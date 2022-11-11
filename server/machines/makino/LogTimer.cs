@@ -48,18 +48,14 @@ namespace Makino
     public delegate void LogsProcessedDel();
     public event LogsProcessedDel LogsProcessed;
 
-    public FMSSettings Settings
-    {
-      get;
-      set;
-    }
+    public SerialSettings Settings { get; set; }
 
     public LogTimer(
-      RepositoryConfig logCfg, MakinoDB makinoDB, StatusDB status, FMSSettings settings)
+      RepositoryConfig logCfg, MakinoDB makinoDB, StatusDB status)
     {
       _lock = new object();
       _openLogDB = () => logCfg.OpenConnection();
-      Settings = settings;
+      Settings = logCfg.Settings;
       _makinoDB = makinoDB;
       _status = status;
       TimerSignaled(null, null);
@@ -372,7 +368,7 @@ namespace Makino
     }
 
     public static void CreateSerial(long matID, string jobUniqe, string partName, int process, string face,
-                                        IRepository _log, FMSSettings Settings)
+                                        IRepository _log, SerialSettings Settings)
     {
       foreach (var stat in _log.GetLogForMaterial(matID))
       {
@@ -391,11 +387,6 @@ namespace Makino
       }
 
       var serial = Settings.ConvertMaterialIDToSerial(matID);
-
-      //length 10 gets us to 1.5e18 which is not quite 2^64
-      //still large enough so we will practically never roll around
-      serial = serial.Substring(0, Math.Min(Settings.SerialLength, serial.Length));
-      serial = serial.PadLeft(Settings.SerialLength, '0');
 
       Log.Debug("Recording serial for matid: {matid} {serial}", matID, serial);
 

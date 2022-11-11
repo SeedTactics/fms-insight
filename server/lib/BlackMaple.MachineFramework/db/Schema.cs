@@ -44,7 +44,7 @@ namespace BlackMaple.MachineFramework
     private const int Version = 28;
 
     #region Create
-    public static void CreateTables(SqliteConnection connection, FMSSettings settings)
+    public static void CreateTables(SqliteConnection connection, SerialSettings settings)
     {
       using (var cmd = connection.CreateCommand())
       {
@@ -64,13 +64,13 @@ namespace BlackMaple.MachineFramework
         }
 
         CreateLogTables(connection, trans, settings);
-        CreateJobTables(connection, trans, settings);
+        CreateJobTables(connection, trans);
 
         trans.Commit();
       }
     }
 
-    private static void CreateLogTables(SqliteConnection connection, SqliteTransaction transaction, FMSSettings settings)
+    private static void CreateLogTables(SqliteConnection connection, SqliteTransaction transaction, SerialSettings settings)
     {
       using (var cmd = connection.CreateCommand())
       {
@@ -149,19 +149,18 @@ namespace BlackMaple.MachineFramework
             "PRIMARY KEY(Counter, PocketNumber, Tool))";
         cmd.ExecuteNonQuery();
 
-        if (!string.IsNullOrEmpty(settings.StartingSerial))
+        if (settings.StartingMaterialID > 0)
         {
-          long matId = settings.ConvertSerialToMaterialID(settings.StartingSerial) - 1;
-          if (matId > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
-            throw new Exception("Serial " + settings.StartingSerial + " is too large");
+          if (settings.StartingMaterialID > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
+            throw new Exception("Starting Serial is too large");
           cmd.CommandText = "INSERT INTO sqlite_sequence(name, seq) VALUES ('matdetails',$v)";
-          cmd.Parameters.Add("v", SqliteType.Integer).Value = matId;
+          cmd.Parameters.Add("v", SqliteType.Integer).Value = settings.StartingMaterialID - 1;
           cmd.ExecuteNonQuery();
         }
       }
     }
 
-    private static void CreateJobTables(SqliteConnection connection, SqliteTransaction transaction, FMSSettings settings)
+    private static void CreateJobTables(SqliteConnection connection, SqliteTransaction transaction)
     {
       using (var cmd = connection.CreateCommand())
       {
@@ -258,7 +257,7 @@ namespace BlackMaple.MachineFramework
     #endregion
 
     #region Upgrade
-    public static void UpgradeTables(SqliteConnection connection, FMSSettings settings, string oldInspDbFile, string oldJobDbFile)
+    public static void UpgradeTables(SqliteConnection connection, SerialSettings settings, string oldInspDbFile, string oldJobDbFile)
     {
       using (var cmd = connection.CreateCommand())
       {
@@ -362,7 +361,7 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 23) Ver22ToVer23(trans);
 
-          if (curVersion < 24) Ver23ToVer24(trans, settings, oldJobDbFile, out detachOldJob);
+          if (curVersion < 24) Ver23ToVer24(trans, oldJobDbFile, out detachOldJob);
 
           bool updateJobsTables = curVersion >= 24; // Ver23ToVer24 creates fresh job tables, so no updates needed if coming from before then
 
@@ -411,12 +410,11 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private static void AdjustStartingSerial(SqliteConnection conn, SqliteTransaction trans, FMSSettings settings)
+    private static void AdjustStartingSerial(SqliteConnection conn, SqliteTransaction trans, SerialSettings settings)
     {
-      if (string.IsNullOrEmpty(settings.StartingSerial)) return;
-      long startingMatId = settings.ConvertSerialToMaterialID(settings.StartingSerial) - 1;
-      if (startingMatId > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
-        throw new Exception("Serial " + settings.StartingSerial + " is too large");
+      if (settings.StartingMaterialID == 0) return;
+      if (settings.StartingMaterialID > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
+        throw new Exception("Starting Serial is too large");
 
       using (var cmd = conn.CreateCommand())
       {
@@ -427,10 +425,10 @@ namespace BlackMaple.MachineFramework
         {
           var lastId = (long)last;
           // if starting mat id is moving forward, update it
-          if (lastId + 1000 < startingMatId)
+          if (lastId + 1000 < settings.StartingMaterialID)
           {
             cmd.CommandText = "UPDATE sqlite_sequence SET seq = $v WHERE name == 'matdetails'";
-            cmd.Parameters.Add("v", SqliteType.Integer).Value = startingMatId;
+            cmd.Parameters.Add("v", SqliteType.Integer).Value = settings.StartingMaterialID - 1;
             cmd.ExecuteNonQuery();
           }
         }
@@ -776,9 +774,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private static void Ver23ToVer24(SqliteTransaction transaction, FMSSettings settings, string oldJobDb, out bool attachedOldJobDb)
+    private static void Ver23ToVer24(SqliteTransaction transaction, string oldJobDb, out bool attachedOldJobDb)
     {
-      CreateJobTables(transaction.Connection, transaction, settings);
+      CreateJobTables(transaction.Connection, transaction);
 
       if (!string.IsNullOrEmpty(oldJobDb) && System.IO.File.Exists(oldJobDb))
       {

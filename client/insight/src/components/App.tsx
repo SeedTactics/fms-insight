@@ -58,10 +58,10 @@ import * as api from "../network/api.js";
 import * as serverSettings from "../network/server-settings.js";
 import { SeedtacticLogo } from "../seedtactics-logo.js";
 import { BackupViewer } from "./BackupViewer.js";
-import { SerialScannerButton } from "./QRScan.js";
+import { BarcodeListener, SerialScannerButton } from "./BarcodeScanning.js";
 import { ManualScanButton } from "./ManualScan.js";
 import { OperatorSelect } from "./ChooseOperator.js";
-import { BasicMaterialDialog } from "./station-monitor/Material.js";
+import { MaterialDialog } from "./station-monitor/Material.js";
 import { RecentSchedulesPage } from "./operations/RecentSchedules.js";
 import { AllMaterial } from "./operations/AllMaterial.js";
 import { FailedPartLookup } from "./quality/FailedPartLookup.js";
@@ -75,7 +75,6 @@ import { ToolReportPage } from "./operations/ToolReport.js";
 import { ProgramReportPage } from "./operations/Programs.js";
 import { WebsocketConnection } from "../network/websocket.js";
 import { currentStatus } from "../cell-status/current-status.js";
-import { BarcodeListener } from "../cell-status/material-details.js";
 import { ScheduleHistory } from "./analysis/ScheduleHistory.js";
 import { differenceInDays, startOfToday } from "date-fns";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog.js";
@@ -587,7 +586,7 @@ const App = React.memo(function App(props: AppProps) {
         {navigation}
       </Header>
       {page}
-      {addBasicMaterialDialog ? <BasicMaterialDialog /> : undefined}
+      {addBasicMaterialDialog ? <MaterialDialog /> : undefined}
       <WebsocketConnection />
       <BarcodeListener />
     </div>

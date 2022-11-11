@@ -40,19 +40,34 @@ namespace BlackMaple.MachineFramework
 
   public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID, string operatorName, string pallet);
   public delegate void PrintLabelForMaterial(long materialId, int process, int? loadStation, string queue);
+  public delegate MaterialDetails ParseBarcode(string barcode, string type);
+
+  public enum AddToQueueType
+  {
+    RequireSerialAndExistingMaterial,
+    AllowNewMaterialBySpecifyingJobAndSerial,
+    AllowNewMaterialBySpecifyingJobWithoutSerial,
+  }
 
   public class FMSImplementation
   {
     public string Name { get; set; }
     public string Version { get; set; }
     public Func<DateTime> LicenseExpires { get; set; } = null;
+
     public IFMSBackend Backend { get; set; }
     public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
+    public IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> ExtraApplicationParts { get; set; } = null;
+
     public CustomizeInstructionPath InstructionPath { get; set; } = null;
+
     public bool UsingLabelPrinterForSerials { get; set; } = false;
     public PrintLabelForMaterial PrintLabel { get; set; } = null;
-    public IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> ExtraApplicationParts { get; set; } = null;
+    public ParseBarcode ParseBarcode { get; set; } = null;
+
     public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
     public string CustomStationMonitorDialogUrl { get; set; } = null;
+    public bool AddRawMaterialAsUnassigned { get; set; } = true;
+    public AddToQueueType AddToQueueType { get; set; } = AddToQueueType.RequireSerialAndExistingMaterial;
   }
 }

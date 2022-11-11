@@ -49,8 +49,7 @@ import { addDays, addHours, addMonths } from "date-fns";
 import * as api from "../../network/api.js";
 import { Menu } from "@mui/material";
 import { MenuItem } from "@mui/material";
-import { useSetRecoilState } from "recoil";
-import { materialToShowInDialog } from "../../cell-status/material-details.js";
+import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
 import { PartCycleData } from "../../cell-status/station-cycles.js";
 import {
@@ -249,7 +248,7 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
   const tpage = useTablePage();
   const zoom = useZoom(props);
   const [detailMenu, setDetailMenu] = React.useState<DetailMenuData | null>(null);
-  const setMatToShow = useSetRecoilState(materialToShowInDialog);
+  const setMatToShow = useSetMaterialToShowInDialog();
 
   const allData = extractData(props.points, columns, props.current_date_zoom, sort.orderBy, sort.order);
   const totalDataLength = allData.length;

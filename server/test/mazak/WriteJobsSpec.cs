@@ -110,7 +110,7 @@ namespace MachineWatchTest
 
     public WriteJobsSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
       _jobDB = _repoCfg.OpenConnection();
 
       _writeMock = new WriteMock();

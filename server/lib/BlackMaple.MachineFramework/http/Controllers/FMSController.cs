@@ -46,32 +46,34 @@ namespace BlackMaple.MachineFramework.Controllers
   {
     [DataMember] public string Name { get; init; }
     [DataMember] public string Version { get; init; }
-    [DataMember] public bool RequireScanAtWash { get; init; }
-    [DataMember] public bool RequireWorkorderBeforeAllowWashComplete { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public DateTime? LicenseExpires { get; init; }
+
     [DataMember] public IReadOnlyList<string> AdditionalLogServers { get; init; }
+
     [DataMember] public string OpenIDConnectAuthority { get; init; }
     [DataMember] public string LocalhostOpenIDConnectAuthority { get; init; }
     [DataMember] public string OpenIDConnectClientId { get; init; }
+
     [DataMember] public bool UsingLabelPrinterForSerials { get; init; }
     [DataMember] public bool? UseClientPrinterForLabels { get; init; }
+
     [DataMember] public string QuarantineQueue { get; init; }
 
-    [DataMember] public bool? RequireExistingMaterialWhenAddingToQueue { get; init; }
-    [DataMember] public bool? RequireSerialWhenAddingMaterialToQueue { get; init; }
-    [DataMember] public bool? AddRawMaterialAsUnassigned { get; init; }
-    [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; init; }
-
+    // Load Station Page Options
     [DataMember] public bool? AllowQuarantineAtLoadStation { get; init; }
     [DataMember] public bool? AllowChangeWorkorderAtLoadStation { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string CustomStationMonitorDialogUrl { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public DateTime? LicenseExpires { get; init; }
+    // Wash Page Options
+    [DataMember] public bool RequireScanAtWash { get; init; }
+    [DataMember] public bool RequireWorkorderBeforeAllowWashComplete { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string CustomStationMonitorDialogUrl { get; init; }
+    // Queues Page Options
+    [DataMember] public AddToQueueType AddToQueueType { get; init; }
+    [DataMember] public bool? AddRawMaterialAsUnassigned { get; init; }
+    [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
   }
 
   [ApiController]
@@ -107,9 +109,8 @@ namespace BlackMaple.MachineFramework.Controllers
         UseClientPrinterForLabels = _impl.PrintLabel == null,
         QuarantineQueue = _cfg.QuarantineQueue,
         RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,
-        RequireExistingMaterialWhenAddingToQueue = _cfg.RequireExistingMaterialWhenAddingToQueue,
-        RequireSerialWhenAddingMaterialToQueue = _cfg.RequireSerialWhenAddingMaterialToQueue,
-        AddRawMaterialAsUnassigned = _cfg.AddRawMaterialAsUnassigned,
+        AddToQueueType = _impl.AddToQueueType,
+        AddRawMaterialAsUnassigned = _impl.AddRawMaterialAsUnassigned,
         AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineAtLoadStation = _impl.Backend.SupportsQuarantineAtLoadStation,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
@@ -249,6 +250,36 @@ namespace BlackMaple.MachineFramework.Controllers
       else
       {
         return BadRequest("FMS configuration does not support printing labels");
+      }
+    }
+
+    [HttpPost("parse-barcode")]
+    public MaterialDetails ParseBarcode([FromQuery] string barcode, [FromQuery] string type = "")
+    {
+      if (_impl != null && _impl.ParseBarcode != null)
+      {
+        return _impl.ParseBarcode(barcode, type);
+      }
+      else
+      {
+        var idxComma = barcode.IndexOf(",");
+        var serial = idxComma > 0 ? barcode.Substring(0, idxComma) : barcode;
+        using (var conn = _impl.Backend.RepoConfig.OpenConnection())
+        {
+          var mats = conn.GetMaterialDetailsForSerial(serial);
+          if (mats.Count > 0)
+          {
+            return mats[mats.Count - 1];
+          }
+          else
+          {
+            return new MaterialDetails()
+            {
+              MaterialID = -1,
+              Serial = serial
+            };
+          }
+        }
       }
     }
   }

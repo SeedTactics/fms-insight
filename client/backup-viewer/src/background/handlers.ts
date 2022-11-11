@@ -237,6 +237,37 @@ handlers["log-for-serial"] = (
   return convertRowsToLog(db, rows);
 };
 
+handlers["material-for-serial"] = (
+  db: Database,
+  a: { serial: string }
+): ReadonlyArray<Readonly<any>> => {
+  const mats = db
+    .prepare(
+      "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Workorder FROM matdetails WHERE Serial = $ser"
+    )
+    .all({ ser: a.serial });
+
+  const path = db.prepare(
+    "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat"
+  );
+
+  return mats.map((mat) => {
+    const paths = path.all({ mat: mat.MaterialID });
+    return {
+      MaterialID: mat.MaterialID,
+      JobUnique: mat.UniqueStr,
+      PartName: mat.PartName,
+      NumProcesses: mat.NumProcesses,
+      Workorder: mat.Workorder,
+      Serial: a.serial,
+      Paths: paths.reduce((obj, p) => {
+        obj[p.Process] = p.Path;
+        return obj;
+      }, {}),
+    };
+  });
+};
+
 function loadProcsAndPaths(
   db: Database,
   uniq: string

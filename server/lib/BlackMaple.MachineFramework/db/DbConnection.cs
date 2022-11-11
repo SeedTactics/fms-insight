@@ -44,6 +44,7 @@ namespace BlackMaple.MachineFramework
     private SqliteConnection _connection;
     private bool _closeConnectionOnDispose;
     private RepositoryConfig _cfg;
+    public RepositoryConfig RepoConfig => _cfg;
 
     internal Repository(RepositoryConfig cfg, SqliteConnection c, bool closeOnDispose)
     {
@@ -68,9 +69,9 @@ namespace BlackMaple.MachineFramework
     public event Action<LogEntry, string, IRepository> NewLogEntry;
     internal void OnNewLogEntry(LogEntry e, string foreignId, IRepository db) => NewLogEntry?.Invoke(e, foreignId, db);
 
-    public FMSSettings Settings { get; }
+    public SerialSettings Settings { get; }
 
-    public static RepositoryConfig InitializeEventDatabase(FMSSettings st, string filename, string oldInspDbFile = null, string oldJobDbFile = null)
+    public static RepositoryConfig InitializeEventDatabase(SerialSettings st, string filename, string oldInspDbFile = null, string oldJobDbFile = null)
     {
       var connStr = "Data Source=" + filename;
       if (System.IO.File.Exists(filename))
@@ -102,7 +103,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public static RepositoryConfig InitializeSingleThreadedMemoryDB(FMSSettings st)
+    public static RepositoryConfig InitializeSingleThreadedMemoryDB(SerialSettings st)
     {
       var memConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
       memConn.Open();
@@ -110,7 +111,7 @@ namespace BlackMaple.MachineFramework
       return new RepositoryConfig(st, memConn);
     }
 
-    public static RepositoryConfig InitializeSingleThreadedMemoryDB(FMSSettings st, SqliteConnection memConn, bool createTables)
+    public static RepositoryConfig InitializeSingleThreadedMemoryDB(SerialSettings st, SqliteConnection memConn, bool createTables)
     {
       if (createTables)
       {
@@ -145,13 +146,13 @@ namespace BlackMaple.MachineFramework
     private string _connStr { get; }
     private SqliteConnection _memoryConnection { get; }
 
-    private RepositoryConfig(FMSSettings st, string connStr)
+    private RepositoryConfig(SerialSettings st, string connStr)
     {
       Settings = st;
       _connStr = connStr;
     }
 
-    private RepositoryConfig(FMSSettings st, SqliteConnection memConn)
+    private RepositoryConfig(SerialSettings st, SqliteConnection memConn)
     {
       Settings = st;
       _memoryConnection = memConn;

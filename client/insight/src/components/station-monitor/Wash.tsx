@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -36,111 +36,161 @@ import { addHours } from "date-fns";
 import { Grid } from "@mui/material";
 import { Button } from "@mui/material";
 
-import { MaterialDialog, MatSummary, InstructionButton } from "./Material.js";
+import { MaterialDialog, MatSummary } from "./Material.js";
 import { WhiteboardRegion } from "./Whiteboard.js";
-import { SelectWorkorderDialog } from "./SelectWorkorder.js";
+import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "./SelectWorkorder.js";
 import { Tooltip } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilValue, useSetRecoilState } from "recoil";
 import {
-  loadWorkordersForMaterialInDialog,
-  materialDetail,
-  materialToShowInDialog,
+  materialDialogOpen,
+  materialInDialogEvents,
+  materialInDialogInfo,
   useAddExistingMaterialToQueue,
+  useCloseMaterialDialog,
   useCompleteWash,
 } from "../../cell-status/material-details.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
+import { LogType } from "../../network/api.js";
+import { instructionUrl } from "../../network/backend.js";
 
-const WashDialog = React.memo(function WashDialog() {
-  const operator = useRecoilValue(currentOperator);
+function CompleteWashButton() {
   const fmsInfo = useRecoilValue(fmsInformation);
-  const displayMat = useRecoilValue(materialDetail);
-  const [matToDisplay, setMatToDisplay] = useRecoilState(materialToShowInDialog);
+  const mat = useRecoilValue(materialInDialogInfo);
   const [completeWash, completingWash] = useCompleteWash();
-  const [addToQueue, addingToQueue] = useAddExistingMaterialToQueue();
-  const setWorkorderDialogOpen = useSetRecoilState(loadWorkordersForMaterialInDialog);
+  const operator = useRecoilValue(currentOperator);
+  const closeMatDialog = useCloseMaterialDialog();
+  const toShow = useRecoilValue(materialDialogOpen);
 
-  function markWashComplete() {
-    if (!displayMat) {
-      return;
-    }
-
-    completeWash({
-      mat: displayMat,
-      operator: operator,
-    });
-    setMatToDisplay(null);
-  }
-  function openAssignWorkorder() {
-    if (!displayMat) {
-      return;
-    }
-    setWorkorderDialogOpen(true);
-  }
+  if (mat === null) return null;
 
   const requireScan = fmsInfo.requireScanAtWash;
   const requireWork = fmsInfo.requireWorkorderBeforeAllowWashComplete;
   let disallowCompleteReason: string | undefined;
 
-  if (requireScan && displayMat && matToDisplay?.type !== "Serial") {
-    disallowCompleteReason = "Scan required at wash";
-  } else if (requireWork && displayMat) {
-    if (displayMat.workorderId === undefined || displayMat.workorderId === "") {
+  if (requireScan) {
+    const usedScan =
+      toShow !== null && (toShow.type === "Barcode" || toShow.type === "ManuallyEnteredSerial");
+    if (!usedScan) {
+      disallowCompleteReason = "Scan required at wash";
+    }
+  } else if (requireWork) {
+    if (mat.workorderId === undefined || mat.workorderId === "") {
       disallowCompleteReason = "No workorder assigned";
     }
   }
 
-  const quarantineQueue = fmsInfo.quarantineQueue || null;
+  function markWashComplete() {
+    if (mat === null) return;
+    completeWash({
+      mat,
+      operator: operator,
+    });
+    closeMatDialog();
+  }
+
+  if (disallowCompleteReason) {
+    return (
+      <Tooltip title={disallowCompleteReason} placement="top">
+        <div>
+          <Button color="primary" disabled>
+            Mark Wash Complete
+          </Button>
+        </div>
+      </Tooltip>
+    );
+  } else {
+    return (
+      <Button color="primary" disabled={completingWash} onClick={markWashComplete}>
+        Mark Wash Complete
+      </Button>
+    );
+  }
+}
+
+function QuarantineMatButton() {
+  const fmsInfo = useRecoilValue(fmsInformation);
+  const [addToQueue, addingToQueue] = useAddExistingMaterialToQueue();
+  const curMat = useRecoilValue(materialInDialogInfo);
+  const operator = useRecoilValue(currentOperator);
+  const closeMatDialog = useCloseMaterialDialog();
+
+  const quarantineQueue = fmsInfo.quarantineQueue ?? null;
+
+  if (!curMat || !quarantineQueue || quarantineQueue === "") return null;
 
   return (
+    <Button
+      color="primary"
+      disabled={addingToQueue}
+      onClick={() => {
+        if (curMat) {
+          addToQueue({
+            materialId: curMat.materialID,
+            queue: quarantineQueue,
+            queuePosition: 0,
+            operator: operator,
+          });
+        }
+        closeMatDialog();
+      }}
+    >
+      Quarantine
+    </Button>
+  );
+}
+
+function InstrButton() {
+  const material = useRecoilValue(materialInDialogInfo);
+  const matEvents = useRecoilValue(materialInDialogEvents);
+  const operator = useRecoilValue(currentOperator);
+
+  if (material === null || material.partName === "") return null;
+
+  const maxProc =
+    LazySeq.of(matEvents)
+      .filter(
+        (e) =>
+          e.details?.["PalletCycleInvalidated"] !== "1" &&
+          (e.type === LogType.LoadUnloadCycle ||
+            e.type === LogType.MachineCycle ||
+            e.type === LogType.AddToQueue)
+      )
+      .flatMap((e) => e.material)
+      .filter((e) => e.id === material.materialID)
+      .maxBy((e) => e.proc)?.proc ?? null;
+  const url = instructionUrl(material.partName, "wash", material.materialID, null, maxProc, operator);
+  return (
+    <Button href={url} target="bms-instructions" color="primary">
+      Instructions
+    </Button>
+  );
+}
+
+function AssignWorkorderButton() {
+  const setWorkorderDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
+  const mat = useRecoilValue(materialInDialogInfo);
+  if (mat === null) return null;
+
+  return (
+    <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
+      Assign Workorder
+    </Button>
+  );
+}
+
+const WashMaterialDialog = React.memo(function WashDialog() {
+  return (
     <MaterialDialog
-      display_material={displayMat}
-      onClose={() => setMatToDisplay(null)}
       allowNote
       buttons={
         <>
-          {displayMat && displayMat.partName !== "" ? (
-            <InstructionButton material={displayMat} type="wash" operator={operator} pallet={null} />
-          ) : undefined}
-          {displayMat && quarantineQueue !== null ? (
-            <Tooltip title={"Move to " + quarantineQueue}>
-              <Button
-                color="primary"
-                disabled={addingToQueue}
-                onClick={() => {
-                  if (displayMat) {
-                    addToQueue({
-                      materialId: displayMat.materialID,
-                      queue: quarantineQueue,
-                      queuePosition: 0,
-                      operator: operator,
-                    });
-                  }
-                  setMatToDisplay(null);
-                }}
-              >
-                Quarantine Material
-              </Button>
-            </Tooltip>
-          ) : undefined}
-          {disallowCompleteReason ? (
-            <Tooltip title={disallowCompleteReason} placement="top">
-              <div>
-                <Button color="primary" disabled>
-                  Mark Wash Complete
-                </Button>
-              </div>
-            </Tooltip>
-          ) : (
-            <Button color="primary" disabled={completingWash} onClick={markWashComplete}>
-              Mark Wash Complete
-            </Button>
-          )}
-          <Button color="primary" onClick={openAssignWorkorder}>
-            {displayMat && displayMat.workorderId ? "Change Workorder" : "Assign Workorder"}
-          </Button>
+          <InstrButton />
+          <QuarantineMatButton />
+          <CompleteWashButton />
+          <AssignWorkorderButton />
         </>
       }
     />
@@ -191,7 +241,7 @@ export function Wash(): JSX.Element {
         </Grid>
       </Grid>
       <SelectWorkorderDialog />
-      <WashDialog />
+      <WashMaterialDialog />
     </div>
   );
 }

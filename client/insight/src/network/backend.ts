@@ -93,6 +93,10 @@ export interface FmsAPI {
     loadStation: number | undefined,
     queue: string | undefined
   ): Promise<void>;
+  parseBarcode(
+    barcode: string | null,
+    type: string | null | undefined
+  ): Promise<Readonly<api.IMaterialDetails>>;
 }
 
 export interface LogAPI {
@@ -105,6 +109,7 @@ export interface LogAPI {
   logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
+  materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>>;
 
   setInspectionDecision(
     materialID: number,

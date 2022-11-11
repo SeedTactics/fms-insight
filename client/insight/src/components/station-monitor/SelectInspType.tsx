@@ -44,20 +44,23 @@ import { DialogTitle } from "@mui/material";
 import { Search as SearchIcon } from "@mui/icons-material";
 import { TextField } from "@mui/material";
 
-import { MaterialDetailTitle } from "./Material.js";
 import * as matDetails from "../../cell-status/material-details.js";
-import { atom, useRecoilState, useRecoilValue } from "recoil";
+import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { last30InspectionTypes } from "../../cell-status/names.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
+import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 
-interface ManualInpTypeEntryProps {
-  readonly close: () => void;
-}
+export const selectInspTypeDialogOpen = atom<boolean>({
+  key: "select-insp-dialog-open",
+  default: false,
+});
 
-function ManualInspTypeEntry(props: ManualInpTypeEntryProps) {
+function ManualInspTypeEntry(): JSX.Element {
   const [inspType, setInspType] = React.useState<string | null>(null);
-  const mat = useRecoilValue(matDetails.materialDetail);
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
   const [forceInsp] = matDetails.useForceInspection();
+  const close = useSetRecoilState(selectInspTypeDialogOpen);
+
   return (
     <TextField
       sx={{ mt: "5px" }}
@@ -72,58 +75,57 @@ function ManualInspTypeEntry(props: ManualInpTypeEntryProps) {
             inspType: inspType,
             inspect: true,
           });
-          props.close();
+          close(false);
         }
       }}
     />
   );
 }
 
-export const selectInspTypeDialogOpen = atom<boolean>({
-  key: "select-insp-dialog-open",
-  default: false,
-});
-
-export const SelectInspTypeDialog = React.memo(function SelectInspTypeDialog() {
-  const mat = useRecoilValue(matDetails.materialDetail);
+function InspectionList() {
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
   const [forceInsp] = matDetails.useForceInspection();
-  const [dialogOpen, setDialogOpen] = useRecoilState(selectInspTypeDialogOpen);
   const inspTypes = useRecoilValue(last30InspectionTypes);
   const sortedInspTypes = LazySeq.of(inspTypes).sortBy((x) => x);
+  const close = useSetRecoilState(selectInspTypeDialogOpen);
+
+  if (mat === null) return null;
+  return (
+    <List>
+      {sortedInspTypes.map((iType) => (
+        <ListItem
+          key={iType}
+          button
+          onClick={() => {
+            forceInsp({ mat, inspType: iType, inspect: true });
+            close(false);
+          }}
+        >
+          <ListItemIcon>
+            <SearchIcon />
+          </ListItemIcon>
+          <ListItemText primary={iType} />
+        </ListItem>
+      ))}
+    </List>
+  );
+}
+
+export const SelectInspTypeDialog = React.memo(function SelectInspTypeDialog() {
+  const [dialogOpen, setDialogOpen] = useRecoilState(selectInspTypeDialogOpen);
 
   let body: JSX.Element | undefined;
-
-  if (mat === null) {
+  if (dialogOpen === false) {
     body = <p>None</p>;
   } else {
-    const inspList = (
-      <List>
-        {sortedInspTypes.map((iType) => (
-          <ListItem
-            key={iType}
-            button
-            onClick={() => {
-              forceInsp({ mat, inspType: iType, inspect: true });
-              setDialogOpen(false);
-            }}
-          >
-            <ListItemIcon>
-              <SearchIcon />
-            </ListItemIcon>
-            <ListItemText primary={iType} />
-          </ListItem>
-        ))}
-      </List>
-    );
-
     body = (
       <>
-        <DialogTitle>
-          <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
-        </DialogTitle>
+        <DialogTitle>Select Inspection Type</DialogTitle>
         <DialogContent>
-          <ManualInspTypeEntry close={() => setDialogOpen(false)} />
-          {inspList}
+          <DisplayLoadingAndError>
+            <ManualInspTypeEntry />
+            <InspectionList />
+          </DisplayLoadingAndError>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)} color="primary">

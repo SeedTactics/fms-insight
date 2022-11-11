@@ -172,6 +172,27 @@ const ServerBackend = {
   printLabel(): Promise<void> {
     return Promise.resolve();
   },
+  async parseBarcode(barcode: string | null): Promise<Readonly<api.IMaterialDetails>> {
+    barcode ??= "";
+    const commaIdx = barcode.indexOf(",");
+    if (commaIdx >= 0) {
+      barcode = barcode.substring(0, commaIdx);
+    }
+    barcode = barcode.replace(/[^0-9a-zA-Z-_]/g, "");
+    const entries: ReadonlyArray<object> = await sendIpc("material-for-serial", {
+      serial: barcode,
+    });
+    const mats = entries.map(api.MaterialDetails.fromJS);
+    if (mats.length > 0) {
+      return mats[mats.length - 1];
+    } else {
+      return {
+        materialID: -1,
+        partName: "",
+        serial: barcode,
+      };
+    }
+  },
 };
 
 const JobsBackend = {
@@ -281,6 +302,12 @@ const LogBackend = {
       serial,
     });
     return entries.map(api.LogEntry.fromJS);
+  },
+  async materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
+    const entries: ReadonlyArray<object> = await sendIpc("material-for-serial", {
+      serial,
+    });
+    return entries.map(api.MaterialDetails.fromJS);
   },
   getWorkorders(): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
     return Promise.resolve([]);

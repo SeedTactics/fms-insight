@@ -60,7 +60,7 @@ namespace MachineWatchTest
 
     public JobLogTest()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
       _jobLog = _repoCfg.OpenConnection();
     }
 
@@ -73,7 +73,9 @@ namespace MachineWatchTest
     public void MaterialIDs()
     {
       long m1 = _jobLog.AllocateMaterialID("U1", "P1", 52);
-      long m2 = _jobLog.AllocateMaterialID("U2", "P2", 66);
+      long m2 = _jobLog.AllocateMaterialIDAndGenerateSerial("U2", "P2", 10002, 66, DateTime.UtcNow, out var serialLogEntry);
+      // no serial is actually generated since the setting is disabled
+      serialLogEntry.Should().BeNull();
       long m3 = _jobLog.AllocateMaterialID("U3", "P3", 566);
       m1.Should().Be(1);
       m2.Should().Be(2);
@@ -2180,6 +2182,7 @@ namespace MachineWatchTest
         oldMatId: initiallyLoadedMatProc1.MaterialID,
         newMatId: newMatProc1.MaterialID,
         operatorName: "theoper",
+        quarantineQueue: "unused",
         timeUTC: now
       );
 
@@ -2362,14 +2365,16 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: 12345,
         newMatId: 98765,
-        operatorName: null
+        operatorName: null,
+        quarantineQueue: "unusedquarantine"
       )).Should().Throw<ConflictRequestException>().WithMessage("Unable to find material");
 
       _jobLog.Invoking(j => j.SwapMaterialInCurrentPalletCycle(
         pallet: "5",
         oldMatId: firstMatId,
         newMatId: differentUniqMatId,
-        operatorName: null
+        operatorName: null,
+        quarantineQueue: "unusedquarantine"
       )).Should().Throw<ConflictRequestException>().WithMessage("Overriding material on pallet must use material from the same job");
 
       var existingPathMatId = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
@@ -2379,7 +2384,8 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: firstMatId,
         newMatId: differentUniqMatId,
-        operatorName: null
+        operatorName: null,
+        quarantineQueue: "unusedquarantine"
       )).Should().Throw<ConflictRequestException>().WithMessage("Overriding material on pallet must use material from the same job");
 
       var otherCastingMatId = _jobLog.AllocateMaterialIDForCasting("othercasting");
@@ -2387,7 +2393,8 @@ namespace MachineWatchTest
         pallet: "5",
         oldMatId: firstMatId,
         newMatId: otherCastingMatId,
-        operatorName: null
+        operatorName: null,
+        quarantineQueue: "unusedquarantine"
       )).Should().Throw<ConflictRequestException>().WithMessage("Material swap of unassigned material does not match part name or raw material name");
     }
 
@@ -2791,7 +2798,7 @@ namespace MachineWatchTest
 
     public LogOneSerialPerMaterialSpec()
     {
-      var settings = new FMSSettings() { SerialType = SerialType.AssignOneSerialPerMaterial, SerialLength = 10 };
+      var settings = new SerialSettings() { SerialType = SerialType.AssignOneSerialPerMaterial, ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10) };
       _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(settings);
       _jobLog = _repoCfg.OpenConnection();
     }
@@ -2799,6 +2806,41 @@ namespace MachineWatchTest
     public void Dispose()
     {
       _repoCfg.CloseMemoryConnection();
+    }
+
+    [Fact]
+    public void AllocateMatIds()
+    {
+      var now = DateTime.UtcNow;
+      var matId = _jobLog.AllocateMaterialIDAndGenerateSerial(unique: "aaa", part: "bbb", proc: 101, numProc: 202, timeUTC: now, out var serialLogEntry);
+      matId.Should().Be(1);
+
+      var expected1 = new LogEntry(
+          cntr: 1,
+          mat: new[] { new LogMaterial(matID: 1, uniq: "aaa", proc: 101, part: "bbb", numProc: 202, serial: "0000000001", workorder: "", face: "") },
+          pal: "",
+          ty: LogType.PartMark,
+          locName: "Mark",
+          locNum: 1,
+          prog: "MARK",
+          start: false,
+          endTime: now,
+          result: "0000000001",
+          endOfRoute: false);
+
+      serialLogEntry.Should().BeEquivalentTo(expected1);
+
+      _jobLog.GetMaterialDetails(matID: 1).Should().BeEquivalentTo(new MaterialDetails()
+      {
+        MaterialID = 1,
+        JobUnique = "aaa",
+        PartName = "bbb",
+        NumProcesses = 202,
+        Serial = "0000000001",
+      }
+      );
+
+      _jobLog.GetLogForSerial("0000000001").Should().BeEquivalentTo(new[] { expected1 });
     }
 
     [Fact]
@@ -2816,9 +2858,9 @@ namespace MachineWatchTest
       var mat4 = new LogMaterial(
           _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "themat4serial", "", "face4");
 
-      var serial1 = FMSSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
-      var serial2 = FMSSettings.ConvertToBase62(mat2.MaterialID).PadLeft(10, '0');
-      var serial3 = FMSSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
+      var serial1 = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
+      var serial2 = SerialSettings.ConvertToBase62(mat2.MaterialID).PadLeft(10, '0');
+      var serial3 = SerialSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
 
       var t = DateTime.UtcNow.AddHours(-1);
 
@@ -2928,7 +2970,7 @@ namespace MachineWatchTest
 
     public LogOneSerialPerCycleSpec()
     {
-      var settings = new FMSSettings() { SerialType = SerialType.AssignOneSerialPerCycle, SerialLength = 10 };
+      var settings = new SerialSettings() { SerialType = SerialType.AssignOneSerialPerCycle, ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10) };
       _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(settings);
       _jobLog = _repoCfg.OpenConnection();
     }
@@ -2950,8 +2992,8 @@ namespace MachineWatchTest
       var mat4 = new LogMaterial(
           _jobLog.AllocateMaterialID("unique4", "part4", 4), "unique4", 4, "part4", 4, "themat4serial", "", "face4");
 
-      var serial1 = FMSSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
-      var serial3 = FMSSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
+      var serial1 = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
+      var serial3 = SerialSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
 
       var t = DateTime.UtcNow.AddHours(-1);
 
@@ -3040,15 +3082,14 @@ namespace MachineWatchTest
     {
       var fixture = new Fixture();
       var matId = fixture.Create<long>();
-      var st = new FMSSettings();
-      st.ConvertSerialToMaterialID(st.ConvertMaterialIDToSerial(matId)).Should().Be(matId);
+      SerialSettings.ConvertFromBase62(SerialSettings.ConvertToBase62(matId)).Should().Be(matId);
     }
 
 
     [Fact]
     public void MaterialIDs()
     {
-      var logDB = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "AbCd12" }, _connection, createTables: true).OpenConnection();
+      var logDB = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12") }, _connection, createTables: true).OpenConnection();
       long m1 = logDB.AllocateMaterialID("U1", "P1", 52);
       long m2 = logDB.AllocateMaterialID("U2", "P2", 66);
       long m3 = logDB.AllocateMaterialID("U3", "P3", 566);
@@ -3069,21 +3110,21 @@ namespace MachineWatchTest
     public void ErrorsTooLarge()
     {
       Action act = () =>
-        RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "A000000000" });
-      act.Should().Throw<Exception>().WithMessage("Serial A000000000 is too large");
+        RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("A000000000") });
+      act.Should().Throw<Exception>().WithMessage("Starting Serial is too large");
     }
 
     [Fact]
     public void AdjustsStartingSerial()
     {
       var logFromCreate =
-        RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "AbCd12" }, _connection, createTables: true).OpenConnection();
+        RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12") }, _connection, createTables: true).OpenConnection();
 
       long m1 = logFromCreate.AllocateMaterialID("U1", "P1", 52);
       m1.Should().Be(33_152_428_148);
 
       var logFromUpgrade =
-        RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "B3t24s" }, _connection, createTables: false).OpenConnection();
+        RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("B3t24s") }, _connection, createTables: false).OpenConnection();
 
       long m2 = logFromUpgrade.AllocateMaterialID("U1", "P1", 2);
       long m3 = logFromUpgrade.AllocateMaterialID("U2", "P2", 4);
@@ -3095,13 +3136,13 @@ namespace MachineWatchTest
     public void AvoidsAdjustingSerialBackwards()
     {
       var logFromCreate =
-        RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "AbCd12" }, _connection, createTables: true).OpenConnection();
+        RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12") }, _connection, createTables: true).OpenConnection();
 
       long m1 = logFromCreate.AllocateMaterialID("U1", "P1", 52);
       m1.Should().Be(33_152_428_148);
 
       var logFromUpgrade =
-        RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings() { StartingSerial = "w53122" }, _connection, createTables: false).OpenConnection();
+        RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("w53122") }, _connection, createTables: false).OpenConnection();
 
       long m2 = logFromUpgrade.AllocateMaterialID("U1", "P1", 2);
       m2.Should().Be(33_152_428_149);

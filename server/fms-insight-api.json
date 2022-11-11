@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v13.16.1.0 (NJsonSchema v10.7.2.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v13.17.0.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -234,6 +234,48 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fms/parse-barcode": {
+      "post": {
+        "tags": [
+          "fms"
+        ],
+        "operationId": "fms_ParseBarcode",
+        "parameters": [
+          {
+            "name": "barcode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialDetails"
                 }
               }
             }
@@ -1524,6 +1566,41 @@
         }
       }
     },
+    "/api/v1/log/material-for-serial/{serial}": {
+      "get": {
+        "tags": [
+          "log"
+        ],
+        "operationId": "log_MaterialForSerial",
+        "parameters": [
+          {
+            "name": "serial",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MaterialDetails"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/log/workorders": {
       "get": {
         "tags": [
@@ -2123,11 +2200,10 @@
             "type": "string",
             "nullable": true
           },
-          "RequireScanAtWash": {
-            "type": "boolean"
-          },
-          "RequireWorkorderBeforeAllowWashComplete": {
-            "type": "boolean"
+          "LicenseExpires": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           },
           "AdditionalLogServers": {
             "type": "array",
@@ -2159,13 +2235,26 @@
             "type": "string",
             "nullable": true
           },
-          "RequireExistingMaterialWhenAddingToQueue": {
+          "AllowQuarantineAtLoadStation": {
             "type": "boolean",
             "nullable": true
           },
-          "RequireSerialWhenAddingMaterialToQueue": {
+          "AllowChangeWorkorderAtLoadStation": {
             "type": "boolean",
             "nullable": true
+          },
+          "CustomStationMonitorDialogUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "RequireScanAtWash": {
+            "type": "boolean"
+          },
+          "RequireWorkorderBeforeAllowWashComplete": {
+            "type": "boolean"
+          },
+          "AddToQueueType": {
+            "$ref": "#/components/schemas/AddToQueueType"
           },
           "AddRawMaterialAsUnassigned": {
             "type": "boolean",
@@ -2175,28 +2264,25 @@
             "type": "boolean",
             "nullable": true
           },
-          "AllowQuarantineAtLoadStation": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "AllowChangeWorkorderAtLoadStation": {
-            "type": "boolean",
-            "nullable": true
-          },
           "AllowEditJobPlanQuantityFromQueuesPage": {
-            "type": "string",
-            "nullable": true
-          },
-          "LicenseExpires": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "CustomStationMonitorDialogUrl": {
             "type": "string",
             "nullable": true
           }
         }
+      },
+      "AddToQueueType": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "RequireSerialAndExistingMaterial",
+          "AllowNewMaterialBySpecifyingJobAndSerial",
+          "AllowNewMaterialBySpecifyingJobWithoutSerial"
+        ],
+        "enum": [
+          "RequireSerialAndExistingMaterial",
+          "AllowNewMaterialBySpecifyingJobAndSerial",
+          "AllowNewMaterialBySpecifyingJobWithoutSerial"
+        ]
       },
       "ServerEvent": {
         "type": "object",
@@ -3508,6 +3594,47 @@
           }
         }
       },
+      "MaterialDetails": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "MaterialID",
+          "PartName"
+        ],
+        "properties": {
+          "MaterialID": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "JobUnique": {
+            "type": "string",
+            "nullable": true
+          },
+          "PartName": {
+            "type": "string"
+          },
+          "NumProcesses": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Workorder": {
+            "type": "string",
+            "nullable": true
+          },
+          "Serial": {
+            "type": "string",
+            "nullable": true
+          },
+          "Paths": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
       "HistoricData": {
         "type": "object",
         "additionalProperties": false,
@@ -3651,47 +3778,6 @@
           "Quantity": {
             "type": "integer",
             "format": "int32"
-          }
-        }
-      },
-      "MaterialDetails": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "MaterialID",
-          "PartName"
-        ],
-        "properties": {
-          "MaterialID": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "JobUnique": {
-            "type": "string",
-            "nullable": true
-          },
-          "PartName": {
-            "type": "string"
-          },
-          "NumProcesses": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "Workorder": {
-            "type": "string",
-            "nullable": true
-          },
-          "Serial": {
-            "type": "string",
-            "nullable": true
-          },
-          "Paths": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": {
-              "type": "integer",
-              "format": "int32"
-            }
           }
         }
       },

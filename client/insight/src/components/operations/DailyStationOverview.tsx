@@ -64,7 +64,7 @@ import * as matDetails from "../../cell-status/material-details.js";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart.js";
 import { OEEChart, OEETable } from "./OEEChart.js";
 import { copyOeeToClipboard, buildOeeSeries } from "../../data/results.oee.js";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilValue } from "recoil";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import {
@@ -215,7 +215,7 @@ interface PartStationCycleChartProps {
 }
 
 const PartStationCycleCart = React.memo(function PartStationCycleChart(props: PartStationCycleChartProps) {
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+  const setMatToShow = matDetails.useSetMaterialToShowInDialog();
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as LoadCycleData;

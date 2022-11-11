@@ -79,7 +79,7 @@ import { DialogTitle } from "@mui/material";
 import { Button } from "@mui/material";
 import { DialogActions } from "@mui/material";
 import { useIsDemo } from "../routes.js";
-import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading.js";
+import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { IProgramRevision } from "../../network/api.js";
 import { MachineBackend } from "../../network/backend.js";
 import { Select } from "@mui/material";
@@ -525,9 +525,9 @@ export function ProgramContentDialog(): JSX.Element {
         {program === null || history !== null ? (
           <div />
         ) : (
-          <DisplayLoadingAndErrorCard>
+          <DisplayLoadingAndError>
             <ProgramContentCode />
-          </DisplayLoadingAndErrorCard>
+          </DisplayLoadingAndError>
         )}
       </DialogContent>
       <DialogActions>
@@ -691,9 +691,9 @@ export function ProgramHistoryDialog(): JSX.Element {
           </Card>
         ) : undefined}
         {programForContent !== null ? (
-          <DisplayLoadingAndErrorCard>
+          <DisplayLoadingAndError>
             <ProgramContentCode />
-          </DisplayLoadingAndErrorCard>
+          </DisplayLoadingAndError>
         ) : revisions !== null ? (
           <ProgramRevisionTable page={page} revisions={revisions} loading={loading} />
         ) : loading ? (
@@ -813,9 +813,9 @@ export function ProgramReportPage(): JSX.Element {
     <>
       <ProgNavHeader />
       <main style={{ padding: "24px" }}>
-        <DisplayLoadingAndErrorCard>
+        <DisplayLoadingAndError>
           <ProgramSummaryTable />
-        </DisplayLoadingAndErrorCard>
+        </DisplayLoadingAndError>
       </main>
       <ProgramContentDialog />
       <ProgramHistoryDialog />

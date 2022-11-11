@@ -51,7 +51,7 @@ namespace MachineWatchTest
 
     public QueueSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
       _logDB = _repoCfg.OpenConnection();
 
       _now = DateTime.UtcNow.AddHours(1);

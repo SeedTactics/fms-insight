@@ -1,0 +1,5 @@
+[*]
+indent_style = space
+
+[*.cs]
+indent_size = 2

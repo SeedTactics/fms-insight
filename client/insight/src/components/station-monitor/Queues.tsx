@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -64,37 +64,27 @@ import {
   MultiMaterial,
   InProcMaterial,
   DragOverlayInProcMaterial,
-  MaterialDetailTitle,
 } from "./Material.js";
 import * as api from "../../network/api.js";
 import {
-  QueueMaterialDialog,
-  AddBySerialDialog,
   BulkAddCastingWithoutSerialDialog,
-  AddWithoutSerialDialog,
-  addMaterialBySerial,
   bulkAddCastingToQueue,
-  addMaterialWithoutSerial,
-  PrintOnClientButton,
+  enterSerialForNewMaterialDialog,
+  AddBySerialDialog,
 } from "./QueuesAddMaterial.js";
-import {
-  selectQueueData,
-  extractJobRawMaterial,
-  loadRawMaterialEvents,
-  JobRawMaterialData,
-} from "../../data/queue-material.js";
-import { LogEntries } from "../LogEntry.js";
-import { JobsBackend, BackendUrl } from "../../network/backend.js";
+import { selectQueueData, extractJobRawMaterial, JobRawMaterialData } from "../../data/queue-material.js";
+import { BackendUrl } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
 import { JobDetails } from "./JobDetails.js";
 import { atom, useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus, currentStatusJobComment } from "../../cell-status/current-status.js";
-import { usePrintLabel } from "../../cell-status/material-details.js";
 import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { SortableRegion, WhiteboardRegion } from "./Whiteboard.js";
+import { MultiMaterialDialog, QueuedMaterialDialog } from "./QueuesMatDialog.js";
+import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -421,154 +411,6 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
   );
 });
 
-interface MultiMaterialDialogProps {
-  readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>> | null;
-  readonly closeDialog: () => void;
-  readonly operator: string | null;
-}
-
-const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const jobs = useRecoilValue(currentStatus).jobs;
-  const [printLabel, printingLabel] = usePrintLabel();
-
-  const [loading, setLoading] = React.useState(false);
-  const [events, setEvents] = React.useState<ReadonlyArray<Readonly<api.ILogEntry>>>([]);
-  const [showRemove, setShowRemove] = React.useState(false);
-  const [removeCnt, setRemoveCnt] = React.useState<number>(NaN);
-  const [lastOperator, setLastOperator] = React.useState<string | undefined>(undefined);
-
-  React.useEffect(() => {
-    if (props.material === null) return;
-    let isSubscribed = true;
-    setLoading(true);
-    loadRawMaterialEvents(props.material)
-      .then((events) => {
-        if (isSubscribed) {
-          setEvents(events);
-          let operator: string | undefined;
-          for (const e of events) {
-            if (e.type === api.LogType.AddToQueue && e.details?.["operator"] !== undefined) {
-              operator = e.details["operator"];
-            }
-          }
-          setLastOperator(operator);
-        }
-      })
-      .finally(() => setLoading(false));
-    return () => {
-      isSubscribed = false;
-    };
-  }, [props.material]);
-
-  const rawMatName = React.useMemo(() => {
-    if (!props.material || props.material.length === 0) return undefined;
-    const uniq = props.material[0].jobUnique;
-    if (!uniq || uniq === "" || !jobs[uniq]) return undefined;
-    return LazySeq.of(jobs[uniq].procsAndPaths[0].paths)
-      .filter((p) => p.casting !== undefined && p.casting !== "")
-      .head()?.casting;
-  }, [props.material, jobs]);
-
-  function close() {
-    props.closeDialog();
-    setShowRemove(false);
-    setRemoveCnt(NaN);
-    setLoading(false);
-    setEvents([]);
-  }
-
-  function remove() {
-    if (showRemove) {
-      if (!isNaN(removeCnt)) {
-        setLoading(true);
-        JobsBackend.bulkRemoveMaterialFromQueues(
-          props.operator,
-          LazySeq.of(props.material || [])
-            .take(removeCnt)
-            .map((m) => m.materialID)
-            .toRArray()
-        ).finally(close);
-      }
-    } else {
-      setShowRemove(true);
-    }
-  }
-
-  const mat1 = props.material?.[0];
-  return (
-    <Dialog open={props.material !== null} onClose={close} maxWidth="md">
-      <DialogTitle>
-        {mat1 && props.material && props.material.length > 0 ? (
-          <MaterialDetailTitle
-            partName={mat1.partName}
-            subtitle={
-              props.material.length.toString() +
-              (mat1.jobUnique && mat1.jobUnique !== "" ? " assigned to " + mat1.jobUnique : " unassigned")
-            }
-          />
-        ) : (
-          "Material"
-        )}
-      </DialogTitle>
-      <DialogContent>
-        {loading ? <CircularProgress color="secondary" /> : <LogEntries entries={events} copyToClipboard />}
-        {showRemove && props.material ? (
-          <div style={{ marginTop: "1em" }}>
-            <TextField
-              type="number"
-              variant="outlined"
-              fullWidth
-              label="Quantity to Remove"
-              inputProps={{ min: "1", max: props.material.length.toString() }}
-              value={isNaN(removeCnt) ? "" : removeCnt}
-              onChange={(e) => setRemoveCnt(parseInt(e.target.value))}
-            />
-          </div>
-        ) : undefined}
-      </DialogContent>
-      <DialogActions>
-        {props.material && props.material.length > 0 && fmsInfo.usingLabelPrinterForSerials ? (
-          fmsInfo.useClientPrinterForLabels ? (
-            <PrintOnClientButton
-              mat={props.material || []}
-              materialName={rawMatName}
-              operator={lastOperator}
-            />
-          ) : (
-            <Button
-              color="primary"
-              disabled={printingLabel}
-              onClick={() =>
-                props.material && props.material.length > 0
-                  ? printLabel({
-                      materialId: props.material[0].materialID,
-                      proc: 0,
-                      loadStation: null,
-                      queue: props.material[0].location.currentQueue || null,
-                    })
-                  : void 0
-              }
-            >
-              Print Label
-            </Button>
-          )
-        ) : undefined}
-        <Button color="primary" onClick={remove} disabled={loading || (showRemove && isNaN(removeCnt))}>
-          {loading && showRemove
-            ? "Removing..."
-            : showRemove && !isNaN(removeCnt)
-            ? `Remove ${removeCnt} material`
-            : "Remove Material"}
-        </Button>
-        <Button color="primary" onClick={close}>
-          Close
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-});
-
 interface AddMaterialButtonsProps {
   readonly label: string;
   readonly rawMatQueue: boolean;
@@ -577,9 +419,9 @@ interface AddMaterialButtonsProps {
 const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
   const currentJobs = useRecoilValue(currentStatus).jobs;
   const fmsInfo = useRecoilValue(fmsInformation);
-  const setAddBySerial = useSetRecoilState(addMaterialBySerial);
   const setBulkAddCastings = useSetRecoilState(bulkAddCastingToQueue);
-  const setAddWithoutSerial = useSetRecoilState(addMaterialWithoutSerial);
+  const setMatToShow = useSetMaterialToShowInDialog();
+  const setAddBySerial = useSetRecoilState(enterSerialForNewMaterialDialog);
 
   const jobExistsWithInputQueue = React.useMemo(() => {
     return LazySeq.ofObject(currentJobs)
@@ -594,12 +436,14 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
         <Fab
           color="secondary"
           onClick={() => {
-            if (fmsInfo.requireSerialWhenAddingMaterialToQueue) {
-              setAddBySerial(props.label);
-            } else if (fmsInfo.addRawMaterialAsUnassigned) {
+            if (fmsInfo.addRawMaterialAsUnassigned) {
               setBulkAddCastings(props.label);
+            } else if (
+              fmsInfo.addToQueueType === api.AddToQueueType.AllowNewMaterialBySpecifyingJobWithoutSerial
+            ) {
+              setMatToShow({ type: "AddMatWithoutSerial", toQueue: props.label });
             } else {
-              setAddWithoutSerial(props.label);
+              setAddBySerial(props.label);
             }
           }}
           size="large"
@@ -611,28 +455,22 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
     );
   } else if (jobExistsWithInputQueue) {
     return (
-      <>
-        {fmsInfo.requireSerialWhenAddingMaterialToQueue ? undefined : (
-          <Tooltip title="Add Material Without Serial">
-            <IconButton
-              onClick={() => setAddWithoutSerial(props.label)}
-              size="medium"
-              style={{ marginBottom: "-20px", zIndex: 1 }}
-            >
-              <AssignIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        )}
-        <Tooltip title="Add By Serial">
-          <IconButton
-            onClick={() => setAddBySerial(props.label)}
-            size="medium"
-            style={{ marginBottom: "-20px", zIndex: 1 }}
-          >
-            <AddIcon fontSize="inherit" />
-          </IconButton>
-        </Tooltip>
-      </>
+      <Tooltip title="Add Material">
+        <Fab
+          color="secondary"
+          onClick={() => {
+            if (fmsInfo.addToQueueType === api.AddToQueueType.AllowNewMaterialBySpecifyingJobWithoutSerial) {
+              setMatToShow({ type: "AddMatWithoutSerial", toQueue: props.label });
+            } else {
+              setAddBySerial(props.label);
+            }
+          }}
+          size="medium"
+          style={{ marginBottom: "-30px", zIndex: 1 }}
+        >
+          <AssignIcon fontSize="inherit" />
+        </Fab>
+      </Tooltip>
     );
   } else {
     return null;
@@ -732,9 +570,8 @@ export const Queues = (props: QueueProps) => {
           </SortableRegion>
         </div>
       ))}
-      <QueueMaterialDialog queueNames={props.queues} />
+      <QueuedMaterialDialog queueNames={props.queues} />
       <AddBySerialDialog />
-      <AddWithoutSerialDialog queueNames={props.queues} />
       <BulkAddCastingWithoutSerialDialog />
       <EditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />

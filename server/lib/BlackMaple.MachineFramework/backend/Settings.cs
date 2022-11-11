@@ -96,23 +96,72 @@ namespace BlackMaple.MachineFramework
     AssignOneSerialPerCycle,     // assign a single serial to all the material on each cycle
   }
 
+  public record SerialSettings
+  {
+    public SerialType SerialType { get; set; } = SerialType.NoAutomaticSerials;
+    public long StartingMaterialID { get; init; } = 0; // if the current material id in the database is below this value, it will be set to this value
+    public Func<long, string> ConvertMaterialIDToSerial { get; init; }
+
+    private static string Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    public static string ConvertToBase62(long num, int? len = null)
+    {
+      string res = "";
+      long cur = num;
+
+      while (cur > 0)
+      {
+        long quotient = cur / 62;
+        int remainder = (int)(cur % 62);
+
+        res = Base62Chars[remainder] + res;
+        cur = quotient;
+      }
+
+      if (len.HasValue)
+      {
+        res = res.PadLeft(len.Value, '0');
+      }
+
+      return res;
+    }
+
+    public static long ConvertFromBase62(string msg)
+    {
+      long res = 0;
+      int len = msg.Length;
+      long multiplier = 1;
+
+      for (int i = 0; i < len; i++)
+      {
+        char c = msg[len - i - 1];
+        int idx = Base62Chars.IndexOf(c);
+        if (idx < 0)
+          throw new Exception("Serial " + msg + " has an invalid character " + c);
+        res += idx * multiplier;
+        multiplier *= 62;
+      }
+      return res;
+
+    }
+
+  }
+
+
   public class FMSSettings
   {
     public string DataDirectory { get; set; } = null;
-    public SerialType SerialType { get; set; } = SerialType.NoAutomaticSerials;
+    public string InstructionFilePath { get; set; }
+
     public int SerialLength { get; set; } = 9;
     public string StartingSerial { get; set; } = null;
-    public Func<string, long> ConvertSerialToMaterialID { get; set; } = ConvertFromBase62;
-    public Func<long, string> ConvertMaterialIDToSerial { get; set; } = ConvertToBase62;
-    public string InstructionFilePath { get; set; }
+
     public bool RequireScanAtWash { get; set; }
     public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
-    public string QuarantineQueue { get; set; }
-    public bool RequireExistingMaterialWhenAddingToQueue { get; set; }
-    public bool RequireSerialWhenAddingMaterialToQueue { get; set; }
-    public bool AddRawMaterialAsUnassigned { get; set; }
     public bool RequireOperatorNamePromptWhenAddingMaterial { get; set; }
     public bool AllowChangeWorkorderAtLoadStation { get; set; }
+
+    public string QuarantineQueue { get; set; }
 
     public Dictionary<string, QueueSize> Queues { get; }
       = new Dictionary<string, QueueSize>();
@@ -133,43 +182,17 @@ namespace BlackMaple.MachineFramework
       {
         DataDirectory = DefaultDataDirectory();
       }
+      InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");
 
-      if (fmsSection.GetValue<bool>("AutomaticSerials", false))
-      {
-        SerialType = SerialType.AssignOneSerialPerMaterial;
-      }
       SerialLength = fmsSection.GetValue<int>("SerialLength", 10);
       StartingSerial = fmsSection.GetValue<string>("StartingSerial", null);
+
       RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
       RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
       RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>("RequireOperatorNamePromptWhenAddingMaterial", false);
-
-      RequireSerialWhenAddingMaterialToQueue = fmsSection.GetValue<bool>("RequireSerialWhenAddingMaterialToQueue", false);
-      RequireExistingMaterialWhenAddingToQueue = fmsSection.GetValue<bool>("RequireExistingMaterialWhenAddingToQueue", false);
-      if (RequireExistingMaterialWhenAddingToQueue)
-      {
-        RequireSerialWhenAddingMaterialToQueue = true;
-      }
-
-      AddRawMaterialAsUnassigned = fmsSection.GetValue<bool>("AddRawMaterialAsUnassigned", true);
       AllowChangeWorkorderAtLoadStation = fmsSection.GetValue<bool>("AllowChangeWorkorderAtLoadStation", false);
-      QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
-      AdditionalLogServers =
-        fmsSection.GetValue<string>("AdditionalServersForLogs", "")
-        .Split(',')
-        .Where(x => !string.IsNullOrWhiteSpace(x))
-        .Select(x =>
-        {
-          var uri = new UriBuilder(x);
-          if (uri.Scheme == "") uri.Scheme = "http";
-          if (uri.Port == 80 && x.IndexOf(':') < 0) uri.Port = 5000;
-          var uriS = uri.Uri.ToString();
-          // remove trailing slash
-          return uriS.Substring(0, uriS.Length - 1);
-        })
-        .ToList();
 
-      InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath");
+      QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
 
       foreach (var q in config.GetSection("QUEUE").AsEnumerable())
       {
@@ -191,6 +214,21 @@ namespace BlackMaple.MachineFramework
           ExternalQueues[key] = q.Value;
         }
       }
+
+      AdditionalLogServers =
+        fmsSection.GetValue<string>("AdditionalServersForLogs", "")
+        .Split(',')
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Select(x =>
+        {
+          var uri = new UriBuilder(x);
+          if (uri.Scheme == "") uri.Scheme = "http";
+          if (uri.Port == 80 && x.IndexOf(':') < 0) uri.Port = 5000;
+          var uriS = uri.Uri.ToString();
+          // remove trailing slash
+          return uriS.Substring(0, uriS.Length - 1);
+        })
+        .ToList();
 
       if (!string.IsNullOrEmpty(QuarantineQueue) && !Queues.ContainsKey(QuarantineQueue) && !ExternalQueues.ContainsKey(QuarantineQueue))
       {
@@ -226,43 +264,6 @@ namespace BlackMaple.MachineFramework
       }
 
       return dataDir;
-    }
-    private static string Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    public static string ConvertToBase62(long num)
-    {
-      string res = "";
-      long cur = num;
-
-      while (cur > 0)
-      {
-        long quotient = cur / 62;
-        int remainder = (int)(cur % 62);
-
-        res = Base62Chars[remainder] + res;
-        cur = quotient;
-      }
-
-      return res;
-    }
-
-    public static long ConvertFromBase62(string msg)
-    {
-      long res = 0;
-      int len = msg.Length;
-      long multiplier = 1;
-
-      for (int i = 0; i < len; i++)
-      {
-        char c = msg[len - i - 1];
-        int idx = Base62Chars.IndexOf(c);
-        if (idx < 0)
-          throw new Exception("Serial " + msg + " has an invalid character " + c);
-        res += idx * multiplier;
-        multiplier *= 62;
-      }
-      return res;
-
     }
   }
 }

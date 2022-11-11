@@ -36,6 +36,7 @@ import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
 import { ErrorBoundary } from "react-error-boundary";
+import { ApiException } from "../network/api.js";
 
 export function Loading() {
   return (
@@ -46,19 +47,31 @@ export function Loading() {
   );
 }
 
-function DisplayError({ error }: { readonly error?: Error }) {
+export function DisplayError({ error }: { readonly error?: Error }) {
   if (error === undefined) return <></>;
-  return (
-    <Card>
-      <CardContent>{error.message}</CardContent>
-    </Card>
-  );
+  if (ApiException.isApiException(error)) {
+    return (
+      <Card>
+        <CardContent>
+          <h3>FMS Insight Server Error</h3>
+          <p>{error.response}</p>
+        </CardContent>
+      </Card>
+    )
+
+  } else {
+    return (
+      <Card>
+        <CardContent>{error.message}</CardContent>
+      </Card>
+    );
+  }
 }
 
-export function DisplayLoadingAndErrorCard(props: React.PropsWithChildren<{}>) {
+export function DisplayLoadingAndError(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
   return (
     <ErrorBoundary FallbackComponent={DisplayError}>
-      <React.Suspense fallback={<Loading />}>{props.children}</React.Suspense>
+      <React.Suspense fallback={props.fallback ?? <Loading />}>{props.children}</React.Suspense>
     </ErrorBoundary>
   );
 }

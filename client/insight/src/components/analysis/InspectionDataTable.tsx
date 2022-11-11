@@ -51,8 +51,7 @@ import { InspectionLogEntry } from "../../cell-status/inspections.js";
 import { Typography } from "@mui/material";
 import { TriggeredInspectionEntry, groupInspectionsByPath } from "../../data/results.inspection.js";
 import { addDays, addHours } from "date-fns";
-import { useSetRecoilState } from "recoil";
-import { materialToShowInDialog } from "../../cell-status/material-details.js";
+import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
 
 enum ColumnId {
@@ -145,7 +144,7 @@ export interface InspectionDataTableProps {
 }
 
 export default React.memo(function InspDataTable(props: InspectionDataTableProps) {
-  const setMatToShow = useSetRecoilState(materialToShowInDialog);
+  const setMatToShow = useSetMaterialToShowInDialog();
   const sort = useColSort(ColumnId.Date, columns);
   const [pages, setPages] = React.useState<HashMap<string, number>>(HashMap.empty());
   const [rowsPerPage, setRowsPerPage] = React.useState(10);

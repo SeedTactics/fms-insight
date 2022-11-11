@@ -118,7 +118,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         }).ToDictionary(x => x.iccMc, x => (group: x.group, num: x.num))
       };
 
-      var repoCfg = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), Path.Combine(directory, "niigatalog.db"));
+      var repoCfg = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), Path.Combine(directory, "niigatalog.db"));
       using var repo = repoCfg.OpenConnection();
 
       var convert = new CreateCellState(new FMSSettings(), names, null);

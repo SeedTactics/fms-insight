@@ -58,10 +58,9 @@ import {
   inproc_mat_to_summary,
   MaterialSummaryAndCompletedData,
 } from "../../cell-status/material-summary.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
-import { instructionUrl } from "../../network/backend.js";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { useRecoilValue, useRecoilValueLoadable } from "recoil";
+import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 
 export class PartIdenticon extends React.PureComponent<{
   part: string;
@@ -148,7 +147,7 @@ const MatCard = React.forwardRef(function MatCard(
   props: MaterialSummaryProps & MaterialDragProps,
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
+  const setMatToShow = matDetails.useSetMaterialToShowInDialog();
 
   const inspections = props.mat.signaledInspections.join(", ");
   const completed = props.mat.completedInspections || {};
@@ -407,122 +406,141 @@ export const MultiMaterial = React.memo(function MultiMaterial(props: MultiMater
   );
 });
 
-export class MaterialDetailTitle extends React.PureComponent<{
+export const MaterialDetailTitle = React.memo(function MaterialDetailTitle({
+  partName,
+  serial,
+  subtitle,
+  notes,
+  fallbackTitle,
+}: {
   partName: string;
-  serial?: string;
+  serial?: string | null;
   subtitle?: string;
   notes?: boolean;
-}> {
-  override render() {
-    let title;
-    if (this.props.partName === "" && (this.props.serial === undefined || this.props.serial === "")) {
-      title = "Loading";
-    } else if (this.props.partName === "") {
-      title = "Loading " + (this.props.serial ?? "");
-    } else if (this.props.serial === undefined || this.props.serial === "") {
-      if (this.props.notes) {
-        title = "Add note for " + this.props.partName;
-      } else {
-        title = this.props.partName;
-      }
-    } else {
-      if (this.props.notes) {
-        title = "Add note for " + this.props.serial;
-      } else {
-        title = this.props.partName + " - " + this.props.serial;
-      }
-    }
-
-    return (
-      <div style={{ display: "flex", textAlign: "left" }}>
-        {this.props.partName === "" ? <SearchIcon /> : <PartIdenticon part={this.props.partName} />}
-        <div style={{ marginLeft: "8px", flexGrow: 1 }}>
-          <Typography variant="h6">{title}</Typography>
-          {this.props.subtitle ? <Typography variant="caption">{this.props.subtitle}</Typography> : undefined}
-        </div>
-      </div>
-    );
-  }
-}
-
-export interface MaterialDetailProps {
-  readonly mat: matDetails.MaterialDetail;
-  readonly highlightProcess?: number;
-}
-
-export class MaterialDetailContent extends React.PureComponent<MaterialDetailProps> {
-  override render() {
-    const mat = this.props.mat;
-    function colorForInspType(type: string): string {
-      if (mat.completedInspections && mat.completedInspections.includes(type)) {
-        return "black";
-      } else {
-        return "red";
-      }
-    }
-    return (
-      <>
-        <div style={{ marginLeft: "1em" }}>
-          <div>
-            <small>Workorder: {mat.workorderId || "none"}</small>
-          </div>
-          <div>
-            <small>Inspections: </small>
-            {mat.signaledInspections.length === 0 ? (
-              <small>none</small>
-            ) : (
-              mat.signaledInspections.map((type, i) => (
-                <span key={i}>
-                  <small>{i === 0 ? "" : ", "}</small>
-                  <small style={{ color: colorForInspType(type) }}>{type}</small>
-                </span>
-              ))
-            )}
-          </div>
-        </div>
-        {mat.loading_events ? (
-          <CircularProgress data-testid="material-events-loading" color="secondary" />
-        ) : (
-          <LogEntries entries={mat.events} copyToClipboard highlightProcess={this.props.highlightProcess} />
-        )}
-      </>
-    );
-  }
-}
-
-export function InstructionButton({
-  material,
-  type,
-  operator,
-  pallet,
-}: {
-  readonly material: matDetails.MaterialDetail;
-  readonly type: string;
-  readonly operator: string | null;
-  readonly pallet: string | null;
+  fallbackTitle?: string;
 }) {
-  const maxProc =
-    LazySeq.of(material.events)
-      .filter(
-        (e) =>
-          e.details?.["PalletCycleInvalidated"] !== "1" &&
-          (e.type === api.LogType.LoadUnloadCycle ||
-            e.type === api.LogType.MachineCycle ||
-            e.type === api.LogType.AddToQueue)
-      )
-      .flatMap((e) => e.material)
-      .filter((e) => e.id === material.materialID)
-      .maxBy((e) => e.proc)?.proc ?? null;
-  const url = instructionUrl(material.partName, type, material.materialID, pallet, maxProc, operator);
+  let title;
+  if (partName === "") {
+    title = serial ?? fallbackTitle ?? "Material";
+  } else if (serial === undefined || serial === null || serial === "") {
+    if (notes) {
+      title = "Add note for " + partName;
+    } else {
+      title = partName;
+    }
+  } else {
+    if (notes) {
+      title = "Add note for " + serial;
+    } else {
+      title = partName + " - " + serial;
+    }
+  }
+
   return (
-    <Button href={url} target="bms-instructions" color="primary">
-      Instructions
-    </Button>
+    <div style={{ display: "flex", textAlign: "left" }}>
+      {partName === "" ? <SearchIcon /> : <PartIdenticon part={partName} />}
+      <div style={{ marginLeft: "8px", flexGrow: 1 }}>
+        <Typography variant="h6">{title}</Typography>
+        {subtitle ? <Typography variant="caption">{subtitle}</Typography> : undefined}
+      </div>
+    </div>
+  );
+});
+
+function MaterialDialogTitle({ notes }: { notes?: boolean }) {
+  const mat = useRecoilValueLoadable(matDetails.materialInDialogInfo).valueMaybe();
+  const serial = useRecoilValueLoadable(matDetails.serialInMaterialDialog).valueMaybe();
+  const toShow = useRecoilValue(matDetails.materialDialogOpen);
+  const fallback = toShow && toShow.type === "AddMatWithoutSerial" ? "Add New Material" : undefined;
+  return (
+    <MaterialDetailTitle
+      notes={notes}
+      partName={mat?.partName ?? ""}
+      serial={mat?.serial ?? serial}
+      fallbackTitle={fallback}
+    />
   );
 }
 
+function MaterialInspections() {
+  const insps = useRecoilValue(matDetails.materialInDialogInspections);
+  function colorForInspType(type: string): string {
+    if (insps.completedInspections.includes(type)) {
+      return "black";
+    } else {
+      return "red";
+    }
+  }
+  if (insps.signaledInspections.length === 0) {
+    return <small>Inspections: none</small>;
+  } else {
+    return (
+      <small>
+        Inspections:{" "}
+        {insps.signaledInspections.map((type, i) => (
+          <span key={i}>
+            {i === 0 ? "" : ", "}
+            <span style={{ color: colorForInspType(type) }}>{type}</span>
+          </span>
+        ))}
+      </small>
+    );
+  }
+}
+
+function MaterialEvents({ highlightProcess }: { highlightProcess?: number }) {
+  const events = useRecoilValue(matDetails.materialInDialogEvents);
+  return <LogEntries entries={events} copyToClipboard highlightProcess={highlightProcess} />;
+}
+
+export const MaterialDetailContent = React.memo(function MaterialDetailContent({
+  highlightProcess,
+}: {
+  highlightProcess?: number;
+}) {
+  const toShow = useRecoilValue(matDetails.materialDialogOpen);
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+
+  if (toShow === null) return null;
+
+  if (mat === null) {
+    if (toShow.type === "AddMatWithEnteredSerial" || toShow.type === "ManuallyEnteredSerial") {
+      return <div style={{ marginLeft: "1em" }}>Material with serial {toShow.serial} not found.</div>;
+    } else if (toShow.type === "Barcode") {
+      return <div style={{ marginLeft: "1em" }}>Material with barcode {toShow.barcode} not found.</div>;
+    } else if (toShow.type === "AddMatWithoutSerial") {
+      return null;
+    } else {
+      return <div style={{ marginLeft: "1em" }}>Material not found.</div>;
+    }
+  }
+
+  return (
+    <>
+      <div style={{ marginLeft: "1em" }}>
+        <div>
+          <small>Workorder: {mat?.workorderId ?? "none"}</small>
+        </div>
+        <div>
+          <DisplayLoadingAndError
+            fallback={
+              <small>
+                Inspections: <CircularProgress size="10" />
+              </small>
+            }
+          >
+            <MaterialInspections />
+          </DisplayLoadingAndError>
+        </div>
+      </div>
+      <DisplayLoadingAndError fallback={<CircularProgress />}>
+        <MaterialEvents highlightProcess={highlightProcess} />
+      </DisplayLoadingAndError>
+    </>
+  );
+});
+
 interface NotesDialogBodyProps {
-  mat: matDetails.MaterialDetail;
   setNotesOpen: (o: boolean) => void;
 }
 
@@ -530,12 +548,11 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
   const [curNote, setCurNote] = React.useState<string>("");
   const operator = useRecoilValue(currentOperator);
   const [addNote] = matDetails.useAddNote();
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  if (mat === null) return null;
 
   return (
     <>
-      <DialogTitle>
-        <MaterialDetailTitle notes partName={props.mat.partName} serial={props.mat.serial} />
-      </DialogTitle>
       <DialogContent>
         <TextField
           sx={{ mt: "5px" }}
@@ -550,7 +567,7 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
       <DialogActions>
         <Button
           onClick={() => {
-            addNote({ matId: props.mat.materialID, process: 0, operator: operator, notes: curNote });
+            addNote({ matId: mat.materialID, process: 0, operator: operator, notes: curNote });
             props.setNotesOpen(false);
             setCurNote("");
           }}
@@ -573,54 +590,112 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
   );
 }
 
+export function MaterialLoading() {
+  const toShow = useRecoilValue(matDetails.materialDialogOpen);
+  if (toShow === null) return null;
+
+  let msg: string;
+  switch (toShow.type) {
+    case "Barcode":
+      msg = "Loading material with barcode " + toShow.barcode + "...";
+      break;
+    case "AddMatWithEnteredSerial":
+    case "ManuallyEnteredSerial":
+      msg = "Loading material with serial " + toShow.serial + "...";
+      break;
+    default:
+      msg = "Loading material...";
+      break;
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <CircularProgress />
+      <div style={{ marginTop: "1em" }}>{msg}</div>
+    </div>
+  );
+}
+
+function AddNoteButton({ setNotesOpen }: { setNotesOpen: (o: boolean) => void }) {
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  if (mat === null) return null;
+
+  return (
+    <Button onClick={() => setNotesOpen(true)} color="primary">
+      Add Note
+    </Button>
+  );
+}
+
 export interface MaterialDialogProps {
-  display_material: matDetails.MaterialDetail | null;
   buttons?: JSX.Element;
-  onClose: () => void;
+  onClose?: () => void;
   allowNote?: boolean;
   extraDialogElements?: JSX.Element;
   highlightProcess?: number;
 }
 
-export function MaterialDialog(props: MaterialDialogProps) {
+export const MaterialDialog = React.memo(function MaterialDialog(props: MaterialDialogProps) {
   const [notesOpen, setNotesOpen] = React.useState<boolean>(false);
+  const closeMatDialog = matDetails.useCloseMaterialDialog();
+  const dialogOpen = useRecoilValue(matDetails.materialDialogOpen);
+
+  function close() {
+    closeMatDialog();
+    if (props.onClose) props.onClose();
+  }
 
   let body: JSX.Element | undefined;
   let notesBody: JSX.Element | undefined;
-  if (props.display_material === null) {
-    body = <p>None</p>;
-    notesBody = <p>None</p>;
-  } else {
-    const mat = props.display_material;
+  if (dialogOpen) {
     body = (
       <>
         <DialogTitle>
-          <MaterialDetailTitle partName={mat.partName} serial={mat.serial} />
+          <MaterialDialogTitle />
         </DialogTitle>
         <DialogContent>
-          <MaterialDetailContent mat={mat} highlightProcess={props.highlightProcess} />
+          <DisplayLoadingAndError fallback={<MaterialLoading />}>
+            <MaterialDetailContent highlightProcess={props.highlightProcess} />
+            <DisplayLoadingAndError fallback={<CircularProgress />}>
+              {props.extraDialogElements}
+            </DisplayLoadingAndError>
+          </DisplayLoadingAndError>
         </DialogContent>
-        {props.extraDialogElements}
         <DialogActions>
-          {props.allowNote ? (
-            <Button onClick={() => setNotesOpen(true)} color="primary">
-              Add Note
-            </Button>
-          ) : undefined}
-          {props.buttons}
-          <Button onClick={props.onClose} color="secondary">
+          {dialogOpen && (props.buttons || props.allowNote) ? (
+            <DisplayLoadingAndError fallback={<CircularProgress />}>
+              {dialogOpen && props.allowNote ? <AddNoteButton setNotesOpen={setNotesOpen} /> : undefined}
+              {props.buttons}
+            </DisplayLoadingAndError>
+          ) : null}
+          <Button onClick={close} color="secondary">
             Close
           </Button>
         </DialogActions>
       </>
     );
     if (props.allowNote) {
-      notesBody = <NotesDialogBody mat={mat} setNotesOpen={setNotesOpen} />;
+      notesBody = (
+        <>
+          <DialogTitle>
+            <MaterialDialogTitle notes />
+          </DialogTitle>
+          <DisplayLoadingAndError
+            fallback={
+              <DialogContent>
+                <CircularProgress />
+              </DialogContent>
+            }
+          >
+            <NotesDialogBody setNotesOpen={setNotesOpen} />;
+          </DisplayLoadingAndError>
+        </>
+      );
     }
   }
   return (
     <>
-      <Dialog open={props.display_material !== null} onClose={props.onClose} maxWidth="md">
+      <Dialog open={dialogOpen !== null} onClose={close} maxWidth="md">
         {body}
       </Dialog>
       {props.allowNote ? (
@@ -630,11 +705,4 @@ export function MaterialDialog(props: MaterialDialogProps) {
       ) : undefined}
     </>
   );
-}
-
-export const BasicMaterialDialog = React.memo(function BasicMaterialDialog() {
-  const mat = useRecoilValue(matDetails.materialDetail);
-  const setMatToShow = useSetRecoilState(matDetails.materialToShowInDialog);
-  const close = React.useCallback(() => setMatToShow(null), []);
-  return <MaterialDialog display_material={mat} onClose={close} />;
 });

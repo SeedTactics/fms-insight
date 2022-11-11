@@ -313,16 +313,8 @@ namespace BlackMaple.FMSInsight.Niigata
             string serial = null;
             if (allocateNew)
             {
-              mid = logDB.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.Processes.Count);
-              if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
-              {
-                serial = _settings.ConvertMaterialIDToSerial(mid);
-                logDB.RecordSerialForMaterialID(
-                  new EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
-                  serial,
-                  nowUtc
-                  );
-              }
+              mid = logDB.AllocateMaterialIDAndGenerateSerial(unique: face.Job.UniqueStr, part: face.Job.PartName, proc: face.Process, numProc: face.Job.Processes.Count, timeUTC: nowUtc, out var serialLogEntry);
+              serial = serialLogEntry?.Result;
             }
             else
             {
@@ -613,16 +605,14 @@ namespace BlackMaple.FMSInsight.Niigata
             for (int i = loadedMatCnt; i < face.PathInfo.PartsPerPallet; i++)
             {
               string serial = null;
-              long mid = logDB.AllocateMaterialID(face.Job.UniqueStr, face.Job.PartName, face.Job.Processes.Count);
-              if (_settings.SerialType == SerialType.AssignOneSerialPerMaterial)
-              {
-                serial = _settings.ConvertMaterialIDToSerial(mid);
-                logDB.RecordSerialForMaterialID(
-                  new EventLogMaterial() { MaterialID = mid, Process = face.Process, Face = "" },
-                  serial,
-                  nowUtc
-                  );
-              }
+              long mid = logDB.AllocateMaterialIDAndGenerateSerial(
+                unique: face.Job.UniqueStr,
+                part: face.Job.PartName,
+                proc: face.Process,
+                numProc: face.Job.Processes.Count,
+                timeUTC: nowUtc,
+                out var serialLogEntry);
+              serial = serialLogEntry?.Result;
               pallet.Material.Add(new InProcessMaterialAndJob()
               {
                 Job = face.Job,

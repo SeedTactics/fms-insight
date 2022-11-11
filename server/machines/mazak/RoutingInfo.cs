@@ -515,7 +515,8 @@ namespace MazakMachineInterface
           pallet: pallet,
           oldMatId: oldMatId,
           newMatId: newMatId,
-          operatorName: operatorName
+          operatorName: operatorName,
+          quarantineQueue: fmsSettings.QuarantineQueue
         );
 
         OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()

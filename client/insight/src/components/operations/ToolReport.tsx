@@ -70,7 +70,7 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { useRecoilState, useRecoilValue } from "recoil";
 import { useIsDemo } from "../routes.js";
-import { DisplayLoadingAndErrorCard } from "../ErrorsAndLoading.js";
+import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
@@ -476,9 +476,9 @@ export function ToolReportPage(): JSX.Element {
     <>
       <ToolNavHeader />
       <main style={{ padding: "24px" }}>
-        <DisplayLoadingAndErrorCard>
+        <DisplayLoadingAndError>
           <ToolSummaryTable />
-        </DisplayLoadingAndErrorCard>
+        </DisplayLoadingAndError>
       </main>
     </>
   );

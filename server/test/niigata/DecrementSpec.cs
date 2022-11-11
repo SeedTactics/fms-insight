@@ -48,7 +48,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public NiigataDecrementSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new FMSSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
       _jobDB = _repoCfg.OpenConnection();
     }
 

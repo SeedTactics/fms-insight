@@ -78,14 +78,13 @@ namespace DebugMachineWatchApiServer
       var serverSettings = ServerSettings.Load(cfg);
 
       var fmsSettings = new FMSSettings(cfg);
-      fmsSettings.RequireSerialWhenAddingMaterialToQueue = false;
-      fmsSettings.AddRawMaterialAsUnassigned = true;
-      fmsSettings.RequireExistingMaterialWhenAddingToQueue = false;
       fmsSettings.InstructionFilePath = System.IO.Path.Combine(
           System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
           "../../../sample-instructions/"
       );
       fmsSettings.QuarantineQueue = "Initial Quarantine";
+      fmsSettings.RequireScanAtWash = true;
+      fmsSettings.AllowChangeWorkorderAtLoadStation = true;
 
       BlackMaple.MachineFramework.Program.EnableSerilog(serverSt: serverSettings, enableEventLog: false);
 
@@ -99,6 +98,29 @@ namespace DebugMachineWatchApiServer
         PrintLabel = (matId, process, loadStation, queue) =>
         {
           Serilog.Log.Information("Print label for {matId} {process} {loadStation}", matId, process, loadStation);
+        },
+        ParseBarcode = (barcode, type) =>
+        {
+          Serilog.Log.Information("Parsing barcode {barcode} {type}", barcode, type);
+          System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
+          var commaIdx = barcode.IndexOf(',');
+          if (commaIdx >= 0) barcode = barcode.Substring(0, commaIdx);
+          using (var conn = backend.RepoConfig.OpenConnection())
+          {
+            var mats = conn.GetMaterialDetailsForSerial(barcode);
+            if (mats.Count > 0)
+            {
+              return mats[mats.Count - 1];
+            }
+            else
+            {
+              return new MaterialDetails()
+              {
+                MaterialID = -1,
+                Serial = barcode
+              };
+            }
+          }
         }
       };
 
@@ -155,14 +177,14 @@ namespace DebugMachineWatchApiServer
 
       if (DebugMockProgram.InsightBackupDbFile != null)
       {
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), DebugMockProgram.InsightBackupDbFile);
+        RepoConfig = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), DebugMockProgram.InsightBackupDbFile);
         LoadStatusFromLog(System.IO.Path.GetDirectoryName(DebugMockProgram.InsightBackupDbFile));
       }
       else
       {
         _tempDbFile = System.IO.Path.GetTempFileName();
         System.IO.File.Delete(_tempDbFile);
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(new FMSSettings(), _tempDbFile);
+        RepoConfig = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), _tempDbFile);
 
         // sample data starts at Jan 1, 2018.  Need to offset to current month
         var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -720,7 +742,8 @@ namespace DebugMachineWatchApiServer
         pallet: pallet,
         oldMatId: oldMatId,
         newMatId: newMatId,
-        operatorName: operatorName
+        operatorName: operatorName,
+        quarantineQueue: null
       );
       OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()
       {
