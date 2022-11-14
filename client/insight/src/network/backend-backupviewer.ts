@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "./api.js";
-import { RouteLocation } from "../components/routes.js";
+import { RouteLocation, setRouteFromCallback } from "../components/routes.js";
 import { registerBackend } from "./backend.js";
 import { onLoadLast30Jobs, onLoadLast30Log } from "../cell-status/loading.js";
 import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback } from "recoil";
@@ -146,7 +146,7 @@ export function useRequestOpenBackupFile(): () => Promise<void> {
         const opened = await sendIpc<null, boolean>("open-insight-file", null);
 
         if (opened) {
-          window.history.pushState(null, "", RouteLocation.Backup_Efficiency);
+          setRouteFromCallback(set, { route: RouteLocation.Backup_Efficiency });
           loadLast30(set, push);
         }
       },

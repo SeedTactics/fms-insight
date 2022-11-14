@@ -33,7 +33,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { useCallback, useEffect } from "react";
-import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import {
+  atom,
+  RecoilState,
+  useRecoilCallback,
+  useRecoilState,
+  useRecoilValue,
+  useSetRecoilState,
+} from "recoil";
 import "urlpattern-polyfill";
 import { useCloseMaterialDialog } from "../cell-status/material-details.js";
 
@@ -218,6 +225,11 @@ const currentRouteLocation = atom<RouteState>({
 });
 export const isDemoAtom = atom<boolean>({ key: "fms-insight-demo", default: false });
 
+export function setRouteFromCallback(set: <T>(rval: RecoilState<T>, val: T) => void, to: RouteState) {
+  set(currentRouteLocation, to);
+  history.pushState(null, "", routeToUrl(to));
+}
+
 export function useWatchHistory(): void {
   const isDemo = useRecoilValue(isDemoAtom);
   const setCurRoute = useSetRecoilState(currentRouteLocation);
@@ -239,10 +251,14 @@ export function useSetCurrentRoute(): (r: RouteState) => void {
   const isDemo = useRecoilValue(isDemoAtom);
   const setCurRoute = useSetRecoilState(currentRouteLocation);
 
-  const setRouteAndUpdateHistory = useCallback((to: RouteState) => {
-    setCurRoute(to);
-    history.pushState(null, "", routeToUrl(to));
-  }, []);
+  const setRouteAndUpdateHistory = useRecoilCallback(
+    ({ set }) =>
+      (to: RouteState) => {
+        setRouteFromCallback(set, to);
+        history.pushState(null, "", routeToUrl(to));
+      },
+    []
+  );
 
   if (isDemo) {
     return setCurRoute;
