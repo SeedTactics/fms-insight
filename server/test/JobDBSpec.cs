@@ -105,7 +105,7 @@ namespace MachineWatchTest
         }
       );
 
-      _jobDB.Invoking(j => j.LoadJobHistory(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(10), new HashSet<string>(new[] { "asdfouh" })))
+      _jobDB.Invoking(j => j.LoadJobHistory(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(10), new HashSet<string>(new[] { schId, "asdfouh" })))
         .Should().Throw<ConflictRequestException>("Schedule ID asdfouh does not exist");
 
       _jobDB.LoadJobHistory(job1.RouteStartUTC.AddHours(-20), job1.RouteStartUTC.AddHours(-10)).Should().BeEquivalentTo(

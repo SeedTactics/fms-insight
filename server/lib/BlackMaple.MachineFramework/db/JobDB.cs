@@ -629,10 +629,11 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
 
         cmd.CommandText = "SELECT 1 FROM jobs WHERE ScheduleId = $sid LIMIT 1";
+        var param = cmd.Parameters.Add("sid", SqliteType.Text);
 
         foreach (var schId in schIDs)
         {
-          cmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
+          param.Value = schId;
 
           object val = cmd.ExecuteScalar();
           if (val == null)
