@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import ReconnectingWebSocket from "reconnecting-websocket";
 import { ServerEvent } from "./api.js";
 import { BackendHost, JobsBackend, LogBackend } from "./backend.js";
 import { fmsInformation } from "./server-settings.js";
@@ -92,6 +91,67 @@ function loadMissed(
     .finally(() => set(websocketReconnectingAtom, false));
 }
 
+class ReconnectingWebsocket {
+  public onopen?: () => void;
+  public onmessage?: (evt: MessageEvent<string>) => void;
+  public onreconnecting?: () => void;
+
+  private readonly url: string;
+  private ws?: WebSocket;
+  private userCalledClose = false;
+  private reconnectAttempts = 0;
+
+  public constructor(url: string) {
+    this.url = url;
+    this.connect();
+  }
+
+  public close() {
+    this.userCalledClose = true;
+    this.ws?.close();
+  }
+
+  private connect() {
+    if (this.userCalledClose) return;
+
+    this.ws = new WebSocket(this.url);
+    const localWs = this.ws;
+
+    const connectTimeout = setTimeout(() => {
+      localWs.close();
+    }, 2000);
+
+    localWs.onopen = () => {
+      clearTimeout(connectTimeout);
+      this.reconnectAttempts = 0;
+      this.onopen?.();
+    };
+
+    localWs.onclose = () => {
+      clearTimeout(connectTimeout);
+      this.ws = undefined;
+      if (this.userCalledClose) {
+        return;
+      }
+
+      this.onreconnecting?.();
+      const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 30000);
+      setTimeout(() => {
+        this.reconnectAttempts++;
+        this.connect();
+      }, delay);
+    };
+
+    localWs.onmessage = (evt: MessageEvent<string>) => {
+      this.onmessage?.(evt);
+    };
+
+    localWs.onerror = (evt) => {
+      console.error(evt);
+    };
+  }
+}
+
 export function WebsocketConnection(): null {
   const onOpen = useRecoilCallback(
     ({ set, snapshot, transact_UNSTABLE }) =>
@@ -112,7 +172,7 @@ export function WebsocketConnection(): null {
     []
   );
 
-  const onClose = useRecoilCallback(
+  const onReconnecting = useRecoilCallback(
     ({ set }) =>
       () => {
         set(websocketReconnectingAtom, true);
@@ -132,7 +192,7 @@ export function WebsocketConnection(): null {
   );
 
   const fmsInfoLoadable = useRecoilValueLoadable(fmsInformation);
-  const websocketRef = useRef<ReconnectingWebSocket.default | null>(null);
+  const websocketRef = useRef<ReconnectingWebsocket | null>(null);
 
   useEffect(() => {
     if (fmsInfoLoadable.state !== "hasValue") return;
@@ -156,9 +216,9 @@ export function WebsocketConnection(): null {
       uri += "?token=" + encodeURIComponent(user.access_token);
     }
 
-    const websocket = new ReconnectingWebSocket.default(uri);
+    const websocket = new ReconnectingWebsocket(uri);
     websocket.onopen = onOpen;
-    websocket.onclose = onClose;
+    websocket.onreconnecting = onReconnecting;
     websocket.onmessage = onMessage;
     websocketRef.current = websocket;
 

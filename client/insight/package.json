@@ -50,7 +50,6 @@
     "react-timeago": "^7.1.0",
     "react-to-print": "^2.14.8",
     "recoil": "0.7.6",
-    "reconnecting-websocket": "^4.4.0",
     "urlpattern-polyfill": "^6.0.1"
   },
   "devDependencies": {
