@@ -56,29 +56,20 @@ namespace BlackMaple.FMSInsight.Niigata
     public bool DecrementJobs(IRepository jobDB, CellState cellSt)
     {
       var decrs = new List<NewDecrementQuantity>();
-      foreach (var j in cellSt.UnarchivedJobs)
+      foreach (var j in cellSt.CurrentStatus.Jobs.Values)
       {
         if (j.ManuallyCreated || j.Decrements?.Count > 0) continue;
 
         if (_jobCanBeDecremented != null && !_jobCanBeDecremented(j)) continue;
 
-        int startedQty;
-        if (cellSt.CyclesStartedOnProc1.TryGetValue(j.UniqueStr, out var qty))
-        {
-          startedQty = qty;
-        }
-        else
-        {
-          startedQty = 0;
-        }
-
-        if (j.Cycles > startedQty)
+        int toStart = (int)(j.RemainingToStart ?? 0);
+        if (toStart > 0)
         {
           decrs.Add(new NewDecrementQuantity()
           {
             JobUnique = j.UniqueStr,
             Part = j.PartName,
-            Quantity = j.Cycles - startedQty
+            Quantity = toStart
           });
         }
       }

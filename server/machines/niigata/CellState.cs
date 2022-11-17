@@ -71,16 +71,11 @@ namespace BlackMaple.FMSInsight.Niigata
   public class CellState
   {
     public NiigataStatus Status { get; set; }
-    public IReadOnlyList<HistoricJob> UnarchivedJobs { get; set; }
     public bool PalletStateUpdated { get; set; }
     public List<PalletAndMaterial> Pallets { get; set; }
     public List<InProcessMaterialAndJob> QueuedMaterial { get; set; }
-    public Dictionary<string, int> CyclesStartedOnProc1 { get; set; }
     public Dictionary<(string progName, long revision), ProgramRevision> ProgramsInUse { get; set; }
     public List<ProgramRevision> OldUnusedPrograms { get; set; }
-
-    // TODO: remove UnarchivedJobs and just use CurrentStatus.Jobs as be ActiveJobs.  Need to change
-    // around where the Cycles property is used and just use RemainingToStart instead
     public CurrentStatus CurrentStatus { get; init; }
   }
 
@@ -155,11 +150,9 @@ namespace BlackMaple.FMSInsight.Niigata
       return new CellState()
       {
         Status = status,
-        UnarchivedJobs = unarchivedJobs,
         PalletStateUpdated = palletStateUpdated,
         Pallets = pals,
         QueuedMaterial = queuedMats,
-        CyclesStartedOnProc1 = cyclesStartedOnProc1,
         ProgramsInUse = progsInUse,
         OldUnusedPrograms = OldUnusedPrograms(logDB, status, progsInUse),
         CurrentStatus = new CurrentStatus()

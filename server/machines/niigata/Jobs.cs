@@ -219,9 +219,7 @@ namespace BlackMaple.FMSInsight.Niigata
         }
 
         CellState curSt = _sync.CurrentCellState();
-
-        var existingJobs = jdb.LoadUnarchivedJobs();
-        foreach (var j in existingJobs)
+        foreach (var j in curSt.CurrentStatus.Jobs.Values)
         {
           if (IsJobCompleted(j, curSt))
           {
@@ -243,20 +241,10 @@ namespace BlackMaple.FMSInsight.Niigata
       _sync.JobsOrQueuesChanged();
     }
 
-    private bool IsJobCompleted(HistoricJob job, CellState st)
+    private bool IsJobCompleted(ActiveJob job, CellState st)
     {
       if (st == null) return false;
-
-      int startedQty;
-      if (st.CyclesStartedOnProc1.TryGetValue(job.UniqueStr, out var qty))
-      {
-        startedQty = qty;
-      }
-      else
-      {
-        startedQty = 0;
-      }
-      if (startedQty < job.Cycles) return false;
+      if (job.RemainingToStart > 0) return false;
 
       var matInProc =
         st.Pallets
