@@ -65,10 +65,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     CurrentStatus IJobControl.GetCurrentStatus()
     {
-      using (var jdb = _jobDbCfg.OpenConnection())
-      {
-        return BuildCurrentStatus.Build(jdb, _sync.CurrentCellState(), _settings);
-      }
+      return _sync.CurrentCellState().CurrentStatus;
     }
 
     #region Jobs

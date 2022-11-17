@@ -224,7 +224,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             if (cellSt != null && raisePalletChanged)
             {
-              _onNewCurrentStatus(BuildCurrentStatus.Build(jdb, cellSt, _settings));
+              _onNewCurrentStatus(cellSt.CurrentStatus);
             }
           }
         }
@@ -244,7 +244,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
         if (changed || cellSt.PalletStateUpdated)
         {
-          _onNewCurrentStatus(BuildCurrentStatus.Build(jobDB, cellSt, _settings));
+          _onNewCurrentStatus(cellSt.CurrentStatus);
         }
       }
     }

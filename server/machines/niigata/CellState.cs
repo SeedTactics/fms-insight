@@ -78,6 +78,10 @@ namespace BlackMaple.FMSInsight.Niigata
     public Dictionary<string, int> CyclesStartedOnProc1 { get; set; }
     public Dictionary<(string progName, long revision), ProgramRevision> ProgramsInUse { get; set; }
     public List<ProgramRevision> OldUnusedPrograms { get; set; }
+
+    // TODO: remove UnarchivedJobs and just use CurrentStatus.Jobs as be ActiveJobs.  Need to change
+    // around where the Cycles property is used and just use RemainingToStart instead
+    public CurrentStatus CurrentStatus { get; init; }
   }
 
   public interface IBuildCellState
@@ -144,16 +148,56 @@ namespace BlackMaple.FMSInsight.Niigata
 
       var progsInUse = FindProgramNums(logDB, jobCache.AllJobs, pals.SelectMany(p => p.Material).Concat(queuedMats), status);
 
+      var unarchivedJobs = jobCache.AllJobs.Select(j => j with { Archived = false }).ToArray();
+      var jobPrec = JobPrecedence(unarchivedJobs);
+      var cyclesStartedOnProc1 = CountStartedCycles(logDB, jobCache.AllJobs, pals);
+
       return new CellState()
       {
         Status = status,
-        UnarchivedJobs = jobCache.AllJobs.Select(j => j with { Archived = false }).ToArray(),
+        UnarchivedJobs = unarchivedJobs,
         PalletStateUpdated = palletStateUpdated,
         Pallets = pals,
         QueuedMaterial = queuedMats,
-        CyclesStartedOnProc1 = CountStartedCycles(logDB, jobCache.AllJobs, pals),
+        CyclesStartedOnProc1 = cyclesStartedOnProc1,
         ProgramsInUse = progsInUse,
-        OldUnusedPrograms = OldUnusedPrograms(logDB, status, progsInUse)
+        OldUnusedPrograms = OldUnusedPrograms(logDB, status, progsInUse),
+        CurrentStatus = new CurrentStatus()
+        {
+          TimeOfCurrentStatusUTC = status.TimeOfStatusUTC,
+          Jobs = unarchivedJobs.ToImmutableDictionary(
+            j => j.UniqueStr,
+            j => HistoricToActiveJob(j, jobPrec, cyclesStartedOnProc1, logDB)),
+          Pallets = pals.ToImmutableDictionary(
+            pal => pal.Status.Master.PalletNum.ToString(),
+            pal => new MachineFramework.PalletStatus()
+            {
+              Pallet = pal.Status.Master.PalletNum.ToString(),
+              FixtureOnPallet = "",
+              OnHold = pal.Status.Master.Skip,
+              CurrentPalletLocation = pal.Status.CurStation.Location,
+              NumFaces = pal.Material.Count > 0 ? pal.Material.Max(m => m.Mat.Location.Face ?? 1) : 0
+            }
+          ),
+          Material =
+            pals.SelectMany(pal => pal.Material)
+            .Concat(queuedMats)
+            .Select(m => m.Mat)
+            .Concat(SetLongTool(pals))
+            .ToImmutableList(),
+          QueueSizes = _settings.Queues.ToImmutableDictionary(),
+          Alarms =
+            pals.Where(pal => pal.Status.Tracking.Alarm).Select(pal => AlarmCodeToString(pal.Status.Master.PalletNum, pal.Status.Tracking.AlarmCode))
+            .Concat(
+              status.Machines.Values.Where(mc => mc.Alarm)
+              .Select(mc => "Machine " + mc.MachineNumber.ToString() + " has an alarm"
+              )
+            )
+            .Concat(
+              status.Alarm ? new[] { "ICC has an alarm" } : new string[] { }
+            )
+            .ToImmutableList()
+        }
       };
     }
 
@@ -1574,6 +1618,83 @@ namespace BlackMaple.FMSInsight.Niigata
       return cnts;
     }
 
+    private ILookup<string, (int proc1path, int prec)> JobPrecedence(IEnumerable<HistoricJob> jobs)
+    {
+      return
+        jobs.SelectMany(job =>
+          Enumerable.Range(1, job.Processes[0].Paths.Count).Select(proc1path => (job, proc1path))
+        )
+        .OrderBy(x => x.job.RouteStartUTC)
+        .ThenBy(x => x.job.Processes[0].Paths[x.proc1path - 1].SimulatedStartingUTC)
+        .Select((x, idx) => new { Uniq = x.job.UniqueStr, Proc1Path = x.proc1path, Prec = idx + 1 })
+        .ToLookup(x => x.Uniq, x => (proc1path: x.Proc1Path, prec: x.Prec));
+    }
+
+    private ActiveJob HistoricToActiveJob(HistoricJob j, ILookup<string, (int proc1path, int prec)> proc1paths, IReadOnlyDictionary<string, int> cyclesStartedOnProc1, IRepository db)
+    {
+      // completed
+      var completed =
+        j.Processes.Select(
+          proc => new int[proc.Paths.Count] // defaults to fill with zeros
+        ).ToArray();
+      var unloads =
+        db.GetLogForJobUnique(j.UniqueStr)
+        .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
+        .ToList();
+      foreach (var e in unloads)
+      {
+        foreach (var mat in e.Material)
+        {
+          if (mat.JobUniqueStr == j.UniqueStr)
+          {
+            var details = db.GetMaterialDetails(mat.MaterialID);
+            int matPath = details?.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1;
+            completed[mat.Process - 1][matPath - 1] += 1;
+          }
+        }
+      }
+
+      // precedence
+      var proc1precs = proc1paths.Contains(j.UniqueStr) ? proc1paths[j.UniqueStr] : null;
+      var precedence =
+        j.Processes.Select((proc, procIdx) =>
+        {
+          if (procIdx == 0)
+          {
+            return proc.Paths.Select((_, pathIdx) =>
+              proc1precs?.FirstOrDefault(x => x.proc1path == pathIdx + 1).prec ?? 0L
+            ).ToArray();
+          }
+          else
+          {
+            return proc.Paths.Select(path =>
+              proc1precs?.FirstOrDefault().prec ?? 0L
+            ).ToArray();
+          }
+        }).ToArray();
+
+      // take decremented quantity out of the planned cycles
+      int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
+      var newPlanned = j.Cycles - decrQty;
+
+      var started = 0;
+      if (cyclesStartedOnProc1 != null && cyclesStartedOnProc1.TryGetValue(j.UniqueStr, out var startedOnProc1))
+      {
+        started = startedOnProc1;
+      }
+
+      var workorders = db.GetWorkordersForUnique(j.UniqueStr);
+
+      return j.CloneToDerived<ActiveJob, Job>() with
+      {
+        Completed = completed.Select(c => ImmutableList.Create(c)).ToImmutableList(),
+        RemainingToStart = decrQty > 0 ? 0 : Math.Max(newPlanned - started, 0),
+        Cycles = newPlanned,
+        Precedence = precedence.Select(p => ImmutableList.Create(p)).ToImmutableList(),
+        AssignedWorkorders = workorders == null || workorders.Count == 0 ? null : workorders
+      };
+    }
+
     public class QueuedMaterialWithDetails
     {
       public long MaterialID { get; set; }
@@ -1857,6 +1978,108 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       return progsToDelete.Values.ToList();
+    }
+
+    private static IEnumerable<InProcessMaterial> SetLongTool(IEnumerable<PalletAndMaterial> pallets)
+    {
+      // tool loads/unloads
+      foreach (var pal in pallets.Where(p => p.Status.Master.ForLongToolMaintenance && p.Status.HasWork))
+      {
+        if (pal.Status.CurrentStep == null) continue;
+        switch (pal.Status.CurrentStep)
+        {
+          case LoadStep load:
+            if (pal.Status.Tracking.BeforeCurrentStep)
+            {
+              yield return new InProcessMaterial()
+              {
+                MaterialID = -1,
+                JobUnique = "",
+                PartName = "LongTool",
+                Process = 1,
+                Path = 1,
+                Location = new InProcessMaterialLocation()
+                {
+                  Type = InProcessMaterialLocation.LocType.Free,
+                },
+                Action = new InProcessMaterialAction()
+                {
+                  Type = InProcessMaterialAction.ActionType.Loading,
+                  LoadOntoPallet = pal.Status.Master.PalletNum.ToString(),
+                  LoadOntoFace = 1,
+                  ProcessAfterLoad = 1,
+                  PathAfterLoad = 1
+                }
+              };
+            }
+            break;
+          case UnloadStep unload:
+            if (pal.Status.Tracking.BeforeCurrentStep)
+            {
+              yield return new InProcessMaterial()
+              {
+                MaterialID = -1,
+                JobUnique = "",
+                PartName = "LongTool",
+                Process = 1,
+                Path = 1,
+                Location = new InProcessMaterialLocation()
+                {
+                  Type = InProcessMaterialLocation.LocType.OnPallet,
+                  Pallet = pal.Status.Master.PalletNum.ToString(),
+                  Face = 1
+                },
+                Action = new InProcessMaterialAction()
+                {
+                  Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+                }
+              };
+            }
+            break;
+        }
+      }
+    }
+
+    private static string AlarmCodeToString(int palletNum, PalletAlarmCode code)
+    {
+      string msg = " has alarm code " + code.ToString();
+      switch (code)
+      {
+        case PalletAlarmCode.AlarmSetOnScreen:
+          msg = " has alarm set by operator";
+          break;
+        case PalletAlarmCode.M165:
+          msg = " has alarm M165";
+          break;
+        case PalletAlarmCode.RoutingFault:
+          msg = " has routing fault";
+          break;
+        case PalletAlarmCode.LoadingFromAutoLULStation:
+          msg = " is loading from auto L/UL station";
+          break;
+        case PalletAlarmCode.ProgramRequestAlarm:
+          msg = " has program request alarm";
+          break;
+        case PalletAlarmCode.ProgramRespondingAlarm:
+          msg = " has program responding alarm";
+          break;
+        case PalletAlarmCode.ProgramTransferAlarm:
+          msg = " has program transfer alarm";
+          break;
+        case PalletAlarmCode.ProgramTransferFinAlarm:
+          msg = " has program transfer alarm";
+          break;
+        case PalletAlarmCode.MachineAutoOff:
+          msg = " at machine with auto off";
+          break;
+        case PalletAlarmCode.MachinePowerOff:
+          msg = " at machine which is powered off";
+          break;
+        case PalletAlarmCode.IccExited:
+          msg = " can't communicate with ICC";
+          break;
+      }
+      return "Pallet " + palletNum.ToString() + msg;
     }
 
     private class JobCache
