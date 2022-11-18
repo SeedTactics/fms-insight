@@ -436,7 +436,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         prog: "prog111",
         progRev: null,
         unloadMins: 5
-      );
+      ).Item1;
 
       AddJobs(new[] { j }, new[] { (prog: "prog111", rev: 5L) });
 

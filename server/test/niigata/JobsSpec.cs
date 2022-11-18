@@ -70,339 +70,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     }
 
     [Fact]
-    public void LoadsCurrentSt()
-    {
-      var mat1 = _logDB.AllocateMaterialID("u1", "p1", 1);
-      _logDB.RecordSerialForMaterialID(mat1, 1, "serial1");
-      _logDB.RecordWorkorderForMaterialID(mat1, 1, "work1");
-
-      var mat2 = _logDB.AllocateMaterialID("u1", "p1", 1);
-      _logDB.RecordSerialForMaterialID(mat2, 1, "serial2");
-      _logDB.RecordWorkorderForMaterialID(mat2, 1, "work2");
-      _logDB.ForceInspection(mat2, "insp2");
-
-      var mat3 = _logDB.AllocateMaterialID("u2", "p2", 1);
-      _logDB.RecordPathForProcess(mat3, 2, 5);
-      _logDB.RecordSerialForMaterialID(mat3, 2, "serial3");
-
-      var mat4 = _logDB.AllocateMaterialID("u1", "p1", 1);
-      _logDB.RecordSerialForMaterialID(mat4, 1, "serial4");
-      _logDB.RecordWorkorderForMaterialID(mat4, 1, "work4");
-      _logDB.ForceInspection(mat4, "insp4");
-
-
-      //job with 1 completed part
-      var j = new Job()
-      {
-        UniqueStr = "u1",
-        PartName = "p1",
-        Cycles = 70,
-        RouteStartUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
-        Processes = ImmutableList.Create(new ProcessInfo()
-        {
-          Paths = ImmutableList.Create(new ProcPathInfo()
-          {
-            Pallets = ImmutableList.Create("pal1"),
-            SimulatedStartingUTC = new DateTime(2020, 04, 19, 20, 0, 0, DateTimeKind.Utc),
-          })
-        })
-      };
-      _logDB.RecordUnloadEnd(
-        mats: new[] { new EventLogMaterial() {
-          MaterialID = mat1,
-          Process = 1,
-          Face = "f1"
-        }},
-        pallet: "pal1",
-        lulNum: 2,
-        timeUTC: DateTime.UtcNow,
-        elapsed: TimeSpan.FromMinutes(10),
-        active: TimeSpan.Zero
-      );
-      var job1Decrements = ImmutableList.Create(
-        new DecrementQuantity()
-        {
-          DecrementId = 0,
-          TimeUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
-          Quantity = 30
-        }
-      );
-
-      // a second job with the same  route starting time and earlier simulated starting time
-      var j2 = new Job()
-      {
-        UniqueStr = "u2",
-        PartName = "p1",
-        RouteStartUTC = new DateTime(2020, 04, 19, 13, 18, 0, DateTimeKind.Utc),
-        Cycles = 40,
-        Processes = ImmutableList.Create(new ProcessInfo()
-        {
-          Paths = ImmutableList.Create(new ProcPathInfo()
-          {
-            SimulatedStartingUTC = new DateTime(2020, 04, 19, 17, 0, 0, DateTimeKind.Utc),
-          })
-        })
-      };
-
-      // a third job with earlier route starting time but later simulated starting time
-      var j3 = new Job()
-      {
-        UniqueStr = "u3",
-        PartName = "p1",
-        RouteStartUTC = new DateTime(2020, 04, 19, 10, 18, 0, DateTimeKind.Utc),
-        Cycles = 50,
-        Processes = ImmutableList.Create(new ProcessInfo()
-        {
-          Paths = ImmutableList.Create(new ProcPathInfo()
-          {
-            SimulatedStartingUTC = new DateTime(2020, 04, 19, 22, 0, 0, DateTimeKind.Utc),
-          })
-        })
-      };
-
-      // two pallets with some material
-      var pal1 = new PalletAndMaterial()
-      {
-        Status = new PalletStatus
-        {
-          Master = new PalletMaster()
-          {
-            PalletNum = 1,
-            Skip = true
-          },
-          Tracking = new TrackingInfo()
-          {
-            Alarm = false
-          },
-          CurStation = NiigataStationNum.Machine(3, null),
-        },
-        CurrentOrLoadingFaces = new List<PalletFace> {
-          new PalletFace() {
-            Job = j,
-            Process = 1,
-            Path = 1,
-            Face = 1,
-            FaceIsMissingMaterial = false
-          }
-        },
-        Material = new List<InProcessMaterialAndJob> {
-            new InProcessMaterialAndJob() {
-              Job = j,
-              Mat = new InProcessMaterial() {
-                MaterialID = mat2,
-                JobUnique = "u1",
-                PartName = "p1",
-                Process = 1,
-                Path = 1,
-                Serial = "serial2",
-                WorkorderId = "work2",
-                SignaledInspections = ImmutableList.Create("insp2"),
-                Location = new InProcessMaterialLocation() {
-                  Type = InProcessMaterialLocation.LocType.OnPallet,
-                  Pallet = "1"
-                },
-                Action = new InProcessMaterialAction() {
-                  Type = InProcessMaterialAction.ActionType.Waiting
-                }
-              }
-            }
-        },
-      };
-      var pal2 = new PalletAndMaterial()
-      {
-        Status = new PalletStatus()
-        {
-          Master = new PalletMaster()
-          {
-            PalletNum = 2,
-            Skip = false,
-          },
-          Tracking = new TrackingInfo()
-          {
-            Alarm = true,
-            AlarmCode = PalletAlarmCode.RoutingFault
-          },
-          CurStation = NiigataStationNum.LoadStation(2)
-        },
-        CurrentOrLoadingFaces = new List<PalletFace> {
-          new PalletFace() {
-            Job = j,
-            Process = 2,
-            Path = 5,
-            Face = 1,
-            FaceIsMissingMaterial = false
-          }
-        },
-        Material = new List<InProcessMaterialAndJob> {
-          new InProcessMaterialAndJob() {
-            Job = j2,
-            Mat =
-            new InProcessMaterial() {
-              MaterialID = mat3,
-              JobUnique = "u2",
-              PartName = "p2",
-              Process = 2,
-              Path = 5,
-              Serial = "serial3",
-              WorkorderId = null,
-              SignaledInspections = ImmutableList<string>.Empty,
-              Location = new InProcessMaterialLocation() {
-                Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "2"
-              },
-              Action = new InProcessMaterialAction() {
-                Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoFace = 1,
-                LoadOntoPallet = "2",
-                ProcessAfterLoad = 2,
-                PathAfterLoad = 1
-              }
-            }
-          }
-        },
-      };
-
-      var queuedMat = new InProcessMaterialAndJob
-      {
-        Job = j,
-        Mat = new InProcessMaterial()
-        {
-          MaterialID = mat4,
-          Process = 1,
-          JobUnique = "u1",
-          PartName = "p1",
-          Path = 1,
-          Serial = "serial4",
-          WorkorderId = "work4",
-          SignaledInspections = ImmutableList.Create("insp4"),
-          Location = new InProcessMaterialLocation()
-          {
-            Type = InProcessMaterialLocation.LocType.InQueue,
-            CurrentQueue = "q1",
-            QueuePosition = 1,
-          },
-          Action = new InProcessMaterialAction()
-          {
-            Type = InProcessMaterialAction.ActionType.Waiting
-          }
-        }
-      };
-
-      // two material in queues
-      _logDB.RecordAddMaterialToQueue(new EventLogMaterial()
-      {
-        MaterialID = mat3,
-        Process = 1,
-        Face = null
-      }, "q1", 0, operatorName: null, reason: "TestReason");
-      _logDB.RecordAddMaterialToQueue(new EventLogMaterial()
-      {
-        MaterialID = mat4,
-        Process = 1,
-        Face = null
-      }, "q1", 1, operatorName: null, reason: "TestReason2");
-
-      var status = new NiigataStatus()
-      {
-        Machines = new Dictionary<int, MachineStatus> {
-          {2, new MachineStatus() {
-            MachineNumber = 2,
-            Alarm = true
-          }}
-        },
-        Alarm = true,
-        TimeOfStatusUTC = DateTime.UtcNow
-      };
-
-
-      var expectedSt = (new CurrentStatus()).Produce(st =>
-      {
-        st.TimeOfCurrentStatusUTC = status.TimeOfStatusUTC;
-        var expectedJob = j.CloneToDerived<ActiveJob, Job>() with
-        {
-          CopiedToSystem = true,
-          Cycles = 70 - 30,
-          RemainingToStart = 0, // zero since there is a decrement
-          Completed = ImmutableList.Create(ImmutableList.Create(1)),
-          Precedence = ImmutableList.Create(ImmutableList.Create(3L)), // has last precedence
-          Decrements = job1Decrements,
-          AssignedWorkorders = ImmutableList.Create("work1", "work2", "work4")
-        };
-        st.Jobs.Add("u1", expectedJob);
-
-        var expectedJob2 = j2.CloneToDerived<ActiveJob, Job>() with
-        {
-          CopiedToSystem = true,
-          Cycles = 40,
-          RemainingToStart = 40 - 11,
-          Completed = ImmutableList.Create(ImmutableList.Create(0)),
-          Precedence = ImmutableList.Create(ImmutableList.Create(2L)), // has middle precedence
-          Decrements = null,
-          AssignedWorkorders = null,
-        };
-        st.Jobs.Add("u2", expectedJob2);
-
-        var expectedJob3 = j3.CloneToDerived<ActiveJob, Job>() with
-        {
-          CopiedToSystem = true,
-          Cycles = 50,
-          RemainingToStart = 50,
-          Completed = ImmutableList.Create(ImmutableList.Create(0)),
-          Precedence = ImmutableList.Create(ImmutableList.Create(1L)), // has first precedence
-          Decrements = null,
-          AssignedWorkorders = null
-        };
-        st.Jobs.Add("u3", expectedJob3);
-
-        st.Material.Add(pal1.Material[0].Mat);
-        st.Material.Add(pal2.Material[0].Mat);
-        st.Material.Add(queuedMat.Mat);
-        st.Pallets.Add("1", new MachineFramework.PalletStatus()
-        {
-          Pallet = "1",
-          FixtureOnPallet = "",
-          OnHold = true,
-          CurrentPalletLocation = new PalletLocation(PalletLocationEnum.Machine, "MC", 3),
-          NumFaces = 1
-        });
-        st.Pallets.Add("2", new MachineFramework.PalletStatus()
-        {
-          Pallet = "2",
-          FixtureOnPallet = "",
-          OnHold = false,
-          CurrentPalletLocation = new PalletLocation(PalletLocationEnum.LoadUnload, "L/U", 2),
-          NumFaces = 1
-        });
-        st.Alarms.Add("Pallet 2 has routing fault");
-        st.Alarms.Add("Machine 2 has an alarm");
-        st.Alarms.Add("ICC has an alarm");
-        st.QueueSizes.Add("q1", new QueueSize());
-        st.QueueSizes.Add("q2", new QueueSize());
-      });
-
-      _syncMock.CurrentCellState().Returns(new CellState()
-      {
-        Status = status,
-        Pallets = new List<PalletAndMaterial> { pal1, pal2 },
-        QueuedMaterial = new List<InProcessMaterialAndJob> { queuedMat },
-        UnarchivedJobs = new List<HistoricJob> { j.CloneToDerived<HistoricJob, Job>() with { Decrements = job1Decrements }, j2.CloneToDerived<HistoricJob, Job>(), j3.CloneToDerived<HistoricJob, Job>() },
-        CyclesStartedOnProc1 = new Dictionary<string, int>() { { "u1", 5 }, { "u2", 11 } },
-      });
-
-      ((IJobControl)_jobs).GetCurrentStatus().Should().BeEquivalentTo(expectedSt,
-         options => options
-           .ComparingByMembers<CurrentStatus>()
-           .ComparingByMembers<ActiveJob>()
-           .ComparingByMembers<ProcessInfo>()
-           .ComparingByMembers<ProcPathInfo>()
-           .ComparingByMembers<MachiningStop>()
-           .ComparingByMembers<InProcessMaterial>()
-           .ComparingByMembers<PalletStatus>()
-
-       );
-    }
-
-    [Fact]
     public void AddsBasicJobs()
     {
       //add some existing jobs
@@ -428,9 +95,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         fixture: "oldfixture",
         face1: 1,
         face2: 2
-      );
+      ).Item1;
 
-      var toKeepJob = completedJob with { UniqueStr = "tokeep", Cycles = 10 };
+      var completedActive = completedJob.CloneToDerived<ActiveJob, Job>() with { RemainingToStart = 0 };
+      var toKeepJob = completedJob.CloneToDerived<ActiveJob, Job>() with { UniqueStr = "tokeep", Cycles = 10, RemainingToStart = 5 };
 
       _logDB.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = ImmutableList.Create<Job>(completedJob, toKeepJob) }, null, addAsCopiedToSystem: true);
 
@@ -438,9 +106,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         Pallets = new List<PalletAndMaterial>(),
         QueuedMaterial = new List<InProcessMaterialAndJob>(),
-        CyclesStartedOnProc1 = new Dictionary<string, int>() {
-          {"old", 3}, // matches Cycles quantity
-          {"tokeep", 5} // Cycles quantity is 10 so this should be kept
+        CurrentStatus = new CurrentStatus()
+        {
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty.Add(completedActive.UniqueStr, completedActive).Add(toKeepJob.UniqueStr, toKeepJob)
         }
       });
 
@@ -461,7 +129,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         unloadMins: 5,
         fixture: "xxxx",
         face: 1
-      );
+      ).Item1;
       var newJob2 = FakeIccDsl.CreateOneProcOnePathJob(
         unique: "uu2",
         part: "p2",
@@ -478,7 +146,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         unloadMins: 5,
         fixture: "fix",
         face: 1
-      );
+      ).Item1;
       var newJobs = new NewJobs()
       {
         ScheduleId = "abcd",

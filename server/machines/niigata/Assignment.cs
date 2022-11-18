@@ -173,6 +173,7 @@ namespace BlackMaple.FMSInsight.Niigata
       public MachineFramework.ProcPathInfo PathInfo { get; init; }
       public int Process { get; init; }
       public int Path { get; init; }
+      public long Precedence { get; init; }
 
 
       // RemainingProc1ToRun is only set to true on Process = 1 paths for which we have not yet
@@ -200,6 +201,7 @@ namespace BlackMaple.FMSInsight.Niigata
           PathInfo = path,
           Process = j.procNum,
           Path = pathIdx + 1,
+          Precedence = j.job.Precedence[j.procNum - 1][pathIdx],
           RemainingProc1ToRun = j.procNum == 1 ? j.job.RemainingToStart > 0 : false,
         }))
         .Where(j =>
@@ -212,9 +214,7 @@ namespace BlackMaple.FMSInsight.Niigata
         .Where(j => loadStation == null || j.PathInfo.Load.Contains(loadStation.Value))
         .Where(j => j.PathInfo.Pallets.Contains(pallet.ToString()))
         .Where(j => _extraPathFilter == null || _extraPathFilter(job: j.Job, procNum: j.Process, pathNum: j.Path, pathInfo: j.PathInfo))
-        .OrderBy(j => j.Job.ManuallyCreated ? 0 : 1)
-        .ThenBy(j => j.Job.RouteStartUTC)
-        .ThenBy(j => j.PathInfo.SimulatedStartingUTC)
+        .OrderBy(j => j.Precedence)
         .ToImmutableList()
         ;
     }

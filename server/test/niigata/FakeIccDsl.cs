@@ -58,6 +58,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private Dictionary<int, List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>> _expectedFaces = new Dictionary<int, List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>>(); // key is pallet
     private Dictionary<string, int> _expectedStartedQty = new Dictionary<string, int>();
     private List<ProgramRevision> _expectedOldPrograms = new List<ProgramRevision>();
+    private Dictionary<string, Dictionary<(int proc, int path), int>> _expectedCompleted = new Dictionary<string, Dictionary<(int proc, int path), int>>();
+    private Dictionary<string, ImmutableList<ImmutableList<long>>> _expectedPrecedence = new Dictionary<string, ImmutableList<ImmutableList<long>>>();
+    private Dictionary<int, string> _expectedPalletAlarms = new Dictionary<int, string>();
+    private HashSet<int> _expectedMachineAlarms = new HashSet<int>();
 
     public FakeIccDsl(int numPals, int numMachines)
     {
@@ -316,9 +320,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl SetPalletAlarm(int pal, bool alarm)
+    public FakeIccDsl SetPalletAlarm(int pal, bool alarm, PalletAlarmCode code = PalletAlarmCode.NoAlarm, string alarmMsg = "")
     {
       _status.Pallets[pal - 1].Tracking.Alarm = alarm;
+      _status.Pallets[pal - 1].Tracking.AlarmCode = code;
+      if (alarm)
+      {
+        _expectedPalletAlarms[pal] = alarmMsg;
+      }
+      else
+      {
+        _expectedPalletAlarms.Remove(pal);
+      }
       return this;
     }
 
@@ -336,6 +349,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       _status.Machines[mc].FMSLinkMode = link;
       _status.Machines[mc].Alarm = alarm;
+      if (alarm)
+      {
+        _expectedMachineAlarms.Add(mc);
+      }
+      else
+      {
+        _expectedMachineAlarms.Remove(mc);
+      }
       return this;
     }
 
@@ -796,14 +817,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _expectedStartedQty[unique] = cnt;
       return this;
     }
-    public FakeIccDsl AddJobs(IEnumerable<Job> jobs, IEnumerable<(string prog, long rev)> progs = null, IEnumerable<Workorder> workorders = null)
+    public FakeIccDsl IncrJobCompletedCnt(string unique, int proc, int path, int cnt = 1)
+    {
+      _expectedCompleted[unique][(proc: proc, path: path)] += cnt;
+      return this;
+    }
+    public FakeIccDsl AddJobs(IEnumerable<(Job, int[][])> jobs, IEnumerable<(string prog, long rev)> progs = null, IEnumerable<Workorder> workorders = null)
     {
       if (progs == null)
         progs = Enumerable.Empty<(string prog, long rev)>();
       var newJ = new NewJobs()
       {
         ScheduleId = DateTime.UtcNow.Ticks.ToString(),
-        Jobs = jobs.ToImmutableList(),
+        Jobs = jobs.Select(j => j.Item1).ToImmutableList(),
         Programs =
             progs.Select(p =>
             new MachineFramework.NewProgramContent()
@@ -816,12 +842,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         CurrentUnfilledWorkorders = workorders?.ToImmutableList()
       };
       _logDB.AddJobs(newJ, null, addAsCopiedToSystem: true);
-      foreach (var j in jobs)
+      foreach (var x in jobs)
       {
+        var j = x.Item1;
+        var precedence = x.Item2;
         _expectedStartedQty[j.UniqueStr] = 0;
+        var completed = new Dictionary<(int proc, int path), int>();
+        for (var proc = 1; proc <= j.Processes.Count; proc++)
+        {
+          for (var path = 1; path <= j.Processes[proc - 1].Paths.Count; path++)
+          {
+            completed[(proc, path)] = 0;
+          }
+        }
+        _expectedCompleted[j.UniqueStr] = completed;
+        _expectedPrecedence[j.UniqueStr] = precedence.Select(ps => ps.Select(p => (long)p).ToImmutableList()).ToImmutableList();
       }
       return this;
 
+    }
+
+    public FakeIccDsl SetJobPrecedence(string uniq, int[][] precs)
+    {
+      _expectedPrecedence[uniq] = precs.Select(ps => ps.Select(p => (long)p).ToImmutableList()).ToImmutableList();
+      return this;
     }
 
     public FakeIccDsl AddJobDecrement(string uniq)
@@ -847,9 +891,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public static Job CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null, bool manual = false)
+    public static (Job, int[][]) CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null, bool manual = false, int precedence = 0)
     {
-      return new Job()
+      return (new Job()
       {
         UniqueStr = unique,
         PartName = part,
@@ -880,10 +924,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             })
           })
         })
-      };
+      }, new int[][] { new int[] { precedence } });
     }
 
-    public static Job CreateOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, string prog1, long? prog1Rev, int[] machs2, string prog2, long? prog2Rev, int[] reclamp, int loadMins, int machMins1, int machMins2, int reclampMins, int unloadMins, string fixture, int face, string queue = null)
+    public static (Job, int[][]) CreateOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, string prog1, long? prog1Rev, int[] machs2, string prog2, long? prog2Rev, int[] reclamp, int loadMins, int machMins1, int machMins2, int reclampMins, int unloadMins, string fixture, int face, string queue = null, int precedence = 0)
     {
       var stops = ImmutableList.CreateBuilder<MachiningStop>();
 
@@ -915,7 +959,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         });
       }
 
-      return new Job()
+      return (new Job()
       {
         UniqueStr = unique,
         PartName = part,
@@ -937,12 +981,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             Stops = stops.ToImmutable()
           })
         })
-      };
+      }, new int[][] { new[] { precedence } }
+      );
     }
 
-    public static Job CreateMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2)
+    public static (Job, int[][]) CreateMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2, int prec1 = 0, int prec2 = 1)
     {
-      return new Job()
+      return (new Job()
       {
         UniqueStr = unique,
         PartName = part,
@@ -953,6 +998,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             Paths = ImmutableList.Create(new ProcPathInfo()
             {
+              SimulatedStartingUTC = DateTime.UtcNow.AddHours(-priority).AddMinutes(10),
               Load = luls.ToImmutableList(),
               Unload = luls.ToImmutableList(),
               ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
@@ -976,6 +1022,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             Paths = ImmutableList.Create(new ProcPathInfo()
             {
+              SimulatedStartingUTC = DateTime.UtcNow.AddHours(-priority).AddMinutes(20),
               Load = luls.ToImmutableList(),
               Unload = luls.ToImmutableList(),
               ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
@@ -994,10 +1041,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               })
             })
           })
-      };
+      }, new[] { new[] { prec1 }, new[] { prec2 } });
     }
 
-    public static Job CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string transQ, int[] reclamp1 = null, int reclamp1Mins = 1, int[] reclamp2 = null, int reclamp2Min = 1, string rawMatName = null, string castingQ = null)
+    public static (Job, int[][]) CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string transQ, int[] reclamp1 = null, int reclamp1Mins = 1, int[] reclamp2 = null, int reclamp2Min = 1, string rawMatName = null, string castingQ = null, int prec1 = 0, int prec2 = 1)
     {
       var stops1 = ImmutableList.CreateBuilder<MachiningStop>();
       var stops2 = ImmutableList.CreateBuilder<MachiningStop>();
@@ -1041,7 +1088,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Stations = machs.Select(m => m + 100).ToImmutableList(),
       });
 
-      return new Job()
+      return (new Job()
       {
         UniqueStr = unique,
         PartName = part,
@@ -1082,9 +1129,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Stops = stops2.ToImmutable()
             })
           })
-      };
-
-
+      }, new[] { new[] { prec1 }, new[] { prec2 } });
     }
 
     public FakeIccDsl ExpectOldProgram(string name, long rev, int num)
@@ -1110,6 +1155,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       actualSt.Status.Should().Be(_status);
       actualSt.Pallets.Count.Should().Be(_status.Pallets.Count);
+      actualSt.CurrentStatus.Pallets.Count.Should().Be(_status.Pallets.Count);
       for (int palNum = 1; palNum <= actualSt.Pallets.Count; palNum++)
       {
         var current = actualSt.Pallets[palNum - 1];
@@ -1160,13 +1206,50 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }),
           options => options.ComparingByMembers<InProcessMaterial>()
         );
+
+        actualSt.CurrentStatus.Pallets[palNum.ToString()].Should().BeEquivalentTo(new MachineFramework.PalletStatus()
+        {
+          Pallet = palNum.ToString(),
+          FixtureOnPallet = "",
+          OnHold = _status.Pallets[palNum - 1].Master.Skip,
+          CurrentPalletLocation = _status.Pallets[palNum - 1].CurStation.Location,
+          NumFaces = current.Material
+              .Select(m => m.Mat.Location.Face ?? 1)
+              .DefaultIfEmpty(0)
+              .Max()
+        }
+        );
       }
       actualSt.QueuedMaterial.Select(m => m.Mat).Should().BeEquivalentTo(_expectedMaterial.Values.Where(
         m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
       ), options => options.ComparingByMembers<InProcessMaterial>());
-      actualSt.CyclesStartedOnProc1.Should().BeEquivalentTo(_expectedStartedQty);
       actualSt.OldUnusedPrograms.Should()
         .BeEquivalentTo(_expectedOldPrograms, options => options.Excluding(p => p.Comment));
+
+      actualSt.CurrentStatus.Jobs.Values.Should().BeEquivalentTo(
+        _logDB.LoadUnarchivedJobs().Select(j => j.CloneToDerived<ActiveJob, HistoricJob>() with
+        {
+          Cycles = j.Decrements != null ? j.Cycles - j.Decrements.Sum(d => d.Quantity) : j.Cycles,
+          RemainingToStart = j.Decrements != null && j.Decrements.Count > 0
+            ? 0
+            : j.Cycles - _expectedStartedQty.GetValueOrDefault(j.UniqueStr, 0),
+          Completed =
+            _expectedCompleted[j.UniqueStr]
+            .GroupBy(x => x.Key.proc)
+            .OrderBy(x => x.Key)
+            .Select(x => x.OrderBy(y => y.Key.path).Select(y => y.Value).ToImmutableList())
+            .ToImmutableList(),
+          Precedence = _expectedPrecedence[j.UniqueStr],
+          AssignedWorkorders = _logDB.GetWorkordersForUnique(j.UniqueStr)
+        })
+      );
+
+      actualSt.CurrentStatus.Material.Should().BeEquivalentTo(
+        _expectedMaterial.Values.Concat(_expectedLoadCastings));
+
+      actualSt.CurrentStatus.QueueSizes.Should().BeEquivalentTo(_settings.Queues);
+
+      actualSt.CurrentStatus.Alarms.Should().BeEquivalentTo(_expectedPalletAlarms.Values.Concat(_expectedMachineAlarms.Select(m => $"Machine {m} has an alarm")));
     }
 
     public FakeIccDsl ExpectNoChanges()
@@ -1176,8 +1259,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var cellSt = _createLog.BuildCellState(_logDB, _status);
         cellSt.PalletStateUpdated.Should().BeFalse();
 
-        var unarchJobs = _logDB.LoadUnarchivedJobs().ToList();
-        cellSt.UnarchivedJobs.Should().BeEquivalentTo(unarchJobs);
         CheckCellStMatchesExpected(cellSt);
         _assign.NewPalletChange(cellSt).Should().BeNull();
         logMonitor.Should().NotRaise("NewLogEntry");
@@ -1704,9 +1785,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var cellSt = _createLog.BuildCellState(_logDB, _status);
 
-        var sch = _logDB.LoadUnarchivedJobs().ToList();
         cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-        cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
 
         var expectedLogs = new List<LogEntry>();
 
@@ -1727,7 +1806,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           // reload cell state
           cellSt = _createLog.BuildCellState(_logDB, _status);
           cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
         }
 
         var expectedDelRoute = (ExpectRouteDeleteChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteDeleteChange);
@@ -1871,7 +1949,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           // reload cell state
           cellSt = _createLog.BuildCellState(_logDB, _status);
           cellSt.PalletStateUpdated.Should().Be(true);
-          cellSt.UnarchivedJobs.Should().BeEquivalentTo(sch);
         }
         else
         {
@@ -2284,14 +2361,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
   public static class FakeIccDslJobHelpers
   {
-    public static Job AddInsp(this Job job, int proc, int path, string inspTy, string cntr, int max)
+    public static (Job, int[][]) AddInsp(this (Job, int[][]) job, int proc, int path, string inspTy, string cntr, int max)
     {
-      return job.AdjustPath(proc, path, p => p.Inspections.Add(new PathInspection()
+      return (job.Item1.AdjustPath(proc, path, p => p.Inspections.Add(new PathInspection()
       {
         InspectionType = inspTy,
         Counter = cntr,
         MaxVal = max
-      }));
+      })), job.Item2);
     }
 
   }

@@ -1611,19 +1611,20 @@ namespace BlackMaple.FMSInsight.Niigata
       return cnts;
     }
 
-    private ILookup<string, (int proc1path, int prec)> JobPrecedence(IEnumerable<HistoricJob> jobs)
+    private IReadOnlyDictionary<(string uniq, int proc, int path), long> JobPrecedence(IEnumerable<HistoricJob> jobs)
     {
-      return
-        jobs.SelectMany(job =>
-          Enumerable.Range(1, job.Processes[0].Paths.Count).Select(proc1path => (job, proc1path))
-        )
-        .OrderBy(x => x.job.RouteStartUTC)
-        .ThenBy(x => x.job.Processes[0].Paths[x.proc1path - 1].SimulatedStartingUTC)
-        .Select((x, idx) => new { Uniq = x.job.UniqueStr, Proc1Path = x.proc1path, Prec = idx + 1 })
-        .ToLookup(x => x.Uniq, x => (proc1path: x.Proc1Path, prec: x.Prec));
+      return jobs
+        .SelectMany(job => job.Processes.Select((proc, procIdx) => new { job, proc, procNum = procIdx + 1 }))
+        .SelectMany(x => x.proc.Paths.Select((path, pathIdx) =>
+          new { job = x.job, proc = x.proc, procNum = x.procNum, path, pathNum = pathIdx + 1 }))
+        .OrderBy(j => j.job.ManuallyCreated ? 0 : 1)
+        .ThenBy(x => x.job.RouteStartUTC)
+        .ThenBy(x => x.path.SimulatedStartingUTC)
+        .Select((x, idx) => new { Key = (uniq: x.job.UniqueStr, proc: x.procNum, path: x.pathNum), Value = idx })
+        .ToDictionary(x => x.Key, x => (long)x.Value);
     }
 
-    private ActiveJob HistoricToActiveJob(HistoricJob j, ILookup<string, (int proc1path, int prec)> proc1paths, IReadOnlyDictionary<string, int> cyclesStartedOnProc1, IRepository db)
+    private ActiveJob HistoricToActiveJob(HistoricJob j, IReadOnlyDictionary<(string uniq, int proc, int path), long> precedence, IReadOnlyDictionary<string, int> cyclesStartedOnProc1, IRepository db)
     {
       // completed
       var completed =
@@ -1647,25 +1648,6 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
 
-      // precedence
-      var proc1precs = proc1paths.Contains(j.UniqueStr) ? proc1paths[j.UniqueStr] : null;
-      var precedence =
-        j.Processes.Select((proc, procIdx) =>
-        {
-          if (procIdx == 0)
-          {
-            return proc.Paths.Select((_, pathIdx) =>
-              proc1precs?.FirstOrDefault(x => x.proc1path == pathIdx + 1).prec ?? 0L
-            ).ToArray();
-          }
-          else
-          {
-            return proc.Paths.Select(path =>
-              proc1precs?.FirstOrDefault().prec ?? 0L
-            ).ToArray();
-          }
-        }).ToArray();
-
       // take decremented quantity out of the planned cycles
       int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
       var newPlanned = j.Cycles - decrQty;
@@ -1676,15 +1658,19 @@ namespace BlackMaple.FMSInsight.Niigata
         started = startedOnProc1;
       }
 
-      var workorders = db.GetWorkordersForUnique(j.UniqueStr);
-
-      return j.CloneToDerived<ActiveJob, Job>() with
+      return j.CloneToDerived<ActiveJob, HistoricJob>() with
       {
         Completed = completed.Select(c => ImmutableList.Create(c)).ToImmutableList(),
         RemainingToStart = decrQty > 0 ? 0 : Math.Max(newPlanned - started, 0),
         Cycles = newPlanned,
-        Precedence = precedence.Select(p => ImmutableList.Create(p)).ToImmutableList(),
-        AssignedWorkorders = workorders == null || workorders.Count == 0 ? null : workorders
+        Precedence =
+          j.Processes.Select((proc, procIdx) =>
+          {
+            return proc.Paths.Select((_, pathIdx) =>
+              precedence.GetValueOrDefault((uniq: j.UniqueStr, proc: procIdx + 1, path: pathIdx + 1), 0)
+            ).ToImmutableList();
+          }).ToImmutableList(),
+        AssignedWorkorders = db.GetWorkordersForUnique(j.UniqueStr)
       };
     }
 

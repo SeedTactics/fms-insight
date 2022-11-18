@@ -60,12 +60,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void Decrements()
     {
-      var qtyStarted = new Dictionary<string, int>();
-
-      var j1 = new HistoricJob()
+      var j1 = new ActiveJob()
       {
         UniqueStr = "u1",
         Cycles = 12,
+        RemainingToStart = 12 - 5,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
@@ -77,15 +76,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         )
       };
-      qtyStarted["u1"] = 5;
 
-      var j2 = new HistoricJob()
+      var j2 = new ActiveJob()
       {
         UniqueStr = "u2",
         Cycles = 22,
+        RemainingToStart = 0,
         Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }),
       };
-      qtyStarted["u2"] = 22;
 
       var d = new DecrementNotYetStartedJobs();
 
@@ -96,8 +94,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         d.DecrementJobs(_jobDB,
           new CellState()
           {
-            UnarchivedJobs = new[] { j1, j2 },
-            CyclesStartedOnProc1 = qtyStarted
+            CurrentStatus = new CurrentStatus()
+            {
+              Jobs = ImmutableDictionary<string, ActiveJob>.Empty.Add(j1.UniqueStr, j1).Add(j2.UniqueStr, j2),
+            }
           }
         ).Should().Be(i == 0); // only something changed first time
 
