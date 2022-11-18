@@ -50,10 +50,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private RepositoryConfig _logDBCfg;
     private IRepository _logDB;
     private IccSimulator _sim;
-    private SyncPallets _sync;
+    private SyncNiigataPallets _sync;
     private Xunit.Abstractions.ITestOutputHelper _output;
     private bool _debugLogEnabled = false;
-    private Action<CurrentStatus> _onCurrentStatus;
     private Newtonsoft.Json.JsonSerializerSettings jsonSettings;
 
     public SyncPalletsSpec(Xunit.Abstractions.ITestOutputHelper o)
@@ -87,10 +86,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var createLog = new CreateCellState(_fmsSt, statNames, machConn);
 
       _sim = new IccSimulator(numPals: numPals, numMachines: numMachines, numLoads: numLoads, statNames: statNames);
-      var decr = new DecrementNotYetStartedJobs();
 
-      _onCurrentStatus = Substitute.For<Action<CurrentStatus>>();
-      _sync = new SyncPallets(_logDBCfg, _sim, assign, createLog, decr, _fmsSt, onNewCurrentStatus: _onCurrentStatus);
+      _sync = new SyncNiigataPallets(_sim, createLog, assign);
 
       _sim.OnNewProgram += (newprog) =>
         _logDB.SetCellControllerProgramForProgram(newprog.ProgramName, newprog.ProgramRevision, newprog.ProgramNum.ToString());
@@ -98,8 +95,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public void Dispose()
     {
-      _sync.Dispose();
       _logDBCfg.CloseMemoryConnection();
+    }
+
+    private void Synchronize()
+    {
+      using (var db = _logDBCfg.OpenConnection())
+      {
+        bool applyAction = false;
+        do
+        {
+          var st = _sync.CalculateCellState(db);
+          applyAction = _sync.ApplyActions(db, st);
+        } while (applyAction);
+      }
     }
 
     private IEnumerable<LogEntry> Step()
@@ -110,14 +119,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        _sync.SynchronizePallets(false);
-        var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
-        if (evts.Any(e => e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound))
-        {
-          _onCurrentStatus.ReceivedCalls().Should().NotBeEmpty();
-        }
-        _onCurrentStatus.ClearReceivedCalls();
-        return evts;
+        Synchronize();
+        return logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
       }
     }
 
@@ -232,7 +235,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        _sync.SynchronizePallets(false);
+        Synchronize();
         var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
         evts.Count(e => e.Result == "New Niigata Route").Should().BePositive();
       }
@@ -243,7 +246,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDB.AddJobs(jobs, null, addAsCopiedToSystem: true);
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        _sync.SynchronizePallets(false);
+        Synchronize();
         if (expectNewRoute)
         {
           var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();

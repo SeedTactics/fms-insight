@@ -68,7 +68,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public MachineStatus MachineStatus { get; set; } // non-null if pallet is at machine
   }
 
-  public class CellState
+  public class CellState : ICellState
   {
     public NiigataStatus Status { get; set; }
     public bool PalletStateUpdated { get; set; }
