@@ -37,6 +37,7 @@ using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
+using System.Linq;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
@@ -69,10 +70,12 @@ namespace BlackMaple.MachineFramework.Controllers
   public class logController : ControllerBase
   {
     private IFMSBackend _backend;
+    private FMSImplementation _impl;
 
-    public logController(IFMSBackend backend)
+    public logController(IFMSBackend backend, FMSImplementation impl)
     {
       _backend = backend;
+      _impl = impl;
     }
 
     [HttpGet("events/all")]
@@ -205,9 +208,24 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("material-for-serial/{serial}")]
     public IEnumerable<MaterialDetails> MaterialForSerial(string serial)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      if (_impl != null && _impl.ParseBarcode != null)
       {
-        return db.GetMaterialDetailsForSerial(serial);
+        var mat = _impl.ParseBarcode(serial, BarcodeType.DirectlyEnteredSerial);
+        if (mat != null)
+        {
+          return new[] { mat };
+        }
+        else
+        {
+          return Enumerable.Empty<MaterialDetails>();
+        }
+      }
+      else
+      {
+        using (var db = _backend.RepoConfig.OpenConnection())
+        {
+          return db.GetMaterialDetailsForSerial(serial);
+        }
       }
     }
 

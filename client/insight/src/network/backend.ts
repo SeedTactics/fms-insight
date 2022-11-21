@@ -93,10 +93,7 @@ export interface FmsAPI {
     loadStation: number | undefined,
     queue: string | undefined
   ): Promise<void>;
-  parseBarcode(
-    barcode: string | null,
-    type: string | null | undefined
-  ): Promise<Readonly<api.IMaterialDetails>>;
+  parseBarcode(barcode: string | null): Promise<Readonly<api.IMaterialDetails>>;
 }
 
 export interface LogAPI {
