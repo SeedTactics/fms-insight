@@ -173,6 +173,7 @@ namespace BlackMaple.FMSInsight.Niigata
       public MachineFramework.ProcPathInfo PathInfo { get; init; }
       public int Process { get; init; }
       public int Path { get; init; }
+      public long Precedence { get; init; }
 
 
       // RemainingProc1ToRun is only set to true on Process = 1 paths for which we have not yet
@@ -192,7 +193,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private ImmutableList<JobPath> FindPathsForPallet(CellState cellSt, int pallet, int? loadStation)
     {
       return
-        cellSt.UnarchivedJobs
+        cellSt.CurrentStatus.Jobs.Values
         .SelectMany(job => job.Processes.Select((proc, procIdx) => new { job, proc, procNum = procIdx + 1 }))
         .SelectMany(j => j.proc.Paths.Select((path, pathIdx) => new JobPath
         {
@@ -200,10 +201,8 @@ namespace BlackMaple.FMSInsight.Niigata
           PathInfo = path,
           Process = j.procNum,
           Path = pathIdx + 1,
-          RemainingProc1ToRun =
-            j.procNum == 1
-            ? PathHasRemainingProc1ToRun(cellSt, j.job, proc1path: pathIdx + 1)
-            : false
+          Precedence = j.job.Precedence[j.procNum - 1][pathIdx],
+          RemainingProc1ToRun = j.procNum == 1 ? j.job.RemainingToStart > 0 : false,
         }))
         .Where(j =>
           j.Process > 1
@@ -215,32 +214,9 @@ namespace BlackMaple.FMSInsight.Niigata
         .Where(j => loadStation == null || j.PathInfo.Load.Contains(loadStation.Value))
         .Where(j => j.PathInfo.Pallets.Contains(pallet.ToString()))
         .Where(j => _extraPathFilter == null || _extraPathFilter(job: j.Job, procNum: j.Process, pathNum: j.Path, pathInfo: j.PathInfo))
-        .OrderBy(j => j.Job.ManuallyCreated ? 0 : 1)
-        .ThenBy(j => j.Job.RouteStartUTC)
-        .ThenBy(j => j.PathInfo.SimulatedStartingUTC)
+        .OrderBy(j => j.Precedence)
         .ToImmutableList()
         ;
-    }
-
-    private bool PathHasRemainingProc1ToRun(CellState cellSt, HistoricJob job, int proc1path)
-    {
-      // the logic here should match the calculation of RemainingToRun when creating the CurrentStatus ActiveJobs
-
-      if (job.Decrements?.Count > 0) return false;
-
-      int startedQty;
-      if (cellSt.CyclesStartedOnProc1.TryGetValue(job.UniqueStr, out var qty))
-      {
-        startedQty = qty;
-      }
-      else
-      {
-        startedQty = 0;
-      }
-
-      // only a single pallet is assigned before the assignment logic is recalculated from scratch, so
-      // we can specify that all paths can run here even if there is only a remaining quantity of 1.
-      return startedQty < job.Cycles;
     }
 
     private bool PathAllowedOnPallet(IEnumerable<JobPath> alreadyLoading, JobPath potentialNewPath)
@@ -822,7 +798,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // search for program in job
       var procAndStopFromJob =
-        cellSt.UnarchivedJobs
+        cellSt.CurrentStatus.Jobs.Values
           .SelectMany(j => j.Processes.Select((p, idx) => new { proc = p, procNum = idx + 1 }))
           .SelectMany(p => p.proc.Paths.Select(path => new { path, procNum = p.procNum }))
           .SelectMany(p => p.path.Stops.Select(stop => new { stop, procNum = p.procNum }))
@@ -842,7 +818,7 @@ namespace BlackMaple.FMSInsight.Niigata
           if (workProg != null)
           {
             process = workProg.ProcessNumber;
-            var job = cellSt.UnarchivedJobs.Where(j => j.PartName == work.Part).FirstOrDefault();
+            var job = cellSt.CurrentStatus.Jobs.Values.Where(j => j.PartName == work.Part).FirstOrDefault();
             if (job != null && process >= 1 && process <= job.Processes.Count)
             {
               elapsed =

@@ -44,17 +44,13 @@ namespace BlackMaple.FMSInsight.Niigata
   public class NiigataBackend : IFMSBackend, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataBackend>();
-    public IJobControl JobControl { get; private set; }
-    public IQueueControl QueueControl { get; private set; }
-    public IMachineControl MachineControl { get; private set; }
 
-    private NiigataICC _icc;
-    private SyncPallets _sync;
+    private readonly JobsAndQueuesFromDb<CellState> _jobsAndQueues;
 
-    public RepositoryConfig RepoConfig { get; private set; }
-    public ISyncPallets SyncPallets => _sync;
-    public NiigataStationNames StationNames { get; }
-    public ICncMachineConnection MachineConnection { get; }
+    public IJobControl JobControl => _jobsAndQueues;
+    public IQueueControl QueueControl => _jobsAndQueues;
+    public IMachineControl MachineControl { get; }
+    public RepositoryConfig RepoConfig { get; }
     public bool SupportsQuarantineAtLoadStation { get; } = true;
 
     public event NewCurrentStatus OnNewCurrentStatus;
@@ -65,8 +61,7 @@ namespace BlackMaple.FMSInsight.Niigata
       SerialSettings serialSt,
       bool startSyncThread,
       Func<NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null,
-      IDecrementJobs decrementJobs = null,
-      Func<NewJobs, CellState, IRepository, IEnumerable<string>> additionalJobChecks = null
+      Func<NiigataStationNames, INiigataCommunication, ICheckJobsValid> customJobCheck = null
     )
     {
       try
@@ -91,7 +86,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
         var reclampNames = config.GetValue<string>("Reclamp Group Names");
         var machineNames = config.GetValue<string>("Machine Names");
-        StationNames = new NiigataStationNames()
+        var stationNames = new NiigataStationNames()
         {
           ReclampGroupNames = new HashSet<string>(
             string.IsNullOrEmpty(reclampNames) ? Enumerable.Empty<string>() : reclampNames.Split(',').Select(s => s.Trim())
@@ -117,44 +112,62 @@ namespace BlackMaple.FMSInsight.Niigata
             .Where(x => x != null)
             .ToDictionary(x => x.iccMc, x => (group: x.group, num: x.num))
         };
-        Log.Debug("Using station names {@names}", StationNames);
+        Log.Debug("Using station names {@names}", stationNames);
 
         var machineIps = config.GetValue<string>("Machine IP Addresses");
-        MachineConnection = new CncMachineConnection(
+        var machConn = new CncMachineConnection(
           string.IsNullOrEmpty(machineIps) ? Enumerable.Empty<string>() : machineIps.Split(',').Select(s => s.Trim())
         );
 
         var connStr = config.GetValue<string>("Connection String", defaultValue: null);
 
-        _icc = new NiigataICC(programDir, connStr, StationNames);
-        var createLog = new CreateCellState(cfg, StationNames, MachineConnection);
+        var icc = new NiigataICC(programDir, connStr, stationNames);
+        var createLog = new CreateCellState(cfg, stationNames, machConn);
 
-        MachineControl = new NiigataMachineControl(RepoConfig, _icc, MachineConnection, StationNames);
+        MachineControl = new NiigataMachineControl(RepoConfig, icc, machConn, stationNames);
 
         IAssignPallets assign;
         if (customAssignment != null)
         {
-          assign = customAssignment(StationNames, MachineConnection);
+          assign = customAssignment(stationNames, machConn);
         }
         else
         {
           assign = new MultiPalletAssign(new IAssignPallets[] {
-            new AssignNewRoutesOnPallets(StationNames),
+            new AssignNewRoutesOnPallets(stationNames),
             new SizedQueues(cfg.Queues)
           });
         }
 
-        decrementJobs = decrementJobs ?? new DecrementNotYetStartedJobs();
+        ICheckJobsValid checkJobsValid;
+        if (customJobCheck != null)
+        {
+          checkJobsValid = customJobCheck(stationNames, icc);
+        }
+        else
+        {
+          checkJobsValid = new CheckJobsMatchNiigata(
+            cfg,
+            stationNames,
+            requireProgramsInJobs: config.GetValue<bool>("Require Programs In Jobs", true),
+            icc
+          );
+        }
 
-        _sync = new SyncPallets(RepoConfig, _icc, assign, createLog, decrementJobs, cfg, s => OnNewCurrentStatus?.Invoke(s));
-        JobControl = new NiigataJobs(j: RepoConfig,
-                                      st: cfg,
-                                      sy: _sync,
-                                      statNames: StationNames,
-                                      requireProgsInJobs: config.GetValue<bool>("Require Programs In Jobs", true),
-                                      additionalJobChecks: additionalJobChecks);
+        var syncSt = new SyncNiigataPallets(
+          icc,
+          createLog,
+          assign
+        );
 
-        QueueControl = new NiigataQueues(RepoConfig, cfg, _sync);
+        _jobsAndQueues = new JobsAndQueuesFromDb<CellState>(
+          RepoConfig,
+          cfg,
+          s => OnNewCurrentStatus?.Invoke(s),
+          syncSt,
+          checkJobsValid,
+          refreshStateInterval: TimeSpan.FromMinutes(5)
+        );
 
         if (startSyncThread)
         {
@@ -169,14 +182,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public void StartSyncThread()
     {
-      _sync.StartThread();
+      _jobsAndQueues.StartThread();
     }
 
     public void Dispose()
     {
-      if (SyncPallets != null) _sync.Dispose();
-      _sync = null;
+      _jobsAndQueues?.Dispose();
     }
-
   }
 }

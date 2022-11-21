@@ -99,7 +99,7 @@ const barcodeMaterialDetail = selector<Readonly<IMaterialDetails> | null>({
   get: async ({ get }) => {
     const toShow = get(matToShow);
     if (toShow && toShow.type === "Barcode") {
-      return await FmsServerBackend.parseBarcode(toShow.barcode, null);
+      return await FmsServerBackend.parseBarcode(toShow.barcode);
     } else {
       return null;
     }

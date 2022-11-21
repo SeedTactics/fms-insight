@@ -257,16 +257,6 @@
               "nullable": true
             },
             "x-position": 1
-          },
-          {
-            "name": "type",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "default": "",
-              "nullable": true
-            },
-            "x-position": 2
           }
         ],
         "responses": {

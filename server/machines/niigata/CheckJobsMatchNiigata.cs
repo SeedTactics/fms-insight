@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -30,69 +30,37 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
 using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
-using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public class NiigataJobs : IJobControl
+  public sealed class CheckJobsMatchNiigata : ICheckJobsValid
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataJobs>();
-
-    public event NewJobsDelegate OnNewJobs;
-
-    private RepositoryConfig _jobDbCfg;
-    private FMSSettings _settings;
-    private ISyncPallets _sync;
+    private readonly FMSSettings _settings;
     private readonly NiigataStationNames _statNames;
-    private bool _requireProgramsInJobs;
-    private Func<NewJobs, CellState, IRepository, IEnumerable<string>> _additionalJobChecks;
+    private readonly bool _requireProgramsInJobs;
+    private readonly INiigataCommunication _icc;
 
-    public NiigataJobs(RepositoryConfig j, FMSSettings st, ISyncPallets sy, NiigataStationNames statNames,
-                       bool requireProgsInJobs, Func<NewJobs, CellState, IRepository, IEnumerable<string>> additionalJobChecks
-                       )
+    public CheckJobsMatchNiigata(
+      FMSSettings settings,
+      NiigataStationNames statNames,
+      bool requireProgramsInJobs,
+      INiigataCommunication icc)
     {
-      _jobDbCfg = j;
-      _sync = sy;
-      _settings = st;
+      _settings = settings;
       _statNames = statNames;
-      _additionalJobChecks = additionalJobChecks;
-      _requireProgramsInJobs = requireProgsInJobs;
+      _requireProgramsInJobs = requireProgramsInJobs;
+      _icc = icc;
     }
 
-    CurrentStatus IJobControl.GetCurrentStatus()
-    {
-      using (var jdb = _jobDbCfg.OpenConnection())
-      {
-        return BuildCurrentStatus.Build(jdb, _sync.CurrentCellState(), _settings);
-      }
-    }
-
-    #region Jobs
-    List<string> IJobControl.CheckValidRoutes(IEnumerable<Job> newJobs)
-    {
-      using (var jdb = _jobDbCfg.OpenConnection())
-      {
-        return CheckJobs(jdb, new NewJobs()
-        {
-          Jobs = newJobs.ToImmutableList()
-        });
-      }
-    }
-
-    public List<string> CheckJobs(IRepository jobDB, NewJobs jobs)
+    public IReadOnlyList<string> CheckNewJobs(IRepository jobDB, NewJobs jobs)
     {
       var errors = new List<string>();
-      var cellState = _sync.CurrentCellState();
-      if (cellState == null)
-      {
-        errors.Add("FMS Insight just started and is not yet ready for new jobs");
-        return errors;
-      }
-
+      var programs = _icc.LoadPrograms().Values;
       foreach (var j in jobs.Jobs)
       {
         for (var proc = 1; proc <= j.Processes.Count; proc++)
@@ -152,7 +120,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 }
                 else
                 {
-                  CheckProgram(stop.Program, stop.ProgramRevision, jobs.Programs, cellState, jobDB, "Part " + j.PartName, errors);
+                  CheckProgram(stop.Program, stop.ProgramRevision, jobs.Programs, jobDB, programs, "Part " + j.PartName, errors);
                 }
               }
             }
@@ -166,19 +134,15 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           foreach (var prog in w.Programs)
           {
-            CheckProgram(prog.ProgramName, prog.Revision, jobs.Programs, cellState, jobDB, "Workorder " + w.WorkorderId, errors);
+            CheckProgram(prog.ProgramName, prog.Revision, jobs.Programs, jobDB, programs, "Workorder " + w.WorkorderId, errors);
           }
         }
       }
 
-      if (_additionalJobChecks != null)
-      {
-        errors.AddRange(_additionalJobChecks(jobs, cellState, jobDB));
-      }
       return errors;
     }
 
-    private void CheckProgram(string programName, long? rev, IEnumerable<MachineFramework.NewProgramContent> newPrograms, CellState cellState, IRepository jobDB, string errHdr, IList<string> errors)
+    private void CheckProgram(string programName, long? rev, IEnumerable<MachineFramework.NewProgramContent> newPrograms, IRepository jobDB, IEnumerable<ProgramEntry> programsInCellCtrl, string errHdr, IList<string> errors)
     {
       if (rev.HasValue && rev.Value > 0)
       {
@@ -197,7 +161,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           if (int.TryParse(programName, out int progNum))
           {
-            if (!cellState.Status.Programs.Values.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
+            if (!programsInCellCtrl.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
             {
               errors.Add(errHdr + " program " + programName + " is neither included in the download nor found in the cell controller");
             }
@@ -210,131 +174,26 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell)
+    public IReadOnlyList<string> CheckWorkorders(IRepository db, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs)
     {
-      using (var jdb = _jobDbCfg.OpenConnection())
+      var errors = new List<string>();
+      var iccProgs = _icc.LoadPrograms().Values;
+      foreach (var w in newWorkorders ?? Enumerable.Empty<Workorder>())
       {
-        Log.Debug("Adding new jobs {@jobs}", jobs);
-        var errors = CheckJobs(jdb, jobs);
-        if (errors.Any())
+        if (w.Programs != null)
         {
-          throw new BadRequestException(string.Join(Environment.NewLine, errors));
-        }
-
-        CellState curSt = _sync.CurrentCellState();
-
-        var existingJobs = jdb.LoadUnarchivedJobs();
-        foreach (var j in existingJobs)
-        {
-          if (IsJobCompleted(j, curSt))
+          foreach (var prog in w.Programs)
           {
-            jdb.ArchiveJob(j.UniqueStr);
+            CheckProgram(prog.ProgramName, prog.Revision, programs, db, iccProgs, "Workorder " + w.WorkorderId, errors);
           }
         }
-
-        Log.Debug("Adding jobs to database");
-
-        jdb.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
       }
-
-      Log.Debug("Sending new jobs on websocket");
-
-      OnNewJobs?.Invoke(jobs);
-
-      Log.Debug("Signaling new jobs available for routes");
-
-      _sync.JobsOrQueuesChanged();
+      return errors;
     }
 
-    private bool IsJobCompleted(HistoricJob job, CellState st)
+    public bool ExcludeJobFromDecrement(IRepository db, Job j)
     {
-      if (st == null) return false;
-
-      int startedQty;
-      if (st.CyclesStartedOnProc1.TryGetValue(job.UniqueStr, out var qty))
-      {
-        startedQty = qty;
-      }
-      else
-      {
-        startedQty = 0;
-      }
-      if (startedQty < job.Cycles) return false;
-
-      var matInProc =
-        st.Pallets
-        .SelectMany(p => p.Material)
-        .Concat(st.QueuedMaterial)
-        .Select(f => f.Mat)
-        .Where(m => m.JobUnique == job.UniqueStr)
-        .Any();
-
-      if (matInProc)
-      {
-        return false;
-      }
-      else
-      {
-        return true;
-      }
+      return false;
     }
-
-    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
-    {
-      using (var jdb = _jobDbCfg.OpenConnection())
-      {
-        _sync.DecrementPlannedButNotStartedQty(jdb);
-        return jdb.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
-      }
-    }
-
-    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
-    {
-      using (var jdb = _jobDbCfg.OpenConnection())
-      {
-        _sync.DecrementPlannedButNotStartedQty(jdb);
-        return jdb.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
-      }
-    }
-
-    void IJobControl.SetJobComment(string jobUnique, string comment)
-    {
-      using (var jdb = _jobDbCfg.OpenConnection())
-      {
-        jdb.SetJobComment(jobUnique, comment);
-      }
-      _sync.JobsOrQueuesChanged();
-    }
-
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<MachineFramework.NewProgramContent> programs)
-    {
-      var cellState = _sync.CurrentCellState();
-      if (cellState == null) return;
-
-      using (var jdb = _jobDbCfg.OpenConnection())
-      {
-        var errors = new List<string>();
-        foreach (var w in newWorkorders ?? Enumerable.Empty<Workorder>())
-        {
-          if (w.Programs != null)
-          {
-            foreach (var prog in w.Programs)
-            {
-              CheckProgram(prog.ProgramName, prog.Revision, programs, cellState, jdb, "Workorder " + w.WorkorderId, errors);
-            }
-          }
-        }
-        if (errors.Any())
-        {
-          throw new BadRequestException(string.Join(Environment.NewLine, errors));
-        }
-
-        jdb.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
-      }
-
-      _sync.JobsOrQueuesChanged();
-    }
-    #endregion
-
   }
 }

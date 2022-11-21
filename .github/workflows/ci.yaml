@@ -30,8 +30,9 @@ jobs:
           dotnet test server/test --collect:"XPlat Code Coverage"
 
       - name: Upload Code Coverage
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           directory: server/test/TestResults
           flags: server-unittests
 

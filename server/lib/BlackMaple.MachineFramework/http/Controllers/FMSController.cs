@@ -254,11 +254,11 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("parse-barcode")]
-    public MaterialDetails ParseBarcode([FromQuery] string barcode, [FromQuery] string type = "")
+    public MaterialDetails ParseBarcode([FromQuery] string barcode)
     {
       if (_impl != null && _impl.ParseBarcode != null)
       {
-        return _impl.ParseBarcode(barcode, type);
+        return _impl.ParseBarcode(barcode, BarcodeType.BarcodeFromScan);
       }
       else
       {

@@ -129,6 +129,26 @@ namespace BlackMaple.MachineFramework
     string GetProgramContent(string programName, long? revision);
   }
 
+  public interface ICellState
+  {
+    CurrentStatus CurrentStatus { get; }
+    bool PalletStateUpdated { get; }
+  }
+
+  public interface ISynchronizeCellState<St> where St : ICellState
+  {
+    event Action NewCellState;
+    St CalculateCellState(IRepository db);
+    bool ApplyActions(IRepository db, St st);
+  }
+
+  public interface ICheckJobsValid
+  {
+    IReadOnlyList<string> CheckNewJobs(IRepository db, NewJobs jobs);
+    IReadOnlyList<string> CheckWorkorders(IRepository db, IEnumerable<Workorder> newWorkorders, IEnumerable<MachineFramework.NewProgramContent> programs);
+    bool ExcludeJobFromDecrement(IRepository db, Job j);
+  }
+
   public delegate void NewCurrentStatus(CurrentStatus status);
 
   public interface IFMSBackend : IDisposable

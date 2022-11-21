@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -40,7 +40,14 @@ namespace BlackMaple.MachineFramework
 
   public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID, string operatorName, string pallet);
   public delegate void PrintLabelForMaterial(long materialId, int process, int? loadStation, string queue);
-  public delegate MaterialDetails ParseBarcode(string barcode, string type);
+
+  public enum BarcodeType
+  {
+    BarcodeFromScan,
+    DirectlyEnteredSerial
+  }
+
+  public delegate MaterialDetails ParseBarcode(string barcode, BarcodeType type);
 
   public enum AddToQueueType
   {

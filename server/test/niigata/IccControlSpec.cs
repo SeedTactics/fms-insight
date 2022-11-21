@@ -248,6 +248,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
          (uniq: "uniq1", part: "part1", pal: 2, path: 1, face: 1),
         })
         .RemoveExpectedMaterial(fstMats.Select(m => m.MaterialID))
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1)
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 33 - 4),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 2, activeMins: 9, mats: fstMats),
@@ -309,6 +310,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       .AdvanceMinutes(5) // = 50 min
       .SetNoWork(pal: 1)
       .RemoveExpectedMaterial(sndMats)
+      .IncrJobCompletedCnt("uniq1", proc: 1, path: 1)
       .ExpectTransition(new[] {
          FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 50 - 30),
          FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 5, activeMins: 9, mats: sndMats),
@@ -483,7 +485,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             machMins2: 15,
             fixture: "fix1",
             face1: 1,
-            face2: 2
+            face2: 2,
+            prec1: 0,
+            prec2: 1
           ),
           FakeIccDsl.CreateMultiProcSamePalletJob(
             unique: "uniq2",
@@ -506,7 +510,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             machMins2: 21,
             fixture: "fix1",
             face1: 1,
-            face2: 2
+            face2: 2,
+            prec1: 2,
+            prec2: 3
           )
           },
           new[] {
@@ -634,6 +640,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           im.SetAction(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
           im.Location.Face = 2;
         })
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: AAAproc1.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 45 - 4),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 20, activeMins: 9, mats: AAAproc1),
@@ -734,6 +741,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .ClearExpectedLoadCastings()
         .SetAfterLoad(pal: 1)
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: BBBproc1.Count())
+        .IncrJobCompletedCnt("uniq1", proc: 2, path: 1, cnt: AAAproc2.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 107-45),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 10, activeMins: 9, mats: BBBproc1),
@@ -847,6 +856,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         })
         .ClearExpectedLoadCastings()
         .SetAfterLoad(pal: 1)
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: CCCproc1.Count())
+        .IncrJobCompletedCnt("uniq1", proc: 2, path: 1, cnt: BBBproc2.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 222 - 107),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 10, activeMins: 9, mats: CCCproc1),
@@ -950,6 +961,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           im.Path = 1;
         })
         .SetAfterLoad(pal: 1)
+        .IncrJobCompletedCnt("uniq2", proc: 1, path: 1, cnt: DDDproc1.Count())
+        .IncrJobCompletedCnt("uniq1", proc: 2, path: 1, cnt: CCCproc2.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 232 - 222),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 2, activeMins: 17, mats: DDDproc1),
@@ -1000,6 +1013,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AdvanceMinutes(10) // = 262min
         .SetNoWork(pal: 1)
         .RemoveExpectedMaterial(DDDproc2.Select(m => m.MaterialID))
+        .IncrJobCompletedCnt("uniq2", proc: 2, path: 1, cnt: DDDproc2.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 262 -  232),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 10, activeMins: 20, mats: DDDproc2)
@@ -1143,6 +1157,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             QueuePosition = 0
           });
         })
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: AAAproc1.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 15, activeMins: 9, mats: AAAproc1),
@@ -1239,7 +1254,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         // pallet can be moved out of machine for operator to fix fault.  Might go to after MC temporarily
         .AdvanceMinutes(2) // = 40min
         .EndMachine(mach: 5)
-        .SetPalletAlarm(pal: 1, alarm: true)
+        .SetPalletAlarm(pal: 1, alarm: true, code: PalletAlarmCode.RoutingFault, "Pallet 1 has routing fault")
         .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(BBBproc1, im =>
         {
@@ -1359,6 +1374,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           });
         })
         .ClearExpectedLoadCastings()
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: BBBproc1.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 48 - 27),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 5, activeMins: 9, mats: BBBproc1),
@@ -1412,6 +1428,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             Face = 1
           });
         })
+        .IncrJobCompletedCnt("uniq1", proc: 2, path: 1, cnt: AAAproc2.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 60 - 34),
           FakeIccDsl.UnloadFromFace(pal: 2, lul: 3, elapsedMin: 12, activeMins: 12, mats: AAAproc2),
@@ -1503,6 +1520,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AdvanceMinutes(3) // = 66 min
         .SetNoWork(pal: 2)
         .RemoveExpectedMaterial(BBBproc2)
+        .IncrJobCompletedCnt("uniq1", proc: 2, path: 1, cnt: BBBproc2.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 2, mins: 66 - 60),
           FakeIccDsl.UnloadFromFace(pal: 2, lul: 4, elapsedMin: 3, activeMins: 12, mats: BBBproc2)
@@ -1545,6 +1563,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           });
           im.LastCompletedMachiningRouteStopIndex = null;
         })
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: CCCproc1.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 69 - 48),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 3, activeMins: 9, mats: CCCproc1),
@@ -1719,6 +1738,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         });
         im.LastCompletedMachiningRouteStopIndex = null;
       })
+      .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: AAAproc1.Count())
       .ExpectTransition(new[] {
         FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 15 - 1),
         FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 4, activeMins: 9, mats: AAAproc1),
@@ -2002,6 +2022,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterLoad(pal: 1)
         .RemoveExpectedMaterial(fstMats)
         .ClearExpectedLoadCastings()
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: fstMats.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 35 - 4),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 10, activeMins: 9, mats: fstMats),
@@ -2102,6 +2123,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .SetAfterLoad(pal: 1)
         .ClearExpectedLoadCastings()
         .RemoveExpectedMaterial(fstMats)
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: fstMats.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 20 - 4),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 6, activeMins: 9, mats: fstMats),
@@ -2852,6 +2874,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             QueuePosition = 0
           });
         })
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: AAAProc1.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 24 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 3, activeMins: 9, mats: AAAProc1),
@@ -2948,6 +2971,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AdvanceMinutes(4)
         .SetNoWork(pal: 4)
         .RemoveExpectedMaterial(AAAproc2)
+        .IncrJobCompletedCnt("uniq1", proc: 2, path: 1, cnt: AAAproc2.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 4, mins: 6),
           FakeIccDsl.UnloadFromFace(pal: 4, lul: 3, elapsedMin: 4, activeMins: 12, mats: AAAproc2),
@@ -3249,6 +3273,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             QueuePosition = 0
           });
         })
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: AAAProc1.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 20),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 3, elapsedMin: 3, activeMins: 9, mats: AAAProc1),
@@ -3362,6 +3387,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .AdvanceMinutes(4)
         .SetNoWork(pal: 4)
         .RemoveExpectedMaterial(AAAproc2)
+        .IncrJobCompletedCnt("uniq1", proc: 2, path: 1, cnt: AAAproc2.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 4, mins: 6),
           FakeIccDsl.UnloadFromFace(pal: 4, lul: 3, elapsedMin: 4, activeMins: 12, mats: AAAproc2),
@@ -3465,13 +3491,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             machMins2: 15,
             fixture: "fix1",
             face1: 1,
-            face2: 2
+            face2: 2,
+            prec1: 0,
+            prec2: 1
           )},
           new[] {
             (prog: "prog111", rev: 100L),
             (prog: "prog222", rev: 200L),
           }
         )
+        .SetJobPrecedence("uniq1", new[] { new[] { 2 }, new[] { 3 } })
         .ExpectTransition(expectedUpdates: false, expectedChanges: new[] {
           FakeIccDsl.ExpectAddNewProgram(progNum: 2101, name: "prog111", rev: 100, mcMin: 14),
           FakeIccDsl.ExpectAddNewProgram(progNum: 2201, name: "prog222", rev: 200, mcMin: 15),
@@ -3761,6 +3790,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             QueuePosition = 0
           });
         })
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: AAAproc1.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 15, activeMins: 9, mats: AAAproc1),
@@ -3935,6 +3965,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             QueuePosition = 0
           });
         })
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: AAAproc1.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 27 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 15, activeMins: 9, mats: AAAproc1),
@@ -4321,6 +4352,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             QueuePosition = 0
           });
         })
+        .IncrJobCompletedCnt("uniq1", proc: 1, path: 1, cnt: AAAproc1.Count())
         .ExpectTransition(new[] {
           FakeIccDsl.ExpectPalletCycle(pal: 1, mins: 17 - 2),
           FakeIccDsl.UnloadFromFace(pal: 1, lul: 4, elapsedMin: 5, activeMins: 9, mats: AAAproc1),
@@ -4882,7 +4914,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             unloadMins: 9,
             machMins: 14,
             fixture: "fix1",
-            face: 1
+            face: 1,
+            precedence: 1
           ),
           FakeIccDsl.CreateOneProcOnePathJob(
             unique: "uniq2",
@@ -4903,7 +4936,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             unloadMins: 9,
             machMins: 14,
             fixture: "fix1",
-            face: 1
+            face: 1,
+            precedence: 0
           ),
         })
         .SetExpectedLoadCastings(new[] {
