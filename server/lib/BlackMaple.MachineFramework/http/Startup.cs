@@ -72,18 +72,8 @@ namespace BlackMaple.MachineFramework
           options.AddDefaultPolicy(builder =>
           {
             builder
-              .WithOrigins(
-                  fmsSt.AdditionalLogServers
-#if DEBUG
-                          .Concat(new[] { "http://localhost:1234" }) // vite url
-#endif
-                          .ToArray()
-              )
-#if DEBUG
-                .WithMethods(new[] { "GET", "PUT", "POST", "DELETE" })
-#else
+              .WithOrigins(fmsSt.AdditionalLogServers.ToArray())
                 .WithMethods("GET")
-#endif
                 .WithHeaders("content-type", "authorization");
           });
         });

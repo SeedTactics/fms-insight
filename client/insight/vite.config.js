@@ -9,6 +9,17 @@ export default defineConfig({
   base: "/",
   server: {
     port: 1234,
+    proxy: {
+      "/api/v1/events": {
+        target: "ws://localhost:5000",
+        changeOrigin: true,
+        ws: true,
+      },
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     outDir: "../dist", // relative to root

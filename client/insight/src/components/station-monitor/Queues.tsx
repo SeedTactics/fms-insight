@@ -73,7 +73,6 @@ import {
   AddBySerialDialog,
 } from "./QueuesAddMaterial.js";
 import { selectQueueData, extractJobRawMaterial, JobRawMaterialData } from "../../data/queue-material.js";
-import { BackendUrl } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
 import { JobDetails } from "./JobDetails.js";
@@ -344,7 +343,7 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
     }
     setRunning(true);
     try {
-      await fetch((BackendUrl ?? "") + allowEditQtyUrl, {
+      await fetch(allowEditQtyUrl, {
         method: "PUT",
         headers: new Headers({
           "Content-Type": "application/json",

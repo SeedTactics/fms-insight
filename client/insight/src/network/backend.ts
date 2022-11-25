@@ -153,9 +153,6 @@ export interface MachineAPI {
   ): Promise<ReadonlyArray<Readonly<api.IProgramRevision>>>;
 }
 
-export const BackendHost = process.env.NODE_ENV === "production" ? undefined : "localhost:5000";
-export const BackendUrl = BackendHost ? "http://" + BackendHost : undefined;
-
 export let FmsServerBackend: FmsAPI;
 export let JobsBackend: JobAPI;
 export let LogBackend: LogAPI;
@@ -164,10 +161,10 @@ let otherLogServers: ReadonlyArray<string> = [];
 export let OtherLogBackends: ReadonlyArray<LogAPI> = [];
 
 export function registerNetworkBackend(): void {
-  LogBackend = new api.LogClient(BackendUrl);
-  MachineBackend = new api.MachinesClient(BackendUrl);
-  JobsBackend = new api.JobsClient(BackendUrl);
-  FmsServerBackend = new api.FmsClient(BackendUrl);
+  LogBackend = new api.LogClient();
+  MachineBackend = new api.MachinesClient();
+  JobsBackend = new api.JobsClient();
+  FmsServerBackend = new api.FmsClient();
 }
 
 export function setOtherLogBackends(servers: ReadonlyArray<string>): void {
@@ -192,9 +189,9 @@ export function setUserToken(u: User): void {
         : { headers: { Authorization: "Bearer " + token } }
     );
   }
-  FmsServerBackend = new api.FmsClient(BackendUrl, { fetch });
-  JobsBackend = new api.JobsClient(BackendUrl, { fetch });
-  LogBackend = new api.LogClient(BackendUrl, { fetch });
+  FmsServerBackend = new api.FmsClient(undefined, { fetch });
+  JobsBackend = new api.JobsClient(undefined, { fetch });
+  LogBackend = new api.LogClient(undefined, { fetch });
   OtherLogBackends = otherLogServers.map((s) => new api.LogClient(s, { fetch }));
 }
 

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { ServerEvent } from "./api.js";
-import { BackendHost, JobsBackend, LogBackend } from "./backend.js";
+import { JobsBackend, LogBackend } from "./backend.js";
 import { fmsInformation } from "./server-settings.js";
 import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback, useRecoilValueLoadable } from "recoil";
 import { useEffect, useRef } from "react";
@@ -210,7 +210,7 @@ export function WebsocketConnection(): null {
     } else {
       uri = "ws:";
     }
-    uri += "//" + (BackendHost || loc.host) + "/api/v1/events";
+    uri += "//" + loc.host + "/api/v1/events";
 
     if (user) {
       uri += "?token=" + encodeURIComponent(user.access_token);
