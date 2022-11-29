@@ -83,7 +83,6 @@ import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { SortableRegion, WhiteboardRegion } from "./Whiteboard.js";
 import { MultiMaterialDialog, QueuedMaterialDialog } from "./QueuesMatDialog.js";
-import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -419,7 +418,6 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
   const currentJobs = useRecoilValue(currentStatus).jobs;
   const fmsInfo = useRecoilValue(fmsInformation);
   const setBulkAddCastings = useSetRecoilState(bulkAddCastingToQueue);
-  const setMatToShow = useSetMaterialToShowInDialog();
   const setAddBySerial = useSetRecoilState(enterSerialForNewMaterialDialog);
 
   const jobExistsWithInputQueue = React.useMemo(() => {
@@ -435,14 +433,14 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
         <Fab
           color="secondary"
           onClick={() => {
-            if (fmsInfo.addRawMaterialAsUnassigned) {
-              setBulkAddCastings(props.label);
-            } else if (
-              fmsInfo.addToQueueType === api.AddToQueueType.AllowNewMaterialBySpecifyingJobWithoutSerial
-            ) {
-              setMatToShow({ type: "AddMatWithoutSerial", toQueue: props.label });
-            } else {
-              setAddBySerial(props.label);
+            switch (fmsInfo.addRawMaterial) {
+              case api.AddRawMaterialType.AddAsUnassigned:
+                setBulkAddCastings(props.label);
+                break;
+              case api.AddRawMaterialType.AddAndSpecifyJob:
+              case api.AddRawMaterialType.RequireExistingMaterial:
+                setAddBySerial(props.label);
+                break;
             }
           }}
           size="large"
@@ -457,13 +455,7 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
       <Tooltip title="Add Material">
         <Fab
           color="secondary"
-          onClick={() => {
-            if (fmsInfo.addToQueueType === api.AddToQueueType.AllowNewMaterialBySpecifyingJobWithoutSerial) {
-              setMatToShow({ type: "AddMatWithoutSerial", toQueue: props.label });
-            } else {
-              setAddBySerial(props.label);
-            }
-          }}
+          onClick={() => setAddBySerial(props.label)}
           size="medium"
           style={{ marginBottom: "-30px", zIndex: 1 }}
         >

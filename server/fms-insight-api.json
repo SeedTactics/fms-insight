@@ -2243,12 +2243,11 @@
           "RequireWorkorderBeforeAllowWashComplete": {
             "type": "boolean"
           },
-          "AddToQueueType": {
-            "$ref": "#/components/schemas/AddToQueueType"
+          "AddRawMaterial": {
+            "$ref": "#/components/schemas/AddRawMaterialType"
           },
-          "AddRawMaterialAsUnassigned": {
-            "type": "boolean",
-            "nullable": true
+          "AddInProcessMaterial": {
+            "$ref": "#/components/schemas/AddInProcessMaterialType"
           },
           "RequireOperatorNamePromptWhenAddingMaterial": {
             "type": "boolean",
@@ -2260,18 +2259,30 @@
           }
         }
       },
-      "AddToQueueType": {
+      "AddRawMaterialType": {
         "type": "string",
         "description": "",
         "x-enumNames": [
-          "RequireSerialAndExistingMaterial",
-          "AllowNewMaterialBySpecifyingJobAndSerial",
-          "AllowNewMaterialBySpecifyingJobWithoutSerial"
+          "AddAsUnassigned",
+          "RequireExistingMaterial",
+          "AddAndSpecifyJob"
         ],
         "enum": [
-          "RequireSerialAndExistingMaterial",
-          "AllowNewMaterialBySpecifyingJobAndSerial",
-          "AllowNewMaterialBySpecifyingJobWithoutSerial"
+          "AddAsUnassigned",
+          "RequireExistingMaterial",
+          "AddAndSpecifyJob"
+        ]
+      },
+      "AddInProcessMaterialType": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "RequireExistingMaterial",
+          "AddAndSpecifyJob"
+        ],
+        "enum": [
+          "RequireExistingMaterial",
+          "AddAndSpecifyJob"
         ]
       },
       "ServerEvent": {

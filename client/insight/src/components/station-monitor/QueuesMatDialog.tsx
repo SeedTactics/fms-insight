@@ -215,6 +215,78 @@ function QuarantineMaterialButton({ onClose }: { onClose: () => void }) {
   );
 }
 
+function useQueueDialogKind(queueNames: ReadonlyArray<string>): "None" | "MatInQueue" | "AddToQueue" {
+  const existingMat = useRecoilValue(matDetails.materialInDialogInfo);
+  const inProcMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
+  const fmsInfo = useRecoilValue(fmsInformation);
+
+  const curInQueueOnScreen =
+    inProcMat !== null &&
+    inProcMat.location.type === api.LocType.InQueue &&
+    inProcMat.location.currentQueue &&
+    queueNames.includes(inProcMat.location.currentQueue);
+  if (curInQueueOnScreen) return "MatInQueue";
+
+  const curOnPallet = inProcMat !== null && inProcMat.location.type === api.LocType.OnPallet;
+  if (curOnPallet) return "None";
+
+  const missingButMatRequired =
+    existingMat === null &&
+    fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.RequireExistingMaterial &&
+    fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireExistingMaterial;
+  if (missingButMatRequired) return "None";
+
+  return "AddToQueue";
+}
+
+function QueuesDialogCt({
+  toQueue,
+  enteredOperator,
+  setEnteredOperator,
+  selectedQueue,
+  setSelectedQueue,
+  selectedJob,
+  setSelectedJob,
+  queueNames,
+}: {
+  toQueue: string | null;
+  enteredOperator: string | null;
+  setEnteredOperator: (operator: string | null) => void;
+  selectedQueue: string | null;
+  setSelectedQueue: (q: string | null) => void;
+  selectedJob: AddNewJobProcessState | null;
+  setSelectedJob: (job: AddNewJobProcessState | null) => void;
+  queueNames: ReadonlyArray<string>;
+}) {
+  const kind = useQueueDialogKind(queueNames);
+  const toShow = useRecoilValue(matDetails.materialDialogOpen);
+
+  const requireSelectQueue = queueNames.length > 1 && toShow?.type !== "AddMatWithEnteredSerial";
+
+  switch (kind) {
+    case "None":
+    case "MatInQueue":
+      return null;
+    case "AddToQueue":
+      return (
+        <>
+          {requireSelectQueue ? (
+            <PromptForQueue
+              selectedQueue={selectedQueue}
+              setSelectedQueue={(q) => {
+                setSelectedQueue(q);
+                setSelectedJob(null);
+              }}
+              queueNames={queueNames}
+            />
+          ) : undefined}
+          <PromptForJob selectedJob={selectedJob} setSelectedJob={setSelectedJob} toQueue={toQueue} />
+          <PromptForOperator enteredOperator={enteredOperator} setEnteredOperator={setEnteredOperator} />
+        </>
+      );
+  }
+}
+
 function QueueButtons({
   toQueue,
   enteredOperator,
@@ -228,31 +300,28 @@ function QueueButtons({
   queueNames: ReadonlyArray<string>;
   onClose: () => void;
 }) {
-  const inProcMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  const curInQueueOnScreen =
-    inProcMat !== null &&
-    inProcMat.location.type === api.LocType.InQueue &&
-    inProcMat.location.currentQueue &&
-    queueNames.includes(inProcMat.location.currentQueue);
+  const kind = useQueueDialogKind(queueNames);
 
-  if (curInQueueOnScreen) {
-    return (
-      <>
-        <PrintLabelButton />
-        <QuarantineMaterialButton onClose={onClose} />
-        <RemoveFromSystemButton onClose={onClose} />
-      </>
-    );
-  } else {
-    return (
-      <AddToQueueButton
-        selectedJob={selectedJob}
-        toQueue={toQueue}
-        queueNames={queueNames}
-        enteredOperator={enteredOperator}
-        onClose={onClose}
-      />
-    );
+  switch (kind) {
+    case "None":
+      return null;
+    case "MatInQueue":
+      return (
+        <>
+          <PrintLabelButton />
+          <QuarantineMaterialButton onClose={onClose} />
+          <RemoveFromSystemButton onClose={onClose} />
+        </>
+      );
+    case "AddToQueue":
+      return (
+        <AddToQueueButton
+          selectedJob={selectedJob}
+          toQueue={toQueue}
+          enteredOperator={enteredOperator}
+          onClose={onClose}
+        />
+      );
   }
 }
 
@@ -267,15 +336,11 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
   const [selectedJob, setSelectedJob] = React.useState<AddNewJobProcessState | null>(null);
 
   let toQueue: string | null = null;
-  let requireSelectQueue = false;
-  if (toShow && toShow.type === "AddMatWithoutSerial") {
-    toQueue = toShow.toQueue;
-  } else if (toShow && toShow.type === "AddMatWithEnteredSerial") {
+  if (toShow && toShow.type === "AddMatWithEnteredSerial") {
     toQueue = toShow.toQueue;
   } else if (queueNames.length === 1) {
     toQueue = queueNames[0];
   } else {
-    requireSelectQueue = true;
     toQueue = selectedQueue;
   }
 
@@ -290,26 +355,16 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
       allowNote
       onClose={onClose}
       extraDialogElements={
-        <>
-          {requireSelectQueue ? (
-            <PromptForQueue
-              selectedQueue={selectedQueue}
-              setSelectedQueue={setSelectedQueue}
-              queueNames={queueNames}
-            />
-          ) : undefined}
-          <PromptForJob
-            selectedJob={selectedJob}
-            setSelectedJob={setSelectedJob}
-            toQueue={toQueue}
-            queueNames={queueNames}
-          />
-          <PromptForOperator
-            enteredOperator={enteredOperator}
-            setEnteredOperator={setEnteredOperator}
-            queueNames={queueNames}
-          />
-        </>
+        <QueuesDialogCt
+          toQueue={toQueue}
+          enteredOperator={enteredOperator}
+          setEnteredOperator={setEnteredOperator}
+          selectedQueue={selectedQueue}
+          setSelectedQueue={setSelectedQueue}
+          selectedJob={selectedJob}
+          setSelectedJob={setSelectedJob}
+          queueNames={queueNames}
+        />
       }
       buttons={
         <QueueButtons

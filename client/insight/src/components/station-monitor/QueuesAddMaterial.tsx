@@ -60,41 +60,7 @@ import { atom, useRecoilState, useRecoilValue, useRecoilValueLoadable } from "re
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
-import { castingNames } from "../../cell-status/names.js";
-
-function useShowAddMaterial(queueNames: ReadonlyArray<string>): boolean {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const existingMat = useRecoilValue(matDetails.materialInDialogInfo);
-  const inProc = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  const newSerial = useRecoilValue(matDetails.serialInMaterialDialog);
-
-  if (
-    inProc &&
-    inProc.location.type === api.LocType.InQueue &&
-    inProc.location.currentQueue &&
-    queueNames.includes(inProc.location.currentQueue)
-  ) {
-    return false;
-  }
-
-  if (inProc && inProc.location.type === api.LocType.OnPallet) {
-    return false;
-  }
-
-  if (fmsInfo.addToQueueType === api.AddToQueueType.RequireSerialAndExistingMaterial && !existingMat) {
-    return false;
-  }
-
-  if (
-    !existingMat &&
-    fmsInfo.addToQueueType === api.AddToQueueType.AllowNewMaterialBySpecifyingJobAndSerial &&
-    (newSerial === null || newSerial === "")
-  ) {
-    return false;
-  }
-
-  return true;
-}
+import { castingNames, rawMaterialQueues } from "../../cell-status/names.js";
 
 const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $expandedOpen?: boolean;
@@ -105,26 +71,86 @@ const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.to
   }),
 }));
 
-export interface AddNewJobProcessState {
-  readonly job: Readonly<api.IActiveJob>;
-  readonly last_proc: number;
+export type AddNewJobProcessState =
+  | {
+      readonly kind: "JobAndProc";
+      readonly job: Readonly<api.IActiveJob>;
+      readonly last_proc: number;
+    }
+  | { readonly kind: "RawMat"; readonly rawMatName: string };
+
+type CurrentCollapseOpen =
+  | { readonly kind: "AllJobs" }
+  | { readonly kind: "Job"; readonly unique: string }
+  | { readonly kind: "RawMat" };
+
+function useCastingNames(): LazySeq<readonly [string, number]> {
+  const currentSt = useRecoilValue(currentStatus);
+  const castNames = useRecoilValue(castingNames);
+  return React.useMemo(
+    () =>
+      LazySeq.ofObject(currentSt.jobs)
+        .flatMap(([, j]) => j.procsAndPaths[0].paths)
+        .filter((p) => p.casting !== undefined && p.casting !== "")
+        .map((p) => ({ casting: p.casting as string, cnt: 1 }))
+        .concat(LazySeq.of(castNames).map((c) => ({ casting: c, cnt: 0 })))
+        .buildOrderedMap<string, number>(
+          (c) => c.casting,
+          (old, c) => (old === undefined ? c.cnt : old + c.cnt)
+        )
+        .toAscLazySeq(),
+    [currentSt.jobs, castNames]
+  );
+}
+
+function SelectRawMaterial({
+  selectedJob,
+  onSelectJob,
+}: {
+  readonly selectedJob: AddNewJobProcessState | null;
+  readonly onSelectJob: (j: AddNewJobProcessState | null) => void;
+}) {
+  const castings = useCastingNames();
+  return (
+    <List>
+      {castings.map(([casting, jobCnt], idx) => (
+        <ListItem
+          key={idx}
+          button
+          sx={(theme) => ({ pl: theme.spacing(4) })}
+          selected={selectedJob?.kind === "RawMat" && selectedJob?.rawMatName === casting}
+          onClick={() => onSelectJob({ kind: "RawMat", rawMatName: casting })}
+        >
+          <ListItemIcon>
+            <PartIdenticon part={casting} />
+          </ListItemIcon>
+          <ListItemText
+            primary={casting}
+            secondary={jobCnt === 0 ? "Not used by any current jobs" : `Used by ${jobCnt} current jobs`}
+          />
+        </ListItem>
+      ))}
+    </List>
+  );
 }
 
 interface SelectJobProps {
   readonly queue: string | null;
   readonly selectedJob: AddNewJobProcessState | null;
   readonly onSelectJob: (j: AddNewJobProcessState | null) => void;
+  readonly curCollapse: CurrentCollapseOpen | null;
+  readonly setCurCollapse: (c: CurrentCollapseOpen | null) => void;
 }
 
-function SelectJob(props: SelectJobProps) {
-  const [selectedJob, setSelectedJob] = React.useState<string | null>(null);
+function SelectJob({ queue, selectedJob, onSelectJob, curCollapse, setCurCollapse }: SelectJobProps) {
   const currentSt = useRecoilValue(currentStatus);
+  const fmsInfo = useRecoilValue(fmsInformation);
   const jobs: ReadonlyArray<JobAndGroups> = React.useMemo(
     () =>
       LazySeq.ofObject(currentSt.jobs)
-        .map(([_uniq, j]) => extractJobGroups(j))
+        .map(([_uniq, j]) => extractJobGroups(j, fmsInfo))
         .toSortedArray((j) => j.job.partName),
-    [currentSt.jobs]
+    [currentSt.jobs, fmsInfo]
   );
 
   return (
@@ -134,12 +160,20 @@ function SelectJob(props: SelectJobProps) {
           <ListItem
             button
             onClick={() => {
-              if (props.selectedJob) props.onSelectJob(null);
-              setSelectedJob(selectedJob === j.job.unique ? null : j.job.unique);
+              if (selectedJob) onSelectJob(null);
+              setCurCollapse(
+                curCollapse && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
+                  ? null
+                  : { kind: "Job", unique: j.job.unique }
+              );
             }}
           >
             <ListItemIcon>
-              <ExpandMore $expandedOpen={selectedJob === j.job.unique} />
+              <ExpandMore
+                $expandedOpen={
+                  curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
+                }
+              />
             </ListItemIcon>
             <ListItemIcon>
               <PartIdenticon part={j.job.partName} />
@@ -149,22 +183,26 @@ function SelectJob(props: SelectJobProps) {
               secondary={j.job.routeStartUTC.toLocaleString()}
             />
           </ListItem>
-          <Collapse in={selectedJob === j.job.unique} timeout="auto">
+          <Collapse
+            in={curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique}
+            timeout="auto"
+          >
             {j.machinedProcs.map((p, idx) => (
               <Tooltip
-                title={props.queue !== null && !p.queues.has(props.queue) ? "Not used in " + props.queue : ""}
+                title={queue !== null && !p.queues.has(queue) ? "Not used in " + queue : p.disabledMsg ?? ""}
                 key={idx}
               >
                 <div>
                   <ListItem
                     button
                     sx={(theme) => ({ pl: theme.spacing(4) })}
-                    disabled={props.queue !== null && !p.queues.has(props.queue)}
+                    disabled={!!p.disabledMsg || (queue !== null && !p.queues.has(queue))}
                     selected={
-                      props.selectedJob?.job.unique === j.job.unique &&
-                      props.selectedJob?.last_proc === p.lastProc
+                      selectedJob?.kind === "JobAndProc" &&
+                      selectedJob?.job.unique === j.job.unique &&
+                      selectedJob?.last_proc === p.lastProc
                     }
-                    onClick={() => props.onSelectJob({ job: j.job, last_proc: p.lastProc })}
+                    onClick={() => onSelectJob({ kind: "JobAndProc", job: j.job, last_proc: p.lastProc })}
                   >
                     <ListItemText
                       primary={
@@ -183,33 +221,108 @@ function SelectJob(props: SelectJobProps) {
   );
 }
 
+function SelectRawMatAndJob({
+  queue,
+  selectedJob,
+  onSelectJob,
+  curCollapse,
+  setCurCollapse,
+}: SelectJobProps) {
+  return (
+    <List>
+      <ListItem
+        button
+        onClick={() => {
+          if (selectedJob) onSelectJob(null);
+          setCurCollapse(curCollapse && curCollapse.kind === "RawMat" ? null : { kind: "RawMat" });
+        }}
+      >
+        <ListItemIcon>
+          <ExpandMore $expandedOpen={curCollapse !== null && curCollapse.kind === "RawMat"} />
+        </ListItemIcon>
+        <ListItemText primary="Specify Job" />
+      </ListItem>
+      <Collapse in={curCollapse !== null && curCollapse.kind === "RawMat"} timeout="auto">
+        <SelectRawMaterial selectedJob={selectedJob} onSelectJob={onSelectJob} />
+      </Collapse>
+      <ListItem
+        button
+        onClick={() => {
+          if (selectedJob) onSelectJob(null);
+          setCurCollapse(
+            curCollapse && (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")
+              ? null
+              : { kind: "AllJobs" }
+          );
+        }}
+      >
+        <ListItemIcon>
+          <ExpandMore
+            $expandedOpen={
+              curCollapse !== null && (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")
+            }
+          />
+        </ListItemIcon>
+        <ListItemText primary="Specify Job" />
+      </ListItem>
+      <Collapse
+        in={curCollapse !== null && (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")}
+        timeout="auto"
+      >
+        <SelectJob
+          queue={queue}
+          selectedJob={selectedJob}
+          onSelectJob={onSelectJob}
+          curCollapse={curCollapse}
+          setCurCollapse={setCurCollapse}
+        />
+      </Collapse>
+    </List>
+  );
+}
+
 export function PromptForJob({
   selectedJob,
   setSelectedJob,
   toQueue,
-  queueNames,
 }: {
   selectedJob: AddNewJobProcessState | null;
   setSelectedJob: (j: AddNewJobProcessState | null) => void;
   toQueue: string | null;
-  queueNames: ReadonlyArray<string>;
 }) {
-  const toShow = useRecoilValue(matDetails.materialDialogOpen);
+  const serial = useRecoilValue(matDetails.serialInMaterialDialog);
   const existingMat = useRecoilValue(matDetails.materialInDialogInfo);
-  const showAdd = useShowAddMaterial(queueNames);
+  const fmsInfo = useRecoilValue(fmsInformation);
+  const rawMatQueues = useRecoilValue(rawMaterialQueues);
+  const [curCollapse, setCurCollapse] = React.useState<CurrentCollapseOpen | null>(null);
 
-  if (!showAdd) return null;
-  if (toShow === null) return null;
   if (existingMat) return null;
+  if (serial === null) return null;
 
-  switch (toShow.type) {
-    case "Barcode":
-    case "ManuallyEnteredSerial":
-    case "AddMatWithEnteredSerial":
-    case "AddMatWithoutSerial":
-      return <SelectJob queue={toQueue} selectedJob={selectedJob} onSelectJob={setSelectedJob} />;
-    default:
-      return null;
+  if (
+    toQueue !== null &&
+    rawMatQueues.has(toQueue) &&
+    fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAsUnassigned
+  ) {
+    return (
+      <SelectRawMatAndJob
+        queue={toQueue}
+        selectedJob={selectedJob}
+        onSelectJob={setSelectedJob}
+        curCollapse={curCollapse}
+        setCurCollapse={setCurCollapse}
+      />
+    );
+  } else {
+    return (
+      <SelectJob
+        queue={toQueue}
+        selectedJob={selectedJob}
+        onSelectJob={setSelectedJob}
+        curCollapse={curCollapse}
+        setCurCollapse={setCurCollapse}
+      />
+    );
   }
 }
 
@@ -222,10 +335,6 @@ export function PromptForQueue({
   setSelectedQueue: (queue: string) => void;
   queueNames: ReadonlyArray<string>;
 }) {
-  const showAdd = useShowAddMaterial(queueNames);
-
-  if (!showAdd) return null;
-
   if (queueNames.length <= 1) {
     return null;
   }
@@ -247,17 +356,12 @@ export function PromptForQueue({
 export function PromptForOperator({
   enteredOperator,
   setEnteredOperator,
-  queueNames,
 }: {
   enteredOperator: string | null;
   setEnteredOperator: (op: string) => void;
-  queueNames: ReadonlyArray<string>;
 }) {
   const fmsInfo = useRecoilValue(fmsInformation);
-  const showAdd = useShowAddMaterial(queueNames);
-
   if (!fmsInfo.requireOperatorNamePromptWhenAddingMaterial) return null;
-  if (!showAdd) return null;
 
   return (
     <div style={{ marginLeft: "1em" }}>
@@ -277,12 +381,10 @@ export function AddToQueueButton({
   selectedJob,
   toQueue,
   onClose,
-  queueNames,
 }: {
   enteredOperator: string | null;
   selectedJob: AddNewJobProcessState | null;
   toQueue: string | null;
-  queueNames: ReadonlyArray<string>;
   onClose: () => void;
 }) {
   const fmsInfo = useRecoilValue(fmsInformation);
@@ -296,9 +398,7 @@ export function AddToQueueButton({
 
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addNewMat, addingNewMat] = matDetails.useAddNewMaterialToQueue();
-  const showAdd = useShowAddMaterial(queueNames);
-
-  if (!showAdd) return null;
+  const [addNewCasting, addingNewCasting] = useAddNewCastingToQueue();
 
   let addProcMsg = "";
   if (existingMat !== null) {
@@ -318,8 +418,11 @@ export function AddToQueueButton({
       addProcMsg = " To Run Process " + (lastProc + 1).toString();
     }
   } else {
-    if (selectedJob?.last_proc !== undefined) {
+    if (selectedJob?.kind === "JobAndProc" && selectedJob?.last_proc !== undefined) {
       addProcMsg = " To Run Process " + (selectedJob.last_proc + 1).toString();
+    }
+    if (selectedJob?.kind === "RawMat" && selectedJob?.rawMatName) {
+      addProcMsg = " As " + selectedJob.rawMatName;
     }
   }
 
@@ -338,6 +441,7 @@ export function AddToQueueButton({
         toQueue === null ||
         addingExistingMat === true ||
         addingNewMat === true ||
+        addingNewCasting === true ||
         (existingMat === null && selectedJob === null) ||
         (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
           (enteredOperator === null || enteredOperator === ""))
@@ -350,13 +454,21 @@ export function AddToQueueButton({
             queuePosition: -1,
             operator: enteredOperator ?? operator,
           });
-        } else if (selectedJob) {
+        } else if (selectedJob && selectedJob.kind === "JobAndProc" && selectedJob.job) {
           addNewMat({
             jobUnique: selectedJob.job.unique,
             lastCompletedProcess: selectedJob.last_proc,
             serial: newSerial ?? undefined,
             queue: toQueue ?? "",
             queuePosition: -1,
+            operator: enteredOperator ?? operator,
+          });
+        } else if (selectedJob && selectedJob.kind === "RawMat" && selectedJob.rawMatName) {
+          addNewCasting({
+            casting: selectedJob.rawMatName,
+            quantity: 1,
+            queue: toQueue ?? "",
+            serials: newSerial ? [newSerial] : undefined,
             operator: enteredOperator ?? operator,
           });
         }
@@ -504,7 +616,6 @@ function AddAndPrintOnClientButton({
 export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCastingWithoutSerialDialog() {
   const [queue, setQueue] = useRecoilState(bulkAddCastingToQueue);
 
-  const currentSt = useRecoilValue(currentStatus);
   const operator = useRecoilValue(currentOperator);
   const fmsInfo = useRecoilValue(fmsInformation);
   const printOnAdd = fmsInfo.usingLabelPrinterForSerials && fmsInfo.useClientPrinterForLabels;
@@ -514,21 +625,7 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
   const [qty, setQty] = React.useState<number | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
   const [adding, setAdding] = React.useState<boolean>(false);
-  const castNames = useRecoilValue(castingNames);
-  const castings: LazySeq<readonly [string, number]> = React.useMemo(
-    () =>
-      LazySeq.ofObject(currentSt.jobs)
-        .flatMap(([, j]) => j.procsAndPaths[0].paths)
-        .filter((p) => p.casting !== undefined && p.casting !== "")
-        .map((p) => ({ casting: p.casting as string, cnt: 1 }))
-        .concat(LazySeq.of(castNames).map((c) => ({ casting: c, cnt: 0 })))
-        .buildOrderedMap<string, number>(
-          (c) => c.casting,
-          (old, c) => (old === undefined ? c.cnt : old + c.cnt)
-        )
-        .toAscLazySeq(),
-    [currentSt.jobs, castNames]
-  );
+  const castings = useCastingNames();
 
   function close() {
     setQueue(null);

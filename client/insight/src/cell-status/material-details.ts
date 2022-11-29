@@ -65,8 +65,7 @@ export type MaterialToShow =
   | { readonly type: "LogMat"; readonly logMat: Readonly<ILogMaterial> }
   | { readonly type: "Barcode"; readonly barcode: string }
   | { readonly type: "ManuallyEnteredSerial"; readonly serial: string }
-  | { readonly type: "AddMatWithEnteredSerial"; readonly serial: string; readonly toQueue: string }
-  | { readonly type: "AddMatWithoutSerial"; readonly toQueue: string };
+  | { readonly type: "AddMatWithEnteredSerial"; readonly serial: string; readonly toQueue: string };
 
 const matToShow = atom<MaterialToShow | null>({
   key: "mat-to-show-in-dialog",
@@ -149,8 +148,6 @@ export const materialInDialogInfo = selector<MaterialToShowInfo | null>({
         const mat = (await LogBackend.materialForSerial(curMat.serial))?.[0] ?? null;
         return mat ? { ...mat, jobUnique: mat.jobUnique ?? "" } : null;
       }
-      case "AddMatWithoutSerial":
-        return null;
     }
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
@@ -185,8 +182,6 @@ export const serialInMaterialDialog = selector<string | null>({
       case "ManuallyEnteredSerial":
       case "AddMatWithEnteredSerial":
         return toShow.serial;
-      case "AddMatWithoutSerial":
-        return null;
     }
   },
 });
