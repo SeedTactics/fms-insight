@@ -238,33 +238,11 @@ function compareByQueuePos(
 }
 
 export function selectQueueData(
-  displayFree: boolean,
   queuesToCheck: ReadonlyArray<string>,
   curSt: Readonly<api.ICurrentStatus>,
   rawMatQueues: ReadonlySet<string>
 ): ReadonlyArray<QueueData> {
   const queues: QueueData[] = [];
-
-  // first free and queued material
-  if (displayFree) {
-    queues.push({
-      label: "Loading Material",
-      free: true,
-      rawMaterialQueue: false,
-      material: curSt.material.filter(
-        (m) => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free
-      ),
-    });
-    queues.push({
-      label: "In Process Material",
-      free: true,
-      rawMaterialQueue: false,
-      material: curSt.material.filter(
-        (m) =>
-          m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free
-      ),
-    });
-  }
 
   const queueNames = [...queuesToCheck];
   queueNames.sort((a, b) => a.localeCompare(b));

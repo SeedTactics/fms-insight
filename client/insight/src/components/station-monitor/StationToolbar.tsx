@@ -124,10 +124,8 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function setStandaloneQueues(newQueuesAny: any) {
-    let newQueues = newQueuesAny as ReadonlyArray<string>;
-    const free = newQueues.includes(freeMaterialSym);
-    newQueues = newQueues.filter((q) => q !== freeMaterialSym);
-    setRoute({ route: RouteLocation.Station_Queues, free: free, queues: newQueues });
+    const newQueues = newQueuesAny as ReadonlyArray<string>;
+    setRoute({ route: RouteLocation.Station_Queues, queues: newQueues });
   }
 
   let curType = StationMonitorType.LoadUnload;
@@ -154,9 +152,6 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
     case RouteLocation.Station_Queues:
       curType = StationMonitorType.Queues;
       currentQueues = [...route.queues];
-      if (route.free) {
-        currentQueues.push(freeMaterialSym);
-      }
       break;
     case RouteLocation.Station_WashMonitor:
       curType = StationMonitorType.Wash;
@@ -215,9 +210,6 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
           ) : undefined}
           <Select
             multiple
-            name="station-monitor-queue-select"
-            data-testid="station-monitor-queue-select"
-            key="queueselect"
             displayEmpty
             variant="standard"
             value={currentQueues}
@@ -253,9 +245,6 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
           ) : undefined}
           <Select
             multiple
-            name="station-monitor-queue-select"
-            data-testid="station-monitor-queue-select"
-            key="queueselect"
             displayEmpty
             variant="standard"
             value={currentQueues}
@@ -263,9 +252,6 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
             style={{ marginTop: "0" }}
             onChange={(e) => setStandaloneQueues(e.target.value)}
           >
-            <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
-              Free Material
-            </MenuItem>
             {queueNames.map((q, idx) => (
               <MenuItem key={idx} value={q}>
                 {q}

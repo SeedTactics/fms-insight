@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button, ListItemButton, styled } from "@mui/material";
+import { Box, Button, ListItemButton, styled } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -140,9 +140,10 @@ interface SelectJobProps {
   readonly onSelectJob: (j: AddNewJobProcessState | null) => void;
   readonly curCollapse: CurrentCollapseOpen | null;
   readonly setCurCollapse: (c: CurrentCollapseOpen | null) => void;
+  readonly indent?: boolean;
 }
 
-function SelectJob({ queue, selectedJob, onSelectJob, curCollapse, setCurCollapse }: SelectJobProps) {
+function SelectJob({ queue, selectedJob, onSelectJob, curCollapse, setCurCollapse, indent }: SelectJobProps) {
   const currentSt = useRecoilValue(currentStatus);
   const fmsInfo = useRecoilValue(fmsInformation);
   const jobs: ReadonlyArray<JobAndGroups> = React.useMemo(
@@ -153,8 +154,19 @@ function SelectJob({ queue, selectedJob, onSelectJob, curCollapse, setCurCollaps
     [currentSt.jobs, fmsInfo]
   );
 
+  if (
+    fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.RequireExistingMaterial &&
+    fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAsUnassigned
+  ) {
+    return (
+      <Box sx={indent ? (theme) => ({ pl: theme.spacing(4) }) : undefined}>
+        Cannot add new assigned material that has not yet been created in the system
+      </Box>
+    );
+  }
+
   return (
-    <List>
+    <List sx={indent ? (theme) => ({ pl: theme.spacing(4) }) : undefined}>
       {jobs.map((j, idx) => (
         <React.Fragment key={idx}>
           <ListItem
@@ -240,7 +252,7 @@ function SelectRawMatAndJob({
         <ListItemIcon>
           <ExpandMore $expandedOpen={curCollapse !== null && curCollapse.kind === "RawMat"} />
         </ListItemIcon>
-        <ListItemText primary="Specify Job" />
+        <ListItemText primary="Raw Material" />
       </ListItem>
       <Collapse in={curCollapse !== null && curCollapse.kind === "RawMat"} timeout="auto">
         <SelectRawMaterial selectedJob={selectedJob} onSelectJob={onSelectJob} />
@@ -275,6 +287,7 @@ function SelectRawMatAndJob({
           onSelectJob={onSelectJob}
           curCollapse={curCollapse}
           setCurCollapse={setCurCollapse}
+          indent
         />
       </Collapse>
     </List>

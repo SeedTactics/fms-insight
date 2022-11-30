@@ -470,7 +470,6 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
 
 interface QueueProps {
   readonly queues: ReadonlyArray<string>;
-  readonly showFree: boolean;
 }
 
 export const Queues = (props: QueueProps) => {
@@ -478,8 +477,8 @@ export const Queues = (props: QueueProps) => {
   const currentSt = useRecoilValue(currentStatus);
   const rawMatQueues = useRecoilValue(rawMaterialQueues);
   const data = React.useMemo(
-    () => selectQueueData(props.showFree, props.queues, currentSt, rawMatQueues),
-    [currentSt, props.queues, props.showFree, rawMatQueues]
+    () => selectQueueData(props.queues, currentSt, rawMatQueues),
+    [currentSt, props.queues, rawMatQueues]
   );
 
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IActiveJob> | null>(null);

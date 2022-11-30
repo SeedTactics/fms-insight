@@ -80,7 +80,7 @@ namespace BlackMaple.MachineFramework
 
     public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
     public string CustomStationMonitorDialogUrl { get; set; } = null;
-    public AddRawMaterialType AddRawMaterial { get; set; } = AddRawMaterialType.AddAsUnassigned;
+    public AddRawMaterialType AddRawMaterial { get; set; } = AddRawMaterialType.RequireExistingMaterial;
     public AddInProcessMaterialType AddInProcessMaterial { get; set; } = AddInProcessMaterialType.RequireExistingMaterial;
   }
 }

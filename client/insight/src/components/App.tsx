@@ -410,7 +410,7 @@ const App = React.memo(function App(props: AppProps) {
         addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Station_Queues:
-        page = <Queues showFree={route.free} queues={route.queues} />;
+        page = <Queues queues={route.queues} />;
         navigation = (p) => <StationToolbar full={p.full} />;
         showOperator = true;
         addBasicMaterialDialog = false;
