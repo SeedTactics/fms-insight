@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v13.17.0.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v13.18.0.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -3163,6 +3163,13 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/QueueSize"
             }
+          },
+          "MachineLocations": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/MachineLocation"
+            }
           }
         }
       },
@@ -3531,6 +3538,34 @@
         "additionalProperties": false,
         "properties": {
           "MaxSizeBeforeStopUnloading": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "MachineLocation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "MachineGroup": {
+            "type": "string"
+          },
+          "MachineNum": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Moving": {
+            "type": "boolean"
+          },
+          "PossibleLoadStations": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "CurrentLoadStation": {
             "type": "integer",
             "format": "int32",
             "nullable": true
