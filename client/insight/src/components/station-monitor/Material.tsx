@@ -85,7 +85,11 @@ function materialAction(
           if (displaySinglePallet === undefined || displaySinglePallet === mat.location.pallet) {
             if (mat.action.loadOntoFace === undefined || mat.action.loadOntoFace === mat.location.face) {
               // material is not moving, just having some manual work done on it
-              return undefined;
+              if (mat.action.processAfterLoad && mat.action.processAfterLoad !== mat.process) {
+                return "Reclamp material to process #" + mat.action.processAfterLoad.toString();
+              } else {
+                return undefined;
+              }
             } else {
               return "Transfer to face " + (mat.action.loadOntoFace || 0).toString();
             }
@@ -118,8 +122,17 @@ function materialAction(
     case api.ActionType.Waiting:
       if (mat.location.type === api.LocType.InQueue && !!mat.jobUnique && mat.jobUnique !== "") {
         return "Waiting; next process is #" + (mat.process + 1).toString();
+      } else if (
+        mat.location.type === api.LocType.OnPallet &&
+        (mat.lastCompletedMachiningRouteStopIndex === null ||
+          mat.lastCompletedMachiningRouteStopIndex === undefined)
+      ) {
+        return "Waiting for machining";
       }
       break;
+
+    case api.ActionType.Machining:
+      return "Machining program " + (mat.action.program ?? "");
   }
   return undefined;
 }
@@ -411,17 +424,15 @@ export const MaterialDetailTitle = React.memo(function MaterialDetailTitle({
   serial,
   subtitle,
   notes,
-  fallbackTitle,
 }: {
   partName: string;
   serial?: string | null;
   subtitle?: string;
   notes?: boolean;
-  fallbackTitle?: string;
 }) {
   let title;
   if (partName === "") {
-    title = serial ?? fallbackTitle ?? "Material";
+    title = serial ?? "Material";
   } else if (serial === undefined || serial === null || serial === "") {
     if (notes) {
       title = "Add note for " + partName;
@@ -450,16 +461,7 @@ export const MaterialDetailTitle = React.memo(function MaterialDetailTitle({
 function MaterialDialogTitle({ notes }: { notes?: boolean }) {
   const mat = useRecoilValueLoadable(matDetails.materialInDialogInfo).valueMaybe();
   const serial = useRecoilValueLoadable(matDetails.serialInMaterialDialog).valueMaybe();
-  const toShow = useRecoilValue(matDetails.materialDialogOpen);
-  const fallback = toShow && toShow.type === "AddMatWithoutSerial" ? "Add New Material" : undefined;
-  return (
-    <MaterialDetailTitle
-      notes={notes}
-      partName={mat?.partName ?? ""}
-      serial={mat?.serial ?? serial}
-      fallbackTitle={fallback}
-    />
-  );
+  return <MaterialDetailTitle notes={notes} partName={mat?.partName ?? ""} serial={mat?.serial ?? serial} />;
 }
 
 function MaterialInspections() {
@@ -508,8 +510,6 @@ export const MaterialDetailContent = React.memo(function MaterialDetailContent({
       return <div style={{ marginLeft: "1em" }}>Material with serial {toShow.serial} not found.</div>;
     } else if (toShow.type === "Barcode") {
       return <div style={{ marginLeft: "1em" }}>Material with barcode {toShow.barcode} not found.</div>;
-    } else if (toShow.type === "AddMatWithoutSerial") {
-      return null;
     } else {
       return <div style={{ marginLeft: "1em" }}>Material not found.</div>;
     }

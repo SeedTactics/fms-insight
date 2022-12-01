@@ -100,7 +100,6 @@ export type RouteState =
   | {
       route: RouteLocation.Station_LoadMonitor;
       loadNum: number;
-      free: boolean;
       queues: ReadonlyArray<string>;
     }
   | { route: RouteLocation.Station_InspectionMonitor }
@@ -136,11 +135,8 @@ export type RouteState =
 function routeToUrl(route: RouteState): string {
   switch (route.route) {
     case RouteLocation.Station_LoadMonitor:
-      if (route.free || route.queues.length > 0) {
+      if (route.queues.length > 0) {
         const params = new URLSearchParams();
-        if (route.free) {
-          params.append("free", "t");
-        }
         for (const q of route.queues) {
           params.append("queue", q);
         }
@@ -180,7 +176,6 @@ function urlToRoute(url: URL): RouteState {
           return {
             route,
             loadNum: parseInt(groups["num"] ?? "1"),
-            free: url.searchParams.has("free"),
             queues: url.searchParams.getAll("queue"),
           };
         case RouteLocation.Station_InspectionMonitorWithType: {

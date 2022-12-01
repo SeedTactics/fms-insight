@@ -64,7 +64,6 @@ export const defaultChooseModes: ReadonlyArray<ChooseModeItem> = [
     route: {
       route: RouteLocation.Station_LoadMonitor,
       loadNum: 1,
-      free: false,
       queues: [],
     },
     icon: <DirectionsIcon />,

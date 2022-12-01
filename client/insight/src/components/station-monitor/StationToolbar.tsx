@@ -63,7 +63,6 @@ interface StationToolbarProps {
   readonly full: boolean;
 }
 
-const freeMaterialSym = "@@insight_free_material@@";
 const allInspSym = "@@all_inspection_display@@";
 
 enum StationMonitorType {
@@ -86,11 +85,10 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
         setRoute({
           route: RouteLocation.Station_LoadMonitor,
           loadNum: val,
-          free: route.free,
           queues: route.queues,
         });
       } else {
-        setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, free: false, queues: [] });
+        setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, queues: [] });
       }
     }
   }
@@ -106,19 +104,16 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
   // the material-ui type bindings specify `e.target.value` to have type string, but
   // when multiple selects are enabled it is actually a type string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function setLoadQueues(newQueuesAny: any) {
-    let newQueues = newQueuesAny as ReadonlyArray<string>;
-    const free = newQueues.includes(freeMaterialSym);
-    newQueues = newQueues.filter((q) => q !== freeMaterialSym).slice(0, 3);
+  function setLoadQueues(newQueues: ReadonlyArray<string>) {
+    newQueues = newQueues.slice(0, 2);
     if (route.route === RouteLocation.Station_LoadMonitor) {
       setRoute({
         route: RouteLocation.Station_LoadMonitor,
         loadNum: route.loadNum,
-        free: free,
         queues: newQueues,
       });
     } else {
-      setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: 1, free: free, queues: newQueues });
+      setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: 1, queues: newQueues });
     }
   }
 
@@ -131,15 +126,12 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
   let curType = StationMonitorType.LoadUnload;
   let loadNum = 1;
   let curInspType: string | null = null;
-  let currentQueues: string[] = [];
+  let currentQueues: ReadonlyArray<string> = [];
   switch (route.route) {
     case RouteLocation.Station_LoadMonitor:
       curType = StationMonitorType.LoadUnload;
       loadNum = route.loadNum;
-      currentQueues = [...route.queues];
-      if (route.free) {
-        currentQueues.push(freeMaterialSym);
-      }
+      currentQueues = route.queues;
       break;
     case RouteLocation.Station_InspectionMonitor:
       curType = StationMonitorType.Inspection;
@@ -151,7 +143,7 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
       break;
     case RouteLocation.Station_Queues:
       curType = StationMonitorType.Queues;
-      currentQueues = [...route.queues];
+      currentQueues = route.queues;
       break;
     case RouteLocation.Station_WashMonitor:
       curType = StationMonitorType.Wash;
@@ -215,11 +207,8 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
             value={currentQueues}
             inputProps={{ id: "queueselect" }}
             style={{ minWidth: "10em", marginTop: "0" }}
-            onChange={(e) => setLoadQueues(e.target.value)}
+            onChange={(e) => setLoadQueues(e.target.value as ReadonlyArray<string>)}
           >
-            <MenuItem key={freeMaterialSym} value={freeMaterialSym}>
-              Free Material
-            </MenuItem>
             {queueNames.map((q, idx) => (
               <MenuItem key={idx} value={q}>
                 {q}

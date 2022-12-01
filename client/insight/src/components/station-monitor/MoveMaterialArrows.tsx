@@ -37,14 +37,14 @@ import {
   computeArrows,
   MoveMaterialIdentifier,
   MoveMaterialNodeKind,
-  MoveArrowElemRect,
-  AllMoveMaterialArrows,
+  MoveMaterialElemRect,
+  AllMoveMaterialNodes,
   uniqueIdForNodeKind,
   memoPropsForNodeKind,
 } from "../../data/move-arrows.js";
 import { HashMap } from "@seedtactics/immutable-collections";
 
-function elementToRect(e: Element): MoveArrowElemRect {
+function elementToRect(e: Element): MoveMaterialElemRect {
   const r = e.getBoundingClientRect();
   return {
     left: r.left + window.scrollX,
@@ -76,7 +76,7 @@ const MoveMaterialArrows = React.memo(function MoveMaterialArrows({
   arrowsWithRefs,
 }: {
   container: React.RefObject<HTMLElement>;
-  arrowsWithRefs: AllMoveMaterialArrows<React.RefObject<HTMLDivElement>>;
+  arrowsWithRefs: AllMoveMaterialNodes<React.RefObject<HTMLDivElement>>;
 }) {
   const arrows = computeArrows(
     container.current ? elementToRect(container.current) : null,
@@ -110,11 +110,13 @@ const MoveMaterialArrowCtx = React.createContext<MoveMaterialArrowContext | unde
 
 export const MoveMaterialArrowContainer = React.memo(function MoveMaterialArrowContainer({
   children,
+  hideArrows,
 }: {
   children?: React.ReactNode;
+  hideArrows?: boolean;
 }) {
   const container = React.useRef<HTMLDivElement>(null);
-  const [nodes, setNodes] = React.useState<AllMoveMaterialArrows<React.RefObject<HTMLDivElement>>>(
+  const [nodes, setNodes] = React.useState<AllMoveMaterialNodes<React.RefObject<HTMLDivElement>>>(
     HashMap.empty()
   );
 
@@ -159,7 +161,7 @@ export const MoveMaterialArrowContainer = React.memo(function MoveMaterialArrowC
             <path d="M0,0 L0,6 L5,3 z" fill="rgba(0,0,0,0.5)" />
           </marker>
         </defs>
-        <MoveMaterialArrows container={container} arrowsWithRefs={nodes} />
+        {!hideArrows ? <MoveMaterialArrows container={container} arrowsWithRefs={nodes} /> : undefined}
       </svg>
       <div ref={container}>
         <MoveMaterialArrowCtx.Provider value={ctx}>{children}</MoveMaterialArrowCtx.Provider>
