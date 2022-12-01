@@ -40,17 +40,19 @@ import { toRawJs } from "../../test/to-raw-js.js";
 describe("load station status", () => {
   it("load 1 with no queues", () => {
     const status = CurrentStatus.fromJS(curSt);
-    expect(toRawJs(selectLoadStationAndQueueProps(1, [], false, status))).toMatchSnapshot("load 1 with no queues");
+    expect(toRawJs(selectLoadStationAndQueueProps(1, [], status))).toMatchSnapshot("load 1 with no queues");
   });
 
   it("load 2 with queue", () => {
     const status = CurrentStatus.fromJS(curSt);
-    expect(toRawJs(selectLoadStationAndQueueProps(2, ["Queue1"], false, status))).toMatchSnapshot("load 2 with queue");
+    expect(toRawJs(selectLoadStationAndQueueProps(2, ["Queue1"], status))).toMatchSnapshot(
+      "load 2 with queue"
+    );
   });
 
   it("load 3 with empty pallet", () => {
     const status = CurrentStatus.fromJS(curSt);
-    expect(toRawJs(selectLoadStationAndQueueProps(3, ["Queue2"], false, status))).toMatchSnapshot(
+    expect(toRawJs(selectLoadStationAndQueueProps(3, ["Queue2"], status))).toMatchSnapshot(
       "load 3 with empty pallet"
     );
   });
