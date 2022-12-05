@@ -386,7 +386,7 @@ const App = React.memo(function App(props: AppProps) {
   if (fmsInfo && (!serverSettings.requireLogin(fmsInfo) || fmsInfo.user)) {
     switch (route.route) {
       case routes.RouteLocation.Station_LoadMonitor:
-        page = <LoadStation loadNum={route.loadNum} showFree={route.free} queues={route.queues} />;
+        page = <LoadStation loadNum={route.loadNum} queues={route.queues} />;
         navigation = (p) => <StationToolbar full={p.full} />;
         showOperator = true;
         addBasicMaterialDialog = false;
@@ -410,7 +410,7 @@ const App = React.memo(function App(props: AppProps) {
         addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Station_Queues:
-        page = <Queues showFree={route.free} queues={route.queues} />;
+        page = <Queues queues={route.queues} />;
         navigation = (p) => <StationToolbar full={p.full} />;
         showOperator = true;
         addBasicMaterialDialog = false;

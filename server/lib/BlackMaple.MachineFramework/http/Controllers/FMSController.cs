@@ -70,8 +70,8 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember] public bool RequireWorkorderBeforeAllowWashComplete { get; init; }
 
     // Queues Page Options
-    [DataMember] public AddToQueueType AddToQueueType { get; init; }
-    [DataMember] public bool? AddRawMaterialAsUnassigned { get; init; }
+    [DataMember] public AddRawMaterialType AddRawMaterial { get; init; }
+    [DataMember] public AddInProcessMaterialType AddInProcessMaterial { get; init; }
     [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; init; }
     [DataMember(IsRequired = false, EmitDefaultValue = false)] public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
   }
@@ -109,8 +109,8 @@ namespace BlackMaple.MachineFramework.Controllers
         UseClientPrinterForLabels = _impl.PrintLabel == null,
         QuarantineQueue = _cfg.QuarantineQueue,
         RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,
-        AddToQueueType = _impl.AddToQueueType,
-        AddRawMaterialAsUnassigned = _impl.AddRawMaterialAsUnassigned,
+        AddRawMaterial = _impl.AddRawMaterial,
+        AddInProcessMaterial = _impl.AddInProcessMaterial,
         AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineAtLoadStation = _impl.Backend.SupportsQuarantineAtLoadStation,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,

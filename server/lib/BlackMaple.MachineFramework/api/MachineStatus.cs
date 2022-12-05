@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -31,29 +31,29 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import curSt from "../../test/status-mock.json";
-import { CurrentStatus } from "../network/api.js";
-import { selectLoadStationAndQueueProps } from "./load-station.js";
-import { describe, it, expect } from "vitest";
-import { toRawJs } from "../../test/to-raw-js.js";
+#nullable enable
 
-describe("load station status", () => {
-  it("load 1 with no queues", () => {
-    const status = CurrentStatus.fromJS(curSt);
-    expect(toRawJs(selectLoadStationAndQueueProps(1, [], status))).toMatchSnapshot("load 1 with no queues");
-  });
+using System;
+using System.Runtime.Serialization;
+using System.Collections.Immutable;
 
-  it("load 2 with queue", () => {
-    const status = CurrentStatus.fromJS(curSt);
-    expect(toRawJs(selectLoadStationAndQueueProps(2, ["Queue1"], status))).toMatchSnapshot(
-      "load 2 with queue"
-    );
-  });
+namespace BlackMaple.MachineFramework
+{
+  public sealed record MachineLocation
+  {
+    [DataMember(IsRequired = true)]
+    public string MachineGroup { get; init; } = "";
 
-  it("load 3 with empty pallet", () => {
-    const status = CurrentStatus.fromJS(curSt);
-    expect(toRawJs(selectLoadStationAndQueueProps(3, ["Queue2"], status))).toMatchSnapshot(
-      "load 3 with empty pallet"
-    );
-  });
-});
+    [DataMember(IsRequired = true)]
+    public int MachineNum { get; init; } = 1;
+
+    [DataMember(IsRequired = true)]
+    public bool Moving { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public ImmutableList<int> PossibleLoadStations { get; init; } = ImmutableList<int>.Empty;
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? CurrentLoadStation { get; init; }
+  }
+}

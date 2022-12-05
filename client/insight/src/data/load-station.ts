@@ -39,7 +39,7 @@ export interface PalletData {
   material: api.IInProcessMaterial[];
 }
 
-function buildPallets(
+function buildCellStatus(
   st: Readonly<api.ICurrentStatus>
 ): ReadonlyMap<string, { pal?: PalletData; queued?: PalletData }> {
   const matByPallet = new Map<string, api.IInProcessMaterial[]>();
@@ -88,23 +88,21 @@ function buildPallets(
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
-export interface LoadStationAndQueueData {
+export interface LoadStationData {
   readonly loadNum: number;
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: ReadonlyMap<number, MaterialList>;
   readonly stationStatus?: ReadonlyMap<string, { pal?: PalletData; queued?: PalletData }>;
   readonly freeLoadingMaterial: MaterialList;
-  readonly free?: MaterialList;
   readonly queues: ReadonlyMap<string, MaterialList>;
-  readonly allJobsHaveRawMatQueue: boolean;
 }
 
 export function selectLoadStationAndQueueProps(
   loadNum: number,
   queues: ReadonlyArray<string>,
-  displayFree: boolean,
   curSt: Readonly<api.ICurrentStatus>
-): LoadStationAndQueueData {
+): LoadStationData {
+  // search for pallet
   let pal: Readonly<api.IPalletStatus> | undefined;
   if (loadNum >= 0) {
     for (const p of Object.values(curSt.pallets)) {
@@ -118,44 +116,49 @@ export function selectLoadStationAndQueueProps(
     }
   }
 
-  const byFace = new Map<number, Array<api.IInProcessMaterial>>();
-  let palName: string | undefined;
-  let freeLoading: ReadonlyArray<Readonly<api.IInProcessMaterial>> = [];
-  let stationStatus: ReadonlyMap<string, { pal?: PalletData; queued?: PalletData }> | undefined;
-
-  // first free and queued material
-  let free: MaterialList | undefined;
-  if (displayFree) {
-    free = curSt.material.filter(
-      (m) =>
-        m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free
-    );
-  }
-
-  const queueMat = new Map<string, Array<api.IInProcessMaterial>>(queues.map((q) => [q, []]));
-  for (const m of curSt.material) {
-    if (m.location.type !== api.LocType.InQueue) {
-      continue;
-    }
-    const queue = m.location.currentQueue ?? "";
-    if (
-      queueMat.has(queue) ||
-      (pal !== undefined &&
+  // first queued and loading material.  Ensure all configured queues are present.
+  const queuesToShow = new Set(queues);
+  if (pal !== undefined) {
+    for (const m of curSt.material) {
+      if (
         m.action.type === api.ActionType.Loading &&
-        m.action.loadOntoPallet === pal.pallet) // show even if not listed as a queue
-    ) {
-      const old = queueMat.get(queue);
-      if (old === undefined) {
-        queueMat.set(queue, [m]);
-      } else {
-        old.push(m);
+        m.action.loadOntoPallet === pal.pallet &&
+        m.location.type === api.LocType.InQueue &&
+        m.location.currentQueue
+      ) {
+        queuesToShow.add(m.location.currentQueue);
       }
     }
   }
 
-  // load pallet material
+  const queueMat = new Map<string, Array<api.IInProcessMaterial>>(
+    LazySeq.of(queuesToShow).map((q) => [q, []])
+  );
+  const freeLoading: Array<Readonly<api.IInProcessMaterial>> = [];
+  for (const m of curSt.material) {
+    if (m.location.type === api.LocType.InQueue && m.location.currentQueue) {
+      if (queueMat.has(m.location.currentQueue)) {
+        const old = queueMat.get(m.location.currentQueue);
+        if (old === undefined) {
+          queueMat.set(m.location.currentQueue, [m]);
+        } else {
+          old.push(m);
+        }
+      }
+    } else if (
+      m.location.type === api.LocType.Free &&
+      pal !== undefined &&
+      m.action.type === api.ActionType.Loading &&
+      m.action.loadOntoPallet === pal.pallet
+    ) {
+      freeLoading.push(m);
+    }
+  }
+
+  // now material currently on the pallet
+  const byFace = new Map<number, Array<api.IInProcessMaterial>>();
   if (pal !== undefined) {
-    palName = pal.pallet;
+    const palName = pal.pallet;
 
     for (const m of curSt.material) {
       if (m.location.type === api.LocType.OnPallet && m.location.pallet === palName) {
@@ -168,45 +171,18 @@ export function selectLoadStationAndQueueProps(
       }
     }
 
-    freeLoading = curSt.material.filter(
-      (m) =>
-        m.action.type === api.ActionType.Loading &&
-        m.action.loadOntoPallet === palName &&
-        m.action.processAfterLoad === 1 &&
-        m.location.type === api.LocType.Free
-    );
-
     // make sure all face desinations exist
-    queueMat.forEach((mats) =>
-      mats.forEach((m) => {
-        if (m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === palName) {
-          const face = m.action.loadOntoFace;
-          if (face !== undefined && !byFace.has(face)) {
-            byFace.set(face, []);
-          }
-        }
-      })
-    );
-    [...freeLoading, ...(free || [])].forEach((m) => {
+    for (const m of LazySeq.of(queueMat)
+      .flatMap(([, m]) => m)
+      .concat(freeLoading)) {
       if (m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === palName) {
         const face = m.action.loadOntoFace;
         if (face !== undefined && !byFace.has(face)) {
           byFace.set(face, []);
         }
       }
-    });
-  } else {
-    stationStatus = buildPallets(curSt);
-    if (displayFree) {
-      freeLoading = curSt.material.filter(
-        (m) => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free
-      );
     }
   }
-
-  const allJobsHaveRawMatQueue = LazySeq.ofObject(curSt.jobs ?? {})
-    .flatMap(([_, j]) => j.procsAndPaths[0]?.paths ?? [])
-    .allMatch((p) => !!p.inputQueue && p.inputQueue !== "");
 
   byFace.forEach((face) => face.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
   queueMat.forEach((mats) => mats.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
@@ -215,10 +191,8 @@ export function selectLoadStationAndQueueProps(
     loadNum,
     pallet: pal,
     face: byFace,
-    stationStatus: stationStatus,
+    stationStatus: pal === undefined ? buildCellStatus(curSt) : undefined,
     freeLoadingMaterial: freeLoading,
-    free: free,
     queues: queueMat,
-    allJobsHaveRawMatQueue,
   };
 }

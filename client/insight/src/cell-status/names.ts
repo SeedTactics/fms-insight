@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { IHistoricData, IJob, ILogEntry, LogType } from "../network/api.js";
+import { ICurrentStatus, IHistoricData, IJob, ILogEntry, LogType } from "../network/api.js";
 import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
 
@@ -59,6 +59,8 @@ export const updateNames = conduit<ServerEventAndTime>(
       onNewJobs(t, evt.newJobs.jobs);
     } else if (evt.logEntry) {
       onLog(t, [evt.logEntry]);
+    } else if (evt.newCurrentStatus) {
+      onCurrentStatus(t, evt.newCurrentStatus);
     }
   }
 );
@@ -70,6 +72,8 @@ export const setNamesFromLast30Jobs = conduit<Readonly<IHistoricData>>(
 );
 
 export const setNamesFromLast30Evts = conduit<ReadonlyArray<Readonly<ILogEntry>>>(onLog);
+
+export const setNamesFromCurrentStatus = conduit<Readonly<ICurrentStatus>>(onCurrentStatus);
 
 function onNewJobs(t: TransactionInterface_UNSTABLE, newJobs: ReadonlyArray<Readonly<IJob>>): void {
   t.set(rawMaterialQueuesRW, (queues) => {
@@ -103,6 +107,10 @@ function onNewJobs(t: TransactionInterface_UNSTABLE, newJobs: ReadonlyArray<Read
       return new Set([...names, ...newC]);
     }
   });
+}
+
+function onCurrentStatus(t: TransactionInterface_UNSTABLE, st: Readonly<ICurrentStatus>): void {
+  onNewJobs(t, Object.values(st.jobs));
 }
 
 function onLog(t: TransactionInterface_UNSTABLE, evts: Iterable<Readonly<ILogEntry>>): void {

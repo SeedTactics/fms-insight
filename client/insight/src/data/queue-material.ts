@@ -40,6 +40,7 @@ export interface JobAndGroups {
   readonly job: Readonly<api.IActiveJob>;
   readonly machinedProcs: ReadonlyArray<{
     readonly lastProc: number;
+    readonly disabledMsg: string | null;
     readonly details?: string;
     readonly queues: ReadonlySet<string>;
   }>;
@@ -87,18 +88,35 @@ function joinDetails(details: ReadonlyArray<PathDetails>): string {
   );
 }
 
-export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
+export function extractJobGroups(
+  job: Readonly<api.IActiveJob>,
+  fmsInfo: Readonly<api.IFMSInfo>
+): JobAndGroups {
   const machinedProcs: {
     readonly lastProc: number;
+    readonly disabledMsg: string | null;
     readonly details?: string;
     readonly queues: ReadonlySet<string>;
   }[] = [];
+
+  const proc0Disabled =
+    fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAsUnassigned
+      ? "Raw material is added as unassigned to a specific job"
+      : fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireExistingMaterial
+      ? "Cannot add raw material that has not yet been created in the system"
+      : null;
+
+  const inProcDisabled =
+    fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.RequireExistingMaterial
+      ? "Cannot add in-process material that has not yet been created in the system"
+      : null;
 
   // Raw material
   const rawMatPaths = job.procsAndPaths[0].paths.map((_, pathIdx) => rawMatDetails(job, pathIdx));
   machinedProcs.push({
     lastProc: 0,
     details: joinRawMatDetails(rawMatPaths),
+    disabledMsg: proc0Disabled,
     queues: LazySeq.of(rawMatPaths)
       .collect((p) => p.queue)
       .toRSet((p) => p),
@@ -110,6 +128,7 @@ export function extractJobGroups(job: Readonly<api.IActiveJob>): JobAndGroups {
     machinedProcs.push({
       lastProc: procIdx + 1,
       details: joinDetails(paths),
+      disabledMsg: inProcDisabled,
       queues: LazySeq.of(paths)
         .collect((p) => p.queue)
         .toRSet((p) => p),
@@ -219,42 +238,11 @@ function compareByQueuePos(
 }
 
 export function selectQueueData(
-  displayFree: boolean,
   queuesToCheck: ReadonlyArray<string>,
   curSt: Readonly<api.ICurrentStatus>,
-  initialRawMatQueues: ReadonlySet<string>
+  rawMatQueues: ReadonlySet<string>
 ): ReadonlyArray<QueueData> {
   const queues: QueueData[] = [];
-
-  const rawMatQueues = new Set(initialRawMatQueues);
-  for (const [, j] of LazySeq.ofObject(curSt.jobs)) {
-    for (const path of j.procsAndPaths[0].paths) {
-      if (path.inputQueue && path.inputQueue !== "" && !rawMatQueues.has(path.inputQueue)) {
-        rawMatQueues.add(path.inputQueue);
-      }
-    }
-  }
-
-  // first free and queued material
-  if (displayFree) {
-    queues.push({
-      label: "Loading Material",
-      free: true,
-      rawMaterialQueue: false,
-      material: curSt.material.filter(
-        (m) => m.action.processAfterLoad === 1 && m.location.type === api.LocType.Free
-      ),
-    });
-    queues.push({
-      label: "In Process Material",
-      free: true,
-      rawMaterialQueue: false,
-      material: curSt.material.filter(
-        (m) =>
-          m.action.processAfterLoad && m.action.processAfterLoad > 1 && m.location.type === api.LocType.Free
-      ),
-    });
-  }
 
   const queueNames = [...queuesToCheck];
   queueNames.sort((a, b) => a.localeCompare(b));

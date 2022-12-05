@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v13.17.0.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v13.18.0.0 (NJsonSchema v10.8.0.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -2243,12 +2243,11 @@
           "RequireWorkorderBeforeAllowWashComplete": {
             "type": "boolean"
           },
-          "AddToQueueType": {
-            "$ref": "#/components/schemas/AddToQueueType"
+          "AddRawMaterial": {
+            "$ref": "#/components/schemas/AddRawMaterialType"
           },
-          "AddRawMaterialAsUnassigned": {
-            "type": "boolean",
-            "nullable": true
+          "AddInProcessMaterial": {
+            "$ref": "#/components/schemas/AddInProcessMaterialType"
           },
           "RequireOperatorNamePromptWhenAddingMaterial": {
             "type": "boolean",
@@ -2260,18 +2259,30 @@
           }
         }
       },
-      "AddToQueueType": {
+      "AddRawMaterialType": {
         "type": "string",
         "description": "",
         "x-enumNames": [
-          "RequireSerialAndExistingMaterial",
-          "AllowNewMaterialBySpecifyingJobAndSerial",
-          "AllowNewMaterialBySpecifyingJobWithoutSerial"
+          "AddAsUnassigned",
+          "RequireExistingMaterial",
+          "AddAndSpecifyJob"
         ],
         "enum": [
-          "RequireSerialAndExistingMaterial",
-          "AllowNewMaterialBySpecifyingJobAndSerial",
-          "AllowNewMaterialBySpecifyingJobWithoutSerial"
+          "AddAsUnassigned",
+          "RequireExistingMaterial",
+          "AddAndSpecifyJob"
+        ]
+      },
+      "AddInProcessMaterialType": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "RequireExistingMaterial",
+          "AddAndSpecifyJob"
+        ],
+        "enum": [
+          "RequireExistingMaterial",
+          "AddAndSpecifyJob"
         ]
       },
       "ServerEvent": {
@@ -3152,6 +3163,13 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/QueueSize"
             }
+          },
+          "MachineLocations": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/MachineLocation"
+            }
           }
         }
       },
@@ -3520,6 +3538,34 @@
         "additionalProperties": false,
         "properties": {
           "MaxSizeBeforeStopUnloading": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
+      },
+      "MachineLocation": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "MachineGroup": {
+            "type": "string"
+          },
+          "MachineNum": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Moving": {
+            "type": "boolean"
+          },
+          "PossibleLoadStations": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "CurrentLoadStation": {
             "type": "integer",
             "format": "int32",
             "nullable": true

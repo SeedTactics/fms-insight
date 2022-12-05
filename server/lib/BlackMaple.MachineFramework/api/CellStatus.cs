@@ -71,6 +71,11 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "Queues", IsRequired = true)]
     public ImmutableDictionary<string, QueueSize> QueueSizes { get; init; } = ImmutableDictionary<string, QueueSize>.Empty;
 
+    // The following is only filled in if the machines move to the load station
+    // instead of the pallets moving to the machine
+    [DataMember(Name = "MachineLocations", IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<MachineLocation>? MachineLocations { get; init; } = null;
+
     public static CurrentStatus operator %(CurrentStatus s, Action<ICurrentStatusDraft> f) => s.Produce(f);
   }
 

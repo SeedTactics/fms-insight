@@ -2,11 +2,9 @@
 
 exports[`load station status > load 1 with no queues > load 1 with no queues 1`] = `
 {
-  "allJobsHaveRawMatQueue": false,
   "face": Map {
     1 => [],
   },
-  "free": undefined,
   "freeLoadingMaterial": [
     {
       "action": {
@@ -61,11 +59,9 @@ exports[`load station status > load 1 with no queues > load 1 with no queues 1`]
 
 exports[`load station status > load 2 with queue > load 2 with queue 1`] = `
 {
-  "allJobsHaveRawMatQueue": false,
   "face": Map {
     1 => [],
   },
-  "free": undefined,
   "freeLoadingMaterial": [],
   "loadNum": 2,
   "pallet": {
@@ -182,9 +178,7 @@ exports[`load station status > load 2 with queue > load 2 with queue 1`] = `
 
 exports[`load station status > load 3 with empty pallet > load 3 with empty pallet 1`] = `
 {
-  "allJobsHaveRawMatQueue": false,
   "face": Map {},
-  "free": undefined,
   "freeLoadingMaterial": [],
   "loadNum": 3,
   "pallet": undefined,

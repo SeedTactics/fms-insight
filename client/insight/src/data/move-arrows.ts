@@ -80,9 +80,9 @@ export function memoPropsForNodeKind(kind: MoveMaterialNodeKind): ReadonlyArray<
     case MoveMaterialNodeKindType.Material:
       return [kind.type, kind.material];
     case MoveMaterialNodeKindType.FreeMaterialZone:
-      return [kind.type];
+      return [kind.type, null];
     case MoveMaterialNodeKindType.CompletedMaterialZone:
-      return [kind.type];
+      return [kind.type, null];
     case MoveMaterialNodeKindType.PalletFaceZone:
       return [kind.type, kind.face];
     case MoveMaterialNodeKindType.QueueZone:
@@ -90,45 +90,45 @@ export function memoPropsForNodeKind(kind: MoveMaterialNodeKind): ReadonlyArray<
   }
 }
 
-export type AllMoveMaterialArrows<T> = HashMap<
+export type AllMoveMaterialNodes<T> = HashMap<
   MoveMaterialIdentifier,
   MoveMaterialNodeKind & { readonly elem: T }
 >;
 
-export interface MoveMaterialArrow {
+export type MoveMaterialArrow = {
   readonly fromX: number;
   readonly fromY: number;
   readonly toX: number;
   readonly toY: number;
   readonly curveDirection: number; // 1 or -1
-}
+};
 
-export interface MoveArrowElemRect {
+export type MoveMaterialElemRect = {
   readonly left: number;
   readonly top: number;
   readonly width: number;
   readonly height: number;
   readonly bottom: number;
   readonly right: number;
-}
+};
 
-interface MoveMaterialByKind {
-  readonly freeMaterial?: MoveArrowElemRect;
-  readonly completedMaterial?: MoveArrowElemRect;
-  readonly faces: ReadonlyMap<number, MoveArrowElemRect>;
-  readonly queues: ReadonlyMap<string, MoveArrowElemRect>;
+type NodeRectsGroupedByKind = {
+  readonly freeMaterial?: MoveMaterialElemRect;
+  readonly completedMaterial?: MoveMaterialElemRect;
+  readonly faces: ReadonlyMap<number, MoveMaterialElemRect>;
+  readonly queues: ReadonlyMap<string, MoveMaterialElemRect>;
 
-  readonly material: ReadonlyArray<[MoveArrowElemRect, Readonly<api.IInProcessMaterial>]>;
-}
+  readonly material: ReadonlyArray<[MoveMaterialElemRect, Readonly<api.IInProcessMaterial>]>;
+};
 
-function buildMatByKind(allArrows: AllMoveMaterialArrows<MoveArrowElemRect>): MoveMaterialByKind {
-  let freeMaterial: MoveArrowElemRect | undefined;
-  let completedMaterial: MoveArrowElemRect | undefined;
-  const faces = new Map<number, MoveArrowElemRect>();
-  const queues = new Map<string, MoveArrowElemRect>();
-  const material = new Array<[MoveArrowElemRect, Readonly<api.IInProcessMaterial>]>();
+function groupMatByKind(allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>): NodeRectsGroupedByKind {
+  let freeMaterial: MoveMaterialElemRect | undefined;
+  let completedMaterial: MoveMaterialElemRect | undefined;
+  const faces = new Map<number, MoveMaterialElemRect>();
+  const queues = new Map<string, MoveMaterialElemRect>();
+  const material = new Array<[MoveMaterialElemRect, Readonly<api.IInProcessMaterial>]>();
 
-  for (const node of allArrows.values()) {
+  for (const node of allNodes.values()) {
     switch (node.type) {
       case MoveMaterialNodeKindType.FreeMaterialZone:
         freeMaterial = node.elem;
@@ -154,13 +154,13 @@ function buildMatByKind(allArrows: AllMoveMaterialArrows<MoveArrowElemRect>): Mo
 }
 
 export function computeArrows(
-  container: MoveArrowElemRect | null | undefined,
-  allArrows: AllMoveMaterialArrows<MoveArrowElemRect>
+  container: MoveMaterialElemRect | null | undefined,
+  allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>
 ): ReadonlyArray<MoveMaterialArrow> {
   if (!container) {
     return [];
   }
-  const byKind = buildMatByKind(allArrows);
+  const byKind = groupMatByKind(allNodes);
   if (!byKind.completedMaterial) {
     return [];
   }
@@ -188,7 +188,7 @@ export function computeArrows(
         });
         break;
       case api.ActionType.UnloadToInProcess: {
-        let dest: MoveArrowElemRect | undefined;
+        let dest: MoveMaterialElemRect | undefined;
         let lastSlotUsed: number;
         if (mat.action.unloadIntoQueue) {
           dest = byKind.queues.get(mat.action.unloadIntoQueue);
@@ -210,25 +210,43 @@ export function computeArrows(
       }
       case api.ActionType.Loading:
         if (mat.action.loadOntoFace) {
-          const face = byKind.faces.get(mat.action.loadOntoFace);
-          if (face !== undefined) {
-            const fromQueue = rect.left > face.right;
-            if (fromQueue) {
+          if (mat.location.type === api.LocType.OnPallet) {
+            if (
+              mat.location.pallet === mat.action.loadOntoPallet &&
+              mat.location.face === mat.action.loadOntoFace
+            ) {
+              // reclamp
+              arrows.push({
+                fromX: rect.right,
+                fromY: rect.top + (rect.height * 3) / 4,
+                toX: rect.left + (rect.width * 7) / 8,
+                toY: rect.bottom,
+                curveDirection: -1,
+              });
+            } else {
+              // move to different face
+              const face = byKind.faces.get(mat.action.loadOntoFace);
+              if (face) {
+                arrows.push({
+                  fromX: rect.left,
+                  fromY: rect.top + rect.height / 2,
+                  toX: rect.left,
+                  toY: face.top + 10,
+                  curveDirection: 1,
+                });
+              }
+            }
+          } else {
+            // loading from queues or free Material
+            const face = byKind.faces.get(mat.action.loadOntoFace);
+            if (face !== undefined) {
               const faceSpotsUsed = faceDestUsed.get(mat.action.loadOntoFace) ?? 0;
               faceDestUsed.set(mat.action.loadOntoFace, faceSpotsUsed + 1);
               arrows.push({
                 fromX: rect.left,
                 fromY: rect.top + rect.height / 2,
-                toX: face.right - 10,
-                toY: face.top + 20 * (faceSpotsUsed + 1),
-                curveDirection: 1,
-              });
-            } else {
-              arrows.push({
-                fromX: rect.left,
-                fromY: rect.top + rect.height / 2,
-                toX: rect.left,
-                toY: face.top + 10,
+                toX: face.right - 20,
+                toY: face.top + 50 + 20 * faceSpotsUsed,
                 curveDirection: 1,
               });
             }

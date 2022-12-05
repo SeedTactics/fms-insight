@@ -114,6 +114,7 @@ export const onLoadLast30Log = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
 export const onLoadCurrentSt = conduit<Readonly<ICurrentStatus>>(
   (t: TransactionInterface_UNSTABLE, curSt: Readonly<ICurrentStatus>) => {
     currentSt.setCurrentStatus.transform(t, curSt);
+    names.setNamesFromCurrentStatus.transform(t, curSt);
   }
 );
 

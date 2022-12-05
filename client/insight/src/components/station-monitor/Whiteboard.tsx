@@ -60,6 +60,7 @@ export interface WhiteboardRegionProps {
   readonly label: string;
   readonly spaceAround?: boolean;
   readonly flexStart?: boolean;
+  readonly column?: boolean;
   readonly borderLeft?: boolean;
   readonly borderBottom?: boolean;
   readonly borderRight?: boolean;
@@ -97,7 +98,13 @@ export const WhiteboardRegion = React.memo(function WhiteboardRegion(props: Whit
           {props.addMaterialButton}
         </div>
       ) : undefined}
-      <div style={{ justifyContent, width: "100%", display: "flex", flexWrap: "wrap" }}>{props.children}</div>
+      {props.column ? (
+        <div style={{ width: "100%" }}>{props.children}</div>
+      ) : (
+        <div style={{ justifyContent, width: "100%", display: "flex", flexWrap: "wrap" }}>
+          {props.children}
+        </div>
+      )}
     </div>
   );
 });
