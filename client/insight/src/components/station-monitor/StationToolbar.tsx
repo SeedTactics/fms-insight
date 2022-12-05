@@ -101,9 +101,6 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
     }
   }
 
-  // the material-ui type bindings specify `e.target.value` to have type string, but
-  // when multiple selects are enabled it is actually a type string[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function setLoadQueues(newQueues: ReadonlyArray<string>) {
     newQueues = newQueues.slice(0, 2);
     if (route.route === RouteLocation.Station_LoadMonitor) {
@@ -117,9 +114,7 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function setStandaloneQueues(newQueuesAny: any) {
-    const newQueues = newQueuesAny as ReadonlyArray<string>;
+  function setStandaloneQueues(newQueues: ReadonlyArray<string>) {
     setRoute({ route: RouteLocation.Station_Queues, queues: newQueues });
   }
 
@@ -239,7 +234,7 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
             value={currentQueues}
             inputProps={{ id: "queueselect" }}
             style={{ marginTop: "0" }}
-            onChange={(e) => setStandaloneQueues(e.target.value)}
+            onChange={(e) => setStandaloneQueues(e.target.value as ReadonlyArray<string>)}
           >
             {queueNames.map((q, idx) => (
               <MenuItem key={idx} value={q}>
