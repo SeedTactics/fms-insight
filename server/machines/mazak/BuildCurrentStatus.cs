@@ -354,15 +354,21 @@ namespace MazakMachineInterface
           //The thread which copies jobs will soon notice and update the database
           //so we can ignore it for now.
           !jobsByUniq.ContainsKey(j.UniqueStr)
-        ).Select(j => j.CloneToDerived<ActiveJob, Job>() with
+        ).Select(j =>
         {
-          Completed = j.Processes.Select(p => ImmutableList.Create(new int[p.Paths.Count])).ToImmutableList(),
-          RemainingToStart = j.Cycles,
-          Decrements = j.Decrements,
-          ScheduleId = j.ScheduleId,
-          CopiedToSystem = false,
-          Precedence = null,
-          AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(j.UniqueStr))
+          precedence += 1;
+          return j.CloneToDerived<ActiveJob, Job>() with
+          {
+            Completed = j.Processes.Select(p => ImmutableList.Create(new int[p.Paths.Count])).ToImmutableList(),
+            RemainingToStart = j.Cycles,
+            Decrements = j.Decrements,
+            ScheduleId = j.ScheduleId,
+            CopiedToSystem = false,
+            Precedence = j.Processes.Select(p =>
+              Enumerable.Range(1, p.Paths.Count).Select(x => precedence).ToImmutableList()
+            ).ToImmutableList(),
+            AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(j.UniqueStr))
+          };
         });
 
       return new CurrentStatus()

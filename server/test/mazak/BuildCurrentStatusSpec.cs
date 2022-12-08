@@ -279,4 +279,55 @@ namespace MachineWatchTest
     }
 
   }
+
+  /*
+    public class ManualCurrentStatusFromDebug
+    {
+      [Fact]
+      public void FromDebug()
+      {
+        var path = "/home/wuzzeb/projects/customer-data/parker-data/Dec8_22";
+        var db = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), Path.Combine(path, "FMSInsight", "log.db"));
+        using var conn = db.OpenConnection();
+
+        var data = JsonConvert.DeserializeObject<MazakCurrentStatusAndTools>(
+          File.ReadAllText(Path.Combine(path, "FMSInsight", "mazakdata.json"))
+        );
+
+
+        var queueSyncFault = Substitute.For<IQueueSyncFault>();
+        queueSyncFault.CurrentQueueMismatch.Returns(false);
+
+        var machGroupName = Substitute.For<IMachineGroupName>();
+        machGroupName.MachineGroupName.Returns("MC");
+
+        var all = new MazakAllData()
+        {
+          Schedules = data.Schedules,
+          LoadActions = data.LoadActions,
+          PalletSubStatuses = data.PalletSubStatuses,
+          PalletPositions = data.PalletPositions,
+          Alarms = data.Alarms,
+          Parts = data.Parts,
+          Pallets = Enumerable.Empty<MazakPalletRow>(),
+          MainPrograms = Enumerable.Empty<MazakProgramRow>(),
+          Fixtures = Enumerable.Empty<MazakFixtureRow>()
+        };
+
+        var curSt = BuildCurrentStatus.Build(conn, new FMSSettings(), machGroupName, queueSyncFault, MazakDbType.MazakSmooth, all, new DateTime(2022, 12, 8, 14, 0, 0, DateTimeKind.Utc));
+
+        var jsonsettings = new Newtonsoft.Json.JsonSerializerSettings();
+        Startup.NewtonsoftJsonSettings(jsonsettings);
+        jsonsettings.Formatting = Newtonsoft.Json.Formatting.Indented;
+
+        File.WriteAllText(Path.Combine(path, "status.json"), JsonConvert.SerializeObject(curSt, jsonsettings));
+
+        var apiCurSt = JsonConvert.DeserializeObject<BlackMaple.FMSInsight.API.CurrentStatus>(JsonConvert.SerializeObject(curSt, jsonsettings), jsonsettings);
+
+        var converted = BlackMaple.SAIL.OldRemotingAPI.JobConverter.ToMachineWatchCurrentStatus(apiCurSt);
+
+        File.WriteAllText(Path.Combine(path, "converted.json"), JsonConvert.SerializeObject(converted, jsonsettings));
+      }
+    }
+  */
 }
