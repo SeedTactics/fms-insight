@@ -41,6 +41,8 @@ namespace MazakMachineInterface
 
   public class BuildMazakSchedules
   {
+    public static Serilog.ILogger Log = Serilog.Log.ForContext<BuildMazakSchedules>();
+
 
     public static (MazakWriteData, ISet<string>)
       RemoveCompletedSchedules(MazakCurrentStatus mazakData)
@@ -117,8 +119,8 @@ namespace MazakMachineInterface
         }
         if (downloadUid < 0)
         {
-          throw new BlackMaple.MachineFramework.BadRequestException(
-            "Attempting to create schedule for " + part.UniqueStr + " but a part does not exist");
+          Log.Error("Attempting to create schedule for {uniq} but a part does not exist, with {@allData}", part.UniqueStr, mazakData);
+          continue;
         }
 
         if (!scheduledParts.Contains(mazakPartName))
