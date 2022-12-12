@@ -1175,7 +1175,10 @@ namespace BlackMaple.FMSInsight.Niigata
           extraData: !ss.Revision.HasValue ? null : new Dictionary<string, string> {
               {"ProgramRevision", ss.Revision.Value.ToString()}
           },
-          pockets: tools?.Select(t => t.ToEventDBToolSnapshot())
+          pockets: tools?.Select(t => t.ToToolInMachine(
+            machineGroup: pallet.Status.CurStation.Location.StationGroup,
+            machineNum: pallet.Status.CurStation.Location.Num
+          ))
         );
 
         foreach (var m in matOnFace)
@@ -1224,12 +1227,12 @@ namespace BlackMaple.FMSInsight.Niigata
 
       string statName;
       int statNum;
-      IEnumerable<ToolPocketSnapshot> toolsAtStart;
+      IEnumerable<ToolSnapshot> toolsAtStart;
       if (machStart != null)
       {
         statName = machStart.LocationName;
         statNum = machStart.LocationNum;
-        toolsAtStart = logDB.ToolPocketSnapshotForCycle(machStart.Counter) ?? Enumerable.Empty<ToolPocketSnapshot>();
+        toolsAtStart = logDB.ToolPocketSnapshotForCycle(machStart.Counter) ?? Enumerable.Empty<ToolSnapshot>();
       }
       else if (ss.IccStepNum <= pallet.Status.Tracking.ExecutedStationNumber.Count)
       {
@@ -1283,7 +1286,10 @@ namespace BlackMaple.FMSInsight.Niigata
                 {"ProgramRevision", ss.Revision.Value.ToString()}
         },
         tools: toolsAtStart == null || toolsAtEnd == null ? null :
-          ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd.Select(t => t.ToEventDBToolSnapshot()))
+          ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd.Select(t => t.ToToolInMachine(
+            machineGroup: statName,
+            machineNum: statNum
+          )))
       );
     }
 

@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 28;
+    private const int Version = 29;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -130,7 +130,7 @@ namespace BlackMaple.MachineFramework
             "PRIMARY KEY(Counter, Key))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE station_tool_use(Counter INTEGER, Tool TEXT, Pocket INTEGER, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, " +
+        cmd.CommandText = "CREATE TABLE station_tool_use(Counter INTEGER, Tool TEXT, Pocket INTEGER, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, SerialAtStart TEXT, SerialAtEnd TEXT, CountInCycle INTEGER, CountAtEndOfCycle INTEGER, LifeCount INTEGER, " +
             "PRIMARY KEY(Counter, Tool, Pocket))";
         cmd.ExecuteNonQuery();
 
@@ -145,7 +145,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
+        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, CurrentCount INTEGER, LifeCount INTEGER, Serial TEXT, " +
             "PRIMARY KEY(Counter, PocketNumber, Tool))";
         cmd.ExecuteNonQuery();
 
@@ -372,6 +372,8 @@ namespace BlackMaple.MachineFramework
           if (curVersion < 27) Ver26ToVer27(trans);
 
           if (curVersion < 28) Ver27ToVer28(trans, updateJobsTables);
+
+          if (curVersion < 29) Ver28ToVer29(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -860,6 +862,7 @@ namespace BlackMaple.MachineFramework
     {
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
+        // will be altered in Ver28to29, but that is OK
         cmd.CommandText = "CREATE TABLE station_tool_use(Counter INTEGER, Tool TEXT, Pocket INTEGER, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, " +
             "PRIMARY KEY(Counter, Tool, Pocket))";
         cmd.ExecuteNonQuery();
@@ -883,6 +886,28 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "DROP INDEX sim_station_time_idx";
         cmd.ExecuteNonQuery();
       }
+    }
+
+    private static void Ver28ToVer29(IDbTransaction transaction)
+    {
+      using var cmd = transaction.Connection.CreateCommand();
+      cmd.Transaction = transaction;
+      cmd.CommandText = "ALTER TABLE station_tool_use ADD SerialAtStart TEXT";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE station_tool_use ADD SerialAtEnd TEXT";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE station_tool_use ADD CountInCycle INTEGER";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE station_tool_use ADD CountAtEndOfCycle INTEGER";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE station_tool_use ADD LifeCount INTEGER";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE tool_snapshots ADD CurrentCount INTEGER";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE tool_snapshots ADD LifeCount INTEGER";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE tool_snapshots ADD Serial TEXT";
+      cmd.ExecuteNonQuery();
     }
 
 

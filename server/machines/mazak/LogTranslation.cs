@@ -129,7 +129,7 @@ namespace MazakMachineInterface
             // There should never be any pending loads since the pallet movement event should have fired.
             // Just in case, we check for pending loads here
             cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", false, cycle);
-            IEnumerable<ToolPocketSnapshot> pockets = null;
+            IEnumerable<ToolSnapshot> pockets = null;
             if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
             {
               pockets = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
@@ -170,7 +170,7 @@ namespace MazakMachineInterface
 
           var machStart = FindMachineStart(e, cycle, e.StationNumber);
           TimeSpan elapsed;
-          IEnumerable<ToolPocketSnapshot> toolsAtStart;
+          IEnumerable<ToolSnapshot> toolsAtStart;
           if (machStart != null)
           {
             elapsed = e.TimeUTC.Subtract(machStart.EndTimeUTC);
@@ -180,7 +180,7 @@ namespace MazakMachineInterface
           {
             Log.Debug("Calculating elapsed time for {@entry} did not find a previous cycle event", e);
             elapsed = TimeSpan.Zero;
-            toolsAtStart = Enumerable.Empty<ToolPocketSnapshot>();
+            toolsAtStart = Enumerable.Empty<ToolSnapshot>();
           }
           var toolsAtEnd = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
 
@@ -974,7 +974,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Tools
-    private IEnumerable<ToolPocketSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
+    private IEnumerable<ToolSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
     {
       if (tools == null) return null;
       return tools
@@ -986,12 +986,15 @@ namespace MazakMachineInterface
           {
             toolName = _mazakConfig.ExtractToolName(t);
           }
-          return new ToolPocketSnapshot()
+          return new ToolSnapshot()
           {
-            Tool = toolName,
-            PocketNumber = t.PocketNumber.Value,
+            ToolName = toolName,
+            Pocket = t.PocketNumber.Value,
             CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
-            ToolLife = TimeSpan.FromSeconds(t.LifeSpan ?? 0)
+            TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0),
+            Serial = null,
+            CurrentUseCount = null,
+            TotalLifeCount = null,
           };
         })
         .ToList();

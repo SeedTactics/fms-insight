@@ -65,7 +65,7 @@ namespace BlackMaple.MachineFramework
         detailCmd.CommandText = "SELECT Key, Value FROM program_details WHERE Counter = $cntr";
         detailCmd.Parameters.Add("cntr", SqliteType.Integer);
 
-        toolCmd.CommandText = "SELECT Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange FROM station_tool_use WHERE Counter = $cntr";
+        toolCmd.CommandText = "SELECT Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange, SerialAtStart, SerialAtEnd, CountInCycle, CountAtEndOfCycle, LifeCount FROM station_tool_use WHERE Counter = $cntr";
         toolCmd.Parameters.Add("cntr", SqliteType.Integer);
 
         while (reader.Read())
@@ -194,10 +194,15 @@ namespace BlackMaple.MachineFramework
               {
                 Tool = toolReader.GetString(0),
                 Pocket = toolReader.GetInt32(1),
-                ToolUseDuringCycle = TimeSpan.FromTicks(toolReader.GetInt64(2)),
-                TotalToolUseAtEndOfCycle = TimeSpan.FromTicks(toolReader.GetInt64(3)),
-                ConfiguredToolLife = TimeSpan.FromTicks(toolReader.GetInt64(4)),
+                ToolUseDuringCycle = toolReader.IsDBNull(2) ? null : TimeSpan.FromTicks(toolReader.GetInt64(2)),
+                TotalToolUseAtEndOfCycle = toolReader.IsDBNull(3) ? null : TimeSpan.FromTicks(toolReader.GetInt64(3)),
+                ConfiguredToolLife = toolReader.IsDBNull(4) ? null : TimeSpan.FromTicks(toolReader.GetInt64(4)),
                 ToolChangeOccurred = toolReader.IsDBNull(5) ? null : toolReader.GetBoolean(5) ? (bool?)true : null,
+                ToolSerialAtStartOfCycle = toolReader.IsDBNull(6) ? null : toolReader.GetString(6),
+                ToolSerialAtEndOfCycle = toolReader.IsDBNull(7) ? null : toolReader.GetString(7),
+                ToolUseCountDuringCycle = toolReader.IsDBNull(8) ? null : toolReader.GetInt32(8),
+                TotalToolUseCountAtEndOfCycle = toolReader.IsDBNull(9) ? null : toolReader.GetInt32(9),
+                ConfiguredToolLifeCount = toolReader.IsDBNull(10) ? null : toolReader.GetInt32(10),
               });
             }
           }
@@ -553,23 +558,26 @@ namespace BlackMaple.MachineFramework
 
     }
 
-    public IEnumerable<ToolPocketSnapshot> ToolPocketSnapshotForCycle(long counter)
+    public IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter)
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT PocketNumber, Tool, CurrentUse, ToolLife FROM tool_snapshots WHERE Counter = $cntr";
+        cmd.CommandText = "SELECT PocketNumber, Tool, CurrentUse, ToolLife, CurrentCount, LifeCount, Serial FROM tool_snapshots WHERE Counter = $cntr";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
 
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())
           {
-            yield return new ToolPocketSnapshot()
+            yield return new ToolSnapshot()
             {
-              PocketNumber = reader.GetInt32(0),
-              Tool = reader.GetString(1),
-              CurrentUse = TimeSpan.FromTicks(reader.GetInt64(2)),
-              ToolLife = TimeSpan.FromTicks(reader.GetInt64(3))
+              Pocket = reader.GetInt32(0),
+              ToolName = reader.GetString(1),
+              CurrentUse = reader.IsDBNull(2) ? null : TimeSpan.FromTicks(reader.GetInt64(2)),
+              TotalLifeTime = reader.IsDBNull(3) ? null : TimeSpan.FromTicks(reader.GetInt64(3)),
+              CurrentUseCount = reader.IsDBNull(4) ? null : (int?)reader.GetInt32(4),
+              TotalLifeCount = reader.IsDBNull(5) ? null : (int?)reader.GetInt32(5),
+              Serial = reader.IsDBNull(6) ? null : reader.GetString(6)
             };
           }
         }
@@ -862,7 +870,7 @@ namespace BlackMaple.MachineFramework
       private Dictionary<string, string> _details = new Dictionary<string, string>();
       public IDictionary<string, string> ProgramDetails { get { return _details; } }
       public ImmutableList<ToolUse> Tools { get; init; } = ImmutableList<ToolUse>.Empty;
-      public IEnumerable<ToolPocketSnapshot> ToolPockets { get; init; }
+      public IEnumerable<ToolSnapshot> ToolPockets { get; init; }
 
       internal LogEntry ToLogEntry(long newCntr, Func<long, MaterialDetails> getDetails)
       {
@@ -1025,7 +1033,7 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT INTO station_tool_use(Counter, Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange) VALUES ($cntr,$tool,$pocket,$use,$totalUse,$life,$change)";
+        cmd.CommandText = "INSERT INTO station_tool_use(Counter, Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange, SerialAtStart, SerialAtEnd, CountInCycle, CountAtEndOfCycle, LifeCount) VALUES ($cntr,$tool,$pocket,$use,$totalUse,$life,$change,$serStart,$serEnd,$countIn,$countEnd,$lifeCount)";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         cmd.Parameters.Add("tool", SqliteType.Text);
         cmd.Parameters.Add("pocket", SqliteType.Integer);
@@ -1033,21 +1041,31 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("totalUse", SqliteType.Integer);
         cmd.Parameters.Add("life", SqliteType.Integer);
         cmd.Parameters.Add("change", SqliteType.Integer);
+        cmd.Parameters.Add("serStart", SqliteType.Text);
+        cmd.Parameters.Add("serEnd", SqliteType.Text);
+        cmd.Parameters.Add("countIn", SqliteType.Integer);
+        cmd.Parameters.Add("countEnd", SqliteType.Integer);
+        cmd.Parameters.Add("lifeCount", SqliteType.Integer);
 
         foreach (var tool in tools)
         {
           cmd.Parameters[1].Value = tool.Tool;
           cmd.Parameters[2].Value = tool.Pocket;
-          cmd.Parameters[3].Value = tool.ToolUseDuringCycle.Ticks;
-          cmd.Parameters[4].Value = tool.TotalToolUseAtEndOfCycle.Ticks;
-          cmd.Parameters[5].Value = (tool.ConfiguredToolLife ?? TimeSpan.Zero).Ticks;
-          cmd.Parameters[6].Value = tool.ToolChangeOccurred.GetValueOrDefault(false);
+          cmd.Parameters[3].Value = tool.ToolUseDuringCycle.HasValue ? tool.ToolUseDuringCycle.Value.Ticks : DBNull.Value;
+          cmd.Parameters[4].Value = tool.TotalToolUseAtEndOfCycle.HasValue ? tool.TotalToolUseAtEndOfCycle.Value.Ticks : DBNull.Value;
+          cmd.Parameters[5].Value = tool.ConfiguredToolLife.HasValue ? tool.ConfiguredToolLife.Value.Ticks : DBNull.Value;
+          cmd.Parameters[6].Value = tool.ToolChangeOccurred.GetValueOrDefault(false) ? true : DBNull.Value;
+          cmd.Parameters[7].Value = tool.ToolSerialAtStartOfCycle == null ? DBNull.Value : (object)tool.ToolSerialAtStartOfCycle;
+          cmd.Parameters[8].Value = tool.ToolSerialAtEndOfCycle == null ? DBNull.Value : (object)tool.ToolSerialAtEndOfCycle;
+          cmd.Parameters[9].Value = tool.ToolUseCountDuringCycle.HasValue ? tool.ToolUseCountDuringCycle.Value : DBNull.Value;
+          cmd.Parameters[10].Value = tool.TotalToolUseCountAtEndOfCycle.HasValue ? tool.TotalToolUseCountAtEndOfCycle.Value : DBNull.Value;
+          cmd.Parameters[11].Value = tool.ConfiguredToolLifeCount.HasValue ? tool.ConfiguredToolLifeCount.Value : DBNull.Value;
           cmd.ExecuteNonQuery();
         }
       }
     }
 
-    private void AddToolSnapshots(long counter, IEnumerable<ToolPocketSnapshot> pockets, IDbTransaction trans)
+    private void AddToolSnapshots(long counter, IEnumerable<ToolSnapshot> pockets, IDbTransaction trans)
     {
       if (pockets == null || !pockets.Any()) return;
 
@@ -1055,19 +1073,25 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT OR REPLACE INTO tool_snapshots(Counter, PocketNumber, Tool, CurrentUse, ToolLife) VALUES ($cntr,$pocket,$tool,$use,$life)";
+        cmd.CommandText = "INSERT OR REPLACE INTO tool_snapshots(Counter, PocketNumber, Tool, CurrentUse, ToolLife, CurrentCount, LifeCount, Serial) VALUES ($cntr,$pocket,$tool,$use,$life,$useCnt,$lifeCnt,$ser)";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         cmd.Parameters.Add("pocket", SqliteType.Integer);
         cmd.Parameters.Add("tool", SqliteType.Text);
         cmd.Parameters.Add("use", SqliteType.Integer);
         cmd.Parameters.Add("life", SqliteType.Integer);
+        cmd.Parameters.Add("useCnt", SqliteType.Integer);
+        cmd.Parameters.Add("lifeCnt", SqliteType.Integer);
+        cmd.Parameters.Add("ser", SqliteType.Text);
 
         foreach (var pocket in pockets)
         {
-          cmd.Parameters[1].Value = pocket.PocketNumber;
-          cmd.Parameters[2].Value = pocket.Tool;
-          cmd.Parameters[3].Value = pocket.CurrentUse.Ticks;
-          cmd.Parameters[4].Value = pocket.ToolLife.Ticks;
+          cmd.Parameters[1].Value = pocket.Pocket;
+          cmd.Parameters[2].Value = pocket.ToolName;
+          cmd.Parameters[3].Value = pocket.CurrentUse.HasValue ? pocket.CurrentUse.Value.Ticks : DBNull.Value;
+          cmd.Parameters[4].Value = pocket.TotalLifeTime.HasValue ? pocket.TotalLifeTime.Value.Ticks : DBNull.Value;
+          cmd.Parameters[5].Value = pocket.CurrentUseCount.HasValue ? pocket.CurrentUseCount.Value : DBNull.Value;
+          cmd.Parameters[6].Value = pocket.TotalLifeCount.HasValue ? pocket.TotalLifeCount.Value : DBNull.Value;
+          cmd.Parameters[7].Value = pocket.Serial == null ? DBNull.Value : (object)pocket.Serial;
           cmd.ExecuteNonQuery();
         }
       }
@@ -1329,7 +1353,7 @@ namespace BlackMaple.MachineFramework
         string program,
         DateTime timeUTC,
         IDictionary<string, string> extraData = null,
-        IEnumerable<ToolPocketSnapshot> pockets = null,
+        IEnumerable<ToolSnapshot> pockets = null,
         string foreignId = null,
         string originalMessage = null
     )
@@ -1368,7 +1392,7 @@ namespace BlackMaple.MachineFramework
         TimeSpan active,
         IDictionary<string, string> extraData = null,
         ImmutableList<ToolUse> tools = null,
-        IEnumerable<ToolPocketSnapshot> pockets = null,
+        IEnumerable<ToolSnapshot> pockets = null,
         string foreignId = null,
         string originalMessage = null
     )

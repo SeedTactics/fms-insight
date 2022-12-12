@@ -68,20 +68,11 @@ namespace BlackMaple.FMSInsight.Niigata
         MachineNum = machineNum,
         Pocket = Pocket,
         ToolName = Group.ToString(),
+        Serial = null,
         CurrentUse = TimeSpan.FromSeconds(LifeTime),
         TotalLifeTime = TimeSpan.FromSeconds(LifeTime + RestTime),
-      };
-    }
-
-    public ToolPocketSnapshot ToEventDBToolSnapshot()
-    {
-      return new ToolPocketSnapshot()
-      {
-
-        PocketNumber = Pocket,
-        Tool = Group.ToString(),
-        CurrentUse = TimeSpan.FromSeconds(LifeTime),
-        ToolLife = TimeSpan.FromSeconds(LifeTime + RestTime),
+        CurrentUseCount = null,
+        TotalLifeCount = null,
       };
     }
   }

@@ -40,35 +40,43 @@ namespace BlackMaple.MachineFramework
 {
   public static class ToolSnapshotDiff
   {
-    public static ImmutableList<ToolUse> Diff(IEnumerable<ToolPocketSnapshot> start, IEnumerable<ToolPocketSnapshot> end)
+    public static ImmutableList<ToolUse> Diff(IEnumerable<ToolSnapshot> start, IEnumerable<ToolSnapshot> end)
     {
-      if (start == null) start = Enumerable.Empty<ToolPocketSnapshot>();
-      if (end == null) end = Enumerable.Empty<ToolPocketSnapshot>();
-      var endPockets = new Dictionary<(int, string), ToolPocketSnapshot>();
+      if (start == null) start = Enumerable.Empty<ToolSnapshot>();
+      if (end == null) end = Enumerable.Empty<ToolSnapshot>();
+      var endPockets = new Dictionary<(int, string), ToolSnapshot>();
       foreach (var t in end)
       {
-        endPockets[(t.PocketNumber, t.Tool)] = t;
+        endPockets[(t.Pocket, t.ToolName)] = t;
       }
 
       var tools = ImmutableList.CreateBuilder<ToolUse>();
 
       foreach (var startPocket in start)
       {
-        if (endPockets.TryGetValue((startPocket.PocketNumber, startPocket.Tool), out var endPocket))
+        if (endPockets.TryGetValue((startPocket.Pocket, startPocket.ToolName), out var endPocket))
         {
-          endPockets.Remove((startPocket.PocketNumber, startPocket.Tool));
+          endPockets.Remove((startPocket.Pocket, startPocket.ToolName));
 
           if (startPocket.CurrentUse < endPocket.CurrentUse)
           {
             // no tool change
             tools.Add(new ToolUse()
             {
-              Tool = startPocket.Tool,
-              Pocket = startPocket.PocketNumber,
-              ToolUseDuringCycle = endPocket.CurrentUse - startPocket.CurrentUse,
+              Tool = startPocket.ToolName,
+              Pocket = startPocket.Pocket,
+              ToolUseDuringCycle =
+                endPocket.CurrentUse.HasValue && startPocket.CurrentUse.HasValue
+                  ? endPocket.CurrentUse.Value - startPocket.CurrentUse.Value
+                  : null,
               TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-              ConfiguredToolLife = endPocket.ToolLife,
-              ToolChangeOccurred = false
+              ConfiguredToolLife = endPocket.TotalLifeTime,
+              ToolChangeOccurred = false,
+              ToolSerialAtStartOfCycle = null,
+              ToolSerialAtEndOfCycle = null,
+              ToolUseCountDuringCycle = null,
+              TotalToolUseCountAtEndOfCycle = null,
+              ConfiguredToolLifeCount = null,
             });
           }
           else if (endPocket.CurrentUse < startPocket.CurrentUse)
@@ -76,12 +84,20 @@ namespace BlackMaple.MachineFramework
             // there was a tool change
             tools.Add(new ToolUse()
             {
-              Tool = startPocket.Tool,
-              Pocket = startPocket.PocketNumber,
-              ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)) + endPocket.CurrentUse,
+              Tool = startPocket.ToolName,
+              Pocket = startPocket.Pocket,
+              ToolUseDuringCycle =
+                startPocket.TotalLifeTime.HasValue && startPocket.CurrentUse.HasValue && endPocket.CurrentUse.HasValue
+                 ? TimeSpan.FromTicks(Math.Max(0, startPocket.TotalLifeTime.Value.Ticks - startPocket.CurrentUse.Value.Ticks)) + endPocket.CurrentUse.Value
+                 : null,
               TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-              ConfiguredToolLife = startPocket.ToolLife,
-              ToolChangeOccurred = true
+              ConfiguredToolLife = startPocket.TotalLifeTime,
+              ToolChangeOccurred = true,
+              ToolSerialAtStartOfCycle = null,
+              ToolSerialAtEndOfCycle = null,
+              ToolUseCountDuringCycle = null,
+              TotalToolUseCountAtEndOfCycle = null,
+              ConfiguredToolLifeCount = null,
             });
           }
           else
@@ -95,12 +111,20 @@ namespace BlackMaple.MachineFramework
           // assume start tool was used until life
           tools.Add(new ToolUse()
           {
-            Tool = startPocket.Tool,
-            Pocket = startPocket.PocketNumber,
-            ToolUseDuringCycle = TimeSpan.FromTicks(Math.Max(0, startPocket.ToolLife.Ticks - startPocket.CurrentUse.Ticks)),
+            Tool = startPocket.ToolName,
+            Pocket = startPocket.Pocket,
+            ToolUseDuringCycle =
+              startPocket.TotalLifeTime.HasValue && startPocket.CurrentUse.HasValue
+                ? TimeSpan.FromTicks(Math.Max(0, startPocket.TotalLifeTime.Value.Ticks - startPocket.CurrentUse.Value.Ticks))
+                : null,
             TotalToolUseAtEndOfCycle = TimeSpan.Zero,
-            ConfiguredToolLife = startPocket.ToolLife,
-            ToolChangeOccurred = true
+            ConfiguredToolLife = startPocket.TotalLifeTime,
+            ToolChangeOccurred = true,
+            ToolSerialAtStartOfCycle = null,
+            ToolSerialAtEndOfCycle = null,
+            ToolUseCountDuringCycle = null,
+            TotalToolUseCountAtEndOfCycle = null,
+            ConfiguredToolLifeCount = null,
           });
         }
       }
@@ -108,16 +132,21 @@ namespace BlackMaple.MachineFramework
       // now any new tools which appeared
       foreach (var endPocket in endPockets.Values)
       {
-        if (endPocket.CurrentUse.Ticks > 0)
+        if (endPocket.CurrentUse.HasValue && endPocket.CurrentUse.Value.Ticks > 0)
         {
           tools.Add(new ToolUse()
           {
-            Tool = endPocket.Tool,
-            Pocket = endPocket.PocketNumber,
+            Tool = endPocket.ToolName,
+            Pocket = endPocket.Pocket,
             ToolUseDuringCycle = endPocket.CurrentUse,
             TotalToolUseAtEndOfCycle = endPocket.CurrentUse,
-            ConfiguredToolLife = endPocket.ToolLife,
-            ToolChangeOccurred = false
+            ConfiguredToolLife = endPocket.TotalLifeTime,
+            ToolChangeOccurred = false,
+            ToolSerialAtStartOfCycle = null,
+            ToolSerialAtEndOfCycle = null,
+            ToolUseCountDuringCycle = null,
+            TotalToolUseCountAtEndOfCycle = null,
+            ConfiguredToolLifeCount = null,
           });
         }
       }
