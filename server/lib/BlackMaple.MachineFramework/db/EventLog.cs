@@ -1393,6 +1393,7 @@ namespace BlackMaple.MachineFramework
         IDictionary<string, string> extraData = null,
         ImmutableList<ToolUse> tools = null,
         IEnumerable<ToolSnapshot> pockets = null,
+        long? deleteToolSnapshotsFromCntr = null,
         string foreignId = null,
         string originalMessage = null
     )
@@ -1419,7 +1420,24 @@ namespace BlackMaple.MachineFramework
         foreach (var k in extraData)
           log.ProgramDetails[k.Key] = k.Value;
       }
-      return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
+      return AddEntryInTransaction(trans =>
+      {
+        var evts = AddLogEntry(trans, log, foreignId, originalMessage);
+
+        if (deleteToolSnapshotsFromCntr.HasValue)
+        {
+          using (var cmd = _connection.CreateCommand())
+          {
+            ((IDbCommand)cmd).Transaction = trans;
+            cmd.CommandText = "DELETE FROM tool_snapshots WHERE Counter = $cntr";
+            cmd.Parameters.Add("cntr", SqliteType.Integer).Value = deleteToolSnapshotsFromCntr.Value;
+            cmd.ExecuteNonQuery();
+          }
+        }
+
+        return evts;
+      });
+
     }
 
     public LogEntry RecordPalletArriveRotaryInbound(

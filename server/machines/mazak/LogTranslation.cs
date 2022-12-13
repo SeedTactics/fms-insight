@@ -199,6 +199,7 @@ namespace MazakMachineInterface
               elapsed: elapsed,
               active: CalculateActiveMachining(machineMats),
               tools: ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd),
+              deleteToolSnapshotsFromCntr: machStart?.Counter,
               pockets: toolsAtEnd,
               foreignId: e.ForeignID,
               extraData: !progRev.HasValue ? null : new Dictionary<string, string> {

@@ -892,6 +892,19 @@ namespace BlackMaple.MachineFramework
     {
       using var cmd = transaction.Connection.CreateCommand();
       cmd.Transaction = transaction;
+
+      // this will delete any currently executing machine cycles, but
+      // not worth it to try and save the few that might be in progress.
+      // The client averages the past 5 cycles in any case.
+      cmd.CommandText = "DELETE FROM tool_snapshots";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE tool_snapshots ADD CurrentCount INTEGER";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE tool_snapshots ADD LifeCount INTEGER";
+      cmd.ExecuteNonQuery();
+      cmd.CommandText = "ALTER TABLE tool_snapshots ADD Serial TEXT";
+      cmd.ExecuteNonQuery();
+
       cmd.CommandText = "ALTER TABLE station_tool_use ADD SerialAtStart TEXT";
       cmd.ExecuteNonQuery();
       cmd.CommandText = "ALTER TABLE station_tool_use ADD SerialAtEnd TEXT";
@@ -901,12 +914,6 @@ namespace BlackMaple.MachineFramework
       cmd.CommandText = "ALTER TABLE station_tool_use ADD CountAtEndOfCycle INTEGER";
       cmd.ExecuteNonQuery();
       cmd.CommandText = "ALTER TABLE station_tool_use ADD LifeCount INTEGER";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText = "ALTER TABLE tool_snapshots ADD CurrentCount INTEGER";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText = "ALTER TABLE tool_snapshots ADD LifeCount INTEGER";
-      cmd.ExecuteNonQuery();
-      cmd.CommandText = "ALTER TABLE tool_snapshots ADD Serial TEXT";
       cmd.ExecuteNonQuery();
     }
 

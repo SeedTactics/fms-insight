@@ -1289,7 +1289,8 @@ namespace BlackMaple.FMSInsight.Niigata
           ToolSnapshotDiff.Diff(toolsAtStart, toolsAtEnd.Select(t => t.ToToolInMachine(
             machineGroup: statName,
             machineNum: statNum
-          )))
+          ))),
+        deleteToolSnapshotsFromCntr: machStart?.Counter
       );
     }
 
