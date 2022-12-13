@@ -2493,9 +2493,7 @@
         "additionalProperties": false,
         "required": [
           "Tool",
-          "Pocket",
-          "ToolUseDuringCycle",
-          "TotalToolUseAtEndOfCycle"
+          "Pocket"
         ],
         "properties": {
           "Tool": {
@@ -2505,21 +2503,46 @@
             "type": "integer",
             "format": "int32"
           },
+          "ToolChangeOccurred": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "ToolSerialAtStartOfCycle": {
+            "type": "string",
+            "nullable": true
+          },
+          "ToolSerialAtEndOfCycle": {
+            "type": "string",
+            "nullable": true
+          },
           "ToolUseDuringCycle": {
             "type": "string",
-            "format": "duration"
+            "format": "duration",
+            "nullable": true
           },
           "TotalToolUseAtEndOfCycle": {
             "type": "string",
-            "format": "duration"
+            "format": "duration",
+            "nullable": true
           },
           "ConfiguredToolLife": {
             "type": "string",
             "format": "duration",
             "nullable": true
           },
-          "ToolChangeOccurred": {
-            "type": "boolean",
+          "ToolUseCountDuringCycle": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "TotalToolUseCountAtEndOfCycle": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "ConfiguredToolLifeCount": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           }
         }
@@ -3971,23 +3994,37 @@
         }
       },
       "ToolInMachine": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ToolSnapshot"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "MachineGroupName",
+              "MachineNum"
+            ],
+            "properties": {
+              "MachineGroupName": {
+                "type": "string"
+              },
+              "MachineNum": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          }
+        ]
+      },
+      "ToolSnapshot": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "MachineGroupName",
-          "MachineNum",
           "Pocket",
-          "ToolName",
-          "CurrentUse"
+          "ToolName"
         ],
         "properties": {
-          "MachineGroupName": {
-            "type": "string"
-          },
-          "MachineNum": {
-            "type": "integer",
-            "format": "int32"
-          },
           "Pocket": {
             "type": "integer",
             "format": "int32"
@@ -3995,13 +4032,28 @@
           "ToolName": {
             "type": "string"
           },
+          "Serial": {
+            "type": "string",
+            "nullable": true
+          },
           "CurrentUse": {
             "type": "string",
-            "format": "duration"
+            "format": "duration",
+            "nullable": true
           },
           "TotalLifeTime": {
             "type": "string",
             "format": "duration",
+            "nullable": true
+          },
+          "CurrentUseCount": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "TotalLifeCount": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           }
         }
