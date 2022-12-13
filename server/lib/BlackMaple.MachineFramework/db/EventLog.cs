@@ -197,7 +197,7 @@ namespace BlackMaple.MachineFramework
                 ToolUseDuringCycle = toolReader.IsDBNull(2) ? null : TimeSpan.FromTicks(toolReader.GetInt64(2)),
                 TotalToolUseAtEndOfCycle = toolReader.IsDBNull(3) ? null : TimeSpan.FromTicks(toolReader.GetInt64(3)),
                 ConfiguredToolLife = toolReader.IsDBNull(4) ? null : TimeSpan.FromTicks(toolReader.GetInt64(4)),
-                ToolChangeOccurred = toolReader.IsDBNull(5) ? null : toolReader.GetBoolean(5) ? (bool?)true : null,
+                ToolChangeOccurred = toolReader.IsDBNull(5) ? null : toolReader.GetBoolean(5),
                 ToolSerialAtStartOfCycle = toolReader.IsDBNull(6) ? null : toolReader.GetString(6),
                 ToolSerialAtEndOfCycle = toolReader.IsDBNull(7) ? null : toolReader.GetString(7),
                 ToolUseCountDuringCycle = toolReader.IsDBNull(8) ? null : toolReader.GetInt32(8),
@@ -1054,7 +1054,7 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[3].Value = tool.ToolUseDuringCycle.HasValue ? tool.ToolUseDuringCycle.Value.Ticks : DBNull.Value;
           cmd.Parameters[4].Value = tool.TotalToolUseAtEndOfCycle.HasValue ? tool.TotalToolUseAtEndOfCycle.Value.Ticks : DBNull.Value;
           cmd.Parameters[5].Value = tool.ConfiguredToolLife.HasValue ? tool.ConfiguredToolLife.Value.Ticks : DBNull.Value;
-          cmd.Parameters[6].Value = tool.ToolChangeOccurred.GetValueOrDefault(false) ? true : DBNull.Value;
+          cmd.Parameters[6].Value = tool.ToolChangeOccurred.HasValue ? tool.ToolChangeOccurred.Value : DBNull.Value;
           cmd.Parameters[7].Value = tool.ToolSerialAtStartOfCycle == null ? DBNull.Value : (object)tool.ToolSerialAtStartOfCycle;
           cmd.Parameters[8].Value = tool.ToolSerialAtEndOfCycle == null ? DBNull.Value : (object)tool.ToolSerialAtEndOfCycle;
           cmd.Parameters[9].Value = tool.ToolUseCountDuringCycle.HasValue ? tool.ToolUseCountDuringCycle.Value : DBNull.Value;
