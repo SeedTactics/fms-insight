@@ -59,6 +59,7 @@ function averageToolUse(
       .map(([toolName, usageInCycles]) => ({
         toolName: toolName,
         cycleUsageMinutes: LazySeq.of(usageInCycles).sumBy((c) => c.cycleUsageMinutes) / usageInCycles.length,
+        cycleUsageCnt: LazySeq.of(usageInCycles).sumBy((c) => c.cycleUsageCnt) / usageInCycles.length,
         toolChangedDuringMiddleOfCycle: false,
       }))
       .toMutableArray();
@@ -72,9 +73,13 @@ function averageToolUse(
 export interface ToolInMachine {
   readonly machineName: string;
   readonly pocket: number;
+  readonly serial?: string;
   readonly currentUseMinutes: number;
   readonly lifetimeMinutes: number;
   readonly remainingMinutes: number;
+  readonly currentUseCnt: number;
+  readonly lifetimeCnt: number;
+  readonly remainingCnt: number;
 }
 
 export interface PartToolUsage {
@@ -83,6 +88,7 @@ export interface PartToolUsage {
   readonly program: string;
   readonly quantity: number;
   readonly scheduledUseMinutes: number;
+  readonly scheduledUseCnt: number;
 }
 
 export interface ToolReport {
@@ -166,6 +172,7 @@ export function calcToolReport(
             program: partAndProg.operation,
             quantity: qty,
             scheduledUseMinutes: tool.cycleUsageMinutes,
+            scheduledUseCnt: tool.cycleUsageCnt,
           },
         }));
       } else {
@@ -194,15 +201,19 @@ export function calcToolReport(
           (t) => t.pocket
         )
         .map((m) => {
-          const currentUseMinutes = m.currentUse !== "" ? durationToMinutes(m.currentUse) : 0;
+          const currentUseMinutes = m.currentUse && m.currentUse !== "" ? durationToMinutes(m.currentUse) : 0;
           const lifetimeMinutes =
             m.totalLifeTime && m.totalLifeTime !== "" ? durationToMinutes(m.totalLifeTime) : 0;
           return {
             machineName: m.machineGroupName + " #" + m.machineNum.toString(),
             pocket: m.pocket,
+            serial: m.serial,
             currentUseMinutes,
             lifetimeMinutes,
             remainingMinutes: Math.max(0, lifetimeMinutes - currentUseMinutes),
+            currentUseCnt: m.currentUseCount ?? 0,
+            lifetimeCnt: m.totalLifeCount ?? 0,
+            remainingCnt: Math.max(0, (m.totalLifeCount ?? 0) - (m.currentUseCount ?? 0)),
           };
         })
         .toRArray();

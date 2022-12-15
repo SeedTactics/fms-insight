@@ -44,6 +44,7 @@ export type ToolReplacement =
       readonly pocket: number;
       readonly type: "ReplaceBeforeCycleStart";
       readonly useAtReplacement: number;
+      readonly cntAtReplacement: number;
     }
   | {
       readonly tool: string;
@@ -57,6 +58,8 @@ export type ToolReplacement =
       // Thus, useAtReplacement estimate = totalUseAtBeginningOfCycle + (averageUse - totalUseAtEndOfCycle)
       readonly totalUseAtBeginningOfCycle: number;
       readonly totalUseAtEndOfCycle: number;
+      readonly totalCntAtBeginningOfCycle: number;
+      readonly totalCntAtEndOfCycle: number;
     };
 
 export type ToolReplacements = {
@@ -128,20 +131,27 @@ function addReplacementsFromLog(
     const replacements: Array<ToolReplacement> = [];
     for (const use of e.tooluse ?? []) {
       // see server/lib/BlackMaple.MachineFramework/backend/ToolSnapshotDiff.cs for the original calculations
-      const useDuring = durationToMinutes(use.toolUseDuringCycle);
-      const totalUseAtEnd = durationToMinutes(use.totalToolUseAtEndOfCycle);
+      const useDuring = use.toolUseDuringCycle ? durationToMinutes(use.toolUseDuringCycle) : 0;
+      const totalUseAtEnd = use.totalToolUseAtEndOfCycle
+        ? durationToMinutes(use.totalToolUseAtEndOfCycle)
+        : 0;
+      const cntDuring = use.toolUseCountDuringCycle ?? 0;
+      const totalCntAtEnd = use.totalToolUseCountAtEndOfCycle ?? 0;
 
-      if (useDuring === totalUseAtEnd && useDuring > 0) {
+      if (useDuring === totalUseAtEnd && cntDuring === totalCntAtEnd && (useDuring > 0 || cntDuring > 0)) {
         // replace before cycle start
         const last = old.recentUse.get(key)?.find((e) => e.tool === use.tool && e.pocket === use.pocket);
         if (last) {
-          const lastTotalUse = durationToMinutes(last.totalToolUseAtEndOfCycle);
+          const lastTotalUse = last.totalToolUseAtEndOfCycle
+            ? durationToMinutes(last.totalToolUseAtEndOfCycle)
+            : 0;
           if (lastTotalUse > 0) {
             replacements.push({
               tool: use.tool,
               pocket: use.pocket,
               type: "ReplaceBeforeCycleStart",
               useAtReplacement: lastTotalUse,
+              cntAtReplacement: last.totalToolUseCountAtEndOfCycle ?? 0,
             });
           }
         }
@@ -157,6 +167,8 @@ function addReplacementsFromLog(
           type: "ReplaceInCycle",
           totalUseAtBeginningOfCycle: lifetime - useDuring + totalUseAtEnd,
           totalUseAtEndOfCycle: totalUseAtEnd,
+          totalCntAtBeginningOfCycle: (use.configuredToolLifeCount ?? 0) - cntDuring + totalCntAtEnd,
+          totalCntAtEndOfCycle: totalCntAtEnd,
         });
       }
     }

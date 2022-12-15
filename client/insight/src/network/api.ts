@@ -2595,10 +2595,15 @@ export enum LogType {
 export class ToolUse implements IToolUse {
     tool!: string;
     pocket!: number;
-    toolUseDuringCycle!: string;
-    totalToolUseAtEndOfCycle!: string;
-    configuredToolLife?: string | undefined;
     toolChangeOccurred?: boolean | undefined;
+    toolSerialAtStartOfCycle?: string | undefined;
+    toolSerialAtEndOfCycle?: string | undefined;
+    toolUseDuringCycle?: string | undefined;
+    totalToolUseAtEndOfCycle?: string | undefined;
+    configuredToolLife?: string | undefined;
+    toolUseCountDuringCycle?: number | undefined;
+    totalToolUseCountAtEndOfCycle?: number | undefined;
+    configuredToolLifeCount?: number | undefined;
 
     constructor(data?: IToolUse) {
         if (data) {
@@ -2613,10 +2618,15 @@ export class ToolUse implements IToolUse {
         if (_data) {
             this.tool = _data["Tool"];
             this.pocket = _data["Pocket"];
+            this.toolChangeOccurred = _data["ToolChangeOccurred"];
+            this.toolSerialAtStartOfCycle = _data["ToolSerialAtStartOfCycle"];
+            this.toolSerialAtEndOfCycle = _data["ToolSerialAtEndOfCycle"];
             this.toolUseDuringCycle = _data["ToolUseDuringCycle"];
             this.totalToolUseAtEndOfCycle = _data["TotalToolUseAtEndOfCycle"];
             this.configuredToolLife = _data["ConfiguredToolLife"];
-            this.toolChangeOccurred = _data["ToolChangeOccurred"];
+            this.toolUseCountDuringCycle = _data["ToolUseCountDuringCycle"];
+            this.totalToolUseCountAtEndOfCycle = _data["TotalToolUseCountAtEndOfCycle"];
+            this.configuredToolLifeCount = _data["ConfiguredToolLifeCount"];
         }
     }
 
@@ -2631,10 +2641,15 @@ export class ToolUse implements IToolUse {
         data = typeof data === 'object' ? data : {};
         data["Tool"] = this.tool;
         data["Pocket"] = this.pocket;
+        data["ToolChangeOccurred"] = this.toolChangeOccurred;
+        data["ToolSerialAtStartOfCycle"] = this.toolSerialAtStartOfCycle;
+        data["ToolSerialAtEndOfCycle"] = this.toolSerialAtEndOfCycle;
         data["ToolUseDuringCycle"] = this.toolUseDuringCycle;
         data["TotalToolUseAtEndOfCycle"] = this.totalToolUseAtEndOfCycle;
         data["ConfiguredToolLife"] = this.configuredToolLife;
-        data["ToolChangeOccurred"] = this.toolChangeOccurred;
+        data["ToolUseCountDuringCycle"] = this.toolUseCountDuringCycle;
+        data["TotalToolUseCountAtEndOfCycle"] = this.totalToolUseCountAtEndOfCycle;
+        data["ConfiguredToolLifeCount"] = this.configuredToolLifeCount;
         return data;
     }
 }
@@ -2642,10 +2657,15 @@ export class ToolUse implements IToolUse {
 export interface IToolUse {
     tool: string;
     pocket: number;
-    toolUseDuringCycle: string;
-    totalToolUseAtEndOfCycle: string;
-    configuredToolLife?: string | undefined;
     toolChangeOccurred?: boolean | undefined;
+    toolSerialAtStartOfCycle?: string | undefined;
+    toolSerialAtEndOfCycle?: string | undefined;
+    toolUseDuringCycle?: string | undefined;
+    totalToolUseAtEndOfCycle?: string | undefined;
+    configuredToolLife?: string | undefined;
+    toolUseCountDuringCycle?: number | undefined;
+    totalToolUseCountAtEndOfCycle?: number | undefined;
+    configuredToolLifeCount?: number | undefined;
 }
 
 export class MaterialProcessActualPath implements IMaterialProcessActualPath {
@@ -5238,15 +5258,16 @@ export interface INewWash {
     active: string;
 }
 
-export class ToolInMachine implements IToolInMachine {
-    machineGroupName!: string;
-    machineNum!: number;
+export class ToolSnapshot implements IToolSnapshot {
     pocket!: number;
     toolName!: string;
-    currentUse!: string;
+    serial?: string | undefined;
+    currentUse?: string | undefined;
     totalLifeTime?: string | undefined;
+    currentUseCount?: number | undefined;
+    totalLifeCount?: number | undefined;
 
-    constructor(data?: IToolInMachine) {
+    constructor(data?: IToolSnapshot) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -5257,12 +5278,59 @@ export class ToolInMachine implements IToolInMachine {
 
     init(_data?: any) {
         if (_data) {
-            this.machineGroupName = _data["MachineGroupName"];
-            this.machineNum = _data["MachineNum"];
             this.pocket = _data["Pocket"];
             this.toolName = _data["ToolName"];
+            this.serial = _data["Serial"];
             this.currentUse = _data["CurrentUse"];
             this.totalLifeTime = _data["TotalLifeTime"];
+            this.currentUseCount = _data["CurrentUseCount"];
+            this.totalLifeCount = _data["TotalLifeCount"];
+        }
+    }
+
+    static fromJS(data: any): ToolSnapshot {
+        data = typeof data === 'object' ? data : {};
+        let result = new ToolSnapshot();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["Pocket"] = this.pocket;
+        data["ToolName"] = this.toolName;
+        data["Serial"] = this.serial;
+        data["CurrentUse"] = this.currentUse;
+        data["TotalLifeTime"] = this.totalLifeTime;
+        data["CurrentUseCount"] = this.currentUseCount;
+        data["TotalLifeCount"] = this.totalLifeCount;
+        return data;
+    }
+}
+
+export interface IToolSnapshot {
+    pocket: number;
+    toolName: string;
+    serial?: string | undefined;
+    currentUse?: string | undefined;
+    totalLifeTime?: string | undefined;
+    currentUseCount?: number | undefined;
+    totalLifeCount?: number | undefined;
+}
+
+export class ToolInMachine extends ToolSnapshot implements IToolInMachine {
+    machineGroupName!: string;
+    machineNum!: number;
+
+    constructor(data?: IToolInMachine) {
+        super(data);
+    }
+
+    init(_data?: any) {
+        super.init(_data);
+        if (_data) {
+            this.machineGroupName = _data["MachineGroupName"];
+            this.machineNum = _data["MachineNum"];
         }
     }
 
@@ -5277,21 +5345,14 @@ export class ToolInMachine implements IToolInMachine {
         data = typeof data === 'object' ? data : {};
         data["MachineGroupName"] = this.machineGroupName;
         data["MachineNum"] = this.machineNum;
-        data["Pocket"] = this.pocket;
-        data["ToolName"] = this.toolName;
-        data["CurrentUse"] = this.currentUse;
-        data["TotalLifeTime"] = this.totalLifeTime;
+        super.toJSON(data);
         return data;
     }
 }
 
-export interface IToolInMachine {
+export interface IToolInMachine extends IToolSnapshot {
     machineGroupName: string;
     machineNum: number;
-    pocket: number;
-    toolName: string;
-    currentUse: string;
-    totalLifeTime?: string | undefined;
 }
 
 export class ProgramInCellController implements IProgramInCellController {
