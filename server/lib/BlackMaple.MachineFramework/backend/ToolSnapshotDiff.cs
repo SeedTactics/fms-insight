@@ -50,8 +50,8 @@ namespace BlackMaple.MachineFramework
      * startPocket is a tool that was in the same pocket as the endTool but is a different tool.
      *
      * When using serials, the tool might have been removed and a new serial inserted.  In this case, startPocket will have the old tool
-     * and startSerial will be null.  While unlikely, it is possible for the tool to not be removed but to change which pocket it is in
-     * and a different tool placed into the pocket.  In this case, startPocket will have the new tool and startSerial will have the old tool.
+     * and startSerial will be null.  While unlikely, it is possible for the tool to not be removed but to change which pocket it is in.
+     * In this case, startPocket will have the new tool and startSerial will have the old tool.
      *
      * When not using serials, we attempt to guess when the tool was changed.  If the tool was changed, startPocket will have the new tool
      * and if the tool was not changed, startPocket will be null and startSerial will have the old tool.
@@ -65,6 +65,10 @@ namespace BlackMaple.MachineFramework
       {
         startSerials.TryGetValue(endTool.Serial, out startSerial);
         startPockets.TryGetValue((endTool.Pocket, endTool.ToolName), out startPocket);
+        if (startSerial == startPocket)
+        {
+          startPocket = null;
+        }
       }
       else
       {
