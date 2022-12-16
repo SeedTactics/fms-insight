@@ -1260,11 +1260,13 @@ Map {
     {
       "tools": [
         {
+          "cycleUsageCnt": 0,
           "cycleUsageMinutes": 0.5166666666666667,
           "toolChangedDuringMiddleOfCycle": true,
           "toolName": "a",
         },
         {
+          "cycleUsageCnt": 0,
           "cycleUsageMinutes": 0.43333333333333335,
           "toolChangedDuringMiddleOfCycle": false,
           "toolName": "5",
@@ -1276,6 +1278,7 @@ Map {
     {
       "tools": [
         {
+          "cycleUsageCnt": 0,
           "cycleUsageMinutes": 0.7833333333333333,
           "toolChangedDuringMiddleOfCycle": true,
           "toolName": "7",
@@ -1287,11 +1290,13 @@ Map {
     {
       "tools": [
         {
+          "cycleUsageCnt": 0,
           "cycleUsageMinutes": 0.4,
           "toolChangedDuringMiddleOfCycle": true,
           "toolName": "r",
         },
         {
+          "cycleUsageCnt": 0,
           "cycleUsageMinutes": 0.31666666666666665,
           "toolChangedDuringMiddleOfCycle": false,
           "toolName": "n",
@@ -1929,11 +1934,13 @@ Map {
     {
       "tools": [
         {
+          "cycleUsageCnt": 0,
           "cycleUsageMinutes": 0.5166666666666667,
           "toolChangedDuringMiddleOfCycle": true,
           "toolName": "a",
         },
         {
+          "cycleUsageCnt": 0,
           "cycleUsageMinutes": 0.43333333333333335,
           "toolChangedDuringMiddleOfCycle": false,
           "toolName": "5",
@@ -1945,6 +1952,7 @@ Map {
     {
       "tools": [
         {
+          "cycleUsageCnt": 0,
           "cycleUsageMinutes": 0.7833333333333333,
           "toolChangedDuringMiddleOfCycle": true,
           "toolName": "7",
@@ -1956,11 +1964,13 @@ Map {
     {
       "tools": [
         {
+          "cycleUsageCnt": 0,
           "cycleUsageMinutes": 0.4,
           "toolChangedDuringMiddleOfCycle": true,
           "toolName": "r",
         },
         {
+          "cycleUsageCnt": 0,
           "cycleUsageMinutes": 0.31666666666666665,
           "toolChangedDuringMiddleOfCycle": false,
           "toolName": "n",

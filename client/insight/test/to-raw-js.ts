@@ -21,6 +21,8 @@ export function toRawJs(val: any): any {
     return val.toLazySeq().toRMap(([k, v]) => [k.toString(), toRawJs(v)]);
   } else if (val instanceof OrderedMap) {
     return val.toAscLazySeq().toRMap(([k, v]) => [k.toString(), toRawJs(v)]);
+  } else if (val === undefined || val === null) {
+    return val;
   } else if (typeof val === "object") {
     return Object.fromEntries(Object.entries(val).map(([k, v]) => [k, toRawJs(v)]));
   } else {
