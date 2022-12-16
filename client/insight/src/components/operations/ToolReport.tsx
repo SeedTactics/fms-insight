@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -62,9 +62,12 @@ import {
   currentToolReport,
   useRefreshToolReport,
   toolReportMachineFilter,
-  copyToolReportToClipboard,
   toolReportRefreshTime,
   machinesWithTools,
+  toolReportHasSerial,
+  toolReportHasTimeUsage,
+  toolReportHasCntUsage,
+  useCopyToolReportToClipboard,
 } from "../../data/tools-programs.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { PartIdenticon } from "../station-monitor/Material.js";
@@ -100,16 +103,36 @@ const ToolTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toStri
 
 function ToolRow(props: ToolRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
+  const showSerial = useRecoilValue(toolReportHasSerial);
+  const showTime = useRecoilValue(toolReportHasTimeUsage);
+  const showCnts = useRecoilValue(toolReportHasCntUsage);
 
-  const schUse = LazySeq.of(props.tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
-  const totalLife = LazySeq.of(props.tool.machines).sumBy((m) => m.remainingMinutes);
+  const schUseMin = LazySeq.of(props.tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
+  const totalLifeMin = LazySeq.of(props.tool.machines).sumBy((m) => m.remainingMinutes ?? 0);
+  const schUseCnt = LazySeq.of(props.tool.parts).sumBy((p) => p.scheduledUseCnt * p.quantity);
+  const totalLifeCnt = LazySeq.of(props.tool.machines).sumBy((m) => m.remainingCnt ?? 0);
+
+  let numCols = 3;
+  if (showTime) {
+    numCols += 2;
+    if (props.showMachine) numCols += 2;
+  }
+  if (showCnts) {
+    numCols += 2;
+    if (props.showMachine) numCols += 2;
+  }
+  if (!props.showMachine) numCols += 1;
 
   return (
     <>
       <ToolTableRow
         $noBorderBottom
-        $highlightedRow={schUse > totalLife}
-        $noticeRow={schUse <= totalLife && schUse > props.tool.minRemainingMinutes}
+        $highlightedRow={schUseMin > totalLifeMin || schUseCnt > totalLifeCnt}
+        $noticeRow={
+          schUseMin <= totalLifeMin &&
+          ((props.tool.minRemainingMinutes !== null && schUseMin > props.tool.minRemainingMinutes) ||
+            (props.tool.minRemainingCnt !== null && schUseCnt > props.tool.minRemainingCnt))
+        }
       >
         <TableCell>
           <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -117,12 +140,36 @@ function ToolRow(props: ToolRowProps) {
           </IconButton>
         </TableCell>
         <TableCell>{props.tool.toolName}</TableCell>
-        <TableCell align="right">{schUse.toFixed(1)}</TableCell>
-        <TableCell align="right">{totalLife.toFixed(1)}</TableCell>
+        {showTime ? (
+          <>
+            <TableCell align="right">{schUseMin.toFixed(1)}</TableCell>
+            <TableCell align="right">{totalLifeMin.toFixed(1)}</TableCell>
+          </>
+        ) : undefined}
+        {showCnts ? (
+          <>
+            <TableCell align="right">{schUseCnt.toFixed(1)}</TableCell>
+            <TableCell align="right">{totalLifeCnt.toFixed(1)}</TableCell>
+          </>
+        ) : undefined}
         {props.showMachine ? (
           <>
-            <TableCell align="right">{props.tool.minRemainingMinutes.toFixed(1)}</TableCell>
-            <TableCell>{props.tool.minRemainingMachine}</TableCell>
+            {showTime ? (
+              <>
+                <TableCell align="right">
+                  {props.tool.minRemainingMinutes !== null ? props.tool.minRemainingMinutes.toFixed(1) : ""}
+                </TableCell>
+                <TableCell>{props.tool.machWithMinMinutes ?? ""}</TableCell>
+              </>
+            ) : undefined}
+            {showCnts ? (
+              <>
+                <TableCell align="right">
+                  {props.tool.minRemainingCnt !== null ? props.tool.minRemainingCnt.toString() : ""}
+                </TableCell>
+                <TableCell>{props.tool.machWithMinCnt ?? ""}</TableCell>
+              </>
+            ) : undefined}
           </>
         ) : (
           <TableCell>{props.tool.machines.map((m) => m.pocket.toString()).join(", ")}</TableCell>
@@ -130,7 +177,7 @@ function ToolRow(props: ToolRowProps) {
         <TableCell />
       </ToolTableRow>
       <TableRow>
-        <TableCell sx={{ pb: "0", pt: "0" }} colSpan={props.showMachine ? 7 : 6}>
+        <TableCell sx={{ pb: "0", pt: "0" }} colSpan={numCols}>
           <Collapse in={open} timeout="auto" unmountOnExit>
             <Box
               sx={{
@@ -156,7 +203,8 @@ function ToolRow(props: ToolRowProps) {
                         <TableCell>Part</TableCell>
                         <TableCell>Program</TableCell>
                         <TableCell align="right">Quantity</TableCell>
-                        <TableCell align="right">Use/Cycle (min)</TableCell>
+                        {showTime ? <TableCell align="right">Use/Cycle (min)</TableCell> : undefined}
+                        {showCnts ? <TableCell align="right">Use/Cycle (cnt)</TableCell> : undefined}
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -177,7 +225,12 @@ function ToolRow(props: ToolRowProps) {
                           </TableCell>
                           <TableCell>{p.program}</TableCell>
                           <TableCell align="right">{p.quantity}</TableCell>
-                          <TableCell align="right">{p.scheduledUseMinutes.toFixed(1)}</TableCell>
+                          {showTime ? (
+                            <TableCell align="right">{p.scheduledUseMinutes.toFixed(1)}</TableCell>
+                          ) : undefined}
+                          {showCnts ? (
+                            <TableCell align="right">{p.scheduledUseCnt.toFixed(1)}</TableCell>
+                          ) : undefined}
                         </TableRow>
                       ))}
                     </TableBody>
@@ -197,9 +250,21 @@ function ToolRow(props: ToolRowProps) {
                     <TableRow>
                       <TableCell>Machine</TableCell>
                       <TableCell align="right">Pocket</TableCell>
-                      <TableCell align="right">Current Use (min)</TableCell>
-                      <TableCell align="right">Lifetime (min)</TableCell>
-                      <TableCell align="right">Remaining Use (min)</TableCell>
+                      {showSerial ? <TableCell>Serial</TableCell> : undefined}
+                      {showTime ? (
+                        <>
+                          <TableCell align="right">Current Use (min)</TableCell>
+                          <TableCell align="right">Lifetime (min)</TableCell>
+                          <TableCell align="right">Remaining Use (min)</TableCell>
+                        </>
+                      ) : undefined}
+                      {showCnts ? (
+                        <>
+                          <TableCell align="right">Current Use (count)</TableCell>
+                          <TableCell align="right">Lifetime (count)</TableCell>
+                          <TableCell align="right">Remaining Use (count)</TableCell>
+                        </>
+                      ) : undefined}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -207,9 +272,33 @@ function ToolRow(props: ToolRowProps) {
                       <TableRow key={idx}>
                         <TableCell>{m.machineName}</TableCell>
                         <TableCell align="right">{m.pocket}</TableCell>
-                        <TableCell align="right">{m.currentUseMinutes.toFixed(1)}</TableCell>
-                        <TableCell align="right">{m.lifetimeMinutes.toFixed(1)}</TableCell>
-                        <TableCell align="right">{m.remainingMinutes.toFixed(1)}</TableCell>
+                        {showSerial ? <TableCell>{m.serial ?? ""}</TableCell> : undefined}
+                        {showTime ? (
+                          <>
+                            <TableCell align="right">
+                              {m.currentUseMinutes !== null ? m.currentUseMinutes.toFixed(1) : ""}
+                            </TableCell>
+                            <TableCell align="right">
+                              {m.lifetimeMinutes !== null ? m.lifetimeMinutes.toFixed(1) : ""}
+                            </TableCell>
+                            <TableCell align="right">
+                              {m.remainingMinutes !== null ? m.remainingMinutes.toFixed(1) : ""}
+                            </TableCell>
+                          </>
+                        ) : undefined}
+                        {showCnts ? (
+                          <>
+                            <TableCell align="right">
+                              {m.currentUseCnt !== null ? m.currentUseCnt.toString() : ""}
+                            </TableCell>
+                            <TableCell align="right">
+                              {m.lifetimeCnt !== null ? m.lifetimeCnt.toString() : ""}
+                            </TableCell>
+                            <TableCell align="right">
+                              {m.remainingCnt !== null ? m.remainingCnt.toString() : ""}
+                            </TableCell>
+                          </>
+                        ) : undefined}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -225,10 +314,14 @@ function ToolRow(props: ToolRowProps) {
 
 type SortColumn =
   | "ToolName"
-  | "ScheduledUse"
-  | "RemainingTotalLife"
-  | "MinRemainingLife"
-  | "MinRemainingMachine";
+  | "ScheduledUseMin"
+  | "RemainingTotalMin"
+  | "ScheduledUseCnt"
+  | "RemainingTotalCnt"
+  | "MinRemainingLifeMinutes"
+  | "MinRemainingMachineMinutes"
+  | "MinRemainingLifeCnt"
+  | "MinRemainingMachineCnt";
 
 const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
 
@@ -238,6 +331,9 @@ export function ToolSummaryTable(): JSX.Element {
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
   const machineNames = useRecoilValue(machinesWithTools);
+  const showTime = useRecoilValue(toolReportHasTimeUsage);
+  const showCnts = useRecoilValue(toolReportHasCntUsage);
+  const copyToolReportToClipboard = useCopyToolReportToClipboard();
 
   if (tools === null) {
     return <div />;
@@ -249,21 +345,37 @@ export function ToolSummaryTable(): JSX.Element {
       case "ToolName":
         c = a.toolName.localeCompare(b.toolName);
         break;
-      case "ScheduledUse":
+      case "ScheduledUseMin":
         c =
           LazySeq.of(a.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity) -
           LazySeq.of(b.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
         break;
-      case "RemainingTotalLife":
+      case "RemainingTotalMin":
         c =
-          LazySeq.of(a.machines).sumBy((m) => m.remainingMinutes) -
-          LazySeq.of(b.machines).sumBy((m) => m.remainingMinutes);
+          LazySeq.of(a.machines).sumBy((m) => m.remainingMinutes ?? 0) -
+          LazySeq.of(b.machines).sumBy((m) => m.remainingMinutes ?? 0);
         break;
-      case "MinRemainingLife":
-        c = a.minRemainingMinutes - b.minRemainingMinutes;
+      case "ScheduledUseCnt":
+        c =
+          LazySeq.of(a.parts).sumBy((p) => p.scheduledUseCnt * p.quantity) -
+          LazySeq.of(b.parts).sumBy((p) => p.scheduledUseCnt * p.quantity);
         break;
-      case "MinRemainingMachine":
-        c = a.minRemainingMachine.localeCompare(b.minRemainingMachine);
+      case "RemainingTotalCnt":
+        c =
+          LazySeq.of(a.machines).sumBy((m) => m.remainingCnt ?? 0) -
+          LazySeq.of(b.machines).sumBy((m) => m.remainingCnt ?? 0);
+        break;
+      case "MinRemainingLifeMinutes":
+        c = (a.minRemainingMinutes ?? 0) - (b.minRemainingMinutes ?? 0);
+        break;
+      case "MinRemainingMachineMinutes":
+        c = (a.machWithMinMinutes ?? "").localeCompare(b.machWithMinMinutes ?? "");
+        break;
+      case "MinRemainingLifeCnt":
+        c = (a.minRemainingCnt ?? 0) - (b.minRemainingCnt ?? 0);
+        break;
+      case "MinRemainingMachineCnt":
+        c = (a.machWithMinCnt ?? "").localeCompare(b.machWithMinCnt ?? "");
         break;
     }
     if (c === 0) {
@@ -318,7 +430,7 @@ export function ToolSummaryTable(): JSX.Element {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyToolReportToClipboard(tools, machineFilter !== null)}
+                onClick={() => copyToolReportToClipboard(machineFilter !== null)}
                 size="large"
               >
                 <ImportExport />
@@ -341,52 +453,118 @@ export function ToolSummaryTable(): JSX.Element {
                   Tool
                 </TableSortLabel>
               </TableCell>
-              <TableCell sortDirection={sortCol === "ScheduledUse" ? sortDir : false} align="right">
-                <Tooltip title="Expected use for all currently scheduled parts">
-                  <TableSortLabel
-                    active={sortCol === "ScheduledUse"}
-                    direction={sortDir}
-                    onClick={() => toggleSort("ScheduledUse")}
-                  >
-                    Scheduled Use (min)
-                  </TableSortLabel>
-                </Tooltip>
-              </TableCell>
-              <TableCell sortDirection={sortCol === "RemainingTotalLife" ? sortDir : false} align="right">
-                <Tooltip title="Remaining life summed over all machines">
-                  <TableSortLabel
-                    active={sortCol === "RemainingTotalLife"}
-                    direction={sortDir}
-                    onClick={() => toggleSort("RemainingTotalLife")}
-                  >
-                    Total Remaining Life (min)
-                  </TableSortLabel>
-                </Tooltip>
-              </TableCell>
+              {showTime ? (
+                <>
+                  <TableCell sortDirection={sortCol === "ScheduledUseMin" ? sortDir : false} align="right">
+                    <Tooltip title="Expected use for all currently scheduled parts">
+                      <TableSortLabel
+                        active={sortCol === "ScheduledUseMin"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("ScheduledUseMin")}
+                      >
+                        Scheduled Use (minutes)
+                      </TableSortLabel>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sortDirection={sortCol === "RemainingTotalMin" ? sortDir : false} align="right">
+                    <Tooltip title="Remaining life summed over all machines">
+                      <TableSortLabel
+                        active={sortCol === "RemainingTotalMin"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("RemainingTotalMin")}
+                      >
+                        Total Remaining Life (minutes)
+                      </TableSortLabel>
+                    </Tooltip>
+                  </TableCell>
+                </>
+              ) : undefined}
+              {showCnts ? (
+                <>
+                  <TableCell sortDirection={sortCol === "ScheduledUseCnt" ? sortDir : false} align="right">
+                    <Tooltip title="Expected use for all currently scheduled parts">
+                      <TableSortLabel
+                        active={sortCol === "ScheduledUseCnt"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("ScheduledUseCnt")}
+                      >
+                        Scheduled Use (count)
+                      </TableSortLabel>
+                    </Tooltip>
+                  </TableCell>
+                  <TableCell sortDirection={sortCol === "RemainingTotalCnt" ? sortDir : false} align="right">
+                    <Tooltip title="Remaining life summed over all machines">
+                      <TableSortLabel
+                        active={sortCol === "RemainingTotalCnt"}
+                        direction={sortDir}
+                        onClick={() => toggleSort("RemainingTotalCnt")}
+                      >
+                        Total Remaining Life (count)
+                      </TableSortLabel>
+                    </Tooltip>
+                  </TableCell>
+                </>
+              ) : undefined}
               {machineFilter === null ? (
                 <>
-                  <TableCell sortDirection={sortCol === "MinRemainingLife" ? sortDir : false} align="right">
-                    <Tooltip title="Machine with the least remaining life">
-                      <TableSortLabel
-                        active={sortCol === "MinRemainingLife"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("MinRemainingLife")}
+                  {showTime ? (
+                    <>
+                      <TableCell
+                        sortDirection={sortCol === "MinRemainingLifeMinutes" ? sortDir : false}
+                        align="right"
                       >
-                        Smallest Remaining Life (min)
-                      </TableSortLabel>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell sortDirection={sortCol === "MinRemainingMachine" ? sortDir : false}>
-                    <Tooltip title="Machine with the least remaining life">
-                      <TableSortLabel
-                        active={sortCol === "MinRemainingMachine"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("MinRemainingMachine")}
+                        <Tooltip title="Machine with the least remaining life">
+                          <TableSortLabel
+                            active={sortCol === "MinRemainingLifeMinutes"}
+                            direction={sortDir}
+                            onClick={() => toggleSort("MinRemainingLifeMinutes")}
+                          >
+                            Smallest Remaining Life (minutes)
+                          </TableSortLabel>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell sortDirection={sortCol === "MinRemainingMachineMinutes" ? sortDir : false}>
+                        <Tooltip title="Machine with the least remaining life">
+                          <TableSortLabel
+                            active={sortCol === "MinRemainingMachineMinutes"}
+                            direction={sortDir}
+                            onClick={() => toggleSort("MinRemainingMachineMinutes")}
+                          >
+                            Machine With Smallest Remaining Time
+                          </TableSortLabel>
+                        </Tooltip>
+                      </TableCell>
+                    </>
+                  ) : undefined}
+                  {showCnts ? (
+                    <>
+                      <TableCell
+                        sortDirection={sortCol === "MinRemainingLifeCnt" ? sortDir : false}
+                        align="right"
                       >
-                        Machine With Smallest Remaining Life
-                      </TableSortLabel>
-                    </Tooltip>
-                  </TableCell>
+                        <Tooltip title="Machine with the least remaining life">
+                          <TableSortLabel
+                            active={sortCol === "MinRemainingLifeCnt"}
+                            direction={sortDir}
+                            onClick={() => toggleSort("MinRemainingLifeCnt")}
+                          >
+                            Smallest Remaining Life (count)
+                          </TableSortLabel>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell sortDirection={sortCol === "MinRemainingMachineCnt" ? sortDir : false}>
+                        <Tooltip title="Machine with the least remaining life">
+                          <TableSortLabel
+                            active={sortCol === "MinRemainingMachineCnt"}
+                            direction={sortDir}
+                            onClick={() => toggleSort("MinRemainingMachineCnt")}
+                          >
+                            Machine With Smallest Remaining Counts
+                          </TableSortLabel>
+                        </Tooltip>
+                      </TableCell>
+                    </>
+                  ) : undefined}
                 </>
               ) : (
                 <TableCell>Pockets</TableCell>
