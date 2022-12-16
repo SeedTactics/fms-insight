@@ -83,7 +83,9 @@ type ToolReplacementSummary = {
   readonly tool: string;
   readonly numReplacements: number;
   readonly totalUseOfAllReplacements: number;
+  readonly totalCntOfAllReplacements: number;
   readonly maxUseOfAnyReplacement: number;
+  readonly maxCntOfAnyReplacement: number;
   readonly replacements: ReadonlyArray<ToolReplacementAndStationDate>;
 };
 
@@ -124,18 +126,28 @@ function tool_summary(
     .map(([tool, replacements]) => {
       let totalUse = 0;
       let maxUse = null;
+      let totalCnt = 0;
+      let maxCnt = null;
       for (const r of replacements) {
         const u = r.type === "ReplaceBeforeCycleStart" ? r.useAtReplacement : r.totalUseAtBeginningOfCycle;
-        if (maxUse === null || u > maxUse) {
+        if (u && (maxUse === null || u > maxUse)) {
           maxUse = u;
         }
-        totalUse += u;
+        if (u) totalUse += u;
+
+        const c = r.type === "ReplaceBeforeCycleStart" ? r.cntAtReplacement : r.totalCntAtBeginningOfCycle;
+        if (c && (maxCnt === null || c > maxCnt)) {
+          maxCnt = c;
+        }
+        if (c) totalCnt += c;
       }
       return {
         tool,
         numReplacements: replacements.length,
         totalUseOfAllReplacements: totalUse,
+        totalCntOfAllReplacements: totalCnt,
         maxUseOfAnyReplacement: maxUse ?? 0,
+        maxCntOfAnyReplacement: maxCnt ?? 0,
         replacements,
       };
     })
@@ -146,6 +158,7 @@ enum SummaryColumnId {
   Tool,
   NumReplacements,
   AvgUseAtReplacement,
+  AvgCntAtReplacement,
   Graph,
 }
 
@@ -199,7 +212,8 @@ const ReplacementGraph = React.memo(function ReplacementGraph({
             key={i}
             cx={timeScale(r.time)}
             cy={yScale(
-              r.type === "ReplaceBeforeCycleStart" ? r.useAtReplacement : r.totalUseAtBeginningOfCycle
+              (r.type === "ReplaceBeforeCycleStart" ? r.useAtReplacement : r.totalUseAtBeginningOfCycle) ??
+                row.maxUseOfAnyReplacement / 2
             )}
             r={r === tooltip?.r ? 3 : 1}
             onMouseEnter={(e) => setTooltip({ left: localPoint(e)?.x ?? 0, r })}
@@ -208,7 +222,7 @@ const ReplacementGraph = React.memo(function ReplacementGraph({
         ))}
       </svg>
       {tooltip !== null ? (
-        <ChartTooltip style={{ left: tooltip.left, top: 0 }}>
+        <ChartTooltip style={{ left: tooltip.left, top: 0, zIndex: 10 }}>
           <Stack spacing={0.5}>
             <div>Tool: {tooltip.r.tool}</div>
             <div>Pocket: {tooltip.r.pocket}</div>
@@ -217,13 +231,32 @@ const ReplacementGraph = React.memo(function ReplacementGraph({
               Station: {tooltip.r.station.group} #{tooltip.r.station.num}
             </div>
             {tooltip.r.type === "ReplaceBeforeCycleStart" ? (
-              <div>Mins at replacement: {decimalFormat.format(tooltip.r.useAtReplacement)}</div>
+              <>
+                {tooltip.r.useAtReplacement !== null ? (
+                  <div>Mins at replacement: {decimalFormat.format(tooltip.r.useAtReplacement)}</div>
+                ) : undefined}
+                {tooltip.r.cntAtReplacement !== null ? (
+                  <div>Count at replacement: {decimalFormat.format(tooltip.r.cntAtReplacement)}</div>
+                ) : undefined}
+              </>
             ) : (
               <>
-                <div>
-                  Mins at beginning of cycle: {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}
-                </div>
-                <div>Mins at end of cycle: {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}</div>
+                {tooltip.r.totalUseAtBeginningOfCycle !== null ? (
+                  <div>
+                    Mins at beginning of cycle: {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}
+                  </div>
+                ) : undefined}
+                {tooltip.r.totalUseAtEndOfCycle !== null ? (
+                  <div>Mins at end of cycle: {decimalFormat.format(tooltip.r.totalUseAtEndOfCycle)}</div>
+                ) : undefined}
+                {tooltip.r.totalCntAtBeginningOfCycle !== null ? (
+                  <div>
+                    Count at beginning of cycle: {decimalFormat.format(tooltip.r.totalCntAtBeginningOfCycle)}
+                  </div>
+                ) : undefined}
+                {tooltip.r.totalCntAtEndOfCycle !== null ? (
+                  <div>Count at end of cycle: {decimalFormat.format(tooltip.r.totalCntAtEndOfCycle)}</div>
+                ) : undefined}
               </>
             )}
           </Stack>
@@ -253,6 +286,13 @@ const summaryColumns: ReadonlyArray<Column<SummaryColumnId, ToolReplacementSumma
     label: "Avg Use (min) at Replacement",
     getDisplay: (c) => decimalFormat.format(c.totalUseOfAllReplacements / c.numReplacements),
     getForSort: (c) => c.totalUseOfAllReplacements / c.numReplacements,
+  },
+  {
+    id: SummaryColumnId.AvgCntAtReplacement,
+    numeric: true,
+    label: "Avg Use (count) at Replacement",
+    getDisplay: (c) => decimalFormat.format(c.totalCntOfAllReplacements / c.numReplacements),
+    getForSort: (c) => c.totalCntOfAllReplacements / c.numReplacements,
   },
   {
     id: SummaryColumnId.Graph,
@@ -308,6 +348,8 @@ enum AllReplacementColumnId {
   Between,
   UseAtReplacement,
   UseAtEndOfCycle,
+  CntAtReplacement,
+  CntAtEndOfCycle,
 }
 
 const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolReplacementAndStationDate>> = [
@@ -349,10 +391,14 @@ const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolR
     id: AllReplacementColumnId.UseAtReplacement,
     numeric: true,
     label: "Use At Replacement / Start of Cycle (min)",
-    getDisplay: (c) =>
-      decimalFormat.format(
-        c.type === "ReplaceBeforeCycleStart" ? c.useAtReplacement : c.totalUseAtBeginningOfCycle
-      ),
+    getDisplay: (c) => {
+      const use = c.type === "ReplaceBeforeCycleStart" ? c.useAtReplacement : c.totalUseAtBeginningOfCycle;
+      if (use !== null && use !== undefined) {
+        return decimalFormat.format(use);
+      } else {
+        return "";
+      }
+    },
     getForSort: (c) =>
       c.type === "ReplaceBeforeCycleStart" ? c.useAtReplacement : c.totalUseAtBeginningOfCycle,
   },
@@ -360,9 +406,46 @@ const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolR
     id: AllReplacementColumnId.UseAtEndOfCycle,
     numeric: true,
     label: "Use At End of Cycle (min)",
-    getDisplay: (c) =>
-      c.type === "ReplaceBeforeCycleStart" ? "" : decimalFormat.format(c.totalUseAtEndOfCycle),
+    getDisplay: (c) => {
+      if (c.type === "ReplaceBeforeCycleStart") return "";
+      const use = c.totalUseAtEndOfCycle;
+      if (use !== null && use !== undefined) {
+        return decimalFormat.format(use);
+      } else {
+        return "";
+      }
+    },
     getForSort: (c) => (c.type === "ReplaceBeforeCycleStart" ? 0 : c.totalUseAtEndOfCycle),
+  },
+  {
+    id: AllReplacementColumnId.CntAtReplacement,
+    numeric: true,
+    label: "Use At Replacement / Start of Cycle (count)",
+    getDisplay: (c) => {
+      const use = c.type === "ReplaceBeforeCycleStart" ? c.cntAtReplacement : c.totalCntAtBeginningOfCycle;
+      if (use !== null && use !== undefined) {
+        return decimalFormat.format(use);
+      } else {
+        return "";
+      }
+    },
+    getForSort: (c) =>
+      c.type === "ReplaceBeforeCycleStart" ? c.cntAtReplacement : c.totalCntAtBeginningOfCycle,
+  },
+  {
+    id: AllReplacementColumnId.CntAtEndOfCycle,
+    numeric: true,
+    label: "Use At End of Cycle (count)",
+    getDisplay: (c) => {
+      if (c.type === "ReplaceBeforeCycleStart") return "";
+      const use = c.totalCntAtEndOfCycle;
+      if (use !== null && use !== undefined) {
+        return decimalFormat.format(use);
+      } else {
+        return "";
+      }
+    },
+    getForSort: (c) => (c.type === "ReplaceBeforeCycleStart" ? 0 : c.totalCntAtEndOfCycle),
   },
 ];
 

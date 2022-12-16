@@ -43,8 +43,8 @@ export type ToolReplacement =
       readonly tool: string;
       readonly pocket: number;
       readonly type: "ReplaceBeforeCycleStart";
-      readonly useAtReplacement: number;
-      readonly cntAtReplacement: number;
+      readonly useAtReplacement: number | null;
+      readonly cntAtReplacement: number | null;
     }
   | {
       readonly tool: string;
@@ -56,10 +56,10 @@ export type ToolReplacement =
       // the calculated average usage (from tool-usage.ts)
 
       // Thus, useAtReplacement estimate = totalUseAtBeginningOfCycle + (averageUse - totalUseAtEndOfCycle)
-      readonly totalUseAtBeginningOfCycle: number;
-      readonly totalUseAtEndOfCycle: number;
-      readonly totalCntAtBeginningOfCycle: number;
-      readonly totalCntAtEndOfCycle: number;
+      readonly totalUseAtBeginningOfCycle: number | null;
+      readonly totalUseAtEndOfCycle: number | null;
+      readonly totalCntAtBeginningOfCycle: number | null;
+      readonly totalCntAtEndOfCycle: number | null;
     };
 
 export type ToolReplacements = {
@@ -131,43 +131,56 @@ function addReplacementsFromLog(
     const replacements: Array<ToolReplacement> = [];
     for (const use of e.tooluse ?? []) {
       // see server/lib/BlackMaple.MachineFramework/backend/ToolSnapshotDiff.cs for the original calculations
-      const useDuring = use.toolUseDuringCycle ? durationToMinutes(use.toolUseDuringCycle) : 0;
-      const totalUseAtEnd = use.totalToolUseAtEndOfCycle
-        ? durationToMinutes(use.totalToolUseAtEndOfCycle)
-        : 0;
-      const cntDuring = use.toolUseCountDuringCycle ?? 0;
-      const totalCntAtEnd = use.totalToolUseCountAtEndOfCycle ?? 0;
+      const useDuring =
+        use.toolUseDuringCycle !== null && use.toolUseDuringCycle !== undefined
+          ? durationToMinutes(use.toolUseDuringCycle)
+          : null;
+      const totalUseAtEnd =
+        use.totalToolUseAtEndOfCycle !== null && use.totalToolUseAtEndOfCycle !== undefined
+          ? durationToMinutes(use.totalToolUseAtEndOfCycle)
+          : null;
+      const cntDuring = use.toolUseCountDuringCycle ?? null;
+      const totalCntAtEnd = use.totalToolUseCountAtEndOfCycle ?? null;
 
-      if (useDuring === totalUseAtEnd && cntDuring === totalCntAtEnd && (useDuring > 0 || cntDuring > 0)) {
+      if ((useDuring || cntDuring) && useDuring === totalUseAtEnd && cntDuring === totalCntAtEnd) {
         // replace before cycle start
         const last = old.recentUse.get(key)?.find((e) => e.tool === use.tool && e.pocket === use.pocket);
         if (last) {
           const lastTotalUse = last.totalToolUseAtEndOfCycle
             ? durationToMinutes(last.totalToolUseAtEndOfCycle)
-            : 0;
-          if (lastTotalUse > 0) {
+            : null;
+          if (lastTotalUse || last.totalToolUseCountAtEndOfCycle) {
             replacements.push({
               tool: use.tool,
               pocket: use.pocket,
               type: "ReplaceBeforeCycleStart",
               useAtReplacement: lastTotalUse,
-              cntAtReplacement: last.totalToolUseCountAtEndOfCycle ?? 0,
+              cntAtReplacement: last.totalToolUseCountAtEndOfCycle ?? null,
             });
           }
         }
-      } else if (use.toolChangeOccurred && useDuring > 0 && use.configuredToolLife) {
+      } else if (
+        use.toolChangeOccurred &&
+        ((useDuring && use.configuredToolLife) || (cntDuring && use.configuredToolLifeCount))
+      ) {
         // replace in the middle of the cycle
 
         // the server calculates  useDuring = lifetime - useAtStartOfCycle + useAtEndOfCycle
         // so solving for useAtStart = lifetime - useDuring + useAtEndOfCycle
-        const lifetime = durationToMinutes(use.configuredToolLife);
+        const lifetime =
+          use.configuredToolLife !== null && use.configuredToolLife !== undefined
+            ? durationToMinutes(use.configuredToolLife)
+            : null;
+        const lifeCnt = use.configuredToolLifeCount ?? null;
         replacements.push({
           tool: use.tool,
           pocket: use.pocket,
           type: "ReplaceInCycle",
-          totalUseAtBeginningOfCycle: lifetime - useDuring + totalUseAtEnd,
+          totalUseAtBeginningOfCycle:
+            lifetime !== null && useDuring !== null ? lifetime - useDuring + (totalUseAtEnd ?? 0) : null,
           totalUseAtEndOfCycle: totalUseAtEnd,
-          totalCntAtBeginningOfCycle: (use.configuredToolLifeCount ?? 0) - cntDuring + totalCntAtEnd,
+          totalCntAtBeginningOfCycle:
+            lifeCnt !== null && cntDuring !== null ? lifeCnt - cntDuring + (totalCntAtEnd ?? 0) : null,
           totalCntAtEndOfCycle: totalCntAtEnd,
         });
       }
