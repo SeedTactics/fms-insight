@@ -49,9 +49,10 @@ namespace BlackMaple.MachineFramework
      * This method returns two possible tools: startSerial and startPocket.  startSerial is the exact matching tool to endTool.
      * startPocket is a tool that was in the same pocket as the endTool but is a different tool.
      *
-     * When using serials, the tool might have been removed and a new serial inserted.  In this case, startPocket will have the old tool
-     * and startSerial will be null.  While unlikely, it is possible for the tool to not be removed but to change which pocket it is in.
-     * In this case, startPocket will have the new tool and startSerial will have the old tool.
+     * When using serials, if the tool with matching serial is still in the same pocket, it is put in startSerial.
+     * If the tool was removed and a new serial inserted, startPocket will have the old tool and startSerial will be null.
+     * While unlikely, it is possible for the tool to not be removed but to change which pocket it is in.
+     * In this case, startPocket will be null and startSerial will have the old tool.
      *
      * When not using serials, we attempt to guess when the tool was changed.  If the tool was changed, startPocket will have the new tool
      * and if the tool was not changed, startPocket will be null and startSerial will have the old tool.
@@ -64,10 +65,9 @@ namespace BlackMaple.MachineFramework
       if (!string.IsNullOrEmpty(endTool.Serial))
       {
         startSerials.TryGetValue(endTool.Serial, out startSerial);
-        startPockets.TryGetValue((endTool.Pocket, endTool.ToolName), out startPocket);
-        if (startSerial == startPocket)
+        if (startSerial == null)
         {
-          startPocket = null;
+          startPockets.TryGetValue((endTool.Pocket, endTool.ToolName), out startPocket);
         }
       }
       else
@@ -108,6 +108,7 @@ namespace BlackMaple.MachineFramework
 
       var startPockets = start.ToDictionary(t => (t.Pocket, t.ToolName));
       var startSerials = start.Where(t => !string.IsNullOrEmpty(t.Serial)).ToDictionary(t => t.Serial!);
+      var endPockets = end.ToDictionary(t => (t.Pocket, t.ToolName));
 
       var tools = ImmutableList.CreateBuilder<ToolUse>();
 
@@ -173,11 +174,16 @@ namespace BlackMaple.MachineFramework
 
       foreach (var startTool in startPockets.Values)
       {
+        var pocket = startTool.Pocket;
         // assume the tool was used until lifetime and then removed
         tools.Add(new ToolUse()
         {
           Tool = startTool.ToolName,
-          Pocket = startTool.Pocket,
+
+          // The (tool,pocket) must be unique, so use the negative of the pocket if it is already in the list.
+          // This can only occur in the rare case when serials are used and tools are shuffled around
+          // between multiple pockets.
+          Pocket = endPockets.ContainsKey((startTool.Pocket, startTool.ToolName)) ? -startTool.Pocket : startTool.Pocket,
           ToolChangeOccurred = true,
 
           ToolSerialAtStartOfCycle = startTool.Serial,

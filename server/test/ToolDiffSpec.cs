@@ -448,11 +448,22 @@ public class ToolDiffSpec
     {
       Tool = "tool1",
       Pocket = 4,
+      ToolChangeOccurred = null,
+      ToolSerialAtStartOfCycle = "ee",
+      ToolSerialAtEndOfCycle = "ee",
+      ToolUseDuringCycle = TimeSpan.FromSeconds(35 - 30),
+      TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(35),
+      ConfiguredToolLife = TimeSpan.FromSeconds(102),
+    });
+    expected.Add(new ToolUse()
+    {
+      Tool = "tool1",
+      Pocket = -4,
       ToolChangeOccurred = true,
       ToolSerialAtStartOfCycle = "ff",
-      ToolSerialAtEndOfCycle = "ee",
-      ToolUseDuringCycle = TimeSpan.FromSeconds(101 - 4 + 35 - 30),
-      TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(35),
+      ToolSerialAtEndOfCycle = null,
+      ToolUseDuringCycle = TimeSpan.FromSeconds(101 - 4),
+      TotalToolUseAtEndOfCycle = TimeSpan.Zero,
       ConfiguredToolLife = TimeSpan.FromSeconds(101),
     });
 
