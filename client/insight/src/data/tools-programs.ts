@@ -95,9 +95,7 @@ export interface ToolReport {
   readonly toolName: string;
   readonly machines: ReadonlyArray<ToolInMachine>;
   readonly minRemainingMinutes: number | null;
-  readonly machWithMinMinutes: string | null;
   readonly minRemainingCnt: number | null;
-  readonly machWithMinCnt: string | null;
   readonly parts: ReadonlyArray<PartToolUsage>;
 }
 
@@ -237,30 +235,26 @@ export function calcToolReport(
       const machGroups = LazySeq.of(toolsInMachine).groupBy((m) => m.machineName);
 
       const minMachMins = machGroups
-        .map(([machineName, toolsForMachine]) => ({
-          machineName,
-          remaining: LazySeq.of(toolsForMachine)
+        .map(([_, toolsForMachine]) =>
+          LazySeq.of(toolsForMachine)
             .collect((m) => m.remainingMinutes)
-            .sumBy((m) => m),
-        }))
-        .minBy((m) => m.remaining);
+            .sumBy((m) => m)
+        )
+        .minBy((m) => m);
 
       const minMachCnt = machGroups
-        .map(([machineName, toolsForMachine]) => ({
-          machineName,
-          remaining: LazySeq.of(toolsForMachine)
+        .map(([_, toolsForMachine]) =>
+          LazySeq.of(toolsForMachine)
             .collect((m) => m.remainingCnt)
-            .sumBy((m) => m),
-        }))
-        .minBy((m) => m.remaining);
+            .sumBy((m) => m)
+        )
+        .minBy((m) => m);
 
       return {
         toolName,
         machines: toolsInMachine,
-        minRemainingMinutes: minMachMins?.remaining ?? null,
-        machWithMinMinutes: minMachMins?.machineName ?? null,
-        minRemainingCnt: minMachCnt?.remaining ?? null,
-        machWithMinCnt: minMachCnt?.machineName ?? null,
+        minRemainingMinutes: minMachMins ?? null,
+        minRemainingCnt: minMachCnt ?? null,
         parts: parts.get(toolName) ?? [],
       };
     })
@@ -393,11 +387,9 @@ function buildToolReportHTML(
   } else {
     if (showTime) {
       table += "<th>Smallest Remaining Life (min)</th>";
-      table += "<th>Machine With Smallest Remaining Time</th>";
     }
     if (showCnts) {
       table += "<th>Smallest Remaining Life (count)</th>";
-      table += "<th>Machine With Smallest Remaining Count</th>";
     }
   }
   table += "</tr></thead>\n<tbody>\n";
@@ -427,11 +419,9 @@ function buildToolReportHTML(
     } else {
       if (showTime) {
         table += "<td>" + (tool.minRemainingMinutes ? tool.minRemainingMinutes.toFixed(1) : "") + "</td>";
-        table += "<td>" + (tool.machWithMinMinutes ?? "") + "</td>";
       }
       if (showCnts) {
         table += "<td>" + (tool.minRemainingCnt ? tool.minRemainingCnt.toFixed(1) : "") + "</td>";
-        table += "<td>" + (tool.machWithMinCnt ?? "") + "</td>";
       }
     }
     table += "</tr>\n";

@@ -258,6 +258,7 @@ function ToolRow(props: ToolRowProps) {
         $highlightedRow={schUseMin > totalLifeMin || schUseCnt > totalLifeCnt}
         $noticeRow={
           schUseMin <= totalLifeMin &&
+          schUseCnt <= totalLifeCnt &&
           ((props.tool.minRemainingMinutes !== null && schUseMin > props.tool.minRemainingMinutes) ||
             (props.tool.minRemainingCnt !== null && schUseCnt > props.tool.minRemainingCnt))
         }
