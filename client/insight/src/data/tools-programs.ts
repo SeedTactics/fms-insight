@@ -332,7 +332,7 @@ export const toolReportHasSerial = selector<boolean>({
     if (!report) return false;
     return LazySeq.of(report)
       .flatMap((r) => r.machines)
-      .anyMatch((t) => !!t.serial && t.serial !== "");
+      .anyMatch((t) => t.serial != null && t.serial !== "");
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
@@ -344,7 +344,7 @@ export const toolReportHasTimeUsage = selector<boolean>({
     if (!report) return false;
     return LazySeq.of(report)
       .flatMap((r) => r.machines)
-      .anyMatch((t) => !!t.currentUseMinutes && t.currentUseMinutes > 0);
+      .anyMatch((t) => t.currentUseMinutes != null);
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
@@ -356,7 +356,7 @@ export const toolReportHasCntUsage = selector<boolean>({
     if (!report) return false;
     return LazySeq.of(report)
       .flatMap((r) => r.machines)
-      .anyMatch((t) => !!t.currentUseCnt && t.currentUseCnt > 0);
+      .anyMatch((t) => t.currentUseCnt != null);
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });

@@ -81,6 +81,11 @@ interface ToolRowProps {
   readonly showingMultipleMachines: boolean;
 }
 
+const cntFormat = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 1,
+});
+
 const ToolTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
   $highlightedRow?: boolean;
@@ -110,8 +115,10 @@ const ToolDetailSummaryRow = styled(TableRow)({
 
 function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> }) {
   const showSerial = useRecoilValue(toolReportHasSerial);
-  const showTime = useRecoilValue(toolReportHasTimeUsage);
-  const showCnts = useRecoilValue(toolReportHasCntUsage);
+  const showTime = LazySeq.of(machines).anyMatch(
+    (m) => m.currentUseMinutes != null || m.lifetimeMinutes != null
+  );
+  const showCnts = LazySeq.of(machines).anyMatch((m) => m.currentUseCnt != null || m.lifetimeCnt != null);
 
   const byMachine = LazySeq.of(machines).toLookupOrderedMap(
     (m) => m.machineName,
@@ -172,13 +179,13 @@ function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> })
                 {showCnts ? (
                   <>
                     <TableCell align="right">
-                      {m.currentUseCnt !== null ? m.currentUseCnt.toString() : ""}
+                      {m.currentUseCnt !== null ? cntFormat.format(m.currentUseCnt) : ""}
                     </TableCell>
                     <TableCell align="right">
-                      {m.lifetimeCnt !== null ? m.lifetimeCnt.toString() : ""}
+                      {m.lifetimeCnt !== null ? cntFormat.format(m.lifetimeCnt) : ""}
                     </TableCell>
                     <TableCell align="right">
-                      {m.remainingCnt !== null ? m.remainingCnt.toString() : ""}
+                      {m.remainingCnt !== null ? cntFormat.format(m.remainingCnt) : ""}
                     </TableCell>
                   </>
                 ) : undefined}
@@ -198,10 +205,7 @@ function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> })
                 ) : undefined}
                 {showCnts ? (
                   <TableCell align="right" colSpan={showTime ? 3 : 1}>
-                    {tools
-                      .valuesToAscLazySeq()
-                      .sumBy((m) => m.remainingCnt ?? 0)
-                      .toFixed(1)}
+                    {cntFormat.format(tools.valuesToAscLazySeq().sumBy((m) => m.remainingCnt ?? 0))}
                   </TableCell>
                 ) : undefined}
               </ToolDetailSummaryRow>
@@ -220,9 +224,7 @@ function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> })
           ) : undefined}
           {showCnts ? (
             <TableCell align="right" colSpan={showTime ? 3 : 1}>
-              {LazySeq.of(machines)
-                .sumBy((m) => m.remainingCnt ?? 0)
-                .toFixed(1)}
+              {cntFormat.format(LazySeq.of(machines).sumBy((m) => m.remainingCnt ?? 0))}
             </TableCell>
           ) : undefined}
         </TableRow>
@@ -271,14 +273,14 @@ function ToolRow(props: ToolRowProps) {
         <TableCell>{props.tool.toolName}</TableCell>
         {showTime ? (
           <>
-            <TableCell align="right">{schUseMin.toFixed(1)}</TableCell>
-            <TableCell align="right">{totalLifeMin.toFixed(1)}</TableCell>
+            <TableCell align="right">{schUseMin > 0 ? schUseMin.toFixed(1) : ""}</TableCell>
+            <TableCell align="right">{totalLifeMin > 0 ? totalLifeMin.toFixed(1) : ""}</TableCell>
           </>
         ) : undefined}
         {showCnts ? (
           <>
-            <TableCell align="right">{schUseCnt.toFixed(1)}</TableCell>
-            <TableCell align="right">{totalLifeCnt.toFixed(1)}</TableCell>
+            <TableCell align="right">{schUseCnt > 0 ? cntFormat.format(schUseCnt) : ""}</TableCell>
+            <TableCell align="right">{totalLifeCnt > 0 ? cntFormat.format(totalLifeCnt) : ""}</TableCell>
           </>
         ) : undefined}
         {props.showingMultipleMachines ? (
@@ -290,7 +292,7 @@ function ToolRow(props: ToolRowProps) {
             ) : undefined}
             {showCnts ? (
               <TableCell align="right">
-                {props.tool.minRemainingCnt !== null ? props.tool.minRemainingCnt.toString() : ""}
+                {props.tool.minRemainingCnt !== null ? cntFormat.format(props.tool.minRemainingCnt) : ""}
               </TableCell>
             ) : undefined}
           </>
@@ -347,10 +349,14 @@ function ToolRow(props: ToolRowProps) {
                           <TableCell>{p.program}</TableCell>
                           <TableCell align="right">{p.quantity}</TableCell>
                           {showTime ? (
-                            <TableCell align="right">{p.scheduledUseMinutes.toFixed(1)}</TableCell>
+                            <TableCell align="right">
+                              {p.scheduledUseMinutes > 0 ? p.scheduledUseMinutes.toFixed(1) : ""}
+                            </TableCell>
                           ) : undefined}
                           {showCnts ? (
-                            <TableCell align="right">{p.scheduledUseCnt.toFixed(1)}</TableCell>
+                            <TableCell align="right">
+                              {p.scheduledUseCnt > 0 ? cntFormat.format(p.scheduledUseCnt) : ""}
+                            </TableCell>
                           ) : undefined}
                         </TableRow>
                       ))}
@@ -393,6 +399,13 @@ export function ToolSummaryTable(): JSX.Element {
   if (tools === null) {
     return <div />;
   }
+
+  const showingMultipleMachines =
+    machineFilter === null &&
+    LazySeq.of(tools)
+      .flatMap((t) => t.machines)
+      .distinctBy((m) => m.machineName)
+      .length() > 1;
 
   const rows = LazySeq.of(tools).sortWith((a: ToolReport, b: ToolReport) => {
     let c = 0;
@@ -518,7 +531,7 @@ export function ToolSummaryTable(): JSX.Element {
                   <TableCell sortDirection={sortCol === "RemainingTotalMin" ? sortDir : false} align="right">
                     <Tooltip
                       title={
-                        machineFilter === null
+                        showingMultipleMachines
                           ? "Remaining life summed over all machines"
                           : "Remaining life of all tools in the machine"
                       }
@@ -528,7 +541,7 @@ export function ToolSummaryTable(): JSX.Element {
                         direction={sortDir}
                         onClick={() => toggleSort("RemainingTotalMin")}
                       >
-                        {machineFilter === null
+                        {showingMultipleMachines
                           ? "Total Remaining Life (minutes)"
                           : "Remaining Life (minutes)"}
                       </TableSortLabel>
@@ -552,7 +565,7 @@ export function ToolSummaryTable(): JSX.Element {
                   <TableCell sortDirection={sortCol === "RemainingTotalCnt" ? sortDir : false} align="right">
                     <Tooltip
                       title={
-                        machineFilter === null
+                        showingMultipleMachines
                           ? "Remaining life summed over all machines"
                           : "Remaining life of all tools in the machine"
                       }
@@ -562,13 +575,13 @@ export function ToolSummaryTable(): JSX.Element {
                         direction={sortDir}
                         onClick={() => toggleSort("RemainingTotalCnt")}
                       >
-                        {machineFilter === null ? "Total Remaining Life (count)" : "Remaining Life (count)"}
+                        {showingMultipleMachines ? "Total Remaining Life (count)" : "Remaining Life (count)"}
                       </TableSortLabel>
                     </Tooltip>
                   </TableCell>
                 </>
               ) : undefined}
-              {machineFilter === null ? (
+              {showingMultipleMachines ? (
                 <>
                   {showTime ? (
                     <TableCell
@@ -609,7 +622,7 @@ export function ToolSummaryTable(): JSX.Element {
           </TableHead>
           <TableBody>
             {rows.map((tool) => (
-              <ToolRow key={tool.toolName} tool={tool} showingMultipleMachines={machineFilter === null} />
+              <ToolRow key={tool.toolName} tool={tool} showingMultipleMachines={showingMultipleMachines} />
             ))}
           </TableBody>
         </Table>

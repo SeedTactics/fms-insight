@@ -411,7 +411,9 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
       }
 
       if (use.toolUseCountDuringCycle && use.toolUseCountDuringCycle > 0) {
-        msg = (msg === null ? "" : " | ") + use.toolUseCountDuringCycle.toString() + " uses during cycle.";
+        msg =
+          (msg === null ? "" : " | ") +
+          `${use.toolUseCountDuringCycle} use${use.toolUseCountDuringCycle > 1 ? "s" : ""} during cycle.`;
 
         if (use.totalToolUseCountAtEndOfCycle && use.configuredToolLifeCount) {
           msg += ` Total use count at end of cycle: ${use.totalToolUseCountAtEndOfCycle}/${
