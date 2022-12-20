@@ -57,11 +57,15 @@ namespace MachineWatchTest
   {
     private RepositoryConfig _repoCfg;
     private IRepository _jobLog;
+    private Fixture _fixture;
 
     public JobLogTest()
     {
       _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
       _jobLog = _repoCfg.OpenConnection();
+      _fixture = new Fixture();
+      _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
+      _fixture.Customizations.Add(new InjectNullValuesForNullableTypesSpecimenBuilder());
     }
 
     public void Dispose()
@@ -336,14 +340,7 @@ namespace MachineWatchTest
       );
       logs.Add(departInbound);
 
-      var machineStartPockets = new List<ToolPocketSnapshot> {
-  new ToolPocketSnapshot() {
-    PocketNumber = 10, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromMinutes(20)
-  },
-  new ToolPocketSnapshot() {
-    PocketNumber = 20, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromMinutes(40)
-  }
-      };
+      var machineStartPockets = _fixture.CreateMany<ToolSnapshot>(40);
       var machineStartActualCycle = _jobLog.RecordMachineStart(
           mats: new[] { mat15 }.Select(EventLogMaterial.FromLogMat),
           pallet: "rrrr",
@@ -363,6 +360,7 @@ namespace MachineWatchTest
       logs.Add(machineStartActualCycle);
       _jobLog.ToolPocketSnapshotForCycle(machineStartActualCycle.Counter).Should().BeEquivalentTo(machineStartPockets);
 
+      var machineEndUsage = _fixture.CreateMany<ToolUse>(40);
       var machineEndActualCycle = _jobLog.RecordMachineEnd(
           mats: new[] { mat2 }.Select(EventLogMaterial.FromLogMat),
           pallet: "www",
@@ -374,34 +372,10 @@ namespace MachineWatchTest
           elapsed: TimeSpan.FromMinutes(12),
           active: TimeSpan.FromMinutes(99),
           extraData: new Dictionary<string, string>() {
-        {"aa", "AA"}, {"bb", "BB"}
+            {"aa", "AA"}, {"bb", "BB"}
           },
-          tools: ImmutableList.Create(
-            new ToolUse()
-            {
-              Tool = "tool1",
-              Pocket = 123,
-              ToolUseDuringCycle = TimeSpan.FromMinutes(10),
-              TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(20),
-              ConfiguredToolLife = TimeSpan.FromMinutes(30)
-            },
-            new ToolUse()
-            {
-              Tool = "tool1",
-              Pocket = 400,
-              ToolUseDuringCycle = TimeSpan.FromMinutes(40),
-              TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(50),
-              ConfiguredToolLife = TimeSpan.FromMinutes(60)
-            },
-            new ToolUse()
-            {
-              Tool = "tool2",
-              Pocket = 123,
-              ToolUseDuringCycle = TimeSpan.FromMinutes(100),
-              TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(130),
-              ConfiguredToolLife = TimeSpan.FromMinutes(144)
-            }
-          )
+          tools: machineEndUsage.ToImmutableList(),
+          deleteToolSnapshotsFromCntr: machineStartActualCycle.Counter
       );
       var machineEndExpectedCycle =
           new LogEntry(
@@ -409,40 +383,19 @@ namespace MachineWatchTest
         LogType.MachineCycle, "xxx", 177,
         "progggg", false, start.AddHours(5).AddMinutes(19), "4444", false,
         TimeSpan.FromMinutes(12), TimeSpan.FromMinutes(99));
-      machineEndExpectedCycle %= e =>
+      machineEndExpectedCycle = machineEndExpectedCycle with
       {
-        e.ProgramDetails["aa"] = "AA";
-        e.ProgramDetails["bb"] = "BB";
-        e.Tools.Add(new ToolUse()
-        {
-          Tool = "tool1",
-          Pocket = 123,
-          ToolUseDuringCycle = TimeSpan.FromMinutes(10),
-          TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(20),
-          ConfiguredToolLife = TimeSpan.FromMinutes(30)
-        });
-        e.Tools.Add(new ToolUse()
-        {
-          Tool = "tool1",
-          Pocket = 400,
-          ToolUseDuringCycle = TimeSpan.FromMinutes(40),
-          TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(50),
-          ConfiguredToolLife = TimeSpan.FromMinutes(60)
-        });
-        e.Tools.Add(
-            new ToolUse()
-            {
-              Tool = "tool2",
-              Pocket = 123,
-              ToolUseDuringCycle = TimeSpan.FromMinutes(100),
-              TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(130),
-              ConfiguredToolLife = TimeSpan.FromMinutes(144)
-            }
-        );
+        ProgramDetails = ImmutableDictionary<string, string>.Empty
+          .Add("aa", "AA")
+          .Add("bb", "BB"),
+        Tools = machineEndUsage.ToImmutableList()
       };
       machineEndActualCycle.Should().BeEquivalentTo(machineEndExpectedCycle, options => options.ComparingByMembers<LogEntry>());
       logs.Add(machineEndActualCycle);
       logsForMat2.Add(machineEndActualCycle);
+      // start snapshot deleted
+      _jobLog.ToolPocketSnapshotForCycle(machineStartActualCycle.Counter).Should().BeEmpty();
+
 
       var unloadStartActualCycle = _jobLog.RecordUnloadStart(
           mats: new[] { mat15, mat19 }.Select(EventLogMaterial.FromLogMat),
@@ -1833,198 +1786,6 @@ namespace MachineWatchTest
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(1);
       _jobLog.NextProcessForQueuedMaterial(mat2.MaterialID).Should().Be(1);
       _jobLog.NextProcessForQueuedMaterial(mat3.MaterialID).Should().Be(1);
-    }
-
-    [Fact]
-    public void ToolSnapshotDifference()
-    {
-      var start = new List<ToolPocketSnapshot>();
-      var end = new List<ToolPocketSnapshot>();
-      var expected = new List<ToolUse>();
-
-      // first a normal use
-      start.Add(
-        new ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 0, Tool = "tool1", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool1",
-        Pocket = 0,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(50 - 10),
-        TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(50),
-        ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = false
-      });
-
-      // now an unused tool
-      start.Add(
-        new ToolPocketSnapshot() { PocketNumber = 1, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 1, Tool = "tool2", CurrentUse = TimeSpan.FromSeconds(10), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-
-      // now a tool which is replaced and used
-      start.Add(
-        new ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(70), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 2, Tool = "tool3", CurrentUse = TimeSpan.FromSeconds(20), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool3",
-        Pocket = 2,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(100 - 70 + 20),
-        TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(20),
-        ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = true
-      });
-
-      // now a pocket with two tools
-      start.Add(
-        new ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(60), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      start.Add(
-        new ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(200) }
-      );
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool4", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 3, Tool = "tool5", CurrentUse = TimeSpan.FromSeconds(110), ToolLife = TimeSpan.FromSeconds(200) }
-      );
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool4",
-        Pocket = 3,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(100 - 60),
-        TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(0),
-        ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = true
-      });
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool5",
-        Pocket = 3,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(110 - 80),
-        TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(110),
-        ConfiguredToolLife = TimeSpan.FromSeconds(200),
-        ToolChangeOccurred = false
-      });
-
-      // now a tool which is removed and a new tool added
-      start.Add(
-        new ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool6", CurrentUse = TimeSpan.FromSeconds(65), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 4, Tool = "tool7", CurrentUse = TimeSpan.FromSeconds(30), ToolLife = TimeSpan.FromSeconds(120) }
-      );
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool6",
-        Pocket = 4,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(100 - 65),
-        TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(0),
-        ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = true
-      });
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool7",
-        Pocket = 4,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(30),
-        TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(30),
-        ConfiguredToolLife = TimeSpan.FromSeconds(120),
-        ToolChangeOccurred = false
-      });
-
-      // now a tool which is removed and nothing added
-      start.Add(
-        new ToolPocketSnapshot() { PocketNumber = 5, Tool = "tool8", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool8",
-        Pocket = 5,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(100 - 80),
-        TotalToolUseAtEndOfCycle = TimeSpan.Zero,
-        ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = true
-      });
-
-      // now a new tool which is appears
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 6, Tool = "tool9", CurrentUse = TimeSpan.FromSeconds(15), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool9",
-        Pocket = 6,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(15),
-        TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(15),
-        ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = false
-      });
-
-      // a new unused tool
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 7, Tool = "tool10", CurrentUse = TimeSpan.FromSeconds(0), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-
-      // same tools in separate pockets
-      start.Add(
-        new ToolPocketSnapshot() { PocketNumber = 8, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(50), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 8, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(77), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      start.Add(
-        new ToolPocketSnapshot() { PocketNumber = 9, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(80), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 9, Tool = "tool11", CurrentUse = TimeSpan.FromSeconds(13), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool11",
-        Pocket = 8,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(77 - 50),
-        TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(77),
-        ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = false
-      });
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool11",
-        Pocket = 9,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(100 - 80 + 13),
-        TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(13),
-        ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = true
-      });
-
-      // a tool which changed between cycles to the starting was zero
-      start.Add(
-        new ToolPocketSnapshot() { PocketNumber = 10, Tool = "tool12", CurrentUse = TimeSpan.Zero, ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      end.Add(
-        new ToolPocketSnapshot() { PocketNumber = 10, Tool = "tool12", CurrentUse = TimeSpan.FromSeconds(34), ToolLife = TimeSpan.FromSeconds(100) }
-      );
-      expected.Add(new ToolUse()
-      {
-        Tool = "tool12",
-        Pocket = 10,
-        ToolUseDuringCycle = TimeSpan.FromSeconds(34),
-        TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(34),
-        ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = false
-      });
-
-      ToolSnapshotDiff.Diff(start, end).Should().BeEquivalentTo(expected);
     }
 
     [Theory]

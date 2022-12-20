@@ -40,36 +40,81 @@ using Germinate;
 namespace BlackMaple.MachineFramework
 {
   [DataContract]
-  public record ToolInMachine
+  public record ToolSnapshot
   {
-    [DataMember(IsRequired = true)]
-    public string MachineGroupName { get; init; } = "";
-
-    [DataMember(IsRequired = true)]
-    public int MachineNum { get; init; }
-
     [DataMember(IsRequired = true)]
     public int Pocket { get; init; }
 
     [DataMember(IsRequired = true)]
     public string ToolName { get; init; } = "";
 
-    [DataMember(IsRequired = true)]
-    public TimeSpan CurrentUse { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? Serial { get; init; }
+
+    // The usage can optionally be tracked by time and if so the time and lifetime are kept in these fields
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] // default value = true for backards compatibility
+    public TimeSpan? CurrentUse { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public TimeSpan? TotalLifeTime { get; init; }
+
+    // The usage can also optionally be tracked by a count of the number of uses (number of times tool is loaded into the spindle),
+    // and if so the current count and lifetime are kept in these fields
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? CurrentUseCount { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? TotalLifeCount { get; init; }
+  }
+
+  [DataContract]
+  public record ToolInMachine : ToolSnapshot
+  {
+    [DataMember(IsRequired = true)]
+    public string MachineGroupName { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public int MachineNum { get; init; }
   }
 
   [DataContract, Draftable]
   public record ToolUse
   {
-    [DataMember(IsRequired = true)] public string Tool { get; init; } = "";
-    [DataMember(IsRequired = true)] public int Pocket { get; init; }
-    [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; init; }
-    [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ConfiguredToolLife { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public bool? ToolChangeOccurred { get; init; }
+    [DataMember(IsRequired = true)]
+    public string Tool { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public int Pocket { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public bool? ToolChangeOccurred { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? ToolSerialAtStartOfCycle { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? ToolSerialAtEndOfCycle { get; init; }
+
+    // The usage can optionally be tracked by time and if so the time and lifetime are kept in these fields
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] // emit default value for backwards compatibility
+    public TimeSpan? ToolUseDuringCycle { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = true)] // emit default value for backwards compatibility
+    public TimeSpan? TotalToolUseAtEndOfCycle { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public TimeSpan? ConfiguredToolLife { get; init; }
+
+    // The usage can also optionally be tracked by a count of the number of uses (number of times tool is loaded into the spindle),
+    // and if so the current count and lifetime are kept in these fields
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? ToolUseCountDuringCycle { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? TotalToolUseCountAtEndOfCycle { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? ConfiguredToolLifeCount { get; init; }
 
     public static ToolUse operator %(ToolUse t, Action<IToolUseDraft> f)
        => t.Produce(f);

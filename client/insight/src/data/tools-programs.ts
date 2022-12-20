@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2022, John Lenz
 
 All rights reserved.
 
@@ -59,6 +59,7 @@ function averageToolUse(
       .map(([toolName, usageInCycles]) => ({
         toolName: toolName,
         cycleUsageMinutes: LazySeq.of(usageInCycles).sumBy((c) => c.cycleUsageMinutes) / usageInCycles.length,
+        cycleUsageCnt: LazySeq.of(usageInCycles).sumBy((c) => c.cycleUsageCnt) / usageInCycles.length,
         toolChangedDuringMiddleOfCycle: false,
       }))
       .toMutableArray();
@@ -72,9 +73,13 @@ function averageToolUse(
 export interface ToolInMachine {
   readonly machineName: string;
   readonly pocket: number;
-  readonly currentUseMinutes: number;
-  readonly lifetimeMinutes: number;
-  readonly remainingMinutes: number;
+  readonly serial?: string;
+  readonly currentUseMinutes: number | null;
+  readonly lifetimeMinutes: number | null;
+  readonly remainingMinutes: number | null;
+  readonly currentUseCnt: number | null;
+  readonly lifetimeCnt: number | null;
+  readonly remainingCnt: number | null;
 }
 
 export interface PartToolUsage {
@@ -83,13 +88,14 @@ export interface PartToolUsage {
   readonly program: string;
   readonly quantity: number;
   readonly scheduledUseMinutes: number;
+  readonly scheduledUseCnt: number;
 }
 
 export interface ToolReport {
   readonly toolName: string;
   readonly machines: ReadonlyArray<ToolInMachine>;
-  readonly minRemainingMinutes: number;
-  readonly minRemainingMachine: string;
+  readonly minRemainingMinutes: number | null;
+  readonly minRemainingCnt: number | null;
   readonly parts: ReadonlyArray<PartToolUsage>;
 }
 
@@ -166,6 +172,7 @@ export function calcToolReport(
             program: partAndProg.operation,
             quantity: qty,
             scheduledUseMinutes: tool.cycleUsageMinutes,
+            scheduledUseCnt: tool.cycleUsageCnt,
           },
         }));
       } else {
@@ -194,32 +201,60 @@ export function calcToolReport(
           (t) => t.pocket
         )
         .map((m) => {
-          const currentUseMinutes = m.currentUse !== "" ? durationToMinutes(m.currentUse) : 0;
+          const currentUseMinutes =
+            m.currentUse !== null && m.currentUse !== undefined && m.currentUse !== ""
+              ? durationToMinutes(m.currentUse)
+              : null;
           const lifetimeMinutes =
-            m.totalLifeTime && m.totalLifeTime !== "" ? durationToMinutes(m.totalLifeTime) : 0;
+            m.totalLifeTime !== null && m.totalLifeTime !== undefined && m.totalLifeTime !== ""
+              ? durationToMinutes(m.totalLifeTime)
+              : null;
           return {
             machineName: m.machineGroupName + " #" + m.machineNum.toString(),
             pocket: m.pocket,
+            serial: m.serial,
             currentUseMinutes,
             lifetimeMinutes,
-            remainingMinutes: Math.max(0, lifetimeMinutes - currentUseMinutes),
+            remainingMinutes:
+              currentUseMinutes !== null && lifetimeMinutes !== null
+                ? Math.max(0, lifetimeMinutes - currentUseMinutes)
+                : null,
+            currentUseCnt: m.currentUseCount ?? null,
+            lifetimeCnt: m.totalLifeCount ?? null,
+            remainingCnt:
+              m.currentUseCount !== null &&
+              m.currentUseCount !== undefined &&
+              m.totalLifeCount !== null &&
+              m.totalLifeCount !== undefined
+                ? Math.max(0, m.totalLifeCount - m.currentUseCount)
+                : null,
           };
         })
         .toRArray();
 
-      const minMachine = LazySeq.of(toolsInMachine)
-        .groupBy((m) => m.machineName)
-        .map(([machineName, toolsForMachine]) => ({
-          machineName,
-          remaining: LazySeq.of(toolsForMachine).sumBy((m) => m.remainingMinutes),
-        }))
-        .minBy((m) => m.remaining);
+      const machGroups = LazySeq.of(toolsInMachine).groupBy((m) => m.machineName);
+
+      const minMachMins = machGroups
+        .map(([_, toolsForMachine]) =>
+          LazySeq.of(toolsForMachine)
+            .collect((m) => m.remainingMinutes)
+            .sumBy((m) => m)
+        )
+        .minBy((m) => m);
+
+      const minMachCnt = machGroups
+        .map(([_, toolsForMachine]) =>
+          LazySeq.of(toolsForMachine)
+            .collect((m) => m.remainingCnt)
+            .sumBy((m) => m)
+        )
+        .minBy((m) => m);
 
       return {
         toolName,
         machines: toolsInMachine,
-        minRemainingMachine: minMachine?.machineName ?? "",
-        minRemainingMinutes: minMachine?.remaining ?? 0,
+        minRemainingMinutes: minMachMins ?? null,
+        minRemainingCnt: minMachCnt ?? null,
         parts: parts.get(toolName) ?? [],
       };
     })
@@ -290,6 +325,42 @@ export const currentToolReport = selector<ReadonlyArray<ToolReport> | null>({
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
 
+export const toolReportHasSerial = selector<boolean>({
+  key: "tool-report-has-serial",
+  get: ({ get }) => {
+    const report = get(currentToolReport);
+    if (!report) return false;
+    return LazySeq.of(report)
+      .flatMap((r) => r.machines)
+      .anyMatch((t) => t.serial != null && t.serial !== "");
+  },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+});
+
+export const toolReportHasTimeUsage = selector<boolean>({
+  key: "tool-report-has-time-usage",
+  get: ({ get }) => {
+    const report = get(currentToolReport);
+    if (!report) return false;
+    return LazySeq.of(report)
+      .flatMap((r) => r.machines)
+      .anyMatch((t) => t.currentUseMinutes != null);
+  },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+});
+
+export const toolReportHasCntUsage = selector<boolean>({
+  key: "tool-report-has-cnt-usage",
+  get: ({ get }) => {
+    const report = get(currentToolReport);
+    if (!report) return false;
+    return LazySeq.of(report)
+      .flatMap((r) => r.machines)
+      .anyMatch((t) => t.currentUseCnt != null);
+  },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+});
+
 export function useRefreshToolReport(): () => Promise<void> {
   return useRecoilCallback(({ set }) => async () => {
     set(toolsInMachine, await MachineBackend.getToolsInMachines());
@@ -297,45 +368,67 @@ export function useRefreshToolReport(): () => Promise<void> {
   });
 }
 
-export function buildToolReportHTML(tools: Iterable<ToolReport>, singleMachine: boolean): string {
+function buildToolReportHTML(
+  tools: Iterable<ToolReport>,
+  { showTime, showCnts }: { showTime: boolean; showCnts: boolean }
+): string {
   let table = "<table>\n<thead><tr>";
-  table += "<th>Tool</th>";
-  table += "<th>Scheduled Use (min)</th>";
-  table += "<th>Total Remaining Life (min)</th>";
-  if (singleMachine) {
-    table += "<th>Pockets</th>";
-  } else {
-    table += "<th>Smallest Remaining Life (min)</th>";
-    table += "<th>Machine With Smallest Remaining Life</th>";
+  table += "<th>Tool</th><th>Machine</th><th>Pocket</th>";
+  if (showTime) {
+    table +=
+      "<th>Scheduled Use (min)</th><th>Current Use (min)</th><th>Lifetime (min)</th><th>Remaining Life (min)</th>";
+  }
+  if (showCnts) {
+    table +=
+      "<th>Scheduled Use (cnt)</th><th>Current Use (cnt)</th><th>Lifetime (cnt)</th><th>Remaining Life (cnt)</th>";
   }
   table += "</tr></thead>\n<tbody>\n";
 
   for (const tool of tools) {
-    table += "<tr><td>" + tool.toolName + "</td>";
+    for (const mach of tool.machines) {
+      table += `<tr><td>${tool.toolName}</td><td>${mach.machineName}</td><td>${mach.pocket}</td>`;
 
-    const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
-    table += "<td>" + schUse.toFixed(1) + "</td>";
+      if (showTime) {
+        const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
+        table += "<td>" + schUse.toFixed(1) + "</td>";
 
-    const totalLife = LazySeq.of(tool.machines).sumBy((m) => m.remainingMinutes);
-    table += "<td>" + totalLife.toFixed(1) + "</td>";
+        table += "<td>" + (mach.currentUseMinutes ? mach.currentUseMinutes.toFixed(1) : "") + "</td>";
+        table += "<td>" + (mach.lifetimeMinutes ? mach.lifetimeMinutes.toFixed(1) : "") + "</td>";
+        table += "<td>" + (mach.remainingMinutes ? mach.remainingMinutes.toFixed(1) : "") + "</td>";
+      }
 
-    if (singleMachine) {
-      const pockets = tool.machines.map((m) => m.pocket.toString());
-      table += "<td>" + pockets.join(", ") + "</td>";
-    } else {
-      table += "<td>" + tool.minRemainingMinutes.toFixed(1) + "</td>";
-      table += "<td>" + tool.minRemainingMachine + "</td>";
+      if (showCnts) {
+        const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseCnt * p.quantity);
+        table += "<td>" + schUse.toFixed(1) + "</td>";
+
+        table += "<td>" + (mach.currentUseCnt ? mach.currentUseCnt.toFixed(1) : "") + "</td>";
+        table += "<td>" + (mach.lifetimeCnt ? mach.lifetimeCnt.toFixed(1) : "") + "</td>";
+        table += "<td>" + (mach.remainingCnt ? mach.remainingCnt.toFixed(1) : "") + "</td>";
+      }
+
+      table += "</tr>\n";
     }
-    table += "</tr>\n";
   }
   table += "</tbody></table>";
 
   return table;
 }
 
-export function copyToolReportToClipboard(tools: Iterable<ToolReport>, singleMachine: boolean): void {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-  copy(buildToolReportHTML(tools, singleMachine));
+export function useCopyToolReportToClipboard(): () => void {
+  return useRecoilCallback(
+    ({ snapshot }) =>
+      () => {
+        const tools = snapshot.getLoadable(currentToolReport).valueMaybe();
+        if (!tools) return;
+        copy(
+          buildToolReportHTML(tools, {
+            showTime: snapshot.getLoadable(toolReportHasTimeUsage).valueMaybe() ?? false,
+            showCnts: snapshot.getLoadable(toolReportHasCntUsage).valueMaybe() ?? false,
+          })
+        );
+      },
+    []
+  );
 }
 
 export interface CellControllerProgram {

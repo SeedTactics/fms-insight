@@ -115,6 +115,15 @@ function ProgramRow(props: ProgramRowProps) {
 
   const numCols = 8 + (props.showCellCtrlCol ? 1 : 0) + (props.showRevCol ? 1 : 0);
 
+  const toolsHaveTime =
+    props.program.toolUse !== null &&
+    props.program.toolUse.tools.length > 0 &&
+    LazySeq.of(props.program.toolUse.tools).anyMatch((t) => t.cycleUsageMinutes > 0);
+  const toolsHaveCnt =
+    props.program.toolUse !== null &&
+    props.program.toolUse.tools.length > 0 &&
+    LazySeq.of(props.program.toolUse.tools).anyMatch((t) => t.cycleUsageCnt > 0);
+
   return (
     <>
       <ProgramTableRow>
@@ -192,14 +201,22 @@ function ProgramRow(props: ProgramRowProps) {
                   <TableHead>
                     <TableRow>
                       <TableCell>Tool</TableCell>
-                      <TableCell align="right">Estimated Usage (min)</TableCell>
+                      {toolsHaveTime ? <TableCell align="right">Estimated Usage (min)</TableCell> : undefined}
+                      {toolsHaveCnt ? (
+                        <TableCell align="right">Estimated Usage (count)</TableCell>
+                      ) : undefined}
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {LazySeq.of(props.program.toolUse.tools).map((t, idx) => (
                       <TableRow key={idx}>
                         <TableCell>{t.toolName}</TableCell>
-                        <TableCell align="right">{t.cycleUsageMinutes.toFixed(1)}</TableCell>
+                        {toolsHaveTime ? (
+                          <TableCell align="right">{t.cycleUsageMinutes.toFixed(1)}</TableCell>
+                        ) : undefined}
+                        {toolsHaveCnt ? (
+                          <TableCell align="right">{t.cycleUsageCnt.toFixed(1)}</TableCell>
+                        ) : undefined}
                       </TableRow>
                     ))}
                   </TableBody>

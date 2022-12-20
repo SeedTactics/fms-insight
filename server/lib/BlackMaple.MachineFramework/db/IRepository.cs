@@ -58,7 +58,7 @@ namespace BlackMaple.MachineFramework
     List<LogEntry> CurrentPalletLog(string pallet);
     string OriginalMessageByForeignID(string foreignID);
     DateTime LastPalletCycleTime(string pallet);
-    IEnumerable<ToolPocketSnapshot> ToolPocketSnapshotForCycle(long counter);
+    IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     string MaxForeignID();
     DateTime MaxLogDate();
     string ForeignIDForCounter(long counter);
@@ -75,8 +75,8 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> RecordUnloadEnd(IEnumerable<EventLogMaterial> mats, string pallet, int lulNum, DateTime timeUTC, TimeSpan elapsed, TimeSpan active, Dictionary<long, string> unloadIntoQueues = null, string foreignId = null, string originalMessage = null);
     LogEntry RecordManualWorkAtLULStart(IEnumerable<EventLogMaterial> mats, string pallet, int lulNum, DateTime timeUTC, string operationName, string foreignId = null, string originalMessage = null);
     LogEntry RecordManualWorkAtLULEnd(IEnumerable<EventLogMaterial> mats, string pallet, int lulNum, DateTime timeUTC, TimeSpan elapsed, TimeSpan active, string operationName, string foreignId = null, string originalMessage = null);
-    LogEntry RecordMachineStart(IEnumerable<EventLogMaterial> mats, string pallet, string statName, int statNum, string program, DateTime timeUTC, IDictionary<string, string> extraData = null, IEnumerable<ToolPocketSnapshot> pockets = null, string foreignId = null, string originalMessage = null);
-    LogEntry RecordMachineEnd(IEnumerable<EventLogMaterial> mats, string pallet, string statName, int statNum, string program, string result, DateTime timeUTC, TimeSpan elapsed, TimeSpan active, IDictionary<string, string> extraData = null, ImmutableList<ToolUse> tools = null, IEnumerable<ToolPocketSnapshot> pockets = null, string foreignId = null, string originalMessage = null);
+    LogEntry RecordMachineStart(IEnumerable<EventLogMaterial> mats, string pallet, string statName, int statNum, string program, DateTime timeUTC, IDictionary<string, string> extraData = null, IEnumerable<ToolSnapshot> pockets = null, string foreignId = null, string originalMessage = null);
+    LogEntry RecordMachineEnd(IEnumerable<EventLogMaterial> mats, string pallet, string statName, int statNum, string program, string result, DateTime timeUTC, TimeSpan elapsed, TimeSpan active, IDictionary<string, string> extraData = null, ImmutableList<ToolUse> tools = null, IEnumerable<ToolSnapshot> pockets = null, long? deleteToolSnapshotsFromCntr = null, string foreignId = null, string originalMessage = null);
     LogEntry RecordPalletArriveRotaryInbound(IEnumerable<EventLogMaterial> mats, string pallet, string statName, int statNum, DateTime timeUTC, string foreignId = null, string originalMessage = null);
     LogEntry RecordPalletDepartRotaryInbound(IEnumerable<EventLogMaterial> mats, string pallet, string statName, int statNum, DateTime timeUTC, TimeSpan elapsed, bool rotateIntoWorktable, string foreignId = null, string originalMessage = null);
     LogEntry RecordPalletArriveStocker(IEnumerable<EventLogMaterial> mats, string pallet, int stockerNum, DateTime timeUTC, bool waitForMachine, string foreignId = null, string originalMessage = null);
@@ -293,14 +293,6 @@ namespace BlackMaple.MachineFramework
   {
     public string JobUnique { get; init; }
     public string BookingId { get; init; }
-  }
-
-  public record ToolPocketSnapshot
-  {
-    public int PocketNumber { get; init; }
-    public string Tool { get; init; }
-    public TimeSpan CurrentUse { get; init; }
-    public TimeSpan ToolLife { get; init; }
   }
 
   public record BulkAddCastingResult

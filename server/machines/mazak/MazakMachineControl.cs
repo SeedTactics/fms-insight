@@ -93,8 +93,11 @@ namespace MazakMachineInterface
           MachineNum = t.MachineNumber.Value,
           Pocket = t.PocketNumber.Value,
           ToolName = _mazakCfg?.ExtractToolName == null ? t.GroupNo : _mazakCfg.ExtractToolName(t),
+          Serial = null,
           CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
-          TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0)
+          TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0),
+          CurrentUseCount = null,
+          TotalLifeCount = null
         }).ToList();
     }
 

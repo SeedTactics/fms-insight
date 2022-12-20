@@ -47,6 +47,7 @@ export interface ProgramToolUseInSingleCycle {
   readonly tools: ReadonlyArray<{
     readonly toolName: string;
     readonly cycleUsageMinutes: number;
+    readonly cycleUsageCnt: number;
     readonly toolChangedDuringMiddleOfCycle: boolean;
   }>;
 }
@@ -82,11 +83,15 @@ function process_tools(
     .groupBy((u) => u.tool)
     .map(([toolName, uses]) => {
       const useDuring = LazySeq.of(uses).sumBy((use) =>
-        use.toolUseDuringCycle === "" ? 0 : durationToMinutes(use.toolUseDuringCycle)
+        use.toolUseDuringCycle && use.toolUseDuringCycle !== ""
+          ? durationToMinutes(use.toolUseDuringCycle)
+          : 0
       );
+      const cntDuring = LazySeq.of(uses).sumBy((use) => use.toolUseCountDuringCycle ?? 0);
       return {
         toolName,
         cycleUsageMinutes: useDuring,
+        cycleUsageCnt: cntDuring,
         toolChangedDuringMiddleOfCycle: LazySeq.of(uses).anyMatch((use) => use.toolChangeOccurred ?? false),
       };
     })

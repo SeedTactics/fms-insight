@@ -83,4 +83,27 @@ namespace MachineWatchTest
       }
     }
   }
+
+  public class InjectNullValuesForNullableTypesSpecimenBuilder : AutoFixture.Kernel.ISpecimenBuilder
+  {
+    private Random random = new Random();
+    private const double LikelihoodOfNull = 0.1;
+
+    public object Create(object request, AutoFixture.Kernel.ISpecimenContext context)
+    {
+      if (request is Type type)
+      {
+        var underlyingType = Nullable.GetUnderlyingType(type);
+        if (underlyingType != null)
+        {
+          if (random.NextDouble() < LikelihoodOfNull)
+            return null;
+
+          return context.Resolve(underlyingType);
+        }
+      }
+
+      return new AutoFixture.Kernel.NoSpecimen();
+    }
+  }
 }

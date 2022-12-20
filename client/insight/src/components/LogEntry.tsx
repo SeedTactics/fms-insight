@@ -391,8 +391,9 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
   }
   if (e.tooluse) {
     for (const use of e.tooluse) {
+      let msg: string | null = null;
       if (use.toolUseDuringCycle && use.toolUseDuringCycle !== "") {
-        let msg = durationToMinutes(use.toolUseDuringCycle).toFixed(1) + " min used during cycle.";
+        msg = durationToMinutes(use.toolUseDuringCycle).toFixed(1) + " minutes used during cycle.";
 
         if (
           use.totalToolUseAtEndOfCycle &&
@@ -403,12 +404,30 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
           const total = durationToSeconds(use.totalToolUseAtEndOfCycle);
           const life = durationToSeconds(use.configuredToolLife);
           const pct = total / life;
-          msg += ` Total use at end of cycle: ${(total / 60).toFixed(1)}/${(life / 60).toFixed(1)} min (${(
-            pct * 100
-          ).toFixed(0)}%).`;
+          msg += ` Total use at end of cycle: ${(total / 60).toFixed(1)}/${(life / 60).toFixed(
+            1
+          )} minutes (${(pct * 100).toFixed(0)}%).`;
         }
+      }
 
-        const name = use.pocket > 0 ? `${use.tool} [${use.pocket}]` : use.tool;
+      if (use.toolUseCountDuringCycle && use.toolUseCountDuringCycle > 0) {
+        msg =
+          (msg === null ? "" : " | ") +
+          `${use.toolUseCountDuringCycle} use${use.toolUseCountDuringCycle > 1 ? "s" : ""} during cycle.`;
+
+        if (use.totalToolUseCountAtEndOfCycle && use.configuredToolLifeCount) {
+          msg += ` Total use count at end of cycle: ${use.totalToolUseCountAtEndOfCycle}/${
+            use.configuredToolLifeCount
+          } (${((use.totalToolUseCountAtEndOfCycle / use.configuredToolLifeCount) * 100).toFixed(0)}%).`;
+        }
+      }
+
+      if (msg !== null) {
+        let name = use.pocket > 0 ? `${use.tool} [${use.pocket}]` : use.tool;
+        const serial = use.toolSerialAtEndOfCycle ?? use.toolSerialAtStartOfCycle;
+        if (serial && serial !== "") {
+          name += ` (${serial})`;
+        }
 
         details.push({
           name,
