@@ -370,76 +370,58 @@ export function useRefreshToolReport(): () => Promise<void> {
 
 function buildToolReportHTML(
   tools: Iterable<ToolReport>,
-  { singleMachine, showTime, showCnts }: { singleMachine: boolean; showTime: boolean; showCnts: boolean }
+  { showTime, showCnts }: { showTime: boolean; showCnts: boolean }
 ): string {
   let table = "<table>\n<thead><tr>";
-  table += "<th>Tool</th>";
+  table += "<th>Tool</th><th>Machine</th><th>Pocket</th>";
   if (showTime) {
-    table += "<th>Scheduled Use (min)</th>";
-    table += "<th>Total Remaining Life (min)</th>";
+    table +=
+      "<th>Scheduled Use (min)</th><th>Current Use (min)</th><th>Lifetime (min)</th><th>Remaining Life (min)</th>";
   }
   if (showCnts) {
-    table += "<th>Scheduled Use (count)</th>";
-    table += "<th>Total Remaining Life (count)</th>";
-  }
-  if (singleMachine) {
-    table += "<th>Pockets</th>";
-  } else {
-    if (showTime) {
-      table += "<th>Smallest Remaining Life (min)</th>";
-    }
-    if (showCnts) {
-      table += "<th>Smallest Remaining Life (count)</th>";
-    }
+    table +=
+      "<th>Scheduled Use (cnt)</th><th>Current Use (cnt)</th><th>Lifetime (cnt)</th><th>Remaining Life (cnt)</th>";
   }
   table += "</tr></thead>\n<tbody>\n";
 
   for (const tool of tools) {
-    table += "<tr><td>" + tool.toolName + "</td>";
+    for (const mach of tool.machines) {
+      table += `<tr><td>${tool.toolName}</td><td>${mach.machineName}</td><td>${mach.pocket}</td>`;
 
-    if (showTime) {
-      const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
-      table += "<td>" + schUse.toFixed(1) + "</td>";
-
-      const totalLife = LazySeq.of(tool.machines).sumBy((m) => m.remainingMinutes ?? 0);
-      table += "<td>" + totalLife.toFixed(1) + "</td>";
-    }
-
-    if (showCnts) {
-      const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseCnt * p.quantity);
-      table += "<td>" + schUse.toFixed(1) + "</td>";
-
-      const totalLife = LazySeq.of(tool.machines).sumBy((m) => m.remainingCnt ?? 0);
-      table += "<td>" + totalLife.toFixed(1) + "</td>";
-    }
-
-    if (singleMachine) {
-      const pockets = tool.machines.map((m) => m.pocket.toString());
-      table += "<td>" + pockets.join(", ") + "</td>";
-    } else {
       if (showTime) {
-        table += "<td>" + (tool.minRemainingMinutes ? tool.minRemainingMinutes.toFixed(1) : "") + "</td>";
+        const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
+        table += "<td>" + schUse.toFixed(1) + "</td>";
+
+        table += "<td>" + (mach.currentUseMinutes ? mach.currentUseMinutes.toFixed(1) : "") + "</td>";
+        table += "<td>" + (mach.lifetimeMinutes ? mach.lifetimeMinutes.toFixed(1) : "") + "</td>";
+        table += "<td>" + (mach.remainingMinutes ? mach.remainingMinutes.toFixed(1) : "") + "</td>";
       }
+
       if (showCnts) {
-        table += "<td>" + (tool.minRemainingCnt ? tool.minRemainingCnt.toFixed(1) : "") + "</td>";
+        const schUse = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseCnt * p.quantity);
+        table += "<td>" + schUse.toFixed(1) + "</td>";
+
+        table += "<td>" + (mach.currentUseCnt ? mach.currentUseCnt.toFixed(1) : "") + "</td>";
+        table += "<td>" + (mach.lifetimeCnt ? mach.lifetimeCnt.toFixed(1) : "") + "</td>";
+        table += "<td>" + (mach.remainingCnt ? mach.remainingCnt.toFixed(1) : "") + "</td>";
       }
+
+      table += "</tr>\n";
     }
-    table += "</tr>\n";
   }
   table += "</tbody></table>";
 
   return table;
 }
 
-export function useCopyToolReportToClipboard(): (singleMachine: boolean) => void {
+export function useCopyToolReportToClipboard(): () => void {
   return useRecoilCallback(
     ({ snapshot }) =>
-      (singleMachine) => {
+      () => {
         const tools = snapshot.getLoadable(currentToolReport).valueMaybe();
         if (!tools) return;
         copy(
           buildToolReportHTML(tools, {
-            singleMachine,
             showTime: snapshot.getLoadable(toolReportHasTimeUsage).valueMaybe() ?? false,
             showCnts: snapshot.getLoadable(toolReportHasCntUsage).valueMaybe() ?? false,
           })

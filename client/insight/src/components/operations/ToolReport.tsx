@@ -479,7 +479,7 @@ export function ToolSummaryTable(): JSX.Element {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyToolReportToClipboard(machineFilter !== null)}
+                onClick={copyToolReportToClipboard}
                 size="large"
               >
                 <ImportExport />
