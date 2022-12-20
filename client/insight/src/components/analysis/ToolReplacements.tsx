@@ -84,8 +84,8 @@ type ToolReplacementSummary = {
   readonly numReplacements: number;
   readonly totalUseOfAllReplacements: number;
   readonly totalCntOfAllReplacements: number;
-  readonly maxUseOfAnyReplacement: number;
-  readonly maxCntOfAnyReplacement: number;
+  readonly maxY: number;
+  readonly yAxisType: "Time" | "Count";
   readonly replacements: ReadonlyArray<ToolReplacementAndStationDate>;
 };
 
@@ -146,12 +146,29 @@ function tool_summary(
         numReplacements: replacements.length,
         totalUseOfAllReplacements: totalUse,
         totalCntOfAllReplacements: totalCnt,
-        maxUseOfAnyReplacement: maxUse ?? 0,
-        maxCntOfAnyReplacement: maxCnt ?? 0,
+        maxY: maxUse ?? maxCnt ?? 1,
+        yAxisType: maxUse === null ? ("Count" as const) : ("Time" as const),
         replacements,
       };
     })
     .toSortedArray(sortOn);
+}
+
+function replacementToYVal(row: ToolReplacementSummary, r: ToolReplacementAndStationDate): number {
+  const def = row.maxY / 2;
+  if (r.type === "ReplaceBeforeCycleStart") {
+    if (row.yAxisType === "Time") {
+      return r.useAtReplacement ?? def;
+    } else {
+      return r.cntAtReplacement ?? def;
+    }
+  } else {
+    if (row.yAxisType === "Time") {
+      return r.totalUseAtBeginningOfCycle ?? def;
+    } else {
+      return r.totalCntAtBeginningOfCycle ?? def;
+    }
+  }
 }
 
 enum SummaryColumnId {
@@ -188,7 +205,7 @@ const ReplacementGraph = React.memo(function ReplacementGraph({
   });
 
   const yScale = scaleLinear({
-    domain: [0, row.maxUseOfAnyReplacement],
+    domain: [0, row.maxY],
     range: [33, 3],
   });
 
@@ -211,10 +228,7 @@ const ReplacementGraph = React.memo(function ReplacementGraph({
           <Circle
             key={i}
             cx={timeScale(r.time)}
-            cy={yScale(
-              (r.type === "ReplaceBeforeCycleStart" ? r.useAtReplacement : r.totalUseAtBeginningOfCycle) ??
-                row.maxUseOfAnyReplacement / 2
-            )}
+            cy={yScale(replacementToYVal(row, r))}
             r={r === tooltip?.r ? 3 : 1}
             onMouseEnter={(e) => setTooltip({ left: localPoint(e)?.x ?? 0, r })}
             fill="black"
@@ -233,7 +247,7 @@ const ReplacementGraph = React.memo(function ReplacementGraph({
             {tooltip.r.type === "ReplaceBeforeCycleStart" ? (
               <>
                 {tooltip.r.useAtReplacement !== null ? (
-                  <div>Mins at replacement: {decimalFormat.format(tooltip.r.useAtReplacement)}</div>
+                  <div>Minutes at replacement: {decimalFormat.format(tooltip.r.useAtReplacement)}</div>
                 ) : undefined}
                 {tooltip.r.cntAtReplacement !== null ? (
                   <div>Count at replacement: {decimalFormat.format(tooltip.r.cntAtReplacement)}</div>
@@ -243,11 +257,12 @@ const ReplacementGraph = React.memo(function ReplacementGraph({
               <>
                 {tooltip.r.totalUseAtBeginningOfCycle !== null ? (
                   <div>
-                    Mins at beginning of cycle: {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}
+                    Minutes at beginning of cycle:{" "}
+                    {decimalFormat.format(tooltip.r.totalUseAtBeginningOfCycle)}
                   </div>
                 ) : undefined}
                 {tooltip.r.totalUseAtEndOfCycle !== null ? (
-                  <div>Mins at end of cycle: {decimalFormat.format(tooltip.r.totalUseAtEndOfCycle)}</div>
+                  <div>Minutes at end of cycle: {decimalFormat.format(tooltip.r.totalUseAtEndOfCycle)}</div>
                 ) : undefined}
                 {tooltip.r.totalCntAtBeginningOfCycle !== null ? (
                   <div>
