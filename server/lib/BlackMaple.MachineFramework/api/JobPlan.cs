@@ -356,6 +356,11 @@ namespace BlackMaple.MachineFramework
       return job.Produce(d => AdjustAllPaths(d, f));
     }
 
+    public static HistoricJob AdjustAllPaths(this HistoricJob job, Action<int, int, IProcPathInfoDraft> f)
+    {
+      return job.Produce(d => AdjustAllPaths(d, f));
+    }
+
     public static void AdjustAllPaths(this IJobDraft job, Action<int, int, IProcPathInfoDraft> f)
     {
       for (int proc = 0; proc < job.Processes.Count; proc++)
