@@ -212,10 +212,14 @@ function ProgramRow(props: ProgramRowProps) {
                       <TableRow key={idx}>
                         <TableCell>{t.toolName}</TableCell>
                         {toolsHaveTime ? (
-                          <TableCell align="right">{t.cycleUsageMinutes.toFixed(1)}</TableCell>
+                          <TableCell align="right">
+                            {t.cycleUsageMinutes === 0 ? "" : t.cycleUsageMinutes.toFixed(1)}
+                          </TableCell>
                         ) : undefined}
                         {toolsHaveCnt ? (
-                          <TableCell align="right">{t.cycleUsageCnt.toFixed(1)}</TableCell>
+                          <TableCell align="right">
+                            {t.cycleUsageCnt === 0 ? "" : t.cycleUsageCnt.toFixed(1)}
+                          </TableCell>
                         ) : undefined}
                       </TableRow>
                     ))}
