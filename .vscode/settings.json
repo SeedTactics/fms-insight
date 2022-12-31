@@ -1,5 +1,6 @@
 {
-  "jest.rootPath": "client/insight",
-  "jest.autoRun": "off",
-  "eslint.workingDirectories": ["./client/insight"]
+  "eslint.workingDirectories": ["./client/insight"],
+  "[csharp]": {
+    "editor.defaultFormatter": "csharpier.csharpier-vscode"
+  }
 }
