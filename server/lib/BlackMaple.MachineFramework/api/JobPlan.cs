@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -44,7 +44,7 @@ namespace BlackMaple.MachineFramework
   public record PathInspection
   {
     [DataMember(IsRequired = true)]
-    public string InspectionType { get; init; } = "";
+    public required string InspectionType { get; init; }
 
     //There are two possible ways of triggering an inspection: counts and frequencies.
     // * For counts, the MaxVal will contain a number larger than zero and RandomFreq will contain -1
@@ -53,21 +53,21 @@ namespace BlackMaple.MachineFramework
 
     //Every time a material completes, the counter string is expanded (see below).
     [DataMember(IsRequired = true)]
-    public string Counter { get; init; } = "";
+    public required string Counter { get; init; }
 
     //For each completed material, the counter is incremented.  If the counter is equal to MaxVal,
     //we signal an inspection and reset the counter to 0.
     [DataMember(IsRequired = true)]
-    public int MaxVal { get; init; }
+    public required int MaxVal { get; init; }
 
     //The random frequency of inspection
     [DataMember(IsRequired = true)]
-    public double RandomFreq { get; init; }
+    public required double RandomFreq { get; init; }
 
     //If the last inspection signaled for this counter was longer than TimeInterval,
     //signal an inspection.  This can be disabled by using TimeSpan.Zero
     [DataMember(IsRequired = true)]
-    public TimeSpan TimeInterval { get; init; }
+    public required TimeSpan TimeInterval { get; init; }
 
     // Expected inspection type
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
@@ -99,10 +99,13 @@ namespace BlackMaple.MachineFramework
   public record MachiningStop
   {
     [DataMember(Name = "StationGroup", IsRequired = true)]
-    public string StationGroup { get; init; } = "";
+    public required string StationGroup { get; init; }
 
     [DataMember(Name = "StationNums", IsRequired = true)]
-    public ImmutableList<int> Stations { get; init; } = ImmutableList<int>.Empty;
+    public required ImmutableList<int> Stations { get; init; }
+
+    [DataMember(Name = "ExpectedCycleTime", IsRequired = true)]
+    public required TimeSpan ExpectedCycleTime { get; init; }
 
     // Programs can be specified in two possible ways: either here as part of the job or separately as part of
     // the workorder.  If this value is non-null, it specifies the program name to use for this machining step.
@@ -128,11 +131,7 @@ namespace BlackMaple.MachineFramework
     public long? ProgramRevision { get; init; }
 
     [DataMember(Name = "Tools", IsRequired = false, EmitDefaultValue = true)]
-    public ImmutableDictionary<string, TimeSpan>? Tools { get; init; } =
-      ImmutableDictionary<string, TimeSpan>.Empty; //key is tool, value is expected cutting time
-
-    [DataMember(Name = "ExpectedCycleTime", IsRequired = true)]
-    public TimeSpan ExpectedCycleTime { get; init; }
+    public ImmutableDictionary<string, TimeSpan>? Tools { get; init; } //key is tool, value is expected cutting time
 
     public static MachiningStop operator %(MachiningStop s, Action<IMachiningStopDraft> f) => s.Produce(f);
   }

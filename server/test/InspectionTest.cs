@@ -101,6 +101,7 @@ namespace MachineWatchTest
         InspectionType = "insp1",
         Counter = "counter1",
         RandomFreq = 0.5,
+        MaxVal = 0,
         TimeInterval = TimeSpan.FromHours(100)
       };
 
@@ -137,6 +138,7 @@ namespace MachineWatchTest
         InspectionType = "insp1",
         Counter = "counter1",
         MaxVal = 3,
+        RandomFreq = 0,
         TimeInterval = TimeSpan.FromHours(11)
       };
 
@@ -186,6 +188,7 @@ namespace MachineWatchTest
         InspectionType = "insp1",
         Counter = "counter1",
         MaxVal = 13,
+        RandomFreq = 0,
         TimeInterval = TimeSpan.FromHours(11)
       };
 
@@ -223,6 +226,7 @@ namespace MachineWatchTest
           InspectionType = "insp1",
           Counter = "counter1",
           MaxVal = 3,
+          RandomFreq = 0,
           TimeInterval = TimeSpan.FromHours(11)
         }
       );
@@ -321,6 +325,7 @@ namespace MachineWatchTest
         InspectionType = "insp1",
         Counter = counter,
         MaxVal = 10,
+        RandomFreq = 0,
         TimeInterval = TimeSpan.FromDays(2)
       };
 

@@ -148,7 +148,8 @@ namespace Makino
             {
               StationGroup = "MC",
               Program = _programs[jobID],
-              Stations = ImmutableList.Create(loc.Num)
+              Stations = ImmutableList.Create(loc.Num),
+              ExpectedCycleTime = TimeSpan.Zero
             }
           );
         }

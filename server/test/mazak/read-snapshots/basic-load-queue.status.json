@@ -33,7 +33,6 @@
                   "StationGroup": "MC",
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1001",
-                  "Tools": {},
                   "ExpectedCycleTime": "PT4M"
                 }
               ],
@@ -143,7 +142,6 @@
                   "StationGroup": "MC",
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1002",
-                  "Tools": {},
                   "ExpectedCycleTime": "PT30M"
                 }
               ],
@@ -271,7 +269,6 @@
                   "StationGroup": "MC",
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1001",
-                  "Tools": {},
                   "ExpectedCycleTime": "PT12M12S"
                 }
               ],
@@ -345,7 +342,6 @@
                   "StationGroup": "MC",
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1002",
-                  "Tools": {},
                   "ExpectedCycleTime": "PT1H10M18S"
                 }
               ],
@@ -437,7 +433,6 @@
                   "StationGroup": "MC",
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1003",
-                  "Tools": {},
                   "ExpectedCycleTime": "PT4M"
                 }
               ],
@@ -542,7 +537,6 @@
                   "StationGroup": "MC",
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1004",
-                  "Tools": {},
                   "ExpectedCycleTime": "PT45M30S"
                 }
               ],

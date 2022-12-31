@@ -2963,7 +2963,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 InspectionType = inspTy,
                 Counter = cntr,
-                MaxVal = max
+                MaxVal = max,
+                RandomFreq = 0,
+                TimeInterval = TimeSpan.Zero
               }
             )
         ),

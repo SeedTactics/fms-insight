@@ -1715,7 +1715,8 @@ namespace MachineWatchTest
                   new MachiningStop()
                   {
                     StationGroup = "machinespec",
-                    ExpectedCycleTime = TimeSpan.FromMinutes(33)
+                    ExpectedCycleTime = TimeSpan.FromMinutes(33),
+                    Stations = ImmutableList<int>.Empty
                   }
                 )
               }
@@ -1732,7 +1733,8 @@ namespace MachineWatchTest
                   new MachiningStop()
                   {
                     StationGroup = "machinespec",
-                    ExpectedCycleTime = TimeSpan.FromMinutes(44)
+                    ExpectedCycleTime = TimeSpan.FromMinutes(44),
+                    Stations = ImmutableList<int>.Empty
                   }
                 )
               }
@@ -1756,7 +1758,8 @@ namespace MachineWatchTest
                   new MachiningStop()
                   {
                     StationGroup = "machinespec",
-                    ExpectedCycleTime = TimeSpan.FromMinutes(33)
+                    ExpectedCycleTime = TimeSpan.FromMinutes(33),
+                    Stations = ImmutableList<int>.Empty
                   }
                 )
               }
@@ -1773,7 +1776,8 @@ namespace MachineWatchTest
                   new MachiningStop()
                   {
                     StationGroup = "machinespec",
-                    ExpectedCycleTime = TimeSpan.FromMinutes(44)
+                    ExpectedCycleTime = TimeSpan.FromMinutes(44),
+                    Stations = ImmutableList<int>.Empty
                   }
                 )
               }
@@ -2118,6 +2122,7 @@ namespace MachineWatchTest
                     InspectionType = "insp_proc1",
                     Counter = "counter1",
                     MaxVal = 10,
+                    RandomFreq = 0,
                     TimeInterval = TimeSpan.FromMinutes(1000)
                   }
                 )
@@ -2135,6 +2140,7 @@ namespace MachineWatchTest
                     InspectionType = "insp_whole",
                     Counter = "counter2",
                     MaxVal = 15,
+                    RandomFreq = 0,
                     TimeInterval = TimeSpan.FromMinutes(1500)
                   }
                 )
@@ -2235,7 +2241,14 @@ namespace MachineWatchTest
               new ProcPathInfo()
               {
                 Stops = ImmutableList.Create(
-                  new MachiningStop() { Program = "the-log-prog", ProgramRevision = 15 }
+                  new MachiningStop()
+                  {
+                    Program = "the-log-prog",
+                    ProgramRevision = 15,
+                    StationGroup = "",
+                    Stations = ImmutableList<int>.Empty,
+                    ExpectedCycleTime = TimeSpan.Zero
+                  }
                 )
               }
             )
@@ -2253,7 +2266,14 @@ namespace MachineWatchTest
               new ProcPathInfo()
               {
                 Stops = ImmutableList.Create(
-                  new MachiningStop() { Program = "other-log-prog", ProgramRevision = 12 }
+                  new MachiningStop()
+                  {
+                    Program = "other-log-prog",
+                    ProgramRevision = 12,
+                    StationGroup = "",
+                    Stations = ImmutableList<int>.Empty,
+                    ExpectedCycleTime = TimeSpan.Zero
+                  }
                 )
               }
             )

@@ -535,6 +535,7 @@ namespace MachineWatchTest
                     StationGroup = "Test",
                     Stations = ImmutableList.Create(245, 36),
                     Program = "dduuude",
+                    ExpectedCycleTime = TimeSpan.Zero,
                   }
                 ),
                 Inspections = ImmutableList.Create(
@@ -597,12 +598,14 @@ namespace MachineWatchTest
                     StationGroup = "Test",
                     Stations = ImmutableList.Create(32, 64),
                     Program = "wefq",
+                    ExpectedCycleTime = TimeSpan.Zero,
                   },
                   new MachiningStop()
                   {
                     StationGroup = "Test",
                     Stations = ImmutableList.Create(23, 53),
                     Program = "so cool",
+                    ExpectedCycleTime = TimeSpan.Zero,
                   }
                 ),
                 Inspections = ImmutableList.Create(

@@ -871,7 +871,8 @@ namespace MachineWatchTest
                         StationGroup = "machine",
                         Stations = ImmutableList.Create(1),
                         Program = progs?[p - 1].prog ?? "1234",
-                        ProgramRevision = progs?[p - 1].rev
+                        ProgramRevision = progs?[p - 1].rev,
+                        ExpectedCycleTime = TimeSpan.Zero,
                       }
                     ),
                     Fixture = fixtures?[p - 1].fix,

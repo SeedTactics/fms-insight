@@ -482,7 +482,7 @@ namespace BlackMaple.MachineFramework
                                   Stations = s.Stations.ToImmutable(),
                                   Program = s.Program,
                                   ProgramRevision = s.ProgramRevision,
-                                  Tools = s.Tools.ToImmutable(),
+                                  Tools = s.Tools.Count == 0 ? null : s.Tools.ToImmutable(),
                                   ExpectedCycleTime = s.ExpectedCycleTime
                                 }
                             )
@@ -1498,14 +1498,17 @@ namespace BlackMaple.MachineFramework
             int routeNum = 0;
             foreach (var entry in path.Stops)
             {
-              foreach (var tool in entry.Tools)
+              if (entry.Tools != null)
               {
-                cmd.Parameters[1].Value = i;
-                cmd.Parameters[2].Value = j;
-                cmd.Parameters[3].Value = routeNum;
-                cmd.Parameters[4].Value = tool.Key;
-                cmd.Parameters[5].Value = tool.Value.Ticks;
-                cmd.ExecuteNonQuery();
+                foreach (var tool in entry.Tools)
+                {
+                  cmd.Parameters[1].Value = i;
+                  cmd.Parameters[2].Value = j;
+                  cmd.Parameters[3].Value = routeNum;
+                  cmd.Parameters[4].Value = tool.Key;
+                  cmd.Parameters[5].Value = tool.Value.Ticks;
+                  cmd.ExecuteNonQuery();
+                }
               }
               routeNum += 1;
             }
