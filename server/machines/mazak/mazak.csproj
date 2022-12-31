@@ -4,7 +4,7 @@
     <AssemblyName>BlackMaple.FMSInsight.Mazak</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.Mazak</PackageId>
     <OutputType>Library</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
 
     <Title>SeedTactcs FMS Insight Mazak Backend</Title>
     <Company>Black Maple Software, LLC</Company>
