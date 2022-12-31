@@ -569,9 +569,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       PartName = "p1",
       Cycles = 0,
       Processes = ImmutableList.Create(
-        new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
-        new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-      )
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+      ),
+      RouteStartUTC = DateTime.MinValue,
+      RouteEndUTC = DateTime.MinValue,
+      Archived = false,
     };
     db.AddJobs(
       new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job) },
@@ -765,7 +768,13 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     {
       UniqueStr = "uuu1",
       PartName = "p1",
-      Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
+      Processes = ImmutableList.Create(
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+      ),
+      RouteStartUTC = DateTime.MinValue,
+      RouteEndUTC = DateTime.MinValue,
+      Archived = false,
+      Cycles = 0
     };
 
     db.AddJobs(
@@ -834,9 +843,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       PartName = "p1",
       Cycles = 5,
       Processes = ImmutableList.Create(
-        new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
-        new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-      )
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+      ),
+      RouteStartUTC = DateTime.MinValue,
+      RouteEndUTC = DateTime.MinValue,
+      Archived = false,
     };
     db.AddJobs(
       new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job) },

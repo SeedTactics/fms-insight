@@ -446,7 +446,14 @@ namespace MazakMachineInterface
                 BookingIds = job.DbJob?.BookingIds,
                 ManuallyCreated = job.DbJob?.ManuallyCreated ?? false,
                 HoldJob = job.UserHold
-                  ? new BlackMaple.MachineFramework.HoldPattern() { UserHold = true }
+                  ? new BlackMaple.MachineFramework.HoldPattern()
+                  {
+                    UserHold = true,
+                    ReasonForUserHold = "",
+                    HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
+                    HoldUnholdPatternStartUTC = DateTime.MinValue,
+                    HoldUnholdPatternRepeats = false
+                  }
                   : null,
                 Cycles = job.Cycles,
                 Processes = job.Processes

@@ -54,6 +54,19 @@ namespace MachineWatchTest
 
   public class JobLogTest : JobComparisonHelpers, IDisposable
   {
+    public static readonly ProcPathInfo EmptyPath = new ProcPathInfo()
+    {
+      Pallets = ImmutableList<string>.Empty,
+      Load = ImmutableList<int>.Empty,
+      Unload = ImmutableList<int>.Empty,
+      ExpectedLoadTime = TimeSpan.Zero,
+      ExpectedUnloadTime = TimeSpan.Zero,
+      Stops = ImmutableList<MachiningStop>.Empty,
+      SimulatedStartingUTC = DateTime.MinValue,
+      SimulatedAverageFlowTime = TimeSpan.Zero,
+      PartsPerPallet = 1
+    };
+
     private RepositoryConfig _repoCfg;
     private IRepository _jobLog;
     private Fixture _fixture;
@@ -3461,9 +3474,12 @@ namespace MachineWatchTest
                   Processes = ImmutableList.Create(
                     new ProcessInfo()
                     {
-                      Paths = ImmutableList.Create(new ProcPathInfo() { Casting = rawMatName })
+                      Paths = ImmutableList.Create(EmptyPath with { Casting = rawMatName })
                     }
-                  )
+                  ),
+                  RouteStartUTC = DateTime.MinValue,
+                  RouteEndUTC = DateTime.MinValue,
+                  Archived = false,
                 }
               ),
               ScheduleId = "anotherSchId"
@@ -3847,11 +3863,11 @@ namespace MachineWatchTest
               PartName = "part1",
               Cycles = 10,
               Processes = ImmutableList.Create(
-                new ProcessInfo()
-                {
-                  Paths = ImmutableList.Create(new ProcPathInfo() { Casting = "thecasting" })
-                }
-              )
+                new ProcessInfo() { Paths = ImmutableList.Create(EmptyPath with { Casting = "thecasting" }) }
+              ),
+              RouteStartUTC = DateTime.MinValue,
+              RouteEndUTC = DateTime.MinValue,
+              Archived = false,
             }
           ),
           ScheduleId = "aschId"

@@ -103,7 +103,12 @@ namespace Makino
           UniqueStr = unique,
           PartName = partName,
           Comment = comment,
-          ManuallyCreated = false
+          ManuallyCreated = false,
+          RouteStartUTC = DateTime.MinValue,
+          RouteEndUTC = DateTime.MinValue,
+          Archived = false,
+          Processes = ImmutableList<ProcessInfo>.Empty,
+          Cycles = 0
         }
       );
     }

@@ -190,9 +190,19 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+          }
         )
       };
       _logDB.AddJobs(
@@ -251,12 +261,25 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                Casting = casting
+              }
+            )
           },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+          }
         )
       };
       if (casting == null)
@@ -323,13 +346,26 @@ namespace MachineWatchTest
       var j = new Job()
       {
         UniqueStr = "uuuu",
+        Cycles = 0,
         PartName = "pppp",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                Casting = casting
+              }
+            )
           },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+          }
         )
       };
       if (casting == null)
@@ -412,9 +448,19 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "castingQ" }) },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "transQ" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "castingQ" })
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "transQ" })
+          }
         )
       };
       _logDB.AddJobs(
@@ -486,9 +532,19 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "castingQ" }) },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "transQ" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "castingQ" })
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "transQ" })
+          }
         )
       };
       _logDB.AddJobs(
@@ -731,10 +787,20 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                Casting = casting
+              }
+            )
           }
         )
       };
@@ -909,10 +975,20 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                Casting = casting
+              }
+            )
           }
         )
       };
@@ -1088,10 +1164,20 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = "casting" })
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                Casting = "casting"
+              }
+            )
           }
         )
       };
@@ -1284,10 +1370,20 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = "cccc" })
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                Casting = "cccc"
+              }
+            )
           }
         )
       };
@@ -1424,8 +1520,12 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { }) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         )
       };
       _logDB.AddJobs(
@@ -1472,10 +1572,20 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                Casting = casting
+              }
+            )
           }
         )
       };
@@ -1584,11 +1694,15 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu1",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 InputQueue = "castingQ",
                 Casting = casting,
@@ -1601,7 +1715,11 @@ namespace MachineWatchTest
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo() { InputQueue = "transQ", Pallets = ImmutableList.Create("2"), }
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "transQ",
+                Pallets = ImmutableList.Create("2"),
+              }
             )
           }
         )
@@ -1611,11 +1729,15 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu2",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 InputQueue = "castingQ",
                 Casting = casting,
@@ -1628,7 +1750,11 @@ namespace MachineWatchTest
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo() { InputQueue = "transQ", Pallets = ImmutableList.Create("4"), }
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "transQ",
+                Pallets = ImmutableList.Create("4"),
+              }
             )
           }
         )
@@ -2522,8 +2648,15 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+          }
         )
       };
       _logDB.AddJobs(
@@ -2635,8 +2768,15 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+          }
         )
       };
       _logDB.AddJobs(
@@ -2777,10 +2917,19 @@ namespace MachineWatchTest
         UniqueStr = "uuu1",
         PartName = "pppp",
         RouteStartUTC = DateTime.UtcNow.AddHours(-2),
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                Casting = casting
+              }
+            )
           }
         )
       };
@@ -2789,10 +2938,19 @@ namespace MachineWatchTest
         UniqueStr = "uuu2",
         PartName = "pppp",
         RouteStartUTC = DateTime.UtcNow.AddHours(-5),
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+            Paths = ImmutableList.Create(
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                Casting = casting
+              }
+            )
           }
         )
       };

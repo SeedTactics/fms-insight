@@ -346,8 +346,11 @@ namespace MachineWatchTest
       {
         UniqueStr = "uniq1",
         PartName = "part1",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
         Cycles = 15,
       };
@@ -355,8 +358,11 @@ namespace MachineWatchTest
       {
         UniqueStr = "uniq2",
         PartName = "part2",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
         Cycles = 15,
       };

@@ -124,8 +124,11 @@ namespace MachineWatchTest
         PartName = "pppp",
         Cycles = 50,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-        )
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+        ),
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
       };
       _jobDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "sch222" },
@@ -212,8 +215,11 @@ namespace MachineWatchTest
         PartName = "pppp",
         Cycles = 50,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-        )
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+        ),
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
       };
       _jobDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "anschedule" },
@@ -267,8 +273,11 @@ namespace MachineWatchTest
         PartName = "pppp",
         Cycles = 50,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-        )
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+        ),
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
       };
       _jobDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "sch56666" },
@@ -382,8 +391,11 @@ namespace MachineWatchTest
         PartName = "pppp",
         Cycles = 50,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-        )
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+        ),
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
       };
       _jobDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "sch3333", },
@@ -454,8 +466,11 @@ namespace MachineWatchTest
         PartName = "pppp",
         Cycles = 50,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-        )
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+        ),
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
       };
       _jobDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "aschId", },
@@ -529,8 +544,9 @@ namespace MachineWatchTest
         RouteStartUTC = now.AddHours(-12),
         RouteEndUTC = now.AddHours(12),
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-        )
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+        ),
+        Archived = false,
       };
       var vvvv = new Job()
       {
@@ -540,8 +556,9 @@ namespace MachineWatchTest
         RouteStartUTC = now.AddHours(-12),
         RouteEndUTC = now.AddHours(12),
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-        )
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+        ),
+        Archived = false,
       };
       _jobDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create(uuuu, vvvv), ScheduleId = "sch44444", },

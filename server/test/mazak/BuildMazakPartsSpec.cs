@@ -850,8 +850,12 @@ namespace MachineWatchTest
     {
       return new Job()
       {
+        Cycles = 0,
         UniqueStr = uniq,
         PartName = part,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = Enumerable
           .Range(1, numProc)
           .Select(
@@ -863,6 +867,7 @@ namespace MachineWatchTest
                   {
                     Pallets = ImmutableList.CreateRange(pals[p - 1]),
                     SimulatedStartingUTC = (p == 1 ? simStart : null) ?? DateTime.MinValue,
+                    SimulatedAverageFlowTime = TimeSpan.Zero,
                     Load = ImmutableList.Create(1),
                     Unload = ImmutableList.Create(1),
                     Stops = ImmutableList.Create(
@@ -876,7 +881,10 @@ namespace MachineWatchTest
                       }
                     ),
                     Fixture = fixtures?[p - 1].fix,
-                    Face = fixtures?[p - 1].face
+                    Face = fixtures?[p - 1].face,
+                    PartsPerPallet = 1,
+                    ExpectedLoadTime = TimeSpan.Zero,
+                    ExpectedUnloadTime = TimeSpan.Zero,
                   }
                 )
               }

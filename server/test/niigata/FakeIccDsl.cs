@@ -1050,6 +1050,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ManuallyCreated = manual,
           RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
           Cycles = qty,
+          RouteEndUTC = DateTime.MinValue,
+          Archived = false,
           Processes = ImmutableList.Create(
             new ProcessInfo()
             {
@@ -1066,6 +1068,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Face = face,
                   InputQueue = queue,
                   Casting = casting,
+                  SimulatedStartingUTC = DateTime.MinValue,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   Stops = ImmutableList.Create(
                     new MachiningStop()
                     {
@@ -1154,6 +1158,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           PartName = part,
           RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
           Cycles = qty,
+          RouteEndUTC = DateTime.MinValue,
+          Archived = false,
           Processes = ImmutableList.Create(
             new ProcessInfo()
             {
@@ -1169,6 +1175,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Fixture = fixture,
                   Face = face,
                   InputQueue = queue,
+                  SimulatedStartingUTC = DateTime.MinValue,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   Stops = stops.ToImmutable()
                 }
               )
@@ -1212,6 +1220,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           PartName = part,
           RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
           Cycles = qty,
+          RouteEndUTC = DateTime.MinValue,
+          Archived = false,
           Processes = ImmutableList.Create(
             new ProcessInfo()
             {
@@ -1227,6 +1237,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
                   Fixture = fixture,
                   Face = face1,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   Stops = ImmutableList.Create(
                     new MachiningStop()
                     {
@@ -1251,6 +1262,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
                   PartsPerPallet = partsPerPal,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
                   Fixture = fixture,
                   Face = face2,
@@ -1364,6 +1376,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           PartName = part,
           RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
           Cycles = qty,
+          RouteEndUTC = DateTime.MinValue,
+          Archived = false,
           Processes = ImmutableList.Create(
             new ProcessInfo()
             {
@@ -1378,6 +1392,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Pallets = pals1.Select(p => p.ToString()).ToImmutableList(),
                   Fixture = fixture,
                   Face = 1,
+                  SimulatedStartingUTC = DateTime.MinValue,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   Casting = string.IsNullOrEmpty(castingQ) ? null : rawMatName,
                   InputQueue = string.IsNullOrEmpty(castingQ) ? null : castingQ,
                   OutputQueue = transQ,
@@ -1398,6 +1414,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Pallets = pals2.Select(p => p.ToString()).ToImmutableList(),
                   Fixture = fixture,
                   Face = 1,
+                  SimulatedStartingUTC = DateTime.MinValue,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   InputQueue = transQ,
                   Stops = stops2.ToImmutable()
                 }

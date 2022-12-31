@@ -577,7 +577,11 @@ namespace MachineWatchTest
                 },
                 HoldLoadUnload = new HoldPattern()
                 {
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01")
+                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
+                  UserHold = false,
+                  ReasonForUserHold = "",
+                  HoldUnholdPatternRepeats = false,
+                  HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
                 },
               },
               new ProcPathInfo()
@@ -636,11 +640,19 @@ namespace MachineWatchTest
                 ),
                 HoldMachining = new HoldPattern()
                 {
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01")
+                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
+                  UserHold = false,
+                  ReasonForUserHold = "",
+                  HoldUnholdPatternRepeats = false,
+                  HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
                 },
                 HoldLoadUnload = new HoldPattern()
                 {
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01")
+                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
+                  UserHold = false,
+                  ReasonForUserHold = "",
+                  HoldUnholdPatternRepeats = false,
+                  HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
                 },
               },
               new ProcPathInfo()
@@ -686,7 +698,11 @@ namespace MachineWatchTest
                 ),
                 HoldMachining = new HoldPattern()
                 {
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01")
+                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
+                  UserHold = false,
+                  ReasonForUserHold = "",
+                  HoldUnholdPatternRepeats = false,
+                  HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
                 },
                 HoldLoadUnload = new HoldPattern()
                 {
