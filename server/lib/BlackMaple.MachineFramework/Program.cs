@@ -63,11 +63,10 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      var cfg =
-          new ConfigurationBuilder()
-          .AddIniFile(configFile, optional: true)
-          .AddEnvironmentVariables()
-          .Build();
+      var cfg = new ConfigurationBuilder()
+        .AddIniFile(configFile, optional: true)
+        .AddEnvironmentVariables()
+        .Build();
 
       var s = ServerSettings.Load(cfg);
 
@@ -80,11 +79,28 @@ namespace BlackMaple.MachineFramework
       {
         try
         {
-          var newGzFile = Path.Combine(Path.GetDirectoryName(origTxtFile), Path.GetFileName(origTxtFile) + ".gz");
+          var newGzFile = Path.Combine(
+            Path.GetDirectoryName(origTxtFile),
+            Path.GetFileName(origTxtFile) + ".gz"
+          );
 
-          using (var sourceStream = new FileStream(origTxtFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-          using (var targetStream = new FileStream(newGzFile, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None))
-          using (var compressStream = new System.IO.Compression.GZipStream(targetStream, System.IO.Compression.CompressionLevel.Optimal))
+          using (
+            var sourceStream = new FileStream(origTxtFile, FileMode.Open, FileAccess.Read, FileShare.Read)
+          )
+          using (
+            var targetStream = new FileStream(
+              newGzFile,
+              FileMode.OpenOrCreate,
+              FileAccess.Write,
+              FileShare.None
+            )
+          )
+          using (
+            var compressStream = new System.IO.Compression.GZipStream(
+              targetStream,
+              System.IO.Compression.CompressionLevel.Optimal
+            )
+          )
           {
             sourceStream.CopyTo(compressStream);
           }
@@ -96,7 +112,15 @@ namespace BlackMaple.MachineFramework
             var m = rx.Match(Path.GetFileName(existingGzFile));
             if (m != null && m.Success && m.Groups.Count >= 2)
             {
-              if (DateTime.TryParseExact(m.Groups[1].Value, "yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var d))
+              if (
+                DateTime.TryParseExact(
+                  m.Groups[1].Value,
+                  "yyyyMMdd",
+                  System.Globalization.CultureInfo.InvariantCulture,
+                  System.Globalization.DateTimeStyles.None,
+                  out var d
+                )
+              )
               {
                 if (DateTime.Today.Subtract(d) > TimeSpan.FromDays(30))
                 {
@@ -108,53 +132,64 @@ namespace BlackMaple.MachineFramework
         }
         catch (Exception ex)
         {
-          Serilog.Debugging.SelfLog.WriteLine("Error while archiving debug log " + origTxtFile + ": " + ex.ToString());
+          Serilog.Debugging.SelfLog.WriteLine(
+            "Error while archiving debug log " + origTxtFile + ": " + ex.ToString()
+          );
         }
       }
-
     }
 
     public static void EnableSerilog(ServerSettings serverSt, bool enableEventLog)
     {
-      var logConfig = new LoggerConfiguration()
-          .MinimumLevel.Debug()
-          .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-          .WriteTo.Console(restrictedToMinimumLevel:
-              serverSt.EnableDebugLog ?
-                  Serilog.Events.LogEventLevel.Debug
-                : Serilog.Events.LogEventLevel.Information);
+      var logConfig = new LoggerConfiguration().MinimumLevel
+        .Debug()
+        .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+        .WriteTo.Console(
+          restrictedToMinimumLevel: serverSt.EnableDebugLog
+            ? Serilog.Events.LogEventLevel.Debug
+            : Serilog.Events.LogEventLevel.Information
+        );
 
 #if SERVICE_AVAIL
-            if (enableEventLog) {
-                logConfig = logConfig.WriteTo.EventLog(
-                    "FMS Insight",
-                    manageEventSource: true,
-                    restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
-            }
+      if (enableEventLog)
+      {
+        logConfig = logConfig.WriteTo.EventLog(
+          "FMS Insight",
+          manageEventSource: true,
+          restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information
+        );
+      }
 #endif
 
       if (serverSt.EnableDebugLog)
       {
         logConfig = logConfig.WriteTo.File(
-            new Serilog.Formatting.Compact.CompactJsonFormatter(),
-            System.IO.Path.Combine(ServerSettings.ConfigDirectory, "fmsinsight-debug.txt"),
-            rollingInterval: RollingInterval.Day,
-            hooks: new CompressSerilogDebugLog(),
-            restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug,
-            retainedFileCountLimit: 3);
+          new Serilog.Formatting.Compact.CompactJsonFormatter(),
+          System.IO.Path.Combine(ServerSettings.ConfigDirectory, "fmsinsight-debug.txt"),
+          rollingInterval: RollingInterval.Day,
+          hooks: new CompressSerilogDebugLog(),
+          restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug,
+          retainedFileCountLimit: 3
+        );
       }
 
       Log.Logger = logConfig.CreateLogger();
     }
 
-    public static IHostBuilder CreateHostBuilder(IConfiguration cfg, ServerSettings serverSt, FMSSettings fmsSt, FMSImplementation fmsImpl, bool useService)
+    public static IHostBuilder CreateHostBuilder(
+      IConfiguration cfg,
+      ServerSettings serverSt,
+      FMSSettings fmsSt,
+      FMSImplementation fmsImpl,
+      bool useService
+    )
     {
       return new HostBuilder()
-          .UseContentRoot(ServerSettings.ContentRootDirectory)
-          .UseSerilog()
-          .ConfigureWebHost(webBuilder =>
-          {
-            webBuilder
+        .UseContentRoot(ServerSettings.ContentRootDirectory)
+        .UseSerilog()
+        .ConfigureWebHost(webBuilder =>
+        {
+          webBuilder
             .ConfigureServices(s =>
             {
               s.AddSingleton<FMSImplementation>(fmsImpl);
@@ -174,10 +209,14 @@ namespace BlackMaple.MachineFramework
               var address = IPAddress.IPv6Any;
               if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
               {
-                options.Listen(address, serverSt.Port, listenOptions =>
-                {
-                  listenOptions.UseHttps(serverSt.TLSCertFile);
-                });
+                options.Listen(
+                  address,
+                  serverSt.Port,
+                  listenOptions =>
+                  {
+                    listenOptions.UseHttps(serverSt.TLSCertFile);
+                  }
+                );
               }
               else
               {
@@ -186,40 +225,65 @@ namespace BlackMaple.MachineFramework
 
               // support for MinDataRate
               // https://github.com/dotnet/aspnetcore/issues/4765
-              var minReqRate = cfg.GetSection("Kestrel").GetSection("Limits").GetSection("MinRequestBodyDataRate");
+              var minReqRate = cfg.GetSection("Kestrel")
+                .GetSection("Limits")
+                .GetSection("MinRequestBodyDataRate");
               if (minReqRate.Value == "")
               {
                 options.Limits.MinRequestBodyDataRate = null;
               }
-              if (minReqRate.GetSection("BytesPerSecond").Exists() && minReqRate.GetSection("GracePeriod").Exists())
+              if (
+                minReqRate.GetSection("BytesPerSecond").Exists()
+                && minReqRate.GetSection("GracePeriod").Exists()
+              )
               {
-                options.Limits.MinRequestBodyDataRate = new MinDataRate(minReqRate.GetValue<double>("BytesPerSecond"), minReqRate.GetValue<TimeSpan>("GracePeriod"));
+                options.Limits.MinRequestBodyDataRate = new MinDataRate(
+                  minReqRate.GetValue<double>("BytesPerSecond"),
+                  minReqRate.GetValue<TimeSpan>("GracePeriod")
+                );
               }
-              var minRespRate = cfg.GetSection("Kestrel").GetSection("Limits").GetSection("MinResponseDataRate");
+              var minRespRate = cfg.GetSection("Kestrel")
+                .GetSection("Limits")
+                .GetSection("MinResponseDataRate");
               if (minRespRate.Value == "")
               {
                 options.Limits.MinResponseDataRate = null;
               }
-              if (minRespRate.GetSection("BytesPerSecond").Exists() && minRespRate.GetSection("GracePeriod").Exists())
+              if (
+                minRespRate.GetSection("BytesPerSecond").Exists()
+                && minRespRate.GetSection("GracePeriod").Exists()
+              )
               {
-                options.Limits.MinResponseDataRate = new MinDataRate(minRespRate.GetValue<double>("BytesPerSecond"), minRespRate.GetValue<TimeSpan>("GracePeriod"));
+                options.Limits.MinResponseDataRate = new MinDataRate(
+                  minRespRate.GetValue<double>("BytesPerSecond"),
+                  minRespRate.GetValue<TimeSpan>("GracePeriod")
+                );
               }
 
               Serilog.Log.Debug("Kestrel Limits {@kestrel}", options.Limits);
             })
             .UseStartup<Startup>();
-          })
+        })
 #if SERVICE_AVAIL
-          .ConfigureServices(services => {
-            if (useService) {
-              services.AddSingleton<IHostLifetime, Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceLifetime>();
-            }
-          })
+        .ConfigureServices(services =>
+        {
+          if (useService)
+          {
+            services.AddSingleton<
+              IHostLifetime,
+              Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceLifetime
+            >();
+          }
+        })
 #endif
-          ;
+      ;
     }
 
-    public static void Run(bool useService, Func<IConfiguration, FMSSettings, FMSImplementation> initalize, bool outputConfigToLog = true)
+    public static void Run(
+      bool useService,
+      Func<IConfiguration, FMSSettings, FMSImplementation> initalize,
+      bool outputConfigToLog = true
+    )
     {
       var (cfg, serverSt) = LoadConfig();
       EnableSerilog(serverSt: serverSt, enableEventLog: useService);
@@ -231,9 +295,14 @@ namespace BlackMaple.MachineFramework
         fmsSt = new FMSSettings(cfg);
         if (outputConfigToLog)
         {
-          Log.Information("Starting FMS Insight with settings {@ServerSettings} and {@FMSSettings}. " +
-                          " Using ContentRoot {ContentRoot} and Config {ConfigDir}.",
-              serverSt, fmsSt, ServerSettings.ContentRootDirectory, ServerSettings.ConfigDirectory);
+          Log.Information(
+            "Starting FMS Insight with settings {@ServerSettings} and {@FMSSettings}. "
+              + " Using ContentRoot {ContentRoot} and Config {ConfigDir}.",
+            serverSt,
+            fmsSt,
+            ServerSettings.ContentRootDirectory,
+            ServerSettings.ConfigDirectory
+          );
         }
         fmsImpl = initalize(cfg, fmsSt);
       }

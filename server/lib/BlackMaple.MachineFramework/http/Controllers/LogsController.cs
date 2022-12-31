@@ -44,25 +44,51 @@ namespace BlackMaple.MachineFramework.Controllers
   [DataContract]
   public record NewInspectionCompleted
   {
-    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
-    [DataMember(IsRequired = true)] public int Process { get; init; }
-    [DataMember(IsRequired = true)] public int InspectionLocationNum { get; init; }
-    [DataMember(IsRequired = true)] public string InspectionType { get; init; }
-    [DataMember(IsRequired = true)] public bool Success { get; init; }
-    [DataMember(IsRequired = false)] public Dictionary<string, string> ExtraData { get; init; }
-    [DataMember(IsRequired = true)] public TimeSpan Elapsed { get; init; }
-    [DataMember(IsRequired = true)] public TimeSpan Active { get; init; }
+    [DataMember(IsRequired = true)]
+    public long MaterialID { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public int Process { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public int InspectionLocationNum { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public string InspectionType { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public bool Success { get; init; }
+
+    [DataMember(IsRequired = false)]
+    public Dictionary<string, string> ExtraData { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public TimeSpan Elapsed { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public TimeSpan Active { get; init; }
   }
 
   [DataContract]
   public record NewWash
   {
-    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
-    [DataMember(IsRequired = true)] public int Process { get; init; }
-    [DataMember(IsRequired = true)] public int WashLocationNum { get; init; }
-    [DataMember(IsRequired = false)] public Dictionary<string, string> ExtraData { get; init; }
-    [DataMember(IsRequired = true)] public TimeSpan Elapsed { get; init; }
-    [DataMember(IsRequired = true)] public TimeSpan Active { get; init; }
+    [DataMember(IsRequired = true)]
+    public long MaterialID { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public int Process { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public int WashLocationNum { get; init; }
+
+    [DataMember(IsRequired = false)]
+    public Dictionary<string, string> ExtraData { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public TimeSpan Elapsed { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public TimeSpan Active { get; init; }
   }
 
   [ApiController]
@@ -114,10 +140,7 @@ namespace BlackMaple.MachineFramework.Controllers
       }
       ms.Position = 0;
       // filestreamresult will close the memorystream
-      return new FileStreamResult(ms, "text/csv")
-      {
-        FileDownloadName = "events.csv"
-      };
+      return new FileStreamResult(ms, "text/csv") { FileDownloadName = "events.csv" };
     }
 
     [HttpGet("events/all-completed-parts")]
@@ -133,7 +156,10 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("events/recent")]
-    public IEnumerable<LogEntry> Recent([FromQuery] long lastSeenCounter, [FromQuery] DateTime? expectedEndUTCofLastSeen = null)
+    public IEnumerable<LogEntry> Recent(
+      [FromQuery] long lastSeenCounter,
+      [FromQuery] DateTime? expectedEndUTCofLastSeen = null
+    )
     {
       using (var db = _backend.RepoConfig.OpenConnection())
       {
@@ -156,7 +182,8 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/for-material")]
     public List<LogEntry> LogForMaterials([FromQuery] List<long> id)
     {
-      if (id == null || id.Count == 0) return new List<LogEntry>();
+      if (id == null || id.Count == 0)
+        return new List<LogEntry>();
       using (var db = _backend.RepoConfig.OpenConnection())
       {
         return db.GetLogForMaterial(id);
@@ -262,10 +289,7 @@ namespace BlackMaple.MachineFramework.Controllers
       }
       ms.Position = 0;
       // filestreamresult will close the memorystream
-      return new FileStreamResult(ms, "text/csv")
-      {
-        FileDownloadName = "workorders.csv"
-      };
+      return new FileStreamResult(ms, "text/csv") { FileDownloadName = "workorders.csv" };
     }
 
     [HttpPost("material-details/{materialID}/serial")]
@@ -287,7 +311,12 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("material-details/{materialID}/inspections/{inspType}")]
-    public LogEntry SetInspectionDecision(long materialID, string inspType, [FromBody] bool inspect, [FromQuery] int process = 1)
+    public LogEntry SetInspectionDecision(
+      long materialID,
+      string inspType,
+      [FromBody] bool inspect,
+      [FromQuery] int process = 1
+    )
     {
       using (var db = _backend.RepoConfig.OpenConnection())
       {
@@ -296,7 +325,12 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("material-details/{materialID}/notes")]
-    public LogEntry RecordOperatorNotes(long materialID, [FromBody] string notes, [FromQuery] int process = 1, [FromQuery] string operatorName = null)
+    public LogEntry RecordOperatorNotes(
+      long materialID,
+      [FromBody] string notes,
+      [FromQuery] int process = 1,
+      [FromQuery] string operatorName = null
+    )
     {
       using (var db = _backend.RepoConfig.OpenConnection())
       {
@@ -304,22 +338,22 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
-
     [HttpPost("events/inspection-result")]
     public LogEntry RecordInspectionCompleted([FromBody] NewInspectionCompleted insp)
     {
-      if (string.IsNullOrEmpty(insp.InspectionType)) throw new BadRequestException("Must give inspection type");
+      if (string.IsNullOrEmpty(insp.InspectionType))
+        throw new BadRequestException("Must give inspection type");
       using (var db = _backend.RepoConfig.OpenConnection())
       {
         return db.RecordInspectionCompleted(
-            insp.MaterialID,
-            insp.Process,
-            insp.InspectionLocationNum,
-            insp.InspectionType,
-            insp.Success,
-            insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
-            insp.Elapsed,
-            insp.Active
+          insp.MaterialID,
+          insp.Process,
+          insp.InspectionLocationNum,
+          insp.InspectionType,
+          insp.Success,
+          insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
+          insp.Elapsed,
+          insp.Active
         );
       }
     }
@@ -330,12 +364,12 @@ namespace BlackMaple.MachineFramework.Controllers
       using (var db = _backend.RepoConfig.OpenConnection())
       {
         return db.RecordWashCompleted(
-            insp.MaterialID,
-            insp.Process,
-            insp.WashLocationNum,
-            insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
-            insp.Elapsed,
-            insp.Active
+          insp.MaterialID,
+          insp.Process,
+          insp.WashLocationNum,
+          insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
+          insp.Elapsed,
+          insp.Active
         );
       }
     }

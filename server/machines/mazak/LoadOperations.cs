@@ -49,7 +49,11 @@ namespace MazakMachineInterface
 
     private Action<int, IEnumerable<LoadAction>> _onLoadActions;
 
-    public LoadOperationsFromFile(IConfigurationSection cfg, bool enableWatcher, Action<int, IEnumerable<LoadAction>> onLoadActions)
+    public LoadOperationsFromFile(
+      IConfigurationSection cfg,
+      bool enableWatcher,
+      Action<int, IEnumerable<LoadAction>> onLoadActions
+    )
     {
       _onLoadActions = onLoadActions;
       mazakPath = cfg.GetValue<string>("Load CSV Path");
@@ -64,8 +68,10 @@ namespace MazakMachineInterface
 
         if (!Directory.Exists(mazakPath))
         {
-          Log.Error("Unable to determine the path to the mazak load CSV files.  Please add/update a setting" +
-                    " called 'Load CSV Path' in config file");
+          Log.Error(
+            "Unable to determine the path to the mazak load CSV files.  Please add/update a setting"
+              + " called 'Load CSV Path' in config file"
+          );
           return;
         }
       }
@@ -89,7 +95,6 @@ namespace MazakMachineInterface
       _watcher = null;
     }
 
-
     private FileSystemWatcher _watcher;
     private object _lock = new object();
     private IDictionary<int, DateTime> lastWriteTime = new Dictionary<int, DateTime>();
@@ -100,8 +105,7 @@ namespace MazakMachineInterface
       {
         string file = e.FullPath;
 
-        Match m = Regex.Match(Path.GetFileName(file).ToLower(),
-                              "lds([0-9]*)_operation.*csv");
+        Match m = Regex.Match(Path.GetFileName(file).ToLower(), "lds([0-9]*)_operation.*csv");
 
         if (!m.Success || m.Groups.Count < 2)
           return;
@@ -116,14 +120,18 @@ namespace MazakMachineInterface
           //it might no longer exist if the event fires multiple times for this file
           if (File.Exists(file))
           {
-
             var last = System.IO.File.GetLastWriteTime(file);
 
             if (lastWriteTime.ContainsKey(lds) && lastWriteTime[lds] == last)
             {
-              Log.Debug("Skipping load " + lds.ToString() +
-                               " file " + Path.GetFileName(file) + " because the file" +
-                               " has not been modified.");
+              Log.Debug(
+                "Skipping load "
+                  + lds.ToString()
+                  + " file "
+                  + Path.GetFileName(file)
+                  + " because the file"
+                  + " has not been modified."
+              );
             }
             else
             {
@@ -139,7 +147,6 @@ namespace MazakMachineInterface
 
         if (a != null)
           _onLoadActions(lds, a);
-
       }
       catch (Exception ex)
       {
@@ -158,8 +165,7 @@ namespace MazakMachineInterface
       {
         foreach (var f in Directory.GetFiles(mazakPath, "*.csv"))
         {
-          Match m = Regex.Match(Path.GetFileName(f).ToLower(),
-                              "lds([0-9]*)_operation.*csv");
+          Match m = Regex.Match(Path.GetFileName(f).ToLower(), "lds([0-9]*)_operation.*csv");
           if (!m.Success || m.Groups.Count < 2)
             continue;
           int lds = int.Parse(m.Groups[1].Value);
@@ -171,7 +177,6 @@ namespace MazakMachineInterface
 
       return ret;
     }
-
 
     private List<LoadAction> ReadFile(int stat, string fName)
     {
@@ -197,7 +202,6 @@ namespace MazakMachineInterface
 
             if (!string.IsNullOrEmpty(part))
             {
-
               bool load = false;
               if (split[0].StartsWith("FIX"))
                 load = true;
@@ -235,7 +239,6 @@ namespace MazakMachineInterface
       }
     }
 
-
     private class FixWork
     {
       public int OperationID { get; set; }
@@ -247,9 +250,10 @@ namespace MazakMachineInterface
 
     private IEnumerable<LoadAction> LoadActions(SqlConnection conn)
     {
-      var qry = "SELECT OperationID, a9_prcnum, a9_ptnam, a9_fixqty, a1_schcom " +
-                   " FROM A9_FixWork " +
-                   " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a9_ScheduleID";
+      var qry =
+        "SELECT OperationID, a9_prcnum, a9_ptnam, a9_fixqty, a1_schcom "
+        + " FROM A9_FixWork "
+        + " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a9_ScheduleID";
       var ret = new List<LoadAction>();
       var elems = conn.Query(qry);
       foreach (var e in conn.Query<FixWork>(qry))
@@ -287,9 +291,10 @@ namespace MazakMachineInterface
 
     private IEnumerable<LoadAction> RemoveActions(SqlConnection conn)
     {
-      var qry = "SELECT OperationID,a8_prcnum,a8_ptnam,a8_fixqty,a1_schcom " +
-          " FROM A8_RemoveWork " +
-          " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
+      var qry =
+        "SELECT OperationID,a8_prcnum,a8_ptnam,a8_fixqty,a1_schcom "
+        + " FROM A8_RemoveWork "
+        + " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
       var ret = new List<LoadAction>();
       var elems = conn.Query(qry);
       foreach (var e in conn.Query<RemoveWork>(qry))
@@ -317,4 +322,3 @@ namespace MazakMachineInterface
     }
   }
 }
-

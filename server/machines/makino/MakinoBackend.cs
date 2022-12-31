@@ -75,16 +75,19 @@ namespace Makino
         bool downloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders");
 
         Log.Information(
-                    "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
-                     dbConnStr, adePath, downloadOnlyOrders);
+          "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
+          dbConnStr,
+          adePath,
+          downloadOnlyOrders
+        );
 
         _dataDirectory = st.DataDirectory;
 
         RepoConfig = RepositoryConfig.InitializeEventDatabase(
-            serialSt,
-            System.IO.Path.Combine(_dataDirectory, "log.db"),
-            System.IO.Path.Combine(_dataDirectory, "inspections.db"),
-            System.IO.Path.Combine(_dataDirectory, "jobs.db")
+          serialSt,
+          System.IO.Path.Combine(_dataDirectory, "log.db"),
+          System.IO.Path.Combine(_dataDirectory, "inspections.db"),
+          System.IO.Path.Combine(_dataDirectory, "jobs.db")
         );
 
         _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
@@ -97,10 +100,15 @@ namespace Makino
 
         _logTimer = new LogTimer(RepoConfig, _makinoDB, _status);
 
-        _jobs = new Jobs(_makinoDB, RepoConfig.OpenConnection, adePath, downloadOnlyOrders, onJobCommentChange: OnLogsProcessed);
+        _jobs = new Jobs(
+          _makinoDB,
+          RepoConfig.OpenConnection,
+          adePath,
+          downloadOnlyOrders,
+          onJobCommentChange: OnLogsProcessed
+        );
 
         _logTimer.LogsProcessed += OnLogsProcessed;
-
       }
       catch (Exception ex)
       {
@@ -109,17 +117,23 @@ namespace Makino
     }
 
     private bool _disposed = false;
+
     public void Dispose()
     {
-      if (_disposed) return;
+      if (_disposed)
+        return;
       _disposed = true;
       _logTimer.LogsProcessed -= OnLogsProcessed;
-      if (_logTimer != null) _logTimer.Halt();
-      if (_makinoDB != null) _makinoDB.Close();
+      if (_logTimer != null)
+        _logTimer.Halt();
+      if (_makinoDB != null)
+        _makinoDB.Close();
     }
 
     public event NewCurrentStatus OnNewCurrentStatus;
+
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
+
     private void OnLogsProcessed()
     {
       RaiseNewCurrentStatus(_jobs.GetCurrentStatus());
@@ -135,7 +149,10 @@ namespace Makino
       return b.ConnectionString;
     }
 
-    public IJobControl JobControl { get => _jobs; }
+    public IJobControl JobControl
+    {
+      get => _jobs;
+    }
     public IQueueControl QueueControl => _jobs;
 
     public IMachineControl MachineControl => null;
@@ -153,4 +170,3 @@ namespace Makino
     public bool SupportsQuarantineAtLoadStation { get; } = false;
   }
 }
-

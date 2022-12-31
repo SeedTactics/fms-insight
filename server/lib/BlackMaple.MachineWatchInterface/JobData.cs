@@ -38,7 +38,6 @@ using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineWatchInterface
 {
-
   //stores information about a single "stop" of the pallet in a route
   [Serializable, DataContract]
   public class JobMachiningStop
@@ -55,19 +54,27 @@ namespace BlackMaple.MachineWatchInterface
       set { _expectedCycleTime = value; }
     }
 
-    public string ProgramName { get => _program; set => _program = value; }
+    public string ProgramName
+    {
+      get => _program;
+      set => _program = value;
+    }
 
-    public long? ProgramRevision { get => _programRevision; set => _programRevision = value; }
+    public long? ProgramRevision
+    {
+      get => _programRevision;
+      set => _programRevision = value;
+    }
 
     public IList<int> Stations
     {
       get
       {
-        if (_stations == null) _stations = new List<int>();
+        if (_stations == null)
+          _stations = new List<int>();
         return _stations;
       }
     }
-
 
     //Key is tool name, value is expected elapsed time
     public IDictionary<string, TimeSpan> Tools
@@ -131,7 +138,8 @@ namespace BlackMaple.MachineWatchInterface
     {
       get
       {
-        if (_stations == null) return null;
+        if (_stations == null)
+          return null;
         var d = new Dictionary<int, string>();
         foreach (var s in _stations)
         {
@@ -189,20 +197,22 @@ namespace BlackMaple.MachineWatchInterface
     {
       return "%pal" + proc.ToString() + "%";
     }
+
     public static string LoadFormatFlag(int proc)
     {
       return "%load" + proc.ToString() + "%";
     }
+
     public static string UnloadFormatFlag(int proc)
     {
       return "%unload" + proc.ToString() + "%";
     }
+
     public static string StationFormatFlag(int proc, int routeNum)
     {
       return "%stat" + proc.ToString() + "," + routeNum.ToString() + "%";
     }
   }
-
 
   // JobInspectionData is the old format before we added ability to control per-path
   // It is kept for backwards compatability, but new stuff should use PathInspection instead.
@@ -249,7 +259,14 @@ namespace BlackMaple.MachineWatchInterface
       RandomFreq = -1;
       InspectSingleProcess = inspSingleProc;
     }
-    public JobInspectionData(string iType, string ctr, double frequency, TimeSpan interval, int inspSingleProc = -1)
+
+    public JobInspectionData(
+      string iType,
+      string ctr,
+      double frequency,
+      TimeSpan interval,
+      int inspSingleProc = -1
+    )
     {
       InspectionType = iType;
       Counter = ctr;
@@ -258,6 +275,7 @@ namespace BlackMaple.MachineWatchInterface
       RandomFreq = frequency;
       InspectSingleProcess = inspSingleProc;
     }
+
     public JobInspectionData(JobInspectionData insp)
     {
       InspectionType = insp.InspectionType;
@@ -272,9 +290,13 @@ namespace BlackMaple.MachineWatchInterface
 
     //The final counter string is determined by replacing following substrings in the counter
     public static string PalletFormatFlag(int proc) => PathInspection.PalletFormatFlag(proc);
+
     public static string LoadFormatFlag(int proc) => PathInspection.LoadFormatFlag(proc);
+
     public static string UnloadFormatFlag(int proc) => PathInspection.UnloadFormatFlag(proc);
-    public static string StationFormatFlag(int proc, int routeNum) => PathInspection.StationFormatFlag(proc, routeNum);
+
+    public static string StationFormatFlag(int proc, int routeNum) =>
+      PathInspection.StationFormatFlag(proc, routeNum);
   }
 
   [Serializable, DataContract]
@@ -315,11 +337,8 @@ namespace BlackMaple.MachineWatchInterface
 
     // Given a time, allows you to calculate if the hold is active
     // and the next transition time.
-    public void HoldInformation(DateTime nowUTC,
-                                out bool isOnHold,
-                                out DateTime nextTransitionUTC)
+    public void HoldInformation(DateTime nowUTC, out bool isOnHold, out DateTime nextTransitionUTC)
     {
-
       if (UserHold)
       {
         isOnHold = true;
@@ -368,7 +387,6 @@ namespace BlackMaple.MachineWatchInterface
 
       do
       {
-
         // Decrement the time.
         remainingSpan = remainingSpan.Subtract(HoldUnholdPattern[curIndex]);
 
@@ -386,7 +404,6 @@ namespace BlackMaple.MachineWatchInterface
         // check for repeat patterns
         if (curIndex >= HoldUnholdPattern.Count && HoldUnholdPatternRepeats)
           curIndex = 0;
-
       } while (curIndex < HoldUnholdPattern.Count && remainingSpan.Ticks > 0);
 
       //We are past the end of the pattern, so we are not on hold.
@@ -475,6 +492,7 @@ namespace BlackMaple.MachineWatchInterface
     {
       get { return _scheduledIds; }
     }
+
     public int GetNumPaths(int process)
     {
       if (process >= 1 && process <= NumProcesses)
@@ -486,6 +504,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process number");
       }
     }
+
     public int GetPathGroup(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -497,6 +516,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetPathGroup(int process, int path, int pgroup)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -509,13 +529,13 @@ namespace BlackMaple.MachineWatchInterface
       }
     }
 
-
     // Hold Status
     public JobHoldPattern HoldEntireJob
     {
       get { return _holdJob; }
       set { _holdJob = value; }
     }
+
     public JobHoldPattern HoldMachining(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -527,6 +547,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetHoldMachining(int process, int path, JobHoldPattern hold)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -538,6 +559,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public JobHoldPattern HoldLoadUnload(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -549,6 +571,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetHoldLoadUnload(int process, int path, JobHoldPattern hold)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -573,6 +596,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid path number");
       }
     }
+
     public void SetPlannedCyclesOnFirstProcess(int path, int numCycles)
     {
       if (path >= 1 && path <= _pCycles.Length)
@@ -597,6 +621,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetSimulatedStartingTimeUTC(int process, int path, DateTime startUTC)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -608,6 +633,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public IEnumerable<SimulatedProduction> GetSimulatedProduction(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -619,6 +645,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetSimulatedProduction(int process, int path, IEnumerable<SimulatedProduction> prod)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -630,6 +657,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public TimeSpan GetSimulatedAverageFlowTime(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -641,6 +669,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetSimulatedAverageFlowTime(int process, int path, TimeSpan t)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -665,6 +694,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetFixtureFace(int process, int path, string fixture, int face)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -676,8 +706,8 @@ namespace BlackMaple.MachineWatchInterface
       {
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
-
     }
+
     public IEnumerable<string> PlannedPallets(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -689,6 +719,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
 #if NET35
     // tuples don't work in net3.5
     public void PlannedFixture(int process, int path, out string fixture, out int face)
@@ -708,7 +739,10 @@ namespace BlackMaple.MachineWatchInterface
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
       {
-        return (fixture: _procPath[process - 1][path - 1].Fixture, face: _procPath[process - 1][path - 1].Face ?? 1);
+        return (
+          fixture: _procPath[process - 1][path - 1].Fixture,
+          face: _procPath[process - 1][path - 1].Face ?? 1
+        );
       }
       else
       {
@@ -716,6 +750,7 @@ namespace BlackMaple.MachineWatchInterface
       }
     }
 #endif
+
     public IEnumerable<string> AllPlannedPallets()
     {
       var ret = new List<string>();
@@ -732,6 +767,7 @@ namespace BlackMaple.MachineWatchInterface
       }
       return ret;
     }
+
     public bool HasPallet(int process, int path, string pallet)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -743,6 +779,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public int PartsPerPallet(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -754,6 +791,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetPartsPerPallet(int process, int path, int partsPerPallet)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -777,6 +815,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void AddLoadStation(int process, int path, int statNum)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -788,6 +827,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     //Expected Load time is per material, need to multiply by PartsPerPallet to get total time
     public TimeSpan GetExpectedLoadTime(int process, int path)
     {
@@ -800,6 +840,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetExpectedLoadTime(int process, int path, TimeSpan t)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -811,6 +852,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public IEnumerable<int> UnloadStations(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -822,6 +864,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void AddUnloadStation(int process, int path, int statNum)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -833,6 +876,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     //Expected Unload time is per material, need to multiply by PartsPerPallet to get total time
     public TimeSpan GetExpectedUnloadTime(int process, int path)
     {
@@ -845,6 +889,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetExpectedUnloadTime(int process, int path, TimeSpan t)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -856,6 +901,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public IEnumerable<JobMachiningStop> GetMachiningStop(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -867,6 +913,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void AddMachiningStop(int process, int path, JobMachiningStop r)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -878,6 +925,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void AddMachiningStops(int process, int path, IEnumerable<JobMachiningStop> stops)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -890,6 +938,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public string GetInputQueue(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -901,6 +950,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public string GetCasting(int proc1path)
     {
       if (proc1path >= 1 && proc1path <= GetNumPaths(1))
@@ -912,6 +962,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid path number");
       }
     }
+
     public string GetOutputQueue(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -923,6 +974,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetInputQueue(int process, int path, string queue)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -934,6 +986,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public void SetCasting(int proc1path, string casting)
     {
       if (proc1path >= 1 && proc1path <= GetNumPaths(1))
@@ -945,6 +998,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid path number");
       }
     }
+
     public void SetOutputQueue(int process, int path, string queue)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -956,6 +1010,7 @@ namespace BlackMaple.MachineWatchInterface
         throw new IndexOutOfRangeException("Invalid process or path number");
       }
     }
+
     public ICollection<PathInspection> PathInspections(int process, int path)
     {
       if (process >= 1 && process <= NumProcesses && path >= 1 && path <= GetNumPaths(process))
@@ -980,9 +1035,8 @@ namespace BlackMaple.MachineWatchInterface
 #pragma warning restore CS0612
     }
 
-    public JobPlan(string unique, int numProcess) : this(unique, numProcess, null)
-    {
-    }
+    public JobPlan(string unique, int numProcess) : this(unique, numProcess, null) { }
+
     public JobPlan(string unique, int numProcess, int[] numPaths)
     {
       _routeStartUTC = DateTime.MinValue;
@@ -1019,6 +1073,7 @@ namespace BlackMaple.MachineWatchInterface
         _pCycles[path] = 0;
       }
     }
+
     public JobPlan(JobPlan job, string newUniqueStr)
     {
       _routeStartUTC = job._routeStartUTC;
@@ -1060,6 +1115,7 @@ namespace BlackMaple.MachineWatchInterface
         _pCycles[path] = 0;
       }
     }
+
     public JobPlan(JobPlan job)
     {
       _routeStartUTC = job._routeStartUTC;
@@ -1151,15 +1207,20 @@ namespace BlackMaple.MachineWatchInterface
     private struct FixtureFace : IComparable<FixtureFace>
     {
 #pragma warning disable CS0649
-      [DataMember(IsRequired = true)] public string Fixture;
-      [DataMember(IsRequired = true)] public string Face;
+      [DataMember(IsRequired = true)]
+      public string Fixture;
+
+      [DataMember(IsRequired = true)]
+      public string Face;
 #pragma warning restore CS0649
 
       public int CompareTo(FixtureFace o)
       {
         var i = Fixture.CompareTo(o.Fixture);
-        if (i < 0) return -1;
-        if (i > 0) return 1;
+        if (i < 0)
+          return -1;
+        if (i > 0)
+          return 1;
         return Face.CompareTo(o.Face);
       }
 
@@ -1172,8 +1233,11 @@ namespace BlackMaple.MachineWatchInterface
     [Serializable, DataContract]
     public struct SimulatedProduction
     {
-      [DataMember(IsRequired = true)] public DateTime TimeUTC;
-      [DataMember(IsRequired = true)] public int Quantity; //total quantity simulated to be completed at TimeUTC
+      [DataMember(IsRequired = true)]
+      public DateTime TimeUTC;
+
+      [DataMember(IsRequired = true)]
+      public int Quantity; //total quantity simulated to be completed at TimeUTC
     }
 
     [Serializable, DataContract]
@@ -1208,7 +1272,6 @@ namespace BlackMaple.MachineWatchInterface
               Face = fNum;
             }
           }
-
         }
       }
 
@@ -1325,15 +1388,36 @@ namespace BlackMaple.MachineWatchInterface
   [SerializableAttribute, DataContract]
   public class SimulatedStationUtilization
   {
-    [DataMember(IsRequired = true)] public string ScheduleId;
-    [DataMember(IsRequired = true)] public string StationGroup;
-    [DataMember(IsRequired = true)] public int StationNum;
-    [DataMember(IsRequired = true)] public DateTime StartUTC;
-    [DataMember(IsRequired = true)] public DateTime EndUTC;
-    [DataMember(IsRequired = true)] public TimeSpan UtilizationTime; //time between StartUTC and EndUTC the station is busy.
-    [DataMember(IsRequired = true)] public TimeSpan PlannedDownTime; //time between StartUTC and EndUTC the station is planned to be down.
+    [DataMember(IsRequired = true)]
+    public string ScheduleId;
 
-    public SimulatedStationUtilization(string id, string group, int num, DateTime start, DateTime endT, TimeSpan u, TimeSpan d)
+    [DataMember(IsRequired = true)]
+    public string StationGroup;
+
+    [DataMember(IsRequired = true)]
+    public int StationNum;
+
+    [DataMember(IsRequired = true)]
+    public DateTime StartUTC;
+
+    [DataMember(IsRequired = true)]
+    public DateTime EndUTC;
+
+    [DataMember(IsRequired = true)]
+    public TimeSpan UtilizationTime; //time between StartUTC and EndUTC the station is busy.
+
+    [DataMember(IsRequired = true)]
+    public TimeSpan PlannedDownTime; //time between StartUTC and EndUTC the station is planned to be down.
+
+    public SimulatedStationUtilization(
+      string id,
+      string group,
+      int num,
+      DateTime start,
+      DateTime endT,
+      TimeSpan u,
+      TimeSpan d
+    )
     {
       ScheduleId = id;
       StationGroup = group;
@@ -1348,11 +1432,20 @@ namespace BlackMaple.MachineWatchInterface
   [Serializable, DataContract]
   public class PartWorkorder
   {
-    [DataMember(IsRequired = true)] public string WorkorderId { get; set; }
-    [DataMember(IsRequired = true)] public string Part { get; set; }
-    [DataMember(IsRequired = true)] public int Quantity { get; set; }
-    [DataMember(IsRequired = true)] public DateTime DueDate { get; set; }
-    [DataMember(IsRequired = true)] public int Priority { get; set; }
+    [DataMember(IsRequired = true)]
+    public string WorkorderId { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public string Part { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public int Quantity { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public DateTime DueDate { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public int Priority { get; set; }
   }
 
   [Serializable, DataContract]
@@ -1367,9 +1460,14 @@ namespace BlackMaple.MachineWatchInterface
   [Serializable, DataContract]
   public class ProgramEntry
   {
-    [DataMember(IsRequired = true)] public string ProgramName { get; set; }
-    [DataMember(IsRequired = true)] public string Comment { get; set; }
-    [DataMember(IsRequired = true)] public string ProgramContent { get; set; }
+    [DataMember(IsRequired = true)]
+    public string ProgramName { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public string Comment { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public string ProgramContent { get; set; }
 
     // * A positive revision number will either add it to the DB with this revision if the revision does
     //   not yet exist, or verify the ProgramContent matches the ProgramContent from the DB if the revision
@@ -1383,7 +1481,8 @@ namespace BlackMaple.MachineWatchInterface
     //   for the same ProgramName, the one with the largest value will be checked to match the latest revision in
     //   the DB and potentially avoid allocating a new number.  The sorting is on negative numbers, so place
     //   the program entry which is likely to already exist with revision 0 or -1 so that it is the first examined.
-    [DataMember(IsRequired = true)] public long Revision { get; set; }
+    [DataMember(IsRequired = true)]
+    public long Revision { get; set; }
   }
 
   [Serializable, DataContract]
@@ -1420,18 +1519,30 @@ namespace BlackMaple.MachineWatchInterface
   [Serializable, DataContract]
   public class DecrementQuantity
   {
-    [DataMember(IsRequired = true)] public long DecrementId { get; set; }
-    [DataMember(IsRequired = true)] public int Proc1Path { get; set; }
-    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; set; }
-    [DataMember(IsRequired = true)] public int Quantity { get; set; }
+    [DataMember(IsRequired = true)]
+    public long DecrementId { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public int Proc1Path { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public DateTime TimeUTC { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public int Quantity { get; set; }
   }
 
   [Serializable, DataContract]
   public struct PlannedSchedule
   {
-    [DataMember(IsRequired = true)] public string LatestScheduleId;
-    [DataMember(IsRequired = true)] public List<JobPlan> Jobs;
-    [DataMember(IsRequired = true)] public Dictionary<string, int> ExtraParts;
+    [DataMember(IsRequired = true)]
+    public string LatestScheduleId;
+
+    [DataMember(IsRequired = true)]
+    public List<JobPlan> Jobs;
+
+    [DataMember(IsRequired = true)]
+    public Dictionary<string, int> ExtraParts;
 
     [OptionalField, DataMember(IsRequired = false)]
     public List<PartWorkorder> CurrentUnfilledWorkorders;

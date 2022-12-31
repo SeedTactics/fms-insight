@@ -52,7 +52,11 @@ namespace BlackMaple.MachineFramework
 
     ///Adds new jobs into the cell controller
     void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell);
-    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs);
+    void ReplaceWorkordersForSchedule(
+      string scheduleId,
+      IEnumerable<Workorder> newWorkorders,
+      IEnumerable<NewProgramContent> programs
+    );
     event NewJobsDelegate OnNewJobs;
 
     void SetJobComment(string jobUnique, string comment);
@@ -74,12 +78,23 @@ namespace BlackMaple.MachineFramework
     /// Add new raw material for part.  The part material has not yet been assigned to a specific job,
     /// and will be assigned to the job with remaining demand and earliest priority.
     /// The serial is optional and is passed only if the material has already been marked with a serial.
-    InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, string serial, string operatorName = null);
+    InProcessMaterial AddUnallocatedPartToQueue(
+      string partName,
+      string queue,
+      string serial,
+      string operatorName = null
+    );
 
     /// Add new castings.  The casting has not yet been assigned to a specific job,
     /// and will be assigned to the job with remaining demand and earliest priority.
     /// The serial is optional and is passed only if the material has already been marked with a serial.
-    List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serial, string operatorName = null);
+    List<InProcessMaterial> AddUnallocatedCastingToQueue(
+      string casting,
+      int qty,
+      string queue,
+      IList<string> serial,
+      string operatorName = null
+    );
 
     /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional
     /// and is passed only if the material has already been marked with a serial.
@@ -105,12 +120,7 @@ namespace BlackMaple.MachineFramework
 
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
 
-    void SwapMaterialOnPallet(
-        string pallet,
-        long oldMatId,
-        long newMatId,
-        string operatorName = null
-    );
+    void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null);
     event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     void InvalidatePalletCycle(
@@ -125,7 +135,11 @@ namespace BlackMaple.MachineFramework
   {
     List<ToolInMachine> CurrentToolsInMachines();
     List<ProgramInCellController> CurrentProgramsInCellController();
-    List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, long? revisionToStart);
+    List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
+      string programName,
+      int count,
+      long? revisionToStart
+    );
     string GetProgramContent(string programName, long? revision);
   }
 
@@ -145,7 +159,11 @@ namespace BlackMaple.MachineFramework
   public interface ICheckJobsValid
   {
     IReadOnlyList<string> CheckNewJobs(IRepository db, NewJobs jobs);
-    IReadOnlyList<string> CheckWorkorders(IRepository db, IEnumerable<Workorder> newWorkorders, IEnumerable<MachineFramework.NewProgramContent> programs);
+    IReadOnlyList<string> CheckWorkorders(
+      IRepository db,
+      IEnumerable<Workorder> newWorkorders,
+      IEnumerable<MachineFramework.NewProgramContent> programs
+    );
     bool ExcludeJobFromDecrement(IRepository db, Job j);
   }
 

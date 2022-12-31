@@ -66,7 +66,16 @@ namespace BlackMaple.MachineWatchInterface
     [DataMember(Name = "workorder", IsRequired = false, EmitDefaultValue = false)]
     public string Workorder { get; private set; }
 
-    public LogMaterial(long matID, string uniq, int proc, string part, int numProc, string serial, string workorder, string face)
+    public LogMaterial(
+      long matID,
+      string uniq,
+      int proc,
+      string part,
+      int numProc,
+      string serial,
+      string workorder,
+      string face
+    )
     {
       MaterialID = matID;
       JobUniqueStr = uniq;
@@ -84,24 +93,59 @@ namespace BlackMaple.MachineWatchInterface
   [Serializable, DataContract]
   public enum LogType
   {
-    [EnumMember] LoadUnloadCycle = 1, //numbers are for backwards compatibility with old type enumeration
-    [EnumMember] MachineCycle = 2,
-    [EnumMember] PartMark = 6,
-    [EnumMember] Inspection = 7,
-    [EnumMember] OrderAssignment = 10,
-    [EnumMember] GeneralMessage = 100,
-    [EnumMember] PalletCycle = 101,
-    [EnumMember] FinalizeWorkorder = 102,
-    [EnumMember] InspectionResult = 103,
-    [EnumMember] Wash = 104,
-    [EnumMember] AddToQueue = 105,
-    [EnumMember] RemoveFromQueue = 106,
-    [EnumMember] InspectionForce = 107,
-    [EnumMember] PalletOnRotaryInbound = 108,
-    [EnumMember] PalletInStocker = 110,
-    [EnumMember] SignalQuarantine = 111,
-    [EnumMember] InvalidateCycle = 112,
-    [EnumMember] SwapMaterialOnPallet = 113,
+    [EnumMember]
+    LoadUnloadCycle = 1, //numbers are for backwards compatibility with old type enumeration
+
+    [EnumMember]
+    MachineCycle = 2,
+
+    [EnumMember]
+    PartMark = 6,
+
+    [EnumMember]
+    Inspection = 7,
+
+    [EnumMember]
+    OrderAssignment = 10,
+
+    [EnumMember]
+    GeneralMessage = 100,
+
+    [EnumMember]
+    PalletCycle = 101,
+
+    [EnumMember]
+    FinalizeWorkorder = 102,
+
+    [EnumMember]
+    InspectionResult = 103,
+
+    [EnumMember]
+    Wash = 104,
+
+    [EnumMember]
+    AddToQueue = 105,
+
+    [EnumMember]
+    RemoveFromQueue = 106,
+
+    [EnumMember]
+    InspectionForce = 107,
+
+    [EnumMember]
+    PalletOnRotaryInbound = 108,
+
+    [EnumMember]
+    PalletInStocker = 110,
+
+    [EnumMember]
+    SignalQuarantine = 111,
+
+    [EnumMember]
+    InvalidateCycle = 112,
+
+    [EnumMember]
+    SwapMaterialOnPallet = 113,
   }
 
   [Serializable, DataContract, KnownType(typeof(MaterialProcessActualPath))]
@@ -151,41 +195,58 @@ namespace BlackMaple.MachineWatchInterface
 
     [DataMember(Name = "details", IsRequired = false, EmitDefaultValue = false)]
     private Dictionary<string, string> _details;
-    public IDictionary<string, string> ProgramDetails { get { return _details; } }
+    public IDictionary<string, string> ProgramDetails
+    {
+      get { return _details; }
+    }
 
     [DataMember(Name = "tools", IsRequired = false, EmitDefaultValue = false)]
     public IDictionary<string, ToolUse> Tools { get; private set; }
 
     public LogEntry(
-        long cntr,
-        IEnumerable<LogMaterial> mat,
-        string pal,
-        LogType ty,
-        string locName,
-        int locNum,
-        string prog,
-        bool start,
-        DateTime endTime,
-        string result,
-        bool endOfRoute)
-        : this(cntr, mat, pal, ty, locName, locNum, prog, start, endTime, result, endOfRoute,
-              TimeSpan.FromMinutes(-1), TimeSpan.Zero)
-    { }
+      long cntr,
+      IEnumerable<LogMaterial> mat,
+      string pal,
+      LogType ty,
+      string locName,
+      int locNum,
+      string prog,
+      bool start,
+      DateTime endTime,
+      string result,
+      bool endOfRoute
+    )
+      : this(
+        cntr,
+        mat,
+        pal,
+        ty,
+        locName,
+        locNum,
+        prog,
+        start,
+        endTime,
+        result,
+        endOfRoute,
+        TimeSpan.FromMinutes(-1),
+        TimeSpan.Zero
+      ) { }
 
     public LogEntry(
-        long cntr,
-        IEnumerable<LogMaterial> mat,
-        string pal,
-        LogType ty,
-        string locName,
-        int locNum,
-        string prog,
-        bool start,
-        DateTime endTime,
-        string result,
-        bool endOfRoute,
-        TimeSpan elapsed,
-        TimeSpan active)
+      long cntr,
+      IEnumerable<LogMaterial> mat,
+      string pal,
+      LogType ty,
+      string locName,
+      int locNum,
+      string prog,
+      bool start,
+      DateTime endTime,
+      string result,
+      bool endOfRoute,
+      TimeSpan elapsed,
+      TimeSpan active
+    )
     {
       Counter = cntr;
       Material = mat; // ok since material is immutable
@@ -260,22 +321,42 @@ namespace BlackMaple.MachineWatchInterface
   [DataContract, Serializable]
   public class MaterialDetails
   {
-    [DataMember(IsRequired = true)] public long MaterialID { get; set; }
-    [DataMember] public string JobUnique { get; set; }
-    [DataMember] public string PartName { get; set; }
-    [DataMember] public int NumProcesses { get; set; }
-    [DataMember] public string Workorder { get; set; }
-    [DataMember] public string Serial { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public Dictionary<int, int> Paths { get; set; } // key is process, value is path
+    [DataMember(IsRequired = true)]
+    public long MaterialID { get; set; }
+
+    [DataMember]
+    public string JobUnique { get; set; }
+
+    [DataMember]
+    public string PartName { get; set; }
+
+    [DataMember]
+    public int NumProcesses { get; set; }
+
+    [DataMember]
+    public string Workorder { get; set; }
+
+    [DataMember]
+    public string Serial { get; set; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public Dictionary<int, int> Paths { get; set; } // key is process, value is path
   }
 
   [DataContract, Serializable]
   public class ToolUse
   {
-    [DataMember(IsRequired = true)] public TimeSpan ToolUseDuringCycle { get; set; }
-    [DataMember(IsRequired = true)] public TimeSpan TotalToolUseAtEndOfCycle { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan ConfiguredToolLife { get; set; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public bool? ToolChangeOccurred { get; set; }
+    [DataMember(IsRequired = true)]
+    public TimeSpan ToolUseDuringCycle { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public TimeSpan TotalToolUseAtEndOfCycle { get; set; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public TimeSpan ConfiguredToolLife { get; set; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public bool? ToolChangeOccurred { get; set; }
   }
 
   // stored serialized in json format in the details for inspection logs.
@@ -285,15 +366,29 @@ namespace BlackMaple.MachineWatchInterface
     [DataContract]
     public class Stop
     {
-      [DataMember(IsRequired = true)] public string StationName { get; set; }
-      [DataMember(IsRequired = true)] public int StationNum { get; set; }
+      [DataMember(IsRequired = true)]
+      public string StationName { get; set; }
+
+      [DataMember(IsRequired = true)]
+      public int StationNum { get; set; }
     }
 
-    [DataMember(IsRequired = true)] public long MaterialID { get; set; }
-    [DataMember(IsRequired = true)] public int Process { get; set; }
-    [DataMember(IsRequired = true)] public string Pallet { get; set; }
-    [DataMember(IsRequired = true)] public int LoadStation { get; set; }
-    [DataMember(IsRequired = true)] public List<Stop> Stops { get; set; } = new List<Stop>();
-    [DataMember(IsRequired = true)] public int UnloadStation { get; set; }
+    [DataMember(IsRequired = true)]
+    public long MaterialID { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public int Process { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public string Pallet { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public int LoadStation { get; set; }
+
+    [DataMember(IsRequired = true)]
+    public List<Stop> Stops { get; set; } = new List<Stop>();
+
+    [DataMember(IsRequired = true)]
+    public int UnloadStation { get; set; }
   }
 }

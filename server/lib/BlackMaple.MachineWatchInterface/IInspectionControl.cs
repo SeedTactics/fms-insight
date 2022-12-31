@@ -40,9 +40,14 @@ namespace BlackMaple.MachineWatchInterface
   [Serializable, DataContract]
   public struct InspectCount
   {
-    [DataMember(IsRequired = true)] public string Counter;
-    [DataMember(IsRequired = true)] public int Value;
-    [DataMember(IsRequired = true)] public DateTime LastUTC;
+    [DataMember(IsRequired = true)]
+    public string Counter;
+
+    [DataMember(IsRequired = true)]
+    public int Value;
+
+    [DataMember(IsRequired = true)]
+    public DateTime LastUTC;
   }
 
   public interface IInspectionControl

@@ -67,11 +67,18 @@ namespace BlackMaple.MachineFramework
   public class RepositoryConfig
   {
     public event Action<LogEntry, string, IRepository> NewLogEntry;
-    internal void OnNewLogEntry(LogEntry e, string foreignId, IRepository db) => NewLogEntry?.Invoke(e, foreignId, db);
+
+    internal void OnNewLogEntry(LogEntry e, string foreignId, IRepository db) =>
+      NewLogEntry?.Invoke(e, foreignId, db);
 
     public SerialSettings Settings { get; }
 
-    public static RepositoryConfig InitializeEventDatabase(SerialSettings st, string filename, string oldInspDbFile = null, string oldJobDbFile = null)
+    public static RepositoryConfig InitializeEventDatabase(
+      SerialSettings st,
+      string filename,
+      string oldInspDbFile = null,
+      string oldJobDbFile = null
+    )
     {
       var connStr = "Data Source=" + filename;
       if (System.IO.File.Exists(filename))
@@ -111,7 +118,11 @@ namespace BlackMaple.MachineFramework
       return new RepositoryConfig(st, memConn);
     }
 
-    public static RepositoryConfig InitializeSingleThreadedMemoryDB(SerialSettings st, SqliteConnection memConn, bool createTables)
+    public static RepositoryConfig InitializeSingleThreadedMemoryDB(
+      SerialSettings st,
+      SqliteConnection memConn,
+      bool createTables
+    )
     {
       if (createTables)
       {

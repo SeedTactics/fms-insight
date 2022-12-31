@@ -41,6 +41,7 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     public HashSet<string> ReclampGroupNames { get; set; }
     public IReadOnlyDictionary<int, (string group, int num)> IccMachineToJobMachNames { get; set; }
+
     public int JobMachToIcc(string group, int num)
     {
       foreach (var x in IccMachineToJobMachNames)
@@ -54,21 +55,30 @@ namespace BlackMaple.FMSInsight.Niigata
     }
   }
 
-
   public class NiigataStationNum
   {
     public int StatNum { get; }
     private readonly NiigataStationNames _statNames;
+
     public NiigataStationNum(int n, NiigataStationNames names)
     {
       StatNum = n;
       _statNames = names;
     }
+
     public static NiigataStationNum LoadStation(int i) => new NiigataStationNum(900 + i, null);
-    public static NiigataStationNum Machine(int i, NiigataStationNames names) => new NiigataStationNum(800 + i, names);
-    public static NiigataStationNum MachineQueue(int i, NiigataStationNames names) => new NiigataStationNum(830 + i, names);
-    public static NiigataStationNum MachineOutboundQueue(int i, NiigataStationNames names) => new NiigataStationNum(860 + i, names);
+
+    public static NiigataStationNum Machine(int i, NiigataStationNames names) =>
+      new NiigataStationNum(800 + i, names);
+
+    public static NiigataStationNum MachineQueue(int i, NiigataStationNames names) =>
+      new NiigataStationNum(830 + i, names);
+
+    public static NiigataStationNum MachineOutboundQueue(int i, NiigataStationNames names) =>
+      new NiigataStationNum(860 + i, names);
+
     public static NiigataStationNum Buffer(int i) => new NiigataStationNum(i, null);
+
     public static NiigataStationNum Cart() => new NiigataStationNum(990, null);
 
     // PalletLocation doesn't distinguish between inbound and outbound
@@ -156,6 +166,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public class MachiningStep : RouteStep
   {
     public List<int> Machines { get; set; } = new List<int>();
+
     ///<summary>Up to 8 programs can be set and will be run in the given order</summary>
     public List<int> ProgramNumsToRun { get; set; } = new List<int>();
   }
@@ -196,7 +207,6 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public List<RouteStep> Routes { get; set; } = new List<RouteStep>();
   }
-
 
   ///<summary>Describes what has been done on the pallet in its current cycle.</summary>
   public class TrackingInfo
@@ -253,8 +263,8 @@ namespace BlackMaple.FMSInsight.Niigata
     public NiigataStationNum CurStation { get; set; }
     public RouteStep CurrentStep =>
       Tracking.CurrentStepNum >= 1 && Tracking.CurrentStepNum <= Master.Routes.Count
-         ? Master.Routes[Tracking.CurrentStepNum - 1]
-         : null;
+        ? Master.Routes[Tracking.CurrentStepNum - 1]
+        : null;
 
     public bool HasWork => Master.NoWork == false && Tracking.RouteInvalid == false;
   }
@@ -297,6 +307,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public Dictionary<int, ProgramEntry> Programs { get; set; }
     public Dictionary<int, MachineStatus> Machines { get; set; }
     public Dictionary<int, LoadStatus> LoadStations { get; set; }
+
     public enum ModeE
     {
       Ready = 0,
@@ -304,6 +315,7 @@ namespace BlackMaple.FMSInsight.Niigata
       Auto = 2,
       Cycle = 3
     }
+
     public ModeE Mode { get; set; }
     public bool Alarm { get; set; }
     public DateTime TimeOfStatusUTC { get; set; }

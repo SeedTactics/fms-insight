@@ -113,7 +113,8 @@ namespace MazakMachineInterface
       {
         var transSet = new MazakWriteData()
         {
-          Schedules = new[] {
+          Schedules = new[]
+          {
             _schRow with
             {
               Command = MazakWriteCommand.ScheduleSafeEdit,
@@ -125,7 +126,11 @@ namespace MazakMachineInterface
         _parent.database.Save(transSet, "Hold Mode");
       }
 
-      public MazakSchedule(BlackMaple.MachineFramework.IRepository jdb, HoldPattern parent, MazakScheduleRow s)
+      public MazakSchedule(
+        BlackMaple.MachineFramework.IRepository jdb,
+        HoldPattern parent,
+        MazakScheduleRow s
+      )
       {
         _parent = parent;
         _schRow = s;
@@ -146,7 +151,10 @@ namespace MazakMachineInterface
       private MazakScheduleRow _schRow;
     }
 
-    private IDictionary<int, MazakSchedule> LoadMazakSchedules(BlackMaple.MachineFramework.IRepository jdb, IEnumerable<MazakScheduleRow> schedules)
+    private IDictionary<int, MazakSchedule> LoadMazakSchedules(
+      BlackMaple.MachineFramework.IRepository jdb,
+      IEnumerable<MazakScheduleRow> schedules
+    )
     {
       var ret = new Dictionary<int, MazakSchedule>();
 
@@ -158,7 +166,10 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    public TimeSpan CheckForTransition(MazakCurrentStatus schedules, BlackMaple.MachineFramework.IRepository jobDB)
+    public TimeSpan CheckForTransition(
+      MazakCurrentStatus schedules,
+      BlackMaple.MachineFramework.IRepository jobDB
+    )
     {
       try
       {
@@ -182,14 +193,29 @@ namespace MazakMachineInterface
           DateTime machNext = DateTime.MaxValue;
 
           if (pair.Value.HoldEntireJob != null)
-            BlackMaple.MachineFramework.HoldCalculations.HoldInformation(pair.Value.HoldEntireJob, nowUTC, out allHold, out allNext);
+            BlackMaple.MachineFramework.HoldCalculations.HoldInformation(
+              pair.Value.HoldEntireJob,
+              nowUTC,
+              out allHold,
+              out allNext
+            );
           if (pair.Value.HoldMachining != null)
-            BlackMaple.MachineFramework.HoldCalculations.HoldInformation(pair.Value.HoldMachining, nowUTC, out allHold, out allNext);
+            BlackMaple.MachineFramework.HoldCalculations.HoldInformation(
+              pair.Value.HoldMachining,
+              nowUTC,
+              out allHold,
+              out allNext
+            );
 
           HoldMode currentHoldMode = CalculateHoldMode(allHold, machHold);
 
-          Log.Debug("Checking schedule {sch}, mode {mode}, target {targetMode}, next {allNext}, mach {machNext}",
-            pair.Key, pair.Value.Hold, currentHoldMode, allNext, machNext
+          Log.Debug(
+            "Checking schedule {sch}, mode {mode}, target {targetMode}, next {allNext}, mach {machNext}",
+            pair.Key,
+            pair.Value.Hold,
+            currentHoldMode,
+            allNext,
+            machNext
           );
 
           if (currentHoldMode != pair.Value.Hold)

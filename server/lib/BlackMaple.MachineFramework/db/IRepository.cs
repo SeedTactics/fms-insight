@@ -69,50 +69,279 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Adding Events
     // --------------------------------------------------------------------------------
-    LogEntry RecordLoadStart(IEnumerable<EventLogMaterial> mats, string pallet, int lulNum, DateTime timeUTC, string foreignId = null, string originalMessage = null);
-    IEnumerable<LogEntry> RecordLoadEnd(IEnumerable<EventLogMaterial> mats, string pallet, int lulNum, DateTime timeUTC, TimeSpan elapsed, TimeSpan active, string foreignId = null, string originalMessage = null);
-    LogEntry RecordUnloadStart(IEnumerable<EventLogMaterial> mats, string pallet, int lulNum, DateTime timeUTC, string foreignId = null, string originalMessage = null);
-    IEnumerable<LogEntry> RecordUnloadEnd(IEnumerable<EventLogMaterial> mats, string pallet, int lulNum, DateTime timeUTC, TimeSpan elapsed, TimeSpan active, Dictionary<long, string> unloadIntoQueues = null, string foreignId = null, string originalMessage = null);
-    LogEntry RecordManualWorkAtLULStart(IEnumerable<EventLogMaterial> mats, string pallet, int lulNum, DateTime timeUTC, string operationName, string foreignId = null, string originalMessage = null);
-    LogEntry RecordManualWorkAtLULEnd(IEnumerable<EventLogMaterial> mats, string pallet, int lulNum, DateTime timeUTC, TimeSpan elapsed, TimeSpan active, string operationName, string foreignId = null, string originalMessage = null);
-    LogEntry RecordMachineStart(IEnumerable<EventLogMaterial> mats, string pallet, string statName, int statNum, string program, DateTime timeUTC, IDictionary<string, string> extraData = null, IEnumerable<ToolSnapshot> pockets = null, string foreignId = null, string originalMessage = null);
-    LogEntry RecordMachineEnd(IEnumerable<EventLogMaterial> mats, string pallet, string statName, int statNum, string program, string result, DateTime timeUTC, TimeSpan elapsed, TimeSpan active, IDictionary<string, string> extraData = null, ImmutableList<ToolUse> tools = null, IEnumerable<ToolSnapshot> pockets = null, long? deleteToolSnapshotsFromCntr = null, string foreignId = null, string originalMessage = null);
-    LogEntry RecordPalletArriveRotaryInbound(IEnumerable<EventLogMaterial> mats, string pallet, string statName, int statNum, DateTime timeUTC, string foreignId = null, string originalMessage = null);
-    LogEntry RecordPalletDepartRotaryInbound(IEnumerable<EventLogMaterial> mats, string pallet, string statName, int statNum, DateTime timeUTC, TimeSpan elapsed, bool rotateIntoWorktable, string foreignId = null, string originalMessage = null);
-    LogEntry RecordPalletArriveStocker(IEnumerable<EventLogMaterial> mats, string pallet, int stockerNum, DateTime timeUTC, bool waitForMachine, string foreignId = null, string originalMessage = null);
-    LogEntry RecordPalletDepartStocker(IEnumerable<EventLogMaterial> mats, string pallet, int stockerNum, DateTime timeUTC, bool waitForMachine, TimeSpan elapsed, string foreignId = null, string originalMessage = null);
+    LogEntry RecordLoadStart(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    IEnumerable<LogEntry> RecordLoadEnd(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      TimeSpan active,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordUnloadStart(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    IEnumerable<LogEntry> RecordUnloadEnd(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      TimeSpan active,
+      Dictionary<long, string> unloadIntoQueues = null,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordManualWorkAtLULStart(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      string operationName,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordManualWorkAtLULEnd(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      TimeSpan active,
+      string operationName,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordMachineStart(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      string statName,
+      int statNum,
+      string program,
+      DateTime timeUTC,
+      IDictionary<string, string> extraData = null,
+      IEnumerable<ToolSnapshot> pockets = null,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordMachineEnd(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      string statName,
+      int statNum,
+      string program,
+      string result,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      TimeSpan active,
+      IDictionary<string, string> extraData = null,
+      ImmutableList<ToolUse> tools = null,
+      IEnumerable<ToolSnapshot> pockets = null,
+      long? deleteToolSnapshotsFromCntr = null,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordPalletArriveRotaryInbound(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      string statName,
+      int statNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordPalletDepartRotaryInbound(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      string statName,
+      int statNum,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      bool rotateIntoWorktable,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordPalletArriveStocker(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int stockerNum,
+      DateTime timeUTC,
+      bool waitForMachine,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    LogEntry RecordPalletDepartStocker(
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int stockerNum,
+      DateTime timeUTC,
+      bool waitForMachine,
+      TimeSpan elapsed,
+      string foreignId = null,
+      string originalMessage = null
+    );
     LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial, DateTime endTimeUTC);
     LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial);
     LogEntry RecordSerialForMaterialID(long materialID, int proc, string serial);
     LogEntry RecordWorkorderForMaterialID(long materialID, int proc, string workorder);
     LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder);
     LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder, DateTime recordUtc);
-    LogEntry RecordInspectionCompleted(EventLogMaterial mat, int inspectionLocNum, string inspectionType, bool success, IDictionary<string, string> extraData, TimeSpan elapsed, TimeSpan active);
-    LogEntry RecordInspectionCompleted(EventLogMaterial mat, int inspectionLocNum, string inspectionType, bool success, IDictionary<string, string> extraData, TimeSpan elapsed, TimeSpan active, DateTime inspectTimeUTC);
-    LogEntry RecordInspectionCompleted(long materialID, int process, int inspectionLocNum, string inspectionType, bool success, IDictionary<string, string> extraData, TimeSpan elapsed, TimeSpan active);
-    LogEntry RecordWashCompleted(long materialID, int process, int washLocNum, IDictionary<string, string> extraData, TimeSpan elapsed, TimeSpan active);
-    LogEntry RecordWashCompleted(EventLogMaterial mat, int washLocNum, IDictionary<string, string> extraData, TimeSpan elapsed, TimeSpan active);
-    LogEntry RecordWashCompleted(EventLogMaterial mat, int washLocNum, IDictionary<string, string> extraData, TimeSpan elapsed, TimeSpan active, DateTime completeTimeUTC);
+    LogEntry RecordInspectionCompleted(
+      EventLogMaterial mat,
+      int inspectionLocNum,
+      string inspectionType,
+      bool success,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active
+    );
+    LogEntry RecordInspectionCompleted(
+      EventLogMaterial mat,
+      int inspectionLocNum,
+      string inspectionType,
+      bool success,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active,
+      DateTime inspectTimeUTC
+    );
+    LogEntry RecordInspectionCompleted(
+      long materialID,
+      int process,
+      int inspectionLocNum,
+      string inspectionType,
+      bool success,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active
+    );
+    LogEntry RecordWashCompleted(
+      long materialID,
+      int process,
+      int washLocNum,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active
+    );
+    LogEntry RecordWashCompleted(
+      EventLogMaterial mat,
+      int washLocNum,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active
+    );
+    LogEntry RecordWashCompleted(
+      EventLogMaterial mat,
+      int washLocNum,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active,
+      DateTime completeTimeUTC
+    );
     LogEntry RecordFinalizedWorkorder(string workorder);
     LogEntry RecordFinalizedWorkorder(string workorder, DateTime finalizedUTC);
-    IEnumerable<LogEntry> RecordAddMaterialToQueue(EventLogMaterial mat, string queue, int position, string operatorName, string reason, DateTime? timeUTC = null);
-    IEnumerable<LogEntry> RecordAddMaterialToQueue(long matID, int process, string queue, int position, string operatorName, string reason, DateTime? timeUTC = null);
-    IEnumerable<LogEntry> RecordRemoveMaterialFromAllQueues(EventLogMaterial mat, string operatorName = null, DateTime? timeUTC = null);
-    IEnumerable<LogEntry> RecordRemoveMaterialFromAllQueues(long matID, int process, string operatorName = null, DateTime? timeUTC = null);
-    IEnumerable<LogEntry> BulkRemoveMaterialFromAllQueues(IEnumerable<long> matIds, string operatorName = null, DateTime? timeUTC = null);
-    LogEntry RecordGeneralMessage(EventLogMaterial mat, string program, string result, string pallet = "", DateTime? timeUTC = null, string foreignId = null, string originalMessage = null, IDictionary<string, string> extraData = null);
+    IEnumerable<LogEntry> RecordAddMaterialToQueue(
+      EventLogMaterial mat,
+      string queue,
+      int position,
+      string operatorName,
+      string reason,
+      DateTime? timeUTC = null
+    );
+    IEnumerable<LogEntry> RecordAddMaterialToQueue(
+      long matID,
+      int process,
+      string queue,
+      int position,
+      string operatorName,
+      string reason,
+      DateTime? timeUTC = null
+    );
+    IEnumerable<LogEntry> RecordRemoveMaterialFromAllQueues(
+      EventLogMaterial mat,
+      string operatorName = null,
+      DateTime? timeUTC = null
+    );
+    IEnumerable<LogEntry> RecordRemoveMaterialFromAllQueues(
+      long matID,
+      int process,
+      string operatorName = null,
+      DateTime? timeUTC = null
+    );
+    IEnumerable<LogEntry> BulkRemoveMaterialFromAllQueues(
+      IEnumerable<long> matIds,
+      string operatorName = null,
+      DateTime? timeUTC = null
+    );
+    LogEntry RecordGeneralMessage(
+      EventLogMaterial mat,
+      string program,
+      string result,
+      string pallet = "",
+      DateTime? timeUTC = null,
+      string foreignId = null,
+      string originalMessage = null,
+      IDictionary<string, string> extraData = null
+    );
     LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName);
-    LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName, DateTime? timeUtc);
-    LogEntry SignalMaterialForQuarantine(EventLogMaterial mat, string pallet, string queue, DateTime? timeUTC = null, string operatorName = null, string foreignId = null, string originalMessage = null);
-    SwapMaterialResult SwapMaterialInCurrentPalletCycle(string pallet, long oldMatId, long newMatId, string operatorName, string quarantineQueue, DateTime? timeUTC = null);
-    IEnumerable<LogEntry> InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue, string operatorName, DateTime? timeUTC = null);
-
+    LogEntry RecordOperatorNotes(
+      long materialId,
+      int process,
+      string notes,
+      string operatorName,
+      DateTime? timeUtc
+    );
+    LogEntry SignalMaterialForQuarantine(
+      EventLogMaterial mat,
+      string pallet,
+      string queue,
+      DateTime? timeUTC = null,
+      string operatorName = null,
+      string foreignId = null,
+      string originalMessage = null
+    );
+    SwapMaterialResult SwapMaterialInCurrentPalletCycle(
+      string pallet,
+      long oldMatId,
+      long newMatId,
+      string operatorName,
+      string quarantineQueue,
+      DateTime? timeUTC = null
+    );
+    IEnumerable<LogEntry> InvalidatePalletCycle(
+      long matId,
+      int process,
+      string oldMatPutInQueue,
+      string operatorName,
+      DateTime? timeUTC = null
+    );
 
     // --------------------------------------------------------------------------------
     // Material IDs
     // --------------------------------------------------------------------------------
     long AllocateMaterialID(string unique, string part, int numProc);
-    long AllocateMaterialIDAndGenerateSerial(string unique, string part, int proc, int numProc, DateTime timeUTC, out LogEntry serialLogEntry);
+    long AllocateMaterialIDAndGenerateSerial(
+      string unique,
+      string part,
+      int proc,
+      int numProc,
+      DateTime timeUTC,
+      out LogEntry serialLogEntry
+    );
     long AllocateMaterialIDForCasting(string casting);
     void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc);
     void RecordPathForProcess(long matID, int process, int path);
@@ -122,29 +351,55 @@ namespace BlackMaple.MachineFramework
     List<MaterialDetails> GetMaterialForWorkorder(string workorder);
     List<MaterialDetails> GetMaterialForJobUnique(string jobUnique);
 
-
     // --------------------------------------------------------------------------------
     // Queues
     // --------------------------------------------------------------------------------
-    IReadOnlyList<long> AllocateCastingsInQueue(string queue, string casting, string unique, string part, int proc1Path, int numProcesses, int count);
+    IReadOnlyList<long> AllocateCastingsInQueue(
+      string queue,
+      string casting,
+      string unique,
+      string part,
+      int proc1Path,
+      int numProcesses,
+      int count
+    );
     void MarkCastingsAsUnallocated(IEnumerable<long> matIds, string casting);
     bool IsMaterialInQueue(long matId);
     IEnumerable<QueuedMaterial> GetMaterialInQueueByUnique(string queue, string jobUnique);
     IEnumerable<QueuedMaterial> GetUnallocatedMaterialInQueue(string queue, string partNameOrCasting);
     IEnumerable<QueuedMaterial> GetMaterialInAllQueues();
     int? NextProcessForQueuedMaterial(long matId);
-    BulkAddCastingResult BulkAddNewCastingsInQueue(string casting, int qty, string queue, IList<string> serials, string operatorName, string reason = null, DateTime? timeUTC = null);
-
+    BulkAddCastingResult BulkAddNewCastingsInQueue(
+      string casting,
+      int qty,
+      string queue,
+      IList<string> serials,
+      string operatorName,
+      string reason = null,
+      DateTime? timeUTC = null
+    );
 
     // --------------------------------------------------------------------------------
     // Pending Loads
     // --------------------------------------------------------------------------------
-    void AddPendingLoad(string pal, string key, int load, TimeSpan elapsed, TimeSpan active, string foreignID);
+    void AddPendingLoad(
+      string pal,
+      string key,
+      int load,
+      TimeSpan elapsed,
+      TimeSpan active,
+      string foreignID
+    );
     List<PendingLoad> PendingLoads(string pallet);
     List<PendingLoad> AllPendingLoads();
     void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID);
-    void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID, IDictionary<string, IEnumerable<EventLogMaterial>> mat, bool generateSerials);
-
+    void CompletePalletCycle(
+      string pal,
+      DateTime timeUTC,
+      string foreignID,
+      IDictionary<string, IEnumerable<EventLogMaterial>> mat,
+      bool generateSerials
+    );
 
     // --------------------------------------------------------------------------------
     // Inspections
@@ -153,7 +408,12 @@ namespace BlackMaple.MachineFramework
     void SetInspectCounts(IEnumerable<InspectCount> counts);
     IReadOnlyList<Decision> LookupInspectionDecisions(long matID);
     ImmutableDictionary<long, IReadOnlyList<Decision>> LookupInspectionDecisions(IEnumerable<long> matID);
-    IEnumerable<LogEntry> MakeInspectionDecisions(long matID, int process, IEnumerable<PathInspection> inspections, DateTime? mutcNow = null);
+    IEnumerable<LogEntry> MakeInspectionDecisions(
+      long matID,
+      int process,
+      IEnumerable<PathInspection> inspections,
+      DateTime? mutcNow = null
+    );
     LogEntry ForceInspection(long matID, string inspType);
     LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect);
     LogEntry ForceInspection(EventLogMaterial mat, string inspType, bool inspect);
@@ -161,21 +421,27 @@ namespace BlackMaple.MachineFramework
     void NextPieceInspection(PalletLocation palLoc, string inspType);
     void CheckMaterialForNextPeiceInspection(PalletLocation palLoc, long matID);
 
-
     // --------------------------------------------------------------------------------
     // Loading Jobs
     // --------------------------------------------------------------------------------
     HistoricJob LoadJob(string UniqueStr);
     bool DoesJobExist(string unique);
     IReadOnlyList<HistoricJob> LoadUnarchivedJobs();
-    IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(DateTime startUTC, DateTime endUTC, bool includeDecremented = true);
-    HistoricData LoadJobHistory(DateTime startUTC, DateTime endUTC, IEnumerable<string> alreadyKnownSchIds = null);
+    IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(
+      DateTime startUTC,
+      DateTime endUTC,
+      bool includeDecremented = true
+    );
+    HistoricData LoadJobHistory(
+      DateTime startUTC,
+      DateTime endUTC,
+      IEnumerable<string> alreadyKnownSchIds = null
+    );
     HistoricData LoadJobsAfterScheduleId(string schId);
     PlannedSchedule LoadMostRecentSchedule();
     IReadOnlyList<Workorder> MostRecentWorkorders();
     List<Workorder> MostRecentUnfilledWorkordersForPart(string part);
     List<Workorder> WorkordersById(string workorderId);
-
 
     // --------------------------------------------------------------------------------
     // Adding and Updating Jobs
@@ -183,7 +449,11 @@ namespace BlackMaple.MachineFramework
     void AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem);
     void AddPrograms(IEnumerable<NewProgramContent> programs, DateTime startingUtc);
     void ArchiveJob(string UniqueStr);
-    void ArchiveJobs(IEnumerable<string> uniqueStrs, IEnumerable<NewDecrementQuantity> newDecrements = null, DateTime? nowUTC = null);
+    void ArchiveJobs(
+      IEnumerable<string> uniqueStrs,
+      IEnumerable<NewDecrementQuantity> newDecrements = null,
+      DateTime? nowUTC = null
+    );
     void UnarchiveJob(string UniqueStr);
     void UnarchiveJobs(IEnumerable<string> uniqueStrs, DateTime? nowUTC = null);
     void MarkJobCopiedToSystem(string UniqueStr);
@@ -191,17 +461,24 @@ namespace BlackMaple.MachineFramework
     void UpdateJobHold(string unique, HoldPattern newHold);
     void UpdateJobLoadUnloadHold(string unique, int proc, int path, HoldPattern newHold);
     void UpdateJobMachiningHold(string unique, int proc, int path, HoldPattern newHold);
-    void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs, DateTime? nowUtc = null);
-
+    void ReplaceWorkordersForSchedule(
+      string scheduleId,
+      IEnumerable<Workorder> newWorkorders,
+      IEnumerable<NewProgramContent> programs,
+      DateTime? nowUtc = null
+    );
 
     // --------------------------------------------------------------------------------
     // Decrements
     // --------------------------------------------------------------------------------
-    void AddNewDecrement(IEnumerable<NewDecrementQuantity> counts, DateTime? nowUTC = null, IEnumerable<RemovedBooking> removedBookings = null);
+    void AddNewDecrement(
+      IEnumerable<NewDecrementQuantity> counts,
+      DateTime? nowUTC = null,
+      IEnumerable<RemovedBooking> removedBookings = null
+    );
     ImmutableList<DecrementQuantity> LoadDecrementsForJob(string unique);
     List<JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(long afterId);
     List<JobAndDecrementQuantity> LoadDecrementQuantitiesAfter(DateTime afterUTC);
-
 
     // --------------------------------------------------------------------------------
     // Programs
@@ -209,7 +486,11 @@ namespace BlackMaple.MachineFramework
     ProgramRevision LoadProgram(string program, long revision);
     ProgramRevision LoadMostRecentProgram(string program);
     string LoadProgramContent(string program, long revision);
-    List<ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(string program, int count, long? startRevision);
+    List<ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(
+      string program,
+      int count,
+      long? startRevision
+    );
     List<ProgramRevision> LoadProgramsInCellController();
     ProgramRevision ProgramFromCellControllerProgram(string cellCtProgName);
     void SetCellControllerProgramForProgram(string program, long revision, string cellCtProgName);
@@ -300,5 +581,4 @@ namespace BlackMaple.MachineFramework
     public HashSet<long> MaterialIds { get; init; }
     public IReadOnlyList<LogEntry> Logs { get; init; }
   }
-
 }

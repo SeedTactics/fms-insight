@@ -62,7 +62,10 @@ namespace DebugMachineWatchApiServer
         BlackMaple.MachineFramework.Startup.NewtonsoftJsonSettings(settings);
         cfg.SerializerSettings = settings;
         //cfg.DefaultReferenceTypeNullHandling = NJsonSchema.ReferenceTypeNullHandling.NotNull;
-        cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema.Generation.ReferenceTypeNullHandling.NotNull;
+        cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
+          .Generation
+          .ReferenceTypeNullHandling
+          .NotNull;
         cfg.RequireParametersWithoutDefault = true;
         cfg.IgnoreObsoleteProperties = true;
       });
@@ -70,17 +73,14 @@ namespace DebugMachineWatchApiServer
 
     public static void Main()
     {
-      var cfg =
-          new ConfigurationBuilder()
-          .AddEnvironmentVariables()
-          .Build();
+      var cfg = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
       var serverSettings = ServerSettings.Load(cfg);
 
       var fmsSettings = new FMSSettings(cfg);
       fmsSettings.InstructionFilePath = System.IO.Path.Combine(
-          System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-          "../../../sample-instructions/"
+        System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+        "../../../sample-instructions/"
       );
       fmsSettings.QuarantineQueue = "Initial Quarantine";
       fmsSettings.RequireScanAtWash = true;
@@ -97,14 +97,20 @@ namespace DebugMachineWatchApiServer
         UsingLabelPrinterForSerials = true,
         PrintLabel = (matId, process, loadStation, queue) =>
         {
-          Serilog.Log.Information("Print label for {matId} {process} {loadStation}", matId, process, loadStation);
+          Serilog.Log.Information(
+            "Print label for {matId} {process} {loadStation}",
+            matId,
+            process,
+            loadStation
+          );
         },
         ParseBarcode = (barcode, type) =>
         {
           Serilog.Log.Information("Parsing barcode {barcode} {type}", barcode, type);
           System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
           var commaIdx = barcode.IndexOf(',');
-          if (commaIdx >= 0) barcode = barcode.Substring(0, commaIdx);
+          if (commaIdx >= 0)
+            barcode = barcode.Substring(0, commaIdx);
           using (var conn = backend.RepoConfig.OpenConnection())
           {
             var mats = conn.GetMaterialDetailsForSerial(barcode);
@@ -114,17 +120,19 @@ namespace DebugMachineWatchApiServer
             }
             else
             {
-              return new MaterialDetails()
-              {
-                MaterialID = -1,
-                Serial = barcode
-              };
+              return new MaterialDetails() { MaterialID = -1, Serial = barcode };
             }
           }
         }
       };
 
-      var hostB = BlackMaple.MachineFramework.Program.CreateHostBuilder(cfg, serverSettings, fmsSettings, fmsImpl, useService: false);
+      var hostB = BlackMaple.MachineFramework.Program.CreateHostBuilder(
+        cfg,
+        serverSettings,
+        fmsSettings,
+        fmsImpl,
+        useService: false
+      );
 
       var webroot = Environment.GetEnvironmentVariable("BMS_WEBROOT");
       if (!string.IsNullOrEmpty(webroot))
@@ -149,6 +157,7 @@ namespace DebugMachineWatchApiServer
     private CurrentStatus CurrentStatus { get; set; }
     private List<ToolInMachine> Tools { get; set; }
     private string _tempDbFile;
+
     private class MockProgram
     {
       public string ProgramName { get; set; }
@@ -156,6 +165,7 @@ namespace DebugMachineWatchApiServer
       public string Comment { get; set; }
       public string CellControllerProgramName { get; set; }
     }
+
     private List<MockProgram> Programs { get; set; }
 
     private JsonSerializerSettings _jsonSettings;
@@ -168,16 +178,21 @@ namespace DebugMachineWatchApiServer
 
     public MockServerBackend()
     {
-
       _jsonSettings = new JsonSerializerSettings();
       _jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       _jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
       _jsonSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
-      _jsonSettings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
+      _jsonSettings.ConstructorHandling = Newtonsoft
+        .Json
+        .ConstructorHandling
+        .AllowNonPublicDefaultConstructor;
 
       if (DebugMockProgram.InsightBackupDbFile != null)
       {
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), DebugMockProgram.InsightBackupDbFile);
+        RepoConfig = RepositoryConfig.InitializeEventDatabase(
+          new SerialSettings(),
+          DebugMockProgram.InsightBackupDbFile
+        );
         LoadStatusFromLog(System.IO.Path.GetDirectoryName(DebugMockProgram.InsightBackupDbFile));
       }
       else
@@ -191,8 +206,8 @@ namespace DebugMachineWatchApiServer
         var offset = DateTime.UtcNow.AddDays(-28).Subtract(jan1_18);
 
         var sampleDataPath = System.IO.Path.Combine(
-            System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-            "../../../sample-data/"
+          System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+          "../../../sample-data/"
         );
 
         LoadEvents(sampleDataPath, offset);
@@ -212,13 +227,16 @@ namespace DebugMachineWatchApiServer
       }
     }
 
-
-    public IJobControl JobControl { get => this; }
+    public IJobControl JobControl
+    {
+      get => this;
+    }
     public IQueueControl QueueControl => this;
 
     public IMachineControl MachineControl => this;
 
     private long _curStatusLoadCount = 0;
+
     public CurrentStatus GetCurrentStatus()
     {
       _curStatusLoadCount += 1;
@@ -232,10 +250,7 @@ namespace DebugMachineWatchApiServer
         {
           CurrentStatus = CurrentStatus with
           {
-            Alarms = ImmutableList.Create(
-              "Test alarm " + _curStatusLoadCount.ToString(),
-              "Another alarm"
-            )
+            Alarms = ImmutableList.Create("Test alarm " + _curStatusLoadCount.ToString(), "Another alarm")
           };
         }
       }
@@ -270,15 +285,39 @@ namespace DebugMachineWatchApiServer
       OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
 
-    public InProcessMaterial AddUnallocatedPartToQueue(string part, string queue, string serial, string operatorName = null)
+    public InProcessMaterial AddUnallocatedPartToQueue(
+      string part,
+      string queue,
+      string serial,
+      string operatorName = null
+    )
     {
-      Serilog.Log.Information("AddUnallocatedPartToQueue: {part} {queue} {serial} {oper}", part, queue, serial, operatorName);
+      Serilog.Log.Information(
+        "AddUnallocatedPartToQueue: {part} {queue} {serial} {oper}",
+        part,
+        queue,
+        serial,
+        operatorName
+      );
       return null;
     }
 
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serials, string operatorName = null)
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(
+      string casting,
+      int qty,
+      string queue,
+      IList<string> serials,
+      string operatorName = null
+    )
     {
-      Serilog.Log.Information("AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {@serials} {oper}", casting, qty, queue, serials, operatorName);
+      Serilog.Log.Information(
+        "AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {@serials} {oper}",
+        casting,
+        qty,
+        queue,
+        serials,
+        operatorName
+      );
       var ret = new List<InProcessMaterial>();
       for (int i = 0; i < qty; i++)
       {
@@ -296,10 +335,7 @@ namespace DebugMachineWatchApiServer
             CurrentQueue = queue,
             QueuePosition = 10 + i
           },
-          Action = new InProcessMaterialAction()
-          {
-            Type = InProcessMaterialAction.ActionType.Waiting
-          }
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
         };
         CurrentStatus %= st => st.Material.Add(m);
         ret.Add(m);
@@ -308,10 +344,24 @@ namespace DebugMachineWatchApiServer
       return ret;
     }
 
-    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int lastCompletedProcess, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(
+      string jobUnique,
+      int lastCompletedProcess,
+      string queue,
+      int position,
+      string serial,
+      string operatorName = null
+    )
     {
-      Serilog.Log.Information("AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {queue} {position} {serial} {oper}",
-        jobUnique, lastCompletedProcess, queue, position, serial, operatorName);
+      Serilog.Log.Information(
+        "AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {queue} {position} {serial} {oper}",
+        jobUnique,
+        lastCompletedProcess,
+        queue,
+        position,
+        serial,
+        operatorName
+      );
 
       var part = CurrentStatus.Jobs.TryGetValue(jobUnique, out var job) ? job.PartName : "";
       var m = new InProcessMaterial()
@@ -328,38 +378,50 @@ namespace DebugMachineWatchApiServer
           CurrentQueue = queue,
           QueuePosition = position
         },
-        Action = new InProcessMaterialAction()
-        {
-          Type = InProcessMaterialAction.ActionType.Waiting
-        }
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
       };
       CurrentStatus %= st => st.Material.Add(m);
       OnNewCurrentStatus?.Invoke(CurrentStatus);
       return m;
     }
+
     public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null)
     {
-      Serilog.Log.Information("SetMaterialInQueue {matId} {queue} {position} {oper}", materialId, queue, position, operatorName);
+      Serilog.Log.Information(
+        "SetMaterialInQueue {matId} {queue} {position} {oper}",
+        materialId,
+        queue,
+        position,
+        operatorName
+      );
 
-      var toMove = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue);
-      if (toMove == null) return;
+      var toMove = CurrentStatus.Material.FirstOrDefault(
+        m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+      );
+      if (toMove == null)
+        return;
 
       // shift old downward
       CurrentStatus = CurrentStatus with
       {
-        Material = CurrentStatus.Material.Select(m =>
+        Material = CurrentStatus.Material
+          .Select(m =>
           {
             int pos = m.Location.QueuePosition ?? 0;
 
-            if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-                && m.Location.CurrentQueue == toMove.Location.CurrentQueue
-                && pos > toMove.Location.QueuePosition)
+            if (
+              m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+              && m.Location.CurrentQueue == toMove.Location.CurrentQueue
+              && pos > toMove.Location.QueuePosition
+            )
             {
               pos -= 1;
             }
-            if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-                && m.Location.CurrentQueue == queue
-                && pos >= position)
+            if (
+              m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+              && m.Location.CurrentQueue == queue
+              && pos >= position
+            )
             {
               pos += 1;
             }
@@ -380,17 +442,24 @@ namespace DebugMachineWatchApiServer
             {
               return m with { Location = m.Location with { QueuePosition = pos } };
             }
-          }).ToImmutableList()
+          })
+          .ToImmutableList()
       };
 
       using (var LogDB = RepoConfig.OpenConnection())
       {
         LogDB.RecordAddMaterialToQueue(
-          mat: new EventLogMaterial() { MaterialID = materialId, Process = 0, Face = "" },
+          mat: new EventLogMaterial()
+          {
+            MaterialID = materialId,
+            Process = 0,
+            Face = ""
+          },
           queue: queue,
           position: position,
           operatorName: operatorName,
-          reason: "SetByOperator");
+          reason: "SetByOperator"
+        );
       }
 
       OnNewStatus(CurrentStatus);
@@ -398,16 +467,31 @@ namespace DebugMachineWatchApiServer
 
     public void SignalMaterialForQuarantine(long materialId, string queue, string operatorName = null)
     {
-      Serilog.Log.Information("SignalMatForQuarantine {matId} {queue} {oper}", materialId, queue, operatorName);
+      Serilog.Log.Information(
+        "SignalMatForQuarantine {matId} {queue} {oper}",
+        materialId,
+        queue,
+        operatorName
+      );
       var mat = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
-      if (mat == null) throw new BadRequestException("Material does not exist");
+      if (mat == null)
+        throw new BadRequestException("Material does not exist");
 
       if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
       {
         using (var LogDB = RepoConfig.OpenConnection())
         {
           LogDB.SignalMaterialForQuarantine(
-            new EventLogMaterial() { MaterialID = materialId, Process = mat.Process, Face = "" }, mat.Location.Pallet, queue, null, operatorName
+            new EventLogMaterial()
+            {
+              MaterialID = materialId,
+              Process = mat.Process,
+              Face = ""
+            },
+            mat.Location.Pallet,
+            queue,
+            null,
+            operatorName
           );
         }
       }
@@ -427,8 +511,11 @@ namespace DebugMachineWatchApiServer
 
       foreach (var materialId in materialIds)
       {
-        var toRemove = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue);
-        if (toRemove == null) return;
+        var toRemove = CurrentStatus.Material.FirstOrDefault(
+          m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+        );
+        if (toRemove == null)
+          return;
 
         // shift downward
         CurrentStatus %= st =>
@@ -436,9 +523,11 @@ namespace DebugMachineWatchApiServer
           for (int i = 0; i < st.Material.Count; i++)
           {
             var m = st.Material[i];
-            if (m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-                && m.Location.CurrentQueue == toRemove.Location.CurrentQueue
-                && m.Location.QueuePosition < toRemove.Location.QueuePosition)
+            if (
+              m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+              && m.Location.CurrentQueue == toRemove.Location.CurrentQueue
+              && m.Location.QueuePosition < toRemove.Location.QueuePosition
+            )
             {
               st.Material[i] = m %= mat => mat.Location.QueuePosition -= 1;
             }
@@ -477,30 +566,43 @@ namespace DebugMachineWatchApiServer
       System.Threading.Thread.Sleep(TimeSpan.FromSeconds(2));
       return Programs
         .Where(p => !string.IsNullOrEmpty(p.CellControllerProgramName))
-        .Select(p => new ProgramInCellController()
-        {
-          ProgramName = p.ProgramName,
-          Revision = p.Revision,
-          Comment = p.Comment,
-          CellControllerProgramName = p.CellControllerProgramName,
-        }).ToList();
+        .Select(
+          p =>
+            new ProgramInCellController()
+            {
+              ProgramName = p.ProgramName,
+              Revision = p.Revision,
+              Comment = p.Comment,
+              CellControllerProgramName = p.CellControllerProgramName,
+            }
+        )
+        .ToList();
     }
 
-    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, long? revisionToStart)
+    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
+      string programName,
+      int count,
+      long? revisionToStart
+    )
     {
       var start = revisionToStart.GetValueOrDefault(50);
       if (start - count < 0)
       {
         count = Math.Max(1, (int)(start - 3));
       }
-      return Enumerable.Range(0, count).Select(i =>
-        new ProgramRevision()
-        {
-          ProgramName = programName,
-          Revision = start - i,
-          Comment = $"programName comment {start - i}",
-          CellControllerProgramName = "cell " + programName
-        }).ToList();
+      return Enumerable
+        .Range(0, count)
+        .Select(
+          i =>
+            new ProgramRevision()
+            {
+              ProgramName = programName,
+              Revision = start - i,
+              Comment = $"programName comment {start - i}",
+              CellControllerProgramName = "cell " + programName
+            }
+        )
+        .ToList();
     }
 
     public string GetProgramContent(string programName, long? revision)
@@ -520,18 +622,16 @@ namespace DebugMachineWatchApiServer
           while (reader.Peek() >= 0)
           {
             var evtJson = reader.ReadLine();
-            var e = (LogEntry)JsonConvert.DeserializeObject(
-              evtJson,
-              typeof(LogEntry),
-              _jsonSettings
-            );
+            var e = (LogEntry)JsonConvert.DeserializeObject(evtJson, typeof(LogEntry), _jsonSettings);
             evts.Add(e);
           }
         }
       }
 
       var tools = JsonConvert.DeserializeObject<Dictionary<long, List<ToolUse>>>(
-        System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tool-use.json")), _jsonSettings);
+        System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tool-use.json")),
+        _jsonSettings
+      );
 
       using var LogDB = RepoConfig.OpenConnection();
       foreach (var e in evts.OrderBy(e => e.EndTimeUTC))
@@ -547,12 +647,20 @@ namespace DebugMachineWatchApiServer
         if (e.LogType == LogType.PartMark)
         {
           foreach (var m in e.Material)
-            LogDB.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
+            LogDB.RecordSerialForMaterialID(
+              EventLogMaterial.FromLogMat(m),
+              e.Result,
+              e.EndTimeUTC.Add(offset)
+            );
         }
         else if (e.LogType == LogType.OrderAssignment)
         {
           foreach (var m in e.Material)
-            LogDB.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(m), e.Result, e.EndTimeUTC.Add(offset));
+            LogDB.RecordWorkorderForMaterialID(
+              EventLogMaterial.FromLogMat(m),
+              e.Result,
+              e.EndTimeUTC.Add(offset)
+            );
         }
         else if (e.LogType == LogType.FinalizeWorkorder)
         {
@@ -583,13 +691,9 @@ namespace DebugMachineWatchApiServer
 
     private void LoadJobs(string sampleDataPath, TimeSpan offset)
     {
-      var newJobsJson = System.IO.File.ReadAllText(
-        System.IO.Path.Combine(sampleDataPath, "newjobs.json"));
-      var allNewJobs = (List<NewJobs>)JsonConvert.DeserializeObject(
-        newJobsJson,
-        typeof(List<NewJobs>),
-        _jsonSettings
-      );
+      var newJobsJson = System.IO.File.ReadAllText(System.IO.Path.Combine(sampleDataPath, "newjobs.json"));
+      var allNewJobs =
+        (List<NewJobs>)JsonConvert.DeserializeObject(newJobsJson, typeof(List<NewJobs>), _jsonSettings);
 
       using var LogDB = RepoConfig.OpenConnection();
       foreach (var newJobs in allNewJobs)
@@ -627,27 +731,26 @@ namespace DebugMachineWatchApiServer
         var name = System.IO.Path.GetFileNameWithoutExtension(f).Replace("status-", "");
 
         var statusJson = System.IO.File.ReadAllText(f);
-        var curSt = (CurrentStatus)JsonConvert.DeserializeObject(
-          statusJson,
-          typeof(CurrentStatus),
-          _jsonSettings
-        );
+        var curSt = (CurrentStatus)
+          JsonConvert.DeserializeObject(statusJson, typeof(CurrentStatus), _jsonSettings);
         curSt = curSt with
         {
           TimeOfCurrentStatusUTC = curSt.TimeOfCurrentStatusUTC.Add(offset),
           Jobs = curSt.Jobs.Values
-            .Select(j =>
-              OffsetJob(j, offset).CloneToDerived<ActiveJob, Job>() with
-              {
-                ScheduleId = j.ScheduleId,
-                CopiedToSystem = j.CopiedToSystem,
-                Decrements = j.Decrements,
-                Completed = j.Completed,
-                RemainingToStart = j.RemainingToStart,
-                Precedence = j.Precedence,
-                AssignedWorkorders = j.AssignedWorkorders,
-              }
-            ).ToImmutableDictionary(j => j.UniqueStr, j => j)
+            .Select(
+              j =>
+                OffsetJob(j, offset).CloneToDerived<ActiveJob, Job>() with
+                {
+                  ScheduleId = j.ScheduleId,
+                  CopiedToSystem = j.CopiedToSystem,
+                  Decrements = j.Decrements,
+                  Completed = j.Completed,
+                  RemainingToStart = j.RemainingToStart,
+                  Precedence = j.Precedence,
+                  AssignedWorkorders = j.AssignedWorkorders,
+                }
+            )
+            .ToImmutableDictionary(j => j.UniqueStr, j => j)
         };
         Statuses.Add(name, curSt);
       }
@@ -681,19 +784,13 @@ namespace DebugMachineWatchApiServer
     public void LoadTools(string sampleDataPath)
     {
       var json = System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tools.json"));
-      Tools = JsonConvert.DeserializeObject<List<ToolInMachine>>(
-        json,
-        _jsonSettings
-      );
+      Tools = JsonConvert.DeserializeObject<List<ToolInMachine>>(json, _jsonSettings);
     }
 
     public void LoadPrograms(string sampleDataPath)
     {
       var programJson = System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "programs.json"));
-      Programs = JsonConvert.DeserializeObject<List<MockProgram>>(
-        programJson,
-        _jsonSettings
-      );
+      Programs = JsonConvert.DeserializeObject<List<MockProgram>>(programJson, _jsonSettings);
     }
 
     public void LoadStatusFromLog(string logPath)
@@ -710,16 +807,17 @@ namespace DebugMachineWatchApiServer
 
       if (lastAddSch != null)
       {
-
-        Programs = Newtonsoft.Json.Linq.JObject.Parse(lastAddSch)
-          ["mazakData"]["MainPrograms"].Select(prog => new MockProgram()
-          {
-            ProgramName = (string)prog["MainProgram"],
-            CellControllerProgramName = (string)prog["MainProgram"],
-            Comment = (string)prog["Comment"]
-          })
+        Programs = Newtonsoft.Json.Linq.JObject.Parse(lastAddSch)["mazakData"]["MainPrograms"]
+          .Select(
+            prog =>
+              new MockProgram()
+              {
+                ProgramName = (string)prog["MainProgram"],
+                CellControllerProgramName = (string)prog["MainProgram"],
+                Comment = (string)prog["Comment"]
+              }
+          )
           .ToList();
-
       }
       else
       {
@@ -728,16 +826,18 @@ namespace DebugMachineWatchApiServer
 
       Tools = new List<ToolInMachine>();
 
-      CurrentStatus = new CurrentStatus()
-      {
-        TimeOfCurrentStatusUTC = DateTime.UtcNow
-      };
+      CurrentStatus = new CurrentStatus() { TimeOfCurrentStatusUTC = DateTime.UtcNow };
     }
 
     public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       using var LogDB = RepoConfig.OpenConnection();
-      Serilog.Log.Information("Swapping {oldMatId} to {newMatId} on pallet {pallet}", oldMatId, newMatId, pallet);
+      Serilog.Log.Information(
+        "Swapping {oldMatId} to {newMatId} on pallet {pallet}",
+        oldMatId,
+        newMatId,
+        pallet
+      );
       var o = LogDB.SwapMaterialInCurrentPalletCycle(
         pallet: pallet,
         oldMatId: oldMatId,
@@ -745,15 +845,22 @@ namespace DebugMachineWatchApiServer
         operatorName: operatorName,
         quarantineQueue: null
       );
-      OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()
-      {
-        OldMaterialID = oldMatId,
-        NewMaterialID = newMatId,
-        EditedEvents = o.ChangedLogEntries,
-      });
+      OnEditMaterialInLog?.Invoke(
+        new EditMaterialInLogEvents()
+        {
+          OldMaterialID = oldMatId,
+          NewMaterialID = newMatId,
+          EditedEvents = o.ChangedLogEntries,
+        }
+      );
     }
 
-    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    public void InvalidatePalletCycle(
+      long matId,
+      int process,
+      string oldMatPutInQueue = null,
+      string operatorName = null
+    )
     {
       using var LogDB = RepoConfig.OpenConnection();
       Serilog.Log.Information("Invalidating {matId} process {process}", matId, process);
@@ -765,7 +872,11 @@ namespace DebugMachineWatchApiServer
       );
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs)
+    public void ReplaceWorkordersForSchedule(
+      string scheduleId,
+      IEnumerable<Workorder> newWorkorders,
+      IEnumerable<NewProgramContent> programs
+    )
     {
       using var LogDB = RepoConfig.OpenConnection();
       LogDB.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);

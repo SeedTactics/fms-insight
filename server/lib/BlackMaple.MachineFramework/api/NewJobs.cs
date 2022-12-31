@@ -39,7 +39,6 @@ using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
-
   [DataContract, Draftable]
   public record SimulatedStationPart
   {
@@ -56,19 +55,34 @@ namespace BlackMaple.MachineFramework
   [DataContract, Draftable]
   public record SimulatedStationUtilization
   {
-    [DataMember(IsRequired = true)] public string ScheduleId { get; init; } = "";
-    [DataMember(IsRequired = true)] public string StationGroup { get; init; } = "";
-    [DataMember(IsRequired = true)] public int StationNum { get; init; }
-    [DataMember(IsRequired = true)] public DateTime StartUTC { get; init; }
-    [DataMember(IsRequired = true)] public DateTime EndUTC { get; init; }
-    [DataMember(IsRequired = true)] public TimeSpan UtilizationTime { get; init; } //time between StartUTC and EndUTC the station is busy.
-    [DataMember(IsRequired = true)] public TimeSpan PlannedDownTime { get; init; } //time between StartUTC and EndUTC the station is planned to be down.
+    [DataMember(IsRequired = true)]
+    public string ScheduleId { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public string StationGroup { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public int StationNum { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public DateTime StartUTC { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public DateTime EndUTC { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public TimeSpan UtilizationTime { get; init; } //time between StartUTC and EndUTC the station is busy.
+
+    [DataMember(IsRequired = true)]
+    public TimeSpan PlannedDownTime { get; init; } //time between StartUTC and EndUTC the station is planned to be down.
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedStationPart>? Parts { get; init; }
 
-    public static SimulatedStationUtilization operator %(SimulatedStationUtilization s, Action<ISimulatedStationUtilizationDraft> f)
-       => s.Produce(f);
+    public static SimulatedStationUtilization operator %(
+      SimulatedStationUtilization s,
+      Action<ISimulatedStationUtilizationDraft> f
+    ) => s.Produce(f);
   }
 
   [DataContract, Germinate.Draftable]
@@ -78,7 +92,8 @@ namespace BlackMaple.MachineFramework
     public string ScheduleId { get; init; } = "";
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<MachineFramework.Job> Jobs { get; init; } = ImmutableList<MachineFramework.Job>.Empty;
+    public ImmutableList<MachineFramework.Job> Jobs { get; init; } =
+      ImmutableList<MachineFramework.Job>.Empty;
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedStationUtilization>? StationUse { get; init; }
@@ -95,7 +110,6 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public byte[]? DebugMessage { get; init; }
 
-    public static NewJobs operator %(NewJobs j, Action<INewJobsDraft> f)
-       => j.Produce(f);
+    public static NewJobs operator %(NewJobs j, Action<INewJobsDraft> f) => j.Produce(f);
   }
 }

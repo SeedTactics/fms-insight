@@ -43,7 +43,6 @@ namespace MachineWatchTest
   {
     private string _dir;
 
-
     public SerilogSpec()
     {
       _dir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -61,9 +60,15 @@ namespace MachineWatchTest
       var file1 = Path.Combine(_dir, $"fmsinsight-debug{DateTime.Today.ToString("yyyyMMdd")}.txt");
       File.WriteAllText(file1, "some log messages");
 
-      var oldGzFile = Path.Combine(_dir, $"fmsinsight-debug{DateTime.Today.AddDays(-5).ToString("yyyyMMdd")}.txt.gz");
+      var oldGzFile = Path.Combine(
+        _dir,
+        $"fmsinsight-debug{DateTime.Today.AddDays(-5).ToString("yyyyMMdd")}.txt.gz"
+      );
       File.WriteAllText(oldGzFile, "some oldGzFile");
-      var toDelGzFile = Path.Combine(_dir, $"fmsinsight-debug{DateTime.Today.AddDays(-33).ToString("yyyyMMdd")}.txt.gz");
+      var toDelGzFile = Path.Combine(
+        _dir,
+        $"fmsinsight-debug{DateTime.Today.AddDays(-33).ToString("yyyyMMdd")}.txt.gz"
+      );
       File.WriteAllText(toDelGzFile, "toDelGzFile");
 
       var a = new BlackMaple.MachineFramework.Program.CompressSerilogDebugLog();
@@ -78,7 +83,9 @@ namespace MachineWatchTest
       File.Exists(file1 + ".gz").Should().BeTrue();
 
       using (var fs = File.Open(file1 + ".gz", FileMode.Open, FileAccess.Read))
-      using (var gz = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress))
+      using (
+        var gz = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)
+      )
       using (var reader = new StreamReader(gz))
       {
         reader.ReadToEnd().Should().Be("some log messages");

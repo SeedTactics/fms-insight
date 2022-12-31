@@ -74,9 +74,7 @@ namespace BlackMaple.MachineFramework
       }
       else
       {
-        return string.Join(";",
-          e.ProgramDetails.Select(k => k.Key + "=" + k.Value)
-        );
+        return string.Join(";", e.ProgramDetails.Select(k => k.Key + "=" + k.Value));
       }
     }
 
@@ -84,57 +82,54 @@ namespace BlackMaple.MachineFramework
     {
       if (e.Material.Any())
       {
-        return e.Material.Select(mat => new CSVLogEntry()
-        {
-          Counter = e.Counter,
-          EndTimeUTC = e.EndTimeUTC.ToString("yyyy-MM-ddTHH:mm:ssZ"),
-          LogType = e.LogType,
-          LocationName = e.LocationName,
-          LocationNum = e.LocationNum,
-
-          StartOfCycle = e.StartOfCycle,
-          Pallet = e.Pallet,
-          Program = e.Program,
-          Result = e.Result,
-
-          ElapsedTime = e.ElapsedTime,
-          ActiveOperationTime = e.ActiveOperationTime,
-
-          MaterialID = mat.MaterialID,
-          JobUniqueStr = mat.JobUniqueStr,
-          PartName = mat.PartName,
-          Process = mat.Process,
-          NumProcesses = mat.NumProcesses,
-          Face = mat.Face,
-
-          ProgramDetails = BuildProgramDetails(e),
-        });
+        return e.Material.Select(
+          mat =>
+            new CSVLogEntry()
+            {
+              Counter = e.Counter,
+              EndTimeUTC = e.EndTimeUTC.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+              LogType = e.LogType,
+              LocationName = e.LocationName,
+              LocationNum = e.LocationNum,
+              StartOfCycle = e.StartOfCycle,
+              Pallet = e.Pallet,
+              Program = e.Program,
+              Result = e.Result,
+              ElapsedTime = e.ElapsedTime,
+              ActiveOperationTime = e.ActiveOperationTime,
+              MaterialID = mat.MaterialID,
+              JobUniqueStr = mat.JobUniqueStr,
+              PartName = mat.PartName,
+              Process = mat.Process,
+              NumProcesses = mat.NumProcesses,
+              Face = mat.Face,
+              ProgramDetails = BuildProgramDetails(e),
+            }
+        );
       }
       else
       {
-        return new[] {
-          new CSVLogEntry() {
+        return new[]
+        {
+          new CSVLogEntry()
+          {
             Counter = e.Counter,
             EndTimeUTC = e.EndTimeUTC.ToString("yyyy-MM-ddTHH:mm:ssZ"),
             LogType = e.LogType,
             LocationName = e.LocationName,
             LocationNum = e.LocationNum,
-
             StartOfCycle = e.StartOfCycle,
             Pallet = e.Pallet,
             Program = e.Program,
             Result = e.Result,
-
             ElapsedTime = e.ElapsedTime,
             ActiveOperationTime = e.ActiveOperationTime,
-
             MaterialID = -1,
             JobUniqueStr = "",
             PartName = "",
             Process = 0,
             NumProcesses = 0,
             Face = "",
-
             ProgramDetails = BuildProgramDetails(e),
           }
         };

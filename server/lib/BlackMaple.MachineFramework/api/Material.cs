@@ -57,24 +57,40 @@ namespace BlackMaple.MachineFramework
       UnloadToCompletedMaterial, // unload and the material has been completed
       Machining
     }
-    [DataMember(IsRequired = true)] public ActionType Type { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public ActionType Type { get; init; }
 
     // If Type = Loading
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? LoadOntoPallet { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? LoadOntoFace { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? ProcessAfterLoad { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? PathAfterLoad { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? LoadOntoPallet { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? LoadOntoFace { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? ProcessAfterLoad { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? PathAfterLoad { get; init; }
 
     //If Type = UnloadToInProcess
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? UnloadIntoQueue { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? UnloadIntoQueue { get; init; }
 
     //If Type = Loading or UnloadToInProcess or UnloadToCompletedMaterial
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedLoadUnloadTime { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public TimeSpan? ElapsedLoadUnloadTime { get; init; }
 
     // If Type = Machining
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? Program { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ElapsedMachiningTime { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public TimeSpan? ExpectedRemainingMachiningTime { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? Program { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public TimeSpan? ElapsedMachiningTime { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public TimeSpan? ExpectedRemainingMachiningTime { get; init; }
   }
 
   ///Stores the current location of a piece of material.  If a transfer operation is currently in process
@@ -90,17 +106,24 @@ namespace BlackMaple.MachineFramework
       OnPallet,
       InQueue,
     }
-    [DataMember(IsRequired = true)] public LocType Type { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public LocType Type { get; init; }
 
     //If Type == OnPallet
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? Pallet { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? Face { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? Pallet { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? Face { get; init; }
 
     //If Type == InQueue
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? CurrentQueue { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? CurrentQueue { get; init; }
 
     //If Type == InQueue or Type == Free
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public int? QueuePosition { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public int? QueuePosition { get; init; }
   }
 
   //Stores information about a piece of material, where it is, and what is happening to it.
@@ -108,37 +131,67 @@ namespace BlackMaple.MachineFramework
   public record InProcessMaterial
   {
     // Information about the material
-    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
-    [DataMember(IsRequired = true)] public string JobUnique { get; init; } = "";
-    [DataMember(IsRequired = true)] public string PartName { get; init; } = "";
-    [DataMember(IsRequired = true)] public int Process { get; init; }  // When in a queue, the process is the last completed process
-    [DataMember(IsRequired = true)] public int Path { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? Serial { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? WorkorderId { get; init; }
-    [DataMember(IsRequired = true)] public ImmutableList<string> SignaledInspections { get; init; } = ImmutableList<string>.Empty;
+    [DataMember(IsRequired = true)]
+    public long MaterialID { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public string JobUnique { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public string PartName { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public int Process { get; init; } // When in a queue, the process is the last completed process
+
+    [DataMember(IsRequired = true)]
+    public int Path { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? Serial { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? WorkorderId { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public ImmutableList<string> SignaledInspections { get; init; } = ImmutableList<string>.Empty;
 
     // 0-based index into the JobPlan.MachiningStops array for the last completed stop.  Null or negative values
     // indicate no machining stops have yet completed.
-    [DataMember(IsRequired = false)] public int? LastCompletedMachiningRouteStopIndex { get; init; }
+    [DataMember(IsRequired = false)]
+    public int? LastCompletedMachiningRouteStopIndex { get; init; }
 
     // Where is the material?
-    [DataMember(IsRequired = true)] public InProcessMaterialLocation Location { get; init; } = new InProcessMaterialLocation();
+    [DataMember(IsRequired = true)]
+    public InProcessMaterialLocation Location { get; init; } = new InProcessMaterialLocation();
 
     // What is currently happening to the material?
-    [DataMember(IsRequired = true)] public InProcessMaterialAction Action { get; init; } = new InProcessMaterialAction();
+    [DataMember(IsRequired = true)]
+    public InProcessMaterialAction Action { get; init; } = new InProcessMaterialAction();
 
-    public static InProcessMaterial operator %(InProcessMaterial m, Action<IInProcessMaterialDraft> f) => m.Produce(f);
+    public static InProcessMaterial operator %(InProcessMaterial m, Action<IInProcessMaterialDraft> f) =>
+      m.Produce(f);
   }
 
   [DataContract]
   public record MaterialDetails
   {
-    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? JobUnique { get; init; }
-    [DataMember(IsRequired = true)] public string PartName { get; init; } = "";
-    [DataMember(IsRequired = false, EmitDefaultValue = true)] public int NumProcesses { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? Workorder { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? Serial { get; init; }
+    [DataMember(IsRequired = true)]
+    public long MaterialID { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public string? JobUnique { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public string PartName { get; init; } = "";
+
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public int NumProcesses { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public string? Workorder { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public string? Serial { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableDictionary<int, int>? Paths { get; init; } // key is process, value is path

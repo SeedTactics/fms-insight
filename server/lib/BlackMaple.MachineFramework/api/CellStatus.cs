@@ -40,7 +40,6 @@ using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
-
   [DataContract]
   public record QueueSize
   {
@@ -57,10 +56,12 @@ namespace BlackMaple.MachineFramework
     public DateTime TimeOfCurrentStatusUTC { get; init; }
 
     [DataMember(Name = "Jobs", IsRequired = true)]
-    public ImmutableDictionary<string, MachineFramework.ActiveJob> Jobs { get; init; } = ImmutableDictionary<string, MachineFramework.ActiveJob>.Empty;
+    public ImmutableDictionary<string, MachineFramework.ActiveJob> Jobs { get; init; } =
+      ImmutableDictionary<string, MachineFramework.ActiveJob>.Empty;
 
     [DataMember(Name = "Pallets", IsRequired = true)]
-    public ImmutableDictionary<string, PalletStatus> Pallets { get; init; } = ImmutableDictionary<string, PalletStatus>.Empty;
+    public ImmutableDictionary<string, PalletStatus> Pallets { get; init; } =
+      ImmutableDictionary<string, PalletStatus>.Empty;
 
     [DataMember(Name = "Material", IsRequired = true)]
     public ImmutableList<InProcessMaterial> Material { get; init; } = ImmutableList<InProcessMaterial>.Empty;
@@ -69,7 +70,8 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<string> Alarms { get; init; } = ImmutableList<string>.Empty;
 
     [DataMember(Name = "Queues", IsRequired = true)]
-    public ImmutableDictionary<string, QueueSize> QueueSizes { get; init; } = ImmutableDictionary<string, QueueSize>.Empty;
+    public ImmutableDictionary<string, QueueSize> QueueSizes { get; init; } =
+      ImmutableDictionary<string, QueueSize>.Empty;
 
     // The following is only filled in if the machines move to the load station
     // instead of the pallets moving to the machine
@@ -82,26 +84,47 @@ namespace BlackMaple.MachineFramework
   [DataContract]
   public record JobAndDecrementQuantity
   {
-    [DataMember(IsRequired = true)] public long DecrementId { get; init; }
-    [DataMember(IsRequired = true)] public string JobUnique { get; init; } = "";
-    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
-    [DataMember(IsRequired = true)] public string Part { get; init; } = "";
-    [DataMember(IsRequired = true)] public int Quantity { get; init; }
+    [DataMember(IsRequired = true)]
+    public long DecrementId { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public string JobUnique { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public DateTime TimeUTC { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public string Part { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public int Quantity { get; init; }
   }
 
   [DataContract]
   public record HistoricData
   {
-    [DataMember(IsRequired = true)] public ImmutableDictionary<string, MachineFramework.HistoricJob> Jobs { get; init; } = ImmutableDictionary<string, MachineFramework.HistoricJob>.Empty;
-    [DataMember(IsRequired = true)] public ImmutableList<SimulatedStationUtilization> StationUse { get; init; } = ImmutableList<SimulatedStationUtilization>.Empty;
+    [DataMember(IsRequired = true)]
+    public ImmutableDictionary<string, MachineFramework.HistoricJob> Jobs { get; init; } =
+      ImmutableDictionary<string, MachineFramework.HistoricJob>.Empty;
+
+    [DataMember(IsRequired = true)]
+    public ImmutableList<SimulatedStationUtilization> StationUse { get; init; } =
+      ImmutableList<SimulatedStationUtilization>.Empty;
   }
 
   [DataContract]
   public record PlannedSchedule
   {
-    [DataMember(IsRequired = true)] public string LatestScheduleId { get; init; } = "";
-    [DataMember(IsRequired = true)] public ImmutableList<MachineFramework.HistoricJob> Jobs { get; init; } = ImmutableList<MachineFramework.HistoricJob>.Empty;
-    [DataMember(IsRequired = true)] public ImmutableDictionary<string, int> ExtraParts { get; init; } = ImmutableDictionary<string, int>.Empty;
+    [DataMember(IsRequired = true)]
+    public string LatestScheduleId { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public ImmutableList<MachineFramework.HistoricJob> Jobs { get; init; } =
+      ImmutableList<MachineFramework.HistoricJob>.Empty;
+
+    [DataMember(IsRequired = true)]
+    public ImmutableDictionary<string, int> ExtraParts { get; init; } =
+      ImmutableDictionary<string, int>.Empty;
 
     [DataMember(IsRequired = false)]
     public ImmutableList<Workorder>? CurrentUnfilledWorkorders { get; init; }

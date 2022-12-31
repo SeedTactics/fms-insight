@@ -100,7 +100,8 @@ namespace MazakMachineInterface
             }
           }
         }
-      foundGroup:;
+        foundGroup:
+        ;
       }
     }
 
@@ -110,27 +111,41 @@ namespace MazakMachineInterface
       if (!string.IsNullOrEmpty(newJ.ScheduleId))
       {
         var recentDbSchedule = jobDB.LoadMostRecentSchedule();
-        if (!string.IsNullOrEmpty(expectedPreviousScheduleId) &&
-            expectedPreviousScheduleId != recentDbSchedule.LatestScheduleId)
+        if (
+          !string.IsNullOrEmpty(expectedPreviousScheduleId)
+          && expectedPreviousScheduleId != recentDbSchedule.LatestScheduleId
+        )
         {
           throw new BlackMaple.MachineFramework.BadRequestException(
-            "Expected previous schedule ID does not match current schedule ID.  Another user may have already created a schedule.");
+            "Expected previous schedule ID does not match current schedule ID.  Another user may have already created a schedule."
+          );
         }
       }
 
       // check workorder programs
-      if (newJ.CurrentUnfilledWorkorders != null && newJ.CurrentUnfilledWorkorders.Any(w => w.Programs != null && w.Programs.Any()))
+      if (
+        newJ.CurrentUnfilledWorkorders != null
+        && newJ.CurrentUnfilledWorkorders.Any(w => w.Programs != null && w.Programs.Any())
+      )
       {
-        throw new BlackMaple.MachineFramework.BadRequestException("Mazak does not support per-workorder programs");
+        throw new BlackMaple.MachineFramework.BadRequestException(
+          "Mazak does not support per-workorder programs"
+        );
       }
 
       //check for an old schedule that has not yet been copied
-      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddHours(1), includeDecremented: false);
+      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(
+        DateTime.UtcNow.AddDays(-1),
+        DateTime.UtcNow.AddHours(1),
+        includeDecremented: false
+      );
       if (oldJobs.Count > 0)
       {
         //there are jobs to copy
-        Log.Information("Resuming copy of job schedules into mazak {uniqs}",
-            oldJobs.Select(j => j.UniqueStr).ToList());
+        Log.Information(
+          "Resuming copy of job schedules into mazak {uniqs}",
+          oldJobs.Select(j => j.UniqueStr).ToList()
+        );
 
         AddSchedules(jobDB, oldJobs);
       }
@@ -150,23 +165,28 @@ namespace MazakMachineInterface
       System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
 
       AddSchedules(jobDB, newJ.Jobs);
-
     }
 
     public void RecopyJobsToMazak(IRepository jobDB, DateTime? nowUtc = null)
     {
       var now = nowUtc ?? DateTime.UtcNow;
-      var jobs = jobDB.LoadJobsNotCopiedToSystem(now.AddHours(-JobLookbackHours), now.AddHours(1), includeDecremented: false);
-      if (jobs.Count == 0) return;
+      var jobs = jobDB.LoadJobsNotCopiedToSystem(
+        now.AddHours(-JobLookbackHours),
+        now.AddHours(1),
+        includeDecremented: false
+      );
+      if (jobs.Count == 0)
+        return;
 
       //there are jobs to copy
-      Log.Information("Resuming copy of job schedules into mazak {uniqs}",
-          jobs.Select(j => j.UniqueStr).ToList());
+      Log.Information(
+        "Resuming copy of job schedules into mazak {uniqs}",
+        jobs.Select(j => j.UniqueStr).ToList()
+      );
 
       List<string> logMessages = new List<string>();
 
       AddSchedules(jobDB, jobs);
-
     }
 
     private ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
@@ -206,7 +226,7 @@ namespace MazakMachineInterface
         }
 
         break;
-      found:
+        found:
         UID += 1;
       }
       if (UID == int.MaxValue)
@@ -233,12 +253,11 @@ namespace MazakMachineInterface
         useStartingOffsetForDueDate: _useStartingOffsetForDueDate,
         fmsSettings: fmsSettings,
         lookupProgram: (prog, rev) => LookupProgram(jobDB, prog, rev),
-        errors: jobErrs);
+        errors: jobErrs
+      );
       if (jobErrs.Any())
       {
-        throw new BlackMaple.MachineFramework.BadRequestException(
-          string.Join(Environment.NewLine, jobErrs)
-        );
+        throw new BlackMaple.MachineFramework.BadRequestException(string.Join(Environment.NewLine, jobErrs));
       }
 
       //delete parts
@@ -315,8 +334,8 @@ namespace MazakMachineInterface
           }
         }
       }
-    foundGroup:;
-
+      foundGroup:
+      ;
     }
 
     private void ArchiveOldJobs(IRepository jobDB, MazakCurrentStatus schedules)
@@ -325,10 +344,13 @@ namespace MazakMachineInterface
       var completed = new Dictionary<(string uniq, int proc1path), int>();
       foreach (var sch in schedules.Schedules)
       {
-        if (string.IsNullOrEmpty(sch.Comment)) continue;
-        if (!MazakPart.IsSailPart(sch.PartName, sch.Comment)) continue;
+        if (string.IsNullOrEmpty(sch.Comment))
+          continue;
+        if (!MazakPart.IsSailPart(sch.PartName, sch.Comment))
+          continue;
         MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
-        if (jobDB.LoadJob(unique) == null) continue;
+        if (jobDB.LoadJob(unique) == null)
+          continue;
 
         if (sch.PlanQuantity == sch.CompleteQuantity)
         {
@@ -344,8 +366,7 @@ namespace MazakMachineInterface
 
       var toArchive = unarchived.Where(j => !current.Contains(j.UniqueStr)).Select(j => j.UniqueStr);
 
-      var newDecrs =
-        unarchived
+      var newDecrs = unarchived
         .Where(j => toArchive.Contains(j.UniqueStr))
         .Select(j =>
         {

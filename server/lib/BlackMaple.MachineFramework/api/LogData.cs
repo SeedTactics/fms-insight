@@ -70,7 +70,16 @@ namespace BlackMaple.MachineFramework
 
     public LogMaterial() { }
 
-    public LogMaterial(long matID, string uniq, int proc, string part, int numProc, string serial, string workorder, string face)
+    public LogMaterial(
+      long matID,
+      string uniq,
+      int proc,
+      string part,
+      int numProc,
+      string serial,
+      string workorder,
+      string face
+    )
     {
       MaterialID = matID;
       JobUniqueStr = uniq;
@@ -88,24 +97,59 @@ namespace BlackMaple.MachineFramework
   [DataContract]
   public enum LogType
   {
-    [EnumMember] LoadUnloadCycle = 1, //numbers are for backwards compatibility with old type enumeration
-    [EnumMember] MachineCycle = 2,
-    [EnumMember] PartMark = 6,
-    [EnumMember] Inspection = 7,
-    [EnumMember] OrderAssignment = 10,
-    [EnumMember] GeneralMessage = 100,
-    [EnumMember] PalletCycle = 101,
-    [EnumMember] FinalizeWorkorder = 102,
-    [EnumMember] InspectionResult = 103,
-    [EnumMember] Wash = 104,
-    [EnumMember] AddToQueue = 105,
-    [EnumMember] RemoveFromQueue = 106,
-    [EnumMember] InspectionForce = 107,
-    [EnumMember] PalletOnRotaryInbound = 108,
-    [EnumMember] PalletInStocker = 110,
-    [EnumMember] SignalQuarantine = 111,
-    [EnumMember] InvalidateCycle = 112,
-    [EnumMember] SwapMaterialOnPallet = 113,
+    [EnumMember]
+    LoadUnloadCycle = 1, //numbers are for backwards compatibility with old type enumeration
+
+    [EnumMember]
+    MachineCycle = 2,
+
+    [EnumMember]
+    PartMark = 6,
+
+    [EnumMember]
+    Inspection = 7,
+
+    [EnumMember]
+    OrderAssignment = 10,
+
+    [EnumMember]
+    GeneralMessage = 100,
+
+    [EnumMember]
+    PalletCycle = 101,
+
+    [EnumMember]
+    FinalizeWorkorder = 102,
+
+    [EnumMember]
+    InspectionResult = 103,
+
+    [EnumMember]
+    Wash = 104,
+
+    [EnumMember]
+    AddToQueue = 105,
+
+    [EnumMember]
+    RemoveFromQueue = 106,
+
+    [EnumMember]
+    InspectionForce = 107,
+
+    [EnumMember]
+    PalletOnRotaryInbound = 108,
+
+    [EnumMember]
+    PalletInStocker = 110,
+
+    [EnumMember]
+    SignalQuarantine = 111,
+
+    [EnumMember]
+    InvalidateCycle = 112,
+
+    [EnumMember]
+    SwapMaterialOnPallet = 113,
     // when adding types, must also update the convertLogType() function in client/backup-viewer/src/background.ts
   }
 
@@ -155,7 +199,8 @@ namespace BlackMaple.MachineFramework
     public TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
 
     [DataMember(Name = "details", IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableDictionary<string, string>? ProgramDetails { get; init; } = ImmutableDictionary<string, string>.Empty;
+    public ImmutableDictionary<string, string>? ProgramDetails { get; init; } =
+      ImmutableDictionary<string, string>.Empty;
 
     [DataMember(Name = "tooluse", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<ToolUse>? Tools { get; init; } = ImmutableList<ToolUse>.Empty;
@@ -163,35 +208,49 @@ namespace BlackMaple.MachineFramework
     public LogEntry() { }
 
     public LogEntry(
-        long cntr,
-        IEnumerable<LogMaterial> mat,
-        string pal,
-        LogType ty,
-        string locName,
-        int locNum,
-        string prog,
-        bool start,
-        DateTime endTime,
-        string result,
-        bool endOfRoute)
-        : this(cntr, mat, pal, ty, locName, locNum, prog, start, endTime, result, endOfRoute,
-              TimeSpan.FromMinutes(-1), TimeSpan.Zero)
-    { }
+      long cntr,
+      IEnumerable<LogMaterial> mat,
+      string pal,
+      LogType ty,
+      string locName,
+      int locNum,
+      string prog,
+      bool start,
+      DateTime endTime,
+      string result,
+      bool endOfRoute
+    )
+      : this(
+        cntr,
+        mat,
+        pal,
+        ty,
+        locName,
+        locNum,
+        prog,
+        start,
+        endTime,
+        result,
+        endOfRoute,
+        TimeSpan.FromMinutes(-1),
+        TimeSpan.Zero
+      ) { }
 
     public LogEntry(
-        long cntr,
-        IEnumerable<LogMaterial> mat,
-        string pal,
-        LogType ty,
-        string locName,
-        int locNum,
-        string prog,
-        bool start,
-        DateTime endTime,
-        string result,
-        bool endOfRoute,
-        TimeSpan elapsed,
-        TimeSpan active)
+      long cntr,
+      IEnumerable<LogMaterial> mat,
+      string pal,
+      LogType ty,
+      string locName,
+      int locNum,
+      string prog,
+      bool start,
+      DateTime endTime,
+      string result,
+      bool endOfRoute,
+      TimeSpan elapsed,
+      TimeSpan active
+    )
     {
       Counter = cntr;
       Material = mat.ToImmutableList();
@@ -230,19 +289,35 @@ namespace BlackMaple.MachineFramework
     [DataContract]
     public record Stop
     {
-      [DataMember(IsRequired = true)] public string StationName { get; init; } = "";
-      [DataMember(IsRequired = true)] public int StationNum { get; init; }
+      [DataMember(IsRequired = true)]
+      public string StationName { get; init; } = "";
+
+      [DataMember(IsRequired = true)]
+      public int StationNum { get; init; }
     }
 
-    [DataMember(IsRequired = true)] public long MaterialID { get; init; }
-    [DataMember(IsRequired = true)] public int Process { get; init; }
-    [DataMember(IsRequired = true)] public string Pallet { get; init; } = "";
-    [DataMember(IsRequired = true)] public int LoadStation { get; init; }
-    [DataMember(IsRequired = true)] public ImmutableList<Stop> Stops { get; init; } = ImmutableList<Stop>.Empty;
-    [DataMember(IsRequired = true)] public int UnloadStation { get; init; }
+    [DataMember(IsRequired = true)]
+    public long MaterialID { get; init; }
 
-    public static MaterialProcessActualPath operator %(MaterialProcessActualPath m, Action<IMaterialProcessActualPathDraft> f)
-       => m.Produce(f);
+    [DataMember(IsRequired = true)]
+    public int Process { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public string Pallet { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public int LoadStation { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public ImmutableList<Stop> Stops { get; init; } = ImmutableList<Stop>.Empty;
+
+    [DataMember(IsRequired = true)]
+    public int UnloadStation { get; init; }
+
+    public static MaterialProcessActualPath operator %(
+      MaterialProcessActualPath m,
+      Action<IMaterialProcessActualPathDraft> f
+    ) => m.Produce(f);
   }
 
   [DataContract]

@@ -69,11 +69,7 @@ namespace MachineWatchTest
 
       public MazakCurrentStatus ToData()
       {
-        return new MazakCurrentStatus()
-        {
-          Schedules = Schedules,
-          LoadActions = LoadActions
-        };
+        return new MazakCurrentStatus() { Schedules = Schedules, LoadActions = LoadActions };
       }
     }
 
@@ -87,7 +83,18 @@ namespace MachineWatchTest
       trans.Should().BeNull();
     }
 
-    private MazakScheduleRow AddSchedule(TestMazakData read, int schId, string unique, string part, int pri, int numProc, int complete, int plan, int partIdx = 1, DateTime? dueDate = null)
+    private MazakScheduleRow AddSchedule(
+      TestMazakData read,
+      int schId,
+      string unique,
+      string part,
+      int pri,
+      int numProc,
+      int complete,
+      int plan,
+      int partIdx = 1,
+      DateTime? dueDate = null
+    )
     {
       var row = new MazakScheduleRow()
       {
@@ -112,23 +119,33 @@ namespace MachineWatchTest
 
     private void AddScheduleProcess(MazakScheduleRow schRow, int proc, int matQty, int exeQty, int fixQty = 1)
     {
-      schRow.Processes.Add(new MazakScheduleProcessRow()
-      {
-        MazakScheduleRowId = schRow.Id,
-        ProcessBadQuantity = 0,
-        ProcessExecuteQuantity = exeQty,
-        ProcessMachine = 1,
-        FixQuantity = fixQty,
-        ProcessMaterialQuantity = matQty,
-        ProcessNumber = proc,
-      });
+      schRow.Processes.Add(
+        new MazakScheduleProcessRow()
+        {
+          MazakScheduleRowId = schRow.Id,
+          ProcessBadQuantity = 0,
+          ProcessExecuteQuantity = exeQty,
+          ProcessMachine = 1,
+          FixQuantity = fixQty,
+          ProcessMaterialQuantity = matQty,
+          ProcessNumber = proc,
+        }
+      );
     }
 
     private long AddCasting(string casting, string queue)
     {
       // Same as RoutingInfo.AddUnallocatedCastingToQueue
       var mat = _logDB.AllocateMaterialIDForCasting(casting);
-      _logDB.RecordAddMaterialToQueue(mat, 0, queue, position: -1, timeUTC: _now, operatorName: null, reason: "TestAddCasting");
+      _logDB.RecordAddMaterialToQueue(
+        mat,
+        0,
+        queue,
+        position: -1,
+        timeUTC: _now,
+        operatorName: null,
+        reason: "TestAddCasting"
+      );
       return mat;
     }
 
@@ -137,7 +154,15 @@ namespace MachineWatchTest
       // Same as RoutingInfo.AddUnprocessedMaterialToQueue
       var mat = _logDB.AllocateMaterialID(uniq, part, numProc);
       _logDB.RecordPathForProcess(mat, Math.Max(1, lastProc), path);
-      _logDB.RecordAddMaterialToQueue(mat, lastProc, queue, position: -1, timeUTC: _now, operatorName: null, reason: "TestAddAssigned");
+      _logDB.RecordAddMaterialToQueue(
+        mat,
+        lastProc,
+        queue,
+        position: -1,
+        timeUTC: _now,
+        operatorName: null,
+        reason: "TestAddAssigned"
+      );
       return mat;
     }
 
@@ -148,7 +173,16 @@ namespace MachineWatchTest
       var read = new TestMazakData();
 
       // plan 50, 40 completed, and 5 in process.  So there are 5 remaining.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 2, pri: 10, plan: 50, complete: 40);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 2,
+        pri: 10,
+        plan: 50,
+        complete: 40
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 0, exeQty: 0);
 
@@ -161,11 +195,11 @@ namespace MachineWatchTest
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
         )
       };
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch11",
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch11", },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
@@ -200,7 +234,16 @@ namespace MachineWatchTest
       var read = new TestMazakData();
 
       // plan 50, 40 completed, and 5 machining.  1 in proc on mat 1 and 2 in proc on mat 2
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 2, pri: 10, plan: 50, complete: 40);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 2,
+        pri: 10,
+        plan: 50,
+        complete: 40
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 1, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 2, exeQty: 0);
 
@@ -209,7 +252,10 @@ namespace MachineWatchTest
         UniqueStr = "uuuu",
         PartName = "pppp",
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+          },
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
         )
       };
@@ -217,11 +263,11 @@ namespace MachineWatchTest
       {
         casting = "pppp";
       }
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch22",
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch22", },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       // add the material which matches the schedule
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
@@ -261,7 +307,16 @@ namespace MachineWatchTest
       var read = new TestMazakData();
 
       // plan 50, 40 completed, and 5 machining.  1 in proc on mat 1 and 2 in proc on mat 2
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 2, pri: 10, plan: 50, complete: 40);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 2,
+        pri: 10,
+        plan: 50,
+        complete: 40
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 1, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 2, exeQty: 0);
 
@@ -270,7 +325,10 @@ namespace MachineWatchTest
         UniqueStr = "uuuu",
         PartName = "pppp",
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+          },
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
         )
       };
@@ -278,11 +336,11 @@ namespace MachineWatchTest
       {
         casting = "pppp";
       }
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch33"
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch33" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       // add the material which matches the schedule
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
@@ -300,7 +358,14 @@ namespace MachineWatchTest
 
       // add 1 more for each proc 1 and 2.
       // proc 2 should be added, while the mat from proc1 is removed to match the mazak schedule
-      var matIdProc1 = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
+      var matIdProc1 = AddAssigned(
+        uniq: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        lastProc: 0,
+        path: 1,
+        queue: "thequeue"
+      );
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "thequeue");
 
       _logDB.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().Contain(m => m.MaterialID == matIdProc1);
@@ -316,7 +381,10 @@ namespace MachineWatchTest
       trans.Schedules[0].Processes[1].ProcessNumber.Should().Be(2);
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.Should().Be(3);
 
-      _logDB.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().NotContain(m => m.MaterialID == matIdProc1);
+      _logDB
+        .GetMaterialInQueueByUnique("thequeue", "uuuu")
+        .Should()
+        .NotContain(m => m.MaterialID == matIdProc1);
       _logDB.IsMaterialInQueue(matIdProc1).Should().BeFalse();
     }
 
@@ -327,7 +395,16 @@ namespace MachineWatchTest
       var read = new TestMazakData();
 
       // plan 50, 30 completed.  proc1 has 5 in process, 2 material.  proc2 has 3 in process, 4 material
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 30);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 50,
+        complete: 30
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 2, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 4, exeQty: 3);
 
@@ -340,21 +417,27 @@ namespace MachineWatchTest
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "transQ" }) }
         )
       };
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch44"
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch44" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       // put 2 allocated casting in queue
-      var proc1Mat = Enumerable.Range(0, 2).Select(i =>
-        AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
-      ).ToList();
+      var proc1Mat = Enumerable
+        .Range(0, 2)
+        .Select(
+          i => AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+        )
+        .ToList();
 
       // put 4 in-proc in queue
-      var proc2Mat = Enumerable.Range(0, 4).Select(i =>
-        AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
-      ).ToList();
+      var proc2Mat = Enumerable
+        .Range(0, 4)
+        .Select(
+          i => AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        )
+        .ToList();
 
       // some extra stuff
       AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "castingQ");
@@ -386,7 +469,16 @@ namespace MachineWatchTest
       var read = new TestMazakData();
 
       // plan 50, 30 completed.  proc1 has 5 in process, 2 material.  proc2 has 3 in process, 4 material
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 30);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 50,
+        complete: 30
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 2, exeQty: 5);
       AddScheduleProcess(schRow, proc: 2, matQty: 4, exeQty: 3);
 
@@ -399,24 +491,37 @@ namespace MachineWatchTest
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "transQ" }) }
         )
       };
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch55",
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch55", },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       // put 2 allocated casting in queue
-      var proc1Mat = Enumerable.Range(0, 2).Select(i =>
-        AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
-      ).ToList();
+      var proc1Mat = Enumerable
+        .Range(0, 2)
+        .Select(
+          i => AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+        )
+        .ToList();
 
       // put 4 in-proc in queue
-      var proc2Mat = Enumerable.Range(0, 4).Select(i =>
-        AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
-      ).ToList();
+      var proc2Mat = Enumerable
+        .Range(0, 4)
+        .Select(
+          i => AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        )
+        .ToList();
 
       // some extra stuff
-      var xxxId1 = AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "castingQ");
+      var xxxId1 = AddAssigned(
+        uniq: "xxxx",
+        part: "pppp",
+        numProc: 1,
+        lastProc: 0,
+        path: 1,
+        queue: "castingQ"
+      );
       var xxxId2 = AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "transQ");
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -426,20 +531,24 @@ namespace MachineWatchTest
       _logDB.RecordRemoveMaterialFromAllQueues(proc1Mat[0], 1);
       _logDB.RecordRemoveMaterialFromAllQueues(proc2Mat[0], 2);
 
-      var expectedTransQ = proc2Mat.Skip(1).Select((matId, idx) =>
-          new QueuedMaterial()
-          {
-            MaterialID = matId,
-            Queue = "transQ",
-            Position = idx,
-            Unique = "uuuu",
-            PartNameOrCasting = "pppp",
-            NumProcesses = 2,
-            AddTimeUTC = _now,
-            NextProcess = 2,
-            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-          }
-      ).Append(
+      var expectedTransQ = proc2Mat
+        .Skip(1)
+        .Select(
+          (matId, idx) =>
+            new QueuedMaterial()
+            {
+              MaterialID = matId,
+              Queue = "transQ",
+              Position = idx,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 2,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            }
+        )
+        .Append(
           new QueuedMaterial()
           {
             MaterialID = xxxId2,
@@ -452,37 +561,89 @@ namespace MachineWatchTest
             NextProcess = 2,
             Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
           }
-      ).ToList();
+        )
+        .ToList();
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-          new QueuedMaterial() {
-            MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-            NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-          },
-          new QueuedMaterial() {
-            MaterialID = xxxId1, Queue = "castingQ", Position = 1, Unique = "xxxx", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-            NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-          }
-      }.Concat(expectedTransQ));
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = proc1Mat[1],
+              Queue = "castingQ",
+              Position = 0,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            },
+            new QueuedMaterial()
+            {
+              MaterialID = xxxId1,
+              Queue = "castingQ",
+              Position = 1,
+              Unique = "xxxx",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            }
+          }.Concat(expectedTransQ)
+        );
 
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
       // adds an extra material with id xxxId2 + 1
       var actual = _logDB.GetMaterialInAllQueues();
-      actual.Should().BeEquivalentTo(new[] {
-          new QueuedMaterial() {
-            MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-            NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-          },
-          new QueuedMaterial() {
-            MaterialID = xxxId1, Queue = "castingQ", Position = 1, Unique = "xxxx", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-            NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-          },
-          new QueuedMaterial() {
-            MaterialID = xxxId2 + 1, Queue = "castingQ", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = actual.Last(m => m.Queue == "castingQ").AddTimeUTC,
-            NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-          }
-      }.Concat(expectedTransQ));
+      actual
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = proc1Mat[1],
+              Queue = "castingQ",
+              Position = 0,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            },
+            new QueuedMaterial()
+            {
+              MaterialID = xxxId1,
+              Queue = "castingQ",
+              Position = 1,
+              Unique = "xxxx",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            },
+            new QueuedMaterial()
+            {
+              MaterialID = xxxId2 + 1,
+              Queue = "castingQ",
+              Position = 2,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = actual.Last(m => m.Queue == "castingQ").AddTimeUTC,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            }
+          }.Concat(expectedTransQ)
+        );
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Id.Should().Be(10);
@@ -500,20 +661,49 @@ namespace MachineWatchTest
 
       // no extra material a second time
       actual = _logDB.GetMaterialInAllQueues();
-      actual.Should().BeEquivalentTo(new[] {
-          new QueuedMaterial() {
-            MaterialID = proc1Mat[1], Queue = "castingQ", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-            NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-          },
-          new QueuedMaterial() {
-            MaterialID = xxxId1, Queue = "castingQ", Position = 1, Unique = "xxxx", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-            NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-          },
-          new QueuedMaterial() {
-            MaterialID = xxxId2 + 1, Queue = "castingQ", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = actual.Last(m => m.Queue == "castingQ").AddTimeUTC,
-            NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-          }
-      }.Concat(expectedTransQ));
+      actual
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = proc1Mat[1],
+              Queue = "castingQ",
+              Position = 0,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            },
+            new QueuedMaterial()
+            {
+              MaterialID = xxxId1,
+              Queue = "castingQ",
+              Position = 1,
+              Unique = "xxxx",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            },
+            new QueuedMaterial()
+            {
+              MaterialID = xxxId2 + 1,
+              Queue = "castingQ",
+              Position = 2,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = actual.Last(m => m.Queue == "castingQ").AddTimeUTC,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            }
+          }.Concat(expectedTransQ)
+        );
     }
 
     [Theory]
@@ -525,7 +715,16 @@ namespace MachineWatchTest
       var read = new TestMazakData();
 
       // plan 50, 43 completed, and 5 in process.  So there are 2 remaining.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 43);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 50,
+        complete: 43
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new Job()
@@ -533,18 +732,21 @@ namespace MachineWatchTest
         UniqueStr = "uuuu",
         PartName = "pppp",
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+          }
         )
       };
       if (casting == null)
       {
         casting = "pppp";
       }
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch66"
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch66" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       // put a different casting
       var mat0 = AddCasting("unused", "thequeue");
@@ -557,46 +759,122 @@ namespace MachineWatchTest
       var mat2 = AddCasting(casting, "thequeue");
       var mat3 = AddCasting(casting, "thequeue");
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat0, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat0,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "unused",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "thequeue", Position = 1, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 1,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "thequeue",
+              Position = 2,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "thequeue",
+              Position = 3,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
 
       // should allocate 1 parts to uuuu since that is the fixed quantity
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat0, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat0,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "unused",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "thequeue", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 1,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "thequeue",
+              Position = 2,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "thequeue",
+              Position = 3,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
       _logDB.GetMaterialDetails(mat1).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
 
       trans.Schedules.Count.Should().Be(1);
@@ -615,7 +893,16 @@ namespace MachineWatchTest
       var read = new TestMazakData();
 
       // plan 50, 43 completed, and 5 in process.  So there are 2 remaining.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 43);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 50,
+        complete: 43
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new Job()
@@ -623,19 +910,21 @@ namespace MachineWatchTest
         UniqueStr = "uuuu",
         PartName = "pppp",
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+          }
         )
       };
       if (casting == null)
       {
         casting = "pppp";
       }
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch77"
-      }, null, addAsCopiedToSystem: true);
-
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch77" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       // put 1 unassigned castings in queue
       var mat1 = AddCasting("unused", "thequeue");
@@ -649,46 +938,122 @@ namespace MachineWatchTest
       var mat3 = AddCasting(casting, "thequeue");
       var mat4 = AddCasting(casting, "thequeue");
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "unused",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "thequeue",
+              Position = 1,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "thequeue",
+              Position = 2,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat4, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat4,
+              Queue = "thequeue",
+              Position = 3,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
 
       // should allocate 2 parts to uuuu since that is the remaining planned
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "unused",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "thequeue",
+              Position = 1,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "thequeue",
+              Position = 2,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat4, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat4,
+              Queue = "thequeue",
+              Position = 3,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
       _logDB.GetMaterialDetails(mat2).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
       _logDB.GetMaterialDetails(mat3).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
 
@@ -707,7 +1072,16 @@ namespace MachineWatchTest
 
       // plan 50, 43 completed, and 3 in process, 0 material in mazak, but 2 assigned in queue.
       // So there are 2 remaining unallocated castings.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 43);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 50,
+        complete: 43
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 3);
 
       var j = new Job()
@@ -715,14 +1089,17 @@ namespace MachineWatchTest
         UniqueStr = "uuuu",
         PartName = "pppp",
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = "casting" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = "casting" })
+          }
         )
       };
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch88"
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch88" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
@@ -734,54 +1111,146 @@ namespace MachineWatchTest
       var mat4 = AddCasting("casting", "thequeue");
       var mat5 = AddCasting("casting", "thequeue");
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "thequeue",
+              Position = 1,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "thequeue",
+              Position = 2,
+              Unique = "",
+              PartNameOrCasting = "casting",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat4, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat4,
+              Queue = "thequeue",
+              Position = 3,
+              Unique = "",
+              PartNameOrCasting = "casting",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat5, Queue = "thequeue", Position = 4, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat5,
+              Queue = "thequeue",
+              Position = 4,
+              Unique = "",
+              PartNameOrCasting = "casting",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
 
       // should allocate nothing because material is not zero, just update the process material quantity
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "thequeue",
+              Position = 1,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "thequeue",
+              Position = 2,
+              Unique = "",
+              PartNameOrCasting = "casting",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat4, Queue = "thequeue", Position = 3, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat4,
+              Queue = "thequeue",
+              Position = 3,
+              Unique = "",
+              PartNameOrCasting = "casting",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat5, Queue = "thequeue", Position = 4, Unique = "", PartNameOrCasting = "casting", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat5,
+              Queue = "thequeue",
+              Position = 4,
+              Unique = "",
+              PartNameOrCasting = "casting",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Priority.Should().Be(10);
@@ -799,7 +1268,16 @@ namespace MachineWatchTest
       var read = new TestMazakData();
 
       // plan 50, 45 completed, and 5 in process.  So there are none remaining.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 45);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 50,
+        complete: 45
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new Job()
@@ -807,52 +1285,115 @@ namespace MachineWatchTest
         UniqueStr = "uuuu",
         PartName = "pppp",
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = "cccc" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = "cccc" })
+          }
         )
       };
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch99"
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch99" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       // put 3 unassigned castings in queue
       var mat1 = AddCasting("cccc", "thequeue");
       var mat2 = AddCasting("cccc", "thequeue");
       var mat3 = AddCasting("cccc", "thequeue");
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-                  MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "cccc",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-                  MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "thequeue",
+              Position = 1,
+              Unique = "",
+              PartNameOrCasting = "cccc",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-                  MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "thequeue",
+              Position = 2,
+              Unique = "",
+              PartNameOrCasting = "cccc",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
 
       // should allocate no parts and leave schedule unchanged.
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-                new QueuedMaterial() {
-                  MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "cccc",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-                new QueuedMaterial() {
-                  MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "thequeue",
+              Position = 1,
+              Unique = "",
+              PartNameOrCasting = "cccc",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-                new QueuedMaterial() {
-                  MaterialID = mat3, Queue = "thequeue", Position = 2, Unique = "", PartNameOrCasting = "cccc", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "thequeue",
+              Position = 2,
+              Unique = "",
+              PartNameOrCasting = "cccc",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-              });
+          }
+        );
 
       trans.Schedules.Should().BeEmpty();
     }
@@ -867,7 +1408,16 @@ namespace MachineWatchTest
 
       // this scenario comes from a job decrement.  At time of decrement, plan 50, 40 completed, 5 in proc, and 5 material
       // decrement reduces planned quantity to 45 but leaves material.  Queue code should clear it.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 45, complete: 40);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 45,
+        complete: 40
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 5, exeQty: 5);
 
       var j = new Job()
@@ -878,11 +1428,11 @@ namespace MachineWatchTest
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { }) }
         )
       };
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch011"
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch011" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
@@ -906,7 +1456,16 @@ namespace MachineWatchTest
       // this scenario occurs after a decrement.  The decrement sets the planned quantity to equal
       // the completed and in-process, but some material in the queue might be assigned to this job unique.
       // The queues code should unallocate or remove the queued material so it can be assigned to a new job.
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 46, complete: 43);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 46,
+        complete: 43
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 3);
 
       var j = new Job()
@@ -914,33 +1473,58 @@ namespace MachineWatchTest
         UniqueStr = "uuuu",
         PartName = "pppp",
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+          }
         )
       };
       if (casting == null)
       {
         casting = "pppp";
       }
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch012",
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch012", },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       // put 2 assigned castings in queue
       var mat1 = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
       var mat2 = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-                new QueuedMaterial() {
-                  MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-                new QueuedMaterial() {
-                  MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "thequeue",
+              Position = 1,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-              });
+          }
+        );
 
       // should not touch the schedule but unallocate or remove the two entries
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
@@ -955,20 +1539,46 @@ namespace MachineWatchTest
       else
       {
         // otherwise, material is just unallocated
-        _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-                  new QueuedMaterial() {
-                    MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
-            },
-                  new QueuedMaterial() {
-                    MaterialID = mat2, Queue = "thequeue", Position = 1, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
-            },
-                });
+        _logDB
+          .GetMaterialInAllQueues()
+          .Should()
+          .BeEquivalentTo(
+            new[]
+            {
+              new QueuedMaterial()
+              {
+                MaterialID = mat1,
+                Queue = "thequeue",
+                Position = 0,
+                Unique = "",
+                PartNameOrCasting = casting,
+                NumProcesses = 1,
+                AddTimeUTC = _now,
+                NextProcess = 1,
+                Paths = ImmutableDictionary<int, int>.Empty
+              },
+              new QueuedMaterial()
+              {
+                MaterialID = mat2,
+                Queue = "thequeue",
+                Position = 1,
+                Unique = "",
+                PartNameOrCasting = casting,
+                NumProcesses = 1,
+                AddTimeUTC = _now,
+                NextProcess = 1,
+                Paths = ImmutableDictionary<int, int>.Empty
+              },
+            }
+          );
       }
     }
 
-    private void CreateMultiPathJobs(string casting = "mycasting", bool matchingPallets = false, bool matchingFixtures = false)
+    private void CreateMultiPathJobs(
+      string casting = "mycasting",
+      bool matchingPallets = false,
+      bool matchingFixtures = false
+    )
     {
       var j1 = new Job()
       {
@@ -977,22 +1587,22 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo()
-            {
-              InputQueue = "castingQ",
-              Casting = casting,
-              Pallets = matchingPallets ? ImmutableList.Create("1", "3") : ImmutableList.Create("1"),
-              Fixture = matchingFixtures ? "fixA" : null,
-              Face = matchingFixtures ? 10 : null,
-            })
+            Paths = ImmutableList.Create(
+              new ProcPathInfo()
+              {
+                InputQueue = "castingQ",
+                Casting = casting,
+                Pallets = matchingPallets ? ImmutableList.Create("1", "3") : ImmutableList.Create("1"),
+                Fixture = matchingFixtures ? "fixA" : null,
+                Face = matchingFixtures ? 10 : null,
+              }
+            )
           },
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo()
-            {
-              InputQueue = "transQ",
-              Pallets = ImmutableList.Create("2"),
-            })
+            Paths = ImmutableList.Create(
+              new ProcPathInfo() { InputQueue = "transQ", Pallets = ImmutableList.Create("2"), }
+            )
           }
         )
       };
@@ -1004,31 +1614,31 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo()
-            {
-              InputQueue = "castingQ",
-              Casting = casting,
-              Pallets = ImmutableList.Create("3"),
-              Fixture = matchingFixtures ? "fixA" : null,
-              Face = matchingFixtures ? 10 : null,
-            })
+            Paths = ImmutableList.Create(
+              new ProcPathInfo()
+              {
+                InputQueue = "castingQ",
+                Casting = casting,
+                Pallets = ImmutableList.Create("3"),
+                Fixture = matchingFixtures ? "fixA" : null,
+                Face = matchingFixtures ? 10 : null,
+              }
+            )
           },
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo()
-            {
-              InputQueue = "transQ",
-              Pallets = ImmutableList.Create("4"),
-            })
+            Paths = ImmutableList.Create(
+              new ProcPathInfo() { InputQueue = "transQ", Pallets = ImmutableList.Create("4"), }
+            )
           }
         )
       };
 
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j1, j2),
-        ScheduleId = "sch013"
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j1, j2), ScheduleId = "sch013" },
+        null,
+        addAsCopiedToSystem: true
+      );
     }
 
     [Fact]
@@ -1042,9 +1652,17 @@ namespace MachineWatchTest
       //   - complete 10
       //   - proc1: 6 in execution, 0 material in mazak
       //   - proc2: 3 in execution, 1 material in mazak
-      var schRow1 = AddSchedule(read,
-        schId: 10, unique: "uuuu1", part: "pppp", numProc: 2, pri: 10, plan: 70, complete: 10,
-        partIdx: 1); // paths are twisted
+      var schRow1 = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu1",
+        part: "pppp",
+        numProc: 2,
+        pri: 10,
+        plan: 70,
+        complete: 10,
+        partIdx: 1
+      ); // paths are twisted
       AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 6, fixQty: 2);
       AddScheduleProcess(schRow1, proc: 2, matQty: 1, exeQty: 3);
       AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ");
@@ -1054,9 +1672,17 @@ namespace MachineWatchTest
       //   - complete 5
       //   - proc1: 4 in execution, 0 material in mazak
       //   - proc2: 3 in execution, 1 material in mazak
-      var schRow2 = AddSchedule(read,
-        schId: 11, unique: "uuuu2", part: "pppp", numProc: 2, pri: 10, plan: 80, complete: 5,
-        partIdx: 2); // paths are twisted
+      var schRow2 = AddSchedule(
+        read,
+        schId: 11,
+        unique: "uuuu2",
+        part: "pppp",
+        numProc: 2,
+        pri: 10,
+        plan: 80,
+        complete: 5,
+        partIdx: 2
+      ); // paths are twisted
       AddScheduleProcess(schRow2, proc: 1, matQty: 1, exeQty: 4, fixQty: 2);
       AddScheduleProcess(schRow2, proc: 2, matQty: 0, exeQty: 3);
       AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ");
@@ -1083,7 +1709,6 @@ namespace MachineWatchTest
       // add 15 more to uuuu 2 proc 2
       for (int i = 0; i < 15; i++)
         AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ");
-
 
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
@@ -1121,36 +1746,64 @@ namespace MachineWatchTest
       //   - complete 10
       //   - proc1: 6 in execution, 4 material in mazak
       //   - proc2: 3 in execution, 7 material in mazak
-      var schRow1 = AddSchedule(read,
-        schId: 10, unique: "uuuu1", part: "pppp", numProc: 2, pri: 10, plan: 30, complete: 10,
-        partIdx: 1); // paths are twisted
+      var schRow1 = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu1",
+        part: "pppp",
+        numProc: 2,
+        pri: 10,
+        plan: 30,
+        complete: 10,
+        partIdx: 1
+      ); // paths are twisted
       AddScheduleProcess(schRow1, proc: 1, matQty: 4, exeQty: 6, fixQty: 2);
       AddScheduleProcess(schRow1, proc: 2, matQty: 7, exeQty: 3);
 
-      var proc1path1 = Enumerable.Range(0, 4).Select(i =>
-        AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
-      ).ToList();
-      var proc2path1 = Enumerable.Range(0, 7).Select(i =>
-        AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
-      ).ToList();
+      var proc1path1 = Enumerable
+        .Range(0, 4)
+        .Select(
+          i => AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+        )
+        .ToList();
+      var proc2path1 = Enumerable
+        .Range(0, 7)
+        .Select(
+          i => AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        )
+        .ToList();
 
       //path 2
       //   - plan 50
       //   - complete 5
       //   - proc1: 4 in execution, 2 material in mazak
       //   - proc2: 3 in execution, 9 material in mazak
-      var schRow2 = AddSchedule(read,
-        schId: 11, unique: "uuuu2", part: "pppp", numProc: 2, pri: 10, plan: 50, complete: 5,
-        partIdx: 2); // paths are twisted
+      var schRow2 = AddSchedule(
+        read,
+        schId: 11,
+        unique: "uuuu2",
+        part: "pppp",
+        numProc: 2,
+        pri: 10,
+        plan: 50,
+        complete: 5,
+        partIdx: 2
+      ); // paths are twisted
       AddScheduleProcess(schRow2, proc: 1, matQty: 2, exeQty: 4, fixQty: 2);
       AddScheduleProcess(schRow2, proc: 2, matQty: 9, exeQty: 3);
 
-      var proc1path2 = Enumerable.Range(0, 2).Select(i =>
-        AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
-      ).ToList();
-      var proc2path2 = Enumerable.Range(0, 9).Select(i =>
-        AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
-      ).ToList();
+      var proc1path2 = Enumerable
+        .Range(0, 2)
+        .Select(
+          i => AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+        )
+        .ToList();
+      var proc2path2 = Enumerable
+        .Range(0, 9)
+        .Select(
+          i => AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        )
+        .ToList();
 
       CreateMultiPathJobs();
 
@@ -1205,15 +1858,26 @@ namespace MachineWatchTest
       //   - complete 10
       //   - proc1: 6 in execution, 0 material in mazak
       //   - proc2: 3 in execution, 3 material in mazak
-      var schRow1 = AddSchedule(read,
-        schId: 10, unique: "uuuu1", part: "pppp", numProc: 2, pri: 10, plan: 30, complete: 10,
-        partIdx: 1);
+      var schRow1 = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu1",
+        part: "pppp",
+        numProc: 2,
+        pri: 10,
+        plan: 30,
+        complete: 10,
+        partIdx: 1
+      );
       AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 6, fixQty: 2);
       AddScheduleProcess(schRow1, proc: 2, matQty: 3, exeQty: 3);
 
-      var proc2path1 = Enumerable.Range(0, 3).Select(i =>
-        AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
-      ).ToList();
+      var proc2path1 = Enumerable
+        .Range(0, 3)
+        .Select(
+          i => AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        )
+        .ToList();
 
       //path 2
       //   - plan 20
@@ -1221,19 +1885,30 @@ namespace MachineWatchTest
       //   - proc1: 2 in execution, 0 material in mazak
       //   - proc2: 3 in execution, 6 material in mazak
       //   - thus 20 - 5 - 2 - 3 - 6 = 4 not yet assigned
-      var schRow2 = AddSchedule(read,
-        schId: 11, unique: "uuuu2", part: "pppp", numProc: 2, pri: 8, plan: 20, complete: 5,
-        partIdx: 2);
+      var schRow2 = AddSchedule(
+        read,
+        schId: 11,
+        unique: "uuuu2",
+        part: "pppp",
+        numProc: 2,
+        pri: 8,
+        plan: 20,
+        complete: 5,
+        partIdx: 2
+      );
       AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 2, fixQty: 2);
       AddScheduleProcess(schRow2, proc: 2, matQty: 6, exeQty: 3);
 
-      var proc2path2 = Enumerable.Range(0, 6).Select(i =>
-        AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
-      ).ToList();
+      var proc2path2 = Enumerable
+        .Range(0, 6)
+        .Select(
+          i => AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        )
+        .ToList();
 
       CreateMultiPathJobs(casting);
-      if (casting == null) casting = "pppp";
-
+      if (casting == null)
+        casting = "pppp";
 
       // put a different casting
       var mat0 = AddCasting("unused", "castingQ");
@@ -1246,46 +1921,124 @@ namespace MachineWatchTest
       var mat2 = AddCasting(casting, "castingQ");
       var mat3 = AddCasting(casting, "castingQ");
 
-      _logDB.GetMaterialInAllQueues().Where(m => m.Queue == "castingQ").Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat0, Queue = "castingQ", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Where(m => m.Queue == "castingQ")
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat0,
+              Queue = "castingQ",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "unused",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "castingQ", Position = 1, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "castingQ",
+              Position = 1,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "castingQ", Position = 2, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "castingQ",
+              Position = 2,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "castingQ", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "castingQ",
+              Position = 3,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
 
       // should allocate 2 (fixqty) parts to path 2 (lowest priority)
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
-      _logDB.GetMaterialInAllQueues().Where(m => m.Queue == "castingQ").Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat0, Queue = "castingQ", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Where(m => m.Queue == "castingQ")
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat0,
+              Queue = "castingQ",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "unused",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "castingQ", Position = 1, Unique = "uuuu2", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "castingQ",
+              Position = 1,
+              Unique = "uuuu2",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "castingQ", Position = 2, Unique = "uuuu2", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "castingQ",
+              Position = 2,
+              Unique = "uuuu2",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "castingQ", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "castingQ",
+              Position = 3,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
       _logDB.GetMaterialDetails(mat1).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
       _logDB.GetMaterialDetails(mat2).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
 
@@ -1306,32 +2059,87 @@ namespace MachineWatchTest
 
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
-      _logDB.GetMaterialInAllQueues().Where(m => m.Queue == "castingQ").Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat0, Queue = "castingQ", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Where(m => m.Queue == "castingQ")
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat0,
+              Queue = "castingQ",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "unused",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "castingQ", Position = 1, Unique = "uuuu2", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "castingQ",
+              Position = 1,
+              Unique = "uuuu2",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "castingQ", Position = 2, Unique = "uuuu2", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "castingQ",
+              Position = 2,
+              Unique = "uuuu2",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "castingQ", Position = 3, Unique = "uuuu1", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "castingQ",
+              Position = 3,
+              Unique = "uuuu1",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat4, Queue = "castingQ", Position = 4, Unique = "uuuu1", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat4,
+              Queue = "castingQ",
+              Position = 4,
+              Unique = "uuuu1",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat5, Queue = "castingQ", Position = 5, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat5,
+              Queue = "castingQ",
+              Position = 5,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
       _logDB.GetMaterialDetails(mat3).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
       _logDB.GetMaterialDetails(mat4).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
 
@@ -1372,15 +2180,26 @@ namespace MachineWatchTest
       //   - proc1: 6 in execution, 0 material in mazak
       //   - proc2: 3 in execution, 3 material in mazak
       //     24 - 10 - 6 - 3 - 3 = 2 remaining
-      var schRow1 = AddSchedule(read,
-        schId: 10, unique: "uuuu1", part: "pppp", numProc: 2, pri: 10, plan: 24, complete: 10,
-        partIdx: 1); // paths are twisted
+      var schRow1 = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu1",
+        part: "pppp",
+        numProc: 2,
+        pri: 10,
+        plan: 24,
+        complete: 10,
+        partIdx: 1
+      ); // paths are twisted
       AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 6, fixQty: 2);
       AddScheduleProcess(schRow1, proc: 2, matQty: 3, exeQty: 3);
 
-      var proc2path2 = Enumerable.Range(0, 3).Select(i =>
-        AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
-      ).ToList();
+      var proc2path2 = Enumerable
+        .Range(0, 3)
+        .Select(
+          i => AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        )
+        .ToList();
 
       //path 2
       //   - plan 20
@@ -1388,19 +2207,30 @@ namespace MachineWatchTest
       //   - proc1: 2 in execution, 0 material in mazak
       //   - proc2: 3 in execution, 6 material in mazak
       //   - thus 20 - 5 - 2 - 3 - 6 = 4 not yet assigned
-      var schRow2 = AddSchedule(read,
-        schId: 11, unique: "uuuu2", part: "pppp", numProc: 2, pri: 8, plan: 20, complete: 5,
-        partIdx: 2);
+      var schRow2 = AddSchedule(
+        read,
+        schId: 11,
+        unique: "uuuu2",
+        part: "pppp",
+        numProc: 2,
+        pri: 8,
+        plan: 20,
+        complete: 5,
+        partIdx: 2
+      );
       AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 2, fixQty: 2);
       AddScheduleProcess(schRow2, proc: 2, matQty: 6, exeQty: 3);
 
-      var proc2path1 = Enumerable.Range(0, 6).Select(i =>
-        AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
-      ).ToList();
+      var proc2path1 = Enumerable
+        .Range(0, 6)
+        .Select(
+          i => AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        )
+        .ToList();
 
       CreateMultiPathJobs(casting);
-      if (casting == null) casting = "pppp";
-
+      if (casting == null)
+        casting = "pppp";
 
       // put a different casting
       var mat0 = AddCasting("unused", "castingQ");
@@ -1413,24 +2243,63 @@ namespace MachineWatchTest
       var mat2 = AddCasting(casting, "castingQ");
       var mat3 = AddCasting(casting, "castingQ");
 
-      _logDB.GetMaterialInAllQueues().Where(m => m.Queue == "castingQ").Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat0, Queue = "castingQ", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Where(m => m.Queue == "castingQ")
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat0,
+              Queue = "castingQ",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "unused",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "castingQ", Position = 1, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "castingQ",
+              Position = 1,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "castingQ", Position = 2, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "castingQ",
+              Position = 2,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "castingQ", Position = 3, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "castingQ",
+              Position = 3,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
 
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
@@ -1441,32 +2310,87 @@ namespace MachineWatchTest
 
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
-      _logDB.GetMaterialInAllQueues().Where(m => m.Queue == "castingQ").Should().BeEquivalentTo(new[] {
-            new QueuedMaterial() {
-              MaterialID = mat0, Queue = "castingQ", Position = 0, Unique = "", PartNameOrCasting = "unused", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Where(m => m.Queue == "castingQ")
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat0,
+              Queue = "castingQ",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = "unused",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-            new QueuedMaterial() {
-              MaterialID = mat1, Queue = "castingQ", Position = 1, Unique = "uuuu2", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "castingQ",
+              Position = 1,
+              Unique = "uuuu2",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat2, Queue = "castingQ", Position = 2, Unique = "uuuu2", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat2,
+              Queue = "castingQ",
+              Position = 2,
+              Unique = "uuuu2",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat3, Queue = "castingQ", Position = 3, Unique = "uuuu2", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat3,
+              Queue = "castingQ",
+              Position = 3,
+              Unique = "uuuu2",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat4, Queue = "castingQ", Position = 4, Unique = "uuuu2", PartNameOrCasting = "pppp", NumProcesses = 2, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            new QueuedMaterial()
+            {
+              MaterialID = mat4,
+              Queue = "castingQ",
+              Position = 4,
+              Unique = "uuuu2",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 2,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-            new QueuedMaterial() {
-              MaterialID = mat5, Queue = "castingQ", Position = 5, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+            new QueuedMaterial()
+            {
+              MaterialID = mat5,
+              Queue = "castingQ",
+              Position = 5,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-          });
+          }
+        );
       _logDB.GetMaterialDetails(mat1).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
       _logDB.GetMaterialDetails(mat2).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
       _logDB.GetMaterialDetails(mat3).Paths.Should().BeEquivalentTo(new Dictionary<int, int>() { { 1, 1 } });
@@ -1500,17 +2424,27 @@ namespace MachineWatchTest
       //   - proc1: 6 in execution, 0 material in mazak
       //   - proc2: 3 in execution, 3 material in mazak
       //     24 - 10 - 6 - 3 - 3 = 2 remaining
-      var schRow1 = AddSchedule(read,
-        schId: 10, unique: "uuuu1", part: "pppp", numProc: 2, pri: 10, plan: 24, complete: 10,
+      var schRow1 = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu1",
+        part: "pppp",
+        numProc: 2,
+        pri: 10,
+        plan: 24,
+        complete: 10,
         partIdx: 1,
         dueDate: new DateTime(2020, 04, 23)
       );
       AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 6, fixQty: 2);
       AddScheduleProcess(schRow1, proc: 2, matQty: 3, exeQty: 3);
 
-      var proc2path1 = Enumerable.Range(0, 3).Select(i =>
-        AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
-      ).ToList();
+      var proc2path1 = Enumerable
+        .Range(0, 3)
+        .Select(
+          i => AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        )
+        .ToList();
 
       //path 2
       //   - plan 20
@@ -1518,20 +2452,31 @@ namespace MachineWatchTest
       //   - proc1: 2 in execution, 0 material in mazak
       //   - proc2: 3 in execution, 6 material in mazak
       //   - thus 20 - 5 - 2 - 3 - 6 = 4 not yet assigned
-      var schRow2 = AddSchedule(read,
-        schId: 11, unique: "uuuu2", part: "pppp", numProc: 2, pri: 8, plan: 20, complete: 5,
+      var schRow2 = AddSchedule(
+        read,
+        schId: 11,
+        unique: "uuuu2",
+        part: "pppp",
+        numProc: 2,
+        pri: 8,
+        plan: 20,
+        complete: 5,
         partIdx: 2, // paths are twisted
         dueDate: new DateTime(2020, 04, 22)
       );
       AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 2, fixQty: 2);
       AddScheduleProcess(schRow2, proc: 2, matQty: 6, exeQty: 3);
 
-      var proc2path2 = Enumerable.Range(0, 6).Select(i =>
-        AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
-      ).ToList();
+      var proc2path2 = Enumerable
+        .Range(0, 6)
+        .Select(
+          i => AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        )
+        .ToList();
 
       CreateMultiPathJobs(casting, matchPallet, matchFixture);
-      if (casting == null) casting = "pppp";
+      if (casting == null)
+        casting = "pppp";
 
       var mat1 = AddCasting(casting, "castingQ");
       var mat2 = AddCasting(casting, "castingQ");
@@ -1561,7 +2506,16 @@ namespace MachineWatchTest
     {
       var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 50,
+        complete: 40
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new Job()
@@ -1572,14 +2526,21 @@ namespace MachineWatchTest
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
         )
       };
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch014"
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch014" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       // put 1 castings in queue
-      var matId = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
+      var matId = AddAssigned(
+        uniq: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        lastProc: 0,
+        path: 1,
+        queue: "thequeue"
+      );
 
       //put something else at load station
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", new[] { 1 }, false), 1, 1);
@@ -1588,12 +2549,26 @@ namespace MachineWatchTest
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Should().BeNull();
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-        new QueuedMaterial() {
-              MaterialID = matId, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = matId,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-      });
+          }
+        );
 
       read.LoadActions.Clear();
 
@@ -1608,12 +2583,26 @@ namespace MachineWatchTest
       else
       {
         // not wait all sets the job
-        _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-          new QueuedMaterial() {
-                MaterialID = matId, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-            },
-        });
+        _logDB
+          .GetMaterialInAllQueues()
+          .Should()
+          .BeEquivalentTo(
+            new[]
+            {
+              new QueuedMaterial()
+              {
+                MaterialID = matId,
+                Queue = "thequeue",
+                Position = 0,
+                Unique = "uuuu",
+                PartNameOrCasting = "pppp",
+                NumProcesses = 1,
+                AddTimeUTC = _now,
+                NextProcess = 1,
+                Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              },
+            }
+          );
         trans.Schedules.Count.Should().Be(1);
         trans.Schedules[0].Priority.Should().Be(10);
         trans.Schedules[0].Id.Should().Be(10);
@@ -1630,7 +2619,16 @@ namespace MachineWatchTest
     {
       var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
-      var schRow = AddSchedule(read, schId: 10, unique: "uuuu", part: "pppp", numProc: 1, pri: 10, plan: 50, complete: 40);
+      var schRow = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 50,
+        complete: 40
+      );
       AddScheduleProcess(schRow, proc: 1, matQty: 0, exeQty: 5);
 
       var j = new Job()
@@ -1641,34 +2639,66 @@ namespace MachineWatchTest
           new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
         )
       };
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j),
-        ScheduleId = "sch015"
-      }, null, addAsCopiedToSystem: true);
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch015" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       // put 1 castings in queue
-      var matId = AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
+      var matId = AddAssigned(
+        uniq: "uuuu",
+        part: "pppp",
+        numProc: 1,
+        lastProc: 0,
+        path: 1,
+        queue: "thequeue"
+      );
 
       //add a pending load
-      _logDB.AddPendingLoad("pal1", "pppp:10:1,unused", load: 5, elapsed: TimeSpan.FromMinutes(2), active: TimeSpan.FromMinutes(3), foreignID: null);
+      _logDB.AddPendingLoad(
+        "pal1",
+        "pppp:10:1,unused",
+        load: 5,
+        elapsed: TimeSpan.FromMinutes(2),
+        active: TimeSpan.FromMinutes(3),
+        foreignID: null
+      );
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Should().BeNull();
 
-      _logDB.CompletePalletCycle("pal1", DateTime.UtcNow, "",
-        new Dictionary<string, IEnumerable<EventLogMaterial>>() {
-          {"pppp:10:1,unused", new EventLogMaterial[] {}}
-        }, false
+      _logDB.CompletePalletCycle(
+        "pal1",
+        DateTime.UtcNow,
+        "",
+        new Dictionary<string, IEnumerable<EventLogMaterial>>()
+        {
+          { "pppp:10:1,unused", new EventLogMaterial[] { } }
+        },
+        false
       );
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-        new QueuedMaterial() {
-              MaterialID = matId, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = matId,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "uuuu",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-      });
-
+          }
+        );
 
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
@@ -1681,12 +2711,26 @@ namespace MachineWatchTest
       else
       {
         // not wait all sets the job
-        _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-          new QueuedMaterial() {
-                MaterialID = matId, Queue = "thequeue", Position = 0, Unique = "uuuu", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-              NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-            },
-        });
+        _logDB
+          .GetMaterialInAllQueues()
+          .Should()
+          .BeEquivalentTo(
+            new[]
+            {
+              new QueuedMaterial()
+              {
+                MaterialID = matId,
+                Queue = "thequeue",
+                Position = 0,
+                Unique = "uuuu",
+                PartNameOrCasting = "pppp",
+                NumProcesses = 1,
+                AddTimeUTC = _now,
+                NextProcess = 1,
+                Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              },
+            }
+          );
         trans.Schedules.Count.Should().Be(1);
         trans.Schedules[0].Priority.Should().Be(10);
         trans.Schedules[0].Id.Should().Be(10);
@@ -1703,11 +2747,29 @@ namespace MachineWatchTest
     {
       var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
-      var schRow1 = AddSchedule(read, schId: 10, unique: "uuu1", part: "pppp", numProc: 1, pri: 10, plan: 15, complete: 0);
+      var schRow1 = AddSchedule(
+        read,
+        schId: 10,
+        unique: "uuu1",
+        part: "pppp",
+        numProc: 1,
+        pri: 10,
+        plan: 15,
+        complete: 0
+      );
       AddScheduleProcess(schRow1, proc: 1, matQty: 0, exeQty: 0);
 
       //sch2 has lower priority so should be allocated to first
-      var schRow2 = AddSchedule(read, schId: 11, unique: "uuu2", part: "pppp", numProc: 1, pri: 8, plan: 50, complete: 40);
+      var schRow2 = AddSchedule(
+        read,
+        schId: 11,
+        unique: "uuu2",
+        part: "pppp",
+        numProc: 1,
+        pri: 8,
+        plan: 50,
+        complete: 40
+      );
       AddScheduleProcess(schRow2, proc: 1, matQty: 0, exeQty: 5);
 
       var j1 = new Job()
@@ -1716,7 +2778,10 @@ namespace MachineWatchTest
         PartName = "pppp",
         RouteStartUTC = DateTime.UtcNow.AddHours(-2),
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+          }
         )
       };
       var j2 = new Job()
@@ -1725,19 +2790,21 @@ namespace MachineWatchTest
         PartName = "pppp",
         RouteStartUTC = DateTime.UtcNow.AddHours(-5),
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue", Casting = casting })
+          }
         )
       };
       if (casting == null)
       {
         casting = "pppp";
       }
-      _logDB.AddJobs(new NewJobs()
-      {
-        Jobs = ImmutableList.Create<Job>(j1, j2),
-        ScheduleId = "sch016"
-      }, null, addAsCopiedToSystem: true);
-
+      _logDB.AddJobs(
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j1, j2), ScheduleId = "sch016" },
+        null,
+        addAsCopiedToSystem: true
+      );
 
       //put something at the load station for uuu2
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuu2", new[] { 1 }, false), 1, 1);
@@ -1745,33 +2812,75 @@ namespace MachineWatchTest
 
       var mat1 = AddCasting(casting, "thequeue");
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-                    new QueuedMaterial() {
-                      MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-                      NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-                  });
+          }
+        );
 
       var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
       trans.Schedules.Should().BeEmpty();
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-                    new QueuedMaterial() {
-                      MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "", PartNameOrCasting = casting, NumProcesses = 1, AddTimeUTC = _now,
-                      NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "",
+              PartNameOrCasting = casting,
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty
             },
-                  });
+          }
+        );
 
       // now remove the action
       read.LoadActions.Clear();
       trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-                    new QueuedMaterial() {
-                      MaterialID = mat1, Queue = "thequeue", Position = 0, Unique = "uuu2", PartNameOrCasting = "pppp", NumProcesses = 1, AddTimeUTC = _now,
-                      NextProcess = 1, Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = mat1,
+              Queue = "thequeue",
+              Position = 0,
+              Unique = "uuu2",
+              PartNameOrCasting = "pppp",
+              NumProcesses = 1,
+              AddTimeUTC = _now,
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
             },
-                  });
+          }
+        );
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Priority.Should().Be(8);
@@ -1779,6 +2888,5 @@ namespace MachineWatchTest
       trans.Schedules[0].Processes.Count.Should().Be(1);
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(1);
     }
-
   }
 }

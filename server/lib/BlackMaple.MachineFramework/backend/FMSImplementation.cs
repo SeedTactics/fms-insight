@@ -38,7 +38,14 @@ namespace BlackMaple.MachineFramework
 {
   public interface IBackgroundWorker : IDisposable { }
 
-  public delegate string CustomizeInstructionPath(string part, int? process, string type, long? materialID, string operatorName, string pallet);
+  public delegate string CustomizeInstructionPath(
+    string part,
+    int? process,
+    string type,
+    long? materialID,
+    string operatorName,
+    string pallet
+  );
   public delegate void PrintLabelForMaterial(long materialId, int process, int? loadStation, string queue);
 
   public enum BarcodeType
@@ -70,7 +77,8 @@ namespace BlackMaple.MachineFramework
 
     public IFMSBackend Backend { get; set; }
     public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
-    public IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> ExtraApplicationParts { get; set; } = null;
+    public IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> ExtraApplicationParts { get; set; } =
+      null;
 
     public CustomizeInstructionPath InstructionPath { get; set; } = null;
 
@@ -81,6 +89,7 @@ namespace BlackMaple.MachineFramework
     public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
     public string CustomStationMonitorDialogUrl { get; set; } = null;
     public AddRawMaterialType AddRawMaterial { get; set; } = AddRawMaterialType.RequireExistingMaterial;
-    public AddInProcessMaterialType AddInProcessMaterial { get; set; } = AddInProcessMaterialType.RequireExistingMaterial;
+    public AddInProcessMaterialType AddInProcessMaterial { get; set; } =
+      AddInProcessMaterialType.RequireExistingMaterial;
   }
 }

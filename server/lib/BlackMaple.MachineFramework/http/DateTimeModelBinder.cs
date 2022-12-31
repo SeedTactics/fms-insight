@@ -39,62 +39,65 @@ using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 
 namespace BlackMaple.MachineFramework
 {
-
-    public class DateTimeModelBinder : IModelBinder
+  public class DateTimeModelBinder : IModelBinder
+  {
+    static readonly string[] dateFormats =
     {
-        static readonly string[] dateFormats = {
-          "yyyyMMddTHHmmssZ",
-          "yyyy-MM-ddTHH:mm:ssZ",
-          "yyyy-MM-ddTHH:mm:ss.FFFZ"
-        };
+      "yyyyMMddTHHmmssZ",
+      "yyyy-MM-ddTHH:mm:ssZ",
+      "yyyy-MM-ddTHH:mm:ss.FFFZ"
+    };
 
-        public Task BindModelAsync(ModelBindingContext bindingContext)
-        {
-            if (bindingContext == null)
-                throw new ArgumentNullException(nameof(bindingContext));
-            var valueProviderResult = bindingContext.ValueProvider.GetValue(bindingContext.ModelName);
-            if (valueProviderResult == ValueProviderResult.None)
-                return Task.CompletedTask;
-
-            bindingContext.ModelState.SetModelValue(bindingContext.ModelName, valueProviderResult);
-
-            var dateStr = valueProviderResult.FirstValue;
-            if (DateTime.TryParseExact(
-                  dateStr,
-                  dateFormats,
-                  System.Globalization.CultureInfo.InvariantCulture,
-                  System.Globalization.DateTimeStyles.RoundtripKind,
-                  out DateTime date)
-              ) {
-
-              bindingContext.Result = ModelBindingResult.Success(date);
-
-            } else {
-
-              bindingContext.ModelState.TryAddModelError(
-                bindingContext.ModelName, "DateTime should be in formatted in ISO-8601 UTC datetime format");
-
-            }
-
-            return Task.CompletedTask;
-        }
-    }
-
-    public class DateTimeBinderProvider : IModelBinderProvider
+    public Task BindModelAsync(ModelBindingContext bindingContext)
     {
-        public IModelBinder GetBinder(ModelBinderProviderContext context)
-        {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+      if (bindingContext == null)
+        throw new ArgumentNullException(nameof(bindingContext));
+      var valueProviderResult = bindingContext.ValueProvider.GetValue(bindingContext.ModelName);
+      if (valueProviderResult == ValueProviderResult.None)
+        return Task.CompletedTask;
 
-            if (context.Metadata.ModelType == typeof(DateTime))
-            {
-                return new BinderTypeModelBinder(typeof(DateTimeModelBinder));
-            }
+      bindingContext.ModelState.SetModelValue(bindingContext.ModelName, valueProviderResult);
 
-            return null;
-        }
+      var dateStr = valueProviderResult.FirstValue;
+      if (
+        DateTime.TryParseExact(
+          dateStr,
+          dateFormats,
+          System.Globalization.CultureInfo.InvariantCulture,
+          System.Globalization.DateTimeStyles.RoundtripKind,
+          out DateTime date
+        )
+      )
+      {
+        bindingContext.Result = ModelBindingResult.Success(date);
+      }
+      else
+      {
+        bindingContext.ModelState.TryAddModelError(
+          bindingContext.ModelName,
+          "DateTime should be in formatted in ISO-8601 UTC datetime format"
+        );
+      }
+
+      return Task.CompletedTask;
     }
+  }
+
+  public class DateTimeBinderProvider : IModelBinderProvider
+  {
+    public IModelBinder GetBinder(ModelBinderProviderContext context)
+    {
+      if (context == null)
+      {
+        throw new ArgumentNullException(nameof(context));
+      }
+
+      if (context.Metadata.ModelType == typeof(DateTime))
+      {
+        return new BinderTypeModelBinder(typeof(DateTimeModelBinder));
+      }
+
+      return null;
+    }
+  }
 }

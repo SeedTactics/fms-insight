@@ -13,9 +13,15 @@ namespace BlackMaple.MachineFramework
     public override bool CanRead => true;
     public override bool CanWrite => true;
 
-    public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+    public override object ReadJson(
+      JsonReader reader,
+      Type objectType,
+      object existingValue,
+      JsonSerializer serializer
+    )
     {
-      if (!CanConvert(objectType)) throw new ArgumentException();
+      if (!CanConvert(objectType))
+        throw new ArgumentException();
 
       if (objectType == typeof(Nullable<TimeSpan>) && reader.Value == null)
         return (Nullable<TimeSpan>)null;
@@ -23,15 +29,19 @@ namespace BlackMaple.MachineFramework
         throw new ArgumentException("Invalid null value for TimeSpan");
 
       var spanString = reader.Value as string;
-      if (TimeSpan.TryParse(spanString, out TimeSpan result)) return result;
+      if (TimeSpan.TryParse(spanString, out TimeSpan result))
+        return result;
       return System.Xml.XmlConvert.ToTimeSpan(spanString);
     }
 
     public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
     {
-      if (value == null) {
+      if (value == null)
+      {
         writer.WriteNull();
-      } else {
+      }
+      else
+      {
         var duration = (TimeSpan)value;
         writer.WriteValue(System.Xml.XmlConvert.ToString(duration));
       }

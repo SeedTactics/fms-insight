@@ -43,17 +43,25 @@ namespace BlackMaple.MachineFramework
   [DataContract]
   public enum PalletLocationEnum
   {
-    [EnumMember] LoadUnload,
-    [EnumMember] Machine,
-    [EnumMember] MachineQueue,
-    [EnumMember] Buffer,
-    [EnumMember] Cart
+    [EnumMember]
+    LoadUnload,
+
+    [EnumMember]
+    Machine,
+
+    [EnumMember]
+    MachineQueue,
+
+    [EnumMember]
+    Buffer,
+
+    [EnumMember]
+    Cart
   }
 
   [DataContract]
   public record PalletLocation
   {
-
     [DataMember(Name = "loc", IsRequired = true)]
     public PalletLocationEnum Location { get; init; }
 
@@ -76,20 +84,33 @@ namespace BlackMaple.MachineFramework
   [DataContract, Draftable]
   public record PalletStatus
   {
-    [DataMember(IsRequired = true)] public string Pallet { get; init; } = "";
-    [DataMember(IsRequired = true)] public string FixtureOnPallet { get; init; } = "";
-    [DataMember(IsRequired = true)] public bool OnHold { get; init; }
-    [DataMember(IsRequired = true)] public PalletLocation CurrentPalletLocation { get; init; } = new PalletLocation(PalletLocationEnum.Buffer, "Buff", 0);
+    [DataMember(IsRequired = true)]
+    public string Pallet { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public string FixtureOnPallet { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public bool OnHold { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public PalletLocation CurrentPalletLocation { get; init; } =
+      new PalletLocation(PalletLocationEnum.Buffer, "Buff", 0);
 
     // If the pallet is at a load station and a new fixture should be loaded, this is filled in.
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string? NewFixture { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? NewFixture { get; init; }
 
     // num faces on new fixture, or current fixture if no change
-    [DataMember(IsRequired = true)] public int NumFaces { get; init; }
+    [DataMember(IsRequired = true)]
+    public int NumFaces { get; init; }
 
     //If CurrentPalletLocation is Cart, the following two fields will be filled in.
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public PalletLocation? TargetLocation { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public decimal? PercentMoveCompleted { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public PalletLocation? TargetLocation { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public decimal? PercentMoveCompleted { get; init; }
 
     public static PalletStatus operator %(PalletStatus s, Action<IPalletStatusDraft> f) => s.Produce(f);
   }

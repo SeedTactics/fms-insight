@@ -72,8 +72,10 @@ namespace BlackMaple.MachineFramework
       try
       {
         var builder = new UriBuilder(mats.Key);
-        if (builder.Scheme == "") builder.Scheme = "http";
-        if (builder.Port == 80 && !mats.Key.Contains(':')) builder.Port = 5000;
+        if (builder.Scheme == "")
+          builder.Scheme = "http";
+        if (builder.Port == 80 && !mats.Key.Contains(':'))
+          builder.Port = 5000;
 
         using (var client = new HttpClient())
         {
@@ -85,14 +87,25 @@ namespace BlackMaple.MachineFramework
 
             Log.Debug("Sending {@mat} to external queue at {server}", mat, builder.Uri);
 
-            var resp = await client.PostAsync("/api/v1/jobs/part/" + WebUtility.UrlEncode(mat.PartName) + "/casting" + q,
-                new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(mat.Serial), System.Text.Encoding.UTF8, "application/json"));
+            var resp = await client.PostAsync(
+              "/api/v1/jobs/part/" + WebUtility.UrlEncode(mat.PartName) + "/casting" + q,
+              new StringContent(
+                Newtonsoft.Json.JsonConvert.SerializeObject(mat.Serial),
+                System.Text.Encoding.UTF8,
+                "application/json"
+              )
+            );
 
             if (!resp.IsSuccessStatusCode)
             {
               var body = await resp.Content.ReadAsStringAsync();
-              Log.Error("Received error {code} when trying to add material {@mat} to external queue at {server}: {err}",
-                resp.StatusCode, mat, builder.Uri, body);
+              Log.Error(
+                "Received error {code} when trying to add material {@mat} to external queue at {server}: {err}",
+                resp.StatusCode,
+                mat,
+                builder.Uri,
+                body
+              );
             }
           }
         }

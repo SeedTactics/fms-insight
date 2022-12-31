@@ -44,7 +44,12 @@ namespace BlackMaple.FMSInsight.Niigata
     private ICncMachineConnection _cnc;
     private NiigataStationNames _statNames;
 
-    public NiigataMachineControl(RepositoryConfig jobDbCfg, INiigataCommunication icc, ICncMachineConnection cnc, NiigataStationNames statNames)
+    public NiigataMachineControl(
+      RepositoryConfig jobDbCfg,
+      INiigataCommunication icc,
+      ICncMachineConnection cnc,
+      NiigataStationNames statNames
+    )
     {
       _jobDbCfg = jobDbCfg;
       _icc = icc;
@@ -52,44 +57,49 @@ namespace BlackMaple.FMSInsight.Niigata
       _statNames = statNames;
     }
 
-
     public List<ProgramInCellController> CurrentProgramsInCellController()
     {
       var programs = _icc.LoadPrograms();
       using (var jobDb = _jobDbCfg.OpenConnection())
       {
-        return programs.Values.Select(p =>
-        {
-          if (AssignNewRoutesOnPallets.TryParseProgramComment(p, out string progName, out long rev))
+        return programs.Values
+          .Select(p =>
           {
-            var jobProg = jobDb.LoadProgram(progName, rev);
-            return new ProgramInCellController()
+            if (AssignNewRoutesOnPallets.TryParseProgramComment(p, out string progName, out long rev))
             {
-              CellControllerProgramName = p.ProgramNum.ToString(),
-              ProgramName = progName,
-              Revision = rev,
-              Comment = jobProg?.Comment
-            };
-          }
-          else
-          {
-            return new ProgramInCellController()
+              var jobProg = jobDb.LoadProgram(progName, rev);
+              return new ProgramInCellController()
+              {
+                CellControllerProgramName = p.ProgramNum.ToString(),
+                ProgramName = progName,
+                Revision = rev,
+                Comment = jobProg?.Comment
+              };
+            }
+            else
             {
-              CellControllerProgramName = p.ProgramNum.ToString(),
-              ProgramName = p.ProgramNum.ToString(),
-              Comment = p.Comment
-            };
-          }
-        }).ToList();
+              return new ProgramInCellController()
+              {
+                CellControllerProgramName = p.ProgramNum.ToString(),
+                ProgramName = p.ProgramNum.ToString(),
+                Comment = p.Comment
+              };
+            }
+          })
+          .ToList();
       }
     }
 
     public List<ToolInMachine> CurrentToolsInMachines()
     {
       return _statNames.IccMachineToJobMachNames
-        .SelectMany(k =>
-          (_cnc.ToolsForMachine(k.Key) ?? new List<NiigataToolData>()).Select(t => t.ToToolInMachine(k.Value.group, k.Value.num))
-        ).ToList();
+        .SelectMany(
+          k =>
+            (_cnc.ToolsForMachine(k.Key) ?? new List<NiigataToolData>()).Select(
+              t => t.ToToolInMachine(k.Value.group, k.Value.num)
+            )
+        )
+        .ToList();
     }
 
     public string GetProgramContent(string programName, long? revision)
@@ -111,7 +121,11 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, long? revisionToStart)
+    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
+      string programName,
+      int count,
+      long? revisionToStart
+    )
     {
       using (var jobDb = _jobDbCfg.OpenConnection())
       {

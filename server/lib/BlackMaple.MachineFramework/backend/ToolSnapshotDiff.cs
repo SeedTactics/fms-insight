@@ -38,12 +38,10 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-
 namespace BlackMaple.MachineFramework
 {
   public static class ToolSnapshotDiff
   {
-
     /** Looks for a matching tool or tools for the specified endTool
      *
      * This method returns two possible tools: startSerial and startPocket.  startSerial is the exact matching tool to endTool.
@@ -57,7 +55,13 @@ namespace BlackMaple.MachineFramework
      * When not using serials, we attempt to guess when the tool was changed.  If the tool was changed, startPocket will have the new tool
      * and if the tool was not changed, startPocket will be null and startSerial will have the old tool.
      */
-    private static void FindMatchingTool(ToolSnapshot endTool, Dictionary<(int, string), ToolSnapshot> startPockets, IReadOnlyDictionary<string, ToolSnapshot> startSerials, out ToolSnapshot? startPocket, out ToolSnapshot? startSerial)
+    private static void FindMatchingTool(
+      ToolSnapshot endTool,
+      Dictionary<(int, string), ToolSnapshot> startPockets,
+      IReadOnlyDictionary<string, ToolSnapshot> startSerials,
+      out ToolSnapshot? startPocket,
+      out ToolSnapshot? startSerial
+    )
     {
       startPocket = null;
       startSerial = null;
@@ -77,11 +81,18 @@ namespace BlackMaple.MachineFramework
         // since we don't have serials, we try and guess when the tool is the same.  If the tool is the same,
         // we put the tool into the startSerial var and set startPocket to null
         if (
-          startPocket != null &&
-          (
-            (startPocket.CurrentUse.HasValue && endTool.CurrentUse.HasValue && startPocket.CurrentUse <= endTool.CurrentUse)
-            ||
-            (startPocket.CurrentUseCount.HasValue && endTool.CurrentUseCount.HasValue && startPocket.CurrentUseCount <= endTool.CurrentUseCount)
+          startPocket != null
+          && (
+            (
+              startPocket.CurrentUse.HasValue
+              && endTool.CurrentUse.HasValue
+              && startPocket.CurrentUse <= endTool.CurrentUse
+            )
+            || (
+              startPocket.CurrentUseCount.HasValue
+              && endTool.CurrentUseCount.HasValue
+              && startPocket.CurrentUseCount <= endTool.CurrentUseCount
+            )
           )
         )
         {
@@ -103,8 +114,10 @@ namespace BlackMaple.MachineFramework
 
     public static ImmutableList<ToolUse> Diff(IEnumerable<ToolSnapshot> start, IEnumerable<ToolSnapshot> end)
     {
-      if (start == null) start = Enumerable.Empty<ToolSnapshot>();
-      if (end == null) end = Enumerable.Empty<ToolSnapshot>();
+      if (start == null)
+        start = Enumerable.Empty<ToolSnapshot>();
+      if (end == null)
+        end = Enumerable.Empty<ToolSnapshot>();
 
       var startPockets = start.ToDictionary(t => (t.Pocket, t.ToolName));
       var startSerials = start.Where(t => !string.IsNullOrEmpty(t.Serial)).ToDictionary(t => t.Serial!);
@@ -138,37 +151,43 @@ namespace BlackMaple.MachineFramework
           if (startPocket.TotalLifeTime.HasValue && startPocket.CurrentUse.HasValue)
           {
             usageTime =
-              (usageTime ?? TimeSpan.Zero) +
-              TimeSpan.FromTicks(Math.Max(0, startPocket.TotalLifeTime.Value.Ticks - startPocket.CurrentUse.Value.Ticks));
+              (usageTime ?? TimeSpan.Zero)
+              + TimeSpan.FromTicks(
+                Math.Max(0, startPocket.TotalLifeTime.Value.Ticks - startPocket.CurrentUse.Value.Ticks)
+              );
           }
           if (startPocket.TotalLifeCount.HasValue && startPocket.CurrentUseCount.HasValue)
           {
             usageCount =
-              (usageCount ?? 0) +
-              Math.Max(0, startPocket.TotalLifeCount.Value - startPocket.CurrentUseCount.Value);
+              (usageCount ?? 0)
+              + Math.Max(0, startPocket.TotalLifeCount.Value - startPocket.CurrentUseCount.Value);
           }
         }
 
-        if (usageTime.HasValue && usageTime <= TimeSpan.Zero) usageTime = null;
-        if (usageCount.HasValue && usageCount <= 0) usageCount = null;
+        if (usageTime.HasValue && usageTime <= TimeSpan.Zero)
+          usageTime = null;
+        if (usageCount.HasValue && usageCount <= 0)
+          usageCount = null;
 
         // add the tool if there is some usage
         if (usageTime.HasValue || usageCount.HasValue)
         {
-          tools.Add(new ToolUse()
-          {
-            Tool = endTool.ToolName,
-            Pocket = endTool.Pocket,
-            ToolChangeOccurred = startPocket == null ? null : (bool?)true,
-            ToolSerialAtStartOfCycle = startPocket?.Serial ?? startSerial?.Serial, // check startPocket first because that is when there was a different serial at the start
-            ToolSerialAtEndOfCycle = endTool.Serial,
-            ToolUseDuringCycle = usageTime,
-            TotalToolUseAtEndOfCycle = endTool.CurrentUse,
-            ConfiguredToolLife = startPocket?.TotalLifeTime ?? endTool.TotalLifeTime,
-            ToolUseCountDuringCycle = usageCount,
-            TotalToolUseCountAtEndOfCycle = endTool.CurrentUseCount,
-            ConfiguredToolLifeCount = startPocket?.TotalLifeCount ?? endTool.TotalLifeCount
-          });
+          tools.Add(
+            new ToolUse()
+            {
+              Tool = endTool.ToolName,
+              Pocket = endTool.Pocket,
+              ToolChangeOccurred = startPocket == null ? null : (bool?)true,
+              ToolSerialAtStartOfCycle = startPocket?.Serial ?? startSerial?.Serial, // check startPocket first because that is when there was a different serial at the start
+              ToolSerialAtEndOfCycle = endTool.Serial,
+              ToolUseDuringCycle = usageTime,
+              TotalToolUseAtEndOfCycle = endTool.CurrentUse,
+              ConfiguredToolLife = startPocket?.TotalLifeTime ?? endTool.TotalLifeTime,
+              ToolUseCountDuringCycle = usageCount,
+              TotalToolUseCountAtEndOfCycle = endTool.CurrentUseCount,
+              ConfiguredToolLifeCount = startPocket?.TotalLifeCount ?? endTool.TotalLifeCount
+            }
+          );
         }
       }
 
@@ -176,34 +195,36 @@ namespace BlackMaple.MachineFramework
       {
         var pocket = startTool.Pocket;
         // assume the tool was used until lifetime and then removed
-        tools.Add(new ToolUse()
-        {
-          Tool = startTool.ToolName,
-
-          // The (tool,pocket) must be unique, so use the negative of the pocket if it is already in the list.
-          // This can only occur in the rare case when serials are used and tools are shuffled around
-          // between multiple pockets.
-          Pocket = endPockets.ContainsKey((startTool.Pocket, startTool.ToolName)) ? -startTool.Pocket : startTool.Pocket,
-          ToolChangeOccurred = true,
-
-          ToolSerialAtStartOfCycle = startTool.Serial,
-          ToolSerialAtEndOfCycle = null,
-
-          ToolUseDuringCycle =
-            startTool.TotalLifeTime.HasValue && startTool.CurrentUse.HasValue
-              ? TimeSpan.FromTicks(Math.Max(0, startTool.TotalLifeTime.Value.Ticks - startTool.CurrentUse.Value.Ticks))
-              : null,
-          TotalToolUseAtEndOfCycle = startTool.CurrentUse.HasValue ? TimeSpan.Zero : null,
-          ConfiguredToolLife = startTool.TotalLifeTime,
-
-          ToolUseCountDuringCycle = startTool.TotalLifeCount.HasValue && startTool.CurrentUseCount.HasValue
-            ? Math.Max(0, startTool.TotalLifeCount.Value - startTool.CurrentUseCount.Value)
-            : null,
-          TotalToolUseCountAtEndOfCycle = startTool.CurrentUseCount.HasValue ? 0 : null,
-          ConfiguredToolLifeCount = startTool.TotalLifeCount,
-        });
+        tools.Add(
+          new ToolUse()
+          {
+            Tool = startTool.ToolName,
+            // The (tool,pocket) must be unique, so use the negative of the pocket if it is already in the list.
+            // This can only occur in the rare case when serials are used and tools are shuffled around
+            // between multiple pockets.
+            Pocket = endPockets.ContainsKey((startTool.Pocket, startTool.ToolName))
+              ? -startTool.Pocket
+              : startTool.Pocket,
+            ToolChangeOccurred = true,
+            ToolSerialAtStartOfCycle = startTool.Serial,
+            ToolSerialAtEndOfCycle = null,
+            ToolUseDuringCycle =
+              startTool.TotalLifeTime.HasValue && startTool.CurrentUse.HasValue
+                ? TimeSpan.FromTicks(
+                  Math.Max(0, startTool.TotalLifeTime.Value.Ticks - startTool.CurrentUse.Value.Ticks)
+                )
+                : null,
+            TotalToolUseAtEndOfCycle = startTool.CurrentUse.HasValue ? TimeSpan.Zero : null,
+            ConfiguredToolLife = startTool.TotalLifeTime,
+            ToolUseCountDuringCycle =
+              startTool.TotalLifeCount.HasValue && startTool.CurrentUseCount.HasValue
+                ? Math.Max(0, startTool.TotalLifeCount.Value - startTool.CurrentUseCount.Value)
+                : null,
+            TotalToolUseCountAtEndOfCycle = startTool.CurrentUseCount.HasValue ? 0 : null,
+            ConfiguredToolLifeCount = startTool.TotalLifeCount,
+          }
+        );
       }
-
 
       return tools.ToImmutable();
     }

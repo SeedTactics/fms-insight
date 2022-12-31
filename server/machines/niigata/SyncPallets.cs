@@ -43,10 +43,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private readonly IBuildCellState _createLog;
     private readonly IAssignPallets _assign;
 
-    public SyncNiigataPallets(
-      INiigataCommunication icc,
-      IBuildCellState createLog,
-      IAssignPallets assign)
+    public SyncNiigataPallets(INiigataCommunication icc, IBuildCellState createLog, IAssignPallets assign)
     {
       _icc = icc;
       _createLog = createLog;
@@ -55,14 +52,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public event Action NewCellState
     {
-      add
-      {
-        _icc.NewCurrentStatus += value;
-      }
-      remove
-      {
-        _icc.NewCurrentStatus -= value;
-      }
+      add { _icc.NewCurrentStatus += value; }
+      remove { _icc.NewCurrentStatus -= value; }
     }
 
     public CellState CalculateCellState(IRepository db)

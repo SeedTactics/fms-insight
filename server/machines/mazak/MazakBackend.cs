@@ -70,7 +70,8 @@ namespace MazakMachineInterface
 
     public void RaiseCurrentStatusChanged(BlackMaple.MachineFramework.IRepository jobDb)
     {
-      if (routing == null) return;
+      if (routing == null)
+        return;
       OnNewCurrentStatus?.Invoke(routing.CurrentStatus(jobDb));
     }
 
@@ -81,7 +82,12 @@ namespace MazakMachineInterface
       OnNewCurrentStatus?.Invoke(((IJobControl)routing).GetCurrentStatus());
     }
 
-    public MazakBackend(IConfiguration configuration, FMSSettings st, SerialSettings serialSt, MazakConfig mazakCfg = null)
+    public MazakBackend(
+      IConfiguration configuration,
+      FMSSettings st,
+      SerialSettings serialSt,
+      MazakConfig mazakCfg = null
+    )
     {
       var cfg = configuration.GetSection("Mazak");
       string localDbPath = cfg.GetValue<string>("Database Path");
@@ -99,8 +105,7 @@ namespace MazakMachineInterface
         else if (!string.IsNullOrEmpty(localDbPath))
         {
           // old installers put sql server computer name in localDbPath
-          dbConnStr = "Server=" + localDbPath + "\\pmcsqlserver;" +
-              "User ID=mazakpmc;Password=Fms-978";
+          dbConnStr = "Server=" + localDbPath + "\\pmcsqlserver;" + "User ID=mazakpmc;Password=Fms-978";
         }
         else
         {
@@ -127,7 +132,10 @@ namespace MazakMachineInterface
 
       if (MazakType != MazakDbType.MazakVersionE && !System.IO.Directory.Exists(logPath))
       {
-        Log.Error("Log CSV Directory {path} does not exist.  Set the directory in the config.ini file.", logPath);
+        Log.Error(
+          "Log CSV Directory {path} does not exist.  Set the directory in the config.ini file.",
+          logPath
+        );
       }
       else if (MazakType != MazakDbType.MazakVersionE)
       {
@@ -175,9 +183,7 @@ namespace MazakMachineInterface
       // queue settings
       bool waitForAllCastings = cfg.GetValue<bool>("Wait For All Castings", false);
 
-      Log.Debug(
-        "Configured UseStartingOffsetForDueDate = {useStarting}",
-        UseStartingOffsetForDueDate);
+      Log.Debug("Configured UseStartingOffsetForDueDate = {useStarting}", UseStartingOffsetForDueDate);
 
       var oldJobDbName = System.IO.Path.Combine(st.DataDirectory, "jobinspection.db");
       if (!System.IO.File.Exists(oldJobDbName))
@@ -220,14 +226,30 @@ namespace MazakMachineInterface
       var decr = new DecrementPlanQty(_writeDB, _readDB);
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(logPath, logDbConfig, writeJobs, sendToExternal, _readDB, queues, hold, st,
+        logDataLoader = new LogDataWeb(
+          logPath,
+          logDbConfig,
+          writeJobs,
+          sendToExternal,
+          _readDB,
+          queues,
+          hold,
+          st,
           currentStatusChanged: RaiseCurrentStatusChanged,
           mazakConfig: mazakCfg
         );
       else
       {
 #if USE_OLEDB
-				logDataLoader = new LogDataVerE(logDbConfig, jobDBConfig, sendToExternal, writeJobs, _readDB, queues, hold, st,
+        logDataLoader = new LogDataVerE(
+          logDbConfig,
+          jobDBConfig,
+          sendToExternal,
+          writeJobs,
+          _readDB,
+          queues,
+          hold,
+          st,
           currentStatusChanged: RaiseCurrentStatusChanged,
           mazakConfig: mazakCfg
         );
@@ -255,16 +277,22 @@ namespace MazakMachineInterface
     }
 
     private bool _disposed = false;
+
     public void Dispose()
     {
-      if (_disposed) return;
+      if (_disposed)
+        return;
       _disposed = true;
       routing.Halt();
       logDataLoader.Halt();
-      if (loadOper != null) loadOper.Dispose();
+      if (loadOper != null)
+        loadOper.Dispose();
     }
 
-    public IJobControl JobControl { get => routing; }
+    public IJobControl JobControl
+    {
+      get => routing;
+    }
     public IQueueControl QueueControl => routing;
 
     public IMachineControl MachineControl => MazakMachineControl;
@@ -295,12 +323,16 @@ namespace MazakMachineInterface
       if (System.IO.File.Exists(testPath))
       {
         //TODO: open database to check column existance for web vs E.
-        Log.Information("Assuming Mazak WEB version.  If this is incorrect it can be changed in the settings.");
+        Log.Information(
+          "Assuming Mazak WEB version.  If this is incorrect it can be changed in the settings."
+        );
         return MazakDbType.MazakWeb;
       }
       else
       {
-        Log.Information("Assuming Mazak Smooth version.  If this is incorrect it can be changed in the settings.");
+        Log.Information(
+          "Assuming Mazak Smooth version.  If this is incorrect it can be changed in the settings."
+        );
         return MazakDbType.MazakSmooth;
       }
     }

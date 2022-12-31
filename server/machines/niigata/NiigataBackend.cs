@@ -40,7 +40,6 @@ using Microsoft.Extensions.Configuration;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-
   public class NiigataBackend : IFMSBackend, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataBackend>();
@@ -68,9 +67,9 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         Log.Information("Starting niigata backend");
         RepoConfig = RepositoryConfig.InitializeEventDatabase(
-            serialSt,
-            System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db"),
-            oldJobDbFile: System.IO.Path.Combine(cfg.DataDirectory, "niigatajobs.db")
+          serialSt,
+          System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db"),
+          oldJobDbFile: System.IO.Path.Combine(cfg.DataDirectory, "niigatajobs.db")
         );
 
         var programDir = config.GetValue<string>("Program Directory");
@@ -89,34 +88,48 @@ namespace BlackMaple.FMSInsight.Niigata
         var stationNames = new NiigataStationNames()
         {
           ReclampGroupNames = new HashSet<string>(
-            string.IsNullOrEmpty(reclampNames) ? Enumerable.Empty<string>() : reclampNames.Split(',').Select(s => s.Trim())
+            string.IsNullOrEmpty(reclampNames)
+              ? Enumerable.Empty<string>()
+              : reclampNames.Split(',').Select(s => s.Trim())
           ),
           IccMachineToJobMachNames = string.IsNullOrEmpty(machineNames)
             ? new Dictionary<int, (string group, int num)>()
-            : machineNames.Split(',').Select(m => m.Trim()).Select((machineName, idx) =>
-            {
-              if (!char.IsDigit(machineName.Last()))
-              {
-                return null;
-              }
-              var group = new string(machineName.Reverse().SkipWhile(char.IsDigit).Reverse().ToArray());
-              if (int.TryParse(machineName.Substring(group.Length), out var num))
-              {
-                return new { iccMc = idx + 1, group = group, num = num };
-              }
-              else
-              {
-                return null;
-              }
-            })
-            .Where(x => x != null)
-            .ToDictionary(x => x.iccMc, x => (group: x.group, num: x.num))
+            : machineNames
+              .Split(',')
+              .Select(m => m.Trim())
+              .Select(
+                (machineName, idx) =>
+                {
+                  if (!char.IsDigit(machineName.Last()))
+                  {
+                    return null;
+                  }
+                  var group = new string(machineName.Reverse().SkipWhile(char.IsDigit).Reverse().ToArray());
+                  if (int.TryParse(machineName.Substring(group.Length), out var num))
+                  {
+                    return new
+                    {
+                      iccMc = idx + 1,
+                      group = group,
+                      num = num
+                    };
+                  }
+                  else
+                  {
+                    return null;
+                  }
+                }
+              )
+              .Where(x => x != null)
+              .ToDictionary(x => x.iccMc, x => (group: x.group, num: x.num))
         };
         Log.Debug("Using station names {@names}", stationNames);
 
         var machineIps = config.GetValue<string>("Machine IP Addresses");
         var machConn = new CncMachineConnection(
-          string.IsNullOrEmpty(machineIps) ? Enumerable.Empty<string>() : machineIps.Split(',').Select(s => s.Trim())
+          string.IsNullOrEmpty(machineIps)
+            ? Enumerable.Empty<string>()
+            : machineIps.Split(',').Select(s => s.Trim())
         );
 
         var connStr = config.GetValue<string>("Connection String", defaultValue: null);
@@ -133,10 +146,9 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         else
         {
-          assign = new MultiPalletAssign(new IAssignPallets[] {
-            new AssignNewRoutesOnPallets(stationNames),
-            new SizedQueues(cfg.Queues)
-          });
+          assign = new MultiPalletAssign(
+            new IAssignPallets[] { new AssignNewRoutesOnPallets(stationNames), new SizedQueues(cfg.Queues) }
+          );
         }
 
         ICheckJobsValid checkJobsValid;
@@ -154,11 +166,7 @@ namespace BlackMaple.FMSInsight.Niigata
           );
         }
 
-        var syncSt = new SyncNiigataPallets(
-          icc,
-          createLog,
-          assign
-        );
+        var syncSt = new SyncNiigataPallets(icc, createLog, assign);
 
         _jobsAndQueues = new JobsAndQueuesFromDb<CellState>(
           RepoConfig,

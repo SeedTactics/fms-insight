@@ -75,9 +75,14 @@ namespace BlackMaple.MachineFramework
   [DataContract]
   public record NewProgramContent
   {
-    [DataMember(IsRequired = true)] public string ProgramName { get; init; } = "";
-    [DataMember(IsRequired = false, EmitDefaultValue = true)] public string? Comment { get; init; }
-    [DataMember(IsRequired = true)] public string ProgramContent { get; init; } = "";
+    [DataMember(IsRequired = true)]
+    public string ProgramName { get; init; } = "";
+
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public string? Comment { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public string ProgramContent { get; init; } = "";
 
     // * A positive revision number will either add it to the DB with this revision if the revision does
     //   not yet exist, or verify the ProgramContent matches the ProgramContent from the DB if the revision
@@ -91,7 +96,8 @@ namespace BlackMaple.MachineFramework
     //   for the same ProgramName, the one with the largest value will be checked to match the latest revision in
     //   the DB and potentially avoid allocating a new number.  The sorting is on negative numbers, so place
     //   the program entry which is likely to already exist with revision 0 or -1 so that it is the first examined.
-    [DataMember(IsRequired = true)] public long Revision { get; init; }
+    [DataMember(IsRequired = true)]
+    public long Revision { get; init; }
   }
 
   [DataContract, Draftable]
@@ -115,8 +121,7 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public long? Revision { get; init; }
 
-    public static ProgramForJobStep operator %(ProgramForJobStep w, Action<IProgramForJobStepDraft> f)
-       => w.Produce(f);
+    public static ProgramForJobStep operator %(ProgramForJobStep w, Action<IProgramForJobStepDraft> f) =>
+      w.Produce(f);
   }
-
 }

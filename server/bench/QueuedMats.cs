@@ -6,7 +6,10 @@ public class QueuedMats
 
   public QueuedMats()
   {
-    repo = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), Environment.GetEnvironmentVariable("INSIGHT_DB_FILE"));
+    repo = RepositoryConfig.InitializeEventDatabase(
+      new SerialSettings(),
+      Environment.GetEnvironmentVariable("INSIGHT_DB_FILE")
+    );
   }
 
   [Benchmark]

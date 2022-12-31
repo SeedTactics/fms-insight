@@ -55,17 +55,19 @@ namespace BlackMaple.MachineFramework
           ((IDbCommand)detailCmd).Transaction = trans;
           ((IDbCommand)toolCmd).Transaction = trans;
         }
-        matCmd.CommandText = "SELECT stations_mat.MaterialID, UniqueStr, Process, PartName, NumProcesses, Face, Serial, Workorder " +
-          " FROM stations_mat " +
-          " LEFT OUTER JOIN matdetails ON stations_mat.MaterialID = matdetails.MaterialID " +
-          " WHERE stations_mat.Counter = $cntr " +
-          " ORDER BY stations_mat.Counter ASC";
+        matCmd.CommandText =
+          "SELECT stations_mat.MaterialID, UniqueStr, Process, PartName, NumProcesses, Face, Serial, Workorder "
+          + " FROM stations_mat "
+          + " LEFT OUTER JOIN matdetails ON stations_mat.MaterialID = matdetails.MaterialID "
+          + " WHERE stations_mat.Counter = $cntr "
+          + " ORDER BY stations_mat.Counter ASC";
         matCmd.Parameters.Add("cntr", SqliteType.Integer);
 
         detailCmd.CommandText = "SELECT Key, Value FROM program_details WHERE Counter = $cntr";
         detailCmd.Parameters.Add("cntr", SqliteType.Integer);
 
-        toolCmd.CommandText = "SELECT Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange, SerialAtStart, SerialAtEnd, CountInCycle, CountAtEndOfCycle, LifeCount FROM station_tool_use WHERE Counter = $cntr";
+        toolCmd.CommandText =
+          "SELECT Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange, SerialAtStart, SerialAtEnd, CountInCycle, CountAtEndOfCycle, LifeCount FROM station_tool_use WHERE Counter = $cntr";
         toolCmd.Parameters.Add("cntr", SqliteType.Integer);
 
         while (reader.Read())
@@ -129,12 +131,24 @@ namespace BlackMaple.MachineFramework
             ty = LogType.GeneralMessage;
             switch (logType)
             {
-              case 3: locName = "Machine"; break;
-              case 4: locName = "Buffer"; break;
-              case 5: locName = "Cart"; break;
-              case 8: locName = "Wash"; break;
-              case 9: locName = "Deburr"; break;
-              default: locName = "Unknown"; break;
+              case 3:
+                locName = "Machine";
+                break;
+              case 4:
+                locName = "Buffer";
+                break;
+              case 5:
+                locName = "Cart";
+                break;
+              case 8:
+                locName = "Wash";
+                break;
+              case 9:
+                locName = "Deburr";
+                break;
+              default:
+                locName = "Unknown";
+                break;
             }
           }
 
@@ -162,15 +176,18 @@ namespace BlackMaple.MachineFramework
                 serial = matReader.GetString(6);
               if (!matReader.IsDBNull(7))
                 workorder = matReader.GetString(7);
-              matLst.Add(new LogMaterial(
-                matID: matReader.GetInt64(0),
-                uniq: uniq,
-                proc: matReader.GetInt32(2),
-                part: part,
-                numProc: numProc,
-                serial: serial,
-                workorder: workorder,
-                face: face));
+              matLst.Add(
+                new LogMaterial(
+                  matID: matReader.GetInt64(0),
+                  uniq: uniq,
+                  proc: matReader.GetInt32(2),
+                  part: part,
+                  numProc: numProc,
+                  serial: serial,
+                  workorder: workorder,
+                  face: face
+                )
+              );
             }
           }
 
@@ -190,20 +207,28 @@ namespace BlackMaple.MachineFramework
           {
             while (toolReader.Read())
             {
-              tools.Add(new ToolUse()
-              {
-                Tool = toolReader.GetString(0),
-                Pocket = toolReader.GetInt32(1),
-                ToolUseDuringCycle = toolReader.IsDBNull(2) ? null : TimeSpan.FromTicks(toolReader.GetInt64(2)),
-                TotalToolUseAtEndOfCycle = toolReader.IsDBNull(3) ? null : TimeSpan.FromTicks(toolReader.GetInt64(3)),
-                ConfiguredToolLife = toolReader.IsDBNull(4) ? null : TimeSpan.FromTicks(toolReader.GetInt64(4)),
-                ToolChangeOccurred = toolReader.IsDBNull(5) ? null : toolReader.GetBoolean(5),
-                ToolSerialAtStartOfCycle = toolReader.IsDBNull(6) ? null : toolReader.GetString(6),
-                ToolSerialAtEndOfCycle = toolReader.IsDBNull(7) ? null : toolReader.GetString(7),
-                ToolUseCountDuringCycle = toolReader.IsDBNull(8) ? null : toolReader.GetInt32(8),
-                TotalToolUseCountAtEndOfCycle = toolReader.IsDBNull(9) ? null : toolReader.GetInt32(9),
-                ConfiguredToolLifeCount = toolReader.IsDBNull(10) ? null : toolReader.GetInt32(10),
-              });
+              tools.Add(
+                new ToolUse()
+                {
+                  Tool = toolReader.GetString(0),
+                  Pocket = toolReader.GetInt32(1),
+                  ToolUseDuringCycle = toolReader.IsDBNull(2)
+                    ? null
+                    : TimeSpan.FromTicks(toolReader.GetInt64(2)),
+                  TotalToolUseAtEndOfCycle = toolReader.IsDBNull(3)
+                    ? null
+                    : TimeSpan.FromTicks(toolReader.GetInt64(3)),
+                  ConfiguredToolLife = toolReader.IsDBNull(4)
+                    ? null
+                    : TimeSpan.FromTicks(toolReader.GetInt64(4)),
+                  ToolChangeOccurred = toolReader.IsDBNull(5) ? null : toolReader.GetBoolean(5),
+                  ToolSerialAtStartOfCycle = toolReader.IsDBNull(6) ? null : toolReader.GetString(6),
+                  ToolSerialAtEndOfCycle = toolReader.IsDBNull(7) ? null : toolReader.GetString(7),
+                  ToolUseCountDuringCycle = toolReader.IsDBNull(8) ? null : toolReader.GetInt32(8),
+                  TotalToolUseCountAtEndOfCycle = toolReader.IsDBNull(9) ? null : toolReader.GetInt32(9),
+                  ConfiguredToolLifeCount = toolReader.IsDBNull(10) ? null : toolReader.GetInt32(10),
+                }
+              );
             }
           }
 
@@ -226,7 +251,6 @@ namespace BlackMaple.MachineFramework
             Tools = tools.ToImmutable()
           };
         }
-
       } // close usings
     }
 
@@ -236,8 +260,9 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-             " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC";
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+          + " FROM stations WHERE TimeUTC >= $start AND TimeUTC <= $end ORDER BY Counter ASC";
 
         cmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
         cmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
@@ -264,16 +289,19 @@ namespace BlackMaple.MachineFramework
             cmd.CommandText = "SELECT TimeUTC FROM stations WHERE Counter = $cntr";
             cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
             var val = cmd.ExecuteScalar();
-            if (val == null) throw new ConflictRequestException("Counter " + counter.ToString() + " not found");
-            if (expectedEndUTCofLastSeen.Value.Ticks != (long)val) throw new ConflictRequestException("Counter " + counter.ToString() + " has different end time");
+            if (val == null)
+              throw new ConflictRequestException("Counter " + counter.ToString() + " not found");
+            if (expectedEndUTCofLastSeen.Value.Ticks != (long)val)
+              throw new ConflictRequestException("Counter " + counter.ToString() + " has different end time");
           }
         }
 
         using (var cmd = _connection.CreateCommand())
         {
           cmd.Transaction = trans;
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-               " FROM stations WHERE Counter > $cntr ORDER BY Counter ASC";
+          cmd.CommandText =
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+            + " FROM stations WHERE Counter > $cntr ORDER BY Counter ASC";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
 
           using (var reader = cmd.ExecuteReader())
@@ -295,8 +323,9 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-             " FROM stations WHERE ForeignID = $foreign ORDER BY Counter ASC";
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+          + " FROM stations WHERE ForeignID = $foreign ORDER BY Counter ASC";
         cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
         using (var reader = cmd.ExecuteReader())
@@ -310,8 +339,9 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT OriginalMessage " +
-             " FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
+        cmd.CommandText =
+          "SELECT OriginalMessage "
+          + " FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
         cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
         using (var reader = cmd.ExecuteReader())
@@ -334,13 +364,15 @@ namespace BlackMaple.MachineFramework
 
     public List<LogEntry> GetLogForMaterial(long materialID)
     {
-      if (materialID < 0) return new List<LogEntry>();
+      if (materialID < 0)
+        return new List<LogEntry>();
       using (var trans = _connection.BeginTransaction())
       using (var cmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-             " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+          + " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
         cmd.Parameters.Add("mat", SqliteType.Integer).Value = materialID;
 
         using (var reader = cmd.ExecuteReader())
@@ -357,8 +389,9 @@ namespace BlackMaple.MachineFramework
       using (var trans = _connection.BeginTransaction())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-             " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+          + " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
         var param = cmd.Parameters.Add("mat", SqliteType.Integer);
 
         foreach (var matId in materialIDs)
@@ -380,8 +413,9 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-            " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC";
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+          + " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Serial = $ser) ORDER BY Counter ASC";
         cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
 
         using (var reader = cmd.ExecuteReader())
@@ -400,8 +434,9 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-            " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.UniqueStr = $uniq) ORDER BY Counter ASC";
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+          + " FROM stations WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.UniqueStr = $uniq) ORDER BY Counter ASC";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
         using (var reader = cmd.ExecuteReader())
@@ -420,11 +455,12 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-            " FROM stations " +
-            " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) " +
-            "    OR (Pallet = '' AND Result = $work AND StationLoc = $workloc) " +
-            " ORDER BY Counter ASC";
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+          + " FROM stations "
+          + " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) "
+          + "    OR (Pallet = '' AND Result = $work AND StationLoc = $workloc) "
+          + " ORDER BY Counter ASC";
         cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
         cmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)LogType.FinalizeWorkorder;
 
@@ -440,7 +476,8 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
     {
-      var searchCompleted = @"
+      var searchCompleted =
+        @"
                 SELECT Counter FROM stations_mat
                     WHERE MaterialId IN
                         (SELECT stations_mat.MaterialId FROM stations, stations_mat, matdetails
@@ -466,10 +503,12 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-            " FROM stations WHERE Counter IN (" + searchCompleted + ") ORDER BY Counter ASC";
-        cmd.Parameters.Add("loadty", SqliteType.Integer)
-            .Value = (int)LogType.LoadUnloadCycle;
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+          + " FROM stations WHERE Counter IN ("
+          + searchCompleted
+          + ") ORDER BY Counter ASC";
+        cmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
         cmd.Parameters.Add("endUTC", SqliteType.Integer).Value = endUTC.Ticks;
         cmd.Parameters.Add("startUTC", SqliteType.Integer).Value = startUTC.Ticks;
 
@@ -487,8 +526,9 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' " +
-                             "ORDER BY Counter DESC LIMIT 1";
+        cmd.CommandText =
+          "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' "
+          + "ORDER BY Counter DESC LIMIT 1";
         cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
 
         var date = cmd.ExecuteScalar();
@@ -513,11 +553,13 @@ namespace BlackMaple.MachineFramework
     private List<LogEntry> CurrentPalletLog(string pallet, SqliteTransaction trans)
     {
       string ignoreInvalidCondition =
-        "   NOT EXISTS (" +
-        "    SELECT 1 FROM program_details d " +
-        "      WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
-        "   ) AND " +
-        "   StationLoc != (" + ((int)LogType.SwapMaterialOnPallet).ToString() + ")";
+        "   NOT EXISTS ("
+        + "    SELECT 1 FROM program_details d "
+        + "      WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'"
+        + "   ) AND "
+        + "   StationLoc != ("
+        + ((int)LogType.SwapMaterialOnPallet).ToString()
+        + ")";
 
       using (var cmd = _connection.CreateCommand())
       {
@@ -529,24 +571,25 @@ namespace BlackMaple.MachineFramework
 
         if (counter == DBNull.Value)
         {
-
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations s " +
-              " WHERE Pallet = $pal AND " + ignoreInvalidCondition +
-              " ORDER BY Counter ASC";
+          cmd.CommandText =
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+            + " FROM stations s "
+            + " WHERE Pallet = $pal AND "
+            + ignoreInvalidCondition
+            + " ORDER BY Counter ASC";
           using (var reader = cmd.ExecuteReader())
           {
             return LoadLog(reader, trans).ToList();
           }
-
         }
         else
         {
-
-          cmd.CommandText = "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName " +
-              " FROM stations s " +
-              " WHERE Pallet = $pal AND Counter > $cntr AND " + ignoreInvalidCondition +
-              " ORDER BY Counter ASC";
+          cmd.CommandText =
+            "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+            + " FROM stations s "
+            + " WHERE Pallet = $pal AND Counter > $cntr AND "
+            + ignoreInvalidCondition
+            + " ORDER BY Counter ASC";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
 
           using (var reader = cmd.ExecuteReader())
@@ -555,14 +598,14 @@ namespace BlackMaple.MachineFramework
           }
         }
       }
-
     }
 
     public IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter)
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT PocketNumber, Tool, CurrentUse, ToolLife, CurrentCount, LifeCount, Serial FROM tool_snapshots WHERE Counter = $cntr";
+        cmd.CommandText =
+          "SELECT PocketNumber, Tool, CurrentUse, ToolLife, CurrentCount, LifeCount, Serial FROM tool_snapshots WHERE Counter = $cntr";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
 
         using (var reader = cmd.ExecuteReader())
@@ -611,7 +654,6 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-
         cmd.CommandText = "SELECT MAX(ForeignID) FROM stations";
         var maxStat = cmd.ExecuteScalar();
 
@@ -656,8 +698,9 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT COUNT(*) FROM stations WHERE " +
-            "TimeUTC = $time AND Pallet = $pal AND StationLoc = $loc AND StationNum = $locnum AND StationName = $locname";
+        cmd.CommandText =
+          "SELECT COUNT(*) FROM stations WHERE "
+          + "TimeUTC = $time AND Pallet = $pal AND StationLoc = $loc AND StationNum = $locnum AND StationName = $locname";
         cmd.Parameters.Add("time", SqliteType.Integer).Value = endUTC.Ticks;
         cmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
         cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)logTy;
@@ -674,7 +717,8 @@ namespace BlackMaple.MachineFramework
 
     public List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorders)
     {
-      var countQry = @"
+      var countQry =
+        @"
 				SELECT matdetails.PartName, COUNT(stations_mat.MaterialID) FROM stations, stations_mat, matdetails
   					WHERE
    						stations.Counter = stations_mat.Counter
@@ -693,12 +737,14 @@ namespace BlackMaple.MachineFramework
                     GROUP BY
                         matdetails.PartName";
 
-      var serialQry = @"
+      var serialQry =
+        @"
 				SELECT DISTINCT Serial FROM matdetails
 				    WHERE
 					    matdetails.Workorder = $workid";
 
-      var finalizedQry = @"
+      var finalizedQry =
+        @"
                 SELECT MAX(TimeUTC) FROM stations
                     WHERE
                         Pallet = ''
@@ -707,7 +753,8 @@ namespace BlackMaple.MachineFramework
                         AND
                         StationLoc = $workloc"; //use the (Pallet, Result) index
 
-      var timeQry = @"
+      var timeQry =
+        @"
                 SELECT PartName, StationName, SUM(Elapsed / totcount), SUM(ActiveTime / totcount)
                     FROM
                         (
@@ -732,14 +779,12 @@ namespace BlackMaple.MachineFramework
       {
         countCmd.CommandText = countQry;
         countCmd.Parameters.Add("workid", SqliteType.Text);
-        countCmd.Parameters.Add("loadty", SqliteType.Integer)
-            .Value = (int)LogType.LoadUnloadCycle;
+        countCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
         serialCmd.CommandText = serialQry;
         serialCmd.Parameters.Add("workid", SqliteType.Text);
         finalizedCmd.CommandText = finalizedQry;
         finalizedCmd.Parameters.Add("workid", SqliteType.Text);
-        finalizedCmd.Parameters.Add("workloc", SqliteType.Integer)
-            .Value = (int)LogType.FinalizeWorkorder;
+        finalizedCmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)LogType.FinalizeWorkorder;
         timeCmd.CommandText = timeQry;
         timeCmd.Parameters.Add("workid", SqliteType.Text);
 
@@ -754,65 +799,68 @@ namespace BlackMaple.MachineFramework
           var ret = new List<WorkorderSummary>();
           foreach (var w in workorders)
           {
-            var emptySummary = new WorkorderSummary()
-            {
-              WorkorderId = w
-            };
-            ret.Add(emptySummary % (summary =>
-            {
-              var partMap = new Dictionary<string, WorkorderPartSummary>();
-
-              countCmd.Parameters[0].Value = w;
-              using (var reader = countCmd.ExecuteReader())
-              {
-                while (reader.Read())
-                {
-                  var wPart = new WorkorderPartSummary
+            var emptySummary = new WorkorderSummary() { WorkorderId = w };
+            ret.Add(
+              emptySummary
+                % (
+                  summary =>
                   {
-                    Part = reader.GetString(0),
-                    PartsCompleted = reader.GetInt32(1)
-                  };
-                  partMap.Add(wPart.Part, wPart);
-                }
-              }
+                    var partMap = new Dictionary<string, WorkorderPartSummary>();
 
-              serialCmd.Parameters[0].Value = w;
-              using (var reader = serialCmd.ExecuteReader())
-              {
-                while (reader.Read())
-                  summary.Serials.Add(reader.GetString(0));
-              }
+                    countCmd.Parameters[0].Value = w;
+                    using (var reader = countCmd.ExecuteReader())
+                    {
+                      while (reader.Read())
+                      {
+                        var wPart = new WorkorderPartSummary
+                        {
+                          Part = reader.GetString(0),
+                          PartsCompleted = reader.GetInt32(1)
+                        };
+                        partMap.Add(wPart.Part, wPart);
+                      }
+                    }
 
-              finalizedCmd.Parameters[0].Value = w;
-              using (var reader = finalizedCmd.ExecuteReader())
-              {
-                if (reader.Read() && !reader.IsDBNull(0))
-                {
-                  summary.FinalizedTimeUTC =
-                    new DateTime(reader.GetInt64(0), DateTimeKind.Utc);
-                }
-              }
+                    serialCmd.Parameters[0].Value = w;
+                    using (var reader = serialCmd.ExecuteReader())
+                    {
+                      while (reader.Read())
+                        summary.Serials.Add(reader.GetString(0));
+                    }
 
-              timeCmd.Parameters[0].Value = w;
-              using (var reader = timeCmd.ExecuteReader())
-              {
-                while (reader.Read())
-                {
-                  var partName = reader.GetString(0);
-                  var stat = reader.GetString(1);
-                  //part name should exist because material query should return it
-                  if (partMap.ContainsKey(partName))
-                  {
-                    if (!reader.IsDBNull(2))
-                      partMap[partName] %= draft => draft.ElapsedStationTime[stat] = TimeSpan.FromTicks((long)reader.GetDecimal(2));
-                    if (!reader.IsDBNull(3))
-                      partMap[partName] %= draft => draft.ActiveStationTime[stat] = TimeSpan.FromTicks((long)reader.GetDecimal(3));
+                    finalizedCmd.Parameters[0].Value = w;
+                    using (var reader = finalizedCmd.ExecuteReader())
+                    {
+                      if (reader.Read() && !reader.IsDBNull(0))
+                      {
+                        summary.FinalizedTimeUTC = new DateTime(reader.GetInt64(0), DateTimeKind.Utc);
+                      }
+                    }
+
+                    timeCmd.Parameters[0].Value = w;
+                    using (var reader = timeCmd.ExecuteReader())
+                    {
+                      while (reader.Read())
+                      {
+                        var partName = reader.GetString(0);
+                        var stat = reader.GetString(1);
+                        //part name should exist because material query should return it
+                        if (partMap.ContainsKey(partName))
+                        {
+                          if (!reader.IsDBNull(2))
+                            partMap[partName] %= draft =>
+                              draft.ElapsedStationTime[stat] = TimeSpan.FromTicks((long)reader.GetDecimal(2));
+                          if (!reader.IsDBNull(3))
+                            partMap[partName] %= draft =>
+                              draft.ActiveStationTime[stat] = TimeSpan.FromTicks((long)reader.GetDecimal(3));
+                        }
+                      }
+                    }
+
+                    summary.Parts.AddRange(partMap.Values);
                   }
-                }
-              }
-
-              summary.Parts.AddRange(partMap.Values);
-            }));
+                )
+            );
           }
 
           trans.Commit();
@@ -831,7 +879,8 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       using (var trans = _connection.BeginTransaction())
       {
-        cmd.CommandText = "SELECT DISTINCT Workorder FROM matdetails WHERE UniqueStr = $uniq AND Workorder IS NOT NULL ORDER BY Workorder ASC";
+        cmd.CommandText =
+          "SELECT DISTINCT Workorder FROM matdetails WHERE UniqueStr = $uniq AND Workorder IS NOT NULL ORDER BY Workorder ASC";
         cmd.Transaction = trans;
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
@@ -868,7 +917,10 @@ namespace BlackMaple.MachineFramework
       public TimeSpan ElapsedTime { get; init; } = TimeSpan.FromMinutes(-1); //time from cycle-start to cycle-stop
       public TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
       private Dictionary<string, string> _details = new Dictionary<string, string>();
-      public IDictionary<string, string> ProgramDetails { get { return _details; } }
+      public IDictionary<string, string> ProgramDetails
+      {
+        get { return _details; }
+      }
       public ImmutableList<ToolUse> Tools { get; init; } = ImmutableList<ToolUse>.Empty;
       public IEnumerable<ToolSnapshot> ToolPockets { get; init; }
 
@@ -877,20 +929,22 @@ namespace BlackMaple.MachineFramework
         return new LogEntry()
         {
           Counter = newCntr,
-          Material = this.Material.Select(m =>
+          Material = this.Material
+            .Select(m =>
             {
               var details = getDetails(m.MaterialID);
               return new LogMaterial(
-                  matID: m.MaterialID,
-                  proc: m.Process,
-                  face: m.Face,
-                  uniq: details?.JobUnique ?? "",
-                  part: details?.PartName ?? "",
-                  numProc: details?.NumProcesses ?? 1,
-                  serial: details?.Serial ?? "",
-                  workorder: details?.Workorder ?? ""
+                matID: m.MaterialID,
+                proc: m.Process,
+                face: m.Face,
+                uniq: details?.JobUnique ?? "",
+                part: details?.PartName ?? "",
+                numProc: details?.NumProcesses ?? 1,
+                serial: details?.Serial ?? "",
+                workorder: details?.Workorder ?? ""
               );
-            }).ToImmutableList(),
+            })
+            .ToImmutableList(),
           LogType = this.LogType,
           StartOfCycle = this.StartOfCycle,
           EndTimeUTC = this.EndTimeUTC,
@@ -933,14 +987,20 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private LogEntry AddLogEntry(IDbTransaction trans, NewEventLogEntry log, string foreignID, string origMessage)
+    private LogEntry AddLogEntry(
+      IDbTransaction trans,
+      NewEventLogEntry log,
+      string foreignID,
+      string origMessage
+    )
     {
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, ForeignID,OriginalMessage)" +
-            "VALUES ($pal,$loc,$locname,$locnum,$prog,$start,$time,$result,$end,$elapsed,$active,$foreign,$orig)";
+        cmd.CommandText =
+          "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, ForeignID,OriginalMessage)"
+          + "VALUES ($pal,$loc,$locname,$locnum,$prog,$start,$time,$result,$end,$elapsed,$active,$foreign,$orig)";
 
         cmd.Parameters.Add("pal", SqliteType.Text).Value = log.Pallet;
         cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)log.LogType;
@@ -989,8 +1049,8 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT INTO stations_mat(Counter,MaterialID,Process,Face)" +
-       "VALUES($cntr,$mat,$proc,$face)";
+        cmd.CommandText =
+          "INSERT INTO stations_mat(Counter,MaterialID,Process,Face)" + "VALUES($cntr,$mat,$proc,$face)";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         cmd.Parameters.Add("mat", SqliteType.Integer);
         cmd.Parameters.Add("proc", SqliteType.Integer);
@@ -1028,12 +1088,14 @@ namespace BlackMaple.MachineFramework
 
     private void AddToolUse(long counter, IEnumerable<ToolUse> tools, IDbTransaction trans)
     {
-      if (tools == null) return;
+      if (tools == null)
+        return;
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT INTO station_tool_use(Counter, Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange, SerialAtStart, SerialAtEnd, CountInCycle, CountAtEndOfCycle, LifeCount) VALUES ($cntr,$tool,$pocket,$use,$totalUse,$life,$change,$serStart,$serEnd,$countIn,$countEnd,$lifeCount)";
+        cmd.CommandText =
+          "INSERT INTO station_tool_use(Counter, Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange, SerialAtStart, SerialAtEnd, CountInCycle, CountAtEndOfCycle, LifeCount) VALUES ($cntr,$tool,$pocket,$use,$totalUse,$life,$change,$serStart,$serEnd,$countIn,$countEnd,$lifeCount)";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         cmd.Parameters.Add("tool", SqliteType.Text);
         cmd.Parameters.Add("pocket", SqliteType.Integer);
@@ -1051,15 +1113,31 @@ namespace BlackMaple.MachineFramework
         {
           cmd.Parameters[1].Value = tool.Tool;
           cmd.Parameters[2].Value = tool.Pocket;
-          cmd.Parameters[3].Value = tool.ToolUseDuringCycle.HasValue ? tool.ToolUseDuringCycle.Value.Ticks : DBNull.Value;
-          cmd.Parameters[4].Value = tool.TotalToolUseAtEndOfCycle.HasValue ? tool.TotalToolUseAtEndOfCycle.Value.Ticks : DBNull.Value;
-          cmd.Parameters[5].Value = tool.ConfiguredToolLife.HasValue ? tool.ConfiguredToolLife.Value.Ticks : DBNull.Value;
-          cmd.Parameters[6].Value = tool.ToolChangeOccurred.HasValue ? tool.ToolChangeOccurred.Value : DBNull.Value;
-          cmd.Parameters[7].Value = tool.ToolSerialAtStartOfCycle == null ? DBNull.Value : (object)tool.ToolSerialAtStartOfCycle;
-          cmd.Parameters[8].Value = tool.ToolSerialAtEndOfCycle == null ? DBNull.Value : (object)tool.ToolSerialAtEndOfCycle;
-          cmd.Parameters[9].Value = tool.ToolUseCountDuringCycle.HasValue ? tool.ToolUseCountDuringCycle.Value : DBNull.Value;
-          cmd.Parameters[10].Value = tool.TotalToolUseCountAtEndOfCycle.HasValue ? tool.TotalToolUseCountAtEndOfCycle.Value : DBNull.Value;
-          cmd.Parameters[11].Value = tool.ConfiguredToolLifeCount.HasValue ? tool.ConfiguredToolLifeCount.Value : DBNull.Value;
+          cmd.Parameters[3].Value = tool.ToolUseDuringCycle.HasValue
+            ? tool.ToolUseDuringCycle.Value.Ticks
+            : DBNull.Value;
+          cmd.Parameters[4].Value = tool.TotalToolUseAtEndOfCycle.HasValue
+            ? tool.TotalToolUseAtEndOfCycle.Value.Ticks
+            : DBNull.Value;
+          cmd.Parameters[5].Value = tool.ConfiguredToolLife.HasValue
+            ? tool.ConfiguredToolLife.Value.Ticks
+            : DBNull.Value;
+          cmd.Parameters[6].Value = tool.ToolChangeOccurred.HasValue
+            ? tool.ToolChangeOccurred.Value
+            : DBNull.Value;
+          cmd.Parameters[7].Value =
+            tool.ToolSerialAtStartOfCycle == null ? DBNull.Value : (object)tool.ToolSerialAtStartOfCycle;
+          cmd.Parameters[8].Value =
+            tool.ToolSerialAtEndOfCycle == null ? DBNull.Value : (object)tool.ToolSerialAtEndOfCycle;
+          cmd.Parameters[9].Value = tool.ToolUseCountDuringCycle.HasValue
+            ? tool.ToolUseCountDuringCycle.Value
+            : DBNull.Value;
+          cmd.Parameters[10].Value = tool.TotalToolUseCountAtEndOfCycle.HasValue
+            ? tool.TotalToolUseCountAtEndOfCycle.Value
+            : DBNull.Value;
+          cmd.Parameters[11].Value = tool.ConfiguredToolLifeCount.HasValue
+            ? tool.ConfiguredToolLifeCount.Value
+            : DBNull.Value;
           cmd.ExecuteNonQuery();
         }
       }
@@ -1067,13 +1145,15 @@ namespace BlackMaple.MachineFramework
 
     private void AddToolSnapshots(long counter, IEnumerable<ToolSnapshot> pockets, IDbTransaction trans)
     {
-      if (pockets == null || !pockets.Any()) return;
+      if (pockets == null || !pockets.Any())
+        return;
 
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT OR REPLACE INTO tool_snapshots(Counter, PocketNumber, Tool, CurrentUse, ToolLife, CurrentCount, LifeCount, Serial) VALUES ($cntr,$pocket,$tool,$use,$life,$useCnt,$lifeCnt,$ser)";
+        cmd.CommandText =
+          "INSERT OR REPLACE INTO tool_snapshots(Counter, PocketNumber, Tool, CurrentUse, ToolLife, CurrentCount, LifeCount, Serial) VALUES ($cntr,$pocket,$tool,$use,$life,$useCnt,$lifeCnt,$ser)";
         cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
         cmd.Parameters.Add("pocket", SqliteType.Integer);
         cmd.Parameters.Add("tool", SqliteType.Text);
@@ -1088,9 +1168,15 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[1].Value = pocket.Pocket;
           cmd.Parameters[2].Value = pocket.ToolName;
           cmd.Parameters[3].Value = pocket.CurrentUse.HasValue ? pocket.CurrentUse.Value.Ticks : DBNull.Value;
-          cmd.Parameters[4].Value = pocket.TotalLifeTime.HasValue ? pocket.TotalLifeTime.Value.Ticks : DBNull.Value;
-          cmd.Parameters[5].Value = pocket.CurrentUseCount.HasValue ? pocket.CurrentUseCount.Value : DBNull.Value;
-          cmd.Parameters[6].Value = pocket.TotalLifeCount.HasValue ? pocket.TotalLifeCount.Value : DBNull.Value;
+          cmd.Parameters[4].Value = pocket.TotalLifeTime.HasValue
+            ? pocket.TotalLifeTime.Value.Ticks
+            : DBNull.Value;
+          cmd.Parameters[5].Value = pocket.CurrentUseCount.HasValue
+            ? pocket.CurrentUseCount.Value
+            : DBNull.Value;
+          cmd.Parameters[6].Value = pocket.TotalLifeCount.HasValue
+            ? pocket.TotalLifeCount.Value
+            : DBNull.Value;
           cmd.Parameters[7].Value = pocket.Serial == null ? DBNull.Value : (object)pocket.Serial;
           cmd.ExecuteNonQuery();
         }
@@ -1118,7 +1204,10 @@ namespace BlackMaple.MachineFramework
       return log;
     }
 
-    private IEnumerable<LogEntry> AddEntryInTransaction(Func<IDbTransaction, IReadOnlyList<LogEntry>> f, string foreignId = "")
+    private IEnumerable<LogEntry> AddEntryInTransaction(
+      Func<IDbTransaction, IReadOnlyList<LogEntry>> f,
+      string foreignId = ""
+    )
     {
       IEnumerable<LogEntry> logs;
       lock (_cfg)
@@ -1135,25 +1224,29 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-      foreach (var l in logs) _cfg.OnNewLogEntry(l, foreignId, this);
+      foreach (var l in logs)
+        _cfg.OnNewLogEntry(l, foreignId, this);
       return logs;
     }
 
-    internal LogEntry AddLogEntryFromUnitTest(LogEntry log, string foreignId = null, string origMessage = null)
+    internal LogEntry AddLogEntryFromUnitTest(
+      LogEntry log,
+      string foreignId = null,
+      string origMessage = null
+    )
     {
-      return AddEntryInTransaction(trans =>
-          AddLogEntry(trans, NewEventLogEntry.FromLogEntry(log), foreignId, origMessage)
+      return AddEntryInTransaction(
+        trans => AddLogEntry(trans, NewEventLogEntry.FromLogEntry(log), foreignId, origMessage)
       );
     }
 
-
     public LogEntry RecordLoadStart(
-        IEnumerable<EventLogMaterial> mats,
-        string pallet,
-        int lulNum,
-        DateTime timeUTC,
-        string foreignId = null,
-        string originalMessage = null
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
     )
     {
       var log = new NewEventLogEntry()
@@ -1173,14 +1266,14 @@ namespace BlackMaple.MachineFramework
     }
 
     public IEnumerable<LogEntry> RecordLoadEnd(
-        IEnumerable<EventLogMaterial> mats,
-        string pallet,
-        int lulNum,
-        DateTime timeUTC,
-        TimeSpan elapsed,
-        TimeSpan active,
-        string foreignId = null,
-        string originalMessage = null
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      TimeSpan active,
+      string foreignId = null,
+      string originalMessage = null
     )
     {
       var log = new NewEventLogEntry()
@@ -1203,7 +1296,12 @@ namespace BlackMaple.MachineFramework
         var logs = new List<LogEntry>();
         foreach (var mat in mats)
         {
-          var prevProcMat = new EventLogMaterial() { MaterialID = mat.MaterialID, Process = mat.Process - 1, Face = "" };
+          var prevProcMat = new EventLogMaterial()
+          {
+            MaterialID = mat.MaterialID,
+            Process = mat.Process - 1,
+            Face = ""
+          };
           logs.AddRange(RemoveFromAllQueues(trans, prevProcMat, operatorName: null, timeUTC: timeUTC));
         }
         logs.Add(AddLogEntry(trans, log, foreignId, originalMessage));
@@ -1212,12 +1310,12 @@ namespace BlackMaple.MachineFramework
     }
 
     public LogEntry RecordUnloadStart(
-        IEnumerable<EventLogMaterial> mats,
-        string pallet,
-        int lulNum,
-        DateTime timeUTC,
-        string foreignId = null,
-        string originalMessage = null
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      string foreignId = null,
+      string originalMessage = null
     )
     {
       var log = new NewEventLogEntry()
@@ -1237,15 +1335,15 @@ namespace BlackMaple.MachineFramework
     }
 
     public IEnumerable<LogEntry> RecordUnloadEnd(
-        IEnumerable<EventLogMaterial> mats,
-        string pallet,
-        int lulNum,
-        DateTime timeUTC,
-        TimeSpan elapsed,
-        TimeSpan active,
-        Dictionary<long, string> unloadIntoQueues = null, // key is material id, value is queue name
-        string foreignId = null,
-        string originalMessage = null
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      TimeSpan active,
+      Dictionary<long, string> unloadIntoQueues = null, // key is material id, value is queue name
+      string foreignId = null,
+      string originalMessage = null
     )
     {
       var log = new NewEventLogEntry()
@@ -1272,7 +1370,17 @@ namespace BlackMaple.MachineFramework
           {
             if (unloadIntoQueues.ContainsKey(mat.MaterialID))
             {
-              msgs.AddRange(AddToQueue(trans, mat, unloadIntoQueues[mat.MaterialID], -1, operatorName: null, timeUTC: timeUTC, reason: "Unloaded"));
+              msgs.AddRange(
+                AddToQueue(
+                  trans,
+                  mat,
+                  unloadIntoQueues[mat.MaterialID],
+                  -1,
+                  operatorName: null,
+                  timeUTC: timeUTC,
+                  reason: "Unloaded"
+                )
+              );
             }
           }
         }
@@ -1282,13 +1390,13 @@ namespace BlackMaple.MachineFramework
     }
 
     public LogEntry RecordManualWorkAtLULStart(
-        IEnumerable<EventLogMaterial> mats,
-        string pallet,
-        int lulNum,
-        DateTime timeUTC,
-        string operationName,
-        string foreignId = null,
-        string originalMessage = null
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      string operationName,
+      string foreignId = null,
+      string originalMessage = null
     )
     {
       if (operationName == "LOAD" || operationName == "UNLOAD")
@@ -1312,15 +1420,15 @@ namespace BlackMaple.MachineFramework
     }
 
     public LogEntry RecordManualWorkAtLULEnd(
-        IEnumerable<EventLogMaterial> mats,
-        string pallet,
-        int lulNum,
-        DateTime timeUTC,
-        TimeSpan elapsed,
-        TimeSpan active,
-        string operationName,
-        string foreignId = null,
-        string originalMessage = null
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      int lulNum,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      TimeSpan active,
+      string operationName,
+      string foreignId = null,
+      string originalMessage = null
     )
     {
       if (operationName == "LOAD" || operationName == "UNLOAD")
@@ -1346,16 +1454,16 @@ namespace BlackMaple.MachineFramework
     }
 
     public LogEntry RecordMachineStart(
-        IEnumerable<EventLogMaterial> mats,
-        string pallet,
-        string statName,
-        int statNum,
-        string program,
-        DateTime timeUTC,
-        IDictionary<string, string> extraData = null,
-        IEnumerable<ToolSnapshot> pockets = null,
-        string foreignId = null,
-        string originalMessage = null
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      string statName,
+      int statNum,
+      string program,
+      DateTime timeUTC,
+      IDictionary<string, string> extraData = null,
+      IEnumerable<ToolSnapshot> pockets = null,
+      string foreignId = null,
+      string originalMessage = null
     )
     {
       var log = new NewEventLogEntry()
@@ -1381,21 +1489,21 @@ namespace BlackMaple.MachineFramework
     }
 
     public LogEntry RecordMachineEnd(
-        IEnumerable<EventLogMaterial> mats,
-        string pallet,
-        string statName,
-        int statNum,
-        string program,
-        string result,
-        DateTime timeUTC,
-        TimeSpan elapsed,
-        TimeSpan active,
-        IDictionary<string, string> extraData = null,
-        ImmutableList<ToolUse> tools = null,
-        IEnumerable<ToolSnapshot> pockets = null,
-        long? deleteToolSnapshotsFromCntr = null,
-        string foreignId = null,
-        string originalMessage = null
+      IEnumerable<EventLogMaterial> mats,
+      string pallet,
+      string statName,
+      int statNum,
+      string program,
+      string result,
+      DateTime timeUTC,
+      TimeSpan elapsed,
+      TimeSpan active,
+      IDictionary<string, string> extraData = null,
+      ImmutableList<ToolUse> tools = null,
+      IEnumerable<ToolSnapshot> pockets = null,
+      long? deleteToolSnapshotsFromCntr = null,
+      string foreignId = null,
+      string originalMessage = null
     )
     {
       var log = new NewEventLogEntry()
@@ -1437,7 +1545,6 @@ namespace BlackMaple.MachineFramework
 
         return evts;
       });
-
     }
 
     public LogEntry RecordPalletArriveRotaryInbound(
@@ -1450,23 +1557,26 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      return AddEntryInTransaction(trans =>
-        AddLogEntry(trans,
-        new NewEventLogEntry()
-        {
-          Material = mats,
-          Pallet = pallet,
-          LogType = LogType.PalletOnRotaryInbound,
-          LocationName = statName,
-          LocationNum = statNum,
-          Program = "Arrive",
-          StartOfCycle = true,
-          EndTimeUTC = timeUTC,
-          Result = "Arrive",
-          EndOfRoute = false,
-        },
-        foreignId, originalMessage
-        )
+      return AddEntryInTransaction(
+        trans =>
+          AddLogEntry(
+            trans,
+            new NewEventLogEntry()
+            {
+              Material = mats,
+              Pallet = pallet,
+              LogType = LogType.PalletOnRotaryInbound,
+              LocationName = statName,
+              LocationNum = statNum,
+              Program = "Arrive",
+              StartOfCycle = true,
+              EndTimeUTC = timeUTC,
+              Result = "Arrive",
+              EndOfRoute = false,
+            },
+            foreignId,
+            originalMessage
+          )
       );
     }
 
@@ -1482,24 +1592,27 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      return AddEntryInTransaction(trans =>
-        AddLogEntry(trans,
-        new NewEventLogEntry()
-        {
-          Material = mats,
-          Pallet = pallet,
-          LogType = LogType.PalletOnRotaryInbound,
-          LocationName = statName,
-          LocationNum = statNum,
-          Program = "Depart",
-          StartOfCycle = false,
-          EndTimeUTC = timeUTC,
-          Result = rotateIntoWorktable ? "RotateIntoWorktable" : "LeaveMachine",
-          ElapsedTime = elapsed,
-          EndOfRoute = false,
-        },
-        foreignId, originalMessage
-        )
+      return AddEntryInTransaction(
+        trans =>
+          AddLogEntry(
+            trans,
+            new NewEventLogEntry()
+            {
+              Material = mats,
+              Pallet = pallet,
+              LogType = LogType.PalletOnRotaryInbound,
+              LocationName = statName,
+              LocationNum = statNum,
+              Program = "Depart",
+              StartOfCycle = false,
+              EndTimeUTC = timeUTC,
+              Result = rotateIntoWorktable ? "RotateIntoWorktable" : "LeaveMachine",
+              ElapsedTime = elapsed,
+              EndOfRoute = false,
+            },
+            foreignId,
+            originalMessage
+          )
       );
     }
 
@@ -1513,23 +1626,26 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      return AddEntryInTransaction(trans =>
-        AddLogEntry(trans,
-        new NewEventLogEntry()
-        {
-          Material = mats,
-          Pallet = pallet,
-          LogType = LogType.PalletInStocker,
-          LocationName = "Stocker",
-          LocationNum = stockerNum,
-          Program = "Arrive",
-          StartOfCycle = true,
-          EndTimeUTC = timeUTC,
-          Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
-          EndOfRoute = false,
-        },
-        foreignId, originalMessage
-        )
+      return AddEntryInTransaction(
+        trans =>
+          AddLogEntry(
+            trans,
+            new NewEventLogEntry()
+            {
+              Material = mats,
+              Pallet = pallet,
+              LogType = LogType.PalletInStocker,
+              LocationName = "Stocker",
+              LocationNum = stockerNum,
+              Program = "Arrive",
+              StartOfCycle = true,
+              EndTimeUTC = timeUTC,
+              Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
+              EndOfRoute = false,
+            },
+            foreignId,
+            originalMessage
+          )
       );
     }
 
@@ -1544,30 +1660,38 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      return AddEntryInTransaction(trans =>
-        AddLogEntry(trans,
-        new NewEventLogEntry()
-        {
-          Material = mats,
-          Pallet = pallet,
-          LogType = LogType.PalletInStocker,
-          LocationName = "Stocker",
-          LocationNum = stockerNum,
-          Program = "Depart",
-          StartOfCycle = false,
-          EndTimeUTC = timeUTC,
-          Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
-          ElapsedTime = elapsed,
-          EndOfRoute = false,
-        },
-        foreignId, originalMessage
-        )
+      return AddEntryInTransaction(
+        trans =>
+          AddLogEntry(
+            trans,
+            new NewEventLogEntry()
+            {
+              Material = mats,
+              Pallet = pallet,
+              LogType = LogType.PalletInStocker,
+              LocationName = "Stocker",
+              LocationNum = stockerNum,
+              Program = "Depart",
+              StartOfCycle = false,
+              EndTimeUTC = timeUTC,
+              Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
+              ElapsedTime = elapsed,
+              EndOfRoute = false,
+            },
+            foreignId,
+            originalMessage
+          )
       );
     }
 
     public LogEntry RecordSerialForMaterialID(long materialID, int proc, string serial)
     {
-      var mat = new EventLogMaterial() { MaterialID = materialID, Process = proc, Face = "" };
+      var mat = new EventLogMaterial()
+      {
+        MaterialID = materialID,
+        Process = proc,
+        Face = ""
+      };
       return RecordSerialForMaterialID(mat, serial, DateTime.UtcNow);
     }
 
@@ -1576,7 +1700,12 @@ namespace BlackMaple.MachineFramework
       return RecordSerialForMaterialID(mat, serial, DateTime.UtcNow);
     }
 
-    private LogEntry RecordSerialForMaterialID(IDbTransaction trans, EventLogMaterial mat, string serial, DateTime endTimeUTC)
+    private LogEntry RecordSerialForMaterialID(
+      IDbTransaction trans,
+      EventLogMaterial mat,
+      string serial,
+      DateTime endTimeUTC
+    )
     {
       var log = new NewEventLogEntry()
       {
@@ -1606,7 +1735,12 @@ namespace BlackMaple.MachineFramework
     // For backwards compatibility
     public LogEntry RecordWorkorderForMaterialID(long materialID, int proc, string workorder)
     {
-      var mat = new EventLogMaterial() { MaterialID = materialID, Process = proc, Face = "" };
+      var mat = new EventLogMaterial()
+      {
+        MaterialID = materialID,
+        Process = proc,
+        Face = ""
+      };
       return RecordWorkorderForMaterialID(mat, workorder, DateTime.UtcNow);
     }
 
@@ -1638,40 +1772,66 @@ namespace BlackMaple.MachineFramework
     }
 
     public LogEntry RecordInspectionCompleted(
-        long materialID,
-        int process,
-        int inspectionLocNum,
-        string inspectionType,
-        bool success,
-        IDictionary<string, string> extraData,
-        TimeSpan elapsed,
-        TimeSpan active)
+      long materialID,
+      int process,
+      int inspectionLocNum,
+      string inspectionType,
+      bool success,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active
+    )
     {
-      var mat = new EventLogMaterial() { MaterialID = materialID, Process = process, Face = "" };
-      return RecordInspectionCompleted(mat, inspectionLocNum, inspectionType, success, extraData, elapsed, active, DateTime.UtcNow);
+      var mat = new EventLogMaterial()
+      {
+        MaterialID = materialID,
+        Process = process,
+        Face = ""
+      };
+      return RecordInspectionCompleted(
+        mat,
+        inspectionLocNum,
+        inspectionType,
+        success,
+        extraData,
+        elapsed,
+        active,
+        DateTime.UtcNow
+      );
     }
 
     public LogEntry RecordInspectionCompleted(
-        EventLogMaterial mat,
-        int inspectionLocNum,
-        string inspectionType,
-        bool success,
-        IDictionary<string, string> extraData,
-        TimeSpan elapsed,
-        TimeSpan active)
+      EventLogMaterial mat,
+      int inspectionLocNum,
+      string inspectionType,
+      bool success,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active
+    )
     {
-      return RecordInspectionCompleted(mat, inspectionLocNum, inspectionType, success, extraData, elapsed, active, DateTime.UtcNow);
+      return RecordInspectionCompleted(
+        mat,
+        inspectionLocNum,
+        inspectionType,
+        success,
+        extraData,
+        elapsed,
+        active,
+        DateTime.UtcNow
+      );
     }
 
     public LogEntry RecordInspectionCompleted(
-        EventLogMaterial mat,
-        int inspectionLocNum,
-        string inspectionType,
-        bool success,
-        IDictionary<string, string> extraData,
-        TimeSpan elapsed,
-        TimeSpan active,
-        DateTime inspectTimeUTC)
+      EventLogMaterial mat,
+      int inspectionLocNum,
+      string inspectionType,
+      bool success,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active,
+      DateTime inspectTimeUTC
+    )
     {
       var log = new NewEventLogEntry()
       {
@@ -1688,42 +1848,49 @@ namespace BlackMaple.MachineFramework
         ElapsedTime = elapsed,
         ActiveOperationTime = active
       };
-      foreach (var x in extraData) log.ProgramDetails.Add(x.Key, x.Value);
+      foreach (var x in extraData)
+        log.ProgramDetails.Add(x.Key, x.Value);
 
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
     }
 
     public LogEntry RecordWashCompleted(
-        long materialID,
-        int process,
-        int washLocNum,
-        IDictionary<string, string> extraData,
-        TimeSpan elapsed,
-        TimeSpan active
+      long materialID,
+      int process,
+      int washLocNum,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active
     )
     {
-      var mat = new EventLogMaterial() { MaterialID = materialID, Process = process, Face = "" };
+      var mat = new EventLogMaterial()
+      {
+        MaterialID = materialID,
+        Process = process,
+        Face = ""
+      };
       return RecordWashCompleted(mat, washLocNum, extraData, elapsed, active, DateTime.UtcNow);
     }
 
     public LogEntry RecordWashCompleted(
-        EventLogMaterial mat,
-        int washLocNum,
-        IDictionary<string, string> extraData,
-        TimeSpan elapsed,
-        TimeSpan active
+      EventLogMaterial mat,
+      int washLocNum,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active
     )
     {
       return RecordWashCompleted(mat, washLocNum, extraData, elapsed, active, DateTime.UtcNow);
     }
 
     public LogEntry RecordWashCompleted(
-        EventLogMaterial mat,
-        int washLocNum,
-        IDictionary<string, string> extraData,
-        TimeSpan elapsed,
-        TimeSpan active,
-        DateTime completeTimeUTC)
+      EventLogMaterial mat,
+      int washLocNum,
+      IDictionary<string, string> extraData,
+      TimeSpan elapsed,
+      TimeSpan active,
+      DateTime completeTimeUTC
+    )
     {
       var log = new NewEventLogEntry()
       {
@@ -1740,15 +1907,16 @@ namespace BlackMaple.MachineFramework
         ElapsedTime = elapsed,
         ActiveOperationTime = active
       };
-      foreach (var x in extraData) log.ProgramDetails.Add(x.Key, x.Value);
+      foreach (var x in extraData)
+        log.ProgramDetails.Add(x.Key, x.Value);
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
     }
 
     public LogEntry RecordFinalizedWorkorder(string workorder)
     {
       return RecordFinalizedWorkorder(workorder, DateTime.UtcNow);
-
     }
+
     public LogEntry RecordFinalizedWorkorder(string workorder, DateTime finalizedUTC)
     {
       var log = new NewEventLogEntry()
@@ -1768,40 +1936,80 @@ namespace BlackMaple.MachineFramework
     }
 
     public IEnumerable<LogEntry> RecordAddMaterialToQueue(
-        EventLogMaterial mat, string queue, int position, string operatorName, string reason, DateTime? timeUTC = null)
+      EventLogMaterial mat,
+      string queue,
+      int position,
+      string operatorName,
+      string reason,
+      DateTime? timeUTC = null
+    )
     {
-      return AddEntryInTransaction(trans =>
-          AddToQueue(trans, mat, queue, position, operatorName: operatorName, timeUTC: timeUTC ?? DateTime.UtcNow, reason: reason)
+      return AddEntryInTransaction(
+        trans =>
+          AddToQueue(
+            trans,
+            mat,
+            queue,
+            position,
+            operatorName: operatorName,
+            timeUTC: timeUTC ?? DateTime.UtcNow,
+            reason: reason
+          )
       );
     }
 
     public IEnumerable<LogEntry> RecordAddMaterialToQueue(
-        long matID, int process, string queue, int position, string operatorName, string reason, DateTime? timeUTC = null)
+      long matID,
+      int process,
+      string queue,
+      int position,
+      string operatorName,
+      string reason,
+      DateTime? timeUTC = null
+    )
     {
-      return AddEntryInTransaction(trans =>
-          AddToQueue(trans, matID, process, queue, position, operatorName: operatorName, timeUTC: timeUTC ?? DateTime.UtcNow, reason: reason)
+      return AddEntryInTransaction(
+        trans =>
+          AddToQueue(
+            trans,
+            matID,
+            process,
+            queue,
+            position,
+            operatorName: operatorName,
+            timeUTC: timeUTC ?? DateTime.UtcNow,
+            reason: reason
+          )
       );
     }
 
-
     public IEnumerable<LogEntry> RecordRemoveMaterialFromAllQueues(
-        EventLogMaterial mat, string operatorName = null, DateTime? timeUTC = null)
+      EventLogMaterial mat,
+      string operatorName = null,
+      DateTime? timeUTC = null
+    )
     {
-      return AddEntryInTransaction(trans =>
-          RemoveFromAllQueues(trans, mat, operatorName, timeUTC ?? DateTime.UtcNow)
+      return AddEntryInTransaction(
+        trans => RemoveFromAllQueues(trans, mat, operatorName, timeUTC ?? DateTime.UtcNow)
       );
     }
 
     public IEnumerable<LogEntry> RecordRemoveMaterialFromAllQueues(
-        long matID, int process, string operatorName = null, DateTime? timeUTC = null)
+      long matID,
+      int process,
+      string operatorName = null,
+      DateTime? timeUTC = null
+    )
     {
-      return AddEntryInTransaction(trans =>
-          RemoveFromAllQueues(trans, matID, process, operatorName, timeUTC ?? DateTime.UtcNow)
+      return AddEntryInTransaction(
+        trans => RemoveFromAllQueues(trans, matID, process, operatorName, timeUTC ?? DateTime.UtcNow)
       );
     }
 
     public IEnumerable<LogEntry> BulkRemoveMaterialFromAllQueues(
-      IEnumerable<long> matIds, string operatorName = null, DateTime? timeUTC = null
+      IEnumerable<long> matIds,
+      string operatorName = null,
+      DateTime? timeUTC = null
     )
     {
       return AddEntryInTransaction(trans =>
@@ -1827,20 +2035,19 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      var log =
-        new NewEventLogEntry()
-        {
-          Material = new[] { mat },
-          Pallet = pallet,
-          LogType = LogType.SignalQuarantine,
-          LocationName = queue,
-          LocationNum = -1,
-          Program = "QuarantineAfterUnload",
-          StartOfCycle = false,
-          EndTimeUTC = timeUTC ?? DateTime.UtcNow,
-          Result = "QuarantineAfterUnload",
-          EndOfRoute = false,
-        };
+      var log = new NewEventLogEntry()
+      {
+        Material = new[] { mat },
+        Pallet = pallet,
+        LogType = LogType.SignalQuarantine,
+        LocationName = queue,
+        LocationNum = -1,
+        Program = "QuarantineAfterUnload",
+        StartOfCycle = false,
+        EndTimeUTC = timeUTC ?? DateTime.UtcNow,
+        Result = "QuarantineAfterUnload",
+        EndOfRoute = false,
+      };
 
       if (!string.IsNullOrEmpty(operatorName))
       {
@@ -1850,10 +2057,15 @@ namespace BlackMaple.MachineFramework
     }
 
     public LogEntry RecordGeneralMessage(
-        EventLogMaterial mat, string program, string result, string pallet = "", DateTime? timeUTC = null, string foreignId = null,
-        string originalMessage = null,
-        IDictionary<string, string> extraData = null
-        )
+      EventLogMaterial mat,
+      string program,
+      string result,
+      string pallet = "",
+      DateTime? timeUTC = null,
+      string foreignId = null,
+      string originalMessage = null,
+      IDictionary<string, string> extraData = null
+    )
     {
       var log = new NewEventLogEntry()
       {
@@ -1870,7 +2082,8 @@ namespace BlackMaple.MachineFramework
       };
       if (extraData != null)
       {
-        foreach (var x in extraData) log.ProgramDetails.Add(x.Key, x.Value);
+        foreach (var x in extraData)
+          log.ProgramDetails.Add(x.Key, x.Value);
       }
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
@@ -1879,7 +2092,14 @@ namespace BlackMaple.MachineFramework
     {
       return RecordOperatorNotes(materialId, process, notes, operatorName, null);
     }
-    public LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName, DateTime? timeUtc)
+
+    public LogEntry RecordOperatorNotes(
+      long materialId,
+      int process,
+      string notes,
+      string operatorName,
+      DateTime? timeUtc
+    )
     {
       var extra = new Dictionary<string, string>();
       extra["note"] = notes;
@@ -1888,7 +2108,12 @@ namespace BlackMaple.MachineFramework
         extra["operator"] = operatorName;
       }
       return RecordGeneralMessage(
-        mat: new EventLogMaterial() { MaterialID = materialId, Process = process, Face = "" },
+        mat: new EventLogMaterial()
+        {
+          MaterialID = materialId,
+          Process = process,
+          Face = ""
+        },
         program: "OperatorNotes",
         result: "Operator Notes",
         timeUTC: timeUtc,
@@ -1924,10 +2149,15 @@ namespace BlackMaple.MachineFramework
 
           // load old events
           var oldEvents = CurrentPalletLog(pallet, trans);
-          var oldMatProcM = oldEvents.SelectMany(e => e.Material).Where(m => m.MaterialID == oldMatId).Max(m => (int?)m.Process);
+          var oldMatProcM = oldEvents
+            .SelectMany(e => e.Material)
+            .Where(m => m.MaterialID == oldMatId)
+            .Max(m => (int?)m.Process);
           if (!oldMatProcM.HasValue)
           {
-            throw new ConflictRequestException("Unable to find material, or material not currently on a pallet");
+            throw new ConflictRequestException(
+              "Unable to find material, or material not currently on a pallet"
+            );
           }
           var oldMatProc = oldMatProcM.Value;
 
@@ -1942,19 +2172,24 @@ namespace BlackMaple.MachineFramework
           {
             if (oldMatProc != 1)
             {
-              throw new ConflictRequestException("Swaps of non-process-1 must use material from the same job");
+              throw new ConflictRequestException(
+                "Swaps of non-process-1 must use material from the same job"
+              );
             }
             if (newMatDetails.PartName != oldMatDetails.PartName)
             {
               using (var checkCastingCmd = _connection.CreateCommand())
               {
                 checkCastingCmd.Transaction = trans;
-                checkCastingCmd.CommandText = "SELECT COUNT(*) FROM pathdata WHERE UniqueStr = $uniq AND Process = 1 AND Casting = $casting";
+                checkCastingCmd.CommandText =
+                  "SELECT COUNT(*) FROM pathdata WHERE UniqueStr = $uniq AND Process = 1 AND Casting = $casting";
                 checkCastingCmd.Parameters.Add("uniq", SqliteType.Text).Value = oldMatDetails.JobUnique;
                 checkCastingCmd.Parameters.Add("casting", SqliteType.Text).Value = newMatDetails.PartName;
                 if (Convert.ToInt64(checkCastingCmd.ExecuteScalar()) == 0)
                 {
-                  throw new ConflictRequestException("Material swap of unassigned material does not match part name or raw material name");
+                  throw new ConflictRequestException(
+                    "Material swap of unassigned material does not match part name or raw material name"
+                  );
                 }
               }
             }
@@ -1963,12 +2198,15 @@ namespace BlackMaple.MachineFramework
           {
             if (oldMatDetails.JobUnique != newMatDetails.JobUnique)
             {
-              throw new ConflictRequestException("Overriding material on pallet must use material from the same job");
+              throw new ConflictRequestException(
+                "Overriding material on pallet must use material from the same job"
+              );
             }
           }
 
           // perform the swap
-          updateMatsCmd.CommandText = "UPDATE stations_mat SET MaterialID = $newmat WHERE Counter = $cntr AND MaterialID = $oldmat";
+          updateMatsCmd.CommandText =
+            "UPDATE stations_mat SET MaterialID = $newmat WHERE Counter = $cntr AND MaterialID = $oldmat";
           updateMatsCmd.Parameters.Add("newmat", SqliteType.Integer).Value = newMatId;
           updateMatsCmd.Parameters.Add("cntr", SqliteType.Integer);
           updateMatsCmd.Parameters.Add("oldmat", SqliteType.Integer).Value = oldMatId;
@@ -1980,21 +2218,26 @@ namespace BlackMaple.MachineFramework
               updateMatsCmd.Parameters[1].Value = evt.Counter;
               updateMatsCmd.ExecuteNonQuery();
 
-              changedLogEntries.Add(evt % ((evtDraft) =>
-              {
-                for (int i = 0; i < evtDraft.Material.Count; i++)
-                {
-                  if (evtDraft.Material[i].MaterialID == oldMatId)
-                  {
-                    evtDraft.Material[i] %= draftMat =>
+              changedLogEntries.Add(
+                evt
+                  % (
+                    (evtDraft) =>
                     {
-                      draftMat.MaterialID = newMatId;
-                      draftMat.Serial = newMatDetails.Serial ?? "";
-                      draftMat.Workorder = newMatDetails.Workorder ?? "";
-                    };
-                  }
-                }
-              }));
+                      for (int i = 0; i < evtDraft.Material.Count; i++)
+                      {
+                        if (evtDraft.Material[i].MaterialID == oldMatId)
+                        {
+                          evtDraft.Material[i] %= draftMat =>
+                          {
+                            draftMat.MaterialID = newMatId;
+                            draftMat.Serial = newMatDetails.Serial ?? "";
+                            draftMat.Workorder = newMatDetails.Workorder ?? "";
+                          };
+                        }
+                      }
+                    }
+                  )
+              );
             }
           }
 
@@ -2004,7 +2247,8 @@ namespace BlackMaple.MachineFramework
             using (var setJobCmd = _connection.CreateCommand())
             {
               setJobCmd.Transaction = trans;
-              setJobCmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq, PartName = $part, NumProcesses = $numproc WHERE MaterialID = $mat";
+              setJobCmd.CommandText =
+                "UPDATE matdetails SET UniqueStr = $uniq, PartName = $part, NumProcesses = $numproc WHERE MaterialID = $mat";
               var uniqParam = setJobCmd.Parameters.Add("uniq", SqliteType.Text);
               var nameParam = setJobCmd.Parameters.Add("part", SqliteType.Text);
               setJobCmd.Parameters.Add("numproc", SqliteType.Integer).Value = oldMatDetails.NumProcesses;
@@ -2027,10 +2271,21 @@ namespace BlackMaple.MachineFramework
 
           var newMsg = new NewEventLogEntry()
           {
-            Material = new EventLogMaterial[] {
-              new EventLogMaterial() { MaterialID = oldMatId, Process = oldMatProc, Face = "" },
-              new EventLogMaterial() { MaterialID = newMatId, Process = oldMatProc, Face = "" },
-             },
+            Material = new EventLogMaterial[]
+            {
+              new EventLogMaterial()
+              {
+                MaterialID = oldMatId,
+                Process = oldMatProc,
+                Face = ""
+              },
+              new EventLogMaterial()
+              {
+                MaterialID = newMatId,
+                Process = oldMatProc,
+                Face = ""
+              },
+            },
             Pallet = pallet,
             LogType = LogType.SwapMaterialOnPallet,
             LocationName = "SwapMatOnPallet",
@@ -2038,33 +2293,47 @@ namespace BlackMaple.MachineFramework
             Program = "SwapMatOnPallet",
             StartOfCycle = false,
             EndTimeUTC = time,
-            Result = "Replace " + (oldMatDetails?.Serial ?? "material") + " with " + (newMatDetails?.Serial ?? "material") + " on pallet " + pallet,
+            Result =
+              "Replace "
+              + (oldMatDetails?.Serial ?? "material")
+              + " with "
+              + (newMatDetails?.Serial ?? "material")
+              + " on pallet "
+              + pallet,
             EndOfRoute = false
           };
           newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
 
           // update queues
-          var removeQueueEvts = RemoveFromAllQueues(trans, matID: newMatId, process: oldMatProc - 1, operatorName: operatorName, time);
+          var removeQueueEvts = RemoveFromAllQueues(
+            trans,
+            matID: newMatId,
+            process: oldMatProc - 1,
+            operatorName: operatorName,
+            time
+          );
           newLogEntries.AddRange(removeQueueEvts);
 
           var oldMatPutInQueue =
             removeQueueEvts
-            .Where(e => e.LogType == LogType.RemoveFromQueue && !string.IsNullOrEmpty(e.LocationName))
-            .Select(e => e.LocationName)
-            .FirstOrDefault()
-            ?? quarantineQueue;
+              .Where(e => e.LogType == LogType.RemoveFromQueue && !string.IsNullOrEmpty(e.LocationName))
+              .Select(e => e.LocationName)
+              .FirstOrDefault() ?? quarantineQueue;
 
           if (!string.IsNullOrEmpty(oldMatPutInQueue))
           {
-            newLogEntries.AddRange(AddToQueue(trans,
-              matId: oldMatId,
-              process: oldMatProc - 1,
-              queue: oldMatPutInQueue,
-              position: -1,
-              operatorName: operatorName,
-              timeUTC: time,
-              reason: "SwapMaterial"
-            ));
+            newLogEntries.AddRange(
+              AddToQueue(
+                trans,
+                matId: oldMatId,
+                process: oldMatProc - 1,
+                queue: oldMatPutInQueue,
+                position: -1,
+                operatorName: operatorName,
+                timeUTC: time,
+                reason: "SwapMaterial"
+              )
+            );
           }
 
           //update paths
@@ -2073,7 +2342,8 @@ namespace BlackMaple.MachineFramework
             using (var newPathCmd = _connection.CreateCommand())
             {
               newPathCmd.Transaction = trans;
-              newPathCmd.CommandText = "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, $proc, $path)";
+              newPathCmd.CommandText =
+                "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, $proc, $path)";
               newPathCmd.Parameters.Add("mid", SqliteType.Integer).Value = newMatId;
               newPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
               newPathCmd.Parameters.Add("path", SqliteType.Integer).Value = oldPath;
@@ -2085,7 +2355,8 @@ namespace BlackMaple.MachineFramework
               using (var delPathCmd = _connection.CreateCommand())
               {
                 delPathCmd.Transaction = trans;
-                delPathCmd.CommandText = "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process = $proc";
+                delPathCmd.CommandText =
+                  "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process = $proc";
                 delPathCmd.Parameters.Add("mid", SqliteType.Integer).Value = oldMatId;
                 delPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
                 delPathCmd.ExecuteNonQuery();
@@ -2097,7 +2368,8 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      foreach (var l in newLogEntries) _cfg.OnNewLogEntry(l, null, this);
+      foreach (var l in newLogEntries)
+        _cfg.OnNewLogEntry(l, null, this);
 
       return new SwapMaterialResult()
       {
@@ -2106,12 +2378,16 @@ namespace BlackMaple.MachineFramework
       };
     }
 
-    private static readonly string LogTypesToCheckForNextProcess = string.Join(",", new int[] {
+    private static readonly string LogTypesToCheckForNextProcess = string.Join(
+      ",",
+      new int[]
+      {
         (int)LogType.AddToQueue,
         (int)LogType.RemoveFromQueue,
         (int)LogType.LoadUnloadCycle,
         (int)LogType.MachineCycle
-      });
+      }
+    );
 
     public IEnumerable<LogEntry> InvalidatePalletCycle(
       long matId,
@@ -2131,15 +2407,17 @@ namespace BlackMaple.MachineFramework
         using (var addMessageCmd = _connection.CreateCommand())
         using (var trans = _connection.BeginTransaction())
         {
-          getCycles.CommandText = "SELECT s.Counter, s.Pallet FROM stations s WHERE " +
-            " EXISTS (" +
-            "   SELECT 1 FROM stations_mat m WHERE s.Counter = m.Counter AND m.MaterialID = $matid AND m.Process = $proc" +
-            " ) AND " +
-            " s.StationLoc IN (" + LogTypesToCheckForNextProcess + ") AND " +
-            " NOT EXISTS(" +
-            "   SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
-            " )"
-          ;
+          getCycles.CommandText =
+            "SELECT s.Counter, s.Pallet FROM stations s WHERE "
+            + " EXISTS ("
+            + "   SELECT 1 FROM stations_mat m WHERE s.Counter = m.Counter AND m.MaterialID = $matid AND m.Process = $proc"
+            + " ) AND "
+            + " s.StationLoc IN ("
+            + LogTypesToCheckForNextProcess
+            + ") AND "
+            + " NOT EXISTS("
+            + "   SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'"
+            + " )";
           getCycles.Parameters.Add("matid", SqliteType.Integer).Value = matId;
           getCycles.Parameters.Add("proc", SqliteType.Integer).Value = process;
           getCycles.Transaction = trans;
@@ -2152,7 +2430,8 @@ namespace BlackMaple.MachineFramework
           updateEvtCmd.Parameters.Add("cntr", SqliteType.Integer);
           updateEvtCmd.Transaction = trans;
 
-          addMessageCmd.CommandText = "INSERT OR REPLACE INTO program_details(Counter, Key, Value) VALUES ($cntr,'PalletCycleInvalidated','1')";
+          addMessageCmd.CommandText =
+            "INSERT OR REPLACE INTO program_details(Counter, Key, Value) VALUES ($cntr,'PalletCycleInvalidated','1')";
           addMessageCmd.Parameters.Add("cntr", SqliteType.Integer);
           addMessageCmd.Transaction = trans;
 
@@ -2174,7 +2453,8 @@ namespace BlackMaple.MachineFramework
               getMatsCmd.Parameters[0].Value = cntr;
               using (var matIdReader = getMatsCmd.ExecuteReader())
               {
-                while (matIdReader.Read()) allMatIds.Add(matIdReader.GetInt64(0));
+                while (matIdReader.Read())
+                  allMatIds.Add(matIdReader.GetInt64(0));
               }
 
               updateEvtCmd.Parameters[0].Value = cntr;
@@ -2190,7 +2470,15 @@ namespace BlackMaple.MachineFramework
 
           var newMsg = new NewEventLogEntry()
           {
-            Material = allMatIds.Select(m => new EventLogMaterial() { MaterialID = m, Process = process, Face = "" }),
+            Material = allMatIds.Select(
+              m =>
+                new EventLogMaterial()
+                {
+                  MaterialID = m,
+                  Process = process,
+                  Face = ""
+                }
+            ),
             Pallet = "",
             LogType = LogType.InvalidateCycle,
             LocationName = "InvalidateCycle",
@@ -2220,17 +2508,24 @@ namespace BlackMaple.MachineFramework
               {
                 checkMatInQueue.Parameters[0].Value = m;
                 var currentQueue = checkMatInQueue.ExecuteScalar();
-                if (currentQueue == null || currentQueue == DBNull.Value || (string)currentQueue != oldMatPutInQueue)
+                if (
+                  currentQueue == null
+                  || currentQueue == DBNull.Value
+                  || (string)currentQueue != oldMatPutInQueue
+                )
                 {
-                  newLogEntries.AddRange(AddToQueue(trans,
-                    matId: m,
-                    process: process - 1,
-                    queue: oldMatPutInQueue,
-                    position: -1,
-                    operatorName: operatorName,
-                    timeUTC: time,
-                    reason: "InvalidateCycle"
-                  ));
+                  newLogEntries.AddRange(
+                    AddToQueue(
+                      trans,
+                      matId: m,
+                      process: process - 1,
+                      queue: oldMatPutInQueue,
+                      position: -1,
+                      operatorName: operatorName,
+                      timeUTC: time,
+                      reason: "InvalidateCycle"
+                    )
+                  );
                 }
               }
             }
@@ -2240,7 +2535,8 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      foreach (var l in newLogEntries) _cfg.OnNewLogEntry(l, null, this);
+      foreach (var l in newLogEntries)
+        _cfg.OnNewLogEntry(l, null, this);
 
       return newLogEntries;
     }
@@ -2252,7 +2548,8 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
-        cmd.CommandText = "INSERT INTO matdetails(UniqueStr, PartName, NumProcesses) VALUES ($uniq,$part,$numproc)";
+        cmd.CommandText =
+          "INSERT INTO matdetails(UniqueStr, PartName, NumProcesses) VALUES ($uniq,$part,$numproc)";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
         cmd.Parameters.Add("part", SqliteType.Text).Value = part;
         cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
@@ -2263,7 +2560,6 @@ namespace BlackMaple.MachineFramework
         return (long)cmd.ExecuteScalar();
       }
     }
-
 
     public long AllocateMaterialID(string unique, string part, int numProc)
     {
@@ -2278,7 +2574,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public long AllocateMaterialIDAndGenerateSerial(string unique, string part, int proc, int numProc, DateTime timeUTC, out LogEntry serialLogEntry)
+    public long AllocateMaterialIDAndGenerateSerial(
+      string unique,
+      string part,
+      int proc,
+      int numProc,
+      DateTime timeUTC,
+      out LogEntry serialLogEntry
+    )
     {
       if (_cfg.Settings.SerialType != SerialType.AssignOneSerialPerMaterial)
       {
@@ -2290,7 +2593,17 @@ namespace BlackMaple.MachineFramework
       {
         matId = AllocateMaterialID(trans, unique, part, numProc);
         var serial = _cfg.Settings.ConvertMaterialIDToSerial(matId);
-        return RecordSerialForMaterialID(trans, new EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" }, serial, timeUTC);
+        return RecordSerialForMaterialID(
+          trans,
+          new EventLogMaterial()
+          {
+            MaterialID = matId,
+            Process = proc,
+            Face = ""
+          },
+          serial,
+          timeUTC
+        );
       });
       return matId;
     }
@@ -2329,10 +2642,12 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-          cmd.CommandText = "UPDATE matdetails SET UniqueStr = coalesce($uniq, UniqueStr), PartName = coalesce($part, PartName), NumProcesses = coalesce($numproc, NumProcesses) WHERE MaterialID = $mat";
+          cmd.CommandText =
+            "UPDATE matdetails SET UniqueStr = coalesce($uniq, UniqueStr), PartName = coalesce($part, PartName), NumProcesses = coalesce($numproc, NumProcesses) WHERE MaterialID = $mat";
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique == null ? DBNull.Value : (object)unique;
           cmd.Parameters.Add("part", SqliteType.Text).Value = part == null ? DBNull.Value : (object)part;
-          cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc == null ? DBNull.Value : (object)numProc;
+          cmd.Parameters.Add("numproc", SqliteType.Integer).Value =
+            numProc == null ? DBNull.Value : (object)numProc;
           cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
           cmd.ExecuteNonQuery();
         }
@@ -2345,7 +2660,8 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-          cmd.CommandText = "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, $proc, $path)";
+          cmd.CommandText =
+            "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, $proc, $path)";
           cmd.Parameters.Add("mid", SqliteType.Integer).Value = matID;
           cmd.Parameters.Add("proc", SqliteType.Integer).Value = process;
           cmd.Parameters.Add("path", SqliteType.Integer).Value = path;
@@ -2360,7 +2676,8 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-          cmd.CommandText = "INSERT INTO matdetails(MaterialID, UniqueStr, PartName, NumProcesses) VALUES ($mid, $uniq, $part, $numproc)";
+          cmd.CommandText =
+            "INSERT INTO matdetails(MaterialID, UniqueStr, PartName, NumProcesses) VALUES ($mid, $uniq, $part, $numproc)";
           cmd.Parameters.Add("mid", SqliteType.Integer).Value = matID;
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
           cmd.Parameters.Add("part", SqliteType.Text).Value = part;
@@ -2391,7 +2708,8 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
-        cmd.CommandText = "SELECT UniqueStr, PartName, NumProcesses, Workorder, Serial FROM matdetails WHERE MaterialID = $mat";
+        cmd.CommandText =
+          "SELECT UniqueStr, PartName, NumProcesses, Workorder, Serial FROM matdetails WHERE MaterialID = $mat";
         cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
 
         MaterialDetails ret = null;
@@ -2444,7 +2762,8 @@ namespace BlackMaple.MachineFramework
         {
           ((IDbCommand)cmd).Transaction = trans;
           ((IDbCommand)cmd2).Transaction = trans;
-          cmd.CommandText = "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Workorder FROM matdetails WHERE Serial = $ser";
+          cmd.CommandText =
+            "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Workorder FROM matdetails WHERE Serial = $ser";
           cmd.Parameters.Add("ser", SqliteType.Text).Value = serial;
 
           cmd2.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
@@ -2502,7 +2821,8 @@ namespace BlackMaple.MachineFramework
       using (var pathCmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Serial FROM matdetails WHERE Workorder IS NOT NULL AND Workorder = $work";
+        cmd.CommandText =
+          "SELECT MaterialID, UniqueStr, PartName, NumProcesses, Serial FROM matdetails WHERE Workorder IS NOT NULL AND Workorder = $work";
         cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
 
         pathCmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
@@ -2556,7 +2876,8 @@ namespace BlackMaple.MachineFramework
       using (var pathCmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "SELECT MaterialID, PartName, NumProcesses, Serial, Workorder FROM matdetails WHERE UniqueStr = $uniq ORDER BY Workorder, Serial";
+        cmd.CommandText =
+          "SELECT MaterialID, PartName, NumProcesses, Serial, Workorder FROM matdetails WHERE UniqueStr = $uniq ORDER BY Workorder, Serial";
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
         pathCmd.CommandText = "SELECT Process, Path FROM mat_path_details WHERE MaterialID = $mat";
@@ -2631,13 +2952,21 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
         cmd.ExecuteNonQuery();
       }
-
     }
     #endregion
 
     #region Queues
 
-    private IReadOnlyList<LogEntry> AddToQueue(IDbTransaction trans, long matId, int process, string queue, int position, string operatorName, DateTime timeUTC, string reason)
+    private IReadOnlyList<LogEntry> AddToQueue(
+      IDbTransaction trans,
+      long matId,
+      int process,
+      string queue,
+      int position,
+      string operatorName,
+      DateTime timeUTC,
+      string reason
+    )
     {
       var mat = new EventLogMaterial()
       {
@@ -2649,7 +2978,15 @@ namespace BlackMaple.MachineFramework
       return AddToQueue(trans, mat, queue, position, operatorName, timeUTC, reason);
     }
 
-    private IReadOnlyList<LogEntry> AddToQueue(IDbTransaction trans, EventLogMaterial mat, string queue, int position, string operatorName, DateTime timeUTC, string reason)
+    private IReadOnlyList<LogEntry> AddToQueue(
+      IDbTransaction trans,
+      EventLogMaterial mat,
+      string queue,
+      int position,
+      string operatorName,
+      DateTime timeUTC,
+      string reason
+    )
     {
       var ret = new List<LogEntry>();
 
@@ -2661,15 +2998,15 @@ namespace BlackMaple.MachineFramework
 
         if (position >= 0)
         {
-          cmd.CommandText = "UPDATE queues SET Position = Position + 1 " +
-                              " WHERE Queue = $q AND Position >= $p";
+          cmd.CommandText =
+            "UPDATE queues SET Position = Position + 1 " + " WHERE Queue = $q AND Position >= $p";
           cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
           cmd.Parameters.Add("p", SqliteType.Integer).Value = position;
           cmd.ExecuteNonQuery();
 
           cmd.CommandText =
-              "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) " +
-              " VALUES ($m, $q, (SELECT MIN(IFNULL(MAX(Position) + 1, 0), $p) FROM queues WHERE Queue = $q), $t)";
+            "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) "
+            + " VALUES ($m, $q, (SELECT MIN(IFNULL(MAX(Position) + 1, 0), $p) FROM queues WHERE Queue = $q), $t)";
           cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
           cmd.Parameters.Add("t", SqliteType.Integer).Value = timeUTC.Ticks;
           cmd.ExecuteNonQuery();
@@ -2677,8 +3014,8 @@ namespace BlackMaple.MachineFramework
         else
         {
           cmd.CommandText =
-              "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) " +
-              " VALUES ($m, $q, (SELECT IFNULL(MAX(Position) + 1, 0) FROM queues WHERE Queue = $q), $t)";
+            "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) "
+            + " VALUES ($m, $q, (SELECT IFNULL(MAX(Position) + 1, 0) FROM queues WHERE Queue = $q), $t)";
           cmd.Parameters.Add("m", SqliteType.Integer).Value = mat.MaterialID;
           cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
           cmd.Parameters.Add("t", SqliteType.Integer).Value = timeUTC.Ticks;
@@ -2718,7 +3055,13 @@ namespace BlackMaple.MachineFramework
       return ret;
     }
 
-    private IReadOnlyList<LogEntry> RemoveFromAllQueues(IDbTransaction trans, long matID, int process, string operatorName, DateTime timeUTC)
+    private IReadOnlyList<LogEntry> RemoveFromAllQueues(
+      IDbTransaction trans,
+      long matID,
+      int process,
+      string operatorName,
+      DateTime timeUTC
+    )
     {
       var mat = new EventLogMaterial()
       {
@@ -2730,7 +3073,12 @@ namespace BlackMaple.MachineFramework
       return RemoveFromAllQueues(trans, mat, operatorName, timeUTC);
     }
 
-    private IReadOnlyList<LogEntry> RemoveFromAllQueues(IDbTransaction trans, EventLogMaterial mat, string operatorName, DateTime timeUTC)
+    private IReadOnlyList<LogEntry> RemoveFromAllQueues(
+      IDbTransaction trans,
+      EventLogMaterial mat,
+      string operatorName,
+      DateTime timeUTC
+    )
     {
       using (var findCmd = _connection.CreateCommand())
       using (var updatePosCmd = _connection.CreateCommand())
@@ -2742,8 +3090,7 @@ namespace BlackMaple.MachineFramework
 
         ((IDbCommand)updatePosCmd).Transaction = trans;
         updatePosCmd.CommandText =
-            "UPDATE queues SET Position = Position - 1 " +
-            " WHERE Queue = $q AND Position > $pos";
+          "UPDATE queues SET Position = Position - 1 " + " WHERE Queue = $q AND Position > $pos";
         updatePosCmd.Parameters.Add("q", SqliteType.Text);
         updatePosCmd.Parameters.Add("pos", SqliteType.Integer);
 
@@ -2759,7 +3106,9 @@ namespace BlackMaple.MachineFramework
           {
             var queue = reader.GetString(0);
             var pos = reader.GetInt32(1);
-            var addTime = reader.IsDBNull(2) ? null : (DateTime?)(new DateTime(reader.GetInt64(2), DateTimeKind.Utc));
+            var addTime = reader.IsDBNull(2)
+              ? null
+              : (DateTime?)(new DateTime(reader.GetInt64(2), DateTimeKind.Utc));
 
             var log = new NewEventLogEntry()
             {
@@ -2794,7 +3143,15 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public BulkAddCastingResult BulkAddNewCastingsInQueue(string casting, int qty, string queue, IList<string> serials, string operatorName, string reason = null, DateTime? timeUTC = null)
+    public BulkAddCastingResult BulkAddNewCastingsInQueue(
+      string casting,
+      int qty,
+      string queue,
+      IList<string> serials,
+      string operatorName,
+      string reason = null,
+      DateTime? timeUTC = null
+    )
     {
       var ret = new List<LogEntry>();
       var matIds = new HashSet<long>();
@@ -2819,7 +3176,8 @@ namespace BlackMaple.MachineFramework
           }
 
           allocateCmd.Transaction = trans;
-          allocateCmd.CommandText = "INSERT INTO matdetails(PartName, NumProcesses, Serial) VALUES ($casting,1,$serial)";
+          allocateCmd.CommandText =
+            "INSERT INTO matdetails(PartName, NumProcesses, Serial) VALUES ($casting,1,$serial)";
           allocateCmd.Parameters.Add("casting", SqliteType.Text).Value = casting;
           var allocateSerialParam = allocateCmd.Parameters.Add("serial", SqliteType.Text);
 
@@ -2828,8 +3186,7 @@ namespace BlackMaple.MachineFramework
 
           addToQueueCmd.Transaction = trans;
           addToQueueCmd.CommandText =
-              "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) " +
-              " VALUES ($m, $q, $pos, $t)";
+            "INSERT INTO queues(MaterialID, Queue, Position, AddTimeUTC) " + " VALUES ($m, $q, $pos, $t)";
           var addQueueMatIdParam = addToQueueCmd.Parameters.Add("m", SqliteType.Integer);
           addToQueueCmd.Parameters.Add("q", SqliteType.Text).Value = queue;
           var addQueuePosCmd = addToQueueCmd.Parameters.Add("pos", SqliteType.Integer);
@@ -2846,7 +3203,15 @@ namespace BlackMaple.MachineFramework
             {
               var serLog = new NewEventLogEntry()
               {
-                Material = new[] { new EventLogMaterial() { MaterialID = matID, Process = 0, Face = "" } },
+                Material = new[]
+                {
+                  new EventLogMaterial()
+                  {
+                    MaterialID = matID,
+                    Process = 0,
+                    Face = ""
+                  }
+                },
                 Pallet = "",
                 LogType = LogType.PartMark,
                 LocationName = "Mark",
@@ -2866,7 +3231,15 @@ namespace BlackMaple.MachineFramework
 
             var log = new NewEventLogEntry()
             {
-              Material = new[] { new EventLogMaterial() { MaterialID = matID, Process = 0, Face = "" } },
+              Material = new[]
+              {
+                new EventLogMaterial()
+                {
+                  MaterialID = matID,
+                  Process = 0,
+                  Face = ""
+                }
+              },
               Pallet = "",
               LogType = LogType.AddToQueue,
               LocationName = queue,
@@ -2888,15 +3261,19 @@ namespace BlackMaple.MachineFramework
           trans.Commit();
         }
       }
-      return new BulkAddCastingResult()
-      {
-        MaterialIds = matIds,
-        Logs = ret
-      };
+      return new BulkAddCastingResult() { MaterialIds = matIds, Logs = ret };
     }
 
     /// Find parts without an assigned unique in the queue, and assign them to the given unique
-    public IReadOnlyList<long> AllocateCastingsInQueue(string queue, string casting, string unique, string part, int proc1Path, int numProcesses, int count)
+    public IReadOnlyList<long> AllocateCastingsInQueue(
+      string queue,
+      string casting,
+      string unique,
+      string part,
+      int proc1Path,
+      int numProcesses,
+      int count
+    )
     {
       lock (_cfg)
       {
@@ -2908,17 +3285,19 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
 
-            cmd.CommandText = "SELECT queues.MaterialID FROM queues " +
-                " INNER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID " +
-                " WHERE Queue = $q AND matdetails.PartName = $c AND matdetails.UniqueStr IS NULL " +
-                " ORDER BY Position ASC" +
-                " LIMIT $cnt ";
+            cmd.CommandText =
+              "SELECT queues.MaterialID FROM queues "
+              + " INNER JOIN matdetails ON queues.MaterialID = matdetails.MaterialID "
+              + " WHERE Queue = $q AND matdetails.PartName = $c AND matdetails.UniqueStr IS NULL "
+              + " ORDER BY Position ASC"
+              + " LIMIT $cnt ";
             cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
             cmd.Parameters.Add("c", SqliteType.Text).Value = casting;
             cmd.Parameters.Add("cnt", SqliteType.Integer).Value = count;
             using (var reader = cmd.ExecuteReader())
             {
-              while (reader.Read()) matIds.Add(reader.GetInt64(0));
+              while (reader.Read())
+                matIds.Add(reader.GetInt64(0));
             }
 
             if (matIds.Count != count)
@@ -2927,7 +3306,8 @@ namespace BlackMaple.MachineFramework
               return new List<long>();
             }
 
-            cmd.CommandText = "UPDATE matdetails SET UniqueStr = $uniq, PartName = $p, NumProcesses = $numproc WHERE MaterialID = $mid";
+            cmd.CommandText =
+              "UPDATE matdetails SET UniqueStr = $uniq, PartName = $p, NumProcesses = $numproc WHERE MaterialID = $mid";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
             cmd.Parameters.Add("p", SqliteType.Text).Value = part;
@@ -2940,7 +3320,8 @@ namespace BlackMaple.MachineFramework
               cmd.ExecuteNonQuery();
             }
 
-            cmd.CommandText = "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, 1, $path)";
+            cmd.CommandText =
+              "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, 1, $path)";
             cmd.Parameters.Clear();
             cmd.Parameters.Add("mid", SqliteType.Integer);
             cmd.Parameters.Add("path", SqliteType.Integer).Value = proc1Path;
@@ -3001,7 +3382,6 @@ namespace BlackMaple.MachineFramework
           throw;
         }
       }
-
     }
 
     public bool IsMaterialInQueue(long matId)
@@ -3068,11 +3448,12 @@ namespace BlackMaple.MachineFramework
         {
           cmd.Transaction = trans;
 
-          cmd.CommandText = "SELECT q.MaterialID, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
-            " FROM queues q " +
-            " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
-            " WHERE q.Queue = $q AND m.UniqueStr = $uniq " +
-            " ORDER BY q.Position";
+          cmd.CommandText =
+            "SELECT q.MaterialID, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC "
+            + " FROM queues q "
+            + " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID "
+            + " WHERE q.Queue = $q AND m.UniqueStr = $uniq "
+            + " ORDER BY q.Position";
           cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
 
@@ -3080,21 +3461,24 @@ namespace BlackMaple.MachineFramework
           {
             while (reader.Read())
             {
-              ret.Add(new QueuedMaterial()
-              {
-                MaterialID = reader.GetInt64(0),
-                Queue = queue,
-                Position = reader.GetInt32(1),
-                Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
-                Serial = reader.IsDBNull(5) ? null : reader.GetString(5),
-                Workorder = reader.IsDBNull(6) ? null : reader.GetString(6),
-                AddTimeUTC = reader.IsDBNull(7) ? null : ((DateTime?)(new DateTime(reader.GetInt64(7), DateTimeKind.Utc))),
-
-                // these are filled in by AddAdditionalDataToQueuedMaterial
-                Paths = ImmutableDictionary<int, int>.Empty,
-              });
+              ret.Add(
+                new QueuedMaterial()
+                {
+                  MaterialID = reader.GetInt64(0),
+                  Queue = queue,
+                  Position = reader.GetInt32(1),
+                  Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                  PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                  NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
+                  Serial = reader.IsDBNull(5) ? null : reader.GetString(5),
+                  Workorder = reader.IsDBNull(6) ? null : reader.GetString(6),
+                  AddTimeUTC = reader.IsDBNull(7)
+                    ? null
+                    : ((DateTime?)(new DateTime(reader.GetInt64(7), DateTimeKind.Utc))),
+                  // these are filled in by AddAdditionalDataToQueuedMaterial
+                  Paths = ImmutableDictionary<int, int>.Empty,
+                }
+              );
             }
           }
         }
@@ -3123,11 +3507,12 @@ namespace BlackMaple.MachineFramework
           cmd.Transaction = trans;
           pathCmd.Transaction = trans;
 
-          cmd.CommandText = "SELECT q.MaterialID, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
-            " FROM queues q " +
-            " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
-            " WHERE q.Queue = $q AND m.UniqueStr IS NULL AND m.PartName = $part " +
-            " ORDER BY q.Position";
+          cmd.CommandText =
+            "SELECT q.MaterialID, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC "
+            + " FROM queues q "
+            + " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID "
+            + " WHERE q.Queue = $q AND m.UniqueStr IS NULL AND m.PartName = $part "
+            + " ORDER BY q.Position";
           cmd.Parameters.Add("q", SqliteType.Text).Value = queue;
           cmd.Parameters.Add("part", SqliteType.Text).Value = partNameOrCasting;
 
@@ -3137,21 +3522,24 @@ namespace BlackMaple.MachineFramework
           {
             while (reader.Read())
             {
-              ret.Add(new QueuedMaterial()
-              {
-                MaterialID = reader.GetInt64(0),
-                Queue = queue,
-                Position = reader.GetInt32(1),
-                Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
-                Serial = reader.IsDBNull(5) ? null : reader.GetString(5),
-                Workorder = reader.IsDBNull(6) ? null : reader.GetString(6),
-                AddTimeUTC = reader.IsDBNull(7) ? null : ((DateTime?)(new DateTime(reader.GetInt64(7), DateTimeKind.Utc))),
-
-                // these are filled in by AddAdditionalDataToQueuedMaterial
-                Paths = ImmutableDictionary<int, int>.Empty,
-              });
+              ret.Add(
+                new QueuedMaterial()
+                {
+                  MaterialID = reader.GetInt64(0),
+                  Queue = queue,
+                  Position = reader.GetInt32(1),
+                  Unique = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                  PartNameOrCasting = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                  NumProcesses = reader.IsDBNull(4) ? 1 : reader.GetInt32(4),
+                  Serial = reader.IsDBNull(5) ? null : reader.GetString(5),
+                  Workorder = reader.IsDBNull(6) ? null : reader.GetString(6),
+                  AddTimeUTC = reader.IsDBNull(7)
+                    ? null
+                    : ((DateTime?)(new DateTime(reader.GetInt64(7), DateTimeKind.Utc))),
+                  // these are filled in by AddAdditionalDataToQueuedMaterial
+                  Paths = ImmutableDictionary<int, int>.Empty,
+                }
+              );
             }
           }
 
@@ -3177,29 +3565,33 @@ namespace BlackMaple.MachineFramework
         using (var cmd = _connection.CreateCommand())
         {
           cmd.Transaction = trans;
-          cmd.CommandText = "SELECT q.MaterialID, q.Queue, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC " +
-            " FROM queues q " +
-            " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID " +
-            " ORDER BY q.Queue, q.Position";
+          cmd.CommandText =
+            "SELECT q.MaterialID, q.Queue, q.Position, m.UniqueStr, m.PartName, m.NumProcesses, m.Serial, m.Workorder, q.AddTimeUTC "
+            + " FROM queues q "
+            + " LEFT OUTER JOIN matdetails m ON q.MaterialID = m.MaterialID "
+            + " ORDER BY q.Queue, q.Position";
           using (var reader = cmd.ExecuteReader())
           {
             while (reader.Read())
             {
-              ret.Add(new QueuedMaterial()
-              {
-                MaterialID = reader.GetInt64(0),
-                Queue = reader.GetString(1),
-                Position = reader.GetInt32(2),
-                Unique = reader.IsDBNull(3) ? "" : reader.GetString(3),
-                PartNameOrCasting = reader.IsDBNull(4) ? "" : reader.GetString(4),
-                NumProcesses = reader.IsDBNull(5) ? 1 : reader.GetInt32(5),
-                Serial = reader.IsDBNull(6) ? null : reader.GetString(6),
-                Workorder = reader.IsDBNull(7) ? null : reader.GetString(7),
-                AddTimeUTC = reader.IsDBNull(8) ? null : ((DateTime?)(new DateTime(reader.GetInt64(8), DateTimeKind.Utc))),
-
-                // these are filled in by AddAdditionalDataToQueuedMaterial
-                Paths = ImmutableDictionary<int, int>.Empty,
-              });
+              ret.Add(
+                new QueuedMaterial()
+                {
+                  MaterialID = reader.GetInt64(0),
+                  Queue = reader.GetString(1),
+                  Position = reader.GetInt32(2),
+                  Unique = reader.IsDBNull(3) ? "" : reader.GetString(3),
+                  PartNameOrCasting = reader.IsDBNull(4) ? "" : reader.GetString(4),
+                  NumProcesses = reader.IsDBNull(5) ? 1 : reader.GetInt32(5),
+                  Serial = reader.IsDBNull(6) ? null : reader.GetString(6),
+                  Workorder = reader.IsDBNull(7) ? null : reader.GetString(7),
+                  AddTimeUTC = reader.IsDBNull(8)
+                    ? null
+                    : ((DateTime?)(new DateTime(reader.GetInt64(8), DateTimeKind.Utc))),
+                  // these are filled in by AddAdditionalDataToQueuedMaterial
+                  Paths = ImmutableDictionary<int, int>.Empty,
+                }
+              );
             }
           }
 
@@ -3224,14 +3616,16 @@ namespace BlackMaple.MachineFramework
     }
 
     private static readonly string _nextProcessForQueuedMaterialSql =
-      "SELECT MAX(m.Process) FROM " +
-        "stations_mat m " +
-        "INNER JOIN stations s ON m.Counter = s.Counter " +
-        "LEFT OUTER JOIN program_details d ON m.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'" +
-        "WHERE " +
-        "  m.MaterialId = $matid " +
-        " AND s.StationLoc IN (" + LogTypesToCheckForNextProcess + ") " +
-        " AND d.Key IS NULL";
+      "SELECT MAX(m.Process) FROM "
+      + "stations_mat m "
+      + "INNER JOIN stations s ON m.Counter = s.Counter "
+      + "LEFT OUTER JOIN program_details d ON m.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'"
+      + "WHERE "
+      + "  m.MaterialId = $matid "
+      + " AND s.StationLoc IN ("
+      + LogTypesToCheckForNextProcess
+      + ") "
+      + " AND d.Key IS NULL";
 
     private int? NextProcessForQueuedMaterial(IDbTransaction trans, long matId)
     {
@@ -3256,7 +3650,14 @@ namespace BlackMaple.MachineFramework
 
     #region Pending Loads
 
-    public void AddPendingLoad(string pal, string key, int load, TimeSpan elapsed, TimeSpan active, string foreignID)
+    public void AddPendingLoad(
+      string pal,
+      string key,
+      int load,
+      TimeSpan elapsed,
+      TimeSpan active,
+      string foreignID
+    )
     {
       lock (_cfg)
       {
@@ -3268,8 +3669,9 @@ namespace BlackMaple.MachineFramework
           {
             cmd.Transaction = trans;
 
-            cmd.CommandText = "INSERT INTO pendingloads(Pallet, Key, LoadStation, Elapsed, ActiveTime, ForeignID)" +
-                "VALUES ($pal,$key,$load,$elapsed,$active,$foreign)";
+            cmd.CommandText =
+              "INSERT INTO pendingloads(Pallet, Key, LoadStation, Elapsed, ActiveTime, ForeignID)"
+              + "VALUES ($pal,$key,$load,$elapsed,$active,$foreign)";
 
             cmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
             cmd.Parameters.Add("key", SqliteType.Text).Value = key;
@@ -3305,7 +3707,8 @@ namespace BlackMaple.MachineFramework
         {
           cmd.Transaction = trans;
 
-          cmd.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
+          cmd.CommandText =
+            "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
           cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
 
           using (var reader = cmd.ExecuteReader())
@@ -3318,7 +3721,9 @@ namespace BlackMaple.MachineFramework
                 Key = reader.GetString(0),
                 LoadStation = reader.GetInt32(1),
                 Elapsed = new TimeSpan(reader.GetInt64(2)),
-                ActiveOperationTime = !reader.IsDBNull(3) ? TimeSpan.FromTicks(reader.GetInt64(3)) : TimeSpan.Zero,
+                ActiveOperationTime = !reader.IsDBNull(3)
+                  ? TimeSpan.FromTicks(reader.GetInt64(3))
+                  : TimeSpan.Zero,
                 ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
               };
               ret.Add(p);
@@ -3348,7 +3753,8 @@ namespace BlackMaple.MachineFramework
         {
           cmd.Transaction = trans;
 
-          cmd.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID, Pallet FROM pendingloads";
+          cmd.CommandText =
+            "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID, Pallet FROM pendingloads";
 
           using (var reader = cmd.ExecuteReader())
           {
@@ -3359,7 +3765,9 @@ namespace BlackMaple.MachineFramework
                 Key = reader.GetString(0),
                 LoadStation = reader.GetInt32(1),
                 Elapsed = new TimeSpan(reader.GetInt64(2)),
-                ActiveOperationTime = !reader.IsDBNull(3) ? TimeSpan.FromTicks(reader.GetInt64(3)) : TimeSpan.Zero,
+                ActiveOperationTime = !reader.IsDBNull(3)
+                  ? TimeSpan.FromTicks(reader.GetInt64(3))
+                  : TimeSpan.Zero,
                 ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
                 Pallet = reader.GetString(5),
               };
@@ -3384,8 +3792,13 @@ namespace BlackMaple.MachineFramework
       CompletePalletCycle(pal, timeUTC, foreignID, null, generateSerials: false);
     }
 
-    public void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID,
-                                    IDictionary<string, IEnumerable<EventLogMaterial>> mat, bool generateSerials)
+    public void CompletePalletCycle(
+      string pal,
+      DateTime timeUTC,
+      string foreignID,
+      IDictionary<string, IEnumerable<EventLogMaterial>> mat,
+      bool generateSerials
+    )
     {
       lock (_cfg)
       {
@@ -3394,11 +3807,11 @@ namespace BlackMaple.MachineFramework
         var newEvts = new List<LogEntry>();
         try
         {
-
           using (var lastTimeCmd = _connection.CreateCommand())
           {
-            lastTimeCmd.CommandText = "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' " +
-                                    "ORDER BY Counter DESC LIMIT 1";
+            lastTimeCmd.CommandText =
+              "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' "
+              + "ORDER BY Counter DESC LIMIT 1";
             lastTimeCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
 
             var elapsedTime = TimeSpan.Zero;
@@ -3408,21 +3821,28 @@ namespace BlackMaple.MachineFramework
 
             if (lastCycleTime == null || lastCycleTime == DBNull.Value || elapsedTime != TimeSpan.Zero)
             {
-              newEvts.Add(AddLogEntry(trans, new NewEventLogEntry()
-              {
-                Material = new EventLogMaterial[] { },
-                Pallet = pal,
-                LogType = LogType.PalletCycle,
-                LocationName = "Pallet Cycle",
-                LocationNum = 1,
-                Program = "",
-                StartOfCycle = false,
-                EndTimeUTC = timeUTC,
-                Result = "PalletCycle",
-                EndOfRoute = false,
-                ElapsedTime = elapsedTime,
-                ActiveOperationTime = TimeSpan.Zero
-              }, foreignID, null));
+              newEvts.Add(
+                AddLogEntry(
+                  trans,
+                  new NewEventLogEntry()
+                  {
+                    Material = new EventLogMaterial[] { },
+                    Pallet = pal,
+                    LogType = LogType.PalletCycle,
+                    LocationName = "Pallet Cycle",
+                    LocationNum = 1,
+                    Program = "",
+                    StartOfCycle = false,
+                    EndTimeUTC = timeUTC,
+                    Result = "PalletCycle",
+                    EndOfRoute = false,
+                    ElapsedTime = elapsedTime,
+                    ActiveOperationTime = TimeSpan.Zero
+                  },
+                  foreignID,
+                  null
+                )
+              );
             }
 
             if (mat == null)
@@ -3437,7 +3857,8 @@ namespace BlackMaple.MachineFramework
             using (var loadPending = _connection.CreateCommand())
             {
               loadPending.Transaction = trans;
-              loadPending.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
+              loadPending.CommandText =
+                "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
               loadPending.Parameters.Add("pal", SqliteType.Text).Value = pal;
 
               using (var reader = loadPending.ExecuteReader())
@@ -3449,7 +3870,6 @@ namespace BlackMaple.MachineFramework
                   {
                     if (generateSerials && _cfg.Settings.SerialType == SerialType.AssignOneSerialPerCycle)
                     {
-
                       // find a material id to use to create the serial
                       long matID = -1;
                       foreach (var m in mat[key])
@@ -3465,17 +3885,18 @@ namespace BlackMaple.MachineFramework
                         using (var checkConn = _connection.CreateCommand())
                         {
                           checkConn.Transaction = trans;
-                          checkConn.CommandText = "SELECT Serial FROM matdetails WHERE MaterialID = $mid LIMIT 1";
+                          checkConn.CommandText =
+                            "SELECT Serial FROM matdetails WHERE MaterialID = $mid LIMIT 1";
                           checkConn.Parameters.Add("mid", SqliteType.Integer).Value = matID;
                           var existingSerial = checkConn.ExecuteScalar();
-                          if (existingSerial != null
-                              && existingSerial != DBNull.Value
-                              && !string.IsNullOrEmpty(existingSerial.ToString())
-                             )
+                          if (
+                            existingSerial != null
+                            && existingSerial != DBNull.Value
+                            && !string.IsNullOrEmpty(existingSerial.ToString())
+                          )
                           {
                             //already has an assigned serial, skip assignment
                             matID = -1;
-
                           }
                         }
                       }
@@ -3488,85 +3909,121 @@ namespace BlackMaple.MachineFramework
                           if (m.MaterialID >= 0)
                             RecordSerialForMaterialID(trans, m.MaterialID, serial);
                         }
-                        newEvts.Add(AddLogEntry(trans, new NewEventLogEntry()
-                        {
-                          Material = mat[key],
-                          Pallet = "",
-                          LogType = LogType.PartMark,
-                          LocationName = "Mark",
-                          LocationNum = 1,
-                          Program = "MARK",
-                          StartOfCycle = false,
-                          EndTimeUTC = timeUTC.AddSeconds(2),
-                          Result = serial,
-                          EndOfRoute = false
-                        }, null, null));
+                        newEvts.Add(
+                          AddLogEntry(
+                            trans,
+                            new NewEventLogEntry()
+                            {
+                              Material = mat[key],
+                              Pallet = "",
+                              LogType = LogType.PartMark,
+                              LocationName = "Mark",
+                              LocationNum = 1,
+                              Program = "MARK",
+                              StartOfCycle = false,
+                              EndTimeUTC = timeUTC.AddSeconds(2),
+                              Result = serial,
+                              EndOfRoute = false
+                            },
+                            null,
+                            null
+                          )
+                        );
                       }
-
                     }
-                    else if (generateSerials && _cfg.Settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+                    else if (
+                      generateSerials && _cfg.Settings.SerialType == SerialType.AssignOneSerialPerMaterial
+                    )
                     {
                       using (var checkConn = _connection.CreateCommand())
                       {
                         checkConn.Transaction = trans;
-                        checkConn.CommandText = "SELECT Serial FROM matdetails WHERE MaterialID = $mid LIMIT 1";
+                        checkConn.CommandText =
+                          "SELECT Serial FROM matdetails WHERE MaterialID = $mid LIMIT 1";
                         checkConn.Parameters.Add("mid", SqliteType.Integer);
                         foreach (var m in mat[key])
                         {
                           checkConn.Parameters[0].Value = m.MaterialID;
                           var existingSerial = checkConn.ExecuteScalar();
-                          if (existingSerial != null
-                              && existingSerial != DBNull.Value
-                              && !string.IsNullOrEmpty(existingSerial.ToString())
-                              )
+                          if (
+                            existingSerial != null
+                            && existingSerial != DBNull.Value
+                            && !string.IsNullOrEmpty(existingSerial.ToString())
+                          )
                           {
                             //already has an assigned serial, skip assignment
                             continue;
                           }
 
                           var serial = _cfg.Settings.ConvertMaterialIDToSerial(m.MaterialID);
-                          if (m.MaterialID < 0) continue;
+                          if (m.MaterialID < 0)
+                            continue;
                           RecordSerialForMaterialID(trans, m.MaterialID, serial);
-                          newEvts.Add(AddLogEntry(trans, new NewEventLogEntry()
-                          {
-                            Material = new[] { m },
-                            Pallet = "",
-                            LogType = LogType.PartMark,
-                            LocationName = "Mark",
-                            LocationNum = 1,
-                            Program = "MARK",
-                            StartOfCycle = false,
-                            EndTimeUTC = timeUTC.AddSeconds(2),
-                            Result = serial,
-                            EndOfRoute = false
-                          }, null, null));
+                          newEvts.Add(
+                            AddLogEntry(
+                              trans,
+                              new NewEventLogEntry()
+                              {
+                                Material = new[] { m },
+                                Pallet = "",
+                                LogType = LogType.PartMark,
+                                LocationName = "Mark",
+                                LocationNum = 1,
+                                Program = "MARK",
+                                StartOfCycle = false,
+                                EndTimeUTC = timeUTC.AddSeconds(2),
+                                Result = serial,
+                                EndOfRoute = false
+                              },
+                              null,
+                              null
+                            )
+                          );
                         }
                       }
                     }
-                    newEvts.Add(AddLogEntry(trans, new NewEventLogEntry()
-                    {
-                      Material = mat[key],
-                      Pallet = pal,
-                      LogType = LogType.LoadUnloadCycle,
-                      LocationName = "L/U",
-                      LocationNum = reader.GetInt32(1),
-                      Program = "LOAD",
-                      StartOfCycle = false,
-                      EndTimeUTC = timeUTC.AddSeconds(1),
-                      Result = "LOAD",
-                      EndOfRoute = false,
-                      ElapsedTime = TimeSpan.FromTicks(reader.GetInt64(2)),
-                      ActiveOperationTime = reader.IsDBNull(3) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(3))
-                    },
-                    foreignID: reader.IsDBNull(4) ? null : reader.GetString(4),
-                    origMessage: null));
+                    newEvts.Add(
+                      AddLogEntry(
+                        trans,
+                        new NewEventLogEntry()
+                        {
+                          Material = mat[key],
+                          Pallet = pal,
+                          LogType = LogType.LoadUnloadCycle,
+                          LocationName = "L/U",
+                          LocationNum = reader.GetInt32(1),
+                          Program = "LOAD",
+                          StartOfCycle = false,
+                          EndTimeUTC = timeUTC.AddSeconds(1),
+                          Result = "LOAD",
+                          EndOfRoute = false,
+                          ElapsedTime = TimeSpan.FromTicks(reader.GetInt64(2)),
+                          ActiveOperationTime = reader.IsDBNull(3)
+                            ? TimeSpan.Zero
+                            : TimeSpan.FromTicks(reader.GetInt64(3))
+                        },
+                        foreignID: reader.IsDBNull(4) ? null : reader.GetString(4),
+                        origMessage: null
+                      )
+                    );
 
                     foreach (var logMat in mat[key])
                     {
-                      var prevProcMat = new EventLogMaterial() { MaterialID = logMat.MaterialID, Process = logMat.Process - 1, Face = "" };
-                      newEvts.AddRange(RemoveFromAllQueues(trans, prevProcMat, operatorName: null, timeUTC: timeUTC.AddSeconds(1)));
+                      var prevProcMat = new EventLogMaterial()
+                      {
+                        MaterialID = logMat.MaterialID,
+                        Process = logMat.Process - 1,
+                        Face = ""
+                      };
+                      newEvts.AddRange(
+                        RemoveFromAllQueues(
+                          trans,
+                          prevProcMat,
+                          operatorName: null,
+                          timeUTC: timeUTC.AddSeconds(1)
+                        )
+                      );
                     }
-
                   }
                 }
               }
@@ -3615,7 +4072,9 @@ namespace BlackMaple.MachineFramework
             {
               Counter = counter,
               Value = reader.GetInt32(0),
-              LastUTC = reader.IsDBNull(1) ? DateTime.MaxValue : new DateTime(reader.GetInt64(1), DateTimeKind.Utc)
+              LastUTC = reader.IsDBNull(1)
+                ? DateTime.MaxValue
+                : new DateTime(reader.GetInt64(1), DateTimeKind.Utc)
             };
           }
           else
@@ -3645,13 +4104,16 @@ namespace BlackMaple.MachineFramework
           {
             while (reader.Read())
             {
-              ret.Add(new InspectCount()
-              {
-                Counter = reader.GetString(0),
-                Value = reader.GetInt32(1),
-                LastUTC = reader.IsDBNull(2) ?
-                DateTime.MaxValue : new DateTime(reader.GetInt64(2), DateTimeKind.Utc),
-              });
+              ret.Add(
+                new InspectCount()
+                {
+                  Counter = reader.GetString(0),
+                  Value = reader.GetInt32(1),
+                  LastUTC = reader.IsDBNull(2)
+                    ? DateTime.MaxValue
+                    : new DateTime(reader.GetInt64(2), DateTimeKind.Utc),
+                }
+              );
             }
           }
         }
@@ -3665,7 +4127,8 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
-        cmd.CommandText = "INSERT OR REPLACE INTO inspection_counters(Counter,Val,LastUTC) VALUES ($cntr,$val,$time)";
+        cmd.CommandText =
+          "INSERT OR REPLACE INTO inspection_counters(Counter,Val,LastUTC) VALUES ($cntr,$val,$time)";
         cmd.Parameters.Add("cntr", SqliteType.Text).Value = cnt.Counter;
         cmd.Parameters.Add("val", SqliteType.Integer).Value = cnt.Value;
         cmd.Parameters.Add("time", SqliteType.Integer).Value = cnt.LastUTC.Ticks;
@@ -3679,7 +4142,8 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-          cmd.CommandText = "INSERT OR REPLACE INTO inspection_counters(Counter, Val, LastUTC) VALUES ($cntr,$val,$last)";
+          cmd.CommandText =
+            "INSERT OR REPLACE INTO inspection_counters(Counter, Val, LastUTC) VALUES ($cntr,$val,$last)";
           cmd.Parameters.Add("cntr", SqliteType.Text);
           cmd.Parameters.Add("val", SqliteType.Integer);
           cmd.Parameters.Add("last", SqliteType.Integer);
@@ -3736,13 +4200,14 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
-        cmd.CommandText = "SELECT Pallet, StationLoc, StationName, StationNum, Process " +
-            " FROM stations " +
-            " INNER JOIN stations_mat ON stations.Counter = stations_mat.Counter " +
-            " WHERE " +
-            "    MaterialID = $mat AND Start = 0 " +
-            "    AND (StationLoc = $ty1 OR StationLoc = $ty2) " +
-            " ORDER BY stations.Counter ASC";
+        cmd.CommandText =
+          "SELECT Pallet, StationLoc, StationName, StationNum, Process "
+          + " FROM stations "
+          + " INNER JOIN stations_mat ON stations.Counter = stations_mat.Counter "
+          + " WHERE "
+          + "    MaterialID = $mat AND Start = 0 "
+          + "    AND (StationLoc = $ty1 OR StationLoc = $ty2) "
+          + " ORDER BY stations.Counter ASC";
         cmd.Parameters.Add("mat", SqliteType.Integer).Value = matID;
         cmd.Parameters.Add("ty1", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
         cmd.Parameters.Add("ty2", SqliteType.Integer).Value = (int)LogType.MachineCycle;
@@ -3759,29 +4224,30 @@ namespace BlackMaple.MachineFramework
             int statNum = reader.GetInt32(3);
             int process = reader.GetInt32(4);
 
-            adjustPath(process, mat =>
-            {
-              if (!string.IsNullOrEmpty(pal))
-                mat.Pallet = pal;
-
-              switch (logTy)
+            adjustPath(
+              process,
+              mat =>
               {
-                case LogType.LoadUnloadCycle:
-                  if (mat.LoadStation == -1)
-                    mat.LoadStation = statNum;
-                  else
-                    mat.UnloadStation = statNum;
-                  break;
+                if (!string.IsNullOrEmpty(pal))
+                  mat.Pallet = pal;
 
-                case LogType.MachineCycle:
-                  mat.Stops.Add(new MaterialProcessActualPath.Stop()
-                  {
-                    StationName = statName,
-                    StationNum = statNum
-                  });
-                  break;
+                switch (logTy)
+                {
+                  case LogType.LoadUnloadCycle:
+                    if (mat.LoadStation == -1)
+                      mat.LoadStation = statNum;
+                    else
+                      mat.UnloadStation = statNum;
+                    break;
+
+                  case LogType.MachineCycle:
+                    mat.Stops.Add(
+                      new MaterialProcessActualPath.Stop() { StationName = statName, StationNum = statNum }
+                    );
+                    break;
+                }
               }
-            });
+            );
           }
         }
       }
@@ -3789,27 +4255,22 @@ namespace BlackMaple.MachineFramework
       return byProc;
     }
 
-    private string TranslateInspectionCounter(long matID, Dictionary<int, MaterialProcessActualPath> actualPath, string counter)
+    private string TranslateInspectionCounter(
+      long matID,
+      Dictionary<int, MaterialProcessActualPath> actualPath,
+      string counter
+    )
     {
       foreach (var p in actualPath.Values)
       {
-        counter = counter.Replace(
-            PathInspection.PalletFormatFlag(p.Process),
-            p.Pallet
-        );
-        counter = counter.Replace(
-            PathInspection.LoadFormatFlag(p.Process),
-            p.LoadStation.ToString()
-        );
-        counter = counter.Replace(
-            PathInspection.UnloadFormatFlag(p.Process),
-            p.UnloadStation.ToString()
-        );
+        counter = counter.Replace(PathInspection.PalletFormatFlag(p.Process), p.Pallet);
+        counter = counter.Replace(PathInspection.LoadFormatFlag(p.Process), p.LoadStation.ToString());
+        counter = counter.Replace(PathInspection.UnloadFormatFlag(p.Process), p.UnloadStation.ToString());
         for (int stopNum = 1; stopNum <= p.Stops.Count; stopNum++)
         {
           counter = counter.Replace(
-              PathInspection.StationFormatFlag(p.Process, stopNum),
-              p.Stops[stopNum - 1].StationNum.ToString()
+            PathInspection.StationFormatFlag(p.Process, stopNum),
+            p.Stops[stopNum - 1].StationNum.ToString()
           );
         }
       }
@@ -3835,7 +4296,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public ImmutableDictionary<long, IReadOnlyList<Decision>> LookupInspectionDecisions(IEnumerable<long> matIDs)
+    public ImmutableDictionary<long, IReadOnlyList<Decision>> LookupInspectionDecisions(
+      IEnumerable<long> matIDs
+    )
     {
       var trans = _connection.BeginTransaction();
       try
@@ -3851,25 +4314,30 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private ImmutableDictionary<long, IReadOnlyList<Decision>>.Builder LookupInspectionDecisions(IDbTransaction trans, IEnumerable<long> matIDs)
+    private ImmutableDictionary<long, IReadOnlyList<Decision>>.Builder LookupInspectionDecisions(
+      IDbTransaction trans,
+      IEnumerable<long> matIDs
+    )
     {
       var ret = ImmutableDictionary.CreateBuilder<long, IReadOnlyList<Decision>>();
       using (var detailCmd = _connection.CreateCommand())
       using (var cmd = _connection.CreateCommand())
       {
         ((IDbCommand)cmd).Transaction = trans;
-        cmd.CommandText = "SELECT Counter, StationLoc, Program, TimeUTC, Result " +
-            " FROM stations " +
-            " WHERE " +
-            "    Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) " +
-            "    AND (StationLoc = $loc1 OR StationLoc = $loc2) " +
-            " ORDER BY Counter ASC";
+        cmd.CommandText =
+          "SELECT Counter, StationLoc, Program, TimeUTC, Result "
+          + " FROM stations "
+          + " WHERE "
+          + "    Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) "
+          + "    AND (StationLoc = $loc1 OR StationLoc = $loc2) "
+          + " ORDER BY Counter ASC";
         cmd.Parameters.Add("$mat", SqliteType.Integer);
         cmd.Parameters.Add("$loc1", SqliteType.Integer).Value = LogType.InspectionForce;
         cmd.Parameters.Add("$loc2", SqliteType.Integer).Value = LogType.Inspection;
 
         ((IDbCommand)detailCmd).Transaction = trans;
-        detailCmd.CommandText = "SELECT Value FROM program_details WHERE Counter = $cntr AND Key = 'InspectionType'";
+        detailCmd.CommandText =
+          "SELECT Value FROM program_details WHERE Counter = $cntr AND Key = 'InspectionType'";
         detailCmd.Parameters.Add("cntr", SqliteType.Integer);
 
         foreach (var matId in matIDs)
@@ -3907,27 +4375,31 @@ namespace BlackMaple.MachineFramework
                   else
                     inspType = "";
                 }
-                decisions.Add(new Decision()
-                {
-                  MaterialID = matId,
-                  InspType = inspType,
-                  Counter = prog,
-                  Inspect = inspect,
-                  Forced = false,
-                  CreateUTC = timeUtc
-                });
+                decisions.Add(
+                  new Decision()
+                  {
+                    MaterialID = matId,
+                    InspType = inspType,
+                    Counter = prog,
+                    Inspect = inspect,
+                    Forced = false,
+                    CreateUTC = timeUtc
+                  }
+                );
               }
               else
               {
-                decisions.Add(new Decision()
-                {
-                  MaterialID = matId,
-                  InspType = prog,
-                  Counter = "",
-                  Inspect = inspect,
-                  Forced = true,
-                  CreateUTC = timeUtc
-                });
+                decisions.Add(
+                  new Decision()
+                  {
+                    MaterialID = matId,
+                    InspType = prog,
+                    Counter = "",
+                    Inspect = inspect,
+                    Forced = true,
+                    CreateUTC = timeUtc
+                  }
+                );
               }
             }
           }
@@ -3940,39 +4412,39 @@ namespace BlackMaple.MachineFramework
     }
 
     public IEnumerable<LogEntry> MakeInspectionDecisions(
-        long matID,
-        int process,
-        IEnumerable<PathInspection> inspections,
-        DateTime? mutcNow = null)
+      long matID,
+      int process,
+      IEnumerable<PathInspection> inspections,
+      DateTime? mutcNow = null
+    )
     {
-      return AddEntryInTransaction(trans =>
-          MakeInspectionDecisions(trans, matID, process, inspections, mutcNow)
+      return AddEntryInTransaction(
+        trans => MakeInspectionDecisions(trans, matID, process, inspections, mutcNow)
       );
     }
 
     private List<LogEntry> MakeInspectionDecisions(
-        IDbTransaction trans,
-        long matID,
-        int process,
-        IEnumerable<PathInspection> inspections,
-        DateTime? mutcNow)
+      IDbTransaction trans,
+      long matID,
+      int process,
+      IEnumerable<PathInspection> inspections,
+      DateTime? mutcNow
+    )
     {
       var utcNow = mutcNow ?? DateTime.UtcNow;
       var logEntries = new List<LogEntry>();
 
       var actualPath = LookupActualPath(trans, matID);
 
-      var decisions =
-          LookupInspectionDecisions(trans, new[] { matID })
-          .GetValueOrDefault(matID, new Decision[] { })
-          .ToLookup(d => d.InspType, d => d);
+      var decisions = LookupInspectionDecisions(trans, new[] { matID })
+        .GetValueOrDefault(matID, new Decision[] { })
+        .ToLookup(d => d.InspType, d => d);
 
       Dictionary<string, PathInspection> insps;
       if (inspections == null)
         insps = new Dictionary<string, PathInspection>();
       else
         insps = inspections.ToDictionary(x => x.InspectionType, x => x);
-
 
       var inspsToCheck = decisions.Select(x => x.Key).Union(insps.Keys).Distinct();
       foreach (var inspType in inspsToCheck)
@@ -3988,7 +4460,6 @@ namespace BlackMaple.MachineFramework
           counter = TranslateInspectionCounter(matID, actualPath, iProg.Counter);
         }
 
-
         if (decisions.Contains(inspType))
         {
           // use the decision
@@ -3997,7 +4468,6 @@ namespace BlackMaple.MachineFramework
             inspect = inspect || d.Inspect;
             alreadyRecorded = alreadyRecorded || !d.Forced;
           }
-
         }
 
         if (!alreadyRecorded && iProg != null)
@@ -4021,9 +4491,11 @@ namespace BlackMaple.MachineFramework
           }
 
           //now check lastutc
-          if (iProg.TimeInterval > TimeSpan.Zero &&
-              currentCount.LastUTC != DateTime.MaxValue &&
-              currentCount.LastUTC.Add(iProg.TimeInterval) < utcNow)
+          if (
+            iProg.TimeInterval > TimeSpan.Zero
+            && currentCount.LastUTC != DateTime.MaxValue
+            && currentCount.LastUTC.Add(iProg.TimeInterval) < utcNow
+          )
           {
             inspect = true;
           }
@@ -4041,8 +4513,16 @@ namespace BlackMaple.MachineFramework
 
         if (!alreadyRecorded)
         {
-          var log = StoreInspectionDecision(trans,
-              matID, process, actualPath, inspType, counter, utcNow, inspect);
+          var log = StoreInspectionDecision(
+            trans,
+            matID,
+            process,
+            actualPath,
+            inspType,
+            counter,
+            utcNow,
+            inspect
+          );
           logEntries.Add(log);
         }
       }
@@ -4051,12 +4531,22 @@ namespace BlackMaple.MachineFramework
     }
 
     private LogEntry StoreInspectionDecision(
-        IDbTransaction trans,
-        long matID, int proc, Dictionary<int, MaterialProcessActualPath> actualPath,
-        string inspType, string counter, DateTime utcNow, bool inspect)
+      IDbTransaction trans,
+      long matID,
+      int proc,
+      Dictionary<int, MaterialProcessActualPath> actualPath,
+      string inspType,
+      string counter,
+      DateTime utcNow,
+      bool inspect
+    )
     {
-      var mat =
-          new EventLogMaterial() { MaterialID = matID, Process = proc, Face = "" };
+      var mat = new EventLogMaterial()
+      {
+        MaterialID = matID,
+        Process = proc,
+        Face = ""
+      };
       var pathSteps = actualPath.Values.OrderBy(p => p.Process).ToList();
 
       var log = new NewEventLogEntry()
@@ -4084,13 +4574,23 @@ namespace BlackMaple.MachineFramework
     #region Force and Next Piece Inspection
     public LogEntry ForceInspection(long matID, string inspType)
     {
-      var mat = new EventLogMaterial() { MaterialID = matID, Process = 1, Face = "" };
+      var mat = new EventLogMaterial()
+      {
+        MaterialID = matID,
+        Process = 1,
+        Face = ""
+      };
       return ForceInspection(mat, inspType, inspect: true, utcNow: DateTime.UtcNow);
     }
 
     public LogEntry ForceInspection(long materialID, int process, string inspType, bool inspect)
     {
-      var mat = new EventLogMaterial() { MaterialID = materialID, Process = process, Face = "" };
+      var mat = new EventLogMaterial()
+      {
+        MaterialID = materialID,
+        Process = process,
+        Face = ""
+      };
       return ForceInspection(mat, inspType, inspect, DateTime.UtcNow);
     }
 
@@ -4099,17 +4599,18 @@ namespace BlackMaple.MachineFramework
       return ForceInspection(mat, inspType, inspect, DateTime.UtcNow);
     }
 
-    public LogEntry ForceInspection(
-        EventLogMaterial mat, string inspType, bool inspect, DateTime utcNow)
+    public LogEntry ForceInspection(EventLogMaterial mat, string inspType, bool inspect, DateTime utcNow)
     {
-      return AddEntryInTransaction(trans =>
-          RecordForceInspection(trans, mat, inspType, inspect, utcNow)
-      );
+      return AddEntryInTransaction(trans => RecordForceInspection(trans, mat, inspType, inspect, utcNow));
     }
 
     private LogEntry RecordForceInspection(
-        IDbTransaction trans,
-        EventLogMaterial mat, string inspType, bool inspect, DateTime utcNow)
+      IDbTransaction trans,
+      EventLogMaterial mat,
+      string inspType,
+      bool inspect,
+      DateTime utcNow
+    )
     {
       var log = new NewEventLogEntry()
       {
@@ -4133,9 +4634,9 @@ namespace BlackMaple.MachineFramework
       {
         using (var cmd = _connection.CreateCommand())
         {
-
-          cmd.CommandText = "INSERT OR REPLACE INTO inspection_next_piece(StatType, StatNum, InspType)" +
-              " VALUES ($loc,$locnum,$insp)";
+          cmd.CommandText =
+            "INSERT OR REPLACE INTO inspection_next_piece(StatType, StatNum, InspType)"
+            + " VALUES ($loc,$locnum,$insp)";
           cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)palLoc.Location;
           cmd.Parameters.Add("locnum", SqliteType.Integer).Value = palLoc.Num;
           cmd.Parameters.Add("insp", SqliteType.Text).Value = inspType;
@@ -4154,8 +4655,8 @@ namespace BlackMaple.MachineFramework
         using (var cmd = _connection.CreateCommand())
         using (var cmd2 = _connection.CreateCommand())
         {
-
-          cmd.CommandText = "SELECT InspType FROM inspection_next_piece WHERE StatType = $loc AND StatNum = $locnum";
+          cmd.CommandText =
+            "SELECT InspType FROM inspection_next_piece WHERE StatType = $loc AND StatNum = $locnum";
           cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)palLoc.Location;
           cmd.Parameters.Add("locnum", SqliteType.Integer).Value = palLoc.Num;
 
@@ -4172,11 +4673,17 @@ namespace BlackMaple.MachineFramework
               {
                 if (!reader.IsDBNull(0))
                 {
-                  var mat = new EventLogMaterial() { MaterialID = matID, Process = 1, Face = "" };
-                  logs.Add(RecordForceInspection(trans, mat, reader.GetString(0), inspect: true, utcNow: now));
+                  var mat = new EventLogMaterial()
+                  {
+                    MaterialID = matID,
+                    Process = 1,
+                    Face = ""
+                  };
+                  logs.Add(
+                    RecordForceInspection(trans, mat, reader.GetString(0), inspect: true, utcNow: now)
+                  );
                 }
               }
-
             }
             finally
             {

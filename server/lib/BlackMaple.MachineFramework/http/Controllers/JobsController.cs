@@ -42,8 +42,11 @@ namespace BlackMaple.MachineFramework.Controllers
   [DataContract]
   public record QueuePosition
   {
-    [DataMember(IsRequired = true)] public string Queue { get; init; }
-    [DataMember(IsRequired = true)] public int Position { get; init; }
+    [DataMember(IsRequired = true)]
+    public string Queue { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public int Position { get; init; }
   }
 
   [ApiController]
@@ -67,11 +70,19 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("history")]
-    public HistoricData FilteredHistory([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC, [FromBody] List<string> alreadyKnownSchIds)
+    public HistoricData FilteredHistory(
+      [FromQuery] DateTime startUTC,
+      [FromQuery] DateTime endUTC,
+      [FromBody] List<string> alreadyKnownSchIds
+    )
     {
       using (var db = _backend.RepoConfig.OpenConnection())
       {
-        return db.LoadJobHistory(startUTC, endUTC, new HashSet<string>(alreadyKnownSchIds ?? new List<string>()));
+        return db.LoadJobHistory(
+          startUTC,
+          endUTC,
+          new HashSet<string>(alreadyKnownSchIds ?? new List<string>())
+        );
       }
     }
 
@@ -111,6 +122,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       [DataMember(IsRequired = true)]
       public IReadOnlyList<Workorder> Workorders { get; init; }
+
       [DataMember(IsRequired = false, EmitDefaultValue = false)]
       public IReadOnlyList<NewProgramContent> Programs { get; init; }
     }
@@ -121,7 +133,11 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (string.IsNullOrEmpty(scheduleId))
         throw new BadRequestException("ScheduleId must be non-empty");
-      _backend.JobControl.ReplaceWorkordersForSchedule(scheduleId, workorders.Workorders, workorders.Programs);
+      _backend.JobControl.ReplaceWorkordersForSchedule(
+        scheduleId,
+        workorders.Workorders,
+        workorders.Programs
+      );
     }
 
     [HttpGet("status")]
@@ -132,13 +148,22 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPost("add")]
     [ProducesResponseType(typeof(void), 200)]
-    public void Add([FromBody] NewJobs newJobs, [FromQuery] string expectedPreviousScheduleId, [FromQuery] bool waitForCopyToCell = true)
+    public void Add(
+      [FromBody] NewJobs newJobs,
+      [FromQuery] string expectedPreviousScheduleId,
+      [FromQuery] bool waitForCopyToCell = true
+    )
     {
       _backend.JobControl.AddJobs(newJobs, expectedPreviousScheduleId, waitForCopyToCell);
     }
 
     [HttpPost("part/{partName}/casting")]
-    public InProcessMaterial AddUnallocatedCastingToQueueByPart(string partName, [FromQuery] string queue, [FromBody] string serial, [FromQuery] string operName = null)
+    public InProcessMaterial AddUnallocatedCastingToQueueByPart(
+      string partName,
+      [FromQuery] string queue,
+      [FromBody] string serial,
+      [FromQuery] string operName = null
+    )
     {
       if (string.IsNullOrEmpty(partName))
         throw new BadRequestException("Part name must be non-empty");
@@ -148,7 +173,13 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("casting/{castingName}")]
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string castingName, [FromQuery] string queue, [FromBody] List<string> serials, [FromQuery] int qty = 1, [FromQuery] string operName = null)
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(
+      string castingName,
+      [FromQuery] string queue,
+      [FromBody] List<string> serials,
+      [FromQuery] int qty = 1,
+      [FromQuery] string operName = null
+    )
     {
       if (string.IsNullOrEmpty(castingName))
         throw new BadRequestException("Casting name must be non-empty");
@@ -167,14 +198,29 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("job/{jobUnique}/unprocessed-material")]
-    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, [FromQuery] int lastCompletedProcess, [FromQuery] string queue, [FromQuery] int pos, [FromBody] string serial, [FromQuery] string operName = null)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(
+      string jobUnique,
+      [FromQuery] int lastCompletedProcess,
+      [FromQuery] string queue,
+      [FromQuery] int pos,
+      [FromBody] string serial,
+      [FromQuery] string operName = null
+    )
     {
       if (string.IsNullOrEmpty(jobUnique))
         throw new BadRequestException("Job unique must be non-empty");
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
-      if (lastCompletedProcess < 0) lastCompletedProcess = 0;
-      return _backend.QueueControl.AddUnprocessedMaterialToQueue(jobUnique, lastCompletedProcess, queue, pos, serial, operName);
+      if (lastCompletedProcess < 0)
+        lastCompletedProcess = 0;
+      return _backend.QueueControl.AddUnprocessedMaterialToQueue(
+        jobUnique,
+        lastCompletedProcess,
+        queue,
+        pos,
+        serial,
+        operName
+      );
     }
 
     [HttpPut("job/{jobUnique}/comment")]
@@ -186,7 +232,11 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPut("material/{materialId}/queue")]
     [ProducesResponseType(typeof(void), 200)]
-    public void SetMaterialInQueue(long materialId, [FromBody] QueuePosition queue, [FromQuery] string operName = null)
+    public void SetMaterialInQueue(
+      long materialId,
+      [FromBody] QueuePosition queue,
+      [FromQuery] string operName = null
+    )
     {
       if (string.IsNullOrEmpty(queue.Queue))
         throw new BadRequestException("Queue name must be non-empty");
@@ -202,28 +252,49 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPut("material/{materialId}/quarantine")]
     [ProducesResponseType(typeof(void), 200)]
-    public void SignalMaterialForQuarantine(long materialId, [FromBody] string queue, [FromQuery] string operName = null)
+    public void SignalMaterialForQuarantine(
+      long materialId,
+      [FromBody] string queue,
+      [FromQuery] string operName = null
+    )
     {
       _backend.QueueControl.SignalMaterialForQuarantine(materialId, queue, operName);
     }
 
     [HttpPut("material/{materialId}/invalidate-process")]
     [ProducesResponseType(typeof(void), 200)]
-    public void InvalidatePalletCycle(long materialId, [FromBody] int process, [FromQuery] string putMatInQueue = null, [FromQuery] string operName = null)
+    public void InvalidatePalletCycle(
+      long materialId,
+      [FromBody] int process,
+      [FromQuery] string putMatInQueue = null,
+      [FromQuery] string operName = null
+    )
     {
-      _backend.QueueControl.InvalidatePalletCycle(matId: materialId, process: process, oldMatPutInQueue: putMatInQueue, operatorName: operName);
+      _backend.QueueControl.InvalidatePalletCycle(
+        matId: materialId,
+        process: process,
+        oldMatPutInQueue: putMatInQueue,
+        operatorName: operName
+      );
     }
 
     [DataContract]
     public record MatToPutOnPallet
     {
-      [DataMember(IsRequired = true)] public string Pallet { get; init; }
-      [DataMember(IsRequired = true)] public long MaterialIDToSetOnPallet { get; init; }
+      [DataMember(IsRequired = true)]
+      public string Pallet { get; init; }
+
+      [DataMember(IsRequired = true)]
+      public long MaterialIDToSetOnPallet { get; init; }
     }
 
     [HttpPut("material/{materialId}/swap-off-pallet")]
     [ProducesResponseType(typeof(void), 200)]
-    public void SwapMaterialOnPallet(long materialId, [FromBody] MatToPutOnPallet mat, [FromQuery] string operName = null)
+    public void SwapMaterialOnPallet(
+      long materialId,
+      [FromBody] MatToPutOnPallet mat,
+      [FromQuery] string operName = null
+    )
     {
       _backend.QueueControl.SwapMaterialOnPallet(
         oldMatId: materialId,
@@ -237,21 +308,25 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(typeof(void), 200)]
     public void BulkRemoveMaterialFromQueues([FromBody] List<long> id, [FromQuery] string operName = null)
     {
-      if (id == null || id.Count == 0) return;
+      if (id == null || id.Count == 0)
+        return;
       _backend.QueueControl.RemoveMaterialFromAllQueues(id, operName);
     }
 
     [HttpDelete("planned-cycles")]
     public List<JobAndDecrementQuantity> DecrementQuantities(
-        [FromQuery] long? loadDecrementsStrictlyAfterDecrementId = null,
-        [FromQuery] DateTime? loadDecrementsAfterTimeUTC = null)
+      [FromQuery] long? loadDecrementsStrictlyAfterDecrementId = null,
+      [FromQuery] DateTime? loadDecrementsAfterTimeUTC = null
+    )
     {
       if (loadDecrementsStrictlyAfterDecrementId != null)
         return _backend.JobControl.DecrementJobQuantites(loadDecrementsStrictlyAfterDecrementId ?? 0);
       else if (loadDecrementsAfterTimeUTC.HasValue)
         return _backend.JobControl.DecrementJobQuantites(loadDecrementsAfterTimeUTC.Value);
       else
-        throw new BadRequestException("Must specify either loadDecrementsStrictlyAfterDecrementId or loadDecrementsAfterTimeUTC");
+        throw new BadRequestException(
+          "Must specify either loadDecrementsStrictlyAfterDecrementId or loadDecrementsAfterTimeUTC"
+        );
     }
   }
 }

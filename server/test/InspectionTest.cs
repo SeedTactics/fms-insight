@@ -43,7 +43,6 @@ namespace MachineWatchTest
 {
   public class InspectionTest : IDisposable
   {
-
     private RepositoryConfig _repoCfg;
     private IRepository _insp;
 
@@ -97,7 +96,13 @@ namespace MachineWatchTest
     [Fact]
     public void Frequencies()
     {
-      var freqProg = new PathInspection() { InspectionType = "insp1", Counter = "counter1", RandomFreq = 0.5, TimeInterval = TimeSpan.FromHours(100) };
+      var freqProg = new PathInspection()
+      {
+        InspectionType = "insp1",
+        Counter = "counter1",
+        RandomFreq = 0.5,
+        TimeInterval = TimeSpan.FromHours(100)
+      };
 
       for (int i = 0; i < 100; i++)
         _insp.MakeInspectionDecisions(i, 1, new[] { freqProg });
@@ -127,7 +132,13 @@ namespace MachineWatchTest
       _insp.SetInspectCounts(new InspectCount[] { cnt });
 
       //set up a program
-      var inspProg = new PathInspection() { InspectionType = "insp1", Counter = "counter1", MaxVal = 3, TimeInterval = TimeSpan.FromHours(11) };
+      var inspProg = new PathInspection()
+      {
+        InspectionType = "insp1",
+        Counter = "counter1",
+        MaxVal = 3,
+        TimeInterval = TimeSpan.FromHours(11)
+      };
 
       //the lastutc should be 2 minutes too short, so only inspections from the counter should take place
 
@@ -170,7 +181,13 @@ namespace MachineWatchTest
       DateTime now = DateTime.UtcNow;
 
       //set up a program
-      var inspProg = new PathInspection() { InspectionType = "insp1", Counter = "counter1", MaxVal = 13, TimeInterval = TimeSpan.FromHours(11) };
+      var inspProg = new PathInspection()
+      {
+        InspectionType = "insp1",
+        Counter = "counter1",
+        MaxVal = 13,
+        TimeInterval = TimeSpan.FromHours(11)
+      };
 
       //set the count as zero, otherwise it chooses a random
       InspectCount cnt = new InspectCount()
@@ -200,13 +217,15 @@ namespace MachineWatchTest
     {
       DateTime now = DateTime.UtcNow;
 
-      var insps = ImmutableList.Create(new PathInspection()
-      {
-        InspectionType = "insp1",
-        Counter = "counter1",
-        MaxVal = 3,
-        TimeInterval = TimeSpan.FromHours(11)
-      });
+      var insps = ImmutableList.Create(
+        new PathInspection()
+        {
+          InspectionType = "insp1",
+          Counter = "counter1",
+          MaxVal = 3,
+          TimeInterval = TimeSpan.FromHours(11)
+        }
+      );
 
       //set the count as zero, otherwise it chooses a random
       InspectCount cnt = new InspectCount()
@@ -232,17 +251,27 @@ namespace MachineWatchTest
     [Fact]
     public void TranslateCounter()
     {
-      var counter = "counter1-" +
-        PathInspection.LoadFormatFlag(1) + "-" +
-        PathInspection.UnloadFormatFlag(1) + "-" +
-        PathInspection.LoadFormatFlag(2) + "-" +
-        PathInspection.UnloadFormatFlag(2) + "-" +
-        PathInspection.PalletFormatFlag(1) + "-" +
-        PathInspection.PalletFormatFlag(2) + "-" +
-        PathInspection.StationFormatFlag(1, 1) + "-" +
-        PathInspection.StationFormatFlag(1, 2) + "-" +
-        PathInspection.StationFormatFlag(2, 1) + "-" +
-        PathInspection.StationFormatFlag(2, 2);
+      var counter =
+        "counter1-"
+        + PathInspection.LoadFormatFlag(1)
+        + "-"
+        + PathInspection.UnloadFormatFlag(1)
+        + "-"
+        + PathInspection.LoadFormatFlag(2)
+        + "-"
+        + PathInspection.UnloadFormatFlag(2)
+        + "-"
+        + PathInspection.PalletFormatFlag(1)
+        + "-"
+        + PathInspection.PalletFormatFlag(2)
+        + "-"
+        + PathInspection.StationFormatFlag(1, 1)
+        + "-"
+        + PathInspection.StationFormatFlag(1, 2)
+        + "-"
+        + PathInspection.StationFormatFlag(2, 1)
+        + "-"
+        + PathInspection.StationFormatFlag(2, 2);
 
       var expandedCounter1 = "counter1-1-2-3-4-P1-P2-10-11-12-13";
       var expandedCounter2 = "counter1-6-8-7-9-P5-P4-15-16-18-19";
@@ -261,7 +290,6 @@ namespace MachineWatchTest
         LastUTC = DateTime.UtcNow.AddHours(-10),
       };
       _insp.SetInspectCounts(new[] { cnt, cnt2 });
-
 
       var mat1Proc1 = new[] { new LogMaterial(1, "job1", 1, "part1", 2, "", "", "") };
       var mat1Proc2 = new[] { new LogMaterial(1, "job1", 2, "part1", 2, "", "", "") };
@@ -288,7 +316,13 @@ namespace MachineWatchTest
       AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 4, true);
       AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 9, true);
 
-      var inspProg = new PathInspection() { InspectionType = "insp1", Counter = counter, MaxVal = 10, TimeInterval = TimeSpan.FromDays(2) };
+      var inspProg = new PathInspection()
+      {
+        InspectionType = "insp1",
+        Counter = counter,
+        MaxVal = 10,
+        TimeInterval = TimeSpan.FromDays(2)
+      };
 
       var now = DateTime.UtcNow;
       _insp.MakeInspectionDecisions(1, 2, new[] { inspProg }, now);
@@ -296,57 +330,71 @@ namespace MachineWatchTest
       Assert.Equal(2, _insp.LoadInspectCounts().Count);
       CheckCount(expandedCounter1, 1);
       CheckCount(expandedCounter2, 0);
-      ExpectPathToBe(1, "insp1", new[] {
-        new MaterialProcessActualPath() {
-          MaterialID = 1,
-          Process = 1,
-          Pallet = "P1",
-          LoadStation = 1,
-          Stops = ImmutableList.Create(
-            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 10},
-            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 11}
-          ),
-          UnloadStation = 2,
-        },
-        new MaterialProcessActualPath() {
-          MaterialID = 1,
-          Process = 2,
-          Pallet = "P2",
-          LoadStation = 3,
-          Stops = ImmutableList.Create(
-            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 12},
-            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 13}
-          ),
-          UnloadStation = 4,
+      ExpectPathToBe(
+        1,
+        "insp1",
+        new[]
+        {
+          new MaterialProcessActualPath()
+          {
+            MaterialID = 1,
+            Process = 1,
+            Pallet = "P1",
+            LoadStation = 1,
+            Stops = ImmutableList.Create(
+              new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 10 },
+              new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 11 }
+            ),
+            UnloadStation = 2,
+          },
+          new MaterialProcessActualPath()
+          {
+            MaterialID = 1,
+            Process = 2,
+            Pallet = "P2",
+            LoadStation = 3,
+            Stops = ImmutableList.Create(
+              new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 12 },
+              new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 13 }
+            ),
+            UnloadStation = 4,
+          }
         }
-      });
+      );
 
       _insp.MakeInspectionDecisions(2, 2, new[] { inspProg });
       CheckDecision(2, "insp1", expandedCounter2, false, now);
-      ExpectPathToBe(2, "insp1", new[] {
-        new MaterialProcessActualPath() {
-          MaterialID = 2,
-          Process = 1,
-          Pallet = "P5",
-          LoadStation = 6,
-          Stops = ImmutableList.Create(
-            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 15},
-            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 16}
-          ),
-          UnloadStation = 8,
-        },
-        new MaterialProcessActualPath() {
-          MaterialID = 2,
-          Process = 2,
-          Pallet = "P4",
-          LoadStation = 7,
-          Stops = ImmutableList.Create(
-            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 18},
-            new MaterialProcessActualPath.Stop() {StationName = "MC", StationNum = 19}
-          ),
-          UnloadStation = 9,
+      ExpectPathToBe(
+        2,
+        "insp1",
+        new[]
+        {
+          new MaterialProcessActualPath()
+          {
+            MaterialID = 2,
+            Process = 1,
+            Pallet = "P5",
+            LoadStation = 6,
+            Stops = ImmutableList.Create(
+              new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 15 },
+              new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 16 }
+            ),
+            UnloadStation = 8,
+          },
+          new MaterialProcessActualPath()
+          {
+            MaterialID = 2,
+            Process = 2,
+            Pallet = "P4",
+            LoadStation = 7,
+            Stops = ImmutableList.Create(
+              new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 18 },
+              new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 19 }
+            ),
+            UnloadStation = 9,
+          }
         }
-      });
+      );
 
       Assert.Equal(2, _insp.LoadInspectCounts().Count);
       CheckCount(expandedCounter1, 1);
@@ -371,21 +419,40 @@ namespace MachineWatchTest
     }
 
     private DateTime _lastCycleTime;
+
     private void AddCycle(LogMaterial[] mat, string pal, LogType loc, int statNum, bool end)
     {
       string name = loc == LogType.MachineCycle ? "MC" : "Load";
-      ((Repository)_insp).AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end));
+      ((Repository)_insp).AddLogEntryFromUnitTest(
+        new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end)
+      );
       _lastCycleTime = _lastCycleTime.AddMinutes(15);
-      ((Repository)_insp).AddLogEntryFromUnitTest(new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end));
+      ((Repository)_insp).AddLogEntryFromUnitTest(
+        new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end)
+      );
       _lastCycleTime = _lastCycleTime.AddMinutes(15);
     }
 
-    private void CheckDecision(long matID, string iType, string counter, bool inspect, DateTime now, bool forced = false)
+    private void CheckDecision(
+      long matID,
+      string iType,
+      string counter,
+      bool inspect,
+      DateTime now,
+      bool forced = false
+    )
     {
       CheckDecision(matID, _insp.LookupInspectionDecisions(matID), iType, counter, inspect, now, forced);
-
     }
-    private void CheckDecisions(IReadOnlyList<long> mats, string iType, string counter, IReadOnlyList<bool> inspect, DateTime now, bool forced = false)
+
+    private void CheckDecisions(
+      IReadOnlyList<long> mats,
+      string iType,
+      string counter,
+      IReadOnlyList<bool> inspect,
+      DateTime now,
+      bool forced = false
+    )
     {
       var insps = _insp.LookupInspectionDecisions(mats);
       insps.Keys.Should().BeEquivalentTo(mats);
@@ -394,7 +461,16 @@ namespace MachineWatchTest
         CheckDecision(mats[i], insps[mats[i]], iType, counter, inspect[i], now, forced);
       }
     }
-    private void CheckDecision(long matID, IReadOnlyList<Decision> decisions, string iType, string counter, bool inspect, DateTime now, bool forced = false)
+
+    private void CheckDecision(
+      long matID,
+      IReadOnlyList<Decision> decisions,
+      string iType,
+      string counter,
+      bool inspect,
+      DateTime now,
+      bool forced = false
+    )
     {
       int decisionCnt = 0;
       int forcedCnt = 0;
@@ -402,7 +478,8 @@ namespace MachineWatchTest
       {
         if (d.InspType == iType)
         {
-          d.Should().BeEquivalentTo(
+          d.Should()
+            .BeEquivalentTo(
               new Decision()
               {
                 MaterialID = matID,
@@ -415,10 +492,15 @@ namespace MachineWatchTest
               options =>
                 options
                   .ComparingByMembers<Decision>()
-                  .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4)))
-                    .WhenTypeIs<DateTime>()
+                  .Using<DateTime>(
+                    ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4))
+                  )
+                  .WhenTypeIs<DateTime>()
             );
-          if (d.Forced) forcedCnt += 1; else decisionCnt += 1;
+          if (d.Forced)
+            forcedCnt += 1;
+          else
+            decisionCnt += 1;
         }
       }
       Assert.Equal(1, decisionCnt);
@@ -455,8 +537,10 @@ namespace MachineWatchTest
         {
           foundEntry = true;
           var path = Newtonsoft.Json.JsonConvert.DeserializeObject<List<MaterialProcessActualPath>>(
-            entry.ProgramDetails["ActualPath"]);
-          path.Should().BeEquivalentTo(expected, options => options.ComparingByMembers<MaterialProcessActualPath>());
+            entry.ProgramDetails["ActualPath"]
+          );
+          path.Should()
+            .BeEquivalentTo(expected, options => options.ComparingByMembers<MaterialProcessActualPath>());
           break;
         }
       }

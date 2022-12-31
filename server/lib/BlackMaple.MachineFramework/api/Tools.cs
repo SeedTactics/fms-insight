@@ -116,8 +116,6 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? ConfiguredToolLifeCount { get; init; }
 
-    public static ToolUse operator %(ToolUse t, Action<IToolUseDraft> f)
-       => t.Produce(f);
+    public static ToolUse operator %(ToolUse t, Action<IToolUseDraft> f) => t.Produce(f);
   }
-
 }

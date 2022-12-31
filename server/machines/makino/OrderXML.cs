@@ -45,22 +45,25 @@ namespace Makino
       string tempFile = Path.GetTempFileName();
       try
       {
-
         WriteFile(tempFile, jobs, onlyOrders);
 
         var accControl = new System.Security.AccessControl.FileSecurity();
-        accControl.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
-            identity: new System.Security.Principal.SecurityIdentifier(System.Security.Principal.WellKnownSidType.WorldSid, null),
+        accControl.AddAccessRule(
+          new System.Security.AccessControl.FileSystemAccessRule(
+            identity: new System.Security.Principal.SecurityIdentifier(
+              System.Security.Principal.WellKnownSidType.WorldSid,
+              null
+            ),
             fileSystemRights: System.Security.AccessControl.FileSystemRights.FullControl,
             type: System.Security.AccessControl.AccessControlType.Allow
-        ));
+          )
+        );
         var finfo = new FileInfo(tempFile);
         finfo.SetAccessControl(accControl);
 
         if (File.Exists(filename))
           File.Delete(filename);
         File.Move(tempFile, filename);
-
       }
       finally
       {
@@ -80,6 +83,7 @@ namespace Makino
     {
       public Job job;
       public int proc;
+
       public JobAndProc(Job j, int p)
       {
         job = j;
@@ -139,7 +143,6 @@ namespace Makino
             WriteFixture(xml, fix.Key, fix.Value);
           xml.WriteEndElement();
         }
-
 
         xml.WriteStartElement("Orders");
         foreach (var j in jobs)
@@ -297,4 +300,3 @@ namespace Makino
     }
   }
 }
-

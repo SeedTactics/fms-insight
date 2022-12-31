@@ -55,21 +55,31 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private List<InProcessMaterial> _expectedLoadCastings = new List<InProcessMaterial>();
     private Dictionary<long, InProcessMaterial> _expectedMaterial = new Dictionary<long, InProcessMaterial>(); //key is matId
-    private Dictionary<int, List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>> _expectedFaces = new Dictionary<int, List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>>(); // key is pallet
+    private Dictionary<
+      int,
+      List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>
+    > _expectedFaces =
+      new Dictionary<
+        int,
+        List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>
+      >(); // key is pallet
     private Dictionary<string, int> _expectedStartedQty = new Dictionary<string, int>();
     private List<ProgramRevision> _expectedOldPrograms = new List<ProgramRevision>();
-    private Dictionary<string, Dictionary<(int proc, int path), int>> _expectedCompleted = new Dictionary<string, Dictionary<(int proc, int path), int>>();
-    private Dictionary<string, ImmutableList<ImmutableList<long>>> _expectedPrecedence = new Dictionary<string, ImmutableList<ImmutableList<long>>>();
+    private Dictionary<string, Dictionary<(int proc, int path), int>> _expectedCompleted =
+      new Dictionary<string, Dictionary<(int proc, int path), int>>();
+    private Dictionary<string, ImmutableList<ImmutableList<long>>> _expectedPrecedence =
+      new Dictionary<string, ImmutableList<ImmutableList<long>>>();
     private Dictionary<int, string> _expectedPalletAlarms = new Dictionary<int, string>();
     private HashSet<int> _expectedMachineAlarms = new HashSet<int>();
 
     public FakeIccDsl(int numPals, int numMachines)
     {
-      _serialSt = new SerialSettings() { SerialType = SerialType.AssignOneSerialPerMaterial, ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10) };
-      _settings = new FMSSettings()
+      _serialSt = new SerialSettings()
       {
-        QuarantineQueue = "Quarantine"
+        SerialType = SerialType.AssignOneSerialPerMaterial,
+        ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
       };
+      _settings = new FMSSettings() { QuarantineQueue = "Quarantine" };
       _settings.Queues.Add("thequeue", new MachineFramework.QueueSize());
       _settings.Queues.Add("qqq", new MachineFramework.QueueSize());
       _settings.Queues.Add("Quarantine", new MachineFramework.QueueSize());
@@ -80,19 +90,28 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _statNames = new NiigataStationNames()
       {
         ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
-        IccMachineToJobMachNames =
-          Enumerable.Range(1, numMachines)
+        IccMachineToJobMachNames = Enumerable
+          .Range(1, numMachines)
           .ToDictionary(mc => mc, mc => (group: "TestMC", num: 100 + mc))
       };
 
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
-      _assign = new MultiPalletAssign(new IAssignPallets[] {
-        new AssignNewRoutesOnPallets(_statNames),
-        new SizedQueues(new Dictionary<string, QueueSize>() {
-          {"sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1}}
-        })
-      });
+      _assign = new MultiPalletAssign(
+        new IAssignPallets[]
+        {
+          new AssignNewRoutesOnPallets(_statNames),
+          new SizedQueues(
+            new Dictionary<string, QueueSize>()
+            {
+              {
+                "sizedQ",
+                new QueueSize() { MaxSizeBeforeStopUnloading = 1 }
+              }
+            }
+          )
+        }
+      );
       _createLog = new CreateCellState(_settings, _statNames, machConn);
 
       _status = new NiigataStatus();
@@ -102,35 +121,37 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _status.Machines = new Dictionary<int, MachineStatus>();
       for (int mach = 1; mach <= numMachines; mach++)
       {
-        _status.Machines.Add(mach, new MachineStatus()
-        {
-          MachineNumber = mach,
-          Machining = false,
-          CurrentlyExecutingProgram = 0,
-          FMSLinkMode = true,
-          Alarm = false
-        });
+        _status.Machines.Add(
+          mach,
+          new MachineStatus()
+          {
+            MachineNumber = mach,
+            Machining = false,
+            CurrentlyExecutingProgram = 0,
+            FMSLinkMode = true,
+            Alarm = false
+          }
+        );
       }
 
       _status.Pallets = new List<PalletStatus>();
       var rng = new Random();
       for (int pal = 1; pal <= numPals; pal++)
       {
-        _status.Pallets.Add(new PalletStatus()
-        {
-          Master = new PalletMaster()
+        _status.Pallets.Add(
+          new PalletStatus()
           {
-            PalletNum = pal,
-            NoWork = rng.NextDouble() > 0.5 // RouteInvalid is true, so all pallets should be considered empty
-          },
-          CurStation = NiigataStationNum.Buffer(pal),
-          Tracking = new TrackingInfo()
-          {
-            RouteInvalid = true,
-            Alarm = false
+            Master = new PalletMaster()
+            {
+              PalletNum = pal,
+              NoWork = rng.NextDouble() > 0.5 // RouteInvalid is true, so all pallets should be considered empty
+            },
+            CurStation = NiigataStationNum.Buffer(pal),
+            Tracking = new TrackingInfo() { RouteInvalid = true, Alarm = false }
           }
-        });
-        _expectedFaces[pal] = new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>();
+        );
+        _expectedFaces[pal] =
+          new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>();
       }
     }
 
@@ -145,16 +166,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _status.Pallets[pal - 1].CurStation = NiigataStationNum.Buffer(buff);
       return this;
     }
+
     public FakeIccDsl MoveToMachineQueue(int pal, int mach)
     {
       _status.Pallets[pal - 1].CurStation = NiigataStationNum.MachineQueue(mach, _statNames);
       return this;
     }
+
     public FakeIccDsl MoveToMachineOutboundQueue(int pal, int mach)
     {
       _status.Pallets[pal - 1].CurStation = NiigataStationNum.MachineOutboundQueue(mach, _statNames);
       return this;
     }
+
     public FakeIccDsl MoveToMachine(int pal, int mach)
     {
       _status.Pallets[pal - 1].CurStation = NiigataStationNum.Machine(mach, _statNames);
@@ -320,7 +344,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl SetPalletAlarm(int pal, bool alarm, PalletAlarmCode code = PalletAlarmCode.NoAlarm, string alarmMsg = "")
+    public FakeIccDsl SetPalletAlarm(
+      int pal,
+      bool alarm,
+      PalletAlarmCode code = PalletAlarmCode.NoAlarm,
+      string alarmMsg = ""
+    )
     {
       _status.Pallets[pal - 1].Tracking.Alarm = alarm;
       _status.Pallets[pal - 1].Tracking.AlarmCode = code;
@@ -339,7 +368,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       if (manual)
       {
-        _expectedFaces[pal] = new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>();
+        _expectedFaces[pal] =
+          new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>();
       }
       _status.Pallets[pal - 1].Master.Comment = manual ? "aaa Manual yyy" : "";
       return this;
@@ -381,36 +411,34 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl OverrideRoute(int pal, string comment, bool noWork, IEnumerable<int> luls, IEnumerable<int> machs, IEnumerable<int> progs, IEnumerable<int> machs2 = null, IEnumerable<int> progs2 = null, IEnumerable<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)> faces = null)
+    public FakeIccDsl OverrideRoute(
+      int pal,
+      string comment,
+      bool noWork,
+      IEnumerable<int> luls,
+      IEnumerable<int> machs,
+      IEnumerable<int> progs,
+      IEnumerable<int> machs2 = null,
+      IEnumerable<int> progs2 = null,
+      IEnumerable<(
+        int face,
+        string unique,
+        int proc,
+        int path,
+        IEnumerable<ProgramsForProcess> progs
+      )> faces = null
+    )
     {
       var routes = new List<RouteStep>();
-      routes.Add(
-        new LoadStep()
-        {
-          LoadStations = luls.ToList()
-        });
-      routes.Add(
-        new MachiningStep()
-        {
-          Machines = machs.ToList(),
-          ProgramNumsToRun = progs.ToList()
-        });
+      routes.Add(new LoadStep() { LoadStations = luls.ToList() });
+      routes.Add(new MachiningStep() { Machines = machs.ToList(), ProgramNumsToRun = progs.ToList() });
 
       if (machs2 != null && progs2 != null)
       {
-        routes.Add(
-          new MachiningStep()
-          {
-            Machines = machs2.ToList(),
-            ProgramNumsToRun = progs2.ToList()
-          });
+        routes.Add(new MachiningStep() { Machines = machs2.ToList(), ProgramNumsToRun = progs2.ToList() });
       }
 
-      routes.Add(new UnloadStep()
-      {
-        UnloadStations = luls.ToList()
-      });
-
+      routes.Add(new UnloadStep() { UnloadStations = luls.ToList() });
 
       _status.Pallets[pal - 1].Tracking.RouteInvalid = false;
       _status.Pallets[pal - 1].Master = new PalletMaster()
@@ -421,7 +449,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         NoWork = noWork,
         Routes = routes
       };
-      _expectedFaces[pal] = faces == null ? new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>() : faces.ToList();
+      _expectedFaces[pal] =
+        faces == null
+          ? new List<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)>()
+          : faces.ToList();
 
       return this;
     }
@@ -453,13 +484,24 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #endregion
 
     #region Material
-    public FakeIccDsl AddUnallocatedCasting(string queue, string rawMatName, out LogMaterial mat, string workorder = null, int numProc = 1)
+    public FakeIccDsl AddUnallocatedCasting(
+      string queue,
+      string rawMatName,
+      out LogMaterial mat,
+      string workorder = null,
+      int numProc = 1
+    )
     {
       var matId = _logDB.AllocateMaterialIDForCasting(rawMatName);
       if (_serialSt.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
-          new EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
+          new EventLogMaterial()
+          {
+            MaterialID = matId,
+            Process = 0,
+            Face = ""
+          },
           _serialSt.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
         );
@@ -467,7 +509,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (!string.IsNullOrEmpty(workorder))
       {
         _logDB.RecordWorkorderForMaterialID(
-          new EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" },
+          new EventLogMaterial()
+          {
+            MaterialID = matId,
+            Process = 0,
+            Face = ""
+          },
           workorder,
           _status.TimeOfStatusUTC
         );
@@ -494,10 +541,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Path = 1,
         Serial = _serialSt.ConvertMaterialIDToSerial(matId),
         WorkorderId = workorder,
-        Action = new InProcessMaterialAction()
-        {
-          Type = InProcessMaterialAction.ActionType.Waiting
-        },
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.InQueue,
@@ -518,13 +562,27 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl AddAllocatedMaterial(string queue, string uniq, string part, int proc, int path, int numProc, out LogMaterial mat, string workorder = null)
+    public FakeIccDsl AddAllocatedMaterial(
+      string queue,
+      string uniq,
+      string part,
+      int proc,
+      int path,
+      int numProc,
+      out LogMaterial mat,
+      string workorder = null
+    )
     {
       var matId = _logDB.AllocateMaterialID(unique: uniq, part: part, numProc: numProc);
       if (_serialSt.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
         _logDB.RecordSerialForMaterialID(
-          new EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
+          new EventLogMaterial()
+          {
+            MaterialID = matId,
+            Process = proc,
+            Face = ""
+          },
           _serialSt.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
         );
@@ -532,7 +590,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (!string.IsNullOrEmpty(workorder))
       {
         _logDB.RecordWorkorderForMaterialID(
-          new EventLogMaterial() { MaterialID = matId, Process = proc, Face = "" },
+          new EventLogMaterial()
+          {
+            MaterialID = matId,
+            Process = proc,
+            Face = ""
+          },
           workorder,
           _status.TimeOfStatusUTC
         );
@@ -559,10 +622,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Path = path,
         Serial = _serialSt.ConvertMaterialIDToSerial(matId),
         WorkorderId = workorder,
-        Action = new InProcessMaterialAction()
-        {
-          Type = InProcessMaterialAction.ActionType.Waiting
-        },
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.InQueue,
@@ -598,12 +658,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         reason: "TestAddCasting",
         timeUTC: _status.TimeOfStatusUTC
       );
-      _expectedMaterial[mat.MaterialID] %= m => m.SetLocation(new InProcessMaterialLocation()
-      {
-        Type = InProcessMaterialLocation.LocType.InQueue,
-        CurrentQueue = queue,
-        QueuePosition = pos
-      });
+      _expectedMaterial[mat.MaterialID] %= m =>
+        m.SetLocation(
+          new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = queue,
+            QueuePosition = pos
+          }
+        );
       return this;
     }
 
@@ -611,7 +674,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       foreach (var mat in mats)
       {
-        _logDB.RecordRemoveMaterialFromAllQueues(EventLogMaterial.FromLogMat(mat), operatorName: null, _status.TimeOfStatusUTC);
+        _logDB.RecordRemoveMaterialFromAllQueues(
+          EventLogMaterial.FromLogMat(mat),
+          operatorName: null,
+          _status.TimeOfStatusUTC
+        );
         _expectedMaterial.Remove(mat.MaterialID);
       }
       return this;
@@ -631,28 +698,32 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl SetExpectedLoadCastings(IEnumerable<(string unique, string part, int pal, int path, int face)> castings)
+    public FakeIccDsl SetExpectedLoadCastings(
+      IEnumerable<(string unique, string part, int pal, int path, int face)> castings
+    )
     {
-      _expectedLoadCastings = castings.Select(c => new InProcessMaterial()
-      {
-        MaterialID = -1,
-        JobUnique = c.unique,
-        PartName = c.part,
-        Process = 0,
-        Path = c.path,
-        Action = new InProcessMaterialAction()
-        {
-          Type = InProcessMaterialAction.ActionType.Loading,
-          LoadOntoPallet = c.pal.ToString(),
-          LoadOntoFace = c.face,
-          ProcessAfterLoad = 1,
-          PathAfterLoad = c.path,
-        },
-        Location = new InProcessMaterialLocation()
-        {
-          Type = InProcessMaterialLocation.LocType.Free
-        }
-      }).ToList();
+      _expectedLoadCastings = castings
+        .Select(
+          c =>
+            new InProcessMaterial()
+            {
+              MaterialID = -1,
+              JobUnique = c.unique,
+              PartName = c.part,
+              Process = 0,
+              Path = c.path,
+              Action = new InProcessMaterialAction()
+              {
+                Type = InProcessMaterialAction.ActionType.Loading,
+                LoadOntoPallet = c.pal.ToString(),
+                LoadOntoFace = c.face,
+                ProcessAfterLoad = 1,
+                PathAfterLoad = c.path,
+              },
+              Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free }
+            }
+        )
+        .ToList();
       return this;
     }
 
@@ -663,7 +734,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         var m = _expectedLoadCastings[i];
         if (m.Action.LoadOntoPallet == pal.ToString())
         {
-          _expectedLoadCastings[i] = m % (mat => mat.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(mins));
+          _expectedLoadCastings[i] =
+            m % (mat => mat.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(mins));
         }
       }
       return this;
@@ -721,33 +793,46 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public static IEnumerable<LogMaterial> ClearFaces(IEnumerable<LogMaterial> mats)
     {
-      return mats.Select(m => new LogMaterial(
-        matID: m.MaterialID,
-        uniq: m.JobUniqueStr,
-        proc: m.Process,
-        part: m.PartName,
-        numProc: m.NumProcesses,
-        serial: m.Serial,
-        workorder: m.Workorder,
-        face: ""
-      )).ToList();
+      return mats.Select(
+          m =>
+            new LogMaterial(
+              matID: m.MaterialID,
+              uniq: m.JobUniqueStr,
+              proc: m.Process,
+              part: m.PartName,
+              numProc: m.NumProcesses,
+              serial: m.Serial,
+              workorder: m.Workorder,
+              face: ""
+            )
+        )
+        .ToList();
     }
 
     public static IEnumerable<LogMaterial> SetProc(int proc, IEnumerable<LogMaterial> mats)
     {
-      return mats.Select(m => new LogMaterial(
-        matID: m.MaterialID,
-        uniq: m.JobUniqueStr,
-        proc: proc,
-        part: m.PartName,
-        numProc: m.NumProcesses,
-        serial: m.Serial,
-        workorder: m.Workorder,
-        face: m.Face
-      )).ToList();
+      return mats.Select(
+          m =>
+            new LogMaterial(
+              matID: m.MaterialID,
+              uniq: m.JobUniqueStr,
+              proc: proc,
+              part: m.PartName,
+              numProc: m.NumProcesses,
+              serial: m.Serial,
+              workorder: m.Workorder,
+              face: m.Face
+            )
+        )
+        .ToList();
     }
 
-    public FakeIccDsl SwapMaterial(int pal, long matOnPalId, long matToAddId, out IEnumerable<LogMaterial> newMat)
+    public FakeIccDsl SwapMaterial(
+      int pal,
+      long matOnPalId,
+      long matToAddId,
+      out IEnumerable<LogMaterial> newMat
+    )
     {
       var swap = _logDB.SwapMaterialInCurrentPalletCycle(
         pallet: pal.ToString(),
@@ -767,15 +852,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         mat.JobUnique = oldMatToAdd.JobUnique;
         mat.Process = oldMatToAdd.Process;
         mat.Path = oldMatToAdd.Path;
-        mat.SetLocation(new InProcessMaterialLocation()
-        {
-          Type = InProcessMaterialLocation.LocType.InQueue,
-          CurrentQueue = queue,
-          QueuePosition =
-        _expectedMaterial.Where(n => n.Value.Location.Type == InProcessMaterialLocation.LocType.InQueue && n.Value.Location.CurrentQueue == queue)
-        .Select(n => n.Value.Location.QueuePosition)
-        .Max()
-        });
+        mat.SetLocation(
+          new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = queue,
+            QueuePosition = _expectedMaterial
+              .Where(
+                n =>
+                  n.Value.Location.Type == InProcessMaterialLocation.LocType.InQueue
+                  && n.Value.Location.CurrentQueue == queue
+              )
+              .Select(n => n.Value.Location.QueuePosition)
+              .Max()
+          }
+        );
       };
 
       _expectedMaterial[matToAddId] %= mat =>
@@ -783,18 +874,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         mat.JobUnique = oldMatOnPal.JobUnique;
         mat.Process = oldMatOnPal.Process;
         mat.Path = oldMatOnPal.Path;
-        mat.SetLocation(new InProcessMaterialLocation()
-        {
-          Type = InProcessMaterialLocation.LocType.OnPallet,
-          Pallet = pal.ToString(),
-          Face = oldMatOnPal.Location.Face
-        });
+        mat.SetLocation(
+          new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.OnPallet,
+            Pallet = pal.ToString(),
+            Face = oldMatOnPal.Location.Face
+          }
+        );
       };
 
       int numProc = _logDB.LoadJob(oldMatOnPal.JobUnique).Processes.Count;
 
-      newMat = new[] {
-  new LogMaterial(matID: matToAddId, uniq: oldMatOnPal.JobUnique, proc: oldMatOnPal.Process, part: oldMatOnPal.PartName, numProc: numProc, serial: oldMatToAdd.Serial, workorder: oldMatToAdd.WorkorderId ?? "", face: oldMatOnPal.Location.Face.ToString())
+      newMat = new[]
+      {
+        new LogMaterial(
+          matID: matToAddId,
+          uniq: oldMatOnPal.JobUnique,
+          proc: oldMatOnPal.Process,
+          part: oldMatOnPal.PartName,
+          numProc: numProc,
+          serial: oldMatToAdd.Serial,
+          workorder: oldMatToAdd.WorkorderId ?? "",
+          face: oldMatOnPal.Location.Face.ToString()
+        )
       };
 
       return this;
@@ -807,22 +910,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _expectedStartedQty[unique] += cnt;
       return this;
     }
+
     public FakeIccDsl RemoveJobStartedCnt(string unique)
     {
       _expectedStartedQty.Remove(unique);
       return this;
     }
+
     public FakeIccDsl SetJobStartedCnt(string unique, int cnt)
     {
       _expectedStartedQty[unique] = cnt;
       return this;
     }
+
     public FakeIccDsl IncrJobCompletedCnt(string unique, int proc, int path, int cnt = 1)
     {
       _expectedCompleted[unique][(proc: proc, path: path)] += cnt;
       return this;
     }
-    public FakeIccDsl AddJobs(IEnumerable<(Job, int[][])> jobs, IEnumerable<(string prog, long rev)> progs = null, IEnumerable<Workorder> workorders = null)
+
+    public FakeIccDsl AddJobs(
+      IEnumerable<(Job, int[][])> jobs,
+      IEnumerable<(string prog, long rev)> progs = null,
+      IEnumerable<Workorder> workorders = null
+    )
     {
       if (progs == null)
         progs = Enumerable.Empty<(string prog, long rev)>();
@@ -830,15 +941,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         ScheduleId = DateTime.UtcNow.Ticks.ToString(),
         Jobs = jobs.Select(j => j.Item1).ToImmutableList(),
-        Programs =
-            progs.Select(p =>
-            new MachineFramework.NewProgramContent()
-            {
-              ProgramName = p.prog,
-              Revision = p.rev,
-              Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
-              ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
-            }).ToImmutableList(),
+        Programs = progs
+          .Select(
+            p =>
+              new MachineFramework.NewProgramContent()
+              {
+                ProgramName = p.prog,
+                Revision = p.rev,
+                Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
+                ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
+              }
+          )
+          .ToImmutableList(),
         CurrentUnfilledWorkorders = workorders?.ToImmutableList()
       };
       _logDB.AddJobs(newJ, null, addAsCopiedToSystem: true);
@@ -856,26 +970,34 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         }
         _expectedCompleted[j.UniqueStr] = completed;
-        _expectedPrecedence[j.UniqueStr] = precedence.Select(ps => ps.Select(p => (long)p).ToImmutableList()).ToImmutableList();
+        _expectedPrecedence[j.UniqueStr] = precedence
+          .Select(ps => ps.Select(p => (long)p).ToImmutableList())
+          .ToImmutableList();
       }
       return this;
-
     }
 
     public FakeIccDsl SetJobPrecedence(string uniq, int[][] precs)
     {
-      _expectedPrecedence[uniq] = precs.Select(ps => ps.Select(p => (long)p).ToImmutableList()).ToImmutableList();
+      _expectedPrecedence[uniq] = precs
+        .Select(ps => ps.Select(p => (long)p).ToImmutableList())
+        .ToImmutableList();
       return this;
     }
 
     public FakeIccDsl AddJobDecrement(string uniq)
     {
-      _logDB.AddNewDecrement(new[] {
-        new NewDecrementQuantity() {
-          JobUnique = uniq,
-          Part = "part",
-          Quantity = 1
-      }});
+      _logDB.AddNewDecrement(
+        new[]
+        {
+          new NewDecrementQuantity()
+          {
+            JobUnique = uniq,
+            Part = "part",
+            Quantity = 1
+          }
+        }
+      );
       return this;
     }
 
@@ -885,261 +1007,418 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
-    public FakeIccDsl ReplaceWorkorders(IEnumerable<Workorder> workorders, IEnumerable<MachineFramework.NewProgramContent> programs)
+    public FakeIccDsl ReplaceWorkorders(
+      IEnumerable<Workorder> workorders,
+      IEnumerable<MachineFramework.NewProgramContent> programs
+    )
     {
-      _logDB.ReplaceWorkordersForSchedule(_logDB.LoadMostRecentSchedule().LatestScheduleId, workorders, programs);
+      _logDB.ReplaceWorkordersForSchedule(
+        _logDB.LoadMostRecentSchedule().LatestScheduleId,
+        workorders,
+        programs
+      );
       return this;
     }
 
-    public static (Job, int[][]) CreateOneProcOnePathJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog, long? progRev, int loadMins, int machMins, int unloadMins, string fixture, int face, string queue = null, string casting = null, bool manual = false, int precedence = 0)
+    public static (Job, int[][]) CreateOneProcOnePathJob(
+      string unique,
+      string part,
+      int qty,
+      int priority,
+      int partsPerPal,
+      int[] pals,
+      int[] luls,
+      int[] machs,
+      string prog,
+      long? progRev,
+      int loadMins,
+      int machMins,
+      int unloadMins,
+      string fixture,
+      int face,
+      string queue = null,
+      string casting = null,
+      bool manual = false,
+      int precedence = 0
+    )
     {
-      return (new Job()
-      {
-        UniqueStr = unique,
-        PartName = part,
-        ManuallyCreated = manual,
-        RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
-        Cycles = qty,
-        Processes = ImmutableList.Create(new ProcessInfo()
+      return (
+        new Job()
         {
-          Paths = ImmutableList.Create(new ProcPathInfo()
-          {
-            Load = luls.ToImmutableList(),
-            Unload = luls.ToImmutableList(),
-            ExpectedLoadTime = TimeSpan.FromMinutes(loadMins),
-            ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins),
-            PartsPerPallet = partsPerPal,
-            Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
-            Fixture = fixture,
-            Face = face,
-            InputQueue = queue,
-            Casting = casting,
-            Stops = ImmutableList.Create(new MachiningStop()
+          UniqueStr = unique,
+          PartName = part,
+          ManuallyCreated = manual,
+          RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
+          Cycles = qty,
+          Processes = ImmutableList.Create(
+            new ProcessInfo()
             {
-              StationGroup = "TestMC",
-              Program = prog,
-              ProgramRevision = progRev,
-              ExpectedCycleTime = TimeSpan.FromMinutes(machMins),
-              Stations = machs.Select(m => m + 100).ToImmutableList(),
-            })
-          })
-        })
-      }, new int[][] { new int[] { precedence } });
-    }
-
-    public static (Job, int[][]) CreateOneProcOnePathMultiStepJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs1, string prog1, long? prog1Rev, int[] machs2, string prog2, long? prog2Rev, int[] reclamp, int loadMins, int machMins1, int machMins2, int reclampMins, int unloadMins, string fixture, int face, string queue = null, int precedence = 0)
-    {
-      var stops = ImmutableList.CreateBuilder<MachiningStop>();
-
-      stops.Add(new MachiningStop()
-      {
-        StationGroup = "TestMC",
-        Program = prog1,
-        ProgramRevision = prog1Rev,
-        ExpectedCycleTime = TimeSpan.FromMinutes(machMins1),
-        Stations = machs1.Select(m => m + 100).ToImmutableList(),
-      });
-
-      stops.Add(new MachiningStop()
-      {
-        StationGroup = "TestMC",
-        Program = prog2,
-        ProgramRevision = prog2Rev,
-        ExpectedCycleTime = TimeSpan.FromMinutes(machMins2),
-        Stations = machs2.Select(m => m + 100).ToImmutableList(),
-      });
-
-      if (reclamp.Any())
-      {
-        stops.Add(new MachiningStop()
-        {
-          StationGroup = "TestReclamp",
-          ExpectedCycleTime = TimeSpan.FromMinutes(reclampMins),
-          Stations = reclamp.ToImmutableList(),
-        });
-      }
-
-      return (new Job()
-      {
-        UniqueStr = unique,
-        PartName = part,
-        RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
-        Cycles = qty,
-        Processes = ImmutableList.Create(new ProcessInfo()
-        {
-          Paths = ImmutableList.Create(new ProcPathInfo()
-          {
-            Load = luls.ToImmutableList(),
-            Unload = luls.ToImmutableList(),
-            ExpectedLoadTime = TimeSpan.FromMinutes(loadMins),
-            ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins),
-            PartsPerPallet = partsPerPal,
-            Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
-            Fixture = fixture,
-            Face = face,
-            InputQueue = queue,
-            Stops = stops.ToImmutable()
-          })
-        })
-      }, new int[][] { new[] { precedence } }
+              Paths = ImmutableList.Create(
+                new ProcPathInfo()
+                {
+                  Load = luls.ToImmutableList(),
+                  Unload = luls.ToImmutableList(),
+                  ExpectedLoadTime = TimeSpan.FromMinutes(loadMins),
+                  ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins),
+                  PartsPerPallet = partsPerPal,
+                  Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
+                  Fixture = fixture,
+                  Face = face,
+                  InputQueue = queue,
+                  Casting = casting,
+                  Stops = ImmutableList.Create(
+                    new MachiningStop()
+                    {
+                      StationGroup = "TestMC",
+                      Program = prog,
+                      ProgramRevision = progRev,
+                      ExpectedCycleTime = TimeSpan.FromMinutes(machMins),
+                      Stations = machs.Select(m => m + 100).ToImmutableList(),
+                    }
+                  )
+                }
+              )
+            }
+          )
+        },
+        new int[][] { new int[] { precedence } }
       );
     }
 
-    public static (Job, int[][]) CreateMultiProcSamePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals, int[] luls, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, int face1, int face2, int prec1 = 0, int prec2 = 1)
+    public static (Job, int[][]) CreateOneProcOnePathMultiStepJob(
+      string unique,
+      string part,
+      int qty,
+      int priority,
+      int partsPerPal,
+      int[] pals,
+      int[] luls,
+      int[] machs1,
+      string prog1,
+      long? prog1Rev,
+      int[] machs2,
+      string prog2,
+      long? prog2Rev,
+      int[] reclamp,
+      int loadMins,
+      int machMins1,
+      int machMins2,
+      int reclampMins,
+      int unloadMins,
+      string fixture,
+      int face,
+      string queue = null,
+      int precedence = 0
+    )
     {
-      return (new Job()
+      var stops = ImmutableList.CreateBuilder<MachiningStop>();
+
+      stops.Add(
+        new MachiningStop()
+        {
+          StationGroup = "TestMC",
+          Program = prog1,
+          ProgramRevision = prog1Rev,
+          ExpectedCycleTime = TimeSpan.FromMinutes(machMins1),
+          Stations = machs1.Select(m => m + 100).ToImmutableList(),
+        }
+      );
+
+      stops.Add(
+        new MachiningStop()
+        {
+          StationGroup = "TestMC",
+          Program = prog2,
+          ProgramRevision = prog2Rev,
+          ExpectedCycleTime = TimeSpan.FromMinutes(machMins2),
+          Stations = machs2.Select(m => m + 100).ToImmutableList(),
+        }
+      );
+
+      if (reclamp.Any())
       {
-        UniqueStr = unique,
-        PartName = part,
-        RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
-        Cycles = qty,
-        Processes = ImmutableList.Create(
-          new ProcessInfo()
+        stops.Add(
+          new MachiningStop()
           {
-            Paths = ImmutableList.Create(new ProcPathInfo()
+            StationGroup = "TestReclamp",
+            ExpectedCycleTime = TimeSpan.FromMinutes(reclampMins),
+            Stations = reclamp.ToImmutableList(),
+          }
+        );
+      }
+
+      return (
+        new Job()
+        {
+          UniqueStr = unique,
+          PartName = part,
+          RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
+          Cycles = qty,
+          Processes = ImmutableList.Create(
+            new ProcessInfo()
             {
-              SimulatedStartingUTC = DateTime.UtcNow.AddHours(-priority).AddMinutes(10),
-              Load = luls.ToImmutableList(),
-              Unload = luls.ToImmutableList(),
-              ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
-              ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins1),
-              PartsPerPallet = partsPerPal,
-              Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
-              Fixture = fixture,
-              Face = face1,
-              Stops = ImmutableList.Create(
-                new MachiningStop()
+              Paths = ImmutableList.Create(
+                new ProcPathInfo()
                 {
-                  StationGroup = "TestMC",
-                  Program = prog1,
-                  ProgramRevision = prog1Rev,
-                  ExpectedCycleTime = TimeSpan.FromMinutes(machMins1),
-                  Stations = machs.Select(m => m + 100).ToImmutableList(),
-                })
-            })
-          },
-          new ProcessInfo()
-          {
-            Paths = ImmutableList.Create(new ProcPathInfo()
-            {
-              SimulatedStartingUTC = DateTime.UtcNow.AddHours(-priority).AddMinutes(20),
-              Load = luls.ToImmutableList(),
-              Unload = luls.ToImmutableList(),
-              ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
-              ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
-              PartsPerPallet = partsPerPal,
-              Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
-              Fixture = fixture,
-              Face = face2,
-              Stops = ImmutableList.Create(new MachiningStop()
-              {
-                StationGroup = "TestMC",
-                Program = prog2,
-                ProgramRevision = prog2Rev,
-                ExpectedCycleTime = TimeSpan.FromMinutes(machMins2),
-                Stations = machs.Select(m => m + 100).ToImmutableList(),
-              })
-            })
-          })
-      }, new[] { new[] { prec1 }, new[] { prec2 } });
+                  Load = luls.ToImmutableList(),
+                  Unload = luls.ToImmutableList(),
+                  ExpectedLoadTime = TimeSpan.FromMinutes(loadMins),
+                  ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins),
+                  PartsPerPallet = partsPerPal,
+                  Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
+                  Fixture = fixture,
+                  Face = face,
+                  InputQueue = queue,
+                  Stops = stops.ToImmutable()
+                }
+              )
+            }
+          )
+        },
+        new int[][] { new[] { precedence } }
+      );
     }
 
-    public static (Job, int[][]) CreateMultiProcSeparatePalletJob(string unique, string part, int qty, int priority, int partsPerPal, int[] pals1, int[] pals2, int[] load1, int[] load2, int[] unload1, int[] unload2, int[] machs, string prog1, long? prog1Rev, string prog2, long? prog2Rev, int loadMins1, int machMins1, int unloadMins1, int loadMins2, int machMins2, int unloadMins2, string fixture, string transQ, int[] reclamp1 = null, int reclamp1Mins = 1, int[] reclamp2 = null, int reclamp2Min = 1, string rawMatName = null, string castingQ = null, int prec1 = 0, int prec2 = 1)
+    public static (Job, int[][]) CreateMultiProcSamePalletJob(
+      string unique,
+      string part,
+      int qty,
+      int priority,
+      int partsPerPal,
+      int[] pals,
+      int[] luls,
+      int[] machs,
+      string prog1,
+      long? prog1Rev,
+      string prog2,
+      long? prog2Rev,
+      int loadMins1,
+      int machMins1,
+      int unloadMins1,
+      int loadMins2,
+      int machMins2,
+      int unloadMins2,
+      string fixture,
+      int face1,
+      int face2,
+      int prec1 = 0,
+      int prec2 = 1
+    )
+    {
+      return (
+        new Job()
+        {
+          UniqueStr = unique,
+          PartName = part,
+          RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
+          Cycles = qty,
+          Processes = ImmutableList.Create(
+            new ProcessInfo()
+            {
+              Paths = ImmutableList.Create(
+                new ProcPathInfo()
+                {
+                  SimulatedStartingUTC = DateTime.UtcNow.AddHours(-priority).AddMinutes(10),
+                  Load = luls.ToImmutableList(),
+                  Unload = luls.ToImmutableList(),
+                  ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
+                  ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins1),
+                  PartsPerPallet = partsPerPal,
+                  Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
+                  Fixture = fixture,
+                  Face = face1,
+                  Stops = ImmutableList.Create(
+                    new MachiningStop()
+                    {
+                      StationGroup = "TestMC",
+                      Program = prog1,
+                      ProgramRevision = prog1Rev,
+                      ExpectedCycleTime = TimeSpan.FromMinutes(machMins1),
+                      Stations = machs.Select(m => m + 100).ToImmutableList(),
+                    }
+                  )
+                }
+              )
+            },
+            new ProcessInfo()
+            {
+              Paths = ImmutableList.Create(
+                new ProcPathInfo()
+                {
+                  SimulatedStartingUTC = DateTime.UtcNow.AddHours(-priority).AddMinutes(20),
+                  Load = luls.ToImmutableList(),
+                  Unload = luls.ToImmutableList(),
+                  ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
+                  ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
+                  PartsPerPallet = partsPerPal,
+                  Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
+                  Fixture = fixture,
+                  Face = face2,
+                  Stops = ImmutableList.Create(
+                    new MachiningStop()
+                    {
+                      StationGroup = "TestMC",
+                      Program = prog2,
+                      ProgramRevision = prog2Rev,
+                      ExpectedCycleTime = TimeSpan.FromMinutes(machMins2),
+                      Stations = machs.Select(m => m + 100).ToImmutableList(),
+                    }
+                  )
+                }
+              )
+            }
+          )
+        },
+        new[] { new[] { prec1 }, new[] { prec2 } }
+      );
+    }
+
+    public static (Job, int[][]) CreateMultiProcSeparatePalletJob(
+      string unique,
+      string part,
+      int qty,
+      int priority,
+      int partsPerPal,
+      int[] pals1,
+      int[] pals2,
+      int[] load1,
+      int[] load2,
+      int[] unload1,
+      int[] unload2,
+      int[] machs,
+      string prog1,
+      long? prog1Rev,
+      string prog2,
+      long? prog2Rev,
+      int loadMins1,
+      int machMins1,
+      int unloadMins1,
+      int loadMins2,
+      int machMins2,
+      int unloadMins2,
+      string fixture,
+      string transQ,
+      int[] reclamp1 = null,
+      int reclamp1Mins = 1,
+      int[] reclamp2 = null,
+      int reclamp2Min = 1,
+      string rawMatName = null,
+      string castingQ = null,
+      int prec1 = 0,
+      int prec2 = 1
+    )
     {
       var stops1 = ImmutableList.CreateBuilder<MachiningStop>();
       var stops2 = ImmutableList.CreateBuilder<MachiningStop>();
 
-      stops1.Add(new MachiningStop()
-      {
-        StationGroup = "TestMC",
-        Program = prog1,
-        ProgramRevision = prog1Rev,
-        ExpectedCycleTime = TimeSpan.FromMinutes(machMins1),
-        Stations = machs.Select(m => m + 100).ToImmutableList(),
-      });
-
+      stops1.Add(
+        new MachiningStop()
+        {
+          StationGroup = "TestMC",
+          Program = prog1,
+          ProgramRevision = prog1Rev,
+          ExpectedCycleTime = TimeSpan.FromMinutes(machMins1),
+          Stations = machs.Select(m => m + 100).ToImmutableList(),
+        }
+      );
 
       if (reclamp1 != null && reclamp1.Any())
       {
-        stops1.Add(new MachiningStop()
-        {
-          StationGroup = "TestReclamp",
-          ExpectedCycleTime = TimeSpan.FromMinutes(reclamp1Mins),
-          Stations = reclamp1.ToImmutableList(),
-        });
+        stops1.Add(
+          new MachiningStop()
+          {
+            StationGroup = "TestReclamp",
+            ExpectedCycleTime = TimeSpan.FromMinutes(reclamp1Mins),
+            Stations = reclamp1.ToImmutableList(),
+          }
+        );
       }
 
       if (reclamp2 != null && reclamp2.Any())
       {
-        stops2.Add(new MachiningStop()
-        {
-          StationGroup = "TestReclamp",
-          ExpectedCycleTime = TimeSpan.FromMinutes(reclamp2Min),
-          Stations = reclamp2.ToImmutableList(),
-        });
+        stops2.Add(
+          new MachiningStop()
+          {
+            StationGroup = "TestReclamp",
+            ExpectedCycleTime = TimeSpan.FromMinutes(reclamp2Min),
+            Stations = reclamp2.ToImmutableList(),
+          }
+        );
       }
 
-      stops2.Add(new MachiningStop()
-      {
-        StationGroup = "TestMC",
-        Program = prog2,
-        ProgramRevision = prog2Rev,
-        ExpectedCycleTime = TimeSpan.FromMinutes(machMins2),
-        Stations = machs.Select(m => m + 100).ToImmutableList(),
-      });
+      stops2.Add(
+        new MachiningStop()
+        {
+          StationGroup = "TestMC",
+          Program = prog2,
+          ProgramRevision = prog2Rev,
+          ExpectedCycleTime = TimeSpan.FromMinutes(machMins2),
+          Stations = machs.Select(m => m + 100).ToImmutableList(),
+        }
+      );
 
-      return (new Job()
-      {
-        UniqueStr = unique,
-        PartName = part,
-        RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
-        Cycles = qty,
-        Processes = ImmutableList.Create(
-          new ProcessInfo()
-          {
-            Paths = ImmutableList.Create(new ProcPathInfo()
+      return (
+        new Job()
+        {
+          UniqueStr = unique,
+          PartName = part,
+          RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
+          Cycles = qty,
+          Processes = ImmutableList.Create(
+            new ProcessInfo()
             {
-              Load = load1.ToImmutableList(),
-              Unload = unload1.ToImmutableList(),
-              ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
-              ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins1),
-              PartsPerPallet = partsPerPal,
-              Pallets = pals1.Select(p => p.ToString()).ToImmutableList(),
-              Fixture = fixture,
-              Face = 1,
-              Casting = string.IsNullOrEmpty(castingQ) ? null : rawMatName,
-              InputQueue = string.IsNullOrEmpty(castingQ) ? null : castingQ,
-              OutputQueue = transQ,
-              Stops = stops1.ToImmutable()
-            })
-          },
-          new ProcessInfo()
-          {
-            Paths = ImmutableList.Create(new ProcPathInfo()
+              Paths = ImmutableList.Create(
+                new ProcPathInfo()
+                {
+                  Load = load1.ToImmutableList(),
+                  Unload = unload1.ToImmutableList(),
+                  ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
+                  ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins1),
+                  PartsPerPallet = partsPerPal,
+                  Pallets = pals1.Select(p => p.ToString()).ToImmutableList(),
+                  Fixture = fixture,
+                  Face = 1,
+                  Casting = string.IsNullOrEmpty(castingQ) ? null : rawMatName,
+                  InputQueue = string.IsNullOrEmpty(castingQ) ? null : castingQ,
+                  OutputQueue = transQ,
+                  Stops = stops1.ToImmutable()
+                }
+              )
+            },
+            new ProcessInfo()
             {
-              Load = load2.ToImmutableList(),
-              Unload = unload2.ToImmutableList(),
-              ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
-              ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
-              PartsPerPallet = partsPerPal,
-              Pallets = pals2.Select(p => p.ToString()).ToImmutableList(),
-              Fixture = fixture,
-              Face = 1,
-              InputQueue = transQ,
-              Stops = stops2.ToImmutable()
-            })
-          })
-      }, new[] { new[] { prec1 }, new[] { prec2 } });
+              Paths = ImmutableList.Create(
+                new ProcPathInfo()
+                {
+                  Load = load2.ToImmutableList(),
+                  Unload = unload2.ToImmutableList(),
+                  ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
+                  ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
+                  PartsPerPallet = partsPerPal,
+                  Pallets = pals2.Select(p => p.ToString()).ToImmutableList(),
+                  Fixture = fixture,
+                  Face = 1,
+                  InputQueue = transQ,
+                  Stops = stops2.ToImmutable()
+                }
+              )
+            }
+          )
+        },
+        new[] { new[] { prec1 }, new[] { prec2 } }
+      );
     }
 
     public FakeIccDsl ExpectOldProgram(string name, long rev, int num)
     {
-      _expectedOldPrograms.Add(new ProgramRevision()
-      {
-        ProgramName = name,
-        Revision = rev,
-        CellControllerProgramName = num.ToString()
-      });
+      _expectedOldPrograms.Add(
+        new ProgramRevision()
+        {
+          ProgramName = name,
+          Revision = rev,
+          CellControllerProgramName = num.ToString()
+        }
+      );
       return this;
     }
 
@@ -1160,96 +1439,129 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var current = actualSt.Pallets[palNum - 1];
         current.Status.Should().Be(_status.Pallets[palNum - 1]);
-        current.CurrentOrLoadingFaces.Should().BeEquivalentTo(_expectedFaces[palNum].Select(face =>
-        {
-          var job = _logDB.LoadJob(face.unique);
-          return new PalletFace()
-          {
-            Job = job,
-            Process = face.proc,
-            Path = face.path,
-            Face = face.face,
-            PathInfo = job.Processes[face.proc - 1].Paths[face.path - 1],
-            FaceIsMissingMaterial = false,
-            Programs = face.progs?.ToImmutableList()
-              ??
-              job.Processes[face.proc - 1].Paths[face.path - 1].Stops
-              .Where(s => _statNames == null || !_statNames.ReclampGroupNames.Contains(s.StationGroup))
-              .Select((stop, stopIdx) => new ProgramsForProcess()
-              {
-                MachineStopIndex = stopIdx,
-                ProgramName = stop.Program,
-                Revision = stop.ProgramRevision
-              }).ToImmutableList()
-          };
-        }
-        ));
-        current.Material.Select(m => m.Mat).Should().BeEquivalentTo(
-          _expectedMaterial.Values.Concat(_expectedLoadCastings).Where(m =>
+        current.CurrentOrLoadingFaces
+          .Should()
+          .BeEquivalentTo(
+            _expectedFaces[palNum].Select(face =>
             {
-              if (m.Action.Type == InProcessMaterialAction.ActionType.Loading)
+              var job = _logDB.LoadJob(face.unique);
+              return new PalletFace()
               {
-                if (string.IsNullOrEmpty(m.Action.LoadOntoPallet))
+                Job = job,
+                Process = face.proc,
+                Path = face.path,
+                Face = face.face,
+                PathInfo = job.Processes[face.proc - 1].Paths[face.path - 1],
+                FaceIsMissingMaterial = false,
+                Programs =
+                  face.progs?.ToImmutableList()
+                  ?? job.Processes[face.proc - 1].Paths[face.path - 1].Stops
+                    .Where(s => _statNames == null || !_statNames.ReclampGroupNames.Contains(s.StationGroup))
+                    .Select(
+                      (stop, stopIdx) =>
+                        new ProgramsForProcess()
+                        {
+                          MachineStopIndex = stopIdx,
+                          ProgramName = stop.Program,
+                          Revision = stop.ProgramRevision
+                        }
+                    )
+                    .ToImmutableList()
+              };
+            })
+          );
+        current.Material
+          .Select(m => m.Mat)
+          .Should()
+          .BeEquivalentTo(
+            _expectedMaterial.Values
+              .Concat(_expectedLoadCastings)
+              .Where(m =>
+              {
+                if (m.Action.Type == InProcessMaterialAction.ActionType.Loading)
+                {
+                  if (string.IsNullOrEmpty(m.Action.LoadOntoPallet))
+                  {
+                    return m.Location.Pallet == palNum.ToString();
+                  }
+                  else
+                  {
+                    return m.Action.LoadOntoPallet == palNum.ToString();
+                  }
+                }
+                else if (m.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
                 {
                   return m.Location.Pallet == palNum.ToString();
                 }
-                else
-                {
-                  return m.Action.LoadOntoPallet == palNum.ToString();
-                }
-              }
-              else if (m.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
-              {
-                return m.Location.Pallet == palNum.ToString();
-              }
-              return false;
-            }),
+                return false;
+              }),
+            options => options.ComparingByMembers<InProcessMaterial>()
+          );
+
+        actualSt.CurrentStatus.Pallets[palNum.ToString()]
+          .Should()
+          .BeEquivalentTo(
+            new MachineFramework.PalletStatus()
+            {
+              Pallet = palNum.ToString(),
+              FixtureOnPallet = "",
+              OnHold = _status.Pallets[palNum - 1].Master.Skip,
+              CurrentPalletLocation = _status.Pallets[palNum - 1].CurStation.Location,
+              NumFaces = current.Material.Select(m => m.Mat.Location.Face ?? 1).DefaultIfEmpty(0).Max()
+            }
+          );
+      }
+      actualSt.QueuedMaterial
+        .Select(m => m.Mat)
+        .Should()
+        .BeEquivalentTo(
+          _expectedMaterial.Values.Where(
+            m =>
+              m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+              && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
+          ),
           options => options.ComparingByMembers<InProcessMaterial>()
         );
-
-        actualSt.CurrentStatus.Pallets[palNum.ToString()].Should().BeEquivalentTo(new MachineFramework.PalletStatus()
-        {
-          Pallet = palNum.ToString(),
-          FixtureOnPallet = "",
-          OnHold = _status.Pallets[palNum - 1].Master.Skip,
-          CurrentPalletLocation = _status.Pallets[palNum - 1].CurStation.Location,
-          NumFaces = current.Material
-              .Select(m => m.Mat.Location.Face ?? 1)
-              .DefaultIfEmpty(0)
-              .Max()
-        }
-        );
-      }
-      actualSt.QueuedMaterial.Select(m => m.Mat).Should().BeEquivalentTo(_expectedMaterial.Values.Where(
-        m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue && m.Action.Type == InProcessMaterialAction.ActionType.Waiting
-      ), options => options.ComparingByMembers<InProcessMaterial>());
-      actualSt.OldUnusedPrograms.Should()
+      actualSt.OldUnusedPrograms
+        .Should()
         .BeEquivalentTo(_expectedOldPrograms, options => options.Excluding(p => p.Comment));
 
-      actualSt.CurrentStatus.Jobs.Values.Should().BeEquivalentTo(
-        _logDB.LoadUnarchivedJobs().Select(j => j.CloneToDerived<ActiveJob, HistoricJob>() with
-        {
-          Cycles = j.Decrements != null ? j.Cycles - j.Decrements.Sum(d => d.Quantity) : j.Cycles,
-          RemainingToStart = j.Decrements != null && j.Decrements.Count > 0
-            ? 0
-            : j.Cycles - _expectedStartedQty.GetValueOrDefault(j.UniqueStr, 0),
-          Completed =
-            _expectedCompleted[j.UniqueStr]
-            .GroupBy(x => x.Key.proc)
-            .OrderBy(x => x.Key)
-            .Select(x => x.OrderBy(y => y.Key.path).Select(y => y.Value).ToImmutableList())
-            .ToImmutableList(),
-          Precedence = _expectedPrecedence[j.UniqueStr],
-          AssignedWorkorders = _logDB.GetWorkordersForUnique(j.UniqueStr)
-        })
-      );
+      actualSt.CurrentStatus.Jobs.Values
+        .Should()
+        .BeEquivalentTo(
+          _logDB
+            .LoadUnarchivedJobs()
+            .Select(
+              j =>
+                j.CloneToDerived<ActiveJob, HistoricJob>() with
+                {
+                  Cycles = j.Decrements != null ? j.Cycles - j.Decrements.Sum(d => d.Quantity) : j.Cycles,
+                  RemainingToStart =
+                    j.Decrements != null && j.Decrements.Count > 0
+                      ? 0
+                      : j.Cycles - _expectedStartedQty.GetValueOrDefault(j.UniqueStr, 0),
+                  Completed = _expectedCompleted[j.UniqueStr]
+                    .GroupBy(x => x.Key.proc)
+                    .OrderBy(x => x.Key)
+                    .Select(x => x.OrderBy(y => y.Key.path).Select(y => y.Value).ToImmutableList())
+                    .ToImmutableList(),
+                  Precedence = _expectedPrecedence[j.UniqueStr],
+                  AssignedWorkorders = _logDB.GetWorkordersForUnique(j.UniqueStr)
+                }
+            )
+        );
 
-      actualSt.CurrentStatus.Material.Should().BeEquivalentTo(
-        _expectedMaterial.Values.Concat(_expectedLoadCastings));
+      actualSt.CurrentStatus.Material
+        .Should()
+        .BeEquivalentTo(_expectedMaterial.Values.Concat(_expectedLoadCastings));
 
       actualSt.CurrentStatus.QueueSizes.Should().BeEquivalentTo(_settings.Queues);
 
-      actualSt.CurrentStatus.Alarms.Should().BeEquivalentTo(_expectedPalletAlarms.Values.Concat(_expectedMachineAlarms.Select(m => $"Machine {m} has an alarm")));
+      actualSt.CurrentStatus.Alarms
+        .Should()
+        .BeEquivalentTo(
+          _expectedPalletAlarms.Values.Concat(_expectedMachineAlarms.Select(m => $"Machine {m} has an alarm"))
+        );
     }
 
     public FakeIccDsl ExpectNoChanges()
@@ -1293,7 +1605,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public List<LogMaterial> OutMaterial { get; set; }
     }
 
-    public static ExpectedChange LoadCastingToFace(int pal, int lul, int face, string unique, int path, int cnt, int elapsedMin, int activeMins, out IEnumerable<LogMaterial> mats, Action<IInProcessMaterialDraft> adj = null)
+    public static ExpectedChange LoadCastingToFace(
+      int pal,
+      int lul,
+      int face,
+      string unique,
+      int path,
+      int cnt,
+      int elapsedMin,
+      int activeMins,
+      out IEnumerable<LogMaterial> mats,
+      Action<IInProcessMaterialDraft> adj = null
+    )
     {
       var e = new ExpectedLoadCastingEvt()
       {
@@ -1321,19 +1644,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int ActiveMins { get; set; }
     }
 
-    public ExpectedChange LoadToFace(int pal, int face, string unique, int lul, int elapsedMin, int activeMins, IEnumerable<LogMaterial> loadingMats, out IEnumerable<LogMaterial> loadedMats, string part = null)
+    public ExpectedChange LoadToFace(
+      int pal,
+      int face,
+      string unique,
+      int lul,
+      int elapsedMin,
+      int activeMins,
+      IEnumerable<LogMaterial> loadingMats,
+      out IEnumerable<LogMaterial> loadedMats,
+      string part = null
+    )
     {
-      loadedMats = loadingMats.Select(m =>
-        new LogMaterial(
-          matID: m.MaterialID,
-          uniq: unique,
-          proc: m.Process + 1,
-          part: part == null ? m.PartName : part,
-          numProc: m.NumProcesses,
-          serial: m.Serial,
-          workorder: m.Workorder,
-          face: face.ToString()
-        )
+      loadedMats = loadingMats.Select(
+        m =>
+          new LogMaterial(
+            matID: m.MaterialID,
+            uniq: unique,
+            proc: m.Process + 1,
+            part: part == null ? m.PartName : part,
+            numProc: m.NumProcesses,
+            serial: m.Serial,
+            workorder: m.Workorder,
+            face: face.ToString()
+          )
       );
       return new ExpectedLoadMatsEvt()
       {
@@ -1353,9 +1687,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int ElapsedMins { get; set; }
     }
 
-    public static ExpectedChange RemoveFromQueue(string queue, int pos, int elapMin, IEnumerable<LogMaterial> mat)
+    public static ExpectedChange RemoveFromQueue(
+      string queue,
+      int pos,
+      int elapMin,
+      IEnumerable<LogMaterial> mat
+    )
     {
-      return new ExpectedRemoveFromQueueEvt() { Material = mat, FromQueue = queue, Position = pos, ElapsedMins = elapMin };
+      return new ExpectedRemoveFromQueueEvt()
+      {
+        Material = mat,
+        FromQueue = queue,
+        Position = pos,
+        ElapsedMins = elapMin
+      };
     }
 
     private class ExpectedUnloadEvt : ExpectedChange
@@ -1367,7 +1712,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int ActiveMins { get; set; }
     }
 
-    public static ExpectedChange UnloadFromFace(int pal, int lul, int elapsedMin, int activeMins, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange UnloadFromFace(
+      int pal,
+      int lul,
+      int elapsedMin,
+      int activeMins,
+      IEnumerable<LogMaterial> mats
+    )
     {
       return new ExpectedUnloadEvt()
       {
@@ -1387,7 +1738,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public string Reason { get; set; }
     }
 
-    public static ExpectedChange AddToQueue(string queue, int pos, string reason, IEnumerable<LogMaterial> mat)
+    public static ExpectedChange AddToQueue(
+      string queue,
+      int pos,
+      string reason,
+      IEnumerable<LogMaterial> mat
+    )
     {
       return new ExpectedAddToQueueEvt()
       {
@@ -1401,29 +1757,33 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private class ExpectNewRouteChange : ExpectedChange
     {
       public PalletMaster ExpectedMaster { get; set; }
-      public IEnumerable<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)> Faces { get; set; }
+      public IEnumerable<(
+        int face,
+        string unique,
+        int proc,
+        int path,
+        IEnumerable<ProgramsForProcess> progs
+      )> Faces { get; set; }
     }
 
-    public static ExpectedChange ExpectNewRoute(int pal, int[] luls, int[] machs, int[] progs, int pri,
-                  IEnumerable<(int face, string unique, int proc, int path)> faces,
-                  int[] unloads = null,
-                  IEnumerable<(int face, ProgramsForProcess[] progs)> progOverride = null,
-                  int[] reclamp = null,
-                  bool reclampFirst = false
-                 )
+    public static ExpectedChange ExpectNewRoute(
+      int pal,
+      int[] luls,
+      int[] machs,
+      int[] progs,
+      int pri,
+      IEnumerable<(int face, string unique, int proc, int path)> faces,
+      int[] unloads = null,
+      IEnumerable<(int face, ProgramsForProcess[] progs)> progOverride = null,
+      int[] reclamp = null,
+      bool reclampFirst = false
+    )
     {
-      var routes = new List<RouteStep> {
-  new LoadStep() {
-    LoadStations = luls.ToList()
-  },
-  new MachiningStep() {
-    Machines = machs.ToList(),
-    ProgramNumsToRun = progs.ToList()
-  },
-  new UnloadStep() {
-    UnloadStations = (unloads ?? luls).ToList(),
-    CompletedPartCount = 1
-  }
+      var routes = new List<RouteStep>
+      {
+        new LoadStep() { LoadStations = luls.ToList() },
+        new MachiningStep() { Machines = machs.ToList(), ProgramNumsToRun = progs.ToList() },
+        new UnloadStep() { UnloadStations = (unloads ?? luls).ToList(), CompletedPartCount = 1 }
       };
       if (reclamp != null)
       {
@@ -1445,13 +1805,25 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         },
         Faces = faces.Select(f =>
         {
-          var overrideProgs = (IEnumerable<ProgramsForProcess>)progOverride?.FirstOrDefault(p => p.face == f.face).progs;
+          var overrideProgs =
+            (IEnumerable<ProgramsForProcess>)progOverride?.FirstOrDefault(p => p.face == f.face).progs;
           return (face: f.face, unique: f.unique, proc: f.proc, path: f.path, progs: overrideProgs);
         })
       };
     }
 
-    public static ExpectedChange ExpectNewRoute(int pal, int[] loads, int[] machs1, int[] progs1, int[] machs2, int[] progs2, int[] reclamp, int[] unloads, int pri, IEnumerable<(int face, string unique, int proc, int path)> faces)
+    public static ExpectedChange ExpectNewRoute(
+      int pal,
+      int[] loads,
+      int[] machs1,
+      int[] progs1,
+      int[] machs2,
+      int[] progs2,
+      int[] reclamp,
+      int[] unloads,
+      int pri,
+      IEnumerable<(int face, string unique, int proc, int path)> faces
+    )
     {
       return new ExpectNewRouteChange()
       {
@@ -1465,28 +1837,25 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Skip = false,
           ForLongToolMaintenance = false,
           PerformProgramDownload = true,
-          Routes = new List<RouteStep> {
-      new LoadStep() {
-        LoadStations = loads.ToList()
-      },
-      new MachiningStep() {
-        Machines = machs1.ToList(),
-        ProgramNumsToRun = progs1.ToList()
-      },
-      new MachiningStep() {
-        Machines = machs2.ToList(),
-        ProgramNumsToRun = progs2.ToList()
-      },
-      new ReclampStep() {
-        Reclamp = reclamp.ToList()
-      },
-      new UnloadStep() {
-        UnloadStations = unloads.ToList(),
-        CompletedPartCount = 1
-      }
-    },
+          Routes = new List<RouteStep>
+          {
+            new LoadStep() { LoadStations = loads.ToList() },
+            new MachiningStep() { Machines = machs1.ToList(), ProgramNumsToRun = progs1.ToList() },
+            new MachiningStep() { Machines = machs2.ToList(), ProgramNumsToRun = progs2.ToList() },
+            new ReclampStep() { Reclamp = reclamp.ToList() },
+            new UnloadStep() { UnloadStations = unloads.ToList(), CompletedPartCount = 1 }
+          },
         },
-        Faces = faces.Select(f => (face: f.face, unique: f.unique, proc: f.proc, path: f.path, progs: (IEnumerable<ProgramsForProcess>)null))
+        Faces = faces.Select(
+          f =>
+            (
+              face: f.face,
+              unique: f.unique,
+              proc: f.proc,
+              path: f.path,
+              progs: (IEnumerable<ProgramsForProcess>)null
+            )
+        )
       };
     }
 
@@ -1494,16 +1863,35 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       public int Pallet { get; set; }
       public int NewCycleCount { get; set; }
-      public IEnumerable<(int face, string unique, int proc, int path, IEnumerable<ProgramsForProcess> progs)> Faces { get; set; }
+      public IEnumerable<(
+        int face,
+        string unique,
+        int proc,
+        int path,
+        IEnumerable<ProgramsForProcess> progs
+      )> Faces { get; set; }
     }
 
-    public static ExpectedChange ExpectRouteIncrement(int pal, int newCycleCnt, IEnumerable<(int face, string unique, int proc, int path)> faces = null)
+    public static ExpectedChange ExpectRouteIncrement(
+      int pal,
+      int newCycleCnt,
+      IEnumerable<(int face, string unique, int proc, int path)> faces = null
+    )
     {
       return new ExpectRouteIncrementChange()
       {
         Pallet = pal,
         NewCycleCount = newCycleCnt,
-        Faces = faces?.Select(f => (face: f.face, unique: f.unique, proc: f.proc, path: f.path, progs: (IEnumerable<ProgramsForProcess>)null))
+        Faces = faces?.Select(
+          f =>
+            (
+              face: f.face,
+              unique: f.unique,
+              proc: f.proc,
+              path: f.path,
+              progs: (IEnumerable<ProgramsForProcess>)null
+            )
+        )
       };
     }
 
@@ -1537,7 +1925,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     public static ExpectedChange ExpectNoWork(int pal, bool noWork)
     {
       return new ExpectPalNoWork() { Pallet = pal, NoWork = noWork };
-
     }
 
     private class ExpectMachineBeginEvent : ExpectedChange
@@ -1549,7 +1936,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectMachineBegin(int pal, int machine, string program, IEnumerable<LogMaterial> mat, long? rev = null)
+    public static ExpectedChange ExpectMachineBegin(
+      int pal,
+      int machine,
+      string program,
+      IEnumerable<LogMaterial> mat,
+      long? rev = null
+    )
     {
       return new ExpectMachineBeginEvent()
       {
@@ -1572,7 +1965,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectMachineEnd(int pal, int mach, string program, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats, long? rev = null)
+    public static ExpectedChange ExpectMachineEnd(
+      int pal,
+      int mach,
+      string program,
+      int elapsedMin,
+      int activeMin,
+      IEnumerable<LogMaterial> mats,
+      long? rev = null
+    )
     {
       return new ExpectMachineEndEvent()
       {
@@ -1612,7 +2013,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectReclampEnd(int pal, int lul, int elapsedMin, int activeMin, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange ExpectReclampEnd(
+      int pal,
+      int lul,
+      int elapsedMin,
+      int activeMin,
+      IEnumerable<LogMaterial> mats
+    )
     {
       return new ExpectReclampEndEvent()
       {
@@ -1632,7 +2039,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectStockerStart(int pal, int stocker, bool waitForMach, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange ExpectStockerStart(
+      int pal,
+      int stocker,
+      bool waitForMach,
+      IEnumerable<LogMaterial> mats
+    )
     {
       return new ExpectStockerStartEvent()
       {
@@ -1652,7 +2064,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectStockerEnd(int pal, int stocker, int elapMin, bool waitForMach, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange ExpectStockerEnd(
+      int pal,
+      int stocker,
+      int elapMin,
+      bool waitForMach,
+      IEnumerable<LogMaterial> mats
+    )
     {
       return new ExpectStockerEndEvent()
       {
@@ -1690,7 +2108,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
     }
 
-    public static ExpectedChange ExpectRotaryEnd(int pal, int mach, bool rotate, int elapMin, IEnumerable<LogMaterial> mats)
+    public static ExpectedChange ExpectRotaryEnd(
+      int pal,
+      int mach,
+      bool rotate,
+      int elapMin,
+      IEnumerable<LogMaterial> mats
+    )
     {
       return new ExpectRotaryEndEvent()
       {
@@ -1711,7 +2135,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<MaterialProcessActualPath> Path { get; set; }
     }
 
-    public static ExpectedChange ExpectInspection(IEnumerable<LogMaterial> mat, string cntr, string inspTy, bool inspect, IEnumerable<MaterialProcessActualPath> path)
+    public static ExpectedChange ExpectInspection(
+      IEnumerable<LogMaterial> mat,
+      string cntr,
+      string inspTy,
+      bool inspect,
+      IEnumerable<MaterialProcessActualPath> path
+    )
     {
       return new ExpectInspectionDecision()
       {
@@ -1731,11 +2161,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public static ExpectedChange ExpectPalletCycle(int pal, int mins)
     {
-      return new ExpectPalletCycleChange()
-      {
-        Pallet = pal,
-        Minutes = mins
-      };
+      return new ExpectPalletCycleChange() { Pallet = pal, Minutes = mins };
     }
 
     private class ExpectAddProgram : ExpectedChange
@@ -1778,9 +2204,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
     }
 
-    public FakeIccDsl ExpectTransition(IEnumerable<ExpectedChange> expectedChanges, bool expectedUpdates = true)
+    public FakeIccDsl ExpectTransition(
+      IEnumerable<ExpectedChange> expectedChanges,
+      bool expectedUpdates = true
+    )
     {
-
       using (var logMonitor = _logDBCfg.Monitor())
       {
         var cellSt = _createLog.BuildCellState(_logDB, _status);
@@ -1794,7 +2222,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           var action = _assign.NewPalletChange(cellSt);
           action.Should().BeEquivalentTo<NewProgram>(expectAdd.Expected);
-          _logDB.SetCellControllerProgramForProgram(expectAdd.Expected.ProgramName, expectAdd.Expected.ProgramRevision, expectAdd.Expected.ProgramNum.ToString());
+          _logDB.SetCellControllerProgramForProgram(
+            expectAdd.Expected.ProgramName,
+            expectAdd.Expected.ProgramRevision,
+            expectAdd.Expected.ProgramNum.ToString()
+          );
           _status.Programs[expectAdd.Expected.ProgramNum] = new ProgramEntry()
           {
             ProgramNum = expectAdd.Expected.ProgramNum,
@@ -1808,10 +2240,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
         }
 
-        var expectedDelRoute = (ExpectRouteDeleteChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteDeleteChange);
-        var expectedNewRoute = (ExpectNewRouteChange)expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);
-        var expectIncr = (ExpectRouteIncrementChange)expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
-        var expectFirstDelete = (ExpectedDeleteProgram)expectedChanges.FirstOrDefault(e => e is ExpectedDeleteProgram);
+        var expectedDelRoute = (ExpectRouteDeleteChange)
+          expectedChanges.FirstOrDefault(e => e is ExpectRouteDeleteChange);
+        var expectedNewRoute = (ExpectNewRouteChange)
+          expectedChanges.FirstOrDefault(e => e is ExpectNewRouteChange);
+        var expectIncr = (ExpectRouteIncrementChange)
+          expectedChanges.FirstOrDefault(e => e is ExpectRouteIncrementChange);
+        var expectFirstDelete = (ExpectedDeleteProgram)
+          expectedChanges.FirstOrDefault(e => e is ExpectedDeleteProgram);
         var expectHold = (ExpectPalHold)expectedChanges.FirstOrDefault(e => e is ExpectPalHold);
         var expectNoWork = (ExpectPalNoWork)expectedChanges.FirstOrDefault(e => e is ExpectPalNoWork);
 
@@ -1819,10 +2255,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           var action = _assign.NewPalletChange(cellSt);
           var pal = expectedDelRoute.Pallet;
-          action.Should().BeEquivalentTo<DeletePalletRoute>(new DeletePalletRoute()
-          {
-            PalletNum = pal
-          });
+          action.Should().BeEquivalentTo<DeletePalletRoute>(new DeletePalletRoute() { PalletNum = pal });
           _status.Pallets[pal - 1].Master.NoWork = true;
           _status.Pallets[pal - 1].Master.Comment = "";
           _status.Pallets[pal - 1].Master.Routes.Clear();
@@ -1837,56 +2270,71 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           var action = _assign.NewPalletChange(cellSt);
           var pal = expectedNewRoute.ExpectedMaster.PalletNum;
-          action.Should().BeEquivalentTo<NewPalletRoute>(new NewPalletRoute()
-          {
-            NewMaster = expectedNewRoute.ExpectedMaster,
-            NewFaces = expectedNewRoute.Faces.Select(f => new AssignedJobAndPathForFace()
-            {
-              Face = f.face,
-              Unique = f.unique,
-              Proc = f.proc,
-              Path = f.path,
-              ProgOverride = f.progs
-            })
-          }, options => options
-              .Excluding(e => e.NewMaster.Comment)
-              .RespectingRuntimeTypes()
+          action
+            .Should()
+            .BeEquivalentTo<NewPalletRoute>(
+              new NewPalletRoute()
+              {
+                NewMaster = expectedNewRoute.ExpectedMaster,
+                NewFaces = expectedNewRoute.Faces.Select(
+                  f =>
+                    new AssignedJobAndPathForFace()
+                    {
+                      Face = f.face,
+                      Unique = f.unique,
+                      Proc = f.proc,
+                      Path = f.path,
+                      ProgOverride = f.progs
+                    }
+                )
+              },
+              options => options.Excluding(e => e.NewMaster.Comment).RespectingRuntimeTypes()
+            );
+          ((NewPalletRoute)action).NewMaster.Comment = RecordFacesForPallet.Save(
+            ((NewPalletRoute)action).NewMaster.PalletNum,
+            _status.TimeOfStatusUTC,
+            ((NewPalletRoute)action).NewFaces,
+            _logDB
           );
-          ((NewPalletRoute)action).NewMaster.Comment =
-            RecordFacesForPallet.Save(((NewPalletRoute)action).NewMaster.PalletNum, _status.TimeOfStatusUTC, ((NewPalletRoute)action).NewFaces, _logDB);
           _status.Pallets[pal - 1].Master = ((NewPalletRoute)action).NewMaster;
           _status.Pallets[pal - 1].Tracking.RouteInvalid = false;
           _status.Pallets[pal - 1].Tracking.CurrentControlNum = 1;
           _status.Pallets[pal - 1].Tracking.CurrentStepNum = 1;
           _expectedFaces[pal] = expectedNewRoute.Faces.ToList();
 
-          expectedLogs.Add(new LogEntry(
-            cntr: -1,
-            mat: Enumerable.Empty<LogMaterial>(),
-            pal: pal.ToString(),
-            ty: LogType.GeneralMessage,
-            locName: "Message",
-            locNum: 1,
-            prog: "Assign",
-            start: false,
-            endTime: _status.TimeOfStatusUTC,
-            result: "New Niigata Route",
-            endOfRoute: false
-          ));
+          expectedLogs.Add(
+            new LogEntry(
+              cntr: -1,
+              mat: Enumerable.Empty<LogMaterial>(),
+              pal: pal.ToString(),
+              ty: LogType.GeneralMessage,
+              locName: "Message",
+              locNum: 1,
+              prog: "Assign",
+              start: false,
+              endTime: _status.TimeOfStatusUTC,
+              result: "New Niigata Route",
+              endOfRoute: false
+            )
+          );
         }
         else if (expectIncr != null)
         {
           var action = _assign.NewPalletChange(cellSt);
           var pal = expectIncr.Pallet;
-          action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
-          {
-            Pallet = pal,
-            Priority = _status.Pallets[pal - 1].Master.Priority,
-            Cycles = expectIncr.NewCycleCount,
-            NoWork = false,
-            Skip = false,
-            LongToolMachine = 0
-          });
+          action
+            .Should()
+            .BeEquivalentTo<UpdatePalletQuantities>(
+              new UpdatePalletQuantities()
+              {
+                Pallet = pal,
+                Priority = _status.Pallets[pal - 1].Master.Priority,
+                Cycles = expectIncr.NewCycleCount,
+                NoWork = false,
+                Skip = false,
+                LongToolMachine = 0
+              }
+            );
           _status.Pallets[pal - 1].Master.NoWork = false;
           _status.Pallets[pal - 1].Master.RemainingPalletCycles = expectIncr.NewCycleCount;
           _status.Pallets[pal - 1].Tracking.CurrentControlNum = 1;
@@ -1898,52 +2346,73 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         }
         else if (expectFirstDelete != null)
         {
-          foreach (var expectDelete in expectedChanges.Where(e => e is ExpectedDeleteProgram).Cast<ExpectedDeleteProgram>())
+          foreach (
+            var expectDelete in expectedChanges
+              .Where(e => e is ExpectedDeleteProgram)
+              .Cast<ExpectedDeleteProgram>()
+          )
           {
             var action = _assign.NewPalletChange(cellSt);
             action.Should().BeEquivalentTo<DeleteProgram>(expectDelete.Expected);
             _status.Programs.Remove(expectDelete.Expected.ProgramNum);
             if (expectDelete.IccFailure == false)
             {
-              _logDB.SetCellControllerProgramForProgram(expectDelete.Expected.ProgramName, expectDelete.Expected.ProgramRevision, null);
-              _expectedOldPrograms.RemoveAll(p => p.CellControllerProgramName == expectDelete.Expected.ProgramNum.ToString());
+              _logDB.SetCellControllerProgramForProgram(
+                expectDelete.Expected.ProgramName,
+                expectDelete.Expected.ProgramRevision,
+                null
+              );
+              _expectedOldPrograms.RemoveAll(
+                p => p.CellControllerProgramName == expectDelete.Expected.ProgramNum.ToString()
+              );
             }
             // reload cell state
             cellSt = _createLog.BuildCellState(_logDB, _status);
             cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
-            cellSt.OldUnusedPrograms.Should().BeEquivalentTo(_expectedOldPrograms,
-              options => options.ComparingByMembers<ProgramRevision>().Excluding(p => p.Comment)
-            );
+            cellSt.OldUnusedPrograms
+              .Should()
+              .BeEquivalentTo(
+                _expectedOldPrograms,
+                options => options.ComparingByMembers<ProgramRevision>().Excluding(p => p.Comment)
+              );
           }
         }
         else if (expectHold != null)
         {
           _status.Pallets[expectHold.Pallet - 1].Master.Skip.Should().Be(!expectHold.Hold);
           var action = _assign.NewPalletChange(cellSt);
-          action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
-          {
-            Pallet = expectHold.Pallet,
-            Priority = _status.Pallets[expectHold.Pallet - 1].Master.Priority,
-            Cycles = _status.Pallets[expectHold.Pallet - 1].Master.RemainingPalletCycles,
-            NoWork = false,
-            Skip = expectHold.Hold,
-            LongToolMachine = 0
-          });
+          action
+            .Should()
+            .BeEquivalentTo<UpdatePalletQuantities>(
+              new UpdatePalletQuantities()
+              {
+                Pallet = expectHold.Pallet,
+                Priority = _status.Pallets[expectHold.Pallet - 1].Master.Priority,
+                Cycles = _status.Pallets[expectHold.Pallet - 1].Master.RemainingPalletCycles,
+                NoWork = false,
+                Skip = expectHold.Hold,
+                LongToolMachine = 0
+              }
+            );
           _status.Pallets[expectHold.Pallet - 1].Master.Skip = expectHold.Hold;
         }
         else if (expectNoWork != null)
         {
           _status.Pallets[expectNoWork.Pallet - 1].Master.NoWork.Should().Be(!expectNoWork.NoWork);
           var action = _assign.NewPalletChange(cellSt);
-          action.Should().BeEquivalentTo<UpdatePalletQuantities>(new UpdatePalletQuantities()
-          {
-            Pallet = expectNoWork.Pallet,
-            Priority = _status.Pallets[expectNoWork.Pallet - 1].Master.Priority,
-            Cycles = _status.Pallets[expectNoWork.Pallet - 1].Master.RemainingPalletCycles,
-            NoWork = expectNoWork.NoWork,
-            Skip = _status.Pallets[expectNoWork.Pallet - 1].Master.Skip,
-            LongToolMachine = 0
-          });
+          action
+            .Should()
+            .BeEquivalentTo<UpdatePalletQuantities>(
+              new UpdatePalletQuantities()
+              {
+                Pallet = expectNoWork.Pallet,
+                Priority = _status.Pallets[expectNoWork.Pallet - 1].Master.Priority,
+                Cycles = _status.Pallets[expectNoWork.Pallet - 1].Master.RemainingPalletCycles,
+                NoWork = expectNoWork.NoWork,
+                Skip = _status.Pallets[expectNoWork.Pallet - 1].Master.Skip,
+                LongToolMachine = 0
+              }
+            );
           _status.Pallets[expectNoWork.Pallet - 1].Master.NoWork = expectNoWork.NoWork;
 
           // reload cell state
@@ -1962,21 +2431,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           switch (expected)
           {
             case ExpectPalletCycleChange palletCycleChange:
-              expectedLogs.Add(new LogEntry(
-                cntr: -1,
-                mat: Enumerable.Empty<LogMaterial>(),
-                pal: palletCycleChange.Pallet.ToString(),
-                ty: LogType.PalletCycle,
-                locName: "Pallet Cycle",
-                locNum: 1,
-                prog: "",
-                start: false,
-                endTime: _status.TimeOfStatusUTC,
-                result: "PalletCycle",
-                endOfRoute: false,
-                elapsed: TimeSpan.FromMinutes(palletCycleChange.Minutes),
-                active: TimeSpan.Zero
-              ));
+              expectedLogs.Add(
+                new LogEntry(
+                  cntr: -1,
+                  mat: Enumerable.Empty<LogMaterial>(),
+                  pal: palletCycleChange.Pallet.ToString(),
+                  ty: LogType.PalletCycle,
+                  locName: "Pallet Cycle",
+                  locNum: 1,
+                  prog: "",
+                  start: false,
+                  endTime: _status.TimeOfStatusUTC,
+                  result: "PalletCycle",
+                  endOfRoute: false,
+                  elapsed: TimeSpan.FromMinutes(palletCycleChange.Minutes),
+                  active: TimeSpan.Zero
+                )
+              );
               _status.Pallets[palletCycleChange.Pallet - 1].Master.RemainingPalletCycles -= 1;
               break;
 
@@ -1994,54 +2465,87 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   endTime: _status.TimeOfStatusUTC,
                   result: "LOAD",
                   endOfRoute: false
-              ));
+                )
+              );
               break;
 
             case ExpectedLoadCastingEvt load:
 
               // first, extract the newly created material
               var evt = evts.First(
-                e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.Material.Any(m => m.Face == load.Face.ToString())
+                e =>
+                  e.LogType == LogType.LoadUnloadCycle
+                  && e.Result == "LOAD"
+                  && e.Material.Any(m => m.Face == load.Face.ToString())
               );
               var matIds = evt.Material.Select(m => m.MaterialID);
 
               matIds.Count().Should().Be(load.Count);
 
-              load.OutMaterial.AddRange(evt.Material.Select(origMat => new LogMaterial(
-                matID: origMat.MaterialID, uniq: load.Unique, proc: 1, part: origMat.PartName, numProc: origMat.NumProcesses,
-                serial: _serialSt.ConvertMaterialIDToSerial(origMat.MaterialID), workorder: "", face: load.Face.ToString())
-              ));
+              load.OutMaterial.AddRange(
+                evt.Material.Select(
+                  origMat =>
+                    new LogMaterial(
+                      matID: origMat.MaterialID,
+                      uniq: load.Unique,
+                      proc: 1,
+                      part: origMat.PartName,
+                      numProc: origMat.NumProcesses,
+                      serial: _serialSt.ConvertMaterialIDToSerial(origMat.MaterialID),
+                      workorder: "",
+                      face: load.Face.ToString()
+                    )
+                )
+              );
 
               // now the expected events
-              expectedLogs.Add(new LogEntry(
-                cntr: -1,
-                mat: load.OutMaterial,
-                pal: load.Pallet.ToString(),
-                ty: LogType.LoadUnloadCycle,
-                locName: "L/U",
-                locNum: load.LoadStation,
-                prog: "LOAD",
-                start: false,
-                endTime: _status.TimeOfStatusUTC.AddSeconds(1),
-                result: "LOAD",
-                endOfRoute: false,
-                elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
-                active: TimeSpan.FromMinutes(load.ActiveMins)
-              ));
-              expectedLogs.AddRange(load.OutMaterial.Select(m => new LogEntry(
-                cntr: -1,
-                mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
-              numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: "") },
-                pal: "",
-                ty: LogType.PartMark,
-                locName: "Mark",
-                locNum: 1,
-                prog: "MARK",
-                start: false,
-                endTime: _status.TimeOfStatusUTC.AddSeconds(1),
-                result: _serialSt.ConvertMaterialIDToSerial(m.MaterialID),
-                endOfRoute: false
-              )));
+              expectedLogs.Add(
+                new LogEntry(
+                  cntr: -1,
+                  mat: load.OutMaterial,
+                  pal: load.Pallet.ToString(),
+                  ty: LogType.LoadUnloadCycle,
+                  locName: "L/U",
+                  locNum: load.LoadStation,
+                  prog: "LOAD",
+                  start: false,
+                  endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                  result: "LOAD",
+                  endOfRoute: false,
+                  elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
+                  active: TimeSpan.FromMinutes(load.ActiveMins)
+                )
+              );
+              expectedLogs.AddRange(
+                load.OutMaterial.Select(
+                  m =>
+                    new LogEntry(
+                      cntr: -1,
+                      mat: new[]
+                      {
+                        new LogMaterial(
+                          matID: m.MaterialID,
+                          uniq: m.JobUniqueStr,
+                          proc: m.Process,
+                          part: m.PartName,
+                          numProc: m.NumProcesses,
+                          serial: m.Serial,
+                          workorder: "",
+                          face: ""
+                        )
+                      },
+                      pal: "",
+                      ty: LogType.PartMark,
+                      locName: "Mark",
+                      locNum: 1,
+                      prog: "MARK",
+                      start: false,
+                      endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                      result: _serialSt.ConvertMaterialIDToSerial(m.MaterialID),
+                      endOfRoute: false
+                    )
+                )
+              );
 
               // finally, add the material to the expected material
               foreach (var m in load.OutMaterial)
@@ -2060,10 +2564,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     Pallet = load.Pallet.ToString(),
                     Face = load.Face
                   },
-                  Action = new InProcessMaterialAction()
-                  {
-                    Type = InProcessMaterialAction.ActionType.Waiting
-                  }
+                  Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
                 };
                 if (load.MatAdjust != null)
                 {
@@ -2073,134 +2574,182 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
               break;
 
-
             case ExpectedLoadMatsEvt load:
 
-              expectedLogs.Add(new LogEntry(
-                cntr: -1,
-                mat: load.Material,
-                pal: load.Pallet.ToString(),
-                ty: LogType.LoadUnloadCycle,
-                locName: "L/U",
-                locNum: load.LoadStation,
-                prog: "LOAD",
-                start: false,
-                endTime: _status.TimeOfStatusUTC.AddSeconds(1),
-                result: "LOAD",
-                endOfRoute: false,
-                elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
-                active: TimeSpan.FromMinutes(load.ActiveMins)
-              ));
+              expectedLogs.Add(
+                new LogEntry(
+                  cntr: -1,
+                  mat: load.Material,
+                  pal: load.Pallet.ToString(),
+                  ty: LogType.LoadUnloadCycle,
+                  locName: "L/U",
+                  locNum: load.LoadStation,
+                  prog: "LOAD",
+                  start: false,
+                  endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                  result: "LOAD",
+                  endOfRoute: false,
+                  elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
+                  active: TimeSpan.FromMinutes(load.ActiveMins)
+                )
+              );
               break;
 
             case ExpectedRemoveFromQueueEvt removeFromQueueEvt:
-              expectedLogs.AddRange(removeFromQueueEvt.Material.Select(m => new LogEntry(
-                cntr: -1,
-                mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
-              numProc: m.NumProcesses, serial: m.Serial, workorder: m.Workorder ?? "", face: m.Face) },
-                pal: "",
-                ty: LogType.RemoveFromQueue,
-                locName: removeFromQueueEvt.FromQueue,
-                locNum: removeFromQueueEvt.Position,
-                prog: "",
-                start: false,
-                endTime: _status.TimeOfStatusUTC.AddSeconds(1),
-                result: "",
-                endOfRoute: false,
-                // add 1 second because addtoqueue event is one-second after load end
-                elapsed: TimeSpan.FromMinutes(removeFromQueueEvt.ElapsedMins).Add(TimeSpan.FromSeconds(1)),
-                active: TimeSpan.Zero
-              )));
+              expectedLogs.AddRange(
+                removeFromQueueEvt.Material.Select(
+                  m =>
+                    new LogEntry(
+                      cntr: -1,
+                      mat: new[]
+                      {
+                        new LogMaterial(
+                          matID: m.MaterialID,
+                          uniq: m.JobUniqueStr,
+                          proc: m.Process,
+                          part: m.PartName,
+                          numProc: m.NumProcesses,
+                          serial: m.Serial,
+                          workorder: m.Workorder ?? "",
+                          face: m.Face
+                        )
+                      },
+                      pal: "",
+                      ty: LogType.RemoveFromQueue,
+                      locName: removeFromQueueEvt.FromQueue,
+                      locNum: removeFromQueueEvt.Position,
+                      prog: "",
+                      start: false,
+                      endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                      result: "",
+                      endOfRoute: false,
+                      // add 1 second because addtoqueue event is one-second after load end
+                      elapsed: TimeSpan
+                        .FromMinutes(removeFromQueueEvt.ElapsedMins)
+                        .Add(TimeSpan.FromSeconds(1)),
+                      active: TimeSpan.Zero
+                    )
+                )
+              );
               break;
 
-
             case ExpectedUnloadEvt unload:
-              expectedLogs.Add(new LogEntry(
-                cntr: -1,
-                mat: unload.Material,
-                pal: unload.Pallet.ToString(),
-                ty: LogType.LoadUnloadCycle,
-                locName: "L/U",
-                locNum: unload.LoadStation,
-                prog: "UNLOAD",
-                start: false,
-                endTime: _status.TimeOfStatusUTC,
-                result: "UNLOAD",
-                endOfRoute: true,
-                elapsed: TimeSpan.FromMinutes(unload.ElapsedMin),
-                active: TimeSpan.FromMinutes(unload.ActiveMins)
-              ));
+              expectedLogs.Add(
+                new LogEntry(
+                  cntr: -1,
+                  mat: unload.Material,
+                  pal: unload.Pallet.ToString(),
+                  ty: LogType.LoadUnloadCycle,
+                  locName: "L/U",
+                  locNum: unload.LoadStation,
+                  prog: "UNLOAD",
+                  start: false,
+                  endTime: _status.TimeOfStatusUTC,
+                  result: "UNLOAD",
+                  endOfRoute: true,
+                  elapsed: TimeSpan.FromMinutes(unload.ElapsedMin),
+                  active: TimeSpan.FromMinutes(unload.ActiveMins)
+                )
+              );
               break;
 
             case ExpectedAddToQueueEvt addToQueueEvt:
-              expectedLogs.AddRange(addToQueueEvt.Material.Select(m => new LogEntry(
-                cntr: -1,
-                mat: new[] { new LogMaterial(matID: m.MaterialID, uniq: m.JobUniqueStr, proc: m.Process, part: m.PartName,
-              numProc: m.NumProcesses, serial: m.Serial, workorder: "", face: m.Face) },
-                pal: "",
-                ty: LogType.AddToQueue,
-                locName: addToQueueEvt.ToQueue,
-                locNum: addToQueueEvt.Position,
-                prog: addToQueueEvt.Reason ?? "",
-                start: false,
-                endTime: _status.TimeOfStatusUTC,
-                result: "",
-                endOfRoute: false
-
-              )));
+              expectedLogs.AddRange(
+                addToQueueEvt.Material.Select(
+                  m =>
+                    new LogEntry(
+                      cntr: -1,
+                      mat: new[]
+                      {
+                        new LogMaterial(
+                          matID: m.MaterialID,
+                          uniq: m.JobUniqueStr,
+                          proc: m.Process,
+                          part: m.PartName,
+                          numProc: m.NumProcesses,
+                          serial: m.Serial,
+                          workorder: "",
+                          face: m.Face
+                        )
+                      },
+                      pal: "",
+                      ty: LogType.AddToQueue,
+                      locName: addToQueueEvt.ToQueue,
+                      locNum: addToQueueEvt.Position,
+                      prog: addToQueueEvt.Reason ?? "",
+                      start: false,
+                      endTime: _status.TimeOfStatusUTC,
+                      result: "",
+                      endOfRoute: false
+                    )
+                )
+              );
               break;
 
             case ExpectMachineBeginEvent machBegin:
+
               {
-                expectedLogs.Add(new LogEntry()
-                {
-                  Counter = -1,
-                  Material = machBegin.Material.ToImmutableList(),
-                  Pallet = machBegin.Pallet.ToString(),
-                  LogType = LogType.MachineCycle,
-                  LocationName = "TestMC",
-                  LocationNum = 100 + machBegin.Machine,
-                  Program = machBegin.Program,
-                  StartOfCycle = true,
-                  EndTimeUTC = _status.TimeOfStatusUTC,
-                  Result = "",
-                  EndOfRoute = false,
-                  ElapsedTime = TimeSpan.FromMinutes(-1),
-                  ProgramDetails = machBegin.Revision.HasValue
-                    ? ImmutableDictionary<string, string>.Empty.Add("ProgramRevision", machBegin.Revision.Value.ToString())
-                    : ImmutableDictionary<string, string>.Empty
-                });
+                expectedLogs.Add(
+                  new LogEntry()
+                  {
+                    Counter = -1,
+                    Material = machBegin.Material.ToImmutableList(),
+                    Pallet = machBegin.Pallet.ToString(),
+                    LogType = LogType.MachineCycle,
+                    LocationName = "TestMC",
+                    LocationNum = 100 + machBegin.Machine,
+                    Program = machBegin.Program,
+                    StartOfCycle = true,
+                    EndTimeUTC = _status.TimeOfStatusUTC,
+                    Result = "",
+                    EndOfRoute = false,
+                    ElapsedTime = TimeSpan.FromMinutes(-1),
+                    ProgramDetails = machBegin.Revision.HasValue
+                      ? ImmutableDictionary<string, string>.Empty.Add(
+                        "ProgramRevision",
+                        machBegin.Revision.Value.ToString()
+                      )
+                      : ImmutableDictionary<string, string>.Empty
+                  }
+                );
               }
               break;
 
             case ExpectMachineEndEvent machEnd:
-              {
 
-                expectedLogs.Add(new LogEntry()
-                {
-                  Counter = -1,
-                  Material = machEnd.Material.ToImmutableList(),
-                  Pallet = machEnd.Pallet.ToString(),
-                  LogType = LogType.MachineCycle,
-                  LocationName = "TestMC",
-                  LocationNum = 100 + machEnd.Machine,
-                  Program = machEnd.Program,
-                  StartOfCycle = false,
-                  EndTimeUTC = _status.TimeOfStatusUTC,
-                  Result = "",
-                  EndOfRoute = false,
-                  ElapsedTime = TimeSpan.FromMinutes(machEnd.ElapsedMin),
-                  ActiveOperationTime = TimeSpan.FromMinutes(machEnd.ActiveMin),
-                  ProgramDetails = machEnd.Revision.HasValue
-                    ? ImmutableDictionary<string, string>.Empty.Add("ProgramRevision", machEnd.Revision.Value.ToString())
-                    : ImmutableDictionary<string, string>.Empty
-                });
+              {
+                expectedLogs.Add(
+                  new LogEntry()
+                  {
+                    Counter = -1,
+                    Material = machEnd.Material.ToImmutableList(),
+                    Pallet = machEnd.Pallet.ToString(),
+                    LogType = LogType.MachineCycle,
+                    LocationName = "TestMC",
+                    LocationNum = 100 + machEnd.Machine,
+                    Program = machEnd.Program,
+                    StartOfCycle = false,
+                    EndTimeUTC = _status.TimeOfStatusUTC,
+                    Result = "",
+                    EndOfRoute = false,
+                    ElapsedTime = TimeSpan.FromMinutes(machEnd.ElapsedMin),
+                    ActiveOperationTime = TimeSpan.FromMinutes(machEnd.ActiveMin),
+                    ProgramDetails = machEnd.Revision.HasValue
+                      ? ImmutableDictionary<string, string>.Empty.Add(
+                        "ProgramRevision",
+                        machEnd.Revision.Value.ToString()
+                      )
+                      : ImmutableDictionary<string, string>.Empty
+                  }
+                );
               }
               break;
 
             case ExpectReclampBeginEvent reclampBegin:
+
               {
-                expectedLogs.Add(new LogEntry(
+                expectedLogs.Add(
+                  new LogEntry(
                     cntr: -1,
                     mat: reclampBegin.Material,
                     pal: reclampBegin.Pallet.ToString(),
@@ -2212,13 +2761,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     endTime: _status.TimeOfStatusUTC,
                     result: "TestReclamp",
                     endOfRoute: false
-                ));
+                  )
+                );
               }
               break;
 
             case ExpectReclampEndEvent reclampEnd:
+
               {
-                expectedLogs.Add(new LogEntry(
+                expectedLogs.Add(
+                  new LogEntry(
                     cntr: -1,
                     mat: reclampEnd.Material,
                     pal: reclampEnd.Pallet.ToString(),
@@ -2232,13 +2784,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     endOfRoute: false,
                     elapsed: TimeSpan.FromMinutes(reclampEnd.ElapsedMin),
                     active: TimeSpan.FromMinutes(reclampEnd.ActiveMin)
-                ));
+                  )
+                );
               }
               break;
 
             case ExpectStockerStartEvent stockerStart:
+
               {
-                expectedLogs.Add(new LogEntry(
+                expectedLogs.Add(
+                  new LogEntry(
                     cntr: -1,
                     mat: stockerStart.Material,
                     pal: stockerStart.Pallet.ToString(),
@@ -2250,13 +2805,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     endTime: _status.TimeOfStatusUTC,
                     result: stockerStart.WaitForMachine ? "WaitForMachine" : "WaitForUnload",
                     endOfRoute: false
-                ));
+                  )
+                );
               }
               break;
 
             case ExpectStockerEndEvent stockerEnd:
+
               {
-                expectedLogs.Add(new LogEntry(
+                expectedLogs.Add(
+                  new LogEntry(
                     cntr: -1,
                     mat: stockerEnd.Material,
                     pal: stockerEnd.Pallet.ToString(),
@@ -2270,13 +2828,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     endOfRoute: false,
                     elapsed: TimeSpan.FromMinutes(stockerEnd.ElapsedMin),
                     active: TimeSpan.Zero
-                ));
+                  )
+                );
               }
               break;
 
             case ExpectRotaryStartEvent rotaryStart:
+
               {
-                expectedLogs.Add(new LogEntry(
+                expectedLogs.Add(
+                  new LogEntry(
                     cntr: -1,
                     mat: rotaryStart.Material,
                     pal: rotaryStart.Pallet.ToString(),
@@ -2288,13 +2849,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     endTime: _status.TimeOfStatusUTC,
                     result: "Arrive",
                     endOfRoute: false
-                ));
+                  )
+                );
               }
               break;
 
             case ExpectRotaryEndEvent rotaryEnd:
+
               {
-                expectedLogs.Add(new LogEntry(
+                expectedLogs.Add(
+                  new LogEntry(
                     cntr: -1,
                     mat: rotaryEnd.Material,
                     pal: rotaryEnd.Pallet.ToString(),
@@ -2308,33 +2872,50 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     endOfRoute: false,
                     elapsed: TimeSpan.FromMinutes(rotaryEnd.ElapsedMin),
                     active: TimeSpan.Zero
-                ));
+                  )
+                );
               }
               break;
 
             case ExpectInspectionDecision insp:
               foreach (var mat in insp.Material)
               {
-                expectedLogs.Add(new LogEntry()
-                {
-                  Counter = -1,
-                  Material = ImmutableList.Create(new LogMaterial(matID: mat.MaterialID, uniq: mat.JobUniqueStr, proc: mat.Process, part: mat.PartName, numProc: mat.NumProcesses, serial: mat.Serial, workorder: mat.Workorder, face: "")),
-                  Pallet = "",
-                  LogType = LogType.Inspection,
-                  LocationName = "Inspect",
-                  LocationNum = 1,
-                  Program = insp.Counter,
-                  StartOfCycle = false,
-                  EndTimeUTC = _status.TimeOfStatusUTC,
-                  Result = insp.Inspect.ToString(),
-                  EndOfRoute = false,
-                  ElapsedTime = TimeSpan.FromMinutes(-1),
-                  ProgramDetails = ImmutableDictionary<string, string>.Empty
-                    .Add("InspectionType", insp.InspType)
-                    .Add("ActualPath", Newtonsoft.Json.JsonConvert.SerializeObject(
-                      insp.Path.Select(p => p with { MaterialID = mat.MaterialID })
-                    ))
-                });
+                expectedLogs.Add(
+                  new LogEntry()
+                  {
+                    Counter = -1,
+                    Material = ImmutableList.Create(
+                      new LogMaterial(
+                        matID: mat.MaterialID,
+                        uniq: mat.JobUniqueStr,
+                        proc: mat.Process,
+                        part: mat.PartName,
+                        numProc: mat.NumProcesses,
+                        serial: mat.Serial,
+                        workorder: mat.Workorder,
+                        face: ""
+                      )
+                    ),
+                    Pallet = "",
+                    LogType = LogType.Inspection,
+                    LocationName = "Inspect",
+                    LocationNum = 1,
+                    Program = insp.Counter,
+                    StartOfCycle = false,
+                    EndTimeUTC = _status.TimeOfStatusUTC,
+                    Result = insp.Inspect.ToString(),
+                    EndOfRoute = false,
+                    ElapsedTime = TimeSpan.FromMinutes(-1),
+                    ProgramDetails = ImmutableDictionary<string, string>.Empty
+                      .Add("InspectionType", insp.InspType)
+                      .Add(
+                        "ActualPath",
+                        Newtonsoft.Json.JsonConvert.SerializeObject(
+                          insp.Path.Select(p => p with { MaterialID = mat.MaterialID })
+                        )
+                      )
+                  }
+                );
               }
 
               break;
@@ -2349,9 +2930,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           logMonitor.Should().NotRaise("NewLogEntry");
         }
-        evts.Should().BeEquivalentTo(expectedLogs,
-          options => options.Excluding(e => e.Counter).ComparingByMembers<LogEntry>()
-        );
+        evts.Should()
+          .BeEquivalentTo(
+            expectedLogs,
+            options => options.Excluding(e => e.Counter).ComparingByMembers<LogEntry>()
+          );
       }
 
       return ExpectNoChanges();
@@ -2361,34 +2944,55 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
   public static class FakeIccDslJobHelpers
   {
-    public static (Job, int[][]) AddInsp(this (Job, int[][]) job, int proc, int path, string inspTy, string cntr, int max)
+    public static (Job, int[][]) AddInsp(
+      this (Job, int[][]) job,
+      int proc,
+      int path,
+      string inspTy,
+      string cntr,
+      int max
+    )
     {
-      return (job.Item1.AdjustPath(proc, path, p => p.Inspections.Add(new PathInspection()
-      {
-        InspectionType = inspTy,
-        Counter = cntr,
-        MaxVal = max
-      })), job.Item2);
+      return (
+        job.Item1.AdjustPath(
+          proc,
+          path,
+          p =>
+            p.Inspections.Add(
+              new PathInspection()
+              {
+                InspectionType = inspTy,
+                Counter = cntr,
+                MaxVal = max
+              }
+            )
+        ),
+        job.Item2
+      );
     }
-
   }
 
   public static class FluentAssertionJsonExtension
   {
-    public static FluentAssertions.Equivalency.EquivalencyAssertionOptions<T> CheckJsonEquals<T, R>(this FluentAssertions.Equivalency.EquivalencyAssertionOptions<T> options)
+    public static FluentAssertions.Equivalency.EquivalencyAssertionOptions<T> CheckJsonEquals<T, R>(
+      this FluentAssertions.Equivalency.EquivalencyAssertionOptions<T> options
+    )
     {
-      return options.Using<R>(ctx =>
-      {
-        // JobPlan has private properties which normal Should().BeEquivalentTo() doesn't see, so instead
-        // check json serialized versions are equal
-        var eJ = Newtonsoft.Json.Linq.JToken.Parse(Newtonsoft.Json.JsonConvert.SerializeObject(ctx.Expectation));
-        var aJ = Newtonsoft.Json.Linq.JToken.Parse(Newtonsoft.Json.JsonConvert.SerializeObject(ctx.Subject));
+      return options
+        .Using<R>(ctx =>
+        {
+          // JobPlan has private properties which normal Should().BeEquivalentTo() doesn't see, so instead
+          // check json serialized versions are equal
+          var eJ = Newtonsoft.Json.Linq.JToken.Parse(
+            Newtonsoft.Json.JsonConvert.SerializeObject(ctx.Expectation)
+          );
+          var aJ = Newtonsoft.Json.Linq.JToken.Parse(
+            Newtonsoft.Json.JsonConvert.SerializeObject(ctx.Subject)
+          );
 
-        FluentAssertions.Json.JsonAssertionExtensions.Should(aJ).BeEquivalentTo(eJ);
-      })
-      .WhenTypeIs<R>();
+          FluentAssertions.Json.JsonAssertionExtensions.Should(aJ).BeEquivalentTo(eJ);
+        })
+        .WhenTypeIs<R>();
     }
-
   }
-
 }

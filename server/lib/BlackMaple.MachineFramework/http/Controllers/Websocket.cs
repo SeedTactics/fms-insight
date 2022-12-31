@@ -102,7 +102,8 @@ namespace BlackMaple.MachineFramework.Controllers
       {
         lock (_lock)
         {
-          if (_sockets != null) _sockets.Remove(guid);
+          if (_sockets != null)
+            _sockets.Remove(guid);
         }
       }
     }
@@ -124,14 +125,11 @@ namespace BlackMaple.MachineFramework.Controllers
 
       if (backend != null)
       {
-        backend.RepoConfig.NewLogEntry += (e, foreignId, db) =>
-          Send(new ServerEvent() { LogEntry = e });
+        backend.RepoConfig.NewLogEntry += (e, foreignId, db) => Send(new ServerEvent() { LogEntry = e });
         backend.JobControl.OnNewJobs += (jobs) =>
           Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
-        backend.OnNewCurrentStatus += (status) =>
-          Send(new ServerEvent() { NewCurrentStatus = status });
-        backend.QueueControl.OnEditMaterialInLog += (o) =>
-          Send(new ServerEvent() { EditMaterialInLog = o });
+        backend.OnNewCurrentStatus += (status) => Send(new ServerEvent() { NewCurrentStatus = status });
+        backend.QueueControl.OnEditMaterialInLog += (o) => Send(new ServerEvent() { EditMaterialInLog = o });
       }
     }
 
@@ -158,14 +156,19 @@ namespace BlackMaple.MachineFramework.Controllers
           return;
         }
 
-        var data = Newtonsoft.Json.JsonConvert.SerializeObject(msg, Newtonsoft.Json.Formatting.None, _serSettings);
+        var data = Newtonsoft.Json.JsonConvert.SerializeObject(
+          msg,
+          Newtonsoft.Json.Formatting.None,
+          _serSettings
+        );
         var encoded = System.Text.Encoding.UTF8.GetBytes(data);
         var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
 
         var sockets = _sockets.AllSockets();
         foreach (var ws in sockets)
         {
-          if (ws.CloseStatus.HasValue) continue;
+          if (ws.CloseStatus.HasValue)
+            continue;
           ws.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
       }
@@ -177,7 +180,6 @@ namespace BlackMaple.MachineFramework.Controllers
       var guid = Guid.NewGuid();
       try
       {
-
         _sockets.Add(guid, ws);
 
         var res = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
@@ -194,7 +196,11 @@ namespace BlackMaple.MachineFramework.Controllers
       }
       catch (ServerClosingException)
       {
-        await ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Server is closing", CancellationToken.None);
+        await ws.CloseOutputAsync(
+          WebSocketCloseStatus.NormalClosure,
+          "Server is closing",
+          CancellationToken.None
+        );
       }
       finally
       {
@@ -217,7 +223,11 @@ namespace BlackMaple.MachineFramework.Controllers
       foreach (var ws in sockets)
       {
         var tokenSource = new CancellationTokenSource();
-        var closeTask = ws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Server is stopping", tokenSource.Token);
+        var closeTask = ws.CloseOutputAsync(
+          WebSocketCloseStatus.NormalClosure,
+          "Server is stopping",
+          tokenSource.Token
+        );
         var cancelTask = Task.Delay(TimeSpan.FromSeconds(3)).ContinueWith(_ => tokenSource.Cancel());
         tasks.Add(Task.WhenAny(closeTask, cancelTask));
       }

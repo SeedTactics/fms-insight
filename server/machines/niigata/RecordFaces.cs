@@ -42,20 +42,34 @@ namespace BlackMaple.FMSInsight.Niigata
   [DataContract]
   public record ProgramsForProcess
   {
-    [DataMember(Name = "StopIndex")] public int MachineStopIndex { get; init; }
-    [DataMember] public string ProgramName { get; init; }
-    [DataMember] public long? Revision { get; init; }
+    [DataMember(Name = "StopIndex")]
+    public int MachineStopIndex { get; init; }
+
+    [DataMember]
+    public string ProgramName { get; init; }
+
+    [DataMember]
+    public long? Revision { get; init; }
   }
 
   /// Recorded as a general message in the log to keep track of what we decided to set on each niigata pallet route
   [DataContract]
   public record AssignedJobAndPathForFace
   {
-    [DataMember] public int Face { get; init; }
-    [DataMember] public string Unique { get; init; }
-    [DataMember] public int Proc { get; init; }
-    [DataMember] public int Path { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public IEnumerable<ProgramsForProcess> ProgOverride { get; init; }
+    [DataMember]
+    public int Face { get; init; }
+
+    [DataMember]
+    public string Unique { get; init; }
+
+    [DataMember]
+    public int Proc { get; init; }
+
+    [DataMember]
+    public int Path { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public IEnumerable<ProgramsForProcess> ProgOverride { get; init; }
   }
 
   public static class RecordFacesForPallet
@@ -73,19 +87,32 @@ namespace BlackMaple.FMSInsight.Niigata
         return Enumerable.Empty<AssignedJobAndPathForFace>();
       }
 
-      var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(List<AssignedJobAndPathForFace>));
+      var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(
+        typeof(List<AssignedJobAndPathForFace>)
+      );
       using (var ms = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(msg)))
       {
         return (List<AssignedJobAndPathForFace>)ser.ReadObject(ms);
       }
     }
 
-    public static string Save(int pal, DateTime nowUtc, IEnumerable<AssignedJobAndPathForFace> newPaths, IRepository logDB)
+    public static string Save(
+      int pal,
+      DateTime nowUtc,
+      IEnumerable<AssignedJobAndPathForFace> newPaths,
+      IRepository logDB
+    )
     {
       // comments can be 32 characters. A base64 guid is 22 characters to which we add "Insight:" 8 characters
-      var guid64 = Convert.ToBase64String(System.Guid.NewGuid().ToByteArray()).Replace("/", "_").Replace("+", "-").Substring(0, 22);
+      var guid64 = Convert
+        .ToBase64String(System.Guid.NewGuid().ToByteArray())
+        .Replace("/", "_")
+        .Replace("+", "-")
+        .Substring(0, 22);
       string json;
-      var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(typeof(List<AssignedJobAndPathForFace>));
+      var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(
+        typeof(List<AssignedJobAndPathForFace>)
+      );
       using (var ms = new System.IO.MemoryStream())
       {
         ser.WriteObject(ms, newPaths.ToList());
