@@ -884,7 +884,9 @@ namespace Makino
           TimeOfCurrentStatusUTC = DateTime.UtcNow,
           Jobs = map.Jobs.ToImmutableDictionary(j => j.UniqueStr),
           Pallets = palMap.Pallets.ToImmutableDictionary(),
-          Material = palMap.Material.ToImmutableList()
+          Material = palMap.Material.ToImmutableList(),
+          Alarms = ImmutableList<string>.Empty,
+          QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
         };
       }
     }

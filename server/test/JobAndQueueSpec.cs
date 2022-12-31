@@ -107,7 +107,15 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       _curSt = _curSt with
       {
         Uniq = _curSt.Uniq + 1,
-        CurrentStatus = new CurrentStatus() { TimeOfCurrentStatusUTC = DateTime.UtcNow }
+        CurrentStatus = new CurrentStatus()
+        {
+          TimeOfCurrentStatusUTC = DateTime.UtcNow,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+          Material = ImmutableList<InProcessMaterial>.Empty,
+          Alarms = ImmutableList<string>.Empty,
+          QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+        }
       };
       return true;
     }
@@ -131,7 +139,17 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   private async Task SetCurrentState(bool palStateUpdated, bool executeAction, CurrentStatus curSt = null)
   {
-    curSt = curSt ?? new CurrentStatus() { TimeOfCurrentStatusUTC = DateTime.UtcNow, };
+    curSt =
+      curSt
+      ?? new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Material = ImmutableList<InProcessMaterial>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+      };
     _curSt = new MockCellState()
     {
       Uniq = 0,
@@ -209,9 +227,14 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       executeAction: false,
       curSt: new CurrentStatus()
       {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty
           .Add(completedActive.UniqueStr, completedActive)
-          .Add(toKeepJob.UniqueStr, toKeepActive)
+          .Add(toKeepJob.UniqueStr, toKeepActive),
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Material = ImmutableList<InProcessMaterial>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
       }
     );
 
@@ -274,7 +297,11 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         TimeOfCurrentStatusUTC = now,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty
           .Add(j1.UniqueStr, j1Active)
-          .Add(j2.UniqueStr, j2Active)
+          .Add(j2.UniqueStr, j2Active),
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Material = ImmutableList<InProcessMaterial>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
       }
     );
 
@@ -754,9 +781,14 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       executeAction: false,
       curSt: new CurrentStatus()
       {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Material = ImmutableList.Create(
           MatOnPal(matId: 1, uniq: "uuu1", part: "p1", proc: 1, path: 2, serial: "aaa", pal: "4")
         ),
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
       }
     );
 
@@ -836,9 +868,14 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       executeAction: false,
       curSt: new CurrentStatus()
       {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Material = ImmutableList.Create(
           QueuedMat(matId: 1, job: job, part: "p1", proc: 1, path: 2, serial: "aaa", queue: "q1", pos: 0)
-        )
+        ),
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
       }
     );
 

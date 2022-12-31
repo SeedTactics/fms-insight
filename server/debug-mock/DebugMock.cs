@@ -826,7 +826,15 @@ namespace DebugMachineWatchApiServer
 
       Tools = new List<ToolInMachine>();
 
-      CurrentStatus = new CurrentStatus() { TimeOfCurrentStatusUTC = DateTime.UtcNow };
+      CurrentStatus = new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Material = ImmutableList<InProcessMaterial>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+      };
     }
 
     public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
