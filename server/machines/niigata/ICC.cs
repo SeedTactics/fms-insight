@@ -146,18 +146,21 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private HashSet<string> statusTables = new HashSet<string>(new[] {
-      "status_icc",
-      "status_load_station",
-      "status_mc",
-      "status_pallet_route",
-      "tracking",
-      "status_pallet_route_step_station",
-      "status_pallet_route_step_program",
-      "status_pallet_route_step",
-      "status_program",
-      "status_program_tool"
-    });
+    private HashSet<string> statusTables = new HashSet<string>(
+      new[]
+      {
+        "status_icc",
+        "status_load_station",
+        "status_mc",
+        "status_pallet_route",
+        "tracking",
+        "status_pallet_route_step_station",
+        "status_pallet_route_step_program",
+        "status_pallet_route_step",
+        "status_program",
+        "status_program_tool"
+      }
+    );
 
     private void ListenForNotifications(out bool openSuccess)
     {
@@ -188,7 +191,10 @@ namespace BlackMaple.FMSInsight.Niigata
         };
         conn.StateChange += (sender, args) =>
         {
-          if (args.CurrentState == System.Data.ConnectionState.Closed || args.CurrentState == System.Data.ConnectionState.Broken)
+          if (
+            args.CurrentState == System.Data.ConnectionState.Closed
+            || args.CurrentState == System.Data.ConnectionState.Broken
+          )
           {
             throw new Exception("Connection to PostgreSQL closed");
           }
@@ -213,7 +219,6 @@ namespace BlackMaple.FMSInsight.Niigata
           conn.Wait();
         }
       }
-
     }
     #endregion
 
@@ -239,6 +244,7 @@ namespace BlackMaple.FMSInsight.Niigata
         Machine = 4,
         Wash = 5
       }
+
       public int PalletNum { get; set; }
       public int RouteNum { get; set; }
       public RouteTypeE RouteType { get; set; }
@@ -292,8 +298,7 @@ namespace BlackMaple.FMSInsight.Niigata
           status.TimeOfStatusUTC = DateTime.UtcNow;
           status.BadProgramNumbers = _badProgramNumbers;
 
-          status.LoadStations =
-            conn.Query<LoadStatus>(
+          status.LoadStations = conn.Query<LoadStatus>(
               $@"SELECT lul_no AS {nameof(LoadStatus.LoadNumber)},
                         pallet_exist AS {nameof(LoadStatus.PalletExists)}
                   FROM status_load_station",
@@ -301,8 +306,7 @@ namespace BlackMaple.FMSInsight.Niigata
             )
             .ToDictionary(l => l.LoadNumber);
 
-          status.Machines =
-            conn.Query<MachineStatus>(
+          status.Machines = conn.Query<MachineStatus>(
               $@"SELECT mc_no AS {nameof(MachineStatus.MachineNumber)},
                         power AS {nameof(MachineStatus.Power)},
                         link_mode AS {nameof(MachineStatus.FMSLinkMode)},
@@ -314,9 +318,8 @@ namespace BlackMaple.FMSInsight.Niigata
             )
             .ToDictionary(k => k.MachineNumber);
 
-          var pallets =
-            conn.Query<PalletMaster, TrackingInfo, CurrentStationNum, PalletStatus>(
-                $@"SELECT status_pallet_route.pallet_no AS {nameof(PalletMaster.PalletNum)},
+          var pallets = conn.Query<PalletMaster, TrackingInfo, CurrentStationNum, PalletStatus>(
+              $@"SELECT status_pallet_route.pallet_no AS {nameof(PalletMaster.PalletNum)},
                           comment AS {nameof(PalletMaster.Comment)},
                           remaining_pallet_cycle AS {nameof(PalletMaster.RemainingPalletCycles)},
                           priority AS {nameof(PalletMaster.Priority)},
@@ -334,19 +337,19 @@ namespace BlackMaple.FMSInsight.Niigata
                     FROM status_pallet_route
                     LEFT OUTER JOIN tracking ON status_pallet_route.pallet_no = tracking.pallet_no
                 ",
-                (master, tracking, curStat) => new PalletStatus()
+              (master, tracking, curStat) =>
+                new PalletStatus()
                 {
                   Master = master,
                   Tracking = tracking,
                   CurStation = new NiigataStationNum(curStat.StationNum ?? 1, _statNames)
                 },
-                splitOn: $"{nameof(TrackingInfo.RouteInvalid)},{nameof(CurrentStationNum.StationNum)}",
-                transaction: trans
-              )
-              .ToDictionary(p => p.Master.PalletNum);
+              splitOn: $"{nameof(TrackingInfo.RouteInvalid)},{nameof(CurrentStationNum.StationNum)}",
+              transaction: trans
+            )
+            .ToDictionary(p => p.Master.PalletNum);
 
-          var routeStations =
-            conn.Query<RouteStepStation>(
+          var routeStations = conn.Query<RouteStepStation>(
               $@"SELECT pallet_no as {nameof(RouteStepStation.PalletNum)},
                         route_no AS {nameof(RouteStepStation.RouteNum)},
                         station_no AS {nameof(RouteStepStation.StationNum)}
@@ -356,8 +359,7 @@ namespace BlackMaple.FMSInsight.Niigata
             )
             .ToLookup(r => (pal: r.PalletNum, step: r.RouteNum), r => r.StationNum);
 
-          var routePrograms =
-            conn.Query<RouteStepPrograms>(
+          var routePrograms = conn.Query<RouteStepPrograms>(
               $@"SELECT pallet_no AS {nameof(RouteStepPrograms.PalletNum)},
                         route_no AS {nameof(RouteStepPrograms.RouteNum)},
                         o_no AS {nameof(RouteStepPrograms.ProgramNumber)}
@@ -366,13 +368,10 @@ namespace BlackMaple.FMSInsight.Niigata
               ",
               transaction: trans
             )
-            .ToLookup(
-              p => (pal: p.PalletNum, step: p.RouteNum),
-              p => p.ProgramNumber
-            );
+            .ToLookup(p => (pal: p.PalletNum, step: p.RouteNum), p => p.ProgramNumber);
 
-          foreach (var step in
-            conn.Query<StatusRouteStep>(
+          foreach (
+            var step in conn.Query<StatusRouteStep>(
               $@"SELECT pallet_no AS {nameof(StatusRouteStep.PalletNum)},
                         route_no AS {nameof(StatusRouteStep.RouteNum)},
                         route_type AS {nameof(StatusRouteStep.RouteType)},
@@ -383,20 +382,20 @@ namespace BlackMaple.FMSInsight.Niigata
                   ORDER BY pallet_no,route_no
                 ",
               transaction: trans
-            ))
+            )
+          )
           {
-
-            if (!pallets.ContainsKey(step.PalletNum)) continue;
+            if (!pallets.ContainsKey(step.PalletNum))
+              continue;
             var palAndStep = (pal: step.PalletNum, step: step.RouteNum);
-            var stats = routeStations.Contains(palAndStep) ? routeStations[palAndStep] : Enumerable.Empty<int>();
+            var stats = routeStations.Contains(palAndStep)
+              ? routeStations[palAndStep]
+              : Enumerable.Empty<int>();
             RouteStep route;
             switch (step.RouteType)
             {
               case StatusRouteStep.RouteTypeE.Load:
-                route = new LoadStep()
-                {
-                  LoadStations = stats.ToList()
-                };
+                route = new LoadStep() { LoadStations = stats.ToList() };
                 break;
 
               case StatusRouteStep.RouteTypeE.Unload:
@@ -408,19 +407,14 @@ namespace BlackMaple.FMSInsight.Niigata
                 break;
 
               case StatusRouteStep.RouteTypeE.Reclamp:
-                route = new ReclampStep()
-                {
-                  Reclamp = stats.ToList()
-                };
+                route = new ReclampStep() { Reclamp = stats.ToList() };
                 break;
 
               case StatusRouteStep.RouteTypeE.Machine:
-                var progs = routePrograms.Contains(palAndStep) ? routePrograms[palAndStep] : Enumerable.Empty<int>();
-                route = new MachiningStep()
-                {
-                  Machines = stats.ToList(),
-                  ProgramNumsToRun = progs.ToList()
-                };
+                var progs = routePrograms.Contains(palAndStep)
+                  ? routePrograms[palAndStep]
+                  : Enumerable.Empty<int>();
+                route = new MachiningStep() { Machines = stats.ToList(), ProgramNumsToRun = progs.ToList() };
                 break;
 
               case StatusRouteStep.RouteTypeE.Wash:
@@ -446,23 +440,24 @@ namespace BlackMaple.FMSInsight.Niigata
           status.Pallets = pallets.Values.ToList();
 
           status.Programs = conn.Query<ProgramEntry>(
-            $@"SELECT o_no AS {nameof(ProgramEntry.ProgramNum)},
+              $@"SELECT o_no AS {nameof(ProgramEntry.ProgramNum)},
                       comment AS {nameof(ProgramEntry.Comment)},
                       work_base_time AS {nameof(ProgramEntry.WorkBaseTimeSeconds)}
                 FROM status_program
             ",
-            transaction: trans
-          )
-          .ToDictionary(p => p.ProgramNum);
+              transaction: trans
+            )
+            .ToDictionary(p => p.ProgramNum);
 
-          foreach (var tool in
-            conn.Query<(int o_no, int tool_no)>(
+          foreach (
+            var tool in conn.Query<(int o_no, int tool_no)>(
               "SELECT o_no, tool_no FROM status_program_tool",
               transaction: trans
             )
           )
           {
-            if (!status.Programs.ContainsKey(tool.o_no)) continue;
+            if (!status.Programs.ContainsKey(tool.o_no))
+              continue;
             status.Programs[tool.o_no].Tools.Add(tool.tool_no);
           }
 
@@ -486,14 +481,14 @@ namespace BlackMaple.FMSInsight.Niigata
         using (var trans = conn.BeginTransaction())
         {
           return conn.Query<ProgramEntry>(
-            $@"SELECT o_no AS {nameof(ProgramEntry.ProgramNum)},
+              $@"SELECT o_no AS {nameof(ProgramEntry.ProgramNum)},
                       comment AS {nameof(ProgramEntry.Comment)},
                       work_base_time AS {nameof(ProgramEntry.WorkBaseTimeSeconds)}
                 FROM status_program
             ",
-            transaction: trans
-          )
-          .ToDictionary(p => p.ProgramNum);
+              transaction: trans
+            )
+            .ToDictionary(p => p.ProgramNum);
         }
       }
     }
@@ -550,7 +545,14 @@ namespace BlackMaple.FMSInsight.Niigata
       public string Error { get; set; }
     }
 
-    private void WaitForCompletion(AutoResetEvent evt, object request, Func<ChangeResponse> check, Action clear, string ignoreError = null, Action timeout = null)
+    private void WaitForCompletion(
+      AutoResetEvent evt,
+      object request,
+      Func<ChangeResponse> check,
+      Action clear,
+      string ignoreError = null,
+      Action timeout = null
+    )
     {
       do
       {
@@ -611,15 +613,30 @@ namespace BlackMaple.FMSInsight.Niigata
       // a response.  But just in case, check and delete here.
 
       // first, check any non-completed
-      if (conn.ExecuteScalar<int>("SELECT COUNT(*) FROM proposal_pallet_route WHERE Success IS NULL", transaction: trans) > 0)
+      if (
+        conn.ExecuteScalar<int>(
+          "SELECT COUNT(*) FROM proposal_pallet_route WHERE Success IS NULL",
+          transaction: trans
+        ) > 0
+      )
       {
         throw new Exception("Niigata ICC has not processed the change to the pallet master");
       }
-      if (conn.ExecuteScalar<int>("SELECT COUNT(*) FROM change_request_palette_route WHERE Success IS NULL", transaction: trans) > 0)
+      if (
+        conn.ExecuteScalar<int>(
+          "SELECT COUNT(*) FROM change_request_palette_route WHERE Success IS NULL",
+          transaction: trans
+        ) > 0
+      )
       {
         throw new Exception("Niigata ICC has not processed the change to the pallet status");
       }
-      if (conn.ExecuteScalar<int>("SELECT COUNT(*) FROM register_program WHERE Success IS NULL", transaction: trans) > 0)
+      if (
+        conn.ExecuteScalar<int>(
+          "SELECT COUNT(*) FROM register_program WHERE Success IS NULL",
+          transaction: trans
+        ) > 0
+      )
       {
         throw new Exception("Niigata ICC has not processed the new program");
       }
@@ -630,15 +647,24 @@ namespace BlackMaple.FMSInsight.Niigata
     private void ClearProposalTables(NpgsqlConnection conn, NpgsqlTransaction trans)
     {
       // now log any errors
-      foreach (var ret in conn.Query("SELECT * FROM proposal_pallet_route WHERE Success = False", transaction: trans))
+      foreach (
+        var ret in conn.Query("SELECT * FROM proposal_pallet_route WHERE Success = False", transaction: trans)
+      )
       {
         Log.Error("Niigata ICC returned error for changing pallet master: {@row}", ret);
       }
-      foreach (var ret in conn.Query("SELECT * FROM change_request_palette_route WHERE Success = False", transaction: trans))
+      foreach (
+        var ret in conn.Query(
+          "SELECT * FROM change_request_palette_route WHERE Success = False",
+          transaction: trans
+        )
+      )
       {
         Log.Error("Niigata ICC returned error for changing pallet status: {@row}", ret);
       }
-      foreach (var ret in conn.Query("SELECT * FROM register_program WHERE Success = False", transaction: trans))
+      foreach (
+        var ret in conn.Query("SELECT * FROM register_program WHERE Success = False", transaction: trans)
+      )
       {
         Log.Error("Niigata ICC returned error for registering program: {@row}", ret);
       }
@@ -664,7 +690,12 @@ namespace BlackMaple.FMSInsight.Niigata
       // first save the faces
       if (newRoute.NewFaces != null && newRoute.NewFaces.Any())
       {
-        newRoute.NewMaster.Comment = RecordFacesForPallet.Save(newRoute.NewMaster.PalletNum, DateTime.UtcNow, newRoute.NewFaces, logDB);
+        newRoute.NewMaster.Comment = RecordFacesForPallet.Save(
+          newRoute.NewMaster.PalletNum,
+          DateTime.UtcNow,
+          newRoute.NewFaces,
+          logDB
+        );
       }
 
       _proposalRouteChanged.Reset();
@@ -722,8 +753,9 @@ namespace BlackMaple.FMSInsight.Niigata
                     @CompletedCount,
                     @WashingPattern
                   )",
-              transaction: trans,
-              param: newRoute.NewMaster.Routes.Select((step, idx) =>
+            transaction: trans,
+            param: newRoute.NewMaster.Routes.Select(
+              (step, idx) =>
               {
                 switch (step)
                 {
@@ -775,7 +807,8 @@ namespace BlackMaple.FMSInsight.Niigata
                   default:
                     throw new Exception("Unknown route step");
                 }
-              })
+              }
+            )
           );
 
           conn.Execute(
@@ -790,17 +823,19 @@ namespace BlackMaple.FMSInsight.Niigata
                   )
                 ",
             transaction: trans,
-            param:
-              newRoute.NewMaster.Routes
-              .SelectMany((step, idx) =>
+            param: newRoute.NewMaster.Routes.SelectMany(
+              (step, idx) =>
                 StepToStations(step)
-                .Select(stat => new
-                {
-                  ProposalId,
-                  RouteNo = idx + 1,
-                  StationNo = stat
-                })
-              )
+                  .Select(
+                    stat =>
+                      new
+                      {
+                        ProposalId,
+                        RouteNo = idx + 1,
+                        StationNo = stat
+                      }
+                  )
+            )
           );
 
           conn.Execute(
@@ -817,38 +852,59 @@ namespace BlackMaple.FMSInsight.Niigata
                   )
                 ",
             transaction: trans,
-            param:
-              newRoute.NewMaster.Routes
-              .SelectMany((step, stepIdx) =>
+            param: newRoute.NewMaster.Routes.SelectMany(
+              (step, stepIdx) =>
                 StepToPrograms(step)
-                .Select((prog, progIdx) => new
-                {
-                  ProposalId,
-                  RouteNo = stepIdx + 1,
-                  ProgramOrder = progIdx + 1,
-                  ProgramNum = prog
-                })
-              )
+                  .Select(
+                    (prog, progIdx) =>
+                      new
+                      {
+                        ProposalId,
+                        RouteNo = stepIdx + 1,
+                        ProgramOrder = progIdx + 1,
+                        ProgramNum = prog
+                      }
+                  )
+            )
           );
 
           trans.Commit();
         }
 
-        WaitForCompletion(_proposalRouteChanged, newRoute,
-          () => conn.QueryFirst<ChangeResponse>(
-            "SELECT Success, Error FROM proposal_pallet_route WHERE proposal_id = @ProposalId", new { ProposalId }
-          ),
+        WaitForCompletion(
+          _proposalRouteChanged,
+          newRoute,
+          () =>
+            conn.QueryFirst<ChangeResponse>(
+              "SELECT Success, Error FROM proposal_pallet_route WHERE proposal_id = @ProposalId",
+              new { ProposalId }
+            ),
           () =>
           {
             using (var trans = conn.BeginTransaction())
             {
-              conn.Execute("DELETE FROM proposal_pallet_route WHERE proposal_id = @ProposalId", new { ProposalId }, transaction: trans);
-              conn.Execute("DELETE FROM proposal_pallet_route_step WHERE proposal_id = @ProposalId", new { ProposalId }, transaction: trans);
-              conn.Execute("DELETE FROM proposal_pallet_route_step_station WHERE proposal_id = @ProposalId", new { ProposalId }, transaction: trans);
-              conn.Execute("DELETE FROM proposal_pallet_route_step_program WHERE proposal_id = @ProposalId", new { ProposalId }, transaction: trans);
+              conn.Execute(
+                "DELETE FROM proposal_pallet_route WHERE proposal_id = @ProposalId",
+                new { ProposalId },
+                transaction: trans
+              );
+              conn.Execute(
+                "DELETE FROM proposal_pallet_route_step WHERE proposal_id = @ProposalId",
+                new { ProposalId },
+                transaction: trans
+              );
+              conn.Execute(
+                "DELETE FROM proposal_pallet_route_step_station WHERE proposal_id = @ProposalId",
+                new { ProposalId },
+                transaction: trans
+              );
+              conn.Execute(
+                "DELETE FROM proposal_pallet_route_step_program WHERE proposal_id = @ProposalId",
+                new { ProposalId },
+                transaction: trans
+              );
               trans.Commit();
             }
-
           }
         );
       }
@@ -905,18 +961,25 @@ namespace BlackMaple.FMSInsight.Niigata
           trans.Commit();
         }
 
-        WaitForCompletion(_proposalRouteChanged, del,
-          () => conn.QueryFirst<ChangeResponse>(
-            "SELECT Success, Error FROM proposal_pallet_route WHERE proposal_id = @ProposalId", new { ProposalId }
-          ),
+        WaitForCompletion(
+          _proposalRouteChanged,
+          del,
+          () =>
+            conn.QueryFirst<ChangeResponse>(
+              "SELECT Success, Error FROM proposal_pallet_route WHERE proposal_id = @ProposalId",
+              new { ProposalId }
+            ),
           () =>
           {
             using (var trans = conn.BeginTransaction())
             {
-              conn.Execute("DELETE FROM proposal_pallet_route WHERE proposal_id = @ProposalId", new { ProposalId }, transaction: trans);
+              conn.Execute(
+                "DELETE FROM proposal_pallet_route WHERE proposal_id = @ProposalId",
+                new { ProposalId },
+                transaction: trans
+              );
               trans.Commit();
             }
-
           }
         );
       }
@@ -966,9 +1029,19 @@ namespace BlackMaple.FMSInsight.Niigata
           trans.Commit();
         }
 
-        WaitForCompletion(_proposalPalletChanged, update,
-          () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM change_request_palette_route WHERE change_id = @ChangeId", new { ChangeId }),
-          () => conn.Execute("DELETE FROM change_request_palette_route WHERE change_id = @ChangeId", new { ChangeId })
+        WaitForCompletion(
+          _proposalPalletChanged,
+          update,
+          () =>
+            conn.QueryFirst<ChangeResponse>(
+              "SELECT Success, Error FROM change_request_palette_route WHERE change_id = @ChangeId",
+              new { ChangeId }
+            ),
+          () =>
+            conn.Execute(
+              "DELETE FROM change_request_palette_route WHERE change_id = @ChangeId",
+              new { ChangeId }
+            )
         );
       }
     }
@@ -1039,28 +1112,38 @@ namespace BlackMaple.FMSInsight.Niigata
                     @ToolNo
                   )
                 ",
-            param: add.Tools.Select(t => new
-            {
-              RegId = RegId,
-              ToolNo = t
-            }),
+            param: add.Tools.Select(t => new { RegId = RegId, ToolNo = t }),
             transaction: trans
           );
 
           trans.Commit();
         }
 
-        WaitForCompletion(_programRegistered, add,
-          check: () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM register_program WHERE registration_id = @RegId", new { RegId }),
+        WaitForCompletion(
+          _programRegistered,
+          add,
+          check: () =>
+            conn.QueryFirst<ChangeResponse>(
+              "SELECT Success, Error FROM register_program WHERE registration_id = @RegId",
+              new { RegId }
+            ),
           clear: () =>
+          {
+            using (var trans = conn.BeginTransaction())
             {
-              using (var trans = conn.BeginTransaction())
-              {
-                conn.Execute("DELETE FROM register_program WHERE registration_id = @RegId", new { RegId }, transaction: trans);
-                conn.Execute("DELETE FROM register_program_tool WHERE registration_id = @RegId", new { RegId }, transaction: trans);
-                trans.Commit();
-              }
-            },
+              conn.Execute(
+                "DELETE FROM register_program WHERE registration_id = @RegId",
+                new { RegId },
+                transaction: trans
+              );
+              conn.Execute(
+                "DELETE FROM register_program_tool WHERE registration_id = @RegId",
+                new { RegId },
+                transaction: trans
+              );
+              trans.Commit();
+            }
+          },
           timeout: () => _badProgramNumbers = _badProgramNumbers.Add(add.ProgramNum)
         );
       }
@@ -1068,7 +1151,11 @@ namespace BlackMaple.FMSInsight.Niigata
       // if we crash at this point, the icc will have the program but it won't be recorded into the job database.  The next time
       // Insight starts, it will add another program with a new ICC number (but identical file).  The old program will eventually be
       // cleaned up since it isn't in use.
-      jobDB.SetCellControllerProgramForProgram(add.ProgramName, add.ProgramRevision, add.ProgramNum.ToString());
+      jobDB.SetCellControllerProgramForProgram(
+        add.ProgramName,
+        add.ProgramRevision,
+        add.ProgramNum.ToString()
+      );
     }
 
     private void DeleteProgram(IRepository jobDB, DeleteProgram delete)
@@ -1115,14 +1202,28 @@ namespace BlackMaple.FMSInsight.Niigata
           trans.Commit();
         }
 
-        WaitForCompletion(_programRegistered, delete,
-          () => conn.QueryFirst<ChangeResponse>("SELECT Success, Error FROM register_program WHERE registration_id = @RegId", new { RegId }),
+        WaitForCompletion(
+          _programRegistered,
+          delete,
+          () =>
+            conn.QueryFirst<ChangeResponse>(
+              "SELECT Success, Error FROM register_program WHERE registration_id = @RegId",
+              new { RegId }
+            ),
           () =>
           {
             using (var trans = conn.BeginTransaction())
             {
-              conn.Execute("DELETE FROM register_program WHERE registration_id = @RegId", new { RegId }, transaction: trans);
-              conn.Execute("DELETE FROM register_program_tool WHERE registration_id = @RegId", new { RegId }, transaction: trans);
+              conn.Execute(
+                "DELETE FROM register_program WHERE registration_id = @RegId",
+                new { RegId },
+                transaction: trans
+              );
+              conn.Execute(
+                "DELETE FROM register_program_tool WHERE registration_id = @RegId",
+                new { RegId },
+                transaction: trans
+              );
               trans.Commit();
             }
           },

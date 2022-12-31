@@ -47,7 +47,9 @@ namespace BlackMaple.FMSInsight.Niigata
   public class MultiPalletAssign : IAssignPallets
   {
     private readonly IEnumerable<IAssignPallets> _assignments;
+
     public MultiPalletAssign(IEnumerable<IAssignPallets> a) => _assignments = a;
+
     public NiigataAction NewPalletChange(CellState materialStatus)
     {
       foreach (var a in _assignments)
@@ -81,7 +83,11 @@ namespace BlackMaple.FMSInsight.Niigata
     private readonly ExtraPartFilterDelegate _extraPathFilter;
     private readonly PathToPriorityDelegate _pathToPriority;
 
-    public AssignNewRoutesOnPallets(NiigataStationNames n, ExtraPartFilterDelegate extraPathFilter = null, PathToPriorityDelegate pathToPriority = null)
+    public AssignNewRoutesOnPallets(
+      NiigataStationNames n,
+      ExtraPartFilterDelegate extraPathFilter = null,
+      PathToPriorityDelegate pathToPriority = null
+    )
     {
       _statNames = n;
       _extraPathFilter = extraPathFilter;
@@ -97,15 +103,14 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (string.IsNullOrEmpty(prog.Value.CellControllerProgramName))
         {
-          return AddProgram(
-            cellSt: cellSt,
-            prog: prog.Value
-          );
+          return AddProgram(cellSt: cellSt, prog: prog.Value);
         }
       }
 
       // next, check if any pallet needs to be adjusted because a face is missing material
-      foreach (var pal in cellSt.Pallets.Where(pal => pal.CurrentOrLoadingFaces.Any(f => f.FaceIsMissingMaterial)))
+      foreach (
+        var pal in cellSt.Pallets.Where(pal => pal.CurrentOrLoadingFaces.Any(f => f.FaceIsMissingMaterial))
+      )
       {
         if (pal.CurrentOrLoadingFaces.All(f => f.FaceIsMissingMaterial))
         {
@@ -114,14 +119,35 @@ namespace BlackMaple.FMSInsight.Niigata
         else
         {
           // can't do anything until at the load station
-          if (pal.Status.CurStation.Location.Location != PalletLocationEnum.LoadUnload) continue;
-          if (!(pal.Status.Tracking.BeforeCurrentStep && (pal.Status.CurrentStep is UnloadStep || pal.Status.CurrentStep is LoadStep))) continue;
+          if (pal.Status.CurStation.Location.Location != PalletLocationEnum.LoadUnload)
+            continue;
+          if (
+            !(
+              pal.Status.Tracking.BeforeCurrentStep
+              && (pal.Status.CurrentStep is UnloadStep || pal.Status.CurrentStep is LoadStep)
+            )
+          )
+            continue;
 
           // FindMaterialToLoad should correctly (re)detect the faces missing material.
-          var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Material, queuedMats: cellSt.QueuedMaterial);
+          var pathsToLoad = FindMaterialToLoad(
+            cellSt,
+            pal.Status.Master.PalletNum,
+            pal.Status.CurStation.Location.Num,
+            pal.Material,
+            queuedMats: cellSt.QueuedMaterial
+          );
           if (pathsToLoad != null && pathsToLoad.Count > 0)
           {
-            if (SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse, out var newAction))
+            if (
+              SetNewRoute(
+                pal,
+                pathsToLoad,
+                cellSt.Status.TimeOfStatusUTC,
+                cellSt.ProgramsInUse,
+                out var newAction
+              )
+            )
               return newAction;
           }
         }
@@ -130,16 +156,35 @@ namespace BlackMaple.FMSInsight.Niigata
       // next, check if pallet at load station being unloaded needs something loaded
       foreach (var pal in cellSt.Pallets)
       {
-        if (pal.ManualControl) continue;
-        if (pal.Status.Master.Skip) continue;
-        if (pal.Status.CurStation.Location.Location != PalletLocationEnum.LoadUnload) continue;
-        if (!(pal.Status.Tracking.BeforeCurrentStep && pal.Status.CurrentStep is UnloadStep)) continue;
-        if (pal.Material.Any(m => m.Mat.Action.Type == InProcessMaterialAction.ActionType.Loading)) continue;
+        if (pal.ManualControl)
+          continue;
+        if (pal.Status.Master.Skip)
+          continue;
+        if (pal.Status.CurStation.Location.Location != PalletLocationEnum.LoadUnload)
+          continue;
+        if (!(pal.Status.Tracking.BeforeCurrentStep && pal.Status.CurrentStep is UnloadStep))
+          continue;
+        if (pal.Material.Any(m => m.Mat.Action.Type == InProcessMaterialAction.ActionType.Loading))
+          continue;
 
-        var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, pal.Status.CurStation.Location.Num, pal.Material, queuedMats: cellSt.QueuedMaterial);
+        var pathsToLoad = FindMaterialToLoad(
+          cellSt,
+          pal.Status.Master.PalletNum,
+          pal.Status.CurStation.Location.Num,
+          pal.Material,
+          queuedMats: cellSt.QueuedMaterial
+        );
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          if (SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse, out var newAction))
+          if (
+            SetNewRoute(
+              pal,
+              pathsToLoad,
+              cellSt.Status.TimeOfStatusUTC,
+              cellSt.ProgramsInUse,
+              out var newAction
+            )
+          )
             return newAction;
         }
       }
@@ -147,17 +192,35 @@ namespace BlackMaple.FMSInsight.Niigata
       // next, check empty stuff in buffer
       foreach (var pal in cellSt.Pallets)
       {
-        if (pal.ManualControl) continue;
-        if (pal.Status.Master.Skip) continue;
-        if (pal.Status.CurStation.Location.Location != PalletLocationEnum.Buffer) continue;
-        if (pal.Status.HasWork) continue;
+        if (pal.ManualControl)
+          continue;
+        if (pal.Status.Master.Skip)
+          continue;
+        if (pal.Status.CurStation.Location.Location != PalletLocationEnum.Buffer)
+          continue;
+        if (pal.Status.HasWork)
+          continue;
 
         // use empty matCurrentlyOnPal because if FMS Insight thinks there is material, the operator aborted it by setting no-work, overriding the route.
         // thus want to record the material as unloaded when it arrives at load station (may already have been unloaded, Insight just don't know it)
-        var pathsToLoad = FindMaterialToLoad(cellSt, pal.Status.Master.PalletNum, loadStation: null, matCurrentlyOnPal: Enumerable.Empty<InProcessMaterialAndJob>(), queuedMats: cellSt.QueuedMaterial);
+        var pathsToLoad = FindMaterialToLoad(
+          cellSt,
+          pal.Status.Master.PalletNum,
+          loadStation: null,
+          matCurrentlyOnPal: Enumerable.Empty<InProcessMaterialAndJob>(),
+          queuedMats: cellSt.QueuedMaterial
+        );
         if (pathsToLoad != null && pathsToLoad.Count > 0)
         {
-          if (SetNewRoute(pal, pathsToLoad, cellSt.Status.TimeOfStatusUTC, cellSt.ProgramsInUse, out var newAction))
+          if (
+            SetNewRoute(
+              pal,
+              pathsToLoad,
+              cellSt.Status.TimeOfStatusUTC,
+              cellSt.ProgramsInUse,
+              out var newAction
+            )
+          )
             return newAction;
         }
       }
@@ -175,7 +238,6 @@ namespace BlackMaple.FMSInsight.Niigata
       public int Path { get; init; }
       public long Precedence { get; init; }
 
-
       // RemainingProc1ToRun is only set to true on Process = 1 paths for which we have not yet
       // started all the planned quantity from the job.  The reason the path is not just filtered
       // out is in the case that there is an input raw material queue, we still want the chance to
@@ -192,31 +254,44 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private ImmutableList<JobPath> FindPathsForPallet(CellState cellSt, int pallet, int? loadStation)
     {
-      return
-        cellSt.CurrentStatus.Jobs.Values
-        .SelectMany(job => job.Processes.Select((proc, procIdx) => new { job, proc, procNum = procIdx + 1 }))
-        .SelectMany(j => j.proc.Paths.Select((path, pathIdx) => new JobPath
-        {
-          Job = j.job,
-          PathInfo = path,
-          Process = j.procNum,
-          Path = pathIdx + 1,
-          Precedence = j.job.Precedence[j.procNum - 1][pathIdx],
-          RemainingProc1ToRun = j.procNum == 1 ? j.job.RemainingToStart > 0 : false,
-        }))
-        .Where(j =>
-          j.Process > 1
-          ||
-          !string.IsNullOrEmpty(j.PathInfo.InputQueue)
-          ||
-          j.RemainingProc1ToRun
+      return cellSt.CurrentStatus.Jobs.Values
+        .SelectMany(
+          job =>
+            job.Processes.Select(
+              (proc, procIdx) =>
+                new
+                {
+                  job,
+                  proc,
+                  procNum = procIdx + 1
+                }
+            )
         )
+        .SelectMany(
+          j =>
+            j.proc.Paths.Select(
+              (path, pathIdx) =>
+                new JobPath
+                {
+                  Job = j.job,
+                  PathInfo = path,
+                  Process = j.procNum,
+                  Path = pathIdx + 1,
+                  Precedence = j.job.Precedence[j.procNum - 1][pathIdx],
+                  RemainingProc1ToRun = j.procNum == 1 ? j.job.RemainingToStart > 0 : false,
+                }
+            )
+        )
+        .Where(j => j.Process > 1 || !string.IsNullOrEmpty(j.PathInfo.InputQueue) || j.RemainingProc1ToRun)
         .Where(j => loadStation == null || j.PathInfo.Load.Contains(loadStation.Value))
         .Where(j => j.PathInfo.Pallets.Contains(pallet.ToString()))
-        .Where(j => _extraPathFilter == null || _extraPathFilter(job: j.Job, procNum: j.Process, pathNum: j.Path, pathInfo: j.PathInfo))
+        .Where(
+          j =>
+            _extraPathFilter == null
+            || _extraPathFilter(job: j.Job, procNum: j.Process, pathNum: j.Path, pathInfo: j.PathInfo)
+        )
         .OrderBy(j => j.Precedence)
-        .ToImmutableList()
-        ;
+        .ToImmutableList();
     }
 
     private bool PathAllowedOnPallet(IEnumerable<JobPath> alreadyLoading, JobPath potentialNewPath)
@@ -237,35 +312,45 @@ namespace BlackMaple.FMSInsight.Niigata
       return true;
     }
 
-    private bool CanMaterialLoadOntoPath(InProcessMaterialAndJob mat, JobPath path, ImmutableList<ProgramsForProcess> programs)
+    private bool CanMaterialLoadOntoPath(
+      InProcessMaterialAndJob mat,
+      JobPath path,
+      ImmutableList<ProgramsForProcess> programs
+    )
     {
       var m = mat.Mat;
-      return CreateCellState.FilterMaterialAvailableToLoadOntoFace(new CreateCellState.QueuedMaterialWithDetails()
-      {
-        MaterialID = m.MaterialID,
-        Unique = m.JobUnique,
-        Serial = m.Serial,
-        Workorder = m.WorkorderId,
-        PartNameOrCasting = m.PartName,
-        NextProcess = m.Process + 1,
-        QueuePosition = m.Location.QueuePosition ?? 0,
-        Paths = new Dictionary<int, int>() { { m.Process, m.Path } },
-        Workorders = mat.Workorders,
-      },
-      new PalletFace()
-      {
-        Job = path.Job,
-        PathInfo = path.PathInfo,
-        Process = path.Process,
-        Path = path.Path,
-        Face = 1,
-        FaceIsMissingMaterial = false,
-        Programs = programs
-      },
-      _statNames);
+      return CreateCellState.FilterMaterialAvailableToLoadOntoFace(
+        new CreateCellState.QueuedMaterialWithDetails()
+        {
+          MaterialID = m.MaterialID,
+          Unique = m.JobUnique,
+          Serial = m.Serial,
+          Workorder = m.WorkorderId,
+          PartNameOrCasting = m.PartName,
+          NextProcess = m.Process + 1,
+          QueuePosition = m.Location.QueuePosition ?? 0,
+          Paths = new Dictionary<int, int>() { { m.Process, m.Path } },
+          Workorders = mat.Workorders,
+        },
+        new PalletFace()
+        {
+          Job = path.Job,
+          PathInfo = path.PathInfo,
+          Process = path.Process,
+          Path = path.Path,
+          Face = 1,
+          FaceIsMissingMaterial = false,
+          Programs = programs
+        },
+        _statNames
+      );
     }
 
-    private ImmutableList<ProgramsForProcess> ProgramsForMaterial(InProcessMaterialAndJob mat, JobPath path, out bool programsOverrideJob)
+    private ImmutableList<ProgramsForProcess> ProgramsForMaterial(
+      InProcessMaterialAndJob mat,
+      JobPath path,
+      out bool programsOverrideJob
+    )
     {
       var matWorkProgs = mat.Workorders?.Where(w => w.Part == path.Job.PartName).FirstOrDefault()?.Programs;
       if (matWorkProgs == null)
@@ -289,7 +374,12 @@ namespace BlackMaple.FMSInsight.Niigata
       public bool ProgramsOverrideJob { get; init; }
     }
 
-    private MatForPath CheckMaterialForPathExists(HashSet<long> currentlyLoading, IReadOnlyDictionary<long, InProcessMaterialAndJob> unusedMatsOnPal, JobPath path, IEnumerable<InProcessMaterialAndJob> queuedMats)
+    private MatForPath CheckMaterialForPathExists(
+      HashSet<long> currentlyLoading,
+      IReadOnlyDictionary<long, InProcessMaterialAndJob> unusedMatsOnPal,
+      JobPath path,
+      IEnumerable<InProcessMaterialAndJob> queuedMats
+    )
     {
       // This logic must be identical to the eventual assignment in CreateCellState.MaterialToLoadOnFace and SizedQueues.AvailablePalletForPickup
 
@@ -310,7 +400,8 @@ namespace BlackMaple.FMSInsight.Niigata
         // check material on pallets
         foreach (var mat in unusedMatsOnPal.Values)
         {
-          if (mat.Mat.JobUnique == path.Job.UniqueStr
+          if (
+            mat.Mat.JobUnique == path.Job.UniqueStr
             && mat.Mat.Process + 1 == path.Process
             && !currentlyLoading.Contains(mat.Mat.MaterialID)
           )
@@ -322,7 +413,12 @@ namespace BlackMaple.FMSInsight.Niigata
             availMatIds.Add(mat.Mat.MaterialID);
             if (availMatIds.Count == countToLoad)
             {
-              return new MatForPath() { MatIds = availMatIds.ToImmutable(), ProgramsOverrideJob = programsOverrideJob, Programs = programs };
+              return new MatForPath()
+              {
+                MatIds = availMatIds.ToImmutable(),
+                ProgramsOverrideJob = programsOverrideJob,
+                Programs = programs
+              };
             }
           }
         }
@@ -331,19 +427,20 @@ namespace BlackMaple.FMSInsight.Niigata
       if (!string.IsNullOrEmpty(inputQueue))
       {
         // load mat in queue
-        var matInQueue =
-          queuedMats
-          .Where(m => m.Mat.Location.CurrentQueue == inputQueue
-                    && !currentlyLoading.Contains(m.Mat.MaterialID)
+        var matInQueue = queuedMats
+          .Where(
+            m => m.Mat.Location.CurrentQueue == inputQueue && !currentlyLoading.Contains(m.Mat.MaterialID)
           )
           .OrderBy(m => m.Mat.Location.QueuePosition);
 
         foreach (var mat in matInQueue)
         {
-          if (!CanMaterialLoadOntoPath(mat, path, programs)) continue;
+          if (!CanMaterialLoadOntoPath(mat, path, programs))
+            continue;
 
           // don't load from casting if no more parts are needed and material not yet assigned to the job
-          if (!path.RemainingProc1ToRun && string.IsNullOrEmpty(mat.Mat.JobUnique)) continue;
+          if (!path.RemainingProc1ToRun && string.IsNullOrEmpty(mat.Mat.JobUnique))
+            continue;
 
           if (programs == null)
           {
@@ -352,7 +449,12 @@ namespace BlackMaple.FMSInsight.Niigata
           availMatIds.Add(mat.Mat.MaterialID);
           if (availMatIds.Count == countToLoad)
           {
-            return new MatForPath() { MatIds = availMatIds.ToImmutable(), ProgramsOverrideJob = programsOverrideJob, Programs = programs };
+            return new MatForPath()
+            {
+              MatIds = availMatIds.ToImmutable(),
+              ProgramsOverrideJob = programsOverrideJob,
+              Programs = programs
+            };
           }
         }
       }
@@ -360,7 +462,13 @@ namespace BlackMaple.FMSInsight.Niigata
       return null;
     }
 
-    private ImmutableList<JobPathAndPrograms> FindMaterialToLoad(CellState cellSt, int pallet, int? loadStation, IEnumerable<InProcessMaterialAndJob> matCurrentlyOnPal, IEnumerable<InProcessMaterialAndJob> queuedMats)
+    private ImmutableList<JobPathAndPrograms> FindMaterialToLoad(
+      CellState cellSt,
+      int pallet,
+      int? loadStation,
+      IEnumerable<InProcessMaterialAndJob> matCurrentlyOnPal,
+      IEnumerable<InProcessMaterialAndJob> queuedMats
+    )
     {
       ImmutableList<JobPathAndPrograms>.Builder paths = null;
       var allPaths = FindPathsForPallet(cellSt, pallet, loadStation);
@@ -369,7 +477,8 @@ namespace BlackMaple.FMSInsight.Niigata
       foreach (var path in allPaths)
       {
         var matForPath = CheckMaterialForPathExists(currentlyLoading, unusedMatsOnPal, path, queuedMats);
-        if (matForPath == null) continue;
+        if (matForPath == null)
+          continue;
 
         if (paths == null)
         {
@@ -402,15 +511,17 @@ namespace BlackMaple.FMSInsight.Niigata
               unusedMatsOnPal.Remove(matId);
               currentlyLoading.Add(matId);
             }
-            paths.Add(new JobPathAndPrograms()
-            {
-              Job = path.Job,
-              PathInfo = path.PathInfo,
-              Process = path.Process,
-              Path = path.Path,
-              Programs = matForPath.Programs,
-              ProgramsOverrideJob = matForPath.ProgramsOverrideJob
-            });
+            paths.Add(
+              new JobPathAndPrograms()
+              {
+                Job = path.Job,
+                PathInfo = path.PathInfo,
+                Process = path.Process,
+                Path = path.Path,
+                Programs = matForPath.Programs,
+                ProgramsOverrideJob = matForPath.ProgramsOverrideJob
+              }
+            );
           }
         }
       }
@@ -419,26 +530,39 @@ namespace BlackMaple.FMSInsight.Niigata
     #endregion
 
     #region Set New Route
-    public static int PathsToPriority(IReadOnlyList<(MachineFramework.HistoricJob job, int process, int path)> newPaths)
+    public static int PathsToPriority(
+      IReadOnlyList<(MachineFramework.HistoricJob job, int process, int path)> newPaths
+    )
     {
-      if (newPaths.Count == 0) return 7;
+      if (newPaths.Count == 0)
+        return 7;
       var proc = newPaths.Select(p => p.process).Max();
       var numProc = newPaths.Select(p => p.job.Processes.Count).Max();
       return Math.Max(1, Math.Min(9, numProc - proc + 1));
     }
 
-    private bool SetNewRoute(PalletAndMaterial oldPallet, IReadOnlyList<JobPathAndPrograms> newPaths, DateTime nowUtc, IReadOnlyDictionary<(string progName, long revision), ProgramRevision> progs, out NiigataAction newAction)
+    private bool SetNewRoute(
+      PalletAndMaterial oldPallet,
+      IReadOnlyList<JobPathAndPrograms> newPaths,
+      DateTime nowUtc,
+      IReadOnlyDictionary<(string progName, long revision), ProgramRevision> progs,
+      out NiigataAction newAction
+    )
     {
       var newMaster = NewPalletMaster(oldPallet.Status.Master.PalletNum, newPaths, progs);
-      var newFaces = newPaths.Select(path =>
-        new AssignedJobAndPathForFace()
-        {
-          Face = path.PathInfo.Face ?? 0,
-          Unique = path.Job.UniqueStr,
-          Proc = path.Process,
-          Path = path.Path,
-          ProgOverride = path.ProgramsOverrideJob ? path.Programs : null
-        }).ToList();
+      var newFaces = newPaths
+        .Select(
+          path =>
+            new AssignedJobAndPathForFace()
+            {
+              Face = path.PathInfo.Face ?? 0,
+              Unique = path.Job.UniqueStr,
+              Proc = path.Process,
+              Path = path.Path,
+              ProgOverride = path.ProgramsOverrideJob ? path.Programs : null
+            }
+        )
+        .ToList();
 
       if (SimpleQuantityChange(oldPallet.Status, oldPallet.CurrentOrLoadingFaces, newMaster, newFaces))
       {
@@ -460,20 +584,13 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else if (AllowOverrideRoute(oldPallet.Status, newMaster))
       {
-        newAction = new NewPalletRoute()
-        {
-          NewMaster = newMaster,
-          NewFaces = newFaces
-        };
+        newAction = new NewPalletRoute() { NewMaster = newMaster, NewFaces = newFaces };
         return true;
       }
       else if (oldPallet.Status.CurStation.Location.Location == PalletLocationEnum.Buffer)
       {
         // need to delete first
-        newAction = new DeletePalletRoute()
-        {
-          PalletNum = newMaster.PalletNum
-        };
+        newAction = new DeletePalletRoute() { PalletNum = newMaster.PalletNum };
         return true;
       }
       else
@@ -484,7 +601,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private List<RouteStep> MiddleStepsForPath(JobPathAndPrograms path, IReadOnlyDictionary<(string progNum, long revision), ProgramRevision> progs)
+    private List<RouteStep> MiddleStepsForPath(
+      JobPathAndPrograms path,
+      IReadOnlyDictionary<(string progNum, long revision), ProgramRevision> progs
+    )
     {
       var steps = new List<RouteStep>();
       int machStopIdx = -1;
@@ -492,10 +612,7 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (_statNames != null && _statNames.ReclampGroupNames.Contains(stop.StationGroup))
         {
-          steps.Add(new ReclampStep()
-          {
-            Reclamp = stop.Stations.ToList()
-          });
+          steps.Add(new ReclampStep() { Reclamp = stop.Stations.ToList() });
         }
         else
         {
@@ -509,7 +626,10 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             if (progs.TryGetValue((workorderProg.ProgramName, workorderProg.Revision.Value), out var program))
             {
-              if (program.CellControllerProgramName != null && int.TryParse(program.CellControllerProgramName, out int p))
+              if (
+                program.CellControllerProgramName != null
+                && int.TryParse(program.CellControllerProgramName, out int p)
+              )
               {
                 iccProgram = p;
               }
@@ -524,15 +644,27 @@ namespace BlackMaple.FMSInsight.Niigata
             }
           }
 
-          if (!iccProgram.HasValue && stop.ProgramRevision.HasValue && progs.TryGetValue((stop.Program, stop.ProgramRevision.Value), out var prog))
+          if (
+            !iccProgram.HasValue
+            && stop.ProgramRevision.HasValue
+            && progs.TryGetValue((stop.Program, stop.ProgramRevision.Value), out var prog)
+          )
           {
-            if (prog.CellControllerProgramName != null && int.TryParse(prog.CellControllerProgramName, out int p))
+            if (
+              prog.CellControllerProgramName != null
+              && int.TryParse(prog.CellControllerProgramName, out int p)
+            )
             {
               iccProgram = p;
             }
             else
             {
-              Log.Error("Unable to find program for job {uniq} part {part} program {name}", path.Job.UniqueStr, path.Job.PartName, stop.Program);
+              Log.Error(
+                "Unable to find program for job {uniq} part {part} program {name}",
+                path.Job.UniqueStr,
+                path.Job.PartName,
+                stop.Program
+              );
             }
           }
           else if (!iccProgram.HasValue)
@@ -543,27 +675,36 @@ namespace BlackMaple.FMSInsight.Niigata
             }
             else
             {
-              Log.Error("Program for job {uniq} part {part} program {prog} is not an integer", path.Job.UniqueStr, path.Job.PartName, stop.Program);
+              Log.Error(
+                "Program for job {uniq} part {part} program {prog} is not an integer",
+                path.Job.UniqueStr,
+                path.Job.PartName,
+                stop.Program
+              );
             }
           }
 
           if (iccProgram.HasValue)
           {
-            steps.Add(new MachiningStep()
-            {
-              Machines = stop.Stations.Select(s =>
+            steps.Add(
+              new MachiningStep()
               {
-                if (_statNames != null)
-                {
-                  return _statNames.JobMachToIcc(stop.StationGroup, s);
-                }
-                else
-                {
-                  return s;
-                }
-              }).ToList(),
-              ProgramNumsToRun = new List<int> { iccProgram.Value }
-            });
+                Machines = stop.Stations
+                  .Select(s =>
+                  {
+                    if (_statNames != null)
+                    {
+                      return _statNames.JobMachToIcc(stop.StationGroup, s);
+                    }
+                    else
+                    {
+                      return s;
+                    }
+                  })
+                  .ToList(),
+                ProgramNumsToRun = new List<int> { iccProgram.Value }
+              }
+            );
           }
         }
       }
@@ -617,12 +758,19 @@ namespace BlackMaple.FMSInsight.Niigata
           idx += 1;
         }
       }
-
     }
 
-    private PalletMaster NewPalletMaster(int pallet, IReadOnlyList<JobPathAndPrograms> newPaths, IReadOnlyDictionary<(string progNum, long revision), ProgramRevision> progs)
+    private PalletMaster NewPalletMaster(
+      int pallet,
+      IReadOnlyList<JobPathAndPrograms> newPaths,
+      IReadOnlyDictionary<(string progNum, long revision), ProgramRevision> progs
+    )
     {
-      var orderedPaths = newPaths.OrderBy(p => p.Job.UniqueStr).ThenBy(p => p.Process).ThenBy(p => p.Path).ToList();
+      var orderedPaths = newPaths
+        .OrderBy(p => p.Job.UniqueStr)
+        .ThenBy(p => p.Process)
+        .ThenBy(p => p.Path)
+        .ToList();
 
       List<RouteStep> middleSteps = null;
       foreach (var path in orderedPaths)
@@ -650,37 +798,45 @@ namespace BlackMaple.FMSInsight.Niigata
         Skip = false,
         ForLongToolMaintenance = false,
         PerformProgramDownload = true,
-        Routes =
-          (new RouteStep[] { new LoadStep() { LoadStations = firstPath.PathInfo.Load.ToList() } })
+        Routes = (new RouteStep[] { new LoadStep() { LoadStations = firstPath.PathInfo.Load.ToList() } })
           .Concat(middleSteps)
-          .Concat(new[] {
-            new UnloadStep()
+          .Concat(
+            new[]
             {
-              UnloadStations = firstPath.PathInfo.Unload.ToList(),
-              CompletedPartCount = 1
+              new UnloadStep() { UnloadStations = firstPath.PathInfo.Unload.ToList(), CompletedPartCount = 1 }
             }
-          })
+          )
           .ToList()
       };
     }
 
-    private bool SimpleQuantityChange(PalletStatus existingStatus, IReadOnlyList<PalletFace> existingFaces,
-                                      PalletMaster newPal, IReadOnlyList<AssignedJobAndPathForFace> newFaces
+    private bool SimpleQuantityChange(
+      PalletStatus existingStatus,
+      IReadOnlyList<PalletFace> existingFaces,
+      PalletMaster newPal,
+      IReadOnlyList<AssignedJobAndPathForFace> newFaces
     )
     {
       var existingMaster = existingStatus.Master;
-      if (existingStatus.Tracking.RouteInvalid) return false;
-      if (existingFaces.Count != newFaces.Count) return false;
-      if (existingMaster.Routes.Count != newPal.Routes.Count) return false;
+      if (existingStatus.Tracking.RouteInvalid)
+        return false;
+      if (existingFaces.Count != newFaces.Count)
+        return false;
+      if (existingMaster.Routes.Count != newPal.Routes.Count)
+        return false;
 
-      if (newFaces.Any(newFace =>
-            existingFaces.FirstOrDefault(existingFace =>
-              newFace.Unique == existingFace.Job.UniqueStr &&
-              newFace.Proc == existingFace.Process &&
-              newFace.Path == existingFace.Path &&
-              newFace.Face == existingFace.Face
-            ) == null)
-         )
+      if (
+        newFaces.Any(
+          newFace =>
+            existingFaces.FirstOrDefault(
+              existingFace =>
+                newFace.Unique == existingFace.Job.UniqueStr
+                && newFace.Proc == existingFace.Process
+                && newFace.Path == existingFace.Path
+                && newFace.Face == existingFace.Face
+            ) == null
+        )
+      )
       {
         return false;
       }
@@ -689,22 +845,39 @@ namespace BlackMaple.FMSInsight.Niigata
       {
         if (existingMaster.Routes[i] is LoadStep && newPal.Routes[i] is LoadStep)
         {
-          if (!((LoadStep)existingMaster.Routes[i]).LoadStations.SequenceEqual(((LoadStep)newPal.Routes[i]).LoadStations)) return false;
+          if (
+            !((LoadStep)existingMaster.Routes[i]).LoadStations.SequenceEqual(
+              ((LoadStep)newPal.Routes[i]).LoadStations
+            )
+          )
+            return false;
         }
         else if (existingMaster.Routes[i] is MachiningStep && newPal.Routes[i] is MachiningStep)
         {
           var eM = (MachiningStep)existingMaster.Routes[i];
           var nM = (MachiningStep)newPal.Routes[i];
-          if (!eM.Machines.SequenceEqual(nM.Machines)) return false;
-          if (!eM.ProgramNumsToRun.SequenceEqual(nM.ProgramNumsToRun)) return false;
+          if (!eM.Machines.SequenceEqual(nM.Machines))
+            return false;
+          if (!eM.ProgramNumsToRun.SequenceEqual(nM.ProgramNumsToRun))
+            return false;
         }
         else if (existingMaster.Routes[i] is ReclampStep && newPal.Routes[i] is ReclampStep)
         {
-          if (!((ReclampStep)existingMaster.Routes[i]).Reclamp.SequenceEqual(((ReclampStep)newPal.Routes[i]).Reclamp)) return false;
+          if (
+            !((ReclampStep)existingMaster.Routes[i]).Reclamp.SequenceEqual(
+              ((ReclampStep)newPal.Routes[i]).Reclamp
+            )
+          )
+            return false;
         }
         else if (existingMaster.Routes[i] is UnloadStep && newPal.Routes[i] is UnloadStep)
         {
-          if (!((UnloadStep)existingMaster.Routes[i]).UnloadStations.SequenceEqual(((UnloadStep)newPal.Routes[i]).UnloadStations)) return false;
+          if (
+            !((UnloadStep)existingMaster.Routes[i]).UnloadStations.SequenceEqual(
+              ((UnloadStep)newPal.Routes[i]).UnloadStations
+            )
+          )
+            return false;
         }
         else
         {
@@ -718,21 +891,20 @@ namespace BlackMaple.FMSInsight.Niigata
     private bool AllowOverrideRoute(PalletStatus existingStatus, PalletMaster newPal)
     {
       var existingMaster = existingStatus.Master;
-      if (existingStatus.Tracking.RouteInvalid) return true;
+      if (existingStatus.Tracking.RouteInvalid)
+        return true;
 
       // The ICC can only replace a route if the sequence of steps matches, otherwise the old route needs to be deleted first
-      if (existingMaster.Routes.Count != newPal.Routes.Count) return false;
+      if (existingMaster.Routes.Count != newPal.Routes.Count)
+        return false;
 
       for (int i = 0; i < existingMaster.Routes.Count - 1; i++)
       {
         if (
           (existingMaster.Routes[i] is LoadStep && newPal.Routes[i] is LoadStep)
-          ||
-          (existingMaster.Routes[i] is MachiningStep && newPal.Routes[i] is MachiningStep)
-          ||
-          (existingMaster.Routes[i] is ReclampStep && newPal.Routes[i] is ReclampStep)
-          ||
-          (existingMaster.Routes[i] is UnloadStep && newPal.Routes[i] is UnloadStep)
+          || (existingMaster.Routes[i] is MachiningStep && newPal.Routes[i] is MachiningStep)
+          || (existingMaster.Routes[i] is ReclampStep && newPal.Routes[i] is ReclampStep)
+          || (existingMaster.Routes[i] is UnloadStep && newPal.Routes[i] is UnloadStep)
         )
         {
           // OK
@@ -765,10 +937,12 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       return "Insight:" + revision.ToString() + ":" + program;
     }
+
     public static bool IsInsightProgram(ProgramEntry prog)
     {
       return prog.Comment.StartsWith("Insight:");
     }
+
     public static bool TryParseProgramComment(ProgramEntry prog, out string program, out long rev)
     {
       var comment = prog.Comment;
@@ -797,12 +971,11 @@ namespace BlackMaple.FMSInsight.Niigata
       TimeSpan elapsed = TimeSpan.Zero;
 
       // search for program in job
-      var procAndStopFromJob =
-        cellSt.CurrentStatus.Jobs.Values
-          .SelectMany(j => j.Processes.Select((p, idx) => new { proc = p, procNum = idx + 1 }))
-          .SelectMany(p => p.proc.Paths.Select(path => new { path, procNum = p.procNum }))
-          .SelectMany(p => p.path.Stops.Select(stop => new { stop, procNum = p.procNum }))
-          .FirstOrDefault(s => s.stop.Program == prog.ProgramName && s.stop.ProgramRevision == prog.Revision);
+      var procAndStopFromJob = cellSt.CurrentStatus.Jobs.Values
+        .SelectMany(j => j.Processes.Select((p, idx) => new { proc = p, procNum = idx + 1 }))
+        .SelectMany(p => p.proc.Paths.Select(path => new { path, procNum = p.procNum }))
+        .SelectMany(p => p.path.Stops.Select(stop => new { stop, procNum = p.procNum }))
+        .FirstOrDefault(s => s.stop.Program == prog.ProgramName && s.stop.ProgramRevision == prog.Revision);
 
       if (procAndStopFromJob != null)
       {
@@ -812,9 +985,16 @@ namespace BlackMaple.FMSInsight.Niigata
       else
       {
         // search in workorders
-        foreach (var work in cellSt.QueuedMaterial.Concat(cellSt.Pallets.SelectMany(p => p.Material)).SelectMany(m => m.Workorders ?? Enumerable.Empty<Workorder>()).Where(w => w.Programs != null))
+        foreach (
+          var work in cellSt.QueuedMaterial
+            .Concat(cellSt.Pallets.SelectMany(p => p.Material))
+            .SelectMany(m => m.Workorders ?? Enumerable.Empty<Workorder>())
+            .Where(w => w.Programs != null)
+        )
         {
-          var workProg = work.Programs.FirstOrDefault(p => p.ProgramName == prog.ProgramName && p.Revision == prog.Revision);
+          var workProg = work.Programs.FirstOrDefault(
+            p => p.ProgramName == prog.ProgramName && p.Revision == prog.Revision
+          );
           if (workProg != null)
           {
             process = workProg.ProcessNumber;
@@ -824,7 +1004,8 @@ namespace BlackMaple.FMSInsight.Niigata
               elapsed =
                 job.Processes[process - 1].Paths[0].Stops
                   .Where(s => _statNames == null || !_statNames.ReclampGroupNames.Contains(s.StationGroup))
-                  .ElementAtOrDefault(workProg.StopIndex ?? 0)?.ExpectedCycleTime ?? TimeSpan.Zero;
+                  .ElementAtOrDefault(workProg.StopIndex ?? 0)
+                  ?.ExpectedCycleTime ?? TimeSpan.Zero;
             }
           }
         }
@@ -832,16 +1013,22 @@ namespace BlackMaple.FMSInsight.Niigata
 
       var existing = new HashSet<int>(
         cellSt.Status.Programs.Keys
-        .Concat(cellSt.OldUnusedPrograms.Select(p => int.TryParse(p.CellControllerProgramName, out var num) ? num : 0))
-        .Concat(cellSt.Status.BadProgramNumbers ?? Enumerable.Empty<int>())
+          .Concat(
+            cellSt.OldUnusedPrograms.Select(
+              p => int.TryParse(p.CellControllerProgramName, out var num) ? num : 0
+            )
+          )
+          .Concat(cellSt.Status.BadProgramNumbers ?? Enumerable.Empty<int>())
       );
 
       int progNum = 0;
       if (process >= 1 && process <= 9)
       {
         // start at the max existing number and wrap around, checking for available
-        int maxExisting = Enumerable.Range(2000 + process * 100, 99).LastOrDefault(p => existing.Contains(p)) % 100;
-        if (maxExisting > 90) maxExisting = 0;
+        int maxExisting =
+          Enumerable.Range(2000 + process * 100, 99).LastOrDefault(p => existing.Contains(p)) % 100;
+        if (maxExisting > 90)
+          maxExisting = 0;
 
         for (int i = 0; i < 99; i++)
         {
@@ -860,7 +1047,12 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       if (progNum == 0)
       {
-        throw new Exception("Unable to find unused program number for program " + prog.ProgramName + " rev" + prog.Revision.ToString());
+        throw new Exception(
+          "Unable to find unused program number for program "
+            + prog.ProgramName
+            + " rev"
+            + prog.Revision.ToString()
+        );
       }
       return new NewProgram()
       {
@@ -876,7 +1068,8 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       foreach (var prog in cellSt.OldUnusedPrograms)
       {
-        if (!int.TryParse(prog.CellControllerProgramName, out int progNum)) continue;
+        if (!int.TryParse(prog.CellControllerProgramName, out int progNum))
+          continue;
 
         return new DeleteProgram()
         {

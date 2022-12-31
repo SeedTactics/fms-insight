@@ -62,8 +62,19 @@ namespace BlackMaple.FMSInsight.Niigata
         throw new Exception("Invalid machine number " + machine.ToString());
       }
       ushort handle;
-      Log.Debug("Connecting to machine {mc} at {ip} on port {port}", machine, _machines[machine - 1].Address.ToString(), _machines[machine - 1].Port);
-      var ret = cnc_allclibhndl3(_machines[machine - 1].Address.ToString(), (ushort)_machines[machine - 1].Port, 10 /* seconds */, out handle);
+      Log.Debug(
+        "Connecting to machine {mc} at {ip} on port {port}",
+        machine,
+        _machines[machine - 1].Address.ToString(),
+        _machines[machine - 1].Port
+      );
+      var ret = cnc_allclibhndl3(
+        _machines[machine - 1].Address.ToString(),
+        (ushort)_machines[machine - 1].Port,
+        10 /* seconds */
+        ,
+        out handle
+      );
       if (ret != 0)
       {
         Log.Error("Code {code} when connecting to machine {machine}", ret, machine);
@@ -99,21 +110,37 @@ namespace BlackMaple.FMSInsight.Niigata
         }
         if (ret == SocketError)
         {
-          Log.Warning("Unable to communicate with machine #{machine}: {ret}, {errRet}, {errNo}, {errDtno}",
-            machine, ret, errRet, errDetail.err_no, errDetail.err_dtno);
+          Log.Warning(
+            "Unable to communicate with machine #{machine}: {ret}, {errRet}, {errNo}, {errDtno}",
+            machine,
+            ret,
+            errRet,
+            errDetail.err_no,
+            errDetail.err_dtno
+          );
         }
         else
         {
-          Log.Error("Received error {ret} when communicating with machine #{machine}: {errRet}, {errNo}, {errDtno}",
-            machine, ret, errRet, errDetail.err_no, errDetail.err_dtno);
+          Log.Error(
+            "Received error {ret} when communicating with machine #{machine}: {errRet}, {errNo}, {errDtno}",
+            machine,
+            ret,
+            errRet,
+            errDetail.err_no,
+            errDetail.err_dtno
+          );
         }
         throw new Exception("Unable to communicate with machine " + machine.ToString());
       }
-
     }
 
     [DllImport("fwlib32.dll")]
-    private static extern short cnc_allclibhndl3([MarshalAs(UnmanagedType.LPStr)] string ip, ushort port, int timeout, out ushort handle);
+    private static extern short cnc_allclibhndl3(
+      [MarshalAs(UnmanagedType.LPStr)] string ip,
+      ushort port,
+      int timeout,
+      out ushort handle
+    );
 
     [DllImport("fwlib32.dll")]
     private static extern short cnc_freelibhndl(ushort handle);

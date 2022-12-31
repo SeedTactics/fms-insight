@@ -43,9 +43,15 @@ namespace BlackMaple.FMSInsight.Niigata
     private static Serilog.ILogger Log = Serilog.Log.ForContext<SizedQueues>();
 
     private readonly IReadOnlyDictionary<string, MachineFramework.QueueSize> _queueSizes;
+
     public SizedQueues(IReadOnlyDictionary<string, MachineFramework.QueueSize> queues)
     {
-      if (queues != null && queues.Values.Any(q => q.MaxSizeBeforeStopUnloading.HasValue && q.MaxSizeBeforeStopUnloading.Value > 0))
+      if (
+        queues != null
+        && queues.Values.Any(
+          q => q.MaxSizeBeforeStopUnloading.HasValue && q.MaxSizeBeforeStopUnloading.Value > 0
+        )
+      )
       {
         _queueSizes = queues;
       }
@@ -57,24 +63,37 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public NiigataAction NewPalletChange(CellState cellState)
     {
-      if (_queueSizes == null) return null;
+      if (_queueSizes == null)
+        return null;
 
       var sizedQueues = new HashSet<string>(
         _queueSizes
-        .Where(q => q.Value.MaxSizeBeforeStopUnloading.HasValue && q.Value.MaxSizeBeforeStopUnloading.Value > 0)
-        .Select(q => q.Key)
+          .Where(
+            q => q.Value.MaxSizeBeforeStopUnloading.HasValue && q.Value.MaxSizeBeforeStopUnloading.Value > 0
+          )
+          .Select(q => q.Key)
       );
 
-      var palletsToCheckForHold =
-        cellState.Pallets
-        .Where(pal =>
-          pal.Material.Count > 0
-          &&
-          pal.Material.Any(m => m.Mat.Process >= 1 && sizedQueues.Contains(m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].OutputQueue))
+      var palletsToCheckForHold = cellState.Pallets
+        .Where(
+          pal =>
+            pal.Material.Count > 0
+            && pal.Material.Any(
+              m =>
+                m.Mat.Process >= 1
+                && sizedQueues.Contains(m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].OutputQueue)
+            )
         )
-        .OrderBy(pal => pal.Material.Min(m => m.Mat.Process >= 1 ? m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].SimulatedStartingUTC : DateTime.MaxValue))
+        .OrderBy(
+          pal =>
+            pal.Material.Min(
+              m =>
+                m.Mat.Process >= 1
+                  ? m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].SimulatedStartingUTC
+                  : DateTime.MaxValue
+            )
+        )
         .ToList();
-
 
       // ensure everything that could be held is marked as hold
       foreach (var pal in palletsToCheckForHold.Where(IsExecutingFinalStep))
@@ -89,7 +108,11 @@ namespace BlackMaple.FMSInsight.Niigata
       var queueRemaining = CalculateQueueRemainingPositions(cellState, palletsToCheckForHold);
       foreach (var pal in palletsToCheckForHold.Where(IsPalletReadyToUnload))
       {
-        if (pal.Status.Master.Skip && IsAvailableSpaceForPallet(cellState, pal, queueRemaining) && SetHoldAllowed(pal.Status))
+        if (
+          pal.Status.Master.Skip
+          && IsAvailableSpaceForPallet(cellState, pal, queueRemaining)
+          && SetHoldAllowed(pal.Status)
+        )
         {
           return SetPalletHold(pal, false);
         }
@@ -107,11 +130,12 @@ namespace BlackMaple.FMSInsight.Niigata
         switch (pal.Status.CurrentStep)
         {
           case MachiningStep machStep:
-            return
-              pal.Material.All(m =>
-                   m.Mat.LastCompletedMachiningRouteStopIndex == m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].Stops.Count() - 1
+            return pal.Material.All(
+              m =>
+                m.Mat.LastCompletedMachiningRouteStopIndex
+                  == m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].Stops.Count() - 1
                 || m.Mat.Action.Type == InProcessMaterialAction.ActionType.Machining
-              );
+            );
 
           case ReclampStep reclamp:
             return pal.Material.All(m => m.Mat.Action.Type == InProcessMaterialAction.ActionType.Loading);
@@ -131,7 +155,8 @@ namespace BlackMaple.FMSInsight.Niigata
       }
       else if (curRouteIdx == pal.Status.Master.Routes.Count - 1)
       {
-        return pal.Status.Tracking.BeforeCurrentStep && pal.Status.CurStation.Location.Location == PalletLocationEnum.Buffer;
+        return pal.Status.Tracking.BeforeCurrentStep
+          && pal.Status.CurStation.Location.Location == PalletLocationEnum.Buffer;
       }
       else
       {
@@ -139,7 +164,10 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private IReadOnlyDictionary<string, int> CalculateQueueRemainingPositions(CellState cellState, IEnumerable<PalletAndMaterial> palsToCheck)
+    private IReadOnlyDictionary<string, int> CalculateQueueRemainingPositions(
+      CellState cellState,
+      IEnumerable<PalletAndMaterial> palsToCheck
+    )
     {
       var remain = new Dictionary<string, int>();
 
@@ -207,19 +235,28 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 remain[queue] -= 1;
               }
-
             }
           }
-
         }
       }
 
       return remain;
     }
 
-    private bool IsAvailableSpaceForPallet(CellState cellState, PalletAndMaterial pallet, IReadOnlyDictionary<string, int> remainingQueuePos)
+    private bool IsAvailableSpaceForPallet(
+      CellState cellState,
+      PalletAndMaterial pallet,
+      IReadOnlyDictionary<string, int> remainingQueuePos
+    )
     {
-      foreach (var matGroup in pallet.Material.GroupBy(mat => mat.Mat.Process >= 1 ? mat.Job.Processes[mat.Mat.Process - 1].Paths[mat.Mat.Path - 1].OutputQueue : null))
+      foreach (
+        var matGroup in pallet.Material.GroupBy(
+          mat =>
+            mat.Mat.Process >= 1
+              ? mat.Job.Processes[mat.Mat.Process - 1].Paths[mat.Mat.Path - 1].OutputQueue
+              : null
+        )
+      )
       {
         if (matGroup.Key != null && remainingQueuePos.TryGetValue(matGroup.Key, out var remain))
         {
@@ -239,28 +276,31 @@ namespace BlackMaple.FMSInsight.Niigata
       return true;
     }
 
-    private bool AvailablePalletForPickup(CellState cellState, IEnumerable<InProcessMaterialAndJob> mats, string queue)
+    private bool AvailablePalletForPickup(
+      CellState cellState,
+      IEnumerable<InProcessMaterialAndJob> mats,
+      string queue
+    )
     {
       var availPallets = new HashSet<string>(
         cellState.Pallets
-        .Where(pal => !pal.Status.HasWork && !pal.ManualControl)
-        .Select(pal => pal.Status.Master.PalletNum.ToString())
+          .Where(pal => !pal.Status.HasWork && !pal.ManualControl)
+          .Select(pal => pal.Status.Master.PalletNum.ToString())
       );
 
       return mats.All(mat =>
       {
-        if (mat.Mat.Process == mat.Job.Processes.Count) return true;
-        if (mat.Mat.Process < 1) return true;
+        if (mat.Mat.Process == mat.Job.Processes.Count)
+          return true;
+        if (mat.Mat.Process < 1)
+          return true;
 
         // search for an available pallet to pickup this material
         int nextProc = mat.Mat.Process + 1;
         var nextJobProcInfo = mat.Job.Processes[nextProc - 1];
         foreach (var pathInfo in nextJobProcInfo.Paths)
         {
-          if (
-              pathInfo.InputQueue == queue
-           && pathInfo.Pallets.Any(p => availPallets.Contains(p))
-          )
+          if (pathInfo.InputQueue == queue && pathInfo.Pallets.Any(p => availPallets.Contains(p)))
           {
             return true;
           }
@@ -273,8 +313,10 @@ namespace BlackMaple.FMSInsight.Niigata
     private bool SetHoldAllowed(PalletStatus pal)
     {
       // currently only allowed to hold at load station or stocker
-      if (pal.CurStation.Location.Location == PalletLocationEnum.Buffer) return true;
-      if (pal.CurStation.Location.Location == PalletLocationEnum.LoadUnload) return true;
+      if (pal.CurStation.Location.Location == PalletLocationEnum.Buffer)
+        return true;
+      if (pal.CurStation.Location.Location == PalletLocationEnum.LoadUnload)
+        return true;
       return false;
     }
 
@@ -290,6 +332,5 @@ namespace BlackMaple.FMSInsight.Niigata
         LongToolMachine = 0
       };
     }
-
   }
 }

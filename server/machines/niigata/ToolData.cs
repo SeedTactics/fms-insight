@@ -77,7 +77,6 @@ namespace BlackMaple.FMSInsight.Niigata
     }
   }
 
-
   public static class LoadToolData
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CncMachineConnection>();
@@ -89,40 +88,52 @@ namespace BlackMaple.FMSInsight.Niigata
         byte[] buff = new byte[10080];
         int numTools = 0;
 
-        cnc.WithConnection<int>(machine, handle =>
-        {
-          Log.Debug("Starting to load number of tools");
-
-          byte[] header = new byte[4];
-
-          CncMachineConnection.LogAndThrowError(machine, handle, cnc: false,
-            ret: pmc_rdkpm(handle, 51, header, 4)
-          );
-
-          Log.Debug("Network call to load number of tools completed");
-
-          using (var mem = new MemoryStream(header))
-          using (var rawReader = new BinaryReader(mem))
+        cnc.WithConnection<int>(
+          machine,
+          handle =>
           {
-            var beReader = new BigEndianBinaryReader(rawReader);
+            Log.Debug("Starting to load number of tools");
 
-            numTools = beReader.ReadUInt16();
-            Log.Debug("Loading {numTools} tools ({@header})", numTools, header);
-            if (numTools < 0) numTools = 0;
-            if (numTools > 360) numTools = 360;
+            byte[] header = new byte[4];
+
+            CncMachineConnection.LogAndThrowError(
+              machine,
+              handle,
+              cnc: false,
+              ret: pmc_rdkpm(handle, 51, header, 4)
+            );
+
+            Log.Debug("Network call to load number of tools completed");
+
+            using (var mem = new MemoryStream(header))
+            using (var rawReader = new BinaryReader(mem))
+            {
+              var beReader = new BigEndianBinaryReader(rawReader);
+
+              numTools = beReader.ReadUInt16();
+              Log.Debug("Loading {numTools} tools ({@header})", numTools, header);
+              if (numTools < 0)
+                numTools = 0;
+              if (numTools > 360)
+                numTools = 360;
+            }
+
+            if (numTools == 0)
+              return 0;
+
+            Log.Debug("Starting to load tool data");
+
+            CncMachineConnection.LogAndThrowError(
+              machine,
+              handle,
+              cnc: false,
+              ret: pmc_rdkpm(handle, 51 + 4, buff, (ushort)(28 * numTools))
+            );
+
+            Log.Debug("Network call to load tool data complete");
+            return 0;
           }
-
-          if (numTools == 0) return 0;
-
-          Log.Debug("Starting to load tool data");
-
-          CncMachineConnection.LogAndThrowError(machine, handle, cnc: false,
-            ret: pmc_rdkpm(handle, 51 + 4, buff, (ushort)(28 * numTools))
-          );
-
-          Log.Debug("Network call to load tool data complete");
-          return 0;
-        });
+        );
 
         using (var mem = new MemoryStream(buff))
         using (var rawReader = new BinaryReader(mem))
@@ -151,33 +162,47 @@ namespace BlackMaple.FMSInsight.Niigata
             var serialNo = toolNum % 100;
             var groupNo = toolNum / 100;
 
-            Log.Debug("Tool data for {i}: {@raw} " +
-              "{toolNum}, {gNum}, {lifeTm}, {restTm}, {loadMax}, {loadMore}, {meas}, {lifeAlrm}, {brokenAlrm}, {cuttingAlrm}, {checkingAlrm}, {lifeKind}",
+            Log.Debug(
+              "Tool data for {i}: {@raw} "
+                + "{toolNum}, {gNum}, {lifeTm}, {restTm}, {loadMax}, {loadMore}, {meas}, {lifeAlrm}, {brokenAlrm}, {cuttingAlrm}, {checkingAlrm}, {lifeKind}",
               i,
               (new Span<byte>(buff, 4 + i * 28, 28)).ToArray(),
-              toolNum, gNum, lifeTm, restTm, loadMax, loadMore, meas, lifeAlrm, brokenAlrm, cuttingAlrm, checkingAlrm, lifeKind
+              toolNum,
+              gNum,
+              lifeTm,
+              restTm,
+              loadMax,
+              loadMore,
+              meas,
+              lifeAlrm,
+              brokenAlrm,
+              cuttingAlrm,
+              checkingAlrm,
+              lifeKind
             );
 
             if (toolNum > 0)
             {
-              tools.Add(new NiigataToolData()
-              {
-                Pocket = i,
-                ToolNum = toolNum,
-                Serial = serialNo,
-                Group = groupNo,
-                GNum = gNum,
-                LifeTime = lifeTm,
-                RestTime = restTm,
-                LoadMax = loadMax,
-                LoadMore = loadMore,
-                Meas = meas,
-                LifeAlarm = lifeAlrm,
-                BrokenAlarm = brokenAlrm,
-                CuttingAlarm = cuttingAlrm,
-                CheckingAlarm = checkingAlrm,
-                LifeKind = lifeKind
-              });
+              tools.Add(
+                new NiigataToolData()
+                {
+                  Pocket = i,
+                  ToolNum = toolNum,
+                  Serial = serialNo,
+                  Group = groupNo,
+                  GNum = gNum,
+                  LifeTime = lifeTm,
+                  RestTime = restTm,
+                  LoadMax = loadMax,
+                  LoadMore = loadMore,
+                  Meas = meas,
+                  LifeAlarm = lifeAlrm,
+                  BrokenAlarm = brokenAlrm,
+                  CuttingAlarm = cuttingAlrm,
+                  CheckingAlarm = checkingAlrm,
+                  LifeKind = lifeKind
+                }
+              );
             }
           }
 
@@ -197,6 +222,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public class BigEndianBinaryReader
     {
       private BinaryReader _reader;
+
       public BigEndianBinaryReader(BinaryReader r) => _reader = r;
 
       private byte[] ReadAndConvert(int count)
@@ -210,11 +236,14 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       public byte ReadByte() => _reader.ReadByte();
+
       public short ReadInt16() => BitConverter.ToInt16(ReadAndConvert(sizeof(short)), 0);
+
       public ushort ReadUInt16() => BitConverter.ToUInt16(ReadAndConvert(sizeof(ushort)), 0);
+
       public int ReadInt32() => BitConverter.ToUInt16(ReadAndConvert(sizeof(int)), 0);
+
       public uint ReadUInt32() => BitConverter.ToUInt16(ReadAndConvert(sizeof(uint)), 0);
     }
-
   }
 }

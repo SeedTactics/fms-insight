@@ -62,12 +62,14 @@ namespace MazakMachineInterface
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
-    public LogTranslation(BlackMaple.MachineFramework.IRepository logDB,
-                          MazakCurrentStatusAndTools mazakSch,
-                          IMachineGroupName machineGroupName,
-                          BlackMaple.MachineFramework.FMSSettings settings,
-                          Action<LogEntry> onMazakLogMessage,
-                          MazakConfig mazakConfig)
+    public LogTranslation(
+      BlackMaple.MachineFramework.IRepository logDB,
+      MazakCurrentStatusAndTools mazakSch,
+      IMachineGroupName machineGroupName,
+      BlackMaple.MachineFramework.FMSSettings settings,
+      Action<LogEntry> onMazakLogMessage,
+      MazakConfig mazakConfig
+    )
     {
       _log = logDB;
       _machGroupName = machineGroupName;
@@ -98,12 +100,10 @@ namespace MazakMachineInterface
       if (e.Pallet >= 1)
         cycle = _log.CurrentPalletLog(e.Pallet.ToString());
 
-
       Log.Debug("Handling mazak event {@event}", e);
 
       switch (e.Code)
       {
-
         case LogCode.LoadBegin:
 
           _log.RecordLoadStart(
@@ -111,48 +111,52 @@ namespace MazakMachineInterface
             pallet: e.Pallet.ToString(),
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
-            foreignId: e.ForeignID);
+            foreignId: e.ForeignID
+          );
 
           break;
 
         case LogCode.LoadEnd:
 
-          _log.AddPendingLoad(e.Pallet.ToString(), PendingLoadKey(e), e.StationNumber,
-                              CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber),
-                              CalculateActiveLoadTime(e),
-                              e.ForeignID);
+          _log.AddPendingLoad(
+            e.Pallet.ToString(),
+            PendingLoadKey(e),
+            e.StationNumber,
+            CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber),
+            CalculateActiveLoadTime(e),
+            e.ForeignID
+          );
           break;
 
         case LogCode.MachineCycleStart:
+        {
+          // There should never be any pending loads since the pallet movement event should have fired.
+          // Just in case, we check for pending loads here
+          cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", false, cycle);
+          IEnumerable<ToolSnapshot> pockets = null;
+          if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
           {
-
-            // There should never be any pending loads since the pallet movement event should have fired.
-            // Just in case, we check for pending loads here
-            cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", false, cycle);
-            IEnumerable<ToolSnapshot> pockets = null;
-            if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
-            {
-              pockets = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
-            }
-
-            var machineMats = GetMaterialOnPallet(e, cycle);
-            LookupProgram(machineMats, e, out var progName, out var progRev);
-            _log.RecordMachineStart(
-              mats: machineMats.Select(m => m.Mat),
-              pallet: e.Pallet.ToString(),
-              statName: _machGroupName.MachineGroupName,
-              statNum: e.StationNumber,
-              program: progName,
-              timeUTC: e.TimeUTC,
-              pockets: pockets,
-              foreignId: e.ForeignID,
-              extraData: !progRev.HasValue ? null : new Dictionary<string, string> {
-                {"ProgramRevision", progRev.Value.ToString()}
-              }
-            );
-
-            break;
+            pockets = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
           }
+
+          var machineMats = GetMaterialOnPallet(e, cycle);
+          LookupProgram(machineMats, e, out var progName, out var progRev);
+          _log.RecordMachineStart(
+            mats: machineMats.Select(m => m.Mat),
+            pallet: e.Pallet.ToString(),
+            statName: _machGroupName.MachineGroupName,
+            statNum: e.StationNumber,
+            program: progName,
+            timeUTC: e.TimeUTC,
+            pockets: pockets,
+            foreignId: e.ForeignID,
+            extraData: !progRev.HasValue
+              ? null
+              : new Dictionary<string, string> { { "ProgramRevision", progRev.Value.ToString() } }
+          );
+
+          break;
+        }
 
         case LogCode.MachineCycleEnd:
 
@@ -202,17 +206,20 @@ namespace MazakMachineInterface
               deleteToolSnapshotsFromCntr: machStart?.Counter,
               pockets: toolsAtEnd,
               foreignId: e.ForeignID,
-              extraData: !progRev.HasValue ? null : new Dictionary<string, string> {
-                  {"ProgramRevision", progRev.Value.ToString()}
-              }
+              extraData: !progRev.HasValue
+                ? null
+                : new Dictionary<string, string> { { "ProgramRevision", progRev.Value.ToString() } }
             );
             HandleMachiningCompleted(s, machineMats);
           }
           else
           {
             //TODO: add this with a FAIL result and skip the event in Update Log?
-            Log.Warning("Ignoring machine cycle at {time} on pallet {pallet} because it is less than 30 seconds",
-              e.TimeUTC, e.Pallet);
+            Log.Warning(
+              "Ignoring machine cycle at {time} on pallet {pallet} because it is less than 30 seconds",
+              e.TimeUTC,
+              e.Pallet
+            );
           }
 
           break;
@@ -224,7 +231,8 @@ namespace MazakMachineInterface
             pallet: e.Pallet.ToString(),
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
-            foreignId: e.ForeignID);
+            foreignId: e.ForeignID
+          );
 
           break;
 
@@ -245,7 +253,8 @@ namespace MazakMachineInterface
             elapsed: loadElapsed,
             active: CalculateActiveUnloadTime(mats),
             foreignId: e.ForeignID,
-            unloadIntoQueues: queues);
+            unloadIntoQueues: queues
+          );
 
           break;
 
@@ -268,9 +277,16 @@ namespace MazakMachineInterface
             cycle = CheckPendingLoads(e.Pallet, e.TimeUTC, e.ForeignID, true, cycle);
           }
           // Mxx1 is inbound at machine xx, Mxx2 is table at machine xx
-          else if (e.FromPosition != null && e.FromPosition.StartsWith("M") && e.FromPosition.Length == 4 && e.FromPosition.EndsWith("1"))
+          else if (
+            e.FromPosition != null
+            && e.FromPosition.StartsWith("M")
+            && e.FromPosition.Length == 4
+            && e.FromPosition.EndsWith("1")
+          )
           {
-            if (LastEventWasRotaryDropoff(cycle) && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum))
+            if (
+              LastEventWasRotaryDropoff(cycle) && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum)
+            )
             {
               _log.RecordPalletDepartRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
@@ -303,7 +319,12 @@ namespace MazakMachineInterface
 
         case LogCode.PalletMoveComplete:
           // Mxx1 is inbound at machine xx, Mxx2 is table at machine xx
-          if (e.TargetPosition != null && e.TargetPosition.StartsWith("M") && e.TargetPosition.Length == 4 && e.TargetPosition.EndsWith("1"))
+          if (
+            e.TargetPosition != null
+            && e.TargetPosition.StartsWith("M")
+            && e.TargetPosition.Length == 4
+            && e.TargetPosition.EndsWith("1")
+          )
           {
             if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
             {
@@ -332,7 +353,6 @@ namespace MazakMachineInterface
             }
           }
           break;
-
       }
 
       _onMazakLog(e);
@@ -349,7 +369,14 @@ namespace MazakMachineInterface
     private List<EventLogMaterial> CreateMaterialWithoutIDs(LogEntry e)
     {
       var ret = new List<EventLogMaterial>();
-      ret.Add(new EventLogMaterial() { MaterialID = -1, Process = e.Process, Face = "" });
+      ret.Add(
+        new EventLogMaterial()
+        {
+          MaterialID = -1,
+          Process = e.Process,
+          Face = ""
+        }
+      );
       return ret;
     }
 
@@ -379,8 +406,15 @@ namespace MazakMachineInterface
         proc: e.Process,
         fixQty: e.FixedQuantity,
         isUnloadEnd: e.Code == LogCode.UnloadEnd,
-        oldEvents: oldEvents);
-      _mazakSchedules.FindSchedule(e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+        oldEvents: oldEvents
+      );
+      _mazakSchedules.FindSchedule(
+        e.FullPartName,
+        e.Process,
+        out string unique,
+        out int path,
+        out int numProc
+      );
 
       if (GetJob(unique) == null)
       {
@@ -400,32 +434,41 @@ namespace MazakMachineInterface
 
         if (byFace.ContainsKey(face))
         {
-          ret.Add(new LogMaterialAndPath()
-          {
-            Mat = byFace[face],
-            PartName = e.JobPartName,
-            Unique = unique,
-            Path = path
-          });
+          ret.Add(
+            new LogMaterialAndPath()
+            {
+              Mat = byFace[face],
+              PartName = e.JobPartName,
+              Unique = unique,
+              Path = path
+            }
+          );
         }
         else
         {
           //something went wrong, must create material
-          ret.Add(new LogMaterialAndPath()
-          {
-            Mat = new EventLogMaterial()
+          ret.Add(
+            new LogMaterialAndPath()
             {
-              MaterialID = _log.AllocateMaterialID(unique, e.JobPartName, numProc),
-              Process = e.Process,
-              Face = face
-            },
-            PartName = e.JobPartName,
-            Unique = unique,
-            Path = path
-          });
+              Mat = new EventLogMaterial()
+              {
+                MaterialID = _log.AllocateMaterialID(unique, e.JobPartName, numProc),
+                Process = e.Process,
+                Face = face
+              },
+              PartName = e.JobPartName,
+              Unique = unique,
+              Path = path
+            }
+          );
 
-          Log.Warning("When attempting to find material for event {@event} on unique {unique} path {path}, there was no previous cycles with material on face {face}",
-            e, unique, path, face);
+          Log.Warning(
+            "When attempting to find material for event {@event} on unique {unique} path {path}, there was no previous cycles with material on face {face}",
+            e,
+            unique,
+            path,
+            face
+          );
         }
       }
 
@@ -438,7 +481,12 @@ namespace MazakMachineInterface
     }
 
     private SortedList<string, EventLogMaterial> ParseMaterialFromPreviousEvents(
-      string jobPartName, int proc, int fixQty, bool isUnloadEnd, IList<MWI.LogEntry> oldEvents)
+      string jobPartName,
+      int proc,
+      int fixQty,
+      bool isUnloadEnd,
+      IList<MWI.LogEntry> oldEvents
+    )
     {
       var byFace = new SortedList<string, EventLogMaterial>(); //face -> material
 
@@ -460,12 +508,13 @@ namespace MazakMachineInterface
 
         foreach (LogMaterial mat in oldEvents[i].Material)
         {
-          if (mat.PartName == jobPartName
-              && mat.Process == proc
-              && mat.MaterialID >= 0
-              && !byFace.ContainsKey(mat.Face))
+          if (
+            mat.PartName == jobPartName
+            && mat.Process == proc
+            && mat.MaterialID >= 0
+            && !byFace.ContainsKey(mat.Face)
+          )
           {
-
             string newFace;
             if (fixQty == 1)
               newFace = proc.ToString();
@@ -478,8 +527,12 @@ namespace MazakMachineInterface
                 newFace = proc.ToString();
             }
 
-            byFace[newFace] =
-              new EventLogMaterial() { MaterialID = mat.MaterialID, Process = proc, Face = newFace };
+            byFace[newFace] = new EventLogMaterial()
+            {
+              MaterialID = mat.MaterialID,
+              Process = proc,
+              Face = newFace
+            };
           }
         }
       }
@@ -492,7 +545,13 @@ namespace MazakMachineInterface
       return e.FullPartName + "," + e.Process.ToString() + "," + e.FixedQuantity.ToString();
     }
 
-    private List<MWI.LogEntry> CheckPendingLoads(int pallet, DateTime t, string foreignID, bool palletCycle, List<MWI.LogEntry> cycle)
+    private List<MWI.LogEntry> CheckPendingLoads(
+      int pallet,
+      DateTime t,
+      string foreignID,
+      bool palletCycle,
+      List<MWI.LogEntry> cycle
+    )
     {
       var pending = _log.PendingLoads(pallet.ToString());
 
@@ -502,14 +561,15 @@ namespace MazakMachineInterface
         {
           bool hasCompletedUnload = false;
           foreach (var e in cycle)
-            if (e.LogType == LogType.LoadUnloadCycle
-                && e.StartOfCycle == false
-                && e.Result == "UNLOAD")
+            if (e.LogType == LogType.LoadUnloadCycle && e.StartOfCycle == false && e.Result == "UNLOAD")
               hasCompletedUnload = true;
           if (hasCompletedUnload)
             _log.CompletePalletCycle(pallet.ToString(), t, foreignID);
           else
-            Log.Debug("Skipping pallet cycle at time {time} because we detected a pallet cycle without unload", t);
+            Log.Debug(
+              "Skipping pallet cycle at time {time} because we detected a pallet cycle without unload",
+              t
+            );
         }
 
         return cycle;
@@ -521,15 +581,18 @@ namespace MazakMachineInterface
       {
         Log.Debug("Processing pending load {@pending}", p);
         var s = p.Key.Split(',');
-        if (s.Length != 3) continue;
+        if (s.Length != 3)
+          continue;
 
         string fullPartName = s[0];
         string jobPartName = MazakPart.ExtractPartNameFromMazakPartName(fullPartName);
 
         int proc;
         int fixQty;
-        if (!int.TryParse(s[1], out proc)) proc = 1;
-        if (!int.TryParse(s[2], out fixQty)) fixQty = 1;
+        if (!int.TryParse(s[1], out proc))
+          proc = 1;
+        if (!int.TryParse(s[2], out fixQty))
+          fixQty = 1;
 
         _mazakSchedules.FindSchedule(fullPartName, proc, out string unique, out int path, out int numProc);
 
@@ -546,10 +609,15 @@ namespace MazakMachineInterface
         {
           var info = job.Processes[proc - 1].Paths[path - 1];
           // search input queue for material
-          Log.Debug("Searching queue {queue} for {unique}-{proc} to load",
-            info.InputQueue, unique, proc);
+          Log.Debug("Searching queue {queue} for {unique}-{proc} to load", info.InputQueue, unique, proc);
 
-          var qs = MazakQueues.QueuedMaterialForLoading(job.UniqueStr, _log.GetMaterialInQueueByUnique(info.InputQueue, job.UniqueStr), proc, path, _log);
+          var qs = MazakQueues.QueuedMaterialForLoading(
+            job.UniqueStr,
+            _log.GetMaterialInQueueByUnique(info.InputQueue, job.UniqueStr),
+            proc,
+            path,
+            _log
+          );
 
           for (int i = 1; i <= fixQty; i++)
           {
@@ -565,25 +633,38 @@ namespace MazakMachineInterface
             if (i <= qs.Count)
             {
               var qmat = qs[i - 1];
-              mats.Add(new EventLogMaterial() { MaterialID = qmat.MaterialID, Process = proc, Face = face });
+              mats.Add(
+                new EventLogMaterial()
+                {
+                  MaterialID = qmat.MaterialID,
+                  Process = proc,
+                  Face = face
+                }
+              );
             }
             else
             {
               // not enough material in queue
-              Log.Warning("Not enough material in queue {queue} for {part}-{proc}, creating new material for {@pending}",
-                info.InputQueue, fullPartName, proc, p);
-              mats.Add(new EventLogMaterial()
-              {
-                MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
-                Process = proc,
-                Face = face
-              });
+              Log.Warning(
+                "Not enough material in queue {queue} for {part}-{proc}, creating new material for {@pending}",
+                info.InputQueue,
+                fullPartName,
+                proc,
+                p
+              );
+              mats.Add(
+                new EventLogMaterial()
+                {
+                  MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
+                  Process = proc,
+                  Face = face
+                }
+              );
             }
           }
         }
         else if (proc == 1)
         {
-
           // create new material
           Log.Debug("Creating new material for unique {unique} process 1", unique);
           for (int i = 1; i <= fixQty; i += 1)
@@ -594,25 +675,32 @@ namespace MazakMachineInterface
             else
               face = proc.ToString() + "-" + i.ToString();
 
-            mats.Add(new EventLogMaterial()
-            {
-              MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
-              Process = proc,
-              Face = face
-            });
+            mats.Add(
+              new EventLogMaterial()
+              {
+                MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
+                Process = proc,
+                Face = face
+              }
+            );
           }
-
         }
         else
         {
           // search on pallet in the previous process for material
-          Log.Debug("Searching on pallet for unique {unique} process {proc} to load into process {proc}", unique, proc - 1, proc);
+          Log.Debug(
+            "Searching on pallet for unique {unique} process {proc} to load into process {proc}",
+            unique,
+            proc - 1,
+            proc
+          );
           var byFace = ParseMaterialFromPreviousEvents(
             jobPartName: jobPartName,
             proc: proc - 1,
             fixQty: fixQty,
             isUnloadEnd: false,
-            oldEvents: cycle);
+            oldEvents: cycle
+          );
           for (int i = 1; i <= fixQty; i += 1)
           {
             string prevFace;
@@ -631,25 +719,33 @@ namespace MazakMachineInterface
             if (byFace.ContainsKey(prevFace))
             {
               var old = byFace[prevFace];
-              mats.Add(new EventLogMaterial()
-              {
-                MaterialID = old.MaterialID,
-                Process = proc,
-                Face = nextFace
-              });
+              mats.Add(
+                new EventLogMaterial()
+                {
+                  MaterialID = old.MaterialID,
+                  Process = proc,
+                  Face = nextFace
+                }
+              );
             }
             else
             {
               //something went wrong, must create material
-              mats.Add(new EventLogMaterial()
-              {
-                MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
-                Process = proc,
-                Face = nextFace
-              });
+              mats.Add(
+                new EventLogMaterial()
+                {
+                  MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
+                  Process = proc,
+                  Face = nextFace
+                }
+              );
 
-              Log.Warning("Could not find material on pallet {pallet} for previous process {proc}, creating new material for {@pending}",
-                pallet, proc - 1, p);
+              Log.Warning(
+                "Could not find material on pallet {pallet} for previous process {proc}, creating new material for {@pending}",
+                pallet,
+                proc - 1,
+                p
+              );
             }
           }
         }
@@ -685,7 +781,9 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    private IEnumerable<BlackMaple.MachineFramework.MaterialToSendToExternalQueue> FindSendToExternalQueue(IEnumerable<LogMaterialAndPath> mats)
+    private IEnumerable<BlackMaple.MachineFramework.MaterialToSendToExternalQueue> FindSendToExternalQueue(
+      IEnumerable<LogMaterialAndPath> mats
+    )
     {
       var ret = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
 
@@ -697,13 +795,15 @@ namespace MazakMachineInterface
           var q = job.Processes[mat.Mat.Process - 1].Paths[mat.Path - 1].OutputQueue;
           if (!string.IsNullOrEmpty(q) && _settings.ExternalQueues.ContainsKey(q))
           {
-            ret.Add(new BlackMaple.MachineFramework.MaterialToSendToExternalQueue()
-            {
-              Server = _settings.ExternalQueues[q],
-              PartName = mat.PartName,
-              Queue = q,
-              Serial = _log.GetMaterialDetails(mat.Mat.MaterialID)?.Serial
-            });
+            ret.Add(
+              new BlackMaple.MachineFramework.MaterialToSendToExternalQueue()
+              {
+                Server = _settings.ExternalQueues[q],
+                PartName = mat.PartName,
+                Queue = q,
+                Serial = _log.GetMaterialDetails(mat.Mat.MaterialID)?.Serial
+              }
+            );
           }
         }
       }
@@ -715,7 +815,8 @@ namespace MazakMachineInterface
     #region Compare Status With Events
     public bool CheckPalletStatusMatchesLogs(DateTime? timeUTC = null)
     {
-      if (string.IsNullOrEmpty(_settings.QuarantineQueue)) return false;
+      if (string.IsNullOrEmpty(_settings.QuarantineQueue))
+        return false;
 
       bool matMovedToQueue = false;
       foreach (var pal in _mazakSchedules.PalletPositions.Where(p => !p.PalletPosition.StartsWith("LS")))
@@ -729,13 +830,15 @@ namespace MazakMachineInterface
         {
           // remove material from matsOnPal that matches this PalletSubStatus
           var sch = _mazakSchedules.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
-          if (sch == null) continue;
+          if (sch == null)
+            continue;
           MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
-          if (string.IsNullOrEmpty(unique)) continue;
+          if (string.IsNullOrEmpty(unique))
+            continue;
 
-          var matchingMats = matsOnPal.Where(
-            m => m.JobUniqueStr == unique && m.Process == st.PartProcessNumber
-          ).ToList();
+          var matchingMats = matsOnPal
+            .Where(m => m.JobUniqueStr == unique && m.Process == st.PartProcessNumber)
+            .ToList();
 
           if (matchingMats.Count < st.FixQuantity)
           {
@@ -743,7 +846,8 @@ namespace MazakMachineInterface
           }
           else
           {
-            foreach (var mat in matchingMats) matsOnPal.Remove(mat);
+            foreach (var mat in matchingMats)
+              matsOnPal.Remove(mat);
           }
         }
 
@@ -751,7 +855,12 @@ namespace MazakMachineInterface
         foreach (var extraMat in matsOnPal)
         {
           _log.RecordAddMaterialToQueue(
-            mat: new EventLogMaterial() { MaterialID = extraMat.MaterialID, Process = extraMat.Process, Face = "" },
+            mat: new EventLogMaterial()
+            {
+              MaterialID = extraMat.MaterialID,
+              Process = extraMat.Process,
+              Face = ""
+            },
             queue: _settings.QuarantineQueue,
             position: -1,
             operatorName: null,
@@ -790,9 +899,17 @@ namespace MazakMachineInterface
 
     private static MWI.LogEntry FindMachineStart(LogEntry e, IList<MWI.LogEntry> oldEvents, int statNum)
     {
-      return oldEvents.LastOrDefault(old => old.LogType == LogType.MachineCycle && old.StartOfCycle && old.LocationNum == statNum);
+      return oldEvents.LastOrDefault(
+        old => old.LogType == LogType.MachineCycle && old.StartOfCycle && old.LocationNum == statNum
+      );
     }
-    private static TimeSpan CalculateElapsed(LogEntry e, IList<MWI.LogEntry> oldEvents, LogType ty, int statNum)
+
+    private static TimeSpan CalculateElapsed(
+      LogEntry e,
+      IList<MWI.LogEntry> oldEvents,
+      LogType ty,
+      int statNum
+    )
     {
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
       {
@@ -829,15 +946,15 @@ namespace MazakMachineInterface
     {
       TimeSpan total = TimeSpan.Zero;
       //for now, assume only one stop per process and each path is the same time
-      var procs = mats
-        .Select(m => new { Unique = m.Unique, Process = m.Mat.Process })
-        .Distinct();
+      var procs = mats.Select(m => new { Unique = m.Unique, Process = m.Mat.Process }).Distinct();
       foreach (var proc in procs)
       {
         var job = GetJob(proc.Unique);
-        if (job == null) continue;
+        if (job == null)
+          continue;
         var stop = job.Processes[proc.Process - 1].Paths[0].Stops.FirstOrDefault();
-        if (stop == null) continue;
+        if (stop == null)
+          continue;
         total += stop.ExpectedCycleTime;
       }
 
@@ -846,19 +963,28 @@ namespace MazakMachineInterface
 
     private TimeSpan CalculateActiveLoadTime(LogEntry e)
     {
-      _mazakSchedules.FindSchedule(e.FullPartName, e.Process, out string unique, out int path, out int numProc);
+      _mazakSchedules.FindSchedule(
+        e.FullPartName,
+        e.Process,
+        out string unique,
+        out int path,
+        out int numProc
+      );
       var job = GetJob(unique);
-      if (job == null) return TimeSpan.Zero;
-      return TimeSpan.FromTicks(job.Processes[e.Process - 1].Paths[path - 1].ExpectedLoadTime.Ticks * e.FixedQuantity);
+      if (job == null)
+        return TimeSpan.Zero;
+      return TimeSpan.FromTicks(
+        job.Processes[e.Process - 1].Paths[path - 1].ExpectedLoadTime.Ticks * e.FixedQuantity
+      );
     }
 
     private TimeSpan CalculateActiveUnloadTime(IEnumerable<LogMaterialAndPath> mats)
     {
-      var ticks = mats
-        .Select(m =>
+      var ticks = mats.Select(m =>
         {
           var job = GetJob(m.Unique);
-          if (job == null) return TimeSpan.Zero;
+          if (job == null)
+            return TimeSpan.Zero;
           return job.Processes[m.Mat.Process - 1].Paths[m.Path - 1].ExpectedUnloadTime;
         })
         .Select(t => t.Ticks)
@@ -866,7 +992,12 @@ namespace MazakMachineInterface
       return TimeSpan.FromTicks(ticks);
     }
 
-    private void LookupProgram(IReadOnlyList<LogMaterialAndPath> mats, LogEntry e, out string progName, out long? rev)
+    private void LookupProgram(
+      IReadOnlyList<LogMaterialAndPath> mats,
+      LogEntry e,
+      out string progName,
+      out long? rev
+    )
     {
       if (LookupProgramFromJob(mats, e, out progName, out rev))
       {
@@ -886,18 +1017,27 @@ namespace MazakMachineInterface
       }
     }
 
-    private bool LookupProgramFromJob(IReadOnlyList<LogMaterialAndPath> mats, LogEntry e, out string progName, out long? rev)
+    private bool LookupProgramFromJob(
+      IReadOnlyList<LogMaterialAndPath> mats,
+      LogEntry e,
+      out string progName,
+      out long? rev
+    )
     {
       progName = null;
       rev = null;
 
-      if (mats.Count == 0) return false; ;
+      if (mats.Count == 0)
+        return false;
+      ;
 
       var firstMat = mats.FirstOrDefault();
-      if (string.IsNullOrEmpty(firstMat.Unique) || firstMat.Mat == null) return false;
+      if (string.IsNullOrEmpty(firstMat.Unique) || firstMat.Mat == null)
+        return false;
 
       var job = GetJob(firstMat.Unique);
-      if (job == null) return false;
+      if (job == null)
+        return false;
 
       // try and find path
       int path = 1;
@@ -929,12 +1069,15 @@ namespace MazakMachineInterface
       rev = null;
 
       var part = _mazakSchedules.Parts?.FirstOrDefault(p => p.PartName == entry.FullPartName);
-      if (part == null) return false;
+      if (part == null)
+        return false;
 
       var proc = part.Processes?.FirstOrDefault(p => p.ProcessNumber == entry.Process);
-      if (proc == null) return false;
+      if (proc == null)
+        return false;
 
-      if (string.IsNullOrEmpty(proc.MainProgram)) return false;
+      if (string.IsNullOrEmpty(proc.MainProgram))
+        return false;
 
       progName = proc.MainProgram;
       rev = null;
@@ -949,9 +1092,13 @@ namespace MazakMachineInterface
       {
         if (mat.Mat.MaterialID < 0 || mat.Unique == null || mat.Unique == "")
         {
-          Log.Debug("HandleMachiningCompleted: Skipping material id " + mat.Mat.MaterialID.ToString() +
-                    " part " + mat.PartName +
-                    " because the job unique string is empty");
+          Log.Debug(
+            "HandleMachiningCompleted: Skipping material id "
+              + mat.Mat.MaterialID.ToString()
+              + " part "
+              + mat.PartName
+              + " because the job unique string is empty"
+          );
           continue;
         }
 
@@ -966,9 +1113,22 @@ namespace MazakMachineInterface
         if (insps != null && insps.Count > 0)
         {
           _log.MakeInspectionDecisions(mat.Mat.MaterialID, mat.Mat.Process, insps);
-          Log.Debug("Making inspection decision for " + string.Join(",", insps.Select(x => x.InspectionType)) + " material " + mat.Mat.MaterialID.ToString() +
-                    " proc " + mat.Mat.Process.ToString() + " path " + mat.Path.ToString() + " completed at time " + cycle.EndTimeUTC.ToLocalTime().ToString() + " on pallet " + cycle.Pallet.ToString() +
-                    " part " + mat.PartName);
+          Log.Debug(
+            "Making inspection decision for "
+              + string.Join(",", insps.Select(x => x.InspectionType))
+              + " material "
+              + mat.Mat.MaterialID.ToString()
+              + " proc "
+              + mat.Mat.Process.ToString()
+              + " path "
+              + mat.Path.ToString()
+              + " completed at time "
+              + cycle.EndTimeUTC.ToLocalTime().ToString()
+              + " on pallet "
+              + cycle.Pallet.ToString()
+              + " part "
+              + mat.PartName
+          );
         }
       }
     }
@@ -977,9 +1137,16 @@ namespace MazakMachineInterface
     #region Tools
     private IEnumerable<ToolSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
     {
-      if (tools == null) return null;
+      if (tools == null)
+        return null;
       return tools
-        .Where(t => t.MachineNumber == machine && (t.IsToolDataValid ?? false) && t.PocketNumber.HasValue && !string.IsNullOrEmpty(t.GroupNo))
+        .Where(
+          t =>
+            t.MachineNumber == machine
+            && (t.IsToolDataValid ?? false)
+            && t.PocketNumber.HasValue
+            && !string.IsNullOrEmpty(t.GroupNo)
+        )
         .Select(t =>
         {
           var toolName = t.GroupNo;
@@ -1004,4 +1171,3 @@ namespace MazakMachineInterface
     #endregion
   }
 }
-

@@ -47,9 +47,13 @@ namespace BlackMaple.MachineFramework
     }
 
     /// Given a time, allows you to calculate if the hold is active and the next transition time.
-    public static void HoldInformation(this HoldPattern hold, DateTime nowUTC, out bool isOnHold, out DateTime nextTransitionUTC)
+    public static void HoldInformation(
+      this HoldPattern hold,
+      DateTime nowUTC,
+      out bool isOnHold,
+      out DateTime nextTransitionUTC
+    )
     {
-
       if (hold.UserHold)
       {
         isOnHold = true;
@@ -98,7 +102,6 @@ namespace BlackMaple.MachineFramework
 
       do
       {
-
         // Decrement the time.
         remainingSpan = remainingSpan.Subtract(hold.HoldUnholdPattern[curIndex]);
 
@@ -116,7 +119,6 @@ namespace BlackMaple.MachineFramework
         // check for repeat patterns
         if (curIndex >= hold.HoldUnholdPattern.Count && hold.HoldUnholdPatternRepeats)
           curIndex = 0;
-
       } while (curIndex < hold.HoldUnholdPattern.Count && remainingSpan.Ticks > 0);
 
       //We are past the end of the pattern, so we are not on hold.

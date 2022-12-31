@@ -96,12 +96,12 @@ namespace MazakMachineInterface
     {
       IEnumerable<ScheduleWithQueues> schs;
       schs = LoadSchedules(jdb, mazakData);
-      if (!schs.Any()) return null;
+      if (!schs.Any())
+        return null;
 
       CalculateTargetMatQty(jdb, schs);
       return UpdateMazakMaterialCounts(schs);
     }
-
 
     private class ScheduleWithQueuesProcess
     {
@@ -131,12 +131,14 @@ namespace MazakMachineInterface
       var skippedCastings = new HashSet<string>();
       foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
       {
-        if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment)) continue;
+        if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
+          continue;
 
         MazakPart.ParseComment(schRow.Comment, out string unique, out var procToPath, out bool manual);
 
         var job = jdb.LoadJob(unique);
-        if (job == null) continue;
+        if (job == null)
+          continue;
 
         var casting = job.Processes[0].Paths[procToPath.PathForProc(1) - 1].Casting;
         if (string.IsNullOrEmpty(casting))
@@ -165,7 +167,8 @@ namespace MazakMachineInterface
             break;
           }
         }
-        if (foundJobAtLoad) continue;
+        if (foundJobAtLoad)
+          continue;
 
         // start building the schedule
         var sch = new ScheduleWithQueues()
@@ -175,7 +178,8 @@ namespace MazakMachineInterface
           Job = job,
           // when we are waiting for all castings to assign, we can assume that any running schedule
           // has all of its material so no need to prevent assignment.
-          LowerPriorityScheduleMatchingCastingSkipped = !_waitForAllCastings && skippedCastings.Contains(casting),
+          LowerPriorityScheduleMatchingCastingSkipped =
+            !_waitForAllCastings && skippedCastings.Contains(casting),
           Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
           NewDueDate = null,
           NewPriority = null
@@ -194,18 +198,26 @@ namespace MazakMachineInterface
           }
           if (schProcRow == null)
           {
-            log.Error("Unable to find process {proc} for job {uniq} and schedule {schid}", proc, job.UniqueStr, schRow.Id);
+            log.Error(
+              "Unable to find process {proc} for job {uniq} and schedule {schid}",
+              proc,
+              job.UniqueStr,
+              schRow.Id
+            );
             missingProc = true;
             break;
           }
           var path = procToPath.PathForProc(proc);
-          sch.Procs.Add(proc, new ScheduleWithQueuesProcess()
-          {
-            SchProcRow = schProcRow,
-            Path = path,
-            InputQueue = job.Processes[proc - 1].Paths[path - 1].InputQueue,
-            Casting = proc == 1 ? casting : null,
-          });
+          sch.Procs.Add(
+            proc,
+            new ScheduleWithQueuesProcess()
+            {
+              SchProcRow = schProcRow,
+              Path = path,
+              InputQueue = job.Processes[proc - 1].Paths[path - 1].InputQueue,
+              Casting = proc == 1 ? casting : null,
+            }
+          );
         }
         if (!missingProc)
         {
@@ -230,14 +242,26 @@ namespace MazakMachineInterface
       AssignCastings(logDb, schs);
     }
 
-    private void CheckAssignedMaterial(Job jobPlan, IRepository logDb, IEnumerable<ScheduleWithQueues> schsForJob, int proc)
+    private void CheckAssignedMaterial(
+      Job jobPlan,
+      IRepository logDb,
+      IEnumerable<ScheduleWithQueues> schsForJob,
+      int proc
+    )
     {
       foreach (var sch in schsForJob.Where(s => !string.IsNullOrEmpty(s.Procs[proc].InputQueue)))
       {
         var schProc = sch.Procs[proc];
-        if (string.IsNullOrEmpty(schProc.InputQueue)) continue;
+        if (string.IsNullOrEmpty(schProc.InputQueue))
+          continue;
 
-        var matInQueue = QueuedMaterialForLoading(jobPlan.UniqueStr, logDb.GetMaterialInQueueByUnique(schProc.InputQueue, jobPlan.UniqueStr), proc, schProc.Path, logDb);
+        var matInQueue = QueuedMaterialForLoading(
+          jobPlan.UniqueStr,
+          logDb.GetMaterialInQueueByUnique(schProc.InputQueue, jobPlan.UniqueStr),
+          proc,
+          schProc.Path,
+          logDb
+        );
         var numMatInQueue = matInQueue.Count;
 
         if (proc == 1)
@@ -250,10 +274,19 @@ namespace MazakMachineInterface
               // add some new material to queues
               for (int i = numMatInQueue + 1; i <= schProc.SchProcRow.ProcessMaterialQuantity; i++)
               {
-                var m = logDb.AllocateMaterialID(sch.Job.UniqueStr, sch.Job.PartName, sch.Job.Processes.Count);
+                var m = logDb.AllocateMaterialID(
+                  sch.Job.UniqueStr,
+                  sch.Job.PartName,
+                  sch.Job.Processes.Count
+                );
                 logDb.RecordPathForProcess(m, 1, schProc.Path);
                 logDb.RecordAddMaterialToQueue(
-                  mat: new EventLogMaterial() { MaterialID = m, Process = 0, Face = "" },
+                  mat: new EventLogMaterial()
+                  {
+                    MaterialID = m,
+                    Process = 0,
+                    Face = ""
+                  },
                   queue: schProc.InputQueue,
                   position: -1,
                   operatorName: null,
@@ -267,11 +300,15 @@ namespace MazakMachineInterface
               foreach (var m in matInQueue.Skip(schProc.SchProcRow.ProcessMaterialQuantity))
               {
                 logDb.RecordRemoveMaterialFromAllQueues(
-                  new EventLogMaterial() { MaterialID = m.MaterialID, Process = 1, Face = "" }
+                  new EventLogMaterial()
+                  {
+                    MaterialID = m.MaterialID,
+                    Process = 1,
+                    Face = ""
+                  }
                 );
               }
             }
-
           }
           else
           {
@@ -280,10 +317,9 @@ namespace MazakMachineInterface
             if (started + numMatInQueue > sch.SchRow.PlanQuantity)
             {
               logDb.MarkCastingsAsUnallocated(
-                matInQueue
-                  .Skip(Math.Max(0, sch.SchRow.PlanQuantity - started))
-                  .Select(m => m.MaterialID),
-                schProc.Casting);
+                matInQueue.Skip(Math.Max(0, sch.SchRow.PlanQuantity - started)).Select(m => m.MaterialID),
+                schProc.Casting
+              );
               numMatInQueue = Math.Max(0, sch.SchRow.PlanQuantity - started);
             }
 
@@ -310,7 +346,10 @@ namespace MazakMachineInterface
         // if the schedule has been decremented
         foreach (var sch in schsForJob.Where(s => string.IsNullOrEmpty(s.Procs[proc].InputQueue)))
         {
-          if (sch.SchRow.PlanQuantity <= CountCompletedOrMachiningStarted(sch) && sch.Procs[1].SchProcRow.ProcessMaterialQuantity > 0)
+          if (
+            sch.SchRow.PlanQuantity <= CountCompletedOrMachiningStarted(sch)
+            && sch.Procs[1].SchProcRow.ProcessMaterialQuantity > 0
+          )
           {
             sch.Procs[1].TargetMaterialCount = 0;
           }
@@ -320,10 +359,12 @@ namespace MazakMachineInterface
 
     private void AssignCastings(IRepository logDb, IEnumerable<ScheduleWithQueues> allSchs)
     {
-      var schsToAssign =
-        allSchs
-        .Where(s => !s.LowerPriorityScheduleMatchingCastingSkipped && !string.IsNullOrEmpty(s.Procs[1].InputQueue))
-        .OrderBy(s => s.SchRow.DueDate).ThenBy(s => s.SchRow.Priority);
+      var schsToAssign = allSchs
+        .Where(
+          s => !s.LowerPriorityScheduleMatchingCastingSkipped && !string.IsNullOrEmpty(s.Procs[1].InputQueue)
+        )
+        .OrderBy(s => s.SchRow.DueDate)
+        .ThenBy(s => s.SchRow.Priority);
 
       var skippedCastings = new HashSet<string>();
 
@@ -333,13 +374,13 @@ namespace MazakMachineInterface
         var started = CountCompletedOrMachiningStarted(sch);
         var curCastings = (schProc1.TargetMaterialCount ?? schProc1.SchProcRow.ProcessMaterialQuantity);
 
-        if (skippedCastings.Contains(schProc1.Casting)) continue;
+        if (skippedCastings.Contains(schProc1.Casting))
+          continue;
 
         if (started + curCastings < sch.SchRow.PlanQuantity && curCastings < schProc1.SchProcRow.FixQuantity)
         {
           // find some new castings
-          var toAdd =
-            _waitForAllCastings
+          var toAdd = _waitForAllCastings
             ? sch.SchRow.PlanQuantity - started - curCastings
             : schProc1.SchProcRow.FixQuantity - curCastings;
 
@@ -353,7 +394,8 @@ namespace MazakMachineInterface
               part: sch.Job.PartName,
               proc1Path: schProc1.Path,
               numProcesses: sch.Job.Processes.Count,
-              count: toAdd);
+              count: toAdd
+            );
             // if not enough material, AllocateCastingsInQueue does nothing and returns an empty list
             if (allocated.Count == toAdd)
             {
@@ -370,8 +412,9 @@ namespace MazakMachineInterface
                   sch.NewDueDate = dueDateOfRunningSch.Value;
                 }
                 sch.NewPriority =
-                  allSchs.Where(s => s.SchRow.DueDate == dueDateOfRunningSch.Value).Max(s => s.SchRow.Priority)
-                  + 1;
+                  allSchs
+                    .Where(s => s.SchRow.DueDate == dueDateOfRunningSch.Value)
+                    .Max(s => s.SchRow.Priority) + 1;
               }
             }
           }
@@ -392,8 +435,14 @@ namespace MazakMachineInterface
       var newSchs = new List<MazakScheduleRow>();
       foreach (var sch in schs)
       {
-        if (!sch.Procs.Values.Any(p => p.TargetMaterialCount.HasValue)) continue;
-        log.Debug("Updating material on schedule {schId} for job {uniq} to {@sch}", sch.SchRow.Id, sch.Unique, sch);
+        if (!sch.Procs.Values.Any(p => p.TargetMaterialCount.HasValue))
+          continue;
+        log.Debug(
+          "Updating material on schedule {schId} for job {uniq} to {@sch}",
+          sch.SchRow.Id,
+          sch.Unique,
+          sch
+        );
 
         var newSch = sch.SchRow with
         {
@@ -416,17 +465,17 @@ namespace MazakMachineInterface
           var oldProc = sch.Procs[newProc.ProcessNumber];
           if (oldProc.TargetMaterialCount.HasValue)
           {
-            newSch.Processes[i] = newProc with { ProcessMaterialQuantity = oldProc.TargetMaterialCount.Value };
+            newSch.Processes[i] = newProc with
+            {
+              ProcessMaterialQuantity = oldProc.TargetMaterialCount.Value
+            };
           }
         }
 
         newSchs.Add(newSch);
       }
 
-      return new MazakWriteData()
-      {
-        Schedules = newSchs
-      };
+      return new MazakWriteData() { Schedules = newSchs };
     }
 
     private static int? FindPathGroup(IRepository log, Func<int, int, int> getPathGroup, long matId)
@@ -444,13 +493,21 @@ namespace MazakMachineInterface
       }
     }
 
-    public static List<QueuedMaterial> QueuedMaterialForLoading(string jobUniq, IEnumerable<QueuedMaterial> materialToSearch, int proc, int path, IRepository log)
+    public static List<QueuedMaterial> QueuedMaterialForLoading(
+      string jobUniq,
+      IEnumerable<QueuedMaterial> materialToSearch,
+      int proc,
+      int path,
+      IRepository log
+    )
     {
       var mats = new List<QueuedMaterial>();
       foreach (var m in materialToSearch)
       {
-        if (m.Unique != jobUniq) continue;
-        if ((m.NextProcess ?? 1) != proc) continue;
+        if (m.Unique != jobUniq)
+          continue;
+        if ((m.NextProcess ?? 1) != proc)
+          continue;
         mats.Add(m);
       }
       return mats;
@@ -469,7 +526,10 @@ namespace MazakMachineInterface
       return cnt;
     }
 
-    private static DateTime? IsLaterPriorityCurrentlyRunning(ScheduleWithQueues currentSch, IEnumerable<ScheduleWithQueues> allSchedules)
+    private static DateTime? IsLaterPriorityCurrentlyRunning(
+      ScheduleWithQueues currentSch,
+      IEnumerable<ScheduleWithQueues> allSchedules
+    )
     {
       var usedFixtureFaces = new HashSet<(string fixture, int face)>();
       var usedPallets = new HashSet<string>();
@@ -489,26 +549,25 @@ namespace MazakMachineInterface
         }
       }
 
-
-      return
-        allSchedules
-        .LastOrDefault(s =>
-          (s.SchRow.DueDate > currentSch.SchRow.DueDate || (s.SchRow.DueDate == currentSch.SchRow.DueDate && s.SchRow.Priority > currentSch.SchRow.Priority))
-          &&
-          s.Procs.Any(p => p.Value.SchProcRow.ProcessExecuteQuantity > 0)
-          &&
-          s.Procs.Any(p =>
-          {
-            var info = s.Job.Processes[p.Key - 1].Paths[p.Value.Path - 1];
-            return
-              usedFixtureFaces.Contains((fixture: info.Fixture, face: info.Face ?? 1))
-              ||
-              info.Pallets.Any(usedPallets.Contains)
-              ;
-          })
+      return allSchedules
+        .LastOrDefault(
+          s =>
+            (
+              s.SchRow.DueDate > currentSch.SchRow.DueDate
+              || (
+                s.SchRow.DueDate == currentSch.SchRow.DueDate
+                && s.SchRow.Priority > currentSch.SchRow.Priority
+              )
+            )
+            && s.Procs.Any(p => p.Value.SchProcRow.ProcessExecuteQuantity > 0)
+            && s.Procs.Any(p =>
+            {
+              var info = s.Job.Processes[p.Key - 1].Paths[p.Value.Path - 1];
+              return usedFixtureFaces.Contains((fixture: info.Fixture, face: info.Face ?? 1))
+                || info.Pallets.Any(usedPallets.Contains);
+            })
         )
         ?.SchRow.DueDate;
     }
-
   }
 }

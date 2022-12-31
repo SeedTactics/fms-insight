@@ -54,6 +54,7 @@ namespace MazakMachineInterface
     // 431 and 432 are used when rotating something into machine, no matter if a
     // different pallet is rotating out or not.
     StartRotatePalletIntoMachine = 431, // event has pallet moving into machine
+
     //EndRotatePalletIntoMachine = 432, // event has pallet moving out of machine if it exists, otherwise pallet = 0
 
     // 433 and 434 are only used if nothing is being sent in.
@@ -73,7 +74,7 @@ namespace MazakMachineInterface
     //Only sometimes filled in depending on the log code
     public int Pallet { get; init; }
     public string FullPartName { get; init; } //Full part name in the mazak system
-    public string JobPartName { get; init; }  //Part name with : stripped off
+    public string JobPartName { get; init; } //Part name with : stripped off
     public int Process { get; init; }
     public int FixedQuantity { get; init; }
     public string Program { get; init; }
@@ -85,11 +86,14 @@ namespace MazakMachineInterface
   }
 
   public delegate void MazakLogEventDel(LogEntry e, BlackMaple.MachineFramework.IRepository jobDB);
+
   public interface INotifyMazakLogEvent
   {
     event MazakLogEventDel MazakLogEvent;
   }
+
   public delegate void NewEntriesDel();
+
   public interface IMazakLogReader : INotifyMazakLogEvent
   {
     void RecheckQueues(bool wait);
@@ -97,8 +101,8 @@ namespace MazakMachineInterface
   }
 
 #if USE_OLEDB
-	public class LogDataVerE : IMazakLogReader, INotifyMazakLogEvent
-	{
+  public class LogDataVerE : IMazakLogReader, INotifyMazakLogEvent
+  {
     private const string DateTimeFormat = "yyyyMMddHHmmss";
 
     private MazakConfig _mazakConfig;
@@ -111,24 +115,28 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private BlackMaple.MachineFramework.FMSSettings FMSSettings { get; set; }
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogDataVerE>();
-    private Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> _currentStatusChanged;
+    private Action<
+      BlackMaple.MachineFramework.JobDB,
+      BlackMaple.MachineFramework.EventLogDB
+    > _currentStatusChanged;
 
     private object _lock;
     private System.Timers.Timer _timer;
 
     public event MazakLogEventDel MazakLogEvent;
 
-    public LogDataVerE(BlackMaple.MachineFramework.EventLogDB.Config logCfg,
-                       BlackMaple.MachineFramework.JobDB.Config jobDBCfg,
-                       BlackMaple.MachineFramework.ISendMaterialToExternalQueue send,
-                       IMachineGroupName machGroupName,
-                       IReadDataAccess readDB,
-                       MazakQueues queues,
-                       IHoldManagement hold,
-                       BlackMaple.MachineFramework.FMSSettings settings,
-                       Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> currentStatusChanged,
-                       MazakConfig mazakConfig
-                      )
+    public LogDataVerE(
+      BlackMaple.MachineFramework.EventLogDB.Config logCfg,
+      BlackMaple.MachineFramework.JobDB.Config jobDBCfg,
+      BlackMaple.MachineFramework.ISendMaterialToExternalQueue send,
+      IMachineGroupName machGroupName,
+      IReadDataAccess readDB,
+      MazakQueues queues,
+      IHoldManagement hold,
+      BlackMaple.MachineFramework.FMSSettings settings,
+      Action<BlackMaple.MachineFramework.JobDB, BlackMaple.MachineFramework.EventLogDB> currentStatusChanged,
+      MazakConfig mazakConfig
+    )
     {
       _logCfg = logCfg;
       _currentStatusChanged = currentStatusChanged;
@@ -167,9 +175,15 @@ namespace MazakMachineInterface
           var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
 
           using (var logDB = _logCfg.OpenConnection())
-          using (var jobDB = _jobDBCfg.OpenConnection()) {
+          using (var jobDB = _jobDBCfg.OpenConnection())
+          {
             logs = LoadLog(logDB.MaxForeignID());
-            var trans = new LogTranslation(jobDB, logDB, mazakData, _machGroupName, FMSSettings,
+            var trans = new LogTranslation(
+              jobDB,
+              logDB,
+              mazakData,
+              _machGroupName,
+              FMSSettings,
               le => MazakLogEvent?.Invoke(le, jobDB, logDB),
               mazakConfig: _mazakConfig
             );
@@ -197,7 +211,8 @@ namespace MazakMachineInterface
             }
           }
 
-          if (sendToExternal.Count > 0) {
+          if (sendToExternal.Count > 0)
+          {
             _sendToExternal.Post(sendToExternal);
           }
         }
@@ -208,139 +223,172 @@ namespace MazakMachineInterface
       }
     }
 
-		public List<LogEntry> LoadLog (string lastForeignID)
-		{
-			return _readDB.WithReadDBConnection(conn =>
-			{
-                var trans = conn.BeginTransaction();
-                try {
+    public List<LogEntry> LoadLog(string lastForeignID)
+    {
+      return _readDB.WithReadDBConnection(conn =>
+      {
+        var trans = conn.BeginTransaction();
+        try
+        {
+          using (System.Data.OleDb.OleDbCommand cmd = (System.Data.OleDb.OleDbCommand)conn.CreateCommand())
+          {
+            ((System.Data.IDbCommand)cmd).Transaction = trans;
 
-                    using (System.Data.OleDb.OleDbCommand cmd = (System.Data.OleDb.OleDbCommand)conn.CreateCommand()) {
-                    ((System.Data.IDbCommand)cmd).Transaction = trans;
+            long epoch = 1;
+            long lastID = 0;
+            DateTime lastDate = DateTime.MinValue;
+            bool useDate = false;
+            string[] s = lastForeignID.Split('-');
+            if (s.Length == 1)
+            {
+              epoch = 1;
+              if (!long.TryParse(s[0], out lastID))
+                useDate = true;
+            }
+            else if (s.Length == 2)
+            {
+              if (!long.TryParse(s[0], out epoch))
+                useDate = true;
+              if (!long.TryParse(s[1], out lastID))
+                useDate = true;
+            }
+            else if (s.Length == 3)
+            {
+              if (!long.TryParse(s[0], out epoch))
+                useDate = true;
+              if (!long.TryParse(s[1], out lastID))
+                useDate = true;
+              lastDate = DateTime.ParseExact(s[2], DateTimeFormat, null);
+            }
+            else
+            {
+              useDate = true;
+            }
 
-                    long epoch = 1;
-                    long lastID = 0;
-                    DateTime lastDate = DateTime.MinValue;
-                    bool useDate = false;
-                    string[] s = lastForeignID.Split('-');
-                    if (s.Length == 1) {
-                        epoch = 1;
-                        if (!long.TryParse(s[0], out lastID))
-                            useDate = true;
-                    } else if (s.Length == 2) {
-                        if (!long.TryParse(s[0], out epoch))
-                            useDate = true;
-                        if (!long.TryParse(s[1], out lastID))
-                            useDate = true;
-                    } else if (s.Length == 3) {
-                        if (!long.TryParse(s[0], out epoch))
-                            useDate = true;
-                        if (!long.TryParse(s[1], out lastID))
-                            useDate = true;
-                        lastDate = DateTime.ParseExact(s[2], DateTimeFormat, null);
-                    } else {
-                        useDate = true;
-                    }
+            if (useDate)
+            {
+              cmd.CommandText =
+                "SELECT ID, Date, LogMessageCode, ResourceNumber, PartName, ProcessNumber,"
+                + "FixedQuantity, PalletNumber, ProgramNumber, FromPosition, ToPosition "
+                + "FROM Log WHERE Date > ? ORDER BY ID ASC";
+              var param = cmd.CreateParameter();
+              param.OleDbType = System.Data.OleDb.OleDbType.Date;
+              param.Value = DateTime.Now.AddDays(-7);
+              cmd.Parameters.Add(param);
+            }
+            else
+            {
+              CheckIDRollover(trans, conn, ref epoch, ref lastID, lastDate);
 
-                    if (useDate) {
-                        cmd.CommandText = "SELECT ID, Date, LogMessageCode, ResourceNumber, PartName, ProcessNumber," +
-                            "FixedQuantity, PalletNumber, ProgramNumber, FromPosition, ToPosition " +
-                            "FROM Log WHERE Date > ? ORDER BY ID ASC";
-                        var param = cmd.CreateParameter();
-                        param.OleDbType = System.Data.OleDb.OleDbType.Date;
-                        param.Value = DateTime.Now.AddDays(-7);
-                        cmd.Parameters.Add(param);
-                    } else {
-                        CheckIDRollover(trans, conn, ref epoch, ref lastID, lastDate);
+              cmd.CommandText =
+                "SELECT ID, Date, LogMessageCode, ResourceNumber, PartName, ProcessNumber,"
+                + "FixedQuantity, PalletNumber, ProgramNumber, FromPosition, ToPosition "
+                + "FROM Log WHERE ID > ? ORDER BY ID ASC";
+              var param = cmd.CreateParameter();
+              param.OleDbType = System.Data.OleDb.OleDbType.Numeric;
+              param.Value = lastID;
+              cmd.Parameters.Add(param);
+            }
 
-                        cmd.CommandText = "SELECT ID, Date, LogMessageCode, ResourceNumber, PartName, ProcessNumber," +
-                            "FixedQuantity, PalletNumber, ProgramNumber, FromPosition, ToPosition " +
-                            "FROM Log WHERE ID > ? ORDER BY ID ASC";
-                        var param = cmd.CreateParameter();
-                        param.OleDbType = System.Data.OleDb.OleDbType.Numeric;
-                        param.Value = lastID;
-                        cmd.Parameters.Add(param);
-                    }
+            var ret = new List<LogEntry>();
 
-                    var ret = new List<LogEntry>();
+            using (var reader = cmd.ExecuteReader())
+            {
+              while (reader.Read())
+              {
+                if (reader.IsDBNull(0))
+                  continue;
+                if (reader.IsDBNull(1))
+                  continue;
+                if (reader.IsDBNull(2))
+                  continue;
+                if (!Enum.IsDefined(typeof(LogCode), reader.GetInt32(2)))
+                  continue;
 
-                    using (var reader = cmd.ExecuteReader()) {
-                        while (reader.Read()) {
+                var e = new LogEntry();
 
-                            if (reader.IsDBNull(0)) continue;
-                            if (reader.IsDBNull(1)) continue;
-                            if (reader.IsDBNull(2)) continue;
-                            if (!Enum.IsDefined(typeof(LogCode), reader.GetInt32(2))) continue;
+                e.ForeignID =
+                  epoch.ToString()
+                  + "-"
+                  + reader.GetInt32(0).ToString()
+                  + "-"
+                  + reader.GetDateTime(1).ToString(DateTimeFormat);
+                e.TimeUTC = new DateTime(reader.GetDateTime(1).Ticks, DateTimeKind.Local);
+                e.TimeUTC = e.TimeUTC.ToUniversalTime();
+                e.Code = (LogCode)reader.GetInt32(2);
+                e.StationNumber = reader.IsDBNull(3) ? -1 : reader.GetInt32(3);
+                e.FullPartName = reader.IsDBNull(4) ? "" : reader.GetString(4);
+                e.Process = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
+                e.FixedQuantity = reader.IsDBNull(6) ? 1 : reader.GetInt32(6);
+                e.Pallet = reader.IsDBNull(7) ? -1 : reader.GetInt32(7);
+                e.Program = reader.IsDBNull(8) ? "" : reader.GetInt32(8).ToString();
+                e.FromPosition = reader.IsDBNull(9) ? "" : reader.GetString(9);
+                e.TargetPosition = reader.IsDBNull(10) ? "" : reader.GetString(10);
 
+                int idx = e.FullPartName.IndexOf(':');
+                if (idx > 0)
+                  e.JobPartName = e.FullPartName.Substring(0, idx);
+                else
+                  e.JobPartName = e.FullPartName;
 
-                            var e = new LogEntry();
+                ret.Add(e);
+              }
+            }
+            trans.Commit();
 
-                            e.ForeignID = epoch.ToString() + "-" + reader.GetInt32(0).ToString()
-                                + "-" + reader.GetDateTime(1).ToString(DateTimeFormat);
-                            e.TimeUTC = new DateTime(reader.GetDateTime(1).Ticks, DateTimeKind.Local);
-                            e.TimeUTC = e.TimeUTC.ToUniversalTime();
-                            e.Code = (LogCode)reader.GetInt32(2);
-                            e.StationNumber = reader.IsDBNull(3) ? -1 : reader.GetInt32(3);
-                            e.FullPartName = reader.IsDBNull(4) ? "" : reader.GetString(4);
-                            e.Process = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
-                            e.FixedQuantity = reader.IsDBNull(6) ? 1 : reader.GetInt32(6);
-                            e.Pallet = reader.IsDBNull(7) ? -1 : reader.GetInt32(7);
-                            e.Program = reader.IsDBNull(8) ? "" : reader.GetInt32(8).ToString();
-                            e.FromPosition = reader.IsDBNull(9) ? "" : reader.GetString(9);
-                            e.TargetPosition = reader.IsDBNull(10) ? "" : reader.GetString(10);
+            return ret;
+          }
+        }
+        catch
+        {
+          trans.Rollback();
+          throw;
+        }
+      });
+    }
 
-                            int idx = e.FullPartName.IndexOf(':');
-                            if (idx > 0)
-                                e.JobPartName = e.FullPartName.Substring(0, idx);
-                            else
-                                e.JobPartName = e.FullPartName;
+    private void CheckIDRollover(
+      System.Data.IDbTransaction trans,
+      System.Data.IDbConnection conn,
+      ref long epoch,
+      ref long lastID,
+      DateTime lastDate
+    )
+    {
+      using (var cmd = conn.CreateCommand())
+      {
+        cmd.Transaction = trans;
+        cmd.CommandText = "SELECT Date FROM Log WHERE ID = ?";
+        var param = (System.Data.OleDb.OleDbParameter)cmd.CreateParameter();
+        param.OleDbType = System.Data.OleDb.OleDbType.Numeric;
+        param.Value = lastID;
+        cmd.Parameters.Add(param);
 
-                            ret.Add(e);
-                        }
-                    }
-                    trans.Commit();
+        using (var reader = cmd.ExecuteReader())
+        {
+          bool foundLine = false;
+          while (reader.Read())
+          {
+            foundLine = true;
+            if (lastDate != DateTime.MinValue && reader.GetDateTime(0) != lastDate)
+            {
+              //roll to new epoch since the date for this ID is different
+              epoch += 1;
+              lastID = 0;
+            }
+            break;
+          }
 
-                    return ret;
-                    }
-                } catch {
-                    trans.Rollback();
-                    throw;
-                }
-            });
-		}
-
-		private void CheckIDRollover(System.Data.IDbTransaction trans, System.Data.IDbConnection conn,
-			ref long epoch, ref long lastID, DateTime lastDate)
-		{
-			using (var cmd = conn.CreateCommand()) {
-			cmd.Transaction = trans;
-			cmd.CommandText = "SELECT Date FROM Log WHERE ID = ?";
-            var param = (System.Data.OleDb.OleDbParameter)cmd.CreateParameter();
-            param.OleDbType = System.Data.OleDb.OleDbType.Numeric;
-            param.Value = lastID;
-            cmd.Parameters.Add(param);
-
-			using (var reader = cmd.ExecuteReader()) {
-				bool foundLine = false;
-				while (reader.Read()) {
-					foundLine = true;
-					if (lastDate != DateTime.MinValue && reader.GetDateTime(0) != lastDate) {
-						//roll to new epoch since the date for this ID is different
-						epoch += 1;
-						lastID = 0;
-					}
-					break;
-				}
-
-				if (!foundLine) {
-					//roll to new epoch since no ID is found, the data has been deleted
-					epoch += 1;
-					lastID = 0;
-				}
-			}
+          if (!foundLine)
+          {
+            //roll to new epoch since no ID is found, the data has been deleted
+            epoch += 1;
+            lastID = 0;
+          }
+        }
       }
-		}
-	}
+    }
+  }
 #endif
 
   public class LogDataWeb : IMazakLogReader, INotifyMazakLogEvent
@@ -366,16 +414,18 @@ namespace MazakMachineInterface
     private Thread _thread;
     private FileSystemWatcher _watcher;
 
-    public LogDataWeb(string path,
-                      BlackMaple.MachineFramework.RepositoryConfig logCfg,
-                      IMachineGroupName machineGroupName,
-                      BlackMaple.MachineFramework.ISendMaterialToExternalQueue sendToExternal,
-                      IReadDataAccess readDB,
-                      MazakQueues queues,
-                      IHoldManagement hold,
-                      BlackMaple.MachineFramework.FMSSettings settings,
-                      Action<BlackMaple.MachineFramework.IRepository> currentStatusChanged,
-                      MazakConfig mazakConfig)
+    public LogDataWeb(
+      string path,
+      BlackMaple.MachineFramework.RepositoryConfig logCfg,
+      IMachineGroupName machineGroupName,
+      BlackMaple.MachineFramework.ISendMaterialToExternalQueue sendToExternal,
+      IReadDataAccess readDB,
+      MazakQueues queues,
+      IHoldManagement hold,
+      BlackMaple.MachineFramework.FMSSettings settings,
+      Action<BlackMaple.MachineFramework.IRepository> currentStatusChanged,
+      MazakConfig mazakConfig
+    )
     {
       _path = path;
       _logDbCfg = logCfg;
@@ -404,13 +454,18 @@ namespace MazakMachineInterface
         {
           cancelSource?.Cancel();
           cancelSource = new CancellationTokenSource();
-          System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(1), cancelSource.Token).ContinueWith(t =>
-          {
-            if (!t.IsCanceled)
-            {
-              _newLogFile.Set();
-            }
-          }, System.Threading.Tasks.TaskScheduler.Default);
+          System.Threading.Tasks.Task
+            .Delay(TimeSpan.FromSeconds(1), cancelSource.Token)
+            .ContinueWith(
+              t =>
+              {
+                if (!t.IsCanceled)
+                {
+                  _newLogFile.Set();
+                }
+              },
+              System.Threading.Tasks.TaskScheduler.Default
+            );
         };
 
         _watcher.EnableRaisingEvents = true;
@@ -427,13 +482,16 @@ namespace MazakMachineInterface
       {
         try
         {
-
           var sleepTime = stoppedBecauseRecentMachineEnd ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(1);
           Log.Debug("Sleeping for {mins} minutes", sleepTime.TotalMinutes);
 
           Thread.Sleep(TimeSpan.FromSeconds(1));
 
-          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _newLogFile, _recheckQueues }, sleepTime, false);
+          var ret = WaitHandle.WaitAny(
+            new WaitHandle[] { _shutdown, _newLogFile, _recheckQueues },
+            sleepTime,
+            false
+          );
           if (ret == 0)
           {
             Log.Debug("Thread shutdown");
@@ -463,7 +521,11 @@ namespace MazakMachineInterface
           using (var logDb = _logDbCfg.OpenConnection())
           {
             logs = LoadLog(logDb.MaxForeignID());
-            var trans = new LogTranslation(logDb, mazakData, _machGroupName, _settings,
+            var trans = new LogTranslation(
+              logDb,
+              mazakData,
+              _machGroupName,
+              _settings,
               le => MazakLogEvent?.Invoke(le, logDb),
               mazakConfig: _mazakConfig
             );
@@ -513,7 +575,6 @@ namespace MazakMachineInterface
           {
             _recheckQueuesComplete.Set();
           }
-
         }
         catch (Exception ex)
         {
@@ -542,7 +603,6 @@ namespace MazakMachineInterface
         _recheckQueues.Set();
       }
     }
-
 
     private FileStream WaitToOpenFile(string file)
     {
@@ -587,7 +647,6 @@ namespace MazakMachineInterface
         {
           while (stream.Peek() >= 0)
           {
-
             var s = stream.ReadLine().Split(',');
             if (s.Length < 18)
               continue;
@@ -610,9 +669,15 @@ namespace MazakMachineInterface
             var e = new LogEntry()
             {
               ForeignID = filename,
-              TimeUTC = new DateTime(int.Parse(s[0]), int.Parse(s[1]), int.Parse(s[2]),
-                                     int.Parse(s[3]), int.Parse(s[4]), int.Parse(s[5]),
-                                     DateTimeKind.Local).ToUniversalTime(),
+              TimeUTC = new DateTime(
+                int.Parse(s[0]),
+                int.Parse(s[1]),
+                int.Parse(s[2]),
+                int.Parse(s[3]),
+                int.Parse(s[4]),
+                int.Parse(s[5]),
+                DateTimeKind.Local
+              ).ToUniversalTime(),
               Code = (LogCode)code,
               Pallet = (int.TryParse(s[13], out var pal)) ? pal : -1,
               FullPartName = fullPartName,
@@ -655,6 +720,4 @@ namespace MazakMachineInterface
       }
     }
   }
-
 }
-

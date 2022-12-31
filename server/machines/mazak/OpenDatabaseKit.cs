@@ -52,12 +52,13 @@ namespace MazakMachineInterface
     // if we get an error 7 when deleting the part table, check if the part was successfully deleted and
     // if so ignore the error.
     public HashSet<string> PartNames { get; }
-    public ErrorModifyingParts(HashSet<string> names) : base("Mazak returned error when modifying parts: " + string.Join(",", names))
+
+    public ErrorModifyingParts(HashSet<string> names)
+      : base("Mazak returned error when modifying parts: " + string.Join(",", names))
     {
       PartNames = names;
     }
   }
-
 
   public class OpenDatabaseKitDB
   {
@@ -100,14 +101,18 @@ namespace MazakMachineInterface
         {
           conn.Open();
           return conn;
-				} catch (OleDbException ex) {
-					if (!(ex.Message.ToLower().IndexOf("could not use") >= 0)) {
-						if (!(ex.Message.ToLower().IndexOf("try again") >= 0)) {
-							//if this is not a locking exception, throw it
+        }
+        catch (OleDbException ex)
+        {
+          if (!(ex.Message.ToLower().IndexOf("could not use") >= 0))
+          {
+            if (!(ex.Message.ToLower().IndexOf("try again") >= 0))
+            {
+              //if this is not a locking exception, throw it
               conn.Dispose();
-							throw new DataException(ex.ToString());
-						}
-					}
+              throw new DataException(ex.ToString());
+            }
+          }
         }
         catch (Exception ex)
         {
@@ -147,23 +152,23 @@ namespace MazakMachineInterface
         return conn;
       }
     }
-
   }
 
-  public class OpenDatabaseKitTransactionDB
-    : OpenDatabaseKitDB, IWriteData
+  public class OpenDatabaseKitTransactionDB : OpenDatabaseKitDB, IWriteData
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitTransactionDB>();
 
-    public OpenDatabaseKitTransactionDB(string dbConnStr, MazakDbType ty)
-      : base(dbConnStr, ty)
+    public OpenDatabaseKitTransactionDB(string dbConnStr, MazakDbType ty) : base(dbConnStr, ty)
     {
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
-        _connectionStr = "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";" +
-            "User ID=Admin;" +
-            "Data Source=" + System.IO.Path.Combine(dbConnStr, "FCNETUSER1.mdb") + ";" +
-            "Mode=Share Deny None;";
+        _connectionStr =
+          "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";"
+          + "User ID=Admin;"
+          + "Data Source="
+          + System.IO.Path.Combine(dbConnStr, "FCNETUSER1.mdb")
+          + ";"
+          + "Mode=Share Deny None;";
       }
       else
       {
@@ -176,21 +181,24 @@ namespace MazakMachineInterface
     internal static IEnumerable<MazakWriteData> SplitWriteData(MazakWriteData original)
     {
       // Open Database Kit can lockup if too many commands are sent at once
-      return
-        original.Schedules.Cast<object>()
+      return original.Schedules
+        .Cast<object>()
         .Concat(original.Parts)
         .Concat(original.Pallets)
         .Concat(original.Fixtures)
         .Concat(original.Programs)
         .Chunk(EntriesPerTransaction)
-        .Select(chunk => new MazakWriteData()
-        {
-          Schedules = chunk.OfType<MazakScheduleRow>().ToArray(),
-          Parts = chunk.OfType<MazakPartRow>().ToArray(),
-          Pallets = chunk.OfType<MazakPalletRow>().ToArray(),
-          Fixtures = chunk.OfType<MazakFixtureRow>().ToArray(),
-          Programs = chunk.OfType<NewMazakProgram>().ToArray(),
-        })
+        .Select(
+          chunk =>
+            new MazakWriteData()
+            {
+              Schedules = chunk.OfType<MazakScheduleRow>().ToArray(),
+              Parts = chunk.OfType<MazakPartRow>().ToArray(),
+              Pallets = chunk.OfType<MazakPalletRow>().ToArray(),
+              Fixtures = chunk.OfType<MazakFixtureRow>().ToArray(),
+              Programs = chunk.OfType<NewMazakProgram>().ToArray(),
+            }
+        )
         .ToList();
     }
 
@@ -224,7 +232,6 @@ namespace MazakMachineInterface
         {
           using (var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted))
           {
-
             ClearTransactionDatabase(conn, trans);
             SaveData(data, conn, trans);
             trans.Commit();
@@ -241,8 +248,10 @@ namespace MazakMachineInterface
           throw new Exception("Timeout during download: open database kit is not running or responding");
         }
 #if USE_OLEDB
-			} catch (OleDbException ex) {
-				throw new Exception(ex.ToString());
+      }
+      catch (OleDbException ex)
+      {
+        throw new Exception(ex.ToString());
 #endif
       }
       finally { }
@@ -487,7 +496,6 @@ namespace MazakMachineInterface
           data.Parts,
           transaction: trans
         );
-
       }
       else
       {
@@ -670,15 +678,27 @@ namespace MazakMachineInterface
       {
         foreach (var table in new[] { "Fixture_t", "Pallet_t", "Schedule_t" })
         {
-          var ret = conn.Query<CommandStatus>("SELECT Command, TransactionStatus FROM " + table, transaction: trans);
+          var ret = conn.Query<CommandStatus>(
+            "SELECT Command, TransactionStatus FROM " + table,
+            transaction: trans
+          );
           int idx = -1;
           foreach (var row in ret)
           {
             idx += 1;
-            if (!row.Command.HasValue) continue;
+            if (!row.Command.HasValue)
+              continue;
             if (row.Command.Value == MazakWriteCommand.Error)
             {
-              log.Add(prefix + " Mazak transaction on table " + table + " at index " + idx.ToString() + " returned error " + row.TransactionStatus.ToString());
+              log.Add(
+                prefix
+                  + " Mazak transaction on table "
+                  + table
+                  + " at index "
+                  + idx.ToString()
+                  + " returned error "
+                  + row.TransactionStatus.ToString()
+              );
             }
             else
             {
@@ -689,20 +709,38 @@ namespace MazakMachineInterface
         }
 
         // now the part, with custom checking for error 7
-        var parts = conn.Query<PartCommandStatus>("SELECT Command, TransactionStatus, PartName FROM Part_t", transaction: trans);
+        var parts = conn.Query<PartCommandStatus>(
+          "SELECT Command, TransactionStatus, PartName FROM Part_t",
+          transaction: trans
+        );
         var partIdx = -1;
         foreach (var row in parts)
         {
           partIdx += 1;
-          if (!row.Command.HasValue) continue;
-          if (row.Command.Value == MazakWriteCommand.Error && row.TransactionStatus == 7 && !string.IsNullOrEmpty(row.PartName))
+          if (!row.Command.HasValue)
+            continue;
+          if (
+            row.Command.Value == MazakWriteCommand.Error
+            && row.TransactionStatus == 7
+            && !string.IsNullOrEmpty(row.PartName)
+          )
           {
-            Log.Debug(prefix + " mazak transaction on table Part_t at index {idx} returned error 7 for part {part}", partIdx, row.PartName);
+            Log.Debug(
+              prefix + " mazak transaction on table Part_t at index {idx} returned error 7 for part {part}",
+              partIdx,
+              row.PartName
+            );
             partEditErrors.Add(row.PartName);
           }
           else if (row.Command.Value == MazakWriteCommand.Error)
           {
-            log.Add(prefix + " Mazak transaction on table Part_t at index " + partIdx.ToString() + " returned error " + row.TransactionStatus.ToString());
+            log.Add(
+              prefix
+                + " Mazak transaction on table Part_t at index "
+                + partIdx.ToString()
+                + " returned error "
+                + row.TransactionStatus.ToString()
+            );
           }
           else
           {
@@ -716,9 +754,7 @@ namespace MazakMachineInterface
       if (log.Any())
       {
         Log.Error("Error communicating with Open Database kit {@errs}", log);
-        throw new OpenDatabaseKitTransactionError(
-          string.Join(Environment.NewLine, log)
-        );
+        throw new OpenDatabaseKitTransactionError(string.Join(Environment.NewLine, log));
       }
 
       if (foundUnprocesssedRow)
@@ -737,7 +773,8 @@ namespace MazakMachineInterface
 
     private void ClearTransactionDatabase(IDbConnection conn, IDbTransaction trans)
     {
-      string[] TransactionTables = {
+      string[] TransactionTables =
+      {
         "Fixture_t",
         "Pallet_t",
         "Part_t",
@@ -753,15 +790,12 @@ namespace MazakMachineInterface
         {
           cmd.CommandText = "DELETE FROM " + table;
           cmd.ExecuteNonQuery();
-
         }
       }
     }
-
   }
 
-  public class OpenDatabaseKitReadDB
-    : OpenDatabaseKitDB, IReadDataAccess
+  public class OpenDatabaseKitReadDB : OpenDatabaseKitDB, IReadDataAccess
   {
     private string _fixtureSelect;
     private string _palletSelect;
@@ -783,9 +817,12 @@ namespace MazakMachineInterface
       _loadOper = loadOper;
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
-        _connectionStr = "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";User ID=Admin;" +
-            "Data Source=" + System.IO.Path.Combine(dbConnStr, "FCREADDAT01.mdb") + ";" +
-            "Mode=Share Deny Write;";
+        _connectionStr =
+          "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";User ID=Admin;"
+          + "Data Source="
+          + System.IO.Path.Combine(dbConnStr, "FCREADDAT01.mdb")
+          + ";"
+          + "Mode=Share Deny Write;";
       }
       else
       {
@@ -806,14 +843,17 @@ namespace MazakMachineInterface
       if (MazakType != MazakDbType.MazakSmooth)
       {
         _partSelect = "SELECT Id, PartName, Comment, Price, TotalProcess FROM Part";
-        _partSelect = @"SELECT
+        _partSelect =
+          @"SELECT
             PartName,
             Comment,
             Price,
             TotalProcess
           FROM Part";
-        _partProcSelect = "SELECT ContinueCut, CutMc, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, WashType FROM PartProcess";
-        _partProcSelect = @"SELECT
+        _partProcSelect =
+          "SELECT ContinueCut, CutMc, FixLDS, FixPhoto, FixQuantity, Fixture, MainProgram, PartName, ProcessNumber, RemoveLDS, RemovePhoto, WashType FROM PartProcess";
+        _partProcSelect =
+          @"SELECT
             PartName,
             ProcessNumber,
             FixQuantity,
@@ -828,7 +868,8 @@ namespace MazakMachineInterface
             WashType
           FROM PartProcess";
 
-        _scheduleSelect = @"SELECT
+        _scheduleSelect =
+          @"SELECT
             ScheduleID As Id,
             Comment,
             PartName,
@@ -844,7 +885,8 @@ namespace MazakMachineInterface
             MixScheduleID,
             ProcessingPriority
           FROM Schedule";
-        _scheduleProcSelect = @"SELECT
+        _scheduleProcSelect =
+          @"SELECT
             ScheduleID As MazakScheduleRowId,
             ProcessNumber,
             ProcessMaterialQuantity,
@@ -855,7 +897,8 @@ namespace MazakMachineInterface
       }
       else
       {
-        _partSelect = @"SELECT
+        _partSelect =
+          @"SELECT
             PartName,
             Comment,
             Price,
@@ -869,7 +912,8 @@ namespace MazakMachineInterface
             CheckCount,
             ProductCount
           FROM Part";
-        _partProcSelect = @"SELECT
+        _partProcSelect =
+          @"SELECT
             PartName,
             ProcessNumber,
             FixQuantity,
@@ -891,7 +935,8 @@ namespace MazakMachineInterface
             CreateToolList_RA
           FROM PartProcess";
 
-        _scheduleSelect = @"SELECT
+        _scheduleSelect =
+          @"SELECT
             ScheduleID As Id,
             Comment,
             PartName,
@@ -917,7 +962,8 @@ namespace MazakMachineInterface
             SetQuantity,
             SetNumberSets
           FROM Schedule";
-        _scheduleProcSelect = @"SELECT
+        _scheduleProcSelect =
+          @"SELECT
             ScheduleID As MazakScheduleRowId,
             ProcessNumber,
             ProcessMaterialQuantity,
@@ -934,13 +980,14 @@ namespace MazakMachineInterface
           FROM ScheduleProcess";
       }
 
-      _palSubStatusSelect = "SELECT FixQuantity, FixtureName, PalletNumber, PartName, PartProcessNumber, ScheduleID FROM PalletSubStatus";
+      _palSubStatusSelect =
+        "SELECT FixQuantity, FixtureName, PalletNumber, PartName, PartProcessNumber, ScheduleID FROM PalletSubStatus";
       _palPositionSelect = "SELECT PalletNumber, PalletPosition FROM PalletPosition WHERE PalletNumber > 0";
       _mainProgSelect = "SELECT MainProgram, Comment FROM MainProgram";
       _alarmSelect = "SELECT AlarmNumber, AlarmMessage FROM Alarm";
 
-
-      _toolSelect = @"SELECT
+      _toolSelect =
+        @"SELECT
           MachineNumber,
           PocketNumber,
           PocketType,
@@ -982,7 +1029,11 @@ namespace MazakMachineInterface
       public int FixQuantity { get; set; }
     }
 
-    private IEnumerable<MazakPartRow> LoadParts(IDbConnection conn, IDbTransaction trans, out IEnumerable<PartProcessFixQty> fixQtys)
+    private IEnumerable<MazakPartRow> LoadParts(
+      IDbConnection conn,
+      IDbTransaction trans,
+      out IEnumerable<PartProcessFixQty> fixQtys
+    )
     {
       var parts = conn.Query<MazakPartRow>(_partSelect, transaction: trans);
       var partsByName = parts.ToDictionary(p => p.PartName, p => p);
@@ -996,18 +1047,24 @@ namespace MazakMachineInterface
           var part = partsByName[proc.PartName];
           part.Processes.Add(proc);
         }
-        fixQty.Add(new PartProcessFixQty()
-        {
-          PartName = proc.PartName,
-          ProcessNumber = proc.ProcessNumber,
-          FixQuantity = proc.FixQuantity
-        });
+        fixQty.Add(
+          new PartProcessFixQty()
+          {
+            PartName = proc.PartName,
+            ProcessNumber = proc.ProcessNumber,
+            FixQuantity = proc.FixQuantity
+          }
+        );
       }
 
       return parts;
     }
 
-    private IEnumerable<MazakScheduleRow> LoadSchedules(IDbConnection conn, IDbTransaction trans, IEnumerable<PartProcessFixQty> fixQtys)
+    private IEnumerable<MazakScheduleRow> LoadSchedules(
+      IDbConnection conn,
+      IDbTransaction trans,
+      IEnumerable<PartProcessFixQty> fixQtys
+    )
     {
       var schs = conn.Query<MazakScheduleRow>(_scheduleSelect, transaction: trans);
       var schDict = schs.ToDictionary(s => s.Id, s => s);
@@ -1071,7 +1128,6 @@ namespace MazakMachineInterface
         PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
         PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
         Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
-
         Parts = parts,
         Pallets = conn.Query<MazakPalletRow>(_palletSelect, transaction: trans),
         MainPrograms = conn.Query<MazakProgramRow>(_mainProgSelect, transaction: trans),
@@ -1088,7 +1144,10 @@ namespace MazakMachineInterface
     {
       return WithReadDBConnection(conn =>
       {
-        var cnt = conn.ExecuteScalar<int>("SELECT COUNT(*) FROM MainProgram WHERE MainProgram = @m", new { m = mainProgram });
+        var cnt = conn.ExecuteScalar<int>(
+          "SELECT COUNT(*) FROM MainProgram WHERE MainProgram = @m",
+          new { m = mainProgram }
+        );
         return cnt > 0;
       });
     }
@@ -1112,7 +1171,10 @@ namespace MazakMachineInterface
     {
       return WithReadDBConnection(conn =>
       {
-        var cnt = conn.ExecuteScalar<int>("SELECT COUNT(*) FROM Part WHERE PartName = @p", new { p = partName });
+        var cnt = conn.ExecuteScalar<int>(
+          "SELECT COUNT(*) FROM Part WHERE PartName = @p",
+          new { p = partName }
+        );
         return cnt > 0;
       });
     }

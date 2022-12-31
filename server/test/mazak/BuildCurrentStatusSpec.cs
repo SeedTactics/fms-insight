@@ -140,23 +140,22 @@ namespace MachineWatchTest
     [InlineData("multiface-transfer-user-jobs")]
     public void StatusSnapshot(string scenario)
     {
-
       IRepository repository;
       bool close = false;
-      var existingLogPath =
-        Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
+      var existingLogPath = Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
       string _tempLogFile = System.IO.Path.GetTempFileName();
       if (File.Exists(existingLogPath))
       {
         System.IO.File.Copy(existingLogPath, _tempLogFile, overwrite: true);
-        repository = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), _tempLogFile).OpenConnection();
+        repository = RepositoryConfig
+          .InitializeEventDatabase(new SerialSettings(), _tempLogFile)
+          .OpenConnection();
         close = true;
       }
       else
       {
         repository = _memoryLog;
       }
-
 
       /*
       Symlinks not supported on Windows
@@ -170,25 +169,22 @@ namespace MachineWatchTest
       if (scenario.Contains("basic"))
       {
         newJobs = JsonConvert.DeserializeObject<NewJobs>(
-          File.ReadAllText(
-            Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+          File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
           jsonSettings
         );
       }
       else if (scenario.Contains("multiface"))
       {
         newJobs = JsonConvert.DeserializeObject<NewJobs>(
-          File.ReadAllText(
-            Path.Combine("..", "..", "..", "sample-newjobs", "multi-face.json")),
+          File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "multi-face.json")),
           jsonSettings
         );
       }
       repository.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       var allData = JsonConvert.DeserializeObject<MazakAllData>(
-        File.ReadAllText(
-          Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".data.json")),
-          jsonSettings
+        File.ReadAllText(Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".data.json")),
+        jsonSettings
       );
 
       if (scenario == "basic-no-material")
@@ -199,12 +195,20 @@ namespace MachineWatchTest
       CurrentStatus status;
       try
       {
-        status = BuildCurrentStatus.Build(repository, _settings, _machGroupName, queueSyncFault, MazakDbType.MazakSmooth, allData,
-          new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));
+        status = BuildCurrentStatus.Build(
+          repository,
+          _settings,
+          _machGroupName,
+          queueSyncFault,
+          MazakDbType.MazakSmooth,
+          allData,
+          new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+        );
       }
       finally
       {
-        if (close) repository.Dispose();
+        if (close)
+          repository.Dispose();
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         File.Delete(_tempLogFile);
       }
@@ -218,66 +222,100 @@ namespace MachineWatchTest
 
       var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(
         File.ReadAllText(
-          Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json")),
-          jsonSettings
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json")
+        ),
+        jsonSettings
       );
 
-      status.Should().BeEquivalentTo(expectedStatus, options =>
-        options.Excluding(c => c.TimeOfCurrentStatusUTC)
-          .ComparingByMembers<CurrentStatus>()
-          .ComparingByMembers<ActiveJob>()
-          .ComparingByMembers<ProcessInfo>()
-          .ComparingByMembers<ProcPathInfo>()
-          .ComparingByMembers<MachiningStop>()
-          .ComparingByMembers<InProcessMaterial>()
-          .ComparingByMembers<PalletStatus>()
-      );
+      status
+        .Should()
+        .BeEquivalentTo(
+          expectedStatus,
+          options =>
+            options
+              .Excluding(c => c.TimeOfCurrentStatusUTC)
+              .ComparingByMembers<CurrentStatus>()
+              .ComparingByMembers<ActiveJob>()
+              .ComparingByMembers<ProcessInfo>()
+              .ComparingByMembers<ProcPathInfo>()
+              .ComparingByMembers<MachiningStop>()
+              .ComparingByMembers<InProcessMaterial>()
+              .ComparingByMembers<PalletStatus>()
+        );
     }
 
     [Fact]
     public void PendingLoad()
     {
       NewJobs newJobs = JsonConvert.DeserializeObject<NewJobs>(
-        File.ReadAllText(
-          Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
       _memoryLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
       var allData = JsonConvert.DeserializeObject<MazakAllData>(
         File.ReadAllText(
-          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.data.json")),
-          jsonSettings
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.data.json")
+        ),
+        jsonSettings
       );
 
-      _memoryLog.AddPendingLoad("1", "thekey", 1, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1), "foreignid");
+      _memoryLog.AddPendingLoad(
+        "1",
+        "thekey",
+        1,
+        TimeSpan.FromMinutes(1),
+        TimeSpan.FromMinutes(1),
+        "foreignid"
+      );
 
       var matId = _memoryLog.AllocateMaterialID("aaa-schId1234", "aaa", 2);
-      _memoryLog.RecordAddMaterialToQueue(new EventLogMaterial() { MaterialID = matId, Process = 0, Face = "" }, "castings", -1,
-        operatorName: null, reason: "TheQueueReason"
+      _memoryLog.RecordAddMaterialToQueue(
+        new EventLogMaterial()
+        {
+          MaterialID = matId,
+          Process = 0,
+          Face = ""
+        },
+        "castings",
+        -1,
+        operatorName: null,
+        reason: "TheQueueReason"
       );
 
-      var status = BuildCurrentStatus.Build(_memoryLog, _settings, _machGroupName, queueSyncFault, MazakDbType.MazakSmooth, allData,
-          new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc));
+      var status = BuildCurrentStatus.Build(
+        _memoryLog,
+        _settings,
+        _machGroupName,
+        queueSyncFault,
+        MazakDbType.MazakSmooth,
+        allData,
+        new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+      );
 
       var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(
         File.ReadAllText(
-          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.status.json")),
-          jsonSettings
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.status.json")
+        ),
+        jsonSettings
       );
 
-      status.Should().BeEquivalentTo(expectedStatus, options =>
-        options.Excluding(c => c.TimeOfCurrentStatusUTC)
-          .ComparingByMembers<CurrentStatus>()
-          .ComparingByMembers<ActiveJob>()
-          .ComparingByMembers<ProcessInfo>()
-          .ComparingByMembers<ProcPathInfo>()
-          .ComparingByMembers<MachiningStop>()
-          .ComparingByMembers<InProcessMaterial>()
-          .ComparingByMembers<PalletStatus>()
-      );
+      status
+        .Should()
+        .BeEquivalentTo(
+          expectedStatus,
+          options =>
+            options
+              .Excluding(c => c.TimeOfCurrentStatusUTC)
+              .ComparingByMembers<CurrentStatus>()
+              .ComparingByMembers<ActiveJob>()
+              .ComparingByMembers<ProcessInfo>()
+              .ComparingByMembers<ProcPathInfo>()
+              .ComparingByMembers<MachiningStop>()
+              .ComparingByMembers<InProcessMaterial>()
+              .ComparingByMembers<PalletStatus>()
+        );
     }
-
   }
 
   /*

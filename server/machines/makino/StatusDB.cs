@@ -93,13 +93,13 @@ namespace Makino
       using (var conn = _openConnection())
       using (var cmd = conn.CreateCommand())
       {
-
         cmd.CommandText = "CREATE TABLE version(ver INTEGER)";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "INSERT INTO version VALUES(" + Version.ToString() + ")";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE matids(Pallet INTEGER, FixtureNum INTEGER, LoadedUTC INTEGER, LocCounter INTEGER, OrderName TEXT, MaterialID INTEGER, PRIMARY KEY(Pallet, FixtureNum, LoadedUTC, LocCounter))";
+        cmd.CommandText =
+          "CREATE TABLE matids(Pallet INTEGER, FixtureNum INTEGER, LoadedUTC INTEGER, LocCounter INTEGER, OrderName TEXT, MaterialID INTEGER, PRIMARY KEY(Pallet, FixtureNum, LoadedUTC, LocCounter))";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX matids_idx ON matids(MaterialID)";
         cmd.ExecuteNonQuery();
@@ -111,7 +111,6 @@ namespace Makino
       using (var conn = _openConnection())
       using (var cmd = conn.CreateCommand())
       {
-
         cmd.CommandText = "SELECT ver FROM version";
 
         int curVersion = 0;
@@ -125,10 +124,12 @@ namespace Makino
         }
 
         if (curVersion > Version)
-          throw new ApplicationException("This input file was created with a newer version of Machine Watch.  Please upgrade Machine Watch");
+          throw new ApplicationException(
+            "This input file was created with a newer version of Machine Watch.  Please upgrade Machine Watch"
+          );
 
-        if (curVersion == Version) return;
-
+        if (curVersion == Version)
+          return;
 
         var trans = conn.BeginTransaction();
 
@@ -162,8 +163,9 @@ namespace Makino
       using (var conn = _openConnection())
       using (var cmd = conn.CreateCommand())
       {
-        cmd.CommandText = "INSERT INTO matids(Pallet, FixtureNum, LoadedUTC, LocCounter, OrderName, MaterialID)" +
-          " VALUES(-1, -1, ?, -1, '', ?)";
+        cmd.CommandText =
+          "INSERT INTO matids(Pallet, FixtureNum, LoadedUTC, LocCounter, OrderName, MaterialID)"
+          + " VALUES(-1, -1, ?, -1, '', ?)";
         cmd.Parameters.Add("", SqliteType.Integer).Value = DateTime.MinValue.Ticks;
         cmd.Parameters.Add("", SqliteType.Integer).Value = matID;
         cmd.ExecuteNonQuery();
@@ -189,7 +191,6 @@ namespace Makino
           var trans = conn.BeginTransaction();
           try
           {
-
             var ret = LoadMatIDs(pallet, fixturenum, loadedUTC, trans);
 
             trans.Commit();
@@ -205,8 +206,14 @@ namespace Makino
       }
     }
 
-    public IList<MatIDRow> CreateMaterialIDs(int pallet, int fixturenum, DateTime loadedUTC,
-      string order, IReadOnlyList<long> materialIds, int startingCounter)
+    public IList<MatIDRow> CreateMaterialIDs(
+      int pallet,
+      int fixturenum,
+      DateTime loadedUTC,
+      string order,
+      IReadOnlyList<long> materialIds,
+      int startingCounter
+    )
     {
       lock (_lock)
       {
@@ -215,7 +222,6 @@ namespace Makino
           var trans = conn.BeginTransaction();
           try
           {
-
             var ret = AddMatIDs(pallet, fixturenum, loadedUTC, order, materialIds, startingCounter, trans);
 
             trans.Commit();
@@ -230,7 +236,12 @@ namespace Makino
       }
     }
 
-    private List<MatIDRow> LoadMatIDs(int pallet, int fixturenum, DateTime beforeLoadedUTC, IDbTransaction trans)
+    private List<MatIDRow> LoadMatIDs(
+      int pallet,
+      int fixturenum,
+      DateTime beforeLoadedUTC,
+      IDbTransaction trans
+    )
     {
       var ret = new List<MatIDRow>();
 
@@ -239,9 +250,10 @@ namespace Makino
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "SELECT LoadedUTC, LocCounter, OrderName, MaterialID FROM " +
-          "matids WHERE Pallet = ? AND FixtureNum = ? AND LoadedUTC <= ? " +
-          "ORDER BY LoadedUTC DESC";
+        cmd.CommandText =
+          "SELECT LoadedUTC, LocCounter, OrderName, MaterialID FROM "
+          + "matids WHERE Pallet = ? AND FixtureNum = ? AND LoadedUTC <= ? "
+          + "ORDER BY LoadedUTC DESC";
         cmd.Parameters.Add("", SqliteType.Integer).Value = pallet;
         cmd.Parameters.Add("", SqliteType.Integer).Value = fixturenum;
         cmd.Parameters.Add("", SqliteType.Integer).Value = beforeLoadedUTC.Ticks;
@@ -252,7 +264,6 @@ namespace Makino
         {
           while (reader.Read())
           {
-
             //Only read a single LoadedUTC time
             var loadedUTC = new DateTime(reader.GetInt64(0), DateTimeKind.Utc);
             if (lastTime == DateTime.MaxValue)
@@ -273,8 +284,15 @@ namespace Makino
       return ret;
     }
 
-    private List<MatIDRow> AddMatIDs(int pallet, int fixturenum, DateTime loadedUTC, string order,
-      IReadOnlyList<long> materialIds, int counterStart, IDbTransaction trans)
+    private List<MatIDRow> AddMatIDs(
+      int pallet,
+      int fixturenum,
+      DateTime loadedUTC,
+      string order,
+      IReadOnlyList<long> materialIds,
+      int counterStart,
+      IDbTransaction trans
+    )
     {
       var ret = new List<MatIDRow>();
 
@@ -283,8 +301,9 @@ namespace Makino
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "INSERT INTO matids(Pallet, FixtureNum, LoadedUTC, LocCounter, OrderName, MaterialID)" +
-          " VALUES (?,?,?,?,?,?)";
+        cmd.CommandText =
+          "INSERT INTO matids(Pallet, FixtureNum, LoadedUTC, LocCounter, OrderName, MaterialID)"
+          + " VALUES (?,?,?,?,?,?)";
         cmd.Parameters.Add("", SqliteType.Integer).Value = pallet;
         cmd.Parameters.Add("", SqliteType.Integer).Value = fixturenum;
         cmd.Parameters.Add("", SqliteType.Integer).Value = loadedUTC.Ticks;
@@ -312,4 +331,3 @@ namespace Makino
     #endregion
   }
 }
-

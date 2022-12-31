@@ -37,7 +37,6 @@ using System.Linq.Expressions;
 
 namespace BlackMaple.MachineFramework
 {
-
   public static class CloneToDerivedExtension
   {
     public static R CloneToDerived<R, T>(this T val) where R : T
@@ -54,19 +53,15 @@ namespace BlackMaple.MachineFramework
         ParameterExpression val = Expression.Variable(typeof(T), "val");
         var ctr = typeof(R).GetConstructors().First(c => !c.GetParameters().Any());
 
-        var bindings = typeof(T).GetProperties()
-          .Where(p =>
-            p.GetMethod != null && p.GetMethod.IsPublic && p.SetMethod != null && p.SetMethod.IsPublic
+        var bindings = typeof(T)
+          .GetProperties()
+          .Where(
+            p => p.GetMethod != null && p.GetMethod.IsPublic && p.SetMethod != null && p.SetMethod.IsPublic
           )
-          .Select(prop =>
-            Expression.Bind(typeof(R).GetProperty(prop.Name), Expression.Property(val, prop))
-          )
+          .Select(prop => Expression.Bind(typeof(R).GetProperty(prop.Name), Expression.Property(val, prop)))
           .ToArray();
 
-        var mbrInit = Expression.MemberInit(
-          Expression.New(ctr),
-          bindings
-        );
+        var mbrInit = Expression.MemberInit(Expression.New(ctr), bindings);
 
         CloneToDerived = Expression.Lambda<Func<T, R>>(mbrInit, new[] { val }).Compile();
       }

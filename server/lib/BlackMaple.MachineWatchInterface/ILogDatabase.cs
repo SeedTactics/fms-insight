@@ -46,4 +46,3 @@ namespace BlackMaple.MachineWatchInterface
     LogEntry RecordWorkorderForMaterialID(long materialID, int process, string workorder);
   }
 }
-

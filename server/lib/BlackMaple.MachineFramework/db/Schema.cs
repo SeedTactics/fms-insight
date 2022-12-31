@@ -70,7 +70,11 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private static void CreateLogTables(SqliteConnection connection, SqliteTransaction transaction, SerialSettings settings)
+    private static void CreateLogTables(
+      SqliteConnection connection,
+      SqliteTransaction transaction,
+      SerialSettings settings
+    )
     {
       using (var cmd = connection.CreateCommand())
       {
@@ -79,13 +83,15 @@ namespace BlackMaple.MachineFramework
         //StationLoc, StationName and StationNum columns should be named
         //LogType, LocationName, and LocationNum but the column names are kept for backwards
         //compatibility
-        cmd.CommandText = "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet TEXT," +
-             "StationLoc INTEGER, StationName TEXT, StationNum INTEGER, Program TEXT, Start INTEGER, TimeUTC INTEGER," +
-             "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT)";
+        cmd.CommandText =
+          "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet TEXT,"
+          + "StationLoc INTEGER, StationName TEXT, StationNum INTEGER, Program TEXT, Start INTEGER, TimeUTC INTEGER,"
+          + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE stations_mat(Counter INTEGER, MaterialID INTEGER, " +
-             "Process INTEGER, Face TEXT, PRIMARY KEY(Counter,MaterialID,Process))";
+        cmd.CommandText =
+          "CREATE TABLE stations_mat(Counter INTEGER, MaterialID INTEGER, "
+          + "Process INTEGER, Face TEXT, PRIMARY KEY(Counter,MaterialID,Process))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX stations_idx ON stations(TimeUTC)";
@@ -100,53 +106,63 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE matdetails(" +
-            "MaterialID INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            "UniqueStr TEXT, " +
-            "PartName TEXT NOT NULL, " +
-            "NumProcesses INTEGER NOT NULL, " +
-            "Serial TEXT, " +
-            "Workorder TEXT " +
-            ")";
+        cmd.CommandText =
+          "CREATE TABLE matdetails("
+          + "MaterialID INTEGER PRIMARY KEY AUTOINCREMENT, "
+          + "UniqueStr TEXT, "
+          + "PartName TEXT NOT NULL, "
+          + "NumProcesses INTEGER NOT NULL, "
+          + "Serial TEXT, "
+          + "Workorder TEXT "
+          + ")";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX matdetails_serial ON matdetails(Serial) WHERE Serial IS NOT NULL";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX matdetails_uniq ON matdetails(UniqueStr)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
+        cmd.CommandText =
+          "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT)";
+        cmd.CommandText =
+          "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT)";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX pending_pal on pendingloads(Pallet)";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX pending_foreign on pendingloads(ForeignID)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, " +
-            "PRIMARY KEY(Counter, Key))";
+        cmd.CommandText =
+          "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, "
+          + "PRIMARY KEY(Counter, Key))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE station_tool_use(Counter INTEGER, Tool TEXT, Pocket INTEGER, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, SerialAtStart TEXT, SerialAtEnd TEXT, CountInCycle INTEGER, CountAtEndOfCycle INTEGER, LifeCount INTEGER, " +
-            "PRIMARY KEY(Counter, Tool, Pocket))";
+        cmd.CommandText =
+          "CREATE TABLE station_tool_use(Counter INTEGER, Tool TEXT, Pocket INTEGER, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, SerialAtStart TEXT, SerialAtEnd TEXT, CountInCycle INTEGER, CountAtEndOfCycle INTEGER, LifeCount INTEGER, "
+          + "PRIMARY KEY(Counter, Tool, Pocket))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
+        cmd.CommandText =
+          "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
+        cmd.CommandText =
+          "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, AddTimeUTC INTEGER, PRIMARY KEY(MaterialID, Queue))";
+        cmd.CommandText =
+          "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, AddTimeUTC INTEGER, PRIMARY KEY(MaterialID, Queue))";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, CurrentCount INTEGER, LifeCount INTEGER, Serial TEXT, " +
-            "PRIMARY KEY(Counter, PocketNumber, Tool))";
+        cmd.CommandText =
+          "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, CurrentCount INTEGER, LifeCount INTEGER, Serial TEXT, "
+          + "PRIMARY KEY(Counter, PocketNumber, Tool))";
         cmd.ExecuteNonQuery();
 
         if (settings.StartingMaterialID > 0)
@@ -166,7 +182,8 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = transaction;
 
-        cmd.CommandText = "CREATE TABLE jobs(UniqueStr TEXT PRIMARY KEY, Part TEXT NOT NULL, NumProcess INTEGER NOT NULL, Comment TEXT, AllocateAlg TEXT, StartUTC INTEGER NOT NULL, EndUTC INTEGER NOT NULL, Archived INTEGER NOT NULL, CopiedToSystem INTEGER NOT NULL, ScheduleId TEXT, Manual INTEGER)";
+        cmd.CommandText =
+          "CREATE TABLE jobs(UniqueStr TEXT PRIMARY KEY, Part TEXT NOT NULL, NumProcess INTEGER NOT NULL, Comment TEXT, AllocateAlg TEXT, StartUTC INTEGER NOT NULL, EndUTC INTEGER NOT NULL, Archived INTEGER NOT NULL, CopiedToSystem INTEGER NOT NULL, ScheduleId TEXT, Manual INTEGER)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX jobs_time_idx ON jobs(EndUTC, StartUTC)";
@@ -178,52 +195,68 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX jobs_schedule_id ON jobs(ScheduleId) WHERE ScheduleId IS NOT NULL";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE planqty(UniqueStr TEXT, Path INTEGER, PlanQty INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Path))";
+        cmd.CommandText =
+          "CREATE TABLE planqty(UniqueStr TEXT, Path INTEGER, PlanQty INTEGER NOT NULL, PRIMARY KEY(UniqueStr, Path))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, Fixture TEXT, Face INTEGER, Casting TEXT, PRIMARY KEY(UniqueStr,Process,Path))";
+        cmd.CommandText =
+          "CREATE TABLE pathdata(UniqueStr TEXT, Process INTEGER, Path INTEGER, StartingUTC INTEGER, PartsPerPallet INTEGER, SimAverageFlowTime INTEGER, InputQueue TEXT, OutputQueue TEXT, LoadTime INTEGER, UnloadTime INTEGER, Fixture TEXT, Face INTEGER, Casting TEXT, PRIMARY KEY(UniqueStr,Process,Path))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE pallets(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet TEXT, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
+        cmd.CommandText =
+          "CREATE TABLE pallets(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet TEXT, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE stops(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatGroup STRING, ExpectedCycleTime INTEGER, Program TEXT, ProgramRevision INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum))";
+        cmd.CommandText =
+          "CREATE TABLE stops(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatGroup STRING, ExpectedCycleTime INTEGER, Program TEXT, ProgramRevision INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE stops_stations(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
+        cmd.CommandText =
+          "CREATE TABLE stops_stations(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE tools(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, Tool STRING, ExpectedUse INTEGER, PRIMARY KEY(UniqueStr,Process,Path,RouteNum,Tool))";
+        cmd.CommandText =
+          "CREATE TABLE tools(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, Tool STRING, ExpectedUse INTEGER, PRIMARY KEY(UniqueStr,Process,Path,RouteNum,Tool))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE loadunload(UniqueStr TEXT, Process INTEGER, Path INTEGER, StatNum INTEGER, Load INTEGER, PRIMARY KEY(UniqueStr,Process,Path,StatNum,Load))";
+        cmd.CommandText =
+          "CREATE TABLE loadunload(UniqueStr TEXT, Process INTEGER, Path INTEGER, StatNum INTEGER, Load INTEGER, PRIMARY KEY(UniqueStr,Process,Path,StatNum,Load))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE path_inspections(UniqueStr TEXT, Process INTEGER, Path INTEGER, InspType STRING, Counter STRING, MaxVal INTEGER, TimeInterval INTEGER, RandomFreq NUMERIC, ExpectedTime INTEGER, PRIMARY KEY (UniqueStr, Process, Path, InspType))";
+        cmd.CommandText =
+          "CREATE TABLE path_inspections(UniqueStr TEXT, Process INTEGER, Path INTEGER, InspType STRING, Counter STRING, MaxVal INTEGER, TimeInterval INTEGER, RandomFreq NUMERIC, ExpectedTime INTEGER, PRIMARY KEY (UniqueStr, Process, Path, InspType))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE holds(UniqueStr TEXT, Process INTEGER, Path INTEGER, LoadUnload INTEGER, UserHold INTEGER, UserHoldReason TEXT, HoldPatternStartUTC INTEGER, HoldPatternRepeats INTEGER, PRIMARY KEY(UniqueStr, Process, Path, LoadUnload))";
+        cmd.CommandText =
+          "CREATE TABLE holds(UniqueStr TEXT, Process INTEGER, Path INTEGER, LoadUnload INTEGER, UserHold INTEGER, UserHoldReason TEXT, HoldPatternStartUTC INTEGER, HoldPatternRepeats INTEGER, PRIMARY KEY(UniqueStr, Process, Path, LoadUnload))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE hold_pattern(UniqueStr TEXT, Process INTEGER, Path INTEGER, LoadUnload INTEGER, Idx INTEGER, Span INTEGER, PRIMARY KEY(UniqueStr, Process, Path, LoadUnload, Idx))";
+        cmd.CommandText =
+          "CREATE TABLE hold_pattern(UniqueStr TEXT, Process INTEGER, Path INTEGER, LoadUnload INTEGER, Idx INTEGER, Span INTEGER, PRIMARY KEY(UniqueStr, Process, Path, LoadUnload, Idx))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE simulated_production(UniqueStr TEXT, Process INTEGER, Path INTEGER, TimeUTC INTEGER, Quantity INTEGER, PRIMARY KEY(UniqueStr,Process,Path,TimeUTC))";
+        cmd.CommandText =
+          "CREATE TABLE simulated_production(UniqueStr TEXT, Process INTEGER, Path INTEGER, TimeUTC INTEGER, Quantity INTEGER, PRIMARY KEY(UniqueStr,Process,Path,TimeUTC))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, UtilizationTime INTEGER, PlanDownTime INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
+        cmd.CommandText =
+          "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, UtilizationTime INTEGER, PlanDownTime INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE sim_station_use_parts(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, JobUnique TEXT, Process INTEGER, Path INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path))";
+        cmd.CommandText =
+          "CREATE TABLE sim_station_use_parts(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, JobUnique TEXT, Process INTEGER, Path INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE scheduled_bookings(UniqueStr TEXT NOT NULL, BookingId TEXT NOT NULL, PRIMARY KEY(UniqueStr, BookingId))";
+        cmd.CommandText =
+          "CREATE TABLE scheduled_bookings(UniqueStr TEXT NOT NULL, BookingId TEXT NOT NULL, PRIMARY KEY(UniqueStr, BookingId))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE scheduled_parts(ScheduleId TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(ScheduleId, Part))";
+        cmd.CommandText =
+          "CREATE TABLE scheduled_parts(ScheduleId TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(ScheduleId, Part))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE job_decrements(DecrementId INTEGER NOT NULL, JobUnique TEXT NOT NULL, Proc1Path INTEGER NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique, Proc1Path))";
+        cmd.CommandText =
+          "CREATE TABLE job_decrements(DecrementId INTEGER NOT NULL, JobUnique TEXT NOT NULL, Proc1Path INTEGER NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique, Proc1Path))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX job_decrements_time ON job_decrements(TimeUTC)";
@@ -235,29 +268,39 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE TABLE schedule_debug(ScheduleId TEXT PRIMARY KEY, DebugMessage BLOB)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, Archived INTEGER, PRIMARY KEY(ScheduleId, Part, Workorder))";
+        cmd.CommandText =
+          "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, Archived INTEGER, PRIMARY KEY(ScheduleId, Part, Workorder))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX workorder_id_idx ON unfilled_workorders(Workorder, ScheduleId)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE workorder_programs(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part, ProcessNumber, StopIndex))";
+        cmd.CommandText =
+          "CREATE TABLE workorder_programs(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part, ProcessNumber, StopIndex))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE program_revisions(ProgramName TEXT NOT NULL, ProgramRevision INTEGER NOT NULL, CellControllerProgramName TEXT, RevisionTimeUTC INTEGER NOT NULL, RevisionComment TEXT, ProgramContent TEXT, PRIMARY KEY(ProgramName, ProgramRevision))";
+        cmd.CommandText =
+          "CREATE TABLE program_revisions(ProgramName TEXT NOT NULL, ProgramRevision INTEGER NOT NULL, CellControllerProgramName TEXT, RevisionTimeUTC INTEGER NOT NULL, RevisionComment TEXT, ProgramContent TEXT, PRIMARY KEY(ProgramName, ProgramRevision))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE INDEX program_rev_cell_prog_name ON program_revisions(CellControllerProgramName, ProgramRevision) WHERE CellControllerProgramName IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX program_rev_cell_prog_name ON program_revisions(CellControllerProgramName, ProgramRevision) WHERE CellControllerProgramName IS NOT NULL";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE INDEX program_comment_idx ON program_revisions(ProgramName, RevisionComment, ProgramRevision) WHERE RevisionComment IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX program_comment_idx ON program_revisions(ProgramName, RevisionComment, ProgramRevision) WHERE RevisionComment IS NOT NULL";
         cmd.ExecuteNonQuery();
       }
     }
     #endregion
 
     #region Upgrade
-    public static void UpgradeTables(SqliteConnection connection, SerialSettings settings, string oldInspDbFile, string oldJobDbFile)
+    public static void UpgradeTables(
+      SqliteConnection connection,
+      SerialSettings settings,
+      string oldInspDbFile,
+      string oldJobDbFile
+    )
     {
       using (var cmd = connection.CreateCommand())
       {
@@ -277,7 +320,6 @@ namespace BlackMaple.MachineFramework
               curVersion = 0;
             }
           }
-
         }
         catch (Exception ex)
         {
@@ -293,7 +335,9 @@ namespace BlackMaple.MachineFramework
 
         if (curVersion > Version)
         {
-          throw new Exception("This input file was created with a newer version of machine watch.  Please upgrade FMS Insight");
+          throw new Exception(
+            "This input file was created with a newer version of machine watch.  Please upgrade FMS Insight"
+          );
         }
 
         if (curVersion == Version)
@@ -314,66 +358,94 @@ namespace BlackMaple.MachineFramework
         using (var trans = connection.BeginTransaction())
         {
           //add upgrade code here, in seperate functions
-          if (curVersion < 1) Ver0ToVer1(trans);
+          if (curVersion < 1)
+            Ver0ToVer1(trans);
 
-          if (curVersion < 2) Ver1ToVer2(trans);
+          if (curVersion < 2)
+            Ver1ToVer2(trans);
 
-          if (curVersion < 3) Ver2ToVer3(trans);
+          if (curVersion < 3)
+            Ver2ToVer3(trans);
 
-          if (curVersion < 4) Ver3ToVer4(trans);
+          if (curVersion < 4)
+            Ver3ToVer4(trans);
 
-          if (curVersion < 5) Ver4ToVer5(trans);
+          if (curVersion < 5)
+            Ver4ToVer5(trans);
 
-          if (curVersion < 6) Ver5ToVer6(trans);
+          if (curVersion < 6)
+            Ver5ToVer6(trans);
 
-          if (curVersion < 7) Ver6ToVer7(trans);
+          if (curVersion < 7)
+            Ver6ToVer7(trans);
 
-          if (curVersion < 8) Ver7ToVer8(trans);
+          if (curVersion < 8)
+            Ver7ToVer8(trans);
 
-          if (curVersion < 9) Ver8ToVer9(trans);
+          if (curVersion < 9)
+            Ver8ToVer9(trans);
 
-          if (curVersion < 10) Ver9ToVer10(trans);
+          if (curVersion < 10)
+            Ver9ToVer10(trans);
 
-          if (curVersion < 11) Ver10ToVer11(trans);
+          if (curVersion < 11)
+            Ver10ToVer11(trans);
 
-          if (curVersion < 12) Ver11ToVer12(trans);
+          if (curVersion < 12)
+            Ver11ToVer12(trans);
 
-          if (curVersion < 13) Ver12ToVer13(trans);
+          if (curVersion < 13)
+            Ver12ToVer13(trans);
 
-          if (curVersion < 14) Ver13ToVer14(trans);
+          if (curVersion < 14)
+            Ver13ToVer14(trans);
 
-          if (curVersion < 15) Ver14ToVer15(trans);
+          if (curVersion < 15)
+            Ver14ToVer15(trans);
 
-          if (curVersion < 16) Ver15ToVer16(trans);
+          if (curVersion < 16)
+            Ver15ToVer16(trans);
 
           if (curVersion < 17)
             detachInsp = Ver16ToVer17(trans, oldInspDbFile);
 
-          if (curVersion < 18) Ver17ToVer18(trans);
+          if (curVersion < 18)
+            Ver17ToVer18(trans);
 
-          if (curVersion < 19) Ver18ToVer19(trans);
+          if (curVersion < 19)
+            Ver18ToVer19(trans);
 
-          if (curVersion < 20) Ver19ToVer20(trans);
+          if (curVersion < 20)
+            Ver19ToVer20(trans);
 
-          if (curVersion < 21) Ver20ToVer21(trans);
+          if (curVersion < 21)
+            Ver20ToVer21(trans);
 
-          if (curVersion < 22) Ver21ToVer22(trans);
+          if (curVersion < 22)
+            Ver21ToVer22(trans);
 
-          if (curVersion < 23) Ver22ToVer23(trans);
+          if (curVersion < 23)
+            Ver22ToVer23(trans);
 
-          if (curVersion < 24) Ver23ToVer24(trans, oldJobDbFile, out detachOldJob);
+          if (curVersion < 24)
+            Ver23ToVer24(trans, oldJobDbFile, out detachOldJob);
 
           bool updateJobsTables = curVersion >= 24; // Ver23ToVer24 creates fresh job tables, so no updates needed if coming from before then
 
-          if (curVersion < 25) Ver24ToVer25(trans, updateJobsTables);
+          if (curVersion < 25)
+            Ver24ToVer25(trans, updateJobsTables);
 
-          if (curVersion < 26) Ver25ToVer26(trans, updateJobsTables);
+          if (curVersion < 26)
+            Ver25ToVer26(trans, updateJobsTables);
 
-          if (curVersion < 27) Ver26ToVer27(trans);
+          if (curVersion < 27)
+            Ver26ToVer27(trans);
 
-          if (curVersion < 28) Ver27ToVer28(trans, updateJobsTables);
+          if (curVersion < 28)
+            Ver27ToVer28(trans, updateJobsTables);
 
-          if (curVersion < 29) Ver28ToVer29(trans);
+          if (curVersion < 29)
+            Ver28ToVer29(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -386,8 +458,10 @@ namespace BlackMaple.MachineFramework
         }
 
         //detaching must be outside the transaction which attached
-        if (detachInsp) DetachInspectionDb(connection);
-        if (detachOldJob) DetachJobsDb(connection);
+        if (detachInsp)
+          DetachInspectionDb(connection);
+        if (detachOldJob)
+          DetachJobsDb(connection);
 
         //only vacuum if we did some updating
         cmd.Transaction = null;
@@ -412,9 +486,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private static void AdjustStartingSerial(SqliteConnection conn, SqliteTransaction trans, SerialSettings settings)
+    private static void AdjustStartingSerial(
+      SqliteConnection conn,
+      SqliteTransaction trans,
+      SerialSettings settings
+    )
     {
-      if (settings.StartingMaterialID == 0) return;
+      if (settings.StartingMaterialID == 0)
+        return;
       if (settings.StartingMaterialID > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
         throw new Exception("Starting Serial is too large");
 
@@ -511,7 +590,8 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ForeignID TEXT)";
+        cmd.CommandText =
+          "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ForeignID TEXT)";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX pending_pal on pendingloads(Pallet)";
         cmd.ExecuteNonQuery();
@@ -530,8 +610,9 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, " +
-            "PRIMARY KEY(Counter, Key))";
+        cmd.CommandText =
+          "CREATE TABLE program_details(Counter INTEGER, Key TEXT, Value TEXT, "
+          + "PRIMARY KEY(Counter, Key))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -569,7 +650,8 @@ namespace BlackMaple.MachineFramework
         cmd.Transaction = trans;
         cmd.CommandText = "ALTER TABLE materialid ADD Workorder TEXT";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX materialid_workorder ON materialid(Workorder) WHERE Workorder IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX materialid_workorder ON materialid(Workorder) WHERE Workorder IS NOT NULL";
         cmd.ExecuteNonQuery();
       }
     }
@@ -589,7 +671,8 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE sersettings(ID INTEGER PRIMARY KEY, SerialType INTEGER, SerialLength INTEGER, DepositProc INTEGER, FilenameTemplate TEXT, ProgramTemplate TEXT)";
+        cmd.CommandText =
+          "CREATE TABLE sersettings(ID INTEGER PRIMARY KEY, SerialType INTEGER, SerialLength INTEGER, DepositProc INTEGER, FilenameTemplate TEXT, ProgramTemplate TEXT)";
         cmd.ExecuteNonQuery();
       }
     }
@@ -620,14 +703,18 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
+        cmd.CommandText =
+          "CREATE TABLE inspection_counters(Counter TEXT PRIMARY KEY, Val INTEGER, LastUTC INTEGER)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
+        cmd.CommandText =
+          "CREATE TABLE inspection_next_piece(StatType INTEGER, StatNum INTEGER, InspType TEXT, PRIMARY KEY(StatType,StatNum, InspType))";
         cmd.ExecuteNonQuery();
 
-        if (string.IsNullOrEmpty(inspDbFile)) return false;
-        if (!System.IO.File.Exists(inspDbFile)) return false;
+        if (string.IsNullOrEmpty(inspDbFile))
+          return false;
+        if (!System.IO.File.Exists(inspDbFile))
+          return false;
 
         cmd.CommandText = "ATTACH DATABASE $db AS insp";
         cmd.Parameters.Add("db", SqliteType.Text).Value = inspDbFile;
@@ -658,46 +745,50 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, PRIMARY KEY(MaterialID, Queue))";
+        cmd.CommandText =
+          "CREATE TABLE queues(MaterialID INTEGER, Queue TEXT, Position INTEGER, PRIMARY KEY(MaterialID, Queue))";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX queues_idx ON queues(Queue, Position)";
         cmd.ExecuteNonQuery();
 
         // new stations_mat table equals old material table but without some columns
-        cmd.CommandText = "CREATE TABLE stations_mat(Counter INTEGER, MaterialID INTEGER, " +
-             "Process INTEGER, Face TEXT, PRIMARY KEY(Counter,MaterialID,Process))";
+        cmd.CommandText =
+          "CREATE TABLE stations_mat(Counter INTEGER, MaterialID INTEGER, "
+          + "Process INTEGER, Face TEXT, PRIMARY KEY(Counter,MaterialID,Process))";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "INSERT INTO stations_mat(Counter, MaterialID, Process, Face) " +
-          " SELECT Counter, MaterialID, Process, Face FROM material";
+        cmd.CommandText =
+          "INSERT INTO stations_mat(Counter, MaterialID, Process, Face) "
+          + " SELECT Counter, MaterialID, Process, Face FROM material";
         cmd.ExecuteNonQuery();
 
-
         // new matdetails table
-        cmd.CommandText = "CREATE TABLE matdetails(" +
-            "MaterialID INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            "UniqueStr TEXT, " +
-            "PartName TEXT," +
-            "NumProcesses INTEGER, " +
-            "Serial TEXT, " +
-            "Workorder TEXT " +
-            ")";
+        cmd.CommandText =
+          "CREATE TABLE matdetails("
+          + "MaterialID INTEGER PRIMARY KEY AUTOINCREMENT, "
+          + "UniqueStr TEXT, "
+          + "PartName TEXT,"
+          + "NumProcesses INTEGER, "
+          + "Serial TEXT, "
+          + "Workorder TEXT "
+          + ")";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX matdetails_serial ON matdetails(Serial) WHERE Serial IS NOT NULL";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX matdetails_workorder ON matdetails(Workorder) WHERE Workorder IS NOT NULL";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX matdetails_uniq ON matdetails(UniqueStr)";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "INSERT INTO matdetails(MaterialID, UniqueStr, Serial, Workorder, PartName, NumProcesses) " +
-          " SELECT " +
-          "   MaterialID, UniqueStr, Serial, Workorder, " +
-          "   (SELECT Part FROM material WHERE material.MaterialID = materialid.MaterialID LIMIT 1) as PartName, " +
-          "   (SELECT NumProcess FROM material WHERE material.MaterialID = materialid.MaterialID LIMIT 1) as NumProcesses " +
-          " FROM materialid";
+        cmd.CommandText =
+          "INSERT INTO matdetails(MaterialID, UniqueStr, Serial, Workorder, PartName, NumProcesses) "
+          + " SELECT "
+          + "   MaterialID, UniqueStr, Serial, Workorder, "
+          + "   (SELECT Part FROM material WHERE material.MaterialID = materialid.MaterialID LIMIT 1) as PartName, "
+          + "   (SELECT NumProcess FROM material WHERE material.MaterialID = materialid.MaterialID LIMIT 1) as NumProcesses "
+          + " FROM materialid";
         cmd.ExecuteNonQuery();
-
 
         cmd.CommandText = "DROP TABLE material";
         cmd.ExecuteNonQuery();
@@ -711,8 +802,9 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, " +
-            "PRIMARY KEY(Counter, Tool))";
+        cmd.CommandText =
+          "CREATE TABLE station_tools(Counter INTEGER, Tool TEXT, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, "
+          + "PRIMARY KEY(Counter, Tool))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -722,7 +814,8 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
-        cmd.CommandText = "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
+        cmd.CommandText =
+          "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -732,8 +825,9 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
-        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
-            "PRIMARY KEY(Counter, PocketNumber))";
+        cmd.CommandText =
+          "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, "
+          + "PRIMARY KEY(Counter, PocketNumber))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -747,8 +841,9 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "DROP TABLE tool_snapshots";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, " +
-            "PRIMARY KEY(Counter, PocketNumber, Tool))";
+        cmd.CommandText =
+          "CREATE TABLE tool_snapshots(Counter INTEGER, PocketNumber INTEGER, Tool TEXT, CurrentUse INTEGER, ToolLife INTEGER, "
+          + "PRIMARY KEY(Counter, PocketNumber, Tool))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "ALTER TABLE queues ADD AddTimeUTC INTEGER";
@@ -776,7 +871,11 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private static void Ver23ToVer24(SqliteTransaction transaction, string oldJobDb, out bool attachedOldJobDb)
+    private static void Ver23ToVer24(
+      SqliteTransaction transaction,
+      string oldJobDb,
+      out bool attachedOldJobDb
+    )
     {
       CreateJobTables(transaction.Connection, transaction);
 
@@ -793,7 +892,8 @@ namespace BlackMaple.MachineFramework
           cmd.ExecuteNonQuery();
           cmd.Parameters.Clear();
 
-          var jobTableNames = new[] {
+          var jobTableNames = new[]
+          {
             "planqty",
             "pallets",
             "stops",
@@ -820,11 +920,13 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
           }
 
-          cmd.CommandText = "INSERT INTO main.jobs(UniqueStr,Part,NumProcess,Comment,StartUTC,EndUTC,Archived,CopiedToSystem,ScheduleId,Manual) SELECT UniqueStr,Part,NumProcess,Comment,StartUTC,EndUTC,Archived,CopiedToSystem,ScheduleId,Manual FROM jobs.jobs";
+          cmd.CommandText =
+            "INSERT INTO main.jobs(UniqueStr,Part,NumProcess,Comment,StartUTC,EndUTC,Archived,CopiedToSystem,ScheduleId,Manual) SELECT UniqueStr,Part,NumProcess,Comment,StartUTC,EndUTC,Archived,CopiedToSystem,ScheduleId,Manual FROM jobs.jobs";
           cmd.ExecuteNonQuery();
 
           // pathdata PathGroup column is removed
-          cmd.CommandText = "INSERT INTO main.pathdata(UniqueStr,Process,Path,StartingUTC,PartsPerPallet,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting) SELECT UniqueStr,Process,Path,StartingUTC,PartsPerPallet,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting FROM jobs.pathdata";
+          cmd.CommandText =
+            "INSERT INTO main.pathdata(UniqueStr,Process,Path,StartingUTC,PartsPerPallet,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting) SELECT UniqueStr,Process,Path,StartingUTC,PartsPerPallet,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting FROM jobs.pathdata";
           cmd.ExecuteNonQuery();
 
           attachedOldJobDb = true;
@@ -838,7 +940,8 @@ namespace BlackMaple.MachineFramework
 
     private static void Ver24ToVer25(IDbTransaction transaction, bool updateJobsTables)
     {
-      if (!updateJobsTables) return;
+      if (!updateJobsTables)
+        return;
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
@@ -849,11 +952,13 @@ namespace BlackMaple.MachineFramework
 
     private static void Ver25ToVer26(IDbTransaction transaction, bool updateJobTables)
     {
-      if (!updateJobTables) return;
+      if (!updateJobTables)
+        return;
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
-        cmd.CommandText = "CREATE TABLE sim_station_use_parts(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, JobUnique TEXT, Process INTEGER, Path INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path))";
+        cmd.CommandText =
+          "CREATE TABLE sim_station_use_parts(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, JobUnique TEXT, Process INTEGER, Path INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -863,12 +968,14 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         // will be altered in Ver28to29, but that is OK
-        cmd.CommandText = "CREATE TABLE station_tool_use(Counter INTEGER, Tool TEXT, Pocket INTEGER, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, " +
-            "PRIMARY KEY(Counter, Tool, Pocket))";
+        cmd.CommandText =
+          "CREATE TABLE station_tool_use(Counter INTEGER, Tool TEXT, Pocket INTEGER, UseInCycle INTEGER, UseAtEndOfCycle INTEGER, ToolLife INTEGER, ToolChange INTEGER, "
+          + "PRIMARY KEY(Counter, Tool, Pocket))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "INSERT INTO station_tool_use(Counter, Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange) " +
-            "SELECT Counter, Tool, -1, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange FROM station_tools";
+        cmd.CommandText =
+          "INSERT INTO station_tool_use(Counter, Tool, Pocket, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange) "
+          + "SELECT Counter, Tool, -1, UseInCycle, UseAtEndOfCycle, ToolLife, ToolChange FROM station_tools";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "DROP TABLE station_tools";
@@ -878,7 +985,8 @@ namespace BlackMaple.MachineFramework
 
     private static void Ver27ToVer28(IDbTransaction transaction, bool updateJobTables)
     {
-      if (!updateJobTables) return;
+      if (!updateJobTables)
+        return;
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
@@ -917,7 +1025,6 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
     }
 
-
     #endregion
   }
 
@@ -946,7 +1053,6 @@ namespace BlackMaple.MachineFramework
                 curVersion = 0;
               }
             }
-
           }
           catch (Exception ex)
           {
@@ -962,7 +1068,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion > 23)
           {
-            throw new Exception("This input file was created with a newer version of machine watch.  Please upgrade machine watch");
+            throw new Exception(
+              "This input file was created with a newer version of machine watch.  Please upgrade machine watch"
+            );
           }
 
           if (curVersion == 23)
@@ -970,33 +1078,54 @@ namespace BlackMaple.MachineFramework
             return;
           }
 
-
           using (var trans = conn.BeginTransaction())
           {
             //add upgrade code here, in separate functions
 
-            if (curVersion < 1) Ver0ToVer1(trans);
-            if (curVersion < 2) Ver1ToVer2(trans);
-            if (curVersion < 3) Ver2ToVer3(trans);
-            if (curVersion < 4) Ver3ToVer4(trans);
-            if (curVersion < 5) Ver4ToVer5(trans);
-            if (curVersion < 6) Ver5ToVer6(trans);
-            if (curVersion < 7) Ver6ToVer7(trans);
-            if (curVersion < 8) Ver7ToVer8(trans);
-            if (curVersion < 9) Ver8ToVer9(trans);
-            if (curVersion < 10) Ver9ToVer10(trans);
-            if (curVersion < 11) Ver10ToVer11(trans);
-            if (curVersion < 12) Ver11ToVer12(trans);
-            if (curVersion < 13) Ver12ToVer13(trans);
-            if (curVersion < 14) Ver13ToVer14(trans);
-            if (curVersion < 15) Ver14ToVer15(trans);
-            if (curVersion < 16) Ver15ToVer16(trans);
-            if (curVersion < 17) Ver16ToVer17(trans);
-            if (curVersion < 18) Ver17ToVer18(trans);
-            if (curVersion < 19) Ver18ToVer19(trans);
-            if (curVersion < 20) Ver19ToVer20(trans);
-            if (curVersion < 22) Ver20ToVer22(trans);
-            if (curVersion < 23) Ver22ToVer23(trans);
+            if (curVersion < 1)
+              Ver0ToVer1(trans);
+            if (curVersion < 2)
+              Ver1ToVer2(trans);
+            if (curVersion < 3)
+              Ver2ToVer3(trans);
+            if (curVersion < 4)
+              Ver3ToVer4(trans);
+            if (curVersion < 5)
+              Ver4ToVer5(trans);
+            if (curVersion < 6)
+              Ver5ToVer6(trans);
+            if (curVersion < 7)
+              Ver6ToVer7(trans);
+            if (curVersion < 8)
+              Ver7ToVer8(trans);
+            if (curVersion < 9)
+              Ver8ToVer9(trans);
+            if (curVersion < 10)
+              Ver9ToVer10(trans);
+            if (curVersion < 11)
+              Ver10ToVer11(trans);
+            if (curVersion < 12)
+              Ver11ToVer12(trans);
+            if (curVersion < 13)
+              Ver12ToVer13(trans);
+            if (curVersion < 14)
+              Ver13ToVer14(trans);
+            if (curVersion < 15)
+              Ver14ToVer15(trans);
+            if (curVersion < 16)
+              Ver15ToVer16(trans);
+            if (curVersion < 17)
+              Ver16ToVer17(trans);
+            if (curVersion < 18)
+              Ver17ToVer18(trans);
+            if (curVersion < 19)
+              Ver18ToVer19(trans);
+            if (curVersion < 20)
+              Ver19ToVer20(trans);
+            if (curVersion < 22)
+              Ver20ToVer22(trans);
+            if (curVersion < 23)
+              Ver22ToVer23(trans);
 
             //update the version in the database
             cmd.Transaction = trans;
@@ -1004,7 +1133,6 @@ namespace BlackMaple.MachineFramework
             cmd.ExecuteNonQuery();
 
             trans.Commit();
-
           }
 
           return;
@@ -1017,7 +1145,8 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE fixtures(UniqueStr TEXT, Process INTEGER, Path INTEGER, Fixture TEXT, Face TEXT, PRIMARY KEY(UniqueStr,Process,Path,Fixture,Face))";
+        cmd.CommandText =
+          "CREATE TABLE fixtures(UniqueStr TEXT, Process INTEGER, Path INTEGER, Fixture TEXT, Face TEXT, PRIMARY KEY(UniqueStr,Process,Path,Fixture,Face))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -1050,7 +1179,6 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "ALTER TABLE inspections ADD RandomFreq NUMERIC";
         cmd.ExecuteNonQuery();
       }
-
     }
 
     private static void Ver4ToVer5(IDbTransaction trans)
@@ -1082,30 +1210,37 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
         cmd.CommandText = "ALTER TABLE pathdata ADD SimAverageFlowTime INTEGER";
         cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE TABLE simulated_production(UniqueStr TEXT, Process INTEGER, Path INTEGER, TimeUTC INTEGER, Quantity INTEGER, PRIMARY KEY(UniqueStr,Process,Path,TimeUTC))";
+        cmd.CommandText =
+          "CREATE TABLE simulated_production(UniqueStr TEXT, Process INTEGER, Path INTEGER, TimeUTC INTEGER, Quantity INTEGER, PRIMARY KEY(UniqueStr,Process,Path,TimeUTC))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE stops(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatGroup STRING, ExpectedCycleTime INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum))";
+        cmd.CommandText =
+          "CREATE TABLE stops(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatGroup STRING, ExpectedCycleTime INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE programs(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, Program TEXT NOT NULL, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
+        cmd.CommandText =
+          "CREATE TABLE programs(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, Program TEXT NOT NULL, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE tools(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, Tool STRING, ExpectedUse INTEGER, PRIMARY KEY(UniqueStr,Process,Path,RouteNum,Tool))";
+        cmd.CommandText =
+          "CREATE TABLE tools(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, Tool STRING, ExpectedUse INTEGER, PRIMARY KEY(UniqueStr,Process,Path,RouteNum,Tool))";
         cmd.ExecuteNonQuery();
 
         //copy data from the old routes table to stops and programs table
-        cmd.CommandText = "INSERT OR REPLACE INTO programs SELECT UniqueStr, Process, Path, RouteNum, StatNum, Program FROM routes";
+        cmd.CommandText =
+          "INSERT OR REPLACE INTO programs SELECT UniqueStr, Process, Path, RouteNum, StatNum, Program FROM routes";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "INSERT OR REPLACE INTO stops(UniqueStr, Process, Path, RouteNum, StatGroup) " +
-            "SELECT UniqueStr, Process, Path, RouteNum, StatGroup FROM routes";
+        cmd.CommandText =
+          "INSERT OR REPLACE INTO stops(UniqueStr, Process, Path, RouteNum, StatGroup) "
+          + "SELECT UniqueStr, Process, Path, RouteNum, StatGroup FROM routes";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "DROP TABLE routes";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, UtilizationTime INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
+        cmd.CommandText =
+          "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, UtilizationTime INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX sim_station_time_idx ON sim_station_use(EndUTC, StartUTC)";
@@ -1118,10 +1253,12 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE scheduled_bookings(UniqueStr TEXT NOT NULL, BookingId TEXT NOT NULL, PRIMARY KEY(UniqueStr, BookingId))";
+        cmd.CommandText =
+          "CREATE TABLE scheduled_bookings(UniqueStr TEXT NOT NULL, BookingId TEXT NOT NULL, PRIMARY KEY(UniqueStr, BookingId))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE extra_parts(UniqueStr TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(UniqueStr, Part))";
+        cmd.CommandText =
+          "CREATE TABLE extra_parts(UniqueStr TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(UniqueStr, Part))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -1140,7 +1277,8 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "DROP TABLE extra_parts";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE scheduled_parts(ScheduleId TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(ScheduleId, Part))";
+        cmd.CommandText =
+          "CREATE TABLE scheduled_parts(ScheduleId TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(ScheduleId, Part))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "DROP TABLE global_tag";
@@ -1156,7 +1294,8 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "DROP TABLE decrement_counts";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE decrement_snapshots(DecrementId TEXT NOT NULL, JobUnique TEXT NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique))";
+        cmd.CommandText =
+          "CREATE TABLE decrement_snapshots(DecrementId TEXT NOT NULL, JobUnique TEXT NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX decrement_snapshot_time ON decrement_snapshots(TimeUTC)";
@@ -1189,7 +1328,8 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = transaction.Connection.CreateCommand())
       {
         cmd.Transaction = transaction;
-        cmd.CommandText = "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Part, Workorder))";
+        cmd.CommandText =
+          "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, PRIMARY KEY(ScheduleId, Part, Workorder))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -1228,7 +1368,8 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "DROP TABLE decrement_snapshots";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE decrements(DecrementId INTEGER NOT NULL, JobUnique TEXT NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique))";
+        cmd.CommandText =
+          "CREATE TABLE decrements(DecrementId INTEGER NOT NULL, JobUnique TEXT NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX decrements_time ON decrements(TimeUTC)";
@@ -1255,10 +1396,12 @@ namespace BlackMaple.MachineFramework
     {
       using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
-        cmd.CommandText = "CREATE TABLE stops_stations(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
+        cmd.CommandText =
+          "CREATE TABLE stops_stations(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, StatNum INTEGER, PRIMARY KEY(UniqueStr, Process, Path, RouteNum, StatNum))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "INSERT INTO stops_stations(UniqueStr, Process, Path, RouteNum, StatNum) SELECT UniqueStr, Process, Path, RouteNum, StatNum FROM programs";
+        cmd.CommandText =
+          "INSERT INTO stops_stations(UniqueStr, Process, Path, RouteNum, StatNum) SELECT UniqueStr, Process, Path, RouteNum, StatNum FROM programs";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "ALTER TABLE stops ADD Program TEXT";
@@ -1268,15 +1411,15 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-            "UPDATE stops SET Program = " +
-            " (SELECT programs.Program FROM programs WHERE " +
-            "  programs.UniqueStr = stops.UniqueStr AND " +
-            "  programs.Process = stops.Process AND " +
-            "  programs.Path = stops.Path AND " +
-            "  programs.RouteNum = stops.RouteNum " +
-            "  ORDER BY programs.StatNum ASC " +
-            "  LIMIT 1 " +
-            " )";
+          "UPDATE stops SET Program = "
+          + " (SELECT programs.Program FROM programs WHERE "
+          + "  programs.UniqueStr = stops.UniqueStr AND "
+          + "  programs.Process = stops.Process AND "
+          + "  programs.Path = stops.Path AND "
+          + "  programs.RouteNum = stops.RouteNum "
+          + "  ORDER BY programs.StatNum ASC "
+          + "  LIMIT 1 "
+          + " )";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "DROP TABLE programs";
@@ -1290,23 +1433,24 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-            "UPDATE pathdata SET " +
-            "  Fixture = (SELECT fixtures.Fixture FROM fixtures WHERE " +
-            "   fixtures.UniqueStr = pathdata.UniqueStr AND fixtures.Process = pathdata.Process AND fixtures.Path = pathdata.Path ORDER BY fixtures.Fixture ASC LIMIT 1)," +
-            "  Face = (SELECT fixtures.Face FROM fixtures WHERE " +
-            "   fixtures.UniqueStr = pathdata.UniqueStr AND fixtures.Process = pathdata.Process AND fixtures.Path = pathdata.Path ORDER BY fixtures.Fixture ASC LIMIT 1)";
+          "UPDATE pathdata SET "
+          + "  Fixture = (SELECT fixtures.Fixture FROM fixtures WHERE "
+          + "   fixtures.UniqueStr = pathdata.UniqueStr AND fixtures.Process = pathdata.Process AND fixtures.Path = pathdata.Path ORDER BY fixtures.Fixture ASC LIMIT 1),"
+          + "  Face = (SELECT fixtures.Face FROM fixtures WHERE "
+          + "   fixtures.UniqueStr = pathdata.UniqueStr AND fixtures.Process = pathdata.Process AND fixtures.Path = pathdata.Path ORDER BY fixtures.Fixture ASC LIMIT 1)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "DROP TABLE fixtures";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE program_revisions(ProgramName TEXT NOT NULL, ProgramRevision INTEGER NOT NULL, CellControllerProgramName TEXT, RevisionTimeUTC INTEGER NOT NULL, RevisionComment TEXT, ProgramContent TEXT, PRIMARY KEY(ProgramName, ProgramRevision))";
+        cmd.CommandText =
+          "CREATE TABLE program_revisions(ProgramName TEXT NOT NULL, ProgramRevision INTEGER NOT NULL, CellControllerProgramName TEXT, RevisionTimeUTC INTEGER NOT NULL, RevisionComment TEXT, ProgramContent TEXT, PRIMARY KEY(ProgramName, ProgramRevision))";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE INDEX program_rev_cell_prog_name ON program_revisions(CellControllerProgramName, ProgramRevision) WHERE CellControllerProgramName IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX program_rev_cell_prog_name ON program_revisions(CellControllerProgramName, ProgramRevision) WHERE CellControllerProgramName IS NOT NULL";
         cmd.ExecuteNonQuery();
       }
-
     }
 
     private static void Ver17ToVer18(IDbTransaction trans)
@@ -1314,15 +1458,16 @@ namespace BlackMaple.MachineFramework
       using (IDbCommand cmd = trans.Connection.CreateCommand())
       {
         cmd.Transaction = trans;
-        cmd.CommandText = "CREATE TABLE path_inspections(UniqueStr TEXT, Process INTEGER, Path INTEGER, InspType STRING, Counter STRING, MaxVal INTEGER, TimeInterval INTEGER, RandomFreq NUMERIC, ExpectedTime INTEGER, PRIMARY KEY (UniqueStr, Process, Path, InspType))";
+        cmd.CommandText =
+          "CREATE TABLE path_inspections(UniqueStr TEXT, Process INTEGER, Path INTEGER, InspType STRING, Counter STRING, MaxVal INTEGER, TimeInterval INTEGER, RandomFreq NUMERIC, ExpectedTime INTEGER, PRIMARY KEY (UniqueStr, Process, Path, InspType))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "INSERT INTO path_inspections(UniqueStr, Process, Path, InspType, Counter, MaxVal, TimeInterval, RandomFreq) " +
-          "  SELECT inspections.UniqueStr, " +
-          "          COALESCE(CASE WHEN InspProc < 0 THEN NULL ELSE InspProc END, NumProcess), " +
-          "         -1, InspType, Counter, MaxVal, TimeInterval, RandomFreq " +
-          "   FROM inspections, jobs where inspections.UniqueStr = jobs.UniqueStr";
+          "INSERT INTO path_inspections(UniqueStr, Process, Path, InspType, Counter, MaxVal, TimeInterval, RandomFreq) "
+          + "  SELECT inspections.UniqueStr, "
+          + "          COALESCE(CASE WHEN InspProc < 0 THEN NULL ELSE InspProc END, NumProcess), "
+          + "         -1, InspType, Counter, MaxVal, TimeInterval, RandomFreq "
+          + "   FROM inspections, jobs where inspections.UniqueStr = jobs.UniqueStr";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "DROP TABLE inspections";
@@ -1360,9 +1505,11 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='job_decrements'";
         var cnt = cmd.ExecuteScalar();
-        if (cnt != null && cnt != DBNull.Value && (long)cnt > 0) return;
+        if (cnt != null && cnt != DBNull.Value && (long)cnt > 0)
+          return;
 
-        cmd.CommandText = "CREATE TABLE job_decrements(DecrementId INTEGER NOT NULL, JobUnique TEXT NOT NULL, Proc1Path INTEGER NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique, Proc1Path))";
+        cmd.CommandText =
+          "CREATE TABLE job_decrements(DecrementId INTEGER NOT NULL, JobUnique TEXT NOT NULL, Proc1Path INTEGER NOT NULL, TimeUTC TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER, PRIMARY KEY(DecrementId, JobUnique, Proc1Path))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX job_decrements_time ON job_decrements(TimeUTC)";
@@ -1371,8 +1518,9 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX job_decrements_unique ON job_decrements(JobUnique)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "INSERT INTO job_decrements(DecrementId, JobUnique, Proc1Path, TimeUTC, Part, Quantity) " +
-          " SELECT DecrementId, JobUnique, 0, TimeUTC, Part, Quantity FROM decrements";
+        cmd.CommandText =
+          "INSERT INTO job_decrements(DecrementId, JobUnique, Proc1Path, TimeUTC, Part, Quantity) "
+          + " SELECT DecrementId, JobUnique, 0, TimeUTC, Part, Quantity FROM decrements";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "DROP TABLE decrements";
@@ -1389,13 +1537,15 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "ALTER TABLE unfilled_workorders ADD Archived INTEGER";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE TABLE workorder_programs(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part, ProcessNumber, StopIndex))";
+        cmd.CommandText =
+          "CREATE TABLE workorder_programs(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part, ProcessNumber, StopIndex))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX workorder_id_idx ON unfilled_workorders(Workorder, ScheduleId)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE INDEX program_comment_idx ON program_revisions(ProgramName, RevisionComment, ProgramRevision) WHERE RevisionComment IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX program_comment_idx ON program_revisions(ProgramName, RevisionComment, ProgramRevision) WHERE RevisionComment IS NOT NULL";
         cmd.ExecuteNonQuery();
       }
     }

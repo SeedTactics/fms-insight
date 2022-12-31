@@ -76,7 +76,11 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("program/{programName}/revisions")]
-    public List<ProgramRevision> GetProgramRevisionsInDescendingOrderOfRevision(string programName, [FromQuery] int count, [FromQuery] long? revisionToStart = null)
+    public List<ProgramRevision> GetProgramRevisionsInDescendingOrderOfRevision(
+      string programName,
+      [FromQuery] int count,
+      [FromQuery] long? revisionToStart = null
+    )
     {
       if (_machControl == null)
       {

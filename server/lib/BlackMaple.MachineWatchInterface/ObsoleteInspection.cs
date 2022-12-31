@@ -49,6 +49,5 @@ namespace BlackMaple.MachineWatchInterface
       _inspections.Add(insp);
 #pragma warning restore CS0612
     }
-
   }
 }

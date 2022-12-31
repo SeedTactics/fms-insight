@@ -15,16 +15,25 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 {
   public class TestDebug
   {
-
     public class PalletLocConverter : JsonConverter<PalletLocation>
     {
-      public override PalletLocation ReadJson(JsonReader reader, Type objectType, PalletLocation? existingValue, bool hasExistingValue, JsonSerializer serializer)
+      public override PalletLocation ReadJson(
+        JsonReader reader,
+        Type objectType,
+        PalletLocation? existingValue,
+        bool hasExistingValue,
+        JsonSerializer serializer
+      )
       {
         var j = JObject.Load(reader);
         var loc = j.Value<string>("Location")!;
         var statGroup = j.Value<string>("StationGroup")!;
         var num = j.Value<int>("Num");
-        return new PalletLocation((PalletLocationEnum)Enum.Parse(typeof(PalletLocationEnum), loc), statGroup, num);
+        return new PalletLocation(
+          (PalletLocationEnum)Enum.Parse(typeof(PalletLocationEnum), loc),
+          statGroup,
+          num
+        );
       }
 
       public override void WriteJson(JsonWriter writer, PalletLocation? value, JsonSerializer serializer)
@@ -44,8 +53,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         if (assemblyName == null)
         {
-          var t = Type.GetType("BlackMaple.FMSInsight.Niigata." + typeName + ", BlackMaple.FMSInsight.Niigata");
-          if (t != null) return t;
+          var t = Type.GetType(
+            "BlackMaple.FMSInsight.Niigata." + typeName + ", BlackMaple.FMSInsight.Niigata"
+          );
+          if (t != null)
+            return t;
           t = Type.GetType("BlackMaple.MachineWatchInterface." + typeName + ", BlackMaple.MachineFramework")!;
           return t;
         }
@@ -63,7 +75,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public static (CellState, NiigataStationNames) LoadFromFMSInsightDir(string directory, string timestamp)
     {
-      var lastDebugFile = Directory.GetFiles(directory, "fmsinsight-debug*.txt").OrderByDescending(f => f).First();
+      var lastDebugFile = Directory
+        .GetFiles(directory, "fmsinsight-debug*.txt")
+        .OrderByDescending(f => f)
+        .First();
 
       NiigataStatus? niigataSt = null;
       using (var f = File.OpenText(lastDebugFile))
@@ -73,20 +88,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           var line = f.ReadLine();
           if (line != null && line.Contains($"\"@t\":\"{timestamp}\""))
           {
-            niigataSt = JsonConvert.DeserializeObject<LoadedPalletsDebugLine>(
-             line,
-             new JsonSerializerSettings()
-             {
-               TypeNameHandling = TypeNameHandling.All,
-               MetadataPropertyHandling = MetadataPropertyHandling.ReadAhead,
-               SerializationBinder = new NiigataNameConverter(),
-               Converters = new[] { new PalletLocConverter() }
-             }
-           )?.status;
+            niigataSt = JsonConvert
+              .DeserializeObject<LoadedPalletsDebugLine>(
+                line,
+                new JsonSerializerSettings()
+                {
+                  TypeNameHandling = TypeNameHandling.All,
+                  MetadataPropertyHandling = MetadataPropertyHandling.ReadAhead,
+                  SerializationBinder = new NiigataNameConverter(),
+                  Converters = new[] { new PalletLocConverter() }
+                }
+              )
+              ?.status;
             break;
           }
         }
-
       }
       if (niigataSt == null)
       {
@@ -105,20 +121,31 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           reclampNames = line.Split('=', 2)[1].Split(',').Select(s => s.Trim()).ToArray();
         }
-
       }
       var names = new NiigataStationNames()
       {
         ReclampGroupNames = new HashSet<string>(reclampNames ?? Enumerable.Empty<string>()),
-        IccMachineToJobMachNames = (machNames ?? Enumerable.Empty<string>()).Select((machName, idx) =>
-        {
-          var group = new string(machName.Reverse().SkipWhile(char.IsDigit).Reverse().ToArray());
-          var num = int.Parse(machName.Substring(group.Length));
-          return new { iccMc = idx + 1, group = group, num = num };
-        }).ToDictionary(x => x.iccMc, x => (group: x.group, num: x.num))
+        IccMachineToJobMachNames = (machNames ?? Enumerable.Empty<string>())
+          .Select(
+            (machName, idx) =>
+            {
+              var group = new string(machName.Reverse().SkipWhile(char.IsDigit).Reverse().ToArray());
+              var num = int.Parse(machName.Substring(group.Length));
+              return new
+              {
+                iccMc = idx + 1,
+                group = group,
+                num = num
+              };
+            }
+          )
+          .ToDictionary(x => x.iccMc, x => (group: x.group, num: x.num))
       };
 
-      var repoCfg = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), Path.Combine(directory, "niigatalog.db"));
+      var repoCfg = RepositoryConfig.InitializeEventDatabase(
+        new SerialSettings(),
+        Path.Combine(directory, "niigatalog.db")
+      );
       using var repo = repoCfg.OpenConnection();
 
       var convert = new CreateCellState(new FMSSettings(), names, null);

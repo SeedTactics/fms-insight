@@ -59,7 +59,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       _output = o;
 
-      _serialSt = new SerialSettings() { SerialType = SerialType.AssignOneSerialPerMaterial, ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10) };
+      _serialSt = new SerialSettings()
+      {
+        SerialType = SerialType.AssignOneSerialPerMaterial,
+        ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
+      };
       _fmsSt = new FMSSettings();
       _fmsSt.Queues.Add("Transfer", new QueueSize() { MaxSizeBeforeStopUnloading = -1 });
       _fmsSt.Queues.Add("sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1 });
@@ -74,23 +78,35 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       jsonSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
     }
 
-    private void InitSim(NiigataStationNames statNames, int numPals = 10, int numMachines = 6, int numLoads = 2)
+    private void InitSim(
+      NiigataStationNames statNames,
+      int numPals = 10,
+      int numMachines = 6,
+      int numLoads = 2
+    )
     {
-
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
-      var assign = new MultiPalletAssign(new IAssignPallets[] {
-        new AssignNewRoutesOnPallets(statNames),
-        new SizedQueues(_fmsSt.Queues)
-      });
+      var assign = new MultiPalletAssign(
+        new IAssignPallets[] { new AssignNewRoutesOnPallets(statNames), new SizedQueues(_fmsSt.Queues) }
+      );
       var createLog = new CreateCellState(_fmsSt, statNames, machConn);
 
-      _sim = new IccSimulator(numPals: numPals, numMachines: numMachines, numLoads: numLoads, statNames: statNames);
+      _sim = new IccSimulator(
+        numPals: numPals,
+        numMachines: numMachines,
+        numLoads: numLoads,
+        statNames: statNames
+      );
 
       _sync = new SyncNiigataPallets(_sim, createLog, assign);
 
       _sim.OnNewProgram += (newprog) =>
-        _logDB.SetCellControllerProgramForProgram(newprog.ProgramName, newprog.ProgramRevision, newprog.ProgramNum.ToString());
+        _logDB.SetCellControllerProgramForProgram(
+          newprog.ProgramName,
+          newprog.ProgramRevision,
+          newprog.ProgramNum.ToString()
+        );
     }
 
     public void Dispose()
@@ -120,7 +136,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       using (var logMonitor = _logDBCfg.Monitor())
       {
         Synchronize();
-        return logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
+        return logMonitor.OccurredEvents
+          .Where(e => e.EventName == "NewLogEntry")
+          .Select(e => e.Parameters[0])
+          .Cast<LogEntry>();
       }
     }
 
@@ -160,7 +179,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var output = new System.Text.StringBuilder();
       foreach (var e in es)
       {
-        Action writeMat = () => output.AppendJoin(',', e.Material.Select(m => m.PartName + "-" + m.Process.ToString() + "[" + m.MaterialID.ToString() + "]"));
+        Action writeMat = () =>
+          output.AppendJoin(
+            ',',
+            e.Material.Select(
+              m => m.PartName + "-" + m.Process.ToString() + "[" + m.MaterialID.ToString() + "]"
+            )
+          );
         switch (e.LogType)
         {
           case LogType.LoadUnloadCycle:
@@ -181,13 +206,23 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           case LogType.MachineCycle:
             if (e.StartOfCycle)
             {
-              output.AppendFormat("Machine-Start on {0} at MC{1} of {2} for ", e.Pallet, e.LocationNum, e.Program);
+              output.AppendFormat(
+                "Machine-Start on {0} at MC{1} of {2} for ",
+                e.Pallet,
+                e.LocationNum,
+                e.Program
+              );
               writeMat();
               output.AppendLine();
             }
             else
             {
-              output.AppendFormat("Machine-End on {0} at MC{1} of {2} for ", e.Pallet, e.LocationNum, e.Program);
+              output.AppendFormat(
+                "Machine-End on {0} at MC{1} of {2} for ",
+                e.Pallet,
+                e.LocationNum,
+                e.Program
+              );
               writeMat();
               output.AppendLine();
             }
@@ -215,20 +250,25 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private void AddJobs(ImmutableList<Job> jobs, IEnumerable<(string prog, long rev)> progs)
     {
-      AddJobs(new NewJobs()
-      {
-        Jobs = jobs,
-        ScheduleId = "theschId",
-        Programs =
-            progs.Select(p =>
-            new MachineFramework.NewProgramContent()
-            {
-              ProgramName = p.prog,
-              Revision = p.rev,
-              Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
-              ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
-            }).ToImmutableList()
-      });
+      AddJobs(
+        new NewJobs()
+        {
+          Jobs = jobs,
+          ScheduleId = "theschId",
+          Programs = progs
+            .Select(
+              p =>
+                new MachineFramework.NewProgramContent()
+                {
+                  ProgramName = p.prog,
+                  Revision = p.rev,
+                  Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
+                  ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
+                }
+            )
+            .ToImmutableList()
+        }
+      );
     }
 
     private void ExpectNewRoute()
@@ -236,7 +276,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       using (var logMonitor = _logDBCfg.Monitor())
       {
         Synchronize();
-        var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
+        var evts = logMonitor.OccurredEvents
+          .Where(e => e.EventName == "NewLogEntry")
+          .Select(e => e.Parameters[0])
+          .Cast<LogEntry>();
         evts.Count(e => e.Result == "New Niigata Route").Should().BePositive();
       }
     }
@@ -249,20 +292,33 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Synchronize();
         if (expectNewRoute)
         {
-          var evts = logMonitor.OccurredEvents.Where(e => e.EventName == "NewLogEntry").Select(e => e.Parameters[0]).Cast<LogEntry>();
+          var evts = logMonitor.OccurredEvents
+            .Where(e => e.EventName == "NewLogEntry")
+            .Select(e => e.Parameters[0])
+            .Cast<LogEntry>();
           evts.Count(e => e.Result == "New Niigata Route").Should().BePositive();
         }
       }
     }
 
-    private void CheckSingleMaterial(IEnumerable<LogEntry> logs,
-        long matId, string uniq, string part, int numProc, int[][] pals, string queue = null, bool[] reclamp = null,
-        string[][] machGroups = null, string castingQueue = null, (string prog, long rev)[][] progs = null
+    private void CheckSingleMaterial(
+      IEnumerable<LogEntry> logs,
+      long matId,
+      string uniq,
+      string part,
+      int numProc,
+      int[][] pals,
+      string queue = null,
+      bool[] reclamp = null,
+      string[][] machGroups = null,
+      string castingQueue = null,
+      (string prog, long rev)[][] progs = null
     )
     {
-      var matLogs = logs.Where(e =>
-        e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound
-      ).ToList();
+      var matLogs = logs.Where(
+          e => e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound
+        )
+        .ToList();
       matLogs.Should().BeInAscendingOrder(e => e.EndTimeUTC);
 
       machGroups = machGroups ?? Enumerable.Range(1, numProc).Select(_ => new string[] { "MC" }).ToArray();
@@ -417,29 +473,35 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void OneProcJob()
     {
-      InitSim(new NiigataStationNames()
-      {
-        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
-        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "TestMC", num: mc + 100))
-      });
+      InitSim(
+        new NiigataStationNames()
+        {
+          ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+          IccMachineToJobMachNames = Enumerable
+            .Range(1, 6)
+            .ToDictionary(mc => mc, mc => (group: "TestMC", num: mc + 100))
+        }
+      );
 
-      var j = FakeIccDsl.CreateOneProcOnePathJob(
-        unique: "uniq1",
-        part: "part1",
-        qty: 3,
-        priority: 1,
-        partsPerPal: 1,
-        pals: new[] { 1, 2 },
-        fixture: "fix1",
-        face: 1,
-        luls: new[] { 1 },
-        loadMins: 8,
-        machs: new[] { 5, 6 },
-        machMins: 14,
-        prog: "prog111",
-        progRev: null,
-        unloadMins: 5
-      ).Item1;
+      var j = FakeIccDsl
+        .CreateOneProcOnePathJob(
+          unique: "uniq1",
+          part: "part1",
+          qty: 3,
+          priority: 1,
+          partsPerPal: 1,
+          pals: new[] { 1, 2 },
+          fixture: "fix1",
+          face: 1,
+          luls: new[] { 1 },
+          loadMins: 8,
+          machs: new[] { 5, 6 },
+          machMins: 14,
+          prog: "prog111",
+          progRev: null,
+          unloadMins: 5
+        )
+        .Item1;
 
       AddJobs(new[] { j }, new[] { (prog: "prog111", rev: 5L) });
 
@@ -449,18 +511,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       byMat.Count.Should().Be(3);
       foreach (var m in byMat)
       {
-        CheckSingleMaterial(m, m.Key, "uniq1", "part1", 1, pals: new[] { new[] { 1, 2 } }, machGroups: new[] { new[] { "TestMC" } });
+        CheckSingleMaterial(
+          m,
+          m.Key,
+          "uniq1",
+          "part1",
+          1,
+          pals: new[] { new[] { 1, 2 } },
+          machGroups: new[] { new[] { "TestMC" } }
+        );
       }
     }
 
     [Fact]
     public void MultpleProcsMultiplePathsSeparatePallets()
     {
-      InitSim(new NiigataStationNames()
-      {
-        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
-        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
-      });
+      InitSim(
+        new NiigataStationNames()
+        {
+          ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+          IccMachineToJobMachNames = Enumerable
+            .Range(1, 6)
+            .ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+        }
+      );
 
       var j = new Job()
       {
@@ -482,13 +556,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Fixture = "fix1",
                 Face = 1,
                 OutputQueue = "transQ",
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(5, 6),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(14),
-                  Program = "1111"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(5, 6),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(14),
+                    Program = "1111"
+                  }
+                )
               },
               new ProcPathInfo()
               {
@@ -501,15 +577,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Fixture = "fix1",
                 Face = 1,
                 OutputQueue = "transQ",
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(3, 4),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(12),
-                  Program = "3333"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(3, 4),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(12),
+                    Program = "3333"
+                  }
+                )
               }
-              )
+            )
           },
           new ProcessInfo()
           {
@@ -525,13 +603,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Fixture = "fix2",
                 Face = 1,
                 InputQueue = "transQ",
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(1, 2),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(19),
-                  Program = "2222"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(1, 2),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(19),
+                    Program = "2222"
+                  }
+                )
               },
               new ProcPathInfo()
               {
@@ -544,16 +624,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Fixture = "fix2",
                 Face = 1,
                 InputQueue = "transQ",
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(1, 2),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(16),
-                  Program = "4444"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(1, 2),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(16),
+                    Program = "4444"
+                  }
+                )
               }
-              )
-          })
+            )
+          }
+        )
       };
 
       AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
@@ -577,25 +660,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             part: "part1",
             numProc: 2,
             queue: "transQ",
-            pals:
-              path.Key
-                ? new[] { new[] { 1, 2 }, new[] { 3, 4, 7, 8 } }
-                : new[] { new[] { 5, 6 }, new[] { 3, 4, 7, 8 } }
+            pals: path.Key
+              ? new[] { new[] { 1, 2 }, new[] { 3, 4, 7, 8 } }
+              : new[] { new[] { 5, 6 }, new[] { 3, 4, 7, 8 } }
           );
         }
       }
-
     }
 
     [Fact]
     public void MultipleProcsMultiplePathsSamePallet()
     {
-      InitSim(new NiigataStationNames()
-      {
-        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
-        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
-      });
-
+      InitSim(
+        new NiigataStationNames()
+        {
+          ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+          IccMachineToJobMachNames = Enumerable
+            .Range(1, 6)
+            .ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+        }
+      );
 
       var j = new Job()
       {
@@ -616,13 +700,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Pallets = ImmutableList.Create("1", "2"),
                 Fixture = "fix1",
                 Face = 1,
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(5, 6),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(14),
-                  Program = "1111"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(5, 6),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(14),
+                    Program = "1111"
+                  }
+                )
               },
               new ProcPathInfo()
               {
@@ -634,15 +720,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Pallets = ImmutableList.Create("3", "4"),
                 Fixture = "fix1",
                 Face = 1,
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(5, 6),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(12),
-                  Program = "3333"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(5, 6),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(12),
+                    Program = "3333"
+                  }
+                )
               }
-              )
+            )
           },
           new ProcessInfo()
           {
@@ -657,13 +745,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Pallets = ImmutableList.Create("1", "2"),
                 Fixture = "fix1",
                 Face = 2,
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(5, 6),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(19),
-                  Program = "2222"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(5, 6),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(19),
+                    Program = "2222"
+                  }
+                )
               },
               new ProcPathInfo()
               {
@@ -675,16 +765,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Pallets = ImmutableList.Create("3", "4"),
                 Fixture = "fix1",
                 Face = 2,
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(5, 6),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(16),
-                  Program = "4444"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(5, 6),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(16),
+                    Program = "4444"
+                  }
+                )
               }
-              )
-          })
+            )
+          }
+        )
       };
 
       AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
@@ -694,10 +787,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var matIds = logs.SelectMany(e => e.Material).Select(m => m.MaterialID).ToHashSet();
       matIds.Count.Should().Be(14);
 
-      var byPath =
-        matIds
-          .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
-          .ToLookup(mat => (new[] { "1", "2" }).Contains(mat.logs.Skip(1).First().Pallet));
+      var byPath = matIds
+        .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
+        .ToLookup(mat => (new[] { "1", "2" }).Contains(mat.logs.Skip(1).First().Pallet));
       byPath[true].Count().Should().BeGreaterThan(0); // true is pallets 1 or 2, path 1
       byPath[false].Count().Should().BeGreaterThan(0); // false is pallets 3 or 4, path 2
 
@@ -711,25 +803,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             uniq: "uniq1",
             part: "part1",
             numProc: 2,
-            pals:
-              path.Key
-                ? new[] { new[] { 1, 2 }, new[] { 1, 2 } }
-                : new[] { new[] { 3, 4 }, new[] { 3, 4 } }
+            pals: path.Key
+              ? new[] { new[] { 1, 2 }, new[] { 1, 2 } }
+              : new[] { new[] { 3, 4 }, new[] { 3, 4 } }
           );
         }
       }
-
-
     }
 
     [Fact(Skip = "Holding at machine not yet supported by Niigata")]
     public void SizedQueue()
     {
-      InitSim(new NiigataStationNames()
-      {
-        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
-        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
-      });
+      InitSim(
+        new NiigataStationNames()
+        {
+          ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+          IccMachineToJobMachNames = Enumerable
+            .Range(1, 6)
+            .ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+        }
+      );
 
       var j = new Job()
       {
@@ -752,15 +845,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Fixture = "fix1",
                 Face = 1,
                 OutputQueue = "sizedQ",
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(5),
-                  Program = "1111"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(5),
+                    Program = "1111"
+                  }
+                )
               }
-              )
+            )
           },
           new ProcessInfo()
           {
@@ -777,16 +872,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Fixture = "fix2",
                 Face = 1,
                 InputQueue = "sizedQ",
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(20),
-                  Program = "2222"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(20),
+                    Program = "2222"
+                  }
+                )
               }
-              )
-          })
+            )
+          }
+        )
       };
 
       AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
@@ -797,7 +895,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       byMat.Count.Should().Be(8);
       foreach (var m in byMat)
       {
-        CheckSingleMaterial(m, m.Key, "uniq1", "part1", 2, pals: new[] { new[] { 1, 2, 3, 4 }, new[] { 5, 6 } }, queue: "sizedQ");
+        CheckSingleMaterial(
+          m,
+          m.Key,
+          "uniq1",
+          "part1",
+          2,
+          pals: new[] { new[] { 1, 2, 3, 4 }, new[] { 5, 6 } },
+          queue: "sizedQ"
+        );
       }
 
       CheckMaxQueueSize(logs, "sizedQ", 1);
@@ -806,11 +912,15 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void SizedQueueWithReclamp()
     {
-      InitSim(new NiigataStationNames()
-      {
-        ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
-        IccMachineToJobMachNames = Enumerable.Range(1, 6).ToDictionary(mc => mc, mc => (group: "MC", num: mc))
-      });
+      InitSim(
+        new NiigataStationNames()
+        {
+          ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+          IccMachineToJobMachNames = Enumerable
+            .Range(1, 6)
+            .ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+        }
+      );
 
       var j = new Job()
       {
@@ -849,7 +959,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   }
                 )
               }
-              )
+            )
           },
           new ProcessInfo()
           {
@@ -866,16 +976,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Fixture = "fix2",
                 Face = 1,
                 InputQueue = "sizedQ",
-                Stops = ImmutableList.Create(new MachiningStop()
-                {
-                  StationGroup = "MC",
-                  Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
-                  ExpectedCycleTime = TimeSpan.FromMinutes(20),
-                  Program = "2222"
-                })
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
+                  {
+                    StationGroup = "MC",
+                    Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
+                    ExpectedCycleTime = TimeSpan.FromMinutes(20),
+                    Program = "2222"
+                  }
+                )
               }
-              )
-          })
+            )
+          }
+        )
       };
 
       AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
@@ -886,10 +999,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       byMat.Count.Should().Be(4);
       foreach (var m in byMat)
       {
-        CheckSingleMaterial(m, m.Key, "uniq1", "part1", 2,
+        CheckSingleMaterial(
+          m,
+          m.Key,
+          "uniq1",
+          "part1",
+          2,
           pals: new[] { new[] { 1, 2, 3, 4 }, new[] { 5, 6 } },
           queue: "sizedQ",
-          reclamp: new[] { true, false });
+          reclamp: new[] { true, false }
+        );
       }
 
       CheckMaxQueueSize(logs, "sizedQ", 1);
@@ -898,28 +1017,33 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void TwoMachineStops()
     {
-      InitSim(new NiigataStationNames()
-      {
-        ReclampGroupNames = new HashSet<string>() { },
-        IccMachineToJobMachNames = new Dictionary<int, (string group, int num)> {
-    {1, (group: "RO", num: 1)},
-    {2, (group: "RO", num: 2)},
-    {3, (group: "RO", num: 3)},
-    {4, (group: "RO", num: 4)},
-    {5, (group: "FC", num: 1)},
-    {6, (group: "FC", num: 2)},
-    {7, (group: "FC", num: 3)},
-    {8, (group: "FC", num: 4)},
-  }
-      },
-      numPals: 16,
-      numLoads: 4,
-      numMachines: 8);
+      InitSim(
+        new NiigataStationNames()
+        {
+          ReclampGroupNames = new HashSet<string>() { },
+          IccMachineToJobMachNames = new Dictionary<int, (string group, int num)>
+          {
+            { 1, (group: "RO", num: 1) },
+            { 2, (group: "RO", num: 2) },
+            { 3, (group: "RO", num: 3) },
+            { 4, (group: "RO", num: 4) },
+            { 5, (group: "FC", num: 1) },
+            { 6, (group: "FC", num: 2) },
+            { 7, (group: "FC", num: 3) },
+            { 8, (group: "FC", num: 4) },
+          }
+        },
+        numPals: 16,
+        numLoads: 4,
+        numMachines: 8
+      );
 
-      AddJobs(Newtonsoft.Json.JsonConvert.DeserializeObject<NewJobs>(
-        System.IO.File.ReadAllText("../../../sample-newjobs/two-stops.json"),
-        jsonSettings
-      ));
+      AddJobs(
+        Newtonsoft.Json.JsonConvert.DeserializeObject<NewJobs>(
+          System.IO.File.ReadAllText("../../../sample-newjobs/two-stops.json"),
+          jsonSettings
+        )
+      );
 
       var logs = Run();
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
@@ -934,23 +1058,20 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           part: "aaa",
           numProc: 4,
           queue: "Transfer",
-          pals: new[] {
-      new[] { 2, 3, 4 },
-      new[] { 5, 6, 7, 8, 9, 10 },
-      new[] { 12, 13, 14, 15, 16},
-      new[] { 11 }
+          pals: new[]
+          {
+            new[] { 2, 3, 4 },
+            new[] { 5, 6, 7, 8, 9, 10 },
+            new[] { 12, 13, 14, 15, 16 },
+            new[] { 11 }
           },
-          machGroups: new[] {
-      new[] { "RO"},
-      new[] { "RO", "FC"},
-      new[] { "FC"},
-      new[] {"RO"}
-          },
-          progs: new[] {
-      new[] { (prog: "aaa1RO", rev: 1L) },
-      new[] { (prog: "aaa2RO", rev: 1L), (prog: "aaa2FC", rev: 1L) },
-      new[] { (prog: "aaa3FC", rev: 1L) },
-      new[] { (prog: "aaa4RO", rev: 1L) },
+          machGroups: new[] { new[] { "RO" }, new[] { "RO", "FC" }, new[] { "FC" }, new[] { "RO" } },
+          progs: new[]
+          {
+            new[] { (prog: "aaa1RO", rev: 1L) },
+            new[] { (prog: "aaa2RO", rev: 1L), (prog: "aaa2FC", rev: 1L) },
+            new[] { (prog: "aaa3FC", rev: 1L) },
+            new[] { (prog: "aaa4RO", rev: 1L) },
           }
         );
       }
@@ -959,23 +1080,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     [Fact]
     public void PerMaterialWorkorderPrograms()
     {
-      InitSim(new NiigataStationNames()
-      {
-        ReclampGroupNames = new HashSet<string>() { },
-        IccMachineToJobMachNames = new Dictionary<int, (string group, int num)> {
-    {1, (group: "RO", num: 1)},
-    {2, (group: "RO", num: 2)},
-    {3, (group: "RO", num: 3)},
-    {4, (group: "RO", num: 4)},
-    {5, (group: "FC", num: 1)},
-    {6, (group: "FC", num: 2)},
-    {7, (group: "FC", num: 3)},
-    {8, (group: "FC", num: 4)},
-  }
-      },
-      numPals: 16,
-      numLoads: 4,
-      numMachines: 8);
+      InitSim(
+        new NiigataStationNames()
+        {
+          ReclampGroupNames = new HashSet<string>() { },
+          IccMachineToJobMachNames = new Dictionary<int, (string group, int num)>
+          {
+            { 1, (group: "RO", num: 1) },
+            { 2, (group: "RO", num: 2) },
+            { 3, (group: "RO", num: 3) },
+            { 4, (group: "RO", num: 4) },
+            { 5, (group: "FC", num: 1) },
+            { 6, (group: "FC", num: 2) },
+            { 7, (group: "FC", num: 3) },
+            { 8, (group: "FC", num: 4) },
+          }
+        },
+        numPals: 16,
+        numLoads: 4,
+        numMachines: 8
+      );
 
       var newJobs = Newtonsoft.Json.JsonConvert.DeserializeObject<NewJobs>(
         System.IO.File.ReadAllText("../../../sample-newjobs/two-stops.json"),
@@ -985,52 +1109,147 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         for (int jobIdx = 0; jobIdx < j.Jobs.Count; jobIdx++)
         {
-          j.Jobs[jobIdx] %= draftJob => draftJob.AdjustAllPaths((proc, path, draftPath) =>
-          {
-            if (proc == 1)
-            {
-              draftPath.InputQueue = "castingQ";
-            }
-            draftPath.Stops.AdjustAll(d =>
-      {
-        d.Program = null;
-        d.ProgramRevision = null;
-      });
-          });
+          j.Jobs[jobIdx] %= draftJob =>
+            draftJob.AdjustAllPaths(
+              (proc, path, draftPath) =>
+              {
+                if (proc == 1)
+                {
+                  draftPath.InputQueue = "castingQ";
+                }
+                draftPath.Stops.AdjustAll(d =>
+                {
+                  d.Program = null;
+                  d.ProgramRevision = null;
+                });
+              }
+            );
         }
-        j.CurrentUnfilledWorkorders.AddRange(new[] {
-    new Workorder()
-    {
-      WorkorderId = "work1",
-      Part = "aaa",
-      Programs = ImmutableList.Create(
-      new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -1 },
-      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -1 },
-      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -1 },
-      new ProgramForJobStep() { ProcessNumber = 3, ProgramName = "aaa3FC", Revision = -1 },
-      new ProgramForJobStep() { ProcessNumber = 4, ProgramName = "aaa4RO", Revision = -1 }
-    )
-    },
-    new Workorder()
-    {
-      WorkorderId = "work2",
-      Part = "aaa",
-      Programs = ImmutableList.Create(
-      new ProgramForJobStep() { ProcessNumber = 1, StopIndex = 0, ProgramName = "aaa1RO", Revision = -2 },
-      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 0, ProgramName = "aaa2RO", Revision = -2 },
-      new ProgramForJobStep() { ProcessNumber = 2, StopIndex = 1, ProgramName = "aaa2FC", Revision = -2 },
-      new ProgramForJobStep() { ProcessNumber = 3, ProgramName = "zzz3FC", Revision = -1 },
-      new ProgramForJobStep() { ProcessNumber = 4, ProgramName = "zzz4RO", Revision = -1 }
-    )
-    }
-        });
-        j.Programs.AddRange(new[] {
-    new MachineFramework.NewProgramContent() { ProgramName = "aaa1RO", Revision = -2, Comment = "a 1 RO rev -2", ProgramContent = "aa 1 RO rev-2"},
-    new MachineFramework.NewProgramContent() { ProgramName = "aaa2RO", Revision = -2, Comment = "a 2 RO rev -2", ProgramContent = "aa 2 RO rev-2"},
-    new MachineFramework.NewProgramContent() { ProgramName = "aaa2FC", Revision = -2, Comment = "a 2 FC rev -2", ProgramContent = "aa 2 FC rev-2"},
-    new MachineFramework.NewProgramContent() { ProgramName = "zzz3FC", Revision = -1, Comment = "z 3 RO rev -1", ProgramContent = "zz 3 FC rev-1"},
-    new MachineFramework.NewProgramContent() { ProgramName = "zzz4RO", Revision = -1, Comment = "z 4 RO rev -1", ProgramContent = "zz 4 RO rev-1"},
-        });
+        j.CurrentUnfilledWorkorders.AddRange(
+          new[]
+          {
+            new Workorder()
+            {
+              WorkorderId = "work1",
+              Part = "aaa",
+              Programs = ImmutableList.Create(
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 1,
+                  StopIndex = 0,
+                  ProgramName = "aaa1RO",
+                  Revision = -1
+                },
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 2,
+                  StopIndex = 0,
+                  ProgramName = "aaa2RO",
+                  Revision = -1
+                },
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 2,
+                  StopIndex = 1,
+                  ProgramName = "aaa2FC",
+                  Revision = -1
+                },
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 3,
+                  ProgramName = "aaa3FC",
+                  Revision = -1
+                },
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 4,
+                  ProgramName = "aaa4RO",
+                  Revision = -1
+                }
+              )
+            },
+            new Workorder()
+            {
+              WorkorderId = "work2",
+              Part = "aaa",
+              Programs = ImmutableList.Create(
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 1,
+                  StopIndex = 0,
+                  ProgramName = "aaa1RO",
+                  Revision = -2
+                },
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 2,
+                  StopIndex = 0,
+                  ProgramName = "aaa2RO",
+                  Revision = -2
+                },
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 2,
+                  StopIndex = 1,
+                  ProgramName = "aaa2FC",
+                  Revision = -2
+                },
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 3,
+                  ProgramName = "zzz3FC",
+                  Revision = -1
+                },
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 4,
+                  ProgramName = "zzz4RO",
+                  Revision = -1
+                }
+              )
+            }
+          }
+        );
+        j.Programs.AddRange(
+          new[]
+          {
+            new MachineFramework.NewProgramContent()
+            {
+              ProgramName = "aaa1RO",
+              Revision = -2,
+              Comment = "a 1 RO rev -2",
+              ProgramContent = "aa 1 RO rev-2"
+            },
+            new MachineFramework.NewProgramContent()
+            {
+              ProgramName = "aaa2RO",
+              Revision = -2,
+              Comment = "a 2 RO rev -2",
+              ProgramContent = "aa 2 RO rev-2"
+            },
+            new MachineFramework.NewProgramContent()
+            {
+              ProgramName = "aaa2FC",
+              Revision = -2,
+              Comment = "a 2 FC rev -2",
+              ProgramContent = "aa 2 FC rev-2"
+            },
+            new MachineFramework.NewProgramContent()
+            {
+              ProgramName = "zzz3FC",
+              Revision = -1,
+              Comment = "z 3 RO rev -1",
+              ProgramContent = "zz 3 FC rev-1"
+            },
+            new MachineFramework.NewProgramContent()
+            {
+              ProgramName = "zzz4RO",
+              Revision = -1,
+              Comment = "z 4 RO rev -1",
+              ProgramContent = "zz 4 RO rev-1"
+            },
+          }
+        );
       };
 
       AddJobs(newJobs, expectNewRoute: false); // no route yet because no material
@@ -1041,7 +1260,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var m = _logDB.AllocateMaterialIDForCasting("aaa");
         _logDB.RecordWorkorderForMaterialID(m, 0, i % 2 == 0 ? "work1" : "work2");
-        _logDB.RecordAddMaterialToQueue(new EventLogMaterial() { MaterialID = m, Process = 0, Face = "" }, "castingQ", -1, "theoperator", "testsuite", addTime);
+        _logDB.RecordAddMaterialToQueue(
+          new EventLogMaterial()
+          {
+            MaterialID = m,
+            Process = 0,
+            Face = ""
+          },
+          "castingQ",
+          -1,
+          "theoperator",
+          "testsuite",
+          addTime
+        );
       }
 
       ExpectNewRoute();
@@ -1060,49 +1291,53 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           numProc: 4,
           castingQueue: "castingQ",
           queue: "Transfer",
-          pals: new[] {
-      new[] { 2, 3, 4 },
-      new[] { 5, 6, 7, 8, 9, 10 },
-      new[] { 12, 13, 14, 15, 16},
-      new[] { 11 }
+          pals: new[]
+          {
+            new[] { 2, 3, 4 },
+            new[] { 5, 6, 7, 8, 9, 10 },
+            new[] { 12, 13, 14, 15, 16 },
+            new[] { 11 }
           },
-          machGroups: new[] {
-      new[] { "RO"},
-      new[] { "RO", "FC"},
-      new[] { "FC"},
-      new[] {"RO"}
-          },
+          machGroups: new[] { new[] { "RO" }, new[] { "RO", "FC" }, new[] { "FC" }, new[] { "RO" } },
           progs: m.Key % 2 == 1 // material ids start at 1, so odd is first
-            ? new[] {
-    new[] { (prog: "aaa1RO", rev: 1L) },
-    new[] { (prog: "aaa2RO", rev: 1L), (prog: "aaa2FC", rev: 1L) },
-    new[] { (prog: "aaa3FC", rev: 1L) },
-    new[] { (prog: "aaa4RO", rev: 1L) },
-              }
-            : new[] {
-    new[] { (prog: "aaa1RO", rev: 2L) },
-    new[] { (prog: "aaa2RO", rev: 2L), (prog: "aaa2FC", rev: 2L) },
-    new[] { (prog: "zzz3FC", rev: 1L) },
-    new[] { (prog: "zzz4RO", rev: 1L) },
-              }
+            ? new[]
+            {
+              new[] { (prog: "aaa1RO", rev: 1L) },
+              new[] { (prog: "aaa2RO", rev: 1L), (prog: "aaa2FC", rev: 1L) },
+              new[] { (prog: "aaa3FC", rev: 1L) },
+              new[] { (prog: "aaa4RO", rev: 1L) },
+            }
+            : new[]
+            {
+              new[] { (prog: "aaa1RO", rev: 2L) },
+              new[] { (prog: "aaa2RO", rev: 2L), (prog: "aaa2FC", rev: 2L) },
+              new[] { (prog: "zzz3FC", rev: 1L) },
+              new[] { (prog: "zzz4RO", rev: 1L) },
+            }
         );
       }
 
-      _logDB.GetMaterialInAllQueues().Should().BeEquivalentTo(new[] {
-        new QueuedMaterial() {
-          MaterialID = 10,
-          Queue = "castingQ",
-          Position = 0,
-          Unique = "",
-          Workorder = "work2",
-          NextProcess = 1,
-          Paths = ImmutableDictionary<int, int>.Empty,
-          PartNameOrCasting = "aaa",
-          NumProcesses = 1,
-          AddTimeUTC = addTime
-        }
-      });
+      _logDB
+        .GetMaterialInAllQueues()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new QueuedMaterial()
+            {
+              MaterialID = 10,
+              Queue = "castingQ",
+              Position = 0,
+              Unique = "",
+              Workorder = "work2",
+              NextProcess = 1,
+              Paths = ImmutableDictionary<int, int>.Empty,
+              PartNameOrCasting = "aaa",
+              NumProcesses = 1,
+              AddTimeUTC = addTime
+            }
+          }
+        );
     }
-
   }
 }

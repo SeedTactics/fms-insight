@@ -37,7 +37,9 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class RoutingInfo : BlackMaple.MachineFramework.IJobControl, BlackMaple.MachineFramework.IQueueControl
+  public class RoutingInfo
+    : BlackMaple.MachineFramework.IJobControl,
+      BlackMaple.MachineFramework.IQueueControl
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<RoutingInfo>();
 
@@ -121,7 +123,15 @@ namespace MazakMachineInterface
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
 
-      var st = MazakMachineInterface.BuildCurrentStatus.Build(eventLogDB, fmsSettings, _machineGroupName, queueFault, readDatabase.MazakType, mazakData, DateTime.UtcNow);
+      var st = MazakMachineInterface.BuildCurrentStatus.Build(
+        eventLogDB,
+        fmsSettings,
+        _machineGroupName,
+        queueFault,
+        readDatabase.MazakType,
+        mazakData,
+        DateTime.UtcNow
+      );
       if (_mazakCfg != null && _mazakCfg.AdjustCurrentStatus != null)
       {
         st = _mazakCfg.AdjustCurrentStatus(eventLogDB, st);
@@ -133,7 +143,9 @@ namespace MazakMachineInterface
 
     #region "Write Routing Info"
 
-    List<string> BlackMaple.MachineFramework.IJobControl.CheckValidRoutes(IEnumerable<BlackMaple.MachineFramework.Job> jobs)
+    List<string> BlackMaple.MachineFramework.IJobControl.CheckValidRoutes(
+      IEnumerable<BlackMaple.MachineFramework.Job> jobs
+    )
     {
       var logMessages = new List<string>();
       MazakAllData mazakData;
@@ -150,7 +162,6 @@ namespace MazakMachineInterface
       {
         OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
       }
-
 
       try
       {
@@ -180,10 +191,10 @@ namespace MazakMachineInterface
             useStartingOffsetForDueDate: _useStartingOffsetForDueDate,
             fmsSettings: fmsSettings,
             lookupProgram: lookupProg,
-            errors: logMessages);
+            errors: logMessages
+          );
 #pragma warning restore 168, 219
         }
-
       }
       catch (Exception ex)
       {
@@ -200,7 +211,11 @@ namespace MazakMachineInterface
       return logMessages;
     }
 
-    void BlackMaple.MachineFramework.IJobControl.AddJobs(NewJobs newJ, string expectedPreviousScheduleId, bool waitForCopyToCell)
+    void BlackMaple.MachineFramework.IJobControl.AddJobs(
+      NewJobs newJ,
+      string expectedPreviousScheduleId,
+      bool waitForCopyToCell
+    )
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
@@ -267,11 +282,17 @@ namespace MazakMachineInterface
       _onCurStatusChange(st);
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs)
+    public void ReplaceWorkordersForSchedule(
+      string scheduleId,
+      IEnumerable<Workorder> newWorkorders,
+      IEnumerable<NewProgramContent> programs
+    )
     {
       if (newWorkorders != null && newWorkorders.Any(w => w.Programs != null && w.Programs.Any()))
       {
-        throw new BlackMaple.MachineFramework.BadRequestException("Mazak does not support per-workorder programs");
+        throw new BlackMaple.MachineFramework.BadRequestException(
+          "Mazak does not support per-workorder programs"
+        );
       }
       using (var jdb = logDbCfg.OpenConnection())
       {
@@ -281,7 +302,9 @@ namespace MazakMachineInterface
     #endregion
 
     #region "Decrement Plan Quantity"
-    List<JobAndDecrementQuantity> BlackMaple.MachineFramework.IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
+    List<JobAndDecrementQuantity> BlackMaple.MachineFramework.IJobControl.DecrementJobQuantites(
+      long loadDecrementsStrictlyAfterDecrementId
+    )
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
@@ -303,7 +326,10 @@ namespace MazakMachineInterface
       logReader.RecheckQueues(wait: false);
       return ret;
     }
-    List<JobAndDecrementQuantity> BlackMaple.MachineFramework.IJobControl.DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
+
+    List<JobAndDecrementQuantity> BlackMaple.MachineFramework.IJobControl.DecrementJobQuantites(
+      DateTime loadDecrementsAfterTimeUTC
+    )
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
@@ -329,7 +355,12 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
-    InProcessMaterial BlackMaple.MachineFramework.IQueueControl.AddUnallocatedPartToQueue(string partName, string queue, string serial, string operatorName)
+    InProcessMaterial BlackMaple.MachineFramework.IQueueControl.AddUnallocatedPartToQueue(
+      string partName,
+      string queue,
+      string serial,
+      string operatorName
+    )
     {
       string casting = partName;
 
@@ -353,11 +384,23 @@ namespace MazakMachineInterface
         }
       }
 
-      var mats = ((BlackMaple.MachineFramework.IQueueControl)this).AddUnallocatedCastingToQueue(casting, 1, queue, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName);
+      var mats = ((BlackMaple.MachineFramework.IQueueControl)this).AddUnallocatedCastingToQueue(
+        casting,
+        1,
+        queue,
+        string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial },
+        operatorName
+      );
       return mats.FirstOrDefault();
     }
 
-    List<InProcessMaterial> BlackMaple.MachineFramework.IQueueControl.AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serial, string operatorName)
+    List<InProcessMaterial> BlackMaple.MachineFramework.IQueueControl.AddUnallocatedCastingToQueue(
+      string casting,
+      int qty,
+      string queue,
+      IList<string> serial,
+      string operatorName
+    )
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
@@ -368,7 +411,14 @@ namespace MazakMachineInterface
       HashSet<long> matIds;
       using (var logDb = logDbCfg.OpenConnection())
       {
-        var mats = logDb.BulkAddNewCastingsInQueue(casting, qty, queue, serial, operatorName, reason: "SetByOperator");
+        var mats = logDb.BulkAddNewCastingsInQueue(
+          casting,
+          qty,
+          queue,
+          serial,
+          operatorName,
+          reason: "SetByOperator"
+        );
         matIds = mats.MaterialIds;
 
         logReader.RecheckQueues(wait: true);
@@ -380,14 +430,26 @@ namespace MazakMachineInterface
       return newSt.Material.Where(m => matIds.Contains(m.MaterialID)).ToList();
     }
 
-    InProcessMaterial BlackMaple.MachineFramework.IQueueControl.AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial, string operatorName)
+    InProcessMaterial BlackMaple.MachineFramework.IQueueControl.AddUnprocessedMaterialToQueue(
+      string jobUnique,
+      int process,
+      string queue,
+      int position,
+      string serial,
+      string operatorName
+    )
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
-      Log.Debug("Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
-        jobUnique, process, queue, position, serial
+      Log.Debug(
+        "Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
+        jobUnique,
+        process,
+        queue,
+        position,
+        serial
       );
 
       CurrentStatus st;
@@ -395,10 +457,12 @@ namespace MazakMachineInterface
       using (var logDb = logDbCfg.OpenConnection())
       {
         var job = logDb.LoadJob(jobUnique);
-        if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
+        if (job == null)
+          throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
 
         int procToCheck = Math.Max(1, process);
-        if (procToCheck > job.Processes.Count) throw new BlackMaple.MachineFramework.BadRequestException("Invalid process " + process.ToString());
+        if (procToCheck > job.Processes.Count)
+          throw new BlackMaple.MachineFramework.BadRequestException("Invalid process " + process.ToString());
 
         matId = logDb.AllocateMaterialID(jobUnique, job.PartName, job.Processes.Count);
         if (!string.IsNullOrEmpty(serial))
@@ -410,7 +474,8 @@ namespace MazakMachineInterface
               Process = process,
               Face = ""
             },
-            serial);
+            serial
+          );
         }
         // the add to queue log entry will use the process, so later when we lookup the latest completed process
         // for the material in the queue, it will be correctly computed.
@@ -420,7 +485,8 @@ namespace MazakMachineInterface
           queue: queue,
           position: position,
           operatorName: operatorName,
-          reason: "SetByOperator");
+          reason: "SetByOperator"
+        );
         logDb.RecordPathForProcess(matId, Math.Max(1, process), 1);
 
         logReader.RecheckQueues(wait: true);
@@ -432,15 +498,18 @@ namespace MazakMachineInterface
       return st.Material.FirstOrDefault(m => m.MaterialID == matId);
     }
 
-    void BlackMaple.MachineFramework.IQueueControl.SetMaterialInQueue(long materialId, string queue, int position, string operatorName)
+    void BlackMaple.MachineFramework.IQueueControl.SetMaterialInQueue(
+      long materialId,
+      string queue,
+      int position,
+      string operatorName
+    )
     {
       if (!fmsSettings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
-      Log.Debug("Adding material {matId} to queue {queue} in position {pos}",
-        materialId, queue, position
-      );
+      Log.Debug("Adding material {matId} to queue {queue} in position {pos}", materialId, queue, position);
 
       CurrentStatus status;
       using (var logDb = logDbCfg.OpenConnection())
@@ -462,7 +531,10 @@ namespace MazakMachineInterface
       _onCurStatusChange(status);
     }
 
-    void BlackMaple.MachineFramework.IQueueControl.RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
+    void BlackMaple.MachineFramework.IQueueControl.RemoveMaterialFromAllQueues(
+      IList<long> materialIds,
+      string operatorName
+    )
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
 
@@ -477,7 +549,11 @@ namespace MazakMachineInterface
       _onCurStatusChange(status);
     }
 
-    void BlackMaple.MachineFramework.IQueueControl.SignalMaterialForQuarantine(long materialId, string queue, string operatorName)
+    void BlackMaple.MachineFramework.IQueueControl.SignalMaterialForQuarantine(
+      long materialId,
+      string queue,
+      string operatorName
+    )
     {
       Log.Debug("Signaling {matId} for quarantine", materialId);
       if (!fmsSettings.Queues.ContainsKey(queue))
@@ -496,11 +572,18 @@ namespace MazakMachineInterface
         }
         else if (mat.Location.Type != InProcessMaterialLocation.LocType.InQueue)
         {
-          throw new BlackMaple.MachineFramework.BadRequestException("Mazak FMS Insight does not support quarantining material on a pallet");
+          throw new BlackMaple.MachineFramework.BadRequestException(
+            "Mazak FMS Insight does not support quarantining material on a pallet"
+          );
         }
         else
         {
-          ((BlackMaple.MachineFramework.IQueueControl)this).SetMaterialInQueue(materialId, queue, -1, operatorName);
+          ((BlackMaple.MachineFramework.IQueueControl)this).SetMaterialInQueue(
+            materialId,
+            queue,
+            -1,
+            operatorName
+          );
         }
       }
     }
@@ -519,17 +602,24 @@ namespace MazakMachineInterface
           quarantineQueue: fmsSettings.QuarantineQueue
         );
 
-        OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()
-        {
-          OldMaterialID = oldMatId,
-          NewMaterialID = newMatId,
-          EditedEvents = o.ChangedLogEntries,
-        });
+        OnEditMaterialInLog?.Invoke(
+          new EditMaterialInLogEvents()
+          {
+            OldMaterialID = oldMatId,
+            NewMaterialID = newMatId,
+            EditedEvents = o.ChangedLogEntries,
+          }
+        );
         _onCurStatusChange(CurrentStatus(logDb));
       }
     }
 
-    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    public void InvalidatePalletCycle(
+      long matId,
+      int process,
+      string oldMatPutInQueue = null,
+      string operatorName = null
+    )
     {
       Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
 

@@ -20,22 +20,26 @@ namespace BlackMaple.FMSInsight.ReverseProxy
   {
     public static void Main(string[] args)
     {
-      var exeDir = System.IO.Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+      var exeDir = System.IO.Path.GetDirectoryName(
+        System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
+      );
       System.IO.Directory.SetCurrentDirectory(exeDir);
       Host.CreateDefaultBuilder(args)
-        .ConfigureServices((context, services) =>
-        {
-          services.Configure<KestrelServerOptions>(context.Configuration.GetSection("Kestrel"));
-        })
+        .ConfigureServices(
+          (context, services) =>
+          {
+            services.Configure<KestrelServerOptions>(context.Configuration.GetSection("Kestrel"));
+          }
+        )
         .UseWindowsService()
-        .ConfigureWebHostDefaults(webBuilder => webBuilder
-          .UseStartup<Startup>()
-          .UseContentRoot(exeDir) // must appear after UseWindowsService or setting is overwritten
+        .ConfigureWebHostDefaults(
+          webBuilder => webBuilder.UseStartup<Startup>().UseContentRoot(exeDir) // must appear after UseWindowsService or setting is overwritten
         )
         .Build()
         .Run();
     }
   }
+
   public class Startup
   {
     public class InsightProxyConfig
@@ -48,6 +52,7 @@ namespace BlackMaple.FMSInsight.ReverseProxy
 
     public IConfiguration Configuration { get; }
     public InsightProxyConfig ProxyConfig { get; }
+
     public Startup(IConfiguration cfg)
     {
       Configuration = cfg;
@@ -61,59 +66,48 @@ namespace BlackMaple.FMSInsight.ReverseProxy
         .AddResponseCompression()
         .AddCors()
         .AddHttpClient("proxy")
-        .ConfigurePrimaryHttpMessageHandler(() =>
-          new HttpClientHandler()
-          {
-            AllowAutoRedirect = false
-          }
-        )
-        ;
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler() { AllowAutoRedirect = false });
 
       if (!string.IsNullOrEmpty(ProxyConfig.OpenIDConnectAuthority))
       {
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-          options.Authority = ProxyConfig.OpenIDConnectAuthority;
-          options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+        services
+          .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+          .AddJwtBearer(options =>
           {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidAudiences = ProxyConfig.AuthTokenAudiences
-          };
-#if DEBUG
-          options.RequireHttpsMetadata = false;
-#endif
-          options.Events = new JwtBearerEvents
-          {
-            OnMessageReceived = context =>
+            options.Authority = ProxyConfig.OpenIDConnectAuthority;
+            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
             {
-              var token = context.Request.Query["token"];
-              if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
+              ValidateIssuer = true,
+              ValidateAudience = true,
+              ValidateLifetime = true,
+              ValidAudiences = ProxyConfig.AuthTokenAudiences
+            };
+#if DEBUG
+            options.RequireHttpsMetadata = false;
+#endif
+            options.Events = new JwtBearerEvents
+            {
+              OnMessageReceived = context =>
               {
-                context.Token = token;
+                var token = context.Request.Query["token"];
+                if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
+                {
+                  context.Token = token;
+                }
+                return System.Threading.Tasks.Task.CompletedTask;
               }
-              return System.Threading.Tasks.Task.CompletedTask;
-            }
-          };
-        });
+            };
+          });
       }
     }
 
-    private readonly HashSet<string> IgnoreRequestHeaders = new HashSet<string>(new[] {
-      "host",
-      "connection",
-      "keep-alive",
-      "transfer-encoding",
-      "upgrade",
-    });
+    private readonly HashSet<string> IgnoreRequestHeaders = new HashSet<string>(
+      new[] { "host", "connection", "keep-alive", "transfer-encoding", "upgrade", }
+    );
 
-    private readonly HashSet<string> IgnoreResponseHeaders = new HashSet<string>(new[] {
-      "date",
-      "server",
-      "transfer-encoding",
-    });
+    private readonly HashSet<string> IgnoreResponseHeaders = new HashSet<string>(
+      new[] { "date", "server", "transfer-encoding", }
+    );
 
     public void Configure(IApplicationBuilder app, IHttpClientFactory httpFactory, ILogger<Startup> logger)
     {
@@ -126,99 +120,113 @@ namespace BlackMaple.FMSInsight.ReverseProxy
       // authentication
       if (!string.IsNullOrEmpty(ProxyConfig.OpenIDConnectAuthority))
       {
-        app.Use(async (context, next) =>
-        {
-          // the fms-information path is unauthorized, everything else requires auth
-          if (context.Request.Path == "/api/v1/fms/fms-information")
+        app.Use(
+          async (context, next) =>
           {
-            await next.Invoke();
-          }
-          else if (context.Request.Path.StartsWithSegments("/api"))
-          {
-            var authResponse = await context.AuthenticateAsync();
-            if (!authResponse.Succeeded)
-            {
-              context.Response.StatusCode = 401;
-              return;
-            }
-            else
+            // the fms-information path is unauthorized, everything else requires auth
+            if (context.Request.Path == "/api/v1/fms/fms-information")
             {
               await next.Invoke();
             }
+            else if (context.Request.Path.StartsWithSegments("/api"))
+            {
+              var authResponse = await context.AuthenticateAsync();
+              if (!authResponse.Succeeded)
+              {
+                context.Response.StatusCode = 401;
+                return;
+              }
+              else
+              {
+                await next.Invoke();
+              }
+            }
+            else
+            {
+              // loading static pages
+              await next.Invoke();
+            }
           }
-          else
-          {
-            // loading static pages
-            await next.Invoke();
-          }
-        });
+        );
       }
 
       // websocket proxy
-      app.Use(async (context, next) =>
-      {
-        if (context.Request.Path != "/api/v1/events")
+      app.Use(
+        async (context, next) =>
         {
-          await next.Invoke();
-          return;
-        }
-        if (!context.WebSockets.IsWebSocketRequest)
-        {
-          context.Response.StatusCode = 400;
-          return;
-        }
-
-        var ws = await context.WebSockets.AcceptWebSocketAsync();
-
-        var buffer = new byte[1024 * 1024];
-        using (var client = new ClientWebSocket())
-        {
-          var uriB = new UriBuilder()
+          if (context.Request.Path != "/api/v1/events")
           {
-            Scheme = "ws",
-            Host = ProxyConfig.InsightHost,
-            Port = ProxyConfig.InsightPort,
-            Path = "/api/v1/events"
-          };
-          try
+            await next.Invoke();
+            return;
+          }
+          if (!context.WebSockets.IsWebSocketRequest)
           {
-            await client.ConnectAsync(uriB.Uri, context.RequestAborted);
-            WebSocketReceiveResult res;
-            do
+            context.Response.StatusCode = 400;
+            return;
+          }
+
+          var ws = await context.WebSockets.AcceptWebSocketAsync();
+
+          var buffer = new byte[1024 * 1024];
+          using (var client = new ClientWebSocket())
+          {
+            var uriB = new UriBuilder()
             {
-              res = await client.ReceiveAsync(buffer, context.RequestAborted);
-              await ws.SendAsync(new ArraySegment<byte>(buffer, 0, res.Count), res.MessageType, res.EndOfMessage, context.RequestAborted);
-            } while (res.MessageType != WebSocketMessageType.Close);
-          }
-          catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
-          {
-            //do nothing, client closed connection
-          }
-          catch (System.Threading.Tasks.TaskCanceledException)
-          {
-            // also do nothing, client closed connection
-          }
-          catch (System.OperationCanceledException)
-          {
-            // a third possibility when the client closed connection
-          }
-          catch (Exception ex)
-          {
-            logger.LogInformation(ex, "Error during websocket");
-          }
-          finally
-          {
+              Scheme = "ws",
+              Host = ProxyConfig.InsightHost,
+              Port = ProxyConfig.InsightPort,
+              Path = "/api/v1/events"
+            };
             try
             {
-              await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Server is closing", context.RequestAborted);
+              await client.ConnectAsync(uriB.Uri, context.RequestAborted);
+              WebSocketReceiveResult res;
+              do
+              {
+                res = await client.ReceiveAsync(buffer, context.RequestAborted);
+                await ws.SendAsync(
+                  new ArraySegment<byte>(buffer, 0, res.Count),
+                  res.MessageType,
+                  res.EndOfMessage,
+                  context.RequestAborted
+                );
+              } while (res.MessageType != WebSocketMessageType.Close);
+            }
+            catch (WebSocketException ex)
+              when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
+            {
+              //do nothing, client closed connection
+            }
+            catch (System.Threading.Tasks.TaskCanceledException)
+            {
+              // also do nothing, client closed connection
             }
             catch (System.OperationCanceledException)
             {
-              // ignore if request is being canceled
+              // a third possibility when the client closed connection
+            }
+            catch (Exception ex)
+            {
+              logger.LogInformation(ex, "Error during websocket");
+            }
+            finally
+            {
+              try
+              {
+                await ws.CloseAsync(
+                  WebSocketCloseStatus.NormalClosure,
+                  "Server is closing",
+                  context.RequestAborted
+                );
+              }
+              catch (System.OperationCanceledException)
+              {
+                // ignore if request is being canceled
+              }
             }
           }
         }
-      });
+      );
 
       //HTTP proxy
       app.Run(async context =>
@@ -247,7 +255,9 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           HashSet<string> connHeader = new HashSet<string>();
           if (context.Request.Headers.TryGetValue("Connection", out var vals))
           {
-            connHeader = new HashSet<string>(vals.SelectMany(s => s.Split(",")).Select(s => s.Trim().ToLower()));
+            connHeader = new HashSet<string>(
+              vals.SelectMany(s => s.Split(",")).Select(s => s.Trim().ToLower())
+            );
           }
           foreach (var h in context.Request.Headers)
           {
@@ -262,7 +272,13 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           }
           msg.Headers.Host = msg.RequestUri.Host;
           var client = httpFactory.CreateClient("proxy");
-          using (var resp = await client.SendAsync(msg, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted))
+          using (
+            var resp = await client.SendAsync(
+              msg,
+              HttpCompletionOption.ResponseHeadersRead,
+              context.RequestAborted
+            )
+          )
           {
             context.Response.StatusCode = (int)resp.StatusCode;
             foreach (var h in resp.Headers.Concat(resp.Content.Headers))

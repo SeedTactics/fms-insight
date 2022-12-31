@@ -44,36 +44,65 @@ namespace BlackMaple.MachineFramework.Controllers
   [KnownType(typeof(ServerEvent))]
   public record FMSInfo
   {
-    [DataMember] public string Name { get; init; }
-    [DataMember] public string Version { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public DateTime? LicenseExpires { get; init; }
+    [DataMember]
+    public string Name { get; init; }
 
-    [DataMember] public IReadOnlyList<string> AdditionalLogServers { get; init; }
+    [DataMember]
+    public string Version { get; init; }
 
-    [DataMember] public string OpenIDConnectAuthority { get; init; }
-    [DataMember] public string LocalhostOpenIDConnectAuthority { get; init; }
-    [DataMember] public string OpenIDConnectClientId { get; init; }
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public DateTime? LicenseExpires { get; init; }
 
-    [DataMember] public bool UsingLabelPrinterForSerials { get; init; }
-    [DataMember] public bool? UseClientPrinterForLabels { get; init; }
+    [DataMember]
+    public IReadOnlyList<string> AdditionalLogServers { get; init; }
 
-    [DataMember] public string QuarantineQueue { get; init; }
+    [DataMember]
+    public string OpenIDConnectAuthority { get; init; }
+
+    [DataMember]
+    public string LocalhostOpenIDConnectAuthority { get; init; }
+
+    [DataMember]
+    public string OpenIDConnectClientId { get; init; }
+
+    [DataMember]
+    public bool UsingLabelPrinterForSerials { get; init; }
+
+    [DataMember]
+    public bool? UseClientPrinterForLabels { get; init; }
+
+    [DataMember]
+    public string QuarantineQueue { get; init; }
 
     // Load Station Page Options
-    [DataMember] public bool? AllowQuarantineAtLoadStation { get; init; }
-    [DataMember] public bool? AllowChangeWorkorderAtLoadStation { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string CustomStationMonitorDialogUrl { get; init; }
+    [DataMember]
+    public bool? AllowQuarantineAtLoadStation { get; init; }
 
+    [DataMember]
+    public bool? AllowChangeWorkorderAtLoadStation { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string CustomStationMonitorDialogUrl { get; init; }
 
     // Wash Page Options
-    [DataMember] public bool RequireScanAtWash { get; init; }
-    [DataMember] public bool RequireWorkorderBeforeAllowWashComplete { get; init; }
+    [DataMember]
+    public bool RequireScanAtWash { get; init; }
+
+    [DataMember]
+    public bool RequireWorkorderBeforeAllowWashComplete { get; init; }
 
     // Queues Page Options
-    [DataMember] public AddRawMaterialType AddRawMaterial { get; init; }
-    [DataMember] public AddInProcessMaterialType AddInProcessMaterial { get; init; }
-    [DataMember] public bool? RequireOperatorNamePromptWhenAddingMaterial { get; init; }
-    [DataMember(IsRequired = false, EmitDefaultValue = false)] public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
+    [DataMember]
+    public AddRawMaterialType AddRawMaterial { get; init; }
+
+    [DataMember]
+    public AddInProcessMaterialType AddInProcessMaterial { get; init; }
+
+    [DataMember]
+    public bool? RequireOperatorNamePromptWhenAddingMaterial { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
   }
 
   [ApiController]
@@ -122,10 +151,8 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("settings/{id}")]
     public string GetSettings(string id)
     {
-      var f = System.IO.Path.Combine(
-          _cfg.DataDirectory,
-          System.IO.Path.GetFileNameWithoutExtension(id))
-          + ".json";
+      var f =
+        System.IO.Path.Combine(_cfg.DataDirectory, System.IO.Path.GetFileNameWithoutExtension(id)) + ".json";
       if (System.IO.File.Exists(f))
         return System.IO.File.ReadAllText(f);
       else
@@ -136,10 +163,8 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(typeof(void), 200)]
     public void SetSetting(string id, [FromBody] string setting)
     {
-      var f = System.IO.Path.Combine(
-          _cfg.DataDirectory,
-          System.IO.Path.GetFileNameWithoutExtension(id))
-          + ".json";
+      var f =
+        System.IO.Path.Combine(_cfg.DataDirectory, System.IO.Path.GetFileNameWithoutExtension(id)) + ".json";
       System.IO.File.WriteAllText(f, setting);
     }
 
@@ -147,8 +172,10 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       foreach (var f in Directory.GetFiles(_cfg.InstructionFilePath))
       {
-        if (!Path.GetFileName(f).Contains(part)) continue;
-        if (!string.IsNullOrEmpty(type) && !Path.GetFileName(f).ToLower().Contains(type.ToLower())) continue;
+        if (!Path.GetFileName(f).Contains(part))
+          continue;
+        if (!string.IsNullOrEmpty(type) && !Path.GetFileName(f).ToLower().Contains(type.ToLower()))
+          continue;
         return Path.GetFileName(f);
       }
       return null;
@@ -157,13 +184,14 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("find-instructions/{part}")]
     [ProducesResponseType(302)]
     [ProducesResponseType(404)]
-    public IActionResult FindInstructions(string part,
-                                         [FromQuery] string type,
-                                         [FromQuery] int? process = null,
-                                         [FromQuery] long? materialID = null,
-                                         [FromQuery] string operatorName = null,
-                                         [FromQuery] string pallet = null
-                                         )
+    public IActionResult FindInstructions(
+      string part,
+      [FromQuery] string type,
+      [FromQuery] int? process = null,
+      [FromQuery] long? materialID = null,
+      [FromQuery] string operatorName = null,
+      [FromQuery] string pallet = null
+    )
     {
       try
       {
@@ -173,10 +201,10 @@ namespace BlackMaple.MachineFramework.Controllers
           if (string.IsNullOrEmpty(path))
           {
             return NotFound(
-                "Error: could not find an instruction for " +
-                (string.IsNullOrEmpty(type) ? part : part + " and " + type) +
-                " in the directory " +
-                _cfg.InstructionFilePath
+              "Error: could not find an instruction for "
+                + (string.IsNullOrEmpty(type) ? part : part + " and " + type)
+                + " in the directory "
+                + _cfg.InstructionFilePath
             );
           }
           return Redirect(path);
@@ -225,10 +253,10 @@ namespace BlackMaple.MachineFramework.Controllers
       if (string.IsNullOrEmpty(instrFile))
       {
         return NotFound(
-            "Error: could not find a file with " +
-            (string.IsNullOrEmpty(type) ? part : part + " and " + type) +
-            " in the filename inside " +
-            _cfg.InstructionFilePath
+          "Error: could not find a file with "
+            + (string.IsNullOrEmpty(type) ? part : part + " and " + type)
+            + " in the filename inside "
+            + _cfg.InstructionFilePath
         );
       }
       else
@@ -240,7 +268,12 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("print-label/{materialId}")]
     [ProducesResponseType(200)]
     [ProducesResponseType(400)]
-    public IActionResult PrintLabel(long materialId, [FromQuery] int process = 1, [FromQuery] int? loadStation = null, [FromQuery] string queue = null)
+    public IActionResult PrintLabel(
+      long materialId,
+      [FromQuery] int process = 1,
+      [FromQuery] int? loadStation = null,
+      [FromQuery] string queue = null
+    )
     {
       if (_impl != null && _impl.PrintLabel != null)
       {
@@ -273,11 +306,7 @@ namespace BlackMaple.MachineFramework.Controllers
           }
           else
           {
-            return new MaterialDetails()
-            {
-              MaterialID = -1,
-              Serial = serial
-            };
+            return new MaterialDetails() { MaterialID = -1, Serial = serial };
           }
         }
       }

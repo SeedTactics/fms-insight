@@ -90,14 +90,12 @@ namespace MachineWatchTest
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0) Assert.True(false, log[0]);
+      if (log.Count > 0)
+        Assert.True(false, log[0]);
 
-      CheckNewFixtures(pMap,
-        new string[] {
-          "F:3:1:1",
-          "F:3:1:2",
-          "F:3:2:1",
-        },
+      CheckNewFixtures(
+        pMap,
+        new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1", },
         new[] { "unusedfixture", "Test" }
       );
 
@@ -192,23 +190,23 @@ namespace MachineWatchTest
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0) Assert.True(false, log[0]);
+      if (log.Count > 0)
+        Assert.True(false, log[0]);
 
       if (useStartingOffset)
       {
-        CheckNewFixtures(pMap,
-          new string[] {
-            "F:3:2:1",
-            "F:3:2:2",
-            "F:3:3:1",
-          },
+        CheckNewFixtures(
+          pMap,
+          new string[] { "F:3:2:1", "F:3:2:2", "F:3:3:1", },
           new[] { "unusedfixture", "Test", }
         );
       }
       else
       {
-        CheckNewFixtures(pMap,
-          new string[] {
+        CheckNewFixtures(
+          pMap,
+          new string[]
+          {
             "F:3:2:1",
             "F:3:2:2",
             // don't create one for pallets 30 and 31 "F:3:4:1",
@@ -282,13 +280,10 @@ namespace MachineWatchTest
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0) Assert.True(false, log[0]);
+      if (log.Count > 0)
+        Assert.True(false, log[0]);
 
-      CheckNewFixtures(pMap, new string[] {
-        "F:3:1:1",
-        "F:3:2:2",
-        "F:3:3:2",
-      });
+      CheckNewFixtures(pMap, new string[] { "F:3:1:1", "F:3:2:2", "F:3:3:2", });
 
       var trans = pMap.CreatePartPalletDatabaseRows();
 
@@ -348,7 +343,6 @@ namespace MachineWatchTest
         fixtures: new[] { ("fix4", 1) } // different than job3
       );
 
-
       var log = new List<string>();
       var dset = CreateReadSet();
       CreateProgram(dset, "1234");
@@ -364,14 +358,14 @@ namespace MachineWatchTest
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0) Assert.True(false, log[0]);
+      if (log.Count > 0)
+        Assert.True(false, log[0]);
 
-      CheckNewFixtures(pMap, new string[] {
-        "F:3:1:fixAA:1",
-        "F:3:1:fixAA:2",
-        "F:3:2:fix3:1",
-        "F:3:3:fix4:1",
-      }, new[] { "Test" });
+      CheckNewFixtures(
+        pMap,
+        new string[] { "F:3:1:fixAA:1", "F:3:1:fixAA:2", "F:3:2:fix3:1", "F:3:3:fix4:1", },
+        new[] { "Test" }
+      );
 
       var trans = pMap.CreatePartPalletDatabaseRows();
 
@@ -446,20 +440,20 @@ namespace MachineWatchTest
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0) Assert.True(false, log[0]);
+      if (log.Count > 0)
+        Assert.True(false, log[0]);
 
-      string part1BaseFix, part2BaseFix, part3BaseFix;
+      string part1BaseFix,
+        part2BaseFix,
+        part3BaseFix;
       if (useStartingOffset && sharePallets)
       {
         // creates three different groups
-        CheckNewFixtures(pMap, new string[] {
-          "F:3:1:1",
-          "F:3:1:2",
-          "F:3:2:1",
-          "F:3:2:2",
-          "F:3:3:1",
-          "F:3:3:2",
-        }, new[] { "Test" });
+        CheckNewFixtures(
+          pMap,
+          new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1", "F:3:2:2", "F:3:3:1", "F:3:3:2", },
+          new[] { "Test" }
+        );
         part2BaseFix = "F:3:1";
         part3BaseFix = "F:3:2";
         part1BaseFix = "F:3:3";
@@ -467,12 +461,11 @@ namespace MachineWatchTest
       else
       {
         // creates only two groups
-        CheckNewFixtures(pMap, new string[] {
-          "F:3:1:1",
-          "F:3:1:2",
-          "F:3:2:1",
-          "F:3:2:2",
-        }, new[] { "Test" });
+        CheckNewFixtures(
+          pMap,
+          new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1", "F:3:2:2", },
+          new[] { "Test" }
+        );
         part2BaseFix = "F:3:1";
         part3BaseFix = "F:3:2";
         part1BaseFix = "F:3:1";
@@ -541,30 +534,43 @@ namespace MachineWatchTest
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0) Assert.True(false, log[0]);
+      if (log.Count > 0)
+        Assert.True(false, log[0]);
 
       var del = pMap.DeleteOldPalletRows();
-      del.Pallets.Should().BeEquivalentTo(new[] {
-        new MazakPalletRow()
-        {
-          PalletNumber = 5,
-          Fixture = "aaaa:1",
-          Command = MazakWriteCommand.Delete,
-          FixtureGroupV2 = 1
-        }
-      });
+      del.Pallets
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new MazakPalletRow()
+            {
+              PalletNumber = 5,
+              Fixture = "aaaa:1",
+              Command = MazakWriteCommand.Delete,
+              FixtureGroupV2 = 1
+            }
+          }
+        );
       del.Parts.Should().BeEmpty();
       del.Fixtures.Should().BeEmpty();
       del.Schedules.Should().BeEmpty();
 
       del = pMap.DeleteOldPartRows();
-      del.Parts.Should().BeEquivalentTo(new[] {
-        dset.TestParts[0] with {
-          Command = MazakWriteCommand.Delete,
-          TotalProcess = dset.TestParts[0].Processes.Count(),
-          Processes = new List<MazakPartProcessRow>(),
-        }
-      }, options => options.ComparingByMembers<MazakPartRow>());
+      del.Parts
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            dset.TestParts[0] with
+            {
+              Command = MazakWriteCommand.Delete,
+              TotalProcess = dset.TestParts[0].Processes.Count(),
+              Processes = new List<MazakPartProcessRow>(),
+            }
+          },
+          options => options.ComparingByMembers<MazakPartRow>()
+        );
       del.Pallets.Should().BeEmpty();
       del.Fixtures.Should().BeEmpty();
       del.Schedules.Should().BeEmpty();
@@ -606,10 +612,14 @@ namespace MachineWatchTest
         errors: log
       );
 
-      log.Should().BeEquivalentTo(new[] {
-				// one for each process
-				"Part Part1 program 1234 does not exist in the cell controller.",
-      });
+      log.Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            // one for each process
+            "Part Part1 program 1234 does not exist in the cell controller.",
+          }
+        );
     }
 
     [Fact]
@@ -635,21 +645,9 @@ namespace MachineWatchTest
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev7", "ddd.EIA"), "Insight:7:ddd"); // latest revision of unused program, should be kept
 
       var lookupProgram = Substitute.For<Func<string, long?, ProgramRevision>>();
-      lookupProgram("aaa", null).Returns(new ProgramRevision()
-      {
-        ProgramName = "aaa",
-        Revision = 3,
-      });
-      lookupProgram("bbb", 7).Returns(new ProgramRevision()
-      {
-        ProgramName = "bbb",
-        Revision = 7,
-      });
-      lookupProgram("ccc", 9).Returns(new ProgramRevision()
-      {
-        ProgramName = "ccc",
-        Revision = 9
-      });
+      lookupProgram("aaa", null).Returns(new ProgramRevision() { ProgramName = "aaa", Revision = 3, });
+      lookupProgram("bbb", 7).Returns(new ProgramRevision() { ProgramName = "bbb", Revision = 7, });
+      lookupProgram("ccc", 9).Returns(new ProgramRevision() { ProgramName = "ccc", Revision = 9 });
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
         new Job[] { job1 },
@@ -662,49 +660,68 @@ namespace MachineWatchTest
         lookupProgram: lookupProgram,
         errors: log
       );
-      if (log.Count > 0) Assert.True(false, log[0]);
+      if (log.Count > 0)
+        Assert.True(false, log[0]);
 
       var getProgramCt = Substitute.For<Func<string, long, string>>();
       getProgramCt("aaa", 3).Returns("aaa 3 ct");
       getProgramCt("bbb", 7).Returns("bbb 7 ct");
 
       pMap.AddFixtureAndProgramDatabaseRows(getProgramCt, "theprogdir")
-        .Programs.Should().BeEquivalentTo(new[] {
-          new NewMazakProgram() {
-            Command = MazakWriteCommand.Add,
-            MainProgram = System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA"),
-            Comment = "Insight:3:aaa",
-            ProgramName = "aaa",
-            ProgramRevision = 3,
-            ProgramContent = "aaa 3 ct"
-          },
-          new NewMazakProgram() {
-            Command = MazakWriteCommand.Add,
-            MainProgram = System.IO.Path.Combine("theprogdir", "rev7", "bbb.EIA"),
-            Comment = "Insight:7:bbb",
-            ProgramName = "bbb",
-            ProgramRevision = 7,
-            ProgramContent = "bbb 7 ct"
-          },
-        });
-      pMap.DeleteFixtureAndProgramDatabaseRows()
-        .Programs.Should().BeEquivalentTo(new[] {
-          new NewMazakProgram() {
-            Command = MazakWriteCommand.Delete,
-            MainProgram = System.IO.Path.Combine("theprogdir", "rev8", "ccc.EIA"),
-            Comment = "Insight:8:ccc"
+        .Programs.Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new NewMazakProgram()
+            {
+              Command = MazakWriteCommand.Add,
+              MainProgram = System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA"),
+              Comment = "Insight:3:aaa",
+              ProgramName = "aaa",
+              ProgramRevision = 3,
+              ProgramContent = "aaa 3 ct"
+            },
+            new NewMazakProgram()
+            {
+              Command = MazakWriteCommand.Add,
+              MainProgram = System.IO.Path.Combine("theprogdir", "rev7", "bbb.EIA"),
+              Comment = "Insight:7:bbb",
+              ProgramName = "bbb",
+              ProgramRevision = 7,
+              ProgramContent = "bbb 7 ct"
+            },
           }
-          // ccc rev9 already exists, should not be added
-        });
+        );
+      pMap.DeleteFixtureAndProgramDatabaseRows()
+        .Programs.Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new NewMazakProgram()
+            {
+              Command = MazakWriteCommand.Delete,
+              MainProgram = System.IO.Path.Combine("theprogdir", "rev8", "ccc.EIA"),
+              Comment = "Insight:8:ccc"
+            }
+            // ccc rev9 already exists, should not be added
+          }
+        );
 
       var trans = pMap.CreatePartPalletDatabaseRows();
 
-      trans.Parts.First().Processes.Select(p => (proc: p.ProcessNumber, prog: p.MainProgram)).Should().BeEquivalentTo(new[] {
-        (1, System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA")),
-        (2, System.IO.Path.Combine("theprogdir", "rev7", "bbb.EIA")),
-        (3, System.IO.Path.Combine("theprogdir", "rev9", "ccc.EIA")),
-        (4, System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA")),
-      });
+      trans.Parts
+        .First()
+        .Processes.Select(p => (proc: p.ProcessNumber, prog: p.MainProgram))
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            (1, System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA")),
+            (2, System.IO.Path.Combine("theprogdir", "rev7", "bbb.EIA")),
+            (3, System.IO.Path.Combine("theprogdir", "rev9", "ccc.EIA")),
+            (4, System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA")),
+          }
+        );
     }
 
     [Fact]
@@ -725,11 +742,7 @@ namespace MachineWatchTest
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev6", "bbb.EIA"), "Insight:6:bbb");
 
       var lookupProgram = Substitute.For<Func<string, long?, ProgramRevision>>();
-      lookupProgram("aaa", null).Returns(new ProgramRevision()
-      {
-        ProgramName = "aaa",
-        Revision = 3,
-      });
+      lookupProgram("aaa", null).Returns(new ProgramRevision() { ProgramName = "aaa", Revision = 3, });
       lookupProgram("bbb", 7).Returns((ProgramRevision)null);
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
@@ -744,9 +757,8 @@ namespace MachineWatchTest
         errors: log
       );
 
-      log.Should().BeEquivalentTo(new[] {
-        "Part Part1 program bbb rev7 does not exist in the cell controller.",
-      });
+      log.Should()
+        .BeEquivalentTo(new[] { "Part Part1 program bbb rev7 does not exist in the cell controller.", });
     }
 
     #region Checking
@@ -775,20 +787,29 @@ namespace MachineWatchTest
       return dset;
     }
 
-    private void CreatePart(MazakTestData dset, string unique, string name, int numProc, string fix, string program = null)
+    private void CreatePart(
+      MazakTestData dset,
+      string unique,
+      string name,
+      int numProc,
+      string fix,
+      string program = null
+    )
     {
       var pRow = new MazakPartRow() { Comment = "comment -Path", PartName = name };
       dset.TestParts.Add(pRow);
 
       for (int proc = 1; proc <= numProc; proc++)
       {
-        pRow.Processes.Add(new MazakPartProcessRow()
-        {
-          ProcessNumber = proc,
-          Fixture = fix + ":" + proc.ToString(),
-          PartName = name,
-          MainProgram = program
-        });
+        pRow.Processes.Add(
+          new MazakPartProcessRow()
+          {
+            ProcessNumber = proc,
+            Fixture = fix + ":" + proc.ToString(),
+            PartName = name,
+            MainProgram = program
+          }
+        );
       }
     }
 
@@ -801,7 +822,14 @@ namespace MachineWatchTest
     {
       for (int i = 1; i <= numProc; i++)
       {
-        dset.TestPallets.Add(new MazakPalletRow() { Fixture = fix + ":" + i.ToString(), PalletNumber = pal, FixtureGroupV2 = group });
+        dset.TestPallets.Add(
+          new MazakPalletRow()
+          {
+            Fixture = fix + ":" + i.ToString(),
+            PalletNumber = pal,
+            FixtureGroupV2 = group
+          }
+        );
       }
     }
 
@@ -810,60 +838,85 @@ namespace MachineWatchTest
       dset.TestPrograms.Add(new MazakProgramRow() { MainProgram = program, Comment = comment });
     }
 
-    private Job CreateBasicStopsWithProg(string uniq, string part, int numProc,
-                                         string[][] pals,
-                                         (string fix, int face)[] fixtures = null,
-                                         DateTime? simStart = null,
-                                         (string prog, int? rev)[] progs = null)
+    private Job CreateBasicStopsWithProg(
+      string uniq,
+      string part,
+      int numProc,
+      string[][] pals,
+      (string fix, int face)[] fixtures = null,
+      DateTime? simStart = null,
+      (string prog, int? rev)[] progs = null
+    )
     {
       return new Job()
       {
         UniqueStr = uniq,
         PartName = part,
-        Processes = Enumerable.Range(1, numProc).Select(p => new ProcessInfo()
-        {
-          Paths = ImmutableList.Create(
-          new ProcPathInfo()
-          {
-            Pallets = ImmutableList.CreateRange(pals[p - 1]),
-            SimulatedStartingUTC = (p == 1 ? simStart : null) ?? DateTime.MinValue,
-            Load = ImmutableList.Create(1),
-            Unload = ImmutableList.Create(1),
-            Stops = ImmutableList.Create(
-              new MachiningStop()
+        Processes = Enumerable
+          .Range(1, numProc)
+          .Select(
+            p =>
+              new ProcessInfo()
               {
-                StationGroup = "machine",
-                Stations = ImmutableList.Create(1),
-                Program = progs?[p - 1].prog ?? "1234",
-                ProgramRevision = progs?[p - 1].rev
+                Paths = ImmutableList.Create(
+                  new ProcPathInfo()
+                  {
+                    Pallets = ImmutableList.CreateRange(pals[p - 1]),
+                    SimulatedStartingUTC = (p == 1 ? simStart : null) ?? DateTime.MinValue,
+                    Load = ImmutableList.Create(1),
+                    Unload = ImmutableList.Create(1),
+                    Stops = ImmutableList.Create(
+                      new MachiningStop()
+                      {
+                        StationGroup = "machine",
+                        Stations = ImmutableList.Create(1),
+                        Program = progs?[p - 1].prog ?? "1234",
+                        ProgramRevision = progs?[p - 1].rev
+                      }
+                    ),
+                    Fixture = fixtures?[p - 1].fix,
+                    Face = fixtures?[p - 1].face
+                  }
+                )
               }
-            ),
-            Fixture = fixtures?[p - 1].fix,
-            Face = fixtures?[p - 1].face
-          }
-        )
-        }).ToImmutableList(),
+          )
+          .ToImmutableList(),
       };
     }
 
-    private void CheckNewFixtures(MazakJobs map, ICollection<string> newFix, ICollection<string> delFix = null)
+    private void CheckNewFixtures(
+      MazakJobs map,
+      ICollection<string> newFix,
+      ICollection<string> delFix = null
+    )
     {
       var add = newFix
-        .Select(f => new MazakFixtureRow()
-        {
-          FixtureName = f,
-          Comment = "Insight",
-          Command = MazakWriteCommand.Add
-        }).ToList();
+        .Select(
+          f =>
+            new MazakFixtureRow()
+            {
+              FixtureName = f,
+              Comment = "Insight",
+              Command = MazakWriteCommand.Add
+            }
+        )
+        .ToList();
       var del = (delFix ?? Enumerable.Empty<string>())
-        .Select(f => new MazakFixtureRow()
-        {
-          FixtureName = f,
-          Comment = "Insight",
-          Command = MazakWriteCommand.Delete
-        }).ToList();
+        .Select(
+          f =>
+            new MazakFixtureRow()
+            {
+              FixtureName = f,
+              Comment = "Insight",
+              Command = MazakWriteCommand.Delete
+            }
+        )
+        .ToList();
 
-      var actions = map.AddFixtureAndProgramDatabaseRows((p, r) => throw new Exception("Unexpected program lookup"), "C:\\NCProgs");
+      var actions = map.AddFixtureAndProgramDatabaseRows(
+        (p, r) => throw new Exception("Unexpected program lookup"),
+        "C:\\NCProgs"
+      );
       actions.Fixtures.Should().BeEquivalentTo(add);
       actions.Schedules.Should().BeEmpty();
       actions.Parts.Should().BeEmpty();
@@ -882,18 +935,27 @@ namespace MachineWatchTest
     {
       CheckPartProcess(dset, part, proc, fixture, "0000000000", "0000000000", "00000000");
     }
+
     private void CheckPartProcessFromJob(MazakWriteData dset, string part, int proc, string fixture)
     {
       //checks stuff created with AddBasicStopsWithProg
       CheckPartProcess(dset, part, proc, fixture, "1000000000", "1000000000", "10000000");
     }
 
-    private void CheckPartProcess(MazakWriteData dset, string part, int proc, string fixture,
-                                  string fix, string rem, string cut)
+    private void CheckPartProcess(
+      MazakWriteData dset,
+      string part,
+      int proc,
+      string fixture,
+      string fix,
+      string rem,
+      string cut
+    )
     {
       foreach (var mpart in dset.Parts)
       {
-        if (mpart.PartName != part) continue;
+        if (mpart.PartName != part)
+          continue;
         foreach (var row in mpart.Processes)
         {
           if (row.PartName == part && row.ProcessNumber == proc)
@@ -935,12 +997,20 @@ namespace MachineWatchTest
 
     private void CheckPalletGroup(MazakWriteData dset, int groupNum, string fix, int numProc, IList<int> pals)
     {
-      CheckPalletGroup(dset, groupNum,
+      CheckPalletGroup(
+        dset,
+        groupNum,
         Enumerable.Range(1, numProc).Select(i => fix + ":" + i.ToString()),
-        pals);
+        pals
+      );
     }
 
-    private void CheckPalletGroup(MazakWriteData dset, int groupNum, IEnumerable<string> fixs, IList<int> pals)
+    private void CheckPalletGroup(
+      MazakWriteData dset,
+      int groupNum,
+      IEnumerable<string> fixs,
+      IList<int> pals
+    )
     {
       int angle = groupNum * 1000;
 
@@ -953,7 +1023,13 @@ namespace MachineWatchTest
       }
     }
 
-    private void CheckPallet(MazakWriteData dset, string fix, int pal, int expectedAngle, int expectedFixGroup)
+    private void CheckPallet(
+      MazakWriteData dset,
+      string fix,
+      int pal,
+      int expectedAngle,
+      int expectedFixGroup
+    )
     {
       foreach (var row in dset.Pallets.ToList())
       {

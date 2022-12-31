@@ -43,26 +43,20 @@ namespace BlackMaple.MachineFramework
   {
 #if SERVICE_AVAIL
 
-      public static string ConfigDirectory {get;} =
-        Path.Combine(
-          System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData),
-          "SeedTactics",
-          "FMSInsight"
-        );
-
-      public static string ContentRootDirectory {get;} =
-        Path.GetDirectoryName(
-            System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName
-        );
-
-#else
-
     public static string ConfigDirectory { get; } =
-      Directory.GetCurrentDirectory();
+      Path.Combine(
+        System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData),
+        "SeedTactics",
+        "FMSInsight"
+      );
 
     public static string ContentRootDirectory { get; } =
-      Directory.GetCurrentDirectory();
+      Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+#else
 
+    public static string ConfigDirectory { get; } = Directory.GetCurrentDirectory();
+
+    public static string ContentRootDirectory { get; } = Directory.GetCurrentDirectory();
 #endif
 
     public bool EnableDebugLog { get; set; } = false;
@@ -74,7 +68,7 @@ namespace BlackMaple.MachineFramework
     public string AuthTokenAudiences { get; set; } = null;
 
     public bool UseAuthentication =>
-         !string.IsNullOrEmpty(OpenIDConnectClientId)
+      !string.IsNullOrEmpty(OpenIDConnectClientId)
       && !string.IsNullOrEmpty(OpenIDConnectAuthority)
       && !string.IsNullOrEmpty(AuthAuthority)
       && !string.IsNullOrEmpty(AuthTokenAudiences);
@@ -92,8 +86,8 @@ namespace BlackMaple.MachineFramework
   public enum SerialType
   {
     NoAutomaticSerials,
-    AssignOneSerialPerMaterial,  // assign a different serial to each piece of material
-    AssignOneSerialPerCycle,     // assign a single serial to all the material on each cycle
+    AssignOneSerialPerMaterial, // assign a different serial to each piece of material
+    AssignOneSerialPerCycle, // assign a single serial to all the material on each cycle
   }
 
   public record SerialSettings
@@ -128,7 +122,8 @@ namespace BlackMaple.MachineFramework
 
     public static long ConvertFromBase62(string msg)
     {
-      if (string.IsNullOrEmpty(msg)) return -1;
+      if (string.IsNullOrEmpty(msg))
+        return -1;
       long res = 0;
       int len = msg.Length;
       long multiplier = 1;
@@ -143,11 +138,8 @@ namespace BlackMaple.MachineFramework
         multiplier *= 62;
       }
       return res;
-
     }
-
   }
-
 
   public class FMSSettings
   {
@@ -164,16 +156,15 @@ namespace BlackMaple.MachineFramework
 
     public string QuarantineQueue { get; set; }
 
-    public Dictionary<string, QueueSize> Queues { get; }
-      = new Dictionary<string, QueueSize>();
+    public Dictionary<string, QueueSize> Queues { get; } = new Dictionary<string, QueueSize>();
 
     // key is queue name, value is IP address or DNS name of fms insight server with the queue
-    public Dictionary<string, string> ExternalQueues { get; }
-      = new Dictionary<string, string>();
+    public Dictionary<string, string> ExternalQueues { get; } = new Dictionary<string, string>();
 
     public IReadOnlyList<string> AdditionalLogServers { get; set; }
 
     public FMSSettings() { }
+
     public FMSSettings(IConfiguration config)
     {
       var fmsSection = config.GetSection("FMS");
@@ -189,9 +180,18 @@ namespace BlackMaple.MachineFramework
       StartingSerial = fmsSection.GetValue<string>("StartingSerial", null);
 
       RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
-      RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>("RequireWorkorderBeforeAllowWashComplete", false);
-      RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>("RequireOperatorNamePromptWhenAddingMaterial", false);
-      AllowChangeWorkorderAtLoadStation = fmsSection.GetValue<bool>("AllowChangeWorkorderAtLoadStation", false);
+      RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>(
+        "RequireWorkorderBeforeAllowWashComplete",
+        false
+      );
+      RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>(
+        "RequireOperatorNamePromptWhenAddingMaterial",
+        false
+      );
+      AllowChangeWorkorderAtLoadStation = fmsSection.GetValue<bool>(
+        "AllowChangeWorkorderAtLoadStation",
+        false
+      );
 
       QuarantineQueue = fmsSection.GetValue<string>("QuarantineQueue", null);
 
@@ -200,10 +200,7 @@ namespace BlackMaple.MachineFramework
         var key = q.Key.Substring(q.Key.IndexOf(':') + 1);
         if (q.Key.IndexOf(':') >= 0 && !string.IsNullOrEmpty(key) && int.TryParse(q.Value, out int count))
         {
-          Queues[key] = new QueueSize()
-          {
-            MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null
-          };
+          Queues[key] = new QueueSize() { MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null };
         }
       }
 
@@ -216,24 +213,33 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      AdditionalLogServers =
-        fmsSection.GetValue<string>("AdditionalServersForLogs", "")
+      AdditionalLogServers = fmsSection
+        .GetValue<string>("AdditionalServersForLogs", "")
         .Split(',')
         .Where(x => !string.IsNullOrWhiteSpace(x))
         .Select(x =>
         {
           var uri = new UriBuilder(x);
-          if (uri.Scheme == "") uri.Scheme = "http";
-          if (uri.Port == 80 && x.IndexOf(':') < 0) uri.Port = 5000;
+          if (uri.Scheme == "")
+            uri.Scheme = "http";
+          if (uri.Port == 80 && x.IndexOf(':') < 0)
+            uri.Port = 5000;
           var uriS = uri.Uri.ToString();
           // remove trailing slash
           return uriS.Substring(0, uriS.Length - 1);
         })
         .ToList();
 
-      if (!string.IsNullOrEmpty(QuarantineQueue) && !Queues.ContainsKey(QuarantineQueue) && !ExternalQueues.ContainsKey(QuarantineQueue))
+      if (
+        !string.IsNullOrEmpty(QuarantineQueue)
+        && !Queues.ContainsKey(QuarantineQueue)
+        && !ExternalQueues.ContainsKey(QuarantineQueue)
+      )
       {
-        Serilog.Log.Error("QuarantineQueue {queue} is not configured as a queue or external queue", QuarantineQueue);
+        Serilog.Log.Error(
+          "QuarantineQueue {queue} is not configured as a queue or external queue",
+          QuarantineQueue
+        );
       }
     }
 
@@ -242,7 +248,9 @@ namespace BlackMaple.MachineFramework
       // FMSInsight directory
       var dataDir = Path.Combine(
         System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData),
-        "SeedTactics", "FMSInsight");
+        "SeedTactics",
+        "FMSInsight"
+      );
       if (!Directory.Exists(dataDir))
       {
         try

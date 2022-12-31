@@ -50,7 +50,14 @@ namespace BlackMaple.MachineFramework
     private readonly ICheckJobsValid _checkJobsValid;
     private readonly TimeSpan _refreshStateInterval;
 
-    public JobsAndQueuesFromDb(RepositoryConfig repo, FMSSettings settings, Action<CurrentStatus> onNewCurrentStatus, ISynchronizeCellState<St> syncSt, ICheckJobsValid checkJobs, TimeSpan refreshStateInterval)
+    public JobsAndQueuesFromDb(
+      RepositoryConfig repo,
+      FMSSettings settings,
+      Action<CurrentStatus> onNewCurrentStatus,
+      ISynchronizeCellState<St> syncSt,
+      ICheckJobsValid checkJobs,
+      TimeSpan refreshStateInterval
+    )
     {
       _repo = repo;
       _settings = settings;
@@ -69,7 +76,6 @@ namespace BlackMaple.MachineFramework
       _syncState.NewCellState -= NewCellState;
       _shutdown.Set();
     }
-
 
     #region Thread and Messages
     private readonly System.Threading.Thread _thread;
@@ -105,7 +111,11 @@ namespace BlackMaple.MachineFramework
         {
           Synchronize(raiseNewCurStatus);
 
-          var ret = WaitHandle.WaitAny(new WaitHandle[] { _shutdown, _recheck, _newCellState }, _refreshStateInterval, false);
+          var ret = WaitHandle.WaitAny(
+            new WaitHandle[] { _shutdown, _recheck, _newCellState },
+            _refreshStateInterval,
+            false
+          );
           if (ret == 0)
           {
             Log.Debug("Thread shutdown");
@@ -158,7 +168,8 @@ namespace BlackMaple.MachineFramework
             }
 
             actionPerformed = _syncState.ApplyActions(db, st);
-            if (actionPerformed) raiseNewCurStatus = true;
+            if (actionPerformed)
+              raiseNewCurStatus = true;
           } while (actionPerformed);
         }
       }
@@ -193,19 +204,23 @@ namespace BlackMaple.MachineFramework
         var decrs = new List<NewDecrementQuantity>();
         foreach (var j in st.CurrentStatus.Jobs.Values)
         {
-          if (j.ManuallyCreated || j.Decrements?.Count > 0) continue;
+          if (j.ManuallyCreated || j.Decrements?.Count > 0)
+            continue;
 
-          if (_checkJobsValid.ExcludeJobFromDecrement(jobDB, j)) continue;
+          if (_checkJobsValid.ExcludeJobFromDecrement(jobDB, j))
+            continue;
 
           int toStart = (int)(j.RemainingToStart ?? 0);
           if (toStart > 0)
           {
-            decrs.Add(new NewDecrementQuantity()
-            {
-              JobUnique = j.UniqueStr,
-              Part = j.PartName,
-              Quantity = toStart
-            });
+            decrs.Add(
+              new NewDecrementQuantity()
+              {
+                JobUnique = j.UniqueStr,
+                Part = j.PartName,
+                Quantity = toStart
+              }
+            );
           }
         }
 
@@ -234,7 +249,6 @@ namespace BlackMaple.MachineFramework
       lock (_curStLock)
       {
         return _lastCurrentStatus;
-
       }
     }
 
@@ -242,10 +256,7 @@ namespace BlackMaple.MachineFramework
     {
       using (var jdb = _repo.OpenConnection())
       {
-        return _checkJobsValid.CheckNewJobs(jdb, new NewJobs()
-        {
-          Jobs = newJobs.ToImmutableList()
-        }).ToList();
+        return _checkJobsValid.CheckNewJobs(jdb, new NewJobs() { Jobs = newJobs.ToImmutableList() }).ToList();
       }
     }
 
@@ -285,13 +296,12 @@ namespace BlackMaple.MachineFramework
 
     private bool IsJobCompleted(ActiveJob job, CurrentStatus st)
     {
-      if (st == null) return false;
-      if (job.RemainingToStart > 0) return false;
+      if (st == null)
+        return false;
+      if (job.RemainingToStart > 0)
+        return false;
 
-      var matInProc =
-        st.Material
-        .Where(m => m.JobUnique == job.UniqueStr)
-        .Any();
+      var matInProc = st.Material.Where(m => m.JobUnique == job.UniqueStr).Any();
 
       if (matInProc)
       {
@@ -303,7 +313,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
+    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(
+      long loadDecrementsStrictlyAfterDecrementId
+    )
     {
       using (var jdb = _repo.OpenConnection())
       {
@@ -330,10 +342,15 @@ namespace BlackMaple.MachineFramework
       RecalculateCellState();
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<MachineFramework.NewProgramContent> programs)
+    public void ReplaceWorkordersForSchedule(
+      string scheduleId,
+      IEnumerable<Workorder> newWorkorders,
+      IEnumerable<MachineFramework.NewProgramContent> programs
+    )
     {
       var cellState = GetCurrentStatus();
-      if (cellState == null) return;
+      if (cellState == null)
+        return;
 
       using (var jdb = _repo.OpenConnection())
       {
@@ -354,7 +371,14 @@ namespace BlackMaple.MachineFramework
     #region Queues
     public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
-    private List<InProcessMaterial> AddUnallocatedCastingToQueue(IRepository logDB, string casting, int qty, string queue, IList<string> serial, string operatorName)
+    private List<InProcessMaterial> AddUnallocatedCastingToQueue(
+      IRepository logDB,
+      string casting,
+      int qty,
+      string queue,
+      IList<string> serial,
+      string operatorName
+    )
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -364,29 +388,35 @@ namespace BlackMaple.MachineFramework
       // num proc will be set later once it is allocated to a specific job
       var mats = new List<InProcessMaterial>();
 
-      var newMats = logDB.BulkAddNewCastingsInQueue(casting, qty, queue, serial, operatorName, reason: "SetByOperator");
+      var newMats = logDB.BulkAddNewCastingsInQueue(
+        casting,
+        qty,
+        queue,
+        serial,
+        operatorName,
+        reason: "SetByOperator"
+      );
 
       foreach (var log in newMats.Logs.Where(l => l.LogType == LogType.AddToQueue))
       {
-        mats.Add(new InProcessMaterial()
-        {
-          MaterialID = log.Material.First().MaterialID,
-          JobUnique = null,
-          PartName = casting,
-          Process = 0,
-          Path = 1,
-          Serial = log.Material.First().Serial,
-          Location = new InProcessMaterialLocation()
+        mats.Add(
+          new InProcessMaterial()
           {
-            Type = InProcessMaterialLocation.LocType.InQueue,
-            CurrentQueue = queue,
-            QueuePosition = log.LocationNum
-          },
-          Action = new InProcessMaterialAction()
-          {
-            Type = InProcessMaterialAction.ActionType.Waiting
+            MaterialID = log.Material.First().MaterialID,
+            JobUnique = null,
+            PartName = casting,
+            Process = 0,
+            Path = 1,
+            Serial = log.Material.First().Serial,
+            Location = new InProcessMaterialLocation()
+            {
+              Type = InProcessMaterialLocation.LocType.InQueue,
+              CurrentQueue = queue,
+              QueuePosition = log.LocationNum
+            },
+            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
           }
-        });
+        );
       }
 
       RecalculateCellState();
@@ -394,7 +424,12 @@ namespace BlackMaple.MachineFramework
       return mats;
     }
 
-    public InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, string serial, string operatorName)
+    public InProcessMaterial AddUnallocatedPartToQueue(
+      string partName,
+      string queue,
+      string serial,
+      string operatorName
+    )
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
@@ -425,13 +460,25 @@ namespace BlackMaple.MachineFramework
 
       using (var ldb = _repo.OpenConnection())
       {
-        return
-          AddUnallocatedCastingToQueue(ldb, casting, 1, queue, string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial }, operatorName)
+        return AddUnallocatedCastingToQueue(
+            ldb,
+            casting,
+            1,
+            queue,
+            string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial },
+            operatorName
+          )
           .FirstOrDefault();
       }
     }
 
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serial, string operatorName)
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(
+      string casting,
+      int qty,
+      string queue,
+      IList<string> serial,
+      string operatorName
+    )
     {
       using (var ldb = _repo.OpenConnection())
       {
@@ -439,15 +486,27 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial, string operatorName)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(
+      string jobUnique,
+      int process,
+      string queue,
+      int position,
+      string serial,
+      string operatorName
+    )
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
 
-      Log.Debug("Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
-        jobUnique, process, queue, position, serial
+      Log.Debug(
+        "Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
+        jobUnique,
+        process,
+        queue,
+        position,
+        serial
       );
 
       HistoricJob job;
@@ -455,10 +514,12 @@ namespace BlackMaple.MachineFramework
       {
         job = jdb.LoadJob(jobUnique);
       }
-      if (job == null) throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
+      if (job == null)
+        throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
 
       int procToCheck = Math.Max(1, process);
-      if (procToCheck > job.Processes.Count) throw new BlackMaple.MachineFramework.BadRequestException("Invalid process " + process.ToString());
+      if (procToCheck > job.Processes.Count)
+        throw new BlackMaple.MachineFramework.BadRequestException("Invalid process " + process.ToString());
 
       long matId;
       IEnumerable<LogEntry> logEvt;
@@ -474,7 +535,8 @@ namespace BlackMaple.MachineFramework
               Process = process,
               Face = ""
             },
-            serial);
+            serial
+          );
         }
         logEvt = ldb.RecordAddMaterialToQueue(
           matID: matId,
@@ -482,7 +544,8 @@ namespace BlackMaple.MachineFramework
           queue: queue,
           position: position,
           operatorName: operatorName,
-          reason: "SetByOperator");
+          reason: "SetByOperator"
+        );
       }
 
       RecalculateCellState();
@@ -501,10 +564,7 @@ namespace BlackMaple.MachineFramework
           CurrentQueue = queue,
           QueuePosition = logEvt.LastOrDefault()?.LocationNum
         },
-        Action = new InProcessMaterialAction()
-        {
-          Type = InProcessMaterialAction.ActionType.Waiting
-        }
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
       };
     }
 
@@ -514,9 +574,7 @@ namespace BlackMaple.MachineFramework
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
-      Log.Debug("Adding material {matId} to queue {queue} in position {pos}",
-        materialId, queue, position
-      );
+      Log.Debug("Adding material {matId} to queue {queue} in position {pos}", materialId, queue, position);
       using (var ldb = _repo.OpenConnection())
       {
         var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
@@ -527,7 +585,8 @@ namespace BlackMaple.MachineFramework
           queue: queue,
           position: position,
           operatorName: operatorName,
-          reason: "SetByOperator");
+          reason: "SetByOperator"
+        );
       }
 
       RecalculateCellState();
@@ -566,7 +625,12 @@ namespace BlackMaple.MachineFramework
         using (var ldb = _repo.OpenConnection())
         {
           ldb.SignalMaterialForQuarantine(
-            mat: new EventLogMaterial() { MaterialID = materialId, Process = palMat.Process, Face = "" },
+            mat: new EventLogMaterial()
+            {
+              MaterialID = materialId,
+              Process = palMat.Process,
+              Face = ""
+            },
             pallet: palMat.Location.Pallet,
             queue: queue,
             timeUTC: null,
@@ -594,7 +658,6 @@ namespace BlackMaple.MachineFramework
 
       using (var logDb = _repo.OpenConnection())
       {
-
         var o = logDb.SwapMaterialInCurrentPalletCycle(
           pallet: pallet,
           oldMatId: oldMatId,
@@ -603,18 +666,25 @@ namespace BlackMaple.MachineFramework
           quarantineQueue: _settings.QuarantineQueue
         );
 
-        OnEditMaterialInLog?.Invoke(new EditMaterialInLogEvents()
-        {
-          OldMaterialID = oldMatId,
-          NewMaterialID = newMatId,
-          EditedEvents = o.ChangedLogEntries,
-        });
+        OnEditMaterialInLog?.Invoke(
+          new EditMaterialInLogEvents()
+          {
+            OldMaterialID = oldMatId,
+            NewMaterialID = newMatId,
+            EditedEvents = o.ChangedLogEntries,
+          }
+        );
       }
 
       RecalculateCellState();
     }
 
-    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    public void InvalidatePalletCycle(
+      long matId,
+      int process,
+      string oldMatPutInQueue = null,
+      string operatorName = null
+    )
     {
       Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
 

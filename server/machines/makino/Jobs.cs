@@ -49,7 +49,13 @@ namespace Makino
     public event NewJobsDelegate OnNewJobs;
     public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
-    public Jobs(MakinoDB db, Func<IRepository> jdb, string xmlPath, bool onlyOrders, Action onJobCommentChange)
+    public Jobs(
+      MakinoDB db,
+      Func<IRepository> jdb,
+      string xmlPath,
+      bool onlyOrders,
+      Action onJobCommentChange
+    )
     {
       _db = db;
       _openJobDB = jdb;
@@ -78,10 +84,15 @@ namespace Makino
       {
         newJ = newJ with
         {
-          Jobs = newJ.Jobs.Select(j => j.AdjustAllPaths(path =>
-          {
-            path.Stops.AdjustAll(stop => stop.StationGroup = "MC");
-          })).ToImmutableList(),
+          Jobs = newJ.Jobs
+            .Select(
+              j =>
+                j.AdjustAllPaths(path =>
+                {
+                  path.Stops.AdjustAll(stop => stop.StationGroup = "MC");
+                })
+            )
+            .ToImmutableList(),
         };
         foreach (var j in newJ.Jobs)
         {
@@ -104,7 +115,9 @@ namespace Makino
     }
 
     #region Decrement
-    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
+    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(
+      long loadDecrementsStrictlyAfterDecrementId
+    )
     {
       return new List<JobAndDecrementQuantity>();
     }
@@ -114,25 +127,48 @@ namespace Makino
       return new List<JobAndDecrementQuantity>();
     }
 
-    public void ReplaceWorkordersForSchedule(string scheduleId, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs)
+    public void ReplaceWorkordersForSchedule(
+      string scheduleId,
+      IEnumerable<Workorder> newWorkorders,
+      IEnumerable<NewProgramContent> programs
+    )
     {
       // do nothing
     }
     #endregion
 
     #region Queues
-    public InProcessMaterial AddUnallocatedPartToQueue(string partName, string queue, string serial, string operatorName = null)
+    public InProcessMaterial AddUnallocatedPartToQueue(
+      string partName,
+      string queue,
+      string serial,
+      string operatorName = null
+    )
     {
       //do nothing
       return null;
     }
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(string casting, int qty, string queue, IList<string> serial, string operatorName = null)
+
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(
+      string casting,
+      int qty,
+      string queue,
+      IList<string> serial,
+      string operatorName = null
+    )
     {
       //do nothing
       return new List<InProcessMaterial>();
     }
 
-    public InProcessMaterial AddUnprocessedMaterialToQueue(string jobUnique, int process, string queue, int position, string serial, string operatorName = null)
+    public InProcessMaterial AddUnprocessedMaterialToQueue(
+      string jobUnique,
+      int process,
+      string queue,
+      int position,
+      string serial,
+      string operatorName = null
+    )
     {
       //do nothing
       return null;
@@ -158,11 +194,15 @@ namespace Makino
       // do nothing
     }
 
-    public void InvalidatePalletCycle(long matId, int process, string oldMatPutInQueue = null, string operatorName = null)
+    public void InvalidatePalletCycle(
+      long matId,
+      int process,
+      string oldMatPutInQueue = null,
+      string operatorName = null
+    )
     {
       // do nothing
     }
     #endregion
   }
 }
-

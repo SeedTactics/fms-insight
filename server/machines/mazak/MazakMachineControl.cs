@@ -44,7 +44,12 @@ namespace MazakMachineInterface
     private IMachineGroupName _machGroupName;
     private MazakConfig _mazakCfg;
 
-    public MazakMachineControl(RepositoryConfig jobDbCfg, IReadDataAccess readData, IMachineGroupName machineGroupName, MazakConfig mazakCfg)
+    public MazakMachineControl(
+      RepositoryConfig jobDbCfg,
+      IReadDataAccess readData,
+      IMachineGroupName machineGroupName,
+      MazakConfig mazakCfg
+    )
     {
       _jobDbCfg = jobDbCfg;
       _readData = readData;
@@ -57,48 +62,63 @@ namespace MazakMachineInterface
       var programs = _readData.LoadPrograms();
       using (var jobDb = _jobDbCfg.OpenConnection())
       {
-        return programs.Select(p =>
-        {
-          ProgramRevision prog = null;
-          if (MazakProcess.TryParseMainProgramComment(p.Comment, out var progFromComent, out var revFromComment))
+        return programs
+          .Select(p =>
           {
-            prog = jobDb.LoadProgram(progFromComent, revFromComment);
-            if (prog == null)
+            ProgramRevision prog = null;
+            if (
+              MazakProcess.TryParseMainProgramComment(
+                p.Comment,
+                out var progFromComent,
+                out var revFromComment
+              )
+            )
             {
-              prog = new ProgramRevision()
+              prog = jobDb.LoadProgram(progFromComent, revFromComment);
+              if (prog == null)
               {
-                ProgramName = progFromComent,
-                Revision = revFromComment,
-              };
+                prog = new ProgramRevision() { ProgramName = progFromComent, Revision = revFromComment, };
+              }
             }
-          }
-          return new ProgramInCellController()
-          {
-            ProgramName = prog?.ProgramName ?? p.MainProgram,
-            CellControllerProgramName = p.MainProgram,
-            Revision = prog?.Revision,
-            Comment = prog?.Comment ?? p.Comment
-          };
-        }).ToList();
+            return new ProgramInCellController()
+            {
+              ProgramName = prog?.ProgramName ?? p.MainProgram,
+              CellControllerProgramName = p.MainProgram,
+              Revision = prog?.Revision,
+              Comment = prog?.Comment ?? p.Comment
+            };
+          })
+          .ToList();
       }
     }
 
     public List<ToolInMachine> CurrentToolsInMachines()
     {
-      return _readData.LoadTools()
-        .Where(t => t.MachineNumber.HasValue && (t.IsToolDataValid ?? false) && t.PocketNumber.HasValue && !string.IsNullOrEmpty(t.GroupNo))
-        .Select(t => new ToolInMachine()
-        {
-          MachineGroupName = _machGroupName.MachineGroupName,
-          MachineNum = t.MachineNumber.Value,
-          Pocket = t.PocketNumber.Value,
-          ToolName = _mazakCfg?.ExtractToolName == null ? t.GroupNo : _mazakCfg.ExtractToolName(t),
-          Serial = null,
-          CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
-          TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0),
-          CurrentUseCount = null,
-          TotalLifeCount = null
-        }).ToList();
+      return _readData
+        .LoadTools()
+        .Where(
+          t =>
+            t.MachineNumber.HasValue
+            && (t.IsToolDataValid ?? false)
+            && t.PocketNumber.HasValue
+            && !string.IsNullOrEmpty(t.GroupNo)
+        )
+        .Select(
+          t =>
+            new ToolInMachine()
+            {
+              MachineGroupName = _machGroupName.MachineGroupName,
+              MachineNum = t.MachineNumber.Value,
+              Pocket = t.PocketNumber.Value,
+              ToolName = _mazakCfg?.ExtractToolName == null ? t.GroupNo : _mazakCfg.ExtractToolName(t),
+              Serial = null,
+              CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
+              TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0),
+              CurrentUseCount = null,
+              TotalLifeCount = null
+            }
+        )
+        .ToList();
     }
 
     public string GetProgramContent(string programName, long? revision)
@@ -123,7 +143,11 @@ namespace MazakMachineInterface
       return "";
     }
 
-    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(string programName, int count, long? revisionToStart)
+    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
+      string programName,
+      int count,
+      long? revisionToStart
+    )
     {
       using (var jobDb = _jobDbCfg.OpenConnection())
       {

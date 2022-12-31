@@ -41,135 +41,135 @@ namespace Makino
 {
   #region Description of DB
   /* Makino static data.
-	 * ----------------------------------------------------------------------------------
-	 * A part consists of:
-	 *   - A globally unique integer called PartID
-	 *   - A name, revision, comment, priority
-	 *   - dbo.Parts stores the above data with one row per part
-	 *   - list of processes (found in dbo.Processes)
-	 *
-	 * A process consists of:
-	 *   - A globally unique integer called ProcessID (unique over all parts)
-	 *   - The PartID
-	 *   - A process number (a counter starting at 1 for each part)
-	 *   - A name, comment, offset file, priority
-	 *   - dbo.Process stores the above data with one row per process
-	 *
-	 *   - a list of operations
-	 *   - a list of jobs
-	 *
-	 * An operation consists of
-	 *   - A globally unique integer called OperationID
-	 *   - ProcessID  (which since it is unique identifies also the part)
-	 *   - An OperationSequence starting at 1 for each process
-	 *   - Three fields called ClampQuantity, UnclampMultiplier, OperationName
-	 *   - dbo.Operations stores the above data
-	 *
-	 * A job consists of
-	 *   - A globally unique JobID
-	 *   - ProcessID (which identifies a process of a part)
-	 *   - A JobNumber starting at 1 for each process
-	 *   - Comment
-	 *   - A JobType, which is 1 for load/unload and 2 for machining
-	 *   - dbo.Jobs stores the above data
-	 *
-	 * If a job is a load/unload job, the following additional data is stored
-	 *   - JobID
-	 *   - OperationType: 0 = load, 1 = unload
-	 *   - MotionType, InformationFile, WorkSetTime
-	 *   - dbo.WorkSetJobs stores this.
-	 *
-	 * If a job is a machining job, the following additional data is stored
-	 *   - JobID
-	 *   - OperatorCall (0 = none, 1 = permanent, 2 = oneshot)
-	 *   - OptionalBlockSkip (comma delimited list of values 2 through 9)
-	 *   - NCProgramID (lookup in dbo.NCProgramFiles)
-	 *   - MachiningMode, MachiningTime, TimeStudy, WHPMachiningType
-	 *   - dbo.MachiningJobs stores this
-	 *
-	 * A job also consists of a list of feasible devices in dbo.JobFeasibleDevices
-	 *   - JobID, FeasibleDeviceID (lookup in dbo.Devices)
-	 *
-	 * -------------------------------------------------------------------------------
-	 *
-	 * A fixture consists of
-	 *   - Globally unique FixtureID
-	 *   - name, comment, offsetfile
-	 *   - above stored in dbo.Fixtures.
-	 *   - list of processes
-	 *
-	 * The list of processes on a fixture is
-	 *   - FixtureID
-	 *   - ProcessID (uniquely identifies a process and part)
-	 *   - FixturePriority
-	 *   - OffsetFile
-	 *   - above stored in dbo.FixtureProcesses
-	 *
-	 * -------------------------------------------------------------------------------
-	 *
-	 * An order consists of
-	 *   - OrderID
-	 *   - PartID
-	 *   - name, comment, quantity, priority, start date, due date
-	 *   - above stored in dbo.Orders
-	 *
-	 * -------------------------------------------------------------------------------
-	 *
-	 * A pallet consists of
-	 *   - PalletID (globally unique integer)
-	 *   - PalletNumber, name, comment, pallet type (seems to be 0 always), priority, home info, vehicle id
-	 *   - above stored in dbo.Pallets
-	 *   - A list of fixtures currently mounted on the pallet
-	 *   - a list of feasible devices
-	 *
-	 * The list of fixutres assigned to the pallet
-	 *   - PalletFixtureID (globally unique integer)
-	 *   - PalletID
-	 *   - FixtureNumber (counter starting at 1 for each pallet id)
-	 *   - FixtureID currently in this (PalletID, FixtureNumber)
-	 *   - offset file, comment, pallet index (always seems to be zero)
-	 *   - some status columns
-	 *   - Above stored in dbo.PalletFixtures
-	 *
-	 * The list of pallet feasible devices is in dbo.PalletFeasibleDevice
-	 */
+   * ----------------------------------------------------------------------------------
+   * A part consists of:
+   *   - A globally unique integer called PartID
+   *   - A name, revision, comment, priority
+   *   - dbo.Parts stores the above data with one row per part
+   *   - list of processes (found in dbo.Processes)
+   *
+   * A process consists of:
+   *   - A globally unique integer called ProcessID (unique over all parts)
+   *   - The PartID
+   *   - A process number (a counter starting at 1 for each part)
+   *   - A name, comment, offset file, priority
+   *   - dbo.Process stores the above data with one row per process
+   *
+   *   - a list of operations
+   *   - a list of jobs
+   *
+   * An operation consists of
+   *   - A globally unique integer called OperationID
+   *   - ProcessID  (which since it is unique identifies also the part)
+   *   - An OperationSequence starting at 1 for each process
+   *   - Three fields called ClampQuantity, UnclampMultiplier, OperationName
+   *   - dbo.Operations stores the above data
+   *
+   * A job consists of
+   *   - A globally unique JobID
+   *   - ProcessID (which identifies a process of a part)
+   *   - A JobNumber starting at 1 for each process
+   *   - Comment
+   *   - A JobType, which is 1 for load/unload and 2 for machining
+   *   - dbo.Jobs stores the above data
+   *
+   * If a job is a load/unload job, the following additional data is stored
+   *   - JobID
+   *   - OperationType: 0 = load, 1 = unload
+   *   - MotionType, InformationFile, WorkSetTime
+   *   - dbo.WorkSetJobs stores this.
+   *
+   * If a job is a machining job, the following additional data is stored
+   *   - JobID
+   *   - OperatorCall (0 = none, 1 = permanent, 2 = oneshot)
+   *   - OptionalBlockSkip (comma delimited list of values 2 through 9)
+   *   - NCProgramID (lookup in dbo.NCProgramFiles)
+   *   - MachiningMode, MachiningTime, TimeStudy, WHPMachiningType
+   *   - dbo.MachiningJobs stores this
+   *
+   * A job also consists of a list of feasible devices in dbo.JobFeasibleDevices
+   *   - JobID, FeasibleDeviceID (lookup in dbo.Devices)
+   *
+   * -------------------------------------------------------------------------------
+   *
+   * A fixture consists of
+   *   - Globally unique FixtureID
+   *   - name, comment, offsetfile
+   *   - above stored in dbo.Fixtures.
+   *   - list of processes
+   *
+   * The list of processes on a fixture is
+   *   - FixtureID
+   *   - ProcessID (uniquely identifies a process and part)
+   *   - FixturePriority
+   *   - OffsetFile
+   *   - above stored in dbo.FixtureProcesses
+   *
+   * -------------------------------------------------------------------------------
+   *
+   * An order consists of
+   *   - OrderID
+   *   - PartID
+   *   - name, comment, quantity, priority, start date, due date
+   *   - above stored in dbo.Orders
+   *
+   * -------------------------------------------------------------------------------
+   *
+   * A pallet consists of
+   *   - PalletID (globally unique integer)
+   *   - PalletNumber, name, comment, pallet type (seems to be 0 always), priority, home info, vehicle id
+   *   - above stored in dbo.Pallets
+   *   - A list of fixtures currently mounted on the pallet
+   *   - a list of feasible devices
+   *
+   * The list of fixutres assigned to the pallet
+   *   - PalletFixtureID (globally unique integer)
+   *   - PalletID
+   *   - FixtureNumber (counter starting at 1 for each pallet id)
+   *   - FixtureID currently in this (PalletID, FixtureNumber)
+   *   - offset file, comment, pallet index (always seems to be zero)
+   *   - some status columns
+   *   - Above stored in dbo.PalletFixtures
+   *
+   * The list of pallet feasible devices is in dbo.PalletFeasibleDevice
+   */
 
   /* Current Status
-	 *  -------------------------------------------------------------------------------
-	 * 	 - dbo.Quantities (one row per Order, Process pair)
-	 *        OrderID, ProcessID, quantities
-	 *
-	 *   - dbo.FixtureRun  (one row per PalletFixtureID)
-	 *       PalletFixtureID (a location on a pallet)
-	 *       current process, order, job
-	 *       status flag (seems to be 1 or 2)
-	 *       MachineDeviceID
-	 *       some status columns
-	 *
-	 *   - dbo.FixtureQuantity (one row per PalletFixtureID)
-	 *       PalletFixtureID (a location on a pallet)
-	 *       OperationID ??
-	 *       some quantities
-	 *
-	 *   - dbo.PalletLocation
-	 *       PalletID, DeviceID
+   *  -------------------------------------------------------------------------------
+   * 	 - dbo.Quantities (one row per Order, Process pair)
+   *        OrderID, ProcessID, quantities
+   *
+   *   - dbo.FixtureRun  (one row per PalletFixtureID)
+   *       PalletFixtureID (a location on a pallet)
+   *       current process, order, job
+   *       status flag (seems to be 1 or 2)
+   *       MachineDeviceID
+   *       some status columns
+   *
+   *   - dbo.FixtureQuantity (one row per PalletFixtureID)
+   *       PalletFixtureID (a location on a pallet)
+   *       OperationID ??
+   *       some quantities
+   *
+   *   - dbo.PalletLocation
+   *       PalletID, DeviceID
      *
-	 *   - dbo.ManualTransport
-	 *       Current manual transports
-	 *
-	 *   - dbo.WorkSetStatus (one row per load station)
-	 *       DeviceID, status info
-	 *
-	 * 	 - dbo.MachineStatus (one row per machine)
-	 *       DeviceID, status info
-	 *
-	 *   - dbo.WorkSetCommand (load/unload instructions)
-	 *       DeviceID
-	 *       PalletFixtureID (a location on a pallet)
-	 *       UnclampJobID, UnclampOrderID
-	 *       ClampJobID, ClampOrderID
-	 *       A bunch of other columns, not sure what they do
-	 */
+   *   - dbo.ManualTransport
+   *       Current manual transports
+   *
+   *   - dbo.WorkSetStatus (one row per load station)
+   *       DeviceID, status info
+   *
+   * 	 - dbo.MachineStatus (one row per machine)
+   *       DeviceID, status info
+   *
+   *   - dbo.WorkSetCommand (load/unload instructions)
+   *       DeviceID
+   *       PalletFixtureID (a location on a pallet)
+   *       UnclampJobID, UnclampOrderID
+   *       ClampJobID, ClampOrderID
+   *       A bunch of other columns, not sure what they do
+   */
 
   /* Unknown Tables
    * - dbo.ONumbers ????
@@ -193,14 +193,21 @@ namespace Makino
     private StatusDB _status;
     private string dbo;
 
-    public MakinoDB(BlackMaple.MachineFramework.RepositoryConfig logDb, DBTypeEnum dbType, string dbConnStr, StatusDB status)
+    public MakinoDB(
+      BlackMaple.MachineFramework.RepositoryConfig logDb,
+      DBTypeEnum dbType,
+      string dbConnStr,
+      StatusDB status
+    )
     {
       _logDbCfg = logDb;
       _status = status;
       switch (dbType)
       {
         case DBTypeEnum.SqlLocal:
-          _db = new System.Data.SqlClient.SqlConnection("Data Source = (localdb)\\MSSQLLocalDB; Initial Catalog = Makino;");
+          _db = new System.Data.SqlClient.SqlConnection(
+            "Data Source = (localdb)\\MSSQLLocalDB; Initial Catalog = Makino;"
+          );
           _db.Open();
           dbo = "dbo.";
           break;
@@ -257,7 +264,7 @@ namespace Makino
       public int JobNum;
 
       /* Process name is just some data about the process entered by the user,
-		     * not used as a key or anything like that */
+         * not used as a key or anything like that */
       public string ProcessName;
 
       /* program for this (part,revision,process,job) combo */
@@ -268,32 +275,35 @@ namespace Makino
       public List<int> OperQuantities;
 
       /* Fields not loaded
-			 *
-			 * PalletIndex:
-			 *   always zero in the test data
-			 *
-			 * OffestFileName:
-			 *   not currently used/needed by machine watch
-			 *
-			 * AlarmNumber
-			 *   can/should we load and use this?
-			 *   it is always null in the test data
-			 *
-			 * FinishStatus
-			 *   what is this?
-			 *   it is either 'Normal' or 'ToolLife' in the test data
-			 */
+       *
+       * PalletIndex:
+       *   always zero in the test data
+       *
+       * OffestFileName:
+       *   not currently used/needed by machine watch
+       *
+       * AlarmNumber
+       *   can/should we load and use this?
+       *   it is always null in the test data
+       *
+       * FinishStatus
+       *   what is this?
+       *   it is either 'Normal' or 'ToolLife' in the test data
+       */
     }
 
     public List<MachineResults> QueryMachineResults(DateTime startUTC, DateTime endUTC)
     {
       using (var cmd = _db.CreateCommand())
       {
-        cmd.CommandText = "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
+        cmd.CommandText =
+          "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
           + "FixtureNumber,FixtureName,FixtureComment,OrderName,PartName,Revision,ProcessNumber,"
-            + "JobNumber,ProcessName,NCProgramFileName,SpindleTime,"
+          + "JobNumber,ProcessName,NCProgramFileName,SpindleTime,"
           + "MaxOperation,QuantityOpe1,QuantityOpe2,QuantityOpe3,QuantityOpe4"
-          + " FROM " + dbo + "MachineResults WHERE FinishDateTime >= @start AND FinishDateTime <= @end";
+          + " FROM "
+          + dbo
+          + "MachineResults WHERE FinishDateTime >= @start AND FinishDateTime <= @end";
         var param = cmd.CreateParameter();
         param.ParameterName = "@start";
         param.DbType = DbType.DateTime;
@@ -311,7 +321,6 @@ namespace Makino
         {
           while (reader.Read())
           {
-
             var m = new MachineResults();
 
             m.StartDateTimeLocal = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local);
@@ -379,7 +388,7 @@ namespace Makino
       public int LoadJobNum;
 
       /* Process name is just some data about the process entered by the user,
-		     * not used as a key or anything like that */
+         * not used as a key or anything like that */
       public string UnloadProcessName;
       public string LoadProcessName;
 
@@ -389,41 +398,43 @@ namespace Makino
       public List<int> UnloadOutProcQuantities; /* TODO: What is this? */
 
       /* At the load station, the operator can push a button saying nothing was unloaded.
-			 * This still adds an entry to the log but it is marked as a remachine, and no quantities are updated
-			 */
+       * This still adds an entry to the log but it is marked as a remachine, and no quantities are updated
+       */
       public bool Remachine;
 
       /* Fields not loaded
-			  * OperationType:
-			  *    seems to be 2 for load and unload, 6 for no load or unload, 4 for unload only,
-			  *    and 1 for load only, plus 3 shows up sometimes.
-			  *
-			  * OperationStatus:
-			  *    not sure what this is
-			  *
-			  * ErrorCode:
-			  *    always null in my test data
-			  *
-			  * ResultVersion
-			  *    always 1 in the test data
-			  */
-
+        * OperationType:
+        *    seems to be 2 for load and unload, 6 for no load or unload, 4 for unload only,
+        *    and 1 for load only, plus 3 shows up sometimes.
+        *
+        * OperationStatus:
+        *    not sure what this is
+        *
+        * ErrorCode:
+        *    always null in my test data
+        *
+        * ResultVersion
+        *    always 1 in the test data
+        */
     }
 
     public List<WorkSetResults> QueryLoadUnloadResults(DateTime startUTC, DateTime endUTC)
     {
       using (var cmd = _db.CreateCommand())
       {
-        cmd.CommandText = "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
+        cmd.CommandText =
+          "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
           + "FixtureNumber,FixtureName,FixtureComment,"
           + "UnclampOrderName,UnclampPartName,UnclampRevision,UnclampProcessNumber,UnclampJobNumber,UnclampProcessName,"
           + "ClampOrderName,ClampPartName,ClampRevision,ClampProcessNumber,ClampJobNumber,ClampProcessName,"
           + "Remachine,"
           + "ClampQuantityOpe1,ClampQuantityOpe2,ClampQuantityOpe3,ClampQuantityOpe4,"
-            + "UnclampNormalQtyOpe1, UnclampNormalQtyOpe2, UnclampNormalQtyOpe3, UnclampNormalQtyOpe4,"
+          + "UnclampNormalQtyOpe1, UnclampNormalQtyOpe2, UnclampNormalQtyOpe3, UnclampNormalQtyOpe4,"
           + "UnclampScrapQtyOpe1, UnclampScrapQtyOpe2, UnclampScrapQtyOpe3, UnclampScrapQtyOpe4,"
           + "UnclampOutProcQtyOpe1, UnclampOutProcQtyOpe2, UnclampOutProcQtyOpe3, UnclampOutProcQtyOpe4"
-          + " FROM " + dbo + "WorkSetResults WHERE FinishDateTime >= @start AND FinishDateTime <= @end";
+          + " FROM "
+          + dbo
+          + "WorkSetResults WHERE FinishDateTime >= @start AND FinishDateTime <= @end";
         var param = cmd.CreateParameter();
         param.ParameterName = "@start";
         param.DbType = DbType.DateTime;
@@ -441,7 +452,6 @@ namespace Makino
         {
           while (reader.Read())
           {
-
             var m = new WorkSetResults();
 
             m.StartDateTimeUTC = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local);
@@ -515,20 +525,23 @@ namespace Makino
       public string Value;
 
       /* Fields Not Loaded
-			 *
-			 * - PalletNumber
-			 * - MainONNumber
-			 * - ExecOnNumber
-			 * - SequenceNumber
-			 */
+       *
+       * - PalletNumber
+       * - MainONNumber
+       * - ExecOnNumber
+       * - SequenceNumber
+       */
     }
 
     public List<CommonValue> QueryCommonValues(MachineResults mach)
     {
       using (var cmd = _db.CreateCommand())
       {
-        cmd.CommandText = "SELECT ExecDateTime,Number,Value"
-          + " FROM " + dbo + "CommonValues "
+        cmd.CommandText =
+          "SELECT ExecDateTime,Number,Value"
+          + " FROM "
+          + dbo
+          + "CommonValues "
           + " WHERE ExecDateTime >= @start AND ExecDateTime <= @end AND DeviceID = @dev";
         var param = cmd.CreateParameter();
         param.ParameterName = "@start";
@@ -601,73 +614,117 @@ namespace Makino
       using (var logDb = _logDbCfg.OpenConnection())
       using (var cmd = _db.CreateCommand())
       {
-
         var map = new MakinoToJobMap(logDb);
         var palMap = new MakinoToPalletMap();
 
-        Load("SELECT PartID, ProcessNumber, ProcessID FROM " + dbo + "Processes", reader =>
-        {
-          map.AddProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
-        });
+        Load(
+          "SELECT PartID, ProcessNumber, ProcessID FROM " + dbo + "Processes",
+          reader =>
+          {
+            map.AddProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
+          }
+        );
 
         //Makino: Parts   MachineWatch: Jobs
-        Load("SELECT PartID, PartName, Revision, Comment, Priority FROM " + dbo + "Parts", reader =>
-        {
-          var partID = reader.GetInt32(0);
+        Load(
+          "SELECT PartID, PartName, Revision, Comment, Priority FROM " + dbo + "Parts",
+          reader =>
+          {
+            var partID = reader.GetInt32(0);
 
-          var partName = reader.GetString(1);
-          if (!reader.IsDBNull(2))
-            partName += reader.GetString(2);
+            var partName = reader.GetString(1);
+            if (!reader.IsDBNull(2))
+              partName += reader.GetString(2);
 
-          map.CreateJob(partName, partID, reader.GetString(1), reader.IsDBNull(3) ? null : reader.GetString(3));
-        });
-
+            map.CreateJob(
+              partName,
+              partID,
+              reader.GetString(1),
+              reader.IsDBNull(3) ? null : reader.GetString(3)
+            );
+          }
+        );
 
         var devices = Devices();
 
-        Load("SELECT ProcessID, JobNumber, JobID FROM " + dbo + "Jobs", reader =>
-        {
-          map.AddJobToProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
-        });
+        Load(
+          "SELECT ProcessID, JobNumber, JobID FROM " + dbo + "Jobs",
+          reader =>
+          {
+            map.AddJobToProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
+          }
+        );
 
-        Load("SELECT a.JobID, b.Name FROM " + dbo + "MachineJobs a " +
-          "INNER JOIN " + dbo + "NCProgramFiles b " +
-          "ON a.NCProgramFileID = b.NCProgramFileID", reader =>
+        Load(
+          "SELECT a.JobID, b.Name FROM "
+            + dbo
+            + "MachineJobs a "
+            + "INNER JOIN "
+            + dbo
+            + "NCProgramFiles b "
+            + "ON a.NCProgramFileID = b.NCProgramFileID",
+          reader =>
           {
             map.AddProgramToJob(reader.GetInt32(0), reader.GetString(1));
-          });
+          }
+        );
 
-        Load("SELECT JobID, FeasibleDeviceID FROM " + dbo + "JobFeasibleDevices", reader =>
-        {
-          map.AddAllowedStationToJob(reader.GetInt32(0), devices[reader.GetInt32(1)]);
-        });
+        Load(
+          "SELECT JobID, FeasibleDeviceID FROM " + dbo + "JobFeasibleDevices",
+          reader =>
+          {
+            map.AddAllowedStationToJob(reader.GetInt32(0), devices[reader.GetInt32(1)]);
+          }
+        );
 
         map.CompleteStations();
 
-        Load("SELECT a.PalletFixtureID, a.FixtureNumber, a.FixtureID, b.PalletNumber, c.CurDeviceType, c.CurDeviceNumber " +
-          "FROM " + dbo + "PalletFixtures a, " + dbo + "Pallets b, " + dbo + "PalletLocation c " +
-          "WHERE a.PalletID = b.PalletID AND a.PalletID = c.PalletID " +
-          " AND a.FixtureID IS NOT NULL", reader =>
+        Load(
+          "SELECT a.PalletFixtureID, a.FixtureNumber, a.FixtureID, b.PalletNumber, c.CurDeviceType, c.CurDeviceNumber "
+            + "FROM "
+            + dbo
+            + "PalletFixtures a, "
+            + dbo
+            + "Pallets b, "
+            + dbo
+            + "PalletLocation c "
+            + "WHERE a.PalletID = b.PalletID AND a.PalletID = c.PalletID "
+            + " AND a.FixtureID IS NOT NULL",
+          reader =>
           {
-
             var loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 0);
             if (!reader.IsDBNull(4) && !reader.IsDBNull(5))
               loc = ParseDevice(reader.GetInt16(4), reader.GetInt16(5));
 
-            palMap.AddPalletInfo(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2),
-              reader.GetInt32(3), loc);
-          });
+            palMap.AddPalletInfo(
+              reader.GetInt32(0),
+              reader.GetInt32(1),
+              reader.GetInt32(2),
+              reader.GetInt32(3),
+              loc
+            );
+          }
+        );
 
-        Load("SELECT ProcessID, FixtureID FROM " + dbo + "FixtureProcesses", reader =>
-        {
-          map.AddFixtureToProcess(reader.GetInt32(0), reader.GetInt32(1),
-            palMap.PalletsForFixture(reader.GetInt32(1)));
-        });
-
-        Load("SELECT OrderID, OrderName, PartID, Comment, Quantity, Priority, StartDate " +
-          "FROM " + dbo + "Orders", reader =>
+        Load(
+          "SELECT ProcessID, FixtureID FROM " + dbo + "FixtureProcesses",
+          reader =>
           {
+            map.AddFixtureToProcess(
+              reader.GetInt32(0),
+              reader.GetInt32(1),
+              palMap.PalletsForFixture(reader.GetInt32(1))
+            );
+          }
+        );
 
+        Load(
+          "SELECT OrderID, OrderName, PartID, Comment, Quantity, Priority, StartDate "
+            + "FROM "
+            + dbo
+            + "Orders",
+          reader =>
+          {
             var newJob = map.DuplicateForOrder(reader.GetInt32(0), reader.GetString(1), reader.GetInt32(2));
 
             DateTime start = DateTime.SpecifyKind(reader.GetDateTime(6), DateTimeKind.Local);
@@ -678,23 +735,39 @@ namespace Makino
               Comment = reader.IsDBNull(3) ? newJob.Comment : reader.GetString(3),
               Cycles = reader.GetInt32(4),
               Precedence = ImmutableList.Create(ImmutableList.Create<long>(reader.GetInt16(5))),
-              Processes = newJob.Processes.Select(proc => new BlackMaple.MachineFramework.ProcessInfo()
-              {
-                Paths = proc.Paths.Select(path => path with { SimulatedStartingUTC = start }).ToImmutableList()
-              }).ToImmutableList()
+              Processes = newJob.Processes
+                .Select(
+                  proc =>
+                    new BlackMaple.MachineFramework.ProcessInfo()
+                    {
+                      Paths = proc.Paths
+                        .Select(path => path with { SimulatedStartingUTC = start })
+                        .ToImmutableList()
+                    }
+                )
+                .ToImmutableList()
             };
-          });
+          }
+        );
 
-        Load("SELECT OrderID, ProcessID, RemainingQuantity, NormalQuantity, ScrapQuantity " +
-          "FROM " + dbo + "Quantities", reader =>
+        Load(
+          "SELECT OrderID, ProcessID, RemainingQuantity, NormalQuantity, ScrapQuantity "
+            + "FROM "
+            + dbo
+            + "Quantities",
+          reader =>
           {
             map.AddQuantityToProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(3));
-          });
+          }
+        );
 
-        Load("SELECT PalletFixtureID, CurProcessID, CurOrderID, CurJobID, WorkStatus " +
-          "FROM " + dbo + "FixtureRun WHERE CurProcessID IS NOT NULL", reader =>
+        Load(
+          "SELECT PalletFixtureID, CurProcessID, CurOrderID, CurJobID, WorkStatus "
+            + "FROM "
+            + dbo
+            + "FixtureRun WHERE CurProcessID IS NOT NULL",
+          reader =>
           {
-
             int palfixID = reader.GetInt32(0);
             int orderID = reader.GetInt32(2);
             var job = map.JobForOrder(orderID);
@@ -722,10 +795,20 @@ namespace Makino
               {
                 if (m.Order != orderName)
                 {
-                  Log.Debug("Current material on pallet " + palletNum.ToString() +
-                              " loc " + fixtureNum.ToString() + " was expecting orderID " +
-                              orderID.ToString() + " for order " + orderName.ToString() +
-                              ", but found order " + m.Order + " for part loaded at " + m.LoadedUTC.ToString());
+                  Log.Debug(
+                    "Current material on pallet "
+                      + palletNum.ToString()
+                      + " loc "
+                      + fixtureNum.ToString()
+                      + " was expecting orderID "
+                      + orderID.ToString()
+                      + " for order "
+                      + orderName.ToString()
+                      + ", but found order "
+                      + m.Order
+                      + " for part loaded at "
+                      + m.LoadedUTC.ToString()
+                  );
                   matIDs.Clear();
                   break;
                 }
@@ -741,21 +824,29 @@ namespace Makino
 
             foreach (var m in matIDs)
             {
-              var inProcMat =
-                              map.CreateMaterial(
-                                  orderID, reader.GetInt32(1), reader.GetInt32(3), palletNum,
-                                  fixtureNum, m.MatID);
+              var inProcMat = map.CreateMaterial(
+                orderID,
+                reader.GetInt32(1),
+                reader.GetInt32(3),
+                palletNum,
+                fixtureNum,
+                m.MatID
+              );
 
               palMap.AddMaterial(palfixID, inProcMat);
             }
-          });
+          }
+        );
 
         //There is a MovePalletFixtureID column which presumebly means rotate through process?
         //Other columns include remachining, cancel, recleaning, offdutyprocess, operation status
-        Load("SELECT PalletFixtureID, UnclampJobID, UnclampOrderID, ClampJobID, ClampOrderID, ClampQuantity " +
-          "FROM " + dbo + "WorkSetCommand WHERE PalletFixtureID IS NOT NULL", reader =>
+        Load(
+          "SELECT PalletFixtureID, UnclampJobID, UnclampOrderID, ClampJobID, ClampOrderID, ClampQuantity "
+            + "FROM "
+            + dbo
+            + "WorkSetCommand WHERE PalletFixtureID IS NOT NULL",
+          reader =>
           {
-
             var palfixID = reader.GetInt32(0);
 
             if (!reader.IsDBNull(1) && !reader.IsDBNull(2))
@@ -783,9 +874,8 @@ namespace Makino
               if (job != null)
                 palMap.AddMaterialToLoad(palfixID, job.UniqueStr, job.PartName, procNum, qty);
             }
-
-
-          });
+          }
+        );
 
         //TODO: inspections (from jobdb), holds
 
@@ -810,7 +900,6 @@ namespace Makino
         {
           while (reader.Read())
           {
-
             var row = "   ";
             for (int i = 0; i < reader.FieldCount; i++)
             {
@@ -857,4 +946,3 @@ namespace Makino
     #endregion
   }
 }
-

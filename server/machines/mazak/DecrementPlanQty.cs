@@ -78,12 +78,12 @@ namespace MazakMachineInterface
       var jobs = JobsToDecrement(jobDB, _read.LoadStatusAndTools());
       Log.Debug("Found jobs to decrement {@jobs}", jobs);
 
-      if (jobs.Count == 0) return;
+      if (jobs.Count == 0)
+        return;
 
       ReducePlannedQuantity(jobs);
       RecordDecrement(jobDB, jobs, now);
     }
-
 
     private class DecrSchedule
     {
@@ -100,19 +100,24 @@ namespace MazakMachineInterface
       foreach (var sch in schedules.Schedules)
       {
         //parse schedule
-        if (!MazakPart.IsSailPart(sch.PartName, sch.Comment)) continue;
-        if (string.IsNullOrEmpty(sch.Comment)) continue;
+        if (!MazakPart.IsSailPart(sch.PartName, sch.Comment))
+          continue;
+        if (string.IsNullOrEmpty(sch.Comment))
+          continue;
         MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
-        if (manual) continue;
+        if (manual)
+          continue;
 
         //load the job
-        if (string.IsNullOrEmpty(unique)) continue;
+        if (string.IsNullOrEmpty(unique))
+          continue;
         var job = jobDB.LoadJob(unique);
-        if (job == null) continue;
+        if (job == null)
+          continue;
 
         // if already decremented, ignore
-        if (jobDB.LoadDecrementsForJob(unique).Any()) continue;
-
+        if (jobDB.LoadDecrementsForJob(unique).Any())
+          continue;
 
         // check load is in process
         var loadOpers = schedules.LoadActions;
@@ -121,26 +126,36 @@ namespace MazakMachineInterface
         {
           foreach (var action in loadOpers)
           {
-            if (action.Unique == job.UniqueStr && action.Process == 1 && action.LoadEvent && action.Path == procToPath.PathForProc(action.Process))
+            if (
+              action.Unique == job.UniqueStr
+              && action.Process == 1
+              && action.LoadEvent
+              && action.Path == procToPath.PathForProc(action.Process)
+            )
             {
               loadingQty += action.Qty;
-              Log.Debug("Found {uniq} is in the process of being loaded action {@action}", job.UniqueStr, action);
+              Log.Debug(
+                "Found {uniq} is in the process of being loaded action {@action}",
+                job.UniqueStr,
+                action
+              );
             }
           }
         }
 
-        jobs.Add(new DecrSchedule()
-        {
-          Schedule = sch,
-          Job = job,
-          Proc1Path = procToPath.PathForProc(proc: 1),
-          NewPlanQty = CountCompletedOrMachiningStarted(sch) + loadingQty
-        });
+        jobs.Add(
+          new DecrSchedule()
+          {
+            Schedule = sch,
+            Job = job,
+            Proc1Path = procToPath.PathForProc(proc: 1),
+            NewPlanQty = CountCompletedOrMachiningStarted(sch) + loadingQty
+          }
+        );
       }
 
       return jobs;
     }
-
 
     private void ReducePlannedQuantity(ICollection<DecrSchedule> jobs)
     {
@@ -177,24 +192,32 @@ namespace MazakMachineInterface
         var newPlanQty = decrsForJob.Sum(d => d.NewPlanQty);
         if (planned > newPlanQty)
         {
-          decrAmt.Add(new NewDecrementQuantity()
-          {
-            JobUnique = job.UniqueStr,
-            Part = job.PartName,
-            Quantity = planned - newPlanQty
-          });
+          decrAmt.Add(
+            new NewDecrementQuantity()
+            {
+              JobUnique = job.UniqueStr,
+              Part = job.PartName,
+              Quantity = planned - newPlanQty
+            }
+          );
         }
       }
 
-      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddDays(-7), DateTime.UtcNow.AddHours(1), includeDecremented: false);
+      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(
+        DateTime.UtcNow.AddDays(-7),
+        DateTime.UtcNow.AddHours(1),
+        includeDecremented: false
+      );
       foreach (var j in oldJobs)
       {
-        decrAmt.Add(new NewDecrementQuantity()
-        {
-          JobUnique = j.UniqueStr,
-          Part = j.PartName,
-          Quantity = j.Cycles
-        });
+        decrAmt.Add(
+          new NewDecrementQuantity()
+          {
+            JobUnique = j.UniqueStr,
+            Part = j.PartName,
+            Quantity = j.Cycles
+          }
+        );
       }
 
       if (decrAmt.Count > 0)

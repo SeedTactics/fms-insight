@@ -46,35 +46,68 @@ namespace MachineWatchTest
   {
     public object Create(object request, AutoFixture.Kernel.ISpecimenContext context)
     {
-      if (context == null) throw new ArgumentNullException(nameof(context));
+      if (context == null)
+        throw new ArgumentNullException(nameof(context));
 
       var t = request as Type;
-      if (t == null) return new AutoFixture.Kernel.NoSpecimen();
+      if (t == null)
+        return new AutoFixture.Kernel.NoSpecimen();
 
       var args = t.GetGenericArguments();
-      if (args.Length == 1 && t.GetGenericTypeDefinition().FullName.StartsWith("System.Collections.Immutable.ImmutableList"))
+      if (
+        args.Length == 1
+        && t.GetGenericTypeDefinition().FullName.StartsWith("System.Collections.Immutable.ImmutableList")
+      )
       {
-        var addRange =
-          t.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-          .Where(m => m.Name == "AddRange" && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType.FullName.StartsWith("System.Collections.Generic.IEnumerable"))
+        var addRange = t.GetMethods(
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
+          )
+          .Where(
+            m =>
+              m.Name == "AddRange"
+              && m.GetParameters().Length == 1
+              && m.GetParameters()[0].ParameterType.FullName.StartsWith(
+                "System.Collections.Generic.IEnumerable"
+              )
+          )
           .FirstOrDefault();
 
         var list = context.Resolve(addRange.GetParameters()[0].ParameterType);
-        var im = t.GetField("Empty", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).GetValue(null);
+        var im = t.GetField(
+            "Empty",
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static
+          )
+          .GetValue(null);
 
         return addRange.Invoke(im, new[] { list });
       }
-      else if (args.Length == 2 && t.GetGenericTypeDefinition().FullName.StartsWith("System.Collections.Immutable.ImmutableDictionary"))
+      else if (
+        args.Length == 2
+        && t.GetGenericTypeDefinition()
+          .FullName.StartsWith("System.Collections.Immutable.ImmutableDictionary")
+      )
       {
-        var addRange =
-          t.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-          .Where(m => m.Name == "AddRange" && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType.FullName.StartsWith("System.Collections.Generic.IEnumerable"))
+        var addRange = t.GetMethods(
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
+          )
+          .Where(
+            m =>
+              m.Name == "AddRange"
+              && m.GetParameters().Length == 1
+              && m.GetParameters()[0].ParameterType.FullName.StartsWith(
+                "System.Collections.Generic.IEnumerable"
+              )
+          )
           .FirstOrDefault();
 
         var dictType = typeof(Dictionary<,>).MakeGenericType(args);
         var dict = context.Resolve(dictType);
 
-        var emptyDict = t.GetField("Empty", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static).GetValue(null);
+        var emptyDict = t.GetField(
+            "Empty",
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static
+          )
+          .GetValue(null);
         return addRange.Invoke(emptyDict, new[] { dict });
       }
       else

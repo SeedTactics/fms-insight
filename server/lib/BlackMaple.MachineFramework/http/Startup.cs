@@ -57,82 +57,86 @@ namespace BlackMaple.MachineFramework
       settings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
     }
 
-
-    public static void AddServices(IServiceCollection services, FMSImplementation fmsImpl, FMSSettings fmsSt, ServerSettings serverSt)
+    public static void AddServices(
+      IServiceCollection services,
+      FMSImplementation fmsImpl,
+      FMSSettings fmsSt,
+      ServerSettings serverSt
+    )
     {
-      services
-          .AddSingleton<Controllers.WebsocketManager>(
-              new Controllers.WebsocketManager(fmsImpl.Backend)
-          );
+      services.AddSingleton<Controllers.WebsocketManager>(new Controllers.WebsocketManager(fmsImpl.Backend));
 
       services.AddResponseCompression();
 
       services.AddCors(options =>
+      {
+        options.AddDefaultPolicy(builder =>
         {
-          options.AddDefaultPolicy(builder =>
-          {
-            builder
-              .WithOrigins(fmsSt.AdditionalLogServers.ToArray())
-                .WithMethods("GET")
-                .WithHeaders("content-type", "authorization");
-          });
+          builder
+            .WithOrigins(fmsSt.AdditionalLogServers.ToArray())
+            .WithMethods("GET")
+            .WithHeaders("content-type", "authorization");
         });
+      });
 
       services
-          .AddControllers(options =>
+        .AddControllers(options =>
+        {
+          options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
+        })
+        .ConfigureApplicationPartManager(am =>
+        {
+          if (fmsImpl.ExtraApplicationParts != null)
           {
-            options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
-          })
-          .ConfigureApplicationPartManager(am =>
-          {
-            if (fmsImpl.ExtraApplicationParts != null)
-            {
-              foreach (var p in fmsImpl.ExtraApplicationParts) am.ApplicationParts.Add(p);
-            }
-          })
-          .AddNewtonsoftJson(options =>
-          {
-            NewtonsoftJsonSettings(options.SerializerSettings);
-          });
+            foreach (var p in fmsImpl.ExtraApplicationParts)
+              am.ApplicationParts.Add(p);
+          }
+        })
+        .AddNewtonsoftJson(options =>
+        {
+          NewtonsoftJsonSettings(options.SerializerSettings);
+        });
 
       if (serverSt.UseAuthentication)
       {
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-          options.Authority = serverSt.AuthAuthority;
-          options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+        services
+          .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+          .AddJwtBearer(options =>
           {
-            ValidateIssuer = true,
-            ValidAudiences = serverSt.AuthTokenAudiences.Split(';')
-          };
-#if DEBUG
-          options.RequireHttpsMetadata = false;
-#endif
-          options.Events = new JwtBearerEvents
-          {
-            OnMessageReceived = context =>
+            options.Authority = serverSt.AuthAuthority;
+            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
             {
-              var token = context.Request.Query["token"];
-              if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
+              ValidateIssuer = true,
+              ValidAudiences = serverSt.AuthTokenAudiences.Split(';')
+            };
+#if DEBUG
+            options.RequireHttpsMetadata = false;
+#endif
+            options.Events = new JwtBearerEvents
+            {
+              OnMessageReceived = context =>
               {
-                context.Token = token;
+                var token = context.Request.Query["token"];
+                if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
+                {
+                  context.Token = token;
+                }
+                return System.Threading.Tasks.Task.CompletedTask;
               }
-              return System.Threading.Tasks.Task.CompletedTask;
-            }
-          };
-        });
+            };
+          });
       }
     }
 
     public void Configure(
-        IApplicationBuilder app,
-        IHostApplicationLifetime lifetime,
-        IWebHostEnvironment env,
-        FMSImplementation fmsImpl,
-        ServerSettings serverSt,
-        FMSSettings fmsSt,
-        Controllers.WebsocketManager wsManager)
+      IApplicationBuilder app,
+      IHostApplicationLifetime lifetime,
+      IWebHostEnvironment env,
+      FMSImplementation fmsImpl,
+      ServerSettings serverSt,
+      FMSSettings fmsSt,
+      Controllers.WebsocketManager wsManager
+    )
     {
       app.UseResponseCompression();
 
@@ -141,15 +145,22 @@ namespace BlackMaple.MachineFramework
       {
         if (System.IO.Directory.Exists(fmsSt.InstructionFilePath))
         {
-          app.UseStaticFiles(new StaticFileOptions()
-          {
-            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(fmsSt.InstructionFilePath),
-            RequestPath = "/instructions"
-          });
+          app.UseStaticFiles(
+            new StaticFileOptions()
+            {
+              FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+                fmsSt.InstructionFilePath
+              ),
+              RequestPath = "/instructions"
+            }
+          );
         }
         else
         {
-          Log.Error("Instruction directory {path} does not exist or is not a directory", fmsSt.InstructionFilePath);
+          Log.Error(
+            "Instruction directory {path} does not exist or is not a directory",
+            fmsSt.InstructionFilePath
+          );
         }
       }
 
@@ -172,17 +183,21 @@ namespace BlackMaple.MachineFramework
         app.UseHttpsRedirection();
       }
 
-      app.Use(async (context, next) =>
-      {
-        context.Response.Headers.Add("Content-Security-Policy",
-          "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; " +
-          // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
-          "script-src 'self';"
-        );
-        context.Response.Headers.Add("Cross-Origin-Embedder-Policy", "require-corp");
-        context.Response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");
-        await next();
-      });
+      app.Use(
+        async (context, next) =>
+        {
+          context.Response.Headers.Add(
+            "Content-Security-Policy",
+            "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; "
+              +
+              // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
+              "script-src 'self';"
+          );
+          context.Response.Headers.Add("Cross-Origin-Embedder-Policy", "require-corp");
+          context.Response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");
+          await next();
+        }
+      );
 
       app.UseWebSockets();
 
@@ -194,34 +209,38 @@ namespace BlackMaple.MachineFramework
           ctrlBuilder.RequireAuthorization();
         }
 
-        endpoints.Map("/api/v1/events", async context =>
-        {
-          if (context.WebSockets.IsWebSocketRequest)
+        endpoints.Map(
+          "/api/v1/events",
+          async context =>
           {
-            if (serverSt.UseAuthentication)
+            if (context.WebSockets.IsWebSocketRequest)
             {
-              var res = await context.AuthenticateAsync();
-              if (!res.Succeeded)
+              if (serverSt.UseAuthentication)
               {
-                context.Response.StatusCode = 401;
-                return;
+                var res = await context.AuthenticateAsync();
+                if (!res.Succeeded)
+                {
+                  context.Response.StatusCode = 401;
+                  return;
+                }
               }
+              var ws = await context.WebSockets.AcceptWebSocketAsync();
+              await wsManager.HandleWebsocket(ws);
             }
-            var ws = await context.WebSockets.AcceptWebSocketAsync();
-            await wsManager.HandleWebsocket(ws);
+            else
+            {
+              context.Response.StatusCode = 400;
+            }
           }
-          else
-          {
-            context.Response.StatusCode = 400;
-          }
-        });
+        );
 
         endpoints.MapFallbackToFile("/index.html");
       });
 
       lifetime.ApplicationStopping.Register(async () =>
       {
-        if (fmsImpl == null) return;
+        if (fmsImpl == null)
+          return;
         await wsManager.CloseAll();
         foreach (var w in fmsImpl.Workers)
           w.Dispose();

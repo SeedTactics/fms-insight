@@ -38,14 +38,11 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-
   public class BuildMazakSchedules
   {
     public static Serilog.ILogger Log = Serilog.Log.ForContext<BuildMazakSchedules>();
 
-
-    public static (MazakWriteData, ISet<string>)
-      RemoveCompletedSchedules(MazakCurrentStatus mazakData)
+    public static (MazakWriteData, ISet<string>) RemoveCompletedSchedules(MazakCurrentStatus mazakData)
     {
       //remove all completed production
       var schs = new List<MazakScheduleRow>();
@@ -54,10 +51,7 @@ namespace MazakMachineInterface
       {
         if (schRow.PlanQuantity == schRow.CompleteQuantity)
         {
-          var newSchRow = schRow with
-          {
-            Command = MazakWriteCommand.Delete
-          };
+          var newSchRow = schRow with { Command = MazakWriteCommand.Delete };
           schs.Add(newSchRow);
         }
         else
@@ -72,9 +66,11 @@ namespace MazakMachineInterface
     public static MazakWriteData AddSchedules(
       MazakAllData mazakData,
       IEnumerable<Job> jobs,
-      bool UseStartingOffsetForDueDate)
+      bool UseStartingOffsetForDueDate
+    )
     {
-      if (!jobs.Any()) return new MazakWriteData();
+      if (!jobs.Any())
+        return new MazakWriteData();
 
       var schs = new List<MazakScheduleRow>();
       var routeStartDate = jobs.First().RouteStartUTC.ToLocalTime().Date;
@@ -96,8 +92,10 @@ namespace MazakMachineInterface
       foreach (Job part in jobs)
       {
         // 1 path per job should have been already prevented by an earlier check
-        if (part.Processes[0].Paths.Count > 1) continue;
-        if (part.Cycles <= 0) continue;
+        if (part.Processes[0].Paths.Count > 1)
+          continue;
+        if (part.Cycles <= 0)
+          continue;
 
         //check if part exists downloaded
         int downloadUid = -1;
@@ -119,7 +117,11 @@ namespace MazakMachineInterface
         }
         if (downloadUid < 0)
         {
-          Log.Error("Attempting to create schedule for {uniq} but a part does not exist, with {@allData}", part.UniqueStr, mazakData);
+          Log.Error(
+            "Attempting to create schedule for {uniq} but a part does not exist, with {@allData}",
+            part.UniqueStr,
+            mazakData
+          );
           continue;
         }
 
@@ -127,16 +129,19 @@ namespace MazakMachineInterface
         {
           int schid = FindNextScheduleId(usedScheduleIDs);
           int earlierConflicts = CountEarlierConflicts(part, jobs);
-          schs.Add(SchedulePart(
-            SchID: schid,
-            mazakPartName: mazakPartName,
-            mazakComment: mazakComment,
-            numProcess: part.Processes.Count,
-            part: part,
-            earlierConflicts: earlierConflicts,
-            startingPriority: maxPriMatchingDate + 1,
-            routeStartDate: routeStartDate,
-            UseStartingOffsetForDueDate: UseStartingOffsetForDueDate));
+          schs.Add(
+            SchedulePart(
+              SchID: schid,
+              mazakPartName: mazakPartName,
+              mazakComment: mazakComment,
+              numProcess: part.Processes.Count,
+              part: part,
+              earlierConflicts: earlierConflicts,
+              startingPriority: maxPriMatchingDate + 1,
+              routeStartDate: routeStartDate,
+              UseStartingOffsetForDueDate: UseStartingOffsetForDueDate
+            )
+          );
         }
       }
 
@@ -147,13 +152,23 @@ namespace MazakMachineInterface
     }
 
     private static MazakScheduleRow SchedulePart(
-      int SchID, string mazakPartName, string mazakComment, int numProcess,
-      Job part, int earlierConflicts, int startingPriority, DateTime routeStartDate, bool UseStartingOffsetForDueDate)
+      int SchID,
+      string mazakPartName,
+      string mazakComment,
+      int numProcess,
+      Job part,
+      int earlierConflicts,
+      int startingPriority,
+      DateTime routeStartDate,
+      bool UseStartingOffsetForDueDate
+    )
     {
       bool entireHold = false;
-      if (part.HoldJob != null) entireHold = HoldCalculations.IsOnHold(part.HoldJob);
+      if (part.HoldJob != null)
+        entireHold = HoldCalculations.IsOnHold(part.HoldJob);
       bool machiningHold = false;
-      if (part.Processes[0].Paths[0].HoldMachining != null) machiningHold = HoldCalculations.IsOnHold(part.Processes[0].Paths[0].HoldMachining);
+      if (part.Processes[0].Paths[0].HoldMachining != null)
+        machiningHold = HoldCalculations.IsOnHold(part.Processes[0].Paths[0].HoldMachining);
 
       var newSchRow = new MazakScheduleRow()
       {
@@ -187,11 +202,7 @@ namespace MazakMachineInterface
         }
         else
         {
-          newSchRow = newSchRow with
-          {
-            DueDate = routeStartDate,
-            Priority = startingPriority,
-          };
+          newSchRow = newSchRow with { DueDate = routeStartDate, Priority = startingPriority, };
         }
       }
 
@@ -225,7 +236,8 @@ namespace MazakMachineInterface
     private static int CountEarlierConflicts(Job jobToCheck, IEnumerable<Job> jobs)
     {
       var startT = jobToCheck.Processes[0].Paths[0].SimulatedStartingUTC;
-      if (startT == DateTime.MinValue) return 0;
+      if (startT == DateTime.MinValue)
+        return 0;
 
       // first, calculate the fixtures and faces used by the job to check
       var usedFixtureFaces = new HashSet<ValueTuple<string, string>>();
@@ -251,12 +263,15 @@ namespace MazakMachineInterface
       // go through each other job
       foreach (var otherJob in jobs)
       {
-        if (otherJob.UniqueStr == jobToCheck.UniqueStr) continue;
+        if (otherJob.UniqueStr == jobToCheck.UniqueStr)
+          continue;
 
         // see if the process 1 starting time is later and if so skip the remaining checks
         var otherStart = otherJob.Processes[0].Paths[0].SimulatedStartingUTC;
-        if (otherStart == DateTime.MinValue) continue;
-        if (otherStart >= startT) continue;
+        if (otherStart == DateTime.MinValue)
+          continue;
+        if (otherStart >= startT)
+          continue;
 
         //the job starts earlier than the jobToCheck, but need to see if it conflicts.
 
@@ -277,7 +292,8 @@ namespace MazakMachineInterface
           }
         }
 
-      checkNextPath:;
+        checkNextPath:
+        ;
       }
 
       return earlierConflicts;
@@ -285,10 +301,7 @@ namespace MazakMachineInterface
 
     private static IReadOnlyList<MazakScheduleRow> SortSchedulesByDate(List<MazakScheduleRow> schs)
     {
-      return schs
-        .OrderBy(x => x.DueDate)
-        .ThenBy(x => -x.Priority)
-        .ToList();
+      return schs.OrderBy(x => x.DueDate).ThenBy(x => -x.Priority).ToList();
     }
 
     private static int FindNextScheduleId(HashSet<int> usedScheduleIds)
@@ -303,6 +316,5 @@ namespace MazakMachineInterface
       }
       throw new Exception("All Schedule Ids are currently being used");
     }
-
   }
 }

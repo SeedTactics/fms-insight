@@ -250,7 +250,6 @@ namespace MazakMachineInterface
     public string GroupNo { get; init; }
   }
 
-
   public record LoadAction
   {
     public int LoadStation { get; init; }
@@ -281,9 +280,9 @@ namespace MazakMachineInterface
       }
     }
 
-    [Newtonsoft.Json.JsonConstructor] public LoadAction() { }
+    [Newtonsoft.Json.JsonConstructor]
+    public LoadAction() { }
   }
-
 
   public record MazakCurrentStatus
   {
@@ -306,7 +305,8 @@ namespace MazakMachineInterface
           bool manual;
           MazakPart.ParseComment(schRow.Comment, out unique, out var procToPath, out manual);
           numProc = schRow.Processes.Count;
-          if (numProc < proc) numProc = proc;
+          if (numProc < proc)
+            numProc = proc;
           path = procToPath.PathForProc(proc);
           return;
         }
@@ -375,5 +375,4 @@ namespace MazakMachineInterface
     MazakDbType MazakType { get; }
     void Save(MazakWriteData data, string prefix);
   }
-
 }

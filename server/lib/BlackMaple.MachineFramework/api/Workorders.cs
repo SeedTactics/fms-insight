@@ -52,13 +52,17 @@ namespace BlackMaple.MachineFramework
     public int PartsCompleted { get; init; }
 
     [DataMember(Name = "elapsed-station-time", IsRequired = true)]
-    public ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; } = ImmutableDictionary<string, TimeSpan>.Empty;
+    public ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; } =
+      ImmutableDictionary<string, TimeSpan>.Empty;
 
     [DataMember(Name = "active-stat-time", IsRequired = true)]
-    public ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; } = ImmutableDictionary<string, TimeSpan>.Empty;
+    public ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; } =
+      ImmutableDictionary<string, TimeSpan>.Empty;
 
-    public static WorkorderPartSummary operator %(WorkorderPartSummary m, Action<IWorkorderPartSummaryDraft> f)
-       => m.Produce(f);
+    public static WorkorderPartSummary operator %(
+      WorkorderPartSummary m,
+      Action<IWorkorderPartSummaryDraft> f
+    ) => m.Produce(f);
   }
 
   [DataContract, Draftable]
@@ -68,7 +72,8 @@ namespace BlackMaple.MachineFramework
     public string WorkorderId { get; init; } = "";
 
     [DataMember(Name = "parts", IsRequired = true)]
-    public ImmutableList<WorkorderPartSummary> Parts { get; init; } = ImmutableList<WorkorderPartSummary>.Empty;
+    public ImmutableList<WorkorderPartSummary> Parts { get; init; } =
+      ImmutableList<WorkorderPartSummary>.Empty;
 
     [DataMember(Name = "serials", IsRequired = true)]
     public ImmutableList<string> Serials { get; init; } = ImmutableList<string>.Empty;
@@ -76,25 +81,32 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "finalized", IsRequired = false, EmitDefaultValue = false)]
     public DateTime? FinalizedTimeUTC { get; init; }
 
-    public static WorkorderSummary operator %(WorkorderSummary m, Action<IWorkorderSummaryDraft> f)
-       => m.Produce(f);
+    public static WorkorderSummary operator %(WorkorderSummary m, Action<IWorkorderSummaryDraft> f) =>
+      m.Produce(f);
   }
 
   [DataContract, Draftable]
   public record Workorder
   {
-    [DataMember(IsRequired = true)] public string WorkorderId { get; init; } = "";
-    [DataMember(IsRequired = true)] public string Part { get; init; } = "";
-    [DataMember(IsRequired = true)] public int Quantity { get; init; }
-    [DataMember(IsRequired = true)] public DateTime DueDate { get; init; }
-    [DataMember(IsRequired = true)] public int Priority { get; init; }
+    [DataMember(IsRequired = true)]
+    public string WorkorderId { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public string Part { get; init; } = "";
+
+    [DataMember(IsRequired = true)]
+    public int Quantity { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public DateTime DueDate { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public int Priority { get; init; }
 
     ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<ProgramForJobStep>? Programs { get; init; } = ImmutableList<ProgramForJobStep>.Empty;
 
-    public static Workorder operator %(Workorder w, Action<IWorkorderDraft> f)
-       => w.Produce(f);
+    public static Workorder operator %(Workorder w, Action<IWorkorderDraft> f) => w.Produce(f);
   }
-
 }

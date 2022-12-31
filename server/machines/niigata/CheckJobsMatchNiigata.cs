@@ -49,7 +49,8 @@ namespace BlackMaple.FMSInsight.Niigata
       FMSSettings settings,
       NiigataStationNames statNames,
       bool requireProgramsInJobs,
-      INiigataCommunication icc)
+      INiigataCommunication icc
+    )
     {
       _settings = settings;
       _statNames = statNames;
@@ -91,13 +92,30 @@ namespace BlackMaple.FMSInsight.Niigata
                 errors.Add("Part " + j.PartName + " has non-integer pallets");
               }
             }
-            if (!string.IsNullOrEmpty(pathData.InputQueue) && !_settings.Queues.ContainsKey(pathData.InputQueue))
+            if (
+              !string.IsNullOrEmpty(pathData.InputQueue) && !_settings.Queues.ContainsKey(pathData.InputQueue)
+            )
             {
-              errors.Add(" Part " + j.PartName + " has an input queue " + pathData.InputQueue + " which is not configured as a local queue in FMS Insight.");
+              errors.Add(
+                " Part "
+                  + j.PartName
+                  + " has an input queue "
+                  + pathData.InputQueue
+                  + " which is not configured as a local queue in FMS Insight."
+              );
             }
-            if (!string.IsNullOrEmpty(pathData.OutputQueue) && !_settings.Queues.ContainsKey(pathData.OutputQueue))
+            if (
+              !string.IsNullOrEmpty(pathData.OutputQueue)
+              && !_settings.Queues.ContainsKey(pathData.OutputQueue)
+            )
             {
-              errors.Add(" Part " + j.PartName + " has an output queue " + pathData.OutputQueue + " which is not configured as a queue in FMS Insight.");
+              errors.Add(
+                " Part "
+                  + j.PartName
+                  + " has an output queue "
+                  + pathData.OutputQueue
+                  + " which is not configured as a queue in FMS Insight."
+              );
             }
 
             foreach (var stop in pathData.Stops)
@@ -106,7 +124,11 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 if (!stop.Stations.Any())
                 {
-                  errors.Add("Part " + j.PartName + " does not have any assigned load stations for intermediate load stop");
+                  errors.Add(
+                    "Part "
+                      + j.PartName
+                      + " does not have any assigned load stations for intermediate load stop"
+                  );
                 }
               }
               else
@@ -120,7 +142,15 @@ namespace BlackMaple.FMSInsight.Niigata
                 }
                 else
                 {
-                  CheckProgram(stop.Program, stop.ProgramRevision, jobs.Programs, jobDB, programs, "Part " + j.PartName, errors);
+                  CheckProgram(
+                    stop.Program,
+                    stop.ProgramRevision,
+                    jobs.Programs,
+                    jobDB,
+                    programs,
+                    "Part " + j.PartName,
+                    errors
+                  );
                 }
               }
             }
@@ -134,7 +164,15 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           foreach (var prog in w.Programs)
           {
-            CheckProgram(prog.ProgramName, prog.Revision, jobs.Programs, jobDB, programs, "Workorder " + w.WorkorderId, errors);
+            CheckProgram(
+              prog.ProgramName,
+              prog.Revision,
+              jobs.Programs,
+              jobDB,
+              programs,
+              "Workorder " + w.WorkorderId,
+              errors
+            );
           }
         }
       }
@@ -142,12 +180,22 @@ namespace BlackMaple.FMSInsight.Niigata
       return errors;
     }
 
-    private void CheckProgram(string programName, long? rev, IEnumerable<MachineFramework.NewProgramContent> newPrograms, IRepository jobDB, IEnumerable<ProgramEntry> programsInCellCtrl, string errHdr, IList<string> errors)
+    private void CheckProgram(
+      string programName,
+      long? rev,
+      IEnumerable<MachineFramework.NewProgramContent> newPrograms,
+      IRepository jobDB,
+      IEnumerable<ProgramEntry> programsInCellCtrl,
+      string errHdr,
+      IList<string> errors
+    )
     {
       if (rev.HasValue && rev.Value > 0)
       {
         var existing = jobDB.LoadProgram(programName, rev.Value) != null;
-        var newProg = newPrograms != null && newPrograms.Any(p => p.ProgramName == programName && p.Revision == rev.Value);
+        var newProg =
+          newPrograms != null
+          && newPrograms.Any(p => p.ProgramName == programName && p.Revision == rev.Value);
         if (!existing && !newProg)
         {
           errors.Add(errHdr + " program " + programName + " rev" + rev.Value.ToString() + " is not found");
@@ -161,20 +209,35 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           if (int.TryParse(programName, out int progNum))
           {
-            if (!programsInCellCtrl.Any(p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)))
+            if (
+              !programsInCellCtrl.Any(
+                p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)
+              )
+            )
             {
-              errors.Add(errHdr + " program " + programName + " is neither included in the download nor found in the cell controller");
+              errors.Add(
+                errHdr
+                  + " program "
+                  + programName
+                  + " is neither included in the download nor found in the cell controller"
+              );
             }
           }
           else
           {
-            errors.Add(errHdr + " program " + programName + " is neither included in the download nor is an integer");
+            errors.Add(
+              errHdr + " program " + programName + " is neither included in the download nor is an integer"
+            );
           }
         }
       }
     }
 
-    public IReadOnlyList<string> CheckWorkorders(IRepository db, IEnumerable<Workorder> newWorkorders, IEnumerable<NewProgramContent> programs)
+    public IReadOnlyList<string> CheckWorkorders(
+      IRepository db,
+      IEnumerable<Workorder> newWorkorders,
+      IEnumerable<NewProgramContent> programs
+    )
     {
       var errors = new List<string>();
       var iccProgs = _icc.LoadPrograms().Values;
@@ -184,7 +247,15 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           foreach (var prog in w.Programs)
           {
-            CheckProgram(prog.ProgramName, prog.Revision, programs, db, iccProgs, "Workorder " + w.WorkorderId, errors);
+            CheckProgram(
+              prog.ProgramName,
+              prog.Revision,
+              programs,
+              db,
+              iccProgs,
+              "Workorder " + w.WorkorderId,
+              errors
+            );
           }
         }
       }

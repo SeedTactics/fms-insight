@@ -78,14 +78,17 @@ namespace BlackMaple.MachineFramework
     {
       return "%pal" + proc.ToString() + "%";
     }
+
     public static string LoadFormatFlag(int proc)
     {
       return "%load" + proc.ToString() + "%";
     }
+
     public static string UnloadFormatFlag(int proc)
     {
       return "%unload" + proc.ToString() + "%";
     }
+
     public static string StationFormatFlag(int proc, int routeNum)
     {
       return "%stat" + proc.ToString() + "," + routeNum.ToString() + "%";
@@ -125,7 +128,8 @@ namespace BlackMaple.MachineFramework
     public long? ProgramRevision { get; init; }
 
     [DataMember(Name = "Tools", IsRequired = false, EmitDefaultValue = true)]
-    public ImmutableDictionary<string, TimeSpan>? Tools { get; init; } = ImmutableDictionary<string, TimeSpan>.Empty; //key is tool, value is expected cutting time
+    public ImmutableDictionary<string, TimeSpan>? Tools { get; init; } =
+      ImmutableDictionary<string, TimeSpan>.Empty; //key is tool, value is expected cutting time
 
     [DataMember(Name = "ExpectedCycleTime", IsRequired = true)]
     public TimeSpan ExpectedCycleTime { get; init; }
@@ -155,14 +159,16 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(IsRequired = true)]
     public bool HoldUnholdPatternRepeats { get; init; }
-
   }
 
   [DataContract, Draftable]
   public record SimulatedProduction
   {
-    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
-    [DataMember(IsRequired = true)] public int Quantity { get; init; } //total quantity simulated to be completed at TimeUTC
+    [DataMember(IsRequired = true)]
+    public DateTime TimeUTC { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public int Quantity { get; init; } //total quantity simulated to be completed at TimeUTC
   }
 
   [DataContract, Draftable]
@@ -279,9 +285,14 @@ namespace BlackMaple.MachineFramework
   [DataContract]
   public record DecrementQuantity
   {
-    [DataMember(IsRequired = true)] public long DecrementId { get; init; }
-    [DataMember(IsRequired = true)] public DateTime TimeUTC { get; init; }
-    [DataMember(IsRequired = true)] public int Quantity { get; init; }
+    [DataMember(IsRequired = true)]
+    public long DecrementId { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public DateTime TimeUTC { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public int Quantity { get; init; }
   }
 
   [DataContract, Draftable]
