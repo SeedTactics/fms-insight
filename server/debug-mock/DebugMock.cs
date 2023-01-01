@@ -120,7 +120,12 @@ namespace DebugMachineWatchApiServer
             }
             else
             {
-              return new MaterialDetails() { MaterialID = -1, Serial = barcode };
+              return new MaterialDetails()
+              {
+                MaterialID = -1,
+                Serial = barcode,
+                PartName = "",
+              };
             }
           }
         }
@@ -335,7 +340,8 @@ namespace DebugMachineWatchApiServer
             CurrentQueue = queue,
             QueuePosition = 10 + i
           },
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+          SignaledInspections = ImmutableList<string>.Empty
         };
         CurrentStatus %= st => st.Material.Add(m);
         ret.Add(m);
@@ -378,7 +384,8 @@ namespace DebugMachineWatchApiServer
           CurrentQueue = queue,
           QueuePosition = position
         },
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+        SignaledInspections = ImmutableList<string>.Empty
       };
       CurrentStatus %= st => st.Material.Add(m);
       OnNewCurrentStatus?.Invoke(CurrentStatus);

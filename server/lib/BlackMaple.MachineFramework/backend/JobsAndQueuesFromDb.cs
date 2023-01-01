@@ -414,7 +414,8 @@ namespace BlackMaple.MachineFramework
               CurrentQueue = queue,
               QueuePosition = log.LocationNum
             },
-            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+            SignaledInspections = ImmutableList<string>.Empty
           }
         );
       }
@@ -564,7 +565,8 @@ namespace BlackMaple.MachineFramework
           CurrentQueue = queue,
           QueuePosition = logEvt.LastOrDefault()?.LocationNum
         },
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+        SignaledInspections = ImmutableList<string>.Empty
       };
     }
 

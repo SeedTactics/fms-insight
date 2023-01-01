@@ -541,6 +541,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Path = 1,
         Serial = _serialSt.ConvertMaterialIDToSerial(matId),
         WorkorderId = workorder,
+        SignaledInspections = ImmutableList<string>.Empty,
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
         Location = new InProcessMaterialLocation()
         {
@@ -621,6 +622,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Process = proc,
         Path = path,
         Serial = _serialSt.ConvertMaterialIDToSerial(matId),
+        SignaledInspections = ImmutableList<string>.Empty,
         WorkorderId = workorder,
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
         Location = new InProcessMaterialLocation()
@@ -712,6 +714,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               PartName = c.part,
               Process = 0,
               Path = c.path,
+              SignaledInspections = ImmutableList<string>.Empty,
               Action = new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
@@ -2571,6 +2574,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Path = load.Path,
                   PartName = m.PartName,
                   Serial = _serialSt.ConvertMaterialIDToSerial(m.MaterialID),
+                  SignaledInspections = ImmutableList<string>.Empty,
                   Location = new InProcessMaterialLocation()
                   {
                     Type = InProcessMaterialLocation.LocType.OnPallet,

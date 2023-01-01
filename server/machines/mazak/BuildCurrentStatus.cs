@@ -947,7 +947,14 @@ namespace MazakMachineInterface
                 ProcessAfterLoad = operation.Process,
                 PathAfterLoad = operation.Path,
                 ElapsedLoadUnloadTime = elapsedLoadTime
-              }
+              },
+              SignaledInspections =
+                matId >= 0
+                  ? log.LookupInspectionDecisions(matId)
+                    .Where(x => x.Inspect)
+                    .Select(x => x.InspType)
+                    .ToImmutableList()
+                  : ImmutableList<string>.Empty,
             }
           );
         }

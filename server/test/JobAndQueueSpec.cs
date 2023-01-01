@@ -1101,6 +1101,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Process = proc,
       Path = path,
       Serial = serial,
+      SignaledInspections = ImmutableList<string>.Empty,
       Location = new InProcessMaterialLocation()
       {
         Type = InProcessMaterialLocation.LocType.InQueue,
@@ -1129,6 +1130,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Process = proc,
       Path = path,
       Serial = serial,
+      SignaledInspections = ImmutableList<string>.Empty,
       Location = new InProcessMaterialLocation()
       {
         Type = InProcessMaterialLocation.LocType.OnPallet,

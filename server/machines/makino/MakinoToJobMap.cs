@@ -445,7 +445,8 @@ namespace Makino
           PathAfterLoad = 1,
           LoadOntoFace = face,
           LoadOntoPallet = pal.Pallet
-        }
+        },
+        SignaledInspections = ImmutableList<string>.Empty
       };
 
       ms.Add(mat);

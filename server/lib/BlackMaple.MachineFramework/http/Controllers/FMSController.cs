@@ -306,7 +306,12 @@ namespace BlackMaple.MachineFramework.Controllers
           }
           else
           {
-            return new MaterialDetails() { MaterialID = -1, Serial = serial };
+            return new MaterialDetails()
+            {
+              MaterialID = -1,
+              Serial = serial,
+              PartName = ""
+            };
           }
         }
       }
