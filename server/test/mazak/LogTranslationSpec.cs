@@ -449,8 +449,7 @@ namespace MachineWatchTest
         prog: logProg ?? prog,
         start: true,
         endTime: e2.TimeUTC,
-        result: "",
-        endOfRoute: false
+        result: ""
       );
       if (progRev.HasValue)
       {
@@ -528,7 +527,6 @@ namespace MachineWatchTest
         start: false,
         endTime: e2.TimeUTC,
         result: "",
-        endOfRoute: false,
         elapsed: TimeSpan.FromMinutes(elapMin),
         active: TimeSpan.FromMinutes(activeMin)
       );
@@ -573,8 +571,7 @@ namespace MachineWatchTest
         prog: counter,
         start: false,
         endTime: DateTime.UtcNow,
-        result: result.ToString(),
-        endOfRoute: false
+        result: result.ToString()
       );
       e %= entry =>
       {
@@ -632,8 +629,7 @@ namespace MachineWatchTest
           prog: "LOAD",
           start: true,
           endTime: e2.TimeUTC,
-          result: "LOAD",
-          endOfRoute: false
+          result: "LOAD"
         )
       );
     }
@@ -703,7 +699,6 @@ namespace MachineWatchTest
           start: false,
           endTime: mats.First().EventStartTime.AddMinutes(cycleOffset).AddSeconds(1),
           result: "LOAD",
-          endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.FromMinutes(activeMin)
         )
@@ -736,8 +731,7 @@ namespace MachineWatchTest
             prog: "MARK",
             start: false,
             endTime: mat.EventStartTime.AddMinutes(cycleOffset).AddSeconds(1),
-            result: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-            endOfRoute: false
+            result: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0')
           )
         );
       }
@@ -791,8 +785,7 @@ namespace MachineWatchTest
           prog: "UNLOAD",
           start: true,
           endTime: e2.TimeUTC,
-          result: "UNLOAD",
-          endOfRoute: false
+          result: "UNLOAD"
         )
       );
     }
@@ -854,7 +847,6 @@ namespace MachineWatchTest
           start: false,
           endTime: e2.TimeUTC.AddSeconds(1),
           result: "UNLOAD",
-          endOfRoute: true,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.FromMinutes(activeMin)
         )
@@ -893,7 +885,6 @@ namespace MachineWatchTest
             start: false,
             endTime: t.AddMinutes(offset),
             result: "PalletCycle",
-            endOfRoute: false,
             elapsed: TimeSpan.FromMinutes(elapMin),
             active: TimeSpan.Zero
           )
@@ -942,8 +933,7 @@ namespace MachineWatchTest
           prog: "Arrive",
           start: true,
           endTime: e2.TimeUTC,
-          result: waitForMachine ? "WaitForMachine" : "WaitForUnload",
-          endOfRoute: false
+          result: waitForMachine ? "WaitForMachine" : "WaitForUnload"
         )
       );
     }
@@ -997,7 +987,6 @@ namespace MachineWatchTest
           start: false,
           endTime: e2.TimeUTC,
           result: waitForMachine ? "WaitForMachine" : "WaitForUnload",
-          endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.Zero
         )
@@ -1046,8 +1035,7 @@ namespace MachineWatchTest
           prog: "Arrive",
           start: true,
           endTime: e2.TimeUTC,
-          result: "Arrive",
-          endOfRoute: false
+          result: "Arrive"
         )
       );
     }
@@ -1094,7 +1082,6 @@ namespace MachineWatchTest
           result: "RotateIntoWorktable",
           start: false,
           endTime: e2.TimeUTC,
-          endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.Zero
         )
@@ -1143,7 +1130,6 @@ namespace MachineWatchTest
           start: false,
           endTime: e2.TimeUTC,
           result: "LeaveMachine",
-          endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.Zero
         )
@@ -1210,8 +1196,7 @@ namespace MachineWatchTest
             prog: reason ?? "Unloaded",
             start: false,
             endTime: mat.EventStartTime.AddMinutes(offset),
-            result: "",
-            endOfRoute: false
+            result: ""
           )
         );
         startPos += 1;
@@ -1262,7 +1247,6 @@ namespace MachineWatchTest
             start: false,
             endTime: mat.EventStartTime.AddMinutes(offset).AddSeconds(1),
             result: "",
-            endOfRoute: false,
             elapsed: TimeSpan.FromMinutes(elapMin).Add(TimeSpan.FromSeconds(1)),
             active: TimeSpan.Zero
           )

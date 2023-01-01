@@ -966,8 +966,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       prog: "MARK",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: serial,
-      endOfRoute: false
+      result: serial
     );
     return e;
   }
@@ -990,8 +989,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       prog: "LOAD",
       start: true,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: "LOAD",
-      endOfRoute: false
+      result: "LOAD"
     );
     return e;
   }
@@ -1016,8 +1014,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       prog: reason ?? "",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: "",
-      endOfRoute: false
+      result: ""
     );
     if (!string.IsNullOrEmpty(operName))
     {
@@ -1045,8 +1042,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       prog: "QuarantineAfterUnload",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: "QuarantineAfterUnload",
-      endOfRoute: false
+      result: "QuarantineAfterUnload"
     );
     if (!string.IsNullOrEmpty(operName))
     {
@@ -1076,7 +1072,6 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
       result: "",
-      endOfRoute: false,
       elapsed: TimeSpan.FromMinutes(elapsedMin),
       active: TimeSpan.Zero
     );

@@ -302,23 +302,23 @@ namespace MachineWatchTest
 
       _lastCycleTime = DateTime.UtcNow.AddDays(-1);
 
-      AddCycle(mat1Proc1, "P1", LogType.LoadUnloadCycle, 1, false);
-      AddCycle(mat2Proc1, "P5", LogType.LoadUnloadCycle, 6, false);
-      AddCycle(mat1Proc1, "P1", LogType.MachineCycle, 10, false);
-      AddCycle(mat2Proc1, "P5", LogType.MachineCycle, 15, false);
-      AddCycle(mat1Proc1, "P1", LogType.MachineCycle, 11, false);
-      AddCycle(mat2Proc1, "P5", LogType.MachineCycle, 16, false);
-      AddCycle(mat1Proc1, "P1", LogType.LoadUnloadCycle, 2, false);
-      AddCycle(mat2Proc1, "P5", LogType.LoadUnloadCycle, 8, false);
+      AddCycle(mat1Proc1, "P1", LogType.LoadUnloadCycle, 1);
+      AddCycle(mat2Proc1, "P5", LogType.LoadUnloadCycle, 6);
+      AddCycle(mat1Proc1, "P1", LogType.MachineCycle, 10);
+      AddCycle(mat2Proc1, "P5", LogType.MachineCycle, 15);
+      AddCycle(mat1Proc1, "P1", LogType.MachineCycle, 11);
+      AddCycle(mat2Proc1, "P5", LogType.MachineCycle, 16);
+      AddCycle(mat1Proc1, "P1", LogType.LoadUnloadCycle, 2);
+      AddCycle(mat2Proc1, "P5", LogType.LoadUnloadCycle, 8);
 
-      AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 3, false);
-      AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 7, false);
-      AddCycle(mat1Proc2, "P2", LogType.MachineCycle, 12, false);
-      AddCycle(mat2Proc2, "P4", LogType.MachineCycle, 18, false);
-      AddCycle(mat1Proc2, "P2", LogType.MachineCycle, 13, false);
-      AddCycle(mat2Proc2, "P4", LogType.MachineCycle, 19, false);
-      AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 4, true);
-      AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 9, true);
+      AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 3);
+      AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 7);
+      AddCycle(mat1Proc2, "P2", LogType.MachineCycle, 12);
+      AddCycle(mat2Proc2, "P4", LogType.MachineCycle, 18);
+      AddCycle(mat1Proc2, "P2", LogType.MachineCycle, 13);
+      AddCycle(mat2Proc2, "P4", LogType.MachineCycle, 19);
+      AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 4);
+      AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 9);
 
       var inspProg = new PathInspection()
       {
@@ -425,15 +425,15 @@ namespace MachineWatchTest
 
     private DateTime _lastCycleTime;
 
-    private void AddCycle(LogMaterial[] mat, string pal, LogType loc, int statNum, bool end)
+    private void AddCycle(LogMaterial[] mat, string pal, LogType loc, int statNum)
     {
       string name = loc == LogType.MachineCycle ? "MC" : "Load";
       ((Repository)_insp).AddLogEntryFromUnitTest(
-        new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "", end)
+        new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "")
       );
       _lastCycleTime = _lastCycleTime.AddMinutes(15);
       ((Repository)_insp).AddLogEntryFromUnitTest(
-        new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "", end)
+        new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "")
       );
       _lastCycleTime = _lastCycleTime.AddMinutes(15);
     }

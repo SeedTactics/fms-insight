@@ -80,9 +80,6 @@ namespace BlackMaple.MachineFramework
           bool start = reader.GetBoolean(5);
           System.DateTime timeUTC = new DateTime(reader.GetInt64(6), DateTimeKind.Utc);
           string result = reader.GetString(7);
-          bool endOfRoute = false;
-          if (!reader.IsDBNull(8))
-            endOfRoute = reader.GetBoolean(8);
           TimeSpan elapsed = TimeSpan.FromMinutes(-1);
           if (!reader.IsDBNull(9))
             elapsed = TimeSpan.FromTicks(reader.GetInt64(9));
@@ -244,11 +241,10 @@ namespace BlackMaple.MachineFramework
             StartOfCycle = start,
             EndTimeUTC = timeUTC,
             Result = result,
-            EndOfRoute = endOfRoute,
             ElapsedTime = elapsed,
             ActiveOperationTime = active,
-            ProgramDetails = progDetails.ToImmutable(),
-            Tools = tools.ToImmutable()
+            ProgramDetails = progDetails.Count == 0 ? null : progDetails.ToImmutable(),
+            Tools = tools.Count == 0 ? null : tools.ToImmutable()
           };
         }
       } // close usings
@@ -904,18 +900,17 @@ namespace BlackMaple.MachineFramework
 
     private record NewEventLogEntry
     {
-      public IEnumerable<EventLogMaterial> Material { get; init; }
-      public LogType LogType { get; init; }
-      public bool StartOfCycle { get; init; }
-      public DateTime EndTimeUTC { get; init; }
-      public string LocationName { get; init; }
-      public int LocationNum { get; init; }
-      public string Pallet { get; init; }
-      public string Program { get; init; }
-      public string Result { get; init; }
-      public bool EndOfRoute { get; init; }
+      public required IEnumerable<EventLogMaterial> Material { get; init; }
+      public required LogType LogType { get; init; }
+      public required bool StartOfCycle { get; init; }
+      public required DateTime EndTimeUTC { get; init; }
+      public required string LocationName { get; init; }
+      public required int LocationNum { get; init; }
+      public required string Pallet { get; init; }
+      public required string Program { get; init; }
+      public required string Result { get; init; }
       public TimeSpan ElapsedTime { get; init; } = TimeSpan.FromMinutes(-1); //time from cycle-start to cycle-stop
-      public TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
+      public TimeSpan ActiveOperationTime { get; init; } = TimeSpan.Zero; //time that the machining or operation is actually active
       private Dictionary<string, string> _details = new Dictionary<string, string>();
       public IDictionary<string, string> ProgramDetails
       {
@@ -953,11 +948,13 @@ namespace BlackMaple.MachineFramework
           Pallet = this.Pallet,
           Program = this.Program,
           Result = this.Result,
-          EndOfRoute = this.EndOfRoute,
           ElapsedTime = this.ElapsedTime,
           ActiveOperationTime = this.ActiveOperationTime,
-          ProgramDetails = this.ProgramDetails?.ToImmutableDictionary(),
-          Tools = this.Tools
+          ProgramDetails =
+            this.ProgramDetails == null || this.ProgramDetails.Count == 0
+              ? null
+              : this.ProgramDetails.ToImmutableDictionary(),
+          Tools = this.Tools == null || this.Tools.Count == 0 ? null : this.Tools
         };
       }
 
@@ -974,14 +971,16 @@ namespace BlackMaple.MachineFramework
           StartOfCycle = e.StartOfCycle,
           EndTimeUTC = e.EndTimeUTC,
           Result = e.Result,
-          EndOfRoute = e.EndOfRoute,
           ElapsedTime = e.ElapsedTime,
           ActiveOperationTime = e.ActiveOperationTime,
           Tools = e.Tools
         };
-        foreach (var d in e.ProgramDetails)
+        if (e.ProgramDetails != null)
         {
-          ret.ProgramDetails[d.Key] = d.Value;
+          foreach (var d in e.ProgramDetails)
+          {
+            ret.ProgramDetails[d.Key] = d.Value;
+          }
         }
         return ret;
       }
@@ -999,8 +998,8 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
 
         cmd.CommandText =
-          "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, ForeignID,OriginalMessage)"
-          + "VALUES ($pal,$loc,$locname,$locnum,$prog,$start,$time,$result,$end,$elapsed,$active,$foreign,$orig)";
+          "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, Elapsed, ActiveTime, ForeignID,OriginalMessage)"
+          + "VALUES ($pal,$loc,$locname,$locnum,$prog,$start,$time,$result,$elapsed,$active,$foreign,$orig)";
 
         cmd.Parameters.Add("pal", SqliteType.Text).Value = log.Pallet;
         cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)log.LogType;
@@ -1010,7 +1009,6 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("start", SqliteType.Integer).Value = log.StartOfCycle;
         cmd.Parameters.Add("time", SqliteType.Integer).Value = log.EndTimeUTC.Ticks;
         cmd.Parameters.Add("result", SqliteType.Text).Value = log.Result;
-        cmd.Parameters.Add("end", SqliteType.Integer).Value = log.EndOfRoute;
         if (log.ElapsedTime.Ticks >= 0)
           cmd.Parameters.Add("elapsed", SqliteType.Integer).Value = log.ElapsedTime.Ticks;
         else
@@ -1260,7 +1258,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = true,
         EndTimeUTC = timeUTC,
         Result = "LOAD",
-        EndOfRoute = false
       };
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
@@ -1289,7 +1286,6 @@ namespace BlackMaple.MachineFramework
         Result = "LOAD",
         ElapsedTime = elapsed,
         ActiveOperationTime = active,
-        EndOfRoute = false
       };
       return AddEntryInTransaction(trans =>
       {
@@ -1329,7 +1325,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = true,
         EndTimeUTC = timeUTC,
         Result = "UNLOAD",
-        EndOfRoute = false
       };
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
@@ -1359,7 +1354,6 @@ namespace BlackMaple.MachineFramework
         ElapsedTime = elapsed,
         ActiveOperationTime = active,
         Result = "UNLOAD",
-        EndOfRoute = true
       };
       return AddEntryInTransaction(trans =>
       {
@@ -1414,7 +1408,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = true,
         EndTimeUTC = timeUTC,
         Result = operationName,
-        EndOfRoute = false
       };
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
@@ -1448,7 +1441,6 @@ namespace BlackMaple.MachineFramework
         ElapsedTime = elapsed,
         ActiveOperationTime = active,
         Result = operationName,
-        EndOfRoute = false
       };
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
@@ -1477,7 +1469,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = true,
         EndTimeUTC = timeUTC,
         Result = "",
-        EndOfRoute = false,
         ToolPockets = pockets
       };
       if (extraData != null)
@@ -1519,9 +1510,8 @@ namespace BlackMaple.MachineFramework
         Result = result,
         ElapsedTime = elapsed,
         ActiveOperationTime = active,
-        EndOfRoute = false,
         ToolPockets = pockets,
-        Tools = tools ?? ImmutableList<ToolUse>.Empty
+        Tools = tools
       };
       if (extraData != null)
       {
@@ -1572,7 +1562,6 @@ namespace BlackMaple.MachineFramework
               StartOfCycle = true,
               EndTimeUTC = timeUTC,
               Result = "Arrive",
-              EndOfRoute = false,
             },
             foreignId,
             originalMessage
@@ -1608,7 +1597,6 @@ namespace BlackMaple.MachineFramework
               EndTimeUTC = timeUTC,
               Result = rotateIntoWorktable ? "RotateIntoWorktable" : "LeaveMachine",
               ElapsedTime = elapsed,
-              EndOfRoute = false,
             },
             foreignId,
             originalMessage
@@ -1641,7 +1629,6 @@ namespace BlackMaple.MachineFramework
               StartOfCycle = true,
               EndTimeUTC = timeUTC,
               Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
-              EndOfRoute = false,
             },
             foreignId,
             originalMessage
@@ -1676,7 +1663,6 @@ namespace BlackMaple.MachineFramework
               EndTimeUTC = timeUTC,
               Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
               ElapsedTime = elapsed,
-              EndOfRoute = false,
             },
             foreignId,
             originalMessage
@@ -1718,7 +1704,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = false,
         EndTimeUTC = endTimeUTC,
         Result = serial,
-        EndOfRoute = false
       };
       RecordSerialForMaterialID(trans, mat.MaterialID, serial);
       return AddLogEntry(trans, log, null, null);
@@ -1762,7 +1747,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = false,
         EndTimeUTC = recordUtc,
         Result = workorder,
-        EndOfRoute = false
       };
       return AddEntryInTransaction(trans =>
       {
@@ -1844,7 +1828,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = false,
         EndTimeUTC = inspectTimeUTC,
         Result = success.ToString(),
-        EndOfRoute = false,
         ElapsedTime = elapsed,
         ActiveOperationTime = active
       };
@@ -1903,7 +1886,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = false,
         EndTimeUTC = completeTimeUTC,
         Result = "",
-        EndOfRoute = false,
         ElapsedTime = elapsed,
         ActiveOperationTime = active
       };
@@ -1930,7 +1912,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = false,
         EndTimeUTC = finalizedUTC,
         Result = workorder,
-        EndOfRoute = false
       };
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
     }
@@ -2046,7 +2027,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = false,
         EndTimeUTC = timeUTC ?? DateTime.UtcNow,
         Result = "QuarantineAfterUnload",
-        EndOfRoute = false,
       };
 
       if (!string.IsNullOrEmpty(operatorName))
@@ -2078,7 +2058,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = false,
         EndTimeUTC = timeUTC ?? DateTime.UtcNow,
         Result = result,
-        EndOfRoute = false
       };
       if (extraData != null)
       {
@@ -2300,7 +2279,6 @@ namespace BlackMaple.MachineFramework
               + (newMatDetails?.Serial ?? "material")
               + " on pallet "
               + pallet,
-            EndOfRoute = false
           };
           newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
 
@@ -2487,7 +2465,6 @@ namespace BlackMaple.MachineFramework
             StartOfCycle = false,
             EndTimeUTC = time,
             Result = "Invalidate all events on cycle for pallet " + pallet.ToString(),
-            EndOfRoute = false
           };
           newMsg.ProgramDetails["EditedCounters"] = string.Join(",", invalidatedCntrs);
           if (!string.IsNullOrEmpty(operatorName))
@@ -3043,7 +3020,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = false,
         EndTimeUTC = timeUTC,
         Result = "",
-        EndOfRoute = false
       };
       if (!string.IsNullOrEmpty(operatorName))
       {
@@ -3121,7 +3097,6 @@ namespace BlackMaple.MachineFramework
               StartOfCycle = false,
               EndTimeUTC = timeUTC,
               Result = "",
-              EndOfRoute = false,
               ElapsedTime = addTime.HasValue ? timeUTC.Subtract(addTime.Value) : TimeSpan.Zero
             };
             if (!string.IsNullOrEmpty(operatorName))
@@ -3220,7 +3195,6 @@ namespace BlackMaple.MachineFramework
                 StartOfCycle = false,
                 EndTimeUTC = addTimeUTC,
                 Result = serials[i],
-                EndOfRoute = false
               };
               ret.Add(AddLogEntry(trans, serLog, null, null));
             }
@@ -3248,7 +3222,6 @@ namespace BlackMaple.MachineFramework
               StartOfCycle = false,
               EndTimeUTC = addTimeUTC,
               Result = "",
-              EndOfRoute = false
             };
             if (!string.IsNullOrEmpty(operatorName))
             {
@@ -3835,7 +3808,6 @@ namespace BlackMaple.MachineFramework
                     StartOfCycle = false,
                     EndTimeUTC = timeUTC,
                     Result = "PalletCycle",
-                    EndOfRoute = false,
                     ElapsedTime = elapsedTime,
                     ActiveOperationTime = TimeSpan.Zero
                   },
@@ -3923,7 +3895,6 @@ namespace BlackMaple.MachineFramework
                               StartOfCycle = false,
                               EndTimeUTC = timeUTC.AddSeconds(2),
                               Result = serial,
-                              EndOfRoute = false
                             },
                             null,
                             null
@@ -3973,7 +3944,6 @@ namespace BlackMaple.MachineFramework
                                 StartOfCycle = false,
                                 EndTimeUTC = timeUTC.AddSeconds(2),
                                 Result = serial,
-                                EndOfRoute = false
                               },
                               null,
                               null
@@ -3996,7 +3966,6 @@ namespace BlackMaple.MachineFramework
                           StartOfCycle = false,
                           EndTimeUTC = timeUTC.AddSeconds(1),
                           Result = "LOAD",
-                          EndOfRoute = false,
                           ElapsedTime = TimeSpan.FromTicks(reader.GetInt64(2)),
                           ActiveOperationTime = reader.IsDBNull(3)
                             ? TimeSpan.Zero
@@ -4191,7 +4160,8 @@ namespace BlackMaple.MachineFramework
             Process = proc,
             Pallet = null,
             LoadStation = -1,
-            UnloadStation = -1
+            UnloadStation = -1,
+            Stops = ImmutableList<MaterialProcessActualPath.Stop>.Empty
           };
           byProc.Add(proc, m % f);
         }
@@ -4560,7 +4530,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = false,
         EndTimeUTC = utcNow,
         Result = inspect.ToString(),
-        EndOfRoute = false
       };
 
       log.ProgramDetails["InspectionType"] = inspType;
@@ -4623,7 +4592,6 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = false,
         EndTimeUTC = utcNow,
         Result = inspect.ToString(),
-        EndOfRoute = false
       };
       return AddLogEntry(trans, log, null, null);
     }

@@ -97,8 +97,7 @@ namespace MachineWatchTest
               prog: "proggg",
               start: false,
               endTime: now,
-              result: "result",
-              endOfRoute: false
+              result: "result"
             ),
             new LogEntry(
               cntr: -1,
@@ -110,8 +109,7 @@ namespace MachineWatchTest
               prog: "proggg2",
               start: false,
               endTime: now.AddMinutes(10),
-              result: "result2",
-              endOfRoute: false
+              result: "result2"
             ),
             new LogEntry(
               cntr: -1,
@@ -123,8 +121,7 @@ namespace MachineWatchTest
               prog: "MARK",
               start: false,
               endTime: now.AddMinutes(20),
-              result: "serial1",
-              endOfRoute: false
+              result: "serial1"
             ),
             new LogEntry(
               cntr: -1,
@@ -136,8 +133,7 @@ namespace MachineWatchTest
               prog: "",
               start: false,
               endTime: now.AddMinutes(30),
-              result: "work1",
-              endOfRoute: false
+              result: "work1"
             ),
             new LogEntry(
               cntr: -1,
@@ -149,8 +145,7 @@ namespace MachineWatchTest
               prog: "MARK",
               start: false,
               endTime: now.AddMinutes(40),
-              result: "serial2",
-              endOfRoute: false
+              result: "serial2"
             ),
             new LogEntry(
               cntr: -1,
@@ -162,8 +157,7 @@ namespace MachineWatchTest
               prog: "LOAD",
               start: false,
               endTime: now.AddMinutes(50),
-              result: "LOAD",
-              endOfRoute: false
+              result: "LOAD"
             ),
             new LogEntry(
               cntr: -1,
@@ -175,8 +169,7 @@ namespace MachineWatchTest
               prog: "",
               start: false,
               endTime: now.AddMinutes(60),
-              result: "work3",
-              endOfRoute: false
+              result: "work3"
             ),
           },
           options => options.Excluding(x => x.Counter).ComparingByMembers<LogEntry>()

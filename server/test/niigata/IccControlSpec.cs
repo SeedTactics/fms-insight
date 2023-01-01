@@ -281,6 +281,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 new MaterialProcessActualPath()
                 {
+                  MaterialID = 0,
                   Process = 1,
                   Pallet = "1",
                   LoadStation = 1,
@@ -432,6 +433,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 new MaterialProcessActualPath()
                 {
+                  MaterialID = 0,
                   Process = 1,
                   Pallet = "1",
                   LoadStation = 4,

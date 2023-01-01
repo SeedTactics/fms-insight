@@ -2331,8 +2331,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               prog: "Assign",
               start: false,
               endTime: _status.TimeOfStatusUTC,
-              result: "New Niigata Route",
-              endOfRoute: false
+              result: "New Niigata Route"
             )
           );
         }
@@ -2461,7 +2460,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC,
                   result: "PalletCycle",
-                  endOfRoute: false,
                   elapsed: TimeSpan.FromMinutes(palletCycleChange.Minutes),
                   active: TimeSpan.Zero
                 )
@@ -2481,8 +2479,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   prog: "LOAD",
                   start: true,
                   endTime: _status.TimeOfStatusUTC,
-                  result: "LOAD",
-                  endOfRoute: false
+                  result: "LOAD"
                 )
               );
               break;
@@ -2529,7 +2526,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                   result: "LOAD",
-                  endOfRoute: false,
                   elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
                   active: TimeSpan.FromMinutes(load.ActiveMins)
                 )
@@ -2559,8 +2555,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       prog: "MARK",
                       start: false,
                       endTime: _status.TimeOfStatusUTC.AddSeconds(1),
-                      result: _serialSt.ConvertMaterialIDToSerial(m.MaterialID),
-                      endOfRoute: false
+                      result: _serialSt.ConvertMaterialIDToSerial(m.MaterialID)
                     )
                 )
               );
@@ -2606,7 +2601,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                   result: "LOAD",
-                  endOfRoute: false,
                   elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
                   active: TimeSpan.FromMinutes(load.ActiveMins)
                 )
@@ -2640,7 +2634,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       start: false,
                       endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                       result: "",
-                      endOfRoute: false,
                       // add 1 second because addtoqueue event is one-second after load end
                       elapsed: TimeSpan
                         .FromMinutes(removeFromQueueEvt.ElapsedMins)
@@ -2664,7 +2657,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC,
                   result: "UNLOAD",
-                  endOfRoute: true,
                   elapsed: TimeSpan.FromMinutes(unload.ElapsedMin),
                   active: TimeSpan.FromMinutes(unload.ActiveMins)
                 )
@@ -2697,8 +2689,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       prog: addToQueueEvt.Reason ?? "",
                       start: false,
                       endTime: _status.TimeOfStatusUTC,
-                      result: "",
-                      endOfRoute: false
+                      result: ""
                     )
                 )
               );
@@ -2720,14 +2711,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StartOfCycle = true,
                     EndTimeUTC = _status.TimeOfStatusUTC,
                     Result = "",
-                    EndOfRoute = false,
                     ElapsedTime = TimeSpan.FromMinutes(-1),
+                    ActiveOperationTime = TimeSpan.Zero,
                     ProgramDetails = machBegin.Revision.HasValue
                       ? ImmutableDictionary<string, string>.Empty.Add(
                         "ProgramRevision",
                         machBegin.Revision.Value.ToString()
                       )
-                      : ImmutableDictionary<string, string>.Empty
+                      : null
                   }
                 );
               }
@@ -2749,7 +2740,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StartOfCycle = false,
                     EndTimeUTC = _status.TimeOfStatusUTC,
                     Result = "",
-                    EndOfRoute = false,
                     ElapsedTime = TimeSpan.FromMinutes(machEnd.ElapsedMin),
                     ActiveOperationTime = TimeSpan.FromMinutes(machEnd.ActiveMin),
                     ProgramDetails = machEnd.Revision.HasValue
@@ -2757,7 +2747,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                         "ProgramRevision",
                         machEnd.Revision.Value.ToString()
                       )
-                      : ImmutableDictionary<string, string>.Empty
+                      : null
                   }
                 );
               }
@@ -2777,8 +2767,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     prog: "TestReclamp",
                     start: true,
                     endTime: _status.TimeOfStatusUTC,
-                    result: "TestReclamp",
-                    endOfRoute: false
+                    result: "TestReclamp"
                   )
                 );
               }
@@ -2799,7 +2788,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     start: false,
                     endTime: _status.TimeOfStatusUTC,
                     result: "TestReclamp",
-                    endOfRoute: false,
                     elapsed: TimeSpan.FromMinutes(reclampEnd.ElapsedMin),
                     active: TimeSpan.FromMinutes(reclampEnd.ActiveMin)
                   )
@@ -2821,8 +2809,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     prog: "Arrive",
                     start: true,
                     endTime: _status.TimeOfStatusUTC,
-                    result: stockerStart.WaitForMachine ? "WaitForMachine" : "WaitForUnload",
-                    endOfRoute: false
+                    result: stockerStart.WaitForMachine ? "WaitForMachine" : "WaitForUnload"
                   )
                 );
               }
@@ -2843,7 +2830,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     start: false,
                     endTime: _status.TimeOfStatusUTC,
                     result: stockerEnd.WaitForMachine ? "WaitForMachine" : "WaitForUnload",
-                    endOfRoute: false,
                     elapsed: TimeSpan.FromMinutes(stockerEnd.ElapsedMin),
                     active: TimeSpan.Zero
                   )
@@ -2865,8 +2851,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     prog: "Arrive",
                     start: true,
                     endTime: _status.TimeOfStatusUTC,
-                    result: "Arrive",
-                    endOfRoute: false
+                    result: "Arrive"
                   )
                 );
               }
@@ -2887,7 +2872,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     start: false,
                     endTime: _status.TimeOfStatusUTC,
                     result: rotaryEnd.RotateIntoMachine ? "RotateIntoWorktable" : "LeaveMachine",
-                    endOfRoute: false,
                     elapsed: TimeSpan.FromMinutes(rotaryEnd.ElapsedMin),
                     active: TimeSpan.Zero
                   )
@@ -2922,8 +2906,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StartOfCycle = false,
                     EndTimeUTC = _status.TimeOfStatusUTC,
                     Result = insp.Inspect.ToString(),
-                    EndOfRoute = false,
                     ElapsedTime = TimeSpan.FromMinutes(-1),
+                    ActiveOperationTime = TimeSpan.Zero,
                     ProgramDetails = ImmutableDictionary<string, string>.Empty
                       .Add("InspectionType", insp.InspType)
                       .Add(
