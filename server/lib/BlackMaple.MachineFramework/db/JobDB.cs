@@ -46,23 +46,23 @@ namespace BlackMaple.MachineFramework
     #region "Loading Jobs"
     private record PathStopRow
     {
-      public string StationGroup { get; init; } = "";
+      public required string StationGroup { get; init; }
       public ImmutableList<int>.Builder Stations { get; } = ImmutableList.CreateBuilder<int>();
-      public string Program { get; init; }
-      public long? ProgramRevision { get; init; }
+      public required string Program { get; init; }
+      public required long? ProgramRevision { get; init; }
       public ImmutableDictionary<string, TimeSpan>.Builder Tools { get; } =
         ImmutableDictionary.CreateBuilder<string, TimeSpan>();
-      public TimeSpan ExpectedCycleTime { get; init; }
+      public required TimeSpan ExpectedCycleTime { get; init; }
     }
 
     private record HoldRow
     {
-      public bool UserHold { get; init; }
-      public string ReasonForUserHold { get; init; } = "";
+      public required bool UserHold { get; init; }
+      public required string ReasonForUserHold { get; init; }
       public ImmutableList<TimeSpan>.Builder HoldUnholdPattern { get; } =
         ImmutableList.CreateBuilder<TimeSpan>();
-      public DateTime HoldUnholdPatternStartUTC { get; init; }
-      public bool HoldUnholdPatternRepeats { get; init; }
+      public required DateTime HoldUnholdPatternStartUTC { get; init; }
+      public required bool HoldUnholdPatternRepeats { get; init; }
 
       public HoldPattern ToHoldPattern()
       {
@@ -79,18 +79,18 @@ namespace BlackMaple.MachineFramework
 
     private record PathDataRow
     {
-      public int Process { get; init; }
-      public int Path { get; init; }
-      public DateTime StartingUTC { get; init; }
-      public int PartsPerPallet { get; init; }
-      public TimeSpan SimAverageFlowTime { get; init; }
-      public string InputQueue { get; init; }
-      public string OutputQueue { get; init; }
-      public TimeSpan LoadTime { get; init; }
-      public TimeSpan UnloadTime { get; init; }
-      public string Fixture { get; init; }
-      public int? Face { get; init; }
-      public string Casting { get; init; }
+      public required int Process { get; init; }
+      public required int Path { get; init; }
+      public required DateTime StartingUTC { get; init; }
+      public required int PartsPerPallet { get; init; }
+      public required TimeSpan SimAverageFlowTime { get; init; }
+      public required string InputQueue { get; init; }
+      public required string OutputQueue { get; init; }
+      public required TimeSpan LoadTime { get; init; }
+      public required TimeSpan UnloadTime { get; init; }
+      public required string Fixture { get; init; }
+      public required int? Face { get; init; }
+      public required string Casting { get; init; }
       public ImmutableList<int>.Builder Loads { get; } = ImmutableList.CreateBuilder<int>();
       public ImmutableList<int>.Builder Unloads { get; } = ImmutableList.CreateBuilder<int>();
       public ImmutableList<PathInspection>.Builder Insps { get; } =
@@ -105,19 +105,19 @@ namespace BlackMaple.MachineFramework
 
     private record JobDetails
     {
-      public ImmutableList<int> CyclesOnFirstProc { get; init; }
-      public ImmutableList<string> Bookings { get; init; }
-      public ImmutableList<ProcessInfo> Procs { get; init; }
-      public HoldRow Hold { get; init; }
+      public required ImmutableList<int> CyclesOnFirstProc { get; init; }
+      public required ImmutableList<string> Bookings { get; init; }
+      public required ImmutableList<ProcessInfo> Procs { get; init; }
+      public required HoldRow Hold { get; init; }
     }
 
     private record SimStatUseKey : IComparable<SimStatUseKey>
     {
-      public string ScheduleId { get; init; } = "";
-      public DateTime StartUTC { get; init; }
-      public DateTime EndUTC { get; init; }
-      public string StationGroup { get; init; } = "";
-      public int StationNum { get; init; }
+      public required string ScheduleId { get; init; }
+      public required DateTime StartUTC { get; init; }
+      public required DateTime EndUTC { get; init; }
+      public required string StationGroup { get; init; }
+      public required int StationNum { get; init; }
 
       public int CompareTo(SimStatUseKey other)
       {
@@ -129,9 +129,9 @@ namespace BlackMaple.MachineFramework
 
     private record SimStatUseRow
     {
-      public TimeSpan UtilizationTime { get; init; }
-      public TimeSpan PlannedDownTime { get; init; }
-      public ImmutableList<SimulatedStationPart>.Builder Parts { get; init; } =
+      public required TimeSpan UtilizationTime { get; init; }
+      public required TimeSpan PlannedDownTime { get; init; }
+      public ImmutableList<SimulatedStationPart>.Builder Parts { get; } =
         ImmutableList.CreateBuilder<SimulatedStationPart>();
     }
 

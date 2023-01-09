@@ -498,17 +498,17 @@ namespace BlackMaple.MachineFramework
 
   public record InspectCount
   {
-    public string Counter { get; init; }
-    public int Value { get; init; }
-    public DateTime LastUTC { get; init; }
+    public required string Counter { get; init; }
+    public required int Value { get; init; }
+    public required DateTime LastUTC { get; init; }
   }
 
   [Draftable]
   public record EventLogMaterial
   {
-    public long MaterialID { get; init; }
-    public int Process { get; init; }
-    public string Face { get; init; }
+    public required long MaterialID { get; init; }
+    public required int Process { get; init; }
+    public required string Face { get; init; }
 
     public static EventLogMaterial FromLogMat(LogMaterial m)
     {
@@ -523,41 +523,41 @@ namespace BlackMaple.MachineFramework
 
   public record SwapMaterialResult
   {
-    public IEnumerable<LogEntry> ChangedLogEntries { get; init; }
-    public IEnumerable<LogEntry> NewLogEntries { get; init; }
+    public required IEnumerable<LogEntry> ChangedLogEntries { get; init; }
+    public required IEnumerable<LogEntry> NewLogEntries { get; init; }
   }
 
   public record Decision
   {
-    public long MaterialID { get; init; }
-    public string InspType { get; init; }
-    public string Counter { get; init; }
-    public bool Inspect { get; init; }
-    public bool Forced { get; init; }
-    public System.DateTime CreateUTC { get; init; }
+    public required long MaterialID { get; init; }
+    public required string InspType { get; init; }
+    public required string Counter { get; init; }
+    public required bool Inspect { get; init; }
+    public required bool Forced { get; init; }
+    public required System.DateTime CreateUTC { get; init; }
   }
 
   public record PendingLoad
   {
-    public string Pallet { get; init; }
-    public string Key { get; init; }
-    public int LoadStation { get; init; }
-    public TimeSpan Elapsed { get; init; }
-    public TimeSpan ActiveOperationTime { get; init; }
-    public string ForeignID { get; init; }
+    public required string Pallet { get; init; }
+    public required string Key { get; init; }
+    public required int LoadStation { get; init; }
+    public required TimeSpan Elapsed { get; init; }
+    public required TimeSpan ActiveOperationTime { get; init; }
+    public required string ForeignID { get; init; }
   }
 
   public record QueuedMaterial
   {
-    public long MaterialID { get; init; }
-    public string Queue { get; init; }
-    public int Position { get; init; }
-    public string Unique { get; init; }
-    public string PartNameOrCasting { get; init; }
-    public int NumProcesses { get; init; }
+    public required long MaterialID { get; init; }
+    public required string Queue { get; init; }
+    public required int Position { get; init; }
+    public required string Unique { get; init; }
+    public required string PartNameOrCasting { get; init; }
+    public required int NumProcesses { get; init; }
     public string Serial { get; init; }
     public string Workorder { get; init; }
-    public ImmutableDictionary<int, int> Paths { get; init; } // key is process, value is path
+    public required ImmutableDictionary<int, int> Paths { get; init; } // key is process, value is path
     public DateTime? AddTimeUTC { get; init; }
     public int? NextProcess { get; init; }
   }
@@ -565,20 +565,20 @@ namespace BlackMaple.MachineFramework
   [Draftable]
   public record NewDecrementQuantity
   {
-    public string JobUnique { get; init; }
-    public string Part { get; init; }
-    public int Quantity { get; init; }
+    public required string JobUnique { get; init; }
+    public required string Part { get; init; }
+    public required int Quantity { get; init; }
   }
 
   public record RemovedBooking
   {
-    public string JobUnique { get; init; }
-    public string BookingId { get; init; }
+    public required string JobUnique { get; init; }
+    public required string BookingId { get; init; }
   }
 
   public record BulkAddCastingResult
   {
-    public HashSet<long> MaterialIds { get; init; }
-    public IReadOnlyList<LogEntry> Logs { get; init; }
+    public required HashSet<long> MaterialIds { get; init; }
+    public required IReadOnlyList<LogEntry> Logs { get; init; }
   }
 }
