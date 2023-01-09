@@ -249,8 +249,18 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       ScheduleId = "abcd",
       Jobs = ImmutableList.Create<Job>(newJob1, newJob2),
       Programs = ImmutableList.Create(
-        new NewProgramContent() { ProgramName = "prog1", ProgramContent = "content1" },
-        new NewProgramContent() { ProgramName = "prog2", ProgramContent = "content2" }
+        new NewProgramContent()
+        {
+          ProgramName = "prog1",
+          ProgramContent = "content1",
+          Revision = 0
+        },
+        new NewProgramContent()
+        {
+          ProgramName = "prog2",
+          ProgramContent = "content2",
+          Revision = 0
+        }
       )
     };
 

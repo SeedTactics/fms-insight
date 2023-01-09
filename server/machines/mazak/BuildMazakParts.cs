@@ -364,7 +364,12 @@ namespace MazakMachineInterface
       : base(parent, template.ProcessNumber, path)
     {
       TemplateProcessRow = template;
-      PartProgram = new ProgramRevision() { CellControllerProgramName = template.MainProgram };
+      PartProgram = new ProgramRevision()
+      {
+        ProgramName = "",
+        CellControllerProgramName = template.MainProgram,
+        Revision = 0
+      };
     }
 
     public override IEnumerable<string> Pallets()
@@ -958,7 +963,12 @@ namespace MazakMachineInterface
           }
           if (mazakData.MainPrograms.Any(mp => mp.MainProgram == stop.Program))
           {
-            prog = new ProgramRevision() { CellControllerProgramName = stop.Program };
+            prog = new ProgramRevision()
+            {
+              ProgramName = "",
+              Revision = 0,
+              CellControllerProgramName = stop.Program
+            };
           }
           else
           {
