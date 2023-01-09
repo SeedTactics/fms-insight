@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,28 +42,28 @@ namespace BlackMaple.MachineFramework
 {
   public record CSVLogEntry
   {
-    public long Counter { get; init; }
-    public string EndTimeUTC { get; init; }
-    public LogType LogType { get; init; }
-    public string LocationName { get; init; }
-    public int LocationNum { get; init; }
+    public required long Counter { get; init; }
+    public required string EndTimeUTC { get; init; }
+    public required LogType LogType { get; init; }
+    public required string LocationName { get; init; }
+    public required int LocationNum { get; init; }
 
-    public bool StartOfCycle { get; init; }
-    public string Pallet { get; init; }
-    public string Program { get; init; }
-    public string Result { get; init; }
+    public required bool StartOfCycle { get; init; }
+    public required string Pallet { get; init; }
+    public required string Program { get; init; }
+    public required string Result { get; init; }
 
-    public TimeSpan ElapsedTime { get; init; }
-    public TimeSpan ActiveOperationTime { get; init; }
+    public required TimeSpan ElapsedTime { get; init; }
+    public required TimeSpan ActiveOperationTime { get; init; }
 
-    public long MaterialID { get; init; }
-    public string JobUniqueStr { get; init; }
-    public string PartName { get; init; }
-    public int Process { get; init; }
-    public int NumProcesses { get; init; }
-    public string Face { get; init; }
+    public required long MaterialID { get; init; }
+    public required string JobUniqueStr { get; init; }
+    public required string PartName { get; init; }
+    public required int Process { get; init; }
+    public required int NumProcesses { get; init; }
+    public required string Face { get; init; }
 
-    public string ProgramDetails { get; init; }
+    public required string ProgramDetails { get; init; }
   }
 
   public static class CSVLogConverter

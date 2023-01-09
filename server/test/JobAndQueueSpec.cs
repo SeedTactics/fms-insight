@@ -60,7 +60,9 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   public JobAndQueueSpec(Xunit.Abstractions.ITestOutputHelper output)
   {
-    _repo = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
+    _repo = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+      new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+    );
     _fixture = new Fixture();
     _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
 

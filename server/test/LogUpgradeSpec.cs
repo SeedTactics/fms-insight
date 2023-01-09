@@ -55,7 +55,12 @@ namespace MachineWatchTest
       _tempJobFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("job.v16.db", _tempJobFile, overwrite: true);
       _log = RepositoryConfig
-        .InitializeEventDatabase(new SerialSettings(), _tempLogFile, null, _tempJobFile)
+        .InitializeEventDatabase(
+          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
+          _tempLogFile,
+          null,
+          _tempJobFile
+        )
         .OpenConnection();
     }
 

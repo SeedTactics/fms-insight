@@ -73,7 +73,9 @@ namespace MachineWatchTest
 
     public JobLogTest()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+      );
       _jobLog = _repoCfg.OpenConnection();
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
@@ -5043,7 +5045,11 @@ namespace MachineWatchTest
     {
       var logDB = RepositoryConfig
         .InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12") },
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          },
           _connection,
           createTables: true
         )
@@ -5074,7 +5080,11 @@ namespace MachineWatchTest
     {
       Action act = () =>
         RepositoryConfig.InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("A000000000") }
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("A000000000"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          }
         );
       act.Should().Throw<Exception>().WithMessage("Starting Serial is too large");
     }
@@ -5084,7 +5094,11 @@ namespace MachineWatchTest
     {
       var logFromCreate = RepositoryConfig
         .InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12") },
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          },
           _connection,
           createTables: true
         )
@@ -5095,7 +5109,11 @@ namespace MachineWatchTest
 
       var logFromUpgrade = RepositoryConfig
         .InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("B3t24s") },
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("B3t24s"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          },
           _connection,
           createTables: false
         )
@@ -5112,7 +5130,11 @@ namespace MachineWatchTest
     {
       var logFromCreate = RepositoryConfig
         .InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12") },
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          },
           _connection,
           createTables: true
         )
@@ -5123,7 +5145,11 @@ namespace MachineWatchTest
 
       var logFromUpgrade = RepositoryConfig
         .InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("w53122") },
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("w53122"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          },
           _connection,
           createTables: false
         )

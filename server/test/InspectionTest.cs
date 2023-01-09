@@ -48,7 +48,9 @@ namespace MachineWatchTest
 
     public InspectionTest()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+      );
       _insp = _repoCfg.OpenConnection();
     }
 

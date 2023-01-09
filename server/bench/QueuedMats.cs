@@ -7,7 +7,7 @@ public class QueuedMats
   public QueuedMats()
   {
     repo = RepositoryConfig.InitializeEventDatabase(
-      new SerialSettings(),
+      new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
       Environment.GetEnvironmentVariable("INSIGHT_DB_FILE")
     );
   }

@@ -68,7 +68,9 @@ namespace MachineWatchTest
 
     public DecrementSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+      );
       _jobDB = _repoCfg.OpenConnection();
 
       _write = new WriteMock();

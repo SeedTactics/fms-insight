@@ -94,7 +94,7 @@ namespace BlackMaple.MachineFramework
   {
     public SerialType SerialType { get; set; } = SerialType.NoAutomaticSerials;
     public long StartingMaterialID { get; init; } = 0; // if the current material id in the database is below this value, it will be set to this value
-    public Func<long, string> ConvertMaterialIDToSerial { get; init; }
+    public required Func<long, string> ConvertMaterialIDToSerial { get; init; }
 
     private static string Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 

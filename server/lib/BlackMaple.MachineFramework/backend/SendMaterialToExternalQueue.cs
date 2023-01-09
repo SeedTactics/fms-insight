@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,10 +46,10 @@ namespace BlackMaple.MachineFramework
   [Draftable]
   public record MaterialToSendToExternalQueue
   {
-    public string Server { get; init; }
-    public string PartName { get; init; }
-    public string Queue { get; init; }
-    public string Serial { get; init; }
+    public required string Server { get; init; }
+    public required string PartName { get; init; }
+    public required string Queue { get; init; }
+    public required string Serial { get; init; }
   }
 
   public interface ISendMaterialToExternalQueue

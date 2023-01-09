@@ -51,7 +51,9 @@ namespace MachineWatchTest
 
     public QueueSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+      );
       _logDB = _repoCfg.OpenConnection();
 
       _now = DateTime.UtcNow.AddHours(1);

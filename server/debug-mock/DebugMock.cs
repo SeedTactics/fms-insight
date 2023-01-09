@@ -195,7 +195,7 @@ namespace DebugMachineWatchApiServer
       if (DebugMockProgram.InsightBackupDbFile != null)
       {
         RepoConfig = RepositoryConfig.InitializeEventDatabase(
-          new SerialSettings(),
+          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
           DebugMockProgram.InsightBackupDbFile
         );
         LoadStatusFromLog(System.IO.Path.GetDirectoryName(DebugMockProgram.InsightBackupDbFile));
@@ -204,7 +204,10 @@ namespace DebugMachineWatchApiServer
       {
         _tempDbFile = System.IO.Path.GetTempFileName();
         System.IO.File.Delete(_tempDbFile);
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), _tempDbFile);
+        RepoConfig = RepositoryConfig.InitializeEventDatabase(
+          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
+          _tempDbFile
+        );
 
         // sample data starts at Jan 1, 2018.  Need to offset to current month
         var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
