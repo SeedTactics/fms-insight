@@ -256,7 +256,9 @@ namespace BlackMaple.MachineFramework
     {
       using (var jdb = _repo.OpenConnection())
       {
-        return _checkJobsValid.CheckNewJobs(jdb, new NewJobs() { Jobs = newJobs.ToImmutableList() }).ToList();
+        return _checkJobsValid
+          .CheckNewJobs(jdb, new NewJobs() { ScheduleId = null, Jobs = newJobs.ToImmutableList() })
+          .ToList();
       }
     }
 

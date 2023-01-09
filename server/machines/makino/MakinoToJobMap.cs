@@ -341,6 +341,7 @@ namespace Makino
         Pallet = palletNum.ToString(),
         CurrentPalletLocation = loc,
         NumFaces = fixtureNum,
+        FixtureOnPallet = "",
         OnHold = false,
       };
 
