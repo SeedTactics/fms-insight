@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -43,10 +43,10 @@ namespace BlackMaple.MachineFramework
   public record ToolSnapshot
   {
     [DataMember(IsRequired = true)]
-    public int Pocket { get; init; }
+    public required int Pocket { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string ToolName { get; init; } = "";
+    public required string ToolName { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Serial { get; init; }
@@ -71,20 +71,20 @@ namespace BlackMaple.MachineFramework
   public record ToolInMachine : ToolSnapshot
   {
     [DataMember(IsRequired = true)]
-    public string MachineGroupName { get; init; } = "";
+    public required string MachineGroupName { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int MachineNum { get; init; }
+    public required int MachineNum { get; init; }
   }
 
   [DataContract, Draftable]
   public record ToolUse
   {
     [DataMember(IsRequired = true)]
-    public string Tool { get; init; } = "";
+    public required string Tool { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Pocket { get; init; }
+    public required int Pocket { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public bool? ToolChangeOccurred { get; init; }
