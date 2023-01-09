@@ -50,7 +50,9 @@ namespace MachineWatchTest
 
     public JobDBSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+      );
       _jobDB = _repoCfg.OpenConnection();
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
@@ -801,7 +803,16 @@ namespace MachineWatchTest
           d =>
           {
             d.Stops.Clear();
-            d.Stops.Add(new MachiningStop() { Program = "aaa", ProgramRevision = null });
+            d.Stops.Add(
+              new MachiningStop()
+              {
+                Program = "aaa",
+                ProgramRevision = null,
+                StationGroup = "",
+                Stations = ImmutableList<int>.Empty,
+                ExpectedCycleTime = TimeSpan.Zero
+              }
+            );
           }
         )
         .AdjustPath(
@@ -810,7 +821,16 @@ namespace MachineWatchTest
           d =>
           {
             d.Stops.Clear();
-            d.Stops.Add(new MachiningStop() { Program = "aaa", ProgramRevision = 1 });
+            d.Stops.Add(
+              new MachiningStop()
+              {
+                Program = "aaa",
+                ProgramRevision = 1,
+                StationGroup = "",
+                Stations = ImmutableList<int>.Empty,
+                ExpectedCycleTime = TimeSpan.Zero
+              }
+            );
           }
         )
         .AdjustPath(
@@ -819,7 +839,16 @@ namespace MachineWatchTest
           d =>
           {
             d.Stops.Clear();
-            d.Stops.Add(new MachiningStop() { Program = "bbb", ProgramRevision = null });
+            d.Stops.Add(
+              new MachiningStop()
+              {
+                Program = "bbb",
+                ProgramRevision = null,
+                StationGroup = "",
+                Stations = ImmutableList<int>.Empty,
+                ExpectedCycleTime = TimeSpan.Zero
+              }
+            );
           }
         )
         .AdjustPath(
@@ -828,7 +857,16 @@ namespace MachineWatchTest
           d =>
           {
             d.Stops.Clear();
-            d.Stops.Add(new MachiningStop() { Program = "bbb", ProgramRevision = 6 });
+            d.Stops.Add(
+              new MachiningStop()
+              {
+                Program = "bbb",
+                ProgramRevision = 6,
+                StationGroup = "",
+                Stations = ImmutableList<int>.Empty,
+                ExpectedCycleTime = TimeSpan.Zero
+              }
+            );
           }
         );
 
@@ -910,9 +948,29 @@ namespace MachineWatchTest
       job1 = job1.AdjustPath(
           1,
           1,
-          d => d.Stops[0] = new MachiningStop() { Program = "aaa", ProgramRevision = 1 }
+          d =>
+            d.Stops[0] = new MachiningStop()
+            {
+              Program = "aaa",
+              ProgramRevision = 1,
+              StationGroup = "",
+              Stations = ImmutableList<int>.Empty,
+              ExpectedCycleTime = TimeSpan.Zero
+            }
         )
-        .AdjustPath(2, 1, d => d.Stops[0] = new MachiningStop() { Program = "bbb", ProgramRevision = 6 });
+        .AdjustPath(
+          2,
+          1,
+          d =>
+            d.Stops[0] = new MachiningStop()
+            {
+              Program = "bbb",
+              ProgramRevision = 6,
+              StationGroup = "",
+              Stations = ImmutableList<int>.Empty,
+              ExpectedCycleTime = TimeSpan.Zero
+            }
+        );
       initialWorks[0] %= w =>
       {
         w.Programs.Clear();
@@ -1620,7 +1678,16 @@ namespace MachineWatchTest
           d =>
           {
             d.Stops.Clear();
-            d.Stops.Add(new MachiningStop() { Program = "aaa", ProgramRevision = -1 });
+            d.Stops.Add(
+              new MachiningStop()
+              {
+                Program = "aaa",
+                ProgramRevision = -1,
+                StationGroup = "",
+                Stations = ImmutableList<int>.Empty,
+                ExpectedCycleTime = TimeSpan.Zero
+              }
+            );
           }
         )
         .AdjustPath(
@@ -1629,7 +1696,16 @@ namespace MachineWatchTest
           d =>
           {
             d.Stops.Clear();
-            d.Stops.Add(new MachiningStop() { Program = "aaa", ProgramRevision = -2 });
+            d.Stops.Add(
+              new MachiningStop()
+              {
+                Program = "aaa",
+                ProgramRevision = -2,
+                StationGroup = "",
+                Stations = ImmutableList<int>.Empty,
+                ExpectedCycleTime = TimeSpan.Zero
+              }
+            );
           }
         )
         .AdjustPath(
@@ -1638,7 +1714,16 @@ namespace MachineWatchTest
           d =>
           {
             d.Stops.Clear();
-            d.Stops.Add(new MachiningStop() { Program = "bbb", ProgramRevision = -1 });
+            d.Stops.Add(
+              new MachiningStop()
+              {
+                Program = "bbb",
+                ProgramRevision = -1,
+                StationGroup = "",
+                Stations = ImmutableList<int>.Empty,
+                ExpectedCycleTime = TimeSpan.Zero
+              }
+            );
           }
         )
         .AdjustPath(
@@ -1647,7 +1732,16 @@ namespace MachineWatchTest
           d =>
           {
             d.Stops.Clear();
-            d.Stops.Add(new MachiningStop() { Program = "bbb", ProgramRevision = -2 });
+            d.Stops.Add(
+              new MachiningStop()
+              {
+                Program = "bbb",
+                ProgramRevision = -2,
+                StationGroup = "",
+                Stations = ImmutableList<int>.Empty,
+                ExpectedCycleTime = TimeSpan.Zero
+              }
+            );
           }
         )
         .AdjustPath(
@@ -1656,7 +1750,16 @@ namespace MachineWatchTest
           d =>
           {
             d.Stops.Clear();
-            d.Stops.Add(new MachiningStop() { Program = "ccc", ProgramRevision = -2 });
+            d.Stops.Add(
+              new MachiningStop()
+              {
+                Program = "ccc",
+                ProgramRevision = -2,
+                StationGroup = "",
+                Stations = ImmutableList<int>.Empty,
+                ExpectedCycleTime = TimeSpan.Zero
+              }
+            );
           }
         );
 
@@ -1783,7 +1886,10 @@ namespace MachineWatchTest
             d.Stops[0] = new MachiningStop()
             {
               Program = "aaa",
-              ProgramRevision = 1 // -1
+              ProgramRevision = 1, // -1
+              StationGroup = "",
+              Stations = ImmutableList<int>.Empty,
+              ExpectedCycleTime = TimeSpan.Zero
             }
         )
         .AdjustPath(
@@ -1793,7 +1899,10 @@ namespace MachineWatchTest
             d.Stops[0] = new MachiningStop()
             {
               Program = "aaa",
-              ProgramRevision = 2 // -2
+              ProgramRevision = 2, // -2
+              StationGroup = "",
+              Stations = ImmutableList<int>.Empty,
+              ExpectedCycleTime = TimeSpan.Zero
             }
         )
         .AdjustPath(
@@ -1803,7 +1912,10 @@ namespace MachineWatchTest
             d.Stops[0] = new MachiningStop()
             {
               Program = "bbb",
-              ProgramRevision = 6 // -1
+              ProgramRevision = 6, // -1
+              StationGroup = "",
+              Stations = ImmutableList<int>.Empty,
+              ExpectedCycleTime = TimeSpan.Zero
             }
         )
         .AdjustPath(
@@ -1813,7 +1925,10 @@ namespace MachineWatchTest
             d.Stops[0] = new MachiningStop()
             {
               Program = "bbb",
-              ProgramRevision = 7 // -2
+              ProgramRevision = 7, // -2
+              StationGroup = "",
+              Stations = ImmutableList<int>.Empty,
+              ExpectedCycleTime = TimeSpan.Zero
             }
         )
         .AdjustPath(
@@ -1823,7 +1938,10 @@ namespace MachineWatchTest
             d.Stops[0] = new MachiningStop()
             {
               Program = "ccc",
-              ProgramRevision = 5 // -2
+              ProgramRevision = 5, // -2
+              StationGroup = "",
+              Stations = ImmutableList<int>.Empty,
+              ExpectedCycleTime = TimeSpan.Zero
             }
         );
 

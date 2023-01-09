@@ -116,13 +116,16 @@ namespace MachineWatchTest
         PartName = "part1",
         RouteStartUTC = new DateTime(2020, 04, 14, 13, 43, 00, DateTimeKind.Local).ToUniversalTime(),
         Cycles = 51,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        CopiedToSystem = true,
         Processes = new[]
         {
           new ProcessInfo()
           {
             Paths = new[]
             {
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 SimulatedStartingUTC = new DateTime(
                   2018,
@@ -143,7 +146,7 @@ namespace MachineWatchTest
           {
             Paths = new[]
             {
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 2,
@@ -160,13 +163,16 @@ namespace MachineWatchTest
         PartName = "part1",
         RouteStartUTC = uniq1.RouteStartUTC,
         Cycles = 41,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        CopiedToSystem = true,
         Processes = new[]
         {
           new ProcessInfo()
           {
             Paths = new[]
             {
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 SimulatedStartingUTC = new DateTime(
                   2018,
@@ -187,7 +193,7 @@ namespace MachineWatchTest
           {
             Paths = new[]
             {
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 2,
@@ -205,13 +211,16 @@ namespace MachineWatchTest
         PartName = "part2",
         RouteStartUTC = uniq1.RouteStartUTC,
         Cycles = 12,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        CopiedToSystem = true,
         Processes = new[]
         {
           new ProcessInfo()
           {
             Paths = new[]
             {
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 SimulatedStartingUTC = new DateTime(
                   2018,
@@ -234,7 +243,7 @@ namespace MachineWatchTest
           {
             Paths = new[]
             {
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 Fixture = null,
                 Face = 1,
@@ -251,13 +260,16 @@ namespace MachineWatchTest
         PartName = "part2",
         RouteStartUTC = uniq1.RouteStartUTC,
         Cycles = 42,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        CopiedToSystem = true,
         Processes = new[]
         {
           new ProcessInfo()
           {
             Paths = new[]
             {
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 SimulatedStartingUTC = new DateTime(
                   2018,
@@ -279,7 +291,7 @@ namespace MachineWatchTest
           {
             Paths = new[]
             {
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 // no conflicts
                 Fixture = conflictByFixture ? "fixB" : null,
@@ -298,13 +310,16 @@ namespace MachineWatchTest
         PartName = "part3",
         RouteStartUTC = uniq1.RouteStartUTC,
         Cycles = 23,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        CopiedToSystem = true,
         Processes = new[]
         {
           new ProcessInfo()
           {
             Paths = new[]
             {
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 SimulatedStartingUTC = new DateTime(
                   2018,
@@ -318,7 +333,7 @@ namespace MachineWatchTest
               }
             }.ToImmutableList()
           },
-          new ProcessInfo() { Paths = new[] { new ProcPathInfo() { } }.ToImmutableList() }
+          new ProcessInfo() { Paths = new[] { JobLogTest.EmptyPath }.ToImmutableList() }
         }.ToImmutableList()
       };
 

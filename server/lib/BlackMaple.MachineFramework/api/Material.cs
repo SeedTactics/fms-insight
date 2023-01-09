@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -59,7 +59,7 @@ namespace BlackMaple.MachineFramework
     }
 
     [DataMember(IsRequired = true)]
-    public ActionType Type { get; init; }
+    public required ActionType Type { get; init; }
 
     // If Type = Loading
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
@@ -108,7 +108,7 @@ namespace BlackMaple.MachineFramework
     }
 
     [DataMember(IsRequired = true)]
-    public LocType Type { get; init; }
+    public required LocType Type { get; init; }
 
     //If Type == OnPallet
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
@@ -132,19 +132,19 @@ namespace BlackMaple.MachineFramework
   {
     // Information about the material
     [DataMember(IsRequired = true)]
-    public long MaterialID { get; init; }
+    public required long MaterialID { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string JobUnique { get; init; } = "";
+    public required string JobUnique { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string PartName { get; init; } = "";
+    public required string PartName { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Process { get; init; } // When in a queue, the process is the last completed process
+    public required int Process { get; init; } // When in a queue, the process is the last completed process
 
     [DataMember(IsRequired = true)]
-    public int Path { get; init; }
+    public required int Path { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Serial { get; init; }
@@ -153,7 +153,7 @@ namespace BlackMaple.MachineFramework
     public string? WorkorderId { get; init; }
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<string> SignaledInspections { get; init; } = ImmutableList<string>.Empty;
+    public required ImmutableList<string> SignaledInspections { get; init; }
 
     // 0-based index into the JobPlan.MachiningStops array for the last completed stop.  Null or negative values
     // indicate no machining stops have yet completed.
@@ -162,11 +162,11 @@ namespace BlackMaple.MachineFramework
 
     // Where is the material?
     [DataMember(IsRequired = true)]
-    public InProcessMaterialLocation Location { get; init; } = new InProcessMaterialLocation();
+    public required InProcessMaterialLocation Location { get; init; }
 
     // What is currently happening to the material?
     [DataMember(IsRequired = true)]
-    public InProcessMaterialAction Action { get; init; } = new InProcessMaterialAction();
+    public required InProcessMaterialAction Action { get; init; }
 
     public static InProcessMaterial operator %(InProcessMaterial m, Action<IInProcessMaterialDraft> f) =>
       m.Produce(f);
@@ -176,13 +176,13 @@ namespace BlackMaple.MachineFramework
   public record MaterialDetails
   {
     [DataMember(IsRequired = true)]
-    public long MaterialID { get; init; }
+    public required long MaterialID { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public string? JobUnique { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string PartName { get; init; } = "";
+    public required string PartName { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public int NumProcesses { get; init; }

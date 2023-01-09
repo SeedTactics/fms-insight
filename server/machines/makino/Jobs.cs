@@ -67,7 +67,15 @@ namespace Makino
     public CurrentStatus GetCurrentStatus()
     {
       if (_db == null)
-        return new CurrentStatus();
+        return new CurrentStatus()
+        {
+          TimeOfCurrentStatusUTC = DateTime.UtcNow,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+          Material = ImmutableList<InProcessMaterial>.Empty,
+          Alarms = ImmutableList<string>.Empty,
+          QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+        };
       else
         return _db.LoadCurrentInfo();
     }

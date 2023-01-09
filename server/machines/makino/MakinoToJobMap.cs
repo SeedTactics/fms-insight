@@ -103,7 +103,12 @@ namespace Makino
           UniqueStr = unique,
           PartName = partName,
           Comment = comment,
-          ManuallyCreated = false
+          ManuallyCreated = false,
+          RouteStartUTC = DateTime.MinValue,
+          RouteEndUTC = DateTime.MinValue,
+          Archived = false,
+          Processes = ImmutableList<ProcessInfo>.Empty,
+          Cycles = 0
         }
       );
     }
@@ -148,7 +153,8 @@ namespace Makino
             {
               StationGroup = "MC",
               Program = _programs[jobID],
-              Stations = ImmutableList.Create(loc.Num)
+              Stations = ImmutableList.Create(loc.Num),
+              ExpectedCycleTime = TimeSpan.Zero
             }
           );
         }
@@ -335,6 +341,7 @@ namespace Makino
         Pallet = palletNum.ToString(),
         CurrentPalletLocation = loc,
         NumFaces = fixtureNum,
+        FixtureOnPallet = "",
         OnHold = false,
       };
 
@@ -439,7 +446,8 @@ namespace Makino
           PathAfterLoad = 1,
           LoadOntoFace = face,
           LoadOntoPallet = pal.Pallet
-        }
+        },
+        SignaledInspections = ImmutableList<string>.Empty
       };
 
       ms.Add(mat);

@@ -120,7 +120,12 @@ namespace DebugMachineWatchApiServer
             }
             else
             {
-              return new MaterialDetails() { MaterialID = -1, Serial = barcode };
+              return new MaterialDetails()
+              {
+                MaterialID = -1,
+                Serial = barcode,
+                PartName = "",
+              };
             }
           }
         }
@@ -190,7 +195,7 @@ namespace DebugMachineWatchApiServer
       if (DebugMockProgram.InsightBackupDbFile != null)
       {
         RepoConfig = RepositoryConfig.InitializeEventDatabase(
-          new SerialSettings(),
+          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
           DebugMockProgram.InsightBackupDbFile
         );
         LoadStatusFromLog(System.IO.Path.GetDirectoryName(DebugMockProgram.InsightBackupDbFile));
@@ -199,7 +204,10 @@ namespace DebugMachineWatchApiServer
       {
         _tempDbFile = System.IO.Path.GetTempFileName();
         System.IO.File.Delete(_tempDbFile);
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), _tempDbFile);
+        RepoConfig = RepositoryConfig.InitializeEventDatabase(
+          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
+          _tempDbFile
+        );
 
         // sample data starts at Jan 1, 2018.  Need to offset to current month
         var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -335,7 +343,8 @@ namespace DebugMachineWatchApiServer
             CurrentQueue = queue,
             QueuePosition = 10 + i
           },
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+          SignaledInspections = ImmutableList<string>.Empty
         };
         CurrentStatus %= st => st.Material.Add(m);
         ret.Add(m);
@@ -378,7 +387,8 @@ namespace DebugMachineWatchApiServer
           CurrentQueue = queue,
           QueuePosition = position
         },
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+        SignaledInspections = ImmutableList<string>.Empty
       };
       CurrentStatus %= st => st.Material.Add(m);
       OnNewCurrentStatus?.Invoke(CurrentStatus);
@@ -826,7 +836,15 @@ namespace DebugMachineWatchApiServer
 
       Tools = new List<ToolInMachine>();
 
-      CurrentStatus = new CurrentStatus() { TimeOfCurrentStatusUTC = DateTime.UtcNow };
+      CurrentStatus = new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Material = ImmutableList<InProcessMaterial>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+      };
     }
 
     public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)

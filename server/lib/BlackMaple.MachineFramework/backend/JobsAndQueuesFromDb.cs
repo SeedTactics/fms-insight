@@ -256,7 +256,9 @@ namespace BlackMaple.MachineFramework
     {
       using (var jdb = _repo.OpenConnection())
       {
-        return _checkJobsValid.CheckNewJobs(jdb, new NewJobs() { Jobs = newJobs.ToImmutableList() }).ToList();
+        return _checkJobsValid
+          .CheckNewJobs(jdb, new NewJobs() { ScheduleId = null, Jobs = newJobs.ToImmutableList() })
+          .ToList();
       }
     }
 
@@ -414,7 +416,8 @@ namespace BlackMaple.MachineFramework
               CurrentQueue = queue,
               QueuePosition = log.LocationNum
             },
-            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+            SignaledInspections = ImmutableList<string>.Empty
           }
         );
       }
@@ -564,7 +567,8 @@ namespace BlackMaple.MachineFramework
           CurrentQueue = queue,
           QueuePosition = logEvt.LastOrDefault()?.LocationNum
         },
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+        SignaledInspections = ImmutableList<string>.Empty
       };
     }
 

@@ -55,7 +55,12 @@ namespace MachineWatchTest
       _tempJobFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("job.v16.db", _tempJobFile, overwrite: true);
       _log = RepositoryConfig
-        .InitializeEventDatabase(new SerialSettings(), _tempLogFile, null, _tempJobFile)
+        .InitializeEventDatabase(
+          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
+          _tempLogFile,
+          null,
+          _tempJobFile
+        )
         .OpenConnection();
     }
 
@@ -97,8 +102,7 @@ namespace MachineWatchTest
               prog: "proggg",
               start: false,
               endTime: now,
-              result: "result",
-              endOfRoute: false
+              result: "result"
             ),
             new LogEntry(
               cntr: -1,
@@ -110,8 +114,7 @@ namespace MachineWatchTest
               prog: "proggg2",
               start: false,
               endTime: now.AddMinutes(10),
-              result: "result2",
-              endOfRoute: false
+              result: "result2"
             ),
             new LogEntry(
               cntr: -1,
@@ -123,8 +126,7 @@ namespace MachineWatchTest
               prog: "MARK",
               start: false,
               endTime: now.AddMinutes(20),
-              result: "serial1",
-              endOfRoute: false
+              result: "serial1"
             ),
             new LogEntry(
               cntr: -1,
@@ -136,8 +138,7 @@ namespace MachineWatchTest
               prog: "",
               start: false,
               endTime: now.AddMinutes(30),
-              result: "work1",
-              endOfRoute: false
+              result: "work1"
             ),
             new LogEntry(
               cntr: -1,
@@ -149,8 +150,7 @@ namespace MachineWatchTest
               prog: "MARK",
               start: false,
               endTime: now.AddMinutes(40),
-              result: "serial2",
-              endOfRoute: false
+              result: "serial2"
             ),
             new LogEntry(
               cntr: -1,
@@ -162,8 +162,7 @@ namespace MachineWatchTest
               prog: "LOAD",
               start: false,
               endTime: now.AddMinutes(50),
-              result: "LOAD",
-              endOfRoute: false
+              result: "LOAD"
             ),
             new LogEntry(
               cntr: -1,
@@ -175,8 +174,7 @@ namespace MachineWatchTest
               prog: "",
               start: false,
               endTime: now.AddMinutes(60),
-              result: "work3",
-              endOfRoute: false
+              result: "work3"
             ),
           },
           options => options.Excluding(x => x.Counter).ComparingByMembers<LogEntry>()
@@ -535,6 +533,7 @@ namespace MachineWatchTest
                     StationGroup = "Test",
                     Stations = ImmutableList.Create(245, 36),
                     Program = "dduuude",
+                    ExpectedCycleTime = TimeSpan.Zero,
                   }
                 ),
                 Inspections = ImmutableList.Create(
@@ -576,7 +575,11 @@ namespace MachineWatchTest
                 },
                 HoldLoadUnload = new HoldPattern()
                 {
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01")
+                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
+                  UserHold = false,
+                  ReasonForUserHold = "",
+                  HoldUnholdPatternRepeats = false,
+                  HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
                 },
               },
               new ProcPathInfo()
@@ -597,12 +600,14 @@ namespace MachineWatchTest
                     StationGroup = "Test",
                     Stations = ImmutableList.Create(32, 64),
                     Program = "wefq",
+                    ExpectedCycleTime = TimeSpan.Zero,
                   },
                   new MachiningStop()
                   {
                     StationGroup = "Test",
                     Stations = ImmutableList.Create(23, 53),
                     Program = "so cool",
+                    ExpectedCycleTime = TimeSpan.Zero,
                   }
                 ),
                 Inspections = ImmutableList.Create(
@@ -633,11 +638,19 @@ namespace MachineWatchTest
                 ),
                 HoldMachining = new HoldPattern()
                 {
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01")
+                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
+                  UserHold = false,
+                  ReasonForUserHold = "",
+                  HoldUnholdPatternRepeats = false,
+                  HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
                 },
                 HoldLoadUnload = new HoldPattern()
                 {
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01")
+                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
+                  UserHold = false,
+                  ReasonForUserHold = "",
+                  HoldUnholdPatternRepeats = false,
+                  HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
                 },
               },
               new ProcPathInfo()
@@ -683,7 +696,11 @@ namespace MachineWatchTest
                 ),
                 HoldMachining = new HoldPattern()
                 {
-                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01")
+                  HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
+                  UserHold = false,
+                  ReasonForUserHold = "",
+                  HoldUnholdPatternRepeats = false,
+                  HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
                 },
                 HoldLoadUnload = new HoldPattern()
                 {

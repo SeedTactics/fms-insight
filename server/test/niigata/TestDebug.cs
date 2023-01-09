@@ -143,7 +143,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
 
       var repoCfg = RepositoryConfig.InitializeEventDatabase(
-        new SerialSettings(),
+        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
         Path.Combine(directory, "niigatalog.db")
       );
       using var repo = repoCfg.OpenConnection();

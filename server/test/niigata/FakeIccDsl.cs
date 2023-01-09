@@ -541,6 +541,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Path = 1,
         Serial = _serialSt.ConvertMaterialIDToSerial(matId),
         WorkorderId = workorder,
+        SignaledInspections = ImmutableList<string>.Empty,
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
         Location = new InProcessMaterialLocation()
         {
@@ -621,6 +622,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Process = proc,
         Path = path,
         Serial = _serialSt.ConvertMaterialIDToSerial(matId),
+        SignaledInspections = ImmutableList<string>.Empty,
         WorkorderId = workorder,
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
         Location = new InProcessMaterialLocation()
@@ -712,6 +714,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               PartName = c.part,
               Process = 0,
               Path = c.path,
+              SignaledInspections = ImmutableList<string>.Empty,
               Action = new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
@@ -1050,6 +1053,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ManuallyCreated = manual,
           RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
           Cycles = qty,
+          RouteEndUTC = DateTime.MinValue,
+          Archived = false,
           Processes = ImmutableList.Create(
             new ProcessInfo()
             {
@@ -1066,6 +1071,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Face = face,
                   InputQueue = queue,
                   Casting = casting,
+                  SimulatedStartingUTC = DateTime.MinValue,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   Stops = ImmutableList.Create(
                     new MachiningStop()
                     {
@@ -1154,6 +1161,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           PartName = part,
           RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
           Cycles = qty,
+          RouteEndUTC = DateTime.MinValue,
+          Archived = false,
           Processes = ImmutableList.Create(
             new ProcessInfo()
             {
@@ -1169,6 +1178,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Fixture = fixture,
                   Face = face,
                   InputQueue = queue,
+                  SimulatedStartingUTC = DateTime.MinValue,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   Stops = stops.ToImmutable()
                 }
               )
@@ -1212,6 +1223,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           PartName = part,
           RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
           Cycles = qty,
+          RouteEndUTC = DateTime.MinValue,
+          Archived = false,
           Processes = ImmutableList.Create(
             new ProcessInfo()
             {
@@ -1227,6 +1240,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
                   Fixture = fixture,
                   Face = face1,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   Stops = ImmutableList.Create(
                     new MachiningStop()
                     {
@@ -1251,6 +1265,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
                   PartsPerPallet = partsPerPal,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
                   Fixture = fixture,
                   Face = face2,
@@ -1364,6 +1379,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           PartName = part,
           RouteStartUTC = DateTime.UtcNow.AddHours(-priority),
           Cycles = qty,
+          RouteEndUTC = DateTime.MinValue,
+          Archived = false,
           Processes = ImmutableList.Create(
             new ProcessInfo()
             {
@@ -1378,6 +1395,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Pallets = pals1.Select(p => p.ToString()).ToImmutableList(),
                   Fixture = fixture,
                   Face = 1,
+                  SimulatedStartingUTC = DateTime.MinValue,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   Casting = string.IsNullOrEmpty(castingQ) ? null : rawMatName,
                   InputQueue = string.IsNullOrEmpty(castingQ) ? null : castingQ,
                   OutputQueue = transQ,
@@ -1398,6 +1417,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Pallets = pals2.Select(p => p.ToString()).ToImmutableList(),
                   Fixture = fixture,
                   Face = 1,
+                  SimulatedStartingUTC = DateTime.MinValue,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
                   InputQueue = transQ,
                   Stops = stops2.ToImmutable()
                 }
@@ -2313,8 +2334,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               prog: "Assign",
               start: false,
               endTime: _status.TimeOfStatusUTC,
-              result: "New Niigata Route",
-              endOfRoute: false
+              result: "New Niigata Route"
             )
           );
         }
@@ -2443,7 +2463,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC,
                   result: "PalletCycle",
-                  endOfRoute: false,
                   elapsed: TimeSpan.FromMinutes(palletCycleChange.Minutes),
                   active: TimeSpan.Zero
                 )
@@ -2463,8 +2482,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   prog: "LOAD",
                   start: true,
                   endTime: _status.TimeOfStatusUTC,
-                  result: "LOAD",
-                  endOfRoute: false
+                  result: "LOAD"
                 )
               );
               break;
@@ -2511,7 +2529,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                   result: "LOAD",
-                  endOfRoute: false,
                   elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
                   active: TimeSpan.FromMinutes(load.ActiveMins)
                 )
@@ -2541,8 +2558,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       prog: "MARK",
                       start: false,
                       endTime: _status.TimeOfStatusUTC.AddSeconds(1),
-                      result: _serialSt.ConvertMaterialIDToSerial(m.MaterialID),
-                      endOfRoute: false
+                      result: _serialSt.ConvertMaterialIDToSerial(m.MaterialID)
                     )
                 )
               );
@@ -2558,6 +2574,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Path = load.Path,
                   PartName = m.PartName,
                   Serial = _serialSt.ConvertMaterialIDToSerial(m.MaterialID),
+                  SignaledInspections = ImmutableList<string>.Empty,
                   Location = new InProcessMaterialLocation()
                   {
                     Type = InProcessMaterialLocation.LocType.OnPallet,
@@ -2588,7 +2605,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                   result: "LOAD",
-                  endOfRoute: false,
                   elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
                   active: TimeSpan.FromMinutes(load.ActiveMins)
                 )
@@ -2622,7 +2638,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       start: false,
                       endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                       result: "",
-                      endOfRoute: false,
                       // add 1 second because addtoqueue event is one-second after load end
                       elapsed: TimeSpan
                         .FromMinutes(removeFromQueueEvt.ElapsedMins)
@@ -2646,7 +2661,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC,
                   result: "UNLOAD",
-                  endOfRoute: true,
                   elapsed: TimeSpan.FromMinutes(unload.ElapsedMin),
                   active: TimeSpan.FromMinutes(unload.ActiveMins)
                 )
@@ -2679,8 +2693,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       prog: addToQueueEvt.Reason ?? "",
                       start: false,
                       endTime: _status.TimeOfStatusUTC,
-                      result: "",
-                      endOfRoute: false
+                      result: ""
                     )
                 )
               );
@@ -2702,14 +2715,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StartOfCycle = true,
                     EndTimeUTC = _status.TimeOfStatusUTC,
                     Result = "",
-                    EndOfRoute = false,
                     ElapsedTime = TimeSpan.FromMinutes(-1),
+                    ActiveOperationTime = TimeSpan.Zero,
                     ProgramDetails = machBegin.Revision.HasValue
                       ? ImmutableDictionary<string, string>.Empty.Add(
                         "ProgramRevision",
                         machBegin.Revision.Value.ToString()
                       )
-                      : ImmutableDictionary<string, string>.Empty
+                      : null
                   }
                 );
               }
@@ -2731,7 +2744,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StartOfCycle = false,
                     EndTimeUTC = _status.TimeOfStatusUTC,
                     Result = "",
-                    EndOfRoute = false,
                     ElapsedTime = TimeSpan.FromMinutes(machEnd.ElapsedMin),
                     ActiveOperationTime = TimeSpan.FromMinutes(machEnd.ActiveMin),
                     ProgramDetails = machEnd.Revision.HasValue
@@ -2739,7 +2751,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                         "ProgramRevision",
                         machEnd.Revision.Value.ToString()
                       )
-                      : ImmutableDictionary<string, string>.Empty
+                      : null
                   }
                 );
               }
@@ -2759,8 +2771,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     prog: "TestReclamp",
                     start: true,
                     endTime: _status.TimeOfStatusUTC,
-                    result: "TestReclamp",
-                    endOfRoute: false
+                    result: "TestReclamp"
                   )
                 );
               }
@@ -2781,7 +2792,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     start: false,
                     endTime: _status.TimeOfStatusUTC,
                     result: "TestReclamp",
-                    endOfRoute: false,
                     elapsed: TimeSpan.FromMinutes(reclampEnd.ElapsedMin),
                     active: TimeSpan.FromMinutes(reclampEnd.ActiveMin)
                   )
@@ -2803,8 +2813,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     prog: "Arrive",
                     start: true,
                     endTime: _status.TimeOfStatusUTC,
-                    result: stockerStart.WaitForMachine ? "WaitForMachine" : "WaitForUnload",
-                    endOfRoute: false
+                    result: stockerStart.WaitForMachine ? "WaitForMachine" : "WaitForUnload"
                   )
                 );
               }
@@ -2825,7 +2834,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     start: false,
                     endTime: _status.TimeOfStatusUTC,
                     result: stockerEnd.WaitForMachine ? "WaitForMachine" : "WaitForUnload",
-                    endOfRoute: false,
                     elapsed: TimeSpan.FromMinutes(stockerEnd.ElapsedMin),
                     active: TimeSpan.Zero
                   )
@@ -2847,8 +2855,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     prog: "Arrive",
                     start: true,
                     endTime: _status.TimeOfStatusUTC,
-                    result: "Arrive",
-                    endOfRoute: false
+                    result: "Arrive"
                   )
                 );
               }
@@ -2869,7 +2876,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     start: false,
                     endTime: _status.TimeOfStatusUTC,
                     result: rotaryEnd.RotateIntoMachine ? "RotateIntoWorktable" : "LeaveMachine",
-                    endOfRoute: false,
                     elapsed: TimeSpan.FromMinutes(rotaryEnd.ElapsedMin),
                     active: TimeSpan.Zero
                   )
@@ -2904,8 +2910,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StartOfCycle = false,
                     EndTimeUTC = _status.TimeOfStatusUTC,
                     Result = insp.Inspect.ToString(),
-                    EndOfRoute = false,
                     ElapsedTime = TimeSpan.FromMinutes(-1),
+                    ActiveOperationTime = TimeSpan.Zero,
                     ProgramDetails = ImmutableDictionary<string, string>.Empty
                       .Add("InspectionType", insp.InspType)
                       .Add(
@@ -2963,7 +2969,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 InspectionType = inspTy,
                 Counter = cntr,
-                MaxVal = max
+                MaxVal = max,
+                RandomFreq = 0,
+                TimeInterval = TimeSpan.Zero
               }
             )
         ),

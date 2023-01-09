@@ -35,7 +35,6 @@
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1001",
                   "ProgramRevision": null,
-                  "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT4M",
                   "Stations": {
@@ -152,7 +151,6 @@
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1002",
                   "ProgramRevision": null,
-                  "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT30M",
                   "Stations": {
@@ -289,7 +287,6 @@
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1001",
                   "ProgramRevision": null,
-                  "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT12M12S",
                   "Stations": {
@@ -370,7 +367,6 @@
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1002",
                   "ProgramRevision": null,
-                  "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT1H10M18S",
                   "Stations": {
@@ -471,7 +467,6 @@
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1003",
                   "ProgramRevision": null,
-                  "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT4M",
                   "Stations": {
@@ -583,7 +578,6 @@
                   "StationNums": [1, 2, 3, 4],
                   "Program": "1004",
                   "ProgramRevision": null,
-                  "Tools": {},
                   "StationGroup": "MC",
                   "ExpectedCycleTime": "PT45M30S",
                   "Stations": {

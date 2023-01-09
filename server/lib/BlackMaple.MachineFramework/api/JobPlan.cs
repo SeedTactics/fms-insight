@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -44,7 +44,7 @@ namespace BlackMaple.MachineFramework
   public record PathInspection
   {
     [DataMember(IsRequired = true)]
-    public string InspectionType { get; init; } = "";
+    public required string InspectionType { get; init; }
 
     //There are two possible ways of triggering an inspection: counts and frequencies.
     // * For counts, the MaxVal will contain a number larger than zero and RandomFreq will contain -1
@@ -53,21 +53,21 @@ namespace BlackMaple.MachineFramework
 
     //Every time a material completes, the counter string is expanded (see below).
     [DataMember(IsRequired = true)]
-    public string Counter { get; init; } = "";
+    public required string Counter { get; init; }
 
     //For each completed material, the counter is incremented.  If the counter is equal to MaxVal,
     //we signal an inspection and reset the counter to 0.
     [DataMember(IsRequired = true)]
-    public int MaxVal { get; init; }
+    public required int MaxVal { get; init; }
 
     //The random frequency of inspection
     [DataMember(IsRequired = true)]
-    public double RandomFreq { get; init; }
+    public required double RandomFreq { get; init; }
 
     //If the last inspection signaled for this counter was longer than TimeInterval,
     //signal an inspection.  This can be disabled by using TimeSpan.Zero
     [DataMember(IsRequired = true)]
-    public TimeSpan TimeInterval { get; init; }
+    public required TimeSpan TimeInterval { get; init; }
 
     // Expected inspection type
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
@@ -99,10 +99,13 @@ namespace BlackMaple.MachineFramework
   public record MachiningStop
   {
     [DataMember(Name = "StationGroup", IsRequired = true)]
-    public string StationGroup { get; init; } = "";
+    public required string StationGroup { get; init; }
 
     [DataMember(Name = "StationNums", IsRequired = true)]
-    public ImmutableList<int> Stations { get; init; } = ImmutableList<int>.Empty;
+    public required ImmutableList<int> Stations { get; init; }
+
+    [DataMember(Name = "ExpectedCycleTime", IsRequired = true)]
+    public required TimeSpan ExpectedCycleTime { get; init; }
 
     // Programs can be specified in two possible ways: either here as part of the job or separately as part of
     // the workorder.  If this value is non-null, it specifies the program name to use for this machining step.
@@ -128,11 +131,7 @@ namespace BlackMaple.MachineFramework
     public long? ProgramRevision { get; init; }
 
     [DataMember(Name = "Tools", IsRequired = false, EmitDefaultValue = true)]
-    public ImmutableDictionary<string, TimeSpan>? Tools { get; init; } =
-      ImmutableDictionary<string, TimeSpan>.Empty; //key is tool, value is expected cutting time
-
-    [DataMember(Name = "ExpectedCycleTime", IsRequired = true)]
-    public TimeSpan ExpectedCycleTime { get; init; }
+    public ImmutableDictionary<string, TimeSpan>? Tools { get; init; } //key is tool, value is expected cutting time
 
     public static MachiningStop operator %(MachiningStop s, Action<IMachiningStopDraft> f) => s.Produce(f);
   }
@@ -144,38 +143,38 @@ namespace BlackMaple.MachineFramework
     // the job is on hold.
 
     [DataMember(IsRequired = true)]
-    public bool UserHold { get; init; }
+    public required bool UserHold { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string ReasonForUserHold { get; init; } = "";
+    public required string ReasonForUserHold { get; init; }
 
     //A list of timespans the job should be on hold/not on hold.
     //During the first timespan, the job is on hold.
     [DataMember(IsRequired = true)]
-    public ImmutableList<TimeSpan> HoldUnholdPattern { get; init; } = ImmutableList<TimeSpan>.Empty;
+    public required ImmutableList<TimeSpan> HoldUnholdPattern { get; init; }
 
     [DataMember(IsRequired = true)]
-    public DateTime HoldUnholdPatternStartUTC { get; init; }
+    public required DateTime HoldUnholdPatternStartUTC { get; init; }
 
     [DataMember(IsRequired = true)]
-    public bool HoldUnholdPatternRepeats { get; init; }
+    public required bool HoldUnholdPatternRepeats { get; init; }
   }
 
   [DataContract, Draftable]
   public record SimulatedProduction
   {
     [DataMember(IsRequired = true)]
-    public DateTime TimeUTC { get; init; }
+    public required DateTime TimeUTC { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Quantity { get; init; } //total quantity simulated to be completed at TimeUTC
+    public required int Quantity { get; init; } //total quantity simulated to be completed at TimeUTC
   }
 
   [DataContract, Draftable]
   public record ProcessInfo
   {
     [DataMember(Name = "paths", IsRequired = true)]
-    public ImmutableList<ProcPathInfo> Paths { get; init; } = ImmutableList<ProcPathInfo>.Empty;
+    public required ImmutableList<ProcPathInfo> Paths { get; init; } = ImmutableList<ProcPathInfo>.Empty;
 
     public static ProcessInfo operator %(ProcessInfo v, Action<IProcessInfoDraft> f) => v.Produce(f);
   }
@@ -184,7 +183,7 @@ namespace BlackMaple.MachineFramework
   public record ProcPathInfo
   {
     [DataMember(IsRequired = true)]
-    public ImmutableList<string> Pallets { get; init; } = ImmutableList<string>.Empty;
+    public required ImmutableList<string> Pallets { get; init; }
 
     [DataMember(IsRequired = false)]
     public string? Fixture { get; init; }
@@ -193,28 +192,28 @@ namespace BlackMaple.MachineFramework
     public int? Face { get; init; }
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<int> Load { get; init; } = ImmutableList<int>.Empty;
+    public required ImmutableList<int> Load { get; init; }
 
     [DataMember(IsRequired = true)]
-    public TimeSpan ExpectedLoadTime { get; init; }
+    public required TimeSpan ExpectedLoadTime { get; init; }
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<int> Unload { get; init; } = ImmutableList<int>.Empty;
+    public required ImmutableList<int> Unload { get; init; }
 
     [DataMember(IsRequired = true)]
-    public TimeSpan ExpectedUnloadTime { get; init; }
+    public required TimeSpan ExpectedUnloadTime { get; init; }
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<MachiningStop> Stops { get; init; } = ImmutableList<MachiningStop>.Empty;
+    public required ImmutableList<MachiningStop> Stops { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedProduction>? SimulatedProduction { get; init; }
 
     [DataMember(IsRequired = true)]
-    public DateTime SimulatedStartingUTC { get; init; }
+    public required DateTime SimulatedStartingUTC { get; init; }
 
     [DataMember(IsRequired = true)]
-    public TimeSpan SimulatedAverageFlowTime { get; init; } // average time a part takes to complete the entire sequence
+    public required TimeSpan SimulatedAverageFlowTime { get; init; } // average time a part takes to complete the entire sequence
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public HoldPattern? HoldMachining { get; init; }
@@ -223,7 +222,7 @@ namespace BlackMaple.MachineFramework
     public HoldPattern? HoldLoadUnload { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int PartsPerPallet { get; init; }
+    public required int PartsPerPallet { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? InputQueue { get; init; }
@@ -244,19 +243,19 @@ namespace BlackMaple.MachineFramework
   public record Job
   {
     [DataMember(Name = "Unique", IsRequired = true)]
-    public string UniqueStr { get; init; } = "";
+    public required string UniqueStr { get; init; }
 
     [DataMember(Name = "RouteStartUTC", IsRequired = true)]
-    public DateTime RouteStartUTC { get; init; }
+    public required DateTime RouteStartUTC { get; init; }
 
     [DataMember(Name = "RouteEndUTC", IsRequired = true)]
-    public DateTime RouteEndUTC { get; init; }
+    public required DateTime RouteEndUTC { get; init; }
 
     [DataMember(Name = "Archived", IsRequired = true)]
-    public bool Archived { get; init; }
+    public required bool Archived { get; init; }
 
     [DataMember(Name = "PartName", IsRequired = true)]
-    public string PartName { get; init; } = "";
+    public required string PartName { get; init; }
 
     [DataMember(Name = "Comment", IsRequired = false, EmitDefaultValue = false)]
     public string? Comment { get; init; }
@@ -274,10 +273,10 @@ namespace BlackMaple.MachineFramework
     public HoldPattern? HoldJob { get; init; }
 
     [DataMember(Name = "Cycles", IsRequired = false, EmitDefaultValue = true)]
-    public int Cycles { get; init; }
+    public required int Cycles { get; init; }
 
     [DataMember(Name = "ProcsAndPaths", IsRequired = true)]
-    public ImmutableList<ProcessInfo> Processes { get; init; } = ImmutableList<ProcessInfo>.Empty;
+    public required ImmutableList<ProcessInfo> Processes { get; init; }
 
     public static Job operator %(Job j, Action<IJobDraft> f) => j.Produce(f);
   }
@@ -286,13 +285,13 @@ namespace BlackMaple.MachineFramework
   public record DecrementQuantity
   {
     [DataMember(IsRequired = true)]
-    public long DecrementId { get; init; }
+    public required long DecrementId { get; init; }
 
     [DataMember(IsRequired = true)]
-    public DateTime TimeUTC { get; init; }
+    public required DateTime TimeUTC { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Quantity { get; init; }
+    public required int Quantity { get; init; }
   }
 
   [DataContract, Draftable]
@@ -302,7 +301,7 @@ namespace BlackMaple.MachineFramework
     public string? ScheduleId { get; init; }
 
     [DataMember(Name = "CopiedToSystem", IsRequired = true)]
-    public bool CopiedToSystem { get; init; }
+    public required bool CopiedToSystem { get; init; }
 
     [DataMember(Name = "Decrements", IsRequired = false)]
     public ImmutableList<DecrementQuantity>? Decrements { get; init; }

@@ -60,7 +60,9 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   public JobAndQueueSpec(Xunit.Abstractions.ITestOutputHelper output)
   {
-    _repo = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
+    _repo = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+      new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+    );
     _fixture = new Fixture();
     _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
 
@@ -107,7 +109,15 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       _curSt = _curSt with
       {
         Uniq = _curSt.Uniq + 1,
-        CurrentStatus = new CurrentStatus() { TimeOfCurrentStatusUTC = DateTime.UtcNow }
+        CurrentStatus = new CurrentStatus()
+        {
+          TimeOfCurrentStatusUTC = DateTime.UtcNow,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+          Material = ImmutableList<InProcessMaterial>.Empty,
+          Alarms = ImmutableList<string>.Empty,
+          QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+        }
       };
       return true;
     }
@@ -131,7 +141,17 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   private async Task SetCurrentState(bool palStateUpdated, bool executeAction, CurrentStatus curSt = null)
   {
-    curSt = curSt ?? new CurrentStatus() { TimeOfCurrentStatusUTC = DateTime.UtcNow, };
+    curSt =
+      curSt
+      ?? new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Material = ImmutableList<InProcessMaterial>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+      };
     _curSt = new MockCellState()
     {
       Uniq = 0,
@@ -209,9 +229,14 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       executeAction: false,
       curSt: new CurrentStatus()
       {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty
           .Add(completedActive.UniqueStr, completedActive)
-          .Add(toKeepJob.UniqueStr, toKeepActive)
+          .Add(toKeepJob.UniqueStr, toKeepActive),
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Material = ImmutableList<InProcessMaterial>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
       }
     );
 
@@ -226,8 +251,18 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       ScheduleId = "abcd",
       Jobs = ImmutableList.Create<Job>(newJob1, newJob2),
       Programs = ImmutableList.Create(
-        new NewProgramContent() { ProgramName = "prog1", ProgramContent = "content1" },
-        new NewProgramContent() { ProgramName = "prog2", ProgramContent = "content2" }
+        new NewProgramContent()
+        {
+          ProgramName = "prog1",
+          ProgramContent = "content1",
+          Revision = 0
+        },
+        new NewProgramContent()
+        {
+          ProgramName = "prog2",
+          ProgramContent = "content2",
+          Revision = 0
+        }
       )
     };
 
@@ -274,7 +309,11 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         TimeOfCurrentStatusUTC = now,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty
           .Add(j1.UniqueStr, j1Active)
-          .Add(j2.UniqueStr, j2Active)
+          .Add(j2.UniqueStr, j2Active),
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Material = ImmutableList<InProcessMaterial>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
       }
     );
 
@@ -542,9 +581,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       PartName = "p1",
       Cycles = 0,
       Processes = ImmutableList.Create(
-        new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
-        new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-      )
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+      ),
+      RouteStartUTC = DateTime.MinValue,
+      RouteEndUTC = DateTime.MinValue,
+      Archived = false,
     };
     db.AddJobs(
       new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job) },
@@ -738,7 +780,13 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     {
       UniqueStr = "uuu1",
       PartName = "p1",
-      Processes = ImmutableList.Create(new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) })
+      Processes = ImmutableList.Create(
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+      ),
+      RouteStartUTC = DateTime.MinValue,
+      RouteEndUTC = DateTime.MinValue,
+      Archived = false,
+      Cycles = 0
     };
 
     db.AddJobs(
@@ -754,9 +802,14 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       executeAction: false,
       curSt: new CurrentStatus()
       {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Material = ImmutableList.Create(
           MatOnPal(matId: 1, uniq: "uuu1", part: "p1", proc: 1, path: 2, serial: "aaa", pal: "4")
         ),
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
       }
     );
 
@@ -802,9 +855,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       PartName = "p1",
       Cycles = 5,
       Processes = ImmutableList.Create(
-        new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
-        new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
-      )
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
+      ),
+      RouteStartUTC = DateTime.MinValue,
+      RouteEndUTC = DateTime.MinValue,
+      Archived = false,
     };
     db.AddJobs(
       new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job) },
@@ -836,9 +892,14 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       executeAction: false,
       curSt: new CurrentStatus()
       {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Material = ImmutableList.Create(
           QueuedMat(matId: 1, job: job, part: "p1", proc: 1, path: 2, serial: "aaa", queue: "q1", pos: 0)
-        )
+        ),
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
       }
     );
 
@@ -917,8 +978,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       prog: "MARK",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: serial,
-      endOfRoute: false
+      result: serial
     );
     return e;
   }
@@ -941,8 +1001,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       prog: "LOAD",
       start: true,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: "LOAD",
-      endOfRoute: false
+      result: "LOAD"
     );
     return e;
   }
@@ -967,8 +1026,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       prog: reason ?? "",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: "",
-      endOfRoute: false
+      result: ""
     );
     if (!string.IsNullOrEmpty(operName))
     {
@@ -996,8 +1054,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       prog: "QuarantineAfterUnload",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: "QuarantineAfterUnload",
-      endOfRoute: false
+      result: "QuarantineAfterUnload"
     );
     if (!string.IsNullOrEmpty(operName))
     {
@@ -1027,7 +1084,6 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
       result: "",
-      endOfRoute: false,
       elapsed: TimeSpan.FromMinutes(elapsedMin),
       active: TimeSpan.Zero
     );
@@ -1057,6 +1113,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Process = proc,
       Path = path,
       Serial = serial,
+      SignaledInspections = ImmutableList<string>.Empty,
       Location = new InProcessMaterialLocation()
       {
         Type = InProcessMaterialLocation.LocType.InQueue,
@@ -1085,6 +1142,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Process = proc,
       Path = path,
       Serial = serial,
+      SignaledInspections = ImmutableList<string>.Empty,
       Location = new InProcessMaterialLocation()
       {
         Type = InProcessMaterialLocation.LocType.OnPallet,

@@ -110,7 +110,9 @@ namespace MachineWatchTest
 
     public WriteJobsSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+      );
       _jobDB = _repoCfg.OpenConnection();
 
       _writeMock = new WriteMock();
@@ -346,8 +348,11 @@ namespace MachineWatchTest
       {
         UniqueStr = "uniq1",
         PartName = "part1",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
         Cycles = 15,
       };
@@ -355,8 +360,11 @@ namespace MachineWatchTest
       {
         UniqueStr = "uniq2",
         PartName = "part2",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
         Cycles = 15,
       };

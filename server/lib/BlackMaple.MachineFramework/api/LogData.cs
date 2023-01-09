@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -45,22 +45,22 @@ namespace BlackMaple.MachineFramework
   public record LogMaterial
   {
     [DataMember(Name = "id", IsRequired = true)]
-    public long MaterialID { get; init; }
+    public required long MaterialID { get; init; }
 
     [DataMember(Name = "uniq", IsRequired = true)]
-    public string JobUniqueStr { get; init; } = "";
+    public required string JobUniqueStr { get; init; }
 
     [DataMember(Name = "part", IsRequired = true)]
-    public string PartName { get; init; } = "";
+    public required string PartName { get; init; }
 
     [DataMember(Name = "proc", IsRequired = true)]
-    public int Process { get; init; }
+    public required int Process { get; init; }
 
     [DataMember(Name = "numproc", IsRequired = true)]
-    public int NumProcesses { get; init; }
+    public required int NumProcesses { get; init; }
 
     [DataMember(Name = "face", IsRequired = true)]
-    public string Face { get; init; } = "";
+    public required string Face { get; init; }
 
     [DataMember(Name = "serial", IsRequired = false, EmitDefaultValue = false)]
     public string? Serial { get; init; }
@@ -70,6 +70,7 @@ namespace BlackMaple.MachineFramework
 
     public LogMaterial() { }
 
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
     public LogMaterial(
       long matID,
       string uniq,
@@ -157,56 +158,50 @@ namespace BlackMaple.MachineFramework
   public record LogEntry
   {
     [DataMember(Name = "counter", IsRequired = true)]
-    public long Counter { get; init; }
+    public required long Counter { get; init; }
 
     [DataMember(Name = "material", IsRequired = true)]
-    public ImmutableList<LogMaterial> Material { get; init; } = ImmutableList<LogMaterial>.Empty;
+    public required ImmutableList<LogMaterial> Material { get; init; }
 
     [DataMember(Name = "type", IsRequired = true)]
-    public LogType LogType { get; init; }
+    public required LogType LogType { get; init; }
 
     [DataMember(Name = "startofcycle", IsRequired = true)]
-    public bool StartOfCycle { get; init; }
+    public required bool StartOfCycle { get; init; }
 
     [DataMember(Name = "endUTC", IsRequired = true)]
-    public DateTime EndTimeUTC { get; init; }
+    public required DateTime EndTimeUTC { get; init; }
 
     [DataMember(Name = "loc", IsRequired = true)]
-    public string LocationName { get; init; } = "";
+    public required string LocationName { get; init; }
 
     [DataMember(Name = "locnum", IsRequired = true)]
-    public int LocationNum { get; init; }
+    public required int LocationNum { get; init; }
 
     [DataMember(Name = "pal", IsRequired = true)]
-    public string Pallet { get; init; } = "";
+    public required string Pallet { get; init; }
 
     [DataMember(Name = "program", IsRequired = true)]
-    public string Program { get; init; } = "";
+    public required string Program { get; init; }
 
     [DataMember(Name = "result", IsRequired = true)]
-    public string Result { get; init; } = "";
-
-    // End of route is kept only for backwards compatbility.
-    // Instead, the user who is processing the data should determine what event
-    // to use to determine when the material should be considered "complete"
-    [IgnoreDataMember]
-    public bool EndOfRoute { get; init; }
+    public required string Result { get; init; }
 
     [DataMember(Name = "elapsed", IsRequired = true)]
-    public TimeSpan ElapsedTime { get; init; } //time from cycle-start to cycle-stop
+    public required TimeSpan ElapsedTime { get; init; } //time from cycle-start to cycle-stop
 
     [DataMember(Name = "active", IsRequired = true)]
-    public TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
+    public required TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
 
     [DataMember(Name = "details", IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableDictionary<string, string>? ProgramDetails { get; init; } =
-      ImmutableDictionary<string, string>.Empty;
+    public ImmutableDictionary<string, string>? ProgramDetails { get; init; } = null;
 
     [DataMember(Name = "tooluse", IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<ToolUse>? Tools { get; init; } = ImmutableList<ToolUse>.Empty;
+    public ImmutableList<ToolUse>? Tools { get; init; } = null;
 
     public LogEntry() { }
 
+    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
     public LogEntry(
       long cntr,
       IEnumerable<LogMaterial> mat,
@@ -218,38 +213,8 @@ namespace BlackMaple.MachineFramework
       bool start,
       DateTime endTime,
       string result,
-      bool endOfRoute
-    )
-      : this(
-        cntr,
-        mat,
-        pal,
-        ty,
-        locName,
-        locNum,
-        prog,
-        start,
-        endTime,
-        result,
-        endOfRoute,
-        TimeSpan.FromMinutes(-1),
-        TimeSpan.Zero
-      ) { }
-
-    public LogEntry(
-      long cntr,
-      IEnumerable<LogMaterial> mat,
-      string pal,
-      LogType ty,
-      string locName,
-      int locNum,
-      string prog,
-      bool start,
-      DateTime endTime,
-      string result,
-      bool endOfRoute,
-      TimeSpan elapsed,
-      TimeSpan active
+      TimeSpan? elapsed = null,
+      TimeSpan? active = null
     )
     {
       Counter = cntr;
@@ -262,11 +227,10 @@ namespace BlackMaple.MachineFramework
       StartOfCycle = start;
       EndTimeUTC = endTime;
       Result = result;
-      EndOfRoute = endOfRoute;
-      ElapsedTime = elapsed;
-      ActiveOperationTime = active;
-      ProgramDetails = ImmutableDictionary<string, string>.Empty;
-      Tools = ImmutableList<ToolUse>.Empty;
+      ElapsedTime = elapsed ?? TimeSpan.FromMinutes(-1);
+      ActiveOperationTime = active ?? TimeSpan.Zero;
+      ProgramDetails = null;
+      Tools = null;
     }
 
     public bool ShouldSerializeProgramDetails()
@@ -290,29 +254,29 @@ namespace BlackMaple.MachineFramework
     public record Stop
     {
       [DataMember(IsRequired = true)]
-      public string StationName { get; init; } = "";
+      public required string StationName { get; init; }
 
       [DataMember(IsRequired = true)]
-      public int StationNum { get; init; }
+      public required int StationNum { get; init; }
     }
 
     [DataMember(IsRequired = true)]
-    public long MaterialID { get; init; }
+    public required long MaterialID { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Process { get; init; }
+    public required int Process { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string Pallet { get; init; } = "";
+    public required string Pallet { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int LoadStation { get; init; }
+    public required int LoadStation { get; init; }
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<Stop> Stops { get; init; } = ImmutableList<Stop>.Empty;
+    public required ImmutableList<Stop> Stops { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int UnloadStation { get; init; }
+    public required int UnloadStation { get; init; }
 
     public static MaterialProcessActualPath operator %(
       MaterialProcessActualPath m,
@@ -324,12 +288,12 @@ namespace BlackMaple.MachineFramework
   public record EditMaterialInLogEvents
   {
     [DataMember(IsRequired = true)]
-    public long OldMaterialID { get; init; }
+    public required long OldMaterialID { get; init; }
 
     [DataMember(IsRequired = true)]
-    public long NewMaterialID { get; init; }
+    public required long NewMaterialID { get; init; }
 
     [DataMember(IsRequired = true)]
-    public IEnumerable<LogEntry> EditedEvents { get; init; } = new LogEntry[] { };
+    public required IEnumerable<LogEntry> EditedEvents { get; init; }
   }
 }

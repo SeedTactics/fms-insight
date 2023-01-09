@@ -45,50 +45,50 @@ namespace BlackMaple.MachineFramework.Controllers
   public record NewInspectionCompleted
   {
     [DataMember(IsRequired = true)]
-    public long MaterialID { get; init; }
+    public required long MaterialID { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Process { get; init; }
+    public required int Process { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int InspectionLocationNum { get; init; }
+    public required int InspectionLocationNum { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string InspectionType { get; init; }
+    public required string InspectionType { get; init; }
 
     [DataMember(IsRequired = true)]
-    public bool Success { get; init; }
+    public required bool Success { get; init; }
 
     [DataMember(IsRequired = false)]
     public Dictionary<string, string> ExtraData { get; init; }
 
     [DataMember(IsRequired = true)]
-    public TimeSpan Elapsed { get; init; }
+    public required TimeSpan Elapsed { get; init; }
 
     [DataMember(IsRequired = true)]
-    public TimeSpan Active { get; init; }
+    public required TimeSpan Active { get; init; }
   }
 
   [DataContract]
   public record NewWash
   {
     [DataMember(IsRequired = true)]
-    public long MaterialID { get; init; }
+    public required long MaterialID { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Process { get; init; }
+    public required int Process { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int WashLocationNum { get; init; }
+    public required int WashLocationNum { get; init; }
 
     [DataMember(IsRequired = false)]
     public Dictionary<string, string> ExtraData { get; init; }
 
     [DataMember(IsRequired = true)]
-    public TimeSpan Elapsed { get; init; }
+    public required TimeSpan Elapsed { get; init; }
 
     [DataMember(IsRequired = true)]
-    public TimeSpan Active { get; init; }
+    public required TimeSpan Active { get; init; }
   }
 
   [ApiController]

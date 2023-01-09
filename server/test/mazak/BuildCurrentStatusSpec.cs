@@ -56,7 +56,9 @@ namespace MachineWatchTest
 
     public BuildCurrentStatusSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+      );
       _memoryLog = _repoCfg.OpenConnection();
 
       _settings = new FMSSettings();
@@ -148,7 +150,10 @@ namespace MachineWatchTest
       {
         System.IO.File.Copy(existingLogPath, _tempLogFile, overwrite: true);
         repository = RepositoryConfig
-          .InitializeEventDatabase(new SerialSettings(), _tempLogFile)
+          .InitializeEventDatabase(
+            new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
+            _tempLogFile
+          )
           .OpenConnection();
         close = true;
       }

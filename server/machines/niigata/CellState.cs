@@ -384,6 +384,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   Process = actionIsLoading ? 0 : face.Process,
                   Path = actionIsLoading ? 1 : face.Path,
                   Serial = serial,
+                  SignaledInspections = ImmutableList<string>.Empty,
                   Location = actionIsLoading
                     ? new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, }
                     : new InProcessMaterialLocation()
@@ -462,6 +463,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   Serial = mat.Serial,
                   WorkorderId = mat.Workorder,
                   Process = actionIsLoading ? 0 : face.Process,
+                  SignaledInspections = ImmutableList<string>.Empty,
                   Path = actionIsLoading
                     ? (mat.Paths != null && mat.Paths.TryGetValue(1, out var path) ? path : 1)
                     : face.Path,
@@ -698,6 +700,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     Serial = serial,
                     Process = actionIsLoading ? face.Process - 1 : face.Process,
                     Path = actionIsLoading ? 1 : face.Path,
+                    SignaledInspections = ImmutableList<string>.Empty,
                     Location = actionIsLoading
                       ? new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, }
                       : new InProcessMaterialLocation()
@@ -2412,6 +2415,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 Process = 1,
                 Path = 1,
                 Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, },
+                SignaledInspections = ImmutableList<string>.Empty,
                 Action = new InProcessMaterialAction()
                 {
                   Type = InProcessMaterialAction.ActionType.Loading,
@@ -2433,6 +2437,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 PartName = "LongTool",
                 Process = 1,
                 Path = 1,
+                SignaledInspections = ImmutableList<string>.Empty,
                 Location = new InProcessMaterialLocation()
                 {
                   Type = InProcessMaterialLocation.LocType.OnPallet,

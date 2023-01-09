@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -43,38 +43,38 @@ namespace BlackMaple.MachineFramework
   public record SimulatedStationPart
   {
     [DataMember(IsRequired = true)]
-    public string JobUnique { get; init; } = "";
+    public required string JobUnique { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Process { get; init; } = 1;
+    public required int Process { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Path { get; init; } = 1;
+    public required int Path { get; init; }
   }
 
   [DataContract, Draftable]
   public record SimulatedStationUtilization
   {
     [DataMember(IsRequired = true)]
-    public string ScheduleId { get; init; } = "";
+    public required string ScheduleId { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string StationGroup { get; init; } = "";
+    public required string StationGroup { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int StationNum { get; init; }
+    public required int StationNum { get; init; }
 
     [DataMember(IsRequired = true)]
-    public DateTime StartUTC { get; init; }
+    public required DateTime StartUTC { get; init; }
 
     [DataMember(IsRequired = true)]
-    public DateTime EndUTC { get; init; }
+    public required DateTime EndUTC { get; init; }
 
     [DataMember(IsRequired = true)]
-    public TimeSpan UtilizationTime { get; init; } //time between StartUTC and EndUTC the station is busy.
+    public required TimeSpan UtilizationTime { get; init; } //time between StartUTC and EndUTC the station is busy.
 
     [DataMember(IsRequired = true)]
-    public TimeSpan PlannedDownTime { get; init; } //time between StartUTC and EndUTC the station is planned to be down.
+    public required TimeSpan PlannedDownTime { get; init; } //time between StartUTC and EndUTC the station is planned to be down.
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedStationPart>? Parts { get; init; }
@@ -89,11 +89,10 @@ namespace BlackMaple.MachineFramework
   public record NewJobs
   {
     [DataMember(IsRequired = true)]
-    public string ScheduleId { get; init; } = "";
+    public required string ScheduleId { get; init; }
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<MachineFramework.Job> Jobs { get; init; } =
-      ImmutableList<MachineFramework.Job>.Empty;
+    public required ImmutableList<MachineFramework.Job> Jobs { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedStationUtilization>? StationUse { get; init; }

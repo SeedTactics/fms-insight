@@ -42,16 +42,16 @@ namespace BlackMaple.MachineFramework
   public sealed record MachineLocation
   {
     [DataMember(IsRequired = true)]
-    public string MachineGroup { get; init; } = "";
+    public required string MachineGroup { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int MachineNum { get; init; } = 1;
+    public required int MachineNum { get; init; }
 
     [DataMember(IsRequired = true)]
-    public bool Moving { get; init; }
+    public required bool Moving { get; init; }
 
     [DataMember(IsRequired = true)]
-    public ImmutableList<int> PossibleLoadStations { get; init; } = ImmutableList<int>.Empty;
+    public required ImmutableList<int> PossibleLoadStations { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? CurrentLoadStation { get; init; }

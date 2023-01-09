@@ -54,13 +54,28 @@ namespace MachineWatchTest
 
   public class JobLogTest : JobComparisonHelpers, IDisposable
   {
+    public static readonly ProcPathInfo EmptyPath = new ProcPathInfo()
+    {
+      Pallets = ImmutableList<string>.Empty,
+      Load = ImmutableList<int>.Empty,
+      Unload = ImmutableList<int>.Empty,
+      ExpectedLoadTime = TimeSpan.Zero,
+      ExpectedUnloadTime = TimeSpan.Zero,
+      Stops = ImmutableList<MachiningStop>.Empty,
+      SimulatedStartingUTC = DateTime.MinValue,
+      SimulatedAverageFlowTime = TimeSpan.Zero,
+      PartsPerPallet = 1
+    };
+
     private RepositoryConfig _repoCfg;
     private IRepository _jobLog;
     private Fixture _fixture;
 
     public JobLogTest()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(new SerialSettings());
+      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+      );
       _jobLog = _repoCfg.OpenConnection();
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
@@ -274,8 +289,7 @@ namespace MachineWatchTest
             "LOAD",
             true,
             start.AddHours(1),
-            "LOAD",
-            false
+            "LOAD"
           ),
           options => options.ComparingByMembers<LogEntry>()
         );
@@ -327,7 +341,6 @@ namespace MachineWatchTest
               false,
               start.AddHours(3),
               "LOAD",
-              false,
               TimeSpan.FromMinutes(52),
               TimeSpan.FromMinutes(25)
             )
@@ -358,8 +371,7 @@ namespace MachineWatchTest
             prog: "Arrive",
             start: true,
             endTime: start.AddHours(4),
-            result: "WaitForMachine",
-            endOfRoute: false
+            result: "WaitForMachine"
           ),
           options => options.Excluding(l => l.Counter).ComparingByMembers<LogEntry>()
         );
@@ -389,8 +401,7 @@ namespace MachineWatchTest
             endTime: start.AddHours(4).AddMinutes(10),
             result: "WaitForMachine",
             elapsed: TimeSpan.FromMinutes(10),
-            active: TimeSpan.Zero,
-            endOfRoute: false
+            active: TimeSpan.Zero
           ),
           options => options.Excluding(l => l.Counter).ComparingByMembers<LogEntry>()
         );
@@ -417,8 +428,7 @@ namespace MachineWatchTest
             prog: "Arrive",
             start: true,
             endTime: start.AddHours(4).AddMinutes(20),
-            result: "Arrive",
-            endOfRoute: false
+            result: "Arrive"
           ),
           options => options.Excluding(l => l.Counter).ComparingByMembers<LogEntry>()
         );
@@ -448,8 +458,7 @@ namespace MachineWatchTest
             start: false,
             endTime: start.AddHours(4).AddMinutes(45),
             elapsed: TimeSpan.FromMinutes(25),
-            active: TimeSpan.Zero,
-            endOfRoute: false
+            active: TimeSpan.Zero
           ),
           options => options.Excluding(l => l.Counter).ComparingByMembers<LogEntry>()
         );
@@ -478,8 +487,7 @@ namespace MachineWatchTest
             "progggg",
             true,
             start.AddHours(5).AddMinutes(10),
-            "",
-            false
+            ""
           ),
           options => options.ComparingByMembers<LogEntry>()
         );
@@ -515,7 +523,6 @@ namespace MachineWatchTest
         false,
         start.AddHours(5).AddMinutes(19),
         "4444",
-        false,
         TimeSpan.FromMinutes(12),
         TimeSpan.FromMinutes(99)
       );
@@ -551,8 +558,7 @@ namespace MachineWatchTest
             "UNLOAD",
             true,
             start.AddHours(6).AddMinutes(10),
-            "UNLOAD",
-            false
+            "UNLOAD"
           ),
           options => options.ComparingByMembers<LogEntry>()
         );
@@ -582,7 +588,6 @@ namespace MachineWatchTest
               false,
               start.AddHours(7),
               "UNLOAD",
-              true,
               TimeSpan.FromMinutes(152),
               TimeSpan.FromMinutes(55)
             )
@@ -652,8 +657,7 @@ namespace MachineWatchTest
           "MARK",
           false,
           markLog.EndTimeUTC,
-          "ser1",
-          false
+          "ser1"
         )
       );
       logsForMat1 = logsForMat1.Select(TransformLog(mat1.MaterialID, SetSerialInMat("ser1"))).ToList();
@@ -674,8 +678,7 @@ namespace MachineWatchTest
           "",
           false,
           orderLog.EndTimeUTC,
-          "work1",
-          false
+          "work1"
         )
       );
       logsForMat1 = logsForMat1.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
@@ -709,7 +712,6 @@ namespace MachineWatchTest
         false,
         inspCompLog.EndTimeUTC,
         "True",
-        false,
         TimeSpan.FromMinutes(100),
         TimeSpan.FromMinutes(5)
       );
@@ -735,7 +737,6 @@ namespace MachineWatchTest
         false,
         washLog.EndTimeUTC,
         "",
-        false,
         TimeSpan.FromMinutes(44),
         TimeSpan.FromMinutes(9)
       );
@@ -759,8 +760,7 @@ namespace MachineWatchTest
         "The program msg",
         false,
         generalLog.EndTimeUTC,
-        "The result msg",
-        false
+        "The result msg"
       );
       expectedGeneralLog %= e => e.ProgramDetails["extra1"] = "value1";
       logsForMat1.Add(expectedGeneralLog);
@@ -793,8 +793,7 @@ namespace MachineWatchTest
         "OperatorNotes",
         false,
         notesLog.EndTimeUTC,
-        "Operator Notes",
-        false
+        "Operator Notes"
       );
       expectedNotesLog %= e =>
       {
@@ -852,8 +851,7 @@ namespace MachineWatchTest
           "prog1",
           true, //start of event
           pal1InitialTime,
-          "result",
-          false
+          "result"
         )
       ); //end of route
       pal1Initial.Add(
@@ -867,8 +865,7 @@ namespace MachineWatchTest
           "prog1",
           false, //start of event
           pal1InitialTime.AddMinutes(5),
-          "result",
-          false
+          "result"
         )
       ); //end of route
 
@@ -884,8 +881,7 @@ namespace MachineWatchTest
           "prog1",
           true, //start of event
           pal1InitialTime.AddMinutes(10),
-          "result",
-          false
+          "result"
         )
       ); //end of route
       pal1Initial.Add(
@@ -899,8 +895,7 @@ namespace MachineWatchTest
           "prog1",
           false, //start of event
           pal1InitialTime.AddMinutes(20),
-          "result",
-          true
+          "result"
         )
       ); //end of route
       // ***********  End of Route for pal1
@@ -924,7 +919,6 @@ namespace MachineWatchTest
           false,
           pal1InitialTime.AddMinutes(25),
           "PalletCycle",
-          false,
           TimeSpan.Zero,
           TimeSpan.Zero
         )
@@ -953,8 +947,7 @@ namespace MachineWatchTest
           "prog1",
           true, //start of event
           pal2CycleTime,
-          "result",
-          false
+          "result"
         )
       ); //end of route
       pal2Cycle.Add(
@@ -968,8 +961,7 @@ namespace MachineWatchTest
           "prog1",
           false, //start of event
           pal2CycleTime.AddMinutes(10),
-          "result",
-          false
+          "result"
         )
       ); //end of route
 
@@ -992,8 +984,7 @@ namespace MachineWatchTest
           "prog1",
           true, //start of event
           pal1CycleTime,
-          "result",
-          false
+          "result"
         )
       ); //end of route
       pal1Cycle.Add(
@@ -1007,8 +998,7 @@ namespace MachineWatchTest
           "prog1",
           false, //start of event
           pal1CycleTime.AddMinutes(15),
-          "result",
-          false
+          "result"
         )
       ); //end of route
 
@@ -1024,8 +1014,7 @@ namespace MachineWatchTest
           "prog1",
           true, //start of event
           pal1CycleTime.AddMinutes(20),
-          "result",
-          false
+          "result"
         )
       ); //end of route
 
@@ -1046,8 +1035,7 @@ namespace MachineWatchTest
           "prog1",
           false, //start of event
           pal1CycleTime.AddMinutes(30),
-          "result",
-          true
+          "result"
         )
       ); //end of route
 
@@ -1067,8 +1055,7 @@ namespace MachineWatchTest
         prog: "prog22",
         start: true,
         endTime: pal1CycleTime.AddMinutes(31),
-        result: "prog22",
-        endOfRoute: false
+        result: "prog22"
       );
       invalidated %= e => e.ProgramDetails["PalletCycleInvalidated"] = "1";
       ((Repository)_jobLog).AddLogEntryFromUnitTest(invalidated);
@@ -1083,8 +1070,7 @@ namespace MachineWatchTest
         prog: "SwapMatOnPallet",
         start: false,
         endTime: pal1CycleTime.AddMinutes(32),
-        result: "Replace aaa with bbb",
-        endOfRoute: false
+        result: "Replace aaa with bbb"
       );
       ((Repository)_jobLog).AddLogEntryFromUnitTest(swap);
 
@@ -1107,7 +1093,6 @@ namespace MachineWatchTest
           false,
           pal1CycleTime.AddMinutes(40),
           "PalletCycle",
-          false,
           elapsed,
           TimeSpan.Zero
         )
@@ -1161,7 +1146,6 @@ namespace MachineWatchTest
         false,
         DateTime.UtcNow,
         "result1",
-        false,
         TimeSpan.FromMinutes(10),
         TimeSpan.FromMinutes(11)
       );
@@ -1176,7 +1160,6 @@ namespace MachineWatchTest
         false,
         DateTime.UtcNow,
         "result2",
-        false,
         TimeSpan.FromMinutes(15),
         TimeSpan.FromMinutes(16)
       );
@@ -1191,7 +1174,6 @@ namespace MachineWatchTest
         false,
         DateTime.UtcNow,
         "result3",
-        false,
         TimeSpan.FromMinutes(20),
         TimeSpan.FromMinutes(21)
       );
@@ -1268,7 +1250,6 @@ namespace MachineWatchTest
         false,
         DateTime.UtcNow,
         "result66",
-        false,
         TimeSpan.FromMinutes(166),
         TimeSpan.FromMinutes(74)
       );
@@ -1318,7 +1299,6 @@ namespace MachineWatchTest
           false,
           t.AddMinutes(5),
           "",
-          false,
           TimeSpan.FromMinutes(10),
           TimeSpan.FromMinutes(20)
         )
@@ -1335,7 +1315,6 @@ namespace MachineWatchTest
           false,
           t.AddMinutes(6),
           "",
-          false,
           TimeSpan.FromMinutes(30),
           TimeSpan.FromMinutes(40)
         )
@@ -1352,7 +1331,6 @@ namespace MachineWatchTest
           false,
           t.AddMinutes(7),
           "UNLOAD",
-          false,
           TimeSpan.FromMinutes(50),
           TimeSpan.FromMinutes(60)
         )
@@ -1412,7 +1390,6 @@ namespace MachineWatchTest
           false,
           t.AddMinutes(15),
           "",
-          false,
           TimeSpan.FromMinutes(3),
           TimeSpan.FromMinutes(4)
         )
@@ -1429,7 +1406,6 @@ namespace MachineWatchTest
           false,
           t.AddMinutes(17),
           "UNLOAD",
-          false,
           TimeSpan.FromMinutes(5),
           TimeSpan.FromMinutes(6)
         )
@@ -1588,7 +1564,6 @@ namespace MachineWatchTest
           false,
           old.AddMinutes(5),
           "",
-          false,
           TimeSpan.FromMinutes(10),
           TimeSpan.FromMinutes(20)
         )
@@ -1605,7 +1580,6 @@ namespace MachineWatchTest
           false,
           old.AddMinutes(6),
           "",
-          false,
           TimeSpan.FromMinutes(11),
           TimeSpan.FromMinutes(21)
         )
@@ -1622,7 +1596,6 @@ namespace MachineWatchTest
           false,
           old.AddMinutes(7),
           "",
-          false,
           TimeSpan.FromMinutes(12),
           TimeSpan.FromMinutes(22)
         )
@@ -1639,7 +1612,6 @@ namespace MachineWatchTest
           false,
           recent.AddMinutes(4),
           "UNLOAD",
-          false,
           TimeSpan.FromMinutes(30),
           TimeSpan.FromMinutes(40)
         )
@@ -1658,7 +1630,6 @@ namespace MachineWatchTest
           false,
           recent.AddMinutes(5),
           "",
-          false,
           TimeSpan.FromMinutes(50),
           TimeSpan.FromMinutes(60)
         )
@@ -1675,7 +1646,6 @@ namespace MachineWatchTest
           false,
           recent.AddMinutes(6),
           "UNLOAD",
-          false,
           TimeSpan.FromMinutes(51),
           TimeSpan.FromMinutes(61)
         )
@@ -1692,7 +1662,6 @@ namespace MachineWatchTest
           false,
           old.AddMinutes(7),
           "",
-          false,
           TimeSpan.FromMinutes(52),
           TimeSpan.FromMinutes(62)
         )
@@ -1711,7 +1680,6 @@ namespace MachineWatchTest
           false,
           old.AddMinutes(20),
           "",
-          false,
           TimeSpan.FromMinutes(70),
           TimeSpan.FromMinutes(80)
         )
@@ -1728,7 +1696,6 @@ namespace MachineWatchTest
           false,
           old.AddMinutes(25),
           "UNLOAD",
-          false,
           TimeSpan.FromMinutes(71),
           TimeSpan.FromMinutes(81)
         )
@@ -1747,7 +1714,6 @@ namespace MachineWatchTest
           false,
           recent.AddMinutes(40),
           "",
-          false,
           TimeSpan.FromMinutes(90),
           TimeSpan.FromMinutes(100)
         )
@@ -1764,7 +1730,6 @@ namespace MachineWatchTest
           false,
           recent.AddMinutes(45),
           "UNLOAD",
-          false,
           TimeSpan.FromMinutes(91),
           TimeSpan.FromMinutes(101)
         )
@@ -2784,7 +2749,6 @@ namespace MachineWatchTest
               false,
               start.AddMinutes(10),
               "LOAD",
-              false,
               TimeSpan.FromMinutes(10),
               TimeSpan.FromMinutes(20)
             ),
@@ -2851,7 +2815,6 @@ namespace MachineWatchTest
               false,
               start.AddMinutes(30),
               "UNLOAD",
-              true,
               TimeSpan.FromMinutes(52),
               TimeSpan.FromMinutes(23)
             ),
@@ -2984,8 +2947,7 @@ namespace MachineWatchTest
             prog: "TheReason",
             start: false,
             endTime: addTime,
-            result: "",
-            endOfRoute: false
+            result: ""
           );
           l %= d => d.ProgramDetails["operator"] = "operName";
           return l;
@@ -3021,8 +2983,7 @@ namespace MachineWatchTest
                   prog: "MARK",
                   start: false,
                   endTime: addTime,
-                  result: i.ToString(),
-                  endOfRoute: false
+                  result: i.ToString()
                 )
             )
         );
@@ -3065,8 +3026,7 @@ namespace MachineWatchTest
                   prog: "",
                   start: false,
                   endTime: addTime,
-                  result: "",
-                  endOfRoute: false
+                  result: ""
                 )
               }
               : Enumerable.Empty<LogEntry>()
@@ -3159,7 +3119,6 @@ namespace MachineWatchTest
                 start: false,
                 endTime: removeTime,
                 result: "",
-                endOfRoute: false,
                 elapsed: removeTime.Subtract(addTime),
                 active: TimeSpan.Zero
               )
@@ -3461,9 +3420,12 @@ namespace MachineWatchTest
                   Processes = ImmutableList.Create(
                     new ProcessInfo()
                     {
-                      Paths = ImmutableList.Create(new ProcPathInfo() { Casting = rawMatName })
+                      Paths = ImmutableList.Create(EmptyPath with { Casting = rawMatName })
                     }
-                  )
+                  ),
+                  RouteStartUTC = DateTime.MinValue,
+                  RouteEndUTC = DateTime.MinValue,
+                  Archived = false,
                 }
               ),
               ScheduleId = "anotherSchId"
@@ -3681,8 +3643,7 @@ namespace MachineWatchTest
         prog: "SwapMatOnPallet",
         start: false,
         endTime: now,
-        result: "Replace bbbb with cccc on pallet 5",
-        endOfRoute: false
+        result: "Replace bbbb with cccc on pallet 5"
       );
 
       var newLog = origLog
@@ -3847,11 +3808,11 @@ namespace MachineWatchTest
               PartName = "part1",
               Cycles = 10,
               Processes = ImmutableList.Create(
-                new ProcessInfo()
-                {
-                  Paths = ImmutableList.Create(new ProcPathInfo() { Casting = "thecasting" })
-                }
-              )
+                new ProcessInfo() { Paths = ImmutableList.Create(EmptyPath with { Casting = "thecasting" }) }
+              ),
+              RouteStartUTC = DateTime.MinValue,
+              RouteEndUTC = DateTime.MinValue,
+              Archived = false,
             }
           ),
           ScheduleId = "aschId"
@@ -4143,8 +4104,7 @@ namespace MachineWatchTest
         prog: "InvalidateCycle",
         start: false,
         endTime: now,
-        result: "Invalidate all events on cycle for pallet 5",
-        endOfRoute: false
+        result: "Invalidate all events on cycle for pallet 5"
       );
       expectedInvalidateMsg %= e =>
       {
@@ -4293,8 +4253,7 @@ namespace MachineWatchTest
         prog: "MARK",
         start: false,
         endTime: timeUTC,
-        result: serial,
-        endOfRoute: false
+        result: serial
       );
     }
 
@@ -4315,8 +4274,7 @@ namespace MachineWatchTest
         prog: "",
         start: false,
         endTime: timeUTC,
-        result: workorder,
-        endOfRoute: false
+        result: workorder
       );
     }
 
@@ -4340,8 +4298,7 @@ namespace MachineWatchTest
         prog: reason ?? "",
         start: false,
         endTime: timeUTC,
-        result: "",
-        endOfRoute: false
+        result: ""
       );
       if (!string.IsNullOrEmpty(operName))
       {
@@ -4369,8 +4326,7 @@ namespace MachineWatchTest
         prog: "QuarantineAfterUnload",
         start: false,
         endTime: timeUTC,
-        result: "QuarantineAfterUnload",
-        endOfRoute: false
+        result: "QuarantineAfterUnload"
       );
       if (!string.IsNullOrEmpty(operName))
       {
@@ -4400,7 +4356,6 @@ namespace MachineWatchTest
         start: false,
         endTime: timeUTC,
         result: "",
-        endOfRoute: false,
         elapsed: TimeSpan.FromMinutes(elapsedMin),
         active: TimeSpan.Zero
       );
@@ -4547,8 +4502,7 @@ namespace MachineWatchTest
         prog: "MARK",
         start: false,
         endTime: now,
-        result: "0000000001",
-        endOfRoute: false
+        result: "0000000001"
       );
 
       serialLogEntry.Should().BeEquivalentTo(expected1);
@@ -4635,8 +4589,7 @@ namespace MachineWatchTest
         "MARK",
         false,
         t.AddMinutes(1),
-        "themat4serial",
-        false
+        "themat4serial"
       );
 
       var log1 = new LogEntry(
@@ -4650,7 +4603,6 @@ namespace MachineWatchTest
         false,
         t,
         "result1",
-        false,
         TimeSpan.FromMinutes(10),
         TimeSpan.FromMinutes(12)
       );
@@ -4665,7 +4617,6 @@ namespace MachineWatchTest
         false,
         t.AddMinutes(20),
         "result2",
-        false,
         TimeSpan.FromMinutes(15),
         TimeSpan.FromMinutes(17)
       );
@@ -4742,7 +4693,6 @@ namespace MachineWatchTest
         false,
         t.AddMinutes(45),
         "PalletCycle",
-        false,
         TimeSpan.Zero,
         TimeSpan.Zero
       );
@@ -4760,7 +4710,6 @@ namespace MachineWatchTest
         false,
         t.AddMinutes(45).AddSeconds(1),
         "LOAD",
-        false,
         TimeSpan.FromMinutes(32),
         TimeSpan.FromMinutes(38)
       );
@@ -4775,8 +4724,7 @@ namespace MachineWatchTest
         "MARK",
         false,
         t.AddMinutes(45).AddSeconds(2),
-        serial1,
-        false
+        serial1
       );
 
       var ser2 = new LogEntry(
@@ -4789,8 +4737,7 @@ namespace MachineWatchTest
         "MARK",
         false,
         t.AddMinutes(45).AddSeconds(2),
-        serial2,
-        false
+        serial2
       );
 
       mat["key2"] = new LogMaterial[] { mat3, mat4 }.Select(EventLogMaterial.FromLogMat);
@@ -4806,7 +4753,6 @@ namespace MachineWatchTest
         false,
         t.AddMinutes(45).AddSeconds(1),
         "LOAD",
-        false,
         TimeSpan.FromMinutes(44),
         TimeSpan.FromMinutes(49)
       );
@@ -4821,8 +4767,7 @@ namespace MachineWatchTest
         "MARK",
         false,
         t.AddMinutes(45).AddSeconds(2),
-        serial3,
-        false
+        serial3
       );
 
       _jobLog.CompletePalletCycle("pal1", t.AddMinutes(45), "for3", mat, generateSerials: true);
@@ -4923,8 +4868,7 @@ namespace MachineWatchTest
         "MARK",
         false,
         t.AddMinutes(1),
-        "themat4serial",
-        false
+        "themat4serial"
       );
 
       var log1 = new LogEntry(
@@ -4938,7 +4882,6 @@ namespace MachineWatchTest
         false,
         t,
         "result1",
-        false,
         TimeSpan.FromMinutes(10),
         TimeSpan.FromMinutes(11)
       );
@@ -4953,7 +4896,6 @@ namespace MachineWatchTest
         false,
         t.AddMinutes(20),
         "result2",
-        false,
         TimeSpan.FromMinutes(15),
         TimeSpan.FromMinutes(22)
       );
@@ -4978,7 +4920,6 @@ namespace MachineWatchTest
         false,
         t.AddMinutes(45),
         "PalletCycle",
-        false,
         TimeSpan.Zero,
         TimeSpan.Zero
       );
@@ -4996,7 +4937,6 @@ namespace MachineWatchTest
         false,
         t.AddMinutes(45).AddSeconds(1),
         "LOAD",
-        false,
         TimeSpan.FromMinutes(32),
         TimeSpan.FromMinutes(38)
       );
@@ -5011,8 +4951,7 @@ namespace MachineWatchTest
         "MARK",
         false,
         t.AddMinutes(45).AddSeconds(2),
-        serial1,
-        false
+        serial1
       );
 
       mat["key2"] = new LogMaterial[] { mat3 }.Select(EventLogMaterial.FromLogMat);
@@ -5028,7 +4967,6 @@ namespace MachineWatchTest
         false,
         t.AddMinutes(45).AddSeconds(1),
         "LOAD",
-        false,
         TimeSpan.FromMinutes(44),
         TimeSpan.FromMinutes(49)
       );
@@ -5043,8 +4981,7 @@ namespace MachineWatchTest
         "MARK",
         false,
         t.AddMinutes(45).AddSeconds(2),
-        serial3,
-        false
+        serial3
       );
 
       mat["key3"] = new LogMaterial[] { mat4 }.Select(EventLogMaterial.FromLogMat);
@@ -5060,7 +4997,6 @@ namespace MachineWatchTest
         false,
         t.AddMinutes(45).AddSeconds(1),
         "LOAD",
-        false,
         TimeSpan.FromMinutes(55),
         TimeSpan.FromMinutes(61)
       );
@@ -5109,7 +5045,11 @@ namespace MachineWatchTest
     {
       var logDB = RepositoryConfig
         .InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12") },
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          },
           _connection,
           createTables: true
         )
@@ -5140,7 +5080,11 @@ namespace MachineWatchTest
     {
       Action act = () =>
         RepositoryConfig.InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("A000000000") }
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("A000000000"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          }
         );
       act.Should().Throw<Exception>().WithMessage("Starting Serial is too large");
     }
@@ -5150,7 +5094,11 @@ namespace MachineWatchTest
     {
       var logFromCreate = RepositoryConfig
         .InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12") },
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          },
           _connection,
           createTables: true
         )
@@ -5161,7 +5109,11 @@ namespace MachineWatchTest
 
       var logFromUpgrade = RepositoryConfig
         .InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("B3t24s") },
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("B3t24s"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          },
           _connection,
           createTables: false
         )
@@ -5178,7 +5130,11 @@ namespace MachineWatchTest
     {
       var logFromCreate = RepositoryConfig
         .InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12") },
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          },
           _connection,
           createTables: true
         )
@@ -5189,7 +5145,11 @@ namespace MachineWatchTest
 
       var logFromUpgrade = RepositoryConfig
         .InitializeSingleThreadedMemoryDB(
-          new SerialSettings() { StartingMaterialID = SerialSettings.ConvertFromBase62("w53122") },
+          new SerialSettings()
+          {
+            StartingMaterialID = SerialSettings.ConvertFromBase62("w53122"),
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          },
           _connection,
           createTables: false
         )

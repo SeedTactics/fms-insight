@@ -449,8 +449,7 @@ namespace MachineWatchTest
         prog: logProg ?? prog,
         start: true,
         endTime: e2.TimeUTC,
-        result: "",
-        endOfRoute: false
+        result: ""
       );
       if (progRev.HasValue)
       {
@@ -528,7 +527,6 @@ namespace MachineWatchTest
         start: false,
         endTime: e2.TimeUTC,
         result: "",
-        endOfRoute: false,
         elapsed: TimeSpan.FromMinutes(elapMin),
         active: TimeSpan.FromMinutes(activeMin)
       );
@@ -573,8 +571,7 @@ namespace MachineWatchTest
         prog: counter,
         start: false,
         endTime: DateTime.UtcNow,
-        result: result.ToString(),
-        endOfRoute: false
+        result: result.ToString()
       );
       e %= entry =>
       {
@@ -632,8 +629,7 @@ namespace MachineWatchTest
           prog: "LOAD",
           start: true,
           endTime: e2.TimeUTC,
-          result: "LOAD",
-          endOfRoute: false
+          result: "LOAD"
         )
       );
     }
@@ -703,7 +699,6 @@ namespace MachineWatchTest
           start: false,
           endTime: mats.First().EventStartTime.AddMinutes(cycleOffset).AddSeconds(1),
           result: "LOAD",
-          endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.FromMinutes(activeMin)
         )
@@ -736,8 +731,7 @@ namespace MachineWatchTest
             prog: "MARK",
             start: false,
             endTime: mat.EventStartTime.AddMinutes(cycleOffset).AddSeconds(1),
-            result: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-            endOfRoute: false
+            result: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0')
           )
         );
       }
@@ -791,8 +785,7 @@ namespace MachineWatchTest
           prog: "UNLOAD",
           start: true,
           endTime: e2.TimeUTC,
-          result: "UNLOAD",
-          endOfRoute: false
+          result: "UNLOAD"
         )
       );
     }
@@ -854,7 +847,6 @@ namespace MachineWatchTest
           start: false,
           endTime: e2.TimeUTC.AddSeconds(1),
           result: "UNLOAD",
-          endOfRoute: true,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.FromMinutes(activeMin)
         )
@@ -893,7 +885,6 @@ namespace MachineWatchTest
             start: false,
             endTime: t.AddMinutes(offset),
             result: "PalletCycle",
-            endOfRoute: false,
             elapsed: TimeSpan.FromMinutes(elapMin),
             active: TimeSpan.Zero
           )
@@ -942,8 +933,7 @@ namespace MachineWatchTest
           prog: "Arrive",
           start: true,
           endTime: e2.TimeUTC,
-          result: waitForMachine ? "WaitForMachine" : "WaitForUnload",
-          endOfRoute: false
+          result: waitForMachine ? "WaitForMachine" : "WaitForUnload"
         )
       );
     }
@@ -997,7 +987,6 @@ namespace MachineWatchTest
           start: false,
           endTime: e2.TimeUTC,
           result: waitForMachine ? "WaitForMachine" : "WaitForUnload",
-          endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.Zero
         )
@@ -1046,8 +1035,7 @@ namespace MachineWatchTest
           prog: "Arrive",
           start: true,
           endTime: e2.TimeUTC,
-          result: "Arrive",
-          endOfRoute: false
+          result: "Arrive"
         )
       );
     }
@@ -1094,7 +1082,6 @@ namespace MachineWatchTest
           result: "RotateIntoWorktable",
           start: false,
           endTime: e2.TimeUTC,
-          endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.Zero
         )
@@ -1143,7 +1130,6 @@ namespace MachineWatchTest
           start: false,
           endTime: e2.TimeUTC,
           result: "LeaveMachine",
-          endOfRoute: false,
           elapsed: TimeSpan.FromMinutes(elapMin),
           active: TimeSpan.Zero
         )
@@ -1210,8 +1196,7 @@ namespace MachineWatchTest
             prog: reason ?? "Unloaded",
             start: false,
             endTime: mat.EventStartTime.AddMinutes(offset),
-            result: "",
-            endOfRoute: false
+            result: ""
           )
         );
         startPos += 1;
@@ -1262,7 +1247,6 @@ namespace MachineWatchTest
             start: false,
             endTime: mat.EventStartTime.AddMinutes(offset).AddSeconds(1),
             result: "",
-            endOfRoute: false,
             elapsed: TimeSpan.FromMinutes(elapMin).Add(TimeSpan.FromSeconds(1)),
             active: TimeSpan.Zero
           )
@@ -1390,9 +1374,12 @@ namespace MachineWatchTest
         UniqueStr = "unique",
         PartName = "part1",
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
         Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
       };
       jobLog.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "singlematSch" },
@@ -1453,9 +1440,12 @@ namespace MachineWatchTest
         UniqueStr = "unique",
         PartName = "part1",
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
         Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
       };
       jobLog.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "multipleSch" },
@@ -1545,10 +1535,13 @@ namespace MachineWatchTest
         UniqueStr = "unique",
         PartName = "part1",
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
         Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
       };
       jobLog.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "multipleprocSch" },
@@ -1703,11 +1696,15 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu1",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 ExpectedLoadTime = TimeSpan.FromMinutes(11),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(711),
@@ -1715,7 +1712,8 @@ namespace MachineWatchTest
                   new MachiningStop()
                   {
                     StationGroup = "machinespec",
-                    ExpectedCycleTime = TimeSpan.FromMinutes(33)
+                    ExpectedCycleTime = TimeSpan.FromMinutes(33),
+                    Stations = ImmutableList<int>.Empty
                   }
                 )
               }
@@ -1724,7 +1722,7 @@ namespace MachineWatchTest
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 ExpectedLoadTime = TimeSpan.FromMinutes(21),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(721),
@@ -1732,7 +1730,8 @@ namespace MachineWatchTest
                   new MachiningStop()
                   {
                     StationGroup = "machinespec",
-                    ExpectedCycleTime = TimeSpan.FromMinutes(44)
+                    ExpectedCycleTime = TimeSpan.FromMinutes(44),
+                    Stations = ImmutableList<int>.Empty
                   }
                 )
               }
@@ -1744,11 +1743,15 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu2",
         PartName = "pppp",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 ExpectedLoadTime = TimeSpan.FromMinutes(12),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(712),
@@ -1756,7 +1759,8 @@ namespace MachineWatchTest
                   new MachiningStop()
                   {
                     StationGroup = "machinespec",
-                    ExpectedCycleTime = TimeSpan.FromMinutes(33)
+                    ExpectedCycleTime = TimeSpan.FromMinutes(33),
+                    Stations = ImmutableList<int>.Empty
                   }
                 )
               }
@@ -1765,7 +1769,7 @@ namespace MachineWatchTest
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 ExpectedLoadTime = TimeSpan.FromMinutes(22),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(722),
@@ -1773,7 +1777,8 @@ namespace MachineWatchTest
                   new MachiningStop()
                   {
                     StationGroup = "machinespec",
-                    ExpectedCycleTime = TimeSpan.FromMinutes(44)
+                    ExpectedCycleTime = TimeSpan.FromMinutes(44),
+                    Stations = ImmutableList<int>.Empty
                   }
                 )
               }
@@ -1835,9 +1840,13 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
       };
       jobLog.AddJobs(
@@ -1942,8 +1951,12 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
       };
       jobLog.AddJobs(
@@ -2009,8 +2022,12 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
       };
       jobLog.AddJobs(
@@ -2106,11 +2123,15 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 Inspections = ImmutableList.Create(
                   new PathInspection()
@@ -2118,6 +2139,7 @@ namespace MachineWatchTest
                     InspectionType = "insp_proc1",
                     Counter = "counter1",
                     MaxVal = 10,
+                    RandomFreq = 0,
                     TimeInterval = TimeSpan.FromMinutes(1000)
                   }
                 )
@@ -2127,7 +2149,7 @@ namespace MachineWatchTest
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 Inspections = ImmutableList.Create(
                   new PathInspection()
@@ -2135,6 +2157,7 @@ namespace MachineWatchTest
                     InspectionType = "insp_whole",
                     Counter = "counter2",
                     MaxVal = 15,
+                    RandomFreq = 0,
                     TimeInterval = TimeSpan.FromMinutes(1500)
                   }
                 )
@@ -2228,14 +2251,25 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique1",
         PartName = "part1",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 Stops = ImmutableList.Create(
-                  new MachiningStop() { Program = "the-log-prog", ProgramRevision = 15 }
+                  new MachiningStop()
+                  {
+                    Program = "the-log-prog",
+                    ProgramRevision = 15,
+                    StationGroup = "",
+                    Stations = ImmutableList<int>.Empty,
+                    ExpectedCycleTime = TimeSpan.Zero
+                  }
                 )
               }
             )
@@ -2246,14 +2280,25 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique2",
         PartName = "part1",
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Cycles = 0,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo()
+              JobLogTest.EmptyPath with
               {
                 Stops = ImmutableList.Create(
-                  new MachiningStop() { Program = "other-log-prog", ProgramRevision = 12 }
+                  new MachiningStop()
+                  {
+                    Program = "other-log-prog",
+                    ProgramRevision = 12,
+                    StationGroup = "",
+                    Stations = ImmutableList<int>.Empty,
+                    ExpectedCycleTime = TimeSpan.Zero
+                  }
                 )
               }
             )
@@ -2344,9 +2389,13 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { }) },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { }) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
       };
       jobLog.AddJobs(
@@ -2423,9 +2472,19 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { OutputQueue = "thequeue" }) },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" })
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+          }
         )
       };
       var newJobs = new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "queueSch" };
@@ -2554,12 +2613,23 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu1",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { OutputQueue = "thequeue" }) },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" })
+          },
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo() { InputQueue = "thequeue", OutputQueue = "externalq" }
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                OutputQueue = "externalq"
+              }
             )
           }
         )
@@ -2568,12 +2638,23 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu2",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { OutputQueue = "thequeue" }) },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" })
+          },
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo() { InputQueue = "thequeue", OutputQueue = "externalq" }
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "thequeue",
+                OutputQueue = "externalq"
+              }
             )
           }
         )
@@ -2801,14 +2882,25 @@ namespace MachineWatchTest
       {
         UniqueStr = "uuuu",
         PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
             Paths = ImmutableList.Create(
-              new ProcPathInfo() { InputQueue = "rawmat", OutputQueue = "thequeue" }
+              JobLogTest.EmptyPath with
+              {
+                InputQueue = "rawmat",
+                OutputQueue = "thequeue"
+              }
             )
           },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo() { InputQueue = "thequeue" }) }
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+          }
         )
       };
       var newJobs = new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "swapSch" };
@@ -2887,8 +2979,12 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
       };
       jobLog.AddJobs(
@@ -3075,8 +3171,12 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
       };
       jobLog.AddJobs(
@@ -3145,8 +3245,12 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
       };
       jobLog.AddJobs(
@@ -3196,9 +3300,13 @@ namespace MachineWatchTest
       {
         UniqueStr = "unique",
         PartName = "part1",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
         Processes = ImmutableList.Create(
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) },
-          new ProcessInfo() { Paths = ImmutableList.Create(new ProcPathInfo()) }
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+          new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
       };
       jobLog.AddJobs(
