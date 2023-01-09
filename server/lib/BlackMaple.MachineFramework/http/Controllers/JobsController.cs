@@ -43,10 +43,10 @@ namespace BlackMaple.MachineFramework.Controllers
   public record QueuePosition
   {
     [DataMember(IsRequired = true)]
-    public string Queue { get; init; }
+    public required string Queue { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Position { get; init; }
+    public required int Position { get; init; }
   }
 
   [ApiController]
@@ -121,7 +121,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public record WorkordersAndPrograms
     {
       [DataMember(IsRequired = true)]
-      public IReadOnlyList<Workorder> Workorders { get; init; }
+      public required IReadOnlyList<Workorder> Workorders { get; init; }
 
       [DataMember(IsRequired = false, EmitDefaultValue = false)]
       public IReadOnlyList<NewProgramContent> Programs { get; init; }
@@ -282,10 +282,10 @@ namespace BlackMaple.MachineFramework.Controllers
     public record MatToPutOnPallet
     {
       [DataMember(IsRequired = true)]
-      public string Pallet { get; init; }
+      public required string Pallet { get; init; }
 
       [DataMember(IsRequired = true)]
-      public long MaterialIDToSetOnPallet { get; init; }
+      public required long MaterialIDToSetOnPallet { get; init; }
     }
 
     [HttpPut("material/{materialId}/swap-off-pallet")]
