@@ -3222,6 +3222,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               WorkorderId = "work1",
               Part = "part1",
+              Quantity = 0,
+              DueDate = DateTime.UtcNow,
+              Priority = 0,
               Programs = ImmutableList.Create(
                 new ProgramForJobStep()
                 {
@@ -3242,6 +3245,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               WorkorderId = "work2",
               Part = "part1",
+              Quantity = 0,
+              DueDate = DateTime.UtcNow,
+              Priority = 0,
               Programs = ImmutableList.Create(
                 new ProgramForJobStep()
                 {
@@ -3404,6 +3410,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               WorkorderId = "work1",
               Part = "part1",
+              Quantity = 0,
+              DueDate = DateTime.UtcNow,
+              Priority = 0,
               Programs = ImmutableList.Create(
                 new ProgramForJobStep()
                 {
@@ -3424,6 +3433,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               WorkorderId = "work2",
               Part = "part1",
+              Quantity = 0,
+              DueDate = DateTime.UtcNow,
+              Priority = 0,
               Programs = ImmutableList.Create(
                 new ProgramForJobStep()
                 {
@@ -3754,6 +3766,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               WorkorderId = "work1",
               Part = "part1",
+              Quantity = 0,
+              DueDate = DateTime.UtcNow,
+              Priority = 0,
               Programs = ImmutableList.Create(
                 new ProgramForJobStep()
                 {
@@ -3774,6 +3789,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               WorkorderId = "work2",
               Part = "part1",
+              Quantity = 0,
+              DueDate = DateTime.UtcNow,
+              Priority = 0,
               Programs = ImmutableList.Create(
                 new ProgramForJobStep()
                 {

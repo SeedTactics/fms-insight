@@ -795,7 +795,12 @@ namespace BlackMaple.MachineFramework
           var ret = new List<WorkorderSummary>();
           foreach (var w in workorders)
           {
-            var emptySummary = new WorkorderSummary() { WorkorderId = w };
+            var emptySummary = new WorkorderSummary()
+            {
+              WorkorderId = w,
+              Parts = ImmutableList<WorkorderPartSummary>.Empty,
+              Serials = ImmutableList<string>.Empty
+            };
             ret.Add(
               emptySummary
                 % (
@@ -811,7 +816,9 @@ namespace BlackMaple.MachineFramework
                         var wPart = new WorkorderPartSummary
                         {
                           Part = reader.GetString(0),
-                          PartsCompleted = reader.GetInt32(1)
+                          PartsCompleted = reader.GetInt32(1),
+                          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+                          ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
                         };
                         partMap.Add(wPart.Part, wPart);
                       }

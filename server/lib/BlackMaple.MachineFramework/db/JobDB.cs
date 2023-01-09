@@ -601,7 +601,6 @@ namespace BlackMaple.MachineFramework
                 Quantity = reader.GetInt32(2),
                 DueDate = new DateTime(reader.GetInt64(3)),
                 Priority = reader.GetInt32(4),
-                Programs = ImmutableList<ProgramForJobStep>.Empty
               };
               ret.Add(
                 (work: workId, part: part),
@@ -625,7 +624,9 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        return ret.Values.Select(w => w.work with { Programs = w.progs.ToImmutable() }).ToImmutableList();
+        return ret.Values
+          .Select(w => w.progs.Count == 0 ? w.work : w.work with { Programs = w.progs.ToImmutable() })
+          .ToImmutableList();
       }
     }
 
@@ -954,7 +955,9 @@ namespace BlackMaple.MachineFramework
         }
 
         trans.Commit();
-        return ret.Values.Select(w => w.work with { Programs = w.progs.ToImmutable() }).ToList();
+        return ret.Values
+          .Select(w => w.progs.Count == 0 ? w.work : w.work with { Programs = w.progs.ToImmutable() })
+          .ToList();
       }
     }
 
@@ -1007,7 +1010,9 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        return ret.Values.Select(w => w.work with { Programs = w.progs.ToImmutable() }).ToList();
+        return ret.Values
+          .Select(w => w.progs.Count == 0 ? w.work : w.work with { Programs = w.progs.ToImmutable() })
+          .ToList();
       }
     }
 

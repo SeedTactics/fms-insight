@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -46,18 +46,16 @@ namespace BlackMaple.MachineFramework
   public record WorkorderPartSummary
   {
     [DataMember(Name = "name", IsRequired = true)]
-    public string Part { get; init; } = "";
+    public required string Part { get; init; }
 
     [DataMember(Name = "completed-qty", IsRequired = true)]
-    public int PartsCompleted { get; init; }
+    public required int PartsCompleted { get; init; }
 
     [DataMember(Name = "elapsed-station-time", IsRequired = true)]
-    public ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; } =
-      ImmutableDictionary<string, TimeSpan>.Empty;
+    public required ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; }
 
     [DataMember(Name = "active-stat-time", IsRequired = true)]
-    public ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; } =
-      ImmutableDictionary<string, TimeSpan>.Empty;
+    public required ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; }
 
     public static WorkorderPartSummary operator %(
       WorkorderPartSummary m,
@@ -69,14 +67,13 @@ namespace BlackMaple.MachineFramework
   public record WorkorderSummary
   {
     [DataMember(Name = "id", IsRequired = true)]
-    public string WorkorderId { get; init; } = "";
+    public required string WorkorderId { get; init; }
 
     [DataMember(Name = "parts", IsRequired = true)]
-    public ImmutableList<WorkorderPartSummary> Parts { get; init; } =
-      ImmutableList<WorkorderPartSummary>.Empty;
+    public required ImmutableList<WorkorderPartSummary> Parts { get; init; }
 
     [DataMember(Name = "serials", IsRequired = true)]
-    public ImmutableList<string> Serials { get; init; } = ImmutableList<string>.Empty;
+    public required ImmutableList<string> Serials { get; init; }
 
     [DataMember(Name = "finalized", IsRequired = false, EmitDefaultValue = false)]
     public DateTime? FinalizedTimeUTC { get; init; }
@@ -89,23 +86,23 @@ namespace BlackMaple.MachineFramework
   public record Workorder
   {
     [DataMember(IsRequired = true)]
-    public string WorkorderId { get; init; } = "";
+    public required string WorkorderId { get; init; }
 
     [DataMember(IsRequired = true)]
-    public string Part { get; init; } = "";
+    public required string Part { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Quantity { get; init; }
+    public required int Quantity { get; init; }
 
     [DataMember(IsRequired = true)]
-    public DateTime DueDate { get; init; }
+    public required DateTime DueDate { get; init; }
 
     [DataMember(IsRequired = true)]
-    public int Priority { get; init; }
+    public required int Priority { get; init; }
 
     ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<ProgramForJobStep>? Programs { get; init; } = ImmutableList<ProgramForJobStep>.Empty;
+    public ImmutableList<ProgramForJobStep>? Programs { get; init; }
 
     public static Workorder operator %(Workorder w, Action<IWorkorderDraft> f) => w.Produce(f);
   }

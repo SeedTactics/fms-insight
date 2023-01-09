@@ -1168,6 +1168,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               WorkorderId = "work1",
               Part = "aaa",
+              Quantity = 0,
+              DueDate = DateTime.MinValue,
+              Priority = 0,
               Programs = ImmutableList.Create(
                 new ProgramForJobStep()
                 {
@@ -1208,6 +1211,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               WorkorderId = "work2",
               Part = "aaa",
+              Quantity = 0,
+              DueDate = DateTime.MinValue,
+              Priority = 0,
               Programs = ImmutableList.Create(
                 new ProgramForJobStep()
                 {
