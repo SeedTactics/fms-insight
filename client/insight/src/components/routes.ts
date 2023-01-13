@@ -52,6 +52,7 @@ export enum RouteLocation {
   Station_InspectionMonitorWithType = "/station/inspection/:type",
   Station_WashMonitor = "/station/wash",
   Station_Queues = "/station/queues",
+  Station_Overview = "/station/overview",
 
   Operations_Dashboard = "/operations",
   Operations_LoadStation = "/operations/loadunload",
@@ -106,6 +107,7 @@ export type RouteState =
   | { route: RouteLocation.Station_InspectionMonitorWithType; inspType: string }
   | { route: RouteLocation.Station_WashMonitor }
   | { route: RouteLocation.Station_Queues; queues: ReadonlyArray<string> }
+  | { route: RouteLocation.Station_Overview }
   | { route: RouteLocation.Operations_Dashboard }
   | { route: RouteLocation.Operations_LoadStation }
   | { route: RouteLocation.Operations_Machines }

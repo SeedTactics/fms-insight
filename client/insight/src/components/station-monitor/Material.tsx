@@ -74,7 +74,7 @@ export class PartIdenticon extends React.PureComponent<{
   }
 }
 
-function materialAction(
+export function materialAction(
   mat: Readonly<api.IInProcessMaterial>,
   displaySinglePallet?: string
 ): string | undefined {

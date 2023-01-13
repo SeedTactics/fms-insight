@@ -80,6 +80,7 @@ import { differenceInDays, startOfToday } from "date-fns";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog.js";
 import { AnalysisCyclePage } from "./analysis/AnalysisCyclesPage.js";
 import { QualityPage } from "./analysis/QualityPage.js";
+import { SystemOverviewPage } from "./station-monitor/SystemOverview.js";
 
 /* eslint-disable react/display-name */
 
@@ -193,6 +194,7 @@ function helpUrl(r: routes.RouteState): string {
     case routes.RouteLocation.Station_InspectionMonitorWithType:
     case routes.RouteLocation.Station_WashMonitor:
     case routes.RouteLocation.Station_Queues:
+    case routes.RouteLocation.Station_Overview:
       return "https://www.seedtactics.com/docs/fms-insight/client-station-monitor";
 
     case routes.RouteLocation.Operations_Dashboard:
@@ -414,6 +416,9 @@ const App = React.memo(function App(props: AppProps) {
         navigation = (p) => <StationToolbar full={p.full} />;
         showOperator = true;
         addBasicMaterialDialog = false;
+        break;
+      case routes.RouteLocation.Station_Overview:
+        page = <SystemOverviewPage />;
         break;
 
       case routes.RouteLocation.Analysis_CostPerPiece:
