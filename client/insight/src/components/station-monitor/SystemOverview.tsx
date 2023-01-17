@@ -32,17 +32,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Paper, ButtonBase, Box, Typography, Collapse, Stack } from "@mui/material";
+import { Paper, ButtonBase, Box, Typography, Collapse, Stack, Avatar, Menu, MenuItem } from "@mui/material";
 import { materialAction, PartIdenticon } from "./Material.js";
-import { IInProcessMaterial } from "../../network/api.js";
-import { useRecoilValue } from "recoil";
+import { ActionType, IInProcessMaterial, LocType } from "../../network/api.js";
+import { selector, useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 
-const CollapsedIconSize = 50;
+const CollapsedIconSize = 45;
+const rowSize = CollapsedIconSize + 10; // each material row has 5px above and 5px below for padding
 
-function MaterialIcon({ mat }: { mat: Readonly<IInProcessMaterial> }) {
+function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMaterial>> }) {
   const [open, setOpen] = React.useState<boolean>(false);
   const closeTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const btnRef = React.useRef<HTMLButtonElement | null>(null);
+  const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
+  const setMatToShow = useSetMaterialToShowInDialog();
 
   function enter() {
     if (closeTimeout.current !== null) {
@@ -59,6 +65,14 @@ function MaterialIcon({ mat }: { mat: Readonly<IInProcessMaterial> }) {
     }, 200);
   }
 
+  function click() {
+    if (mats.length === 1) {
+      setMatToShow({ type: "MatDetails", details: mats[0] });
+    } else {
+      setMenuOpen(true);
+    }
+  }
+
   return (
     <Box sx={{ width: CollapsedIconSize, height: CollapsedIconSize, overflow: "visible" }}>
       <Paper
@@ -67,170 +81,213 @@ function MaterialIcon({ mat }: { mat: Readonly<IInProcessMaterial> }) {
         onPointerLeave={leave}
         sx={{ position: "relative", zIndex: open ? 10 : 0, width: "max-content", height: "max-content" }}
       >
-        <ButtonBase focusRipple>
+        <ButtonBase focusRipple onClick={click} ref={btnRef}>
           <Collapse orientation="horizontal" in={open} collapsedSize={CollapsedIconSize}>
-            <Box sx={{ display: "flex" }}>
-              <PartIdenticon part={mat.partName} size={CollapsedIconSize} />
-              <Box sx={{ marginLeft: "10px", marginRight: "10px", whiteSpace: "nowrap", textAlign: "left" }}>
+            <Box display="flex">
+              <PartIdenticon part={mats[0].partName} size={CollapsedIconSize} />
+              <Box marginLeft="10px" marginRight="10px" whiteSpace="nowrap" textAlign="left">
                 <Collapse in={open} collapsedSize={CollapsedIconSize}>
-                  <Typography variant="h6">{mat.partName}</Typography>
-                  {mat.serial ? (
+                  <Stack direction="column" marginBottom="0.2em">
+                    <Box display="flex" justifyContent="space-between" alignItems="baseline">
+                      <Typography variant="h6">
+                        {mats[0].partName}-{mats[0].process}
+                      </Typography>
+                      {mats.length > 1 ? (
+                        <Avatar sx={{ width: "30px", height: "30px" }}>{mats.length}</Avatar>
+                      ) : undefined}
+                    </Box>
                     <div>
-                      <small>Serial: {mat.serial}</small>
+                      <small>Face: {mats[0].location.face ?? mats[0].action.loadOntoFace ?? ""}</small>
                     </div>
-                  ) : undefined}
-                  <Box sx={{ marginBottom: "0.2em" }}>
-                    <small>{materialAction(mat)}</small>
-                  </Box>
+                    {LazySeq.of(mats).collect((mat) =>
+                      mat.serial ? (
+                        <div key={mat.materialID}>
+                          <small>Serial: {mat.serial}</small>
+                        </div>
+                      ) : undefined
+                    )}
+                    <div>
+                      <small>{materialAction(mats[0])}</small>
+                    </div>
+                  </Stack>
                 </Collapse>
               </Box>
             </Box>
           </Collapse>
         </ButtonBase>
       </Paper>
+      <Menu
+        anchorEl={btnRef.current}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "left" }}
+      >
+        {LazySeq.of(mats).collect((mat) =>
+          mat.serial ? (
+            <MenuItem
+              onClick={() => {
+                setMenuOpen(false);
+                setMatToShow({ type: "MatDetails", details: mat });
+              }}
+            >
+              {mat.serial}
+            </MenuItem>
+          ) : undefined
+        )}
+      </Menu>
     </Box>
   );
 }
 
-function Machine() {
-  const curSt = useRecoilValue(currentStatus);
+const materialByPallet = selector<ReadonlyMap<string, ReadonlyArray<Readonly<IInProcessMaterial>>>>({
+  key: "overview-materialByPallet",
+  get: ({ get }) => {
+    const st = get(currentStatus);
+    return LazySeq.of(st.material)
+      .filter((m) => m.location.type === LocType.OnPallet || m.action.type === ActionType.Loading)
+      .toRLookup((m) => m.location.pallet ?? m.action.loadOntoPallet ?? "");
+  },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+});
 
-  const maxNumFaces = 2;
+const maxFacesOnPallet = selector<number>({
+  key: "overview-maxFacesOnPallet",
+  get: () => {
+    return 2;
+  },
+  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+});
 
-  // each material row has 5px above and 5px below for padding
-  const rowSize = CollapsedIconSize + 10;
-  // each material column is at least CollapsedIconSize * (maxNumFaces) for the icon + 8px * (maxNumFaces + 1) for the margins
-  const minColSize = CollapsedIconSize * maxNumFaces + 8 * (maxNumFaces + 1);
+function PalletFaces({ pallet, loadingOntoPallet }: { pallet: string; loadingOntoPallet?: boolean }) {
+  const mats = useRecoilValue(materialByPallet).get(pallet) ?? [];
+  const maxNumFaces = useRecoilValue(maxFacesOnPallet);
+
+  const byFace = loadingOntoPallet
+    ? LazySeq.of(mats)
+        .filter((m) => m.location.type !== LocType.OnPallet)
+        .orderedGroupBy((m) => m.action.loadOntoFace ?? 1)
+    : LazySeq.of(mats)
+        .filter((m) => m.location.type === LocType.OnPallet)
+        .orderedGroupBy((m) => m.location.face ?? 1);
 
   return (
     <Box
-      sx={{
-        display: "grid",
-        border: "1px solid black",
-        margin: "5px",
-        gridTemplateRows: `auto ${rowSize}px ${rowSize}px ${rowSize}px`,
-        gridTemplateColumns: `60px minmax(${minColSize}px, auto)`,
-        gridTemplateAreas: `"machname machname" "inboundpal inboundmat" "worktablepal worktablemat" "outboundpal outboundmat"`,
-      }}
+      display="grid"
+      gridTemplateRows={`${CollapsedIconSize}px`}
+      gridTemplateColumns={`repeat(${maxNumFaces}, ${CollapsedIconSize}px)`}
+      columnGap="5px"
+      height="100%"
+      alignContent="center"
+      justifyContent="center"
     >
-      <Typography
-        variant="h5"
-        sx={{
-          gridArea: "machname",
-          padding: "0.2em",
-          borderBottom: "1px solid black",
-        }}
-      >
+      {byFace.map(([face, mats]) => (
+        <Box key={face} gridColumn={face} gridRow={1}>
+          <MaterialIcon mats={mats} />
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+function useGridTemplateColumns() {
+  const maxNumFaces = useRecoilValue(maxFacesOnPallet);
+  // each material column is at least CollapsedIconSize * (maxNumFaces) for the icon + 5px * (maxNumFaces + 1) for the columnGap in PalletFaces
+  const minColSize = CollapsedIconSize * maxNumFaces + 5 * (maxNumFaces + 1);
+
+  return `60px minmax(${minColSize}px, auto)`;
+}
+
+function Machine() {
+  const gridCols = useGridTemplateColumns();
+
+  return (
+    <Box
+      display="grid"
+      border="1px solid black"
+      margin="5px"
+      gridTemplateRows={`auto ${rowSize}px ${rowSize}px ${rowSize}px`}
+      gridTemplateColumns={gridCols}
+      gridTemplateAreas={`"machname machname" "inboundpal inboundmat" "worktablepal worktablemat" "outboundpal outboundmat"`}
+    >
+      <Typography variant="h5" gridArea="machname" padding="0.2em" borderBottom="1px solid black">
         Machine 3: Idle
       </Typography>
-      <Typography
-        variant="body1"
-        sx={{
-          gridArea: "inboundpal",
-          borderBottom: "1px solid black",
-          borderRight: "1px solid black",
-          padding: "2px",
-        }}
-      >
-        In
-      </Typography>
-      <Box sx={{ gridArea: "inboundmat", borderBottom: "1px solid black", paddingTop: "5px" }} />
-      <Typography
-        variant="body1"
-        sx={{
-          gridArea: "worktablepal",
-          borderBottom: "1px solid black",
-          borderRight: "1px solid black",
-          padding: "2px",
-        }}
-      >
-        Work
-      </Typography>
-      <Box
-        sx={{
-          gridArea: "worktablemat",
-          borderBottom: "1px solid black",
-          paddingTop: "5px",
-        }}
-      >
-        <Stack direction="row" spacing={1} marginLeft="8px" marginRight="8px">
-          <MaterialIcon mat={curSt.material[0]} />
+      <Box gridArea="inboundpal" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
+        <Stack>
+          <Typography variant="body1" textAlign="center">
+            In
+          </Typography>
+          <Typography variant="h6" textAlign="center">
+            5
+          </Typography>
         </Stack>
       </Box>
-      <Typography
-        variant="body1"
-        sx={{ gridArea: "outboundpal", borderRight: "1px solid black", padding: "2px" }}
-      >
-        Out
-      </Typography>
-      <Box sx={{ gridArea: "outboundmat", paddingTop: "5px" }} />
+      <Box gridArea="inboundmat" borderBottom="1px solid black" />
+      <Box gridArea="worktablepal" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
+        <Stack>
+          <Typography variant="body1" textAlign="center">
+            Work
+          </Typography>
+          <Typography variant="h6" textAlign="center">
+            4
+          </Typography>
+        </Stack>
+      </Box>
+      <Box gridArea="worktablemat" borderBottom="1px solid black">
+        <PalletFaces pallet="7" />
+      </Box>
+      <Box gridArea="outboundpal" borderRight="1px solid black" padding="2px">
+        <Stack>
+          <Typography variant="body1" textAlign="center">
+            Out
+          </Typography>
+          <Typography variant="h6" textAlign="center">
+            16
+          </Typography>
+        </Stack>
+      </Box>
+      <Box gridArea="outboundmat" />
     </Box>
   );
 }
 
 function LoadStation() {
-  const curSt = useRecoilValue(currentStatus);
-
-  const maxNumFaces = 2;
-
-  // each material row has 5px above and 5px below for padding
-  const rowSize = CollapsedIconSize + 10;
-  // each material column is at least CollapsedIconSize * (maxNumFaces) for the icon + 8px * (maxNumFaces + 1) for the margins
-  const minColSize = CollapsedIconSize * maxNumFaces + 8 * (maxNumFaces + 1);
+  const gridCols = useGridTemplateColumns();
 
   return (
     <Box
-      sx={{
-        display: "grid",
-        border: "1px solid black",
-        margin: "5px",
-        gridTemplateRows: `auto ${rowSize}px ${rowSize}px`,
-        gridTemplateColumns: `60px minmax(${minColSize}px, auto)`,
-        gridTemplateAreas: `"lulname lulname" "loadingpal loadingmat" "unloadingpal unloadingmat"`,
-      }}
+      display="grid"
+      border="1px solid black"
+      margin="5px"
+      gridTemplateRows={`auto ${rowSize}px ${rowSize}px`}
+      gridTemplateColumns={gridCols}
+      gridTemplateAreas={`"lulname lulname" "loading loadingmat" "currentpal currentmat"`}
     >
-      <Typography
-        variant="h5"
-        sx={{
-          gridArea: "lulname",
-          padding: "0.2em",
-          borderBottom: "1px solid black",
-        }}
-      >
+      <Typography variant="h5" gridArea="lulname" padding="0.2em" borderBottom="1px solid black">
         L/U 3: Idle
       </Typography>
-      <Typography
-        variant="body1"
-        sx={{
-          gridArea: "loadingpal",
-          borderBottom: "1px solid black",
-          borderRight: "1px solid black",
-          padding: "2px",
-        }}
-      >
-        Load
-      </Typography>
-      <Box sx={{ gridArea: "loadingmat", borderBottom: "1px solid black", paddingTop: "5px" }} />
-      <Typography
-        variant="body1"
-        sx={{
-          gridArea: "unloadingpal",
-          borderRight: "1px solid black",
-          padding: "2px",
-        }}
-      >
-        Unload
-      </Typography>
-      <Box
-        sx={{
-          gridArea: "unloadingmat",
-          paddingTop: "5px",
-        }}
-      >
-        <Stack direction="row" spacing={1} marginLeft="8px" marginRight="8px">
-          <MaterialIcon mat={curSt.material[0]} />
+      <Box gridArea="loading" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
+        <Stack>
+          <Typography variant="body1" textAlign="center">
+            To
+          </Typography>
+          <Typography variant="body1" textAlign="center">
+            Load
+          </Typography>
         </Stack>
       </Box>
+      <Box sx={{ gridArea: "loadingmat", borderBottom: "1px solid black" }} />
+      <Box gridArea="currentpal" borderRight="1px solid black" padding="2px">
+        <Stack>
+          <Typography variant="body1" textAlign="center">
+            Pallet
+          </Typography>
+          <Typography variant="h6" textAlign="center">
+            6
+          </Typography>
+        </Stack>
+      </Box>
+      <Box gridArea="currentmat"></Box>
     </Box>
   );
 }
@@ -242,7 +299,7 @@ export function SystemOverview() {
       <div>
         <div style={{ display: "flex", flexWrap: "wrap" }}>
           {curSt.material.map((m) => (
-            <MaterialIcon key={m.materialID} mat={m} />
+            <MaterialIcon key={m.materialID} mats={[m]} />
           ))}
         </div>
       </div>
