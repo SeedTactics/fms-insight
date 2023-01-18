@@ -125,6 +125,7 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
         {LazySeq.of(mats).collect((mat) =>
           mat.serial ? (
             <MenuItem
+              key={mat.materialID}
               onClick={() => {
                 setMenuOpen(false);
                 setMatToShow({ type: "MatDetails", details: mat });
@@ -194,7 +195,7 @@ function useGridTemplateColumns() {
   // each material column is at least CollapsedIconSize * (maxNumFaces) for the icon + 5px * (maxNumFaces + 1) for the columnGap in PalletFaces
   const minColSize = CollapsedIconSize * maxNumFaces + 5 * (maxNumFaces + 1);
 
-  return `60px minmax(${minColSize}px, auto)`;
+  return `60px ${Math.max(minColSize, 100)}px`;
 }
 
 function Machine() {
