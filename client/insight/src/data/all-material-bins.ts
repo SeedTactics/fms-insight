@@ -112,7 +112,6 @@ export type MaterialBin =
       readonly material: MaterialList;
     };
 
-// TODO: switch to recoil selector
 export function selectAllMaterialIntoBins(
   curSt: Readonly<api.ICurrentStatus>,
   curBinOrder: ReadonlyArray<MaterialBinId>
