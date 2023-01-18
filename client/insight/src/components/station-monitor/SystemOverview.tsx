@@ -34,14 +34,76 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Paper, ButtonBase, Box, Typography, Collapse, Stack, Avatar, Menu, MenuItem } from "@mui/material";
 import { materialAction, PartIdenticon } from "./Material.js";
-import { ActionType, IInProcessMaterial, LocType } from "../../network/api.js";
-import { selector, useRecoilValue } from "recoil";
+import {
+  ActionType,
+  IInProcessMaterial,
+  IPalletLocation,
+  IPalletStatus,
+  LocType,
+} from "../../network/api.js";
+import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
+import { ComparableObj, LazySeq } from "@seedtactics/immutable-collections";
 import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 
 const CollapsedIconSize = 45;
 const rowSize = CollapsedIconSize + 10; // each material row has 5px above and 5px below for padding
+
+type PalletAndMaterial = {
+  readonly pallet: Readonly<IPalletStatus>;
+  readonly mats: ReadonlyArray<Readonly<IInProcessMaterial>>;
+};
+
+type MachineStatus = {
+  readonly name: string;
+  readonly inbound: PalletAndMaterial | null;
+  readonly worktable: PalletAndMaterial | null;
+  readonly outbound: PalletAndMaterial | null;
+};
+
+type LoadStatus = {
+  readonly lulNum: number;
+  readonly pal: PalletAndMaterial | null;
+};
+
+type CellOverview = {
+  readonly machines: ReadonlyArray<MachineStatus>;
+  readonly loads: ReadonlyArray<LoadStatus>;
+  readonly stockerPals: ReadonlyArray<PalletAndMaterial>;
+  readonly maxNumFacesOnPallet: number;
+};
+
+class PalLoc implements ComparableObj {
+  constructor(public readonly loc: Readonly<IPalletLocation>) {}
+  compare(other: PalLoc): number {
+    return (
+      this.loc.loc.localeCompare(other.loc.loc) ||
+      this.loc.group.localeCompare(other.loc.group) ||
+      this.loc.num - other.loc.num
+    );
+  }
+}
+
+function useCellOverview(): CellOverview {
+  const currentSt = useRecoilValue(currentStatus);
+  //const jobs = useRecoilValue(last30Jobs);
+
+  const matByPal = LazySeq.of(currentSt.material)
+    .filter((m) => m.location.type === LocType.OnPallet || m.action.type === ActionType.Loading)
+    .toRLookup((m) => m.location.pallet ?? m.action.loadOntoPallet ?? "");
+
+  const palByLoc = LazySeq.ofObject(currentSt.pallets).toOrderedMap(([palName, pal]) => [
+    new PalLoc(pal.currentPalletLocation),
+    { pallet: pal, mats: matByPal.get(palName) ?? [] },
+  ]);
+
+  return {
+    machines: [],
+    loads: [],
+    stockerPals: palByLoc.valuesToAscLazySeq().toRArray(),
+    maxNumFacesOnPallet: 2,
+  };
+}
 
 function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMaterial>> }) {
   const [open, setOpen] = React.useState<boolean>(false);
@@ -140,34 +202,20 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
   );
 }
 
-const materialByPallet = selector<ReadonlyMap<string, ReadonlyArray<Readonly<IInProcessMaterial>>>>({
-  key: "overview-materialByPallet",
-  get: ({ get }) => {
-    const st = get(currentStatus);
-    return LazySeq.of(st.material)
-      .filter((m) => m.location.type === LocType.OnPallet || m.action.type === ActionType.Loading)
-      .toRLookup((m) => m.location.pallet ?? m.action.loadOntoPallet ?? "");
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-const maxFacesOnPallet = selector<number>({
-  key: "overview-maxFacesOnPallet",
-  get: () => {
-    return 2;
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-function PalletFaces({ pallet, loadingOntoPallet }: { pallet: string; loadingOntoPallet?: boolean }) {
-  const mats = useRecoilValue(materialByPallet).get(pallet) ?? [];
-  const maxNumFaces = useRecoilValue(maxFacesOnPallet);
-
+function PalletFaces({
+  maxNumFaces,
+  pallet,
+  loadingOntoPallet,
+}: {
+  maxNumFaces: number;
+  pallet: PalletAndMaterial;
+  loadingOntoPallet?: boolean;
+}) {
   const byFace = loadingOntoPallet
-    ? LazySeq.of(mats)
+    ? LazySeq.of(pallet.mats)
         .filter((m) => m.location.type !== LocType.OnPallet)
         .orderedGroupBy((m) => m.action.loadOntoFace ?? 1)
-    : LazySeq.of(mats)
+    : LazySeq.of(pallet.mats)
         .filter((m) => m.location.type === LocType.OnPallet)
         .orderedGroupBy((m) => m.location.face ?? 1);
 
@@ -190,82 +238,86 @@ function PalletFaces({ pallet, loadingOntoPallet }: { pallet: string; loadingOnt
   );
 }
 
-function useGridTemplateColumns() {
-  const maxNumFaces = useRecoilValue(maxFacesOnPallet);
+function gridTemplateColumns(maxNumFaces: number) {
   // each material column is at least CollapsedIconSize * (maxNumFaces) for the icon + 5px * (maxNumFaces + 1) for the columnGap in PalletFaces
-  const minColSize = CollapsedIconSize * maxNumFaces + 5 * (maxNumFaces + 1);
-
-  return `60px ${Math.max(minColSize, 100)}px`;
+  const colSize = CollapsedIconSize * maxNumFaces + 5 * (maxNumFaces + 1);
+  return `60px ${Math.max(colSize, 100)}px`;
 }
 
-function Machine() {
-  const gridCols = useGridTemplateColumns();
-
+function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: MachineStatus }) {
   return (
     <Box
       display="grid"
       border="1px solid black"
       margin="5px"
       gridTemplateRows={`auto ${rowSize}px ${rowSize}px ${rowSize}px`}
-      gridTemplateColumns={gridCols}
+      gridTemplateColumns={gridTemplateColumns(maxNumFaces)}
       gridTemplateAreas={`"machname machname" "inboundpal inboundmat" "worktablepal worktablemat" "outboundpal outboundmat"`}
     >
       <Typography variant="h5" gridArea="machname" padding="0.2em" borderBottom="1px solid black">
-        Machine 3: Idle
+        {machine.name}: Idle
       </Typography>
       <Box gridArea="inboundpal" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
         <Stack>
           <Typography variant="body1" textAlign="center">
             In
           </Typography>
-          <Typography variant="h6" textAlign="center">
-            5
-          </Typography>
+          {machine.inbound ? (
+            <Typography variant="h6" textAlign="center">
+              {machine.inbound.pallet.pallet}
+            </Typography>
+          ) : undefined}
         </Stack>
       </Box>
-      <Box gridArea="inboundmat" borderBottom="1px solid black" />
+      <Box gridArea="inboundmat" borderBottom="1px solid black">
+        {machine.inbound ? <PalletFaces pallet={machine.inbound} maxNumFaces={maxNumFaces} /> : undefined}
+      </Box>
       <Box gridArea="worktablepal" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
         <Stack>
           <Typography variant="body1" textAlign="center">
             Work
           </Typography>
-          <Typography variant="h6" textAlign="center">
-            4
-          </Typography>
+          {machine.worktable ? (
+            <Typography variant="h6" textAlign="center">
+              {machine.worktable.pallet.pallet}
+            </Typography>
+          ) : undefined}
         </Stack>
       </Box>
       <Box gridArea="worktablemat" borderBottom="1px solid black">
-        <PalletFaces pallet="7" />
+        {machine.worktable ? <PalletFaces pallet={machine.worktable} maxNumFaces={maxNumFaces} /> : undefined}
       </Box>
       <Box gridArea="outboundpal" borderRight="1px solid black" padding="2px">
         <Stack>
           <Typography variant="body1" textAlign="center">
             Out
           </Typography>
-          <Typography variant="h6" textAlign="center">
-            16
-          </Typography>
+          {machine.outbound ? (
+            <Typography variant="h6" textAlign="center">
+              {machine.outbound.pallet.pallet}
+            </Typography>
+          ) : undefined}
         </Stack>
       </Box>
-      <Box gridArea="outboundmat" />
+      <Box gridArea="outboundmat">
+        {machine.outbound ? <PalletFaces pallet={machine.outbound} maxNumFaces={maxNumFaces} /> : undefined}
+      </Box>
     </Box>
   );
 }
 
-function LoadStation() {
-  const gridCols = useGridTemplateColumns();
-
+function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadStatus }) {
   return (
     <Box
       display="grid"
       border="1px solid black"
       margin="5px"
       gridTemplateRows={`auto ${rowSize}px ${rowSize}px`}
-      gridTemplateColumns={gridCols}
+      gridTemplateColumns={gridTemplateColumns(maxNumFaces)}
       gridTemplateAreas={`"lulname lulname" "loading loadingmat" "currentpal currentmat"`}
     >
       <Typography variant="h5" gridArea="lulname" padding="0.2em" borderBottom="1px solid black">
-        L/U 3: Idle
+        L/U {load.lulNum}: Idle
       </Typography>
       <Box gridArea="loading" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
         <Stack>
@@ -277,54 +329,44 @@ function LoadStation() {
           </Typography>
         </Stack>
       </Box>
-      <Box sx={{ gridArea: "loadingmat", borderBottom: "1px solid black" }} />
+      <Box sx={{ gridArea: "loadingmat", borderBottom: "1px solid black" }}>
+        {load.pal ? <PalletFaces pallet={load.pal} maxNumFaces={maxNumFaces} loadingOntoPallet /> : undefined}
+      </Box>
       <Box gridArea="currentpal" borderRight="1px solid black" padding="2px">
         <Stack>
           <Typography variant="body1" textAlign="center">
             Pallet
           </Typography>
-          <Typography variant="h6" textAlign="center">
-            6
-          </Typography>
+          {load.pal ? (
+            <Typography variant="h6" textAlign="center">
+              {load.pal.pallet.pallet}
+            </Typography>
+          ) : undefined}
         </Stack>
       </Box>
-      <Box gridArea="currentmat"></Box>
+      <Box gridArea="currentmat">
+        {load.pal ? <PalletFaces pallet={load.pal} maxNumFaces={maxNumFaces} /> : undefined}
+      </Box>
     </Box>
   );
 }
 
 export function SystemOverview() {
-  const curSt = useRecoilValue(currentStatus);
+  const overview = useCellOverview();
   return (
     <div>
       <div>
-        <div style={{ display: "flex", flexWrap: "wrap" }}>
-          {curSt.material.map((m) => (
-            <MaterialIcon key={m.materialID} mats={[m]} />
-          ))}
-        </div>
-      </div>
-      <div style={{ marginTop: "4em" }}>
         <Box display="flex" flexWrap="wrap">
-          <Machine />
-          <Machine />
-          <Machine />
-          <Machine />
-          <Machine />
-          <Machine />
-          <Machine />
-          <Machine />
-          <Machine />
-          <Machine />
-          <Machine />
+          {overview.machines.map((machine) => (
+            <Machine key={machine.name} machine={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
+          ))}
         </Box>
       </div>
-      <div style={{ marginTop: "4em" }}>
+      <div>
         <Box display="flex" flexWrap="wrap">
-          <LoadStation />
-          <LoadStation />
-          <LoadStation />
-          <LoadStation />
+          {overview.loads.map((machine) => (
+            <LoadStation key={machine.lulNum} load={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
+          ))}
         </Box>
       </div>
     </div>
