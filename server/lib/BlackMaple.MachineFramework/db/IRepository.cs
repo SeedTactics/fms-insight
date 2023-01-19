@@ -392,6 +392,7 @@ namespace BlackMaple.MachineFramework
     );
     List<PendingLoad> PendingLoads(string pallet);
     List<PendingLoad> AllPendingLoads();
+    void CancelPendingLoads(string foreignID);
     void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID);
     void CompletePalletCycle(
       string pal,
