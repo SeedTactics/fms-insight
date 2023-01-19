@@ -143,10 +143,10 @@ function useScales(
   });
 
   const actualPlannedScale = scaleBand({
-    domain: ["actual", "planned"],
+    domain: ["actual", "planned"] as ["actual", "planned"],
     range: [0, yScale.bandwidth()],
     padding: 0.1,
-  }) as PickD3Scale<"band", number, "actual" | "planned">;
+  });
 
   return { xScale, yScale, actualPlannedScale };
 }
