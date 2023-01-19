@@ -39,6 +39,7 @@ namespace MazakMachineInterface
 {
   public enum LogCode
   {
+    // Codes are in section 9-8-8 "Log Message Screen" of the Mazak operations Manual
     MachineCycleStart = 441,
     MachineCycleEnd = 442,
 

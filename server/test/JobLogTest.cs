@@ -4680,6 +4680,80 @@ namespace MachineWatchTest
           }
         );
 
+      _jobLog.AddPendingLoad(
+        "pal1",
+        "key3",
+        7,
+        TimeSpan.FromMinutes(244),
+        TimeSpan.FromMinutes(249),
+        "extraforID"
+      );
+
+      _jobLog
+        .AllPendingLoads()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new PendingLoad()
+            {
+              Pallet = "pal1",
+              Key = "key1",
+              LoadStation = 5,
+              Elapsed = TimeSpan.FromMinutes(32),
+              ForeignID = "for1",
+              ActiveOperationTime = TimeSpan.FromMinutes(38)
+            },
+            new PendingLoad()
+            {
+              Pallet = "pal1",
+              Key = "key2",
+              LoadStation = 7,
+              Elapsed = TimeSpan.FromMinutes(44),
+              ForeignID = "for2",
+              ActiveOperationTime = TimeSpan.FromMinutes(49)
+            },
+            new PendingLoad()
+            {
+              Pallet = "pal1",
+              Key = "key3",
+              LoadStation = 7,
+              Elapsed = TimeSpan.FromMinutes(244),
+              ForeignID = "extraforID",
+              ActiveOperationTime = TimeSpan.FromMinutes(249)
+            }
+          }
+        );
+
+      _jobLog.CancelPendingLoads("extraforID");
+
+      _jobLog
+        .AllPendingLoads()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new PendingLoad()
+            {
+              Pallet = "pal1",
+              Key = "key1",
+              LoadStation = 5,
+              Elapsed = TimeSpan.FromMinutes(32),
+              ForeignID = "for1",
+              ActiveOperationTime = TimeSpan.FromMinutes(38)
+            },
+            new PendingLoad()
+            {
+              Pallet = "pal1",
+              Key = "key2",
+              LoadStation = 7,
+              Elapsed = TimeSpan.FromMinutes(44),
+              ForeignID = "for2",
+              ActiveOperationTime = TimeSpan.FromMinutes(49)
+            }
+          }
+        );
+
       var mat = new Dictionary<string, IEnumerable<EventLogMaterial>>();
 
       var palCycle = new LogEntry(

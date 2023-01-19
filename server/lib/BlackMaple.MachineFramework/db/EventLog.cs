@@ -3722,6 +3722,19 @@ namespace BlackMaple.MachineFramework
       return ret;
     }
 
+    public void CancelPendingLoads(string foreignID)
+    {
+      lock (_cfg)
+      {
+        using var trans = _connection.BeginTransaction();
+        using var cmd = _connection.CreateCommand();
+        cmd.CommandText = "DELETE FROM pendingloads WHERE ForeignID = $fid";
+        cmd.Parameters.Add("fid", SqliteType.Text).Value = foreignID;
+        cmd.ExecuteNonQuery();
+        trans.Commit();
+      }
+    }
+
     public List<PendingLoad> AllPendingLoads()
     {
       var ret = new List<PendingLoad>();

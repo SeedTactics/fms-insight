@@ -579,178 +579,197 @@ namespace MazakMachineInterface
 
       foreach (var p in pending)
       {
-        Log.Debug("Processing pending load {@pending}", p);
-        var s = p.Key.Split(',');
-        if (s.Length != 3)
-          continue;
-
-        string fullPartName = s[0];
-        string jobPartName = MazakPart.ExtractPartNameFromMazakPartName(fullPartName);
-
-        int proc;
-        int fixQty;
-        if (!int.TryParse(s[1], out proc))
-          proc = 1;
-        if (!int.TryParse(s[2], out fixQty))
-          fixQty = 1;
-
-        _mazakSchedules.FindSchedule(fullPartName, proc, out string unique, out int path, out int numProc);
-
-        Job job = GetJob(unique);
-        if (job == null)
+        try
         {
-          Log.Warning("Unable to find job for pending load {@pending} with unique {@uniq}", p, unique);
-          unique = "";
-          path = 1;
-        }
+          Log.Debug("Processing pending load {@pending}", p);
+          var s = p.Key.Split(',');
+          if (s.Length != 3)
+            continue;
 
-        var mats = new List<EventLogMaterial>();
-        if (job != null && !string.IsNullOrEmpty(job.Processes[proc - 1].Paths[path - 1].InputQueue))
-        {
-          var info = job.Processes[proc - 1].Paths[path - 1];
-          // search input queue for material
-          Log.Debug("Searching queue {queue} for {unique}-{proc} to load", info.InputQueue, unique, proc);
+          string fullPartName = s[0];
+          string jobPartName = MazakPart.ExtractPartNameFromMazakPartName(fullPartName);
 
-          var qs = MazakQueues.QueuedMaterialForLoading(
-            job.UniqueStr,
-            _log.GetMaterialInQueueByUnique(info.InputQueue, job.UniqueStr),
-            proc,
-            path,
-            _log
-          );
+          Log.Debug("Extracted {jobPartName} from {fullPartName}", jobPartName, fullPartName);
 
-          for (int i = 1; i <= fixQty; i++)
-          {
-            string face;
-            if (fixQty == 1)
-            {
-              face = proc.ToString();
-            }
-            else
-            {
-              face = proc.ToString() + "-" + i.ToString();
-            }
-            if (i <= qs.Count)
-            {
-              var qmat = qs[i - 1];
-              mats.Add(
-                new EventLogMaterial()
-                {
-                  MaterialID = qmat.MaterialID,
-                  Process = proc,
-                  Face = face
-                }
-              );
-            }
-            else
-            {
-              // not enough material in queue
-              Log.Warning(
-                "Not enough material in queue {queue} for {part}-{proc}, creating new material for {@pending}",
-                info.InputQueue,
-                fullPartName,
-                proc,
-                p
-              );
-              mats.Add(
-                new EventLogMaterial()
-                {
-                  MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
-                  Process = proc,
-                  Face = face
-                }
-              );
-            }
-          }
-        }
-        else if (proc == 1)
-        {
-          // create new material
-          Log.Debug("Creating new material for unique {unique} process 1", unique);
-          for (int i = 1; i <= fixQty; i += 1)
-          {
-            string face;
-            if (fixQty == 1)
-              face = proc.ToString();
-            else
-              face = proc.ToString() + "-" + i.ToString();
+          int proc;
+          int fixQty;
+          if (!int.TryParse(s[1], out proc))
+            proc = 1;
+          if (!int.TryParse(s[2], out fixQty))
+            fixQty = 1;
 
-            mats.Add(
-              new EventLogMaterial()
-              {
-                MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
-                Process = proc,
-                Face = face
-              }
-            );
-          }
-        }
-        else
-        {
-          // search on pallet in the previous process for material
           Log.Debug(
-            "Searching on pallet for unique {unique} process {proc} to load into process {proc}",
-            unique,
-            proc - 1,
-            proc
+            "Searching for schedule for {fullPartName}-{proc} and {fixQty}",
+            fullPartName,
+            proc,
+            fixQty
           );
-          var byFace = ParseMaterialFromPreviousEvents(
-            jobPartName: jobPartName,
-            proc: proc - 1,
-            fixQty: fixQty,
-            isUnloadEnd: false,
-            oldEvents: cycle
-          );
-          for (int i = 1; i <= fixQty; i += 1)
-          {
-            string prevFace;
-            string nextFace;
-            if (fixQty == 1)
-            {
-              prevFace = (proc - 1).ToString();
-              nextFace = proc.ToString();
-            }
-            else
-            {
-              prevFace = (proc - 1).ToString() + "-" + i.ToString();
-              nextFace = proc.ToString() + "-" + i.ToString();
-            }
 
-            if (byFace.ContainsKey(prevFace))
+          _mazakSchedules.FindSchedule(fullPartName, proc, out string unique, out int path, out int numProc);
+
+          Log.Debug("Found job {unique} with path {path} and {numProc}", unique, path, numProc);
+
+          Job job = string.IsNullOrEmpty(unique) ? null : GetJob(unique);
+          if (job == null)
+          {
+            Log.Warning("Unable to find job for pending load {@pending} with unique {@uniq}", p, unique);
+            unique = "";
+            path = 1;
+          }
+
+          var mats = new List<EventLogMaterial>();
+          if (job != null && !string.IsNullOrEmpty(job.Processes[proc - 1].Paths[path - 1].InputQueue))
+          {
+            var info = job.Processes[proc - 1].Paths[path - 1];
+            // search input queue for material
+            Log.Debug("Searching queue {queue} for {unique}-{proc} to load", info.InputQueue, unique, proc);
+
+            var qs = MazakQueues.QueuedMaterialForLoading(
+              job.UniqueStr,
+              _log.GetMaterialInQueueByUnique(info.InputQueue, job.UniqueStr),
+              proc,
+              path,
+              _log
+            );
+
+            for (int i = 1; i <= fixQty; i++)
             {
-              var old = byFace[prevFace];
-              mats.Add(
-                new EventLogMaterial()
-                {
-                  MaterialID = old.MaterialID,
-                  Process = proc,
-                  Face = nextFace
-                }
-              );
+              string face;
+              if (fixQty == 1)
+              {
+                face = proc.ToString();
+              }
+              else
+              {
+                face = proc.ToString() + "-" + i.ToString();
+              }
+              if (i <= qs.Count)
+              {
+                var qmat = qs[i - 1];
+                mats.Add(
+                  new EventLogMaterial()
+                  {
+                    MaterialID = qmat.MaterialID,
+                    Process = proc,
+                    Face = face
+                  }
+                );
+              }
+              else
+              {
+                // not enough material in queue
+                Log.Warning(
+                  "Not enough material in queue {queue} for {part}-{proc}, creating new material for {@pending}",
+                  info.InputQueue,
+                  fullPartName,
+                  proc,
+                  p
+                );
+                mats.Add(
+                  new EventLogMaterial()
+                  {
+                    MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
+                    Process = proc,
+                    Face = face
+                  }
+                );
+              }
             }
-            else
+          }
+          else if (proc == 1)
+          {
+            // create new material
+            Log.Debug("Creating new material for unique {unique} process 1", unique);
+            for (int i = 1; i <= fixQty; i += 1)
             {
-              //something went wrong, must create material
+              string face;
+              if (fixQty == 1)
+                face = proc.ToString();
+              else
+                face = proc.ToString() + "-" + i.ToString();
+
               mats.Add(
                 new EventLogMaterial()
                 {
                   MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
                   Process = proc,
-                  Face = nextFace
+                  Face = face
                 }
-              );
-
-              Log.Warning(
-                "Could not find material on pallet {pallet} for previous process {proc}, creating new material for {@pending}",
-                pallet,
-                proc - 1,
-                p
               );
             }
           }
-        }
+          else
+          {
+            // search on pallet in the previous process for material
+            Log.Debug(
+              "Searching on pallet for unique {unique} process {proc} to load into process {proc}",
+              unique,
+              proc - 1,
+              proc
+            );
+            var byFace = ParseMaterialFromPreviousEvents(
+              jobPartName: jobPartName,
+              proc: proc - 1,
+              fixQty: fixQty,
+              isUnloadEnd: false,
+              oldEvents: cycle
+            );
+            for (int i = 1; i <= fixQty; i += 1)
+            {
+              string prevFace;
+              string nextFace;
+              if (fixQty == 1)
+              {
+                prevFace = (proc - 1).ToString();
+                nextFace = proc.ToString();
+              }
+              else
+              {
+                prevFace = (proc - 1).ToString() + "-" + i.ToString();
+                nextFace = proc.ToString() + "-" + i.ToString();
+              }
 
-        mat[p.Key] = mats;
+              if (byFace.ContainsKey(prevFace))
+              {
+                var old = byFace[prevFace];
+                mats.Add(
+                  new EventLogMaterial()
+                  {
+                    MaterialID = old.MaterialID,
+                    Process = proc,
+                    Face = nextFace
+                  }
+                );
+              }
+              else
+              {
+                //something went wrong, must create material
+                mats.Add(
+                  new EventLogMaterial()
+                  {
+                    MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
+                    Process = proc,
+                    Face = nextFace
+                  }
+                );
+
+                Log.Warning(
+                  "Could not find material on pallet {pallet} for previous process {proc}, creating new material for {@pending}",
+                  pallet,
+                  proc - 1,
+                  p
+                );
+              }
+            }
+          }
+
+          mat[p.Key] = mats;
+        }
+        catch (Exception ex)
+        {
+          Log.Error(ex, "Error processing pending load {@pending}", p);
+          _log.CancelPendingLoads(p.ForeignID);
+        }
       }
 
       _log.CompletePalletCycle(pallet.ToString(), t, foreignID, mat, generateSerials: true);
