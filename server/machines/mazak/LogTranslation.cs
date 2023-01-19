@@ -589,21 +589,12 @@ namespace MazakMachineInterface
           string fullPartName = s[0];
           string jobPartName = MazakPart.ExtractPartNameFromMazakPartName(fullPartName);
 
-          Log.Debug("Extracted {jobPartName} from {fullPartName}", jobPartName, fullPartName);
-
           int proc;
           int fixQty;
           if (!int.TryParse(s[1], out proc))
             proc = 1;
           if (!int.TryParse(s[2], out fixQty))
             fixQty = 1;
-
-          Log.Debug(
-            "Searching for schedule for {fullPartName}-{proc} and {fixQty}",
-            fullPartName,
-            proc,
-            fixQty
-          );
 
           _mazakSchedules.FindSchedule(fullPartName, proc, out string unique, out int path, out int numProc);
 
