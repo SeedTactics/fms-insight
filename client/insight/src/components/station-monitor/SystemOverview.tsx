@@ -543,9 +543,10 @@ function LoadStationLabel({ load }: { load: LoadStatus }) {
   );
   const [status] = useRemainingTime(mat?.action?.elapsedLoadUnloadTime, null);
   return (
-    <Typography variant="h5">
-      L/U {load.lulNum}: {status}
-    </Typography>
+    <Box display="flex" justifyContent="space-between" alignItems="baseline">
+      <Typography variant="h5">L/U {load.lulNum}</Typography>
+      <Typography variant="body1">{status}</Typography>
+    </Box>
   );
 }
 
