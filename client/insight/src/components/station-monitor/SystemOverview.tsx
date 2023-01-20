@@ -57,7 +57,7 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { ComparableObj, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
-import { addDays } from "date-fns/esm";
+import { addDays } from "date-fns";
 import { durationToSeconds } from "../../util/parseISODuration.js";
 
 const CollapsedIconSize = 45;
@@ -401,6 +401,20 @@ const secondsSinceEpochAtom = atom<number>({
   ],
 });
 
+function formatSeconds(totalSeconds: number): string {
+  const secs = Math.abs(totalSeconds) % 60;
+  const totalMins = Math.floor(Math.abs(totalSeconds) / 60);
+  const mins = totalMins % 60;
+  const hours = Math.floor(totalMins / 60);
+  if (hours > 0) {
+    return `${totalSeconds < 0 ? "-" : ""}${hours}:${mins.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
+  } else {
+    return `${totalSeconds < 0 ? "-" : ""}${mins}:${secs.toString().padStart(2, "0")}`;
+  }
+}
+
 function useRemainingTime(
   elapsedDurationFromCurSt: string | null | undefined,
   remainingDurationFromCurSt: string | null | undefined
@@ -408,56 +422,43 @@ function useRemainingTime(
   const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
   const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
 
-  if (!remainingDurationFromCurSt && !elapsedDurationFromCurSt) {
-    return ["Idle", null];
+  let remainingSecs: number | null = null;
+  if (remainingDurationFromCurSt) {
+    const remainingSecsInCurSt = durationToSeconds(remainingDurationFromCurSt);
+    remainingSecs = remainingSecsInCurSt - (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+  }
+
+  let elapsedSecs: number | null = null;
+  if (elapsedDurationFromCurSt) {
+    const elapsedSecsInCurSt = durationToSeconds(elapsedDurationFromCurSt);
+    elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+  }
+
+  if (remainingSecs !== null && elapsedSecs !== null) {
+    return [
+      `${formatSeconds(elapsedSecs)} / ${formatSeconds(remainingSecs)}`,
+      remainingSecs < 0 ? -1 : (elapsedSecs / (elapsedSecs + remainingSecs)) * 100,
+    ];
+  } else if (remainingSecs !== null) {
+    return [" / " + formatSeconds(remainingSecs), remainingSecs < 0 ? -1 : null];
+  } else if (elapsedSecs !== null) {
+    return [formatSeconds(elapsedSecs), null];
   } else {
-    let remaining: string | null = null;
-    let remainingSecs: number | null = null;
-    if (remainingDurationFromCurSt) {
-      const remainingSecsInCurSt = durationToSeconds(remainingDurationFromCurSt);
-      remainingSecs = remainingSecsInCurSt - (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
-      const remainingMins = Math.floor(Math.abs(remainingSecs) / 60);
-      const secs = Math.abs(remainingSecs) % 60;
-      remaining = `${remainingSecs < 0 ? "-" : ""}${remainingMins}:${secs.toString().padStart(2, "0")}`;
-    }
-
-    let elapsed: string | null = null;
-    let elapsedSecs: number | null = null;
-    if (elapsedDurationFromCurSt) {
-      const elapsedSecsInCurSt = durationToSeconds(elapsedDurationFromCurSt);
-      elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
-      const elapsedMins = Math.floor(Math.abs(elapsedSecs) / 60);
-      const secs = Math.abs(elapsedSecs) % 60;
-      elapsed = `${elapsedMins}:${secs.toString().padStart(2, "0")}`;
-    }
-
-    if (remaining && elapsed) {
-      return [
-        `${elapsed} / ${remaining}`,
-        elapsedSecs !== null && remainingSecs !== null
-          ? remainingSecs < 0
-            ? -1
-            : (elapsedSecs / (elapsedSecs + remainingSecs)) * 100
-          : null,
-      ];
-    } else {
-      return [elapsed ?? remaining ?? "", null];
-    }
+    return ["Idle", null];
   }
 }
 
 function MachineLabel({ machine }: { machine: MachineStatus }) {
-  const mat = machine.worktable?.mats?.[0];
-  const action = mat && mat.action.type === ActionType.Machining ? mat?.action : null;
+  const mat = machine.worktable?.mats?.find((m) => m.action.type === ActionType.Machining);
   const [status, elapsed] = useRemainingTime(
-    action?.elapsedMachiningTime,
-    action?.expectedRemainingMachiningTime
+    mat?.action?.elapsedMachiningTime,
+    mat?.action?.expectedRemainingMachiningTime
   );
   return (
     <div>
       <Typography variant="h5">{machine.name}</Typography>
       <Typography variant="subtitle1">{status}</Typography>
-      {action !== null ? (
+      {mat ? (
         elapsed === null ? (
           <LinearProgress />
         ) : elapsed < 0 ? (
@@ -533,15 +534,13 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
 }
 
 function LoadStationLabel({ load }: { load: LoadStatus }) {
-  const mat = load.pal?.mats?.[0];
-  const action =
-    mat &&
-    (mat.action.type === ActionType.Loading ||
-      mat.action.type === ActionType.UnloadToCompletedMaterial ||
-      mat.action.type === ActionType.UnloadToInProcess)
-      ? mat?.action
-      : null;
-  const [status] = useRemainingTime(action?.elapsedLoadUnloadTime, null);
+  const mat = load.pal?.mats?.find(
+    (m) =>
+      m.action.type === ActionType.Loading ||
+      m.action.type === ActionType.UnloadToCompletedMaterial ||
+      m.action.type === ActionType.UnloadToInProcess
+  );
+  const [status] = useRemainingTime(mat?.action?.elapsedLoadUnloadTime, null);
   return (
     <Typography variant="h5">
       L/U {load.lulNum}: {status}
