@@ -81,18 +81,11 @@ type LoadStatus = {
 };
 
 type CellOverview = {
-  readonly machines: ReadonlyArray<MachineStatus>;
+  readonly machines: OrderedMap<string, ReadonlyArray<MachineStatus>>;
   readonly loads: ReadonlyArray<LoadStatus>;
   readonly stockerPals: ReadonlyArray<PalletAndMaterial>;
   readonly maxNumFacesOnPallet: number;
 };
-
-class StatName implements ComparableObj {
-  constructor(public readonly group: string, public readonly num: number) {}
-  compare(other: StatName): number {
-    return this.group.localeCompare(other.group) || this.num - other.num;
-  }
-}
 
 class PalletNum implements ComparableObj {
   constructor(public readonly name: string) {}
@@ -119,54 +112,59 @@ function useCellOverview(): CellOverview {
       },
     ]);
 
-  let machines: OrderedMap<StatName, MachineStatus> = LazySeq.ofObject(currentSt.pallets)
+  let machines: OrderedMap<string, OrderedMap<number, MachineStatus>> = LazySeq.ofObject(currentSt.pallets)
     .filter(
       ([, p]) =>
         p.currentPalletLocation.loc === PalletLocationEnum.Machine ||
         p.currentPalletLocation.loc === PalletLocationEnum.MachineQueue
     )
-    .toOrderedLookup(
-      ([_, p]) => new StatName(p.currentPalletLocation.group, p.currentPalletLocation.num),
-      ([_, p]) => p
+    .map(([_, p]) => p)
+    .groupBy(
+      (p) => p.currentPalletLocation.group,
+      (p) => p.currentPalletLocation.num
     )
-    .mapValues((pals, stat) => {
-      const worktable = pals.find((p) => p.currentPalletLocation.loc === PalletLocationEnum.Machine);
-      const worktableMats = worktable ? matByPal.get(worktable.pallet) ?? [] : null;
-      const rotary = pals.find((p) => p.currentPalletLocation.loc === PalletLocationEnum.MachineQueue);
-      const rotaryMats = rotary ? matByPal.get(rotary.pallet) ?? [] : null;
+    .toLookupOrderedMap(
+      ([[statGroup, _statNum], _pals]) => statGroup,
+      ([[_statGroup, statNum], _pals]) => statNum,
+      ([[statGroup, statNum], pals]) => {
+        const worktable = pals.find((p) => p.currentPalletLocation.loc === PalletLocationEnum.Machine);
+        const worktableMats = worktable ? matByPal.get(worktable.pallet) ?? [] : null;
+        const rotary = pals.find((p) => p.currentPalletLocation.loc === PalletLocationEnum.MachineQueue);
+        const rotaryMats = rotary ? matByPal.get(rotary.pallet) ?? [] : null;
 
-      let isInbound = true;
-      const rotaryMat0 = rotaryMats?.[0];
-      if (
-        rotaryMat0 &&
-        rotaryMat0.lastCompletedMachiningRouteStopIndex !== null &&
-        rotaryMat0.lastCompletedMachiningRouteStopIndex !== undefined
-      ) {
-        const stop =
-          currentSt.jobs[rotaryMat0.jobUnique]?.procsAndPaths?.[rotaryMat0.process - 1]?.paths?.[
-            rotaryMat0.path - 1
-          ]?.stops?.[rotaryMat0.lastCompletedMachiningRouteStopIndex];
-        if (stop.stationGroup === stat.group && stop.stationNums.includes(stat.num)) {
-          isInbound = false;
+        let isInbound = true;
+        const rotaryMat0 = rotaryMats?.[0];
+        if (
+          rotaryMat0 &&
+          rotaryMat0.lastCompletedMachiningRouteStopIndex !== null &&
+          rotaryMat0.lastCompletedMachiningRouteStopIndex !== undefined
+        ) {
+          const stop =
+            currentSt.jobs[rotaryMat0.jobUnique]?.procsAndPaths?.[rotaryMat0.process - 1]?.paths?.[
+              rotaryMat0.path - 1
+            ]?.stops?.[rotaryMat0.lastCompletedMachiningRouteStopIndex];
+          if (stop.stationGroup === statGroup && stop.stationNums.includes(statNum)) {
+            isInbound = false;
+          }
+        }
+
+        if (isInbound) {
+          return {
+            name: statGroup + " " + statNum.toString(),
+            inbound: rotary ? { pallet: rotary, mats: rotaryMats ?? [] } : null,
+            worktable: worktable ? { pallet: worktable, mats: worktableMats ?? [] } : null,
+            outbound: null,
+          };
+        } else {
+          return {
+            name: statGroup + " " + statNum.toString(),
+            inbound: null,
+            worktable: worktable ? { pallet: worktable, mats: worktableMats ?? [] } : null,
+            outbound: rotary ? { pallet: rotary, mats: rotaryMats ?? [] } : null,
+          };
         }
       }
-
-      if (isInbound) {
-        return {
-          name: stat.group + " " + stat.num.toString(),
-          inbound: rotary ? { pallet: rotary, mats: rotaryMats ?? [] } : null,
-          worktable: worktable ? { pallet: worktable, mats: worktableMats ?? [] } : null,
-          outbound: null,
-        };
-      } else {
-        return {
-          name: stat.group + " " + stat.num.toString(),
-          inbound: null,
-          worktable: worktable ? { pallet: worktable, mats: worktableMats ?? [] } : null,
-          outbound: rotary ? { pallet: rotary, mats: rotaryMats ?? [] } : null,
-        };
-      }
-    });
+    );
 
   const stockerPals = LazySeq.ofObject(currentSt.pallets)
     .filter(
@@ -203,18 +201,21 @@ function useCellOverview(): CellOverview {
     }
 
     for (const stop of path.stops) {
-      for (const num of stop.stationNums) {
-        const s = new StatName(stop.stationGroup, num);
-        machines = machines.alter(s, (status) => {
-          if (status) return status;
-          return {
-            name: stop.stationGroup + " " + num.toString(),
-            inbound: null,
-            worktable: null,
-            outbound: null,
-          };
-        });
-      }
+      machines = machines.alter(stop.stationGroup, (stationStatuses) => {
+        stationStatuses = stationStatuses ?? OrderedMap.empty();
+        for (const num of stop.stationNums) {
+          stationStatuses = stationStatuses.alter(num, (status) => {
+            if (status) return status;
+            return {
+              name: stop.stationGroup + " " + num.toString(),
+              inbound: null,
+              worktable: null,
+              outbound: null,
+            };
+          });
+        }
+        return stationStatuses;
+      });
     }
   }
 
@@ -238,7 +239,7 @@ function useCellOverview(): CellOverview {
   }
 
   return {
-    machines: machines.valuesToAscLazySeq().toRArray(),
+    machines: machines.mapValues((group) => group.valuesToAscLazySeq().toRArray()),
     loads: loads.valuesToAscLazySeq().toRArray(),
     stockerPals: stockerPals.valuesToAscLazySeq().toRArray(),
     maxNumFacesOnPallet,
@@ -617,17 +618,19 @@ export function SystemOverview() {
   const overview = useCellOverview();
   return (
     <div>
-      <Box display="flex" flexWrap="wrap">
-        {overview.machines.map((machine) => (
-          <Machine key={machine.name} machine={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
-        ))}
-      </Box>
-      <Box display="flex" flexWrap="wrap">
+      {overview.machines.toAscLazySeq().map(([group, machines]) => (
+        <Box key={group} display="flex" flexWrap="wrap" justifyContent="space-evenly">
+          {machines.map((machine) => (
+            <Machine key={machine.name} machine={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
+          ))}
+        </Box>
+      ))}
+      <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
         {overview.loads.map((machine) => (
           <LoadStation key={machine.lulNum} load={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
         ))}
       </Box>
-      <Box display="flex" flexWrap="wrap">
+      <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
         {overview.stockerPals.map((pal) => (
           <StockerPallet key={pal.pallet.pallet} pallet={pal} maxNumFaces={overview.maxNumFacesOnPallet} />
         ))}
