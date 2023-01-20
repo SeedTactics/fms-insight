@@ -44,7 +44,7 @@ import {
   MenuItem,
   LinearProgress,
 } from "@mui/material";
-import { materialAction, PartIdenticon } from "./Material.js";
+import { InProcMaterial, materialAction, PartIdenticon } from "./Material.js";
 import {
   ActionType,
   IInProcessMaterial,
@@ -80,10 +80,20 @@ type LoadStatus = {
   readonly pal: PalletAndMaterial | null;
 };
 
+type MachineAtLoadStatus = {
+  readonly lulNum: number;
+  readonly machineMoving: boolean;
+  readonly machineCurrentlyAtLoad: { readonly group: string; readonly num: number } | null;
+  readonly readyMats: ReadonlyArray<Readonly<IInProcessMaterial>>;
+  readonly machiningMats: ReadonlyArray<Readonly<IInProcessMaterial>>;
+  readonly loadingMats: ReadonlyArray<Readonly<IInProcessMaterial>>;
+};
+
 type CellOverview = {
   readonly machines: OrderedMap<string, ReadonlyArray<MachineStatus>>;
   readonly loads: ReadonlyArray<LoadStatus>;
   readonly stockerPals: ReadonlyArray<PalletAndMaterial>;
+  readonly machineAtLoad: ReadonlyArray<MachineAtLoadStatus>;
   readonly maxNumFacesOnPallet: number;
 };
 
@@ -242,6 +252,16 @@ function useCellOverview(): CellOverview {
     machines: machines.mapValues((group) => group.valuesToAscLazySeq().toRArray()),
     loads: loads.valuesToAscLazySeq().toRArray(),
     stockerPals: stockerPals.valuesToAscLazySeq().toRArray(),
+    machineAtLoad: [
+      {
+        lulNum: 1,
+        machineMoving: false,
+        machineCurrentlyAtLoad: { group: "MC", num: 4 },
+        readyMats: [],
+        machiningMats: currentSt.material.length > 0 ? [currentSt.material[5]] : [],
+        loadingMats: [],
+      },
+    ],
     maxNumFacesOnPallet,
   };
 }
@@ -345,38 +365,50 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
 
 function PalletFaces({
   maxNumFaces,
-  pallet,
+  mats,
   loadingOntoPallet,
+  showExpanded,
 }: {
   maxNumFaces: number;
-  pallet: PalletAndMaterial;
+  mats: ReadonlyArray<Readonly<IInProcessMaterial>>;
   loadingOntoPallet?: boolean;
+  showExpanded?: boolean;
 }) {
-  const byFace = loadingOntoPallet
-    ? LazySeq.of(pallet.mats)
-        .filter((m) => m.location.type !== LocType.OnPallet)
-        .orderedGroupBy((m) => m.action.loadOntoFace ?? 1)
-    : LazySeq.of(pallet.mats)
-        .filter((m) => m.location.type === LocType.OnPallet)
-        .orderedGroupBy((m) => m.location.face ?? 1);
+  if (showExpanded && maxNumFaces === 1) {
+    return (
+      <Box display="flex" flexDirection="column" flexWrap="wrap">
+        {mats.map((mat) => (
+          <InProcMaterial key={mat.materialID} mat={mat} />
+        ))}
+      </Box>
+    );
+  } else {
+    const byFace = loadingOntoPallet
+      ? LazySeq.of(mats)
+          .filter((m) => m.location.type !== LocType.OnPallet)
+          .orderedGroupBy((m) => m.action.loadOntoFace ?? 1)
+      : LazySeq.of(mats)
+          .filter((m) => m.location.type === LocType.OnPallet)
+          .orderedGroupBy((m) => m.location.face ?? 1);
 
-  return (
-    <Box
-      display="grid"
-      gridTemplateRows={`${CollapsedIconSize}px`}
-      gridTemplateColumns={`repeat(${maxNumFaces}, ${CollapsedIconSize}px)`}
-      columnGap="5px"
-      height="100%"
-      alignContent="center"
-      justifyContent="center"
-    >
-      {byFace.map(([face, mats]) => (
-        <Box key={face} gridColumn={face} gridRow={1}>
-          <MaterialIcon mats={mats} />
-        </Box>
-      ))}
-    </Box>
-  );
+    return (
+      <Box
+        display="grid"
+        gridTemplateRows={`${CollapsedIconSize}px`}
+        gridTemplateColumns={`repeat(${maxNumFaces}, ${CollapsedIconSize}px)`}
+        columnGap="5px"
+        height="100%"
+        alignContent="center"
+        justifyContent="center"
+      >
+        {byFace.map(([face, mats]) => (
+          <Box key={face} gridColumn={face} gridRow={1}>
+            <MaterialIcon mats={mats} />
+          </Box>
+        ))}
+      </Box>
+    );
+  }
 }
 
 function gridTemplateColumns(maxNumFaces: number, includeLabelCol: boolean) {
@@ -498,7 +530,7 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
         </Stack>
       </Box>
       <Box gridArea="inboundmat" borderBottom="1px solid black">
-        {machine.inbound ? <PalletFaces pallet={machine.inbound} maxNumFaces={maxNumFaces} /> : undefined}
+        {machine.inbound ? <PalletFaces mats={machine.inbound.mats} maxNumFaces={maxNumFaces} /> : undefined}
       </Box>
       <Box gridArea="worktablepal" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
         <Stack>
@@ -513,7 +545,9 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
         </Stack>
       </Box>
       <Box gridArea="worktablemat" borderBottom="1px solid black">
-        {machine.worktable ? <PalletFaces pallet={machine.worktable} maxNumFaces={maxNumFaces} /> : undefined}
+        {machine.worktable ? (
+          <PalletFaces mats={machine.worktable.mats} maxNumFaces={maxNumFaces} />
+        ) : undefined}
       </Box>
       <Box gridArea="outboundpal" borderRight="1px solid black" padding="2px">
         <Stack>
@@ -528,7 +562,9 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
         </Stack>
       </Box>
       <Box gridArea="outboundmat">
-        {machine.outbound ? <PalletFaces pallet={machine.outbound} maxNumFaces={maxNumFaces} /> : undefined}
+        {machine.outbound ? (
+          <PalletFaces mats={machine.outbound.mats} maxNumFaces={maxNumFaces} />
+        ) : undefined}
       </Box>
     </Box>
   );
@@ -574,7 +610,9 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
         </Stack>
       </Box>
       <Box sx={{ gridArea: "loadingmat", borderBottom: "1px solid black" }}>
-        {load.pal ? <PalletFaces pallet={load.pal} maxNumFaces={maxNumFaces} loadingOntoPallet /> : undefined}
+        {load.pal ? (
+          <PalletFaces mats={load.pal.mats} maxNumFaces={maxNumFaces} loadingOntoPallet />
+        ) : undefined}
       </Box>
       <Box gridArea="currentpal" borderRight="1px solid black" padding="2px">
         <Stack>
@@ -589,7 +627,113 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
         </Stack>
       </Box>
       <Box gridArea="currentmat">
-        {load.pal ? <PalletFaces pallet={load.pal} maxNumFaces={maxNumFaces} /> : undefined}
+        {load.pal ? <PalletFaces mats={load.pal.mats} maxNumFaces={maxNumFaces} /> : undefined}
+      </Box>
+    </Box>
+  );
+}
+
+function MachineAtLoadLabel({ status }: { status: MachineAtLoadStatus }) {
+  const loadMat = status.loadingMats.find(
+    (m) =>
+      m.action.type === ActionType.Loading ||
+      m.action.type === ActionType.UnloadToCompletedMaterial ||
+      m.action.type === ActionType.UnloadToInProcess
+  );
+  const [lulStatus] = useRemainingTime(loadMat?.action?.elapsedLoadUnloadTime, null);
+
+  const machiningMat = status.machiningMats.find((m) => m.action.type === ActionType.Machining);
+  const [mcStatus, mcElapsed] = useRemainingTime(
+    machiningMat?.action?.elapsedMachiningTime,
+    machiningMat?.action?.expectedRemainingMachiningTime
+  );
+
+  return (
+    <div>
+      <Typography variant="h5">Station {status.lulNum}</Typography>
+      {status.machineCurrentlyAtLoad ? (
+        <>
+          <Typography variant="h5">
+            {status.machineCurrentlyAtLoad.group} {status.machineCurrentlyAtLoad.num}
+          </Typography>
+          <Typography variant="subtitle1">{mcStatus === "Idle" ? lulStatus : mcStatus}</Typography>
+          {machiningMat ? (
+            mcElapsed === null ? (
+              <LinearProgress />
+            ) : mcElapsed < 0 ? (
+              <LinearProgress color="error" />
+            ) : (
+              <LinearProgress variant="determinate" value={mcElapsed} />
+            )
+          ) : undefined}
+        </>
+      ) : (
+        <>
+          {status.machineMoving ? <Typography variant="subtitle2">Machine Moving</Typography> : undefined}
+          <Typography variant="subtitle1">Loading {lulStatus}</Typography>
+        </>
+      )}
+    </div>
+  );
+}
+
+function MachineAtLoad({ maxNumFaces, status }: { maxNumFaces: number; status: MachineAtLoadStatus }) {
+  return (
+    <Box
+      display="grid"
+      border="1px solid black"
+      margin="5px"
+      gridTemplateRows={`minmax(104px, max-content) repeat(3, ${
+        maxNumFaces > 1 ? rowSize.toString() + "px" : "minmax(110px, max-content)"
+      })`}
+      gridTemplateColumns={
+        maxNumFaces === 1 ? "60px minmax(230px, max-content)" : gridTemplateColumns(maxNumFaces, true)
+      }
+      gridTemplateAreas={`"name name" "ready readymat" "machining machiningmat" "loadstation loadstationmat"`}
+    >
+      <Box gridArea="name" padding="0.2em" borderBottom="1px solid black">
+        <MachineAtLoadLabel status={status} />
+      </Box>
+      <Box gridArea="ready" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
+        <Typography variant="body1" textAlign="center">
+          Ready
+        </Typography>
+      </Box>
+      <Box
+        gridArea="readymat"
+        borderBottom="1px solid black"
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+      >
+        <PalletFaces mats={status.readyMats} maxNumFaces={maxNumFaces} showExpanded />
+      </Box>
+      <Box gridArea="machining" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
+        <Typography variant="body1" textAlign="center">
+          Work
+        </Typography>
+      </Box>
+      <Box
+        gridArea="machiningmat"
+        borderBottom="1px solid black"
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+      >
+        <PalletFaces mats={status.machiningMats} maxNumFaces={maxNumFaces} showExpanded />
+      </Box>
+      <Box gridArea="loadstation" borderRight="1px solid black" padding="2px">
+        <Stack>
+          <Typography variant="body1" textAlign="center">
+            Load
+          </Typography>
+          <Typography variant="body1" textAlign="center">
+            Station
+          </Typography>
+        </Stack>
+      </Box>
+      <Box gridArea="loadstationmat" display="flex" flexDirection="column" justifyContent="center">
+        <PalletFaces mats={status.loadingMats} maxNumFaces={maxNumFaces} showExpanded />
       </Box>
     </Box>
   );
@@ -609,7 +753,7 @@ function StockerPallet({ maxNumFaces, pallet }: { maxNumFaces: number; pallet: P
         Pallet {pallet.pallet.pallet}
       </Typography>
       <Box gridArea="palmat">
-        <PalletFaces pallet={pallet} maxNumFaces={maxNumFaces} />
+        <PalletFaces mats={pallet.mats} maxNumFaces={maxNumFaces} />
       </Box>
     </Box>
   );
@@ -626,16 +770,27 @@ export function SystemOverview() {
           ))}
         </Box>
       ))}
-      <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
-        {overview.loads.map((machine) => (
-          <LoadStation key={machine.lulNum} load={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
-        ))}
-      </Box>
-      <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
-        {overview.stockerPals.map((pal) => (
-          <StockerPallet key={pal.pallet.pallet} pallet={pal} maxNumFaces={overview.maxNumFacesOnPallet} />
-        ))}
-      </Box>
+      {overview.loads.length > 0 ? (
+        <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
+          {overview.loads.map((machine) => (
+            <LoadStation key={machine.lulNum} load={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
+          ))}
+        </Box>
+      ) : undefined}
+      {overview.machineAtLoad.length > 0 ? (
+        <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
+          {overview.machineAtLoad.map((status) => (
+            <MachineAtLoad key={status.lulNum} status={status} maxNumFaces={overview.maxNumFacesOnPallet} />
+          ))}
+        </Box>
+      ) : undefined}
+      {overview.stockerPals.length > 0 ? (
+        <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
+          {overview.stockerPals.map((pal) => (
+            <StockerPallet key={pal.pallet.pallet} pallet={pal} maxNumFaces={overview.maxNumFacesOnPallet} />
+          ))}
+        </Box>
+      ) : undefined}
     </div>
   );
 }
