@@ -32,7 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Paper, ButtonBase, Box, Typography, Collapse, Stack, Avatar, Menu, MenuItem } from "@mui/material";
+import {
+  Paper,
+  ButtonBase,
+  Box,
+  Typography,
+  Collapse,
+  Stack,
+  Avatar,
+  Menu,
+  MenuItem,
+  LinearProgress,
+} from "@mui/material";
 import { materialAction, PartIdenticon } from "./Material.js";
 import {
   ActionType,
@@ -41,12 +52,13 @@ import {
   LocType,
   PalletLocationEnum,
 } from "../../network/api.js";
-import { useRecoilValue } from "recoil";
+import { atom, useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { ComparableObj, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { addDays } from "date-fns/esm";
+import { durationToSeconds } from "../../util/parseISODuration.js";
 
 const CollapsedIconSize = 45;
 const rowSize = CollapsedIconSize + 10; // each material row has 5px above and 5px below for padding
@@ -162,9 +174,15 @@ function useCellOverview(): CellOverview {
         p.currentPalletLocation.loc === PalletLocationEnum.Buffer ||
         p.currentPalletLocation.loc === PalletLocationEnum.Cart
     )
-    .toOrderedMap(([_, p]) => [new PalletNum(p.pallet), { pallet: p, mats: matByPal.get(p.pallet) ?? [] }]);
+    .collect(([_, p]) => {
+      const mats = matByPal.get(p.pallet);
+      if (!mats || mats.length === 0) return null;
+      return { pallet: p, mats };
+    })
+    .toOrderedMap((p) => [new PalletNum(p.pallet.pallet), p]);
 
   let maxLoadNum = 1;
+  let maxNumFacesOnPallet = 1;
   const cutoff = addDays(new Date(), -7);
 
   // now add empty locations
@@ -178,6 +196,10 @@ function useCellOverview(): CellOverview {
   for (const path of allPaths) {
     for (const lul of path.load.concat(path.unload)) {
       maxLoadNum = Math.max(maxLoadNum, lul);
+    }
+
+    if (path.face) {
+      maxNumFacesOnPallet = Math.max(maxNumFacesOnPallet, path.face);
     }
 
     for (const stop of path.stops) {
@@ -206,11 +228,20 @@ function useCellOverview(): CellOverview {
     });
   }
 
+  for (const pal of Object.values(currentSt.pallets)) {
+    maxNumFacesOnPallet = Math.max(maxNumFacesOnPallet, pal.numFaces);
+  }
+  for (const mat of currentSt.material) {
+    if (mat.location.face !== null && mat.location.face !== undefined) {
+      maxNumFacesOnPallet = Math.max(maxNumFacesOnPallet, mat.location.face);
+    }
+  }
+
   return {
     machines: machines.valuesToAscLazySeq().toRArray(),
     loads: loads.valuesToAscLazySeq().toRArray(),
     stockerPals: stockerPals.valuesToAscLazySeq().toRArray(),
-    maxNumFacesOnPallet: 2,
+    maxNumFacesOnPallet,
   };
 }
 
@@ -347,10 +378,96 @@ function PalletFaces({
   );
 }
 
-function gridTemplateColumns(maxNumFaces: number) {
+function gridTemplateColumns(maxNumFaces: number, includeLabelCol: boolean) {
   // each material column is at least CollapsedIconSize * (maxNumFaces) for the icon + 5px * (maxNumFaces + 1) for the columnGap in PalletFaces
   const colSize = CollapsedIconSize * maxNumFaces + 5 * (maxNumFaces + 1);
-  return `60px ${Math.max(colSize, 100)}px`;
+  if (includeLabelCol) {
+    return `60px ${Math.max(colSize, 100)}px`;
+  } else {
+    return `${Math.max(colSize, 100)}px`;
+  }
+}
+
+const secondsSinceEpochAtom = atom<number>({
+  key: "system-overview/seconds-since-epoch",
+  default: Math.floor(Date.now() / 1000),
+  effects: [
+    ({ setSelf }) => {
+      const interval = setInterval(() => {
+        setSelf(Math.floor(Date.now() / 1000));
+      }, 1000);
+      return () => clearInterval(interval);
+    },
+  ],
+});
+
+function useRemainingTime(
+  elapsedDurationFromCurSt: string | null | undefined,
+  remainingDurationFromCurSt: string | null | undefined
+): [string, number | null] {
+  const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
+  const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
+
+  if (!remainingDurationFromCurSt && !elapsedDurationFromCurSt) {
+    return ["Idle", null];
+  } else {
+    let remaining: string | null = null;
+    let remainingSecs: number | null = null;
+    if (remainingDurationFromCurSt) {
+      const remainingSecsInCurSt = durationToSeconds(remainingDurationFromCurSt);
+      remainingSecs = remainingSecsInCurSt - (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+      const remainingMins = Math.floor(Math.abs(remainingSecs) / 60);
+      const secs = Math.abs(remainingSecs) % 60;
+      remaining = `${remainingSecs < 0 ? "-" : ""}${remainingMins}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    let elapsed: string | null = null;
+    let elapsedSecs: number | null = null;
+    if (elapsedDurationFromCurSt) {
+      const elapsedSecsInCurSt = durationToSeconds(elapsedDurationFromCurSt);
+      elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+      const elapsedMins = Math.floor(Math.abs(elapsedSecs) / 60);
+      const secs = Math.abs(elapsedSecs) % 60;
+      elapsed = `${elapsedMins}:${secs.toString().padStart(2, "0")}`;
+    }
+
+    if (remaining && elapsed) {
+      return [
+        `${elapsed} / ${remaining}`,
+        elapsedSecs !== null && remainingSecs !== null
+          ? remainingSecs < 0
+            ? -1
+            : (elapsedSecs / (elapsedSecs + remainingSecs)) * 100
+          : null,
+      ];
+    } else {
+      return [elapsed ?? remaining ?? "", null];
+    }
+  }
+}
+
+function MachineLabel({ machine }: { machine: MachineStatus }) {
+  const mat = machine.worktable?.mats?.[0];
+  const action = mat && mat.action.type === ActionType.Machining ? mat?.action : null;
+  const [status, elapsed] = useRemainingTime(
+    action?.elapsedMachiningTime,
+    action?.expectedRemainingMachiningTime
+  );
+  return (
+    <div>
+      <Typography variant="h5">{machine.name}</Typography>
+      <Typography variant="subtitle1">{status}</Typography>
+      {action !== null ? (
+        elapsed === null ? (
+          <LinearProgress />
+        ) : elapsed < 0 ? (
+          <LinearProgress color="error" />
+        ) : (
+          <LinearProgress variant="determinate" value={elapsed} />
+        )
+      ) : undefined}
+    </div>
+  );
 }
 
 function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: MachineStatus }) {
@@ -360,12 +477,12 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
       border="1px solid black"
       margin="5px"
       gridTemplateRows={`auto ${rowSize}px ${rowSize}px ${rowSize}px`}
-      gridTemplateColumns={gridTemplateColumns(maxNumFaces)}
+      gridTemplateColumns={gridTemplateColumns(maxNumFaces, true)}
       gridTemplateAreas={`"machname machname" "inboundpal inboundmat" "worktablepal worktablemat" "outboundpal outboundmat"`}
     >
-      <Typography variant="h5" gridArea="machname" padding="0.2em" borderBottom="1px solid black">
-        {machine.name}: Idle
-      </Typography>
+      <Box gridArea="machname" padding="0.2em" borderBottom="1px solid black">
+        <MachineLabel machine={machine} />
+      </Box>
       <Box gridArea="inboundpal" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
         <Stack>
           <Typography variant="body1" textAlign="center">
@@ -415,6 +532,23 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
   );
 }
 
+function LoadStationLabel({ load }: { load: LoadStatus }) {
+  const mat = load.pal?.mats?.[0];
+  const action =
+    mat &&
+    (mat.action.type === ActionType.Loading ||
+      mat.action.type === ActionType.UnloadToCompletedMaterial ||
+      mat.action.type === ActionType.UnloadToInProcess)
+      ? mat?.action
+      : null;
+  const [status] = useRemainingTime(action?.elapsedLoadUnloadTime, null);
+  return (
+    <Typography variant="h5">
+      L/U {load.lulNum}: {status}
+    </Typography>
+  );
+}
+
 function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadStatus }) {
   return (
     <Box
@@ -422,12 +556,12 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
       border="1px solid black"
       margin="5px"
       gridTemplateRows={`auto ${rowSize}px ${rowSize}px`}
-      gridTemplateColumns={gridTemplateColumns(maxNumFaces)}
+      gridTemplateColumns={gridTemplateColumns(maxNumFaces, true)}
       gridTemplateAreas={`"lulname lulname" "loading loadingmat" "currentpal currentmat"`}
     >
-      <Typography variant="h5" gridArea="lulname" padding="0.2em" borderBottom="1px solid black">
-        L/U {load.lulNum}: Idle
-      </Typography>
+      <Box gridArea="lulname" padding="0.2em" borderBottom="1px solid black">
+        <LoadStationLabel load={load} />
+      </Box>
       <Box gridArea="loading" borderRight="1px solid black" borderBottom="1px solid black" padding="2px">
         <Stack>
           <Typography variant="body1" textAlign="center">
@@ -460,24 +594,45 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
   );
 }
 
+function StockerPallet({ maxNumFaces, pallet }: { maxNumFaces: number; pallet: PalletAndMaterial }) {
+  return (
+    <Box
+      display="grid"
+      border="1px solid black"
+      margin="5px"
+      gridTemplateRows={`auto ${rowSize}px`}
+      gridTemplateColumns={gridTemplateColumns(maxNumFaces, false)}
+      gridTemplateAreas={`"palname" "palmat"`}
+    >
+      <Typography variant="h5" gridArea="palname" padding="0.2em" borderBottom="1px solid black">
+        Pallet {pallet.pallet.pallet}
+      </Typography>
+      <Box gridArea="palmat">
+        <PalletFaces pallet={pallet} maxNumFaces={maxNumFaces} />
+      </Box>
+    </Box>
+  );
+}
+
 export function SystemOverview() {
   const overview = useCellOverview();
   return (
     <div>
-      <div>
-        <Box display="flex" flexWrap="wrap">
-          {overview.machines.map((machine) => (
-            <Machine key={machine.name} machine={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
-          ))}
-        </Box>
-      </div>
-      <div>
-        <Box display="flex" flexWrap="wrap">
-          {overview.loads.map((machine) => (
-            <LoadStation key={machine.lulNum} load={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
-          ))}
-        </Box>
-      </div>
+      <Box display="flex" flexWrap="wrap">
+        {overview.machines.map((machine) => (
+          <Machine key={machine.name} machine={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
+        ))}
+      </Box>
+      <Box display="flex" flexWrap="wrap">
+        {overview.loads.map((machine) => (
+          <LoadStation key={machine.lulNum} load={machine} maxNumFaces={overview.maxNumFacesOnPallet} />
+        ))}
+      </Box>
+      <Box display="flex" flexWrap="wrap">
+        {overview.stockerPals.map((pal) => (
+          <StockerPallet key={pal.pallet.pallet} pallet={pal} maxNumFaces={overview.maxNumFacesOnPallet} />
+        ))}
+      </Box>
     </div>
   );
 }
@@ -490,7 +645,7 @@ export function SystemOverviewPage() {
   return (
     <main
       style={{
-        padding: "24px",
+        padding: "10px",
         minHeight: "calc(100vh - 64px)",
         backgroundColor: "#EEEEEE",
       }}
