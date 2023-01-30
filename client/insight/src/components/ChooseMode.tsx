@@ -49,6 +49,7 @@ import {
   Info as InfoIcon,
   Opacity as OpacityIcon,
   Memory as MemoryIcon,
+  CalendarViewMonth,
 } from "@mui/icons-material";
 
 import { RouteState, RouteLocation } from "./routes.js";
@@ -101,6 +102,14 @@ export const defaultChooseModes: ReadonlyArray<ChooseModeItem> = [
     },
     icon: <BuildIcon />,
     label: "Tool Management",
+  },
+  {
+    type: "Link",
+    route: {
+      route: RouteLocation.Station_Overview,
+    },
+    icon: <CalendarViewMonth />,
+    label: "System Overview",
   },
   {
     type: "Subheader",

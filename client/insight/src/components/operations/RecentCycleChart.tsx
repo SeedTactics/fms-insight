@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { atom, selector, useRecoilValue, useSetRecoilState } from "recoil";
+import { atom, useRecoilValue, useSetRecoilState } from "recoil";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
@@ -59,20 +59,6 @@ const occupiedOutlierColor = red[700];
 const simColor = grey[400];
 const downtimeColor = grey[100];
 
-const recentCycleArr = selector<ReadonlyArray<RecentCycle>>({
-  key: "insight-recent-cycles-for-chart",
-  get: ({ get }) => {
-    const allCycles = get(last30StationCycles);
-    const estimated = get(last30EstimatedCycleTimes);
-    const cutoff = addHours(new Date(), -12);
-    return recentCycles(
-      allCycles.valuesToLazySeq().filter((e) => e.x >= cutoff),
-      estimated
-    );
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
 type SimCycle = {
   readonly station: string;
   readonly start: Date;
@@ -82,11 +68,10 @@ type SimCycle = {
   readonly parts: ReadonlyArray<string>;
 };
 
-const simCycles = selector<ReadonlyArray<SimCycle>>({
-  key: "insight-planned-cycles-for-chart",
-  get: ({ get }) => {
-    const jobs = get(last30Jobs);
-    const statUse = get(last30SimStationUse);
+function useSimCycles(): ReadonlyArray<SimCycle> {
+  const jobs = useRecoilValue(last30Jobs);
+  const statUse = useRecoilValue(last30SimStationUse);
+  return React.useMemo(() => {
     const cutoff = addHours(new Date(), -12);
     return LazySeq.of(statUse)
       .filter((s) => s.end >= cutoff)
@@ -106,18 +91,8 @@ const simCycles = selector<ReadonlyArray<SimCycle>>({
           .toRArray(),
       }))
       .toRArray();
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-const curCycles = selector<ReadonlyArray<CurrentCycle>>({
-  key: "insight-current-cycles-for-chart",
-  get: ({ get }) => {
-    const currentSt = get(currentStatus);
-    const estimated = get(last30EstimatedCycleTimes);
-    return currentCycles(currentSt, estimated);
-  },
-});
+  }, [jobs, statUse]);
+}
 
 interface TooltipData {
   readonly left: number;
@@ -168,10 +143,10 @@ function useScales(
   });
 
   const actualPlannedScale = scaleBand({
-    domain: ["actual", "planned"],
+    domain: ["actual", "planned"] as ["actual", "planned"],
     range: [0, yScale.bandwidth()],
     padding: 0.1,
-  }) as PickD3Scale<"band", number, "actual" | "planned">;
+  });
 
   return { xScale, yScale, actualPlannedScale };
 }
@@ -552,9 +527,22 @@ function NowLine({
 }
 
 export function RecentCycleChart({ height, width }: { height: number; width: number }) {
-  const cycles = useRecoilValue(recentCycleArr);
-  const sim = useRecoilValue(simCycles);
-  const current = useRecoilValue(curCycles);
+  const last30Cycles = useRecoilValue(last30StationCycles);
+  const estimated = useRecoilValue(last30EstimatedCycleTimes);
+  const sim = useSimCycles();
+  const currentSt = useRecoilValue(currentStatus);
+
+  const cycles = React.useMemo(() => {
+    const cutoff = addHours(new Date(), -12);
+    return recentCycles(
+      last30Cycles.valuesToLazySeq().filter((e) => e.x >= cutoff),
+      estimated
+    );
+  }, [last30Cycles, estimated]);
+
+  const current = React.useMemo(() => {
+    return currentCycles(currentSt, estimated);
+  }, [currentSt, estimated]);
 
   // ensure a re-render at least every 5 minutes, but reset the timer if the data changes
   const now = new Date();

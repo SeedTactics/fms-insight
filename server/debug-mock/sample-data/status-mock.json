@@ -1024,7 +1024,8 @@
         "Face": "2"
       },
       "Action": {
-        "Type": "UnloadToCompletedMaterial"
+        "Type": "UnloadToCompletedMaterial",
+        "ElapsedLoadUnloadTime": "PT3M10S"
       }
     },
     {
@@ -1045,7 +1046,8 @@
         "LoadOntoPallet": "1",
         "LoadOntoFace": 2,
         "ProcessAfterLoad": 2,
-        "PathAfterLoad": 1
+        "PathAfterLoad": 1,
+        "ElapsedLoadUnloadTime": "PT3M10S"
       }
     },
     {
@@ -1064,7 +1066,8 @@
         "LoadOntoPallet": "1",
         "LoadOntoFace": 1,
         "ProcessAfterLoad": 1,
-        "PathAfterLoad": 1
+        "PathAfterLoad": 1,
+        "ElapsedLoadUnloadTime": "PT3M10S"
       }
     },
     {
@@ -1152,7 +1155,8 @@
         "Face": "1"
       },
       "Action": {
-        "Type": "UnloadToCompletedMaterial"
+        "Type": "UnloadToCompletedMaterial",
+        "ElapsedLoadUnloadTime": "PT4M22S"
       }
     },
     {
@@ -1173,7 +1177,8 @@
         "LoadOntoPallet": "5",
         "LoadOntoFace": 1,
         "ProcessAfterLoad": 1,
-        "PathAfterLoad": 1
+        "PathAfterLoad": 1,
+        "ElapsedLoadUnloadTime": "PT4M22S"
       }
     },
     {
