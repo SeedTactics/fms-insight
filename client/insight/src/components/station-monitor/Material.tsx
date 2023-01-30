@@ -35,21 +35,26 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* eslint-disable react/display-name */
 import * as React from "react";
 import * as jdenticon from "jdenticon";
-import { Typography } from "@mui/material";
-import { ButtonBase } from "@mui/material";
-import { Button } from "@mui/material";
-import { Tooltip } from "@mui/material";
-import { Avatar } from "@mui/material";
-import { Paper } from "@mui/material";
-import { CircularProgress } from "@mui/material";
-import { TextField } from "@mui/material";
+import {
+  Typography,
+  Badge,
+  Box,
+  ButtonBase,
+  Button,
+  Tooltip,
+  Avatar,
+  Paper,
+  CircularProgress,
+  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+} from "@mui/material";
 import TimeAgo from "react-timeago";
-import { Dialog } from "@mui/material";
-import { DialogActions } from "@mui/material";
-import { DialogContent } from "@mui/material";
-import { DialogTitle } from "@mui/material";
 import { DragIndicator, Warning as WarningIcon, Search as SearchIcon } from "@mui/icons-material";
 import { useSortable } from "@dnd-kit/sortable";
+import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
@@ -59,7 +64,6 @@ import {
   MaterialSummaryAndCompletedData,
 } from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";
-import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 
 export class PartIdenticon extends React.PureComponent<{
@@ -220,9 +224,9 @@ const MatCard = React.forwardRef(function MatCard(
         </div>
       ) : undefined}
       <ButtonBase focusRipple onClick={() => setMatToShow({ type: "MatSummary", summary: props.mat })}>
-        <div style={{ display: "flex", textAlign: "left" }}>
+        <Box display="flex" textAlign="left">
           <PartIdenticon part={props.mat.partName} />
-          <div style={{ marginLeft: "8px", flexGrow: 1 }}>
+          <Box marginLeft="8px" flexGrow={1}>
             <Typography variant="h6">{props.mat.partName}</Typography>
             {props.displayJob ? (
               <div>
@@ -251,21 +255,17 @@ const MatCard = React.forwardRef(function MatCard(
               </div>
             )}
             {completedMsg}
-          </div>
-          <div
-            style={{
-              marginLeft: "4px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-            }}
+          </Box>
+          <Box
+            marginLeft="4px"
+            display="flex"
+            flexDirection="column"
+            justifyContent="space-between"
+            alignItems="flex-end"
           >
             {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (
               <div>
-                <Avatar style={{ width: "30px", height: "30px" }}>
-                  {props.mat.serial.substr(props.mat.serial.length - 1, 1)}
-                </Avatar>
+                <Avatar style={{ width: "30px", height: "30px" }}>{props.mat.serial.slice(-1)}</Avatar>
               </div>
             ) : undefined}
             {props.hideInspectionIcon || props.mat.signaledInspections.length === 0 ? undefined : (
@@ -275,8 +275,8 @@ const MatCard = React.forwardRef(function MatCard(
                 </Tooltip>
               </div>
             )}
-          </div>
-        </div>
+          </Box>
+        </Box>
       </ButtonBase>
     </Paper>
   );
@@ -382,39 +382,31 @@ export interface MultiMaterialProps {
 
 export const MultiMaterial = React.memo(function MultiMaterial(props: MultiMaterialProps) {
   return (
-    <Paper elevation={4} style={{ display: "flex", minWidth: "10em", padding: "8px", margin: "8px" }}>
-      <ButtonBase focusRipple onClick={() => props.onOpen()}>
-        <div style={{ display: "flex", textAlign: "left" }}>
-          <PartIdenticon part={props.partOrCasting} />
-          <div style={{ marginLeft: "8px", flexGrow: 1 }}>
-            <Typography variant="h6">{props.partOrCasting}</Typography>
-            <div>
-              <small>
-                {props.assignedJobUnique && props.assignedJobUnique !== ""
-                  ? "Assigned to " + props.assignedJobUnique
-                  : "Unassigned material"}
-              </small>
-            </div>
-          </div>
-          <div
-            style={{
-              marginLeft: "4px",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              alignItems: "flex-end",
-            }}
-          >
-            <div>
-              <Avatar style={{ width: "37px", height: "30px", backgroundColor: "#757575" }}>
-                {props.material.length > 100
-                  ? props.material.length.toString()
-                  : "x" + props.material.length.toString()}
-              </Avatar>
-            </div>
-          </div>
-        </div>
-      </ButtonBase>
+    <Paper elevation={4} sx={{ display: "flex", minWidth: "10em", padding: "8px", margin: "8px" }}>
+      <Badge badgeContent={props.material.length < 2 ? 0 : props.material.length} color="secondary">
+        <ButtonBase focusRipple onClick={() => props.onOpen()}>
+          <Box display="flex" textAlign="left">
+            <PartIdenticon part={props.partOrCasting} />
+            <Box marginLeft="8px" flexGrow={1}>
+              <Typography variant="h6">{props.partOrCasting}</Typography>
+              <div>
+                <small>
+                  {props.assignedJobUnique && props.assignedJobUnique !== ""
+                    ? "Assigned to " + props.assignedJobUnique
+                    : "Unassigned material"}
+                </small>
+              </div>
+            </Box>
+            {props.material.length > 0 && props.material[0].serial && props.material[0].serial.length >= 1 ? (
+              <div>
+                <Avatar style={{ width: "30px", height: "30px" }}>
+                  {props.material[0].serial.slice(-1)}
+                </Avatar>
+              </div>
+            ) : undefined}
+          </Box>
+        </ButtonBase>
+      </Badge>
     </Paper>
   );
 });
@@ -448,13 +440,13 @@ export const MaterialDetailTitle = React.memo(function MaterialDetailTitle({
   }
 
   return (
-    <div style={{ display: "flex", textAlign: "left" }}>
+    <Box display="flex" textAlign="left">
       {partName === "" ? <SearchIcon /> : <PartIdenticon part={partName} />}
-      <div style={{ marginLeft: "8px", flexGrow: 1 }}>
+      <Box marginLeft="8px" flexGrow={1}>
         <Typography variant="h6">{title}</Typography>
         {subtitle ? <Typography variant="caption">{subtitle}</Typography> : undefined}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 });
 
