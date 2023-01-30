@@ -39,6 +39,7 @@ using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework
 {
+  [DataContract]
   public sealed record MachineLocation
   {
     [DataMember(IsRequired = true)]
