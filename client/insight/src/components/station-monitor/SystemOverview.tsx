@@ -39,10 +39,10 @@ import {
   Typography,
   Collapse,
   Stack,
-  Avatar,
   Menu,
   MenuItem,
   LinearProgress,
+  Badge,
 } from "@mui/material";
 import { InProcMaterial, materialAction, PartIdenticon } from "./Material.js";
 import {
@@ -248,20 +248,64 @@ function useCellOverview(): CellOverview {
     }
   }
 
+  let machAtLoad = OrderedMap.empty<number, MachineAtLoadStatus>();
+  if (currentSt.machineLocations && currentSt.machineLocations.length > 0) {
+    for (const mach of currentSt.machineLocations) {
+      // remove machine status
+      machines = machines.alter(mach.machineGroup, (old) => {
+        if (!old || mach.machineNum === undefined) return old;
+        const n = old.delete(mach.machineNum);
+        if (n.size === 0) return undefined;
+        return n;
+      });
+
+      for (const lulNum of mach.possibleLoadStations) {
+        // remove and lookup old load status
+        let lul: LoadStatus | undefined;
+        loads = loads.alter(lulNum, (s) => {
+          lul = s;
+          return undefined;
+        });
+
+        const allMats = LazySeq.of(lul?.pal?.mats ?? []).toLookup((m) => {
+          if (m.action.type === ActionType.Machining) return "Machining";
+          if (m.action.type !== ActionType.Waiting) return "Loading";
+
+          if (
+            m.lastCompletedMachiningRouteStopIndex !== null &&
+            m.lastCompletedMachiningRouteStopIndex !== undefined
+          ) {
+            const stop =
+              currentSt.jobs[m.jobUnique]?.procsAndPaths?.[m.process - 1]?.paths?.[m.path - 1]?.stops?.[
+                m.lastCompletedMachiningRouteStopIndex
+              ];
+            if (stop.stationGroup === mach.machineGroup && stop.stationNums.includes(mach.machineNum)) {
+              return "Loading";
+            }
+          }
+          return "Ready";
+        });
+
+        const newStatus: MachineAtLoadStatus = {
+          lulNum,
+          machineMoving: mach.moving,
+          machineCurrentlyAtLoad:
+            lulNum === mach.currentLoadStation ? { group: mach.machineGroup, num: mach.machineNum } : null,
+          readyMats: allMats.get("Ready") ?? [],
+          machiningMats: allMats.get("Machining") ?? [],
+          loadingMats: allMats.get("Loading") ?? [],
+        };
+
+        machAtLoad = machAtLoad.set(lulNum, newStatus);
+      }
+    }
+  }
+
   return {
     machines: machines.mapValues((group) => group.valuesToAscLazySeq().toRArray()),
     loads: loads.valuesToAscLazySeq().toRArray(),
     stockerPals: stockerPals.valuesToAscLazySeq().toRArray(),
-    machineAtLoad: [
-      {
-        lulNum: 1,
-        machineMoving: false,
-        machineCurrentlyAtLoad: { group: "MC", num: 4 },
-        readyMats: [],
-        machiningMats: currentSt.material.length > 0 ? [currentSt.material[5]] : [],
-        loadingMats: [],
-      },
-    ],
+    machineAtLoad: machAtLoad.valuesToAscLazySeq().toRArray(),
     maxNumFacesOnPallet,
   };
 }
@@ -304,40 +348,37 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
         onPointerLeave={leave}
         sx={{ position: "relative", zIndex: open ? 10 : 0, width: "max-content", height: "max-content" }}
       >
-        <ButtonBase focusRipple onClick={click} ref={btnRef}>
-          <Collapse orientation="horizontal" in={open} collapsedSize={CollapsedIconSize}>
-            <Box display="flex">
-              <PartIdenticon part={mats[0].partName} size={CollapsedIconSize} />
-              <Box marginLeft="10px" marginRight="10px" whiteSpace="nowrap" textAlign="left">
-                <Collapse in={open} collapsedSize={CollapsedIconSize}>
-                  <Stack direction="column" marginBottom="0.2em">
-                    <Box display="flex" justifyContent="space-between" alignItems="baseline">
+        <Badge badgeContent={mats.length > 1 ? mats.length : 0} color="secondary">
+          <ButtonBase focusRipple onClick={click} ref={btnRef}>
+            <Collapse orientation="horizontal" in={open} collapsedSize={CollapsedIconSize}>
+              <Box display="flex">
+                <PartIdenticon part={mats[0].partName} size={CollapsedIconSize} />
+                <Box marginLeft="10px" marginRight="10px" whiteSpace="nowrap" textAlign="left">
+                  <Collapse in={open} collapsedSize={CollapsedIconSize}>
+                    <Stack direction="column" marginBottom="0.2em">
                       <Typography variant="h6">
                         {mats[0].partName}-{mats[0].process}
                       </Typography>
-                      {mats.length > 1 ? (
-                        <Avatar sx={{ width: "30px", height: "30px" }}>{mats.length}</Avatar>
-                      ) : undefined}
-                    </Box>
-                    <div>
-                      <small>Face: {mats[0].location.face ?? mats[0].action.loadOntoFace ?? ""}</small>
-                    </div>
-                    {LazySeq.of(mats).collect((mat) =>
-                      mat.serial ? (
-                        <div key={mat.materialID}>
-                          <small>Serial: {mat.serial}</small>
-                        </div>
-                      ) : undefined
-                    )}
-                    <div>
-                      <small>{materialAction(mats[0])}</small>
-                    </div>
-                  </Stack>
-                </Collapse>
+                      <div>
+                        <small>Face: {mats[0].location.face ?? mats[0].action.loadOntoFace ?? ""}</small>
+                      </div>
+                      {LazySeq.of(mats).collect((mat) =>
+                        mat.serial ? (
+                          <div key={mat.materialID}>
+                            <small>Serial: {mat.serial}</small>
+                          </div>
+                        ) : undefined
+                      )}
+                      <div>
+                        <small>{materialAction(mats[0])}</small>
+                      </div>
+                    </Stack>
+                  </Collapse>
+                </Box>
               </Box>
-            </Box>
-          </Collapse>
-        </ButtonBase>
+            </Collapse>
+          </ButtonBase>
+        </Badge>
       </Paper>
       <Menu
         anchorEl={btnRef.current}
