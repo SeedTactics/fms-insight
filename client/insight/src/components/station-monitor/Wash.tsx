@@ -48,13 +48,13 @@ import {
   materialDialogOpen,
   materialInDialogEvents,
   materialInDialogInfo,
-  useAddExistingMaterialToQueue,
   useCloseMaterialDialog,
   useCompleteWash,
 } from "../../cell-status/material-details.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { LogType } from "../../network/api.js";
 import { instructionUrl } from "../../network/backend.js";
+import { QuarantineMatButton } from "./QuarantineButton.js";
 
 function CompleteWashButton() {
   const fmsInfo = useRecoilValue(fmsInformation);
@@ -108,38 +108,6 @@ function CompleteWashButton() {
       </Button>
     );
   }
-}
-
-function QuarantineMatButton() {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const [addToQueue, addingToQueue] = useAddExistingMaterialToQueue();
-  const curMat = useRecoilValue(materialInDialogInfo);
-  const operator = useRecoilValue(currentOperator);
-  const closeMatDialog = useCloseMaterialDialog();
-
-  const quarantineQueue = fmsInfo.quarantineQueue ?? null;
-
-  if (!curMat || !quarantineQueue || quarantineQueue === "") return null;
-
-  return (
-    <Button
-      color="primary"
-      disabled={addingToQueue}
-      onClick={() => {
-        if (curMat) {
-          addToQueue({
-            materialId: curMat.materialID,
-            queue: quarantineQueue,
-            queuePosition: 0,
-            operator: operator,
-          });
-        }
-        closeMatDialog();
-      }}
-    >
-      Quarantine
-    </Button>
-  );
 }
 
 function InstrButton() {
@@ -226,14 +194,20 @@ export function Wash(): JSX.Element {
     <div data-testid="stationmonitor-wash" style={{ padding: "8px" }}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
-          <WhiteboardRegion label="Recently completed parts not yet washed" borderRight borderBottom>
+          <WhiteboardRegion
+            label="Recently Completed Parts Not Yet Washed"
+            borderTop
+            borderRight
+            borderLeft
+            borderBottom
+          >
             {unwashed.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
           </WhiteboardRegion>
         </Grid>
         <Grid item xs={12} md={6}>
-          <WhiteboardRegion label="Recently Washed Parts" borderLeft borderBottom>
+          <WhiteboardRegion label="Recently Washed Parts" borderTop borderRight borderLeft borderBottom>
             {washed.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
@@ -252,7 +226,7 @@ export default function WashPage(): JSX.Element {
   }, []);
 
   return (
-    <main>
+    <main style={{ backgroundColor: "#F8F8F8", minHeight: "calc(100vh - 64px)" }}>
       <Wash />
     </main>
   );

@@ -68,6 +68,7 @@ import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useIsDemo } from "../routes.js";
 import { PrintOnClientButton } from "./QueuesMatDialog.js";
+import { QuarantineMatButton } from "./QuarantineButton.js";
 
 function stationPalMaterialStatus(
   mat: Readonly<api.IInProcessMaterial>,
@@ -458,31 +459,6 @@ function PrintSerialButton({ loadNum }: { loadNum: number }) {
   }
 }
 
-function QuarantineButton() {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const [signalQuarantine, signalingQuarantine] = matDetails.useSignalForQuarantine();
-  const curMat = useRecoilValue(matDetails.materialInDialogInfo);
-  const operator = useRecoilValue(currentOperator);
-  const closeMatDialog = matDetails.useCloseMaterialDialog();
-
-  const quarantineQueue = fmsInfo.allowQuarantineAtLoadStation ? fmsInfo.quarantineQueue ?? null : null;
-
-  if (!curMat || !quarantineQueue || quarantineQueue === "") return null;
-
-  return (
-    <Button
-      color="primary"
-      disabled={signalingQuarantine}
-      onClick={() => {
-        signalQuarantine(curMat.materialID, quarantineQueue, operator);
-        closeMatDialog();
-      }}
-    >
-      Quarantine
-    </Button>
-  );
-}
-
 function SignalInspectionButton() {
   const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
   const curMat = useRecoilValue(matDetails.materialInDialogInfo);
@@ -505,7 +481,7 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
         <>
           <InstructionButton pallet={props.pallet} />
           <PrintSerialButton loadNum={props.loadNum} />
-          <QuarantineButton />
+          <QuarantineMatButton />
           <SignalInspectionButton />
           {fmsInfo.allowChangeWorkorderAtLoadStation ? (
             <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>

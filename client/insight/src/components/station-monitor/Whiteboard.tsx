@@ -54,6 +54,7 @@ import { reorderQueuedMatInCurrentStatus } from "../../cell-status/current-statu
 import { useRecoilConduit } from "../../util/recoil-util.js";
 import { useRecoilValue } from "recoil";
 import { currentOperator } from "../../data/operators.js";
+import { Box, Typography } from "@mui/material";
 
 export interface WhiteboardRegionProps {
   readonly children?: React.ReactNode;
@@ -61,6 +62,7 @@ export interface WhiteboardRegionProps {
   readonly spaceAround?: boolean;
   readonly flexStart?: boolean;
   readonly column?: boolean;
+  readonly borderTop?: boolean;
   readonly borderLeft?: boolean;
   readonly borderBottom?: boolean;
   readonly borderRight?: boolean;
@@ -75,28 +77,26 @@ export const WhiteboardRegion = React.memo(function WhiteboardRegion(props: Whit
     justifyContent = "flex-start";
   }
   return (
-    <div
-      style={{
-        width: "100%",
-        minHeight: "70px",
-        borderLeft: props.borderLeft ? "1px solid rgba(0,0,0,0.12)" : undefined,
-        borderBottom: props.borderBottom ? "1px solid rgba(0,0,0,0.12)" : undefined,
-        borderRight: props.borderRight ? "1px solid rgba(0,0,0,0.12)" : undefined,
-      }}
+    <Box
+      width="100%"
+      minHeight="134px"
+      borderTop={props.borderTop ? "1px solid black" : undefined}
+      borderLeft={props.borderLeft ? "1px solid black" : undefined}
+      borderBottom={props.borderBottom ? "1px solid black" : undefined}
+      borderRight={props.borderRight ? "1px solid black" : undefined}
     >
       {props.label !== "" || props.addMaterialButton ? (
-        <div style={{ display: "flex" }}>
-          <span
-            style={{
-              color: "rgba(0,0,0,0.5)",
-              fontSize: "small",
+        <Box display="flex" margin="4px">
+          <Typography
+            variant="h4"
+            sx={{
               flexGrow: 1,
             }}
           >
             {props.label}
-          </span>
+          </Typography>
           {props.addMaterialButton}
-        </div>
+        </Box>
       ) : undefined}
       {props.column ? (
         <div style={{ width: "100%" }}>{props.children}</div>
@@ -105,7 +105,7 @@ export const WhiteboardRegion = React.memo(function WhiteboardRegion(props: Whit
           {props.children}
         </div>
       )}
-    </div>
+    </Box>
   );
 });
 

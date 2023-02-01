@@ -2224,7 +2224,7 @@ export class FMSInfo implements IFMSInfo {
     usingLabelPrinterForSerials?: boolean;
     useClientPrinterForLabels?: boolean | undefined;
     quarantineQueue?: string | undefined;
-    allowQuarantineAtLoadStation?: boolean | undefined;
+    supportsQuarantineAtLoadStation?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     customStationMonitorDialogUrl?: string | undefined;
     requireScanAtWash?: boolean;
@@ -2259,7 +2259,7 @@ export class FMSInfo implements IFMSInfo {
             this.usingLabelPrinterForSerials = _data["UsingLabelPrinterForSerials"];
             this.useClientPrinterForLabels = _data["UseClientPrinterForLabels"];
             this.quarantineQueue = _data["QuarantineQueue"];
-            this.allowQuarantineAtLoadStation = _data["AllowQuarantineAtLoadStation"];
+            this.supportsQuarantineAtLoadStation = _data["SupportsQuarantineAtLoadStation"];
             this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
             this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
             this.requireScanAtWash = _data["RequireScanAtWash"];
@@ -2294,7 +2294,7 @@ export class FMSInfo implements IFMSInfo {
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
         data["UseClientPrinterForLabels"] = this.useClientPrinterForLabels;
         data["QuarantineQueue"] = this.quarantineQueue;
-        data["AllowQuarantineAtLoadStation"] = this.allowQuarantineAtLoadStation;
+        data["SupportsQuarantineAtLoadStation"] = this.supportsQuarantineAtLoadStation;
         data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
         data["RequireScanAtWash"] = this.requireScanAtWash;
@@ -2318,7 +2318,7 @@ export interface IFMSInfo {
     usingLabelPrinterForSerials?: boolean;
     useClientPrinterForLabels?: boolean | undefined;
     quarantineQueue?: string | undefined;
-    allowQuarantineAtLoadStation?: boolean | undefined;
+    supportsQuarantineAtLoadStation?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     customStationMonitorDialogUrl?: string | undefined;
     requireScanAtWash?: boolean;
