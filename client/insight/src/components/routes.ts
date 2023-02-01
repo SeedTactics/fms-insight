@@ -57,6 +57,7 @@ export enum RouteLocation {
   Operations_Dashboard = "/operations",
   Operations_LoadStation = "/operations/loadunload",
   Operations_Machines = "/operations/machines",
+  Operations_SystemOverview = "/operations/system-overview",
   Operations_AllMaterial = "/operations/material",
   Operations_RecentSchedules = "/operations/recent-schedules",
   Operations_Tools = "/operations/tools",
@@ -111,6 +112,7 @@ export type RouteState =
   | { route: RouteLocation.Operations_Dashboard }
   | { route: RouteLocation.Operations_LoadStation }
   | { route: RouteLocation.Operations_Machines }
+  | { route: RouteLocation.Operations_SystemOverview }
   | { route: RouteLocation.Operations_AllMaterial }
   | { route: RouteLocation.Operations_RecentSchedules }
   | { route: RouteLocation.Operations_Tools }

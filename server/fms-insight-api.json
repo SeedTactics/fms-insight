@@ -2225,7 +2225,7 @@
             "type": "string",
             "nullable": true
           },
-          "AllowQuarantineAtLoadStation": {
+          "SupportsQuarantineAtLoadStation": {
             "type": "boolean",
             "nullable": true
           },

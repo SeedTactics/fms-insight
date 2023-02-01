@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import {
   Button,
-  Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -48,7 +47,6 @@ import { MaterialDetailTitle, MaterialDialog } from "./Material.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { currentOperator } from "../../data/operators.js";
 import { PrintedLabel, PrintMaterial } from "./PrintedLabel.js";
 import { useRecoilValue } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
@@ -63,6 +61,7 @@ import {
   AddNewJobProcessState,
   PromptForJob,
 } from "./QueuesAddMaterial.js";
+import { QuarantineMatButton } from "./QuarantineButton.js";
 
 export function PrintOnClientButton({
   mat,
@@ -125,94 +124,6 @@ function PrintLabelButton() {
       </Button>
     );
   }
-}
-
-function RemoveFromSystemButton({ onClose }: { onClose: () => void }) {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  const [removeFromQueue, removingFromQueue] = matDetails.useRemoveFromQueue();
-  const operator = useRecoilValue(currentOperator);
-  const closeMatDialog = matDetails.useCloseMaterialDialog();
-
-  if (curMat === null) return null;
-
-  // first, check if can't remove because material is being loaded
-  if (
-    (fmsInfo.allowQuarantineAtLoadStation ?? false) === false &&
-    curMat.action.type === api.ActionType.Loading
-  ) {
-    return null;
-  } else if (curMat.location.type === api.LocType.OnPallet) {
-    // can't remove if on a pallet
-    return null;
-  } else {
-    // can't remove if there is a quarantine queue and material is in process
-    if (fmsInfo.quarantineQueue && fmsInfo.quarantineQueue !== "" && curMat.process > 0) {
-      return null;
-    }
-  }
-
-  return (
-    <Button
-      color="primary"
-      disabled={removingFromQueue}
-      onClick={() => {
-        removeFromQueue(curMat.materialID, operator);
-        closeMatDialog();
-        onClose();
-      }}
-    >
-      Remove From System
-    </Button>
-  );
-}
-
-function QuarantineMaterialButton({ onClose }: { onClose: () => void }) {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  const [addMat, addingMat] = matDetails.useAddExistingMaterialToQueue();
-  const operator = useRecoilValue(currentOperator);
-  const closeMatDialog = matDetails.useCloseMaterialDialog();
-
-  if (curMat === null) return null;
-
-  // can't quarantine if there is no queue defined
-  const quarantineQueue = fmsInfo.quarantineQueue;
-  if (!quarantineQueue || quarantineQueue === "") return null;
-
-  // check if can't remove because material is being loaded
-  if (
-    (fmsInfo.allowQuarantineAtLoadStation ?? false) === false &&
-    curMat.action.type === api.ActionType.Loading
-  ) {
-    return null;
-  }
-
-  // can't quarantine if on a pallet
-  if (curMat.location.type === api.LocType.OnPallet) {
-    return null;
-  }
-
-  return (
-    <Tooltip title={"Move to " + quarantineQueue}>
-      <Button
-        color="primary"
-        disabled={addingMat}
-        onClick={() => {
-          addMat({
-            materialId: curMat.materialID,
-            queue: quarantineQueue,
-            queuePosition: 0,
-            operator: operator,
-          });
-          closeMatDialog();
-          onClose();
-        }}
-      >
-        Quarantine Material
-      </Button>
-    </Tooltip>
-  );
 }
 
 function useQueueDialogKind(queueNames: ReadonlyArray<string>): "None" | "MatInQueue" | "AddToQueue" {
@@ -309,8 +220,7 @@ function QueueButtons({
       return (
         <>
           <PrintLabelButton />
-          <QuarantineMaterialButton onClose={onClose} />
-          <RemoveFromSystemButton onClose={onClose} />
+          <QuarantineMatButton onClose={onClose} />
         </>
       );
     case "AddToQueue":

@@ -76,7 +76,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
     // Load Station Page Options
     [DataMember]
-    public bool? AllowQuarantineAtLoadStation { get; init; }
+    public bool? SupportsQuarantineAtLoadStation { get; init; }
 
     [DataMember]
     public bool? AllowChangeWorkorderAtLoadStation { get; init; }
@@ -141,7 +141,7 @@ namespace BlackMaple.MachineFramework.Controllers
         AddRawMaterial = _impl.AddRawMaterial,
         AddInProcessMaterial = _impl.AddInProcessMaterial,
         AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
-        AllowQuarantineAtLoadStation = _impl.Backend.SupportsQuarantineAtLoadStation,
+        SupportsQuarantineAtLoadStation = _impl.Backend.SupportsQuarantineAtLoadStation,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
         LicenseExpires = _impl.LicenseExpires?.Invoke(),
         CustomStationMonitorDialogUrl = _impl.CustomStationMonitorDialogUrl,

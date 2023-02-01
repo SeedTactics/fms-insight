@@ -35,7 +35,6 @@ import * as React from "react";
 import { addDays } from "date-fns";
 import { Grid } from "@mui/material";
 import { Button } from "@mui/material";
-import { Tooltip } from "@mui/material";
 import { DialogActions } from "@mui/material";
 
 import { MaterialDialog, MatSummary } from "./Material.js";
@@ -44,11 +43,11 @@ import * as matDetails from "../../cell-status/material-details.js";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";
 import { useRecoilValue } from "recoil";
-import { fmsInformation } from "../../network/server-settings.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { instructionUrl } from "../../network/backend.js";
 import { LogType } from "../../network/api.js";
+import { QuarantineMatButton } from "./QuarantineButton.js";
 
 interface InspButtonsProps {
   readonly inspection_type: string;
@@ -56,11 +55,9 @@ interface InspButtonsProps {
 
 function InspButtons(props: InspButtonsProps) {
   const operator = useRecoilValue(currentOperator);
-  const quarantineQueue = useRecoilValue(fmsInformation).quarantineQueue ?? null;
   const material = useRecoilValue(matDetails.materialInDialogInfo);
   const matEvents = useRecoilValue(matDetails.materialInDialogEvents);
   const [completeInsp, completeInspUpdating] = matDetails.useCompleteInspection();
-  const [addExistingToQueue, addExistingToQueueUpdating] = matDetails.useAddExistingMaterialToQueue();
   const closeMatDialog = matDetails.useCloseMaterialDialog();
 
   if (material === null) return null;
@@ -108,25 +105,7 @@ function InspButtons(props: InspButtonsProps) {
           Instructions
         </Button>
       ) : undefined}
-      {quarantineQueue !== null ? (
-        <Tooltip title={"Move to " + quarantineQueue}>
-          <Button
-            color="primary"
-            disabled={addExistingToQueueUpdating}
-            onClick={() => {
-              addExistingToQueue({
-                materialId: material.materialID,
-                queue: quarantineQueue,
-                queuePosition: 0,
-                operator: operator || null,
-              });
-              closeMatDialog();
-            }}
-          >
-            Quarantine Material
-          </Button>
-        </Tooltip>
-      ) : undefined}
+      <QuarantineMatButton />
       <Button color="primary" disabled={completeInspUpdating} onClick={() => markInspComplete(true)}>
         Mark {props.inspection_type} Success
       </Button>

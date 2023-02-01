@@ -44,7 +44,7 @@ import {
   LinearProgress,
   Badge,
 } from "@mui/material";
-import { InProcMaterial, materialAction, PartIdenticon } from "./Material.js";
+import { InProcMaterial, materialAction, MaterialDialog, PartIdenticon } from "./Material.js";
 import {
   ActionType,
   IInProcessMaterial,
@@ -59,6 +59,15 @@ import { useSetMaterialToShowInDialog } from "../../cell-status/material-details
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { addDays } from "date-fns";
 import { durationToSeconds } from "../../util/parseISODuration.js";
+import {
+  InvalidateCycleDialogButtons,
+  InvalidateCycleDialogContent,
+  InvalidateCycleState,
+  SwapMaterialButtons,
+  SwapMaterialDialogContent,
+  SwapMaterialState,
+} from "./InvalidateCycle.js";
+import { QuarantineMatButton } from "./QuarantineButton.js";
 
 const CollapsedIconSize = 45;
 const rowSize = CollapsedIconSize + 10; // each material row has 5px above and 5px below for padding
@@ -836,7 +845,53 @@ export function SystemOverview() {
   );
 }
 
-export function SystemOverviewPage() {
+const SystemOverviewDialog = React.memo(function SystemOverviewDialog({
+  ignoreOperator,
+}: {
+  ignoreOperator?: boolean;
+}) {
+  const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
+  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
+
+  function onClose() {
+    setSwapSt(null);
+    setInvalidateSt(null);
+  }
+
+  return (
+    <MaterialDialog
+      onClose={onClose}
+      allowNote
+      extraDialogElements={
+        <>
+          <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />
+          {invalidateSt !== null ? (
+            <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
+          ) : null}
+        </>
+      }
+      buttons={
+        <>
+          <QuarantineMatButton ignoreOperator={ignoreOperator} />
+          <SwapMaterialButtons
+            st={swapSt}
+            setState={setSwapSt}
+            onClose={onClose}
+            ignoreOperator={ignoreOperator}
+          />
+          <InvalidateCycleDialogButtons
+            st={invalidateSt}
+            setState={setInvalidateSt}
+            onClose={onClose}
+            ignoreOperator={ignoreOperator}
+          />
+        </>
+      }
+    />
+  );
+});
+
+export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolean }) {
   React.useEffect(() => {
     document.title = "System Overview - FMS Insight";
   }, []);
@@ -850,6 +905,7 @@ export function SystemOverviewPage() {
       }}
     >
       <SystemOverview />
+      <SystemOverviewDialog ignoreOperator={ignoreOperator} />
     </main>
   );
 }

@@ -47,7 +47,6 @@ import * as matDetails from "../../cell-status/material-details.js";
 import * as currentSt from "../../cell-status/current-status.js";
 import { Box, Paper } from "@mui/material";
 import { Typography } from "@mui/material";
-import { Button } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import {
   DragOverlayInProcMaterial,
@@ -56,7 +55,7 @@ import {
   SortableInProcMaterial,
   SortableMatData,
 } from "../station-monitor/Material.js";
-import { IInProcessMaterial, LocType } from "../../network/api.js";
+import { IInProcessMaterial } from "../../network/api.js";
 import {
   InvalidateCycleDialogButtons,
   InvalidateCycleDialogContent,
@@ -83,6 +82,7 @@ import {
   rectIntersection,
 } from "@dnd-kit/core";
 import { useRecoilConduit } from "../../util/recoil-util.js";
+import { QuarantineMatButton } from "../station-monitor/QuarantineButton.js";
 
 type ColWithTitleProps = {
   readonly label: string;
@@ -334,41 +334,7 @@ function MaterialBinColumn({
   }
 }
 
-function RemoveFromSystemButton({
-  onClose,
-  allBins,
-}: {
-  onClose: () => void;
-  allBins: ReadonlyArray<MaterialBin>;
-}) {
-  const [removeFromQueue] = matDetails.useRemoveFromQueue();
-  const mat = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  const close = matDetails.useCloseMaterialDialog();
-  if (mat === null || mat.location.type !== LocType.InQueue) return null;
-
-  const inQuarantineQueue =
-    allBins.findIndex(
-      (bin) =>
-        bin.type === MaterialBinType.QuarantineQueues &&
-        bin.material.findIndex((m) => m.materialID === mat.materialID) >= 0
-    ) >= 0;
-  if (!inQuarantineQueue) return null;
-
-  return (
-    <Button
-      color="primary"
-      onClick={() => {
-        removeFromQueue(mat.materialID, null);
-        close();
-        onClose();
-      }}
-    >
-      Remove From System
-    </Button>
-  );
-}
-
-const AllMatDialog = React.memo(function AllMatDialog({ allBins }: { allBins: ReadonlyArray<MaterialBin> }) {
+const AllMatDialog = React.memo(function AllMatDialog() {
   const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
   const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
 
@@ -392,9 +358,14 @@ const AllMatDialog = React.memo(function AllMatDialog({ allBins }: { allBins: Re
       }
       buttons={
         <>
-          <RemoveFromSystemButton onClose={onClose} allBins={allBins} />
-          <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} />
-          <InvalidateCycleDialogButtons st={invalidateSt} setState={setInvalidateSt} onClose={onClose} />
+          <QuarantineMatButton onClose={onClose} ignoreOperator />
+          <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} ignoreOperator />
+          <InvalidateCycleDialogButtons
+            st={invalidateSt}
+            setState={setInvalidateSt}
+            onClose={onClose}
+            ignoreOperator
+          />
         </>
       }
     />
@@ -572,7 +543,7 @@ export function AllMaterial(props: AllMaterialProps) {
           <MaterialBinColumn matBin={activeDrag.bin} isDragOverlay />
         ) : undefined}
       </DragOverlay>
-      <AllMatDialog allBins={allBins} />
+      <AllMatDialog />
     </DndContext>
   );
 }

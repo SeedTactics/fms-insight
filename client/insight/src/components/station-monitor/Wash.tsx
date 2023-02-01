@@ -48,13 +48,13 @@ import {
   materialDialogOpen,
   materialInDialogEvents,
   materialInDialogInfo,
-  useAddExistingMaterialToQueue,
   useCloseMaterialDialog,
   useCompleteWash,
 } from "../../cell-status/material-details.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { LogType } from "../../network/api.js";
 import { instructionUrl } from "../../network/backend.js";
+import { QuarantineMatButton } from "./QuarantineButton.js";
 
 function CompleteWashButton() {
   const fmsInfo = useRecoilValue(fmsInformation);
@@ -108,38 +108,6 @@ function CompleteWashButton() {
       </Button>
     );
   }
-}
-
-function QuarantineMatButton() {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const [addToQueue, addingToQueue] = useAddExistingMaterialToQueue();
-  const curMat = useRecoilValue(materialInDialogInfo);
-  const operator = useRecoilValue(currentOperator);
-  const closeMatDialog = useCloseMaterialDialog();
-
-  const quarantineQueue = fmsInfo.quarantineQueue ?? null;
-
-  if (!curMat || !quarantineQueue || quarantineQueue === "") return null;
-
-  return (
-    <Button
-      color="primary"
-      disabled={addingToQueue}
-      onClick={() => {
-        if (curMat) {
-          addToQueue({
-            materialId: curMat.materialID,
-            queue: quarantineQueue,
-            queuePosition: 0,
-            operator: operator,
-          });
-        }
-        closeMatDialog();
-      }}
-    >
-      Quarantine
-    </Button>
-  );
 }
 
 function InstrButton() {

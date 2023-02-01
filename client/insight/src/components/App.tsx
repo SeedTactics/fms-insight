@@ -109,6 +109,7 @@ function OperationsTabs(p: HeaderNavProps) {
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
       <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
       <Tab label="Schedules" value={routes.RouteLocation.Operations_RecentSchedules} />
+      <Tab label="Cell" value={routes.RouteLocation.Operations_SystemOverview} />
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
       <Tab label="Tools" value={routes.RouteLocation.Operations_Tools} />
       <Tab label="Programs" value={routes.RouteLocation.Operations_Programs} />
@@ -200,6 +201,7 @@ function helpUrl(r: routes.RouteState): string {
     case routes.RouteLocation.Operations_Dashboard:
     case routes.RouteLocation.Operations_LoadStation:
     case routes.RouteLocation.Operations_Machines:
+    case routes.RouteLocation.Operations_SystemOverview:
     case routes.RouteLocation.Operations_AllMaterial:
     case routes.RouteLocation.Operations_RecentSchedules:
       return "https://www.seedtactics.com/docs/fms-insight/client-operations";
@@ -419,6 +421,7 @@ const App = React.memo(function App(props: AppProps) {
         break;
       case routes.RouteLocation.Station_Overview:
         page = <SystemOverviewPage />;
+        addBasicMaterialDialog = false;
         break;
 
       case routes.RouteLocation.Analysis_CostPerPiece:
@@ -463,6 +466,11 @@ const App = React.memo(function App(props: AppProps) {
       case routes.RouteLocation.Operations_Machines:
         page = <OperationMachines />;
         navigation = OperationsTabs;
+        break;
+      case routes.RouteLocation.Operations_SystemOverview:
+        page = <SystemOverviewPage ignoreOperator />;
+        navigation = OperationsTabs;
+        addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Operations_AllMaterial:
         page = <AllMaterial displaySystemBins />;

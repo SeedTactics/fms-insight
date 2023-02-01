@@ -41,6 +41,7 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { inProcessMaterialInDialog, useCloseMaterialDialog } from "../../cell-status/material-details.js";
 import { useRecoilValue } from "recoil";
+import { currentOperator } from "../../data/operators.js";
 
 interface InvalidateCycle {
   readonly process: number | null;
@@ -89,16 +90,20 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
   );
 }
 
-export function InvalidateCycleDialogButtons(props: InvalidateCycleProps & { readonly onClose: () => void }) {
+export function InvalidateCycleDialogButtons(
+  props: InvalidateCycleProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean }
+) {
   const curMat = useRecoilValue(inProcessMaterialInDialog);
   const closeMatDialog = useCloseMaterialDialog();
+  let operator = useRecoilValue(currentOperator);
+  if (props.ignoreOperator) operator = null;
 
   if (curMat === null || curMat.location.type !== LocType.InQueue) return null;
 
   function invalidateCycle() {
     if (curMat && props.st && props.st.process) {
       props.setState({ ...props.st, updating: true });
-      JobsBackend.invalidatePalletCycle(curMat.materialID, null, null, props.st.process).finally(() => {
+      JobsBackend.invalidatePalletCycle(curMat.materialID, null, operator, props.st.process).finally(() => {
         closeMatDialog();
         props.onClose();
       });
@@ -227,14 +232,18 @@ export function SwapMaterialDialogContent(props: SwapMaterialProps): JSX.Element
   }
 }
 
-export function SwapMaterialButtons(props: SwapMaterialProps & { readonly onClose: () => void }) {
+export function SwapMaterialButtons(
+  props: SwapMaterialProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean }
+) {
   const curMat = useRecoilValue(inProcessMaterialInDialog);
   const closeMatDialog = useCloseMaterialDialog();
+  let operator = useRecoilValue(currentOperator);
+  if (props.ignoreOperator) operator = null;
 
   function swapMats() {
     if (curMat && props.st && props.st.selectedMatToSwap && curMat.location.type === LocType.OnPallet) {
       props.setState({ selectedMatToSwap: props.st.selectedMatToSwap, updating: true });
-      JobsBackend.swapMaterialOnPallet(curMat.materialID, null, {
+      JobsBackend.swapMaterialOnPallet(curMat.materialID, operator, {
         pallet: curMat.location.pallet ?? "",
         materialIDToSetOnPallet: props.st.selectedMatToSwap.materialID,
       }).finally(() => {
