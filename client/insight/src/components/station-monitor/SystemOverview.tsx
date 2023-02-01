@@ -901,7 +901,7 @@ export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolea
       style={{
         padding: "10px",
         minHeight: "calc(100vh - 64px)",
-        backgroundColor: "#EEEEEE",
+        backgroundColor: "#F8F8F8",
       }}
     >
       <SystemOverview />

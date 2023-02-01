@@ -498,10 +498,7 @@ export const Queues = (props: QueueProps) => {
       }}
     >
       {data.map((region, idx) => (
-        <div
-          style={idx < data.length - 1 ? { borderBottom: "1px solid rgba(0,0,0,0.12)" } : undefined}
-          key={idx}
-        >
+        <div style={idx < data.length - 1 ? { borderBottom: "1px solid black" } : undefined} key={idx}>
           <SortableRegion
             matIds={region.material.map((m) => m.materialID)}
             direction="rect"
@@ -580,7 +577,7 @@ export default function QueuesPage(props: QueueProps): JSX.Element {
   }, []);
 
   return (
-    <main>
+    <main style={{ backgroundColor: "#F8F8F8", minHeight: "calc(100vh - 64px)" }}>
       <Queues {...props} />
     </main>
   );

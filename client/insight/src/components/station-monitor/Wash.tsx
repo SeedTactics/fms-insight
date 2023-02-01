@@ -194,14 +194,20 @@ export function Wash(): JSX.Element {
     <div data-testid="stationmonitor-wash" style={{ padding: "8px" }}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
-          <WhiteboardRegion label="Recently completed parts not yet washed" borderRight borderBottom>
+          <WhiteboardRegion
+            label="Recently Completed Parts Not Yet Washed"
+            borderTop
+            borderRight
+            borderLeft
+            borderBottom
+          >
             {unwashed.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
           </WhiteboardRegion>
         </Grid>
         <Grid item xs={12} md={6}>
-          <WhiteboardRegion label="Recently Washed Parts" borderLeft borderBottom>
+          <WhiteboardRegion label="Recently Washed Parts" borderTop borderRight borderLeft borderBottom>
             {washed.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
@@ -220,7 +226,7 @@ export default function WashPage(): JSX.Element {
   }, []);
 
   return (
-    <main>
+    <main style={{ backgroundColor: "#F8F8F8", minHeight: "calc(100vh - 64px)" }}>
       <Wash />
     </main>
   );

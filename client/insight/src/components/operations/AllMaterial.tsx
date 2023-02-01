@@ -539,7 +539,7 @@ export function AllMaterial(props: AllMaterialProps) {
           style={{
             display: "flex",
             flexWrap: "nowrap",
-            backgroundColor: "#EEEEEE",
+            backgroundColor: "#F8F8F8",
             minHeight: "calc(100vh - 64px)",
           }}
         >

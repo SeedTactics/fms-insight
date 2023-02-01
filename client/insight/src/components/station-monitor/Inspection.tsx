@@ -179,7 +179,7 @@ export function Inspection(props: InspectionProps): JSX.Element {
     <div data-testid="stationmonitor-inspection" style={{ padding: "8px" }}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={6}>
-          <WhiteboardRegion label="Parts to Inspect" borderRight borderBottom>
+          <WhiteboardRegion label="Parts to Inspect" borderTop borderLeft borderRight borderBottom>
             {recent_inspections.waiting_to_inspect.map((m, idx) => (
               <MatSummary
                 key={idx}
@@ -191,7 +191,7 @@ export function Inspection(props: InspectionProps): JSX.Element {
           </WhiteboardRegion>
         </Grid>
         <Grid item xs={12} md={6}>
-          <WhiteboardRegion label="Recently Inspected" borderLeft borderBottom>
+          <WhiteboardRegion label="Recently Inspected" borderTop borderLeft borderRight borderBottom>
             {recent_inspections.inspect_completed.map((m, idx) => (
               <MatSummary
                 key={idx}
@@ -296,7 +296,7 @@ export default function InspectionPage(props: InspectionProps): JSX.Element {
   }, [props.focusInspectionType]);
 
   return (
-    <main>
+    <main style={{ backgroundColor: "#F8F8F8", minHeight: "calc(100vh - 64px)" }}>
       <Inspection {...props} />
     </main>
   );
