@@ -45,7 +45,7 @@ import {
 } from "../../data/all-material-bins.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import * as currentSt from "../../cell-status/current-status.js";
-import { Box, Paper } from "@mui/material";
+import { Box } from "@mui/material";
 import { Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import {
@@ -103,8 +103,13 @@ const ColumnWithTitle = React.forwardRef(function MaterialBin(
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
   return (
-    <Paper
-      sx={{ margin: props.isDragOverlay ? undefined : "0.75em", opacity: props.isActiveDrag ? 0.2 : 1 }}
+    <Box
+      sx={{
+        margin: props.isDragOverlay ? undefined : "0.75em",
+        opacity: props.isActiveDrag ? 0.2 : 1,
+        border: "1px solid black",
+        padding: "4px",
+      }}
       ref={ref}
       {...props.dragRootProps}
     >
@@ -127,7 +132,7 @@ const ColumnWithTitle = React.forwardRef(function MaterialBin(
       >
         {props.children}
       </Box>
-    </Paper>
+    </Box>
   );
 });
 
@@ -530,11 +535,18 @@ export function AllMaterial(props: AllMaterialProps) {
       onDragCancel={() => setActiveDrag(null)}
     >
       <SortableContext items={curBins.map((b) => b.binId)} strategy={horizontalListSortingStrategy}>
-        <div style={{ display: "flex", flexWrap: "nowrap" }}>
+        <main
+          style={{
+            display: "flex",
+            flexWrap: "nowrap",
+            backgroundColor: "#EEEEEE",
+            minHeight: "calc(100vh - 64px)",
+          }}
+        >
           {curBins.map((matBin) => (
             <MaterialBinColumn key={matBin.binId} matBin={matBin} />
           ))}
-        </div>
+        </main>
       </SortableContext>
       <DragOverlay>
         {activeDrag?.type === "material" ? (
