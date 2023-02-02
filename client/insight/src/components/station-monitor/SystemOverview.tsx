@@ -43,7 +43,16 @@ import {
   MenuItem,
   LinearProgress,
   Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  Slide,
+  AppBar,
+  Toolbar,
+  IconButton,
 } from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
+import type { TransitionProps } from "@mui/material/transitions";
 import { InProcMaterial, materialAction, MaterialDialog, PartIdenticon } from "./Material.js";
 import {
   ActionType,
@@ -809,8 +818,7 @@ function StockerPallet({ maxNumFaces, pallet }: { maxNumFaces: number; pallet: P
   );
 }
 
-export function SystemOverview() {
-  const overview = useCellOverview();
+export const SystemOverview = React.memo(function SystemOverview({ overview }: { overview: CellOverview }) {
   return (
     <div>
       {overview.machines.toAscLazySeq().map(([group, machines]) => (
@@ -843,9 +851,9 @@ export function SystemOverview() {
       ) : undefined}
     </div>
   );
-}
+});
 
-const SystemOverviewDialog = React.memo(function SystemOverviewDialog({
+const SystemOverviewMaterialDialog = React.memo(function SystemOverviewMaterialDialog({
   ignoreOperator,
 }: {
   ignoreOperator?: boolean;
@@ -895,6 +903,7 @@ export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolea
   React.useEffect(() => {
     document.title = "System Overview - FMS Insight";
   }, []);
+  const overview = useCellOverview();
 
   return (
     <main
@@ -904,8 +913,120 @@ export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolea
         backgroundColor: "#F8F8F8",
       }}
     >
-      <SystemOverview />
-      <SystemOverviewDialog ignoreOperator={ignoreOperator} />
+      <SystemOverview overview={overview} />
+      <SystemOverviewMaterialDialog ignoreOperator={ignoreOperator} />
     </main>
   );
 }
+
+const StatusIconSize = 30;
+
+function MachineIcon({ machine }: { machine: MachineStatus }) {
+  return <rect x={3} y={3} width={24} height={24} fill="blue" />;
+}
+
+function LoadStationIcon({ load }: { load: LoadStatus }) {
+  return <rect x={3} y={3} width={24} height={24} fill="purple" />;
+}
+
+function MachineAtLoadIcon({ status }: { status: MachineAtLoadStatus }) {
+  return <rect x={3} y={3} width={24} height={24} fill="orange" />;
+}
+
+const StatusIcons = React.memo(function StatusIcons({ overview }: { overview: CellOverview }) {
+  const numMachines = overview.machines.toAscLazySeq().sumBy(([, machines]) => machines.length);
+  return (
+    <Box
+      sx={{
+        height: "1.5em",
+        "&:hover": {
+          backgroundColor: "primary.light",
+        },
+      }}
+    >
+      <svg
+        viewBox={`0 0 ${
+          (numMachines + overview.loads.length + overview.machineAtLoad.length) * StatusIconSize
+        } ${StatusIconSize}`}
+        preserveAspectRatio="none"
+        width="100px"
+        height="1.5em"
+      >
+        <g>
+          {overview.machines
+            .toAscLazySeq()
+            .flatMap(([, machines]) => machines)
+            .map((machine, idx) => (
+              <g key={machine.name} transform={`translate(${idx * StatusIconSize})`}>
+                <MachineIcon machine={machine} />
+              </g>
+            ))}
+        </g>
+        <g transform={`translate(${numMachines * StatusIconSize})`}>
+          {overview.loads.map((load, idx) => (
+            <g key={load.lulNum} transform={`translate(${idx * StatusIconSize})`}>
+              <LoadStationIcon load={load} />
+            </g>
+          ))}
+        </g>
+        <g transform={`translate(${(numMachines + overview.loads.length) * StatusIconSize})`}>
+          {overview.machineAtLoad.map((status, idx) => (
+            <g key={status.lulNum} transform={`translate(${idx * StatusIconSize})`}>
+              <MachineAtLoadIcon status={status} />
+            </g>
+          ))}
+        </g>
+      </svg>
+    </Box>
+  );
+});
+
+const Transition = React.forwardRef(function Transition(
+  props: TransitionProps & {
+    children: React.ReactElement;
+  },
+  ref: React.Ref<unknown>
+) {
+  return <Slide direction="down" ref={ref} {...props} />;
+});
+
+export const SystemOverviewDialogButton = React.memo(function SystemOverviewDialogButton({
+  full,
+}: {
+  full: boolean;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const overview = useCellOverview();
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>
+        <StatusIcons overview={overview} />
+      </Button>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        maxWidth="xl"
+        fullScreen={full}
+        TransitionComponent={Transition}
+      >
+        {full ? (
+          <AppBar sx={{ position: "relative" }}>
+            <Toolbar>
+              <IconButton edge="start" color="inherit" onClick={() => setOpen(false)} aria-label="close">
+                <CloseIcon />
+              </IconButton>
+              <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+                System Overview
+              </Typography>
+            </Toolbar>
+          </AppBar>
+        ) : undefined}
+        <DialogContent>
+          <SystemOverview overview={overview} />
+          <Box height="1em" />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+});

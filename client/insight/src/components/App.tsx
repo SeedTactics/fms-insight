@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { AppBar } from "@mui/material";
+import { AppBar, Box, useMediaQuery, useTheme } from "@mui/material";
 import { Tabs } from "@mui/material";
 import { Tab } from "@mui/material";
 import { Typography } from "@mui/material";
@@ -49,12 +49,10 @@ import OperationDashboard from "./operations/Dashboard.js";
 import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationOverview.js";
 import CostPerPiece from "./analysis/CostPerPiece.js";
 import Efficiency from "./analysis/EfficiencyPage.js";
-import StationToolbar from "./station-monitor/StationToolbar.js";
 import DataExport from "./analysis/DataExport.js";
 import ChooseMode, { ChooseModeItem } from "./ChooseMode.js";
 import { LoadingIcon } from "./LoadingIcon.js";
 import * as routes from "./routes.js";
-import * as api from "../network/api.js";
 import * as serverSettings from "../network/server-settings.js";
 import { SeedtacticLogo } from "../seedtactics-logo.js";
 import { BackupViewer } from "./BackupViewer.js";
@@ -81,30 +79,31 @@ import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonit
 import { AnalysisCyclePage } from "./analysis/AnalysisCyclesPage.js";
 import { QualityPage } from "./analysis/QualityPage.js";
 import { SystemOverviewPage } from "./station-monitor/SystemOverview.js";
+import { StationToolbar, StationToolbarOverviewButton } from "./station-monitor/StationToolbar.js";
 
-/* eslint-disable react/display-name */
+export function NavTabs({ children }: { children?: React.ReactNode }) {
+  const [route, setRoute] = routes.useCurrentRoute();
+  const theme = useTheme();
+  const full = useMediaQuery(theme.breakpoints.down("md"));
 
-const tabsStyle = {
-  alignSelf: "flex-end" as const,
-  flexGrow: 1,
-};
-
-export interface HeaderNavProps {
-  readonly full: boolean;
-  readonly setRoute: (r: routes.RouteState) => void;
-  readonly routeState: routes.RouteState;
-}
-
-function OperationsTabs(p: HeaderNavProps) {
   return (
     <Tabs
-      variant={p.full ? "fullWidth" : "standard"}
-      style={p.full ? {} : tabsStyle}
-      value={p.routeState.route}
-      onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
+      variant={full && (!Array.isArray(children) || children.length < 5) ? "fullWidth" : "scrollable"}
+      value={route.route}
+      onChange={(e, v) => setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
       textColor="inherit"
+      scrollButtons
+      allowScrollButtonsMobile
       indicatorColor="secondary"
     >
+      {children}
+    </Tabs>
+  );
+}
+
+function OperationsTabs() {
+  return (
+    <NavTabs>
       <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
       <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
@@ -113,135 +112,51 @@ function OperationsTabs(p: HeaderNavProps) {
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
       <Tab label="Tools" value={routes.RouteLocation.Operations_Tools} />
       <Tab label="Programs" value={routes.RouteLocation.Operations_Programs} />
-    </Tabs>
+    </NavTabs>
   );
 }
 
-function QualityTabs(p: HeaderNavProps) {
+function QualityTabs() {
   return (
-    <Tabs
-      variant={p.full ? "fullWidth" : "standard"}
-      style={p.full ? {} : tabsStyle}
-      value={p.routeState.route}
-      onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
-      textColor="inherit"
-      indicatorColor="secondary"
-    >
+    <NavTabs>
       <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
       <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
       <Tab label="Paths" value={routes.RouteLocation.Quality_Paths} />
       <Tab label="Quarantine Material" value={routes.RouteLocation.Quality_Quarantine} />
-    </Tabs>
+    </NavTabs>
   );
 }
 
-function ToolsTabs(p: HeaderNavProps) {
+function ToolsTabs() {
   return (
-    <Tabs
-      variant={p.full ? "fullWidth" : "standard"}
-      style={p.full ? {} : tabsStyle}
-      value={p.routeState.route}
-      onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
-      textColor="inherit"
-      indicatorColor="secondary"
-    >
+    <NavTabs>
       <Tab label="Tools" value={routes.RouteLocation.Tools_Dashboard} />
       <Tab label="Programs" value={routes.RouteLocation.Tools_Programs} />
-    </Tabs>
+    </NavTabs>
   );
 }
 
-function AnalysisTabs(p: HeaderNavProps) {
+function AnalysisTabs() {
   return (
-    <Tabs
-      variant={p.full ? "fullWidth" : "standard"}
-      style={p.full ? {} : tabsStyle}
-      value={p.routeState.route}
-      onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
-      textColor="inherit"
-      indicatorColor="secondary"
-    >
+    <NavTabs>
       <Tab label="Cycles" value={routes.RouteLocation.Analysis_Cycles} />
       <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
       <Tab label="Quality" value={routes.RouteLocation.Analysis_Quality} />
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
       <Tab label="Schedules" value={routes.RouteLocation.Analysis_Schedules} />
       <Tab label="Data Export" value={routes.RouteLocation.Analysis_DataExport} />
-    </Tabs>
+    </NavTabs>
   );
 }
 
-function BackupTabs(p: HeaderNavProps) {
+function BackupTabs() {
   return (
-    <Tabs
-      variant={p.full ? "fullWidth" : "standard"}
-      style={p.full ? {} : tabsStyle}
-      value={p.routeState.route}
-      onChange={(e, v) => p.setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
-      textColor="inherit"
-      indicatorColor="secondary"
-    >
+    <NavTabs>
       <Tab label="Efficiency" value={routes.RouteLocation.Backup_Efficiency} />
       <Tab label="Part Lookup" value={routes.RouteLocation.Backup_PartLookup} />
       <Tab label="Schedules" value={routes.RouteLocation.Backup_Schedules} />
-    </Tabs>
+    </NavTabs>
   );
-}
-
-function helpUrl(r: routes.RouteState): string {
-  switch (r.route) {
-    case routes.RouteLocation.Station_LoadMonitor:
-    case routes.RouteLocation.Station_InspectionMonitor:
-    case routes.RouteLocation.Station_InspectionMonitorWithType:
-    case routes.RouteLocation.Station_WashMonitor:
-    case routes.RouteLocation.Station_Queues:
-    case routes.RouteLocation.Station_Overview:
-      return "https://www.seedtactics.com/docs/fms-insight/client-station-monitor";
-
-    case routes.RouteLocation.Operations_Dashboard:
-    case routes.RouteLocation.Operations_LoadStation:
-    case routes.RouteLocation.Operations_Machines:
-    case routes.RouteLocation.Operations_SystemOverview:
-    case routes.RouteLocation.Operations_AllMaterial:
-    case routes.RouteLocation.Operations_RecentSchedules:
-      return "https://www.seedtactics.com/docs/fms-insight/client-operations";
-
-    case routes.RouteLocation.Operations_Tools:
-    case routes.RouteLocation.Operations_Programs:
-      return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
-
-    case routes.RouteLocation.Engineering:
-      return "https://www.seedtactics.com/docs/fms-insight/client-engineering";
-
-    case routes.RouteLocation.Quality_Dashboard:
-    case routes.RouteLocation.Quality_Serials:
-    case routes.RouteLocation.Quality_Paths:
-    case routes.RouteLocation.Quality_Quarantine:
-    case routes.RouteLocation.Backup_PartLookup:
-      return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
-
-    case routes.RouteLocation.Tools_Dashboard:
-    case routes.RouteLocation.Tools_Programs:
-      return "https://www.seedtactics.com/docs/fms-insight/client-operations";
-
-    case routes.RouteLocation.Analysis_Cycles:
-    case routes.RouteLocation.Analysis_Efficiency:
-    case routes.RouteLocation.Analysis_Quality:
-    case routes.RouteLocation.Analysis_DataExport:
-    case routes.RouteLocation.Backup_Efficiency:
-      return "https://www.seedtactics.com/docs/fms-insight/client-flexibility-analysis";
-
-    case routes.RouteLocation.Analysis_CostPerPiece:
-      return "https://www.seedtactics.com/docs/fms-insight/client-cost-per-piece";
-
-    case routes.RouteLocation.Backup_InitialOpen:
-      return "https://www.seedtactics.com/docs/fms-insight/client-backup-viewer";
-
-    case routes.RouteLocation.ChooseMode:
-    case routes.RouteLocation.Client_Custom:
-    default:
-      return "https://www.seedtactics.com/docs/fms-insight/client-launch";
-  }
 }
 
 function ShowLicense({ d }: { d: Date }) {
@@ -257,48 +172,43 @@ function ShowLicense({ d }: { d: Date }) {
   }
 }
 
-interface HeaderProps {
-  showAlarms: boolean;
-  showLogout: boolean;
-  showSearch: boolean;
-  showOperator: boolean;
-  fmsInfo: Readonly<api.IFMSInfo> | null;
-  readonly setRoute: (r: routes.RouteState) => void;
-  readonly routeState: routes.RouteState;
-
-  children?: (p: HeaderNavProps) => React.ReactNode;
-}
-
-function Header(p: HeaderProps) {
+function Alarms() {
   const alarms = useRecoilValue(currentStatus).alarms;
   const hasAlarms = alarms && alarms.length > 0;
 
   const alarmTooltip = hasAlarms ? alarms.join(". ") : "No Alarms";
-  const Alarms = () => (
+  return (
     <Tooltip title={alarmTooltip}>
       <Badge badgeContent={hasAlarms ? alarms.length : 0}>
         <Notifications color={hasAlarms ? "error" : undefined} />
       </Badge>
     </Tooltip>
   );
+}
 
-  const HelpButton = () => (
+function HelpButton() {
+  const [route] = routes.useCurrentRoute();
+  return (
     <Tooltip title="Help">
-      <IconButton aria-label="Help" href={helpUrl(p.routeState)} target="_help" size="large">
+      <IconButton aria-label="Help" href={routes.helpUrl(route)} target="_help" size="large">
         <HelpOutline />
       </IconButton>
     </Tooltip>
   );
+}
 
-  const LogoutButton = () => (
+function LogoutButton() {
+  return (
     <Tooltip title="Logout">
       <IconButton aria-label="Logout" onClick={serverSettings.logout} size="large">
         <ExitToApp />
       </IconButton>
     </Tooltip>
   );
+}
 
-  const SearchButtons = () => (
+function SearchButtons() {
+  return (
     <>
       {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
         <SerialScannerButton />
@@ -306,37 +216,68 @@ function Header(p: HeaderProps) {
       <ManualScanButton />
     </>
   );
+}
+
+function Header({
+  showAlarms,
+  showLogout,
+  showSearch,
+  showOperator,
+  Nav,
+  NavCenter,
+}: {
+  showAlarms: boolean;
+  showLogout: boolean;
+  showSearch: boolean;
+  showOperator: boolean;
+  Nav: React.ComponentType | undefined;
+  NavCenter: React.ComponentType | undefined;
+}) {
+  const fmsInfoM = useRecoilValueLoadable(serverSettings.fmsInformation);
+  const fmsInfo = fmsInfoM.valueMaybe();
 
   let tooltip: JSX.Element | string = "";
-  if (p.fmsInfo) {
-    tooltip = (p.fmsInfo.name || "") + " " + (p.fmsInfo.version || "");
+  if (fmsInfo) {
+    tooltip = (fmsInfo.name || "") + " " + (fmsInfo.version || "");
   }
 
   return (
     <>
       <AppBar position="static" sx={{ display: { xs: "none", md: "block" } }}>
         <Toolbar>
-          <Tooltip title={tooltip}>
-            <div>
-              <SeedtacticLogo />
-            </div>
-          </Tooltip>
-          <Typography variant="h6" style={{ marginLeft: "1em", marginRight: "2em" }}>
-            Insight
-          </Typography>
-          {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
-          {p.children ? (
-            p.children({ full: false, setRoute: p.setRoute, routeState: p.routeState })
-          ) : (
-            <div style={{ flexGrow: 1 }} />
-          )}
-          <LoadingIcon />
-          {p.showOperator ? <OperatorSelect /> : undefined}
-          {p.showOperator ? <CustomStationMonitorDialog /> : undefined}
-          {p.showSearch ? <SearchButtons /> : undefined}
-          <HelpButton />
-          {p.showLogout ? <LogoutButton /> : undefined}
-          {p.showAlarms ? <Alarms /> : undefined}
+          <Box
+            display="grid"
+            gridTemplateColumns={NavCenter ? "1fr auto 1fr" : "minmax(200px, 1fr) auto"}
+            width="100vw"
+            gridTemplateAreas={NavCenter ? '"nav navCenter tools"' : '"nav tools"'}
+          >
+            <Box gridArea="nav" display="flex" alignItems="center">
+              <Tooltip title={tooltip}>
+                <div>
+                  <SeedtacticLogo />
+                </div>
+              </Tooltip>
+              <Typography variant="h6" style={{ marginLeft: "1em", marginRight: "2em" }}>
+                Insight
+              </Typography>
+              {fmsInfo?.licenseExpires ? <ShowLicense d={fmsInfo.licenseExpires} /> : undefined}
+              {Nav ? <Nav /> : undefined}
+            </Box>
+            {NavCenter ? (
+              <Box gridArea="navCenter">
+                <NavCenter />
+              </Box>
+            ) : undefined}
+            <Box gridArea="tools" display="flex" alignItems="center" justifyContent="flex-end">
+              <LoadingIcon />
+              {showOperator ? <OperatorSelect /> : undefined}
+              {showOperator ? <CustomStationMonitorDialog /> : undefined}
+              {showSearch ? <SearchButtons /> : undefined}
+              <HelpButton />
+              {showLogout ? <LogoutButton /> : undefined}
+              {showAlarms ? <Alarms /> : undefined}
+            </Box>
+          </Box>
         </Toolbar>
       </AppBar>
       <AppBar position="static" sx={{ display: { xs: "block", md: "none" } }}>
@@ -349,16 +290,19 @@ function Header(p: HeaderProps) {
           <Typography variant="h6" style={{ marginLeft: "4px" }}>
             Insight
           </Typography>
-          {p.fmsInfo?.licenseExpires ? <ShowLicense d={p.fmsInfo.licenseExpires} /> : undefined}
+          {fmsInfo?.licenseExpires ? <ShowLicense d={fmsInfo.licenseExpires} /> : undefined}
           <div style={{ flexGrow: 1 }} />
           <LoadingIcon />
-          {p.showOperator ? <CustomStationMonitorDialog /> : undefined}
-          {p.showSearch ? <SearchButtons /> : undefined}
+          {showOperator ? <CustomStationMonitorDialog /> : undefined}
+          {showSearch ? <SearchButtons /> : undefined}
           <HelpButton />
-          {p.showLogout ? <LogoutButton /> : undefined}
-          {p.showAlarms ? <Alarms /> : undefined}
+          {showLogout ? <LogoutButton /> : undefined}
+          {showAlarms ? <Alarms /> : undefined}
         </Toolbar>
-        {p.children ? p.children({ full: true, setRoute: p.setRoute, routeState: p.routeState }) : undefined}
+        <Box display="grid" gridTemplateColumns="minmax(200px, 1fr) auto">
+          <Box gridColumn="1">{Nav ? <Nav /> : undefined}</Box>
+          <Box gridColumn="2">{NavCenter ? <NavCenter /> : undefined}</Box>
+        </Box>
       </AppBar>
     </>
   );
@@ -366,7 +310,7 @@ function Header(p: HeaderProps) {
 
 export interface AppProps {
   readonly renderCustomPage?: (custom: ReadonlyArray<string>) => {
-    readonly nav: (props: HeaderNavProps) => JSX.Element;
+    readonly nav: React.ComponentType | undefined;
     readonly page: JSX.Element;
   };
   readonly chooseModes?: ReadonlyArray<ChooseModeItem>;
@@ -381,7 +325,8 @@ const App = React.memo(function App(props: AppProps) {
   const fmsInfo = fmsInfoLoadable.state === "hasValue" ? fmsInfoLoadable.valueOrThrow() : null;
 
   let page: JSX.Element;
-  let navigation: ((p: HeaderNavProps) => JSX.Element) | undefined = undefined;
+  let navigation: React.ComponentType | undefined = undefined;
+  let navigationCenter: React.ComponentType | undefined = undefined;
   let showAlarms = true;
   const showLogout = fmsInfo !== null && fmsInfo.user !== null && fmsInfo.user !== undefined;
   let showSearch = true;
@@ -391,31 +336,36 @@ const App = React.memo(function App(props: AppProps) {
     switch (route.route) {
       case routes.RouteLocation.Station_LoadMonitor:
         page = <LoadStation loadNum={route.loadNum} queues={route.queues} />;
-        navigation = (p) => <StationToolbar full={p.full} />;
+        navigation = StationToolbar;
+        navigationCenter = StationToolbarOverviewButton;
         showOperator = true;
         addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Station_InspectionMonitor:
         page = <Inspection focusInspectionType={null} />;
-        navigation = (p) => <StationToolbar full={p.full} />;
+        navigation = StationToolbar;
+        navigationCenter = StationToolbarOverviewButton;
         showOperator = true;
         addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Station_InspectionMonitorWithType:
         page = <Inspection focusInspectionType={route.inspType} />;
-        navigation = (p) => <StationToolbar full={p.full} />;
+        navigation = StationToolbar;
+        navigationCenter = StationToolbarOverviewButton;
         showOperator = true;
         addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Station_WashMonitor:
         page = <Wash />;
-        navigation = (p) => <StationToolbar full={p.full} />;
+        navigation = StationToolbar;
+        navigationCenter = StationToolbarOverviewButton;
         showOperator = true;
         addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Station_Queues:
         page = <Queues queues={route.queues} />;
-        navigation = (p) => <StationToolbar full={p.full} />;
+        navigation = StationToolbar;
+        navigationCenter = StationToolbarOverviewButton;
         showOperator = true;
         addBasicMaterialDialog = false;
         break;
@@ -588,16 +538,13 @@ const App = React.memo(function App(props: AppProps) {
   return (
     <div id="App">
       <Header
-        routeState={route}
-        fmsInfo={fmsInfo}
         showAlarms={showAlarms}
         showSearch={showSearch}
         showLogout={showLogout}
         showOperator={showOperator}
-        setRoute={setRoute}
-      >
-        {navigation}
-      </Header>
+        Nav={navigation}
+        NavCenter={navigationCenter}
+      />
       {page}
       {addBasicMaterialDialog ? <MaterialDialog /> : undefined}
       <WebsocketConnection />

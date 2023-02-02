@@ -283,3 +283,59 @@ export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
 export function useIsDemo(): boolean {
   return useRecoilValue(isDemoAtom);
 }
+
+export function helpUrl(r: RouteState): string {
+  switch (r.route) {
+    case RouteLocation.Station_LoadMonitor:
+    case RouteLocation.Station_InspectionMonitor:
+    case RouteLocation.Station_InspectionMonitorWithType:
+    case RouteLocation.Station_WashMonitor:
+    case RouteLocation.Station_Queues:
+    case RouteLocation.Station_Overview:
+      return "https://www.seedtactics.com/docs/fms-insight/client-station-monitor";
+
+    case RouteLocation.Operations_Dashboard:
+    case RouteLocation.Operations_LoadStation:
+    case RouteLocation.Operations_Machines:
+    case RouteLocation.Operations_SystemOverview:
+    case RouteLocation.Operations_AllMaterial:
+    case RouteLocation.Operations_RecentSchedules:
+      return "https://www.seedtactics.com/docs/fms-insight/client-operations";
+
+    case RouteLocation.Operations_Tools:
+    case RouteLocation.Operations_Programs:
+      return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
+
+    case RouteLocation.Engineering:
+      return "https://www.seedtactics.com/docs/fms-insight/client-engineering";
+
+    case RouteLocation.Quality_Dashboard:
+    case RouteLocation.Quality_Serials:
+    case RouteLocation.Quality_Paths:
+    case RouteLocation.Quality_Quarantine:
+    case RouteLocation.Backup_PartLookup:
+      return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
+
+    case RouteLocation.Tools_Dashboard:
+    case RouteLocation.Tools_Programs:
+      return "https://www.seedtactics.com/docs/fms-insight/client-operations";
+
+    case RouteLocation.Analysis_Cycles:
+    case RouteLocation.Analysis_Efficiency:
+    case RouteLocation.Analysis_Quality:
+    case RouteLocation.Analysis_DataExport:
+    case RouteLocation.Backup_Efficiency:
+      return "https://www.seedtactics.com/docs/fms-insight/client-flexibility-analysis";
+
+    case RouteLocation.Analysis_CostPerPiece:
+      return "https://www.seedtactics.com/docs/fms-insight/client-cost-per-piece";
+
+    case RouteLocation.Backup_InitialOpen:
+      return "https://www.seedtactics.com/docs/fms-insight/client-backup-viewer";
+
+    case RouteLocation.ChooseMode:
+    case RouteLocation.Client_Custom:
+    default:
+      return "https://www.seedtactics.com/docs/fms-insight/client-launch";
+  }
+}
