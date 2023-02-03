@@ -46,13 +46,12 @@ import {
   Button,
   Dialog,
   DialogContent,
-  Slide,
   AppBar,
   Toolbar,
   IconButton,
+  useTheme,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
-import type { TransitionProps } from "@mui/material/transitions";
 import { InProcMaterial, materialAction, MaterialDialog, PartIdenticon } from "./Material.js";
 import {
   ActionType,
@@ -507,10 +506,12 @@ function formatSeconds(totalSeconds: number): string {
   }
 }
 
-function useRemainingTime(
-  elapsedDurationFromCurSt: string | null | undefined,
-  remainingDurationFromCurSt: string | null | undefined
-): [string, number | null] {
+function useRemainingMachineTime(
+  material: ReadonlyArray<Readonly<IInProcessMaterial>> | null | undefined
+): [boolean, string, number | null] {
+  const mat = material?.find((m) => m.action.type === ActionType.Machining);
+  const elapsedDurationFromCurSt = mat?.action?.elapsedMachiningTime;
+  const remainingDurationFromCurSt = mat?.action.expectedRemainingMachiningTime;
   const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
   const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
 
@@ -528,29 +529,26 @@ function useRemainingTime(
 
   if (remainingSecs !== null && elapsedSecs !== null) {
     return [
+      true,
       `${formatSeconds(elapsedSecs)} / ${formatSeconds(remainingSecs)}`,
       remainingSecs < 0 ? -1 : (elapsedSecs / (elapsedSecs + remainingSecs)) * 100,
     ];
   } else if (remainingSecs !== null) {
-    return [" / " + formatSeconds(remainingSecs), remainingSecs < 0 ? -1 : null];
+    return [true, " / " + formatSeconds(remainingSecs), remainingSecs < 0 ? -1 : null];
   } else if (elapsedSecs !== null) {
-    return [formatSeconds(elapsedSecs), null];
+    return [true, formatSeconds(elapsedSecs), null];
   } else {
-    return ["Idle", null];
+    return [!!mat, "Idle", null];
   }
 }
 
 function MachineLabel({ machine }: { machine: MachineStatus }) {
-  const mat = machine.worktable?.mats?.find((m) => m.action.type === ActionType.Machining);
-  const [status, elapsed] = useRemainingTime(
-    mat?.action?.elapsedMachiningTime,
-    mat?.action?.expectedRemainingMachiningTime
-  );
+  const [machining, status, elapsed] = useRemainingMachineTime(machine.worktable?.mats);
   return (
     <div>
       <Typography variant="h5">{machine.name}</Typography>
       <Typography variant="subtitle1">{status}</Typography>
-      {mat ? (
+      {machining ? (
         elapsed === null ? (
           <LinearProgress />
         ) : elapsed < 0 ? (
@@ -629,14 +627,34 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
   );
 }
 
-function LoadStationLabel({ load }: { load: LoadStatus }) {
-  const mat = load.pal?.mats?.find(
+function useRemainingLoadTime(
+  material: ReadonlyArray<Readonly<IInProcessMaterial>> | null | undefined
+): string {
+  const mat = material?.find(
     (m) =>
       m.action.type === ActionType.Loading ||
       m.action.type === ActionType.UnloadToCompletedMaterial ||
       m.action.type === ActionType.UnloadToInProcess
   );
-  const [status] = useRemainingTime(mat?.action?.elapsedLoadUnloadTime, null);
+  const elapsedDurationFromCurSt = mat?.action?.elapsedLoadUnloadTime;
+  const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
+  const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
+
+  let elapsedSecs: number | null = null;
+  if (elapsedDurationFromCurSt) {
+    const elapsedSecsInCurSt = durationToSeconds(elapsedDurationFromCurSt);
+    elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+  }
+
+  if (elapsedSecs !== null) {
+    return formatSeconds(elapsedSecs);
+  } else {
+    return "Idle";
+  }
+}
+
+function LoadStationLabel({ load }: { load: LoadStatus }) {
+  const status = useRemainingLoadTime(load.pal?.mats);
   return (
     <Box display="flex" justifyContent="space-between" alignItems="baseline">
       <Typography variant="h5">L/U {load.lulNum}</Typography>
@@ -693,19 +711,8 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
 }
 
 function MachineAtLoadLabel({ status }: { status: MachineAtLoadStatus }) {
-  const loadMat = status.loadingMats.find(
-    (m) =>
-      m.action.type === ActionType.Loading ||
-      m.action.type === ActionType.UnloadToCompletedMaterial ||
-      m.action.type === ActionType.UnloadToInProcess
-  );
-  const [lulStatus] = useRemainingTime(loadMat?.action?.elapsedLoadUnloadTime, null);
-
-  const machiningMat = status.machiningMats.find((m) => m.action.type === ActionType.Machining);
-  const [mcStatus, mcElapsed] = useRemainingTime(
-    machiningMat?.action?.elapsedMachiningTime,
-    machiningMat?.action?.expectedRemainingMachiningTime
-  );
+  const lulStatus = useRemainingLoadTime(status.loadingMats);
+  const [machining, mcStatus, mcElapsed] = useRemainingMachineTime(status.machiningMats);
 
   return (
     <div>
@@ -716,7 +723,7 @@ function MachineAtLoadLabel({ status }: { status: MachineAtLoadStatus }) {
             {status.machineCurrentlyAtLoad.group} {status.machineCurrentlyAtLoad.num}
           </Typography>
           <Typography variant="subtitle1">{mcStatus === "Idle" ? lulStatus : mcStatus}</Typography>
-          {machiningMat ? (
+          {machining ? (
             mcElapsed === null ? (
               <LinearProgress />
             ) : mcElapsed < 0 ? (
@@ -922,15 +929,88 @@ export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolea
 const StatusIconSize = 30;
 
 function MachineIcon({ machine }: { machine: MachineStatus }) {
-  return <rect x={3} y={3} width={24} height={24} fill="blue" />;
+  const theme = useTheme();
+  const [, , elapsed] = useRemainingMachineTime(machine.worktable?.mats);
+  return (
+    <>
+      <rect x={3} y={3} width={24} height={24} stroke="black" />;
+      <rect
+        x={3}
+        y={3}
+        width={24}
+        height={8}
+        fill={machine.inbound === null ? "white" : theme.palette.secondary.main}
+      />
+      <rect
+        x={3}
+        y={11}
+        width={24}
+        height={8}
+        fill={
+          machine.worktable === null
+            ? "white"
+            : elapsed != null && elapsed < 0
+            ? theme.palette.error.main
+            : theme.palette.secondary.main
+        }
+      />
+      <rect
+        x={3}
+        y={19}
+        width={24}
+        height={8}
+        fill={machine.outbound === null ? "white" : theme.palette.secondary.main}
+      />
+    </>
+  );
 }
 
 function LoadStationIcon({ load }: { load: LoadStatus }) {
-  return <rect x={3} y={3} width={24} height={24} fill="purple" />;
+  const theme = useTheme();
+  return (
+    <polygon
+      points="3,27 27,27 15,3"
+      fill={load.pal === null ? "white" : theme.palette.secondary.main}
+      stroke="black"
+    />
+  );
 }
 
 function MachineAtLoadIcon({ status }: { status: MachineAtLoadStatus }) {
-  return <rect x={3} y={3} width={24} height={24} fill="orange" />;
+  const theme = useTheme();
+  const [, , elapsed] = useRemainingMachineTime(status.machiningMats);
+  return (
+    <>
+      <rect x={3} y={3} width={24} height={24} stroke="black" />;
+      <rect
+        x={3}
+        y={3}
+        width={24}
+        height={8}
+        fill={status.readyMats.length === 0 ? "white" : theme.palette.secondary.main}
+      />
+      <rect
+        x={3}
+        y={11}
+        width={24}
+        height={8}
+        fill={
+          status.machiningMats.length === 0
+            ? "white"
+            : elapsed != null && elapsed < 0
+            ? theme.palette.error.main
+            : theme.palette.secondary.main
+        }
+      />
+      <rect
+        x={3}
+        y={19}
+        width={24}
+        height={8}
+        fill={status.loadingMats.length === 0 ? "white" : theme.palette.secondary.main}
+      />
+    </>
+  );
 }
 
 const StatusIcons = React.memo(function StatusIcons({ overview }: { overview: CellOverview }) {
@@ -949,7 +1029,7 @@ const StatusIcons = React.memo(function StatusIcons({ overview }: { overview: Ce
           (numMachines + overview.loads.length + overview.machineAtLoad.length) * StatusIconSize
         } ${StatusIconSize}`}
         preserveAspectRatio="none"
-        width="100px"
+        width="140px"
         height="1.5em"
       >
         <g>
@@ -981,15 +1061,6 @@ const StatusIcons = React.memo(function StatusIcons({ overview }: { overview: Ce
   );
 });
 
-const Transition = React.forwardRef(function Transition(
-  props: TransitionProps & {
-    children: React.ReactElement;
-  },
-  ref: React.Ref<unknown>
-) {
-  return <Slide direction="down" ref={ref} {...props} />;
-});
-
 export const SystemOverviewDialogButton = React.memo(function SystemOverviewDialogButton({
   full,
 }: {
@@ -1003,13 +1074,7 @@ export const SystemOverviewDialogButton = React.memo(function SystemOverviewDial
       <Button onClick={() => setOpen(true)}>
         <StatusIcons overview={overview} />
       </Button>
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        maxWidth="xl"
-        fullScreen={full}
-        TransitionComponent={Transition}
-      >
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xl" fullScreen={full}>
         {full ? (
           <AppBar sx={{ position: "relative" }}>
             <Toolbar>
