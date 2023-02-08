@@ -50,7 +50,7 @@ import { last30InspectionTypes } from "../../cell-status/names.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 
-export const selectInspTypeDialogOpen = atom<boolean>({
+const selectInspTypeDialogOpen = atom<boolean>({
   key: "select-insp-dialog-open",
   default: false,
 });
@@ -108,6 +108,17 @@ function InspectionList() {
         </ListItem>
       ))}
     </List>
+  );
+}
+
+export function SignalInspectionButton() {
+  const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
+  const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
+  if (curMat === null) return null;
+  return (
+    <Button color="primary" onClick={() => setForceInspOpen(true)}>
+      Signal Inspection
+    </Button>
   );
 }
 

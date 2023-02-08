@@ -76,6 +76,7 @@ import {
   SwapMaterialState,
 } from "./InvalidateCycle.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
 
 const CollapsedIconSize = 45;
 const rowSize = CollapsedIconSize + 10; // each material row has 5px above and 5px below for padding
@@ -888,6 +889,7 @@ const SystemOverviewMaterialDialog = React.memo(function SystemOverviewMaterialD
       buttons={
         <>
           <QuarantineMatButton ignoreOperator={ignoreOperator} />
+          <SignalInspectionButton />
           <SwapMaterialButtons
             st={swapSt}
             setState={setSwapSt}
@@ -922,6 +924,7 @@ export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolea
     >
       <SystemOverview overview={overview} />
       <SystemOverviewMaterialDialog ignoreOperator={ignoreOperator} />
+      <SelectInspTypeDialog />
     </main>
   );
 }

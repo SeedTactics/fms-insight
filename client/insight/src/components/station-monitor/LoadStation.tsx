@@ -56,7 +56,7 @@ import { WhiteboardRegion, SortableRegion } from "./Whiteboard.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "./SelectWorkorder.js";
-import { SelectInspTypeDialog, selectInspTypeDialogOpen } from "./SelectInspType.js";
+import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
 import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows.js";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows.js";
 import { currentOperator } from "../../data/operators.js";
@@ -457,17 +457,6 @@ function PrintSerialButton({ loadNum }: { loadNum: number }) {
       </Button>
     );
   }
-}
-
-function SignalInspectionButton() {
-  const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
-  const curMat = useRecoilValue(matDetails.materialInDialogInfo);
-  if (curMat === null) return null;
-  return (
-    <Button color="primary" onClick={() => setForceInspOpen(true)}>
-      Signal Inspection
-    </Button>
-  );
 }
 
 const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProps) {
