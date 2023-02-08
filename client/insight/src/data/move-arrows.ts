@@ -178,12 +178,10 @@ export function computeArrows(
     switch (mat.action.type) {
       case api.ActionType.UnloadToCompletedMaterial:
         arrows.push({
-          fromX: rect.left,
+          fromX: rect.right,
           fromY: rect.top + rect.height / 2,
-          toX: rect.left,
-          toY: byKind.completedMaterial
-            ? byKind.completedMaterial.top + byKind.completedMaterial.height / 2
-            : container.bottom - 10,
+          toY: rect.top + rect.height / 2,
+          toX: byKind.completedMaterial ? byKind.completedMaterial.left + 10 : container.right - 10,
           curveDirection: 1,
         });
         break;

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Box, Divider, useMediaQuery, Button } from "@mui/material";
+import { Box, useMediaQuery, Button, Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
 import { FolderOpen as FolderOpenIcon } from "@mui/icons-material";
@@ -44,7 +44,7 @@ import {
   SortableInProcMaterial,
   DragOverlayInProcMaterial,
 } from "./Material.js";
-import { WhiteboardRegion, SortableRegion } from "./Whiteboard.js";
+import { SortableRegion } from "./Whiteboard.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "./SelectWorkorder.js";
@@ -62,7 +62,8 @@ import { useIsDemo } from "../routes.js";
 import { PrintOnClientButton } from "./QueuesMatDialog.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 
-function MultiInstructionButton({ loadData }: { readonly loadData: LoadStationData }) {
+function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
+  const isDemo = useIsDemo();
   const operator = useRecoilValue(currentOperator);
   const urls = React.useMemo(() => {
     const pal = loadData.pallet;
@@ -106,7 +107,7 @@ function MultiInstructionButton({ loadData }: { readonly loadData: LoadStationDa
     }
   }, [loadData]);
 
-  if (urls.length === 0) {
+  if (urls.length === 0 || isDemo) {
     return <div />;
   }
 
@@ -117,98 +118,58 @@ function MultiInstructionButton({ loadData }: { readonly loadData: LoadStationDa
   }
 
   return (
-    <Tooltip title="Open All Instructions">
-      <Fab onClick={open} color="secondary">
-        <FolderOpenIcon />
-      </Fab>
-    </Tooltip>
+    <Box
+      sx={{
+        position: "fixed",
+        bottom: "5px",
+        right: "5px",
+      }}
+    >
+      <Tooltip title="Open All Instructions">
+        <Fab onClick={open} color="secondary">
+          <FolderOpenIcon />
+        </Fab>
+      </Tooltip>
+    </Box>
   );
 }
 
-function PalletZones({ data }: { readonly data: LoadStationData }) {
-  const maxFace = LazySeq.of(data.face.keys()).maxBy((x) => x) ?? 1;
-  const firstMats = LazySeq.of(data.face).head()?.[1];
+function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number }) {
+  const face = data.face.get(faceNum);
+  if (!face || !data.pallet) return null;
 
   return (
-    <>
-      <Box sx={{ position: "absolute", top: "4px", left: "4px" }}>
-        <Box sx={{ color: "rgba(0,0,0,0.5)", fontSize: "small" }}>Pallet</Box>
-        {data.pallet ? (
-          <Box sx={{ color: "rgba(0,0,0,0.5)", fontSize: "xx-large" }}>{data.pallet.pallet}</Box>
-        ) : undefined}
-      </Box>
-      {data.face.size === 1 && firstMats ? (
-        <Box sx={{ ml: "4em", mr: "4em" }}>
-          <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: maxFace }}>
-            <WhiteboardRegion label={""} spaceAround>
-              {firstMats.map((m, idx) => (
-                <MoveMaterialArrowNode
-                  key={idx}
-                  kind={{
-                    type: MoveMaterialNodeKindType.Material,
-                    material: m,
-                  }}
-                >
-                  <InProcMaterial mat={m} />
-                </MoveMaterialArrowNode>
-              ))}
-            </WhiteboardRegion>
-          </MoveMaterialArrowNode>
+    <div>
+      {faceNum === 1 ? (
+        <Box display="grid" gridTemplateColumns="1fr 1fr 1fr">
+          <Typography variant="h4">Pallet {data.pallet.pallet}</Typography>
+          {data.pallet.numFaces > 1 ? (
+            <Typography variant="h6" justifySelf="center">
+              Face 1
+            </Typography>
+          ) : undefined}
+          <Box justifySelf="flex-end">0:14</Box>
         </Box>
-      ) : (
-        <Box sx={{ ml: "4em", mr: "4em" }}>
-          {LazySeq.of(data.face)
-            .sortBy(([face, _]) => face)
-            .map(([face, data]) => (
-              <div key={face}>
-                <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: face }}>
-                  <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
-                    {data.map((m, idx) => (
-                      <MoveMaterialArrowNode
-                        key={idx}
-                        kind={{ type: MoveMaterialNodeKindType.Material, material: m }}
-                      >
-                        <InProcMaterial mat={m} />
-                      </MoveMaterialArrowNode>
-                    ))}
-                  </WhiteboardRegion>
-                </MoveMaterialArrowNode>
-                {face === maxFace ? undefined : <Divider key={1} />}
-              </div>
-            ))}
-        </Box>
-      )}
-    </>
-  );
-}
-
-function PalletColumn(props: {
-  readonly dateOfCurrentStatus: Date;
-  readonly data: LoadStationData;
-  readonly fillViewPort: boolean;
-}) {
-  return (
-    <>
-      {props.data.pallet ? ( // stationStatus is defined only when no pallet
-        <Box
-          sx={
-            props.fillViewPort
-              ? { position: "relative", width: "100%", flexGrow: 1 }
-              : {
-                  position: "relative",
-                  width: "100%",
-                  minHeight: "12em",
-                }
-          }
-        >
-          <PalletZones data={props.data} />
+      ) : data.pallet.numFaces > 1 ? (
+        <Box display="flex" justifyContent="center">
+          <Typography variant="h6">Face {faceNum}</Typography>
         </Box>
       ) : undefined}
-      <Divider />
-      <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.CompletedMaterialZone }}>
-        <WhiteboardRegion label="Completed Material" />
-      </MoveMaterialArrowNode>
-    </>
+      <Box ml="4em" mr="4em">
+        <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: faceNum }}>
+          <Box display="flex" flexWrap="wrap" justifyContent="space-around">
+            {face.map((m, idx) => (
+              <MoveMaterialArrowNode
+                key={idx}
+                kind={{ type: MoveMaterialNodeKindType.Material, material: m }}
+              >
+                <InProcMaterial mat={m} />
+              </MoveMaterialArrowNode>
+            ))}
+          </Box>
+        </MoveMaterialArrowNode>
+      </Box>
+    </div>
   );
 }
 
@@ -220,7 +181,8 @@ function MaterialRegion({
   mat: { readonly label: string; readonly material: MaterialList; readonly isFree: boolean };
 }) {
   return (
-    <WhiteboardRegion column label={mat.label}>
+    <div>
+      <Typography variant="h4">{mat.label}</Typography>
       {mat.material.map((m, matIdx) => (
         <MoveMaterialArrowNode
           key={matIdx}
@@ -236,59 +198,64 @@ function MaterialRegion({
           )}
         </MoveMaterialArrowNode>
       ))}
-    </WhiteboardRegion>
+    </div>
   );
 }
 
 function MaterialColumn({
   data,
   mat,
-  fillViewPort,
 }: {
   readonly data: LoadStationData;
   mat: { readonly label: string; readonly material: MaterialList; readonly isFree: boolean };
-  fillViewPort: boolean;
 }) {
   return (
-    <Box
-      sx={{
-        minWidth: "16em",
-        padding: "8px",
-        borderLeft: fillViewPort ? "1px solid rgba(0, 0, 0, 0.12)" : undefined,
-        borderTop: !fillViewPort ? "1px solid rgba(0, 0, 0, 0.12)" : undefined,
-      }}
+    <MoveMaterialArrowNode
+      kind={
+        mat.isFree
+          ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
+          : {
+              type: MoveMaterialNodeKindType.QueueZone,
+              queue: mat.label,
+            }
+      }
     >
-      <MoveMaterialArrowNode
-        kind={
-          mat.isFree
-            ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
-            : {
-                type: MoveMaterialNodeKindType.QueueZone,
-                queue: mat.label,
-              }
-        }
-      >
-        {mat.isFree ? (
+      {mat.isFree ? (
+        <MaterialRegion data={data} mat={mat} />
+      ) : (
+        <SortableRegion
+          matIds={mat.material.map((m) => m.materialID)}
+          direction="vertical"
+          queueName={mat.label}
+          renderDragOverlay={(mat) => (
+            <DragOverlayInProcMaterial
+              mat={mat}
+              displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+            />
+          )}
+        >
           <MaterialRegion data={data} mat={mat} />
-        ) : (
-          <SortableRegion
-            matIds={mat.material.map((m) => m.materialID)}
-            direction="vertical"
-            queueName={mat.label}
-            renderDragOverlay={(mat) => (
-              <DragOverlayInProcMaterial
-                mat={mat}
-                displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
-              />
-            )}
-          >
-            <MaterialRegion data={data} mat={mat} />
-          </SortableRegion>
-        )}
-      </MoveMaterialArrowNode>
-    </Box>
+        </SortableRegion>
+      )}
+    </MoveMaterialArrowNode>
   );
 }
+
+const CompletedCol = React.memo(function CompletedCol({ fillViewPort }: { fillViewPort: boolean }) {
+  return (
+    <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.CompletedMaterialZone }}>
+      <Box display="flex" justifyContent={fillViewPort ? "flex-end" : undefined} padding="8px">
+        <Typography
+          variant="h4"
+          margin="4px"
+          sx={fillViewPort ? { textOrientation: "mixed", writingMode: "vertical-rl" } : undefined}
+        >
+          Completed Material
+        </Typography>
+      </Box>
+    </MoveMaterialArrowNode>
+  );
+});
 
 interface LoadMatDialogProps {
   readonly loadNum: number;
@@ -376,57 +343,46 @@ interface LoadStationProps {
   readonly queues: ReadonlyArray<string>;
 }
 
-export function LoadStation(props: LoadStationProps) {
-  const currentSt = useRecoilValue(currentStatus);
-  const data = React.useMemo(
-    () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt),
-    [currentSt, props.loadNum, props.queues]
-  );
-  const isDemo = useIsDemo();
+function useGridLayout({
+  numMatCols,
+  maxNumFaces,
+  horizontal,
+}: {
+  numMatCols: number;
+  maxNumFaces: number;
+  horizontal: boolean;
+}): string {
+  let rows = "";
+  let cols = "";
 
-  let matColsSeq = LazySeq.of(data.queues)
-    .sortBy(([q, _]) => q)
-    .map(([q, mats]) => ({
-      label: q,
-      material: mats,
-      isFree: false,
-    }));
+  if (horizontal) {
+    let colNames = "";
+    for (let i = 0; i < numMatCols; i++) {
+      cols += "minmax(16em, max-content) ";
+      colNames += `mat${i} `;
+    }
+    cols += "1fr ";
+    cols += " 4.5em";
 
-  if (data.queues.size === 0 || data.freeLoadingMaterial.length > 0) {
-    matColsSeq = matColsSeq.prepend({
-      label: "Material",
-      material: data.freeLoadingMaterial,
-      isFree: true,
-    });
+    for (let i = 0; i < maxNumFaces; i++) {
+      rows += `"${colNames} palface${i} completed" 1fr\n`;
+    }
+  } else {
+    cols = "1fr";
+    for (let i = 0; i < numMatCols; i++) {
+      rows += `"mat${i}" minmax(134px, max-content)\n`;
+    }
+    for (let i = 0; i < maxNumFaces; i++) {
+      rows += `"palface${i}" minmax(134px, max-content)\n`;
+    }
+    rows += '"completed" minmax(134px, max-content)\n';
   }
-  const matCols = matColsSeq.toRArray();
 
-  const fillViewPort = useMediaQuery(
-    matCols.length <= 1
-      ? "(min-width: 600px)"
-      : matCols.length === 2
-      ? "(min-width: 950px)"
-      : "(min-width: 1250px)"
-  );
+  return `${rows} / ${cols}`;
+}
 
-  return (
-    <MoveMaterialArrowContainer hideArrows={!fillViewPort}>
-      <Box
-        component="main"
-        sx={
-          fillViewPort
-            ? {
-                height: "calc(100vh - 64px - 1em)",
-                display: "flex",
-                padding: "8px",
-                width: "100%",
-              }
-            : {
-                padding: "8px",
-                width: "100%",
-              }
-        }
-      >
+/*
+
         <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", position: "relative" }}>
           <PalletColumn
             fillViewPort={fillViewPort}
@@ -453,9 +409,91 @@ export function LoadStation(props: LoadStationProps) {
             </Box>
           ) : undefined}
         </Box>
+        */
+
+export function LoadStation(props: LoadStationProps) {
+  const currentSt = useRecoilValue(currentStatus);
+  const data = React.useMemo(
+    () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt),
+    [currentSt, props.loadNum, props.queues]
+  );
+
+  let matColsSeq = LazySeq.of(data.queues)
+    .sortBy(([q, _]) => q)
+    .map(([q, mats]) => ({
+      label: q,
+      material: mats,
+      isFree: false,
+    }));
+
+  if (data.queues.size === 0 || data.freeLoadingMaterial.length > 0) {
+    matColsSeq = matColsSeq.prepend({
+      label: "Material",
+      material: data.freeLoadingMaterial,
+      isFree: true,
+    });
+  }
+  const matCols = matColsSeq.toRArray();
+
+  const fillViewPort = useMediaQuery(
+    matCols.length <= 1
+      ? "(min-width: 600px)"
+      : matCols.length === 2
+      ? "(min-width: 950px)"
+      : "(min-width: 1250px)"
+  );
+
+  const grid = useGridLayout({ numMatCols: matCols.length, maxNumFaces: 2, horizontal: fillViewPort });
+
+  return (
+    <MoveMaterialArrowContainer hideArrows={!fillViewPort}>
+      <Box
+        component="main"
+        width="100%"
+        bgcolor="#F8F8F8"
+        display="grid"
+        sx={
+          fillViewPort
+            ? {
+                minHeight: "calc(100vh - 64px)",
+                gridTemplate: grid,
+              }
+            : {
+                padding: "8px",
+                gridTemplate: grid,
+              }
+        }
+      >
         {matCols.map((col, idx) => (
-          <MaterialColumn key={idx} data={data} mat={col} fillViewPort={fillViewPort} />
+          <Box
+            key={idx}
+            gridArea={`mat${idx}`}
+            padding="8px"
+            borderRight={fillViewPort ? "1px solid black" : undefined}
+            borderBottom={!fillViewPort ? "1px solid black" : undefined}
+          >
+            <MaterialColumn data={data} mat={col} />
+          </Box>
         ))}
+        {[0, 1].map((i) => (
+          <Box
+            key={i}
+            marginLeft="15px"
+            gridArea={`palface${i}`}
+            padding="8px"
+            borderTop={i !== 0 ? "1px solid black" : undefined}
+          >
+            <PalletFace data={data} faceNum={i + 1} />
+          </Box>
+        ))}
+        <Box
+          borderLeft={fillViewPort ? "1px solid black" : undefined}
+          borderTop={!fillViewPort ? "1px solid black" : undefined}
+          gridArea="completed"
+        >
+          <CompletedCol fillViewPort={fillViewPort} />
+        </Box>
+        <MultiInstructionButton loadData={data} />
         <SelectWorkorderDialog />
         <SelectInspTypeDialog />
         <LoadMatDialog loadNum={data.loadNum} pallet={data.pallet?.pallet ?? null} />
@@ -468,11 +506,7 @@ function LoadStationCheckWidth(props: LoadStationProps): JSX.Element {
   React.useEffect(() => {
     document.title = "Load " + props.loadNum.toString() + " - FMS Insight";
   }, [props.loadNum]);
-  return (
-    <div>
-      <LoadStation {...props} />
-    </div>
-  );
+  return <LoadStation {...props} />;
 }
 
 export default LoadStationCheckWidth;

@@ -90,7 +90,7 @@ const MoveMaterialArrows = React.memo(function MoveMaterialArrows({
       {arrows.map((arr, idx) => (
         <path
           key={idx}
-          style={{ fill: "none", stroke: "rgba(0,0,0,0.5)", strokeWidth: 2 }}
+          style={{ fill: "none", stroke: "rgba(0,0,0,0.15)", strokeWidth: 2 }}
           d={arrowToPath(arr)}
           markerEnd={`url(#arrow)`}
         />
@@ -158,7 +158,7 @@ export const MoveMaterialArrowContainer = React.memo(function MoveMaterialArrowC
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <path d="M0,0 L0,6 L5,3 z" fill="rgba(0,0,0,0.5)" />
+            <path d="M0,0 L0,6 L5,3 z" fill="rgba(0,0,0,0.15)" />
           </marker>
         </defs>
         {!hideArrows ? <MoveMaterialArrows container={container} arrowsWithRefs={nodes} /> : undefined}
