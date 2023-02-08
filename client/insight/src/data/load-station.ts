@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -39,60 +39,12 @@ export interface PalletData {
   material: api.IInProcessMaterial[];
 }
 
-function buildCellStatus(
-  st: Readonly<api.ICurrentStatus>
-): ReadonlyMap<string, { pal?: PalletData; queued?: PalletData }> {
-  const matByPallet = new Map<string, api.IInProcessMaterial[]>();
-  for (const mat of st.material) {
-    if (mat.location.type === api.LocType.OnPallet && mat.location.pallet !== undefined) {
-      const mats = matByPallet.get(mat.location.pallet) || [];
-      mats.push(mat);
-      matByPallet.set(mat.location.pallet, mats);
-    }
-  }
-
-  const m = new Map<string, { pal?: PalletData; queued?: PalletData }>();
-  for (const pal of Object.values(st.pallets)) {
-    switch (pal.currentPalletLocation.loc) {
-      case api.PalletLocationEnum.LoadUnload:
-      case api.PalletLocationEnum.Machine: {
-        const stat = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
-        m.set(stat, {
-          ...(m.get(stat) || {}),
-          pal: {
-            pallet: pal,
-            material: matByPallet.get(pal.pallet) || [],
-          },
-        });
-        break;
-      }
-
-      case api.PalletLocationEnum.MachineQueue: {
-        const stat2 = pal.currentPalletLocation.group + " #" + pal.currentPalletLocation.num.toString();
-        m.set(stat2, {
-          ...(m.get(stat2) || {}),
-          queued: {
-            pallet: pal,
-            material: matByPallet.get(pal.pallet) || [],
-          },
-        });
-        break;
-      }
-
-      // TODO: buffer and cart
-    }
-  }
-
-  return m;
-}
-
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
 export interface LoadStationData {
   readonly loadNum: number;
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: ReadonlyMap<number, MaterialList>;
-  readonly stationStatus?: ReadonlyMap<string, { pal?: PalletData; queued?: PalletData }>;
   readonly freeLoadingMaterial: MaterialList;
   readonly queues: ReadonlyMap<string, MaterialList>;
 }
@@ -191,7 +143,6 @@ export function selectLoadStationAndQueueProps(
     loadNum,
     pallet: pal,
     face: byFace,
-    stationStatus: pal === undefined ? buildCellStatus(curSt) : undefined,
     freeLoadingMaterial: freeLoading,
     queues: queueMat,
   };

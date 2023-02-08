@@ -33,19 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { Box, Divider, useMediaQuery, Button } from "@mui/material";
-import TimeAgo from "react-timeago";
-import { addSeconds } from "date-fns";
-import { durationToSeconds } from "../../util/parseISODuration.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
 import { FolderOpen as FolderOpenIcon } from "@mui/icons-material";
 
-import {
-  LoadStationData,
-  selectLoadStationAndQueueProps,
-  PalletData,
-  MaterialList,
-} from "../../data/load-station.js";
+import { LoadStationData, selectLoadStationAndQueueProps, MaterialList } from "../../data/load-station.js";
 import {
   MaterialDialog,
   InProcMaterial,
@@ -69,88 +61,6 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { useIsDemo } from "../routes.js";
 import { PrintOnClientButton } from "./QueuesMatDialog.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
-
-function stationPalMaterialStatus(
-  mat: Readonly<api.IInProcessMaterial>,
-  dateOfCurrentStatus: Date
-): JSX.Element {
-  const name = mat.partName + "-" + mat.process.toString();
-
-  let matStatus = "";
-  let matTime: JSX.Element | undefined;
-  switch (mat.action.type) {
-    case api.ActionType.Loading:
-      if (
-        (mat.action.loadOntoPallet !== undefined && mat.action.loadOntoPallet !== mat.location.pallet) ||
-        (mat.action.loadOntoFace !== undefined && mat.action.loadOntoFace !== mat.location.face)
-      ) {
-        matStatus = " (loading)";
-      } else if (mat.action.loadOntoPallet !== undefined && mat.action.loadOntoFace !== undefined) {
-        matStatus = " (reclamp)";
-      }
-      break;
-    case api.ActionType.UnloadToCompletedMaterial:
-    case api.ActionType.UnloadToInProcess:
-      matStatus = " (unloading)";
-      break;
-    case api.ActionType.Machining:
-      matStatus = " (machining)";
-      if (mat.action.expectedRemainingMachiningTime) {
-        matStatus += " completing ";
-        const seconds = durationToSeconds(mat.action.expectedRemainingMachiningTime);
-        matTime = <TimeAgo date={addSeconds(dateOfCurrentStatus, seconds)} />;
-      }
-      break;
-  }
-
-  return (
-    <>
-      <span>{name + matStatus}</span>
-      {matTime}
-    </>
-  );
-}
-
-interface StationStatusProps {
-  byStation: ReadonlyMap<string, { pal?: PalletData; queue?: PalletData }>;
-  dateOfCurrentStatus: Date;
-}
-
-function StationStatus(props: StationStatusProps) {
-  if (props.byStation.size === 0) {
-    return <div />;
-  }
-  return (
-    <dl style={{ color: "rgba(0,0,0,0.6" }}>
-      {LazySeq.of(props.byStation)
-        .sortBy(([s, _]) => s)
-        .map(([stat, pals]) => (
-          <React.Fragment key={stat}>
-            {pals.pal ? (
-              <>
-                <dt style={{ marginTop: "1em" }}>
-                  {stat} - Pallet {pals.pal.pallet.pallet} - worktable
-                </dt>
-                {pals.pal.material.map((mat, idx) => (
-                  <dd key={idx}>{stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}</dd>
-                ))}
-              </>
-            ) : undefined}
-            {pals.queue ? (
-              <>
-                <dt style={{ marginTop: "1em" }}>
-                  {stat} - Pallet {pals.queue.pallet.pallet} - queue
-                </dt>
-                {pals.queue.material.map((mat, idx) => (
-                  <dd key={idx}>{stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}</dd>
-                ))}
-              </>
-            ) : undefined}
-          </React.Fragment>
-        ))}
-    </dl>
-  );
-}
 
 function MultiInstructionButton({ loadData }: { readonly loadData: LoadStationData }) {
   const operator = useRecoilValue(currentOperator);
@@ -279,29 +189,7 @@ function PalletColumn(props: {
 }) {
   return (
     <>
-      {props.data.stationStatus ? ( // stationStatus is defined only when no pallet
-        <Box
-          sx={
-            props.fillViewPort
-              ? {
-                  width: "100%",
-                  flexGrow: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }
-              : {
-                  width: "100%",
-                  minHeight: "12em",
-                }
-          }
-        >
-          <StationStatus
-            byStation={props.data.stationStatus}
-            dateOfCurrentStatus={props.dateOfCurrentStatus}
-          />
-        </Box>
-      ) : (
+      {props.data.pallet ? ( // stationStatus is defined only when no pallet
         <Box
           sx={
             props.fillViewPort
@@ -315,7 +203,7 @@ function PalletColumn(props: {
         >
           <PalletZones data={props.data} />
         </Box>
-      )}
+      ) : undefined}
       <Divider />
       <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.CompletedMaterialZone }}>
         <WhiteboardRegion label="Completed Material" />
