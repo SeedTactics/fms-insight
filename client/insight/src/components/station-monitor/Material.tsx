@@ -50,6 +50,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  keyframes,
+  styled,
 } from "@mui/material";
 import TimeAgo from "react-timeago";
 import { DragIndicator, Warning as WarningIcon, Search as SearchIcon } from "@mui/icons-material";
@@ -284,18 +286,72 @@ const MatCard = React.forwardRef(function MatCard(
 
 export const MatSummary: React.ComponentType<MaterialSummaryProps> = React.memo(MatCard);
 
-export interface InProcMaterialProps {
+const shakeSize = 2;
+
+const shakeHorizKeyframes = keyframes`
+  from, to { transform: translate(0, 0) }
+  10% { transform: translate(${shakeSize}px, 0) }
+  20% { transform: translate(0, 0) }
+  30% { transform: translate(${shakeSize}px, 0) }
+  40% { transform: translate(0, 0) }
+  50% { transform: translate(${shakeSize}px, 0) }
+  60% { transform: translate(0, 0) }
+`;
+
+const shakeVerticalKeyframes = keyframes`
+  from, to { transform: translate(0, 0) }
+  10% { transform: translate(0, ${shakeSize}px) }
+  20% { transform: translate(0, 0) }
+  30% { transform: translate(0, ${shakeSize}px) }
+  40% { transform: translate(0, 0) }
+  50% { transform: translate(0, ${shakeSize}px) }
+  60% { transform: translate(0, 0) }
+`;
+
+const shakeRotateKeyframes = keyframes`
+  from, to { transform: rotate(0deg) }
+  10% { transform: rotate(${shakeSize}deg) }
+  20% { transform: rotate(-${shakeSize}deg) }
+  30% { transform: rotate(${shakeSize}deg) }
+  40% { transform: rotate(-${shakeSize}deg) }
+  50% { transform: rotate(${shakeSize}deg) }
+  60% { transform: rotate(0deg) }
+`;
+
+export type ShakeProps = {
+  readonly shakeVertical?: boolean;
+  readonly shakeHorizontal?: boolean;
+  readonly shakeRotate?: boolean;
+};
+
+const Shake = styled("div", {
+  shouldForwardProp: (p) => p !== "shakeVertical" && p !== "shakeHorizontal" && p !== "shakeRotate",
+})<ShakeProps>((props) => ({
+  animation: `${
+    props.shakeVertical
+      ? shakeVerticalKeyframes
+      : props.shakeHorizontal
+      ? shakeHorizKeyframes
+      : shakeRotateKeyframes
+  } 1s ease-in-out infinite`,
+  transformOrigin: "center center",
+  "&:hover": {
+    animationPlayState: "paused",
+  },
+}));
+
+export type InProcMaterialProps = {
   readonly mat: Readonly<api.IInProcessMaterial>;
   readonly displaySinglePallet?: string;
   readonly displayJob?: boolean;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
-}
+};
 
 export const InProcMaterial = React.memo(function InProcMaterial(
-  props: InProcMaterialProps & { readonly showHandle?: boolean }
+  props: InProcMaterialProps & ShakeProps & { readonly showHandle?: boolean }
 ) {
-  return (
+  const mat = (
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
       action={materialAction(props.mat, props.displaySinglePallet)}
@@ -305,6 +361,20 @@ export const InProcMaterial = React.memo(function InProcMaterial(
       hideEmptySerial={props.hideEmptySerial}
     />
   );
+
+  if (props.shakeHorizontal || props.shakeVertical || props.shakeRotate) {
+    return (
+      <Shake
+        shakeVertical={props.shakeVertical}
+        shakeHorizontal={props.shakeHorizontal}
+        shakeRotate={props.shakeRotate}
+      >
+        {mat}
+      </Shake>
+    );
+  } else {
+    return mat;
+  }
 });
 
 export type SortableMatData = {
