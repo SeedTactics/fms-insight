@@ -34,19 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from "../network/api.js";
 import { LazySeq, mkCompareByProperties } from "@seedtactics/immutable-collections";
 
-export interface PalletData {
-  pallet: api.IPalletStatus;
-  material: api.IInProcessMaterial[];
-}
-
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
 export interface LoadStationData {
-  readonly loadNum: number;
   readonly pallet?: Readonly<api.IPalletStatus>;
   readonly face: ReadonlyMap<number, MaterialList>;
   readonly freeLoadingMaterial: MaterialList;
   readonly queues: ReadonlyMap<string, MaterialList>;
+  readonly elapsedLoadingTime: string | null;
 }
 
 export function selectLoadStationAndQueueProps(
@@ -68,7 +63,8 @@ export function selectLoadStationAndQueueProps(
     }
   }
 
-  // first queued and loading material.  Ensure all configured queues are present.
+  // calculate queues to show, which is all configured queues and any queues with
+  // material loading onto the pallet
   const queuesToShow = new Set(queues);
   if (pal !== undefined) {
     for (const m of curSt.material) {
@@ -87,33 +83,43 @@ export function selectLoadStationAndQueueProps(
     LazySeq.of(queuesToShow).map((q) => [q, []])
   );
   const freeLoading: Array<Readonly<api.IInProcessMaterial>> = [];
-  for (const m of curSt.material) {
-    if (m.location.type === api.LocType.InQueue && m.location.currentQueue) {
-      if (queueMat.has(m.location.currentQueue)) {
-        const old = queueMat.get(m.location.currentQueue);
-        if (old === undefined) {
-          queueMat.set(m.location.currentQueue, [m]);
-        } else {
-          old.push(m);
-        }
-      }
-    } else if (
-      m.location.type === api.LocType.Free &&
-      pal !== undefined &&
-      m.action.type === api.ActionType.Loading &&
-      m.action.loadOntoPallet === pal.pallet
-    ) {
-      freeLoading.push(m);
+  const byFace = new Map<number, Array<api.IInProcessMaterial>>();
+  let elapsedLoadingTime: string | null = null;
+
+  // ensure all faces
+  if (pal) {
+    for (let i = 0; i <= pal.numFaces; i++) {
+      byFace.set(i, []);
     }
   }
 
-  // now material currently on the pallet
-  const byFace = new Map<number, Array<api.IInProcessMaterial>>();
-  if (pal !== undefined) {
-    const palName = pal.pallet;
+  for (const m of curSt.material) {
+    if (pal) {
+      // if loading onto pallet, set elapsed load time, ensure face exists, and set free loading
+      if (m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === pal.pallet) {
+        if (m.action.elapsedLoadUnloadTime) {
+          elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
+        }
 
-    for (const m of curSt.material) {
-      if (m.location.type === api.LocType.OnPallet && m.location.pallet === palName) {
+        if (m.action.loadOntoFace && !byFace.has(m.action.loadOntoFace)) {
+          byFace.set(m.action.loadOntoFace, []);
+        }
+
+        if (m.location.type === api.LocType.Free) {
+          freeLoading.push(m);
+        }
+      }
+
+      // if currently on the pallet, set elapsed load time and add it to the pallet face
+      if (m.location.type === api.LocType.OnPallet && m.location.pallet === pal.pallet) {
+        if (
+          (m.action.type === api.ActionType.UnloadToCompletedMaterial ||
+            m.action.type === api.ActionType.UnloadToInProcess) &&
+          m.action.elapsedLoadUnloadTime
+        ) {
+          elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
+        }
+
         const face = byFace.get(m.location.face ?? 0);
         if (face !== undefined) {
           face.push(m);
@@ -123,15 +129,17 @@ export function selectLoadStationAndQueueProps(
       }
     }
 
-    // make sure all face desinations exist
-    for (const m of LazySeq.of(queueMat)
-      .flatMap(([, m]) => m)
-      .concat(freeLoading)) {
-      if (m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === palName) {
-        const face = m.action.loadOntoFace;
-        if (face !== undefined && !byFace.has(face)) {
-          byFace.set(face, []);
-        }
+    // add all material in the configured queues
+    if (
+      m.location.type === api.LocType.InQueue &&
+      m.location.currentQueue &&
+      queueMat.has(m.location.currentQueue)
+    ) {
+      const old = queueMat.get(m.location.currentQueue);
+      if (old === undefined) {
+        queueMat.set(m.location.currentQueue, [m]);
+      } else {
+        old.push(m);
       }
     }
   }
@@ -140,10 +148,10 @@ export function selectLoadStationAndQueueProps(
   queueMat.forEach((mats) => mats.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
 
   return {
-    loadNum,
     pallet: pal,
     face: byFace,
     freeLoadingMaterial: freeLoading,
     queues: queueMat,
+    elapsedLoadingTime,
   };
 }

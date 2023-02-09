@@ -60,8 +60,8 @@ import {
   LocType,
   PalletLocationEnum,
 } from "../../network/api.js";
-import { atom, useRecoilValue } from "recoil";
-import { currentStatus } from "../../cell-status/current-status.js";
+import { useRecoilValue } from "recoil";
+import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { ComparableObj, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
@@ -480,20 +480,7 @@ function gridTemplateColumns(maxNumFaces: number, includeLabelCol: boolean) {
   }
 }
 
-const secondsSinceEpochAtom = atom<number>({
-  key: "system-overview/seconds-since-epoch",
-  default: Math.floor(Date.now() / 1000),
-  effects: [
-    ({ setSelf }) => {
-      const interval = setInterval(() => {
-        setSelf(Math.floor(Date.now() / 1000));
-      }, 1000);
-      return () => clearInterval(interval);
-    },
-  ],
-});
-
-function formatSeconds(totalSeconds: number): string {
+export function formatSeconds(totalSeconds: number): string {
   const secs = Math.abs(totalSeconds) % 60;
   const totalMins = Math.floor(Math.abs(totalSeconds) / 60);
   const mins = totalMins % 60;
@@ -628,7 +615,7 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
   );
 }
 
-function useRemainingLoadTime(
+function useElapsedLoadTime(
   material: ReadonlyArray<Readonly<IInProcessMaterial>> | null | undefined
 ): string {
   const mat = material?.find(
@@ -655,7 +642,7 @@ function useRemainingLoadTime(
 }
 
 function LoadStationLabel({ load }: { load: LoadStatus }) {
-  const status = useRemainingLoadTime(load.pal?.mats);
+  const status = useElapsedLoadTime(load.pal?.mats);
   return (
     <Box display="flex" justifyContent="space-between" alignItems="baseline">
       <Typography variant="h5">L/U {load.lulNum}</Typography>
@@ -712,7 +699,7 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
 }
 
 function MachineAtLoadLabel({ status }: { status: MachineAtLoadStatus }) {
-  const lulStatus = useRemainingLoadTime(status.loadingMats);
+  const lulStatus = useElapsedLoadTime(status.loadingMats);
   const [machining, mcStatus, mcElapsed] = useRemainingMachineTime(status.machiningMats);
 
   return (

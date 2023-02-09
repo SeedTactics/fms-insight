@@ -57,10 +57,12 @@ import { Tooltip } from "@mui/material";
 import { Fab } from "@mui/material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
-import { currentStatus } from "../../cell-status/current-status.js";
+import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { useIsDemo } from "../routes.js";
 import { PrintOnClientButton } from "./QueuesMatDialog.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { durationToSeconds } from "../../util/parseISODuration.js";
+import { formatSeconds } from "./SystemOverview.js";
 
 function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
   const isDemo = useIsDemo();
@@ -134,6 +136,19 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
   );
 }
 
+function ElapsedLoadTime({ elapsedLoadTime }: { elapsedLoadTime: string | null }) {
+  const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
+  const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
+
+  if (elapsedLoadTime) {
+    const elapsedSecsInCurSt = durationToSeconds(elapsedLoadTime);
+    const elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+    return <span>{formatSeconds(elapsedSecs)}</span>;
+  } else {
+    return null;
+  }
+}
+
 function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number }) {
   const face = data.face.get(faceNum);
   if (!face || !data.pallet) return null;
@@ -148,7 +163,9 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
               Face 1
             </Typography>
           ) : undefined}
-          <Box justifySelf="flex-end">0:14</Box>
+          <Box justifySelf="flex-end">
+            <ElapsedLoadTime elapsedLoadTime={data.elapsedLoadingTime} />
+          </Box>
         </Box>
       ) : data.pallet.numFaces > 1 ? (
         <Box display="flex" justifyContent="center">
@@ -466,7 +483,7 @@ export function LoadStation(props: LoadStationProps) {
         <MultiInstructionButton loadData={data} />
         <SelectWorkorderDialog />
         <SelectInspTypeDialog />
-        <LoadMatDialog loadNum={data.loadNum} pallet={data.pallet?.pallet ?? null} />
+        <LoadMatDialog loadNum={props.loadNum} pallet={data.pallet?.pallet ?? null} />
       </Box>
     </MoveMaterialArrowContainer>
   );
