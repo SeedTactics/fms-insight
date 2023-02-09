@@ -141,7 +141,7 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
   return (
     <div>
       {faceNum === 1 ? (
-        <Box display="grid" gridTemplateColumns="1fr 1fr 1fr">
+        <Box display="grid" gridTemplateColumns={data.pallet.numFaces > 1 ? "1fr 1fr 1fr" : "1fr 1fr"}>
           <Typography variant="h4">Pallet {data.pallet.pallet}</Typography>
           {data.pallet.numFaces > 1 ? (
             <Typography variant="h6" justifySelf="center">
@@ -250,7 +250,7 @@ const CompletedCol = React.memo(function CompletedCol({ fillViewPort }: { fillVi
           margin="4px"
           sx={fillViewPort ? { textOrientation: "mixed", writingMode: "vertical-rl" } : undefined}
         >
-          Completed Material
+          Completed
         </Typography>
       </Box>
     </MoveMaterialArrowNode>
@@ -381,36 +381,6 @@ function useGridLayout({
   return `${rows} / ${cols}`;
 }
 
-/*
-
-        <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", position: "relative" }}>
-          <PalletColumn
-            fillViewPort={fillViewPort}
-            data={data}
-            dateOfCurrentStatus={currentSt.timeOfCurrentStatusUTC}
-          />
-          {!isDemo ? (
-            <Box
-              sx={
-                fillViewPort
-                  ? {
-                      position: "absolute",
-                      bottom: "0px",
-                      right: "5px",
-                    }
-                  : {
-                      position: "fixed",
-                      bottom: "5px",
-                      right: "5px",
-                    }
-              }
-            >
-              <MultiInstructionButton loadData={data} />
-            </Box>
-          ) : undefined}
-        </Box>
-        */
-
 export function LoadStation(props: LoadStationProps) {
   const currentSt = useRecoilValue(currentStatus);
   const data = React.useMemo(
@@ -427,7 +397,7 @@ export function LoadStation(props: LoadStationProps) {
     }));
 
   if (data.queues.size === 0 || data.freeLoadingMaterial.length > 0) {
-    matColsSeq = matColsSeq.prepend({
+    matColsSeq = matColsSeq.append({
       label: "Material",
       material: data.freeLoadingMaterial,
       isFree: true,
@@ -481,7 +451,7 @@ export function LoadStation(props: LoadStationProps) {
             marginLeft="15px"
             gridArea={`palface${i}`}
             padding="8px"
-            borderTop={i !== 0 ? "1px solid black" : undefined}
+            borderTop={data.pallet && i !== 0 ? "1px solid black" : undefined}
           >
             <PalletFace data={data} faceNum={i + 1} />
           </Box>
