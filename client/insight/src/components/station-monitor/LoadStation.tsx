@@ -180,16 +180,7 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
                 key={idx}
                 kind={{ type: MoveMaterialNodeKindType.Material, material: m }}
               >
-                <InProcMaterial
-                  mat={m}
-                  shakeVertical={
-                    m.action.type === api.ActionType.Loading && m.location.type === api.LocType.OnPallet
-                  }
-                  shakeHorizontal={
-                    m.action.type === api.ActionType.UnloadToCompletedMaterial ||
-                    m.action.type === api.ActionType.UnloadToInProcess
-                  }
-                />
+                <InProcMaterial mat={m} />
               </MoveMaterialArrowNode>
             ))}
           </Box>
@@ -221,10 +212,16 @@ function MaterialRegion({
             <InProcMaterial
               mat={m}
               displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
-              shakeHorizontal={m.action.type === api.ActionType.Loading}
+              shake={m.action.type === api.ActionType.Loading}
             />
           ) : (
-            <SortableInProcMaterial mat={m} displaySinglePallet={data.pallet ? data.pallet.pallet : ""} />
+            <SortableInProcMaterial
+              mat={m}
+              displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+              shake={
+                m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === data.pallet?.pallet
+              }
+            />
           )}
         </MoveMaterialArrowNode>
       ))}
