@@ -335,7 +335,7 @@ const App = React.memo(function App(props: AppProps) {
   if (fmsInfo && (!serverSettings.requireLogin(fmsInfo) || fmsInfo.user)) {
     switch (route.route) {
       case routes.RouteLocation.Station_LoadMonitor:
-        page = <LoadStation loadNum={route.loadNum} queues={route.queues} />;
+        page = <LoadStation loadNum={route.loadNum} queues={route.queues} completed={route.completed} />;
         navigation = StationToolbar;
         navigationCenter = StationToolbarOverviewButton;
         showOperator = true;

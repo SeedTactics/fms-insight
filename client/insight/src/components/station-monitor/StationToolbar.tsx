@@ -60,6 +60,7 @@ const inHeaderStyle = {
 };
 
 const allInspSym = "@@all_inspection_display@@";
+const completedSym = "@@recent_completed_material@@";
 
 enum StationMonitorType {
   LoadUnload = "LoadUnload",
@@ -84,9 +85,10 @@ export function StationToolbar(): JSX.Element {
           route: RouteLocation.Station_LoadMonitor,
           loadNum: val,
           queues: route.queues,
+          completed: route.completed,
         });
       } else {
-        setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, queues: [] });
+        setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, queues: [], completed: false });
       }
     }
   }
@@ -100,15 +102,17 @@ export function StationToolbar(): JSX.Element {
   }
 
   function setLoadQueues(newQueues: ReadonlyArray<string>) {
-    newQueues = newQueues.slice(0, 2);
+    const completed = newQueues.includes(completedSym);
+    newQueues = newQueues.filter((q) => q !== completedSym).slice(0, 2);
     if (route.route === RouteLocation.Station_LoadMonitor) {
       setRoute({
         route: RouteLocation.Station_LoadMonitor,
         loadNum: route.loadNum,
         queues: newQueues,
+        completed: completed,
       });
     } else {
-      setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: 1, queues: newQueues });
+      setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: 1, queues: newQueues, completed });
     }
   }
 
@@ -125,6 +129,9 @@ export function StationToolbar(): JSX.Element {
       curType = StationMonitorType.LoadUnload;
       loadNum = route.loadNum;
       currentQueues = route.queues;
+      if (route.completed) {
+        currentQueues = currentQueues.concat(completedSym);
+      }
       break;
     case RouteLocation.Station_InspectionMonitor:
       curType = StationMonitorType.Inspection;
@@ -207,6 +214,9 @@ export function StationToolbar(): JSX.Element {
                 {q}
               </MenuItem>
             ))}
+            <MenuItem value={completedSym}>
+              <i>Completed</i>
+            </MenuItem>
           </Select>
         </FormControl>
       ) : undefined}

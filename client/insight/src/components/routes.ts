@@ -103,6 +103,7 @@ export type RouteState =
       route: RouteLocation.Station_LoadMonitor;
       loadNum: number;
       queues: ReadonlyArray<string>;
+      completed: boolean;
     }
   | { route: RouteLocation.Station_InspectionMonitor }
   | { route: RouteLocation.Station_InspectionMonitorWithType; inspType: string }
@@ -139,10 +140,13 @@ export type RouteState =
 function routeToUrl(route: RouteState): string {
   switch (route.route) {
     case RouteLocation.Station_LoadMonitor:
-      if (route.queues.length > 0) {
+      if (route.queues.length > 0 || route.completed) {
         const params = new URLSearchParams();
         for (const q of route.queues) {
           params.append("queue", q);
+        }
+        if (route.completed) {
+          params.append("completed", "t");
         }
         return `/station/loadunload/${route.loadNum}?${params.toString()}`;
       } else {
@@ -181,6 +185,7 @@ function urlToRoute(url: URL): RouteState {
             route,
             loadNum: parseInt(groups["num"] ?? "1"),
             queues: url.searchParams.getAll("queue"),
+            completed: url.searchParams.has("completed"),
           };
         case RouteLocation.Station_InspectionMonitorWithType: {
           const inspType = groups["type"];

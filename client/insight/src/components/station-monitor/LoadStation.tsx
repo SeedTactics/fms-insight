@@ -42,13 +42,18 @@ import {
   InProcMaterial,
   SortableInProcMaterial,
   DragOverlayInProcMaterial,
+  MatSummary,
 } from "./Material.js";
 import { SortableRegion } from "./Whiteboard.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "./SelectWorkorder.js";
 import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
-import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows.js";
+import {
+  MoveMaterialArrowContainer,
+  MoveMaterialArrowNode,
+  useMoveMaterialArrowRef,
+} from "./MoveMaterialArrows.js";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows.js";
 import { currentOperator } from "../../data/operators.js";
 import { instructionUrl } from "../../network/backend.js";
@@ -70,6 +75,8 @@ import {
   SwapMaterialDialogContent,
   SwapMaterialState,
 } from "./InvalidateCycle.js";
+import { last30MaterialSummary } from "../../cell-status/material-summary.js";
+import { addHours } from "date-fns";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -398,10 +405,52 @@ function MaterialColumn({
   );
 }
 
-const CompletedCol = React.memo(function CompletedCol({ fillViewPort }: { fillViewPort: boolean }) {
+function RecentCompletedMaterial() {
+  const matSummary = useRecoilValue(last30MaterialSummary);
+  const recentCompleted = React.useMemo(() => {
+    const cutoff = addHours(new Date(), -5);
+    return matSummary.matsById
+      .valuesToLazySeq()
+      .filter(
+        (e) =>
+          e.completed_last_proc_machining === true &&
+          e.last_unload_time !== undefined &&
+          e.last_unload_time >= cutoff
+      )
+      .toSortedArray({ desc: (e) => e.last_unload_time?.getTime() ?? 0 });
+  }, [matSummary]);
+
   return (
-    <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.CompletedMaterialZone }}>
-      <Box display="flex" justifyContent={fillViewPort ? "flex-end" : undefined} padding="8px">
+    <div>
+      {recentCompleted.map((m, idx) => (
+        <MatSummary key={idx} mat={m} />
+      ))}
+    </div>
+  );
+}
+
+const CompletedCol = React.memo(function CompletedCol({
+  fillViewPort,
+  showMaterial,
+}: {
+  fillViewPort: boolean;
+  showMaterial: boolean;
+}) {
+  const ref = useMoveMaterialArrowRef({ type: MoveMaterialNodeKindType.CompletedMaterialZone });
+  if (showMaterial) {
+    return (
+      <Box padding="8px" display="flex" flexDirection="column" height="100%" ref={ref}>
+        <Typography variant="h4">Completed</Typography>
+        <Box position="relative" flexGrow={1}>
+          <Box position="absolute" top="0" left="0" right="0" bottom="0" overflow="auto">
+            <RecentCompletedMaterial />
+          </Box>
+        </Box>
+      </Box>
+    );
+  } else {
+    return (
+      <Box display="flex" justifyContent={fillViewPort ? "flex-end" : undefined} padding="8px" ref={ref}>
         <Typography
           variant="h4"
           margin="4px"
@@ -410,8 +459,8 @@ const CompletedCol = React.memo(function CompletedCol({ fillViewPort }: { fillVi
           Completed
         </Typography>
       </Box>
-    </MoveMaterialArrowNode>
-  );
+    );
+  }
 });
 
 interface LoadMatDialogProps {
@@ -531,16 +580,19 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
 interface LoadStationProps {
   readonly loadNum: number;
   readonly queues: ReadonlyArray<string>;
+  readonly completed: boolean;
 }
 
 function useGridLayout({
   numMatCols,
   maxNumFaces,
   horizontal,
+  showMatInCompleted,
 }: {
   numMatCols: number;
   maxNumFaces: number;
   horizontal: boolean;
+  showMatInCompleted: boolean;
 }): string {
   let rows = "";
   let cols = "";
@@ -553,7 +605,11 @@ function useGridLayout({
       colNames += `mat${i} `;
     }
     cols += "1fr ";
-    cols += " 4.5em";
+    if (showMatInCompleted) {
+      cols += "minmax(16em, max-content)";
+    } else {
+      cols += " 4.5em";
+    }
 
     for (let i = 0; i < maxNumFaces; i++) {
       rows += `"${colNames} palface${i} completed" 1fr\n`;
@@ -608,6 +664,7 @@ export function LoadStation(props: LoadStationProps) {
     numMatCols: matCols.length,
     maxNumFaces: data.face.size,
     horizontal: fillViewPort,
+    showMatInCompleted: props.completed,
   });
 
   return (
@@ -656,7 +713,7 @@ export function LoadStation(props: LoadStationProps) {
           borderTop={!fillViewPort ? "1px solid black" : undefined}
           gridArea="completed"
         >
-          <CompletedCol fillViewPort={fillViewPort} />
+          <CompletedCol fillViewPort={fillViewPort} showMaterial={props.completed} />
         </Box>
         <MultiInstructionButton loadData={data} />
         <SelectWorkorderDialog />
