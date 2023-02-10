@@ -865,6 +865,7 @@ const SystemOverviewMaterialDialog = React.memo(function SystemOverviewMaterialD
     <MaterialDialog
       onClose={onClose}
       allowNote
+      highlightProcess={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
           <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />

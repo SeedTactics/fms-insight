@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -62,6 +62,14 @@ import { PrintOnClientButton } from "./QueuesMatDialog.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { durationToSeconds } from "../../util/parseISODuration.js";
 import { formatSeconds } from "./SystemOverview.js";
+import {
+  InvalidateCycleDialogButtons,
+  InvalidateCycleDialogContent,
+  InvalidateCycleState,
+  SwapMaterialButtons,
+  SwapMaterialDialogContent,
+  SwapMaterialState,
+} from "./InvalidateCycle.js";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -417,14 +425,28 @@ function InstructionButton({ pallet }: { pallet: string | null }) {
 
   if (material === null) return null;
 
-  const type = material.action.type === api.ActionType.Loading ? "load" : "unload";
+  let type: string | undefined;
+  if (material.action.type === api.ActionType.Loading && material.action.loadOntoPallet === pallet) {
+    type = "load";
+  } else if (
+    (material.action.type === api.ActionType.UnloadToInProcess ||
+      material.action.type === api.ActionType.UnloadToCompletedMaterial) &&
+    material.location.type === api.LocType.OnPallet &&
+    material.location.pallet === pallet
+  ) {
+    type = "unload";
+  }
+
+  if (type === undefined) return null;
 
   const url = instructionUrl(
     material.partName,
     type,
     material.materialID,
     pallet,
-    material.process,
+    material.action.type === api.ActionType.Loading
+      ? material.action.processAfterLoad ?? material.process
+      : material.process,
     operator
   );
   return (
@@ -466,16 +488,35 @@ function PrintSerialButton({ loadNum }: { loadNum: number }) {
 const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProps) {
   const fmsInfo = useRecoilValue(fmsInformation);
   const setWorkorderDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
+  const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
+  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
+
+  function onClose() {
+    setSwapSt(null);
+    setInvalidateSt(null);
+  }
 
   return (
     <MaterialDialog
+      onClose={onClose}
       allowNote
+      highlightProcess={invalidateSt?.process ?? undefined}
+      extraDialogElements={
+        <>
+          <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />
+          {invalidateSt !== null ? (
+            <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
+          ) : null}
+        </>
+      }
       buttons={
         <>
           <InstructionButton pallet={props.pallet} />
           <PrintSerialButton loadNum={props.loadNum} />
           <QuarantineMatButton />
           <SignalInspectionButton />
+          <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} />
+          <InvalidateCycleDialogButtons st={invalidateSt} setState={setInvalidateSt} onClose={onClose} />
           {fmsInfo.allowChangeWorkorderAtLoadStation ? (
             <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
               Assign Workorder
