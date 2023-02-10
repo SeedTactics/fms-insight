@@ -81,7 +81,7 @@ import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus, currentStatusJobComment } from "../../cell-status/current-status.js";
 import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names.js";
-import { SortableRegion, WhiteboardRegion } from "./Whiteboard.js";
+import { SortableRegion } from "./Whiteboard.js";
 import { MultiMaterialDialog, QueuedMaterialDialog } from "./QueuesMatDialog.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
@@ -507,53 +507,55 @@ export const Queues = (props: QueueProps) => {
               <DragOverlayInProcMaterial mat={mat} hideEmptySerial displayJob={region.rawMaterialQueue} />
             )}
           >
-            <WhiteboardRegion
-              label={region.label}
-              flexStart
-              addMaterialButton={
-                region.free ? undefined : (
+            <Box minHeight="134px">
+              <Box display="flex" margin="4px">
+                <Typography variant="h4" flexGrow={1}>
+                  {region.label}
+                </Typography>
+                {region.free ? undefined : (
                   <AddMaterialButtons label={region.label} rawMatQueue={region.rawMaterialQueue} />
-                )
-              }
-            >
-              {region.material.map((m, matIdx) => (
-                <SortableInProcMaterial
-                  key={matIdx}
-                  mat={m}
-                  hideEmptySerial
-                  displayJob={region.rawMaterialQueue}
-                />
-              ))}
-              {region.groupedRawMat && region.groupedRawMat.length > 0
-                ? region.groupedRawMat.map((matGroup, idx) =>
-                    matGroup.material.length === 1 ? (
-                      <InProcMaterial
-                        key={idx}
-                        mat={matGroup.material[0]}
-                        hideEmptySerial
-                        displayJob={region.rawMaterialQueue}
-                      />
-                    ) : (
-                      <MultiMaterial
-                        key={idx}
-                        partOrCasting={matGroup.partOrCasting}
-                        assignedJobUnique={matGroup.assignedJobUnique}
-                        material={matGroup.material}
-                        onOpen={() => setMultiMaterialDialog(matGroup.material)}
-                      />
-                    )
-                  )
-                : undefined}
-              {region.rawMaterialQueue ? (
-                <div style={{ margin: "1em 5em 1em 5em", width: "100%" }}>
-                  <RawMaterialJobTable
-                    queue={region.label}
-                    editNote={setChangeNoteForJob}
-                    editQty={setEditQtyForJob}
+                )}
+              </Box>
+              <Box justifyContent="flex-start" display="flex" flexWrap="wrap">
+                {region.material.map((m, matIdx) => (
+                  <SortableInProcMaterial
+                    key={matIdx}
+                    mat={m}
+                    hideEmptySerial
+                    displayJob={region.rawMaterialQueue}
                   />
-                </div>
-              ) : undefined}
-            </WhiteboardRegion>
+                ))}
+                {region.groupedRawMat && region.groupedRawMat.length > 0
+                  ? region.groupedRawMat.map((matGroup, idx) =>
+                      matGroup.material.length === 1 ? (
+                        <InProcMaterial
+                          key={idx}
+                          mat={matGroup.material[0]}
+                          hideEmptySerial
+                          displayJob={region.rawMaterialQueue}
+                        />
+                      ) : (
+                        <MultiMaterial
+                          key={idx}
+                          partOrCasting={matGroup.partOrCasting}
+                          assignedJobUnique={matGroup.assignedJobUnique}
+                          material={matGroup.material}
+                          onOpen={() => setMultiMaterialDialog(matGroup.material)}
+                        />
+                      )
+                    )
+                  : undefined}
+                {region.rawMaterialQueue ? (
+                  <div style={{ margin: "1em 5em 1em 5em", width: "100%" }}>
+                    <RawMaterialJobTable
+                      queue={region.label}
+                      editNote={setChangeNoteForJob}
+                      editQty={setEditQtyForJob}
+                    />
+                  </div>
+                ) : undefined}
+              </Box>
+            </Box>
           </SortableRegion>
         </div>
       ))}
@@ -577,8 +579,14 @@ export default function QueuesPage(props: QueueProps): JSX.Element {
   }, []);
 
   return (
-    <main style={{ backgroundColor: "#F8F8F8", minHeight: "calc(100vh - 64px)" }}>
+    <Box
+      component="main"
+      sx={{
+        backgroundColor: "#F8F8F8",
+        minHeight: { sm: "calc(100vh - 64px - 40px)", md: "calc(100vh - 64px)" },
+      }}
+    >
       <Queues {...props} />
-    </main>
+    </Box>
   );
 }

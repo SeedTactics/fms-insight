@@ -33,11 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { addHours } from "date-fns";
-import { Grid } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { Button } from "@mui/material";
 
 import { MaterialDialog, MatSummary } from "./Material.js";
-import { WhiteboardRegion } from "./Whiteboard.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "./SelectWorkorder.js";
 import { Tooltip } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
@@ -191,32 +190,36 @@ export function Wash(): JSX.Element {
   const washed = LazySeq.of(recentCompleted).filter((m) => m.wash_completed !== undefined);
 
   return (
-    <div data-testid="stationmonitor-wash" style={{ padding: "8px" }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
-          <WhiteboardRegion
-            label="Recently Completed Parts Not Yet Washed"
-            borderTop
-            borderRight
-            borderLeft
-            borderBottom
-          >
+    <>
+      <Box sx={{ display: { md: "flex" } }}>
+        <Box
+          padding="8px"
+          sx={{
+            minHeight: { md: "calc(100vh - 64px)" },
+            width: { md: "50vw" },
+            borderRight: { md: "1px solid black" },
+            borderBottom: { sm: "1px solid black", md: "none" },
+          }}
+        >
+          <Typography variant="h4">Recently Completed Parts Not Yet Washed</Typography>
+          <Box display="flex" justifyContent="space-between" flexWrap="wrap">
             {unwashed.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
-          </WhiteboardRegion>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <WhiteboardRegion label="Recently Washed Parts" borderTop borderRight borderLeft borderBottom>
+          </Box>
+        </Box>
+        <Box padding="8px" sx={{ width: { md: "50vw" } }}>
+          <Typography variant="h4">Recently Washed Parts</Typography>
+          <Box display="flex" justifyContent="space-between" flexWrap="wrap">
             {washed.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
-          </WhiteboardRegion>
-        </Grid>
-      </Grid>
+          </Box>
+        </Box>
+      </Box>
       <SelectWorkorderDialog />
       <WashMaterialDialog />
-    </div>
+    </>
   );
 }
 
@@ -226,8 +229,14 @@ export default function WashPage(): JSX.Element {
   }, []);
 
   return (
-    <main style={{ backgroundColor: "#F8F8F8", minHeight: "calc(100vh - 64px)" }}>
+    <Box
+      component="main"
+      sx={{
+        backgroundColor: "#F8F8F8",
+        minHeight: { sm: "calc(100vh - 64px - 40px)", md: "calc(100vh - 64px)" },
+      }}
+    >
       <Wash />
-    </main>
+    </Box>
   );
 }

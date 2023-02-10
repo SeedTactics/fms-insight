@@ -679,20 +679,17 @@ export function LoadStation(props: LoadStationProps) {
     <MoveMaterialArrowContainer hideArrows={!fillViewPort}>
       <Box
         component="main"
-        width="100%"
-        bgcolor="#F8F8F8"
-        display="grid"
-        sx={
-          fillViewPort
-            ? {
-                minHeight: "calc(100vh - 64px)",
-                gridTemplate: grid,
-              }
-            : {
-                padding: "8px",
-                gridTemplate: grid,
-              }
-        }
+        sx={{
+          width: "100%",
+          bgcolor: "#F8F8F8",
+          display: "grid",
+          gridTemplate: grid,
+          minHeight: {
+            sm: "calc(100vh - 64px - 40px)",
+            md: "calc(100vh - 64px)",
+          },
+          padding: fillViewPort ? undefined : "8px",
+        }}
       >
         {matCols.map((col, idx) => (
           <Box
