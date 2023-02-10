@@ -78,6 +78,18 @@ const MoveMaterialArrows = React.memo(function MoveMaterialArrows({
   container: React.RefObject<HTMLElement>;
   arrowsWithRefs: AllMoveMaterialNodes<React.RefObject<HTMLDivElement>>;
 }) {
+  const [, setDims] = React.useState({
+    height: window.innerHeight,
+    width: window.innerWidth,
+  });
+  React.useEffect(() => {
+    function handleResize() {
+      setDims({ height: window.innerHeight, width: window.innerWidth });
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [setDims]);
+
   const arrows = computeArrows(
     container.current ? elementToRect(container.current) : null,
     arrowsWithRefs.collectValues((r) =>

@@ -437,7 +437,7 @@ const CompletedCol = React.memo(function CompletedCol({
   showMaterial: boolean;
 }) {
   const ref = useMoveMaterialArrowRef({ type: MoveMaterialNodeKindType.CompletedMaterialZone });
-  if (showMaterial) {
+  if (showMaterial && fillViewPort) {
     return (
       <Box padding="8px" display="flex" flexDirection="column" height="100%" ref={ref}>
         <Typography variant="h4">Completed</Typography>
@@ -446,6 +446,13 @@ const CompletedCol = React.memo(function CompletedCol({
             <RecentCompletedMaterial />
           </Box>
         </Box>
+      </Box>
+    );
+  } else if (showMaterial) {
+    return (
+      <Box padding="8px" ref={ref}>
+        <Typography variant="h4">Completed</Typography>
+        <RecentCompletedMaterial />
       </Box>
     );
   } else {
@@ -651,13 +658,14 @@ export function LoadStation(props: LoadStationProps) {
     });
   }
   const matCols = matColsSeq.toRArray();
+  const numNonPalCols = matCols.length + (props.completed ? 1 : 0);
 
   const fillViewPort = useMediaQuery(
-    matCols.length <= 1
-      ? "(min-width: 600px)"
-      : matCols.length === 2
-      ? "(min-width: 950px)"
-      : "(min-width: 1250px)"
+    numNonPalCols <= 1
+      ? "(min-width: 720px)"
+      : numNonPalCols === 2
+      ? "(min-width: 1030px)"
+      : "(min-width: 1320px)"
   );
 
   const grid = useGridLayout({
