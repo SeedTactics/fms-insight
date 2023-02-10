@@ -152,8 +152,7 @@ const shakeHorizKeyframes = keyframes`
   50% { transform: translate(${shakeSize}px, 0) }
   60% { transform: translate(0, 0) }
 `;
-
-const shakeAnimation = `${shakeHorizKeyframes.name} 1s ease-in-out infinite`;
+const shakeHorizAnimation = `${shakeHorizKeyframes} 1s ease-in-out infinite`;
 
 // global sync of all shake animations
 function shakeAnimationIteration(event: React.AnimationEvent<HTMLDivElement>) {
@@ -230,7 +229,7 @@ const MatCard = React.forwardRef(function MatCard(
         padding: "8px",
         margin: props.isDragOverlay ? undefined : "8px",
         opacity: props.isActiveDrag ? 0.2 : 1,
-        animation: props.shake ? shakeAnimation : undefined,
+        animation: props.shake ? shakeHorizAnimation : undefined,
         "&:hover": {
           animationPlayState: "paused",
         },
