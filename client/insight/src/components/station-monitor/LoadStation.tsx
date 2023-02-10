@@ -381,6 +381,7 @@ function useGridLayout({
 }): string {
   let rows = "";
   let cols = "";
+  if (maxNumFaces <= 0) maxNumFaces = 1;
 
   if (horizontal) {
     let colNames = "";
@@ -440,7 +441,11 @@ export function LoadStation(props: LoadStationProps) {
       : "(min-width: 1250px)"
   );
 
-  const grid = useGridLayout({ numMatCols: matCols.length, maxNumFaces: 2, horizontal: fillViewPort });
+  const grid = useGridLayout({
+    numMatCols: matCols.length,
+    maxNumFaces: data.face.size,
+    horizontal: fillViewPort,
+  });
 
   return (
     <MoveMaterialArrowContainer hideArrows={!fillViewPort}>
@@ -472,15 +477,15 @@ export function LoadStation(props: LoadStationProps) {
             <MaterialColumn data={data} mat={col} />
           </Box>
         ))}
-        {[0, 1].map((i) => (
+        {data.face.keysToAscLazySeq().map((faceNum, idx) => (
           <Box
-            key={i}
+            key={faceNum}
             marginLeft="15px"
-            gridArea={`palface${i}`}
+            gridArea={`palface${idx}`}
             padding="8px"
-            borderTop={data.pallet && i !== 0 ? "1px solid black" : undefined}
+            borderTop={data.pallet && idx !== 0 ? "1px solid black" : undefined}
           >
-            <PalletFace data={data} faceNum={i + 1} />
+            <PalletFace data={data} faceNum={faceNum} />
           </Box>
         ))}
         <Box

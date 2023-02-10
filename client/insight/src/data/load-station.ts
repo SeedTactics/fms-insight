@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api.js";
-import { LazySeq, mkCompareByProperties } from "@seedtactics/immutable-collections";
+import { LazySeq, mkCompareByProperties, OrderedMap } from "@seedtactics/immutable-collections";
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
 export interface LoadStationData {
   readonly pallet?: Readonly<api.IPalletStatus>;
-  readonly face: ReadonlyMap<number, MaterialList>;
+  readonly face: OrderedMap<number, MaterialList>;
   readonly freeLoadingMaterial: MaterialList;
   readonly queues: ReadonlyMap<string, MaterialList>;
   readonly elapsedLoadingTime: string | null;
@@ -83,13 +83,13 @@ export function selectLoadStationAndQueueProps(
     LazySeq.of(queuesToShow).map((q) => [q, []])
   );
   const freeLoading: Array<Readonly<api.IInProcessMaterial>> = [];
-  const byFace = new Map<number, Array<api.IInProcessMaterial>>();
+  let palFaces = OrderedMap.empty<number, Array<api.IInProcessMaterial>>();
   let elapsedLoadingTime: string | null = null;
 
   // ensure all faces
   if (pal) {
-    for (let i = 0; i <= pal.numFaces; i++) {
-      byFace.set(i, []);
+    for (let i = 1; i <= pal.numFaces; i++) {
+      palFaces = palFaces.set(i, []);
     }
   }
 
@@ -101,8 +101,8 @@ export function selectLoadStationAndQueueProps(
           elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
         }
 
-        if (m.action.loadOntoFace && !byFace.has(m.action.loadOntoFace)) {
-          byFace.set(m.action.loadOntoFace, []);
+        if (m.action.loadOntoFace && !palFaces.has(m.action.loadOntoFace)) {
+          palFaces = palFaces.set(m.action.loadOntoFace, []);
         }
 
         if (m.location.type === api.LocType.Free) {
@@ -120,12 +120,14 @@ export function selectLoadStationAndQueueProps(
           elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
         }
 
-        const face = byFace.get(m.location.face ?? 0);
-        if (face !== undefined) {
-          face.push(m);
-        } else {
-          byFace.set(m.location.face ?? 0, [m]);
-        }
+        palFaces = palFaces.alter(m.location.face ?? 1, (oldMats) => {
+          if (oldMats) {
+            oldMats.push(m);
+            return oldMats;
+          } else {
+            return [m];
+          }
+        });
       }
     }
 
@@ -144,12 +146,11 @@ export function selectLoadStationAndQueueProps(
     }
   }
 
-  byFace.forEach((face) => face.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
   queueMat.forEach((mats) => mats.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
 
   return {
     pallet: pal,
-    face: byFace,
+    face: palFaces,
     freeLoadingMaterial: freeLoading,
     queues: queueMat,
     elapsedLoadingTime,
