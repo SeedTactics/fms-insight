@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Select } from "@mui/material";
+import { Box, Select, useMediaQuery, useTheme } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { Input } from "@mui/material";
 import { FormControl } from "@mui/material";
@@ -41,6 +41,7 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { RouteLocation, useCurrentRoute } from "../routes.js";
 import { last30InspectionTypes } from "../../cell-status/names.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
+import { SystemOverviewDialogButton } from "./SystemOverview.js";
 
 const toolbarStyle = {
   display: "flex",
@@ -54,16 +55,12 @@ const toolbarStyle = {
 
 const inHeaderStyle = {
   display: "flex",
-  flexGrow: 1,
   alignSelf: "center",
   alignItems: "flex-end",
 };
 
-interface StationToolbarProps {
-  readonly full: boolean;
-}
-
 const allInspSym = "@@all_inspection_display@@";
+const completedSym = "@@recent_completed_material@@";
 
 enum StationMonitorType {
   LoadUnload = "LoadUnload",
@@ -73,10 +70,12 @@ enum StationMonitorType {
   AllMaterial = "AllMaterial",
 }
 
-function StationToolbar(props: StationToolbarProps): JSX.Element {
+export function StationToolbar(): JSX.Element {
   const [route, setRoute] = useCurrentRoute();
   const inspTypes = useRecoilValue(last30InspectionTypes);
   const queueNames = Object.keys(useRecoilValue(currentStatus).queues).sort();
+  const theme = useTheme();
+  const full = useMediaQuery(theme.breakpoints.down("md"));
 
   function setLoadNumber(valStr: string) {
     const val = parseFloat(valStr);
@@ -86,9 +85,10 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
           route: RouteLocation.Station_LoadMonitor,
           loadNum: val,
           queues: route.queues,
+          completed: route.completed,
         });
       } else {
-        setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, queues: [] });
+        setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: val, queues: [], completed: false });
       }
     }
   }
@@ -102,15 +102,17 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
   }
 
   function setLoadQueues(newQueues: ReadonlyArray<string>) {
-    newQueues = newQueues.slice(0, 2);
+    const completed = newQueues.includes(completedSym);
+    newQueues = newQueues.filter((q) => q !== completedSym).slice(0, 2);
     if (route.route === RouteLocation.Station_LoadMonitor) {
       setRoute({
         route: RouteLocation.Station_LoadMonitor,
         loadNum: route.loadNum,
         queues: newQueues,
+        completed: completed,
       });
     } else {
-      setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: 1, queues: newQueues });
+      setRoute({ route: RouteLocation.Station_LoadMonitor, loadNum: 1, queues: newQueues, completed });
     }
   }
 
@@ -127,6 +129,9 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
       curType = StationMonitorType.LoadUnload;
       loadNum = route.loadNum;
       currentQueues = route.queues;
+      if (route.completed) {
+        currentQueues = currentQueues.concat(completedSym);
+      }
       break;
     case RouteLocation.Station_InspectionMonitor:
       curType = StationMonitorType.Inspection;
@@ -149,7 +154,7 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
   }
 
   return (
-    <nav style={props.full ? toolbarStyle : inHeaderStyle}>
+    <Box component="nav" sx={full ? toolbarStyle : inHeaderStyle}>
       {curType === StationMonitorType.LoadUnload ? (
         <Input
           type="number"
@@ -209,6 +214,9 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
                 {q}
               </MenuItem>
             ))}
+            <MenuItem value={completedSym}>
+              <i>Completed</i>
+            </MenuItem>
           </Select>
         </FormControl>
       ) : undefined}
@@ -244,8 +252,16 @@ function StationToolbar(props: StationToolbarProps): JSX.Element {
           </Select>
         </FormControl>
       ) : undefined}
-    </nav>
+    </Box>
   );
 }
 
-export default StationToolbar;
+export function StationToolbarOverviewButton() {
+  const theme = useTheme();
+  const full = useMediaQuery(theme.breakpoints.down("md"));
+  return (
+    <Box display="flex" alignItems="center" height="100%" bgcolor={full ? "#E0E0E0" : undefined}>
+      <SystemOverviewDialogButton full={full} />
+    </Box>
+  );
+}

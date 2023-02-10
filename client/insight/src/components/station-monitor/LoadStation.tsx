@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -32,32 +32,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Box, Divider, useMediaQuery, Button } from "@mui/material";
-import TimeAgo from "react-timeago";
-import { addSeconds } from "date-fns";
-import { durationToSeconds } from "../../util/parseISODuration.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
+import { Box, useMediaQuery, Button, Typography } from "@mui/material";
+import { LazySeq, mkCompareByProperties, OrderedMap } from "@seedtactics/immutable-collections";
 
 import { FolderOpen as FolderOpenIcon } from "@mui/icons-material";
 
-import {
-  LoadStationData,
-  selectLoadStationAndQueueProps,
-  PalletData,
-  MaterialList,
-} from "../../data/load-station.js";
 import {
   MaterialDialog,
   InProcMaterial,
   SortableInProcMaterial,
   DragOverlayInProcMaterial,
+  MatSummary,
 } from "./Material.js";
-import { WhiteboardRegion, SortableRegion } from "./Whiteboard.js";
+import { SortableRegion } from "./Whiteboard.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "./SelectWorkorder.js";
-import { SelectInspTypeDialog, selectInspTypeDialogOpen } from "./SelectInspType.js";
-import { MoveMaterialArrowContainer, MoveMaterialArrowNode } from "./MoveMaterialArrows.js";
+import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
+import {
+  MoveMaterialArrowContainer,
+  MoveMaterialArrowNode,
+  useMoveMaterialArrowRef,
+} from "./MoveMaterialArrows.js";
 import { MoveMaterialNodeKindType } from "../../data/move-arrows.js";
 import { currentOperator } from "../../data/operators.js";
 import { instructionUrl } from "../../network/backend.js";
@@ -65,94 +61,148 @@ import { Tooltip } from "@mui/material";
 import { Fab } from "@mui/material";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
-import { currentStatus } from "../../cell-status/current-status.js";
+import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { useIsDemo } from "../routes.js";
 import { PrintOnClientButton } from "./QueuesMatDialog.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { durationToSeconds } from "../../util/parseISODuration.js";
+import { formatSeconds } from "./SystemOverview.js";
+import {
+  InvalidateCycleDialogButtons,
+  InvalidateCycleDialogContent,
+  InvalidateCycleState,
+  SwapMaterialButtons,
+  SwapMaterialDialogContent,
+  SwapMaterialState,
+} from "./InvalidateCycle.js";
+import { last30MaterialSummary } from "../../cell-status/material-summary.js";
+import { addHours } from "date-fns";
 
-function stationPalMaterialStatus(
-  mat: Readonly<api.IInProcessMaterial>,
-  dateOfCurrentStatus: Date
-): JSX.Element {
-  const name = mat.partName + "-" + mat.process.toString();
+type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
-  let matStatus = "";
-  let matTime: JSX.Element | undefined;
-  switch (mat.action.type) {
-    case api.ActionType.Loading:
+type LoadStationData = {
+  readonly pallet?: Readonly<api.IPalletStatus>;
+  readonly face: OrderedMap<number, MaterialList>;
+  readonly freeLoadingMaterial: MaterialList;
+  readonly queues: ReadonlyMap<string, MaterialList>;
+  readonly elapsedLoadingTime: string | null;
+};
+
+function selectLoadStationAndQueueProps(
+  loadNum: number,
+  queues: ReadonlyArray<string>,
+  curSt: Readonly<api.ICurrentStatus>
+): LoadStationData {
+  // search for pallet
+  let pal: Readonly<api.IPalletStatus> | undefined;
+  if (loadNum >= 0) {
+    for (const p of Object.values(curSt.pallets)) {
       if (
-        (mat.action.loadOntoPallet !== undefined && mat.action.loadOntoPallet !== mat.location.pallet) ||
-        (mat.action.loadOntoFace !== undefined && mat.action.loadOntoFace !== mat.location.face)
+        p.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload &&
+        p.currentPalletLocation.num === loadNum
       ) {
-        matStatus = " (loading)";
-      } else if (mat.action.loadOntoPallet !== undefined && mat.action.loadOntoFace !== undefined) {
-        matStatus = " (reclamp)";
+        pal = p;
+        break;
       }
-      break;
-    case api.ActionType.UnloadToCompletedMaterial:
-    case api.ActionType.UnloadToInProcess:
-      matStatus = " (unloading)";
-      break;
-    case api.ActionType.Machining:
-      matStatus = " (machining)";
-      if (mat.action.expectedRemainingMachiningTime) {
-        matStatus += " completing ";
-        const seconds = durationToSeconds(mat.action.expectedRemainingMachiningTime);
-        matTime = <TimeAgo date={addSeconds(dateOfCurrentStatus, seconds)} />;
-      }
-      break;
+    }
   }
 
-  return (
-    <>
-      <span>{name + matStatus}</span>
-      {matTime}
-    </>
-  );
-}
-
-interface StationStatusProps {
-  byStation: ReadonlyMap<string, { pal?: PalletData; queue?: PalletData }>;
-  dateOfCurrentStatus: Date;
-}
-
-function StationStatus(props: StationStatusProps) {
-  if (props.byStation.size === 0) {
-    return <div />;
+  // calculate queues to show, which is all configured queues and any queues with
+  // material loading onto the pallet
+  const queuesToShow = new Set(queues);
+  if (pal !== undefined) {
+    for (const m of curSt.material) {
+      if (
+        m.action.type === api.ActionType.Loading &&
+        m.action.loadOntoPallet === pal.pallet &&
+        m.location.type === api.LocType.InQueue &&
+        m.location.currentQueue
+      ) {
+        queuesToShow.add(m.location.currentQueue);
+      }
+    }
   }
-  return (
-    <dl style={{ color: "rgba(0,0,0,0.6" }}>
-      {LazySeq.of(props.byStation)
-        .sortBy(([s, _]) => s)
-        .map(([stat, pals]) => (
-          <React.Fragment key={stat}>
-            {pals.pal ? (
-              <>
-                <dt style={{ marginTop: "1em" }}>
-                  {stat} - Pallet {pals.pal.pallet.pallet} - worktable
-                </dt>
-                {pals.pal.material.map((mat, idx) => (
-                  <dd key={idx}>{stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}</dd>
-                ))}
-              </>
-            ) : undefined}
-            {pals.queue ? (
-              <>
-                <dt style={{ marginTop: "1em" }}>
-                  {stat} - Pallet {pals.queue.pallet.pallet} - queue
-                </dt>
-                {pals.queue.material.map((mat, idx) => (
-                  <dd key={idx}>{stationPalMaterialStatus(mat, props.dateOfCurrentStatus)}</dd>
-                ))}
-              </>
-            ) : undefined}
-          </React.Fragment>
-        ))}
-    </dl>
+
+  const queueMat = new Map<string, Array<api.IInProcessMaterial>>(
+    LazySeq.of(queuesToShow).map((q) => [q, []])
   );
+  const freeLoading: Array<Readonly<api.IInProcessMaterial>> = [];
+  let palFaces = OrderedMap.empty<number, Array<api.IInProcessMaterial>>();
+  let elapsedLoadingTime: string | null = null;
+
+  // ensure all faces
+  if (pal) {
+    for (let i = 1; i <= pal.numFaces; i++) {
+      palFaces = palFaces.set(i, []);
+    }
+  }
+
+  for (const m of curSt.material) {
+    if (pal) {
+      // if loading onto pallet, set elapsed load time, ensure face exists, and set free loading
+      if (m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === pal.pallet) {
+        if (m.action.elapsedLoadUnloadTime) {
+          elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
+        }
+
+        if (m.action.loadOntoFace && !palFaces.has(m.action.loadOntoFace)) {
+          palFaces = palFaces.set(m.action.loadOntoFace, []);
+        }
+
+        if (m.location.type === api.LocType.Free) {
+          freeLoading.push(m);
+        }
+      }
+
+      // if currently on the pallet, set elapsed load time and add it to the pallet face
+      if (m.location.type === api.LocType.OnPallet && m.location.pallet === pal.pallet) {
+        if (
+          (m.action.type === api.ActionType.UnloadToCompletedMaterial ||
+            m.action.type === api.ActionType.UnloadToInProcess) &&
+          m.action.elapsedLoadUnloadTime
+        ) {
+          elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
+        }
+
+        palFaces = palFaces.alter(m.location.face ?? 1, (oldMats) => {
+          if (oldMats) {
+            oldMats.push(m);
+            return oldMats;
+          } else {
+            return [m];
+          }
+        });
+      }
+    }
+
+    // add all material in the configured queues
+    if (
+      m.location.type === api.LocType.InQueue &&
+      m.location.currentQueue &&
+      queueMat.has(m.location.currentQueue)
+    ) {
+      const old = queueMat.get(m.location.currentQueue);
+      if (old === undefined) {
+        queueMat.set(m.location.currentQueue, [m]);
+      } else {
+        old.push(m);
+      }
+    }
+  }
+
+  queueMat.forEach((mats) => mats.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
+
+  return {
+    pallet: pal,
+    face: palFaces,
+    freeLoadingMaterial: freeLoading,
+    queues: queueMat,
+    elapsedLoadingTime,
+  };
 }
 
-function MultiInstructionButton({ loadData }: { readonly loadData: LoadStationData }) {
+function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
+  const isDemo = useIsDemo();
   const operator = useRecoilValue(currentOperator);
   const urls = React.useMemo(() => {
     const pal = loadData.pallet;
@@ -196,7 +246,7 @@ function MultiInstructionButton({ loadData }: { readonly loadData: LoadStationDa
     }
   }, [loadData]);
 
-  if (urls.length === 0) {
+  if (urls.length === 0 || isDemo) {
     return <div />;
   }
 
@@ -207,120 +257,73 @@ function MultiInstructionButton({ loadData }: { readonly loadData: LoadStationDa
   }
 
   return (
-    <Tooltip title="Open All Instructions">
-      <Fab onClick={open} color="secondary">
-        <FolderOpenIcon />
-      </Fab>
-    </Tooltip>
+    <Box
+      sx={{
+        position: "fixed",
+        bottom: "5px",
+        right: "5px",
+      }}
+    >
+      <Tooltip title="Open All Instructions">
+        <Fab onClick={open} color="secondary">
+          <FolderOpenIcon />
+        </Fab>
+      </Tooltip>
+    </Box>
   );
 }
 
-function PalletZones({ data }: { readonly data: LoadStationData }) {
-  const maxFace = LazySeq.of(data.face.keys()).maxBy((x) => x) ?? 1;
-  const firstMats = LazySeq.of(data.face).head()?.[1];
+function ElapsedLoadTime({ elapsedLoadTime }: { elapsedLoadTime: string | null }) {
+  const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
+  const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
+
+  if (elapsedLoadTime) {
+    const elapsedSecsInCurSt = durationToSeconds(elapsedLoadTime);
+    const elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+    return <span>{formatSeconds(elapsedSecs)}</span>;
+  } else {
+    return null;
+  }
+}
+
+function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number }) {
+  const face = data.face.get(faceNum);
+  if (!face || !data.pallet) return null;
 
   return (
-    <>
-      <Box sx={{ position: "absolute", top: "4px", left: "4px" }}>
-        <Box sx={{ color: "rgba(0,0,0,0.5)", fontSize: "small" }}>Pallet</Box>
-        {data.pallet ? (
-          <Box sx={{ color: "rgba(0,0,0,0.5)", fontSize: "xx-large" }}>{data.pallet.pallet}</Box>
-        ) : undefined}
-      </Box>
-      {data.face.size === 1 && firstMats ? (
-        <Box sx={{ ml: "4em", mr: "4em" }}>
-          <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: maxFace }}>
-            <WhiteboardRegion label={""} spaceAround>
-              {firstMats.map((m, idx) => (
-                <MoveMaterialArrowNode
-                  key={idx}
-                  kind={{
-                    type: MoveMaterialNodeKindType.Material,
-                    material: m,
-                  }}
-                >
-                  <InProcMaterial mat={m} />
-                </MoveMaterialArrowNode>
-              ))}
-            </WhiteboardRegion>
-          </MoveMaterialArrowNode>
+    <div>
+      {faceNum === 1 ? (
+        <Box display="grid" gridTemplateColumns={data.pallet.numFaces > 1 ? "1fr 1fr 1fr" : "1fr 1fr"}>
+          <Typography variant="h4">Pallet {data.pallet.pallet}</Typography>
+          {data.pallet.numFaces > 1 ? (
+            <Typography variant="h6" justifySelf="center">
+              Face 1
+            </Typography>
+          ) : undefined}
+          <Box justifySelf="flex-end">
+            <ElapsedLoadTime elapsedLoadTime={data.elapsedLoadingTime} />
+          </Box>
         </Box>
-      ) : (
-        <Box sx={{ ml: "4em", mr: "4em" }}>
-          {LazySeq.of(data.face)
-            .sortBy(([face, _]) => face)
-            .map(([face, data]) => (
-              <div key={face}>
-                <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: face }}>
-                  <WhiteboardRegion label={"Face " + face.toString()} spaceAround>
-                    {data.map((m, idx) => (
-                      <MoveMaterialArrowNode
-                        key={idx}
-                        kind={{ type: MoveMaterialNodeKindType.Material, material: m }}
-                      >
-                        <InProcMaterial mat={m} />
-                      </MoveMaterialArrowNode>
-                    ))}
-                  </WhiteboardRegion>
-                </MoveMaterialArrowNode>
-                {face === maxFace ? undefined : <Divider key={1} />}
-              </div>
+      ) : data.pallet.numFaces > 1 ? (
+        <Box display="flex" justifyContent="center">
+          <Typography variant="h6">Face {faceNum}</Typography>
+        </Box>
+      ) : undefined}
+      <Box ml="4em" mr="4em">
+        <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.PalletFaceZone, face: faceNum }}>
+          <Box display="flex" flexWrap="wrap" justifyContent="space-around">
+            {face.map((m, idx) => (
+              <MoveMaterialArrowNode
+                key={idx}
+                kind={{ type: MoveMaterialNodeKindType.Material, material: m }}
+              >
+                <InProcMaterial mat={m} />
+              </MoveMaterialArrowNode>
             ))}
-        </Box>
-      )}
-    </>
-  );
-}
-
-function PalletColumn(props: {
-  readonly dateOfCurrentStatus: Date;
-  readonly data: LoadStationData;
-  readonly fillViewPort: boolean;
-}) {
-  return (
-    <>
-      {props.data.stationStatus ? ( // stationStatus is defined only when no pallet
-        <Box
-          sx={
-            props.fillViewPort
-              ? {
-                  width: "100%",
-                  flexGrow: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }
-              : {
-                  width: "100%",
-                  minHeight: "12em",
-                }
-          }
-        >
-          <StationStatus
-            byStation={props.data.stationStatus}
-            dateOfCurrentStatus={props.dateOfCurrentStatus}
-          />
-        </Box>
-      ) : (
-        <Box
-          sx={
-            props.fillViewPort
-              ? { position: "relative", width: "100%", flexGrow: 1 }
-              : {
-                  position: "relative",
-                  width: "100%",
-                  minHeight: "12em",
-                }
-          }
-        >
-          <PalletZones data={props.data} />
-        </Box>
-      )}
-      <Divider />
-      <MoveMaterialArrowNode kind={{ type: MoveMaterialNodeKindType.CompletedMaterialZone }}>
-        <WhiteboardRegion label="Completed Material" />
-      </MoveMaterialArrowNode>
-    </>
+          </Box>
+        </MoveMaterialArrowNode>
+      </Box>
+    </div>
   );
 }
 
@@ -332,7 +335,8 @@ function MaterialRegion({
   mat: { readonly label: string; readonly material: MaterialList; readonly isFree: boolean };
 }) {
   return (
-    <WhiteboardRegion column label={mat.label}>
+    <div>
+      <Typography variant="h4">{mat.label}</Typography>
       {mat.material.map((m, matIdx) => (
         <MoveMaterialArrowNode
           key={matIdx}
@@ -342,65 +346,129 @@ function MaterialRegion({
           }}
         >
           {mat.isFree ? (
-            <InProcMaterial mat={m} displaySinglePallet={data.pallet ? data.pallet.pallet : ""} />
+            <InProcMaterial
+              mat={m}
+              displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+              shake={m.action.type === api.ActionType.Loading}
+            />
           ) : (
-            <SortableInProcMaterial mat={m} displaySinglePallet={data.pallet ? data.pallet.pallet : ""} />
+            <SortableInProcMaterial
+              mat={m}
+              displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+              shake={
+                m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === data.pallet?.pallet
+              }
+            />
           )}
         </MoveMaterialArrowNode>
       ))}
-    </WhiteboardRegion>
+    </div>
   );
 }
 
 function MaterialColumn({
   data,
   mat,
-  fillViewPort,
 }: {
   readonly data: LoadStationData;
   mat: { readonly label: string; readonly material: MaterialList; readonly isFree: boolean };
-  fillViewPort: boolean;
 }) {
   return (
-    <Box
-      sx={{
-        minWidth: "16em",
-        padding: "8px",
-        borderLeft: fillViewPort ? "1px solid rgba(0, 0, 0, 0.12)" : undefined,
-        borderTop: !fillViewPort ? "1px solid rgba(0, 0, 0, 0.12)" : undefined,
-      }}
+    <MoveMaterialArrowNode
+      kind={
+        mat.isFree
+          ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
+          : {
+              type: MoveMaterialNodeKindType.QueueZone,
+              queue: mat.label,
+            }
+      }
     >
-      <MoveMaterialArrowNode
-        kind={
-          mat.isFree
-            ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
-            : {
-                type: MoveMaterialNodeKindType.QueueZone,
-                queue: mat.label,
-              }
-        }
-      >
-        {mat.isFree ? (
+      {mat.isFree ? (
+        <MaterialRegion data={data} mat={mat} />
+      ) : (
+        <SortableRegion
+          matIds={mat.material.map((m) => m.materialID)}
+          direction="vertical"
+          queueName={mat.label}
+          renderDragOverlay={(mat) => (
+            <DragOverlayInProcMaterial
+              mat={mat}
+              displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+            />
+          )}
+        >
           <MaterialRegion data={data} mat={mat} />
-        ) : (
-          <SortableRegion
-            matIds={mat.material.map((m) => m.materialID)}
-            direction="vertical"
-            queueName={mat.label}
-            renderDragOverlay={(mat) => (
-              <DragOverlayInProcMaterial
-                mat={mat}
-                displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
-              />
-            )}
-          >
-            <MaterialRegion data={data} mat={mat} />
-          </SortableRegion>
-        )}
-      </MoveMaterialArrowNode>
-    </Box>
+        </SortableRegion>
+      )}
+    </MoveMaterialArrowNode>
   );
 }
+
+function RecentCompletedMaterial() {
+  const matSummary = useRecoilValue(last30MaterialSummary);
+  const recentCompleted = React.useMemo(() => {
+    const cutoff = addHours(new Date(), -5);
+    return matSummary.matsById
+      .valuesToLazySeq()
+      .filter(
+        (e) =>
+          e.completed_last_proc_machining === true &&
+          e.last_unload_time !== undefined &&
+          e.last_unload_time >= cutoff
+      )
+      .toSortedArray({ desc: (e) => e.last_unload_time?.getTime() ?? 0 });
+  }, [matSummary]);
+
+  return (
+    <div>
+      {recentCompleted.map((m, idx) => (
+        <MatSummary key={idx} mat={m} />
+      ))}
+    </div>
+  );
+}
+
+const CompletedCol = React.memo(function CompletedCol({
+  fillViewPort,
+  showMaterial,
+}: {
+  fillViewPort: boolean;
+  showMaterial: boolean;
+}) {
+  const ref = useMoveMaterialArrowRef({ type: MoveMaterialNodeKindType.CompletedMaterialZone });
+  if (showMaterial && fillViewPort) {
+    return (
+      <Box padding="8px" display="flex" flexDirection="column" height="100%" ref={ref}>
+        <Typography variant="h4">Completed</Typography>
+        <Box position="relative" flexGrow={1}>
+          <Box position="absolute" top="0" left="0" right="0" bottom="0" overflow="auto">
+            <RecentCompletedMaterial />
+          </Box>
+        </Box>
+      </Box>
+    );
+  } else if (showMaterial) {
+    return (
+      <Box padding="8px" ref={ref}>
+        <Typography variant="h4">Completed</Typography>
+        <RecentCompletedMaterial />
+      </Box>
+    );
+  } else {
+    return (
+      <Box display="flex" justifyContent={fillViewPort ? "flex-end" : undefined} padding="8px" ref={ref}>
+        <Typography
+          variant="h4"
+          margin="4px"
+          sx={fillViewPort ? { textOrientation: "mixed", writingMode: "vertical-rl" } : undefined}
+        >
+          Completed
+        </Typography>
+      </Box>
+    );
+  }
+});
 
 interface LoadMatDialogProps {
   readonly loadNum: number;
@@ -413,14 +481,28 @@ function InstructionButton({ pallet }: { pallet: string | null }) {
 
   if (material === null) return null;
 
-  const type = material.action.type === api.ActionType.Loading ? "load" : "unload";
+  let type: string | undefined;
+  if (material.action.type === api.ActionType.Loading && material.action.loadOntoPallet === pallet) {
+    type = "load";
+  } else if (
+    (material.action.type === api.ActionType.UnloadToInProcess ||
+      material.action.type === api.ActionType.UnloadToCompletedMaterial) &&
+    material.location.type === api.LocType.OnPallet &&
+    material.location.pallet === pallet
+  ) {
+    type = "unload";
+  }
+
+  if (type === undefined) return null;
 
   const url = instructionUrl(
     material.partName,
     type,
     material.materialID,
     pallet,
-    material.process,
+    material.action.type === api.ActionType.Loading
+      ? material.action.processAfterLoad ?? material.process
+      : material.process,
     operator
   );
   return (
@@ -459,30 +541,38 @@ function PrintSerialButton({ loadNum }: { loadNum: number }) {
   }
 }
 
-function SignalInspectionButton() {
-  const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
-  const curMat = useRecoilValue(matDetails.materialInDialogInfo);
-  if (curMat === null) return null;
-  return (
-    <Button color="primary" onClick={() => setForceInspOpen(true)}>
-      Signal Inspection
-    </Button>
-  );
-}
-
 const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProps) {
   const fmsInfo = useRecoilValue(fmsInformation);
   const setWorkorderDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
+  const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
+  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
+
+  function onClose() {
+    setSwapSt(null);
+    setInvalidateSt(null);
+  }
 
   return (
     <MaterialDialog
+      onClose={onClose}
       allowNote
+      highlightProcess={invalidateSt?.process ?? undefined}
+      extraDialogElements={
+        <>
+          <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />
+          {invalidateSt !== null ? (
+            <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
+          ) : null}
+        </>
+      }
       buttons={
         <>
           <InstructionButton pallet={props.pallet} />
           <PrintSerialButton loadNum={props.loadNum} />
           <QuarantineMatButton />
           <SignalInspectionButton />
+          <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} />
+          <InvalidateCycleDialogButtons st={invalidateSt} setState={setInvalidateSt} onClose={onClose} />
           {fmsInfo.allowChangeWorkorderAtLoadStation ? (
             <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
               Assign Workorder
@@ -497,6 +587,52 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
 interface LoadStationProps {
   readonly loadNum: number;
   readonly queues: ReadonlyArray<string>;
+  readonly completed: boolean;
+}
+
+function useGridLayout({
+  numMatCols,
+  maxNumFaces,
+  horizontal,
+  showMatInCompleted,
+}: {
+  numMatCols: number;
+  maxNumFaces: number;
+  horizontal: boolean;
+  showMatInCompleted: boolean;
+}): string {
+  let rows = "";
+  let cols = "";
+  if (maxNumFaces <= 0) maxNumFaces = 1;
+
+  if (horizontal) {
+    let colNames = "";
+    for (let i = 0; i < numMatCols; i++) {
+      cols += "minmax(16em, max-content) ";
+      colNames += `mat${i} `;
+    }
+    cols += "1fr ";
+    if (showMatInCompleted) {
+      cols += "minmax(16em, max-content)";
+    } else {
+      cols += " 4.5em";
+    }
+
+    for (let i = 0; i < maxNumFaces; i++) {
+      rows += `"${colNames} palface${i} completed" 1fr\n`;
+    }
+  } else {
+    cols = "1fr";
+    for (let i = 0; i < numMatCols; i++) {
+      rows += `"mat${i}" minmax(134px, max-content)\n`;
+    }
+    for (let i = 0; i < maxNumFaces; i++) {
+      rows += `"palface${i}" minmax(134px, max-content)\n`;
+    }
+    rows += '"completed" minmax(134px, max-content)\n';
+  }
+
+  return `${rows} / ${cols}`;
 }
 
 export function LoadStation(props: LoadStationProps) {
@@ -505,7 +641,6 @@ export function LoadStation(props: LoadStationProps) {
     () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt),
     [currentSt, props.loadNum, props.queues]
   );
-  const isDemo = useIsDemo();
 
   let matColsSeq = LazySeq.of(data.queues)
     .sortBy(([q, _]) => q)
@@ -516,72 +651,79 @@ export function LoadStation(props: LoadStationProps) {
     }));
 
   if (data.queues.size === 0 || data.freeLoadingMaterial.length > 0) {
-    matColsSeq = matColsSeq.prepend({
+    matColsSeq = matColsSeq.append({
       label: "Material",
       material: data.freeLoadingMaterial,
       isFree: true,
     });
   }
   const matCols = matColsSeq.toRArray();
+  const numNonPalCols = matCols.length + (props.completed ? 1 : 0);
 
   const fillViewPort = useMediaQuery(
-    matCols.length <= 1
-      ? "(min-width: 600px)"
-      : matCols.length === 2
-      ? "(min-width: 950px)"
-      : "(min-width: 1250px)"
+    numNonPalCols <= 1
+      ? "(min-width: 720px)"
+      : numNonPalCols === 2
+      ? "(min-width: 1030px)"
+      : "(min-width: 1320px)"
   );
+
+  const grid = useGridLayout({
+    numMatCols: matCols.length,
+    maxNumFaces: data.face.size,
+    horizontal: fillViewPort,
+    showMatInCompleted: props.completed,
+  });
 
   return (
     <MoveMaterialArrowContainer hideArrows={!fillViewPort}>
       <Box
         component="main"
-        sx={
-          fillViewPort
-            ? {
-                height: "calc(100vh - 64px - 1em)",
-                display: "flex",
-                padding: "8px",
-                width: "100%",
-              }
-            : {
-                padding: "8px",
-                width: "100%",
-              }
-        }
+        sx={{
+          width: "100%",
+          bgcolor: "#F8F8F8",
+          display: "grid",
+          gridTemplate: grid,
+          minHeight: {
+            sm: "calc(100vh - 64px - 40px)",
+            md: "calc(100vh - 64px)",
+          },
+          padding: fillViewPort ? undefined : "8px",
+        }}
       >
-        <Box sx={{ flexGrow: 1, display: "flex", flexDirection: "column", position: "relative" }}>
-          <PalletColumn
-            fillViewPort={fillViewPort}
-            data={data}
-            dateOfCurrentStatus={currentSt.timeOfCurrentStatusUTC}
-          />
-          {!isDemo ? (
-            <Box
-              sx={
-                fillViewPort
-                  ? {
-                      position: "absolute",
-                      bottom: "0px",
-                      right: "5px",
-                    }
-                  : {
-                      position: "fixed",
-                      bottom: "5px",
-                      right: "5px",
-                    }
-              }
-            >
-              <MultiInstructionButton loadData={data} />
-            </Box>
-          ) : undefined}
-        </Box>
         {matCols.map((col, idx) => (
-          <MaterialColumn key={idx} data={data} mat={col} fillViewPort={fillViewPort} />
+          <Box
+            key={idx}
+            gridArea={`mat${idx}`}
+            padding="8px"
+            borderRight={fillViewPort ? "1px solid black" : undefined}
+            borderBottom={!fillViewPort ? "1px solid black" : undefined}
+          >
+            <MaterialColumn data={data} mat={col} />
+          </Box>
         ))}
+        {data.face.keysToAscLazySeq().map((faceNum, idx) => (
+          <Box
+            key={faceNum}
+            marginLeft="15px"
+            gridArea={`palface${idx}`}
+            padding="8px"
+            borderTop={data.pallet && idx !== 0 ? "1px solid black" : undefined}
+          >
+            <PalletFace data={data} faceNum={faceNum} />
+          </Box>
+        ))}
+        <Box
+          borderLeft={fillViewPort ? "1px solid black" : undefined}
+          borderTop={!fillViewPort ? "1px solid black" : undefined}
+          gridArea="completed"
+        >
+          <CompletedCol fillViewPort={fillViewPort} showMaterial={props.completed} />
+        </Box>
+        <MultiInstructionButton loadData={data} />
         <SelectWorkorderDialog />
         <SelectInspTypeDialog />
-        <LoadMatDialog loadNum={data.loadNum} pallet={data.pallet?.pallet ?? null} />
+        <LoadMatDialog loadNum={props.loadNum} pallet={data.pallet?.pallet ?? null} />
       </Box>
     </MoveMaterialArrowContainer>
   );
@@ -591,11 +733,7 @@ function LoadStationCheckWidth(props: LoadStationProps): JSX.Element {
   React.useEffect(() => {
     document.title = "Load " + props.loadNum.toString() + " - FMS Insight";
   }, [props.loadNum]);
-  return (
-    <div>
-      <LoadStation {...props} />
-    </div>
-  );
+  return <LoadStation {...props} />;
 }
 
 export default LoadStationCheckWidth;

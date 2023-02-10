@@ -43,7 +43,15 @@ import {
   MenuItem,
   LinearProgress,
   Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  AppBar,
+  Toolbar,
+  IconButton,
+  useTheme,
 } from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
 import { InProcMaterial, materialAction, MaterialDialog, PartIdenticon } from "./Material.js";
 import {
   ActionType,
@@ -52,8 +60,8 @@ import {
   LocType,
   PalletLocationEnum,
 } from "../../network/api.js";
-import { atom, useRecoilValue } from "recoil";
-import { currentStatus } from "../../cell-status/current-status.js";
+import { useRecoilValue } from "recoil";
+import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { ComparableObj, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
@@ -68,6 +76,7 @@ import {
   SwapMaterialState,
 } from "./InvalidateCycle.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
 
 const CollapsedIconSize = 45;
 const rowSize = CollapsedIconSize + 10; // each material row has 5px above and 5px below for padding
@@ -471,20 +480,7 @@ function gridTemplateColumns(maxNumFaces: number, includeLabelCol: boolean) {
   }
 }
 
-const secondsSinceEpochAtom = atom<number>({
-  key: "system-overview/seconds-since-epoch",
-  default: Math.floor(Date.now() / 1000),
-  effects: [
-    ({ setSelf }) => {
-      const interval = setInterval(() => {
-        setSelf(Math.floor(Date.now() / 1000));
-      }, 1000);
-      return () => clearInterval(interval);
-    },
-  ],
-});
-
-function formatSeconds(totalSeconds: number): string {
+export function formatSeconds(totalSeconds: number): string {
   const secs = Math.abs(totalSeconds) % 60;
   const totalMins = Math.floor(Math.abs(totalSeconds) / 60);
   const mins = totalMins % 60;
@@ -498,10 +494,12 @@ function formatSeconds(totalSeconds: number): string {
   }
 }
 
-function useRemainingTime(
-  elapsedDurationFromCurSt: string | null | undefined,
-  remainingDurationFromCurSt: string | null | undefined
-): [string, number | null] {
+function useRemainingMachineTime(
+  material: ReadonlyArray<Readonly<IInProcessMaterial>> | null | undefined
+): [boolean, string, number | null] {
+  const mat = material?.find((m) => m.action.type === ActionType.Machining);
+  const elapsedDurationFromCurSt = mat?.action?.elapsedMachiningTime;
+  const remainingDurationFromCurSt = mat?.action.expectedRemainingMachiningTime;
   const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
   const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
 
@@ -519,29 +517,26 @@ function useRemainingTime(
 
   if (remainingSecs !== null && elapsedSecs !== null) {
     return [
+      true,
       `${formatSeconds(elapsedSecs)} / ${formatSeconds(remainingSecs)}`,
       remainingSecs < 0 ? -1 : (elapsedSecs / (elapsedSecs + remainingSecs)) * 100,
     ];
   } else if (remainingSecs !== null) {
-    return [" / " + formatSeconds(remainingSecs), remainingSecs < 0 ? -1 : null];
+    return [true, " / " + formatSeconds(remainingSecs), remainingSecs < 0 ? -1 : null];
   } else if (elapsedSecs !== null) {
-    return [formatSeconds(elapsedSecs), null];
+    return [true, formatSeconds(elapsedSecs), null];
   } else {
-    return ["Idle", null];
+    return [!!mat, "Idle", null];
   }
 }
 
 function MachineLabel({ machine }: { machine: MachineStatus }) {
-  const mat = machine.worktable?.mats?.find((m) => m.action.type === ActionType.Machining);
-  const [status, elapsed] = useRemainingTime(
-    mat?.action?.elapsedMachiningTime,
-    mat?.action?.expectedRemainingMachiningTime
-  );
+  const [machining, status, elapsed] = useRemainingMachineTime(machine.worktable?.mats);
   return (
     <div>
       <Typography variant="h5">{machine.name}</Typography>
       <Typography variant="subtitle1">{status}</Typography>
-      {mat ? (
+      {machining ? (
         elapsed === null ? (
           <LinearProgress />
         ) : elapsed < 0 ? (
@@ -620,14 +615,34 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
   );
 }
 
-function LoadStationLabel({ load }: { load: LoadStatus }) {
-  const mat = load.pal?.mats?.find(
+function useElapsedLoadTime(
+  material: ReadonlyArray<Readonly<IInProcessMaterial>> | null | undefined
+): string {
+  const mat = material?.find(
     (m) =>
       m.action.type === ActionType.Loading ||
       m.action.type === ActionType.UnloadToCompletedMaterial ||
       m.action.type === ActionType.UnloadToInProcess
   );
-  const [status] = useRemainingTime(mat?.action?.elapsedLoadUnloadTime, null);
+  const elapsedDurationFromCurSt = mat?.action?.elapsedLoadUnloadTime;
+  const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
+  const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
+
+  let elapsedSecs: number | null = null;
+  if (elapsedDurationFromCurSt) {
+    const elapsedSecsInCurSt = durationToSeconds(elapsedDurationFromCurSt);
+    elapsedSecs = elapsedSecsInCurSt + (secondsSinceEpoch - Math.floor(currentStTime.getTime() / 1000));
+  }
+
+  if (elapsedSecs !== null) {
+    return formatSeconds(elapsedSecs);
+  } else {
+    return "Idle";
+  }
+}
+
+function LoadStationLabel({ load }: { load: LoadStatus }) {
+  const status = useElapsedLoadTime(load.pal?.mats);
   return (
     <Box display="flex" justifyContent="space-between" alignItems="baseline">
       <Typography variant="h5">L/U {load.lulNum}</Typography>
@@ -684,19 +699,8 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
 }
 
 function MachineAtLoadLabel({ status }: { status: MachineAtLoadStatus }) {
-  const loadMat = status.loadingMats.find(
-    (m) =>
-      m.action.type === ActionType.Loading ||
-      m.action.type === ActionType.UnloadToCompletedMaterial ||
-      m.action.type === ActionType.UnloadToInProcess
-  );
-  const [lulStatus] = useRemainingTime(loadMat?.action?.elapsedLoadUnloadTime, null);
-
-  const machiningMat = status.machiningMats.find((m) => m.action.type === ActionType.Machining);
-  const [mcStatus, mcElapsed] = useRemainingTime(
-    machiningMat?.action?.elapsedMachiningTime,
-    machiningMat?.action?.expectedRemainingMachiningTime
-  );
+  const lulStatus = useElapsedLoadTime(status.loadingMats);
+  const [machining, mcStatus, mcElapsed] = useRemainingMachineTime(status.machiningMats);
 
   return (
     <div>
@@ -707,7 +711,7 @@ function MachineAtLoadLabel({ status }: { status: MachineAtLoadStatus }) {
             {status.machineCurrentlyAtLoad.group} {status.machineCurrentlyAtLoad.num}
           </Typography>
           <Typography variant="subtitle1">{mcStatus === "Idle" ? lulStatus : mcStatus}</Typography>
-          {machiningMat ? (
+          {machining ? (
             mcElapsed === null ? (
               <LinearProgress />
             ) : mcElapsed < 0 ? (
@@ -809,8 +813,7 @@ function StockerPallet({ maxNumFaces, pallet }: { maxNumFaces: number; pallet: P
   );
 }
 
-export function SystemOverview() {
-  const overview = useCellOverview();
+export const SystemOverview = React.memo(function SystemOverview({ overview }: { overview: CellOverview }) {
   return (
     <div>
       {overview.machines.toAscLazySeq().map(([group, machines]) => (
@@ -843,9 +846,9 @@ export function SystemOverview() {
       ) : undefined}
     </div>
   );
-}
+});
 
-const SystemOverviewDialog = React.memo(function SystemOverviewDialog({
+const SystemOverviewMaterialDialog = React.memo(function SystemOverviewMaterialDialog({
   ignoreOperator,
 }: {
   ignoreOperator?: boolean;
@@ -862,6 +865,7 @@ const SystemOverviewDialog = React.memo(function SystemOverviewDialog({
     <MaterialDialog
       onClose={onClose}
       allowNote
+      highlightProcess={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
           <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />
@@ -873,6 +877,7 @@ const SystemOverviewDialog = React.memo(function SystemOverviewDialog({
       buttons={
         <>
           <QuarantineMatButton ignoreOperator={ignoreOperator} />
+          <SignalInspectionButton />
           <SwapMaterialButtons
             st={swapSt}
             setState={setSwapSt}
@@ -895,6 +900,7 @@ export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolea
   React.useEffect(() => {
     document.title = "System Overview - FMS Insight";
   }, []);
+  const overview = useCellOverview();
 
   return (
     <main
@@ -904,8 +910,179 @@ export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolea
         backgroundColor: "#F8F8F8",
       }}
     >
-      <SystemOverview />
-      <SystemOverviewDialog ignoreOperator={ignoreOperator} />
+      <SystemOverview overview={overview} />
+      <SystemOverviewMaterialDialog ignoreOperator={ignoreOperator} />
+      <SelectInspTypeDialog />
     </main>
   );
 }
+
+const StatusIconSize = 30;
+
+function MachineIcon({ machine }: { machine: MachineStatus }) {
+  const theme = useTheme();
+  const [, , elapsed] = useRemainingMachineTime(machine.worktable?.mats);
+  return (
+    <>
+      <rect x={3} y={3} width={24} height={24} stroke="black" />;
+      <rect
+        x={3}
+        y={3}
+        width={24}
+        height={8}
+        fill={machine.inbound === null ? "white" : theme.palette.secondary.main}
+      />
+      <rect
+        x={3}
+        y={11}
+        width={24}
+        height={8}
+        fill={
+          machine.worktable === null
+            ? "white"
+            : elapsed != null && elapsed < 0
+            ? theme.palette.error.main
+            : theme.palette.secondary.main
+        }
+      />
+      <rect
+        x={3}
+        y={19}
+        width={24}
+        height={8}
+        fill={machine.outbound === null ? "white" : theme.palette.secondary.main}
+      />
+    </>
+  );
+}
+
+function LoadStationIcon({ load }: { load: LoadStatus }) {
+  const theme = useTheme();
+  return (
+    <polygon
+      points="3,27 27,27 15,3"
+      fill={load.pal === null ? "white" : theme.palette.secondary.main}
+      stroke="black"
+    />
+  );
+}
+
+function MachineAtLoadIcon({ status }: { status: MachineAtLoadStatus }) {
+  const theme = useTheme();
+  const [, , elapsed] = useRemainingMachineTime(status.machiningMats);
+  return (
+    <>
+      <rect x={3} y={3} width={24} height={24} stroke="black" />;
+      <rect
+        x={3}
+        y={3}
+        width={24}
+        height={8}
+        fill={status.readyMats.length === 0 ? "white" : theme.palette.secondary.main}
+      />
+      <rect
+        x={3}
+        y={11}
+        width={24}
+        height={8}
+        fill={
+          status.machiningMats.length === 0
+            ? "white"
+            : elapsed != null && elapsed < 0
+            ? theme.palette.error.main
+            : theme.palette.secondary.main
+        }
+      />
+      <rect
+        x={3}
+        y={19}
+        width={24}
+        height={8}
+        fill={status.loadingMats.length === 0 ? "white" : theme.palette.secondary.main}
+      />
+    </>
+  );
+}
+
+const StatusIcons = React.memo(function StatusIcons({ overview }: { overview: CellOverview }) {
+  const numMachines = overview.machines.toAscLazySeq().sumBy(([, machines]) => machines.length);
+  return (
+    <Box
+      sx={{
+        height: "1.5em",
+        "&:hover": {
+          backgroundColor: "primary.light",
+        },
+      }}
+    >
+      <svg
+        viewBox={`0 0 ${
+          (numMachines + overview.loads.length + overview.machineAtLoad.length) * StatusIconSize
+        } ${StatusIconSize}`}
+        preserveAspectRatio="none"
+        width="140px"
+        height="1.5em"
+      >
+        <g>
+          {overview.machines
+            .toAscLazySeq()
+            .flatMap(([, machines]) => machines)
+            .map((machine, idx) => (
+              <g key={machine.name} transform={`translate(${idx * StatusIconSize})`}>
+                <MachineIcon machine={machine} />
+              </g>
+            ))}
+        </g>
+        <g transform={`translate(${numMachines * StatusIconSize})`}>
+          {overview.loads.map((load, idx) => (
+            <g key={load.lulNum} transform={`translate(${idx * StatusIconSize})`}>
+              <LoadStationIcon load={load} />
+            </g>
+          ))}
+        </g>
+        <g transform={`translate(${(numMachines + overview.loads.length) * StatusIconSize})`}>
+          {overview.machineAtLoad.map((status, idx) => (
+            <g key={status.lulNum} transform={`translate(${idx * StatusIconSize})`}>
+              <MachineAtLoadIcon status={status} />
+            </g>
+          ))}
+        </g>
+      </svg>
+    </Box>
+  );
+});
+
+export const SystemOverviewDialogButton = React.memo(function SystemOverviewDialogButton({
+  full,
+}: {
+  full: boolean;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const overview = useCellOverview();
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>
+        <StatusIcons overview={overview} />
+      </Button>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="xl" fullScreen={full}>
+        {full ? (
+          <AppBar sx={{ position: "relative" }}>
+            <Toolbar>
+              <IconButton edge="start" color="inherit" onClick={() => setOpen(false)} aria-label="close">
+                <CloseIcon />
+              </IconButton>
+              <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+                System Overview
+              </Typography>
+            </Toolbar>
+          </AppBar>
+        ) : undefined}
+        <DialogContent>
+          <SystemOverview overview={overview} />
+          <Box height="1em" />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+});

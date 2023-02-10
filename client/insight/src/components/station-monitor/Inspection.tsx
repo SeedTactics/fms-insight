@@ -33,12 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { addDays } from "date-fns";
-import { Grid } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { Button } from "@mui/material";
 import { DialogActions } from "@mui/material";
 
 import { MaterialDialog, MatSummary } from "./Material.js";
-import { WhiteboardRegion } from "./Whiteboard.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";
@@ -176,10 +175,19 @@ export function Inspection(props: InspectionProps): JSX.Element {
   );
 
   return (
-    <div data-testid="stationmonitor-inspection" style={{ padding: "8px" }}>
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
-          <WhiteboardRegion label="Parts to Inspect" borderTop borderLeft borderRight borderBottom>
+    <>
+      <Box sx={{ display: { md: "flex" } }}>
+        <Box
+          padding="8px"
+          sx={{
+            minHeight: { md: "calc(100vh - 64px)" },
+            width: { md: "50vw" },
+            borderRight: { md: "1px solid black" },
+            borderBottom: { sm: "1px solid black", md: "none" },
+          }}
+        >
+          <Typography variant="h4">Parts to Inspect</Typography>
+          <Box display="flex" justifyContent="space-between" flexWrap="wrap">
             {recent_inspections.waiting_to_inspect.map((m, idx) => (
               <MatSummary
                 key={idx}
@@ -188,10 +196,11 @@ export function Inspection(props: InspectionProps): JSX.Element {
                 hideInspectionIcon
               />
             ))}
-          </WhiteboardRegion>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <WhiteboardRegion label="Recently Inspected" borderTop borderLeft borderRight borderBottom>
+          </Box>
+        </Box>
+        <Box padding="8px" sx={{ width: { md: "50vw" } }}>
+          <Typography variant="h4">Recently Inspected</Typography>
+          <Box display="flex" justifyContent="space-between" flexWrap="wrap">
             {recent_inspections.inspect_completed.map((m, idx) => (
               <MatSummary
                 key={idx}
@@ -200,11 +209,11 @@ export function Inspection(props: InspectionProps): JSX.Element {
                 hideInspectionIcon
               />
             ))}
-          </WhiteboardRegion>
-        </Grid>
-      </Grid>
+          </Box>
+        </Box>
+      </Box>
       <InspMaterialDialog focusInspectionType={props.focusInspectionType} />
-    </div>
+    </>
   );
 }
 
@@ -296,8 +305,14 @@ export default function InspectionPage(props: InspectionProps): JSX.Element {
   }, [props.focusInspectionType]);
 
   return (
-    <main style={{ backgroundColor: "#F8F8F8", minHeight: "calc(100vh - 64px)" }}>
+    <Box
+      component="main"
+      sx={{
+        backgroundColor: "#F8F8F8",
+        minHeight: { sm: "calc(100vh - 64px - 40px)", md: "calc(100vh - 64px)" },
+      }}
+    >
       <Inspection {...props} />
-    </main>
+    </Box>
   );
 }

@@ -50,6 +50,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  keyframes,
 } from "@mui/material";
 import TimeAgo from "react-timeago";
 import { DragIndicator, Warning as WarningIcon, Search as SearchIcon } from "@mui/icons-material";
@@ -141,6 +142,30 @@ export function materialAction(
   return undefined;
 }
 
+const shakeSize = 2;
+const shakeHorizKeyframes = keyframes`
+  from, to { transform: translate(0, 0) }
+  10% { transform: translate(${shakeSize}px, 0) }
+  20% { transform: translate(0, 0) }
+  30% { transform: translate(${shakeSize}px, 0) }
+  40% { transform: translate(0, 0) }
+  50% { transform: translate(${shakeSize}px, 0) }
+  60% { transform: translate(0, 0) }
+`;
+const shakeHorizAnimation = `${shakeHorizKeyframes} 1s ease-in-out infinite`;
+
+// global sync of all shake animations
+function shakeAnimationIteration(event: React.AnimationEvent<HTMLDivElement>) {
+  const anim = event.currentTarget
+    .getAnimations()
+    .find((a) => (a as CSSAnimation).animationName === shakeHorizKeyframes.name);
+  if (anim && anim.startTime) {
+    // the start time can drift due to the pause on hover, so to keep it in sync always
+    // round the start time down to be a multiple of the duration (1s)
+    anim.startTime = anim.startTime - (anim.startTime % 1000);
+  }
+}
+
 interface MaterialDragProps {
   readonly dragRootProps?: React.HTMLAttributes<HTMLDivElement>;
   readonly showDragHandle?: boolean;
@@ -148,6 +173,7 @@ interface MaterialDragProps {
   readonly setDragHandleRef?: React.RefCallback<HTMLDivElement>;
   readonly isDragOverlay?: boolean;
   readonly isActiveDrag?: boolean;
+  readonly shake?: boolean;
 }
 
 export interface MaterialSummaryProps {
@@ -203,7 +229,12 @@ const MatCard = React.forwardRef(function MatCard(
         padding: "8px",
         margin: props.isDragOverlay ? undefined : "8px",
         opacity: props.isActiveDrag ? 0.2 : 1,
+        animation: props.shake ? shakeHorizAnimation : undefined,
+        "&:hover": {
+          animationPlayState: "paused",
+        },
       }}
+      onAnimationIteration={shakeAnimationIteration}
       {...props.dragRootProps}
     >
       {props.showDragHandle ? (
@@ -284,16 +315,20 @@ const MatCard = React.forwardRef(function MatCard(
 
 export const MatSummary: React.ComponentType<MaterialSummaryProps> = React.memo(MatCard);
 
-export interface InProcMaterialProps {
+export type InProcMaterialProps = {
   readonly mat: Readonly<api.IInProcessMaterial>;
   readonly displaySinglePallet?: string;
   readonly displayJob?: boolean;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
-}
+};
+
+export type ShakeProp = {
+  readonly shake?: boolean;
+};
 
 export const InProcMaterial = React.memo(function InProcMaterial(
-  props: InProcMaterialProps & { readonly showHandle?: boolean }
+  props: InProcMaterialProps & ShakeProp & { readonly showHandle?: boolean }
 ) {
   return (
     <MatCard
@@ -303,6 +338,7 @@ export const InProcMaterial = React.memo(function InProcMaterial(
       displayJob={props.displayJob}
       showDragHandle={props.showHandle}
       hideEmptySerial={props.hideEmptySerial}
+      shake={props.shake}
     />
   );
 });
@@ -311,7 +347,9 @@ export type SortableMatData = {
   readonly mat: Readonly<api.IInProcessMaterial>;
 };
 
-export const SortableInProcMaterial = React.memo(function SortableInProcMaterial(props: InProcMaterialProps) {
+export const SortableInProcMaterial = React.memo(function SortableInProcMaterial(
+  props: InProcMaterialProps & ShakeProp
+) {
   const d: SortableMatData = { mat: props.mat };
   const {
     active,
@@ -355,6 +393,7 @@ export const SortableInProcMaterial = React.memo(function SortableInProcMaterial
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
       hideEmptySerial={props.hideEmptySerial}
+      shake={active ? undefined : props.shake}
     />
   );
 });

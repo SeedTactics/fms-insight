@@ -35,7 +35,7 @@ import { Button } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { TextField } from "@mui/material";
 import * as React from "react";
-import { IActiveJob, IInProcessMaterial, LocType } from "../../network/api.js";
+import { ActionType, IActiveJob, IInProcessMaterial, LocType } from "../../network/api.js";
 import { JobsBackend } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
@@ -112,12 +112,12 @@ export function InvalidateCycleDialogButtons(
 
   return (
     <>
-      {curMat && props.st === null ? (
+      {props.st === null ? (
         <Button color="primary" onClick={() => props.setState({ process: null, updating: false })}>
           Invalidate Cycle
         </Button>
       ) : undefined}
-      {curMat && props.st !== null ? (
+      {props.st !== null ? (
         <Button
           color="primary"
           onClick={invalidateCycle}
@@ -240,6 +240,16 @@ export function SwapMaterialButtons(
   let operator = useRecoilValue(currentOperator);
   if (props.ignoreOperator) operator = null;
 
+  if (
+    !curMat ||
+    curMat.location.type !== LocType.OnPallet ||
+    curMat.action.type === ActionType.Loading ||
+    curMat.action.type === ActionType.UnloadToCompletedMaterial ||
+    curMat.action.type === ActionType.UnloadToInProcess
+  ) {
+    return null;
+  }
+
   function swapMats() {
     if (curMat && props.st && props.st.selectedMatToSwap && curMat.location.type === LocType.OnPallet) {
       props.setState({ selectedMatToSwap: props.st.selectedMatToSwap, updating: true });
@@ -255,12 +265,12 @@ export function SwapMaterialButtons(
 
   return (
     <>
-      {curMat && props.st === null && curMat.location.type === LocType.OnPallet ? (
+      {props.st === null ? (
         <Button color="primary" onClick={() => props.setState({ selectedMatToSwap: null, updating: false })}>
           Swap Serial
         </Button>
       ) : undefined}
-      {curMat && props.st !== null && curMat.location.type === LocType.OnPallet ? (
+      {props.st !== null ? (
         <Button
           color="primary"
           onClick={swapMats}

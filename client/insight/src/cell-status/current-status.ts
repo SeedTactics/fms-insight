@@ -40,7 +40,13 @@ import {
   LocType,
   ActiveJob,
 } from "../network/api.js";
-import { atom, DefaultValue, RecoilValueReadOnly, selectorFamily, TransactionInterface_UNSTABLE } from "recoil";
+import {
+  atom,
+  DefaultValue,
+  RecoilValueReadOnly,
+  selectorFamily,
+  TransactionInterface_UNSTABLE,
+} from "recoil";
 import { last30JobComment } from "./scheduled-jobs.js";
 import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
@@ -57,6 +63,19 @@ const currentStatusRW = atom<Readonly<ICurrentStatus>>({
   },
 });
 export const currentStatus: RecoilValueReadOnly<ICurrentStatus> = currentStatusRW;
+
+export const secondsSinceEpochAtom = atom<number>({
+  key: "system-overview/seconds-since-epoch",
+  default: Math.floor(Date.now() / 1000),
+  effects: [
+    ({ setSelf }) => {
+      const interval = setInterval(() => {
+        setSelf(Math.floor(Date.now() / 1000));
+      }, 1000);
+      return () => clearInterval(interval);
+    },
+  ],
+});
 
 export const currentStatusJobComment = selectorFamily<string | null, string>({
   key: "current-status-job-comment",

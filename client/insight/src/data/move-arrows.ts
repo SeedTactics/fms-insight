@@ -178,12 +178,10 @@ export function computeArrows(
     switch (mat.action.type) {
       case api.ActionType.UnloadToCompletedMaterial:
         arrows.push({
-          fromX: rect.left,
+          fromX: rect.right,
           fromY: rect.top + rect.height / 2,
-          toX: rect.left,
-          toY: byKind.completedMaterial
-            ? byKind.completedMaterial.top + byKind.completedMaterial.height / 2
-            : container.bottom - 10,
+          toY: rect.top + rect.height / 2,
+          toX: byKind.completedMaterial ? byKind.completedMaterial.left + 10 : container.right - 10,
           curveDirection: 1,
         });
         break;
@@ -200,9 +198,9 @@ export function computeArrows(
           lastFreeUsed += 1;
         }
         arrows.push({
-          fromX: rect.right,
+          fromX: rect.left,
           fromY: rect.top + rect.height / 2,
-          toX: dest !== undefined ? dest.left - 5 : container.right - 2,
+          toX: dest !== undefined ? dest.right - 5 : container.left + 2,
           toY: dest !== undefined ? dest.top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
           curveDirection: 1,
         });
@@ -231,7 +229,7 @@ export function computeArrows(
                   fromX: rect.left,
                   fromY: rect.top + rect.height / 2,
                   toX: rect.left,
-                  toY: face.top + 10,
+                  toY: face.top - 20,
                   curveDirection: 1,
                 });
               }
@@ -243,11 +241,11 @@ export function computeArrows(
               const faceSpotsUsed = faceDestUsed.get(mat.action.loadOntoFace) ?? 0;
               faceDestUsed.set(mat.action.loadOntoFace, faceSpotsUsed + 1);
               arrows.push({
-                fromX: rect.left,
+                fromX: rect.right,
                 fromY: rect.top + rect.height / 2,
-                toX: face.right - 20,
+                toX: face.left + 20,
                 toY: face.top + 50 + 20 * faceSpotsUsed,
-                curveDirection: 1,
+                curveDirection: -1,
               });
             }
           }
