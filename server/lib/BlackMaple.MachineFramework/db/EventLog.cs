@@ -1369,13 +1369,13 @@ namespace BlackMaple.MachineFramework
         {
           foreach (var mat in mats)
           {
-            if (unloadIntoQueues.ContainsKey(mat.MaterialID))
+            if (unloadIntoQueues.TryGetValue(mat.MaterialID, out var queueName) && queueName != null)
             {
               msgs.AddRange(
                 AddToQueue(
                   trans,
                   mat,
-                  unloadIntoQueues[mat.MaterialID],
+                  queueName,
                   -1,
                   operatorName: null,
                   timeUTC: timeUTC,

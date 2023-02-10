@@ -192,7 +192,7 @@ namespace Makino
       //do nothing
     }
 
-    public void SignalMaterialForQuarantine(long materialId, string queue, string operatorName = null)
+    public void SignalMaterialForQuarantine(long materialId, string operatorName = null)
     {
       // do nothing
     }

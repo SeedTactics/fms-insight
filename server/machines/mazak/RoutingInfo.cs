@@ -551,39 +551,52 @@ namespace MazakMachineInterface
 
     void BlackMaple.MachineFramework.IQueueControl.SignalMaterialForQuarantine(
       long materialId,
-      string queue,
       string operatorName
     )
     {
       Log.Debug("Signaling {matId} for quarantine", materialId);
-      if (!fmsSettings.Queues.ContainsKey(queue))
-      {
-        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
-      }
 
       using (var logDb = logDbCfg.OpenConnection())
       {
         var status = CurrentStatus(logDb);
 
         var mat = status.Material.FirstOrDefault(m => m.MaterialID == materialId);
-        if (mat == null)
+
+        if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
         {
-          throw new BlackMaple.MachineFramework.BadRequestException("Unable to find material to quarantine");
+          var job = status.Jobs.GetValueOrDefault(mat.JobUnique);
+          var path = job?.Processes?[mat.Process - 1]?.Paths?[mat.Path - 1];
+          if (path != null && path.OutputQueue != null)
+          {
+            logDb.SignalMaterialForQuarantine(
+              mat: new EventLogMaterial()
+              {
+                MaterialID = materialId,
+                Process = mat.Process,
+                Face = ""
+              },
+              pallet: mat.Location.Pallet,
+              queue: fmsSettings.QuarantineQueue,
+              timeUTC: null,
+              operatorName: operatorName
+            );
+          }
+          else
+          {
+            throw new BadRequestException(
+              "Can only signal material for quarantine if the current process and path has an output queue"
+            );
+          }
+
+          _onCurStatusChange(CurrentStatus(logDb));
         }
-        else if (mat.Location.Type != InProcessMaterialLocation.LocType.InQueue)
+        else if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
         {
-          throw new BlackMaple.MachineFramework.BadRequestException(
-            "Mazak FMS Insight does not support quarantining material on a pallet"
-          );
+          throw new BadRequestException("Can only signal material for quarantine if it is on a pallet");
         }
         else
         {
-          ((BlackMaple.MachineFramework.IQueueControl)this).SetMaterialInQueue(
-            materialId,
-            queue,
-            -1,
-            operatorName
-          );
+          throw new BadRequestException("Unable to find material to quarantine");
         }
       }
     }

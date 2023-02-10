@@ -39,7 +39,8 @@ using System.Threading;
 
 namespace BlackMaple.MachineFramework
 {
-  public class JobsAndQueuesFromDb<St> : IJobControl, IQueueControl, IDisposable where St : ICellState
+  public class JobsAndQueuesFromDb<St> : IJobControl, IQueueControl, IDisposable
+    where St : ICellState
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<JobsAndQueuesFromDb<St>>();
 
@@ -606,39 +607,41 @@ namespace BlackMaple.MachineFramework
       RecalculateCellState();
     }
 
-    public void SignalMaterialForQuarantine(long materialId, string queue, string operatorName)
+    public void SignalMaterialForQuarantine(long materialId, string operatorName)
     {
       Log.Debug("Signaling {matId} for quarantine", materialId);
-      if (!_settings.Queues.ContainsKey(queue))
-      {
-        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
-      }
 
       var st = GetCurrentStatus();
 
       // first, see if it is on a pallet
-      var palMat = st.Material
-        .Where(m => m.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
-        .FirstOrDefault(m => m.MaterialID == materialId);
-      var qMat = st.Material
-        .Where(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue)
-        .FirstOrDefault(m => m.MaterialID == materialId);
+      var mat = st.Material.FirstOrDefault(m => m.MaterialID == materialId);
 
-      if (palMat != null)
+      if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
       {
-        using (var ldb = _repo.OpenConnection())
+        var job = st.Jobs.GetValueOrDefault(mat.JobUnique);
+        var path = job?.Processes?[mat.Process - 1]?.Paths?[mat.Path - 1];
+        if (path != null && path.OutputQueue != null)
         {
-          ldb.SignalMaterialForQuarantine(
-            mat: new EventLogMaterial()
-            {
-              MaterialID = materialId,
-              Process = palMat.Process,
-              Face = ""
-            },
-            pallet: palMat.Location.Pallet,
-            queue: queue,
-            timeUTC: null,
-            operatorName: operatorName
+          using (var ldb = _repo.OpenConnection())
+          {
+            ldb.SignalMaterialForQuarantine(
+              mat: new EventLogMaterial()
+              {
+                MaterialID = materialId,
+                Process = mat.Process,
+                Face = ""
+              },
+              pallet: mat.Location.Pallet,
+              queue: _settings.QuarantineQueue,
+              timeUTC: null,
+              operatorName: operatorName
+            );
+          }
+        }
+        else
+        {
+          throw new BadRequestException(
+            "Can only signal material for quarantine if the current process and path has an output queue"
           );
         }
 
@@ -646,9 +649,9 @@ namespace BlackMaple.MachineFramework
 
         return;
       }
-      else if (qMat != null)
+      else if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
       {
-        this.SetMaterialInQueue(materialId, queue, -1, operatorName);
+        throw new BadRequestException("Can only signal material for quarantine if it is on a pallet");
       }
       else
       {

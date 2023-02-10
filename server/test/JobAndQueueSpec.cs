@@ -55,6 +55,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   private readonly RepositoryConfig _repo;
   private readonly ICheckJobsValid _checkJobsMock;
+  private readonly FMSSettings _settings;
   private readonly JobsAndQueuesFromDb<MockCellState> _jq;
   private readonly Fixture _fixture;
 
@@ -68,13 +69,13 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
     _checkJobsMock = Substitute.For<ICheckJobsValid>();
 
-    var settings = new FMSSettings();
-    settings.Queues.Add("q1", new QueueSize());
-    settings.Queues.Add("q2", new QueueSize());
+    _settings = new FMSSettings();
+    _settings.Queues.Add("q1", new QueueSize());
+    _settings.Queues.Add("q2", new QueueSize());
 
     _jq = new JobsAndQueuesFromDb<MockCellState>(
       _repo,
-      settings,
+      _settings,
       OnNewCurrentStatus,
       this,
       _checkJobsMock,
@@ -771,8 +772,94 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       );
   }
 
+  [Theory]
+  [InlineData("quarqqq")]
+  [InlineData(null)]
+  public async Task QuarantinesMatOnPallet(string quarantineQueue)
+  {
+    _settings.QuarantineQueue = quarantineQueue;
+
+    using var db = _repo.OpenConnection();
+
+    var job = new Job()
+    {
+      UniqueStr = "uuu1",
+      PartName = "p1",
+      Processes = ImmutableList.Create(
+        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "q1" }) }
+      ),
+      RouteStartUTC = DateTime.MinValue,
+      RouteEndUTC = DateTime.MinValue,
+      Archived = false,
+      Cycles = 0
+    };
+
+    db.AddJobs(
+      new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create(job) },
+      null,
+      addAsCopiedToSystem: true
+    );
+
+    db.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
+
+    await SetCurrentState(
+      palStateUpdated: false,
+      executeAction: false,
+      curSt: new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
+        Material = ImmutableList.Create(
+          MatOnPal(matId: 1, uniq: "uuu1", part: "p1", proc: 1, path: 2, serial: "aaa", pal: "4")
+        ),
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Alarms = ImmutableList<string>.Empty,
+        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+      }
+    );
+
+    var newStatusTask = CreateTaskToWaitForNewCellState();
+
+    _jq.SignalMaterialForQuarantine(1, "theoper");
+
+    await newStatusTask;
+
+    var logMat = new LogMaterial(
+      matID: 1,
+      uniq: "uuu1",
+      proc: 1,
+      part: "p1",
+      numProc: 2,
+      serial: "",
+      workorder: "",
+      face: ""
+    );
+
+    db.GetLogForMaterial(materialID: 1)
+      .Should()
+      .BeEquivalentTo(
+        new[]
+        {
+          SignalQuarantineExpectedEntry(
+            logMat,
+            cntr: 1,
+            pal: "4",
+            queue: quarantineQueue,
+            operName: "theoper"
+          )
+        },
+        options =>
+          options
+            .Using<DateTime>(
+              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            )
+            .WhenTypeIs<DateTime>()
+            .ComparingByMembers<LogEntry>()
+      );
+  }
+
   [Fact]
-  public async Task QuarantinesMatOnPallet()
+  public async Task ErrorsWhenQuarnatiningPathWithoutOutputQueue()
   {
     using var db = _repo.OpenConnection();
 
@@ -813,39 +900,18 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       }
     );
 
-    var newStatusTask = CreateTaskToWaitForNewCellState();
-
-    _jq.SignalMaterialForQuarantine(1, "q1", "theoper");
-
-    await newStatusTask;
-
-    var logMat = new LogMaterial(
-      matID: 1,
-      uniq: "uuu1",
-      proc: 1,
-      part: "p1",
-      numProc: 2,
-      serial: "",
-      workorder: "",
-      face: ""
-    );
-
-    db.GetLogForMaterial(materialID: 1)
+    _jq.Invoking(j => j.SignalMaterialForQuarantine(1, "theoper"))
       .Should()
-      .BeEquivalentTo(
-        new[] { SignalQuarantineExpectedEntry(logMat, cntr: 1, pal: "4", queue: "q1", operName: "theoper") },
-        options =>
-          options
-            .Using<DateTime>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<DateTime>()
-            .ComparingByMembers<LogEntry>()
+      .Throw<BadRequestException>()
+      .WithMessage(
+        "Can only signal material for quarantine if the current process and path has an output queue"
       );
+
+    db.GetLogForMaterial(materialID: 1).Should().BeEmpty();
   }
 
   [Fact]
-  public async Task QuarantinesMatInQueue()
+  public async Task ErrorsQuarantinesMatInQueue()
   {
     using var db = _repo.OpenConnection();
 
@@ -903,11 +969,10 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       }
     );
 
-    var newStatusTask = CreateTaskToWaitForNewCellState();
-
-    _jq.SignalMaterialForQuarantine(1, "q2", "theoper");
-
-    await newStatusTask;
+    _jq.Invoking(j => j.SignalMaterialForQuarantine(1, "theoper"))
+      .Should()
+      .Throw<BadRequestException>()
+      .WithMessage("Can only signal material for quarantine if it is on a pallet");
 
     var logMat = new LogMaterial(
       matID: 1,
@@ -935,22 +1000,6 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
             operName: null,
             reason: "SetByOperator"
           ),
-          RemoveFromQueueExpectedEntry(
-            logMat,
-            cntr: 4,
-            queue: "q1",
-            position: 0,
-            elapsedMin: 0,
-            operName: "theoper"
-          ),
-          AddToQueueExpectedEntry(
-            logMat,
-            cntr: 5,
-            queue: "q2",
-            position: 0,
-            operName: "theoper",
-            reason: "SetByOperator"
-          )
         },
         options =>
           options

@@ -252,13 +252,9 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPut("material/{materialId}/quarantine")]
     [ProducesResponseType(typeof(void), 200)]
-    public void SignalMaterialForQuarantine(
-      long materialId,
-      [FromBody] string queue,
-      [FromQuery] string operName = null
-    )
+    public void SignalMaterialForQuarantine(long materialId, [FromQuery] string operName = null)
     {
-      _backend.QueueControl.SignalMaterialForQuarantine(materialId, queue, operName);
+      _backend.QueueControl.SignalMaterialForQuarantine(materialId, operName);
     }
 
     [HttpPut("material/{materialId}/invalidate-process")]

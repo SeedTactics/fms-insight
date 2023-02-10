@@ -876,29 +876,18 @@ namespace BlackMaple.FMSInsight.Niigata
       // now material to unload
       foreach (var mat in unusedMatsOnPal.Values.Where(m => !loadingIds.Contains(m.Mat.MaterialID)))
       {
-        if (mat.Mat.Process == mat.Job.Processes.Count)
-        {
-          mat.Mat %= m =>
-            m.SetAction(
-              new InProcessMaterialAction()
-              {
-                Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
-                ElapsedLoadUnloadTime = elapsedLoadTime
-              }
-            );
-        }
-        else
-        {
-          mat.Mat %= m =>
-            m.SetAction(
-              new InProcessMaterialAction()
-              {
-                Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
-                UnloadIntoQueue = OutputQueueForMaterial(mat, pallet.Log),
-                ElapsedLoadUnloadTime = elapsedLoadTime
-              }
-            );
-        }
+        mat.Mat %= m =>
+          m.SetAction(
+            new InProcessMaterialAction()
+            {
+              Type =
+                mat.Mat.Process == mat.Job.Processes.Count
+                  ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+                  : InProcessMaterialAction.ActionType.UnloadToInProcess,
+              UnloadIntoQueue = OutputQueueForMaterial(mat, pallet.Log, defaultToScrap: true),
+              ElapsedLoadUnloadTime = elapsedLoadTime
+            }
+          );
         pallet.Material.Add(mat);
       }
     }
@@ -922,7 +911,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var queues = new Dictionary<long, string>();
         foreach (var mat in face)
         {
-          var q = OutputQueueForMaterial(mat, pallet.Log);
+          var q = OutputQueueForMaterial(mat, pallet.Log, defaultToScrap: false);
           if (!string.IsNullOrEmpty(q))
           {
             queues[mat.Mat.MaterialID] = q;
@@ -2218,15 +2207,27 @@ namespace BlackMaple.FMSInsight.Niigata
         );
     }
 
-    private string OutputQueueForMaterial(InProcessMaterialAndJob mat, IReadOnlyList<LogEntry> log)
+    private string OutputQueueForMaterial(
+      InProcessMaterialAndJob mat,
+      IReadOnlyList<LogEntry> log,
+      bool defaultToScrap
+    )
     {
-      var signalQuarantine = log.FirstOrDefault(
+      var signalQuarantine = log.LastOrDefault(
         e => e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == mat.Mat.MaterialID)
       );
 
       if (signalQuarantine != null)
       {
-        return signalQuarantine.LocationName ?? _settings.QuarantineQueue;
+        var queue = signalQuarantine.LocationName ?? _settings.QuarantineQueue;
+        if (defaultToScrap)
+        {
+          return queue ?? "Scrap";
+        }
+        else
+        {
+          return queue;
+        }
       }
       else
       {

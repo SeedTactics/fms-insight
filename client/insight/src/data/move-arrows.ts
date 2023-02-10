@@ -177,35 +177,39 @@ export function computeArrows(
   )) {
     switch (mat.action.type) {
       case api.ActionType.UnloadToCompletedMaterial:
-        arrows.push({
-          fromX: rect.right,
-          fromY: rect.top + rect.height / 2,
-          toY: rect.top + rect.height / 2,
-          toX: byKind.completedMaterial ? byKind.completedMaterial.left + 10 : container.right - 10,
-          curveDirection: 1,
-        });
-        break;
-      case api.ActionType.UnloadToInProcess: {
-        let dest: MoveMaterialElemRect | undefined;
-        let lastSlotUsed: number;
-        if (mat.action.unloadIntoQueue) {
-          dest = byKind.queues.get(mat.action.unloadIntoQueue);
-          lastSlotUsed = queueDestUsed.get(mat.action.unloadIntoQueue) ?? 0;
-          queueDestUsed.set(mat.action.unloadIntoQueue, lastSlotUsed + 1);
+      case api.ActionType.UnloadToInProcess:
+        if (
+          mat.action.type === api.ActionType.UnloadToCompletedMaterial &&
+          (!mat.action.unloadIntoQueue || mat.action.unloadIntoQueue === "")
+        ) {
+          arrows.push({
+            fromX: rect.right,
+            fromY: rect.top + rect.height / 2,
+            toY: rect.top + rect.height / 2,
+            toX: byKind.completedMaterial ? byKind.completedMaterial.left + 10 : container.right - 10,
+            curveDirection: 1,
+          });
         } else {
-          dest = byKind.freeMaterial;
-          lastSlotUsed = lastFreeUsed;
-          lastFreeUsed += 1;
+          let dest: MoveMaterialElemRect | undefined;
+          let lastSlotUsed: number;
+          if (mat.action.unloadIntoQueue) {
+            dest = byKind.queues.get(mat.action.unloadIntoQueue);
+            lastSlotUsed = queueDestUsed.get(mat.action.unloadIntoQueue) ?? 0;
+            queueDestUsed.set(mat.action.unloadIntoQueue, lastSlotUsed + 1);
+          } else {
+            dest = byKind.freeMaterial;
+            lastSlotUsed = lastFreeUsed;
+            lastFreeUsed += 1;
+          }
+          arrows.push({
+            fromX: rect.left,
+            fromY: rect.top + rect.height / 2,
+            toX: dest !== undefined ? dest.right - 5 : container.left + 2,
+            toY: dest !== undefined ? dest.top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
+            curveDirection: 1,
+          });
         }
-        arrows.push({
-          fromX: rect.left,
-          fromY: rect.top + rect.height / 2,
-          toX: dest !== undefined ? dest.right - 5 : container.left + 2,
-          toY: dest !== undefined ? dest.top + 20 * (lastSlotUsed + 1) : rect.top + rect.height / 2,
-          curveDirection: 1,
-        });
         break;
-      }
       case api.ActionType.Loading:
         if (mat.action.loadOntoFace) {
           if (mat.location.type === api.LocType.OnPallet) {

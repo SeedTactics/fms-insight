@@ -88,7 +88,7 @@ namespace DebugMachineWatchApiServer
 
       BlackMaple.MachineFramework.Program.EnableSerilog(serverSt: serverSettings, enableEventLog: false);
 
-      var backend = new MockServerBackend();
+      var backend = new MockServerBackend(fmsSettings);
       var fmsImpl = new FMSImplementation()
       {
         Backend = backend,
@@ -180,9 +180,11 @@ namespace DebugMachineWatchApiServer
     public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public bool SupportsQuarantineAtLoadStation { get; } = true;
+    private readonly FMSSettings _fmsSettings;
 
-    public MockServerBackend()
+    public MockServerBackend(FMSSettings settings)
     {
+      _fmsSettings = settings;
       _jsonSettings = new JsonSerializerSettings();
       _jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       _jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
@@ -475,14 +477,9 @@ namespace DebugMachineWatchApiServer
       OnNewStatus(CurrentStatus);
     }
 
-    public void SignalMaterialForQuarantine(long materialId, string queue, string operatorName = null)
+    public void SignalMaterialForQuarantine(long materialId, string operatorName = null)
     {
-      Serilog.Log.Information(
-        "SignalMatForQuarantine {matId} {queue} {oper}",
-        materialId,
-        queue,
-        operatorName
-      );
+      Serilog.Log.Information("SignalMatForQuarantine {matId} {oper}", materialId, operatorName);
       var mat = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
       if (mat == null)
         throw new BadRequestException("Material does not exist");
@@ -499,7 +496,7 @@ namespace DebugMachineWatchApiServer
               Face = ""
             },
             mat.Location.Pallet,
-            queue,
+            _fmsSettings.QuarantineQueue,
             null,
             operatorName
           );
@@ -507,7 +504,7 @@ namespace DebugMachineWatchApiServer
       }
       else if (mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
       {
-        SetMaterialInQueue(materialId, queue, 0, operatorName);
+        throw new BadRequestException("Can only signal material for quarantine if it is on a pallet");
       }
       else
       {
