@@ -511,24 +511,53 @@ namespace MazakMachineInterface
       }
       Log.Debug("Adding material {matId} to queue {queue} in position {pos}", materialId, queue, position);
 
-      CurrentStatus status;
-      using (var logDb = logDbCfg.OpenConnection())
+      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
       {
-        var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
-        var proc = (nextProc ?? 1) - 1;
-        logDb.RecordAddMaterialToQueue(
-          matID: materialId,
-          process: proc,
-          queue: queue,
-          position: position,
-          operatorName: operatorName,
-          reason: "SetByOperator"
-        );
-        logReader.RecheckQueues(wait: true);
-
-        status = CurrentStatus(logDb);
+        return;
       }
-      _onCurStatusChange(status);
+      try
+      {
+        using (var logDb = logDbCfg.OpenConnection())
+        {
+          var status = CurrentStatus(logDb);
+
+          var mat = status.Material.FirstOrDefault(m => m.MaterialID == materialId);
+          if (mat == null)
+          {
+            throw new BadRequestException("Material not found");
+          }
+          else if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+          {
+            throw new BadRequestException("Material on pallet can not be moved to a queue");
+          }
+          else if (
+            mat.Action.Type != InProcessMaterialAction.ActionType.Waiting
+            && mat.Location.CurrentQueue != queue
+          )
+          {
+            throw new BadRequestException("Only waiting material can be moved between queues");
+          }
+          else
+          {
+            var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
+            var proc = (nextProc ?? 1) - 1;
+            logDb.RecordAddMaterialToQueue(
+              matID: materialId,
+              process: proc,
+              queue: queue,
+              position: position,
+              operatorName: operatorName,
+              reason: "SetByOperator"
+            );
+          }
+        }
+      }
+      finally
+      {
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
+      }
+
+      logReader.RecheckQueues(wait: true);
     }
 
     void BlackMaple.MachineFramework.IQueueControl.RemoveMaterialFromAllQueues(
@@ -538,16 +567,45 @@ namespace MazakMachineInterface
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
 
-      CurrentStatus status;
-      using (var logDb = logDbCfg.OpenConnection())
+      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
       {
-        logDb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
-        logReader.RecheckQueues(wait: true);
-
-        status = CurrentStatus(logDb);
+        return;
       }
-      _onCurStatusChange(status);
+      try
+      {
+        using (var logDb = logDbCfg.OpenConnection())
+        {
+          var status = CurrentStatus(logDb);
+
+          foreach (var matId in materialIds)
+          {
+            var mat = status.Material.FirstOrDefault(m => m.MaterialID == matId);
+            if (mat == null)
+            {
+              throw new BadRequestException("Material not found");
+            }
+            else if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+            {
+              throw new BadRequestException("Material on pallet can not be removed from queues");
+            }
+            else if (mat.Action.Type != InProcessMaterialAction.ActionType.Waiting)
+            {
+              throw new BadRequestException("Only waiting material can be removed from queues");
+            }
+          }
+
+          logDb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
+        }
+      }
+      finally
+      {
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
+      }
+
+      logReader.RecheckQueues(wait: true);
     }
+
+    bool BlackMaple.MachineFramework.IQueueControl.AllowQuarantineToCancelLoad { get; } = false;
 
     void BlackMaple.MachineFramework.IQueueControl.SignalMaterialForQuarantine(
       long materialId,
@@ -556,49 +614,97 @@ namespace MazakMachineInterface
     {
       Log.Debug("Signaling {matId} for quarantine", materialId);
 
-      using (var logDb = logDbCfg.OpenConnection())
+      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
       {
-        var status = CurrentStatus(logDb);
-
-        var mat = status.Material.FirstOrDefault(m => m.MaterialID == materialId);
-
-        if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+        return;
+      }
+      try
+      {
+        using (var logDb = logDbCfg.OpenConnection())
         {
-          var job = status.Jobs.GetValueOrDefault(mat.JobUnique);
-          var path = job?.Processes?[mat.Process - 1]?.Paths?[mat.Path - 1];
-          if (path != null && path.OutputQueue != null)
+          var status = CurrentStatus(logDb);
+
+          var mat = status.Material.FirstOrDefault(m => m.MaterialID == materialId);
+
+          if (mat == null)
           {
-            logDb.SignalMaterialForQuarantine(
-              mat: new EventLogMaterial()
+            throw new BadRequestException("Material not found");
+          }
+
+          switch (mat.Location.Type, mat.Action.Type)
+          {
+            case (InProcessMaterialLocation.LocType.OnPallet, _):
+            {
+              if (mat.Action.Type == InProcessMaterialAction.ActionType.Loading)
               {
-                MaterialID = materialId,
-                Process = mat.Process,
-                Face = ""
-              },
-              pallet: mat.Location.Pallet,
-              queue: fmsSettings.QuarantineQueue,
-              timeUTC: null,
-              operatorName: operatorName
-            );
-          }
-          else
-          {
-            throw new BadRequestException(
-              "Can only signal material for quarantine if the current process and path has an output queue"
-            );
-          }
+                throw new BadRequestException("Material on pallet can not be quarantined while loading");
+              }
+              else
+              {
+                // If the material will eventually stay on the pallet, disallow quarantine
+                var job = status.Jobs.GetValueOrDefault(mat.JobUnique);
+                var path = job?.Processes?[mat.Process - 1]?.Paths?[mat.Path - 1];
+                if (mat.Process != job.Processes.Count && (path == null || path.OutputQueue == null))
+                {
+                  throw new BadRequestException(
+                    "Can only signal material for quarantine if the current process and path has an output queue"
+                  );
+                }
+              }
 
-          _onCurStatusChange(CurrentStatus(logDb));
-        }
-        else if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
-        {
-          throw new BadRequestException("Can only signal material for quarantine if it is on a pallet");
-        }
-        else
-        {
-          throw new BadRequestException("Unable to find material to quarantine");
+              logDb.SignalMaterialForQuarantine(
+                mat: new EventLogMaterial()
+                {
+                  MaterialID = materialId,
+                  Process = mat.Process,
+                  Face = ""
+                },
+                pallet: mat.Location.Pallet,
+                queue: fmsSettings.QuarantineQueue,
+                timeUTC: null,
+                operatorName: operatorName
+              );
+              break;
+            }
+
+            case (InProcessMaterialLocation.LocType.Free, InProcessMaterialAction.ActionType.Waiting)
+              when !string.IsNullOrEmpty(fmsSettings.QuarantineQueue):
+            case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
+              when !string.IsNullOrEmpty(fmsSettings.QuarantineQueue):
+
+              {
+                var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
+                var proc = (nextProc ?? 1) - 1;
+                logDb.RecordAddMaterialToQueue(
+                  matID: materialId,
+                  process: proc,
+                  queue: fmsSettings.QuarantineQueue,
+                  position: -1,
+                  operatorName: operatorName,
+                  reason: "SetByOperator"
+                );
+              }
+              break;
+
+            case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
+              when string.IsNullOrEmpty(fmsSettings.QuarantineQueue):
+
+              {
+                logDb.BulkRemoveMaterialFromAllQueues(new[] { materialId }, operatorName);
+              }
+              break;
+
+            default:
+              throw new BadRequestException("Invalid material state for quarantine");
+          }
         }
       }
+      finally
+      {
+        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
+      }
+
+      logReader.RecheckQueues(wait: true);
     }
 
     public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)

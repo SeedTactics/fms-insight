@@ -50,7 +50,6 @@ namespace BlackMaple.FMSInsight.Niigata
     public IQueueControl QueueControl => _jobsAndQueues;
     public IMachineControl MachineControl { get; }
     public RepositoryConfig RepoConfig { get; }
-    public bool SupportsQuarantineAtLoadStation { get; } = true;
 
     public event NewCurrentStatus OnNewCurrentStatus;
 
@@ -174,7 +173,8 @@ namespace BlackMaple.FMSInsight.Niigata
           s => OnNewCurrentStatus?.Invoke(s),
           syncSt,
           checkJobsValid,
-          refreshStateInterval: TimeSpan.FromMinutes(5)
+          refreshStateInterval: TimeSpan.FromMinutes(5),
+          allowQuarantineToCancelLoad: false
         );
 
         if (startSyncThread)

@@ -901,7 +901,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    signalMaterialForQuarantine(materialId: number, operName: string | null | undefined, queue: string): Promise<void> {
+    signalMaterialForQuarantine(materialId: number, operName: string | null | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/quarantine?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -910,13 +910,9 @@ export class JobsClient {
             url_ += "operName=" + encodeURIComponent("" + operName) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(queue);
-
         let options_: RequestInit = {
-            body: content_,
             method: "PUT",
             headers: {
-                "Content-Type": "application/json",
             }
         };
 
@@ -2223,8 +2219,8 @@ export class FMSInfo implements IFMSInfo {
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials?: boolean;
     useClientPrinterForLabels?: boolean | undefined;
+    allowQuarantineToCancelLoad?: boolean | undefined;
     quarantineQueue?: string | undefined;
-    supportsQuarantineAtLoadStation?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     customStationMonitorDialogUrl?: string | undefined;
     requireScanAtWash?: boolean;
@@ -2258,8 +2254,8 @@ export class FMSInfo implements IFMSInfo {
             this.openIDConnectClientId = _data["OpenIDConnectClientId"];
             this.usingLabelPrinterForSerials = _data["UsingLabelPrinterForSerials"];
             this.useClientPrinterForLabels = _data["UseClientPrinterForLabels"];
+            this.allowQuarantineToCancelLoad = _data["AllowQuarantineToCancelLoad"];
             this.quarantineQueue = _data["QuarantineQueue"];
-            this.supportsQuarantineAtLoadStation = _data["SupportsQuarantineAtLoadStation"];
             this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
             this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
             this.requireScanAtWash = _data["RequireScanAtWash"];
@@ -2293,8 +2289,8 @@ export class FMSInfo implements IFMSInfo {
         data["OpenIDConnectClientId"] = this.openIDConnectClientId;
         data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
         data["UseClientPrinterForLabels"] = this.useClientPrinterForLabels;
+        data["AllowQuarantineToCancelLoad"] = this.allowQuarantineToCancelLoad;
         data["QuarantineQueue"] = this.quarantineQueue;
-        data["SupportsQuarantineAtLoadStation"] = this.supportsQuarantineAtLoadStation;
         data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
         data["RequireScanAtWash"] = this.requireScanAtWash;
@@ -2317,8 +2313,8 @@ export interface IFMSInfo {
     openIDConnectClientId?: string | undefined;
     usingLabelPrinterForSerials?: boolean;
     useClientPrinterForLabels?: boolean | undefined;
+    allowQuarantineToCancelLoad?: boolean | undefined;
     quarantineQueue?: string | undefined;
-    supportsQuarantineAtLoadStation?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     customStationMonitorDialogUrl?: string | undefined;
     requireScanAtWash?: boolean;

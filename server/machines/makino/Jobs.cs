@@ -192,6 +192,8 @@ namespace Makino
       //do nothing
     }
 
+    public bool AllowQuarantineToCancelLoad { get; } = false;
+
     public void SignalMaterialForQuarantine(long materialId, string operatorName = null)
     {
       // do nothing

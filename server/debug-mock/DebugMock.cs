@@ -179,7 +179,8 @@ namespace DebugMachineWatchApiServer
     public event NewJobsDelegate OnNewJobs;
     public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
-    public bool SupportsQuarantineAtLoadStation { get; } = true;
+    public bool AllowQuarantineToCancelLoad { get; } = true;
+
     private readonly FMSSettings _fmsSettings;
 
     public MockServerBackend(FMSSettings settings)

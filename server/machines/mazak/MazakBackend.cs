@@ -56,7 +56,6 @@ namespace MazakMachineInterface
     //Settings
     public MazakDbType MazakType { get; }
     public string ProgramDirectory { get; }
-    public bool SupportsQuarantineAtLoadStation { get; } = false;
 
     public IWriteData WriteDB => _writeDB;
     public IReadDataAccess ReadDB => _readDB;

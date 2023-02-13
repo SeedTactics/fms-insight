@@ -114,6 +114,11 @@ namespace BlackMaple.MachineFramework
     /// it will be removed and placed in the given position.
     void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null);
 
+    // If true, material that is currently being loaded onto a pallet can be canceled by calling
+    // SignalMaterialForQuarantine.  Otherwise, SignalMaterialForQuarantine will give an error
+    // for currently loading material.
+    bool AllowQuarantineToCancelLoad { get; }
+
     /// Mark the material for quarantine.  If the material is already in a queue, it is directly moved.
     /// If the material is still on a pallet, it will be moved after unload completes.
     void SignalMaterialForQuarantine(long materialId, string operatorName = null);
@@ -178,7 +183,5 @@ namespace BlackMaple.MachineFramework
     RepositoryConfig RepoConfig { get; }
 
     event NewCurrentStatus OnNewCurrentStatus;
-
-    bool SupportsQuarantineAtLoadStation { get; }
   }
 }

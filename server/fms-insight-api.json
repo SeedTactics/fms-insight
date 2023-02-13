@@ -956,21 +956,9 @@
               "type": "string",
               "nullable": true
             },
-            "x-position": 3
+            "x-position": 2
           }
         ],
-        "requestBody": {
-          "x-name": "queue",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
         "responses": {
           "200": {
             "description": ""
@@ -2221,12 +2209,12 @@
             "type": "boolean",
             "nullable": true
           },
-          "QuarantineQueue": {
-            "type": "string",
+          "AllowQuarantineToCancelLoad": {
+            "type": "boolean",
             "nullable": true
           },
-          "SupportsQuarantineAtLoadStation": {
-            "type": "boolean",
+          "QuarantineQueue": {
+            "type": "string",
             "nullable": true
           },
           "AllowChangeWorkorderAtLoadStation": {

@@ -71,7 +71,7 @@ export interface JobAPI {
     operatrorName: string | null,
     serials: string[]
   ): Promise<ReadonlyArray<Readonly<api.IInProcessMaterial>>>;
-  signalMaterialForQuarantine(materialId: number, operName: string | null, queue: string): Promise<void>;
+  signalMaterialForQuarantine(materialId: number, operName: string | null): Promise<void>;
   swapMaterialOnPallet(
     materialId: number,
     operName: string | null,
