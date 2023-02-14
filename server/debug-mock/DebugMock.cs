@@ -485,31 +485,20 @@ namespace DebugMachineWatchApiServer
       if (mat == null)
         throw new BadRequestException("Material does not exist");
 
-      if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+      using (var LogDB = RepoConfig.OpenConnection())
       {
-        using (var LogDB = RepoConfig.OpenConnection())
-        {
-          LogDB.SignalMaterialForQuarantine(
-            new EventLogMaterial()
-            {
-              MaterialID = materialId,
-              Process = mat.Process,
-              Face = ""
-            },
-            mat.Location.Pallet,
-            _fmsSettings.QuarantineQueue,
-            null,
-            operatorName
-          );
-        }
-      }
-      else if (mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
-      {
-        throw new BadRequestException("Can only signal material for quarantine if it is on a pallet");
-      }
-      else
-      {
-        throw new BadRequestException("Material not on pallet or in queue");
+        LogDB.SignalMaterialForQuarantine(
+          new EventLogMaterial()
+          {
+            MaterialID = materialId,
+            Process = mat.Process,
+            Face = ""
+          },
+          mat.Location.Pallet,
+          _fmsSettings.QuarantineQueue,
+          null,
+          operatorName
+        );
       }
     }
 

@@ -522,16 +522,13 @@ namespace MazakMachineInterface
           var status = CurrentStatus(logDb);
 
           var mat = status.Material.FirstOrDefault(m => m.MaterialID == materialId);
-          if (mat == null)
-          {
-            throw new BadRequestException("Material not found");
-          }
-          else if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+          if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
           {
             throw new BadRequestException("Material on pallet can not be moved to a queue");
           }
           else if (
-            mat.Action.Type != InProcessMaterialAction.ActionType.Waiting
+            mat != null
+            && mat.Action.Type != InProcessMaterialAction.ActionType.Waiting
             && mat.Location.CurrentQueue != queue
           )
           {
@@ -580,15 +577,11 @@ namespace MazakMachineInterface
           foreach (var matId in materialIds)
           {
             var mat = status.Material.FirstOrDefault(m => m.MaterialID == matId);
-            if (mat == null)
-            {
-              throw new BadRequestException("Material not found");
-            }
-            else if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+            if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
             {
               throw new BadRequestException("Material on pallet can not be removed from queues");
             }
-            else if (mat.Action.Type != InProcessMaterialAction.ActionType.Waiting)
+            else if (mat != null && mat.Action.Type != InProcessMaterialAction.ActionType.Waiting)
             {
               throw new BadRequestException("Only waiting material can be removed from queues");
             }
@@ -643,7 +636,11 @@ namespace MazakMachineInterface
               {
                 // If the material will eventually stay on the pallet, disallow quarantine
                 var job = status.Jobs.GetValueOrDefault(mat.JobUnique);
-                var path = job?.Processes?[mat.Process - 1]?.Paths?[mat.Path - 1];
+                if (job == null)
+                {
+                  throw new BadRequestException("Unable to find job for material");
+                }
+                var path = job.Processes[mat.Process - 1].Paths[mat.Path - 1];
                 if (mat.Process != job.Processes.Count && (path == null || path.OutputQueue == null))
                 {
                   throw new BadRequestException(
@@ -660,7 +657,7 @@ namespace MazakMachineInterface
                   Face = ""
                 },
                 pallet: mat.Location.Pallet,
-                queue: fmsSettings.QuarantineQueue,
+                queue: fmsSettings.QuarantineQueue ?? "",
                 timeUTC: null,
                 operatorName: operatorName
               );

@@ -593,19 +593,20 @@ namespace BlackMaple.MachineFramework
         lock (_changeLock)
         {
           var st = _syncState.CalculateCellState(ldb);
+          if (st == null)
+          {
+            throw new BadRequestException("Unable to calculate cell state");
+          }
           requireStateRefresh = requireStateRefresh || st.PalletStateUpdated;
 
           var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
-          if (mat == null)
-          {
-            error = "Material not found";
-          }
-          else if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+          if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
           {
             error = "Material on pallet can not be moved to a queue";
           }
           else if (
-            mat.Action.Type != InProcessMaterialAction.ActionType.Waiting
+            mat != null
+            && mat.Action.Type != InProcessMaterialAction.ActionType.Waiting
             && mat.Location.CurrentQueue != queue
           )
           {
@@ -651,22 +652,21 @@ namespace BlackMaple.MachineFramework
         using (var ldb = _repo.OpenConnection())
         {
           var st = _syncState.CalculateCellState(ldb);
+          if (st == null)
+          {
+            throw new BadRequestException("Unable to calculate cell state");
+          }
           requireStateRefresh = requireStateRefresh || st.PalletStateUpdated;
 
           foreach (var matId in materialIds)
           {
             var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == matId);
-            if (mat == null)
-            {
-              error = "Material not found";
-              break;
-            }
-            else if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+            if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
             {
               error = "Material on pallet can not be removed from queues";
               break;
             }
-            else if (mat.Action.Type != InProcessMaterialAction.ActionType.Waiting)
+            else if (mat != null && mat.Action.Type != InProcessMaterialAction.ActionType.Waiting)
             {
               error = "Only waiting material can be removed from queues";
               break;
@@ -704,6 +704,10 @@ namespace BlackMaple.MachineFramework
         lock (_changeLock)
         {
           var st = _syncState.CalculateCellState(ldb);
+          if (st == null)
+          {
+            throw new BadRequestException("Unable to calculate cell state");
+          }
           requireStateRefresh = requireStateRefresh || st.PalletStateUpdated;
 
           var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
@@ -727,11 +731,18 @@ namespace BlackMaple.MachineFramework
                   {
                     // If the material will eventually stay on the pallet, disallow quarantine
                     var job = st.CurrentStatus.Jobs.GetValueOrDefault(mat.JobUnique);
-                    var path = job?.Processes?[mat.Process - 1]?.Paths?[mat.Path - 1];
-                    if (mat.Process != job.Processes.Count && (path == null || path.OutputQueue == null))
+                    if (job == null)
                     {
-                      error =
-                        "Can only signal material for quarantine if the current process and path has an output queue";
+                      error = "Job not found";
+                    }
+                    else
+                    {
+                      var path = job.Processes[mat.Process - 1].Paths[mat.Path - 1];
+                      if ((mat.Process != job.Processes.Count && (path == null || path.OutputQueue == null)))
+                      {
+                        error =
+                          "Can only signal material for quarantine if the current process and path has an output queue";
+                      }
                     }
                   }
                 }
@@ -746,7 +757,7 @@ namespace BlackMaple.MachineFramework
                       Face = ""
                     },
                     pallet: mat.Location.Pallet,
-                    queue: _settings.QuarantineQueue,
+                    queue: _settings.QuarantineQueue ?? "",
                     timeUTC: null,
                     operatorName: operatorName
                   );
