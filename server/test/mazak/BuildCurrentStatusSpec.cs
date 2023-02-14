@@ -321,6 +321,124 @@ namespace MachineWatchTest
               .ComparingByMembers<PalletStatus>()
         );
     }
+
+    [Fact]
+    public void SignalForQuarantine()
+    {
+      IRepository repository;
+      bool close = false;
+      var existingLogPath = Path.Combine(
+        "..",
+        "..",
+        "..",
+        "mazak",
+        "read-snapshots",
+        "basic-unload-queues.log.db"
+      );
+      string _tempLogFile = System.IO.Path.GetTempFileName();
+      System.IO.File.Copy(existingLogPath, _tempLogFile, overwrite: true);
+      repository = RepositoryConfig
+        .InitializeEventDatabase(
+          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
+          _tempLogFile
+        )
+        .OpenConnection();
+      close = true;
+
+      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      repository.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+
+      var allData = JsonConvert.DeserializeObject<MazakAllData>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-unload-queues.data.json")
+        ),
+        jsonSettings
+      );
+
+      // additionally record a signal for quarantine for the unloading material
+
+      repository.SignalMaterialForQuarantine(
+        new EventLogMaterial()
+        {
+          MaterialID = 2426324,
+          Process = 1,
+          Face = "1"
+        },
+        pallet: "5",
+        queue: "QuarantineQ",
+        operatorName: "theoper",
+        reason: "a reason",
+        timeUTC: new DateTime(2018, 7, 19, 20, 40, 19, DateTimeKind.Utc)
+      );
+
+      CurrentStatus status;
+      try
+      {
+        status = BuildCurrentStatus.Build(
+          repository,
+          _settings,
+          _machGroupName,
+          queueSyncFault,
+          MazakDbType.MazakSmooth,
+          allData,
+          new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+        );
+      }
+      finally
+      {
+        if (close)
+          repository.Dispose();
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+        File.Delete(_tempLogFile);
+      }
+
+      /*
+      File.WriteAllText(
+        Path.Combine(
+          "..",
+          "..",
+          "..",
+          "mazak",
+          "read-snapshots",
+          "basic-unload-queues-quarantine.status.json"
+        ),
+        JsonConvert.SerializeObject(status, jsonSettings)
+      );
+      */
+
+      var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(
+        File.ReadAllText(
+          Path.Combine(
+            "..",
+            "..",
+            "..",
+            "mazak",
+            "read-snapshots",
+            "basic-unload-queues-quarantine.status.json"
+          )
+        ),
+        jsonSettings
+      );
+
+      status
+        .Should()
+        .BeEquivalentTo(
+          expectedStatus,
+          options =>
+            options
+              .Excluding(c => c.TimeOfCurrentStatusUTC)
+              .ComparingByMembers<CurrentStatus>()
+              .ComparingByMembers<ActiveJob>()
+              .ComparingByMembers<ProcessInfo>()
+              .ComparingByMembers<ProcPathInfo>()
+              .ComparingByMembers<MachiningStop>()
+              .ComparingByMembers<InProcessMaterial>()
+              .ComparingByMembers<PalletStatus>()
+        );
+    }
   }
 
   /*
