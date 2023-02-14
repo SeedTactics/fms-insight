@@ -1253,6 +1253,58 @@ namespace MachineWatchTest
         );
     }
 
+    protected void SignalForQuarantine(TestMaterial mat, int offset, string queue)
+    {
+      SignalForQuarantine(new[] { mat }, offset, queue);
+    }
+
+    protected void SignalForQuarantine(IEnumerable<TestMaterial> mats, int offset, string queue)
+    {
+      foreach (var mat in mats)
+      {
+        jobLog.SignalMaterialForQuarantine(
+          new EventLogMaterial()
+          {
+            MaterialID = mat.MaterialID,
+            Process = mat.Process,
+            Face = mat.Face
+          },
+          pallet: mat.Pallet.ToString(),
+          queue: queue,
+          operatorName: null,
+          reason: null,
+          timeUTC: mat.EventStartTime.AddMinutes(offset)
+        );
+
+        expected.Add(
+          new BlackMaple.MachineFramework.LogEntry(
+            cntr: -1,
+            mat: new[]
+            {
+              new LogMaterial(
+                matID: mat.MaterialID,
+                uniq: mat.Unique,
+                proc: mat.Process,
+                part: mat.JobPartName,
+                numProc: mat.NumProcess,
+                face: mat.Face,
+                serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+                workorder: ""
+              )
+            },
+            pal: mat.Pallet.ToString(),
+            ty: LogType.SignalQuarantine,
+            locName: queue,
+            locNum: -1,
+            prog: "QuarantineAfterUnload",
+            result: "QuarantineAfterUnload",
+            start: false,
+            endTime: mat.EventStartTime.AddMinutes(offset)
+          )
+        );
+      }
+    }
+
     protected void SwapMaterial(TestMaterial matOnPal, TestMaterial matToAdd, int offset, bool unassigned)
     {
       var time = matOnPal.EventStartTime.AddMinutes(offset);
@@ -2829,6 +2881,97 @@ namespace MachineWatchTest
             },
           }
         );
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void QueuesSignalQuarantine(bool signalDuringUnload)
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
+
+      var proc1 = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        face: "1",
+        matID: 1
+      );
+      var proc1snd = BuildMaterial(
+        t,
+        pal: 8,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 1,
+        numProc: 2,
+        face: "1",
+        matID: 2
+      );
+
+      var proc2 = BuildMaterial(
+        t,
+        pal: 9,
+        unique: "uuuu",
+        part: "pppp",
+        proc: 2,
+        numProc: 2,
+        face: "2",
+        matID: 1
+      );
+
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes = ImmutableList.Create(
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" })
+          },
+          new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+          }
+        )
+      };
+      var newJobs = new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "queueSch" };
+      jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+
+      LoadStart(proc1, offset: 0, load: 1);
+      LoadEnd(proc1, offset: 5, cycleOffset: 6, load: 1, elapMin: 5);
+      MovePallet(t, pal: 8, offset: 6, load: 1, elapMin: 0);
+
+      MachStart(proc1, offset: 10, mach: 5);
+      if (!signalDuringUnload)
+      {
+        SignalForQuarantine(proc1, offset: 12, queue: "QuarantineQ");
+      }
+      MachEnd(proc1, offset: 15, mach: 5, elapMin: 5);
+
+      UnloadStart(proc1, offset: 20, load: 2);
+      LoadStart(proc1snd, offset: 20, load: 2);
+
+      if (signalDuringUnload)
+      {
+        SignalForQuarantine(proc1, offset: 22, queue: "QuarantineQ");
+      }
+
+      UnloadEnd(proc1, offset: 24, load: 2, elapMin: 4);
+      ExpectAddToQueue(proc1, offset: 24, queue: "QuarantineQ", pos: 0);
+      LoadEnd(proc1snd, offset: 24, cycleOffset: 25, load: 2, elapMin: 4);
+      MovePallet(t, pal: 8, offset: 25, load: 2, elapMin: 25 - 6);
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+
+      sendToExternal.Should().BeEmpty();
     }
 
     [Fact]
