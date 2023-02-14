@@ -6247,8 +6247,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges();
     }
 
-    [Fact]
-    public void SignalForQuarantine()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SignalForQuarantine(bool signalDuringUnload)
     {
       _dsl.AddJobs(
           new[]
@@ -6346,8 +6348,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 6, program: "prog111", rev: 5, mat: AAAproc1)
           }
         )
-        .AdvanceMinutes(10) // = 12min
-        .EndMachine(mach: 6)
+        .AdvanceMinutes(10); // = 12min
+
+      if (!signalDuringUnload)
+      {
+        _dsl.SignalForQuarantine(AAAproc1, pal: 1, q: "Quarantine");
+      }
+
+      _dsl.EndMachine(mach: 6)
         .SetAfterMC(pal: 1)
         .UpdateExpectedMaterial(
           AAAproc1,
@@ -6386,7 +6394,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.UnloadToInProcess,
-                UnloadIntoQueue = "qqq",
+                UnloadIntoQueue = signalDuringUnload ? "qqq" : "Quarantine",
                 ElapsedLoadUnloadTime = TimeSpan.Zero
               }
             );
@@ -6410,17 +6418,22 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         )
         .SetExpectedCastingElapsedLoadUnloadTime(pal: 1, mins: 5)
-        .ExpectNoChanges()
+        .ExpectNoChanges();
+
+      if (signalDuringUnload)
+      {
         // signal for quarantine
-        .SignalForQuarantine(AAAproc1, pal: 1, q: "Quarantine")
-        .UpdateExpectedMaterial(
-          AAAproc1,
-          im =>
-          {
-            im.Action.UnloadIntoQueue = "Quarantine";
-          }
-        )
-        .ExpectNoChanges()
+        _dsl.SignalForQuarantine(AAAproc1, pal: 1, q: "Quarantine")
+          .UpdateExpectedMaterial(
+            AAAproc1,
+            im =>
+            {
+              im.Action.UnloadIntoQueue = "Quarantine";
+            }
+          );
+      }
+
+      _dsl.ExpectNoChanges()
         .SetAfterLoad(pal: 1)
         .ClearExpectedLoadCastings()
         .UpdateExpectedMaterial(
