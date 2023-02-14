@@ -692,7 +692,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void SignalMaterialForQuarantine(long materialId, string operatorName)
+    public void SignalMaterialForQuarantine(long materialId, string operatorName, string reason)
     {
       Log.Debug("Signaling {matId} for quarantine", materialId);
 
@@ -759,7 +759,8 @@ namespace BlackMaple.MachineFramework
                     pallet: mat.Location.Pallet,
                     queue: _settings.QuarantineQueue ?? "",
                     timeUTC: null,
-                    operatorName: operatorName
+                    operatorName: operatorName,
+                    reason: reason
                   );
                   requireStateRefresh = true;
                 }
@@ -775,6 +776,12 @@ namespace BlackMaple.MachineFramework
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;
+                  ldb.RecordOperatorNotes(
+                    materialId: materialId,
+                    process: proc,
+                    notes: reason,
+                    operatorName: operatorName
+                  );
                   ldb.RecordAddMaterialToQueue(
                     matID: materialId,
                     process: proc,
@@ -793,6 +800,14 @@ namespace BlackMaple.MachineFramework
                 when string.IsNullOrEmpty(_settings.QuarantineQueue) && AllowQuarantineToCancelLoad:
 
                 {
+                  var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
+                  var proc = (nextProc ?? 1) - 1;
+                  ldb.RecordOperatorNotes(
+                    materialId: materialId,
+                    process: proc,
+                    notes: reason,
+                    operatorName: operatorName
+                  );
                   ldb.BulkRemoveMaterialFromAllQueues(new[] { materialId }, operatorName);
                   requireStateRefresh = true;
                 }

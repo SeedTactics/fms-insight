@@ -901,8 +901,8 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    signalMaterialForQuarantine(materialId: number, operName: string | null | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/quarantine?";
+    signalMaterialForQuarantine(materialId: number, operName: string | null | undefined, reason: string | undefined): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/signal-quarantine?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
         url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
@@ -910,9 +910,13 @@ export class JobsClient {
             url_ += "operName=" + encodeURIComponent("" + operName) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
+        const content_ = JSON.stringify(reason);
+
         let options_: RequestInit = {
+            body: content_,
             method: "PUT",
             headers: {
+                "Content-Type": "application/json",
             }
         };
 

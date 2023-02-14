@@ -478,7 +478,7 @@ namespace DebugMachineWatchApiServer
       OnNewStatus(CurrentStatus);
     }
 
-    public void SignalMaterialForQuarantine(long materialId, string operatorName = null)
+    public void SignalMaterialForQuarantine(long materialId, string operatorName = null, string reason = null)
     {
       Serilog.Log.Information("SignalMatForQuarantine {matId} {oper}", materialId, operatorName);
       var mat = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
@@ -494,10 +494,10 @@ namespace DebugMachineWatchApiServer
             Process = mat.Process,
             Face = ""
           },
-          mat.Location.Pallet,
-          _fmsSettings.QuarantineQueue,
-          null,
-          operatorName
+          pallet: mat.Location.Pallet,
+          queue: _fmsSettings.QuarantineQueue,
+          operatorName: operatorName,
+          reason: reason
         );
       }
     }

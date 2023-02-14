@@ -121,7 +121,7 @@ namespace BlackMaple.MachineFramework
 
     /// Mark the material for quarantine.  If the material is already in a queue, it is directly moved.
     /// If the material is still on a pallet, it will be moved after unload completes.
-    void SignalMaterialForQuarantine(long materialId, string operatorName = null);
+    void SignalMaterialForQuarantine(long materialId, string operatorName = null, string reason = null);
 
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
 

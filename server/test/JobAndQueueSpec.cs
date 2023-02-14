@@ -1176,7 +1176,9 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       );
     }
 
-    _jq.Invoking(j => j.SignalMaterialForQuarantine(materialId: 1, "theoper"))
+    _jq.Invoking(
+        j => j.SignalMaterialForQuarantine(materialId: 1, operatorName: "theoper", reason: "a reason")
+      )
       .Should()
       .Throw<BadRequestException>()
       .WithMessage("Material not found");
@@ -1208,7 +1210,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
     if (data.Error != null)
     {
-      _jq.Invoking(j => j.SignalMaterialForQuarantine(materialId: 1, "theoper"))
+      _jq.Invoking(j => j.SignalMaterialForQuarantine(materialId: 1, "theoper", reason: "a reason"))
         .Should()
         .Throw<BadRequestException>()
         .WithMessage(data.Error);
@@ -1217,7 +1219,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     {
       var newStatusTask = CreateTaskToWaitForNewCellState();
 
-      _jq.SignalMaterialForQuarantine(1, "theoper");
+      _jq.SignalMaterialForQuarantine(1, "theoper", reason: "signaling reason");
 
       await newStatusTask;
 
@@ -1229,12 +1231,22 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
             cntr: expectedLog.Count + 1,
             pal: "4",
             queue: data.QuarantineQueue ?? "",
-            operName: "theoper"
+            operName: "theoper",
+            reason: "signaling reason"
           )
         );
       }
       else
       {
+        expectedLog.Add(
+          OperatorNoteExpectedEntry(
+            logMat,
+            cntr: expectedLog.Count + 1,
+            note: "signaling reason",
+            operName: "theoper"
+          )
+        );
+
         if (data.LocType == InProcessMaterialLocation.LocType.InQueue)
         {
           expectedLog.Add(
@@ -1358,7 +1370,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     string pal,
     string queue,
     DateTime? timeUTC = null,
-    string operName = null
+    string operName = null,
+    string reason = null
   )
   {
     var e = new LogEntry(
@@ -1376,6 +1389,10 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     if (!string.IsNullOrEmpty(operName))
     {
       e %= en => en.ProgramDetails.Add("operator", operName);
+    }
+    if (!string.IsNullOrEmpty(reason))
+    {
+      e = e with { ProgramDetails = e.ProgramDetails.Add("note", reason) };
     }
     return e;
   }
@@ -1439,6 +1456,34 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       },
       Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
     };
+  }
+
+  private LogEntry OperatorNoteExpectedEntry(
+    LogMaterial mat,
+    long cntr,
+    string note,
+    DateTime? timeUTC = null,
+    string operName = null
+  )
+  {
+    var e = new LogEntry(
+      cntr: cntr,
+      mat: new[] { mat },
+      pal: "",
+      ty: LogType.GeneralMessage,
+      locName: "Message",
+      locNum: 1,
+      prog: "OperatorNotes",
+      start: false,
+      endTime: timeUTC ?? DateTime.UtcNow,
+      result: "Operator Notes"
+    );
+    e = e with { ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("note", note) };
+    if (!string.IsNullOrEmpty(operName))
+    {
+      e %= en => en.ProgramDetails.Add("operator", operName);
+    }
+    return e;
   }
 
   private InProcessMaterial MatOnPal(

@@ -602,7 +602,8 @@ namespace MazakMachineInterface
 
     void BlackMaple.MachineFramework.IQueueControl.SignalMaterialForQuarantine(
       long materialId,
-      string operatorName
+      string operatorName,
+      string reason
     )
     {
       Log.Debug("Signaling {matId} for quarantine", materialId);
@@ -659,7 +660,8 @@ namespace MazakMachineInterface
                 pallet: mat.Location.Pallet,
                 queue: fmsSettings.QuarantineQueue ?? "",
                 timeUTC: null,
-                operatorName: operatorName
+                operatorName: operatorName,
+                reason: reason
               );
               break;
             }
@@ -672,6 +674,12 @@ namespace MazakMachineInterface
               {
                 var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
                 var proc = (nextProc ?? 1) - 1;
+                logDb.RecordOperatorNotes(
+                  materialId: materialId,
+                  process: proc,
+                  notes: reason,
+                  operatorName: operatorName
+                );
                 logDb.RecordAddMaterialToQueue(
                   matID: materialId,
                   process: proc,
@@ -687,6 +695,14 @@ namespace MazakMachineInterface
               when string.IsNullOrEmpty(fmsSettings.QuarantineQueue):
 
               {
+                var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
+                var proc = (nextProc ?? 1) - 1;
+                logDb.RecordOperatorNotes(
+                  materialId: materialId,
+                  process: proc,
+                  notes: reason,
+                  operatorName: operatorName
+                );
                 logDb.BulkRemoveMaterialFromAllQueues(new[] { materialId }, operatorName);
               }
               break;

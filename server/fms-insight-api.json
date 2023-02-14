@@ -932,7 +932,7 @@
         }
       }
     },
-    "/api/v1/jobs/material/{materialId}/quarantine": {
+    "/api/v1/jobs/material/{materialId}/signal-quarantine": {
       "put": {
         "tags": [
           "jobs"
@@ -959,6 +959,17 @@
             "x-position": 2
           }
         ],
+        "requestBody": {
+          "x-name": "reason",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "x-position": 3
+        },
         "responses": {
           "200": {
             "description": ""

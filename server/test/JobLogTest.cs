@@ -2463,16 +2463,17 @@ namespace MachineWatchTest
           EventLogMaterial.FromLogMat(mat1),
           "pal",
           "QQQ",
-          start.AddMinutes(59),
-          "theoper"
+          "theoper",
+          reason: "a reason",
+          timeUTC: start.AddMinutes(59)
         )
         .Should()
         .BeEquivalentTo(
-          SignalQuarantineExpectedEntry(mat1, 15, "pal", "QQQ", start.AddMinutes(59), "theoper"),
+          SignalQuarantineExpectedEntry(mat1, 15, "pal", "QQQ", start.AddMinutes(59), "theoper", "a reason"),
           options => options.ComparingByMembers<LogEntry>()
         );
       expectedLogs.Add(
-        SignalQuarantineExpectedEntry(mat1, 15, "pal", "QQQ", start.AddMinutes(59), "theoper")
+        SignalQuarantineExpectedEntry(mat1, 15, "pal", "QQQ", start.AddMinutes(59), "theoper", "a reason")
       );
 
       // hasn't moved yet
@@ -4313,7 +4314,8 @@ namespace MachineWatchTest
       string pal,
       string queue,
       DateTime timeUTC,
-      string operName = null
+      string operName = null,
+      string reason = null
     )
     {
       var e = new LogEntry(
@@ -4331,6 +4333,10 @@ namespace MachineWatchTest
       if (!string.IsNullOrEmpty(operName))
       {
         e %= en => en.ProgramDetails.Add("operator", operName);
+      }
+      if (!string.IsNullOrEmpty(operName))
+      {
+        e = e with { ProgramDetails = e.ProgramDetails.Add("note", reason) };
       }
       return e;
     }

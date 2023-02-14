@@ -2017,8 +2017,9 @@ namespace BlackMaple.MachineFramework
       EventLogMaterial mat,
       string pallet,
       string queue,
+      string operatorName,
+      string reason,
       DateTime? timeUTC = null,
-      string operatorName = null,
       string foreignId = null,
       string originalMessage = null
     )
@@ -2039,6 +2040,10 @@ namespace BlackMaple.MachineFramework
       if (!string.IsNullOrEmpty(operatorName))
       {
         log.ProgramDetails["operator"] = operatorName;
+      }
+      if (!string.IsNullOrEmpty(reason))
+      {
+        log.ProgramDetails["note"] = reason;
       }
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }

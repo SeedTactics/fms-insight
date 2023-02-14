@@ -694,6 +694,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           EventLogMaterial.FromLogMat(mat),
           pallet: pal.ToString(),
           queue: q,
+          operatorName: null,
+          reason: null,
           timeUTC: _status.TimeOfStatusUTC
         );
       }
