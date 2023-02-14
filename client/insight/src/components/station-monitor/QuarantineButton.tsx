@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button, Tooltip } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, TextField, Tooltip } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
@@ -48,7 +48,7 @@ import { fmsInformation } from "../../network/server-settings.js";
 
 type QuarantineMaterialData = {
   readonly type: "Remove" | "Scrap" | "Quarantine" | "Signal";
-  readonly quarantine: () => void;
+  readonly quarantine: (reason: string) => void;
   readonly removing: boolean;
   readonly quarantineQueueDestination: string | null;
 };
@@ -139,7 +139,7 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
   if (type) {
     return {
       type,
-      quarantine: () => signalQuarantine(inProcMat.materialID, operator),
+      quarantine: (reason) => signalQuarantine(inProcMat.materialID, operator, reason),
       removing: signalingQuarantine,
       quarantineQueueDestination: quarantineQueue,
     };
@@ -155,6 +155,8 @@ export function QuarantineMatButton({
   onClose?: () => void;
   ignoreOperator?: boolean;
 }) {
+  const [open, setOpen] = React.useState(false);
+  const [reason, setReason] = React.useState("");
   const q = useQuarantineMaterial(!!ignoreOperator);
   const closeMatDialog = useCloseMaterialDialog();
 
@@ -183,19 +185,42 @@ export function QuarantineMatButton({
       btnTxt = "Quarantine";
   }
 
+  function quarantine() {
+    q?.quarantine(reason);
+    closeMatDialog();
+    setOpen(false);
+    setReason("");
+    onClose?.();
+  }
+
   return (
-    <Tooltip title={title}>
-      <Button
-        color="primary"
-        disabled={q.removing}
-        onClick={() => {
-          q.quarantine();
-          closeMatDialog();
-          onClose?.();
-        }}
-      >
-        {btnTxt}
-      </Button>
-    </Tooltip>
+    <>
+      <Tooltip title={title}>
+        <Button color="primary" disabled={q.removing} onClick={() => setOpen(true)}>
+          {btnTxt}
+        </Button>
+      </Tooltip>
+      <Dialog open={open} onClose={() => setOpen(false)}>
+        <DialogContent>
+          <p>{title}</p>
+          <TextField
+            label="Reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            fullWidth
+            autoFocus
+            multiline
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button color="primary" onClick={quarantine}>
+            {btnTxt}
+          </Button>
+          <Button color="secondary" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
