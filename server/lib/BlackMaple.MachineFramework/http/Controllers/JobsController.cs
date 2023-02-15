@@ -250,15 +250,15 @@ namespace BlackMaple.MachineFramework.Controllers
       _backend.QueueControl.RemoveMaterialFromAllQueues(new[] { materialId }, operName);
     }
 
-    [HttpPut("material/{materialId}/quarantine")]
+    [HttpPut("material/{materialId}/signal-quarantine")]
     [ProducesResponseType(typeof(void), 200)]
     public void SignalMaterialForQuarantine(
       long materialId,
-      [FromBody] string queue,
-      [FromQuery] string operName = null
+      [FromQuery] string operName = null,
+      [FromBody] string reason = null
     )
     {
-      _backend.QueueControl.SignalMaterialForQuarantine(materialId, queue, operName);
+      _backend.QueueControl.SignalMaterialForQuarantine(materialId, operatorName: operName, reason: reason);
     }
 
     [HttpPut("material/{materialId}/invalidate-process")]

@@ -242,7 +242,7 @@ namespace MazakMachineInterface
           var loadElapsed = CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber);
 
           var mats = GetMaterialOnPallet(e, cycle);
-          var queues = FindUnloadQueues(mats);
+          var queues = FindUnloadQueues(mats, cycle);
           sendToExternal = FindSendToExternalQueue(mats);
 
           _log.RecordUnloadEnd(
@@ -771,19 +771,35 @@ namespace MazakMachineInterface
         return _log.CurrentPalletLog(pallet.ToString());
     }
 
-    private Dictionary<long, string> FindUnloadQueues(IEnumerable<LogMaterialAndPath> mats)
+    private Dictionary<long, string> FindUnloadQueues(
+      IEnumerable<LogMaterialAndPath> mats,
+      IEnumerable<MWI.LogEntry> cycle
+    )
     {
       var ret = new Dictionary<long, string>();
 
       foreach (var mat in mats)
       {
-        Job job = GetJob(mat.Unique);
-        if (job != null)
+        var signalQuarantine = cycle.LastOrDefault(
+          e =>
+            e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == mat.Mat.MaterialID)
+        );
+
+        if (signalQuarantine != null)
         {
-          var q = job.Processes[mat.Mat.Process - 1].Paths[mat.Path - 1].OutputQueue;
-          if (!string.IsNullOrEmpty(q) && _settings.Queues.ContainsKey(q))
+          ret[mat.Mat.MaterialID] = signalQuarantine.LocationName ?? _settings.QuarantineQueue;
+        }
+        else
+        {
+          Job job = GetJob(mat.Unique);
+
+          if (job != null)
           {
-            ret[mat.Mat.MaterialID] = q;
+            var q = job.Processes[mat.Mat.Process - 1].Paths[mat.Path - 1].OutputQueue;
+            if (!string.IsNullOrEmpty(q) && _settings.Queues.ContainsKey(q))
+            {
+              ret[mat.Mat.MaterialID] = q;
+            }
           }
         }
       }

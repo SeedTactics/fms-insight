@@ -120,6 +120,16 @@ function selectLoadStationAndQueueProps(
       ) {
         queuesToShow.add(m.location.currentQueue);
       }
+
+      if (
+        (m.action.type === api.ActionType.UnloadToInProcess ||
+          m.action.type === api.ActionType.UnloadToCompletedMaterial) &&
+        m.action.unloadIntoQueue &&
+        m.location.type === api.LocType.OnPallet &&
+        m.location.pallet === pal.pallet
+      ) {
+        queuesToShow.add(m.action.unloadIntoQueue);
+      }
     }
   }
 

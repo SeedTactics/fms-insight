@@ -88,7 +88,7 @@ namespace DebugMachineWatchApiServer
 
       BlackMaple.MachineFramework.Program.EnableSerilog(serverSt: serverSettings, enableEventLog: false);
 
-      var backend = new MockServerBackend();
+      var backend = new MockServerBackend(fmsSettings);
       var fmsImpl = new FMSImplementation()
       {
         Backend = backend,
@@ -179,10 +179,13 @@ namespace DebugMachineWatchApiServer
     public event NewJobsDelegate OnNewJobs;
     public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
-    public bool SupportsQuarantineAtLoadStation { get; } = true;
+    public bool AllowQuarantineToCancelLoad { get; } = true;
 
-    public MockServerBackend()
+    private readonly FMSSettings _fmsSettings;
+
+    public MockServerBackend(FMSSettings settings)
     {
+      _fmsSettings = settings;
       _jsonSettings = new JsonSerializerSettings();
       _jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
       _jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
@@ -475,43 +478,27 @@ namespace DebugMachineWatchApiServer
       OnNewStatus(CurrentStatus);
     }
 
-    public void SignalMaterialForQuarantine(long materialId, string queue, string operatorName = null)
+    public void SignalMaterialForQuarantine(long materialId, string operatorName = null, string reason = null)
     {
-      Serilog.Log.Information(
-        "SignalMatForQuarantine {matId} {queue} {oper}",
-        materialId,
-        queue,
-        operatorName
-      );
+      Serilog.Log.Information("SignalMatForQuarantine {matId} {oper}", materialId, operatorName);
       var mat = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
       if (mat == null)
         throw new BadRequestException("Material does not exist");
 
-      if (mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+      using (var LogDB = RepoConfig.OpenConnection())
       {
-        using (var LogDB = RepoConfig.OpenConnection())
-        {
-          LogDB.SignalMaterialForQuarantine(
-            new EventLogMaterial()
-            {
-              MaterialID = materialId,
-              Process = mat.Process,
-              Face = ""
-            },
-            mat.Location.Pallet,
-            queue,
-            null,
-            operatorName
-          );
-        }
-      }
-      else if (mat.Location.Type == InProcessMaterialLocation.LocType.InQueue)
-      {
-        SetMaterialInQueue(materialId, queue, 0, operatorName);
-      }
-      else
-      {
-        throw new BadRequestException("Material not on pallet or in queue");
+        LogDB.SignalMaterialForQuarantine(
+          new EventLogMaterial()
+          {
+            MaterialID = materialId,
+            Process = mat.Process,
+            Face = ""
+          },
+          pallet: mat.Location.Pallet,
+          queue: _fmsSettings.QuarantineQueue,
+          operatorName: operatorName,
+          reason: reason
+        );
       }
     }
 

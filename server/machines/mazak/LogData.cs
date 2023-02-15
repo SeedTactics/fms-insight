@@ -561,7 +561,7 @@ namespace MazakMachineInterface
 
             _hold.CheckForTransition(mazakData, logDb);
 
-            if (logs.Count > 0 || queuesChanged || palStChanged)
+            if (logs.Count > 0 || queuesChanged || palStChanged || recheckingQueues)
             {
               _currentStatusChanged(logDb);
             }

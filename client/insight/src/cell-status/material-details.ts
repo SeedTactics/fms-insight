@@ -494,13 +494,15 @@ export function useRemoveFromQueue(): [(matId: number, operator: string | null) 
 }
 
 export function useSignalForQuarantine(): [
-  (matId: number, queue: string, operator: string | null) => void,
+  (matId: number, operator: string | null, reason: string) => void,
   boolean
 ] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const callback = useCallback((matId: number, queue: string, operator: string | null) => {
+  const callback = useCallback((matId: number, operator: string | null, reason: string) => {
     setUpdating(true);
-    JobsBackend.signalMaterialForQuarantine(matId, operator, queue).finally(() => setUpdating(false));
+    JobsBackend.signalMaterialForQuarantine(matId, operator, reason === "" ? undefined : reason).finally(() =>
+      setUpdating(false)
+    );
   }, []);
 
   return [callback, updating];

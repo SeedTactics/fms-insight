@@ -55,7 +55,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   private readonly RepositoryConfig _repo;
   private readonly ICheckJobsValid _checkJobsMock;
-  private readonly JobsAndQueuesFromDb<MockCellState> _jq;
+  private readonly FMSSettings _settings;
+  private JobsAndQueuesFromDb<MockCellState> _jq;
   private readonly Fixture _fixture;
 
   public JobAndQueueSpec(Xunit.Abstractions.ITestOutputHelper output)
@@ -68,32 +69,38 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
     _checkJobsMock = Substitute.For<ICheckJobsValid>();
 
-    var settings = new FMSSettings();
-    settings.Queues.Add("q1", new QueueSize());
-    settings.Queues.Add("q2", new QueueSize());
-
-    _jq = new JobsAndQueuesFromDb<MockCellState>(
-      _repo,
-      settings,
-      OnNewCurrentStatus,
-      this,
-      _checkJobsMock,
-      refreshStateInterval: TimeSpan.FromHours(50)
-    );
-
-    _jq.StartThread();
+    _settings = new FMSSettings();
+    _settings.Queues.Add("q1", new QueueSize());
+    _settings.Queues.Add("q2", new QueueSize());
   }
 
   void IDisposable.Dispose()
   {
     _repo?.CloseMemoryConnection();
-    _jq?.Dispose();
+    if (_jq != null)
+    {
+      _jq?.Dispose();
+    }
   }
 
   #region Sync Cell State
   private MockCellState _curSt;
   private bool _executeActions;
   public event Action NewCellState;
+
+  private void StartSyncThread(bool allowQuarantineToCancelLoad = false)
+  {
+    _jq = new JobsAndQueuesFromDb<MockCellState>(
+      _repo,
+      _settings,
+      OnNewCurrentStatus,
+      this,
+      _checkJobsMock,
+      refreshStateInterval: TimeSpan.FromHours(50),
+      allowQuarantineToCancelLoad
+    );
+    _jq.StartThread();
+  }
 
   MockCellState ISynchronizeCellState<MockCellState>.CalculateCellState(IRepository db)
   {
@@ -167,6 +174,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     (await tcs.Task).Should().Be(curSt);
   }
 
+  private async Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
+  {
+    var st = _curSt.CurrentStatus with { Material = material };
+    await SetCurrentState(palStateUpdated: true, executeAction: false, curSt: st);
+  }
+
   private Task CreateTaskToWaitForNewCellState()
   {
     var st = _curSt.CurrentStatus;
@@ -202,6 +215,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   public async Task AddsBasicJobs()
   {
     using var db = _repo.OpenConnection();
+    StartSyncThread();
 
     //add some existing jobs
     var completedJob = RandJob() with
@@ -286,6 +300,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   [InlineData(false)]
   public async Task Decrement(bool byDate)
   {
+    StartSyncThread();
     var now = DateTime.UtcNow;
     using var db = _repo.OpenConnection();
 
@@ -373,6 +388,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   public async Task UnallocatedQueues()
   {
     using var db = _repo.OpenConnection();
+    StartSyncThread();
 
     await SetCurrentState(palStateUpdated: false, executeAction: false);
     var newStatusTask = CreateTaskToWaitForNewCellState();
@@ -566,6 +582,46 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
             .WhenTypeIs<TimeSpan>()
             .ComparingByMembers<LogEntry>()
       );
+
+    var expectedMat2 = QueuedMat(
+      matId: 2,
+      job: null,
+      part: "c1",
+      proc: 0,
+      path: 1,
+      serial: "",
+      queue: "q1",
+      pos: 1
+    );
+    await SetCurrentMaterial(
+      ImmutableList.Create(
+        expectedMat2 with
+        {
+          Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet, }
+        }
+      )
+    );
+
+    _jq.Invoking(j => j.RemoveMaterialFromAllQueues(new[] { 2L }, "theoper"))
+      .Should()
+      .Throw<BadRequestException>()
+      .WithMessage("Material on pallet can not be removed from queues");
+
+    await SetCurrentMaterial(
+      ImmutableList.Create(
+        expectedMat2 with
+        {
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading }
+        }
+      )
+    );
+
+    _jq.Invoking(j => j.RemoveMaterialFromAllQueues(new[] { 2L }, "theoper"))
+      .Should()
+      .Throw<BadRequestException>()
+      .WithMessage("Only waiting material can be removed from queues");
+
+    db.GetMaterialInAllQueues().Should().Contain(m => m.MaterialID == 2);
   }
 
   [Theory]
@@ -573,6 +629,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   [InlineData(1)]
   public async Task UnprocessedMaterial(int lastCompletedProcess)
   {
+    StartSyncThread();
     using var db = _repo.OpenConnection();
 
     var job = new Job()
@@ -598,6 +655,16 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var newStatusTask = CreateTaskToWaitForNewCellState();
 
     //add an allocated material
+    var expectedMat1 = QueuedMat(
+      matId: 1,
+      job: job,
+      part: "p1",
+      proc: lastCompletedProcess,
+      path: 1,
+      serial: "aaa",
+      queue: "q1",
+      pos: 0
+    );
     _jq.AddUnprocessedMaterialToQueue(
         "uuu1",
         process: lastCompletedProcess,
@@ -607,19 +674,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         operatorName: "theoper"
       )
       .Should()
-      .BeEquivalentTo(
-        QueuedMat(
-          matId: 1,
-          job: job,
-          part: "p1",
-          proc: lastCompletedProcess,
-          path: 1,
-          serial: "aaa",
-          queue: "q1",
-          pos: 0
-        ),
-        options => options.ComparingByMembers<InProcessMaterial>()
-      );
+      .BeEquivalentTo(expectedMat1);
+    await SetCurrentMaterial(ImmutableList.Create(expectedMat1));
     db.GetMaterialDetails(1)
       .Should()
       .BeEquivalentTo(
@@ -725,38 +781,85 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       workorder: "",
       face: ""
     );
+    var expectedLog = new[]
+    {
+      MarkExpectedEntry(logMat, cntr: 1, serial: "aaa"),
+      AddToQueueExpectedEntry(
+        logMat,
+        cntr: 2,
+        queue: "q1",
+        position: 0,
+        operName: "theoper",
+        reason: "SetByOperator"
+      ),
+      RemoveFromQueueExpectedEntry(
+        logMat,
+        cntr: 3,
+        queue: "q1",
+        position: 0,
+        elapsedMin: 0,
+        operName: "myoper"
+      ),
+      AddToQueueExpectedEntry(
+        logMat,
+        cntr: 4,
+        queue: "q1",
+        position: 0,
+        operName: "theoper",
+        reason: "SetByOperator"
+      ),
+    };
 
     db.GetLogForMaterial(materialID: 1)
       .Should()
       .BeEquivalentTo(
-        new[]
+        expectedLog,
+        options =>
+          options
+            .Using<DateTime>(
+              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            )
+            .WhenTypeIs<DateTime>()
+            .Using<TimeSpan>(
+              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            )
+            .WhenTypeIs<TimeSpan>()
+            .ComparingByMembers<LogEntry>()
+      );
+
+    // should error if it is loading or on a pallet
+    await SetCurrentMaterial(
+      ImmutableList.Create(
+        expectedMat1 with
         {
-          MarkExpectedEntry(logMat, cntr: 1, serial: "aaa"),
-          AddToQueueExpectedEntry(
-            logMat,
-            cntr: 2,
-            queue: "q1",
-            position: 0,
-            operName: "theoper",
-            reason: "SetByOperator"
-          ),
-          RemoveFromQueueExpectedEntry(
-            logMat,
-            cntr: 3,
-            queue: "q1",
-            position: 0,
-            elapsedMin: 0,
-            operName: "myoper"
-          ),
-          AddToQueueExpectedEntry(
-            logMat,
-            cntr: 4,
-            queue: "q1",
-            position: 0,
-            operName: "theoper",
-            reason: "SetByOperator"
-          ),
-        },
+          Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet }
+        }
+      )
+    );
+
+    _jq.Invoking(j => j.SetMaterialInQueue(materialId: 1, "q1", 3, "oper"))
+      .Should()
+      .Throw<BadRequestException>()
+      .WithMessage("Material on pallet can not be moved to a queue");
+
+    await SetCurrentMaterial(
+      ImmutableList.Create(
+        expectedMat1 with
+        {
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading, }
+        }
+      )
+    );
+
+    _jq.Invoking(j => j.SetMaterialInQueue(materialId: 1, "q2", 3, "oper"))
+      .Should()
+      .Throw<BadRequestException>()
+      .WithMessage("Only waiting material can be moved between queues");
+
+    db.GetLogForMaterial(materialID: 1)
+      .Should()
+      .BeEquivalentTo(
+        expectedLog,
         options =>
           options
             .Using<DateTime>(
@@ -772,96 +875,247 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   }
 
   [Fact]
-  public async Task QuarantinesMatOnPallet()
+  public async Task AllowsSwapOfLoadingMaterial()
   {
+    StartSyncThread();
     using var db = _repo.OpenConnection();
 
-    var job = new Job()
-    {
-      UniqueStr = "uuu1",
-      PartName = "p1",
-      Processes = ImmutableList.Create(
-        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
-      ),
-      RouteStartUTC = DateTime.MinValue,
-      RouteEndUTC = DateTime.MinValue,
-      Archived = false,
-      Cycles = 0
-    };
-
-    db.AddJobs(
-      new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create(job) },
-      null,
-      addAsCopiedToSystem: true
-    );
-
-    db.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
-
-    await SetCurrentState(
-      palStateUpdated: false,
-      executeAction: false,
-      curSt: new CurrentStatus()
-      {
-        TimeOfCurrentStatusUTC = DateTime.UtcNow,
-        Material = ImmutableList.Create(
-          MatOnPal(matId: 1, uniq: "uuu1", part: "p1", proc: 1, path: 2, serial: "aaa", pal: "4")
-        ),
-        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
-        Alarms = ImmutableList<string>.Empty,
-        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
-      }
-    );
-
+    await SetCurrentState(palStateUpdated: false, executeAction: false);
     var newStatusTask = CreateTaskToWaitForNewCellState();
 
-    _jq.SignalMaterialForQuarantine(1, "q1", "theoper");
+    var expectedMat1 = QueuedMat(
+      matId: 1,
+      job: null,
+      part: "c1",
+      proc: 0,
+      path: 1,
+      serial: "aaa",
+      queue: "q1",
+      pos: 0
+    );
+    var expectedMat2 = QueuedMat(
+      matId: 2,
+      job: null,
+      part: "c1",
+      proc: 0,
+      path: 1,
+      serial: "",
+      queue: "q1",
+      pos: 1
+    );
+    _jq.AddUnallocatedCastingToQueue(
+        casting: "c1",
+        qty: 2,
+        queue: "q1",
+        serial: new[] { "aaa" },
+        operatorName: "theoper"
+      )
+      .Should()
+      .BeEquivalentTo(new[] { expectedMat1, expectedMat2 });
+
+    await SetCurrentMaterial(
+      ImmutableList.Create(
+        expectedMat1 with
+        {
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading, }
+        },
+        expectedMat2
+      )
+    );
+
+    db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal(new[] { 1L, 2L });
+
+    newStatusTask = CreateTaskToWaitForNewCellState();
+
+    _jq.SetMaterialInQueue(materialId: 1, "q1", 1, "oper");
 
     await newStatusTask;
 
-    var logMat = new LogMaterial(
-      matID: 1,
-      uniq: "uuu1",
-      proc: 1,
-      part: "p1",
-      numProc: 2,
-      serial: "",
-      workorder: "",
-      face: ""
-    );
+    db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal(new[] { 2L, 1L });
 
-    db.GetLogForMaterial(materialID: 1)
+    _jq.Invoking(j => j.SetMaterialInQueue(materialId: 1, "q2", -1, "oper"))
       .Should()
-      .BeEquivalentTo(
-        new[] { SignalQuarantineExpectedEntry(logMat, cntr: 1, pal: "4", queue: "q1", operName: "theoper") },
-        options =>
-          options
-            .Using<DateTime>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<DateTime>()
-            .ComparingByMembers<LogEntry>()
-      );
+      .Throw<BadRequestException>()
+      .WithMessage("Only waiting material can be moved between queues");
   }
 
-  [Fact]
-  public async Task QuarantinesMatInQueue()
+  public record SignalQuarantineTheoryData
   {
+    public enum QuarantineType
+    {
+      Add,
+      Signal,
+      Remove
+    }
+
+    public required InProcessMaterialLocation.LocType LocType { get; init; }
+    public required InProcessMaterialAction.ActionType ActionType { get; init; }
+    public required string QuarantineQueue { get; init; }
+    public string Error { get; init; } = null;
+    public QuarantineType? QuarantineAction { get; init; } = null;
+    public int Process { get; init; } = 0;
+    public string JobTransferQeuue { get; init; } = "q1";
+    public bool AllowQuarantineToCancelLoad { get; init; } = false;
+  }
+
+  public static IEnumerable<object[]> SignalTheoryData = new[]
+  {
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Waiting,
+      LocType = InProcessMaterialLocation.LocType.InQueue,
+      QuarantineQueue = "quarqqq",
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add
+    },
+    new SignalQuarantineTheoryData()
+    {
+      ActionType = InProcessMaterialAction.ActionType.Waiting,
+      LocType = InProcessMaterialLocation.LocType.InQueue,
+      QuarantineQueue = null,
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Remove
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Waiting,
+      LocType = InProcessMaterialLocation.LocType.Free,
+      QuarantineQueue = "quarqqq",
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add
+    },
+    // Now OnPallet with various tests for transfer queues and proces
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Waiting,
+      LocType = InProcessMaterialLocation.LocType.OnPallet,
+      QuarantineQueue = "quarqqq",
+      Process = 1,
+      JobTransferQeuue = "q1",
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.UnloadToInProcess,
+      LocType = InProcessMaterialLocation.LocType.OnPallet,
+      QuarantineQueue = "quarqqq",
+      Process = 1,
+      JobTransferQeuue = "q1",
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.OnPallet,
+      QuarantineQueue = "quarqqq",
+      Process = 1,
+      JobTransferQeuue = "q1",
+      Error = "Material on pallet can not be quarantined while loading"
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.OnPallet,
+      QuarantineQueue = "quarqqq",
+      Process = 1,
+      JobTransferQeuue = "q1",
+      AllowQuarantineToCancelLoad = true,
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
+    },
+    new SignalQuarantineTheoryData()
+    {
+      ActionType = InProcessMaterialAction.ActionType.Waiting,
+      LocType = InProcessMaterialLocation.LocType.OnPallet,
+      QuarantineQueue = null,
+      Process = 2,
+      JobTransferQeuue = "q1",
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Machining,
+      LocType = InProcessMaterialLocation.LocType.OnPallet,
+      QuarantineQueue = "quarqqq",
+      Process = 1,
+      JobTransferQeuue = null,
+      Error = "Can only signal material for quarantine if the current process and path has an output queue"
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Machining,
+      LocType = InProcessMaterialLocation.LocType.OnPallet,
+      QuarantineQueue = "quarqqq",
+      Process = 1,
+      JobTransferQeuue = null,
+      AllowQuarantineToCancelLoad = true,
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal
+    },
+    new SignalQuarantineTheoryData
+    {
+      ActionType = InProcessMaterialAction.ActionType.Machining,
+      LocType = InProcessMaterialLocation.LocType.OnPallet,
+      QuarantineQueue = "quarqqq",
+      Process = 2,
+      JobTransferQeuue = null,
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal
+    },
+    // Loading from a queue
+    new SignalQuarantineTheoryData()
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.InQueue,
+      QuarantineQueue = "quarqqq",
+      Error = "Invalid material state for quarantine"
+    },
+    new SignalQuarantineTheoryData()
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.InQueue,
+      QuarantineQueue = "quarqqq",
+      AllowQuarantineToCancelLoad = true,
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add
+    },
+    new SignalQuarantineTheoryData()
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.InQueue,
+      QuarantineQueue = null,
+      Error = "Invalid material state for quarantine"
+    },
+    new SignalQuarantineTheoryData()
+    {
+      ActionType = InProcessMaterialAction.ActionType.Loading,
+      LocType = InProcessMaterialLocation.LocType.InQueue,
+      QuarantineQueue = null,
+      AllowQuarantineToCancelLoad = true,
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Remove
+    },
+  }.Select(d => new object[] { d });
+
+  [Theory]
+  [MemberData(nameof(SignalTheoryData))]
+  public async Task QuarantinesMatOnPallet(SignalQuarantineTheoryData data)
+  {
+    _settings.QuarantineQueue = data.QuarantineQueue;
+    StartSyncThread(allowQuarantineToCancelLoad: data.AllowQuarantineToCancelLoad);
+
     using var db = _repo.OpenConnection();
 
-    var job = new Job()
+    var job = new ActiveJob()
     {
       UniqueStr = "uuu1",
       PartName = "p1",
-      Cycles = 5,
       Processes = ImmutableList.Create(
-        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
+        new ProcessInfo()
+        {
+          Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = data.JobTransferQeuue })
+        },
         new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
       ),
       RouteStartUTC = DateTime.MinValue,
       RouteEndUTC = DateTime.MinValue,
       Archived = false,
+      Cycles = 0,
+      CopiedToSystem = true
     };
+
     db.AddJobs(
       new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job) },
       null,
@@ -869,23 +1123,16 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     );
 
     db.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
-    db.RecordSerialForMaterialID(materialID: 1, proc: 1, serial: "aaa");
-    db.RecordLoadStart(
-      new[]
-      {
-        new EventLogMaterial()
-        {
-          MaterialID = 1,
-          Process = 1,
-          Face = ""
-        }
-      },
-      "3",
-      2,
-      DateTime.UtcNow
+    var logMat = new LogMaterial(
+      matID: 1,
+      uniq: "uuu1",
+      proc: data.Process,
+      part: "p1",
+      numProc: 2,
+      serial: "",
+      workorder: "",
+      face: ""
     );
-
-    _jq.SetMaterialInQueue(materialId: 1, queue: "q1", position: -1, operatorName: null);
 
     await SetCurrentState(
       palStateUpdated: false,
@@ -893,65 +1140,147 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       curSt: new CurrentStatus()
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
-        Material = ImmutableList.Create(
-          QueuedMat(matId: 1, job: job, part: "p1", proc: 1, path: 2, serial: "aaa", queue: "q1", pos: 0)
-        ),
-        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty.Add(job.UniqueStr, job),
         Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
         QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
       }
     );
 
-    var newStatusTask = CreateTaskToWaitForNewCellState();
+    var expectedLog = new List<LogEntry>();
+    if (data.LocType == InProcessMaterialLocation.LocType.InQueue)
+    {
+      db.RecordAddMaterialToQueue(
+        new EventLogMaterial()
+        {
+          MaterialID = 1,
+          Process = data.Process,
+          Face = ""
+        },
+        queue: "q1",
+        position: 0,
+        operatorName: "anoper",
+        reason: "Test"
+      );
 
-    _jq.SignalMaterialForQuarantine(1, "q2", "theoper");
+      expectedLog.Add(
+        AddToQueueExpectedEntry(
+          cntr: 1,
+          mat: logMat,
+          queue: "q1",
+          position: 0,
+          operName: "anoper",
+          reason: "Test"
+        )
+      );
+    }
 
-    await newStatusTask;
+    _jq.Invoking(
+        j => j.SignalMaterialForQuarantine(materialId: 1, operatorName: "theoper", reason: "a reason")
+      )
+      .Should()
+      .Throw<BadRequestException>()
+      .WithMessage("Material not found");
 
-    var logMat = new LogMaterial(
-      matID: 1,
-      uniq: "uuu1",
-      proc: 1,
+    var queuedMat = QueuedMat(
+      matId: 1,
+      job: job,
       part: "p1",
-      numProc: 2,
-      serial: "aaa",
-      workorder: "",
-      face: ""
+      proc: data.Process,
+      path: 1,
+      serial: "",
+      queue: "q1",
+      pos: 0
     );
+
+    await SetCurrentMaterial(
+      ImmutableList.Create(
+        queuedMat with
+        {
+          Action = new InProcessMaterialAction() { Type = data.ActionType },
+          Location = new InProcessMaterialLocation()
+          {
+            Type = data.LocType,
+            Pallet = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? "4" : null
+          }
+        }
+      )
+    );
+
+    if (data.Error != null)
+    {
+      _jq.Invoking(j => j.SignalMaterialForQuarantine(materialId: 1, "theoper", reason: "a reason"))
+        .Should()
+        .Throw<BadRequestException>()
+        .WithMessage(data.Error);
+    }
+    else
+    {
+      var newStatusTask = CreateTaskToWaitForNewCellState();
+
+      _jq.SignalMaterialForQuarantine(1, "theoper", reason: "signaling reason");
+
+      await newStatusTask;
+
+      if (data.QuarantineAction == SignalQuarantineTheoryData.QuarantineType.Signal)
+      {
+        expectedLog.Add(
+          SignalQuarantineExpectedEntry(
+            logMat,
+            cntr: expectedLog.Count + 1,
+            pal: "4",
+            queue: data.QuarantineQueue ?? "",
+            operName: "theoper",
+            reason: "signaling reason"
+          )
+        );
+      }
+      else
+      {
+        expectedLog.Add(
+          OperatorNoteExpectedEntry(
+            logMat,
+            cntr: expectedLog.Count + 1,
+            note: "signaling reason",
+            operName: "theoper"
+          )
+        );
+
+        if (data.LocType == InProcessMaterialLocation.LocType.InQueue)
+        {
+          expectedLog.Add(
+            RemoveFromQueueExpectedEntry(
+              logMat,
+              cntr: expectedLog.Count + 1,
+              queue: "q1",
+              position: 0,
+              elapsedMin: 0,
+              operName: "theoper"
+            )
+          );
+        }
+      }
+
+      if (data.QuarantineAction == SignalQuarantineTheoryData.QuarantineType.Add)
+      {
+        expectedLog.Add(
+          AddToQueueExpectedEntry(
+            logMat,
+            cntr: expectedLog.Count + 1,
+            queue: data.QuarantineQueue,
+            position: 0,
+            reason: "SetByOperator",
+            operName: "theoper"
+          )
+        );
+      }
+    }
 
     db.GetLogForMaterial(materialID: 1)
       .Should()
       .BeEquivalentTo(
-        new[]
-        {
-          MarkExpectedEntry(logMat, cntr: 1, serial: "aaa"),
-          LoadStartExpectedEntry(logMat, cntr: 2, pal: "3", lul: 2),
-          AddToQueueExpectedEntry(
-            logMat,
-            cntr: 3,
-            queue: "q1",
-            position: 0,
-            operName: null,
-            reason: "SetByOperator"
-          ),
-          RemoveFromQueueExpectedEntry(
-            logMat,
-            cntr: 4,
-            queue: "q1",
-            position: 0,
-            elapsedMin: 0,
-            operName: "theoper"
-          ),
-          AddToQueueExpectedEntry(
-            logMat,
-            cntr: 5,
-            queue: "q2",
-            position: 0,
-            operName: "theoper",
-            reason: "SetByOperator"
-          )
-        },
+        expectedLog,
         options =>
           options
             .Using<DateTime>(
@@ -1041,7 +1370,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     string pal,
     string queue,
     DateTime? timeUTC = null,
-    string operName = null
+    string operName = null,
+    string reason = null
   )
   {
     var e = new LogEntry(
@@ -1059,6 +1389,10 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     if (!string.IsNullOrEmpty(operName))
     {
       e %= en => en.ProgramDetails.Add("operator", operName);
+    }
+    if (!string.IsNullOrEmpty(reason))
+    {
+      e = e with { ProgramDetails = e.ProgramDetails.Add("note", reason) };
     }
     return e;
   }
@@ -1122,6 +1456,34 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       },
       Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
     };
+  }
+
+  private LogEntry OperatorNoteExpectedEntry(
+    LogMaterial mat,
+    long cntr,
+    string note,
+    DateTime? timeUTC = null,
+    string operName = null
+  )
+  {
+    var e = new LogEntry(
+      cntr: cntr,
+      mat: new[] { mat },
+      pal: "",
+      ty: LogType.GeneralMessage,
+      locName: "Message",
+      locNum: 1,
+      prog: "OperatorNotes",
+      start: false,
+      endTime: timeUTC ?? DateTime.UtcNow,
+      result: "Operator Notes"
+    );
+    e = e with { ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("note", note) };
+    if (!string.IsNullOrEmpty(operName))
+    {
+      e %= en => en.ProgramDetails.Add("operator", operName);
+    }
+    return e;
   }
 
   private InProcessMaterial MatOnPal(

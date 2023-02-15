@@ -72,11 +72,10 @@ namespace BlackMaple.MachineFramework.Controllers
     public bool? UseClientPrinterForLabels { get; init; }
 
     [DataMember]
-    public string QuarantineQueue { get; init; }
+    public bool? AllowQuarantineToCancelLoad { get; init; }
 
-    // Load Station Page Options
     [DataMember]
-    public bool? SupportsQuarantineAtLoadStation { get; init; }
+    public string QuarantineQueue { get; init; }
 
     [DataMember]
     public bool? AllowChangeWorkorderAtLoadStation { get; init; }
@@ -141,7 +140,7 @@ namespace BlackMaple.MachineFramework.Controllers
         AddRawMaterial = _impl.AddRawMaterial,
         AddInProcessMaterial = _impl.AddInProcessMaterial,
         AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
-        SupportsQuarantineAtLoadStation = _impl.Backend.SupportsQuarantineAtLoadStation,
+        AllowQuarantineToCancelLoad = _impl.Backend.QueueControl.AllowQuarantineToCancelLoad,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
         LicenseExpires = _impl.LicenseExpires?.Invoke(),
         CustomStationMonitorDialogUrl = _impl.CustomStationMonitorDialogUrl,

@@ -309,8 +309,9 @@ namespace BlackMaple.MachineFramework
       EventLogMaterial mat,
       string pallet,
       string queue,
+      string operatorName,
+      string reason,
       DateTime? timeUTC = null,
-      string operatorName = null,
       string foreignId = null,
       string originalMessage = null
     );

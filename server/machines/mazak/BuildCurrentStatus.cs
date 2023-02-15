@@ -285,9 +285,14 @@ namespace MazakMachineInterface
                     palSub.PartProcessNumber == job.Processes.Count
                       ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
                       : InProcessMaterialAction.ActionType.UnloadToInProcess,
-                  UnloadIntoQueue = job.Processes[palSub.PartProcessNumber - 1][
-                    procToPath.PathForProc(palSub.PartProcessNumber) - 1
-                  ].OutputQueue,
+                  UnloadIntoQueue = OutputQueueForMaterial(
+                    matID,
+                    job,
+                    palSub.PartProcessNumber,
+                    procToPath.PathForProc(palSub.PartProcessNumber),
+                    oldCycles,
+                    fmsSettings
+                  ),
                   ElapsedLoadUnloadTime = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null
                 };
               }
@@ -358,7 +363,8 @@ namespace MazakMachineInterface
               material,
               jobsByUniq,
               oldCycles,
-              partNameToNumProc
+              partNameToNumProc,
+              fmsSettings
             );
           }
         }
@@ -740,7 +746,8 @@ namespace MazakMachineInterface
       IList<InProcessMaterial> material,
       IReadOnlyDictionary<string, CurrentJob> jobsByUniq,
       List<BlackMaple.MachineFramework.LogEntry> oldCycles,
-      IReadOnlyDictionary<string, int> partNameToNumProc
+      IReadOnlyDictionary<string, int> partNameToNumProc,
+      FMSSettings fmsSettings
     )
     {
       var queuedMats = new Dictionary<(string uniq, int proc, int path), List<QueuedMaterial>>();
@@ -760,7 +767,11 @@ namespace MazakMachineInterface
 
         jobsByUniq.TryGetValue(unload.Unique, out CurrentJob job);
 
-        InProcessMaterialAction action = null;
+        var matIDs = new Queue<long>(
+          FindMatIDsFromOldCycles(oldCycles, false, job, unload.Process, unload.Path, log)
+        );
+
+        InProcessMaterialAction loadAction = null;
         if (job == null)
         {
           // if user-entered schedule, check for loading of next process
@@ -774,7 +785,7 @@ namespace MazakMachineInterface
               && loadAct.Process == unload.Process + 1
             )
             {
-              action = new InProcessMaterialAction()
+              loadAction = new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
                 LoadOntoPallet = palletName,
@@ -789,44 +800,6 @@ namespace MazakMachineInterface
           }
         }
 
-        if (action == null)
-        {
-          // no load found, just unload it
-          if (job != null)
-          {
-            action = new InProcessMaterialAction()
-            {
-              Type =
-                unload.Process < job.Processes.Count
-                  ? InProcessMaterialAction.ActionType.UnloadToInProcess
-                  : InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
-              ElapsedLoadUnloadTime = elapsedLoadTime,
-              UnloadIntoQueue = job.Processes[unload.Process - 1][unload.Path - 1].OutputQueue
-            };
-          }
-          else
-          {
-            bool unloadToInProc = false;
-            if (partNameToNumProc.TryGetValue(unload.Part, out var numProc))
-            {
-              if (unload.Process < numProc)
-              {
-                unloadToInProc = true;
-              }
-            }
-            action = new InProcessMaterialAction()
-            {
-              Type = unloadToInProc
-                ? InProcessMaterialAction.ActionType.UnloadToInProcess
-                : InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
-              ElapsedLoadUnloadTime = elapsedLoadTime,
-            };
-          }
-        }
-
-        var matIDs = new Queue<long>(
-          FindMatIDsFromOldCycles(oldCycles, false, job, unload.Process, unload.Path, log)
-        );
         for (int i = 0; i < unload.Qty; i += 1)
         {
           string face = unload.Process.ToString();
@@ -835,6 +808,50 @@ namespace MazakMachineInterface
             matID = matIDs.Dequeue();
 
           var matDetails = log.GetMaterialDetails(matID);
+
+          InProcessMaterialAction action = loadAction;
+          if (action == null)
+          {
+            // no load found, just unload it
+            if (job != null)
+            {
+              action = new InProcessMaterialAction()
+              {
+                Type =
+                  unload.Process < job.Processes.Count
+                    ? InProcessMaterialAction.ActionType.UnloadToInProcess
+                    : InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+                ElapsedLoadUnloadTime = elapsedLoadTime,
+                UnloadIntoQueue = OutputQueueForMaterial(
+                  matID,
+                  job,
+                  unload.Process,
+                  unload.Path,
+                  oldCycles,
+                  fmsSettings
+                ),
+              };
+            }
+            else
+            {
+              bool unloadToInProc = false;
+              if (partNameToNumProc.TryGetValue(unload.Part, out var numProc))
+              {
+                if (unload.Process < numProc)
+                {
+                  unloadToInProc = true;
+                }
+              }
+              action = new InProcessMaterialAction()
+              {
+                Type = unloadToInProc
+                  ? InProcessMaterialAction.ActionType.UnloadToInProcess
+                  : InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
+                ElapsedLoadUnloadTime = elapsedLoadTime,
+              };
+            }
+          }
+
           material.Add(
             new InProcessMaterial()
             {
@@ -970,6 +987,29 @@ namespace MazakMachineInterface
     )
     {
       return MazakQueues.QueuedMaterialForLoading(job.UniqueStr, materialToSearch, proc, path, log);
+    }
+
+    private static string OutputQueueForMaterial(
+      long matId,
+      CurrentJob job,
+      int proc,
+      int path,
+      IReadOnlyList<BlackMaple.MachineFramework.LogEntry> log,
+      FMSSettings fmsSettings
+    )
+    {
+      var signalQuarantine = log.LastOrDefault(
+        e => e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == matId)
+      );
+
+      if (signalQuarantine != null)
+      {
+        return signalQuarantine.LocationName ?? fmsSettings.QuarantineQueue ?? "Scrap";
+      }
+      else
+      {
+        return job.Processes[proc - 1][path - 1].OutputQueue;
+      }
     }
 
     private static IEnumerable<long> FindMatIDsFromOldCycles(

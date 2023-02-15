@@ -39,7 +39,8 @@ using System.Threading;
 
 namespace BlackMaple.MachineFramework
 {
-  public class JobsAndQueuesFromDb<St> : IJobControl, IQueueControl, IDisposable where St : ICellState
+  public class JobsAndQueuesFromDb<St> : IJobControl, IQueueControl, IDisposable
+    where St : ICellState
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<JobsAndQueuesFromDb<St>>();
 
@@ -50,13 +51,16 @@ namespace BlackMaple.MachineFramework
     private readonly ICheckJobsValid _checkJobsValid;
     private readonly TimeSpan _refreshStateInterval;
 
+    public bool AllowQuarantineToCancelLoad { get; }
+
     public JobsAndQueuesFromDb(
       RepositoryConfig repo,
       FMSSettings settings,
       Action<CurrentStatus> onNewCurrentStatus,
       ISynchronizeCellState<St> syncSt,
       ICheckJobsValid checkJobs,
-      TimeSpan refreshStateInterval
+      TimeSpan refreshStateInterval,
+      bool allowQuarantineToCancelLoad
     )
     {
       _repo = repo;
@@ -66,6 +70,7 @@ namespace BlackMaple.MachineFramework
       _checkJobsValid = checkJobs;
       _refreshStateInterval = refreshStateInterval;
       _syncState.NewCellState += NewCellState;
+      AllowQuarantineToCancelLoad = allowQuarantineToCancelLoad;
 
       _thread = new Thread(Thread);
       _thread.IsBackground = true;
@@ -83,7 +88,7 @@ namespace BlackMaple.MachineFramework
     private readonly AutoResetEvent _recheck = new AutoResetEvent(false);
     private readonly ManualResetEvent _newCellState = new ManualResetEvent(false);
 
-    // lock prevents decrement from occuring at the same time as the thread
+    // lock prevents decrement and queue changes from occuring at the same time as the thread
     // is deciding what to put onto a pallet
     private readonly object _changeLock = new object();
 
@@ -579,80 +584,251 @@ namespace BlackMaple.MachineFramework
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
       Log.Debug("Adding material {matId} to queue {queue} in position {pos}", materialId, queue, position);
+
+      string error = null;
+      bool requireStateRefresh = false;
+
       using (var ldb = _repo.OpenConnection())
       {
-        var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
-        var proc = (nextProc ?? 1) - 1;
-        ldb.RecordAddMaterialToQueue(
-          matID: materialId,
-          process: proc,
-          queue: queue,
-          position: position,
-          operatorName: operatorName,
-          reason: "SetByOperator"
-        );
+        lock (_changeLock)
+        {
+          var st = _syncState.CalculateCellState(ldb);
+          if (st == null)
+          {
+            throw new BadRequestException("Unable to calculate cell state");
+          }
+          requireStateRefresh = requireStateRefresh || st.PalletStateUpdated;
+
+          var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
+          if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
+          {
+            error = "Material on pallet can not be moved to a queue";
+          }
+          else if (
+            mat != null
+            && mat.Action.Type != InProcessMaterialAction.ActionType.Waiting
+            && mat.Location.CurrentQueue != queue
+          )
+          {
+            error = "Only waiting material can be moved between queues";
+          }
+          else
+          {
+            var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
+            var proc = (nextProc ?? 1) - 1;
+            ldb.RecordAddMaterialToQueue(
+              matID: materialId,
+              process: proc,
+              queue: queue,
+              position: position,
+              operatorName: operatorName,
+              reason: "SetByOperator"
+            );
+            requireStateRefresh = true;
+          }
+        }
       }
 
-      RecalculateCellState();
+      if (requireStateRefresh)
+      {
+        RecalculateCellState();
+      }
+
+      if (error != null)
+      {
+        throw new BadRequestException(error);
+      }
     }
 
     public void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName)
     {
       Log.Debug("Removing {@matId} from all queues", materialIds);
-      using (var ldb = _repo.OpenConnection())
-      {
-        ldb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
-      }
-      RecalculateCellState();
-    }
 
-    public void SignalMaterialForQuarantine(long materialId, string queue, string operatorName)
-    {
-      Log.Debug("Signaling {matId} for quarantine", materialId);
-      if (!_settings.Queues.ContainsKey(queue))
-      {
-        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
-      }
+      string error = null;
+      bool requireStateRefresh = false;
 
-      var st = GetCurrentStatus();
-
-      // first, see if it is on a pallet
-      var palMat = st.Material
-        .Where(m => m.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
-        .FirstOrDefault(m => m.MaterialID == materialId);
-      var qMat = st.Material
-        .Where(m => m.Location.Type == InProcessMaterialLocation.LocType.InQueue)
-        .FirstOrDefault(m => m.MaterialID == materialId);
-
-      if (palMat != null)
+      lock (_changeLock)
       {
         using (var ldb = _repo.OpenConnection())
         {
-          ldb.SignalMaterialForQuarantine(
-            mat: new EventLogMaterial()
+          var st = _syncState.CalculateCellState(ldb);
+          if (st == null)
+          {
+            throw new BadRequestException("Unable to calculate cell state");
+          }
+          requireStateRefresh = requireStateRefresh || st.PalletStateUpdated;
+
+          foreach (var matId in materialIds)
+          {
+            var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == matId);
+            if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
             {
-              MaterialID = materialId,
-              Process = palMat.Process,
-              Face = ""
-            },
-            pallet: palMat.Location.Pallet,
-            queue: queue,
-            timeUTC: null,
-            operatorName: operatorName
-          );
+              error = "Material on pallet can not be removed from queues";
+              break;
+            }
+            else if (mat != null && mat.Action.Type != InProcessMaterialAction.ActionType.Waiting)
+            {
+              error = "Only waiting material can be removed from queues";
+              break;
+            }
+          }
+
+          if (error == null)
+          {
+            ldb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
+            requireStateRefresh = true;
+          }
         }
+      }
 
+      if (requireStateRefresh)
+      {
         RecalculateCellState();
+      }
 
-        return;
-      }
-      else if (qMat != null)
+      if (error != null)
       {
-        this.SetMaterialInQueue(materialId, queue, -1, operatorName);
+        throw new BadRequestException(error);
       }
-      else
+    }
+
+    public void SignalMaterialForQuarantine(long materialId, string operatorName, string reason)
+    {
+      Log.Debug("Signaling {matId} for quarantine", materialId);
+
+      string error = null;
+      bool requireStateRefresh = false;
+
+      using (var ldb = _repo.OpenConnection())
       {
-        throw new BadRequestException("Unable to find material to quarantine");
+        lock (_changeLock)
+        {
+          var st = _syncState.CalculateCellState(ldb);
+          if (st == null)
+          {
+            throw new BadRequestException("Unable to calculate cell state");
+          }
+          requireStateRefresh = requireStateRefresh || st.PalletStateUpdated;
+
+          var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
+
+          if (mat == null)
+          {
+            error = "Material not found";
+          }
+          else
+          {
+            switch (mat.Location.Type, mat.Action.Type)
+            {
+              case (InProcessMaterialLocation.LocType.OnPallet, _):
+                if (!AllowQuarantineToCancelLoad)
+                {
+                  if (mat.Action.Type == InProcessMaterialAction.ActionType.Loading)
+                  {
+                    error = "Material on pallet can not be quarantined while loading";
+                  }
+                  else
+                  {
+                    // If the material will eventually stay on the pallet, disallow quarantine
+                    var job = st.CurrentStatus.Jobs.GetValueOrDefault(mat.JobUnique);
+                    if (job == null)
+                    {
+                      error = "Job not found";
+                    }
+                    else
+                    {
+                      var path = job.Processes[mat.Process - 1].Paths[mat.Path - 1];
+                      if ((mat.Process != job.Processes.Count && (path == null || path.OutputQueue == null)))
+                      {
+                        error =
+                          "Can only signal material for quarantine if the current process and path has an output queue";
+                      }
+                    }
+                  }
+                }
+
+                if (error == null)
+                {
+                  ldb.SignalMaterialForQuarantine(
+                    mat: new EventLogMaterial()
+                    {
+                      MaterialID = materialId,
+                      Process = mat.Process,
+                      Face = ""
+                    },
+                    pallet: mat.Location.Pallet,
+                    queue: _settings.QuarantineQueue ?? "",
+                    timeUTC: null,
+                    operatorName: operatorName,
+                    reason: reason
+                  );
+                  requireStateRefresh = true;
+                }
+                break;
+
+              case (InProcessMaterialLocation.LocType.Free, InProcessMaterialAction.ActionType.Waiting)
+                when !string.IsNullOrEmpty(_settings.QuarantineQueue):
+              case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
+                when !string.IsNullOrEmpty(_settings.QuarantineQueue):
+              case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Loading)
+                when !string.IsNullOrEmpty(_settings.QuarantineQueue) && AllowQuarantineToCancelLoad:
+
+                {
+                  var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
+                  var proc = (nextProc ?? 1) - 1;
+                  ldb.RecordOperatorNotes(
+                    materialId: materialId,
+                    process: proc,
+                    notes: reason,
+                    operatorName: operatorName
+                  );
+                  ldb.RecordAddMaterialToQueue(
+                    matID: materialId,
+                    process: proc,
+                    queue: _settings.QuarantineQueue,
+                    position: -1,
+                    operatorName: operatorName,
+                    reason: "SetByOperator"
+                  );
+                  requireStateRefresh = true;
+                }
+                break;
+
+              case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
+                when string.IsNullOrEmpty(_settings.QuarantineQueue):
+              case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Loading)
+                when string.IsNullOrEmpty(_settings.QuarantineQueue) && AllowQuarantineToCancelLoad:
+
+                {
+                  var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
+                  var proc = (nextProc ?? 1) - 1;
+                  ldb.RecordOperatorNotes(
+                    materialId: materialId,
+                    process: proc,
+                    notes: reason,
+                    operatorName: operatorName
+                  );
+                  ldb.BulkRemoveMaterialFromAllQueues(new[] { materialId }, operatorName);
+                  requireStateRefresh = true;
+                }
+                break;
+
+              default:
+                error = "Invalid material state for quarantine";
+                break;
+            }
+          }
+        }
+      }
+
+      if (requireStateRefresh)
+      {
+        RecalculateCellState();
+      }
+
+      if (error != null)
+      {
+        throw new BadRequestException(error);
       }
     }
 

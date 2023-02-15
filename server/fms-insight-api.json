@@ -932,7 +932,7 @@
         }
       }
     },
-    "/api/v1/jobs/material/{materialId}/quarantine": {
+    "/api/v1/jobs/material/{materialId}/signal-quarantine": {
       "put": {
         "tags": [
           "jobs"
@@ -956,11 +956,11 @@
               "type": "string",
               "nullable": true
             },
-            "x-position": 3
+            "x-position": 2
           }
         ],
         "requestBody": {
-          "x-name": "queue",
+          "x-name": "reason",
           "content": {
             "application/json": {
               "schema": {
@@ -968,8 +968,7 @@
               }
             }
           },
-          "required": true,
-          "x-position": 2
+          "x-position": 3
         },
         "responses": {
           "200": {
@@ -2221,12 +2220,12 @@
             "type": "boolean",
             "nullable": true
           },
-          "QuarantineQueue": {
-            "type": "string",
+          "AllowQuarantineToCancelLoad": {
+            "type": "boolean",
             "nullable": true
           },
-          "SupportsQuarantineAtLoadStation": {
-            "type": "boolean",
+          "QuarantineQueue": {
+            "type": "string",
             "nullable": true
           },
           "AllowChangeWorkorderAtLoadStation": {
