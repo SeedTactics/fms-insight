@@ -56,7 +56,7 @@ import * as routes from "./routes.js";
 import * as serverSettings from "../network/server-settings.js";
 import { SeedtacticLogo } from "../seedtactics-logo.js";
 import { BackupViewer } from "./BackupViewer.js";
-import { BarcodeListener, SerialScannerButton } from "./BarcodeScanning.js";
+import { BarcodeListener } from "./BarcodeScanning.js";
 import { ManualScanButton } from "./ManualScan.js";
 import { OperatorSelect } from "./ChooseOperator.js";
 import { MaterialDialog } from "./station-monitor/Material.js";
@@ -208,14 +208,7 @@ function LogoutButton() {
 }
 
 function SearchButtons() {
-  return (
-    <>
-      {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
-        <SerialScannerButton />
-      ) : undefined}
-      <ManualScanButton />
-    </>
-  );
+  return <ManualScanButton />;
 }
 
 function Header({

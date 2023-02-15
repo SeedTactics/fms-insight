@@ -32,16 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { OnResultFunction, QrReader } from "react-qr-reader";
-import { Dialog } from "@mui/material";
-import { Button } from "@mui/material";
-import { DialogActions } from "@mui/material";
-import { DialogContent } from "@mui/material";
-import { DialogTitle } from "@mui/material";
-import { CameraAlt } from "@mui/icons-material";
 import { useSetMaterialToShowInDialog } from "../cell-status/material-details.js";
-import { Tooltip } from "@mui/material";
-import { IconButton } from "@mui/material";
 
 export const BarcodeListener = React.memo(function BarcodeListener(): null {
   const setBarcode = useSetMaterialToShowInDialog();
@@ -102,43 +93,4 @@ export const BarcodeListener = React.memo(function BarcodeListener(): null {
   }, [setBarcode]);
 
   return null;
-});
-
-export const SerialScannerButton = React.memo(function SerialScanner() {
-  const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
-  const setBarcode = useSetMaterialToShowInDialog();
-
-  const onScan: OnResultFunction = (result) => {
-    if (result === undefined || result == null) {
-      return;
-    }
-    const barcode = result.getText();
-    if (barcode === "") {
-      return;
-    }
-    setBarcode({ type: "Barcode", barcode: barcode });
-    setDialogOpen(false);
-  };
-  return (
-    <>
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md">
-        <DialogTitle>Scan a part&apos;s serial</DialogTitle>
-        <DialogContent>
-          <div style={{ minWidth: "20em" }}>
-            {dialogOpen ? <QrReader onResult={onScan} constraints={{}} /> : undefined}
-          </div>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)} color="secondary">
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Tooltip title="Scan QR Code">
-        <IconButton onClick={() => setDialogOpen(true)} size="large">
-          <CameraAlt />
-        </IconButton>
-      </Tooltip>
-    </>
-  );
 });
