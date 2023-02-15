@@ -174,9 +174,16 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     (await tcs.Task).Should().Be(curSt);
   }
 
-  private void SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
+  private Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
   {
-    _curSt = _curSt with { CurrentStatus = _curSt.CurrentStatus with { Material = material } };
+    return SetCurrentState(
+      palStateUpdated: true,
+      executeAction: false,
+      curSt: _curSt.CurrentStatus with
+      {
+        Material = material
+      }
+    );
   }
 
   private Task CreateTaskToWaitForNewCellState()
@@ -592,7 +599,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       queue: "q1",
       pos: 1
     );
-    SetCurrentMaterial(
+    await SetCurrentMaterial(
       ImmutableList.Create(
         expectedMat2 with
         {
@@ -606,7 +613,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       .Throw<BadRequestException>()
       .WithMessage("Material on pallet can not be removed from queues");
 
-    SetCurrentMaterial(
+    await SetCurrentMaterial(
       ImmutableList.Create(
         expectedMat2 with
         {
@@ -674,7 +681,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       )
       .Should()
       .BeEquivalentTo(expectedMat1);
-    SetCurrentMaterial(ImmutableList.Create(expectedMat1));
+    await SetCurrentMaterial(ImmutableList.Create(expectedMat1));
     db.GetMaterialDetails(1)
       .Should()
       .BeEquivalentTo(
@@ -827,7 +834,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       );
 
     // should error if it is loading or on a pallet
-    SetCurrentMaterial(
+    await SetCurrentMaterial(
       ImmutableList.Create(
         expectedMat1 with
         {
@@ -841,7 +848,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       .Throw<BadRequestException>()
       .WithMessage("Material on pallet can not be moved to a queue");
 
-    SetCurrentMaterial(
+    await SetCurrentMaterial(
       ImmutableList.Create(
         expectedMat1 with
         {
@@ -880,7 +887,6 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     using var db = _repo.OpenConnection();
 
     await SetCurrentState(palStateUpdated: false, executeAction: false);
-    var newStatusTask = CreateTaskToWaitForNewCellState();
 
     var expectedMat1 = QueuedMat(
       matId: 1,
@@ -912,7 +918,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       .Should()
       .BeEquivalentTo(new[] { expectedMat1, expectedMat2 });
 
-    SetCurrentMaterial(
+    await SetCurrentMaterial(
       ImmutableList.Create(
         expectedMat1 with
         {
@@ -924,7 +930,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
     db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal(new[] { 1L, 2L });
 
-    newStatusTask = CreateTaskToWaitForNewCellState();
+    var newStatusTask = CreateTaskToWaitForNewCellState();
 
     _jq.SetMaterialInQueue(materialId: 1, "q1", 1, "oper");
 
@@ -1193,7 +1199,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       pos: 0
     );
 
-    SetCurrentMaterial(
+    await SetCurrentMaterial(
       ImmutableList.Create(
         queuedMat with
         {
