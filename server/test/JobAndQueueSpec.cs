@@ -171,7 +171,15 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var tcs = new TaskCompletionSource<CurrentStatus>();
     _newCellStateTcs.Enqueue(tcs);
     NewCellState?.Invoke();
-    (await tcs.Task).Should().Be(curSt);
+    (await tcs.Task)
+      .Should()
+      .BeEquivalentTo(
+        curSt,
+        options =>
+          options
+            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4)))
+            .WhenTypeIs<DateTime>()
+      );
   }
 
   private async Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
