@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button, Dialog, DialogActions, DialogContent, TextField, Tooltip } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
@@ -104,7 +104,8 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
         }
         // Check that the job outputs to a queue, only then can signaling for quarantine work
         const job = curSt.jobs[inProcMat.jobUnique];
-        const path = job?.procsAndPaths?.[inProcMat.process - 1]?.paths?.[inProcMat.path - 1];
+        if (job === null) return null;
+        const path = job.procsAndPaths?.[inProcMat.process - 1]?.paths?.[inProcMat.path - 1];
         if (inProcMat.process != job.procsAndPaths.length && (!path || !path.outputQueue)) {
           return null;
         }
@@ -113,7 +114,6 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
       type = "Signal";
       break;
 
-    // If in an active queue and loading, then
     case LocType.InQueue:
       if (inProcMat.action.type === ActionType.Loading && !fmsInfo.allowQuarantineToCancelLoad) {
         return null;
@@ -201,6 +201,7 @@ export function QuarantineMatButton({
         </Button>
       </Tooltip>
       <Dialog open={open} onClose={() => setOpen(false)}>
+        <DialogTitle>Quarantine Material</DialogTitle>
         <DialogContent>
           <p>{title}</p>
           <TextField
