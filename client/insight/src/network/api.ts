@@ -3996,6 +3996,7 @@ export class PalletStatus implements IPalletStatus {
     currentPalletLocation!: PalletLocation;
     newFixture?: string | undefined;
     numFaces!: number;
+    faceNames?: string[] | undefined;
     targetLocation?: PalletLocation | undefined;
     percentMoveCompleted?: number | undefined;
 
@@ -4019,6 +4020,11 @@ export class PalletStatus implements IPalletStatus {
             this.currentPalletLocation = _data["CurrentPalletLocation"] ? PalletLocation.fromJS(_data["CurrentPalletLocation"]) : new PalletLocation();
             this.newFixture = _data["NewFixture"];
             this.numFaces = _data["NumFaces"];
+            if (Array.isArray(_data["FaceNames"])) {
+                this.faceNames = [] as any;
+                for (let item of _data["FaceNames"])
+                    this.faceNames!.push(item);
+            }
             this.targetLocation = _data["TargetLocation"] ? PalletLocation.fromJS(_data["TargetLocation"]) : <any>undefined;
             this.percentMoveCompleted = _data["PercentMoveCompleted"];
         }
@@ -4039,6 +4045,11 @@ export class PalletStatus implements IPalletStatus {
         data["CurrentPalletLocation"] = this.currentPalletLocation ? this.currentPalletLocation.toJSON() : <any>undefined;
         data["NewFixture"] = this.newFixture;
         data["NumFaces"] = this.numFaces;
+        if (Array.isArray(this.faceNames)) {
+            data["FaceNames"] = [];
+            for (let item of this.faceNames)
+                data["FaceNames"].push(item);
+        }
         data["TargetLocation"] = this.targetLocation ? this.targetLocation.toJSON() : <any>undefined;
         data["PercentMoveCompleted"] = this.percentMoveCompleted;
         return data;
@@ -4052,6 +4063,7 @@ export interface IPalletStatus {
     currentPalletLocation: PalletLocation;
     newFixture?: string | undefined;
     numFaces: number;
+    faceNames?: string[] | undefined;
     targetLocation?: PalletLocation | undefined;
     percentMoveCompleted?: number | undefined;
 }

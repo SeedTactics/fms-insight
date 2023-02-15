@@ -105,6 +105,9 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = true)]
     public required int NumFaces { get; init; }
 
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<string>? FaceNames { get; init; }
+
     //If CurrentPalletLocation is Cart, the following two fields will be filled in.
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public PalletLocation? TargetLocation { get; init; }

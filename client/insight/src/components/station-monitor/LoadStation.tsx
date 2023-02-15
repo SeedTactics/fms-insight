@@ -308,7 +308,7 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
           <Typography variant="h4">Pallet {data.pallet.pallet}</Typography>
           {data.pallet.numFaces > 1 ? (
             <Typography variant="h6" justifySelf="center">
-              Face 1
+              {data.pallet.faceNames?.[faceNum - 1] ?? "Face 1"}
             </Typography>
           ) : undefined}
           <Box justifySelf="flex-end">
@@ -317,7 +317,7 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
         </Box>
       ) : data.pallet.numFaces > 1 ? (
         <Box display="flex" justifyContent="center">
-          <Typography variant="h6">Face {faceNum}</Typography>
+          <Typography variant="h6">{data.pallet.faceNames?.[faceNum - 1] ?? `Face ${faceNum}`}</Typography>
         </Box>
       ) : undefined}
       <Box ml="4em" mr="4em">

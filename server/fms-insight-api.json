@@ -3326,6 +3326,13 @@
             "type": "integer",
             "format": "int32"
           },
+          "FaceNames": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
           "TargetLocation": {
             "nullable": true,
             "oneOf": [
