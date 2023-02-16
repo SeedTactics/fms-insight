@@ -172,7 +172,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     (_newCellStateTcs as object).Should().BeNull();
     _newCellStateTcs = tcs;
     NewCellState?.Invoke();
-    (await tcs.Task).Should().BeEquivalentTo(curSt);
+    (await tcs.Task).Should().Be(curSt);
   }
 
   private async Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
