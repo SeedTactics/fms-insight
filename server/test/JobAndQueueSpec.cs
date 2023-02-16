@@ -140,6 +140,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   private void OnNewCurrentStatus(CurrentStatus st)
   {
+    _newCellStateTcs.Should().NotBeEmpty();
     while (_newCellStateTcs.TryDequeue(out var tcs))
     {
       tcs.SetResult(st);
@@ -176,15 +177,15 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   private async Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
   {
+    _newCellStateTcs.Count.Should().Be(0);
     await SetCurrentState(
-      palStateUpdated: true,
+      palStateUpdated: false,
       executeAction: false,
       curSt: _curSt.CurrentStatus with
       {
         Material = material
       }
     );
-    _curSt = _curSt with { PalletStateUpdated = false };
   }
 
   private Task CreateTaskToWaitForNewCellState()
