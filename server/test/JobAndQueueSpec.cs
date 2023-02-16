@@ -174,9 +174,9 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     (await tcs.Task).Should().Be(curSt);
   }
 
-  private Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
+  private async Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
   {
-    return SetCurrentState(
+    await SetCurrentState(
       palStateUpdated: true,
       executeAction: false,
       curSt: _curSt.CurrentStatus with
@@ -184,6 +184,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         Material = material
       }
     );
+    _curSt = _curSt with { PalletStateUpdated = false };
   }
 
   private Task CreateTaskToWaitForNewCellState()
