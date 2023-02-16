@@ -88,8 +88,9 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   private bool _executeActions;
   public event Action NewCellState;
 
-  private void StartSyncThread(bool allowQuarantineToCancelLoad = false)
+  private async Task StartSyncThread(bool allowQuarantineToCancelLoad = false)
   {
+    var newCellSt = CreateTaskToWaitForNewCellState();
     _jq = new JobsAndQueuesFromDb<MockCellState>(
       _repo,
       _settings,
@@ -100,6 +101,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       allowQuarantineToCancelLoad
     );
     _jq.StartThread();
+    await newCellSt;
   }
 
   MockCellState ISynchronizeCellState<MockCellState>.CalculateCellState(IRepository db)
@@ -134,17 +136,14 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     }
   }
 
-  private System.Collections.Concurrent.ConcurrentQueue<
-    TaskCompletionSource<CurrentStatus>
-  > _newCellStateTcs = new();
+  private TaskCompletionSource<CurrentStatus> _newCellStateTcs;
 
   private void OnNewCurrentStatus(CurrentStatus st)
   {
-    _newCellStateTcs.Should().NotBeEmpty();
-    while (_newCellStateTcs.TryDequeue(out var tcs))
-    {
-      tcs.SetResult(st);
-    }
+    var tcs = _newCellStateTcs;
+    _newCellStateTcs = null;
+    (tcs as object).Should().NotBeNull();
+    tcs.SetResult(st);
   }
 
   private async Task SetCurrentState(bool palStateUpdated, bool executeAction, CurrentStatus curSt = null)
@@ -170,14 +169,14 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
     // wait for NewCurrentStatus after raising NewCellState event
     var tcs = new TaskCompletionSource<CurrentStatus>();
-    _newCellStateTcs.Enqueue(tcs);
+    (_newCellStateTcs as object).Should().BeNull();
+    _newCellStateTcs = tcs;
     NewCellState?.Invoke();
     (await tcs.Task).Should().BeEquivalentTo(curSt);
   }
 
   private async Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
   {
-    _newCellStateTcs.Count.Should().Be(0);
     await SetCurrentState(
       palStateUpdated: false,
       executeAction: false,
@@ -190,9 +189,10 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   private Task CreateTaskToWaitForNewCellState()
   {
-    var st = _curSt.CurrentStatus;
+    var st = _curSt?.CurrentStatus;
+    (_newCellStateTcs as object).Should().BeNull();
     var tcs = new TaskCompletionSource<CurrentStatus>();
-    _newCellStateTcs.Enqueue(tcs);
+    _newCellStateTcs = tcs;
     return tcs.Task.ContinueWith(s => s.Result.Should().Be(st));
   }
   #endregion
@@ -223,7 +223,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   public async Task AddsBasicJobs()
   {
     using var db = _repo.OpenConnection();
-    StartSyncThread();
+    await StartSyncThread();
 
     //add some existing jobs
     var completedJob = RandJob() with
@@ -308,7 +308,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   [InlineData(false)]
   public async Task Decrement(bool byDate)
   {
-    StartSyncThread();
+    await StartSyncThread();
     var now = DateTime.UtcNow;
     using var db = _repo.OpenConnection();
 
@@ -396,7 +396,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   public async Task UnallocatedQueues()
   {
     using var db = _repo.OpenConnection();
-    StartSyncThread();
+    await StartSyncThread();
 
     await SetCurrentState(palStateUpdated: false, executeAction: false);
     var newStatusTask = CreateTaskToWaitForNewCellState();
@@ -637,7 +637,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   [InlineData(1)]
   public async Task UnprocessedMaterial(int lastCompletedProcess)
   {
-    StartSyncThread();
+    await StartSyncThread();
     using var db = _repo.OpenConnection();
 
     var job = new Job()
@@ -885,7 +885,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   [Fact]
   public async Task AllowsSwapOfLoadingMaterial()
   {
-    StartSyncThread();
+    await StartSyncThread();
     using var db = _repo.OpenConnection();
 
     await SetCurrentState(palStateUpdated: false, executeAction: false);
@@ -1101,7 +1101,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   public async Task QuarantinesMatOnPallet(SignalQuarantineTheoryData data)
   {
     _settings.QuarantineQueue = data.QuarantineQueue;
-    StartSyncThread(allowQuarantineToCancelLoad: data.AllowQuarantineToCancelLoad);
+    await StartSyncThread(allowQuarantineToCancelLoad: data.AllowQuarantineToCancelLoad);
 
     using var db = _repo.OpenConnection();
 
