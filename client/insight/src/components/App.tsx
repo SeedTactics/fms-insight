@@ -80,6 +80,7 @@ import { AnalysisCyclePage } from "./analysis/AnalysisCyclesPage.js";
 import { QualityPage } from "./analysis/QualityPage.js";
 import { SystemOverviewPage } from "./station-monitor/SystemOverview.js";
 import { StationToolbar, StationToolbarOverviewButton } from "./station-monitor/StationToolbar.js";
+import { RecentProductionPage } from "./operations/RecentProduction.js";
 
 export function NavTabs({ children }: { children?: React.ReactNode }) {
   const [route, setRoute] = routes.useCurrentRoute();
@@ -108,6 +109,7 @@ function OperationsTabs() {
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
       <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
       <Tab label="Schedules" value={routes.RouteLocation.Operations_RecentSchedules} />
+      <Tab label="Production" value={routes.RouteLocation.Operations_Production} />
       <Tab label="Cell" value={routes.RouteLocation.Operations_SystemOverview} />
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
       <Tab label="Tools" value={routes.RouteLocation.Operations_Tools} />
@@ -422,6 +424,10 @@ const App = React.memo(function App(props: AppProps) {
         break;
       case routes.RouteLocation.Operations_RecentSchedules:
         page = <RecentSchedulesPage />;
+        navigation = OperationsTabs;
+        break;
+      case routes.RouteLocation.Operations_Production:
+        page = <RecentProductionPage />;
         navigation = OperationsTabs;
         break;
       case routes.RouteLocation.Operations_Tools:

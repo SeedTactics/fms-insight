@@ -315,7 +315,8 @@ const summaryColumns: ReadonlyArray<Column<SummaryColumnId, ToolReplacementSumma
     ignoreDuringExport: true,
     label: "All Replacements",
     getDisplay: () => "",
-    ExpandedCell: ReplacementGraph,
+    expanded: true,
+    Cell: ReplacementGraph,
   },
 ];
 

@@ -39,7 +39,9 @@ import type { ServerEventAndTime } from "./loading.js";
 import { IHistoricData, IJob } from "../network/api.js";
 
 export interface SimPartCompleted {
-  readonly part: string;
+  readonly partName: string;
+  readonly process: number;
+  readonly finalProcess: boolean;
   readonly completeTime: Date;
   readonly quantity: number;
   readonly expectedMachineMins: number; // expected machine minutes to entirely produce quantity
@@ -72,7 +74,9 @@ function* jobToPartCompleted(jobs: Iterable<Readonly<IJob>>): Iterable<SimPartCo
         let prevQty = 0;
         for (const prod of pathInfo.simulatedProduction || []) {
           yield {
-            part: j.partName + "-" + (proc + 1).toString(),
+            partName: j.partName,
+            process: proc + 1,
+            finalProcess: proc === j.procsAndPaths.length - 1,
             completeTime: prod.timeUTC,
             quantity: prod.quantity - prevQty,
             expectedMachineMins: machTime,

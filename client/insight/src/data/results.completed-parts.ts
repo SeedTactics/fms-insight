@@ -145,7 +145,7 @@ export function binSimProductionByDayAndPart(
   return LazySeq.of(prod).toHashMap(
     (p) =>
       [
-        new DayAndPart(startOfDay(p.completeTime), p.part),
+        new DayAndPart(startOfDay(p.completeTime), p.partName + "-" + p.process.toString()),
         { count: p.quantity, activeMachineMins: p.expectedMachineMins },
       ] as [DayAndPart, PartsCompletedSummary],
     (v1, v2) => ({

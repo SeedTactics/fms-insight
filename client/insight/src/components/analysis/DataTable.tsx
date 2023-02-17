@@ -60,7 +60,7 @@ import {
 import copy from "copy-to-clipboard";
 
 import { addDays, addHours, addMonths } from "date-fns";
-import { LazySeq, ToComparable, ToComparableBase } from "@seedtactics/immutable-collections";
+import { ToComparable, ToComparableBase } from "@seedtactics/immutable-collections";
 import { SelectedAnalysisPeriod } from "../../network/load-specific-month.js";
 
 export interface Column<Id, Row> {
@@ -70,7 +70,8 @@ export interface Column<Id, Row> {
   readonly getDisplay: (c: Row) => string;
   readonly getForSort?: ToComparableBase<Row>;
   readonly getForExport?: (c: Row) => string;
-  readonly ExpandedCell?: React.ComponentType<{ readonly row: Row }>;
+  readonly Cell?: React.ComponentType<{ readonly row: Row }>;
+  readonly expanded?: boolean;
   readonly ignoreDuringExport?: boolean;
 }
 
@@ -119,11 +120,9 @@ export type TableZoom = {
   readonly zoom: DataTableActionZoom | undefined;
 };
 
-const DataCell = styled(TableCell, { shouldForwardProp: (p) => p !== "expand" && p !== "nowrap" })<{
+const DataCell = styled(TableCell, { shouldForwardProp: (p) => p !== "expand" })<{
   expand?: boolean;
-  nowrap?: boolean;
-}>(({ expand, nowrap }) => ({
-  whitespace: expand || !nowrap ? undefined : "nowrap",
+}>(({ expand }) => ({
   width: expand ? "100%" : undefined,
 }));
 
@@ -137,7 +136,6 @@ export interface DataTableHeadProps<Id, Row> {
 export function DataTableHead<Id extends string | number, Row>(
   props: DataTableHeadProps<Id, Row>
 ): JSX.Element {
-  const nowrap = LazySeq.of(props.columns).anyMatch((c) => !c.ExpandedCell);
   const clipboardRows = props.copyToClipboardRows;
   return (
     <TableHead>
@@ -146,8 +144,7 @@ export function DataTableHead<Id extends string | number, Row>(
           <DataCell
             key={col.id}
             align={col.numeric ? "right" : "left"}
-            nowrap={nowrap}
-            expand={col.ExpandedCell !== undefined}
+            expand={col.expanded}
             sortDirection={props.sort.orderBy === col.id ? props.sort.order : false}
           >
             <Tooltip title="Sort" placement={col.numeric ? "bottom-end" : "bottom-start"} enterDelay={300}>
@@ -162,7 +159,7 @@ export function DataTableHead<Id extends string | number, Row>(
           </DataCell>
         ))}
         {props.showDetailsCol ? (
-          <DataCell padding="checkbox" nowrap={nowrap}>
+          <DataCell padding="checkbox">
             {clipboardRows ? (
               <Tooltip title="Copy to Clipboard">
                 <IconButton
@@ -453,7 +450,6 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
 > {
   override render(): JSX.Element {
     const onClickDetails = this.props.onClickDetails;
-    const nowrap = LazySeq.of(this.props.columns).anyMatch((c) => !c.ExpandedCell);
     const rows = [...this.props.pageData];
     const emptyRows =
       this.props.rowsPerPage !== undefined ? Math.max(0, this.props.rowsPerPage - rows.length) : 0;
@@ -462,17 +458,12 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
         {rows.map((row, idx) => (
           <TableRow key={idx}>
             {this.props.columns.map((col) => (
-              <DataCell
-                key={col.id}
-                align={col.numeric ? "right" : "left"}
-                nowrap={nowrap}
-                expand={col.ExpandedCell !== undefined}
-              >
-                {col.ExpandedCell ? <col.ExpandedCell row={row} /> : col.getDisplay(row)}
+              <DataCell key={col.id} align={col.numeric ? "right" : "left"} expand={col.expanded}>
+                {col.Cell ? <col.Cell row={row} /> : col.getDisplay(row)}
               </DataCell>
             ))}
             {onClickDetails ? (
-              <DataCell padding="checkbox" nowrap={nowrap}>
+              <DataCell padding="checkbox">
                 <IconButton onClick={(e) => onClickDetails(e, row)} size="large">
                   <MoreHoriz />
                 </IconButton>
