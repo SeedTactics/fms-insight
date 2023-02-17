@@ -447,7 +447,11 @@ const CompletedCol = React.memo(function CompletedCol({
   fillViewPort: boolean;
   showMaterial: boolean;
 }) {
-  const ref = useMoveMaterialArrowRef({ type: MoveMaterialNodeKindType.CompletedMaterialZone });
+  const ref = useMoveMaterialArrowRef({
+    type: showMaterial
+      ? MoveMaterialNodeKindType.CompletedExpandedMaterialZone
+      : MoveMaterialNodeKindType.CompletedCollapsedMaterialZone,
+  });
   if (showMaterial && fillViewPort) {
     return (
       <Box padding="8px" display="flex" flexDirection="column" height="100%" ref={ref}>

@@ -37,7 +37,8 @@ import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 export enum MoveMaterialNodeKindType {
   Material,
   FreeMaterialZone,
-  CompletedMaterialZone,
+  CompletedCollapsedMaterialZone,
+  CompletedExpandedMaterialZone,
   PalletFaceZone,
   QueueZone,
 }
@@ -48,7 +49,8 @@ export type MoveMaterialNodeKind =
       readonly material: Readonly<api.IInProcessMaterial> | null;
     }
   | { readonly type: MoveMaterialNodeKindType.FreeMaterialZone }
-  | { readonly type: MoveMaterialNodeKindType.CompletedMaterialZone }
+  | { readonly type: MoveMaterialNodeKindType.CompletedCollapsedMaterialZone }
+  | { readonly type: MoveMaterialNodeKindType.CompletedExpandedMaterialZone }
   | {
       readonly type: MoveMaterialNodeKindType.PalletFaceZone;
       readonly face: number;
@@ -66,8 +68,10 @@ export function uniqueIdForNodeKind(kind: MoveMaterialNodeKind): MoveMaterialIde
       return "Material-" + (kind.material?.materialID ?? -1).toString();
     case MoveMaterialNodeKindType.FreeMaterialZone:
       return "FreeMaterialZone";
-    case MoveMaterialNodeKindType.CompletedMaterialZone:
-      return "CompletedMaterialZone";
+    case MoveMaterialNodeKindType.CompletedCollapsedMaterialZone:
+      return "CompletedCollapsedMaterialZone";
+    case MoveMaterialNodeKindType.CompletedExpandedMaterialZone:
+      return "CompletedExpandedMaterialZone";
     case MoveMaterialNodeKindType.PalletFaceZone:
       return "PalletFaceZone-" + kind.face.toString();
     case MoveMaterialNodeKindType.QueueZone:
@@ -80,8 +84,8 @@ export function memoPropsForNodeKind(kind: MoveMaterialNodeKind): ReadonlyArray<
     case MoveMaterialNodeKindType.Material:
       return [kind.type, kind.material];
     case MoveMaterialNodeKindType.FreeMaterialZone:
-      return [kind.type, null];
-    case MoveMaterialNodeKindType.CompletedMaterialZone:
+    case MoveMaterialNodeKindType.CompletedCollapsedMaterialZone:
+    case MoveMaterialNodeKindType.CompletedExpandedMaterialZone:
       return [kind.type, null];
     case MoveMaterialNodeKindType.PalletFaceZone:
       return [kind.type, kind.face];
@@ -133,7 +137,8 @@ function groupMatByKind(allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>): N
       case MoveMaterialNodeKindType.FreeMaterialZone:
         freeMaterial = node.elem;
         break;
-      case MoveMaterialNodeKindType.CompletedMaterialZone:
+      case MoveMaterialNodeKindType.CompletedCollapsedMaterialZone:
+      case MoveMaterialNodeKindType.CompletedExpandedMaterialZone:
         completedMaterial = node.elem;
         break;
       case MoveMaterialNodeKindType.PalletFaceZone:
@@ -186,7 +191,7 @@ export function computeArrows(
             fromX: rect.right,
             fromY: rect.top + rect.height / 2,
             toY: rect.top + rect.height / 2,
-            toX: byKind.completedMaterial ? byKind.completedMaterial.left + 10 : container.right - 10,
+            toX: byKind.completedMaterial ? byKind.completedMaterial.left + 2 : container.right - 10,
             curveDirection: 1,
           });
         } else {
