@@ -31,7 +31,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Box, IconButton, Stack, Table, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  IconButton,
+  Stack,
+  Table,
+  TableCell,
+  TableFooter,
+  TableRow,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { addDays, startOfToday } from "date-fns";
 import * as React from "react";
 import {
@@ -59,11 +69,13 @@ enum ColumnId {
   CompletedShift2,
 }
 
-type Row = {
+type ProdRow = {
   readonly part: string;
   readonly planned: ReadonlyMap<number, number>;
   readonly completed: ReadonlyMap<number, number>;
 };
+
+type ProdColumn = Column<ColumnId, ProdRow> & { readonly getForTotal: (row: ProdRow) => number };
 
 function decideShift<T>(
   f: (t: T) => Date,
@@ -117,7 +129,7 @@ function binCompleted(
     );
 }
 
-function useRows(day: Date): ReadonlyArray<Row> {
+function useRows(day: Date): ReadonlyArray<ProdRow> {
   const cycles = useRecoilValue(last30StationCycles);
   const sim = useRecoilValue(last30SimProduction);
   const shifts = useShifts(day);
@@ -147,7 +159,7 @@ const fulldayFormat = new Intl.DateTimeFormat(undefined, {
   year: "numeric",
 });
 
-function PartCell({ row }: { row: Row }) {
+function PartCell({ row }: { row: ProdRow }) {
   return (
     <Stack direction="row" spacing={1} alignItems="center">
       <PartIdenticon part={row.part} size={25} />
@@ -156,16 +168,17 @@ function PartCell({ row }: { row: Row }) {
   );
 }
 
-function useColumns(day: Date): ReadonlyArray<Column<ColumnId, Row>> {
+function useColumns(day: Date): ReadonlyArray<ProdColumn> {
   const numShifts = useShifts(day).length;
 
   return React.useMemo(() => {
-    const cols: Array<Column<ColumnId, Row>> = [
+    const cols: Array<ProdColumn> = [
       {
         id: ColumnId.Part,
         numeric: false,
         label: "Part",
         getDisplay: (c) => c.part,
+        getForTotal: () => 0,
         Cell: PartCell,
       },
       {
@@ -174,6 +187,7 @@ function useColumns(day: Date): ReadonlyArray<Column<ColumnId, Row>> {
         label: `Shift 1 Planned`,
         getDisplay: (c) => c.planned.get(0)?.toString() ?? "",
         getForSort: (c) => c.planned.get(0) ?? 0,
+        getForTotal: (c) => c.planned.get(0) ?? 0,
       },
       {
         id: ColumnId.CompletedShift0,
@@ -181,6 +195,7 @@ function useColumns(day: Date): ReadonlyArray<Column<ColumnId, Row>> {
         label: `Shift 1 Completed`,
         getDisplay: (c) => c.completed.get(0)?.toString() ?? "",
         getForSort: (c) => c.completed.get(0) ?? 0,
+        getForTotal: (c) => c.completed.get(0) ?? 0,
       },
     ];
 
@@ -191,6 +206,7 @@ function useColumns(day: Date): ReadonlyArray<Column<ColumnId, Row>> {
         label: `Shift 2 Planned`,
         getDisplay: (c) => c.planned.get(1)?.toString() ?? "",
         getForSort: (c) => c.planned.get(1) ?? 0,
+        getForTotal: (c) => c.planned.get(1) ?? 0,
       });
       cols.push({
         id: ColumnId.CompletedShift1,
@@ -198,6 +214,7 @@ function useColumns(day: Date): ReadonlyArray<Column<ColumnId, Row>> {
         label: `Shift 2 Completed`,
         getDisplay: (c) => c.completed.get(1)?.toString() ?? "",
         getForSort: (c) => c.completed.get(1) ?? 0,
+        getForTotal: (c) => c.completed.get(1) ?? 0,
       });
     }
 
@@ -208,6 +225,7 @@ function useColumns(day: Date): ReadonlyArray<Column<ColumnId, Row>> {
         label: `Shift 3 Planned`,
         getDisplay: (c) => c.planned.get(2)?.toString() ?? "",
         getForSort: (c) => c.planned.get(2) ?? 0,
+        getForTotal: (c) => c.planned.get(2) ?? 0,
       });
 
       cols.push({
@@ -216,18 +234,37 @@ function useColumns(day: Date): ReadonlyArray<Column<ColumnId, Row>> {
         label: `Shift 3 Completed`,
         getDisplay: (c) => c.completed.get(2)?.toString() ?? "",
         getForSort: (c) => c.completed.get(2) ?? 0,
+        getForTotal: (c) => c.completed.get(2) ?? 0,
       });
     }
     return cols;
   }, [numShifts]);
 }
 
+function FooterRow({
+  columns,
+  rows,
+}: {
+  readonly columns: ReadonlyArray<ProdColumn>;
+  readonly rows: ReadonlyArray<ProdRow>;
+}) {
+  return (
+    <TableRow>
+      {columns.map((col) => (
+        <TableCell key={col.id} align={col.numeric ? "right" : "left"}>
+          {col.id === ColumnId.Part ? "Total" : LazySeq.of(rows).sumBy(col.getForTotal)}
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+}
+
 const RecentProductionTable = React.memo(function RecentSchedules({
   columns,
   rows,
 }: {
-  readonly columns: ReadonlyArray<Column<ColumnId, Row>>;
-  readonly rows: ReadonlyArray<Row>;
+  readonly columns: ReadonlyArray<ProdColumn>;
+  readonly rows: ReadonlyArray<ProdRow>;
 }): JSX.Element {
   const sort = useColSort(ColumnId.Part, columns);
 
@@ -239,6 +276,9 @@ const RecentProductionTable = React.memo(function RecentSchedules({
           columns={columns}
           pageData={LazySeq.of(rows).toSortedArray(sort.sortOn, (x) => x.part)}
         />
+        <TableFooter>
+          <FooterRow columns={columns} rows={rows} />
+        </TableFooter>
       </Table>
     </Box>
   );
@@ -255,15 +295,19 @@ function NavigateDay({
   return (
     <Stack direction="row" spacing={2} alignItems="center">
       <Tooltip title="Previous Day">
-        <IconButton disabled={day <= addDays(today, -28)} onClick={() => setDay((d) => addDays(d, -1))}>
-          <SkipPrevIcon />
-        </IconButton>
+        <div>
+          <IconButton disabled={day <= addDays(today, -28)} onClick={() => setDay((d) => addDays(d, -1))}>
+            <SkipPrevIcon />
+          </IconButton>
+        </div>
       </Tooltip>
       <Typography sx={{ minWidth: "14em", textAlign: "center" }}>{fulldayFormat.format(day)}</Typography>
       <Tooltip title="Next Day">
-        <IconButton disabled={day >= today} onClick={() => setDay((d) => addDays(d, 1))}>
-          <SkipNextIcon />
-        </IconButton>
+        <div>
+          <IconButton disabled={day >= today} onClick={() => setDay((d) => addDays(d, 1))}>
+            <SkipNextIcon />
+          </IconButton>
+        </div>
       </Tooltip>
     </Stack>
   );
@@ -281,8 +325,8 @@ const RecentProductionToolbar = function RecentProductionToolbar({
 }: {
   readonly day: Date;
   readonly setDay: (s: (d: Date) => Date) => void;
-  readonly columns: ReadonlyArray<Column<ColumnId, Row>>;
-  readonly rows: ReadonlyArray<Row>;
+  readonly columns: ReadonlyArray<ProdColumn>;
+  readonly rows: ReadonlyArray<ProdRow>;
 }): JSX.Element {
   return (
     <Box
