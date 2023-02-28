@@ -660,7 +660,6 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     );
 
     await SetCurrentState(palStateUpdated: false, executeAction: false);
-    var newStatusTask = CreateTaskToWaitForNewCellState();
 
     //add an allocated material
     var expectedMat1 = QueuedMat(
@@ -673,6 +672,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       queue: "q1",
       pos: 0
     );
+
+    var newStatusTask = CreateTaskToWaitForNewCellState();
     _jq.AddUnprocessedMaterialToQueue(
         "uuu1",
         process: lastCompletedProcess,
@@ -683,7 +684,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       )
       .Should()
       .BeEquivalentTo(expectedMat1);
-    await SetCurrentMaterial(ImmutableList.Create(expectedMat1));
+    await newStatusTask;
+
     db.GetMaterialDetails(1)
       .Should()
       .BeEquivalentTo(
@@ -720,7 +722,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         }
       );
 
-    await newStatusTask;
+    await SetCurrentMaterial(ImmutableList.Create(expectedMat1));
 
     newStatusTask = CreateTaskToWaitForNewCellState();
 
