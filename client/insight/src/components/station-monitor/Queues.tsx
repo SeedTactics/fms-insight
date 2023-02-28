@@ -504,7 +504,12 @@ export const Queues = (props: QueueProps) => {
             direction="rect"
             queueName={region.label}
             renderDragOverlay={(mat) => (
-              <DragOverlayInProcMaterial mat={mat} hideEmptySerial displayJob={region.rawMaterialQueue} />
+              <DragOverlayInProcMaterial
+                mat={mat}
+                hideEmptySerial
+                displayJob={region.rawMaterialQueue}
+                fsize="normal"
+              />
             )}
           >
             <Box minHeight="134px">
@@ -522,6 +527,7 @@ export const Queues = (props: QueueProps) => {
                     key={matIdx}
                     mat={m}
                     hideEmptySerial
+                    fsize="normal"
                     displayJob={region.rawMaterialQueue}
                   />
                 ))}
@@ -532,6 +538,7 @@ export const Queues = (props: QueueProps) => {
                           key={idx}
                           mat={matGroup.material[0]}
                           hideEmptySerial
+                          fsize="normal"
                           displayJob={region.rawMaterialQueue}
                         />
                       ) : (
@@ -540,6 +547,7 @@ export const Queues = (props: QueueProps) => {
                           partOrCasting={matGroup.partOrCasting}
                           assignedJobUnique={matGroup.assignedJobUnique}
                           material={matGroup.material}
+                          fsize="normal"
                           onOpen={() => setMultiMaterialDialog(matGroup.material)}
                         />
                       )

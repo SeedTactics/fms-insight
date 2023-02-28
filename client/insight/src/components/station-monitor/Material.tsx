@@ -51,6 +51,7 @@ import {
   DialogContent,
   DialogTitle,
   keyframes,
+  styled,
 } from "@mui/material";
 import TimeAgo from "react-timeago";
 import { DragIndicator, Warning as WarningIcon, Search as SearchIcon } from "@mui/icons-material";
@@ -166,6 +167,74 @@ function shakeAnimationIteration(event: React.AnimationEvent<HTMLDivElement>) {
   }
 }
 
+export type MatCardFontSize = "normal" | "large" | "x-large";
+
+const MatCardHeader = styled("div", { shouldForwardProp: (prop) => prop !== "fsize" })<{
+  fsize?: MatCardFontSize;
+}>(({ fsize, theme }) => {
+  if (!fsize) return { fontSize: "1.25rem" };
+  switch (fsize) {
+    case "normal":
+      return { fontSize: "1.5rem" };
+    case "large":
+      return {
+        fontSize: "1.5rem",
+        [theme.breakpoints.up("lg")]: {
+          fontSize: "1.75rem",
+        },
+        [theme.breakpoints.up("xl")]: {
+          fontSize: "2rem",
+        },
+      };
+    case "x-large":
+      return {
+        fontSize: "1.5rem",
+        [theme.breakpoints.up("md")]: {
+          fontSize: "1.75rem",
+        },
+        [theme.breakpoints.up("lg")]: {
+          fontSize: "2.75rem",
+        },
+        [theme.breakpoints.up("xl")]: {
+          fontSize: "3.75rem",
+        },
+      };
+  }
+});
+
+const MatCardDetail = styled("div", { shouldForwardProp: (prop) => prop !== "fsize" })<{
+  fsize?: MatCardFontSize;
+}>(({ fsize, theme }) => {
+  if (!fsize) return { fontSize: "0.75rem" };
+  switch (fsize) {
+    case "normal":
+      return { fontSize: "1rem" };
+    case "large":
+      return {
+        fontSize: "1rem",
+        [theme.breakpoints.up("lg")]: {
+          fontSize: "1.5rem",
+        },
+        [theme.breakpoints.up("xl")]: {
+          fontSize: "1.75rem",
+        },
+      };
+    case "x-large":
+      return {
+        fontSize: "1rem",
+        [theme.breakpoints.up("md")]: {
+          fontSize: "1.5rem",
+        },
+        [theme.breakpoints.up("lg")]: {
+          fontSize: "2.5rem",
+        },
+        [theme.breakpoints.up("xl")]: {
+          fontSize: "3.5rem",
+        },
+      };
+  }
+});
+
 interface MaterialDragProps {
   readonly dragRootProps?: React.HTMLAttributes<HTMLDivElement>;
   readonly showDragHandle?: boolean;
@@ -178,6 +247,7 @@ interface MaterialDragProps {
 
 export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummaryAndCompletedData>;
+  readonly fsize?: MatCardFontSize;
   readonly action?: string;
   readonly focusInspectionType?: string | null;
   readonly hideInspectionIcon?: boolean;
@@ -198,24 +268,24 @@ const MatCard = React.forwardRef(function MatCard(
   let completedMsg: JSX.Element | undefined;
   if (props.focusInspectionType && completed[props.focusInspectionType]) {
     completedMsg = (
-      <small>
+      <MatCardDetail fsize={props.fsize}>
         <span>Inspection completed </span>
         <TimeAgo date={completed[props.focusInspectionType].time} />
-      </small>
+      </MatCardDetail>
     );
   } else if (props.focusInspectionType && props.mat.last_unload_time) {
     completedMsg = (
-      <small>
+      <MatCardDetail fsize={props.fsize}>
         <span>Unloaded </span>
         <TimeAgo date={props.mat.last_unload_time} />
-      </small>
+      </MatCardDetail>
     );
   } else if (props.mat.wash_completed) {
     completedMsg = (
-      <small>
+      <MatCardDetail fsize={props.fsize}>
         <span>Wash completed </span>
         <TimeAgo date={props.mat.wash_completed} />
-      </small>
+      </MatCardDetail>
     );
   }
 
@@ -254,36 +324,34 @@ const MatCard = React.forwardRef(function MatCard(
           <DragIndicator fontSize="large" color="action" />
         </div>
       ) : undefined}
-      <ButtonBase focusRipple onClick={() => setMatToShow({ type: "MatSummary", summary: props.mat })}>
-        <Box display="flex" textAlign="left">
+      <ButtonBase
+        focusRipple
+        sx={{ width: "100%" }}
+        onClick={() => setMatToShow({ type: "MatSummary", summary: props.mat })}
+      >
+        <Box display="flex" textAlign="left" alignItems="center" width="100%">
           <PartIdenticon part={props.mat.partName} />
           <Box marginLeft="8px" flexGrow={1}>
-            <Typography variant="h6">{props.mat.partName}</Typography>
+            <MatCardHeader fsize={props.fsize}>{props.mat.partName}</MatCardHeader>
             {props.displayJob ? (
-              <div>
-                <small>
-                  {props.mat.jobUnique && props.mat.jobUnique !== ""
-                    ? "Assigned to " + props.mat.jobUnique
-                    : "Unassigned material"}
-                </small>
-              </div>
+              <MatCardDetail fsize={props.fsize}>
+                {props.mat.jobUnique && props.mat.jobUnique !== ""
+                  ? "Assigned to " + props.mat.jobUnique
+                  : "Unassigned material"}
+              </MatCardDetail>
             ) : undefined}
             {!props.hideEmptySerial || props.mat.serial ? (
-              <div>
-                <small>Serial: {props.mat.serial ? props.mat.serial : "none"}</small>
-              </div>
+              <MatCardDetail fsize={props.fsize}>
+                Serial: {props.mat.serial ? props.mat.serial : "none"}
+              </MatCardDetail>
             ) : undefined}
             {props.mat.workorderId === undefined ||
             props.mat.workorderId === "" ||
             props.mat.workorderId === props.mat.serial ? undefined : (
-              <div>
-                <small>Workorder: {props.mat.workorderId}</small>
-              </div>
+              <MatCardDetail fsize={props.fsize}>Workorder: {props.mat.workorderId}</MatCardDetail>
             )}
             {props.action === undefined ? undefined : (
-              <div>
-                <small>{props.action}</small>
-              </div>
+              <MatCardDetail fsize={props.fsize}>{props.action}</MatCardDetail>
             )}
             {completedMsg}
           </Box>
@@ -293,6 +361,7 @@ const MatCard = React.forwardRef(function MatCard(
             flexDirection="column"
             justifyContent="space-between"
             alignItems="flex-end"
+            alignSelf="start"
           >
             {props.mat.serial && props.mat.serial.length >= 1 && !props.hideAvatar ? (
               <div>
@@ -317,6 +386,7 @@ export const MatSummary: React.ComponentType<MaterialSummaryProps> = React.memo(
 
 export type InProcMaterialProps = {
   readonly mat: Readonly<api.IInProcessMaterial>;
+  readonly fsize?: MatCardFontSize;
   readonly displaySinglePallet?: string;
   readonly displayJob?: boolean;
   readonly hideAvatar?: boolean;
@@ -334,6 +404,7 @@ export const InProcMaterial = React.memo(function InProcMaterial(
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
       action={materialAction(props.mat, props.displaySinglePallet)}
+      fsize={props.fsize}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
       showDragHandle={props.showHandle}
@@ -393,6 +464,7 @@ export const SortableInProcMaterial = React.memo(function SortableInProcMaterial
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
       hideEmptySerial={props.hideEmptySerial}
+      fsize={props.fsize}
       shake={active ? undefined : props.shake}
     />
   );
@@ -406,6 +478,7 @@ export function DragOverlayInProcMaterial(props: InProcMaterialProps) {
       showDragHandle={true}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
+      fsize={props.fsize}
       hideEmptySerial={props.hideEmptySerial}
       isDragOverlay
     />
@@ -414,6 +487,7 @@ export function DragOverlayInProcMaterial(props: InProcMaterialProps) {
 
 export interface MultiMaterialProps {
   readonly partOrCasting: string;
+  readonly fsize?: MatCardFontSize;
   readonly assignedJobUnique: string | null;
   readonly material: ReadonlyArray<Readonly<api.IInProcessMaterial>>;
   onOpen: () => void;
@@ -428,13 +502,11 @@ export const MultiMaterial = React.memo(function MultiMaterial(props: MultiMater
             <PartIdenticon part={props.partOrCasting} />
             <Box marginLeft="8px" flexGrow={1}>
               <Typography variant="h6">{props.partOrCasting}</Typography>
-              <div>
-                <small>
-                  {props.assignedJobUnique && props.assignedJobUnique !== ""
-                    ? "Assigned to " + props.assignedJobUnique
-                    : "Unassigned material"}
-                </small>
-              </div>
+              <MatCardDetail fsize={props.fsize}>
+                {props.assignedJobUnique && props.assignedJobUnique !== ""
+                  ? "Assigned to " + props.assignedJobUnique
+                  : "Unassigned material"}
+              </MatCardDetail>
             </Box>
             {props.material.length > 0 && props.material[0].serial && props.material[0].serial.length >= 1 ? (
               <div>

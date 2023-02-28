@@ -43,6 +43,7 @@ import {
   SortableInProcMaterial,
   DragOverlayInProcMaterial,
   MatSummary,
+  MatCardFontSize,
 } from "./Material.js";
 import { SortableRegion } from "./Whiteboard.js";
 import * as api from "../../network/api.js";
@@ -87,6 +88,7 @@ type LoadStationData = {
   readonly freeLoadingMaterial: MaterialList;
   readonly queues: ReadonlyMap<string, MaterialList>;
   readonly elapsedLoadingTime: string | null;
+  readonly fsize: MatCardFontSize;
 };
 
 function selectLoadStationAndQueueProps(
@@ -203,12 +205,15 @@ function selectLoadStationAndQueueProps(
 
   queueMat.forEach((mats) => mats.sort(mkCompareByProperties((m) => m.location.queuePosition ?? 0)));
 
+  const matCount = freeLoading.length + palFaces.valuesToAscLazySeq().sumBy((x) => x.length);
+
   return {
     pallet: pal,
     face: palFaces,
     freeLoadingMaterial: freeLoading,
     queues: queueMat,
     elapsedLoadingTime,
+    fsize: matCount <= 2 ? "x-large" : matCount <= 6 ? "large" : "normal",
   };
 }
 
@@ -328,7 +333,7 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
                 key={idx}
                 kind={{ type: MoveMaterialNodeKindType.Material, material: m }}
               >
-                <InProcMaterial mat={m} />
+                <InProcMaterial mat={m} fsize={data.fsize} />
               </MoveMaterialArrowNode>
             ))}
           </Box>
@@ -361,6 +366,7 @@ function MaterialRegion({
               mat={m}
               displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
               shake={m.action.type === api.ActionType.Loading}
+              fsize={data.fsize}
             />
           ) : (
             <SortableInProcMaterial
@@ -368,6 +374,11 @@ function MaterialRegion({
               displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
               shake={
                 m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === data.pallet?.pallet
+              }
+              fsize={
+                m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === data.pallet?.pallet
+                  ? data.fsize
+                  : undefined
               }
             />
           )}
@@ -379,37 +390,43 @@ function MaterialRegion({
 
 function MaterialColumn({
   data,
-  mat,
+  region,
 }: {
   readonly data: LoadStationData;
-  mat: { readonly label: string; readonly material: MaterialList; readonly isFree: boolean };
+  region: { readonly label: string; readonly material: MaterialList; readonly isFree: boolean };
 }) {
   return (
     <MoveMaterialArrowNode
       kind={
-        mat.isFree
+        region.isFree
           ? { type: MoveMaterialNodeKindType.FreeMaterialZone }
           : {
               type: MoveMaterialNodeKindType.QueueZone,
-              queue: mat.label,
+              queue: region.label,
             }
       }
     >
-      {mat.isFree ? (
-        <MaterialRegion data={data} mat={mat} />
+      {region.isFree ? (
+        <MaterialRegion data={data} mat={region} />
       ) : (
         <SortableRegion
-          matIds={mat.material.map((m) => m.materialID)}
+          matIds={region.material.map((m) => m.materialID)}
           direction="vertical"
-          queueName={mat.label}
+          queueName={region.label}
           renderDragOverlay={(mat) => (
             <DragOverlayInProcMaterial
               mat={mat}
               displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+              fsize={
+                mat.action.type === api.ActionType.Loading &&
+                mat.action.loadOntoPallet === data.pallet?.pallet
+                  ? data.fsize
+                  : undefined
+              }
             />
           )}
         >
-          <MaterialRegion data={data} mat={mat} />
+          <MaterialRegion data={data} mat={region} />
         </SortableRegion>
       )}
     </MoveMaterialArrowNode>
@@ -808,7 +825,7 @@ export function LoadStation(props: LoadStationProps) {
             borderRight={fillViewPort ? "1px solid black" : undefined}
             borderBottom={!fillViewPort ? "1px solid black" : undefined}
           >
-            <MaterialColumn data={data} mat={col} />
+            <MaterialColumn data={data} region={col} />
           </Box>
         ))}
         {data.face.keysToAscLazySeq().map((faceNum, idx) => (
