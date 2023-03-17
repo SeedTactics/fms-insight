@@ -167,7 +167,7 @@ namespace BlackMaple.FMSInsight.Niigata
           TimeOfCurrentStatusUTC = status.TimeOfStatusUTC,
           Jobs = unarchivedJobs.ToImmutableDictionary(
             j => j.UniqueStr,
-            j => HistoricToActiveJob(j, jobPrec, cyclesStartedOnProc1, logDB)
+            j => JobCache.HistoricToActiveJob(j, jobPrec, cyclesStartedOnProc1, logDB)
           ),
           Pallets = pals.ToImmutableDictionary(
             pal => pal.Status.Master.PalletNum.ToString(),
@@ -1938,72 +1938,6 @@ namespace BlackMaple.FMSInsight.Niigata
         .ToDictionary(x => x.Key, x => (long)x.Value);
     }
 
-    private ActiveJob HistoricToActiveJob(
-      HistoricJob j,
-      IReadOnlyDictionary<(string uniq, int proc, int path), long> precedence,
-      IReadOnlyDictionary<string, int> cyclesStartedOnProc1,
-      IRepository db
-    )
-    {
-      // completed
-      var completed = j.Processes
-        .Select(
-          proc => new int[proc.Paths.Count] // defaults to fill with zeros
-        )
-        .ToArray();
-      var unloads = db.GetLogForJobUnique(j.UniqueStr)
-        .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
-        .ToList();
-      foreach (var e in unloads)
-      {
-        foreach (var mat in e.Material)
-        {
-          if (mat.JobUniqueStr == j.UniqueStr)
-          {
-            var details = db.GetMaterialDetails(mat.MaterialID);
-            int matPath =
-              details?.Paths != null && details.Paths.ContainsKey(mat.Process)
-                ? details.Paths[mat.Process]
-                : 1;
-            completed[mat.Process - 1][matPath - 1] += 1;
-          }
-        }
-      }
-
-      // take decremented quantity out of the planned cycles
-      int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
-      var newPlanned = j.Cycles - decrQty;
-
-      var started = 0;
-      if (
-        cyclesStartedOnProc1 != null && cyclesStartedOnProc1.TryGetValue(j.UniqueStr, out var startedOnProc1)
-      )
-      {
-        started = startedOnProc1;
-      }
-
-      return j.CloneToDerived<ActiveJob, HistoricJob>() with
-      {
-        Completed = completed.Select(c => ImmutableList.Create(c)).ToImmutableList(),
-        RemainingToStart = decrQty > 0 ? 0 : Math.Max(newPlanned - started, 0),
-        Cycles = newPlanned,
-        Precedence = j.Processes
-          .Select(
-            (proc, procIdx) =>
-            {
-              return proc.Paths
-                .Select(
-                  (_, pathIdx) =>
-                    precedence.GetValueOrDefault((uniq: j.UniqueStr, proc: procIdx + 1, path: pathIdx + 1), 0)
-                )
-                .ToImmutableList();
-            }
-          )
-          .ToImmutableList(),
-        AssignedWorkorders = db.GetWorkordersForUnique(j.UniqueStr)
-      };
-    }
-
     public class QueuedMaterialWithDetails
     {
       public long MaterialID { get; set; }
@@ -2496,39 +2430,6 @@ namespace BlackMaple.FMSInsight.Niigata
           break;
       }
       return "Pallet " + palletNum.ToString() + msg;
-    }
-
-    private class JobCache
-    {
-      private Dictionary<string, HistoricJob> _jobs;
-      private IRepository _repo;
-
-      public JobCache(IRepository repo)
-      {
-        _repo = repo;
-        _jobs = repo.LoadUnarchivedJobs().ToDictionary(j => j.UniqueStr, j => j);
-      }
-
-      public HistoricJob Lookup(string uniq)
-      {
-        if (_jobs.TryGetValue(uniq, out var j))
-        {
-          return j;
-        }
-        else
-        {
-          var job = _repo.LoadJob(uniq);
-          if (job != null && job.Archived)
-          {
-            _repo.UnarchiveJob(job.UniqueStr);
-            job = job with { Archived = false };
-          }
-          _jobs.Add(uniq, job);
-          return job;
-        }
-      }
-
-      public IEnumerable<HistoricJob> AllJobs => _jobs.Values;
     }
     #endregion
   }
