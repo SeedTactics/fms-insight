@@ -481,7 +481,7 @@ function gridTemplateColumns(maxNumFaces: number, includeLabelCol: boolean) {
 }
 
 export function formatSeconds(totalSeconds: number): string {
-  const secs = Math.abs(totalSeconds) % 60;
+  const secs = Math.round(Math.abs(totalSeconds) % 60);
   const totalMins = Math.floor(Math.abs(totalSeconds) / 60);
   const mins = totalMins % 60;
   const hours = Math.floor(totalMins / 60);
