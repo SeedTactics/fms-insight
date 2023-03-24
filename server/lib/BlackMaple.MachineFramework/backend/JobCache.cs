@@ -31,24 +31,71 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 namespace BlackMaple.MachineFramework;
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
 public class JobCache
 {
-  private Dictionary<string, HistoricJob> _jobs;
-  private IRepository _repo;
+  private sealed record JobSortKey : IComparable<JobSortKey>
+  {
+    public required bool ManuallyCreated { get; init; }
+    public required DateTime PathStart { get; init; }
+    public required DateTime RouteStart { get; init; }
+
+    public int CompareTo(JobSortKey? other)
+    {
+      if (other == null)
+        return 1;
+      if (ManuallyCreated != other.ManuallyCreated)
+      {
+        return ManuallyCreated ? -1 : 1;
+      }
+
+      if (PathStart != other.PathStart)
+      {
+        return PathStart.CompareTo(other.PathStart);
+      }
+
+      return RouteStart.CompareTo(other.RouteStart);
+    }
+  }
+
+  private readonly Dictionary<string, HistoricJob> _jobs;
+  private readonly SortedList<JobSortKey, (HistoricJob job, int proc)> _precedence;
+  private readonly IRepository _repo;
 
   public JobCache(IRepository repo)
   {
     _repo = repo;
     _jobs = repo.LoadUnarchivedJobs().ToDictionary(j => j.UniqueStr, j => j);
+    _precedence = new SortedList<JobSortKey, (HistoricJob job, int proc)>();
+    foreach (var j in _jobs.Values)
+    {
+      AddJobToPrecedence(j);
+    }
   }
 
-  public HistoricJob Lookup(string uniq)
+  private void AddJobToPrecedence(HistoricJob j)
+  {
+    for (var proc = 1; proc <= j.Processes.Count; proc++)
+    {
+      var key = new JobSortKey()
+      {
+        ManuallyCreated = j.ManuallyCreated,
+        PathStart = j.Processes[proc - 1].Paths[0].SimulatedStartingUTC,
+        RouteStart = j.RouteStartUTC
+      };
+      _precedence.Add(key, (j, proc));
+    }
+  }
+
+  public HistoricJob? Lookup(string uniq)
   {
     if (_jobs.TryGetValue(uniq, out var j))
     {
@@ -62,12 +109,17 @@ public class JobCache
         _repo.UnarchiveJob(job.UniqueStr);
         job = job with { Archived = false };
       }
-      _jobs.Add(uniq, job);
+      if (job != null)
+      {
+        _jobs.Add(uniq, job);
+        AddJobToPrecedence(job);
+      }
       return job;
     }
   }
 
   public IEnumerable<HistoricJob> AllJobs => _jobs.Values;
+  public IEnumerable<(HistoricJob job, int proc)> JobsSortedByPrecedence => _precedence.Values;
 
   public static ActiveJob HistoricToActiveJob(
     HistoricJob j,
