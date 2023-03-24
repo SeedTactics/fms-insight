@@ -73,7 +73,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public NiigataStatus Status { get; set; }
     public bool PalletStateUpdated { get; set; }
     public List<PalletAndMaterial> Pallets { get; set; }
-    public List<InProcessMaterialAndJob> QueuedMaterial { get; set; }
+    public ImmutableList<InProcessMaterialAndJob> QueuedMaterial { get; set; }
     public Dictionary<(string progName, long revision), ProgramRevision> ProgramsInUse { get; set; }
     public List<ProgramRevision> OldUnusedPrograms { get; set; }
     public CurrentStatus CurrentStatus { get; init; }
@@ -140,7 +140,7 @@ namespace BlackMaple.FMSInsight.Niigata
       var queuedMats = QueuedMaterial(
         new HashSet<long>(pals.SelectMany(p => p.Material).Select(m => m.Mat.MaterialID)),
         logDB,
-        jobCache.Lookup
+        jobCache
       );
 
       var progsInUse = FindProgramNums(
@@ -1810,60 +1810,34 @@ namespace BlackMaple.FMSInsight.Niigata
     }
 
     #region Material Computations
-    private List<InProcessMaterialAndJob> QueuedMaterial(
+    private ImmutableList<InProcessMaterialAndJob> QueuedMaterial(
       HashSet<long> matsOnPallets,
       IRepository logDB,
-      Func<string, HistoricJob> loadJob
+      JobCache loadJob
     )
     {
-      var mats = new List<InProcessMaterialAndJob>();
-      var queuedMats = logDB.GetMaterialInAllQueues();
-      var insps = logDB.LookupInspectionDecisions(queuedMats.Select(m => m.MaterialID));
+      var allMats = MachineFramework.BuildCellState
+        .AllQueuedMaterial(logDB, loadWorkorders: true)
+        .Where(m => !matsOnPallets.Contains(m.InProc.MaterialID));
 
-      foreach (var mat in queuedMats)
-      {
-        if (matsOnPallets.Contains(mat.MaterialID))
-          continue;
+      var works = logDB.WorkordersById(
+        allMats
+          .Where(m => !string.IsNullOrEmpty(m.InProc.WorkorderId))
+          .Select(m => m.InProc.WorkorderId)
+          .ToHashSet()
+      );
 
-        var lastProc = (mat.NextProcess ?? 1) - 1;
-
-        var job = string.IsNullOrEmpty(mat.Unique) ? null : loadJob(mat.Unique);
-
-        mats.Add(
-          new InProcessMaterialAndJob()
-          {
-            Job = job,
-            Mat = new InProcessMaterial()
+      return allMats
+        .Select(
+          m =>
+            new InProcessMaterialAndJob()
             {
-              MaterialID = mat.MaterialID,
-              JobUnique = mat.Unique,
-              PartName = mat.PartNameOrCasting,
-              Process = lastProc,
-              Path =
-                mat.Paths != null && mat.Paths.TryGetValue(Math.Max(1, lastProc), out var path) ? path : 1,
-              Serial = mat.Serial,
-              WorkorderId = mat.Workorder,
-              SignaledInspections = insps[mat.MaterialID]
-                .Where(x => x.Inspect)
-                .Select(x => x.InspType)
-                .Distinct()
-                .ToImmutableList(),
-              Location = new InProcessMaterialLocation()
-              {
-                Type = InProcessMaterialLocation.LocType.InQueue,
-                CurrentQueue = mat.Queue,
-                QueuePosition = mat.Position,
-              },
-              Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
-            },
-            Workorders = string.IsNullOrEmpty(mat.Workorder)
-              ? null
-              : logDB.WorkordersById(mat.Workorder).ToImmutableList()
-          }
-        );
-      }
-
-      return mats;
+              Job = loadJob.Lookup(m.InProc.JobUnique),
+              Mat = m.InProc,
+              Workorders = string.IsNullOrEmpty(m.InProc.WorkorderId) ? null : works[m.InProc.WorkorderId]
+            }
+        )
+        .ToImmutableList();
     }
 
     private Dictionary<string, int> CountStartedCycles(

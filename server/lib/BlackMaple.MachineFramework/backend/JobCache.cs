@@ -111,6 +111,11 @@ public class JobCache
 
   public HistoricJob? Lookup(string uniq)
   {
+    if (string.IsNullOrEmpty(uniq))
+    {
+      return null;
+    }
+
     if (_jobs.TryGetValue(uniq, out var j))
     {
       return j;

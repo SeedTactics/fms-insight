@@ -372,39 +372,12 @@ namespace MazakMachineInterface
 
       //now queued
       var seenMatIds = new HashSet<long>(material.Select(m => m.MaterialID));
-      var queuedMats = jobDB.GetMaterialInAllQueues();
-      var inspections = jobDB.LookupInspectionDecisions(queuedMats.Select(m => m.MaterialID));
-      foreach (var mat in queuedMats)
-      {
-        // material could be in the process of being loaded
-        if (seenMatIds.Contains(mat.MaterialID))
-          continue;
-        var lastProc = (mat.NextProcess ?? 1) - 1;
-        material.Add(
-          new InProcessMaterial()
-          {
-            MaterialID = mat.MaterialID,
-            JobUnique = mat.Unique,
-            PartName = mat.PartNameOrCasting,
-            Process = lastProc,
-            Path = mat.Paths != null && mat.Paths.TryGetValue(Math.Max(lastProc, 1), out var path) ? path : 1,
-            Serial = mat.Serial,
-            WorkorderId = mat.Workorder,
-            SignaledInspections = inspections[mat.MaterialID]
-              .Where(x => x.Inspect)
-              .Select(x => x.InspType)
-              .Distinct()
-              .ToImmutableList(),
-            Location = new InProcessMaterialLocation()
-            {
-              Type = InProcessMaterialLocation.LocType.InQueue,
-              CurrentQueue = mat.Queue,
-              QueuePosition = mat.Position,
-            },
-            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
-          }
-        );
-      }
+      material.AddRange(
+        BuildCellState
+          .AllQueuedMaterial(jobDB)
+          .Where(m => !seenMatIds.Contains(m.InProc.MaterialID))
+          .Select(m => m.InProc)
+      );
 
       var notCopied = jobDB
         .LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-WriteJobs.JobLookbackHours), DateTime.UtcNow)
