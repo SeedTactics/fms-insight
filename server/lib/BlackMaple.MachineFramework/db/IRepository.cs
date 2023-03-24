@@ -443,7 +443,8 @@ namespace BlackMaple.MachineFramework
     PlannedSchedule LoadMostRecentSchedule();
     IReadOnlyList<Workorder> MostRecentWorkorders();
     List<Workorder> MostRecentUnfilledWorkordersForPart(string part);
-    List<Workorder> WorkordersById(string workorderId);
+    ImmutableList<Workorder> WorkordersById(string workorderId);
+    ImmutableDictionary<string, ImmutableList<Workorder>> WorkordersById(IReadOnlySet<string> workorderId);
 
     // --------------------------------------------------------------------------------
     // Adding and Updating Jobs

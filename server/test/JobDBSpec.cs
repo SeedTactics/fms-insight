@@ -1022,6 +1022,12 @@ namespace MachineWatchTest
         .BeEquivalentTo(new[] { initialWorks[0] });
 
       _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] });
+      _jobDB
+        .WorkordersById(initialWorks.Select(w => w.WorkorderId).ToHashSet())
+        .Should()
+        .BeEquivalentTo(
+          initialWorks.GroupBy(w => w.WorkorderId).ToImmutableDictionary(g => g.Key, g => g.ToImmutableList())
+        );
 
       _jobDB
         .LoadProgram("aaa", 1)
