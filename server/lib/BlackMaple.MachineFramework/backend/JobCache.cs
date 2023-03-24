@@ -47,6 +47,8 @@ public class JobCache
     public required bool ManuallyCreated { get; init; }
     public required DateTime PathStart { get; init; }
     public required DateTime RouteStart { get; init; }
+    public required string Unique { get; init; }
+    public required int Process { get; init; }
 
     public int CompareTo(JobSortKey? other)
     {
@@ -62,7 +64,17 @@ public class JobCache
         return PathStart.CompareTo(other.PathStart);
       }
 
-      return RouteStart.CompareTo(other.RouteStart);
+      if (RouteStart != other.RouteStart)
+      {
+        return RouteStart.CompareTo(other.RouteStart);
+      }
+
+      if (Unique != other.Unique)
+      {
+        return string.Compare(Unique, other.Unique, StringComparison.Ordinal);
+      }
+
+      return Process.CompareTo(other.Process);
     }
   }
 
@@ -89,7 +101,9 @@ public class JobCache
       {
         ManuallyCreated = j.ManuallyCreated,
         PathStart = j.Processes[proc - 1].Paths[0].SimulatedStartingUTC,
-        RouteStart = j.RouteStartUTC
+        RouteStart = j.RouteStartUTC,
+        Unique = j.UniqueStr,
+        Process = proc
       };
       _precedence.Add(key, (j, proc));
     }
