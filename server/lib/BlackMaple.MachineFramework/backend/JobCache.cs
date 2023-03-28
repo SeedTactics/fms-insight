@@ -49,6 +49,7 @@ public class JobCache
     public required DateTime RouteStart { get; init; }
     public required string Unique { get; init; }
     public required int Process { get; init; }
+    public required int Path { get; init; }
 
     public int CompareTo(JobSortKey? other)
     {
@@ -74,19 +75,24 @@ public class JobCache
         return string.Compare(Unique, other.Unique, StringComparison.Ordinal);
       }
 
-      return Process.CompareTo(other.Process);
+      if (Process != other.Process)
+      {
+        return Process.CompareTo(other.Process);
+      }
+
+      return Path.CompareTo(other.Path);
     }
   }
 
   private readonly Dictionary<string, HistoricJob> _jobs;
-  private readonly SortedList<JobSortKey, (HistoricJob job, int proc)> _precedence;
+  private readonly SortedList<JobSortKey, (HistoricJob job, int proc, int path)> _precedence;
   private readonly IRepository _repo;
 
   public JobCache(IRepository repo)
   {
     _repo = repo;
     _jobs = repo.LoadUnarchivedJobs().ToDictionary(j => j.UniqueStr, j => j);
-    _precedence = new SortedList<JobSortKey, (HistoricJob job, int proc)>();
+    _precedence = new SortedList<JobSortKey, (HistoricJob job, int proc, int path)>();
     foreach (var j in _jobs.Values)
     {
       AddJobToPrecedence(j);
@@ -97,15 +103,19 @@ public class JobCache
   {
     for (var proc = 1; proc <= j.Processes.Count; proc++)
     {
-      var key = new JobSortKey()
+      for (var path = 1; path <= j.Processes[proc - 1].Paths.Count; path++)
       {
-        ManuallyCreated = j.ManuallyCreated,
-        PathStart = j.Processes[proc - 1].Paths[0].SimulatedStartingUTC,
-        RouteStart = j.RouteStartUTC,
-        Unique = j.UniqueStr,
-        Process = proc
-      };
-      _precedence.Add(key, (j, proc));
+        var key = new JobSortKey()
+        {
+          ManuallyCreated = j.ManuallyCreated,
+          PathStart = j.Processes[proc - 1].Paths[path - 1].SimulatedStartingUTC,
+          RouteStart = j.RouteStartUTC,
+          Unique = j.UniqueStr,
+          Process = proc,
+          Path = path
+        };
+        _precedence.Add(key, (j, proc, path));
+      }
     }
   }
 
@@ -138,7 +148,7 @@ public class JobCache
   }
 
   public IEnumerable<HistoricJob> AllJobs => _jobs.Values;
-  public IEnumerable<(HistoricJob job, int proc)> JobsSortedByPrecedence => _precedence.Values;
+  public IEnumerable<(HistoricJob job, int proc, int path)> JobsSortedByPrecedence => _precedence.Values;
 
   public static ActiveJob HistoricToActiveJob(
     HistoricJob j,
