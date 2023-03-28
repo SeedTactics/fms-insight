@@ -103,9 +103,6 @@ jobs:
 
       - run: pnpm --dir client/insight run build
 
-      - run: npm ci && npm run build-background
-        working-directory: client/backup-viewer
-
       - name: Server TestSuite
         run: |
           tzutil /s "Pacific Standard Time"

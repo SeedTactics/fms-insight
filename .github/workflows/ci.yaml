@@ -67,9 +67,5 @@ jobs:
       - name: Client Main Build
         run: pnpm --dir client/insight run build
 
-      - name: Build Backup-Viewer
-        run: npm ci && npm run build-background
-        working-directory: client/backup-viewer
-
       - name: Cleanup pnpm cache
         run: pnpm store prune
