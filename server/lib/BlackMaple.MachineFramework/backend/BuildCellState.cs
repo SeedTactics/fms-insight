@@ -45,9 +45,10 @@ public static class BuildCellState
   {
     public required QueuedMaterial QMat { get; init; }
     public required InProcessMaterial InProc { get; init; }
+    public required Job? Job { get; init; }
   }
 
-  public static ImmutableList<MaterialInQueue> AllQueuedMaterial(IRepository db, bool loadWorkorders = false)
+  public static ImmutableList<MaterialInQueue> AllQueuedMaterial(IRepository db, JobCache? jobCache)
   {
     var mats = ImmutableList.CreateBuilder<MaterialInQueue>();
     var queuedMats = db.GetMaterialInAllQueues();
@@ -61,6 +62,7 @@ public static class BuildCellState
         new MaterialInQueue()
         {
           QMat = mat,
+          Job = string.IsNullOrEmpty(mat.Unique) || jobCache == null ? null : jobCache.Lookup(mat.Unique),
           InProc = new InProcessMaterial()
           {
             MaterialID = mat.MaterialID,

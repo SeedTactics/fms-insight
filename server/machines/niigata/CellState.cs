@@ -1817,7 +1817,7 @@ namespace BlackMaple.FMSInsight.Niigata
     )
     {
       var allMats = MachineFramework.BuildCellState
-        .AllQueuedMaterial(logDB, loadWorkorders: true)
+        .AllQueuedMaterial(logDB, loadJob)
         .Where(m => !matsOnPallets.Contains(m.InProc.MaterialID));
 
       var works = logDB.WorkordersById(
@@ -1832,7 +1832,7 @@ namespace BlackMaple.FMSInsight.Niigata
           m =>
             new InProcessMaterialAndJob()
             {
-              Job = loadJob.Lookup(m.InProc.JobUnique),
+              Job = m.Job,
               Mat = m.InProc,
               Workorders = string.IsNullOrEmpty(m.InProc.WorkorderId) ? null : works[m.InProc.WorkorderId]
             }

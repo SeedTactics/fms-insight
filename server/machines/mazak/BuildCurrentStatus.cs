@@ -374,7 +374,7 @@ namespace MazakMachineInterface
       var seenMatIds = new HashSet<long>(material.Select(m => m.MaterialID));
       material.AddRange(
         BuildCellState
-          .AllQueuedMaterial(jobDB)
+          .AllQueuedMaterial(jobDB, jobCache: null)
           .Where(m => !seenMatIds.Contains(m.InProc.MaterialID))
           .Select(m => m.InProc)
       );
