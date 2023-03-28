@@ -236,7 +236,7 @@ function SelectDateRange(props: SelectDateRangeProps) {
 
   // @types/react-calendar has the wrong type for onChange
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-  const matchingOnChange: (d: Date) => void = onChange as any;
+  const matchingOnChange: (d: Date | ReadonlyArray<Date | null> | null) => void = onChange as any;
 
   return (
     <>
