@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
@@ -91,4 +92,75 @@ public static class BuildCellState
 
     return mats.ToImmutable();
   }
+
+  public record LoadedMaterial
+  {
+    public required InProcessMaterial InProc { get; init; }
+    public required Job? Job { get; init; }
+    public required LogEntry LoadEnd { get; init; }
+  }
+
+  public record PalletMaterial
+  {
+    public required ImmutableList<LoadedMaterial> LoadedMaterial { get; init; }
+    public required IReadOnlyList<LogEntry> Log { get; init; }
+  }
+
+  public static PalletMaterial CurrentMaterialOnPallet(string pallet, IRepository db, JobCache jobs)
+  {
+    var loadedMats = ImmutableList.CreateBuilder<LoadedMaterial>();
+    var log = db.CurrentPalletLog(pallet);
+
+    var lastLoaded = log.Where(
+        e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && !e.StartOfCycle
+      )
+      .SelectMany(e => e.Material);
+
+    foreach (var mat in lastLoaded)
+    {
+      var details = db.GetMaterialDetails(mat.MaterialID);
+      var inProcMat = new InProcessMaterial()
+      {
+        MaterialID = mat.MaterialID,
+        JobUnique = mat.JobUniqueStr,
+        PartName = mat.PartName,
+        Process = mat.Process,
+        Path =
+          details.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1,
+        Serial = details.Serial,
+        WorkorderId = details.Workorder,
+        SignaledInspections = db.LookupInspectionDecisions(mat.MaterialID)
+          .Where(x => x.Inspect)
+          .Select(x => x.InspType)
+          .ToImmutableList(),
+        LastCompletedMachiningRouteStopIndex = null,
+        Location = new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          Pallet = pallet,
+          Face = int.TryParse(mat.Face, out var face) ? face : 1
+        },
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+      };
+
+      var logsForMat = log.Where(e => e.Material.Any(m => m.MaterialID == mat.MaterialID));
+      var loadEnd = logsForMat.Last(
+        e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && !e.StartOfCycle
+      );
+
+      loadedMats.Add(
+        new LoadedMaterial()
+        {
+          InProc = inProcMat,
+          Job = jobs.Lookup(mat.JobUniqueStr),
+          LoadEnd = loadEnd,
+        }
+      );
+    }
+
+    return new PalletMaterial() { LoadedMaterial = loadedMats.ToImmutable(), Log = log };
+  }
+
+  // Additional Helpers to consider here are FindMaterialToLoad, but currently the different implementations
+  // have slightly different behavior.
 }

@@ -104,7 +104,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
       var jobCache = new JobCache(logDB);
       var pals = status.Pallets
-        .Select(p => BuildCurrentPallet(status.Machines, jobCache.Lookup, p, logDB))
+        .Select(p => BuildCurrentPallet(status.Machines, jobCache, p, logDB))
         .OrderBy(p =>
         {
           // sort pallets by loadBegin so that the assignment of material from queues to pallets is consistent
@@ -202,7 +202,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private PalletAndMaterial BuildCurrentPallet(
       IReadOnlyDictionary<int, MachineStatus> machines,
-      Func<string, HistoricJob> jobCache,
+      JobCache jobCache,
       PalletStatus pallet,
       IRepository logDB
     )
@@ -225,7 +225,7 @@ namespace BlackMaple.FMSInsight.Niigata
         .Load(pallet.Master.Comment, logDB)
         .Select(m =>
         {
-          var job = jobCache(m.Unique);
+          var job = jobCache.Lookup(m.Unique);
           var pathInfo = job.Processes[m.Proc - 1].Paths[m.Path - 1];
           return new PalletFace()
           {
@@ -242,78 +242,54 @@ namespace BlackMaple.FMSInsight.Niigata
         })
         .ToList();
 
-      var mats = new List<InProcessMaterialAndJob>();
-
-      var log = logDB.CurrentPalletLog(pallet.Master.PalletNum.ToString());
-      foreach (
-        var m in log.Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && !e.StartOfCycle)
-          .SelectMany(e => e.Material)
-      )
-      {
-        var details = logDB.GetMaterialDetails(m.MaterialID);
-        var inProcMat = new InProcessMaterial()
+      var palSt = MachineFramework.BuildCellState.CurrentMaterialOnPallet(
+        pallet.Master.PalletNum.ToString(),
+        logDB,
+        jobCache
+      );
+      var mats = palSt.LoadedMaterial
+        .Select(mat =>
         {
-          MaterialID = m.MaterialID,
-          JobUnique = m.JobUniqueStr,
-          PartName = m.PartName,
-          Process = m.Process,
-          Path = details.Paths.ContainsKey(m.Process) ? details.Paths[m.Process] : 1,
-          Serial = details.Serial,
-          WorkorderId = details.Workorder,
-          SignaledInspections = logDB
-            .LookupInspectionDecisions(m.MaterialID)
-            .Where(x => x.Inspect)
-            .Select(x => x.InspType)
-            .ToImmutableList(),
-          LastCompletedMachiningRouteStopIndex = null,
-          Location = new InProcessMaterialLocation()
+          var job = mat.Job;
+          var inProcMat = mat.InProc;
+          if (job != null)
           {
-            Type = InProcessMaterialLocation.LocType.OnPallet,
-            Pallet = pallet.Master.PalletNum.ToString(),
-            Face = int.Parse(m.Face)
-          },
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-        };
-        var job = jobCache(m.JobUniqueStr);
-        if (job != null)
-        {
-          var stops = job.Processes[inProcMat.Process - 1].Paths[inProcMat.Path - 1].Stops.ToList();
-          var lastCompletedIccIdx = pallet.Tracking.CurrentStepNum - 1;
-          if (
-            pallet.Tracking.BeforeCurrentStep == false
-            && pallet.Tracking.Alarm == false
-            && (machStatus == null || (machStatus.FMSLinkMode && machStatus.Alarm == false))
-          )
-          {
-            lastCompletedIccIdx += 1;
-          }
-          var completedMachineSteps = Math.Min(
-            pallet.Master.Routes
-              .Take(lastCompletedIccIdx)
-              .Where(r => r is MachiningStep || r is ReclampStep)
-              .Count(),
-            // Should never be hit, but if the user edits the pallet and forgets to set "Manual" in the comment field,
-            // it can be higher than the configured steps.  Add a bound just in case.
-            stops.Count
-          );
+            var stops = job.Processes[inProcMat.Process - 1].Paths[inProcMat.Path - 1].Stops.ToList();
+            var lastCompletedIccIdx = pallet.Tracking.CurrentStepNum - 1;
+            if (
+              pallet.Tracking.BeforeCurrentStep == false
+              && pallet.Tracking.Alarm == false
+              && (machStatus == null || (machStatus.FMSLinkMode && machStatus.Alarm == false))
+            )
+            {
+              lastCompletedIccIdx += 1;
+            }
+            var completedMachineSteps = Math.Min(
+              pallet.Master.Routes
+                .Take(lastCompletedIccIdx)
+                .Where(r => r is MachiningStep || r is ReclampStep)
+                .Count(),
+              // Should never be hit, but if the user edits the pallet and forgets to set "Manual" in the comment field,
+              // it can be higher than the configured steps.  Add a bound just in case.
+              stops.Count
+            );
 
-          if (completedMachineSteps > 0)
-          {
-            inProcMat %= m => m.LastCompletedMachiningRouteStopIndex = completedMachineSteps - 1;
+            if (completedMachineSteps > 0)
+            {
+              inProcMat %= m => m.LastCompletedMachiningRouteStopIndex = completedMachineSteps - 1;
+            }
           }
-        }
 
-        mats.Add(
-          new InProcessMaterialAndJob()
+          return new InProcessMaterialAndJob()
           {
             Mat = inProcMat,
             Job = job,
             Workorders = string.IsNullOrEmpty(inProcMat.WorkorderId)
               ? null
               : logDB.WorkordersById(inProcMat.WorkorderId).ToImmutableList()
-          }
-        );
-      }
+          };
+        })
+        .ToList();
 
       bool manualControl = (pallet.Master.Comment ?? "").ToLower().Contains("manual");
 
@@ -322,7 +298,7 @@ namespace BlackMaple.FMSInsight.Niigata
         Status = pallet,
         CurrentOrLoadingFaces = currentOrLoadingFaces,
         Material = mats,
-        Log = log,
+        Log = palSt.Log,
         IsLoading =
           !manualControl
           && (
