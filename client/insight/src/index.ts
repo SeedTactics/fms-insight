@@ -32,15 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { render } from "./renderer.js";
-import { RouteLocation } from "./components/routes.js";
-import { registerBackupViewerBackend } from "./network/backend-backupviewer.js";
 import { registerNetworkBackend } from "./network/backend.js";
 
-if (window.location.pathname === RouteLocation.Backup_InitialOpen) {
-  registerBackupViewerBackend();
-} else {
-  registerNetworkBackend();
-}
+registerNetworkBackend();
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 render(null, document.getElementById("root")!);

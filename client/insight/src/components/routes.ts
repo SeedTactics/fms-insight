@@ -81,11 +81,6 @@ export enum RouteLocation {
   Analysis_Schedules = "/analysis/schedules",
   Analysis_DataExport = "/analysis/data-export",
 
-  Backup_InitialOpen = "/backup/open",
-  Backup_Efficiency = "/backup/efficiency",
-  Backup_PartLookup = "/backup/lookup",
-  Backup_Schedules = "/backup/schedules",
-
   Client_Custom = "/client/:custom+",
 }
 
@@ -133,10 +128,6 @@ export type RouteState =
   | { route: RouteLocation.Analysis_CostPerPiece }
   | { route: RouteLocation.Analysis_Schedules }
   | { route: RouteLocation.Analysis_DataExport }
-  | { route: RouteLocation.Backup_InitialOpen }
-  | { route: RouteLocation.Backup_Efficiency }
-  | { route: RouteLocation.Backup_Schedules }
-  | { route: RouteLocation.Backup_PartLookup }
   | { route: RouteLocation.Client_Custom; custom: ReadonlyArray<string> };
 
 function routeToUrl(route: RouteState): string {
@@ -321,7 +312,6 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Quality_Serials:
     case RouteLocation.Quality_Paths:
     case RouteLocation.Quality_Quarantine:
-    case RouteLocation.Backup_PartLookup:
       return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
 
     case RouteLocation.Tools_Dashboard:
@@ -332,14 +322,10 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Analysis_Efficiency:
     case RouteLocation.Analysis_Quality:
     case RouteLocation.Analysis_DataExport:
-    case RouteLocation.Backup_Efficiency:
       return "https://www.seedtactics.com/docs/fms-insight/client-flexibility-analysis";
 
     case RouteLocation.Analysis_CostPerPiece:
       return "https://www.seedtactics.com/docs/fms-insight/client-cost-per-piece";
-
-    case RouteLocation.Backup_InitialOpen:
-      return "https://www.seedtactics.com/docs/fms-insight/client-backup-viewer";
 
     case RouteLocation.ChooseMode:
     case RouteLocation.Client_Custom:

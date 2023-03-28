@@ -42,10 +42,6 @@
       <PackagePath>contentFiles\any\net7.0\insight-client\src</PackagePath>
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
-    <Content Include="..\..\..\client\backup-viewer\build\background\*">
-      <PackagePath>contentFiles\any\net7.0\backup-viewer-background</PackagePath>
-      <PackageCopyToOutput>true</PackageCopyToOutput>
-    </Content>
   </ItemGroup>
 
   <ItemGroup>

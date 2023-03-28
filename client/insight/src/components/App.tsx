@@ -55,7 +55,6 @@ import { LoadingIcon } from "./LoadingIcon.js";
 import * as routes from "./routes.js";
 import * as serverSettings from "../network/server-settings.js";
 import { SeedtacticLogo } from "../seedtactics-logo.js";
-import { BackupViewer } from "./BackupViewer.js";
 import { BarcodeListener } from "./BarcodeScanning.js";
 import { ManualScanButton } from "./ManualScan.js";
 import { OperatorSelect } from "./ChooseOperator.js";
@@ -147,16 +146,6 @@ function AnalysisTabs() {
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
       <Tab label="Schedules" value={routes.RouteLocation.Analysis_Schedules} />
       <Tab label="Data Export" value={routes.RouteLocation.Analysis_DataExport} />
-    </NavTabs>
-  );
-}
-
-function BackupTabs() {
-  return (
-    <NavTabs>
-      <Tab label="Efficiency" value={routes.RouteLocation.Backup_Efficiency} />
-      <Tab label="Part Lookup" value={routes.RouteLocation.Backup_PartLookup} />
-      <Tab label="Schedules" value={routes.RouteLocation.Backup_Schedules} />
     </NavTabs>
   );
 }
@@ -475,28 +464,6 @@ const App = React.memo(function App(props: AppProps) {
       case routes.RouteLocation.Tools_Programs:
         page = <ProgramReportPage />;
         navigation = ToolsTabs;
-        break;
-
-      case routes.RouteLocation.Backup_InitialOpen:
-        navigation = undefined;
-        page = <BackupViewer />;
-        showAlarms = false;
-        break;
-      case routes.RouteLocation.Backup_Efficiency:
-        navigation = BackupTabs;
-        page = <Efficiency />;
-        showAlarms = false;
-        break;
-      case routes.RouteLocation.Backup_Schedules:
-        navigation = BackupTabs;
-        page = <ScheduleHistory />;
-        showAlarms = false;
-        break;
-      case routes.RouteLocation.Backup_PartLookup:
-        navigation = BackupTabs;
-        page = <FailedPartLookup />;
-        addBasicMaterialDialog = false;
-        showAlarms = false;
         break;
 
       case routes.RouteLocation.Client_Custom: {

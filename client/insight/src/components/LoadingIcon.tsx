@@ -31,36 +31,41 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton } from "@mui/material";
+import {
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+} from "@mui/material";
 import { Error as ErrorIcon } from "@mui/icons-material";
 
 import { Tooltip } from "@mui/material";
 import { errorLoadingLast30, websocketReconnecting } from "../network/websocket.js";
 import { useRecoilValue } from "recoil";
-import { errorLoadingBackupViewer, loadingBackupViewer } from "../network/backend-backupviewer.js";
 import { errorLoadingSpecificMonthData, loadingSpecificMonthData } from "../network/load-specific-month.js";
 
 export const LoadingIcon = React.memo(function LoadingIcon() {
   const websocketLoading = useRecoilValue(websocketReconnecting);
-  const backupLoading = useRecoilValue(loadingBackupViewer);
   const specificMonthLoading = useRecoilValue(loadingSpecificMonthData);
 
   const last30Error = useRecoilValue(errorLoadingLast30);
-  const backupViewerError = useRecoilValue(errorLoadingBackupViewer);
   const specificMonthError = useRecoilValue(errorLoadingSpecificMonthData);
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
   return (
     <>
-      {last30Error != null || backupViewerError != null || specificMonthError != null ? (
+      {last30Error != null || specificMonthError != null ? (
         <Tooltip title="Error">
           <IconButton onClick={() => setDialogOpen(true)} size="large">
             <ErrorIcon />
           </IconButton>
         </Tooltip>
       ) : undefined}
-      {websocketLoading || backupLoading || specificMonthLoading ? (
+      {websocketLoading || specificMonthLoading ? (
         <Tooltip title="Loading">
           <CircularProgress data-testid="loading-icon" color="secondary" />
         </Tooltip>
@@ -69,7 +74,6 @@ export const LoadingIcon = React.memo(function LoadingIcon() {
         <DialogTitle>Error</DialogTitle>
         <DialogContent>
           {last30Error !== null ? <p>{last30Error}</p> : undefined}
-          {backupViewerError !== null ? <p>{backupViewerError}</p> : undefined}
           {specificMonthError !== null ? <p>{specificMonthError}</p> : undefined}
         </DialogContent>
         <DialogActions>
