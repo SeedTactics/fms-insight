@@ -31,25 +31,101 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 namespace BlackMaple.MachineFramework;
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
 public class JobCache
 {
-  private Dictionary<string, HistoricJob> _jobs;
-  private IRepository _repo;
+  private sealed record JobSortKey : IComparable<JobSortKey>
+  {
+    public required bool ManuallyCreated { get; init; }
+    public required DateTime PathStart { get; init; }
+    public required DateTime RouteStart { get; init; }
+    public required string Unique { get; init; }
+    public required int Process { get; init; }
+    public required int Path { get; init; }
+
+    public int CompareTo(JobSortKey? other)
+    {
+      if (other == null)
+        return 1;
+      if (ManuallyCreated != other.ManuallyCreated)
+      {
+        return ManuallyCreated ? -1 : 1;
+      }
+
+      if (PathStart != other.PathStart)
+      {
+        return PathStart.CompareTo(other.PathStart);
+      }
+
+      if (RouteStart != other.RouteStart)
+      {
+        return RouteStart.CompareTo(other.RouteStart);
+      }
+
+      if (Unique != other.Unique)
+      {
+        return string.Compare(Unique, other.Unique, StringComparison.Ordinal);
+      }
+
+      if (Process != other.Process)
+      {
+        return Process.CompareTo(other.Process);
+      }
+
+      return Path.CompareTo(other.Path);
+    }
+  }
+
+  private readonly Dictionary<string, HistoricJob> _jobs;
+  private readonly SortedList<JobSortKey, (HistoricJob job, int proc, int path)> _precedence;
+  private readonly IRepository _repo;
 
   public JobCache(IRepository repo)
   {
     _repo = repo;
     _jobs = repo.LoadUnarchivedJobs().ToDictionary(j => j.UniqueStr, j => j);
+    _precedence = new SortedList<JobSortKey, (HistoricJob job, int proc, int path)>();
+    foreach (var j in _jobs.Values)
+    {
+      AddJobToPrecedence(j);
+    }
   }
 
-  public HistoricJob Lookup(string uniq)
+  private void AddJobToPrecedence(HistoricJob j)
   {
+    for (var proc = 1; proc <= j.Processes.Count; proc++)
+    {
+      for (var path = 1; path <= j.Processes[proc - 1].Paths.Count; path++)
+      {
+        var key = new JobSortKey()
+        {
+          ManuallyCreated = j.ManuallyCreated,
+          PathStart = j.Processes[proc - 1].Paths[path - 1].SimulatedStartingUTC,
+          RouteStart = j.RouteStartUTC,
+          Unique = j.UniqueStr,
+          Process = proc,
+          Path = path
+        };
+        _precedence.Add(key, (j, proc, path));
+      }
+    }
+  }
+
+  public HistoricJob? Lookup(string uniq)
+  {
+    if (string.IsNullOrEmpty(uniq))
+    {
+      return null;
+    }
+
     if (_jobs.TryGetValue(uniq, out var j))
     {
       return j;
@@ -62,12 +138,17 @@ public class JobCache
         _repo.UnarchiveJob(job.UniqueStr);
         job = job with { Archived = false };
       }
-      _jobs.Add(uniq, job);
+      if (job != null)
+      {
+        _jobs.Add(uniq, job);
+        AddJobToPrecedence(job);
+      }
       return job;
     }
   }
 
   public IEnumerable<HistoricJob> AllJobs => _jobs.Values;
+  public IEnumerable<(HistoricJob job, int proc, int path)> JobsSortedByPrecedence => _precedence.Values;
 
   public static ActiveJob HistoricToActiveJob(
     HistoricJob j,

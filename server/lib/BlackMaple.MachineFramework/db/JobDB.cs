@@ -961,11 +961,18 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<Workorder> WorkordersById(string workorderId)
+    public ImmutableList<Workorder> WorkordersById(string workorderId)
     {
+      return WorkordersById(new HashSet<string>(new[] { workorderId }))[workorderId];
+    }
+
+    public ImmutableDictionary<string, ImmutableList<Workorder>> WorkordersById(
+      IReadOnlySet<string> workorderIds
+    )
+    {
+      var byWorkId = ImmutableDictionary.CreateBuilder<string, ImmutableList<Workorder>>();
       using (var cmd = _connection.CreateCommand())
       {
-        var ret = new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
         cmd.CommandText =
           "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision"
           + " FROM unfilled_workorders w "
@@ -973,47 +980,59 @@ namespace BlackMaple.MachineFramework
           + " WHERE "
           + "    w.ScheduleId = (SELECT MAX(v.ScheduleId) FROM unfilled_workorders v WHERE v.Workorder = $work)"
           + "    AND w.Workorder = $work";
-        cmd.Parameters.Add("work", SqliteType.Text).Value = workorderId;
+        cmd.Parameters.Add("work", SqliteType.Text);
 
-        using (IDataReader reader = cmd.ExecuteReader())
+        foreach (var workorderId in workorderIds)
         {
-          while (reader.Read())
+          cmd.Parameters[0].Value = workorderId;
+          var byPart =
+            new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
+
+          using (IDataReader reader = cmd.ExecuteReader())
           {
-            var part = reader.GetString(0);
-
-            if (!ret.ContainsKey(part))
+            while (reader.Read())
             {
-              var workorder = new Workorder()
-              {
-                WorkorderId = workorderId,
-                Part = part,
-                Quantity = reader.GetInt32(1),
-                DueDate = new DateTime(reader.GetInt64(2)),
-                Priority = reader.GetInt32(3)
-              };
-              ret.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
-            }
+              var part = reader.GetString(0);
 
-            if (reader.IsDBNull(4))
-              continue;
-
-            // add the program
-            ret[part].progs.Add(
-              new ProgramForJobStep()
+              if (!byPart.ContainsKey(part))
               {
-                ProcessNumber = reader.GetInt32(4),
-                StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
-                ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
+                var workorder = new Workorder()
+                {
+                  WorkorderId = workorderId,
+                  Part = part,
+                  Quantity = reader.GetInt32(1),
+                  DueDate = new DateTime(reader.GetInt64(2)),
+                  Priority = reader.GetInt32(3)
+                };
+                byPart.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
               }
-            );
-          }
-        }
 
-        return ret.Values
-          .Select(w => w.progs.Count == 0 ? w.work : w.work with { Programs = w.progs.ToImmutable() })
-          .ToList();
+              if (reader.IsDBNull(4))
+                continue;
+
+              // add the program
+              byPart[part].progs.Add(
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = reader.GetInt32(4),
+                  StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
+                  ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
+                  Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
+                }
+              );
+            }
+          }
+
+          byWorkId.Add(
+            workorderId,
+            byPart.Values
+              .Select(w => w.progs.Count == 0 ? w.work : w.work with { Programs = w.progs.ToImmutable() })
+              .ToImmutableList()
+          );
+        }
       }
+
+      return byWorkId.ToImmutable();
     }
 
     public PlannedSchedule LoadMostRecentSchedule()
