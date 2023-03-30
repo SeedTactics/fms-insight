@@ -65,7 +65,7 @@ const completedSym = "@@recent_completed_material@@";
 enum StationMonitorType {
   LoadUnload = "LoadUnload",
   Inspection = "Inspection",
-  Wash = "Wash",
+  CloseOut = "CloseOut",
   Queues = "Queues",
   AllMaterial = "AllMaterial",
 }
@@ -145,8 +145,8 @@ export function StationToolbar(): JSX.Element {
       curType = StationMonitorType.Queues;
       currentQueues = route.queues;
       break;
-    case RouteLocation.Station_WashMonitor:
-      curType = StationMonitorType.Wash;
+    case RouteLocation.Station_Closeout:
+      curType = StationMonitorType.CloseOut;
       break;
     default:
       curType = StationMonitorType.AllMaterial;

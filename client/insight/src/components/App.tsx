@@ -66,7 +66,7 @@ import { QualityPaths } from "./quality/QualityPaths.js";
 import { QualityDashboard } from "./quality/RecentFailedInspections.js";
 import LoadStation from "./station-monitor/LoadStation.js";
 import Inspection from "./station-monitor/Inspection.js";
-import Wash from "./station-monitor/Wash.js";
+import { CloseoutPage } from "./station-monitor/Closeout.js";
 import Queues from "./station-monitor/Queues.js";
 import { ToolReportPage } from "./operations/ToolReport.js";
 import { ProgramReportPage } from "./operations/Programs.js";
@@ -297,7 +297,7 @@ export interface AppProps {
     readonly nav: React.ComponentType | undefined;
     readonly page: JSX.Element;
   };
-  readonly chooseModes?: ReadonlyArray<ChooseModeItem>;
+  readonly chooseModes?: (i: serverSettings.FMSInfoAndUser) => ReadonlyArray<ChooseModeItem> | null;
 }
 
 const App = React.memo(function App(props: AppProps) {
@@ -305,14 +305,13 @@ const App = React.memo(function App(props: AppProps) {
   const fmsInfoLoadable = useRecoilValueLoadable(serverSettings.fmsInformation);
   const [route, setRoute] = routes.useCurrentRoute();
 
-  // BaseLoadable<T>.valueMaybe() has the wrong type so hard to use :(
-  const fmsInfo = fmsInfoLoadable.state === "hasValue" ? fmsInfoLoadable.valueOrThrow() : null;
+  const fmsInfo = fmsInfoLoadable.valueMaybe();
+  const showLogout = !!fmsInfo && fmsInfo.user !== null && fmsInfo.user !== undefined;
 
   let page: JSX.Element;
   let navigation: React.ComponentType | undefined = undefined;
   let navigationCenter: React.ComponentType | undefined = undefined;
   let showAlarms = true;
-  const showLogout = fmsInfo !== null && fmsInfo.user !== null && fmsInfo.user !== undefined;
   let showSearch = true;
   let showOperator = false;
   let addBasicMaterialDialog = true;
@@ -339,8 +338,8 @@ const App = React.memo(function App(props: AppProps) {
         showOperator = true;
         addBasicMaterialDialog = false;
         break;
-      case routes.RouteLocation.Station_WashMonitor:
-        page = <Wash />;
+      case routes.RouteLocation.Station_Closeout:
+        page = <CloseoutPage />;
         navigation = StationToolbar;
         navigationCenter = StationToolbarOverviewButton;
         showOperator = true;
@@ -469,14 +468,14 @@ const App = React.memo(function App(props: AppProps) {
       case routes.RouteLocation.Client_Custom: {
         const customPage = props.renderCustomPage?.(route.custom);
         navigation = customPage?.nav;
-        page = customPage?.page ?? <ChooseMode setRoute={setRoute} modes={props.chooseModes} />;
+        page = customPage?.page ?? <ChooseMode setRoute={setRoute} modes={props.chooseModes?.(fmsInfo)} />;
         showAlarms = false;
         break;
       }
 
       case routes.RouteLocation.ChooseMode:
       default:
-        page = <ChooseMode setRoute={setRoute} modes={props.chooseModes} />;
+        page = <ChooseMode setRoute={setRoute} modes={props.chooseModes?.(fmsInfo)} />;
         showSearch = false;
         showAlarms = false;
     }

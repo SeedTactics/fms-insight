@@ -630,8 +630,8 @@ function stat_name(e: Readonly<api.ILogEntry>): string {
       return "Mark";
     case api.LogType.OrderAssignment:
       return "Workorder";
-    case api.LogType.Wash:
-      return "Wash";
+    case api.LogType.CloseOut:
+      return "CloseOut";
     case api.LogType.Inspection: {
       const inspName = (e.details || {}).InspectionType || "";
       return "Signal " + inspName;

@@ -54,7 +54,7 @@ export interface MaterialSummaryAndCompletedData extends MaterialSummary {
   readonly last_unload_time?: Date;
   readonly completed_last_proc_machining?: boolean;
   readonly completed_inspect_time?: Date;
-  readonly wash_completed?: Date;
+  readonly closeout_completed?: Date;
   readonly completedInspections?: { [key: string]: { time: Date; success: boolean } };
 }
 
@@ -206,8 +206,8 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
 
         break;
 
-      case LogType.Wash:
-        mat = { ...mat, wash_completed: e.endUTC };
+      case LogType.CloseOut:
+        mat = { ...mat, closeout_completed: e.endUTC };
         break;
     }
 

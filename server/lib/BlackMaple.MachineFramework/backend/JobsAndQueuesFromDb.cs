@@ -165,7 +165,7 @@ namespace BlackMaple.MachineFramework
           {
             _newCellState.Reset();
             var st = _syncState.CalculateCellState(db);
-            raiseNewCurStatus = raiseNewCurStatus || (st?.PalletStateUpdated ?? false);
+            raiseNewCurStatus = raiseNewCurStatus || (st?.StateUpdated ?? false);
 
             lock (_curStLock)
             {
@@ -197,7 +197,7 @@ namespace BlackMaple.MachineFramework
       lock (_changeLock)
       {
         var st = _syncState.CalculateCellState(jobDB);
-        requireStateRefresh = requireStateRefresh || st.PalletStateUpdated;
+        requireStateRefresh = requireStateRefresh || st.StateUpdated;
 
         lock (_curStLock)
         {
@@ -597,7 +597,7 @@ namespace BlackMaple.MachineFramework
           {
             throw new BadRequestException("Unable to calculate cell state");
           }
-          requireStateRefresh = requireStateRefresh || st.PalletStateUpdated;
+          requireStateRefresh = requireStateRefresh || st.StateUpdated;
 
           var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
           if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
@@ -656,7 +656,7 @@ namespace BlackMaple.MachineFramework
           {
             throw new BadRequestException("Unable to calculate cell state");
           }
-          requireStateRefresh = requireStateRefresh || st.PalletStateUpdated;
+          requireStateRefresh = requireStateRefresh || st.StateUpdated;
 
           foreach (var matId in materialIds)
           {
@@ -708,7 +708,7 @@ namespace BlackMaple.MachineFramework
           {
             throw new BadRequestException("Unable to calculate cell state");
           }
-          requireStateRefresh = requireStateRefresh || st.PalletStateUpdated;
+          requireStateRefresh = requireStateRefresh || st.StateUpdated;
 
           var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
 

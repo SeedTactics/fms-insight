@@ -445,16 +445,16 @@ export function fakeSerial(mat?: LogMaterial, serial?: string): ILogEntry {
   };
 }
 
-export function fakeWashComplete(mat?: LogMaterial): ILogEntry {
+export function fakeCloseoutComplete(mat?: LogMaterial): ILogEntry {
   mat = mat || fakeMaterial();
   return {
     counter: 100,
     material: [mat],
     pal: faker.random.alphaNumeric(),
-    type: LogType.Wash,
+    type: LogType.CloseOut,
     startofcycle: false,
     endUTC: new Date(2017, 9, 5),
-    loc: "Wash",
+    loc: "CloseOut",
     locnum: 1,
     result: "",
     program: "",

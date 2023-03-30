@@ -170,8 +170,8 @@ export function registerMockBackend(
       return Promise.resolve({
         name: "mock",
         version: "1.0.0",
-        requireScanAtWash: false,
-        requireWorkorderBeforeAllowWashComplete: false,
+        requireScanAtCloseout: false,
+        requireWorkorderBeforeAllowCloseoutComplete: false,
         additionalLogServers: [],
         usingLabelPrinterForSerials: false,
       });
@@ -400,16 +400,16 @@ export function registerMockBackend(
         })
       );
     },
-    recordWashCompleted(
-      wash: api.NewWash,
+    recordCloseoutCompleted(
+      closeout: api.NewCloseout,
       jobUnique?: string,
       partName?: string
     ): Promise<Readonly<api.ILogEntry>> {
       const mat = new api.LogMaterial({
-        id: wash.materialID,
+        id: closeout.materialID,
         uniq: jobUnique || "",
         part: partName || "",
-        proc: wash.process,
+        proc: closeout.process,
         numproc: 1,
         face: "1",
       });
@@ -417,16 +417,16 @@ export function registerMockBackend(
         counter: 0,
         material: [mat],
         pal: "",
-        type: api.LogType.Wash,
+        type: api.LogType.CloseOut,
         startofcycle: false,
         endUTC: new Date(),
-        loc: "Wash",
-        locnum: wash.washLocationNum,
+        loc: "CloseOut",
+        locnum: closeout.locationNum,
         result: "",
         program: "",
-        elapsed: wash.elapsed,
-        active: wash.active,
-        details: wash.extraData,
+        elapsed: closeout.elapsed,
+        active: closeout.active,
+        details: closeout.extraData,
       };
       return data.then(() =>
         events.then((evts) => {

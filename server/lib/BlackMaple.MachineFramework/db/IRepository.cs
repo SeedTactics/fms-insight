@@ -229,24 +229,27 @@ namespace BlackMaple.MachineFramework
       TimeSpan elapsed,
       TimeSpan active
     );
-    LogEntry RecordWashCompleted(
+    LogEntry RecordCloseoutCompleted(
       long materialID,
       int process,
-      int washLocNum,
+      int locNum,
+      string closeoutType,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active
     );
-    LogEntry RecordWashCompleted(
+    LogEntry RecordCloseoutCompleted(
       EventLogMaterial mat,
-      int washLocNum,
+      int locNum,
+      string closeoutType,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active
     );
-    LogEntry RecordWashCompleted(
+    LogEntry RecordCloseoutCompleted(
       EventLogMaterial mat,
-      int washLocNum,
+      int locNum,
+      string closeoutType,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active,

@@ -149,8 +149,8 @@ namespace BlackMaple.MachineFramework
     public int SerialLength { get; set; } = 9;
     public string StartingSerial { get; set; } = null;
 
-    public bool RequireScanAtWash { get; set; }
-    public bool RequireWorkorderBeforeAllowWashComplete { get; set; }
+    public bool RequireScanAtCloseout { get; set; }
+    public bool RequireWorkorderBeforeAllowCloseoutComplete { get; set; }
     public bool RequireOperatorNamePromptWhenAddingMaterial { get; set; }
     public bool AllowChangeWorkorderAtLoadStation { get; set; }
 
@@ -179,9 +179,9 @@ namespace BlackMaple.MachineFramework
       SerialLength = fmsSection.GetValue<int>("SerialLength", 10);
       StartingSerial = fmsSection.GetValue<string>("StartingSerial", null);
 
-      RequireScanAtWash = fmsSection.GetValue<bool>("RequireScanAtWash", false);
-      RequireWorkorderBeforeAllowWashComplete = fmsSection.GetValue<bool>(
-        "RequireWorkorderBeforeAllowWashComplete",
+      RequireScanAtCloseout = fmsSection.GetValue<bool>("RequireScanAtCloseout", false);
+      RequireWorkorderBeforeAllowCloseoutComplete = fmsSection.GetValue<bool>(
+        "RequireWorkorderBeforeAllowCloseoutComplete",
         false
       );
       RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>(

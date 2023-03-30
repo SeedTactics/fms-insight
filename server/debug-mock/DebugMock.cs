@@ -83,7 +83,7 @@ namespace DebugMachineWatchApiServer
         "../../../sample-instructions/"
       );
       fmsSettings.QuarantineQueue = "Initial Quarantine";
-      fmsSettings.RequireScanAtWash = true;
+      fmsSettings.RequireScanAtCloseout = true;
       fmsSettings.AllowChangeWorkorderAtLoadStation = true;
 
       BlackMaple.MachineFramework.Program.EnableSerilog(serverSt: serverSettings, enableEventLog: false);
