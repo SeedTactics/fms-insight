@@ -228,15 +228,15 @@ export function Closeout(): JSX.Element {
           }}
         >
           <Typography variant="h4">Recently Completed</Typography>
-          <Box display="flex" justifyContent="space-between" flexWrap="wrap">
+          <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
             {material.uncompleted.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
           </Box>
         </Box>
         <Box padding="8px" sx={{ width: { md: "50vw" } }}>
-          <Typography variant="h4">Closed Out</Typography>
-          <Box display="flex" justifyContent="space-between" flexWrap="wrap">
+          <Typography variant="h4">Recently Closed Out</Typography>
+          <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
             {material.closed.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
