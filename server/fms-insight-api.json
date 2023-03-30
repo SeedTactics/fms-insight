@@ -1935,18 +1935,18 @@
         }
       }
     },
-    "/api/v1/log/events/wash": {
+    "/api/v1/log/events/closeout": {
       "post": {
         "tags": [
           "log"
         ],
-        "operationId": "log_RecordWashCompleted",
+        "operationId": "log_RecordCloseoutCompleted",
         "requestBody": {
           "x-name": "insp",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewWash"
+                "$ref": "#/components/schemas/NewCloseout"
               }
             }
           },
@@ -2236,10 +2236,10 @@
             "type": "string",
             "nullable": true
           },
-          "RequireScanAtWash": {
+          "RequireScanAtCloseout": {
             "type": "boolean"
           },
-          "RequireWorkorderBeforeAllowWashComplete": {
+          "RequireWorkorderBeforeAllowCloseoutComplete": {
             "type": "boolean"
           },
           "AddRawMaterial": {
@@ -2456,7 +2456,7 @@
           "PalletCycle",
           "FinalizeWorkorder",
           "InspectionResult",
-          "Wash",
+          "CloseOut",
           "AddToQueue",
           "RemoveFromQueue",
           "InspectionForce",
@@ -2476,7 +2476,7 @@
           "PalletCycle",
           "FinalizeWorkorder",
           "InspectionResult",
-          "Wash",
+          "CloseOut",
           "AddToQueue",
           "RemoveFromQueue",
           "InspectionForce",
@@ -3965,13 +3965,14 @@
           }
         }
       },
-      "NewWash": {
+      "NewCloseout": {
         "type": "object",
         "additionalProperties": false,
         "required": [
           "MaterialID",
           "Process",
-          "WashLocationNum",
+          "LocationNum",
+          "CloseoutType",
           "Elapsed",
           "Active"
         ],
@@ -3984,9 +3985,13 @@
             "type": "integer",
             "format": "int32"
           },
-          "WashLocationNum": {
+          "LocationNum": {
             "type": "integer",
             "format": "int32"
+          },
+          "CloseoutType": {
+            "type": "string",
+            "nullable": true
           },
           "ExtraData": {
             "type": "object",

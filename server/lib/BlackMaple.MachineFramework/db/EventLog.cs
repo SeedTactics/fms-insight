@@ -1844,10 +1844,11 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
     }
 
-    public LogEntry RecordWashCompleted(
+    public LogEntry RecordCloseoutCompleted(
       long materialID,
       int process,
-      int washLocNum,
+      int locNum,
+      string closeoutType,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active
@@ -1859,23 +1860,25 @@ namespace BlackMaple.MachineFramework
         Process = process,
         Face = ""
       };
-      return RecordWashCompleted(mat, washLocNum, extraData, elapsed, active, DateTime.UtcNow);
+      return RecordCloseoutCompleted(mat, locNum, closeoutType, extraData, elapsed, active, DateTime.UtcNow);
     }
 
-    public LogEntry RecordWashCompleted(
+    public LogEntry RecordCloseoutCompleted(
       EventLogMaterial mat,
-      int washLocNum,
+      int locNum,
+      string closeoutType,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active
     )
     {
-      return RecordWashCompleted(mat, washLocNum, extraData, elapsed, active, DateTime.UtcNow);
+      return RecordCloseoutCompleted(mat, locNum, closeoutType, extraData, elapsed, active, DateTime.UtcNow);
     }
 
-    public LogEntry RecordWashCompleted(
+    public LogEntry RecordCloseoutCompleted(
       EventLogMaterial mat,
-      int washLocNum,
+      int locNum,
+      string closeoutType,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active,
@@ -1886,10 +1889,10 @@ namespace BlackMaple.MachineFramework
       {
         Material = new[] { mat },
         Pallet = "",
-        LogType = LogType.Wash,
-        LocationName = "Wash",
-        LocationNum = washLocNum,
-        Program = "",
+        LogType = LogType.CloseOut,
+        LocationName = "CloseOut",
+        LocationNum = locNum,
+        Program = closeoutType,
         StartOfCycle = false,
         EndTimeUTC = completeTimeUTC,
         Result = "",

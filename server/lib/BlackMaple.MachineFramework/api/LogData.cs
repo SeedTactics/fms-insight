@@ -126,7 +126,7 @@ namespace BlackMaple.MachineFramework
     InspectionResult = 103,
 
     [EnumMember]
-    Wash = 104,
+    CloseOut = 104,
 
     [EnumMember]
     AddToQueue = 105,

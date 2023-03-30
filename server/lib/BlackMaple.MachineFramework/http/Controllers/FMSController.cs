@@ -83,12 +83,12 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string CustomStationMonitorDialogUrl { get; init; }
 
-    // Wash Page Options
+    // Closeout Page Options
     [DataMember]
-    public bool RequireScanAtWash { get; init; }
+    public bool RequireScanAtCloseout { get; init; }
 
     [DataMember]
-    public bool RequireWorkorderBeforeAllowWashComplete { get; init; }
+    public bool RequireWorkorderBeforeAllowCloseoutComplete { get; init; }
 
     // Queues Page Options
     [DataMember]
@@ -127,8 +127,8 @@ namespace BlackMaple.MachineFramework.Controllers
       {
         Name = _impl.Name,
         Version = _impl.Version,
-        RequireScanAtWash = _cfg.RequireScanAtWash,
-        RequireWorkorderBeforeAllowWashComplete = _cfg.RequireWorkorderBeforeAllowWashComplete,
+        RequireScanAtCloseout = _cfg.RequireScanAtCloseout,
+        RequireWorkorderBeforeAllowCloseoutComplete = _cfg.RequireWorkorderBeforeAllowCloseoutComplete,
         AdditionalLogServers = _cfg.AdditionalLogServers,
         OpenIDConnectAuthority = _serverSt.OpenIDConnectAuthority,
         OpenIDConnectClientId = _serverSt.OpenIDConnectClientId,

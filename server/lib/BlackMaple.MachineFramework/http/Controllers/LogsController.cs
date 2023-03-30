@@ -70,7 +70,7 @@ namespace BlackMaple.MachineFramework.Controllers
   }
 
   [DataContract]
-  public record NewWash
+  public record NewCloseout
   {
     [DataMember(IsRequired = true)]
     public required long MaterialID { get; init; }
@@ -79,7 +79,10 @@ namespace BlackMaple.MachineFramework.Controllers
     public required int Process { get; init; }
 
     [DataMember(IsRequired = true)]
-    public required int WashLocationNum { get; init; }
+    public required int LocationNum { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required string CloseoutType { get; init; }
 
     [DataMember(IsRequired = false)]
     public Dictionary<string, string> ExtraData { get; init; }
@@ -358,15 +361,16 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
-    [HttpPost("events/wash")]
-    public LogEntry RecordWashCompleted([FromBody] NewWash insp)
+    [HttpPost("events/closeout")]
+    public LogEntry RecordCloseoutCompleted([FromBody] NewCloseout insp)
     {
       using (var db = _backend.RepoConfig.OpenConnection())
       {
-        return db.RecordWashCompleted(
+        return db.RecordCloseoutCompleted(
           insp.MaterialID,
           insp.Process,
-          insp.WashLocationNum,
+          insp.LocationNum,
+          insp.CloseoutType,
           insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
           insp.Elapsed,
           insp.Active

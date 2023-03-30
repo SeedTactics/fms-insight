@@ -719,9 +719,10 @@ namespace MachineWatchTest
       expectedInspLog %= e => e.ProgramDetails.Add("b", "bbb");
       logsForMat1.Add(expectedInspLog);
 
-      var washLog = _jobLog.RecordWashCompleted(
+      var washLog = _jobLog.RecordCloseoutCompleted(
         EventLogMaterial.FromLogMat(mat1),
         7,
+        "Closety",
         new Dictionary<string, string> { { "z", "zzz" }, { "y", "yyy" } },
         TimeSpan.FromMinutes(44),
         TimeSpan.FromMinutes(9)
@@ -730,10 +731,10 @@ namespace MachineWatchTest
         -1,
         new LogMaterial[] { mat1 },
         "",
-        LogType.Wash,
-        "Wash",
+        LogType.CloseOut,
+        "CloseOut",
         7,
-        "",
+        "Closety",
         false,
         washLog.EndTimeUTC,
         "",
