@@ -151,7 +151,7 @@ namespace BlackMaple.MachineFramework
   public interface ICellState
   {
     CurrentStatus CurrentStatus { get; }
-    bool PalletStateUpdated { get; }
+    bool StateUpdated { get; }
   }
 
   public interface ISynchronizeCellState<St>

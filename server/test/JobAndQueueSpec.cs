@@ -50,7 +50,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   {
     public long Uniq { get; init; }
     public CurrentStatus CurrentStatus { get; init; }
-    public bool PalletStateUpdated { get; init; }
+    public bool StateUpdated { get; init; }
   }
 
   private readonly RepositoryConfig _repo;
@@ -146,7 +146,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     tcs.SetResult(st);
   }
 
-  private async Task SetCurrentState(bool palStateUpdated, bool executeAction, CurrentStatus curSt = null)
+  private async Task SetCurrentState(bool stateUpdated, bool executeAction, CurrentStatus curSt = null)
   {
     curSt =
       curSt
@@ -163,7 +163,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     {
       Uniq = 0,
       CurrentStatus = curSt,
-      PalletStateUpdated = palStateUpdated
+      StateUpdated = stateUpdated
     };
     _executeActions = executeAction;
 
@@ -178,7 +178,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   private async Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
   {
     await SetCurrentState(
-      palStateUpdated: false,
+      stateUpdated: false,
       executeAction: false,
       curSt: _curSt.CurrentStatus with
       {
@@ -247,7 +247,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     );
 
     await SetCurrentState(
-      palStateUpdated: false,
+      stateUpdated: false,
       executeAction: false,
       curSt: new CurrentStatus()
       {
@@ -325,7 +325,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     );
 
     await SetCurrentState(
-      palStateUpdated: false,
+      stateUpdated: false,
       executeAction: false,
       curSt: new CurrentStatus()
       {
@@ -398,7 +398,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     using var db = _repo.OpenConnection();
     await StartSyncThread();
 
-    await SetCurrentState(palStateUpdated: false, executeAction: false);
+    await SetCurrentState(stateUpdated: false, executeAction: false);
     var newStatusTask = CreateTaskToWaitForNewCellState();
 
     //add a casting
@@ -659,7 +659,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       addAsCopiedToSystem: true
     );
 
-    await SetCurrentState(palStateUpdated: false, executeAction: false);
+    await SetCurrentState(stateUpdated: false, executeAction: false);
 
     //add an allocated material
     var expectedMat1 = QueuedMat(
@@ -890,7 +890,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     await StartSyncThread();
     using var db = _repo.OpenConnection();
 
-    await SetCurrentState(palStateUpdated: false, executeAction: false);
+    await SetCurrentState(stateUpdated: false, executeAction: false);
 
     var expectedMat1 = QueuedMat(
       matId: 1,
@@ -1144,7 +1144,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     );
 
     await SetCurrentState(
-      palStateUpdated: false,
+      stateUpdated: false,
       executeAction: false,
       curSt: new CurrentStatus()
       {

@@ -1592,7 +1592,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       using (var logMonitor = _logDBCfg.Monitor())
       {
         var cellSt = _createLog.BuildCellState(_logDB, _status);
-        cellSt.PalletStateUpdated.Should().BeFalse();
+        cellSt.StateUpdated.Should().BeFalse();
 
         CheckCellStMatchesExpected(cellSt);
         _assign.NewPalletChange(cellSt).Should().BeNull();
@@ -2236,7 +2236,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var cellSt = _createLog.BuildCellState(_logDB, _status);
 
-        cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
+        cellSt.StateUpdated.Should().Be(expectedUpdates);
 
         var expectedLogs = new List<LogEntry>();
 
@@ -2260,7 +2260,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
           // reload cell state
           cellSt = _createLog.BuildCellState(_logDB, _status);
-          cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
+          cellSt.StateUpdated.Should().Be(expectedUpdates);
         }
 
         var expectedDelRoute = (ExpectRouteDeleteChange)
@@ -2286,7 +2286,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
           // reload
           cellSt = _createLog.BuildCellState(_logDB, _status);
-          cellSt.PalletStateUpdated.Should().Be(false);
+          cellSt.StateUpdated.Should().Be(false);
         }
 
         if (expectedNewRoute != null)
@@ -2390,7 +2390,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
             // reload cell state
             cellSt = _createLog.BuildCellState(_logDB, _status);
-            cellSt.PalletStateUpdated.Should().Be(expectedUpdates);
+            cellSt.StateUpdated.Should().Be(expectedUpdates);
             cellSt.OldUnusedPrograms
               .Should()
               .BeEquivalentTo(
@@ -2439,7 +2439,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
           // reload cell state
           cellSt = _createLog.BuildCellState(_logDB, _status);
-          cellSt.PalletStateUpdated.Should().Be(true);
+          cellSt.StateUpdated.Should().Be(true);
         }
         else
         {

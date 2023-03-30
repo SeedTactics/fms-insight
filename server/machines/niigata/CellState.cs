@@ -71,7 +71,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public class CellState : ICellState
   {
     public NiigataStatus Status { get; set; }
-    public bool PalletStateUpdated { get; set; }
+    public bool StateUpdated { get; set; }
     public List<PalletAndMaterial> Pallets { get; set; }
     public ImmutableList<InProcessMaterialAndJob> QueuedMaterial { get; set; }
     public Dictionary<(string progName, long revision), ProgramRevision> ProgramsInUse { get; set; }
@@ -157,7 +157,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return new CellState()
       {
         Status = status,
-        PalletStateUpdated = palletStateUpdated,
+        StateUpdated = palletStateUpdated,
         Pallets = pals,
         QueuedMaterial = queuedMats,
         ProgramsInUse = progsInUse,
