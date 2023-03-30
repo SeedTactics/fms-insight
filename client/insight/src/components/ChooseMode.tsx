@@ -145,7 +145,7 @@ export const defaultChooseModes: ReadonlyArray<ChooseModeItem> = [
 
 export interface ChooseModeProps {
   readonly setRoute: (r: RouteState) => void;
-  readonly modes?: ReadonlyArray<ChooseModeItem>;
+  readonly modes?: ReadonlyArray<ChooseModeItem> | null;
 }
 
 export function ChooseMode(p: ChooseModeProps): JSX.Element {
