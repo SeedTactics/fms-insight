@@ -53,7 +53,7 @@ import {
   IWorkorderSummary,
   LogType,
   NewInspectionCompleted,
-  NewWash,
+  NewCloseout,
   QueuePosition,
 } from "../network/api.js";
 import { useCallback, useState } from "react";
@@ -402,20 +402,21 @@ export function useCompleteInspection(): [(data: CompleteInspectionData) => void
   return [callback, updating];
 }
 
-export interface CompleteWashData {
+export interface CompleteCloseoutData {
   readonly mat: MaterialToShowInfo;
   readonly operator: string | null;
 }
 
-export function useCompleteWash(): [(d: CompleteWashData) => void, boolean] {
+export function useCompleteCloseout(): [(d: CompleteCloseoutData) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const callback = useCallback((d: CompleteWashData) => {
+  const callback = useCallback((d: CompleteCloseoutData) => {
     setUpdating(true);
-    LogBackend.recordWashCompleted(
-      new NewWash({
+    LogBackend.recordCloseoutCompleted(
+      new NewCloseout({
         materialID: d.mat.materialID,
         process: 1,
-        washLocationNum: 1,
+        locationNum: 1,
+        closeoutType: "",
         active: "PT0S",
         elapsed: "PT0S",
         extraData: d.operator ? { operator: d.operator } : undefined,

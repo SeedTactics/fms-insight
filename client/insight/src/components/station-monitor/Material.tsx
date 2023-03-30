@@ -280,11 +280,11 @@ const MatCard = React.forwardRef(function MatCard(
         <TimeAgo date={props.mat.last_unload_time} />
       </MatCardDetail>
     );
-  } else if (props.mat.wash_completed) {
+  } else if (props.mat.closeout_completed) {
     completedMsg = (
       <MatCardDetail fsize={props.fsize}>
-        <span>Wash completed </span>
-        <TimeAgo date={props.mat.wash_completed} />
+        <span>Closed Out </span>
+        <TimeAgo date={props.mat.closeout_completed} />
       </MatCardDetail>
     );
   }

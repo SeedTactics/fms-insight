@@ -91,10 +91,10 @@ export const defaultChooseModes: ReadonlyArray<ChooseModeItem> = [
   {
     type: "Link",
     route: {
-      route: RouteLocation.Station_WashMonitor,
+      route: RouteLocation.Station_Closeout,
     },
     icon: <OpacityIcon />,
-    label: "Wash",
+    label: "Close Out",
   },
   {
     type: "Link",

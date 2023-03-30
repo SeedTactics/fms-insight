@@ -125,8 +125,8 @@ export interface LogAPI {
     jobUnique?: string,
     partName?: string
   ): Promise<Readonly<api.ILogEntry>>;
-  recordWashCompleted(
-    insp: api.NewWash,
+  recordCloseoutCompleted(
+    insp: api.NewCloseout,
     jobUnique?: string,
     partName?: string
   ): Promise<Readonly<api.ILogEntry>>;

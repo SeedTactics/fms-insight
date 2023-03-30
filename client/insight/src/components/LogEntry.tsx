@@ -110,8 +110,8 @@ function logType(entry: api.ILogEntry): string {
     case api.LogType.FinalizeWorkorder:
       return "Finalize Workorder";
 
-    case api.LogType.Wash:
-      return "Wash";
+    case api.LogType.CloseOut:
+      return "CloseOut";
 
     case api.LogType.InspectionResult:
       return "Inspection";
@@ -259,8 +259,8 @@ function display(props: LogEntryProps): JSX.Element {
         return <ColoredSpan $type="inspectionSignaled">{entry.program} Succeeded</ColoredSpan>;
       }
 
-    case api.LogType.Wash:
-      return <span>Wash Completed</span>;
+    case api.LogType.CloseOut:
+      return <span>{entry.program && entry.program !== "" ? entry.program : "CloseOut"} Completed</span>;
 
     case api.LogType.AddToQueue:
       switch (entry.program) {

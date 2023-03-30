@@ -1915,8 +1915,8 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    recordWashCompleted(insp: NewWash): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/events/wash";
+    recordCloseoutCompleted(insp: NewCloseout): Promise<LogEntry> {
+        let url_ = this.baseUrl + "/api/v1/log/events/closeout";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(insp);
@@ -1931,11 +1931,11 @@ export class LogClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRecordWashCompleted(_response);
+            return this.processRecordCloseoutCompleted(_response);
         });
     }
 
-    protected processRecordWashCompleted(response: Response): Promise<LogEntry> {
+    protected processRecordCloseoutCompleted(response: Response): Promise<LogEntry> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -2227,8 +2227,8 @@ export class FMSInfo implements IFMSInfo {
     quarantineQueue?: string | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     customStationMonitorDialogUrl?: string | undefined;
-    requireScanAtWash?: boolean;
-    requireWorkorderBeforeAllowWashComplete?: boolean;
+    requireScanAtCloseout?: boolean;
+    requireWorkorderBeforeAllowCloseoutComplete?: boolean;
     addRawMaterial?: AddRawMaterialType;
     addInProcessMaterial?: AddInProcessMaterialType;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
@@ -2262,8 +2262,8 @@ export class FMSInfo implements IFMSInfo {
             this.quarantineQueue = _data["QuarantineQueue"];
             this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
             this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
-            this.requireScanAtWash = _data["RequireScanAtWash"];
-            this.requireWorkorderBeforeAllowWashComplete = _data["RequireWorkorderBeforeAllowWashComplete"];
+            this.requireScanAtCloseout = _data["RequireScanAtCloseout"];
+            this.requireWorkorderBeforeAllowCloseoutComplete = _data["RequireWorkorderBeforeAllowCloseoutComplete"];
             this.addRawMaterial = _data["AddRawMaterial"];
             this.addInProcessMaterial = _data["AddInProcessMaterial"];
             this.requireOperatorNamePromptWhenAddingMaterial = _data["RequireOperatorNamePromptWhenAddingMaterial"];
@@ -2297,8 +2297,8 @@ export class FMSInfo implements IFMSInfo {
         data["QuarantineQueue"] = this.quarantineQueue;
         data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
-        data["RequireScanAtWash"] = this.requireScanAtWash;
-        data["RequireWorkorderBeforeAllowWashComplete"] = this.requireWorkorderBeforeAllowWashComplete;
+        data["RequireScanAtCloseout"] = this.requireScanAtCloseout;
+        data["RequireWorkorderBeforeAllowCloseoutComplete"] = this.requireWorkorderBeforeAllowCloseoutComplete;
         data["AddRawMaterial"] = this.addRawMaterial;
         data["AddInProcessMaterial"] = this.addInProcessMaterial;
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
@@ -2321,8 +2321,8 @@ export interface IFMSInfo {
     quarantineQueue?: string | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     customStationMonitorDialogUrl?: string | undefined;
-    requireScanAtWash?: boolean;
-    requireWorkorderBeforeAllowWashComplete?: boolean;
+    requireScanAtCloseout?: boolean;
+    requireWorkorderBeforeAllowCloseoutComplete?: boolean;
     addRawMaterial?: AddRawMaterialType;
     addInProcessMaterial?: AddInProcessMaterialType;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
@@ -2581,7 +2581,7 @@ export enum LogType {
     PalletCycle = "PalletCycle",
     FinalizeWorkorder = "FinalizeWorkorder",
     InspectionResult = "InspectionResult",
-    Wash = "Wash",
+    CloseOut = "CloseOut",
     AddToQueue = "AddToQueue",
     RemoveFromQueue = "RemoveFromQueue",
     InspectionForce = "InspectionForce",
@@ -5205,15 +5205,16 @@ export interface INewInspectionCompleted {
     active: string;
 }
 
-export class NewWash implements INewWash {
+export class NewCloseout implements INewCloseout {
     materialID!: number;
     process!: number;
-    washLocationNum!: number;
+    locationNum!: number;
+    closeoutType!: string | undefined;
     extraData?: { [key: string]: string; } | undefined;
     elapsed!: string;
     active!: string;
 
-    constructor(data?: INewWash) {
+    constructor(data?: INewCloseout) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -5226,7 +5227,8 @@ export class NewWash implements INewWash {
         if (_data) {
             this.materialID = _data["MaterialID"];
             this.process = _data["Process"];
-            this.washLocationNum = _data["WashLocationNum"];
+            this.locationNum = _data["LocationNum"];
+            this.closeoutType = _data["CloseoutType"];
             if (_data["ExtraData"]) {
                 this.extraData = {} as any;
                 for (let key in _data["ExtraData"]) {
@@ -5239,9 +5241,9 @@ export class NewWash implements INewWash {
         }
     }
 
-    static fromJS(data: any): NewWash {
+    static fromJS(data: any): NewCloseout {
         data = typeof data === 'object' ? data : {};
-        let result = new NewWash();
+        let result = new NewCloseout();
         result.init(data);
         return result;
     }
@@ -5250,7 +5252,8 @@ export class NewWash implements INewWash {
         data = typeof data === 'object' ? data : {};
         data["MaterialID"] = this.materialID;
         data["Process"] = this.process;
-        data["WashLocationNum"] = this.washLocationNum;
+        data["LocationNum"] = this.locationNum;
+        data["CloseoutType"] = this.closeoutType;
         if (this.extraData) {
             data["ExtraData"] = {};
             for (let key in this.extraData) {
@@ -5264,10 +5267,11 @@ export class NewWash implements INewWash {
     }
 }
 
-export interface INewWash {
+export interface INewCloseout {
     materialID: number;
     process: number;
-    washLocationNum: number;
+    locationNum: number;
+    closeoutType: string | undefined;
     extraData?: { [key: string]: string; } | undefined;
     elapsed: string;
     active: string;

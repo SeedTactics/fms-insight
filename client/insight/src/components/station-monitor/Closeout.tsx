@@ -42,38 +42,41 @@ import { Tooltip } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
-import { useRecoilValue, useSetRecoilState } from "recoil";
+import { atom, useRecoilValue, useSetRecoilState } from "recoil";
 import {
   materialDialogOpen,
   materialInDialogEvents,
   materialInDialogInfo,
   useCloseMaterialDialog,
-  useCompleteWash,
+  useCompleteCloseout,
 } from "../../cell-status/material-details.js";
-import { last30MaterialSummary } from "../../cell-status/material-summary.js";
+import {
+  last30MaterialSummary,
+  MaterialSummaryAndCompletedData,
+} from "../../cell-status/material-summary.js";
 import { LogType } from "../../network/api.js";
 import { instructionUrl } from "../../network/backend.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 
-function CompleteWashButton() {
+function CompleteButton() {
   const fmsInfo = useRecoilValue(fmsInformation);
   const mat = useRecoilValue(materialInDialogInfo);
-  const [completeWash, completingWash] = useCompleteWash();
+  const [complete, isCompleting] = useCompleteCloseout();
   const operator = useRecoilValue(currentOperator);
   const closeMatDialog = useCloseMaterialDialog();
   const toShow = useRecoilValue(materialDialogOpen);
 
   if (mat === null) return null;
 
-  const requireScan = fmsInfo.requireScanAtWash;
-  const requireWork = fmsInfo.requireWorkorderBeforeAllowWashComplete;
+  const requireScan = fmsInfo.requireScanAtCloseout;
+  const requireWork = fmsInfo.requireWorkorderBeforeAllowCloseoutComplete;
   let disallowCompleteReason: string | undefined;
 
   if (requireScan) {
     const usedScan =
       toShow !== null && (toShow.type === "Barcode" || toShow.type === "ManuallyEnteredSerial");
     if (!usedScan) {
-      disallowCompleteReason = "Scan required at wash";
+      disallowCompleteReason = "Scan Required";
     }
   } else if (requireWork) {
     if (mat.workorderId === undefined || mat.workorderId === "") {
@@ -81,9 +84,9 @@ function CompleteWashButton() {
     }
   }
 
-  function markWashComplete() {
+  function markComplete() {
     if (mat === null) return;
-    completeWash({
+    complete({
       mat,
       operator: operator,
     });
@@ -95,15 +98,15 @@ function CompleteWashButton() {
       <Tooltip title={disallowCompleteReason} placement="top">
         <div>
           <Button color="primary" disabled>
-            Mark Wash Complete
+            Close Out
           </Button>
         </div>
       </Tooltip>
     );
   } else {
     return (
-      <Button color="primary" disabled={completingWash} onClick={markWashComplete}>
-        Mark Wash Complete
+      <Button color="primary" disabled={isCompleting} onClick={markComplete}>
+        Close Out
       </Button>
     );
   }
@@ -128,7 +131,7 @@ function InstrButton() {
       .flatMap((e) => e.material)
       .filter((e) => e.id === material.materialID)
       .maxBy((e) => e.proc)?.proc ?? null;
-  const url = instructionUrl(material.partName, "wash", material.materialID, null, maxProc, operator);
+  const url = instructionUrl(material.partName, "closeout", material.materialID, null, maxProc, operator);
   return (
     <Button href={url} target="bms-instructions" color="primary">
       Instructions
@@ -148,7 +151,7 @@ function AssignWorkorderButton() {
   );
 }
 
-const WashMaterialDialog = React.memo(function WashDialog() {
+const CloseoutMaterialDialog = React.memo(function CloseoutDialog() {
   return (
     <MaterialDialog
       allowNote
@@ -156,38 +159,61 @@ const WashMaterialDialog = React.memo(function WashDialog() {
         <>
           <InstrButton />
           <QuarantineMatButton />
-          <CompleteWashButton />
           <AssignWorkorderButton />
+          <CompleteButton />
         </>
       }
     />
   );
 });
 
-export function Wash(): JSX.Element {
+const currentNearestMinutes = atom<Date>({
+  key: "closeout/nearestminute",
+  default: new Date(),
+  effects: [
+    ({ setSelf }) => {
+      const interval = setInterval(() => {
+        setSelf(new Date());
+      }, 1000 * 60);
+      return () => clearInterval(interval);
+    },
+  ],
+});
+
+export function Closeout(): JSX.Element {
   const matSummary = useRecoilValue(last30MaterialSummary);
-  const recentCompleted = React.useMemo(() => {
-    const cutoff = addHours(new Date(), -36);
-    const recent = matSummary.matsById
-      .valuesToLazySeq()
-      .filter(
-        (e) =>
-          e.completed_last_proc_machining === true &&
-          e.last_unload_time !== undefined &&
-          e.last_unload_time >= cutoff
-      )
-      .toMutableArray();
-    // sort decending
-    recent.sort((e1, e2) =>
+  const nearestMinute = useRecoilValue(currentNearestMinutes);
+
+  const material = React.useMemo(() => {
+    const cutoff = addHours(nearestMinute, -48);
+    const closedCutoff = addHours(nearestMinute, -2);
+    const uncompleted: Array<MaterialSummaryAndCompletedData> = [];
+    const closed: Array<MaterialSummaryAndCompletedData> = [];
+    for (const m of matSummary.matsById.values()) {
+      if (m.completed_last_proc_machining === true && m.last_unload_time && m.last_unload_time >= cutoff) {
+        if (m.closeout_completed === undefined) {
+          uncompleted.push(m);
+        } else if (m.closeout_completed >= closedCutoff) {
+          closed.push(m);
+        }
+      }
+    }
+
+    // sort ascending
+    uncompleted.sort((e1, e2) =>
+      e1.last_unload_time && e2.last_unload_time
+        ? e1.last_unload_time.getTime() - e2.last_unload_time.getTime()
+        : 0
+    );
+    // sort descending
+    closed.sort((e1, e2) =>
       e1.last_unload_time && e2.last_unload_time
         ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime()
         : 0
     );
-    return recent;
-  }, [matSummary]);
 
-  const unwashed = LazySeq.of(recentCompleted).filter((m) => m.wash_completed === undefined);
-  const washed = LazySeq.of(recentCompleted).filter((m) => m.wash_completed !== undefined);
+    return { uncompleted, closed };
+  }, [matSummary, nearestMinute]);
 
   return (
     <>
@@ -201,31 +227,31 @@ export function Wash(): JSX.Element {
             borderBottom: { sm: "1px solid black", md: "none" },
           }}
         >
-          <Typography variant="h4">Recently Completed Parts Not Yet Washed</Typography>
+          <Typography variant="h4">Recently Completed</Typography>
           <Box display="flex" justifyContent="space-between" flexWrap="wrap">
-            {unwashed.map((m, idx) => (
+            {material.uncompleted.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
           </Box>
         </Box>
         <Box padding="8px" sx={{ width: { md: "50vw" } }}>
-          <Typography variant="h4">Recently Washed Parts</Typography>
+          <Typography variant="h4">Closed Out</Typography>
           <Box display="flex" justifyContent="space-between" flexWrap="wrap">
-            {washed.map((m, idx) => (
+            {material.closed.map((m, idx) => (
               <MatSummary key={idx} mat={m} />
             ))}
           </Box>
         </Box>
       </Box>
       <SelectWorkorderDialog />
-      <WashMaterialDialog />
+      <CloseoutMaterialDialog />
     </>
   );
 }
 
-export default function WashPage(): JSX.Element {
+export function CloseoutPage(): JSX.Element {
   React.useEffect(() => {
-    document.title = "Wash - FMS Insight";
+    document.title = "Close Out - FMS Insight";
   }, []);
 
   return (
@@ -236,7 +262,7 @@ export default function WashPage(): JSX.Element {
         minHeight: { sm: "calc(100vh - 64px - 40px)", md: "calc(100vh - 64px)" },
       }}
     >
-      <Wash />
+      <Closeout />
     </Box>
   );
 }

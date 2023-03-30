@@ -66,7 +66,7 @@ import { QualityPaths } from "./quality/QualityPaths.js";
 import { QualityDashboard } from "./quality/RecentFailedInspections.js";
 import LoadStation from "./station-monitor/LoadStation.js";
 import Inspection from "./station-monitor/Inspection.js";
-import Wash from "./station-monitor/Wash.js";
+import { CloseoutPage } from "./station-monitor/Closeout.js";
 import Queues from "./station-monitor/Queues.js";
 import { ToolReportPage } from "./operations/ToolReport.js";
 import { ProgramReportPage } from "./operations/Programs.js";
@@ -338,8 +338,8 @@ const App = React.memo(function App(props: AppProps) {
         showOperator = true;
         addBasicMaterialDialog = false;
         break;
-      case routes.RouteLocation.Station_WashMonitor:
-        page = <Wash />;
+      case routes.RouteLocation.Station_Closeout:
+        page = <CloseoutPage />;
         navigation = StationToolbar;
         navigationCenter = StationToolbarOverviewButton;
         showOperator = true;

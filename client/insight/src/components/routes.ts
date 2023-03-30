@@ -50,7 +50,7 @@ export enum RouteLocation {
   Station_LoadMonitor = "/station/loadunload/:num",
   Station_InspectionMonitor = "/station/inspection",
   Station_InspectionMonitorWithType = "/station/inspection/:type",
-  Station_WashMonitor = "/station/wash",
+  Station_Closeout = "/station/closeout",
   Station_Queues = "/station/queues",
   Station_Overview = "/station/overview",
 
@@ -91,6 +91,7 @@ const patterns = LazySeq.ofObject(RouteLocation)
     RouteLocation.Operations_RecentSchedules,
     new URLPattern("/operations/completed", location.origin),
   ])
+  .append([RouteLocation.Station_Closeout, new URLPattern("/station/wash", location.origin)])
   .toRArray();
 
 export type RouteState =
@@ -103,7 +104,7 @@ export type RouteState =
     }
   | { route: RouteLocation.Station_InspectionMonitor }
   | { route: RouteLocation.Station_InspectionMonitorWithType; inspType: string }
-  | { route: RouteLocation.Station_WashMonitor }
+  | { route: RouteLocation.Station_Closeout }
   | { route: RouteLocation.Station_Queues; queues: ReadonlyArray<string> }
   | { route: RouteLocation.Station_Overview }
   | { route: RouteLocation.Operations_Dashboard }
@@ -287,7 +288,7 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Station_LoadMonitor:
     case RouteLocation.Station_InspectionMonitor:
     case RouteLocation.Station_InspectionMonitorWithType:
-    case RouteLocation.Station_WashMonitor:
+    case RouteLocation.Station_Closeout:
     case RouteLocation.Station_Queues:
     case RouteLocation.Station_Overview:
       return "https://www.seedtactics.com/docs/fms-insight/client-station-monitor";
