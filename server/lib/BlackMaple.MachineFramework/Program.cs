@@ -142,13 +142,9 @@ namespace BlackMaple.MachineFramework
     public static void EnableSerilog(ServerSettings serverSt, bool enableEventLog)
     {
       var logConfig = new LoggerConfiguration().MinimumLevel
-        .Debug()
+        .ControlledBy(serverSt.LogLevel)
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-        .WriteTo.Console(
-          restrictedToMinimumLevel: serverSt.EnableDebugLog
-            ? Serilog.Events.LogEventLevel.Debug
-            : Serilog.Events.LogEventLevel.Information
-        );
+        .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
 
 #if SERVICE_AVAIL
       if (enableEventLog)
@@ -168,7 +164,7 @@ namespace BlackMaple.MachineFramework
           System.IO.Path.Combine(ServerSettings.ConfigDirectory, "fmsinsight-debug.txt"),
           rollingInterval: RollingInterval.Day,
           hooks: new CompressSerilogDebugLog(),
-          restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug,
+          restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Verbose,
           retainedFileCountLimit: 3
         );
       }

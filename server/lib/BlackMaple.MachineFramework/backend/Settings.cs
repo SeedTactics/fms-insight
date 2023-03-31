@@ -59,13 +59,13 @@ namespace BlackMaple.MachineFramework
     public static string ContentRootDirectory { get; } = Directory.GetCurrentDirectory();
 #endif
 
-    public bool EnableDebugLog { get; set; } = false;
-    public int Port { get; set; } = 5000;
-    public string TLSCertFile { get; set; } = null;
-    public string OpenIDConnectAuthority { get; set; } = null;
-    public string OpenIDConnectClientId { get; set; } = null;
-    public string AuthAuthority { get; set; } = null;
-    public string AuthTokenAudiences { get; set; } = null;
+    public bool EnableDebugLog { get; init; } = false;
+    public int Port { get; init; } = 5000;
+    public string TLSCertFile { get; init; } = null;
+    public string OpenIDConnectAuthority { get; init; } = null;
+    public string OpenIDConnectClientId { get; init; } = null;
+    public string AuthAuthority { get; init; } = null;
+    public string AuthTokenAudiences { get; init; } = null;
 
     public bool UseAuthentication =>
       !string.IsNullOrEmpty(OpenIDConnectClientId)
@@ -73,11 +73,19 @@ namespace BlackMaple.MachineFramework
       && !string.IsNullOrEmpty(AuthAuthority)
       && !string.IsNullOrEmpty(AuthTokenAudiences);
 
+    public Serilog.Core.LoggingLevelSwitch LogLevel { get; } =
+      new Serilog.Core.LoggingLevelSwitch(Serilog.Events.LogEventLevel.Information);
+
     public static ServerSettings Load(IConfiguration config)
     {
       var s = config.GetSection("SERVER").Get<ServerSettings>();
       if (s == null)
         s = new ServerSettings();
+
+      if (s.EnableDebugLog)
+      {
+        s.LogLevel.MinimumLevel = Serilog.Events.LogEventLevel.Debug;
+      }
 
       return s;
     }
