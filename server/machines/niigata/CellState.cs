@@ -243,7 +243,7 @@ namespace BlackMaple.FMSInsight.Niigata
         .ToList();
 
       var palSt = MachineFramework.BuildCellState.CurrentMaterialOnPallet(
-        pallet.Master.PalletNum.ToString(),
+        pallet.Master.PalletNum,
         logDB,
         jobCache
       );
