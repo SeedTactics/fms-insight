@@ -102,14 +102,15 @@ public static class BuildCellState
 
   public record PalletMaterial
   {
+    public required int Pallet { get; init; }
     public required ImmutableList<LoadedMaterial> LoadedMaterial { get; init; }
     public required IReadOnlyList<LogEntry> Log { get; init; }
   }
 
-  public static PalletMaterial CurrentMaterialOnPallet(string pallet, IRepository db, JobCache jobs)
+  public static PalletMaterial CurrentMaterialOnPallet(int pallet, IRepository db, JobCache jobs)
   {
     var loadedMats = ImmutableList.CreateBuilder<LoadedMaterial>();
-    var log = db.CurrentPalletLog(pallet);
+    var log = db.CurrentPalletLog(pallet.ToString());
 
     var lastLoaded = log.Where(
         e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && !e.StartOfCycle
@@ -137,7 +138,7 @@ public static class BuildCellState
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.OnPallet,
-          Pallet = pallet,
+          Pallet = pallet.ToString(),
           Face = int.TryParse(mat.Face, out var face) ? face : 1
         },
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
@@ -158,7 +159,131 @@ public static class BuildCellState
       );
     }
 
-    return new PalletMaterial() { LoadedMaterial = loadedMats.ToImmutable(), Log = log };
+    return new PalletMaterial()
+    {
+      Pallet = pallet,
+      LoadedMaterial = loadedMats.ToImmutable(),
+      Log = log
+    };
+  }
+
+  public record CurrentMachiningStop
+  {
+    public required MachiningStop? JobStop { get; init; }
+    public required LogEntry? MachineStart { get; init; }
+    public required LogEntry? MachineEnd { get; init; }
+  }
+
+  // In many cells, only a single piece of material is on a pallet at once.
+  public record SingleLoadedMaterial : LoadedMaterial
+  {
+    public required int Pallet { get; init; }
+    public required ImmutableList<CurrentMachiningStop> Stops { get; init; }
+    public required LogEntry? UnloadBegin { get; init; }
+    public required IReadOnlyList<LogEntry> AllEntries { get; init; }
+  }
+
+  public static SingleLoadedMaterial? CurrentSingleMaterialOnPallet(int pallet, IRepository db, JobCache jobs)
+  {
+    var palMats = BuildCellState.CurrentMaterialOnPallet(pallet, db, jobs);
+    var mat = palMats.LoadedMaterial.FirstOrDefault();
+    if (mat == null)
+    {
+      return null;
+    }
+    else if (jobs == null)
+    {
+      var stops = ImmutableList.CreateBuilder<CurrentMachiningStop>();
+
+      LogEntry? machineBegin = null;
+      foreach (var log in palMats.Log.Where(e => e.LogType == LogType.MachineCycle))
+      {
+        if (log.StartOfCycle && machineBegin != null)
+        {
+          // machine started while another was in-process, add the stop as a half-unfinished stop
+          stops.Add(
+            new CurrentMachiningStop()
+            {
+              JobStop = null,
+              MachineStart = machineBegin,
+              MachineEnd = null
+            }
+          );
+          machineBegin = log;
+        }
+        else if (log.StartOfCycle)
+        {
+          // machine started with previous begin null, all is good
+          machineBegin = log;
+        }
+        else if (
+          machineBegin != null
+          && log.LocationName == machineBegin.LocationName
+          && log.LocationNum == machineBegin.LocationNum
+          && log.Program == machineBegin.Program
+        )
+        {
+          // machine end matching the machine start, all is good
+          stops.Add(
+            new CurrentMachiningStop()
+            {
+              JobStop = null,
+              MachineStart = machineBegin,
+              MachineEnd = log
+            }
+          );
+          machineBegin = null;
+        }
+        else if (machineBegin != null)
+        {
+          // machine begin and end don't match locations or programs, add both as half-unfinished stops
+          stops.Add(
+            new CurrentMachiningStop()
+            {
+              JobStop = null,
+              MachineStart = machineBegin,
+              MachineEnd = null,
+            }
+          );
+          stops.Add(
+            new CurrentMachiningStop()
+            {
+              JobStop = null,
+              MachineStart = null,
+              MachineEnd = log
+            }
+          );
+          machineBegin = null;
+        }
+        else
+        {
+          // machine begin is null, but we have a machine end
+          stops.Add(
+            new CurrentMachiningStop()
+            {
+              JobStop = null,
+              MachineStart = null,
+              MachineEnd = log
+            }
+          );
+        }
+      }
+
+      return new SingleLoadedMaterial
+      {
+        Pallet = pallet,
+        InProc = mat.InProc,
+        Job = mat.Job,
+        LoadEnd = mat.LoadEnd,
+        Stops = stops.ToImmutable(),
+        UnloadBegin = palMats.Log.LastOrDefault(e => e.LogType == LogType.LoadUnloadCycle && e.StartOfCycle),
+        AllEntries = palMats.Log
+      };
+    }
+    else
+    {
+      throw new NotImplementedException("TODO: match with job steps too");
+    }
   }
 
   // Additional Helpers to consider here are FindMaterialToLoad, but currently the different implementations
