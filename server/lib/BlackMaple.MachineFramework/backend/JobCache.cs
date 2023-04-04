@@ -40,7 +40,17 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 
-public class JobCache
+public interface IJobCache
+{
+  HistoricJob? Lookup(string uniq);
+}
+
+public interface IJobCacheWithDefaultStops : IJobCache
+{
+  IReadOnlyList<MachiningStop> DefaultStopsForPath(string partName, int proc, int path);
+}
+
+public class JobCache : IJobCache
 {
   private sealed record JobSortKey : IComparable<JobSortKey>
   {

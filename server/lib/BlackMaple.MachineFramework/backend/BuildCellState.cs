@@ -49,7 +49,7 @@ public static class BuildCellState
     public required Job? Job { get; init; }
   }
 
-  public static ImmutableList<MaterialInQueue> AllQueuedMaterial(IRepository db, JobCache? jobCache)
+  public static ImmutableList<MaterialInQueue> AllQueuedMaterial(IRepository db, IJobCache? jobCache)
   {
     var mats = ImmutableList.CreateBuilder<MaterialInQueue>();
     var queuedMats = db.GetMaterialInAllQueues();
@@ -93,28 +93,42 @@ public static class BuildCellState
     return mats.ToImmutable();
   }
 
-  public record LoadedMaterial
+  public record ExecutedMachiningStop : MachiningStop
   {
-    public required InProcessMaterial InProc { get; init; }
+    public required LogEntry MachineStart { get; init; }
+    public required LogEntry MachineEnd { get; init; }
+  }
+
+  public record CurrentMachiningStop : MachiningStop
+  {
+    public required LogEntry MachineStart { get; init; }
+  }
+
+  public record LoadedFace
+  {
     public required Job? Job { get; init; }
-    public required IReadOnlyList<MachiningStop> AllStops { get; init; }
+    public required int Process { get; init; }
+    public required int Path { get; init; }
+    public required ImmutableList<InProcessMaterial> Material { get; init; }
+    public required ImmutableList<ExecutedMachiningStop> ExecutedStops { get; init; }
+    public required MachiningStop? CurrentStop { get; init; }
+    public required ImmutableList<MachiningStop> RemainingStops { get; init; }
   }
 
   public record LoadedPallet
   {
     public required int Pallet { get; init; }
-    public required ImmutableList<LoadedMaterial> LoadedMaterial { get; init; }
+    public required ImmutableDictionary<int, LoadedFace> Faces { get; init; }
     public required IReadOnlyList<LogEntry> Log { get; init; }
   }
 
   public static LoadedPallet CurrentMaterialOnPallet(
     int pallet,
     IRepository db,
-    JobCache jobs,
-    Func<string, IReadOnlyList<MachiningStop>> defaultRouteForPart
+    IJobCacheWithDefaultStops jobs
   )
   {
-    var loadedMats = ImmutableList.CreateBuilder<LoadedMaterial>();
+    var faces = ImmutableDictionary.CreateBuilder<int, LoadedFace>();
     var log = db.CurrentPalletLog(pallet.ToString());
 
     var lastLoaded = log.Where(
@@ -126,42 +140,59 @@ public static class BuildCellState
       )
       .SelectMany(e => e.Material);
 
-    foreach (var mat in lastLoaded)
+    foreach (var matGroup in lastLoaded.GroupBy(m => int.TryParse(m.Face, out var faceNum) ? faceNum : 1))
     {
-      var details = db.GetMaterialDetails(mat.MaterialID);
-      var inProcMat = new InProcessMaterial()
-      {
-        MaterialID = mat.MaterialID,
-        JobUnique = mat.JobUniqueStr,
-        PartName = mat.PartName,
-        Process = mat.Process,
-        Path =
-          details.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1,
-        Serial = details.Serial,
-        WorkorderId = details.Workorder,
-        SignaledInspections = db.LookupInspectionDecisions(mat.MaterialID)
-          .Where(x => x.Inspect)
-          .Select(x => x.InspType)
-          .ToImmutableList(),
-        LastCompletedMachiningRouteStopIndex = null,
-        Location = new InProcessMaterialLocation()
+      var loadedMats = matGroup
+        .Select(mat =>
         {
-          Type = InProcessMaterialLocation.LocType.OnPallet,
-          Pallet = pallet.ToString(),
-          Face = int.TryParse(mat.Face, out var face) ? face : 1
-        },
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-      };
+          var details = db.GetMaterialDetails(mat.MaterialID);
+          return new InProcessMaterial()
+          {
+            MaterialID = mat.MaterialID,
+            JobUnique = mat.JobUniqueStr,
+            PartName = mat.PartName,
+            Process = mat.Process,
+            Path =
+              details.Paths != null && details.Paths.ContainsKey(mat.Process)
+                ? details.Paths[mat.Process]
+                : 1,
+            Serial = details.Serial,
+            WorkorderId = details.Workorder,
+            SignaledInspections = db.LookupInspectionDecisions(mat.MaterialID)
+              .Where(x => x.Inspect)
+              .Select(x => x.InspType)
+              .ToImmutableList(),
+            LastCompletedMachiningRouteStopIndex = null,
+            Location = new InProcessMaterialLocation()
+            {
+              Type = InProcessMaterialLocation.LocType.OnPallet,
+              Pallet = pallet.ToString(),
+              Face = int.TryParse(mat.Face, out var face) ? face : 1
+            },
+            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+          };
+        })
+        .ToImmutableList();
 
-      var job = jobs.Lookup(mat.JobUniqueStr);
-      loadedMats.Add(
-        new LoadedMaterial()
+      var firstMat = loadedMats.First();
+      var job = jobs.Lookup(firstMat.JobUnique);
+      var stops =
+        job?.Processes?[firstMat.Process - 1]?.Paths?[firstMat.Path - 1]?.Stops
+        ?? jobs.DefaultStopsForPath(firstMat.PartName, firstMat.Process, firstMat.Path);
+
+      // TODO: split stops based on completed, executing, and remaining
+
+      faces.Add(
+        matGroup.Key,
+        new LoadedFace()
         {
-          InProc = inProcMat,
           Job = job,
-          AllStops =
-            job?.Processes?[mat.Process - 1]?.Paths?[inProcMat.Path - 1]?.Stops
-            ?? defaultRouteForPart(mat.PartName)
+          Process = firstMat.Process,
+          Path = firstMat.Path,
+          Material = loadedMats,
+          ExecutedStops = ImmutableList<ExecutedMachiningStop>.Empty,
+          CurrentStop = null,
+          RemainingStops = stops.ToImmutableList()
         }
       );
     }
@@ -169,13 +200,14 @@ public static class BuildCellState
     return new LoadedPallet()
     {
       Pallet = pallet,
-      LoadedMaterial = loadedMats.ToImmutable(),
+      Faces = faces.ToImmutable(),
       Log = log
     };
   }
 
+  // TODO: Function to FastForward Stops based on currently running program (would also create log events and update Action)
+
+
   // Additional Helpers to consider here are FindMaterialToLoad, but currently the different implementations
   // have slightly different behavior.
-
-  // Add helper to apply a log entry such as machine begin to a loaded material and update the InProc state
 }
