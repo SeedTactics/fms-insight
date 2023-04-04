@@ -245,7 +245,10 @@ namespace BlackMaple.FMSInsight.Niigata
       var palSt = MachineFramework.BuildCellState.CurrentMaterialOnPallet(
         pallet.Master.PalletNum,
         logDB,
-        jobCache
+        jobCache,
+        // We doesn't use the stops calculated here, instead there is code below
+        // in EnsureAllNonloadStopsHaveEvents() to manually find the stops
+        (_partName) => Array.Empty<MachiningStop>()
       );
       var mats = palSt.LoadedMaterial
         .Select(mat =>
