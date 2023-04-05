@@ -43,11 +43,18 @@ using System.Linq;
 public interface IJobCache
 {
   HistoricJob? Lookup(string uniq);
+  IEnumerable<HistoricJob> AllJobs { get; }
+  IEnumerable<(HistoricJob job, int proc, int path)> JobsSortedByPrecedence { get; }
+  ImmutableDictionary<string, ActiveJob> BuildActiveJobs(
+    IEnumerable<InProcessMaterial> allMaterial,
+    IRepository db
+  );
 }
 
 public interface IJobCacheWithDefaultStops : IJobCache
 {
   IReadOnlyList<MachiningStop> DefaultStopsForPath(string partName, int proc, int path);
+  int TotalNumberOfProcesses(string partName);
 }
 
 public class JobCache : IJobCache
@@ -55,8 +62,8 @@ public class JobCache : IJobCache
   private sealed record JobSortKey : IComparable<JobSortKey>
   {
     public required bool ManuallyCreated { get; init; }
-    public required DateTime PathStart { get; init; }
     public required DateTime RouteStart { get; init; }
+    public required DateTime PathStart { get; init; }
     public required string Unique { get; init; }
     public required int Process { get; init; }
     public required int Path { get; init; }
@@ -70,14 +77,14 @@ public class JobCache : IJobCache
         return ManuallyCreated ? -1 : 1;
       }
 
-      if (PathStart != other.PathStart)
-      {
-        return PathStart.CompareTo(other.PathStart);
-      }
-
       if (RouteStart != other.RouteStart)
       {
         return RouteStart.CompareTo(other.RouteStart);
+      }
+
+      if (PathStart != other.PathStart)
+      {
+        return PathStart.CompareTo(other.PathStart);
       }
 
       if (Unique != other.Unique)
@@ -97,6 +104,9 @@ public class JobCache : IJobCache
   private readonly Dictionary<string, HistoricJob> _jobs;
   private readonly SortedList<JobSortKey, (HistoricJob job, int proc, int path)> _precedence;
   private readonly IRepository _repo;
+
+  public IEnumerable<HistoricJob> AllJobs => _jobs.Values;
+  public IEnumerable<(HistoricJob job, int proc, int path)> JobsSortedByPrecedence => _precedence.Values;
 
   public JobCache(IRepository repo)
   {
@@ -157,68 +167,93 @@ public class JobCache : IJobCache
     }
   }
 
-  public IEnumerable<HistoricJob> AllJobs => _jobs.Values;
-  public IEnumerable<(HistoricJob job, int proc, int path)> JobsSortedByPrecedence => _precedence.Values;
-
-  public static ActiveJob HistoricToActiveJob(
-    HistoricJob j,
-    IReadOnlyDictionary<(string uniq, int proc, int path), long> precedence,
-    IReadOnlyDictionary<string, int> cyclesStartedOnProc1,
+  public ImmutableDictionary<string, ActiveJob> BuildActiveJobs(
+    IEnumerable<InProcessMaterial> allMaterial,
     IRepository db
   )
   {
-    // completed
-    var completed = j.Processes
-      .Select(
-        proc => new int[proc.Paths.Count] // defaults to fill with zeros
-      )
-      .ToArray();
-    var unloads = db.GetLogForJobUnique(j.UniqueStr)
-      .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
-      .ToList();
-    foreach (var e in unloads)
-    {
-      foreach (var mat in e.Material)
+    var precedence = _precedence.Values
+      .Select((j, idx) => new { j, idx })
+      .ToDictionary(x => (uniq: x.j.job.UniqueStr, proc: x.j.proc, path: x.j.path), x => (long)x.idx);
+
+    return _jobs.ToImmutableDictionary(
+      kv => kv.Key,
+      kv =>
       {
-        if (mat.JobUniqueStr == j.UniqueStr)
+        var j = kv.Value;
+        var jobLog = db.GetLogForJobUnique(j.UniqueStr);
+
+        var loadedCnt = jobLog
+          .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD")
+          .SelectMany(e => e.Material)
+          .Where(m => m.JobUniqueStr == j.UniqueStr)
+          .Select(m => m.MaterialID)
+          .Distinct()
+          .Count();
+
+        var loadingCnt = allMaterial
+          .Where(
+            m =>
+              m.JobUnique == j.UniqueStr
+              && m.Action.Type == InProcessMaterialAction.ActionType.Loading
+              && m.Action.ProcessAfterLoad == 1
+          )
+          .Count();
+
+        // completed
+        var completed = j.Processes
+          .Select(
+            proc => new int[proc.Paths.Count] // defaults to fill with zeros
+          )
+          .ToArray();
+        var unloads = jobLog
+          .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
+          .ToList();
+        foreach (var e in unloads)
         {
-          var details = db.GetMaterialDetails(mat.MaterialID);
-          int matPath =
-            details?.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1;
-          completed[mat.Process - 1][matPath - 1] += 1;
-        }
-      }
-    }
-
-    // take decremented quantity out of the planned cycles
-    int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
-    var newPlanned = j.Cycles - decrQty;
-
-    var started = 0;
-    if (cyclesStartedOnProc1 != null && cyclesStartedOnProc1.TryGetValue(j.UniqueStr, out var startedOnProc1))
-    {
-      started = startedOnProc1;
-    }
-
-    return j.CloneToDerived<ActiveJob, HistoricJob>() with
-    {
-      Completed = completed.Select(c => ImmutableList.Create(c)).ToImmutableList(),
-      RemainingToStart = decrQty > 0 ? 0 : System.Math.Max(newPlanned - started, 0),
-      Cycles = newPlanned,
-      Precedence = j.Processes
-        .Select(
-          (proc, procIdx) =>
+          foreach (var mat in e.Material)
           {
-            return proc.Paths
-              .Select(
-                (_, pathIdx) =>
-                  precedence.GetValueOrDefault((uniq: j.UniqueStr, proc: procIdx + 1, path: pathIdx + 1), 0)
-              )
-              .ToImmutableList();
+            if (mat.JobUniqueStr == j.UniqueStr)
+            {
+              var details = db.GetMaterialDetails(mat.MaterialID);
+              int matPath =
+                details?.Paths != null && details.Paths.ContainsKey(mat.Process)
+                  ? details.Paths[mat.Process]
+                  : 1;
+              completed[mat.Process - 1][matPath - 1] += 1;
+            }
           }
-        )
-        .ToImmutableList(),
-      AssignedWorkorders = db.GetWorkordersForUnique(j.UniqueStr)
-    };
+        }
+
+        // take decremented quantity out of the planned cycles
+        int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
+        var newPlanned = j.Cycles - decrQty;
+
+        return j.CloneToDerived<ActiveJob, HistoricJob>() with
+        {
+          Archived = false,
+          Completed = completed.Select(c => ImmutableList.Create(c)).ToImmutableList(),
+          RemainingToStart = decrQty > 0 ? 0 : System.Math.Max(newPlanned - loadedCnt - loadingCnt, 0),
+          Cycles = newPlanned,
+          Precedence = j.Processes
+            .Select(
+              (proc, procIdx) =>
+              {
+                return proc.Paths
+                  .Select(
+                    (_, pathIdx) =>
+                      precedence.GetValueOrDefault(
+                        (uniq: j.UniqueStr, proc: procIdx + 1, path: pathIdx + 1),
+                        0
+                      )
+                  )
+                  .ToImmutableList();
+              }
+            )
+            .ToImmutableList(),
+          AssignedWorkorders = db.GetWorkordersForUnique(j.UniqueStr)
+        };
+      }
+    );
   }
 }

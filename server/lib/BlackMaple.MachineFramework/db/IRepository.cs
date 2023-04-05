@@ -78,12 +78,9 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     );
     IEnumerable<LogEntry> RecordLoadEnd(
-      IEnumerable<EventLogMaterial> mats,
+      IEnumerable<MaterialToLoadOntoPallet> toLoad,
       string pallet,
-      int lulNum,
       DateTime timeUTC,
-      TimeSpan elapsed,
-      TimeSpan active,
       string foreignId = null,
       string originalMessage = null
     );
@@ -397,13 +394,14 @@ namespace BlackMaple.MachineFramework
     List<PendingLoad> PendingLoads(string pallet);
     List<PendingLoad> AllPendingLoads();
     void CancelPendingLoads(string foreignID);
-    void CompletePalletCycle(string pal, DateTime timeUTC, string foreignID);
-    void CompletePalletCycle(
+    LogEntry CompletePalletCycle(string pal, DateTime timeUTC, string foreignID = null);
+    (LogEntry, IEnumerable<LogEntry>) CompletePalletCycle(
       string pal,
       DateTime timeUTC,
-      string foreignID,
-      IDictionary<string, IEnumerable<EventLogMaterial>> mat,
-      bool generateSerials
+      IReadOnlyDictionary<string, IEnumerable<EventLogMaterial>> matFromPendingLoads,
+      IEnumerable<MaterialToLoadOntoPallet> additionalLoads,
+      bool generateSerials = false,
+      string foreignID = null
     );
 
     // --------------------------------------------------------------------------------
@@ -551,6 +549,22 @@ namespace BlackMaple.MachineFramework
     public required TimeSpan Elapsed { get; init; }
     public required TimeSpan ActiveOperationTime { get; init; }
     public required string ForeignID { get; init; }
+  }
+
+  public record MaterialToLoadOntoFace
+  {
+    public required ImmutableList<long> MaterialIDs { get; init; }
+    public required int FaceNum { get; init; }
+    public required int Process { get; init; }
+    public required int? Path { get; init; }
+    public required TimeSpan ActiveOperationTime { get; init; }
+  }
+
+  public record MaterialToLoadOntoPallet
+  {
+    public required int LoadStation { get; init; }
+    public TimeSpan Elapsed { get; init; }
+    public ImmutableList<MaterialToLoadOntoFace> Faces { get; init; }
   }
 
   public record QueuedMaterial

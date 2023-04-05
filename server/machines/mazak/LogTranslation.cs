@@ -763,7 +763,14 @@ namespace MazakMachineInterface
         }
       }
 
-      _log.CompletePalletCycle(pallet.ToString(), t, foreignID, mat, generateSerials: true);
+      _log.CompletePalletCycle(
+        pal: pallet.ToString(),
+        timeUTC: t,
+        foreignID: foreignID,
+        matFromPendingLoads: mat,
+        additionalLoads: null,
+        generateSerials: true
+      );
 
       if (palletCycle)
         return cycle;

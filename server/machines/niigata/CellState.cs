@@ -150,10 +150,6 @@ namespace BlackMaple.FMSInsight.Niigata
         status
       );
 
-      var unarchivedJobs = jobCache.AllJobs.Select(j => j with { Archived = false }).ToArray();
-      var jobPrec = JobPrecedence(unarchivedJobs);
-      var cyclesStartedOnProc1 = CountStartedCycles(logDB, jobCache.AllJobs, pals);
-
       return new CellState()
       {
         Status = status,
@@ -165,10 +161,7 @@ namespace BlackMaple.FMSInsight.Niigata
         CurrentStatus = new CurrentStatus()
         {
           TimeOfCurrentStatusUTC = status.TimeOfStatusUTC,
-          Jobs = unarchivedJobs.ToImmutableDictionary(
-            j => j.UniqueStr,
-            j => JobCache.HistoricToActiveJob(j, jobPrec, cyclesStartedOnProc1, logDB)
-          ),
+          Jobs = jobCache.BuildActiveJobs(pals.SelectMany(p => p.Material).Select(m => m.Mat), logDB),
           Pallets = pals.ToImmutableDictionary(
             pal => pal.Status.Master.PalletNum.ToString(),
             pal =>
@@ -805,7 +798,7 @@ namespace BlackMaple.FMSInsight.Niigata
           pallet.Material,
           pallet.Status.Master.PalletNum
         );
-        logDB.CompletePalletCycle(pallet.Status.Master.PalletNum.ToString(), nowUtc, foreignID: null);
+        logDB.CompletePalletCycle(pallet.Status.Master.PalletNum.ToString(), nowUtc);
         pallet.Material.Clear();
         palletStateUpdated = true;
       }
@@ -938,7 +931,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
 
       // complete the pallet cycle so new cycle starts with the below Load end
-      logDB.CompletePalletCycle(pallet.Status.Master.PalletNum.ToString(), nowUtc, foreignID: null);
+      logDB.CompletePalletCycle(pallet.Status.Master.PalletNum.ToString(), nowUtc);
 
       var unusedMatsOnPal = pallet.Material.ToDictionary(m => m.Mat.MaterialID, m => m);
       pallet.Material.Clear();
@@ -959,36 +952,39 @@ namespace BlackMaple.FMSInsight.Niigata
           logDB: logDB
         );
 
-        foreach (var face in pallet.Material.GroupBy(p => p.Mat.Location.Face))
-        {
-          var job = face.First().Job;
-          var proc = face.First().Mat.Process;
-          var path = face.First().Mat.Path;
-          var pathInfo = job.Processes[proc - 1].Paths[path - 1];
-          newLoadEvents.AddRange(
-            logDB.RecordLoadEnd(
-              mats: face.Select(
-                m =>
-                  new EventLogMaterial()
+        newLoadEvents.AddRange(
+          logDB.RecordLoadEnd(
+            toLoad: new[]
+            {
+              new MaterialToLoadOntoPallet()
+              {
+                LoadStation = loadBegin.LocationNum,
+                Elapsed = nowUtc.Subtract(loadBegin.EndTimeUTC),
+                Faces = pallet.Material
+                  .GroupBy(p => p.Mat.Location.Face ?? 1)
+                  .Select(face =>
                   {
-                    MaterialID = m.Mat.MaterialID,
-                    Process = m.Mat.Process,
-                    Face = face.Key.ToString()
-                  }
-              ),
-              pallet: pallet.Status.Master.PalletNum.ToString(),
-              lulNum: loadBegin.LocationNum,
-              timeUTC: nowUtc.AddSeconds(1),
-              elapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),
-              active: TimeSpan.FromTicks(pathInfo.ExpectedLoadTime.Ticks * face.Count())
-            )
-          );
-        }
+                    var job = face.First().Job;
+                    var proc = face.First().Mat.Process;
+                    var path = face.First().Mat.Path;
+                    var pathInfo = job.Processes[proc - 1].Paths[path - 1];
 
-        foreach (var mat in pallet.Material)
-        {
-          logDB.RecordPathForProcess(mat.Mat.MaterialID, mat.Mat.Process, mat.Mat.Path);
-        }
+                    return new MaterialToLoadOntoFace()
+                    {
+                      MaterialIDs = face.Select(m => m.Mat.MaterialID).ToImmutableList(),
+                      FaceNum = face.Key,
+                      Process = proc,
+                      Path = path,
+                      ActiveOperationTime = TimeSpan.FromTicks(pathInfo.ExpectedLoadTime.Ticks * face.Count())
+                    };
+                  })
+                  .ToImmutableList(),
+              }
+            },
+            pallet: pallet.Status.Master.PalletNum.ToString(),
+            timeUTC: nowUtc.AddSeconds(1)
+          )
+        );
       }
 
       pallet.Log = newLoadEvents;
@@ -1838,78 +1834,6 @@ namespace BlackMaple.FMSInsight.Niigata
             }
         )
         .ToImmutableList();
-    }
-
-    private Dictionary<string, int> CountStartedCycles(
-      IRepository logDB,
-      IEnumerable<Job> unarchivedJobs,
-      IEnumerable<PalletAndMaterial> pals
-    )
-    {
-      var cnts = new Dictionary<string, int>();
-      foreach (var job in unarchivedJobs)
-      {
-        var loadedCnt = logDB
-          .GetLogForJobUnique(job.UniqueStr)
-          .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD")
-          .SelectMany(e => e.Material)
-          .Where(m => m.JobUniqueStr == job.UniqueStr)
-          .Select(m => m.MaterialID)
-          .Distinct()
-          .Count();
-
-        var loadingCnt = pals.SelectMany(p => p.Material)
-          .Select(m => m.Mat)
-          .Where(
-            m =>
-              m.JobUnique == job.UniqueStr
-              && m.Action.Type == InProcessMaterialAction.ActionType.Loading
-              && m.Action.ProcessAfterLoad == 1
-          )
-          .Count();
-
-        cnts.Add(job.UniqueStr, loadingCnt + loadedCnt);
-      }
-      return cnts;
-    }
-
-    private IReadOnlyDictionary<(string uniq, int proc, int path), long> JobPrecedence(
-      IEnumerable<HistoricJob> jobs
-    )
-    {
-      return jobs.SelectMany(
-          job =>
-            job.Processes.Select(
-              (proc, procIdx) =>
-                new
-                {
-                  job,
-                  proc,
-                  procNum = procIdx + 1
-                }
-            )
-        )
-        .SelectMany(
-          x =>
-            x.proc.Paths.Select(
-              (path, pathIdx) =>
-                new
-                {
-                  job = x.job,
-                  proc = x.proc,
-                  procNum = x.procNum,
-                  path,
-                  pathNum = pathIdx + 1
-                }
-            )
-        )
-        .OrderBy(j => j.job.ManuallyCreated ? 0 : 1)
-        .ThenBy(x => x.job.RouteStartUTC)
-        .ThenBy(x => x.path.SimulatedStartingUTC)
-        .Select(
-          (x, idx) => new { Key = (uniq: x.job.UniqueStr, proc: x.procNum, path: x.pathNum), Value = idx }
-        )
-        .ToDictionary(x => x.Key, x => (long)x.Value);
     }
 
     public class QueuedMaterialWithDetails
