@@ -492,7 +492,7 @@ namespace BlackMaple.MachineFramework
     ProgramRevision LoadProgram(string program, long revision);
     ProgramRevision LoadMostRecentProgram(string program);
     string LoadProgramContent(string program, long revision);
-    List<ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(
+    ImmutableList<ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(
       string program,
       int count,
       long? startRevision

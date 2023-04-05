@@ -160,7 +160,7 @@ namespace DebugMachineWatchApiServer
 
     private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
-    private List<ToolInMachine> Tools { get; set; }
+    private ImmutableList<ToolInMachine> Tools { get; set; }
     private string _tempDbFile;
 
     private class MockProgram
@@ -552,13 +552,21 @@ namespace DebugMachineWatchApiServer
       OnNewCurrentStatus?.Invoke(s);
     }
 
-    public List<ToolInMachine> CurrentToolsInMachines()
+    public ImmutableList<ToolInMachine> CurrentToolsInMachines()
     {
       System.Threading.Thread.Sleep(TimeSpan.FromSeconds(2));
       return Tools;
     }
 
-    public List<ProgramInCellController> CurrentProgramsInCellController()
+    public ImmutableList<ToolInMachine> CurrentToolsInMachine(string machineGroup, int machineNum)
+    {
+      System.Threading.Thread.Sleep(TimeSpan.FromSeconds(2));
+      return Tools
+        .Where(t => t.MachineGroupName == machineGroup && t.MachineNum == machineNum)
+        .ToImmutableList();
+    }
+
+    public ImmutableList<ProgramInCellController> CurrentProgramsInCellController()
     {
       System.Threading.Thread.Sleep(TimeSpan.FromSeconds(2));
       return Programs
@@ -573,10 +581,10 @@ namespace DebugMachineWatchApiServer
               CellControllerProgramName = p.CellControllerProgramName,
             }
         )
-        .ToList();
+        .ToImmutableList();
     }
 
-    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
+    public ImmutableList<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
       string programName,
       int count,
       long? revisionToStart
@@ -599,7 +607,7 @@ namespace DebugMachineWatchApiServer
               CellControllerProgramName = "cell " + programName
             }
         )
-        .ToList();
+        .ToImmutableList();
     }
 
     public string GetProgramContent(string programName, long? revision)
@@ -781,7 +789,7 @@ namespace DebugMachineWatchApiServer
     public void LoadTools(string sampleDataPath)
     {
       var json = System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tools.json"));
-      Tools = JsonConvert.DeserializeObject<List<ToolInMachine>>(json, _jsonSettings);
+      Tools = JsonConvert.DeserializeObject<ImmutableList<ToolInMachine>>(json, _jsonSettings);
     }
 
     public void LoadPrograms(string sampleDataPath)
@@ -821,7 +829,7 @@ namespace DebugMachineWatchApiServer
         Programs = new List<MockProgram>();
       }
 
-      Tools = new List<ToolInMachine>();
+      Tools = ImmutableList<ToolInMachine>.Empty;
 
       CurrentStatus = new CurrentStatus()
       {
