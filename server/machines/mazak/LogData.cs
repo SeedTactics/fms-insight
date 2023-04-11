@@ -402,7 +402,6 @@ namespace MazakMachineInterface
     private IMachineGroupName _machGroupName;
     private IHoldManagement _hold;
     private BlackMaple.MachineFramework.FMSSettings _settings;
-    private BlackMaple.MachineFramework.ISendMaterialToExternalQueue _sendToExternal;
     private MazakQueues _queues;
     private Action<BlackMaple.MachineFramework.IRepository> _currentStatusChanged;
 
@@ -419,7 +418,6 @@ namespace MazakMachineInterface
       string path,
       BlackMaple.MachineFramework.RepositoryConfig logCfg,
       IMachineGroupName machineGroupName,
-      BlackMaple.MachineFramework.ISendMaterialToExternalQueue sendToExternal,
       IReadDataAccess readDB,
       MazakQueues queues,
       IHoldManagement hold,
@@ -437,7 +435,6 @@ namespace MazakMachineInterface
       _machGroupName = machineGroupName;
       _mazakConfig = mazakConfig;
       _currentStatusChanged = currentStatusChanged;
-      _sendToExternal = sendToExternal;
       _shutdown = new AutoResetEvent(false);
       _newLogFile = new AutoResetEvent(false);
       _recheckQueues = new AutoResetEvent(false);
@@ -569,7 +566,9 @@ namespace MazakMachineInterface
 
           if (sendToExternal.Count > 0)
           {
-            _sendToExternal.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
+            BlackMaple.MachineFramework.SendMaterialToExternalQueue
+              .Post(sendToExternal)
+              .Wait(TimeSpan.FromSeconds(30));
           }
 
           if (recheckingQueues)
