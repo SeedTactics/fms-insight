@@ -306,77 +306,22 @@ public static class BuildCellState
     };
   }
 
-  public static Pallet SetMaterialOntoPallet(
-    Pallet pal,
-    int lulNum,
-    IEnumerable<InProcessMaterial> mats,
-    IRepository db,
-    IJobCacheWithDefaultStops jobs,
-    DateTime nowUTC
-  )
+  public static Pallet EnsureLoadBegin(Pallet pal, IRepository db, DateTime nowUTC)
   {
-    var matToLoad = CalcMaterialToLoad(palletNum: pal.PalletNum, materialToLoad: mats, jobs: jobs);
-
-    /*
-        var oldFace = pal.Faces.GetValueOrDefault(faceNum);
-        if (oldFace != null)
-        {
-          if (mats.Any(m => !oldFace.Material.Any(om => om.MaterialID == m.MaterialID)))
-          {
-            // we must have missed some events, the material was switchted
-            Serilog.Log.Warning(
-              "Mismatch between material on face {FaceNum} of pallet {Pallet} and material being loaded",
-              faceNum,
-              pal.PalletNum
-            );
-            Serilog.Log.Debug(
-              "Mismatch between material on face {FaceNum} of pallet {@Pallet} and material being loaded: {@matsToLoad}",
-              faceNum,
-              pal,
-              mats
-            );
-            pal = pal with { Faces = pal.Faces.Remove(faceNum) };
-          }
-          else
-          {
-            return pal;
-          }
-        }
-        */
-
-    TimeSpan elapsed = TimeSpan.Zero;
-    if (pal.LoadBegin != null)
+    if (pal.LoadBegin == null)
     {
-      elapsed = nowUTC - pal.LoadBegin.EndTimeUTC;
+      var loadBegin = db.RecordLoadStart(
+        mats: new EventLogMaterial[] { },
+        pallet: pal.PalletNum.ToString(),
+        lulNum: pal.PalletNum,
+        timeUTC: nowUTC
+      );
+      return pal with { LoadBegin = loadBegin, Log = pal.Log.Add(loadBegin), NewLogEvents = true };
     }
-
-    var loadEnds = db.RecordLoadEnd(
-      toLoad: new[]
-      {
-        new MaterialToLoadOntoPallet()
-        {
-          LoadStation = lulNum,
-          Elapsed = elapsed,
-          Faces = matToLoad.Select(m => m.Item1).ToImmutableList()
-        }
-      },
-      pallet: pal.PalletNum.ToString(),
-      timeUTC: nowUTC.AddSeconds(1)
-    );
-
-    var newFaces = pal.Faces.ToBuilder();
-    foreach (var (_, createLoadedFace) in matToLoad)
+    else
     {
-      var loadedFace = createLoadedFace(loadEnds);
-      newFaces.Add(loadedFace.FaceNum, loadedFace);
+      return pal;
     }
-
-    return pal with
-    {
-      Faces = newFaces.ToImmutable(),
-      Log = pal.Log.AddRange(loadEnds),
-      NewLogEvents = true
-    };
   }
 
   // A discriminated union of the different states a pallet can be in
@@ -384,15 +329,26 @@ public static class BuildCellState
   {
     private LoadedPalletStatus() { }
 
+    public record LoadFinished : LoadedPalletStatus
+    {
+      public required int LoadNum { get; init; }
+      public required ImmutableList<InProcessMaterial> Material { get; init; }
+    }
+
     public record MachineStopped() : LoadedPalletStatus;
 
-    public record MachineRunning(int machineNum, string program) : LoadedPalletStatus;
+    public record MachineRunning : LoadedPalletStatus
+    {
+      public required string MachineGroup { get; init; }
+      public required int MachineNum { get; init; }
+      public required string Program { get; init; }
+    }
 
     public record Unloading : LoadedPalletStatus
     {
       public required int LoadNum { get; init; }
-      public IEnumerable<int> UnloadingFaces { get; init; } = Enumerable.Empty<int>();
-      public IEnumerable<int> UnloadCompletedFaces { get; init; } = Enumerable.Empty<int>();
+      public ImmutableList<int> UnloadingFaces { get; init; } = ImmutableList<int>.Empty;
+      public ImmutableList<int> UnloadCompletedFaces { get; init; } = ImmutableList<int>.Empty;
       public Func<LoadedFace, ImmutableList<InProcessMaterial>>? AdjustUnloadingMaterial { get; init; } =
         null;
       public ImmutableList<InProcessMaterial>? NewMaterialToLoad { get; init; } = null;
@@ -417,14 +373,25 @@ public static class BuildCellState
   {
     switch (status)
     {
+      case LoadedPalletStatus.LoadFinished loadFinished:
+        return CheckExpectedMaterialOnPallet(
+          pal: pal,
+          loadNum: loadFinished.LoadNum,
+          material: loadFinished.Material,
+          db: db,
+          nowUTC: nowUTC,
+          jobs: jobs
+        );
+
       case LoadedPalletStatus.MachineStopped machineStopped:
         return SetMachineNotRunning(pal: pal, db: db, machineControl: machineControl, nowUTC: nowUTC);
 
       case LoadedPalletStatus.MachineRunning machineRunning:
         return SetMachineRunning(
           pal: pal,
-          machineNum: machineRunning.machineNum,
-          program: machineRunning.program,
+          machineGroup: machineRunning.MachineGroup,
+          machineNum: machineRunning.MachineNum,
+          program: machineRunning.Program,
           db: db,
           machineControl: machineControl,
           nowUTC: nowUTC
@@ -491,8 +458,83 @@ public static class BuildCellState
     }
   }
 
+  public static Pallet CheckExpectedMaterialOnPallet(
+    Pallet pal,
+    int loadNum,
+    ImmutableList<InProcessMaterial> material,
+    IRepository db,
+    IJobCacheWithDefaultStops jobs,
+    DateTime nowUTC
+  )
+  {
+    var matToLoad = CalcMaterialToLoad(palletNum: pal.PalletNum, materialToLoad: material, jobs: jobs);
+
+    foreach (var (face, _) in matToLoad)
+    {
+      var oldFace = pal.Faces.GetValueOrDefault(face.FaceNum);
+      if (oldFace != null)
+      {
+        if (face.MaterialIDs.Any(m => !oldFace.Material.Any(om => om.MaterialID == m)))
+        {
+          // we must have missed some events, the material was switchted
+          Serilog.Log.Warning(
+            "Mismatch between material on face {FaceNum} of pallet {Pallet} and material being loaded",
+            face.FaceNum,
+            pal.PalletNum
+          );
+          Serilog.Log.Debug(
+            "Mismatch between material on face {FaceNum} of pallet {@Pallet} and material being loaded: {@matOnPal}",
+            face.FaceNum,
+            pal,
+            material
+          );
+          pal = pal with { Faces = pal.Faces.Remove(face.FaceNum) };
+        }
+        else
+        {
+          return pal;
+        }
+      }
+    }
+
+    DateTime? loadBeginTime = null;
+    if (pal.LoadBegin != null)
+    {
+      loadBeginTime = pal.LoadBegin.EndTimeUTC;
+    }
+
+    var loadEnds = db.RecordLoadEnd(
+      toLoad: new[]
+      {
+        new MaterialToLoadOntoPallet()
+        {
+          LoadStation = loadNum,
+          Elapsed = loadBeginTime.HasValue ? nowUTC - loadBeginTime.Value : TimeSpan.Zero,
+          Faces = matToLoad.Select(m => m.Item1).ToImmutableList()
+        }
+      },
+      pallet: pal.PalletNum.ToString(),
+      timeUTC: nowUTC.AddSeconds(1)
+    );
+
+    var newFaces = pal.Faces.ToBuilder();
+    foreach (var (_, createLoadedFace) in matToLoad)
+    {
+      var loadedFace = createLoadedFace(loadEnds);
+      newFaces.Add(loadedFace.FaceNum, loadedFace);
+    }
+
+    return pal with
+    {
+      Faces = newFaces.ToImmutable(),
+      Log = pal.Log.AddRange(loadEnds),
+      NewLogEvents = true
+    };
+  }
+
   private static Pallet SetMachineRunning(
     Pallet pal,
+    string machineGroup,
     int machineNum,
     string program,
     IRepository db,
@@ -507,7 +549,7 @@ public static class BuildCellState
     {
       foreach (var stop in face.Value.Stops)
       {
-        if (stop.Program == program)
+        if (stop.StationGroup == machineGroup && stop.Program == program)
         {
           stops.Add((face.Key, face.Value, stop));
         }
