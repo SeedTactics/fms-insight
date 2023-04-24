@@ -215,7 +215,7 @@ public static class BuildCellState
             e.LogType == LogType.MachineCycle
             && e.StartOfCycle
             && e.LocationName == stop.StationGroup
-            && e.Program == stop.Program
+            && (stop.Program == null || e.Program == stop.Program)
             && string.IsNullOrEmpty(e.ProgramDetails?.GetValueOrDefault("PalletCycleInvalidated", ""))
             && e.Material.Any(m => loadedMats.Any(lm => lm.MaterialID == m.MaterialID))
         );
@@ -224,7 +224,7 @@ public static class BuildCellState
             e.LogType == LogType.MachineCycle
             && !e.StartOfCycle
             && e.LocationName == stop.StationGroup
-            && e.Program == stop.Program
+            && (stop.Program == null || e.Program == stop.Program)
             && string.IsNullOrEmpty(e.ProgramDetails?.GetValueOrDefault("PalletCycleInvalidated", ""))
             && e.Material.Any(m => loadedMats.Any(lm => lm.MaterialID == m.MaterialID))
         );
@@ -544,14 +544,14 @@ public static class BuildCellState
   {
     // a single program could machine multiple faces.  Lookup all stops using this program.
 
-    var stops = new List<(int faceNum, LoadedFace face, MachiningStopAndEvents stop)>();
+    var stops = new List<(LoadedFace face, MachiningStopAndEvents stop)>();
     foreach (var face in pal.Faces.OrderBy(f => f.Key))
     {
       foreach (var stop in face.Value.Stops)
       {
-        if (stop.StationGroup == machineGroup && stop.Program == program)
+        if (stop.StationGroup == machineGroup && (stop.Program == null || stop.Program == program))
         {
-          stops.Add((face.Key, face.Value, stop));
+          stops.Add((face.Value, stop));
         }
       }
     }
@@ -577,7 +577,7 @@ public static class BuildCellState
                 {
                   MaterialID = m.MaterialID,
                   Process = m.Process,
-                  Face = stop.faceNum.ToString()
+                  Face = stop.face.FaceNum.ToString()
                 }
             )
         ),
@@ -586,7 +586,7 @@ public static class BuildCellState
         statNum: machineNum,
         program: program,
         timeUTC: nowUTC,
-        pockets: machineControl?.CurrentToolsInMachine(stops[0].stop.StationGroup, machineNum),
+        pockets: machineControl?.CurrentToolsInMachine(groupName, machineNum),
         extraData: !programRevision.HasValue
           ? null
           : new Dictionary<string, string> { { "ProgramRevision", programRevision.Value.ToString() } }
@@ -600,7 +600,7 @@ public static class BuildCellState
       pal = pal with
       {
         Faces = pal.Faces.SetItem(
-          stop.faceNum,
+          stop.face.FaceNum,
           stop.face with
           {
             Stops = stop.face.Stops.SetItem(
@@ -649,8 +649,8 @@ public static class BuildCellState
     DateTime nowUTC
   )
   {
-    var runningStops = pal.Faces
-      .SelectMany(f => f.Value.Stops.Select(s => (faceNum: f.Key, face: f.Value, stop: s)))
+    var runningStops = pal.Faces.Values
+      .SelectMany(f => f.Stops.Select(s => (face: f, stop: s)))
       .Where(s => s.stop.MachineStart != null && s.stop.MachineEnd == null)
       .GroupBy(s => s.stop.Program);
 
@@ -675,7 +675,7 @@ public static class BuildCellState
                 {
                   MaterialID = m.MaterialID,
                   Process = m.Process,
-                  Face = stop.faceNum.ToString()
+                  Face = stop.face.FaceNum.ToString()
                 }
             )
         ),
@@ -697,7 +697,7 @@ public static class BuildCellState
         pal = pal with
         {
           Faces = pal.Faces.SetItem(
-            stop.faceNum,
+            stop.face.FaceNum,
             stop.face with
             {
               Stops = stop.face.Stops.SetItem(stop.stop.StopIdx, stop.stop with { MachineEnd = machineEnd }),
@@ -1008,7 +1008,7 @@ public static class BuildCellState
         ? CalcMaterialToLoad(palletNum: pal.PalletNum, materialToLoad: materialToLoad, jobs: jobs)
         : ImmutableList<(MaterialToLoadOntoFace, Func<IEnumerable<LogEntry>, LoadedFace>)>.Empty;
 
-    var (unloadEvts, loadEvts) = db.CompletePalletCycle(
+    var (cycleEvt, loadEvts) = db.CompletePalletCycle(
       pal: pal.PalletNum.ToString(),
       timeUTC: nowUTC,
       generateSerials: false,
