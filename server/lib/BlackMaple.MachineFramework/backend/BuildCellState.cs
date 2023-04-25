@@ -121,6 +121,7 @@ public static class BuildCellState
     public required ImmutableDictionary<int, LoadedFace> Faces { get; init; }
     public required ImmutableList<InProcessMaterial> MaterialLoadingOntoPallet { get; init; }
     public required ImmutableList<LogEntry> Log { get; init; }
+    public required LogEntry? LastPalletCycle { get; init; }
     public required LogEntry? LoadBegin { get; init; }
     public required bool NewLogEvents { get; init; }
 
@@ -132,6 +133,7 @@ public static class BuildCellState
         Faces = ImmutableDictionary<int, LoadedFace>.Empty,
         MaterialLoadingOntoPallet = ImmutableList<InProcessMaterial>.Empty,
         Log = ImmutableList<LogEntry>.Empty,
+        LastPalletCycle = null,
         LoadBegin = null,
         NewLogEvents = false,
       };
@@ -141,14 +143,12 @@ public static class BuildCellState
   public static Pallet CurrentMaterialOnPallet(int pallet, IRepository db, IJobCacheWithDefaultStops jobs)
   {
     var faces = ImmutableDictionary.CreateBuilder<int, LoadedFace>();
-    var log = db.CurrentPalletLog(pallet.ToString()).ToImmutableList();
+    var log = db.CurrentPalletLog(pallet.ToString(), includeLastPalletCycleEvt: true).ToImmutableList();
+
+    var lastPalletCycle = log.LastOrDefault(e => e.LogType == LogType.PalletCycle);
 
     var loadBegin = log.LastOrDefault(
-      e =>
-        e.LogType == LogType.LoadUnloadCycle
-        && e.Result == "LOAD"
-        && e.StartOfCycle
-        && string.IsNullOrEmpty(e.ProgramDetails?.GetValueOrDefault("PalletCycleInvalidated", ""))
+      e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.StartOfCycle
     );
 
     var lastLoaded = log.Where(
@@ -156,7 +156,6 @@ public static class BuildCellState
           e.LogType == LogType.LoadUnloadCycle
           && e.Result == "LOAD"
           && !e.StartOfCycle
-          && string.IsNullOrEmpty(e.ProgramDetails?.GetValueOrDefault("PalletCycleInvalidated", ""))
           && e.Material != null
           && e.Material.Any()
       )
@@ -216,7 +215,6 @@ public static class BuildCellState
             && e.StartOfCycle
             && e.LocationName == stop.StationGroup
             && (stop.Program == null || e.Program == stop.Program)
-            && string.IsNullOrEmpty(e.ProgramDetails?.GetValueOrDefault("PalletCycleInvalidated", ""))
             && e.Material.Any(m => loadedMats.Any(lm => lm.MaterialID == m.MaterialID))
         );
         var machEnd = log.FirstOrDefault(
@@ -225,7 +223,6 @@ public static class BuildCellState
             && !e.StartOfCycle
             && e.LocationName == stop.StationGroup
             && (stop.Program == null || e.Program == stop.Program)
-            && string.IsNullOrEmpty(e.ProgramDetails?.GetValueOrDefault("PalletCycleInvalidated", ""))
             && e.Material.Any(m => loadedMats.Any(lm => lm.MaterialID == m.MaterialID))
         );
 
@@ -264,7 +261,6 @@ public static class BuildCellState
           e.LogType == LogType.LoadUnloadCycle
           && e.Result == "UNLOAD"
           && e.StartOfCycle
-          && string.IsNullOrEmpty(e.ProgramDetails?.GetValueOrDefault("PalletCycleInvalidated", ""))
           && e.Material.Any(m => loadedMats.Any(lm => lm.MaterialID == m.MaterialID))
       );
 
@@ -273,7 +269,6 @@ public static class BuildCellState
           e.LogType == LogType.LoadUnloadCycle
           && e.Result == "UNLOAD"
           && !e.StartOfCycle
-          && string.IsNullOrEmpty(e.ProgramDetails?.GetValueOrDefault("PalletCycleInvalidated", ""))
           && e.Material.Any(m => loadedMats.Any(lm => lm.MaterialID == m.MaterialID))
       );
 
@@ -301,6 +296,7 @@ public static class BuildCellState
       Faces = faces.ToImmutable(),
       MaterialLoadingOntoPallet = ImmutableList<InProcessMaterial>.Empty,
       Log = log,
+      LastPalletCycle = lastPalletCycle,
       LoadBegin = loadBegin,
       NewLogEvents = false
     };
@@ -333,6 +329,9 @@ public static class BuildCellState
     {
       public required int LoadNum { get; init; }
       public required ImmutableList<InProcessMaterial> Material { get; init; }
+
+      // normally, elapsed load time is calculated from the LoadBegin event
+      public TimeSpan? OverrideElapsedLoadTime { get; init; } = null;
     }
 
     public record MachineStopped() : LoadedPalletStatus;
@@ -380,7 +379,8 @@ public static class BuildCellState
           material: loadFinished.Material,
           db: db,
           nowUTC: nowUTC,
-          jobs: jobs
+          jobs: jobs,
+          overrideElapsedLoadTime: loadFinished.OverrideElapsedLoadTime
         );
 
       case LoadedPalletStatus.MachineStopped machineStopped:
@@ -432,21 +432,27 @@ public static class BuildCellState
 
       case LoadedPalletStatus.CompletePalletCycle complete:
         pal = SetMachineNotRunning(pal: pal, db: db, machineControl: machineControl, nowUTC: nowUTC);
-        foreach (var face in pal.Faces.Keys)
+        DateTime? unloadStartTime = null;
+        foreach (var face in pal.Faces.Values)
         {
           pal = SetUnloadComplete(
             pal: pal,
-            faceNum: face,
+            faceNum: face.FaceNum,
             lulNum: complete.LoadNum,
             fmsSettings: settings,
             db: db,
             nowUTC: nowUTC
           );
+          if (face.UnloadStart != null)
+          {
+            unloadStartTime = face.UnloadStart.EndTimeUTC;
+          }
         }
         pal = CompletePalletCycle(
           pal: pal,
           loadNum: complete.LoadNum,
           materialToLoad: complete.MaterialToLoad,
+          unloadStartTime: unloadStartTime,
           jobs: jobs,
           db: db,
           nowUTC: nowUTC
@@ -464,7 +470,8 @@ public static class BuildCellState
     ImmutableList<InProcessMaterial> material,
     IRepository db,
     IJobCacheWithDefaultStops jobs,
-    DateTime nowUTC
+    DateTime nowUTC,
+    TimeSpan? overrideElapsedLoadTime = null
   )
   {
     var matToLoad = CalcMaterialToLoad(palletNum: pal.PalletNum, materialToLoad: material, jobs: jobs);
@@ -497,10 +504,17 @@ public static class BuildCellState
       }
     }
 
-    DateTime? loadBeginTime = null;
-    if (pal.LoadBegin != null)
+    TimeSpan? elapsedTime = null;
+    if (overrideElapsedLoadTime.HasValue)
     {
-      loadBeginTime = pal.LoadBegin.EndTimeUTC;
+      elapsedTime = overrideElapsedLoadTime.Value;
+    }
+    else
+    {
+      if (pal.LoadBegin != null)
+      {
+        elapsedTime = nowUTC - pal.LoadBegin.EndTimeUTC;
+      }
     }
 
     var loadEnds = db.RecordLoadEnd(
@@ -509,7 +523,7 @@ public static class BuildCellState
         new MaterialToLoadOntoPallet()
         {
           LoadStation = loadNum,
-          Elapsed = loadBeginTime.HasValue ? nowUTC - loadBeginTime.Value : TimeSpan.Zero,
+          Elapsed = elapsedTime ?? TimeSpan.Zero,
           Faces = matToLoad.Select(m => m.Item1).ToImmutableList()
         }
       },
@@ -624,7 +638,7 @@ public static class BuildCellState
                       ElapsedMachiningTime = elapsed,
                       ExpectedRemainingMachiningTime =
                         stop.stop.ExpectedCycleTime == TimeSpan.Zero
-                          ? TimeSpan.Zero
+                          ? null
                           : stop.stop.ExpectedCycleTime - elapsed,
                     },
                   }
@@ -818,7 +832,7 @@ public static class BuildCellState
     var sendToExternal = Enumerable.Empty<MaterialToSendToExternalQueue>();
     IEnumerable<LogEntry>? newEvts = null;
 
-    if (face.UnloadEnd != null)
+    if (face.UnloadEnd == null)
     {
       Dictionary<long, string>? queues = null;
       var outputQueue = OutputQueueForMaterial(face, pal.Log);
@@ -966,6 +980,7 @@ public static class BuildCellState
                   {
                     Process = process,
                     Path = path,
+                    LastCompletedMachiningRouteStopIndex = null,
                     Action = new InProcessMaterialAction()
                     {
                       Type = InProcessMaterialAction.ActionType.Waiting
@@ -992,17 +1007,12 @@ public static class BuildCellState
     Pallet pal,
     int loadNum,
     IEnumerable<InProcessMaterial>? materialToLoad,
+    DateTime? unloadStartTime,
     IRepository db,
     IJobCacheWithDefaultStops jobs,
     DateTime nowUTC
   )
   {
-    var unloadStartTime = pal.Faces.Values
-      .Select(f => f.UnloadStart)
-      .Where(t => t != null)
-      .FirstOrDefault()
-      ?.EndTimeUTC;
-
     var matsToLoad =
       materialToLoad != null
         ? CalcMaterialToLoad(palletNum: pal.PalletNum, materialToLoad: materialToLoad, jobs: jobs)
