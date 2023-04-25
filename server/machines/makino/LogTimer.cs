@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BlackMaple.MachineFramework;
 
 namespace Makino
@@ -336,12 +337,26 @@ namespace Makino
         );
 
         logDb.RecordLoadEnd(
-          mats: matList,
+          toLoad: new[]
+          {
+            new MaterialToLoadOntoPallet()
+            {
+              LoadStation = loc.Num,
+              Elapsed = elapsed,
+              Faces = System.Collections.Immutable.ImmutableList.Create(
+                new MaterialToLoadOntoFace()
+                {
+                  MaterialIDs = System.Collections.Immutable.ImmutableList.CreateRange(matList),
+                  FaceNum = 1,
+                  Process = w.LoadProcessNum,
+                  Path = null,
+                  ActiveOperationTime = elapsed,
+                }
+              )
+            }
+          },
           pallet: w.PalletID.ToString(),
-          lulNum: loc.Num,
-          timeUTC: w.EndDateTimeUTC.AddSeconds(1),
-          elapsed: elapsed,
-          active: elapsed
+          timeUTC: w.EndDateTimeUTC.AddSeconds(1)
         );
       }
     }
@@ -362,7 +377,7 @@ namespace Makino
       return matIds;
     }
 
-    private IList<EventLogMaterial> CreateMaterial(
+    private IEnumerable<long> CreateMaterial(
       int pallet,
       int fixturenum,
       DateTime endUTC,
@@ -373,26 +388,16 @@ namespace Makino
       IRepository logDb
     )
     {
-      var rows = _status.CreateMaterialIDs(
-        pallet,
-        fixturenum,
-        endUTC,
-        order,
-        AllocateMatIds(count, order, part, process, logDb),
-        0
-      );
-
-      var ret = new List<EventLogMaterial>();
-      foreach (var row in rows)
-        ret.Add(
-          new EventLogMaterial()
-          {
-            MaterialID = row.MatID,
-            Process = process,
-            Face = ""
-          }
-        );
-      return ret;
+      return _status
+        .CreateMaterialIDs(
+          pallet,
+          fixturenum,
+          endUTC,
+          order,
+          AllocateMatIds(count, order, part, process, logDb),
+          0
+        )
+        .Select(m => m.MatID);
     }
 
     private IList<EventLogMaterial> FindOrCreateMaterial(

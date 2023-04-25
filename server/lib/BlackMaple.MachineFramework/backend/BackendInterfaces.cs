@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework
 {
@@ -138,9 +139,10 @@ namespace BlackMaple.MachineFramework
 
   public interface IMachineControl
   {
-    List<ToolInMachine> CurrentToolsInMachines();
-    List<ProgramInCellController> CurrentProgramsInCellController();
-    List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
+    ImmutableList<ToolInMachine> CurrentToolsInMachines();
+    ImmutableList<ToolInMachine> CurrentToolsInMachine(string machineGroup, int machineNum);
+    ImmutableList<ProgramInCellController> CurrentProgramsInCellController();
+    ImmutableList<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
       string programName,
       int count,
       long? revisionToStart

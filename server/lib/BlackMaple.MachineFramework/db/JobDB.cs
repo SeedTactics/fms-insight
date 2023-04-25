@@ -2508,7 +2508,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(
+    public ImmutableList<ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(
       string program,
       int count,
       long? startRevision
@@ -2543,7 +2543,7 @@ namespace BlackMaple.MachineFramework
 
         using (var reader = cmd.ExecuteReader())
         {
-          var ret = new List<ProgramRevision>();
+          var ret = ImmutableList.CreateBuilder<ProgramRevision>();
           while (reader.Read())
           {
             ret.Add(
@@ -2556,7 +2556,7 @@ namespace BlackMaple.MachineFramework
               }
             );
           }
-          return ret;
+          return ret.ToImmutable();
         }
       }
     }

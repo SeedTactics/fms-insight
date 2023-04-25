@@ -297,7 +297,10 @@ function useCellOverview(): CellOverview {
               currentSt.jobs[m.jobUnique]?.procsAndPaths?.[m.process - 1]?.paths?.[m.path - 1]?.stops?.[
                 m.lastCompletedMachiningRouteStopIndex
               ];
-            if (stop.stationGroup === mach.machineGroup && stop.stationNums.includes(mach.machineNum)) {
+            if (
+              !stop ||
+              (stop.stationGroup === mach.machineGroup && stop.stationNums.includes(mach.machineNum))
+            ) {
               return "Loading";
             }
           }
@@ -426,11 +429,13 @@ function PalletFaces({
   maxNumFaces,
   mats,
   loadingOntoPallet,
+  noFilter,
   showExpanded,
 }: {
   maxNumFaces: number;
   mats: ReadonlyArray<Readonly<IInProcessMaterial>>;
   loadingOntoPallet?: boolean;
+  noFilter?: boolean;
   showExpanded?: boolean;
 }) {
   if (showExpanded && maxNumFaces === 1) {
@@ -444,11 +449,13 @@ function PalletFaces({
   } else {
     const byFace = loadingOntoPallet
       ? LazySeq.of(mats)
-          .filter((m) => m.location.type !== LocType.OnPallet)
+          .filter((m) => noFilter || m.location.type !== LocType.OnPallet)
           .orderedGroupBy((m) => m.action.loadOntoFace ?? 1)
       : LazySeq.of(mats)
-          .filter((m) => m.location.type === LocType.OnPallet)
-          .orderedGroupBy((m) => m.location.face ?? 1);
+          .filter((m) => noFilter || m.location.type === LocType.OnPallet)
+          .orderedGroupBy((m) =>
+            m.action.type === ActionType.Loading ? m.action.loadOntoFace ?? 1 : m.location.face ?? 1
+          );
 
     return (
       <Box
@@ -787,7 +794,7 @@ function MachineAtLoad({ maxNumFaces, status }: { maxNumFaces: number; status: M
         </Stack>
       </Box>
       <Box gridArea="loadstationmat" display="flex" flexDirection="column" justifyContent="center">
-        <PalletFaces mats={status.loadingMats} maxNumFaces={maxNumFaces} showExpanded />
+        <PalletFaces mats={status.loadingMats} maxNumFaces={maxNumFaces} showExpanded noFilter />
       </Box>
     </Box>
   );

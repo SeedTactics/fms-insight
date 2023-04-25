@@ -207,7 +207,6 @@ namespace MazakMachineInterface
       _readDB = new OpenDatabaseKitReadDB(dbConnStr, MazakType, loadOper);
 
       queues = new MazakQueues(_writeDB, waitForAllCastings);
-      var sendToExternal = new SendMaterialToExternalQueue();
 
       var hold = new HoldPattern(_writeDB);
       WriteJobs writeJobs;
@@ -229,7 +228,6 @@ namespace MazakMachineInterface
           logPath,
           logDbConfig,
           writeJobs,
-          sendToExternal,
           _readDB,
           queues,
           hold,

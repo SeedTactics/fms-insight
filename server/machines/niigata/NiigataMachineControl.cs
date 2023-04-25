@@ -34,6 +34,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
+using System.Collections.Immutable;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -57,7 +58,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _statNames = statNames;
     }
 
-    public List<ProgramInCellController> CurrentProgramsInCellController()
+    public ImmutableList<ProgramInCellController> CurrentProgramsInCellController()
     {
       var programs = _icc.LoadPrograms();
       using (var jobDb = _jobDbCfg.OpenConnection())
@@ -86,11 +87,11 @@ namespace BlackMaple.FMSInsight.Niigata
               };
             }
           })
-          .ToList();
+          .ToImmutableList();
       }
     }
 
-    public List<ToolInMachine> CurrentToolsInMachines()
+    public ImmutableList<ToolInMachine> CurrentToolsInMachines()
     {
       return _statNames.IccMachineToJobMachNames
         .SelectMany(
@@ -99,7 +100,15 @@ namespace BlackMaple.FMSInsight.Niigata
               t => t.ToToolInMachine(k.Value.group, k.Value.num)
             )
         )
-        .ToList();
+        .ToImmutableList();
+    }
+
+    public ImmutableList<ToolInMachine> CurrentToolsInMachine(string machineGroup, int machineNum)
+    {
+      var iccNum = _statNames.JobMachToIcc(machineGroup, machineNum);
+      return (_cnc.ToolsForMachine(iccNum) ?? new List<NiigataToolData>())
+        .Select(t => t.ToToolInMachine(machineGroup, machineNum))
+        .ToImmutableList();
     }
 
     public string GetProgramContent(string programName, long? revision)
@@ -121,7 +130,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
+    public ImmutableList<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
       string programName,
       int count,
       long? revisionToStart

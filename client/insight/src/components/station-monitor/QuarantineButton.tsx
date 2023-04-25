@@ -104,7 +104,7 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
         }
         // Check that the job outputs to a queue, only then can signaling for quarantine work
         const job = curSt.jobs[inProcMat.jobUnique];
-        if (job === null) return null;
+        if (!job) return null;
         const path = job.procsAndPaths?.[inProcMat.process - 1]?.paths?.[inProcMat.path - 1];
         if (inProcMat.process != job.procsAndPaths.length && (!path || !path.outputQueue)) {
           return null;

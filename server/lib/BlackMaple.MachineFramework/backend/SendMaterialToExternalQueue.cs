@@ -52,16 +52,11 @@ namespace BlackMaple.MachineFramework
     public required string Serial { get; init; }
   }
 
-  public interface ISendMaterialToExternalQueue
+  public static class SendMaterialToExternalQueue
   {
-    Task Post(IEnumerable<MaterialToSendToExternalQueue> mats);
-  }
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<MaterialToSendToExternalQueue>();
 
-  public class SendMaterialToExternalQueue : ISendMaterialToExternalQueue
-  {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<SendMaterialToExternalQueue>();
-
-    public async Task Post(IEnumerable<MaterialToSendToExternalQueue> mats)
+    public static async Task Post(IEnumerable<MaterialToSendToExternalQueue> mats)
     {
       foreach (var g in mats.GroupBy(m => m.Server))
       {
@@ -69,7 +64,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private async Task SendToServer(IGrouping<string, MaterialToSendToExternalQueue> mats)
+    private static async Task SendToServer(IGrouping<string, MaterialToSendToExternalQueue> mats)
     {
       try
       {

@@ -34,6 +34,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using BlackMaple.MachineFramework;
+using System.Collections.Immutable;
 
 namespace MazakMachineInterface
 {
@@ -57,7 +58,7 @@ namespace MazakMachineInterface
       _mazakCfg = mazakCfg;
     }
 
-    public List<ProgramInCellController> CurrentProgramsInCellController()
+    public ImmutableList<ProgramInCellController> CurrentProgramsInCellController()
     {
       var programs = _readData.LoadPrograms();
       using (var jobDb = _jobDbCfg.OpenConnection())
@@ -88,11 +89,11 @@ namespace MazakMachineInterface
               Comment = prog?.Comment ?? p.Comment
             };
           })
-          .ToList();
+          .ToImmutableList();
       }
     }
 
-    public List<ToolInMachine> CurrentToolsInMachines()
+    public ImmutableList<ToolInMachine> CurrentToolsInMachines()
     {
       return _readData
         .LoadTools()
@@ -118,7 +119,14 @@ namespace MazakMachineInterface
               TotalLifeCount = null
             }
         )
-        .ToList();
+        .ToImmutableList();
+    }
+
+    public ImmutableList<ToolInMachine> CurrentToolsInMachine(string machineGroup, int machineNum)
+    {
+      return CurrentToolsInMachines()
+        .Where(t => t.MachineGroupName == machineGroup && t.MachineNum == machineNum)
+        .ToImmutableList();
     }
 
     public string GetProgramContent(string programName, long? revision)
@@ -143,7 +151,7 @@ namespace MazakMachineInterface
       return "";
     }
 
-    public List<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
+    public ImmutableList<ProgramRevision> ProgramRevisionsInDecendingOrderOfRevision(
       string programName,
       int count,
       long? revisionToStart

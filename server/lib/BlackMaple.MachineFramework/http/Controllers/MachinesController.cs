@@ -31,10 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-using System;
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
@@ -50,11 +48,11 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("tools")]
-    public List<ToolInMachine> GetToolsInMachines()
+    public ImmutableList<ToolInMachine> GetToolsInMachines()
     {
       if (_machControl == null)
       {
-        return new List<ToolInMachine>();
+        return ImmutableList<ToolInMachine>.Empty;
       }
       else
       {
@@ -63,11 +61,11 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("programs-in-cell-controller")]
-    public List<ProgramInCellController> GetProgramsInCellController()
+    public ImmutableList<ProgramInCellController> GetProgramsInCellController()
     {
       if (_machControl == null)
       {
-        return new List<ProgramInCellController>();
+        return ImmutableList<ProgramInCellController>.Empty;
       }
       else
       {
@@ -76,7 +74,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("program/{programName}/revisions")]
-    public List<ProgramRevision> GetProgramRevisionsInDescendingOrderOfRevision(
+    public ImmutableList<ProgramRevision> GetProgramRevisionsInDescendingOrderOfRevision(
       string programName,
       [FromQuery] int count,
       [FromQuery] long? revisionToStart = null
@@ -84,7 +82,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (_machControl == null)
       {
-        return new List<ProgramRevision>();
+        return ImmutableList<ProgramRevision>.Empty;
       }
       else
       {

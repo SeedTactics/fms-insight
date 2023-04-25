@@ -2811,14 +2811,15 @@ namespace MachineWatchTest
       trans.Should().BeNull();
 
       _logDB.CompletePalletCycle(
-        "pal1",
-        DateTime.UtcNow,
-        "",
-        new Dictionary<string, IEnumerable<EventLogMaterial>>()
+        pal: "pal1",
+        timeUTC: DateTime.UtcNow,
+        matFromPendingLoads: new Dictionary<string, IEnumerable<EventLogMaterial>>()
         {
           { "pppp:10:1,unused", new EventLogMaterial[] { } }
         },
-        false
+        additionalLoads: null,
+        foreignID: null,
+        generateSerials: false
       );
 
       _logDB
