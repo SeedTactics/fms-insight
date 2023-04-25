@@ -236,6 +236,35 @@ namespace MachineWatchTest
         );
 
       _jobLog.GetMaterialForJobUnique("unused").Should().BeEmpty();
+
+      _jobLog.CreateMaterialID(matID: 555, unique: "55555", part: "part5", numProc: 12);
+      _jobLog
+        .GetMaterialDetails(555)
+        .Should()
+        .BeEquivalentTo(
+          new MaterialDetails()
+          {
+            MaterialID = 555,
+            JobUnique = "55555",
+            PartName = "part5",
+            NumProcesses = 12,
+          }
+        );
+
+      // only update some fields
+      _jobLog.CreateMaterialID(matID: 555, unique: "newuniq", part: "newpart5", numProc: 44);
+      _jobLog
+        .GetMaterialDetails(555)
+        .Should()
+        .BeEquivalentTo(
+          new MaterialDetails()
+          {
+            MaterialID = 555,
+            JobUnique = "newuniq",
+            PartName = "newpart5",
+            NumProcesses = 44,
+          }
+        );
     }
 
     [Fact]
@@ -1025,6 +1054,10 @@ namespace MachineWatchTest
         DateTime.UtcNow.AddHours(-50)
       );
       _jobLog.CurrentPalletLog("pal1").Should().BeEmpty();
+      _jobLog
+        .CurrentPalletLog("pal1", includeLastPalletCycleEvt: true)
+        .Should()
+        .BeEquivalentTo(new[] { pal1Initial.Last() }, options => options.Excluding(x => x.Counter));
       _jobLog.CurrentPalletLog("pal2").Should().BeEmpty();
 
       DateTime pal2CycleTime = DateTime.UtcNow.AddHours(-3);

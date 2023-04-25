@@ -536,17 +536,21 @@ namespace BlackMaple.MachineFramework
     }
 
     //Loads the log for the current pallet cycle, which is all events from the last Result = "PalletCycle"
-    public List<LogEntry> CurrentPalletLog(string pallet)
+    public List<LogEntry> CurrentPalletLog(string pallet, bool includeLastPalletCycleEvt = false)
     {
       using (var trans = _connection.BeginTransaction())
       {
-        var ret = CurrentPalletLog(pallet, trans);
+        var ret = CurrentPalletLog(pallet, includeLastPalletCycleEvt, trans);
         trans.Commit();
         return ret;
       }
     }
 
-    private List<LogEntry> CurrentPalletLog(string pallet, SqliteTransaction trans)
+    private List<LogEntry> CurrentPalletLog(
+      string pallet,
+      bool includeLastPalletCycleEvt,
+      SqliteTransaction trans
+    )
     {
       string ignoreInvalidCondition =
         "   NOT EXISTS ("
@@ -583,7 +587,9 @@ namespace BlackMaple.MachineFramework
           cmd.CommandText =
             "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
             + " FROM stations s "
-            + " WHERE Pallet = $pal AND Counter > $cntr AND "
+            + " WHERE Pallet = $pal AND Counter "
+            + (includeLastPalletCycleEvt ? ">=" : ">")
+            + " $cntr AND "
             + ignoreInvalidCondition
             + " ORDER BY Counter ASC";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
@@ -2183,7 +2189,7 @@ namespace BlackMaple.MachineFramework
           }
 
           // load old events
-          var oldEvents = CurrentPalletLog(pallet, trans);
+          var oldEvents = CurrentPalletLog(pallet, includeLastPalletCycleEvt: false, trans);
           var oldMatProcM = oldEvents
             .SelectMany(e => e.Material)
             .Where(m => m.MaterialID == oldMatId)
@@ -2719,7 +2725,8 @@ namespace BlackMaple.MachineFramework
         using (var cmd = _connection.CreateCommand())
         {
           cmd.CommandText =
-            "INSERT INTO matdetails(MaterialID, UniqueStr, PartName, NumProcesses) VALUES ($mid, $uniq, $part, $numproc)";
+            "INSERT OR REPLACE INTO matdetails(MaterialID, UniqueStr, PartName, NumProcesses) "
+            + " VALUES ($mid, $uniq, $part, $numproc)";
           cmd.Parameters.Add("mid", SqliteType.Integer).Value = matID;
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
           cmd.Parameters.Add("part", SqliteType.Text).Value = part;

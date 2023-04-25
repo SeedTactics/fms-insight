@@ -55,7 +55,7 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> StationLogByForeignID(string foreignID);
-    List<LogEntry> CurrentPalletLog(string pallet);
+    List<LogEntry> CurrentPalletLog(string pallet, bool includeLastPalletCycleEvt = false);
     string OriginalMessageByForeignID(string foreignID);
     DateTime LastPalletCycleTime(string pallet);
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
