@@ -609,6 +609,8 @@ public static class BuildCellState
     }
 
     var elapsed = nowUTC.Subtract(machineStart.EndTimeUTC);
+    var expectedTotalTime = TimeSpan.FromTicks(stops.Sum(s => s.stop.ExpectedCycleTime.Ticks));
+
     foreach (var stop in stops)
     {
       pal = pal with
@@ -637,9 +639,7 @@ public static class BuildCellState
                         : program,
                       ElapsedMachiningTime = elapsed,
                       ExpectedRemainingMachiningTime =
-                        stop.stop.ExpectedCycleTime == TimeSpan.Zero
-                          ? null
-                          : stop.stop.ExpectedCycleTime - elapsed,
+                        expectedTotalTime == TimeSpan.Zero ? null : expectedTotalTime - elapsed,
                     },
                   }
               )
@@ -680,6 +680,9 @@ public static class BuildCellState
       );
       var toolUse =
         startTools != null && endTools != null ? ToolSnapshotDiff.Diff(startTools, endTools) : null;
+
+      var activeTime = TimeSpan.FromTicks(stopGroup.Sum(s => s.stop.ExpectedCycleTime.Ticks));
+
       var machineEnd = db.RecordMachineEnd(
         mats: stopGroup.SelectMany(
           stop =>
@@ -700,7 +703,7 @@ public static class BuildCellState
         result: "",
         timeUTC: nowUTC,
         elapsed: nowUTC - machineStart.EndTimeUTC,
-        active: stopGroup.First().stop.ExpectedCycleTime,
+        active: activeTime,
         tools: toolUse,
         deleteToolSnapshotsFromCntr: machineStart.Counter
       );
