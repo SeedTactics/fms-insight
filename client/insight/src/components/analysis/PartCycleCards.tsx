@@ -312,6 +312,7 @@ export function PartMachineCycleChart() {
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             showWorkorderAndInspect={true}
+            emptyMessage="Select part, station, or pallet to see cycles."
           />
         )}
       </CardContent>
@@ -360,9 +361,9 @@ export function PartLoadStationCycleChart() {
   const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
   const curOperation =
     selectedPart && selectedOperation === "LoadOp"
-      ? new PartAndStationOperation(selectedPart.part, selectedPart.proc, "L/U", "LOAD")
+      ? new PartAndStationOperation(selectedPart.part, "L/U", "LOAD" + "-" + selectedPart.proc.toString())
       : selectedPart && selectedOperation === "UnloadOp"
-      ? new PartAndStationOperation(selectedPart.part, selectedPart.proc, "L/U", "UNLOAD")
+      ? new PartAndStationOperation(selectedPart.part, "L/U", "UNLOAD" + "-" + selectedPart.proc.toString())
       : null;
 
   const defaultDateRange =
@@ -562,6 +563,7 @@ export function PartLoadStationCycleChart() {
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             showWorkorderAndInspect={true}
             hideMedian={selectedOperation === "LULOccupancy"}
+            emptyMessage="Select part, operation, or pallet to see cycles."
           />
         )}
       </CardContent>

@@ -443,6 +443,7 @@ export interface DataTableBodyProps<Id, Row> {
   readonly columns: ReadonlyArray<Column<Id, Row>>;
   readonly onClickDetails?: (event: React.MouseEvent, r: Row) => void;
   readonly rowsPerPage?: number;
+  readonly emptyMessage?: string;
 }
 
 export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<
@@ -473,7 +474,12 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
         ))}
         {emptyRows > 0 ? (
           <TableRow style={{ height: 53 * emptyRows }}>
-            <TableCell colSpan={this.props.columns.length + (this.props.onClickDetails ? 1 : 0)} />
+            <TableCell
+              colSpan={this.props.columns.length + (this.props.onClickDetails ? 1 : 0)}
+              style={{ textAlign: "center" }}
+            >
+              {this.props.emptyMessage}
+            </TableCell>
           </TableRow>
         ) : undefined}
       </TableBody>

@@ -48,36 +48,36 @@ export interface StatisticalCycleTime {
 export class PartAndStationOperation {
   public constructor(
     public readonly part: string,
-    public readonly proc: number,
     public readonly statGroup: string,
     public readonly operation: string
   ) {}
   public static ofLogCycle(c: Readonly<ILogEntry>): PartAndStationOperation {
     return new PartAndStationOperation(
       c.material[0].part,
-      c.material[0].proc,
       c.loc,
-      c.type === LogType.LoadUnloadCycle ? c.result : c.program
+      c.type === LogType.LoadUnloadCycle ? c.result + "-" + c.material[0].proc.toString() : c.program
     );
   }
   public static ofPartCycle(c: Readonly<PartCycleData>): PartAndStationOperation {
-    return new PartAndStationOperation(c.material[0].part, c.material[0].proc, c.stationGroup, c.operation);
+    return new PartAndStationOperation(
+      c.part,
+      c.stationGroup,
+      c.isLabor ? c.operation + "-" + c.material[0].proc.toString() : c.operation
+    );
   }
 
   compare(other: PartAndStationOperation): number {
     let cmp = this.part.localeCompare(other.part);
-    if (cmp !== 0) return cmp;
-    cmp = this.proc - other.proc;
     if (cmp !== 0) return cmp;
     cmp = this.statGroup.localeCompare(other.statGroup);
     if (cmp !== 0) return cmp;
     return this.operation.localeCompare(other.operation);
   }
   hash(): number {
-    return hashValues(this.part, this.proc, this.statGroup, this.operation);
+    return hashValues(this.part, this.statGroup, this.operation);
   }
   toString(): string {
-    return `{part: ${this.part}}, proc: ${this.proc}, statGroup: ${this.statGroup}, operation: ${this.operation}}`;
+    return `{part: ${this.part}}, statGroup: ${this.statGroup}, operation: ${this.operation}}`;
   }
 }
 

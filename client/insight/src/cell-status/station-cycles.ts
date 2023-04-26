@@ -52,7 +52,6 @@ export interface PartCycleData {
   readonly y: number; // cycle time in minutes
   readonly cntr: number;
   readonly part: string;
-  readonly process: number;
   readonly stationGroup: string;
   readonly stationNumber: number;
   readonly operation: string;
@@ -112,7 +111,6 @@ function convertLogToCycle(
     return null;
   }
   const part = cycle.material.length > 0 ? cycle.material[0].part : "";
-  const proc = cycle.material.length > 0 ? cycle.material[0].proc : 1;
   const stats =
     cycle.material.length > 0
       ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
@@ -128,7 +126,6 @@ function convertLogToCycle(
       medianCycleMinutes: (stats?.medianMinutesForSingleMat ?? 0) * cycle.material.length,
       MAD_aboveMinutes: stats?.MAD_aboveMinutes ?? 0,
       part: part,
-      process: proc,
       pallet: cycle.pal,
       material: cycle.material,
       isLabor: cycle.type === LogType.LoadUnloadCycle,

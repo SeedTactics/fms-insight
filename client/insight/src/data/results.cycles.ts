@@ -56,10 +56,6 @@ export interface PartAndProcess {
   readonly proc: number;
 }
 
-function cycleToPartAndOp(cycle: PartCycleData): PartAndStationOperation {
-  return new PartAndStationOperation(cycle.part, cycle.process, cycle.stationGroup, cycle.operation);
-}
-
 export interface CycleFilterOptions {
   readonly allPartAndProcNames: ReadonlyArray<PartAndProcess>;
   readonly allPalletNames: ReadonlyArray<string>;
@@ -86,8 +82,12 @@ function extractFilterOptions(
     } else {
       mcNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
 
-      if (selectedPart && c.part == selectedPart.part && c.process == selectedPart.proc) {
-        oper = oper.add(new PartAndStationOperation(c.part, c.process, c.stationGroup, c.operation));
+      if (
+        selectedPart &&
+        c.part == selectedPart.part &&
+        c.material.some((m) => m.proc === selectedPart.proc)
+      ) {
+        oper = oper.add(PartAndStationOperation.ofPartCycle(c));
       }
     }
 
@@ -156,7 +156,10 @@ export function filterStationCycles(
         if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
           return false;
         }
-        if (partAndProc && (e.part !== partAndProc.part || e.process !== partAndProc.proc)) {
+        if (
+          partAndProc &&
+          (e.part !== partAndProc.part || !e.material.some((m) => m.proc === partAndProc.proc))
+        ) {
           return false;
         }
         if (pallet && e.pallet !== pallet) {
@@ -175,7 +178,7 @@ export function filterStationCycles(
           return false;
         }
 
-        if (operation && operation.compare(cycleToPartAndOp(e)) !== 0) {
+        if (operation && operation.compare(PartAndStationOperation.ofPartCycle(e)) !== 0) {
           return false;
         }
 
@@ -185,7 +188,15 @@ export function filterStationCycles(
         if (groupByPal) {
           return e.pallet;
         } else if (groupByPart) {
-          return e.part + "-" + e.process.toString();
+          return (
+            e.part +
+            "-" +
+            LazySeq.of(e.material)
+              .map((m) => m.proc)
+              .distinctAndSortBy((p) => p)
+              .toRArray()
+              .join(":")
+          );
         } else {
           return stat_name_and_num(e.stationGroup, e.stationNumber);
         }
@@ -242,7 +253,10 @@ export function loadOccupancyCycles(
                   if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
                     return false;
                   }
-                  if (partAndProc && (e.part !== partAndProc.part || e.process !== partAndProc.proc)) {
+                  if (
+                    partAndProc &&
+                    (e.part !== partAndProc.part || !e.material.some((m) => m.proc === partAndProc.proc))
+                  ) {
                     return false;
                   }
                   if (pallet && e.pallet !== pallet) {
@@ -316,7 +330,7 @@ export function estimateLulOperations(
                   if (zoom && (e.cycle.x < zoom.start || e.cycle.x > zoom.end)) {
                     return false;
                   }
-                  if (operation.compare(cycleToPartAndOp(e.cycle)) !== 0) {
+                  if (operation.compare(PartAndStationOperation.ofPartCycle(e.cycle)) !== 0) {
                     return false;
                   }
                   if (pallet && e.cycle.pallet !== pallet) {
@@ -362,10 +376,10 @@ export function outlierMachineCycles(
       .filter((e) => !e.isLabor && e.x >= start && e.x <= end)
       .filter((cycle) => {
         if (cycle.material.length === 0) return false;
-        const stats = estimated.get(cycleToPartAndOp(cycle));
+        const stats = estimated.get(PartAndStationOperation.ofPartCycle(cycle));
         return stats !== undefined && isOutlier(stats, cycle.y / cycle.material.length);
       })
-      .toRLookup((e) => e.part + "-" + e.process.toString()),
+      .toRLookup((e) => e.part + "-" + e.material[0].proc.toString()),
   };
 }
 
@@ -392,11 +406,11 @@ export function outlierLoadCycles(
         // another cycle arrives it will be recaluclated.  Thus showing stale data isn't a huge problem.
         if (Math.abs(differenceInSeconds(now, e.cycle.x)) < 15) return false;
 
-        const stats = estimated.get(cycleToPartAndOp(e.cycle));
+        const stats = estimated.get(PartAndStationOperation.ofPartCycle(e.cycle));
         return stats !== undefined && isOutlier(stats, e.elapsedForSingleMaterialMinutes);
       })
       .toRLookup(
-        (e) => e.cycle.part + "-" + e.cycle.process.toString(),
+        (e) => e.cycle.part + "-" + e.cycle.material[0].proc.toString(),
         (e) => e.cycle
       ),
   };
@@ -464,11 +478,11 @@ export function recentCycles(
             parts: LazySeq.of(chunk)
               .distinctAndSortBy(
                 (c) => c.part,
-                (c) => c.process,
+                (c) => c.material[0].proc, // load events have the same process on all mats on face
                 (c) => c.operation
               )
               .map((c) => ({
-                part: c.part + "-" + c.process.toString(),
+                part: c.part + "-" + c.material[0].proc.toString(),
                 oper: c.operation,
               }))
               .toRArray(),
@@ -482,7 +496,11 @@ export function recentCycles(
               endActive: c.activeMinutes > 0 ? addMinutes(c.x, c.activeMinutes - c.y) : undefined,
               endOccupied: c.x,
               outlier: stats ? isOutlier(stats, c.y / c.material.length) : false,
-              parts: [{ part: c.part + "-" + c.process.toString(), oper: c.operation }],
+              parts: LazySeq.of(c.material)
+                .map((m) => m.proc)
+                .distinctAndSortBy((p) => p)
+                .map((proc) => ({ part: c.part + "-" + proc.toString(), oper: c.operation }))
+                .toRArray(),
             };
           }
         }
@@ -553,7 +571,16 @@ export function buildCycleTable(
   for (const cycle of filteredCycles) {
     table += "<tr>";
     table += "<td>" + format(cycle.x, "MMM d, yyyy, h:mm aa") + "</td>";
-    table += "<td>" + cycle.part + "-" + cycle.process.toString() + "</td>";
+    table +=
+      "<td>" +
+      cycle.part +
+      "-" +
+      LazySeq.of(cycle.material)
+        .map((m) => m.proc)
+        .distinctAndSortBy((p) => p)
+        .toRArray()
+        .join(":") +
+      "</td>";
     table += "<td>" + stat_name_and_num(cycle.stationGroup, cycle.stationNumber) + "</td>";
     table += "<td>" + cycle.pallet + "</td>";
     table +=

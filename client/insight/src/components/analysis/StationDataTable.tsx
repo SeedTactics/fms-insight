@@ -89,7 +89,14 @@ function buildColumns(
       id: ColumnId.Part,
       numeric: false,
       label: "Part",
-      getDisplay: (c) => c.part + "-" + c.process.toString(),
+      getDisplay: (c) =>
+        c.part +
+        "-" +
+        LazySeq.of(c.material)
+          .map((m) => m.proc)
+          .distinctAndSortBy((p) => p)
+          .toRArray()
+          .join(":"),
     },
     {
       id: ColumnId.Station,
@@ -173,6 +180,7 @@ interface StationDataTableProps {
   readonly showWorkorderAndInspect: boolean;
   readonly hideMedian?: boolean;
   readonly defaultSortDesc?: boolean;
+  readonly emptyMessage?: string;
 }
 
 function extractData(
@@ -287,6 +295,7 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
               setDetailMenu({ anchorEl: e.currentTarget, material: row.material });
             }
           }}
+          emptyMessage={props.emptyMessage}
         />
       </Table>
       <DataTableActions zoom={zoom.zoom} tpage={tpage} count={totalDataLength} />
