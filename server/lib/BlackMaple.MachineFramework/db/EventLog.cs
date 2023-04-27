@@ -2728,7 +2728,9 @@ namespace BlackMaple.MachineFramework
             "INSERT OR REPLACE INTO matdetails(MaterialID, UniqueStr, PartName, NumProcesses) "
             + " VALUES ($mid, $uniq, $part, $numproc)";
           cmd.Parameters.Add("mid", SqliteType.Integer).Value = matID;
-          cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+          cmd.Parameters.Add("uniq", SqliteType.Text).Value = string.IsNullOrEmpty(unique)
+            ? DBNull.Value
+            : unique;
           cmd.Parameters.Add("part", SqliteType.Text).Value = part;
           cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
           cmd.ExecuteNonQuery();

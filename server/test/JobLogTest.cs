@@ -251,7 +251,7 @@ namespace MachineWatchTest
           }
         );
 
-      // only update some fields
+      // update to new values
       _jobLog.CreateMaterialID(matID: 555, unique: "newuniq", part: "newpart5", numProc: 44);
       _jobLog
         .GetMaterialDetails(555)
@@ -263,6 +263,20 @@ namespace MachineWatchTest
             JobUnique = "newuniq",
             PartName = "newpart5",
             NumProcesses = 44,
+          }
+        );
+
+      _jobLog.CreateMaterialID(matID: 666, unique: null, part: "abc", numProc: 32);
+      _jobLog
+        .GetMaterialDetails(666)
+        .Should()
+        .BeEquivalentTo(
+          new MaterialDetails()
+          {
+            MaterialID = 666,
+            JobUnique = null,
+            PartName = "abc",
+            NumProcesses = 32
           }
         );
     }
