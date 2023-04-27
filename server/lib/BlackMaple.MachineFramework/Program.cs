@@ -147,7 +147,12 @@ namespace BlackMaple.MachineFramework
         .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
 
 #if SERVICE_AVAIL
-      if (enableEventLog)
+      if (
+        enableEventLog
+        && System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+          System.Runtime.InteropServices.OSPlatform.Windows
+        )
+      )
       {
         logConfig = logConfig.WriteTo.EventLog(
           "FMS Insight",
