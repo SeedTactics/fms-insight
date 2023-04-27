@@ -71,12 +71,7 @@ function machiningCurrentCycles(
     .map(([[statGroup, statNum], mats]) => {
       // all mats currently machining at the same station should all have the same part and program
       const stats = estimated.get(
-        new PartAndStationOperation(
-          mats[0].mat.partName,
-          mats[0].mat.process,
-          statGroup,
-          mats[0].mat.action.program ?? ""
-        )
+        new PartAndStationOperation(mats[0].mat.partName, statGroup, mats[0].mat.action.program ?? "")
       );
       const elapsedSec = durationToSeconds(mats[0].mat.action.elapsedMachiningTime ?? "PT0S");
       const remainingSec = durationToSeconds(mats[0].mat.action.expectedRemainingMachiningTime ?? "PT0S");
@@ -144,9 +139,10 @@ function loadCurrentCycles(
         const stats = estimated.get(
           new PartAndStationOperation(
             m.mat.partName,
-            m.proc,
             statGroup,
-            m.mat.action.type === ActionType.Loading ? "LOAD" : "UNLOAD"
+            m.mat.action.type === ActionType.Loading
+              ? "LOAD-" + m.proc.toString()
+              : "UNLOAD-" + m.proc.toString()
           )
         );
         if (stats && isOutlierAbove(stats, elapsedForSingleMaterialMinutes)) {

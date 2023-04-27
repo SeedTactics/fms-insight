@@ -203,6 +203,9 @@ export function registerMockBackend(
         };
       }
     },
+    enableVerboseLoggingForFiveMinutes(): Promise<void> {
+      return Promise.resolve();
+    },
   };
 
   const jobsB = {

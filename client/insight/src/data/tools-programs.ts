@@ -84,7 +84,6 @@ export interface ToolInMachine {
 
 export interface PartToolUsage {
   readonly partName: string;
-  readonly process: number;
   readonly program: string;
   readonly quantity: number;
   readonly scheduledUseMinutes: number;
@@ -153,7 +152,7 @@ export function calcToolReport(
       }
       for (const [op, afterInProc] of programsToAfterInProc) {
         partPlannedQtys = partPlannedQtys.modify(
-          new PartAndStationOperation(job.partName, procIdx + 1, op.statGroup, op.operation),
+          new PartAndStationOperation(job.partName, op.statGroup, op.operation),
           (old) => (old ?? 0) + planQty - completed - afterInProc
         );
       }
@@ -168,7 +167,6 @@ export function calcToolReport(
           toolName: tool.toolName,
           part: {
             partName: partAndProg.part,
-            process: partAndProg.proc,
             program: partAndProg.operation,
             quantity: qty,
             scheduledUseMinutes: tool.cycleUsageMinutes,
@@ -181,7 +179,7 @@ export function calcToolReport(
     })
     .sortBy(
       (p) => p.part.partName,
-      (p) => p.part.process
+      (p) => p.part.program
     )
     .toLookup(
       (t) => t.toolName,
@@ -437,7 +435,6 @@ export interface CellControllerProgram {
   readonly comment: string | null;
   readonly revision: number | null;
   readonly partName: string | null;
-  readonly process: number | null;
   readonly statisticalCycleTime: StatisticalCycleTime | null;
   readonly toolUse: ProgramToolUseInSingleCycle | null;
 }
@@ -477,7 +474,6 @@ export function calcProgramReport(
         comment: prog.comment ?? null,
         revision: prog.revision ?? null,
         partName: part?.part ?? null,
-        process: part?.proc ?? null,
         statisticalCycleTime: part ? cycleTimes.get(part) ?? null : null,
         toolUse: part ? tools.get(part) ?? null : null,
       };
@@ -552,7 +548,6 @@ export interface ProgramNameAndRevision {
   readonly programName: string;
   readonly revision: number | null;
   readonly partName: string | null;
-  readonly process: number | null;
 }
 
 export const programToShowContent = atom<ProgramNameAndRevision | null>({
@@ -578,7 +573,6 @@ export const programContent = selector<string>({
 export interface ProgramHistoryRequest {
   readonly programName: string;
   readonly partName: string | null;
-  readonly process: number | null;
 }
 
 export const programToShowHistory = atom<ProgramHistoryRequest | null>({

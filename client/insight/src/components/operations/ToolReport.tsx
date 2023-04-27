@@ -341,9 +341,7 @@ function ToolRow(props: ToolRowProps) {
                               }}
                             >
                               <PartIdenticon part={p.partName} size={20} />
-                              <span>
-                                {p.partName}-{p.process}
-                              </span>
+                              <span>{p.partName}</span>
                             </Box>
                           </TableCell>
                           <TableCell>{p.program}</TableCell>

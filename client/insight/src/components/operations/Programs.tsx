@@ -145,9 +145,7 @@ function ProgramRow(props: ProgramRowProps) {
               }}
             >
               <PartIdenticon part={props.program.partName} size={20} />
-              <span>
-                {props.program.partName}-{props.program.process}
-              </span>
+              <span>{props.program.partName}</span>
             </Box>
           ) : undefined}
         </TableCell>
@@ -294,9 +292,6 @@ export function ProgramSummaryTable(): JSX.Element {
           c = -1;
         } else {
           c = a.partName.localeCompare(b.partName);
-          if (c === 0) {
-            c = (a.process ?? 1) - (b.process ?? 1);
-          }
         }
         break;
       case "MedianTime":
@@ -532,7 +527,7 @@ export function ProgramContentDialog(): JSX.Element {
               {program?.programName ?? "Program"}{" "}
               {program?.revision ? " rev" + program.revision.toFixed() : ""}{" "}
               <Typography variant="subtitle1" component="span">
-                ({program.partName}-{program.process ?? 1})
+                ({program.partName})
               </Typography>
             </div>
           </div>
@@ -611,7 +606,6 @@ function ProgramRevisionTable(props: ProgramRevisionTableProps) {
                         setProgramToShowContent({
                           ...rev,
                           partName: program?.partName ?? null,
-                          process: program?.process ?? null,
                         })
                       }
                     >
@@ -697,7 +691,7 @@ export function ProgramHistoryDialog(): JSX.Element {
             <div style={{ marginLeft: "10px", marginRight: "3em" }}>
               {program.programName ?? "Program"}{" "}
               <Typography variant="subtitle1" component="span">
-                ({program.partName}-{program.process ?? 1})
+                ({program.partName})
               </Typography>
             </div>
           </div>

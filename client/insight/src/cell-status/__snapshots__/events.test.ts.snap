@@ -1,4 +1,4 @@
-// Vitest Snapshot v1
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`processes events in a specific month > buffers 1`] = `
 Map {
@@ -34,59 +34,59 @@ Map {
 
 exports[`processes events in a specific month > estimated cycle times 1`] = `
 Map {
-  "{part: part222}, proc: 2, statGroup: L/U, operation: LOAD}" => {
+  "{part: part222}, statGroup: L/U, operation: LOAD-2}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "{part: part111}, proc: 1, statGroup: L/U, operation: LOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 6,
-    "medianMinutesForSingleMat": 6,
-  },
-  "{part: part222}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 3,
-    "medianMinutesForSingleMat": 3,
-  },
-  "{part: part111}, proc: 1, statGroup: MC, operation: progh}" => {
+  "{part: part111}, statGroup: MC, operation: progh}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 30,
     "medianMinutesForSingleMat": 30,
   },
-  "{part: part222}, proc: 1, statGroup: L/U, operation: LOAD}" => {
+  "{part: part222}, statGroup: L/U, operation: UNLOAD-2}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "{part: part222}, statGroup: L/U, operation: UNLOAD-1}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "{part: part222}, statGroup: L/U, operation: LOAD-1}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "{part: part222}, proc: 2, statGroup: L/U, operation: UNLOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 3,
-    "medianMinutesForSingleMat": 3,
-  },
-  "{part: part222}, proc: 1, statGroup: MC, operation: progk}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 24,
-    "medianMinutesForSingleMat": 24,
-  },
-  "{part: part111}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 3,
-    "medianMinutesForSingleMat": 3,
-  },
-  "{part: part222}, proc: 2, statGroup: MC, operation: progx}" => {
+  "{part: part222}, statGroup: MC, operation: progx}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 18,
     "medianMinutesForSingleMat": 18,
+  },
+  "{part: part111}, statGroup: L/U, operation: UNLOAD-1}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "{part: part111}, statGroup: L/U, operation: LOAD-1}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 6,
+    "medianMinutesForSingleMat": 6,
+  },
+  "{part: part222}, statGroup: MC, operation: progk}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 24,
+    "medianMinutesForSingleMat": 24,
   },
 }
 `;
@@ -386,7 +386,6 @@ Map {
     "operator": "",
     "pallet": "palaa",
     "part": "part222",
-    "process": 2,
     "stationGroup": "L/U",
     "stationNumber": 2,
     "x": 2018-01-06T09:45:05.000Z,
@@ -414,7 +413,6 @@ Map {
     "operator": "",
     "pallet": "palaa",
     "part": "part222",
-    "process": 2,
     "stationGroup": "MC",
     "stationNumber": 1,
     "x": 2018-01-06T09:35:05.000Z,
@@ -442,7 +440,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 2,
     "x": 2018-01-31T09:51:05.000Z,
@@ -470,7 +467,6 @@ Map {
     "operator": "",
     "pallet": "palaa",
     "part": "part222",
-    "process": 2,
     "stationGroup": "L/U",
     "stationNumber": 1,
     "x": 2018-01-06T09:09:05.000Z,
@@ -498,7 +494,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
-    "process": 1,
     "stationGroup": "MC",
     "stationNumber": 1,
     "x": 2018-01-31T09:41:05.000Z,
@@ -526,7 +521,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part111",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 2,
     "x": 2018-02-02T09:57:05.000Z,
@@ -554,7 +548,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 1,
     "x": 2018-01-31T09:09:05.000Z,
@@ -582,7 +575,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part111",
-    "process": 1,
     "stationGroup": "MC",
     "stationNumber": 1,
     "x": 2018-02-02T09:47:05.000Z,
@@ -610,7 +602,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part111",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 1,
     "x": 2018-02-02T09:09:05.000Z,
@@ -653,55 +644,55 @@ Map {
 
 exports[`processes last 30 events > after filter - estimated cycle times 1`] = `
 Map {
-  "{part: part222}, proc: 2, statGroup: L/U, operation: LOAD}" => {
+  "{part: part222}, statGroup: L/U, operation: LOAD-2}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "{part: part111}, proc: 1, statGroup: L/U, operation: LOAD}" => {
+  "{part: part222}, statGroup: L/U, operation: UNLOAD-2}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "{part: part222}, statGroup: L/U, operation: UNLOAD-1}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "{part: part222}, statGroup: L/U, operation: LOAD-1}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "{part: part222}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 3,
-    "medianMinutesForSingleMat": 3,
-  },
-  "{part: part222}, proc: 1, statGroup: L/U, operation: LOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 6,
-    "medianMinutesForSingleMat": 6,
-  },
-  "{part: part222}, proc: 2, statGroup: L/U, operation: UNLOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 3,
-    "medianMinutesForSingleMat": 3,
-  },
-  "{part: part111}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 3,
-    "medianMinutesForSingleMat": 3,
-  },
-  "{part: part111}, proc: 1, statGroup: MC, operation: progz}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 30,
-    "medianMinutesForSingleMat": 30,
-  },
-  "{part: part222}, proc: 1, statGroup: MC, operation: progv}" => {
+  "{part: part222}, statGroup: MC, operation: progv}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 24,
     "medianMinutesForSingleMat": 24,
   },
-  "{part: part222}, proc: 2, statGroup: MC, operation: prog4}" => {
+  "{part: part111}, statGroup: MC, operation: progz}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 30,
+    "medianMinutesForSingleMat": 30,
+  },
+  "{part: part111}, statGroup: L/U, operation: UNLOAD-1}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "{part: part111}, statGroup: L/U, operation: LOAD-1}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 6,
+    "medianMinutesForSingleMat": 6,
+  },
+  "{part: part222}, statGroup: MC, operation: prog4}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 18,
@@ -1021,7 +1012,6 @@ Map {
     "operator": "",
     "pallet": "palcc",
     "part": "part111",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 2,
     "x": 2018-02-08T09:39:05.000Z,
@@ -1049,7 +1039,6 @@ Map {
     "operator": "",
     "pallet": "palcc",
     "part": "part111",
-    "process": 1,
     "stationGroup": "MC",
     "stationNumber": 1,
     "x": 2018-02-08T09:29:05.000Z,
@@ -1077,7 +1066,6 @@ Map {
     "operator": "",
     "pallet": "palcc",
     "part": "part111",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 1,
     "x": 2018-02-08T09:09:05.000Z,
@@ -1105,7 +1093,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 2,
     "x": 2018-01-31T09:51:05.000Z,
@@ -1133,7 +1120,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
-    "process": 1,
     "stationGroup": "MC",
     "stationNumber": 1,
     "x": 2018-01-31T09:41:05.000Z,
@@ -1161,7 +1147,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part111",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 2,
     "x": 2018-02-02T09:57:05.000Z,
@@ -1189,7 +1174,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 1,
     "x": 2018-01-31T09:09:05.000Z,
@@ -1217,7 +1201,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part111",
-    "process": 1,
     "stationGroup": "MC",
     "stationNumber": 1,
     "x": 2018-02-02T09:47:05.000Z,
@@ -1245,7 +1228,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part111",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 1,
     "x": 2018-02-02T09:09:05.000Z,
@@ -1256,7 +1238,19 @@ Map {
 
 exports[`processes last 30 events > after filter - tool use 1`] = `
 Map {
-  "{part: part111}, proc: 1, statGroup: MC, operation: progz}" => [
+  "{part: part222}, statGroup: MC, operation: progv}" => [
+    {
+      "tools": [
+        {
+          "cycleUsageCnt": 0,
+          "cycleUsageMinutes": 0.7833333333333333,
+          "toolChangedDuringMiddleOfCycle": true,
+          "toolName": "7",
+        },
+      ],
+    },
+  ],
+  "{part: part111}, statGroup: MC, operation: progz}" => [
     {
       "tools": [
         {
@@ -1274,19 +1268,7 @@ Map {
       ],
     },
   ],
-  "{part: part222}, proc: 1, statGroup: MC, operation: progv}" => [
-    {
-      "tools": [
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.7833333333333333,
-          "toolChangedDuringMiddleOfCycle": true,
-          "toolName": "7",
-        },
-      ],
-    },
-  ],
-  "{part: part222}, proc: 2, statGroup: MC, operation: prog4}" => [
+  "{part: part222}, statGroup: MC, operation: prog4}" => [
     {
       "tools": [
         {
@@ -1341,55 +1323,55 @@ Map {
 
 exports[`processes last 30 events > initial 27 days ago, two days ago, and today - estimated cycle times 1`] = `
 Map {
-  "{part: part222}, proc: 2, statGroup: L/U, operation: LOAD}" => {
+  "{part: part222}, statGroup: L/U, operation: LOAD-2}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "{part: part111}, proc: 1, statGroup: L/U, operation: LOAD}" => {
+  "{part: part222}, statGroup: L/U, operation: UNLOAD-2}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "{part: part222}, statGroup: L/U, operation: UNLOAD-1}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "{part: part222}, statGroup: L/U, operation: LOAD-1}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 6,
     "medianMinutesForSingleMat": 6,
   },
-  "{part: part222}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 3,
-    "medianMinutesForSingleMat": 3,
-  },
-  "{part: part222}, proc: 1, statGroup: L/U, operation: LOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 6,
-    "medianMinutesForSingleMat": 6,
-  },
-  "{part: part222}, proc: 2, statGroup: L/U, operation: UNLOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 3,
-    "medianMinutesForSingleMat": 3,
-  },
-  "{part: part111}, proc: 1, statGroup: L/U, operation: UNLOAD}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 3,
-    "medianMinutesForSingleMat": 3,
-  },
-  "{part: part111}, proc: 1, statGroup: MC, operation: progz}" => {
-    "MAD_aboveMinutes": 0.25,
-    "MAD_belowMinutes": 0.25,
-    "expectedCycleMinutesForSingleMat": 30,
-    "medianMinutesForSingleMat": 30,
-  },
-  "{part: part222}, proc: 1, statGroup: MC, operation: progv}" => {
+  "{part: part222}, statGroup: MC, operation: progv}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 24,
     "medianMinutesForSingleMat": 24,
   },
-  "{part: part222}, proc: 2, statGroup: MC, operation: prog4}" => {
+  "{part: part111}, statGroup: MC, operation: progz}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 30,
+    "medianMinutesForSingleMat": 30,
+  },
+  "{part: part111}, statGroup: L/U, operation: UNLOAD-1}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 3,
+    "medianMinutesForSingleMat": 3,
+  },
+  "{part: part111}, statGroup: L/U, operation: LOAD-1}" => {
+    "MAD_aboveMinutes": 0.25,
+    "MAD_belowMinutes": 0.25,
+    "expectedCycleMinutesForSingleMat": 6,
+    "medianMinutesForSingleMat": 6,
+  },
+  "{part: part222}, statGroup: MC, operation: prog4}" => {
     "MAD_aboveMinutes": 0.25,
     "MAD_belowMinutes": 0.25,
     "expectedCycleMinutesForSingleMat": 18,
@@ -1695,7 +1677,6 @@ Map {
     "operator": "",
     "pallet": "palaa",
     "part": "part222",
-    "process": 2,
     "stationGroup": "L/U",
     "stationNumber": 2,
     "x": 2018-01-06T09:45:05.000Z,
@@ -1723,7 +1704,6 @@ Map {
     "operator": "",
     "pallet": "palaa",
     "part": "part222",
-    "process": 2,
     "stationGroup": "MC",
     "stationNumber": 1,
     "x": 2018-01-06T09:35:05.000Z,
@@ -1751,7 +1731,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 2,
     "x": 2018-01-31T09:51:05.000Z,
@@ -1779,7 +1758,6 @@ Map {
     "operator": "",
     "pallet": "palaa",
     "part": "part222",
-    "process": 2,
     "stationGroup": "L/U",
     "stationNumber": 1,
     "x": 2018-01-06T09:09:05.000Z,
@@ -1807,7 +1785,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
-    "process": 1,
     "stationGroup": "MC",
     "stationNumber": 1,
     "x": 2018-01-31T09:41:05.000Z,
@@ -1835,7 +1812,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part111",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 2,
     "x": 2018-02-02T09:57:05.000Z,
@@ -1863,7 +1839,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part222",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 1,
     "x": 2018-01-31T09:09:05.000Z,
@@ -1891,7 +1866,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part111",
-    "process": 1,
     "stationGroup": "MC",
     "stationNumber": 1,
     "x": 2018-02-02T09:47:05.000Z,
@@ -1919,7 +1893,6 @@ Map {
     "operator": "",
     "pallet": "palbb",
     "part": "part111",
-    "process": 1,
     "stationGroup": "L/U",
     "stationNumber": 1,
     "x": 2018-02-02T09:09:05.000Z,
@@ -1930,7 +1903,19 @@ Map {
 
 exports[`processes last 30 events > initial 27 days ago, two days ago, and today - tool use 1`] = `
 Map {
-  "{part: part111}, proc: 1, statGroup: MC, operation: progz}" => [
+  "{part: part222}, statGroup: MC, operation: progv}" => [
+    {
+      "tools": [
+        {
+          "cycleUsageCnt": 0,
+          "cycleUsageMinutes": 0.7833333333333333,
+          "toolChangedDuringMiddleOfCycle": true,
+          "toolName": "7",
+        },
+      ],
+    },
+  ],
+  "{part: part111}, statGroup: MC, operation: progz}" => [
     {
       "tools": [
         {
@@ -1948,19 +1933,7 @@ Map {
       ],
     },
   ],
-  "{part: part222}, proc: 1, statGroup: MC, operation: progv}" => [
-    {
-      "tools": [
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.7833333333333333,
-          "toolChangedDuringMiddleOfCycle": true,
-          "toolName": "7",
-        },
-      ],
-    },
-  ],
-  "{part: part222}, proc: 2, statGroup: MC, operation: prog4}" => [
+  "{part: part222}, statGroup: MC, operation: prog4}" => [
     {
       "tools": [
         {

@@ -194,7 +194,7 @@ it("calculates recent cycles", () => {
 
   const expected = HashMap.from<PartAndStationOperation, StatisticalCycleTime>([
     [
-      new PartAndStationOperation("part1", 1, "MC", "abcd"),
+      new PartAndStationOperation("part1", "MC", "abcd"),
       {
         medianMinutesForSingleMat: 28 / 3, // 3 parts per face
         MAD_aboveMinutes: 1.2,
@@ -203,7 +203,7 @@ it("calculates recent cycles", () => {
       },
     ],
     [
-      new PartAndStationOperation("part3", 1, "L/U", "LOAD"),
+      new PartAndStationOperation("part3", "L/U", "LOAD-1"),
       {
         medianMinutesForSingleMat: 8 / 2, // 2 parts per face
         MAD_aboveMinutes: 1,
@@ -212,7 +212,7 @@ it("calculates recent cycles", () => {
       },
     ],
     [
-      new PartAndStationOperation("part4", 2, "L/U", "UNLOAD"),
+      new PartAndStationOperation("part4", "L/U", "UNLOAD-2"),
       {
         medianMinutesForSingleMat: 11 / 2, // two parts per face
         MAD_aboveMinutes: 1,
