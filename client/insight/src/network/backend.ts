@@ -98,6 +98,7 @@ export interface FmsAPI {
     queue: string | undefined
   ): Promise<void>;
   parseBarcode(barcode: string | null): Promise<Readonly<api.IMaterialDetails>>;
+  enableVerboseLoggingForFiveMinutes(): Promise<void>;
 }
 
 export interface LogAPI {

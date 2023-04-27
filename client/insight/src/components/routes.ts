@@ -81,6 +81,8 @@ export enum RouteLocation {
   Analysis_Schedules = "/analysis/schedules",
   Analysis_DataExport = "/analysis/data-export",
 
+  VerboseLogging = "/logging",
+
   Client_Custom = "/client/:custom+",
 }
 
@@ -129,6 +131,7 @@ export type RouteState =
   | { route: RouteLocation.Analysis_CostPerPiece }
   | { route: RouteLocation.Analysis_Schedules }
   | { route: RouteLocation.Analysis_DataExport }
+  | { route: RouteLocation.VerboseLogging }
   | { route: RouteLocation.Client_Custom; custom: ReadonlyArray<string> };
 
 function routeToUrl(route: RouteState): string {
@@ -329,6 +332,7 @@ export function helpUrl(r: RouteState): string {
       return "https://www.seedtactics.com/docs/fms-insight/client-cost-per-piece";
 
     case RouteLocation.ChooseMode:
+    case RouteLocation.VerboseLogging:
     case RouteLocation.Client_Custom:
     default:
       return "https://www.seedtactics.com/docs/fms-insight/client-launch";

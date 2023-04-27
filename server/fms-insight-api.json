@@ -27,73 +27,6 @@
         }
       }
     },
-    "/api/v1/fms/settings/{id}": {
-      "get": {
-        "tags": [
-          "fms"
-        ],
-        "operationId": "fms_GetSettings",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "fms"
-        ],
-        "operationId": "fms_SetSetting",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "setting",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/v1/fms/find-instructions/{part}": {
       "get": {
         "tags": [
@@ -269,6 +202,19 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/fms/enable-verbose-logging-for-five-minutes": {
+      "post": {
+        "tags": [
+          "fms"
+        ],
+        "operationId": "fms_EnableVerboseLoggingForFiveMinutes",
+        "responses": {
+          "200": {
+            "description": ""
           }
         }
       }

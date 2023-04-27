@@ -80,6 +80,7 @@ import { QualityPage } from "./analysis/QualityPage.js";
 import { SystemOverviewPage } from "./station-monitor/SystemOverview.js";
 import { StationToolbar, StationToolbarOverviewButton } from "./station-monitor/StationToolbar.js";
 import { RecentProductionPage } from "./operations/RecentProduction.js";
+import { VerboseLoggingPage } from "./VerboseLogging.js";
 
 export function NavTabs({ children }: { children?: React.ReactNode }) {
   const [route, setRoute] = routes.useCurrentRoute();
@@ -463,6 +464,12 @@ const App = React.memo(function App(props: AppProps) {
       case routes.RouteLocation.Tools_Programs:
         page = <ProgramReportPage />;
         navigation = ToolsTabs;
+        break;
+
+      case routes.RouteLocation.VerboseLogging:
+        page = <VerboseLoggingPage />;
+        showSearch = false;
+        showAlarms = false;
         break;
 
       case routes.RouteLocation.Client_Custom: {

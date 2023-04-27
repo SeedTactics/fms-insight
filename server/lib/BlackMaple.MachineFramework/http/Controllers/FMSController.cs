@@ -309,7 +309,7 @@ namespace BlackMaple.MachineFramework.Controllers
         {
           // task is currently running, user wants to extend
           _timeToReenableOldLogLevel = DateTime.UtcNow + TimeSpan.FromMinutes(5);
-          Serilog.Log.Information("Extending verbose logging for another 5 minutes");
+          Serilog.Log.Debug("Extending verbose logging for another 5 minutes");
         }
         else
         {
@@ -318,7 +318,7 @@ namespace BlackMaple.MachineFramework.Controllers
           _timeToReenableOldLogLevel = DateTime.UtcNow + TimeSpan.FromMinutes(5);
 
           _serverSt.LogLevel.MinimumLevel = Serilog.Events.LogEventLevel.Verbose;
-          Serilog.Log.Information("Enabling verbose logging for 5 minutes");
+          Serilog.Log.Debug("Enabling verbose logging for 5 minutes");
 
           System.Threading.Tasks.Task.Run(async () =>
           {
@@ -330,7 +330,7 @@ namespace BlackMaple.MachineFramework.Controllers
               {
                 if (DateTime.UtcNow.AddSeconds(5) >= _timeToReenableOldLogLevel.Value)
                 {
-                  Serilog.Log.Information("Returning to logging level {level}", _oldLogLevel);
+                  Serilog.Log.Debug("Returning to logging level {level}", _oldLogLevel);
                   _serverSt.LogLevel.MinimumLevel = _oldLogLevel;
                   _timeToReenableOldLogLevel = null;
                   break;
