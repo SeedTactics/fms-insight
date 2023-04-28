@@ -478,7 +478,7 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
               colSpan={this.props.columns.length + (this.props.onClickDetails ? 1 : 0)}
               style={{ textAlign: "center" }}
             >
-              {this.props.emptyMessage}
+              {rows.length === 0 ? this.props.emptyMessage : undefined}
             </TableCell>
           </TableRow>
         ) : undefined}

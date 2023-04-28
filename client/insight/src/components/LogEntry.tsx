@@ -43,6 +43,7 @@ import { IconButton } from "@mui/material";
 import { ChevronRight as ChevronRightIcon, ImportExport } from "@mui/icons-material";
 import { copyLogEntriesToClipboard } from "../data/results.cycles.js";
 import { durationToMinutes, durationToSeconds } from "../util/parseISODuration.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 type ColoredSpanType =
   | "machine"
@@ -147,7 +148,11 @@ function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
     if (mats[0].numproc == 1) {
       return `${mats[0].part} x${mats.length}`;
     } else {
-      return `${mats[0].part}-${mats[0].proc} x${mats.length}`;
+      return `${mats[0].part}-${LazySeq.of(mats)
+        .map((m) => m.proc)
+        .distinctAndSortBy((p) => p)
+        .toRArray()
+        .join("&")} x${mats.length}`;
     }
   } else if (mats.length == 1) {
     if (mats[0].numproc == 1) {

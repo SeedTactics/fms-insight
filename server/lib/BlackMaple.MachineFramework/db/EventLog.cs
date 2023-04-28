@@ -2617,7 +2617,9 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)cmd).Transaction = trans;
         cmd.CommandText =
           "INSERT INTO matdetails(UniqueStr, PartName, NumProcesses) VALUES ($uniq,$part,$numproc)";
-        cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+        cmd.Parameters.Add("uniq", SqliteType.Text).Value = string.IsNullOrEmpty(unique)
+          ? DBNull.Value
+          : unique;
         cmd.Parameters.Add("part", SqliteType.Text).Value = part;
         cmd.Parameters.Add("numproc", SqliteType.Integer).Value = numProc;
         cmd.ExecuteNonQuery();

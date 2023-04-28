@@ -67,6 +67,7 @@ enum ColumnId {
   Pallet,
   Serial,
   Workorder,
+  Operation,
   Inspection,
   ElapsedMin,
   ActiveMin,
@@ -103,6 +104,12 @@ function buildColumns(
       numeric: false,
       label: "Station",
       getDisplay: (c) => c.stationGroup + " " + c.stationNumber.toString(),
+    },
+    {
+      id: ColumnId.Operation,
+      numeric: false,
+      label: "Operation",
+      getDisplay: (c) => c.operation,
     },
     {
       id: ColumnId.Pallet,
