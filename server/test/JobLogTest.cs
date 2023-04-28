@@ -781,7 +781,11 @@ namespace MachineWatchTest
       );
       _jobLog.GetLogForMaterial(18).Should().BeEmpty();
 
-      var markLog = _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat1), "ser1");
+      var markLog = _jobLog.RecordSerialForMaterialID(
+        EventLogMaterial.FromLogMat(mat1),
+        "ser1",
+        start.AddHours(8)
+      );
       logsForMat1.Add(
         new LogEntry(
           -1,
@@ -792,7 +796,7 @@ namespace MachineWatchTest
           1,
           "MARK",
           false,
-          markLog.EndTimeUTC,
+          start.AddHours(8),
           "ser1"
         )
       );
@@ -1343,6 +1347,8 @@ namespace MachineWatchTest
       load1.Count.Should().Be(1);
       CheckEqual(log1, load1[0]);
 
+      CheckEqual(_jobLog.MostRecentLogEntryForForeignID("for1"), load1[0]);
+
       var load2 = _jobLog.StationLogByForeignID("for2");
       load2.Count.Should().Be(1);
       CheckEqual(log2, load2[0]);
@@ -1356,10 +1362,46 @@ namespace MachineWatchTest
       Assert.Equal(LogType.LoadUnloadCycle, load4[0].LogType);
 
       _jobLog.StationLogByForeignID("abwgtweg").Should().BeEmpty();
+      _jobLog.MostRecentLogEntryForForeignID("woeufhwioeuf").Should().BeNull();
 
       Assert.Equal("for1", _jobLog.ForeignIDForCounter(load1[0].Counter));
       Assert.Equal("for2", _jobLog.ForeignIDForCounter(load2[0].Counter));
       Assert.Equal("", _jobLog.ForeignIDForCounter(load2[0].Counter + 30));
+
+      // add another log with same foreign id
+      var t = DateTime.UtcNow.AddHours(-2);
+      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat1), "ser1", t, foreignID: "for1");
+
+      var mat1WithSer = mat1 with { Serial = "ser1" };
+
+      var expectedFor1Serial = new LogEntry()
+      {
+        Counter = -1,
+        Material = ImmutableList.Create(mat1WithSer),
+        Pallet = "",
+        LogType = LogType.PartMark,
+        Program = "MARK",
+        LocationName = "Mark",
+        LocationNum = 1,
+        StartOfCycle = false,
+        EndTimeUTC = t,
+        Result = "ser1",
+        ElapsedTime = TimeSpan.FromMinutes(-1),
+        ActiveOperationTime = TimeSpan.Zero,
+      };
+
+      _jobLog
+        .StationLogByForeignID("for1")
+        .Should()
+        .BeEquivalentTo(
+          new[] { load1[0] with { Material = ImmutableList.Create(mat1WithSer, mat2) }, expectedFor1Serial },
+          options => options.Excluding(e => e.Counter)
+        );
+
+      _jobLog
+        .MostRecentLogEntryForForeignID("for1")
+        .Should()
+        .BeEquivalentTo(expectedFor1Serial, options => options.Excluding(e => e.Counter));
     }
 
     [Fact]
@@ -1559,12 +1601,12 @@ namespace MachineWatchTest
       );
 
       //now record serial and workorder
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat1_proc2), "serial1");
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat2_proc1), "serial2");
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat3), "serial3");
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat4), "serial4");
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat5), "serial5");
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat6), "serial6");
+      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat1_proc2), "serial1", t.AddHours(1));
+      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat2_proc1), "serial2", t.AddHours(2));
+      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat3), "serial3", t.AddHours(3));
+      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat4), "serial4", t.AddHours(4));
+      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat5), "serial5", t.AddHours(5));
+      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat6), "serial6", t.AddHours(6));
       Assert.Equal("serial1", _jobLog.GetMaterialDetails(mat1_proc2.MaterialID).Serial);
       _jobLog
         .GetMaterialDetailsForSerial("serial1")
@@ -4024,7 +4066,7 @@ namespace MachineWatchTest
         Process = 1,
         Face = "1"
       };
-      _jobLog.RecordSerialForMaterialID(firstMatProc0, serial: "aaaa", endTimeUTC: now);
+      _jobLog.RecordSerialForMaterialID(firstMatProc0, serial: "aaaa", timeUTC: now);
       _jobLog.RecordLoadEnd(
         toLoad: new[]
         {
@@ -5146,6 +5188,57 @@ namespace MachineWatchTest
       _jobLog.MaxForeignID().Should().Be("for3");
 
       _jobLog.PendingLoads("pal1").Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ForeignID()
+    {
+      var t = DateTime.UtcNow.AddHours(-3);
+
+      var newMat = _jobLog.AllocateMaterialIDAndGenerateSerial(
+        unique: "unique3",
+        part: "part3",
+        proc: 2,
+        numProc: 4,
+        timeUTC: t.AddMinutes(3),
+        out var serialLogEntry,
+        foreignID: "for2"
+      );
+
+      var expected = new LogEntry()
+      {
+        Counter = -1,
+        Material = ImmutableList.Create(
+          new LogMaterial()
+          {
+            MaterialID = newMat,
+            JobUniqueStr = "unique3",
+            Process = 2,
+            PartName = "part3",
+            NumProcesses = 4,
+            Serial = "0000000001",
+            Workorder = "",
+            Face = ""
+          }
+        ),
+        Pallet = "",
+        LogType = LogType.PartMark,
+        Program = "MARK",
+        LocationName = "Mark",
+        LocationNum = 1,
+        StartOfCycle = false,
+        EndTimeUTC = t.AddMinutes(3),
+        Result = "0000000001",
+        ElapsedTime = TimeSpan.FromMinutes(-1),
+        ActiveOperationTime = TimeSpan.Zero,
+      };
+
+      serialLogEntry.Should().BeEquivalentTo(expected, options => options.Excluding(e => e.Counter));
+
+      _jobLog
+        .MostRecentLogEntryForForeignID("for2")
+        .Should()
+        .BeEquivalentTo(expected, options => options.Excluding(e => e.Counter));
     }
   }
 

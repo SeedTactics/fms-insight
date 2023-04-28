@@ -330,7 +330,8 @@ namespace MachineWatchTest
             jobLog.RecordSerialForMaterialID(
               matId,
               proc,
-              SerialSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0')
+              SerialSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0'),
+              DateTime.UtcNow
             )
           );
           break;
@@ -348,7 +349,8 @@ namespace MachineWatchTest
             jobLog.RecordSerialForMaterialID(
               matId,
               proc,
-              SerialSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0')
+              SerialSettings.ConvertToBase62(material.MaterialID).PadLeft(10, '0'),
+              DateTime.UtcNow
             )
           );
           break;

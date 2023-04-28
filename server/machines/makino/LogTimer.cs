@@ -554,7 +554,7 @@ namespace Makino
         Process = process,
         Face = face
       };
-      _log.RecordSerialForMaterialID(logMat, serial);
+      _log.RecordSerialForMaterialID(logMat, serial, DateTime.UtcNow);
     }
 
 #if DEBUG

@@ -300,7 +300,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       using (var db = _backend.RepoConfig.OpenConnection())
       {
-        return db.RecordSerialForMaterialID(materialID, process, serial);
+        return db.RecordSerialForMaterialID(materialID, process, serial, DateTime.UtcNow);
       }
     }
 

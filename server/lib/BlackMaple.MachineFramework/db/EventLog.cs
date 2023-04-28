@@ -331,6 +331,24 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public LogEntry MostRecentLogEntryForForeignID(string foreignID)
+    {
+      using (var trans = _connection.BeginTransaction())
+      using (var cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = trans;
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+          + " FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
+        cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
+
+        using (var reader = cmd.ExecuteReader())
+        {
+          return LoadLog(reader, trans).FirstOrDefault();
+        }
+      }
+    }
+
     public string OriginalMessageByForeignID(string foreignID)
     {
       using (var cmd = _connection.CreateCommand())
@@ -1724,7 +1742,14 @@ namespace BlackMaple.MachineFramework
       );
     }
 
-    public LogEntry RecordSerialForMaterialID(long materialID, int proc, string serial)
+    public LogEntry RecordSerialForMaterialID(
+      long materialID,
+      int proc,
+      string serial,
+      DateTime timeUTC,
+      string foreignID = null,
+      string originalMessage = null
+    )
     {
       var mat = new EventLogMaterial()
       {
@@ -1732,19 +1757,30 @@ namespace BlackMaple.MachineFramework
         Process = proc,
         Face = ""
       };
-      return RecordSerialForMaterialID(mat, serial, DateTime.UtcNow);
+      return RecordSerialForMaterialID(mat, serial, timeUTC, foreignID, originalMessage);
     }
 
-    public LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial)
+    public LogEntry RecordSerialForMaterialID(
+      EventLogMaterial mat,
+      string serial,
+      DateTime endTimeUTC,
+      string foreignID = null,
+      string originalMessage = null
+    )
     {
-      return RecordSerialForMaterialID(mat, serial, DateTime.UtcNow);
+      return AddEntryInTransaction(trans =>
+      {
+        return RecordSerialForMaterialID(trans, mat, serial, endTimeUTC, foreignID, originalMessage);
+      });
     }
 
     private LogEntry RecordSerialForMaterialID(
       IDbTransaction trans,
       EventLogMaterial mat,
       string serial,
-      DateTime endTimeUTC
+      DateTime endTimeUTC,
+      string foreignID,
+      string originalMessage
     )
     {
       var log = new NewEventLogEntry()
@@ -1760,15 +1796,7 @@ namespace BlackMaple.MachineFramework
         Result = serial,
       };
       RecordSerialForMaterialID(trans, mat.MaterialID, serial);
-      return AddLogEntry(trans, log, null, null);
-    }
-
-    public LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial, DateTime endTimeUTC)
-    {
-      return AddEntryInTransaction(trans =>
-      {
-        return RecordSerialForMaterialID(trans, mat, serial, endTimeUTC);
-      });
+      return AddLogEntry(trans, log, foreignID, originalMessage);
     }
 
     // For backwards compatibility
@@ -2619,7 +2647,9 @@ namespace BlackMaple.MachineFramework
       int proc,
       int numProc,
       DateTime timeUTC,
-      out LogEntry serialLogEntry
+      out LogEntry serialLogEntry,
+      string foreignID = null,
+      string originalMessage = null
     )
     {
       if (_cfg.Settings.SerialType != SerialType.AssignOneSerialPerMaterial)
@@ -2641,7 +2671,9 @@ namespace BlackMaple.MachineFramework
             Face = ""
           },
           serial,
-          timeUTC
+          timeUTC,
+          foreignID: foreignID,
+          originalMessage: originalMessage
         );
       });
       return matId;

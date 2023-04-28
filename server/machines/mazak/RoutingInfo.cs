@@ -474,7 +474,8 @@ namespace MazakMachineInterface
               Process = process,
               Face = ""
             },
-            serial
+            serial,
+            DateTime.UtcNow
           );
         }
         // the add to queue log entry will use the process, so later when we lookup the latest completed process

@@ -55,6 +55,7 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> StationLogByForeignID(string foreignID);
+    LogEntry MostRecentLogEntryForForeignID(string foreignID);
     List<LogEntry> CurrentPalletLog(string pallet, bool includeLastPalletCycleEvt = false);
     string OriginalMessageByForeignID(string foreignID);
     DateTime LastPalletCycleTime(string pallet);
@@ -191,9 +192,21 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
-    LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial, DateTime endTimeUTC);
-    LogEntry RecordSerialForMaterialID(EventLogMaterial mat, string serial);
-    LogEntry RecordSerialForMaterialID(long materialID, int proc, string serial);
+    LogEntry RecordSerialForMaterialID(
+      EventLogMaterial mat,
+      string serial,
+      DateTime timeUTC,
+      string foreignID = null,
+      string originalMessage = null
+    );
+    LogEntry RecordSerialForMaterialID(
+      long materialID,
+      int proc,
+      string serial,
+      DateTime timeUTC,
+      string foreignID = null,
+      string originalMessage = null
+    );
     LogEntry RecordWorkorderForMaterialID(long materialID, int proc, string workorder);
     LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder);
     LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder, DateTime recordUtc);
@@ -341,7 +354,9 @@ namespace BlackMaple.MachineFramework
       int proc,
       int numProc,
       DateTime timeUTC,
-      out LogEntry serialLogEntry
+      out LogEntry serialLogEntry,
+      string foreignID = null,
+      string originalMessage = null
     );
     long AllocateMaterialIDForCasting(string casting);
     void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc);

@@ -142,7 +142,6 @@ namespace BlackMaple.MachineFramework
           }
           else
           {
-            Log.Debug("Timeout, rechecking cell state");
             raiseNewCurStatus = false;
           }
         }
@@ -543,7 +542,8 @@ namespace BlackMaple.MachineFramework
               Process = process,
               Face = ""
             },
-            serial
+            serial,
+            DateTime.UtcNow
           );
         }
         logEvt = ldb.RecordAddMaterialToQueue(
