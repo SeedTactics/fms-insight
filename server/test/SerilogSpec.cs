@@ -71,7 +71,7 @@ namespace MachineWatchTest
       );
       File.WriteAllText(toDelGzFile, "toDelGzFile");
 
-      var a = new BlackMaple.MachineFramework.Program.CompressSerilogDebugLog();
+      var a = new BlackMaple.MachineFramework.InsightLogging.CompressSerilogDebugLog();
       a.OnFileDeleting(file1);
 
       File.Exists(file1).Should().BeTrue();

@@ -296,50 +296,10 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
-    private static object _verboseLoggingLock = new object();
-    private static Serilog.Events.LogEventLevel _oldLogLevel = Serilog.Events.LogEventLevel.Information;
-    private static DateTime? _timeToReenableOldLogLevel = null;
-
     [HttpPost("enable-verbose-logging-for-five-minutes")]
     public void EnableVerboseLoggingForFiveMinutes()
     {
-      lock (_verboseLoggingLock)
-      {
-        if (_timeToReenableOldLogLevel.HasValue)
-        {
-          // task is currently running, user wants to extend
-          _timeToReenableOldLogLevel = DateTime.UtcNow + TimeSpan.FromMinutes(5);
-          Serilog.Log.Debug("Extending verbose logging for another 5 minutes");
-        }
-        else
-        {
-          // start a new task
-          _oldLogLevel = _serverSt.LogLevel.MinimumLevel;
-          _timeToReenableOldLogLevel = DateTime.UtcNow + TimeSpan.FromMinutes(5);
-
-          _serverSt.LogLevel.MinimumLevel = Serilog.Events.LogEventLevel.Verbose;
-          Serilog.Log.Debug("Enabling verbose logging for 5 minutes");
-
-          System.Threading.Tasks.Task.Run(async () =>
-          {
-            while (true)
-            {
-              await System.Threading.Tasks.Task.Delay(_timeToReenableOldLogLevel.Value - DateTime.UtcNow);
-
-              lock (_verboseLoggingLock)
-              {
-                if (DateTime.UtcNow.AddSeconds(5) >= _timeToReenableOldLogLevel.Value)
-                {
-                  Serilog.Log.Debug("Returning to logging level {level}", _oldLogLevel);
-                  _serverSt.LogLevel.MinimumLevel = _oldLogLevel;
-                  _timeToReenableOldLogLevel = null;
-                  break;
-                }
-              }
-            }
-          });
-        }
-      }
+      InsightLogging.EnableVerboseLoggingFor(TimeSpan.FromMinutes(5));
     }
   }
 }

@@ -86,7 +86,10 @@ namespace DebugMachineWatchApiServer
       fmsSettings.RequireScanAtCloseout = true;
       fmsSettings.AllowChangeWorkorderAtLoadStation = true;
 
-      BlackMaple.MachineFramework.Program.EnableSerilog(serverSt: serverSettings, enableEventLog: false);
+      BlackMaple.MachineFramework.InsightLogging.EnableSerilog(
+        serverSt: serverSettings,
+        enableEventLog: false
+      );
 
       var backend = new MockServerBackend(fmsSettings);
       var fmsImpl = new FMSImplementation()

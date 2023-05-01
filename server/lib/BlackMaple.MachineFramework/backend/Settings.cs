@@ -73,19 +73,11 @@ namespace BlackMaple.MachineFramework
       && !string.IsNullOrEmpty(AuthAuthority)
       && !string.IsNullOrEmpty(AuthTokenAudiences);
 
-    public Serilog.Core.LoggingLevelSwitch LogLevel { get; } =
-      new Serilog.Core.LoggingLevelSwitch(Serilog.Events.LogEventLevel.Information);
-
     public static ServerSettings Load(IConfiguration config)
     {
       var s = config.GetSection("SERVER").Get<ServerSettings>();
       if (s == null)
         s = new ServerSettings();
-
-      if (s.EnableDebugLog)
-      {
-        s.LogLevel.MinimumLevel = Serilog.Events.LogEventLevel.Debug;
-      }
 
       return s;
     }
