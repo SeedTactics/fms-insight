@@ -148,6 +148,15 @@ namespace MachineWatchTest
       _jobDB.DoesJobExist(job1.UniqueStr).Should().BeTrue();
       _jobDB.DoesJobExist("afouiaehwiouhwef").Should().BeFalse();
 
+      var belowJob1 = job1.UniqueStr.Substring(0, job1.UniqueStr.Length / 2);
+      var aboveJob1 =
+        belowJob1.Substring(0, belowJob1.Length - 1)
+        + ((char)(belowJob1[belowJob1.Length - 1] + 1)).ToString();
+      _jobDB.LoadJobsBetween(belowJob1, aboveJob1).Should().BeEquivalentTo(new[] { job1history });
+      _jobDB.LoadJobsBetween(belowJob1, job1.UniqueStr).Should().BeEquivalentTo(new[] { job1history });
+      _jobDB.LoadJobsBetween(belowJob1, belowJob1 + "!").Should().BeEmpty();
+      _jobDB.LoadJobsBetween(job1.UniqueStr, aboveJob1).Should().BeEquivalentTo(new[] { job1history });
+
       _jobDB
         .LoadMostRecentSchedule()
         .Should()
@@ -286,6 +295,32 @@ namespace MachineWatchTest
           // ignores job2 since manually created
           new[] { job1UnfilledWorks[0] }
         );
+
+      var belowJob2 = job2.UniqueStr.Substring(0, job2.UniqueStr.Length / 2);
+      var aboveJob2 =
+        belowJob2.Substring(0, belowJob2.Length - 1)
+        + ((char)(belowJob2[belowJob2.Length - 1] + 1)).ToString();
+
+      if (belowJob1.CompareTo(belowJob2) < 0)
+      {
+        _jobDB
+          .LoadJobsBetween(belowJob1, aboveJob2)
+          .Should()
+          .BeEquivalentTo(new[] { job1history, job2history });
+        _jobDB.LoadJobsBetween(belowJob1, belowJob2).Should().BeEquivalentTo(new[] { job1history });
+        _jobDB.LoadJobsBetween(aboveJob1, aboveJob2).Should().BeEquivalentTo(new[] { job2history });
+        _jobDB.LoadJobsBetween(aboveJob1, belowJob2).Should().BeEmpty();
+      }
+      else
+      {
+        _jobDB
+          .LoadJobsBetween(belowJob2, aboveJob1)
+          .Should()
+          .BeEquivalentTo(new[] { job1history, job2history });
+        _jobDB.LoadJobsBetween(belowJob2, belowJob1).Should().BeEquivalentTo(new[] { job2history });
+        _jobDB.LoadJobsBetween(aboveJob2, aboveJob1).Should().BeEquivalentTo(new[] { job1history });
+        _jobDB.LoadJobsBetween(aboveJob2, belowJob1).Should().BeEmpty();
+      }
     }
 
     [Fact]

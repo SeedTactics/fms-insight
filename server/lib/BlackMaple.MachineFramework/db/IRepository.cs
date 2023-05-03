@@ -443,6 +443,7 @@ namespace BlackMaple.MachineFramework
     // Loading Jobs
     // --------------------------------------------------------------------------------
     HistoricJob LoadJob(string UniqueStr);
+    ImmutableList<HistoricJob> LoadJobsBetween(string startingUniqueStr, string endingUniqueStr);
     bool DoesJobExist(string unique);
     IReadOnlyList<HistoricJob> LoadUnarchivedJobs();
     IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(

@@ -1059,6 +1059,24 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public ImmutableList<HistoricJob> LoadJobsBetween(string startingUniqueStr, string endingUniqueStr)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        cmd.CommandText =
+          "SELECT UniqueStr, Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg"
+          + " FROM jobs WHERE UniqueStr BETWEEN $start AND $end";
+
+        using (var trans = _connection.BeginTransaction())
+        {
+          cmd.Transaction = trans;
+          cmd.Parameters.Add("start", SqliteType.Text).Value = startingUniqueStr;
+          cmd.Parameters.Add("end", SqliteType.Text).Value = endingUniqueStr;
+          return LoadJobsHelper(cmd, trans);
+        }
+      }
+    }
+
     public HistoricJob LoadJob(string UniqueStr)
     {
       using (var cmd = _connection.CreateCommand())
