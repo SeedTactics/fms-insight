@@ -365,7 +365,6 @@ function MaterialRegion({
             <InProcMaterial
               mat={m}
               displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
-              shake={m.action.type === api.ActionType.Loading}
               fsize={data.fsize}
             />
           ) : (
