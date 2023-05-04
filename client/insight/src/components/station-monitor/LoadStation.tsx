@@ -503,7 +503,6 @@ const CompletedCol = React.memo(function CompletedCol({
 });
 
 interface LoadMatDialogProps {
-  readonly loadNum: number;
   readonly pallet: string | null;
   readonly queues: ReadonlyArray<string>;
 }
@@ -545,7 +544,7 @@ function InstructionButton({ pallet }: { pallet: string | null }) {
   );
 }
 
-function PrintSerialButton({ loadNum }: { loadNum: number }) {
+function PrintSerialButton() {
   const fmsInfo = useRecoilValue(fmsInformation);
   const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
   const [printLabel, printingLabel] = matDetails.usePrintLabel();
@@ -563,8 +562,6 @@ function PrintSerialButton({ loadNum }: { loadNum: number }) {
           printLabel({
             materialId: curMat.materialID,
             proc: curMat.process,
-            loadStation: loadNum,
-            queue: null,
           })
         }
       >
@@ -687,7 +684,7 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
       buttons={
         <>
           <InstructionButton pallet={props.pallet} />
-          <PrintSerialButton loadNum={props.loadNum} />
+          <PrintSerialButton />
           <QuarantineMatButton />
           <SignalInspectionButton />
           <AddMatButton
@@ -849,7 +846,7 @@ export function LoadStation(props: LoadStationProps) {
         <MultiInstructionButton loadData={data} />
         <SelectWorkorderDialog />
         <SelectInspTypeDialog />
-        <LoadMatDialog loadNum={props.loadNum} pallet={data.pallet?.pallet ?? null} queues={props.queues} />
+        <LoadMatDialog pallet={data.pallet?.pallet ?? null} queues={props.queues} />
       </Box>
     </MoveMaterialArrowContainer>
   );

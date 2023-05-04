@@ -46,7 +46,7 @@ namespace BlackMaple.MachineFramework
     string operatorName,
     string pallet
   );
-  public delegate void PrintLabelForMaterial(long materialId, int process, int? loadStation, string queue);
+  public delegate void PrintLabelForMaterial(long materialId, int process);
 
   public enum BarcodeType
   {
@@ -54,7 +54,13 @@ namespace BlackMaple.MachineFramework
     DirectlyEnteredSerial
   }
 
-  public delegate MaterialDetails ParseBarcode(string barcode, BarcodeType type);
+  public delegate MaterialDetails ParseBarcode(
+    string barcode,
+    BarcodeType type,
+    int? loadStation,
+    IReadOnlyList<string> queues,
+    bool? closeOut
+  );
 
   public enum AddRawMaterialType
   {

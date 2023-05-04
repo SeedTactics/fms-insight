@@ -115,8 +115,6 @@ function PrintLabelButton() {
           printLabel({
             materialId: curMat.materialID,
             proc: curMat.process,
-            loadStation: null,
-            queue: curMat.location.currentQueue ?? null,
           })
         }
       >
@@ -412,8 +410,6 @@ export const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props
                   ? printLabel({
                       materialId: props.material[0].materialID,
                       proc: 0,
-                      loadStation: null,
-                      queue: props.material[0].location.currentQueue || null,
                     })
                   : void 0
               }

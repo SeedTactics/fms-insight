@@ -236,11 +236,22 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("material-for-serial/{serial}")]
-    public IEnumerable<MaterialDetails> MaterialForSerial(string serial)
+    public IEnumerable<MaterialDetails> MaterialForSerial(
+      string serial,
+      [FromQuery] int? loadStation = null,
+      [FromQuery] IReadOnlyList<string> queues = null,
+      [FromQuery] bool? closeOut = null
+    )
     {
       if (_impl != null && _impl.ParseBarcode != null)
       {
-        var mat = _impl.ParseBarcode(serial, BarcodeType.DirectlyEnteredSerial);
+        var mat = _impl.ParseBarcode(
+          serial,
+          BarcodeType.DirectlyEnteredSerial,
+          loadStation,
+          queues,
+          closeOut
+        );
         if (mat != null)
         {
           return new[] { mat };

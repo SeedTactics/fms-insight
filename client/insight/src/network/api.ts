@@ -104,7 +104,7 @@ export class FmsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    printLabel(materialId: number, process: number | undefined, loadStation: number | null | undefined, queue: string | null | undefined): Promise<void> {
+    printLabel(materialId: number, process: number | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/fms/print-label/{materialId}?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -113,10 +113,6 @@ export class FmsClient {
             throw new Error("The parameter 'process' cannot be null.");
         else if (process !== undefined)
             url_ += "process=" + encodeURIComponent("" + process) + "&";
-        if (loadStation !== undefined && loadStation !== null)
-            url_ += "loadStation=" + encodeURIComponent("" + loadStation) + "&";
-        if (queue !== undefined && queue !== null)
-            url_ += "queue=" + encodeURIComponent("" + queue) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -152,12 +148,18 @@ export class FmsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    parseBarcode(barcode: string | null): Promise<MaterialDetails> {
+    parseBarcode(barcode: string | null, loadStation: number | null | undefined, queues: string[] | null | undefined, closeOut: boolean | null | undefined): Promise<MaterialDetails> {
         let url_ = this.baseUrl + "/api/v1/fms/parse-barcode?";
         if (barcode === undefined)
             throw new Error("The parameter 'barcode' must be defined.");
         else if(barcode !== null)
             url_ += "barcode=" + encodeURIComponent("" + barcode) + "&";
+        if (loadStation !== undefined && loadStation !== null)
+            url_ += "loadStation=" + encodeURIComponent("" + loadStation) + "&";
+        if (queues !== undefined && queues !== null)
+            queues && queues.forEach(item => { url_ += "queues=" + encodeURIComponent("" + item) + "&"; });
+        if (closeOut !== undefined && closeOut !== null)
+            url_ += "closeOut=" + encodeURIComponent("" + closeOut) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -1516,11 +1518,17 @@ export class LogClient {
         return Promise.resolve<MaterialDetails[]>(null as any);
     }
 
-    materialForSerial(serial: string | null): Promise<MaterialDetails[]> {
-        let url_ = this.baseUrl + "/api/v1/log/material-for-serial/{serial}";
+    materialForSerial(serial: string | null, loadStation: number | null | undefined, queues: string[] | null | undefined, closeOut: boolean | null | undefined): Promise<MaterialDetails[]> {
+        let url_ = this.baseUrl + "/api/v1/log/material-for-serial/{serial}?";
         if (serial === undefined || serial === null)
             throw new Error("The parameter 'serial' must be defined.");
         url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
+        if (loadStation !== undefined && loadStation !== null)
+            url_ += "loadStation=" + encodeURIComponent("" + loadStation) + "&";
+        if (queues !== undefined && queues !== null)
+            queues && queues.forEach(item => { url_ += "queues=" + encodeURIComponent("" + item) + "&"; });
+        if (closeOut !== undefined && closeOut !== null)
+            url_ += "closeOut=" + encodeURIComponent("" + closeOut) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {

@@ -247,16 +247,11 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("print-label/{materialId}")]
     [ProducesResponseType(200)]
     [ProducesResponseType(400)]
-    public IActionResult PrintLabel(
-      long materialId,
-      [FromQuery] int process = 1,
-      [FromQuery] int? loadStation = null,
-      [FromQuery] string queue = null
-    )
+    public IActionResult PrintLabel(long materialId, [FromQuery] int process = 1)
     {
       if (_impl != null && _impl.PrintLabel != null)
       {
-        _impl.PrintLabel(materialId, process, loadStation, queue);
+        _impl.PrintLabel(materialId, process);
         return Ok();
       }
       else
@@ -266,11 +261,16 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("parse-barcode")]
-    public MaterialDetails ParseBarcode([FromQuery] string barcode)
+    public MaterialDetails ParseBarcode(
+      [FromQuery] string barcode,
+      [FromQuery] int? loadStation = null,
+      [FromQuery] IReadOnlyList<string> queues = null,
+      [FromQuery] bool? closeOut = null
+    )
     {
       if (_impl != null && _impl.ParseBarcode != null)
       {
-        return _impl.ParseBarcode(barcode, BarcodeType.BarcodeFromScan);
+        return _impl.ParseBarcode(barcode, BarcodeType.BarcodeFromScan, loadStation, queues, closeOut);
       }
       else
       {

@@ -98,18 +98,20 @@ namespace DebugMachineWatchApiServer
         Name = "mock",
         Version = "1.2.3.4",
         UsingLabelPrinterForSerials = true,
-        PrintLabel = (matId, process, loadStation, queue) =>
+        PrintLabel = (matId, process) =>
+        {
+          Serilog.Log.Information("Print label for {matId} {process}", matId, process);
+        },
+        ParseBarcode = (barcode, type, lul, queues, closeout) =>
         {
           Serilog.Log.Information(
-            "Print label for {matId} {process} {loadStation}",
-            matId,
-            process,
-            loadStation
+            "Parsing barcode {barcode} {type} {lul} {queues} {closeout}",
+            barcode,
+            type,
+            lul,
+            queues,
+            closeout
           );
-        },
-        ParseBarcode = (barcode, type) =>
-        {
-          Serilog.Log.Information("Parsing barcode {barcode} {type}", barcode, type);
           System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
           var commaIdx = barcode.IndexOf(',');
           if (commaIdx >= 0)

@@ -36,6 +36,7 @@ import { useCallback, useEffect } from "react";
 import {
   atom,
   RecoilState,
+  RecoilValueReadOnly,
   useRecoilCallback,
   useRecoilState,
   useRecoilValue,
@@ -221,6 +222,7 @@ const currentRouteLocation = atom<RouteState>({
   default: urlToRoute(new URL(location.href)),
 });
 export const isDemoAtom = atom<boolean>({ key: "fms-insight-demo", default: false });
+export const currentRoute: RecoilValueReadOnly<RouteState> = currentRouteLocation;
 
 export function setRouteFromCallback(set: <T>(rval: RecoilState<T>, val: T) => void, to: RouteState) {
   set(currentRouteLocation, to);

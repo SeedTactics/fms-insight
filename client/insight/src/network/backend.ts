@@ -91,13 +91,13 @@ export interface JobAPI {
 
 export interface FmsAPI {
   fMSInformation(): Promise<Readonly<api.IFMSInfo>>;
-  printLabel(
-    materialId: number,
-    process: number,
-    loadStation: number | undefined,
-    queue: string | undefined
-  ): Promise<void>;
-  parseBarcode(barcode: string | null): Promise<Readonly<api.IMaterialDetails>>;
+  printLabel(materialId: number, process: number): Promise<void>;
+  parseBarcode(
+    barcode: string | null,
+    loadStation: number | null,
+    queues: string[] | null,
+    closeOut: boolean | null
+  ): Promise<Readonly<api.IMaterialDetails>>;
   enableVerboseLoggingForFiveMinutes(): Promise<void>;
 }
 
@@ -111,7 +111,12 @@ export interface LogAPI {
   logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
-  materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>>;
+  materialForSerial(
+    serial: string | null,
+    loadStation: number | null,
+    queues: string[] | null,
+    closeOut: boolean | null
+  ): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>>;
 
   setInspectionDecision(
     materialID: number,
