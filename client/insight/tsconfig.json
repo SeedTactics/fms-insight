@@ -1,15 +1,17 @@
 {
   "compilerOptions": {
-    "module": "node16",
-    "moduleResolution": "nodenext",
+    "module": "es2020",
+    "moduleResolution": "bundler",
     "target": "es2021",
     "lib": ["es2021", "dom"],
+    "noEmit": true,
 
     "allowJs": false,
     "jsx": "react",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
 
     "strict": true,
     "forceConsistentCasingInFileNames": true,
