@@ -67,7 +67,7 @@ function SerialLookup() {
     if (serial && serial !== "") {
       setLoading(true);
       setError(null);
-      LogBackend.materialForSerial(serial, null, null, null)
+      LogBackend.materialForSerial(serial)
         .then((mats) => {
           const mat = LazySeq.of(mats).maxBy((m) => m.materialID);
           if (mat) {

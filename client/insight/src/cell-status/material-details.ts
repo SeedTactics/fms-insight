@@ -58,7 +58,6 @@ import {
 } from "../network/api.js";
 import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
-import { RouteLocation, currentRoute } from "../components/routes.js";
 
 export type MaterialToShow =
   | { readonly type: "MatSummary"; readonly summary: Readonly<MaterialSummary> }
@@ -99,13 +98,7 @@ const barcodeMaterialDetail = selector<Readonly<IMaterialDetails> | null>({
   get: async ({ get }) => {
     const toShow = get(matToShow);
     if (toShow && toShow.type === "Barcode") {
-      const route = get(currentRoute);
-      return await FmsServerBackend.parseBarcode(
-        toShow.barcode,
-        route.route === RouteLocation.Station_LoadMonitor ? route.loadNum : null,
-        route.route === RouteLocation.Station_Queues ? [...route.queues] : null,
-        route.route === RouteLocation.Station_Closeout ? true : null
-      );
+      return await FmsServerBackend.parseBarcode(toShow.barcode);
     } else {
       return null;
     }
@@ -152,16 +145,7 @@ export const materialInDialogInfo = selector<MaterialToShowInfo | null>({
       }
       case "ManuallyEnteredSerial":
       case "AddMatWithEnteredSerial": {
-        const route = get(currentRoute);
-        const mat =
-          (
-            await LogBackend.materialForSerial(
-              curMat.serial,
-              route.route === RouteLocation.Station_LoadMonitor ? route.loadNum : null,
-              route.route === RouteLocation.Station_Queues ? [...route.queues] : null,
-              route.route === RouteLocation.Station_Closeout ? true : null
-            )
-          )?.[0] ?? null;
+        const mat = (await LogBackend.materialForSerial(curMat.serial))?.[0] ?? null;
         return mat ? { ...mat, jobUnique: mat.jobUnique ?? "" } : null;
       }
     }

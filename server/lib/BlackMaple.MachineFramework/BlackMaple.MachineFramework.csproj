@@ -45,18 +45,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.*"/>
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.*" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.*"/>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.*" />
 
-    <PackageReference Include="Serilog" Version="2.10.0"/>
+    <PackageReference Include="Serilog" Version="2.12.0"/>
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0"/>
-    <PackageReference Include="Serilog.Sinks.Console" Version="4.0.1"/>
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0"/>
     <PackageReference Include="Serilog.Formatting.Compact" Version="1.1.0"/>
-    <PackageReference Include="Serilog.AspNetCore" Version="5.0.0"/>
+    <PackageReference Include="Serilog.AspNetCore" Version="6.1.0"/>
 
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.*" />
-    <PackageReference Include="CsvHelper" Version="30.0.0"/>
-    <PackageReference Include="System.Collections.Immutable" Version="6.0.*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.*" />
+    <PackageReference Include="CsvHelper" Version="30.0.1"/>
+    <PackageReference Include="System.Collections.Immutable" Version="7.0.*" />
 
     <PackageReference Include="Germinate" Version="1.0.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 
@@ -66,7 +66,7 @@
   <Choose>
     <When Condition="$(OS) == 'Windows_NT'">
       <ItemGroup>
-        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.*" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.*" />
         <PackageReference Include="Serilog.Sinks.EventLog" Version="3.1.0"/>
       </ItemGroup>
       <PropertyGroup>

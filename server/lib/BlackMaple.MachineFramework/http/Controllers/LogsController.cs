@@ -38,6 +38,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using System.Linq;
+using Microsoft.AspNetCore.Http;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
@@ -236,21 +237,14 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("material-for-serial/{serial}")]
-    public IEnumerable<MaterialDetails> MaterialForSerial(
-      string serial,
-      [FromQuery] int? loadStation = null,
-      [FromQuery] IReadOnlyList<string> queues = null,
-      [FromQuery] bool? closeOut = null
-    )
+    public IEnumerable<MaterialDetails> MaterialForSerial(string serial)
     {
       if (_impl != null && _impl.ParseBarcode != null)
       {
         var mat = _impl.ParseBarcode(
           serial,
           BarcodeType.DirectlyEnteredSerial,
-          loadStation,
-          queues,
-          closeOut
+          Request.GetTypedHeaders().Referer
         );
         if (mat != null)
         {

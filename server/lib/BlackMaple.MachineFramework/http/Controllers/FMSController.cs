@@ -37,6 +37,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Runtime.Serialization;
+using Microsoft.AspNetCore.Http;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
@@ -251,7 +252,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (_impl != null && _impl.PrintLabel != null)
       {
-        _impl.PrintLabel(materialId, process);
+        _impl.PrintLabel(materialId, process, Request.GetTypedHeaders().Referer);
         return Ok();
       }
       else
@@ -261,16 +262,11 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("parse-barcode")]
-    public MaterialDetails ParseBarcode(
-      [FromQuery] string barcode,
-      [FromQuery] int? loadStation = null,
-      [FromQuery] IReadOnlyList<string> queues = null,
-      [FromQuery] bool? closeOut = null
-    )
+    public MaterialDetails ParseBarcode([FromQuery] string barcode)
     {
       if (_impl != null && _impl.ParseBarcode != null)
       {
-        return _impl.ParseBarcode(barcode, BarcodeType.BarcodeFromScan, loadStation, queues, closeOut);
+        return _impl.ParseBarcode(barcode, BarcodeType.BarcodeFromScan, Request.GetTypedHeaders().Referer);
       }
       else
       {
