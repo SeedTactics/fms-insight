@@ -98,9 +98,26 @@ namespace DebugMachineWatchApiServer
         Name = "mock",
         Version = "1.2.3.4",
         UsingLabelPrinterForSerials = true,
-        PrintLabel = (matId, process, referer) =>
+        PrintLabel = (matId, process, httpReferer) =>
         {
-          Serilog.Log.Information("Print label for {matId} {process} {referer}", matId, process, referer);
+          int loadStation = -10;
+          if (
+            httpReferer.Segments.Length == 4
+            && httpReferer.Segments[0] == "/"
+            && httpReferer.Segments[1] == "station/"
+            && httpReferer.Segments[2] == "loadunload/"
+            && int.TryParse(httpReferer.Segments[3], out var lul)
+          )
+          {
+            loadStation = lul;
+          }
+          Serilog.Log.Information(
+            "Print label for {matId} {process} {referer} and {load}",
+            matId,
+            process,
+            httpReferer,
+            loadStation
+          );
         },
         ParseBarcode = (barcode, type, referer) =>
         {
