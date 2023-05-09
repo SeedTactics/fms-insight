@@ -114,7 +114,7 @@ function InspectionList() {
 export function SignalInspectionButton() {
   const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
   const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  if (curMat === null) return null;
+  if (curMat === null || curMat.materialID < 0) return null;
   return (
     <Button color="primary" onClick={() => setForceInspOpen(true)}>
       Signal Inspection

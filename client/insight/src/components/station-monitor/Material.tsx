@@ -247,6 +247,7 @@ interface MaterialDragProps {
 
 export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummaryAndCompletedData>;
+  readonly inProcMat?: Readonly<api.IInProcessMaterial>;
   readonly fsize?: MatCardFontSize;
   readonly action?: string;
   readonly focusInspectionType?: string | null;
@@ -327,7 +328,13 @@ const MatCard = React.forwardRef(function MatCard(
       <ButtonBase
         focusRipple
         sx={{ width: "100%" }}
-        onClick={() => setMatToShow({ type: "MatSummary", summary: props.mat })}
+        onClick={() =>
+          setMatToShow(
+            props.inProcMat
+              ? { type: "InProcMat", inproc: props.inProcMat }
+              : { type: "MatSummary", summary: props.mat }
+          )
+        }
       >
         <Box display="flex" textAlign="left" alignItems="center" width="100%">
           <PartIdenticon part={props.mat.partName} />
@@ -403,6 +410,7 @@ export const InProcMaterial = React.memo(function InProcMaterial(
   return (
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
+      inProcMat={props.mat}
       action={materialAction(props.mat, props.displaySinglePallet)}
       fsize={props.fsize}
       hideAvatar={props.hideAvatar}
@@ -460,6 +468,7 @@ export const SortableInProcMaterial = React.memo(function SortableInProcMaterial
       setDragHandleRef={setActivatorNodeRef}
       isActiveDrag={isDragging}
       mat={inproc_mat_to_summary(props.mat)}
+      inProcMat={props.mat}
       action={materialAction(props.mat, props.displaySinglePallet)}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
@@ -474,6 +483,7 @@ export function DragOverlayInProcMaterial(props: InProcMaterialProps) {
   return (
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
+      inProcMat={props.mat}
       action={materialAction(props.mat, props.displaySinglePallet)}
       showDragHandle={true}
       hideAvatar={props.hideAvatar}
@@ -721,7 +731,7 @@ export function MaterialLoading() {
 
 function AddNoteButton({ setNotesOpen }: { setNotesOpen: (o: boolean) => void }) {
   const mat = useRecoilValue(matDetails.materialInDialogInfo);
-  if (mat === null) return null;
+  if (mat === null || mat.materialID < 0) return null;
 
   return (
     <Button onClick={() => setNotesOpen(true)} color="primary">

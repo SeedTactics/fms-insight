@@ -62,7 +62,7 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
   let operator = useRecoilValue(currentOperator);
   if (ignoreOperator) operator = null;
 
-  if (inProcMat === null) return null;
+  if (inProcMat === null || inProcMat.materialID < 0) return null;
 
   const quarantineQueue = fmsInfo.quarantineQueue?.length ? fmsInfo.quarantineQueue : null;
 

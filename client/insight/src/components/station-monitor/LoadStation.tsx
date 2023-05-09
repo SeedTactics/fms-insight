@@ -548,7 +548,7 @@ function PrintSerialButton() {
   const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
   const [printLabel, printingLabel] = matDetails.usePrintLabel();
 
-  if (curMat === null || !fmsInfo.usingLabelPrinterForSerials) return null;
+  if (curMat === null || !fmsInfo.usingLabelPrinterForSerials || curMat.materialID < 0) return null;
 
   if (fmsInfo.useClientPrinterForLabels) {
     return <PrintOnClientButton mat={curMat} />;
@@ -642,9 +642,27 @@ function AddMatButton({
   }
 }
 
-const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProps) {
+function AssignWorkorderButton() {
   const fmsInfo = useRecoilValue(fmsInformation);
   const setWorkorderDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
+  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+
+  if (!fmsInfo.allowChangeWorkorderAtLoadStation) {
+    return null;
+  }
+
+  if (mat === null || mat.materialID < 0) {
+    return null;
+  }
+
+  return (
+    <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
+      Assign Workorder
+    </Button>
+  );
+}
+
+const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProps) {
   const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
   const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
   const [selectedQueue, setSelectedQueue] = React.useState<string | null>(null);
@@ -695,11 +713,7 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
           />
           <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} />
           <InvalidateCycleDialogButtons st={invalidateSt} setState={setInvalidateSt} onClose={onClose} />
-          {fmsInfo.allowChangeWorkorderAtLoadStation ? (
-            <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
-              Assign Workorder
-            </Button>
-          ) : undefined}
+          <AssignWorkorderButton />
         </>
       }
     />

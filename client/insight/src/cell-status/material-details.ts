@@ -60,6 +60,7 @@ import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
 
 export type MaterialToShow =
+  | { readonly type: "InProcMat"; readonly inproc: Readonly<IInProcessMaterial> }
   | { readonly type: "MatSummary"; readonly summary: Readonly<MaterialSummary> }
   | { readonly type: "MatDetails"; readonly details: Readonly<IMaterialDetails> }
   | { readonly type: "LogMat"; readonly logMat: Readonly<ILogMaterial> }
@@ -120,6 +121,8 @@ export const materialInDialogInfo = selector<MaterialToShowInfo | null>({
     const curMat = get(matToShow);
     if (curMat === null) return null;
     switch (curMat.type) {
+      case "InProcMat":
+        return curMat.inproc;
       case "MatSummary":
         return curMat.summary;
       case "MatDetails":
@@ -157,10 +160,11 @@ export const inProcessMaterialInDialog = selector<IInProcessMaterial | null>({
   key: "material-inproc-mat-in-dialog",
   get: ({ get }) => {
     const status = get(currentStatus);
-    const displayMat = get(materialInDialogInfo);
-    return displayMat !== null && displayMat.materialID >= 0
-      ? status.material.find((m) => m.materialID === displayMat.materialID) ?? null
-      : null;
+    const toShow = get(matToShow);
+    if (toShow === null) return null;
+    if (toShow.type === "InProcMat") return toShow.inproc;
+    const matId = get(materialInDialogInfo)?.materialID ?? null;
+    return matId !== null && matId >= 0 ? status.material.find((m) => m.materialID === matId) ?? null : null;
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
 });
@@ -171,6 +175,8 @@ export const serialInMaterialDialog = selector<string | null>({
     const toShow = get(matToShow);
     if (toShow === null) return null;
     switch (toShow.type) {
+      case "InProcMat":
+        return toShow.inproc.serial ?? null;
       case "MatSummary":
         return toShow.summary.serial ?? null;
       case "MatDetails":
@@ -266,7 +272,13 @@ export const materialInDialogInspections = selector<MaterialToShowInspections>({
       return { signaledInspections: [], completedInspections: [] };
     }
 
-    const inspTypes = new Set<string>(curMat.type === "MatSummary" ? curMat.summary.signaledInspections : []);
+    const inspTypes = new Set<string>(
+      curMat.type === "MatSummary"
+        ? curMat.summary.signaledInspections
+        : curMat.type === "InProcMat"
+        ? curMat.inproc.signaledInspections
+        : []
+    );
     const completedTypes = new Set<string>();
 
     evts.forEach((e) => {
