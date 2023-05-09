@@ -106,7 +106,10 @@ public static class BuildCellState
     public required Job? Job { get; init; }
     public required int Process { get; init; }
     public required int Path { get; init; }
-    public required int TotalNumberOfProcesses { get; init; }
+    public required bool IsFinalProcess { get; init; }
+    public required string? OutputQueue { get; init; }
+    public required TimeSpan? ExpectedUnloadTimeForOnePieceOfMaterial { get; init; }
+
     public required ImmutableList<InProcessMaterial> Material { get; init; }
 
     public required LogEntry? LoadEnd { get; init; }
@@ -198,11 +201,28 @@ public static class BuildCellState
 
       var firstMat = loadedMats.First();
       var job = jobs.Lookup(firstMat.JobUnique);
-      var stops =
-        job?.Processes?[firstMat.Process - 1]?.Paths?[firstMat.Path - 1]?.Stops
-        ?? jobs.DefaultStopsForPath(firstMat.PartName, firstMat.Process, firstMat.Path);
-      var totalNumProcesses =
-        job != null ? job.Processes.Count : jobs.TotalNumberOfProcesses(firstMat.PartName);
+
+      IReadOnlyList<MachiningStop> stops;
+      bool isFinalProcess;
+      string? outputQueue;
+      TimeSpan? expectedUnloadTimeForOnePieceOfMaterial;
+      if (job != null)
+      {
+        stops = job.Processes[firstMat.Process - 1].Paths[firstMat.Path - 1].Stops;
+        isFinalProcess = firstMat.Process == job.Processes.Count;
+        outputQueue = job.Processes[firstMat.Process - 1].Paths[firstMat.Path - 1].OutputQueue;
+        expectedUnloadTimeForOnePieceOfMaterial = job.Processes[firstMat.Process - 1].Paths[
+          firstMat.Path - 1
+        ].ExpectedUnloadTime;
+      }
+      else
+      {
+        var info = jobs.DefaultPathInfo(firstMat.PartName, firstMat.Process, firstMat.Path);
+        stops = info.Stops;
+        isFinalProcess = info.IsFinalProcess;
+        outputQueue = info.OutputQueue;
+        expectedUnloadTimeForOnePieceOfMaterial = info.ExpectedUnloadTimeForOnePieceOfMaterial;
+      }
 
       var stopsAndEvts = ImmutableList.CreateBuilder<MachiningStopAndEvents>();
       var stopIdx = 0;
@@ -280,7 +300,9 @@ public static class BuildCellState
           Job = job,
           Process = firstMat.Process,
           Path = firstMat.Path,
-          TotalNumberOfProcesses = totalNumProcesses,
+          IsFinalProcess = isFinalProcess,
+          OutputQueue = outputQueue,
+          ExpectedUnloadTimeForOnePieceOfMaterial = expectedUnloadTimeForOnePieceOfMaterial,
           Material = loadedMats,
           LoadEnd = face.LoadEnd,
           Stops = stopsAndEvts.ToImmutable(),
@@ -743,7 +765,7 @@ public static class BuildCellState
     }
     else
     {
-      return face.Job?.Processes?[face.Process - 1]?.Paths[face.Path - 1]?.OutputQueue;
+      return face.OutputQueue;
     }
   }
 
@@ -794,10 +816,9 @@ public static class BuildCellState
               LastCompletedMachiningRouteStopIndex = face.Stops.Count - 1,
               Action = new InProcessMaterialAction()
               {
-                Type =
-                  face.Process == face.TotalNumberOfProcesses
-                    ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-                    : InProcessMaterialAction.ActionType.UnloadToInProcess,
+                Type = face.IsFinalProcess
+                  ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+                  : InProcessMaterialAction.ActionType.UnloadToInProcess,
                 UnloadIntoQueue = outputQueue,
                 ElapsedLoadUnloadTime = nowUTC - face.UnloadStart.EndTimeUTC
               }
@@ -861,8 +882,6 @@ public static class BuildCellState
         );
       }
 
-      var expectedUnloadTime =
-        face.Job?.Processes?[face.Process - 1]?.Paths?[face.Path - 1]?.ExpectedUnloadTime ?? TimeSpan.Zero;
       newEvts = db.RecordUnloadEnd(
         mats: face.Material.Select(
           m =>
@@ -877,7 +896,7 @@ public static class BuildCellState
         lulNum: lulNum,
         timeUTC: nowUTC,
         elapsed: face.UnloadStart != null ? nowUTC - face.UnloadStart.EndTimeUTC : TimeSpan.Zero,
-        active: expectedUnloadTime * face.Material.Count,
+        active: (face.ExpectedUnloadTimeForOnePieceOfMaterial ?? TimeSpan.Zero) * face.Material.Count,
         unloadIntoQueues: queues
       );
     }
@@ -928,13 +947,29 @@ public static class BuildCellState
           );
         }
 
-        var totalNumProcesses =
-          job != null ? job.Processes.Count : jobs.TotalNumberOfProcesses(face.First().PartName);
         var process = face.First().Action.ProcessAfterLoad ?? 1;
         var path = face.First().Action.PathAfterLoad ?? 1;
-        var stops =
-          job?.Processes?[process - 1]?.Paths?[path - 1]?.Stops
-          ?? jobs.DefaultStopsForPath(face.First().PartName, process, path);
+        IReadOnlyList<MachiningStop> stops;
+        bool isFinalProcess;
+        string? outputQueue;
+        TimeSpan? expectedUnloadTimeForOnePieceOfMaterial;
+        if (job != null)
+        {
+          stops = job.Processes[process - 1].Paths[path - 1].Stops;
+          isFinalProcess = process == job.Processes.Count;
+          outputQueue = job.Processes[process - 1].Paths[path - 1].OutputQueue;
+          expectedUnloadTimeForOnePieceOfMaterial = job.Processes[process - 1].Paths[
+            path - 1
+          ].ExpectedUnloadTime;
+        }
+        else
+        {
+          var info = jobs.DefaultPathInfo(face.First().PartName, process, path);
+          stops = info.Stops;
+          isFinalProcess = info.IsFinalProcess;
+          outputQueue = info.OutputQueue;
+          expectedUnloadTimeForOnePieceOfMaterial = info.ExpectedUnloadTimeForOnePieceOfMaterial;
+        }
 
         var matToLoad = (
           new MaterialToLoadOntoFace()
@@ -954,7 +989,9 @@ public static class BuildCellState
             Job = job,
             Process = process,
             Path = path,
-            TotalNumberOfProcesses = totalNumProcesses,
+            IsFinalProcess = isFinalProcess,
+            OutputQueue = outputQueue,
+            ExpectedUnloadTimeForOnePieceOfMaterial = expectedUnloadTimeForOnePieceOfMaterial,
             LoadEnd = loadEnds.First(
               e =>
                 e.LogType == LogType.LoadUnloadCycle

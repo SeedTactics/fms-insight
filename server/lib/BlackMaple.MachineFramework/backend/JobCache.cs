@@ -51,10 +51,17 @@ public interface IJobCache
   );
 }
 
+public record DefaultPathInformation
+{
+  public required IReadOnlyList<MachiningStop> Stops { get; init; }
+  public required bool IsFinalProcess { get; init; }
+  public required string? OutputQueue { get; init; }
+  public required TimeSpan? ExpectedUnloadTimeForOnePieceOfMaterial { get; init; }
+}
+
 public interface IJobCacheWithDefaultStops : IJobCache
 {
-  IReadOnlyList<MachiningStop> DefaultStopsForPath(string partName, int proc, int path);
-  int TotalNumberOfProcesses(string partName);
+  DefaultPathInformation DefaultPathInfo(string partName, int proc, int path);
 }
 
 public class JobCache : IJobCache
