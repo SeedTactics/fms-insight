@@ -61,7 +61,7 @@ public record DefaultPathInformation
 
 public interface IJobCacheWithDefaultStops : IJobCache
 {
-  DefaultPathInformation DefaultPathInfo(string partName, int proc, int path);
+  DefaultPathInformation DefaultPathInfo(ImmutableList<InProcessMaterial> matOnFace);
 }
 
 public class JobCache : IJobCache

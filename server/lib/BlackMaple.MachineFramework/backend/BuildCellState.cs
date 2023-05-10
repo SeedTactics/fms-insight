@@ -217,7 +217,7 @@ public static class BuildCellState
       }
       else
       {
-        var info = jobs.DefaultPathInfo(firstMat.PartName, firstMat.Process, firstMat.Path);
+        var info = jobs.DefaultPathInfo(matOnFace: loadedMats);
         stops = info.Stops;
         isFinalProcess = info.IsFinalProcess;
         outputQueue = info.OutputQueue;
@@ -949,6 +949,35 @@ public static class BuildCellState
 
         var process = face.First().Action.ProcessAfterLoad ?? 1;
         var path = face.First().Action.PathAfterLoad ?? 1;
+        var matToLoad = (
+          new MaterialToLoadOntoFace()
+          {
+            FaceNum = face.Key,
+            Process = process,
+            Path = path,
+            ActiveOperationTime = activeTime,
+            MaterialIDs = face.Select(m => m.MaterialID).ToImmutableList()
+          }
+        );
+
+        var matOnFace = face.Select(
+            m =>
+              m with
+              {
+                Process = process,
+                Path = path,
+                LastCompletedMachiningRouteStopIndex = null,
+                Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+                Location = new InProcessMaterialLocation()
+                {
+                  Type = InProcessMaterialLocation.LocType.OnPallet,
+                  Pallet = palletNum.ToString(),
+                  Face = face.Key
+                }
+              }
+          )
+          .ToImmutableList();
+
         IReadOnlyList<MachiningStop> stops;
         bool isFinalProcess;
         string? outputQueue;
@@ -964,23 +993,12 @@ public static class BuildCellState
         }
         else
         {
-          var info = jobs.DefaultPathInfo(face.First().PartName, process, path);
+          var info = jobs.DefaultPathInfo(matOnFace);
           stops = info.Stops;
           isFinalProcess = info.IsFinalProcess;
           outputQueue = info.OutputQueue;
           expectedUnloadTimeForOnePieceOfMaterial = info.ExpectedUnloadTimeForOnePieceOfMaterial;
         }
-
-        var matToLoad = (
-          new MaterialToLoadOntoFace()
-          {
-            FaceNum = face.Key,
-            Process = process,
-            Path = path,
-            ActiveOperationTime = activeTime,
-            MaterialIDs = face.Select(m => m.MaterialID).ToImmutableList()
-          }
-        );
 
         Func<IEnumerable<LogEntry>, LoadedFace> newFace = loadEnds =>
           new LoadedFace()
@@ -1014,26 +1032,7 @@ public static class BuildCellState
                   }
               )
               .ToImmutableList(),
-            Material = face.Select(
-                m =>
-                  m with
-                  {
-                    Process = process,
-                    Path = path,
-                    LastCompletedMachiningRouteStopIndex = null,
-                    Action = new InProcessMaterialAction()
-                    {
-                      Type = InProcessMaterialAction.ActionType.Waiting
-                    },
-                    Location = new InProcessMaterialLocation()
-                    {
-                      Type = InProcessMaterialLocation.LocType.OnPallet,
-                      Pallet = palletNum.ToString(),
-                      Face = face.Key
-                    }
-                  }
-              )
-              .ToImmutableList(),
+            Material = matOnFace,
             UnloadStart = null,
             UnloadEnd = null
           };
