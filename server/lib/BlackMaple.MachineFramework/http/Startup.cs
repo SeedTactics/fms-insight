@@ -64,7 +64,7 @@ namespace BlackMaple.MachineFramework
       ServerSettings serverSt
     )
     {
-      services.AddSingleton<Controllers.WebsocketManager>(new Controllers.WebsocketManager(fmsImpl.Backend));
+      services.AddSingleton<Controllers.WebsocketManager>(new Controllers.WebsocketManager(fmsImpl));
 
       services.AddResponseCompression();
 

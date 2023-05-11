@@ -90,7 +90,6 @@ namespace BlackMaple.MachineFramework
             .ConfigureServices(s =>
             {
               s.AddSingleton<FMSImplementation>(fmsImpl);
-              s.AddSingleton<IFMSBackend>(fmsImpl.Backend);
               s.AddSingleton<FMSSettings>(fmsSt);
               s.AddSingleton<ServerSettings>(serverSt);
               Startup.AddServices(s, fmsImpl, fmsSt, serverSt);

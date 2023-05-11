@@ -42,9 +42,9 @@ namespace BlackMaple.MachineFramework.Controllers
   {
     private IMachineControl _machControl;
 
-    public machinesController(IFMSBackend backend)
+    public machinesController(FMSImplementation impl)
     {
-      _machControl = backend.MachineControl;
+      _machControl = impl.Backend?.MachineControl;
     }
 
     [HttpGet("tools")]

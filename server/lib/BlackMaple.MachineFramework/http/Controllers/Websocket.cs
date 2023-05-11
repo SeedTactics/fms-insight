@@ -113,7 +113,7 @@ namespace BlackMaple.MachineFramework.Controllers
     private System.Collections.Concurrent.BlockingCollection<ServerEvent> _messages;
     private Thread _thread;
 
-    public WebsocketManager(IFMSBackend backend)
+    public WebsocketManager(FMSImplementation impl)
     {
       _serSettings = new Newtonsoft.Json.JsonSerializerSettings();
       Startup.NewtonsoftJsonSettings(_serSettings);
@@ -123,13 +123,14 @@ namespace BlackMaple.MachineFramework.Controllers
       _thread.IsBackground = true;
       _thread.Start();
 
-      if (backend != null)
+      if (impl.Backend != null)
       {
-        backend.RepoConfig.NewLogEntry += (e, foreignId, db) => Send(new ServerEvent() { LogEntry = e });
-        backend.JobControl.OnNewJobs += (jobs) =>
+        impl.Backend.RepoConfig.NewLogEntry += (e, foreignId, db) => Send(new ServerEvent() { LogEntry = e });
+        impl.Backend.JobControl.OnNewJobs += (jobs) =>
           Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
-        backend.OnNewCurrentStatus += (status) => Send(new ServerEvent() { NewCurrentStatus = status });
-        backend.QueueControl.OnEditMaterialInLog += (o) => Send(new ServerEvent() { EditMaterialInLog = o });
+        impl.Backend.OnNewCurrentStatus += (status) => Send(new ServerEvent() { NewCurrentStatus = status });
+        impl.Backend.QueueControl.OnEditMaterialInLog += (o) =>
+          Send(new ServerEvent() { EditMaterialInLog = o });
       }
     }
 

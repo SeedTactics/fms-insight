@@ -141,7 +141,7 @@ namespace BlackMaple.MachineFramework.Controllers
         AddRawMaterial = _impl.AddRawMaterial,
         AddInProcessMaterial = _impl.AddInProcessMaterial,
         AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
-        AllowQuarantineToCancelLoad = _impl.Backend.QueueControl.AllowQuarantineToCancelLoad,
+        AllowQuarantineToCancelLoad = _impl.Backend?.QueueControl.AllowQuarantineToCancelLoad,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
         LicenseExpires = _impl.LicenseExpires?.Invoke(),
         CustomStationMonitorDialogUrl = _impl.CustomStationMonitorDialogUrl,
@@ -264,7 +264,12 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("parse-barcode")]
     public MaterialDetails ParseBarcode([FromQuery] string barcode)
     {
-      if (_impl != null && _impl.ParseBarcode != null)
+      if (_impl == null || _impl.Backend == null)
+      {
+        return null;
+      }
+
+      if (_impl.ParseBarcode != null)
       {
         return _impl.ParseBarcode(barcode, BarcodeType.BarcodeFromScan, Request.GetTypedHeaders().Referer);
       }

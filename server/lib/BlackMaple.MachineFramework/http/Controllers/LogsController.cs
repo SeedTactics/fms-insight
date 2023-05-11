@@ -99,19 +99,17 @@ namespace BlackMaple.MachineFramework.Controllers
   [Route("api/v1/[controller]")]
   public class logController : ControllerBase
   {
-    private IFMSBackend _backend;
     private FMSImplementation _impl;
 
-    public logController(IFMSBackend backend, FMSImplementation impl)
+    public logController(FMSImplementation impl)
     {
-      _backend = backend;
       _impl = impl;
     }
 
     [HttpGet("events/all")]
     public IEnumerable<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         foreach (var l in db.GetLogEntries(startUTC, endUTC))
         {
@@ -125,7 +123,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public IActionResult GetEventCSV([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
       IEnumerable<LogEntry> entries;
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         entries = db.GetLogEntries(startUTC, endUTC);
       }
@@ -150,7 +148,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/all-completed-parts")]
     public IEnumerable<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         foreach (var l in db.GetCompletedPartLogs(startUTC, endUTC))
         {
@@ -165,7 +163,7 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] DateTime? expectedEndUTCofLastSeen = null
     )
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         foreach (var l in db.GetRecentLog(lastSeenCounter, expectedEndUTCofLastSeen))
         {
@@ -177,7 +175,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/for-material/{materialID}")]
     public List<LogEntry> LogForMaterial(long materialID)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.GetLogForMaterial(materialID);
       }
@@ -188,7 +186,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (id == null || id.Count == 0)
         return new List<LogEntry>();
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.GetLogForMaterial(id);
       }
@@ -197,7 +195,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/for-serial/{serial}")]
     public IEnumerable<LogEntry> LogForSerial(string serial)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         foreach (var l in db.GetLogForSerial(serial))
         {
@@ -209,7 +207,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/for-workorder/{workorder}")]
     public IEnumerable<LogEntry> LogForWorkorder(string workorder)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         foreach (var l in db.GetLogForWorkorder(workorder))
         {
@@ -221,7 +219,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("material-details/{materialID}")]
     public MaterialDetails MaterialDetails(long materialID)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.GetMaterialDetails(materialID);
       }
@@ -230,7 +228,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("material-for-job/{jobUnique}")]
     public List<MaterialDetails> MaterialDetailsForJob(string jobUnique)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.GetMaterialForJobUnique(jobUnique);
       }
@@ -257,7 +255,7 @@ namespace BlackMaple.MachineFramework.Controllers
       }
       else
       {
-        using (var db = _backend.RepoConfig.OpenConnection())
+        using (var db = _impl.Backend.RepoConfig.OpenConnection())
         {
           return db.GetMaterialDetailsForSerial(serial);
         }
@@ -267,7 +265,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("workorders")]
     public List<WorkorderSummary> GetWorkorders([FromQuery] IEnumerable<string> ids)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.GetWorkorderSummaries(ids);
       }
@@ -278,7 +276,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public IActionResult GetWorkordersCSV([FromQuery] IEnumerable<string> ids)
     {
       IEnumerable<WorkorderSummary> workorders;
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         workorders = db.GetWorkorderSummaries(ids);
       }
@@ -303,7 +301,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("material-details/{materialID}/serial")]
     public LogEntry SetSerial(long materialID, [FromBody] string serial, [FromQuery] int process = 1)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.RecordSerialForMaterialID(materialID, process, serial, DateTime.UtcNow);
       }
@@ -312,7 +310,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("material-details/{materialID}/workorder")]
     public LogEntry SetWorkorder(long materialID, [FromBody] string workorder, [FromQuery] int process = 1)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.RecordWorkorderForMaterialID(materialID, process, workorder);
       }
@@ -326,7 +324,7 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] int process = 1
     )
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.ForceInspection(materialID, process, inspType, inspect);
       }
@@ -340,7 +338,7 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] string operatorName = null
     )
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.RecordOperatorNotes(materialID, process, notes, operatorName);
       }
@@ -351,7 +349,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (string.IsNullOrEmpty(insp.InspectionType))
         throw new BadRequestException("Must give inspection type");
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.RecordInspectionCompleted(
           insp.MaterialID,
@@ -369,7 +367,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("events/closeout")]
     public LogEntry RecordCloseoutCompleted([FromBody] NewCloseout insp)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.RecordCloseoutCompleted(
           insp.MaterialID,
@@ -386,7 +384,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("workorder/{workorder}/finalize")]
     public LogEntry FinalizeWorkorder(string workorder)
     {
-      using (var db = _backend.RepoConfig.OpenConnection())
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
         return db.RecordFinalizedWorkorder(workorder);
       }
