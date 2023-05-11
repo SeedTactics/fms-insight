@@ -354,7 +354,6 @@ namespace BlackMaple.FMSInsight.Niigata
               mid = logDB.AllocateMaterialIDAndGenerateSerial(
                 unique: face.Job.UniqueStr,
                 part: face.Job.PartName,
-                proc: face.Process,
                 numProc: face.Job.Processes.Count,
                 timeUTC: nowUtc,
                 out var serialLogEntry
@@ -675,7 +674,6 @@ namespace BlackMaple.FMSInsight.Niigata
               long mid = logDB.AllocateMaterialIDAndGenerateSerial(
                 unique: face.Job.UniqueStr,
                 part: face.Job.PartName,
-                proc: face.Process,
                 numProc: face.Job.Processes.Count,
                 timeUTC: nowUtc,
                 out var serialLogEntry

@@ -94,7 +94,6 @@ namespace MachineWatchTest
       long m2 = _jobLog.AllocateMaterialIDAndGenerateSerial(
         "U2",
         "P2",
-        10002,
         66,
         DateTime.UtcNow,
         out var serialLogEntry
@@ -4738,7 +4737,6 @@ namespace MachineWatchTest
       var matId = _jobLog.AllocateMaterialIDAndGenerateSerial(
         unique: "aaa",
         part: "bbb",
-        proc: 101,
         numProc: 202,
         timeUTC: now,
         out var serialLogEntry
@@ -4752,7 +4750,7 @@ namespace MachineWatchTest
           new LogMaterial(
             matID: 1,
             uniq: "aaa",
-            proc: 101,
+            proc: 0,
             part: "bbb",
             numProc: 202,
             serial: "0000000001",
@@ -4787,6 +4785,85 @@ namespace MachineWatchTest
         );
 
       _jobLog.GetLogForSerial("0000000001").Should().BeEquivalentTo(new[] { expected1 });
+
+      var mat2 = _jobLog.AllocateMaterialIDWithSerialAndWorkorder(
+        unique: "ttt",
+        part: "zzz",
+        numProc: 202,
+        serial: "asdf",
+        workorder: "www",
+        timeUTC: now.AddSeconds(1)
+      );
+
+      mat2.Should()
+        .BeEquivalentTo(
+          new MaterialDetails()
+          {
+            MaterialID = 2,
+            JobUnique = "ttt",
+            PartName = "zzz",
+            NumProcesses = 202,
+            Serial = "asdf",
+            Workorder = "www"
+          }
+        );
+
+      _jobLog
+        .GetLogForSerial("asdf")
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new LogEntry(
+              cntr: 2,
+              mat: new[]
+              {
+                new LogMaterial(
+                  matID: 2,
+                  uniq: "ttt",
+                  proc: 0,
+                  part: "zzz",
+                  numProc: 202,
+                  serial: "asdf",
+                  workorder: "www",
+                  face: ""
+                )
+              },
+              pal: "",
+              ty: LogType.PartMark,
+              locName: "Mark",
+              locNum: 1,
+              prog: "MARK",
+              start: false,
+              endTime: now.AddSeconds(1),
+              result: "asdf"
+            ),
+            new LogEntry(
+              cntr: 3,
+              mat: new[]
+              {
+                new LogMaterial(
+                  matID: 2,
+                  uniq: "ttt",
+                  proc: 0,
+                  part: "zzz",
+                  numProc: 202,
+                  serial: "asdf",
+                  workorder: "www",
+                  face: ""
+                )
+              },
+              pal: "",
+              ty: LogType.OrderAssignment,
+              locName: "Order",
+              locNum: 1,
+              prog: "",
+              start: false,
+              endTime: now.AddSeconds(1),
+              result: "www"
+            )
+          }
+        );
     }
 
     [Fact]
@@ -5198,7 +5275,6 @@ namespace MachineWatchTest
       var newMat = _jobLog.AllocateMaterialIDAndGenerateSerial(
         unique: "unique3",
         part: "part3",
-        proc: 2,
         numProc: 4,
         timeUTC: t.AddMinutes(3),
         out var serialLogEntry,
@@ -5213,7 +5289,7 @@ namespace MachineWatchTest
           {
             MaterialID = newMat,
             JobUniqueStr = "unique3",
-            Process = 2,
+            Process = 0,
             PartName = "part3",
             NumProcesses = 4,
             Serial = "0000000001",

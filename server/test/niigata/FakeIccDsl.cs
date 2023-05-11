@@ -2545,7 +2545,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                         new LogMaterial(
                           matID: m.MaterialID,
                           uniq: m.JobUniqueStr,
-                          proc: m.Process,
+                          proc: 0,
                           part: m.PartName,
                           numProc: m.NumProcesses,
                           serial: m.Serial,

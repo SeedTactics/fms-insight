@@ -1818,6 +1818,19 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordWorkorderForMaterialID(EventLogMaterial mat, string workorder, DateTime recordUtc)
     {
+      return AddEntryInTransaction(trans =>
+      {
+        return RecordWorkorderForMaterialID(trans, mat, workorder, recordUtc);
+      });
+    }
+
+    public LogEntry RecordWorkorderForMaterialID(
+      IDbTransaction trans,
+      EventLogMaterial mat,
+      string workorder,
+      DateTime recordUtc
+    )
+    {
       var log = new NewEventLogEntry()
       {
         Material = new[] { mat },
@@ -1830,11 +1843,8 @@ namespace BlackMaple.MachineFramework
         EndTimeUTC = recordUtc,
         Result = workorder,
       };
-      return AddEntryInTransaction(trans =>
-      {
-        RecordWorkorderForMaterialID(trans, mat.MaterialID, workorder);
-        return AddLogEntry(trans, log, null, null);
-      });
+      RecordWorkorderForMaterialID(trans, mat.MaterialID, workorder);
+      return AddLogEntry(trans, log, null, null);
     }
 
     public LogEntry RecordInspectionCompleted(
@@ -2646,7 +2656,6 @@ namespace BlackMaple.MachineFramework
     public long AllocateMaterialIDAndGenerateSerial(
       string unique,
       string part,
-      int proc,
       int numProc,
       DateTime timeUTC,
       out LogEntry serialLogEntry,
@@ -2654,31 +2663,34 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      if (_cfg.Settings.SerialType != SerialType.AssignOneSerialPerMaterial)
+      lock (_cfg)
       {
-        serialLogEntry = null;
-        return AllocateMaterialID(unique, part, numProc);
+        if (_cfg.Settings.SerialType != SerialType.AssignOneSerialPerMaterial)
+        {
+          serialLogEntry = null;
+          return AllocateMaterialID(unique, part, numProc);
+        }
+        long matId = -1;
+        serialLogEntry = AddEntryInTransaction(trans =>
+        {
+          matId = AllocateMaterialID(trans, unique, part, numProc);
+          var serial = _cfg.Settings.ConvertMaterialIDToSerial(matId);
+          return RecordSerialForMaterialID(
+            trans,
+            new EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = 0,
+              Face = ""
+            },
+            serial,
+            timeUTC,
+            foreignID: foreignID,
+            originalMessage: originalMessage
+          );
+        });
+        return matId;
       }
-      long matId = -1;
-      serialLogEntry = AddEntryInTransaction(trans =>
-      {
-        matId = AllocateMaterialID(trans, unique, part, numProc);
-        var serial = _cfg.Settings.ConvertMaterialIDToSerial(matId);
-        return RecordSerialForMaterialID(
-          trans,
-          new EventLogMaterial()
-          {
-            MaterialID = matId,
-            Process = proc,
-            Face = ""
-          },
-          serial,
-          timeUTC,
-          foreignID: foreignID,
-          originalMessage: originalMessage
-        );
-      });
-      return matId;
     }
 
     public long AllocateMaterialIDForCasting(string casting)
@@ -2705,6 +2717,66 @@ namespace BlackMaple.MachineFramework
             trans.Rollback();
             throw;
           }
+        }
+      }
+    }
+
+    public MaterialDetails AllocateMaterialIDWithSerialAndWorkorder(
+      string unique,
+      string part,
+      int numProc,
+      string serial,
+      string workorder,
+      DateTime? timeUTC = null
+    )
+    {
+      var time = timeUTC ?? DateTime.UtcNow;
+      lock (_cfg)
+      {
+        using (var trans = _connection.BeginTransaction())
+        {
+          var matId = AllocateMaterialID(trans, unique, part, numProc);
+          if (!string.IsNullOrEmpty(serial))
+          {
+            RecordSerialForMaterialID(
+              trans,
+              new EventLogMaterial()
+              {
+                MaterialID = matId,
+                Process = 0,
+                Face = ""
+              },
+              serial,
+              time,
+              foreignID: null,
+              originalMessage: null
+            );
+          }
+          if (!string.IsNullOrEmpty(workorder))
+          {
+            RecordWorkorderForMaterialID(
+              trans,
+              new EventLogMaterial()
+              {
+                MaterialID = matId,
+                Process = 0,
+                Face = ""
+              },
+              workorder,
+              time
+            );
+          }
+          trans.Commit();
+
+          return new MaterialDetails()
+          {
+            MaterialID = matId,
+            JobUnique = unique,
+            PartName = part,
+            NumProcesses = numProc,
+            Serial = serial,
+            Workorder = workorder
+          };
         }
       }
     }

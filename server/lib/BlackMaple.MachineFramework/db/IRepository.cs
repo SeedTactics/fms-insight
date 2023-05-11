@@ -351,7 +351,6 @@ namespace BlackMaple.MachineFramework
     long AllocateMaterialIDAndGenerateSerial(
       string unique,
       string part,
-      int proc,
       int numProc,
       DateTime timeUTC,
       out LogEntry serialLogEntry,
@@ -359,6 +358,14 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     );
     long AllocateMaterialIDForCasting(string casting);
+    MaterialDetails AllocateMaterialIDWithSerialAndWorkorder(
+      string unique,
+      string part,
+      int numProc,
+      string serial,
+      string workorder,
+      DateTime? timeUTC = null
+    );
     void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc);
     void RecordPathForProcess(long matID, int process, int path);
     void CreateMaterialID(long matID, string unique, string part, int numProc);
