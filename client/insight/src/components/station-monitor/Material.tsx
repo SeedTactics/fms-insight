@@ -222,11 +222,11 @@ export function MaterialAction({
           if (displayActionForSinglePallet === undefined) {
             return (
               <MatCardDetail fsize={fsize}>
-                Load onto {faceName ?? `face ${faceNum}`} of pal {mat.action.loadOntoPallet ?? ""}
+                Load to {faceName ?? `face ${faceNum}`} of pal {mat.action.loadOntoPallet ?? ""}
               </MatCardDetail>
             );
           } else if (displayActionForSinglePallet === mat.action.loadOntoPallet) {
-            return <MatCardDetail fsize={fsize}>Load onto {faceName ?? `face ${faceNum}`}</MatCardDetail>;
+            return <MatCardDetail fsize={fsize}>Load to {faceName ?? `face ${faceNum}`}</MatCardDetail>;
           } else {
             return null;
           }
