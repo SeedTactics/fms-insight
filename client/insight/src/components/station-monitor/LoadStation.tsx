@@ -364,13 +364,13 @@ function MaterialRegion({
           {mat.isFree ? (
             <InProcMaterial
               mat={m}
-              displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+              displayActionForSinglePallet={data.pallet ? data.pallet.pallet : ""}
               fsize={data.fsize}
             />
           ) : (
             <SortableInProcMaterial
               mat={m}
-              displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+              displayActionForSinglePallet={data.pallet ? data.pallet.pallet : ""}
               shake={
                 m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === data.pallet?.pallet
               }
@@ -415,7 +415,7 @@ function MaterialColumn({
           renderDragOverlay={(mat) => (
             <DragOverlayInProcMaterial
               mat={mat}
-              displaySinglePallet={data.pallet ? data.pallet.pallet : ""}
+              displayActionForSinglePallet={data.pallet ? data.pallet.pallet : ""}
               fsize={
                 mat.action.type === api.ActionType.Loading &&
                 mat.action.loadOntoPallet === data.pallet?.pallet

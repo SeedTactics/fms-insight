@@ -68,6 +68,7 @@ import {
 import { currentOperator } from "../../data/operators.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { ErrorBoundary } from "react-error-boundary";
+import { currentStatus } from "../../cell-status/current-status.js";
 
 export class PartIdenticon extends React.PureComponent<{
   part: string;
@@ -79,69 +80,6 @@ export class PartIdenticon extends React.PureComponent<{
 
     return <div style={{ width: iconSize, height: iconSize }} dangerouslySetInnerHTML={{ __html: icon }} />;
   }
-}
-
-export function materialAction(
-  mat: Readonly<api.IInProcessMaterial>,
-  displaySinglePallet?: string
-): string | undefined {
-  switch (mat.action.type) {
-    case api.ActionType.Loading:
-      switch (mat.location.type) {
-        case api.LocType.OnPallet:
-          if (displaySinglePallet === undefined || displaySinglePallet === mat.location.pallet) {
-            if (mat.action.loadOntoFace === undefined || mat.action.loadOntoFace === mat.location.face) {
-              // material is not moving, just having some manual work done on it
-              if (mat.action.processAfterLoad && mat.action.processAfterLoad !== mat.process) {
-                return "Reclamp material to process #" + mat.action.processAfterLoad.toString();
-              } else {
-                return undefined;
-              }
-            } else {
-              return "Transfer to face " + (mat.action.loadOntoFace || 0).toString();
-            }
-          } else {
-            return undefined;
-          }
-        default:
-          if (displaySinglePallet === undefined) {
-            return (
-              "Load onto face " +
-              (mat.action.loadOntoFace || 0).toString() +
-              " of pal " +
-              (mat.action.loadOntoPallet ?? "")
-            );
-          } else if (displaySinglePallet === mat.action.loadOntoPallet) {
-            return "Load onto face " + (mat.action.loadOntoFace || 0).toString();
-          } else {
-            return undefined;
-          }
-      }
-
-    case api.ActionType.UnloadToInProcess:
-    case api.ActionType.UnloadToCompletedMaterial:
-      if (mat.action.unloadIntoQueue) {
-        return "Unload into queue " + mat.action.unloadIntoQueue;
-      } else {
-        return "Unload from pallet";
-      }
-
-    case api.ActionType.Waiting:
-      if (mat.location.type === api.LocType.InQueue && !!mat.jobUnique && mat.jobUnique !== "") {
-        return "Waiting; next process is #" + (mat.process + 1).toString();
-      } else if (
-        mat.location.type === api.LocType.OnPallet &&
-        (mat.lastCompletedMachiningRouteStopIndex === null ||
-          mat.lastCompletedMachiningRouteStopIndex === undefined)
-      ) {
-        return "Waiting for machining";
-      }
-      break;
-
-    case api.ActionType.Machining:
-      return "Machining program " + (mat.action.program ?? "");
-  }
-  return undefined;
 }
 
 const shakeSize = 2;
@@ -236,6 +174,91 @@ const MatCardDetail = styled("div", { shouldForwardProp: (prop) => prop !== "fsi
   }
 });
 
+export function MaterialAction({
+  mat,
+  displayActionForSinglePallet,
+  fsize,
+}: {
+  mat: Readonly<api.IInProcessMaterial>;
+  displayActionForSinglePallet?: string;
+  fsize?: MatCardFontSize;
+}): JSX.Element | null {
+  const curSt = useRecoilValue(currentStatus);
+
+  switch (mat.action.type) {
+    case api.ActionType.Loading:
+      switch (mat.location.type) {
+        case api.LocType.OnPallet:
+          if (
+            displayActionForSinglePallet === undefined ||
+            displayActionForSinglePallet === mat.location.pallet
+          ) {
+            if (mat.action.loadOntoFace === undefined || mat.action.loadOntoFace === mat.location.face) {
+              // material is not moving, just having some manual work done on it
+              if (mat.action.processAfterLoad && mat.action.processAfterLoad !== mat.process) {
+                return (
+                  <MatCardDetail fsize={fsize}>
+                    Reclamp material to process # {mat.action.processAfterLoad}
+                  </MatCardDetail>
+                );
+              } else {
+                return null;
+              }
+            } else {
+              const faceNum = mat.action.loadOntoFace ?? 0;
+              const faceName = mat.location.pallet
+                ? curSt.pallets[mat.location.pallet]?.faceNames?.[faceNum - 1]
+                : null;
+              return <MatCardDetail fsize={fsize}>Transfer to {faceName ?? `face ${faceNum}`}</MatCardDetail>;
+            }
+          } else {
+            return null;
+          }
+        default: {
+          const faceNum = mat.action.loadOntoFace ?? 0;
+          const faceName = mat.action.loadOntoPallet
+            ? curSt.pallets[mat.action.loadOntoPallet]?.faceNames?.[faceNum - 1]
+            : null;
+          if (displayActionForSinglePallet === undefined) {
+            return (
+              <MatCardDetail fsize={fsize}>
+                Load onto {faceName ?? `face ${faceNum}`} of pal {mat.action.loadOntoPallet ?? ""}
+              </MatCardDetail>
+            );
+          } else if (displayActionForSinglePallet === mat.action.loadOntoPallet) {
+            return <MatCardDetail fsize={fsize}>Load onto {faceName ?? `face ${faceNum}`}</MatCardDetail>;
+          } else {
+            return null;
+          }
+        }
+      }
+
+    case api.ActionType.UnloadToInProcess:
+    case api.ActionType.UnloadToCompletedMaterial:
+      if (mat.action.unloadIntoQueue) {
+        return <MatCardDetail fsize={fsize}>Unload into queue {mat.action.unloadIntoQueue}</MatCardDetail>;
+      } else {
+        return <MatCardDetail fsize={fsize}>Unload from pallet</MatCardDetail>;
+      }
+
+    case api.ActionType.Waiting:
+      if (mat.location.type === api.LocType.InQueue && !!mat.jobUnique && mat.jobUnique !== "") {
+        return <MatCardDetail fsize={fsize}>Waiting; next process is #{mat.process + 1}</MatCardDetail>;
+      } else if (
+        mat.location.type === api.LocType.OnPallet &&
+        (mat.lastCompletedMachiningRouteStopIndex === null ||
+          mat.lastCompletedMachiningRouteStopIndex === undefined)
+      ) {
+        return <MatCardDetail fsize={fsize}>Waiting for machining</MatCardDetail>;
+      }
+      break;
+
+    case api.ActionType.Machining:
+      return <MatCardDetail fsize={fsize}>Machining program {mat.action.program ?? ""}</MatCardDetail>;
+  }
+  return null;
+}
+
 interface MaterialDragProps {
   readonly dragRootProps?: React.HTMLAttributes<HTMLDivElement>;
   readonly showDragHandle?: boolean;
@@ -250,7 +273,7 @@ export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummaryAndCompletedData>;
   readonly inProcMat?: Readonly<api.IInProcessMaterial>;
   readonly fsize?: MatCardFontSize;
-  readonly action?: string;
+  readonly displayActionForSinglePallet?: string;
   readonly focusInspectionType?: string | null;
   readonly hideInspectionIcon?: boolean;
   readonly displayJob?: boolean;
@@ -358,9 +381,13 @@ const MatCard = React.forwardRef(function MatCard(
             props.mat.workorderId === props.mat.serial ? undefined : (
               <MatCardDetail fsize={props.fsize}>Workorder: {props.mat.workorderId}</MatCardDetail>
             )}
-            {props.action === undefined ? undefined : (
-              <MatCardDetail fsize={props.fsize}>{props.action}</MatCardDetail>
-            )}
+            {props.inProcMat ? (
+              <MaterialAction
+                mat={props.inProcMat}
+                displayActionForSinglePallet={props.displayActionForSinglePallet}
+                fsize={props.fsize}
+              />
+            ) : undefined}
             {completedMsg}
           </Box>
           <Box
@@ -395,7 +422,7 @@ export const MatSummary: React.ComponentType<MaterialSummaryProps> = React.memo(
 export type InProcMaterialProps = {
   readonly mat: Readonly<api.IInProcessMaterial>;
   readonly fsize?: MatCardFontSize;
-  readonly displaySinglePallet?: string;
+  readonly displayActionForSinglePallet?: string;
   readonly displayJob?: boolean;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
@@ -412,7 +439,7 @@ export const InProcMaterial = React.memo(function InProcMaterial(
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
       inProcMat={props.mat}
-      action={materialAction(props.mat, props.displaySinglePallet)}
+      displayActionForSinglePallet={props.displayActionForSinglePallet}
       fsize={props.fsize}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
@@ -470,7 +497,7 @@ export const SortableInProcMaterial = React.memo(function SortableInProcMaterial
       isActiveDrag={isDragging}
       mat={inproc_mat_to_summary(props.mat)}
       inProcMat={props.mat}
-      action={materialAction(props.mat, props.displaySinglePallet)}
+      displayActionForSinglePallet={props.displayActionForSinglePallet}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}
       hideEmptySerial={props.hideEmptySerial}
@@ -485,7 +512,7 @@ export function DragOverlayInProcMaterial(props: InProcMaterialProps) {
     <MatCard
       mat={inproc_mat_to_summary(props.mat)}
       inProcMat={props.mat}
-      action={materialAction(props.mat, props.displaySinglePallet)}
+      displayActionForSinglePallet={props.displayActionForSinglePallet}
       showDragHandle={true}
       hideAvatar={props.hideAvatar}
       displayJob={props.displayJob}

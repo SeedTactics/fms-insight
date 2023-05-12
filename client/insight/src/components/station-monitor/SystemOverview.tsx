@@ -52,7 +52,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
-import { InProcMaterial, materialAction, MaterialDialog, PartIdenticon } from "./Material.js";
+import { InProcMaterial, MaterialAction, MaterialDialog, PartIdenticon } from "./Material.js";
 import {
   ActionType,
   IInProcessMaterial,
@@ -391,7 +391,7 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
                         ) : undefined
                       )}
                       <div>
-                        <small>{materialAction(mats[0])}</small>
+                        <MaterialAction mat={mats[0]} />
                       </div>
                     </Stack>
                   </Collapse>
