@@ -1086,8 +1086,9 @@ export const SystemOverviewDialogButton = React.memo(function SystemOverviewDial
           </AppBar>
         ) : undefined}
         <DialogContent>
-          <SystemOverview overview={overview} />
-          <Box height="1em" />
+          <Box paddingBottom="2em" paddingLeft="5em" paddingRight="5em">
+            <SystemOverview overview={overview} />
+          </Box>
         </DialogContent>
       </Dialog>
     </>
