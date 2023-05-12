@@ -4792,7 +4792,8 @@ namespace MachineWatchTest
         numProc: 202,
         serial: "asdf",
         workorder: "www",
-        timeUTC: now.AddSeconds(1)
+        timeUTC: now.AddSeconds(1),
+        newLogEntries: out var newLogEvtsForMat2
       );
 
       mat2.Should()
@@ -4805,6 +4806,62 @@ namespace MachineWatchTest
             NumProcesses = 202,
             Serial = "asdf",
             Workorder = "www"
+          }
+        );
+
+      newLogEvtsForMat2
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new LogEntry(
+              cntr: 2,
+              mat: new[]
+              {
+                new LogMaterial(
+                  matID: 2,
+                  uniq: "ttt",
+                  proc: 0,
+                  part: "zzz",
+                  numProc: 202,
+                  serial: "asdf",
+                  workorder: "", // NOTE: workorder not filled in yet because serial recorded first
+                  face: ""
+                )
+              },
+              pal: "",
+              ty: LogType.PartMark,
+              locName: "Mark",
+              locNum: 1,
+              prog: "MARK",
+              start: false,
+              endTime: now.AddSeconds(1),
+              result: "asdf"
+            ),
+            new LogEntry(
+              cntr: 3,
+              mat: new[]
+              {
+                new LogMaterial(
+                  matID: 2,
+                  uniq: "ttt",
+                  proc: 0,
+                  part: "zzz",
+                  numProc: 202,
+                  serial: "asdf",
+                  workorder: "www",
+                  face: ""
+                )
+              },
+              pal: "",
+              ty: LogType.OrderAssignment,
+              locName: "Order",
+              locNum: 1,
+              prog: "",
+              start: false,
+              endTime: now.AddSeconds(1),
+              result: "www"
+            )
           }
         );
 

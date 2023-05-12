@@ -364,6 +364,7 @@ namespace BlackMaple.MachineFramework
       int numProc,
       string serial,
       string workorder,
+      out IEnumerable<LogEntry> newLogEntries,
       DateTime? timeUTC = null
     );
     void SetDetailsForMaterialID(long matID, string unique, string part, int? numProc);
