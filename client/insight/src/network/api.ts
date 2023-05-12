@@ -2176,8 +2176,9 @@ export class FMSInfo implements IFMSInfo {
     useClientPrinterForLabels?: boolean | undefined;
     allowQuarantineToCancelLoad?: boolean | undefined;
     quarantineQueue?: string | undefined;
-    allowChangeWorkorderAtLoadStation?: boolean | undefined;
     customStationMonitorDialogUrl?: string | undefined;
+    allowChangeWorkorderAtLoadStation?: boolean | undefined;
+    allowSwapAndInvalidateMaterialAtLoadStation?: boolean | undefined;
     requireScanAtCloseout?: boolean;
     requireWorkorderBeforeAllowCloseoutComplete?: boolean;
     addRawMaterial?: AddRawMaterialType;
@@ -2211,8 +2212,9 @@ export class FMSInfo implements IFMSInfo {
             this.useClientPrinterForLabels = _data["UseClientPrinterForLabels"];
             this.allowQuarantineToCancelLoad = _data["AllowQuarantineToCancelLoad"];
             this.quarantineQueue = _data["QuarantineQueue"];
-            this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
             this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
+            this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
+            this.allowSwapAndInvalidateMaterialAtLoadStation = _data["AllowSwapAndInvalidateMaterialAtLoadStation"];
             this.requireScanAtCloseout = _data["RequireScanAtCloseout"];
             this.requireWorkorderBeforeAllowCloseoutComplete = _data["RequireWorkorderBeforeAllowCloseoutComplete"];
             this.addRawMaterial = _data["AddRawMaterial"];
@@ -2246,8 +2248,9 @@ export class FMSInfo implements IFMSInfo {
         data["UseClientPrinterForLabels"] = this.useClientPrinterForLabels;
         data["AllowQuarantineToCancelLoad"] = this.allowQuarantineToCancelLoad;
         data["QuarantineQueue"] = this.quarantineQueue;
-        data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
+        data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
+        data["AllowSwapAndInvalidateMaterialAtLoadStation"] = this.allowSwapAndInvalidateMaterialAtLoadStation;
         data["RequireScanAtCloseout"] = this.requireScanAtCloseout;
         data["RequireWorkorderBeforeAllowCloseoutComplete"] = this.requireWorkorderBeforeAllowCloseoutComplete;
         data["AddRawMaterial"] = this.addRawMaterial;
@@ -2270,8 +2273,9 @@ export interface IFMSInfo {
     useClientPrinterForLabels?: boolean | undefined;
     allowQuarantineToCancelLoad?: boolean | undefined;
     quarantineQueue?: string | undefined;
-    allowChangeWorkorderAtLoadStation?: boolean | undefined;
     customStationMonitorDialogUrl?: string | undefined;
+    allowChangeWorkorderAtLoadStation?: boolean | undefined;
+    allowSwapAndInvalidateMaterialAtLoadStation?: boolean | undefined;
     requireScanAtCloseout?: boolean;
     requireWorkorderBeforeAllowCloseoutComplete?: boolean;
     addRawMaterial?: AddRawMaterialType;

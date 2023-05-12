@@ -42,6 +42,7 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { inProcessMaterialInDialog, useCloseMaterialDialog } from "../../cell-status/material-details.js";
 import { useRecoilValue } from "recoil";
 import { currentOperator } from "../../data/operators.js";
+import { fmsInformation } from "../../network/server-settings.js";
 
 interface InvalidateCycle {
   readonly process: number | null;
@@ -93,9 +94,13 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
 export function InvalidateCycleDialogButtons(
   props: InvalidateCycleProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean }
 ) {
+  const fmsInfo = useRecoilValue(fmsInformation);
   const curMat = useRecoilValue(inProcessMaterialInDialog);
   const closeMatDialog = useCloseMaterialDialog();
   let operator = useRecoilValue(currentOperator);
+
+  if (!fmsInfo.allowSwapAndInvalidateMaterialAtLoadStation) return null;
+
   if (props.ignoreOperator) operator = null;
 
   if (curMat === null || curMat.location.type !== LocType.InQueue) return null;
@@ -235,9 +240,13 @@ export function SwapMaterialDialogContent(props: SwapMaterialProps): JSX.Element
 export function SwapMaterialButtons(
   props: SwapMaterialProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean }
 ) {
+  const fmsInfo = useRecoilValue(fmsInformation);
   const curMat = useRecoilValue(inProcessMaterialInDialog);
   const closeMatDialog = useCloseMaterialDialog();
   let operator = useRecoilValue(currentOperator);
+
+  if (!fmsInfo.allowSwapAndInvalidateMaterialAtLoadStation) return null;
+
   if (props.ignoreOperator) operator = null;
 
   if (

@@ -2138,12 +2138,16 @@
             "type": "string",
             "nullable": true
           },
+          "CustomStationMonitorDialogUrl": {
+            "type": "string",
+            "nullable": true
+          },
           "AllowChangeWorkorderAtLoadStation": {
             "type": "boolean",
             "nullable": true
           },
-          "CustomStationMonitorDialogUrl": {
-            "type": "string",
+          "AllowSwapAndInvalidateMaterialAtLoadStation": {
+            "type": "boolean",
             "nullable": true
           },
           "RequireScanAtCloseout": {

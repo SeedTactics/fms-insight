@@ -78,11 +78,15 @@ namespace BlackMaple.MachineFramework.Controllers
     [DataMember]
     public string QuarantineQueue { get; init; }
 
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string CustomStationMonitorDialogUrl { get; init; }
+
+    // LoadStation Options
     [DataMember]
     public bool? AllowChangeWorkorderAtLoadStation { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string CustomStationMonitorDialogUrl { get; init; }
+    [DataMember]
+    public bool? AllowSwapAndInvalidateMaterialAtLoadStation { get; init; }
 
     // Closeout Page Options
     [DataMember]
@@ -143,6 +147,7 @@ namespace BlackMaple.MachineFramework.Controllers
         AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineToCancelLoad = _impl.Backend?.QueueControl.AllowQuarantineToCancelLoad,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
+        AllowSwapAndInvalidateMaterialAtLoadStation = _impl.AllowSwapAndInvalidateMaterialAtLoadStation,
         LicenseExpires = _impl.LicenseExpires?.Invoke(),
         CustomStationMonitorDialogUrl = _impl.CustomStationMonitorDialogUrl,
       };
