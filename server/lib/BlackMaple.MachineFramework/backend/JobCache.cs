@@ -56,6 +56,7 @@ public record DefaultPathInformation
   public required IReadOnlyList<MachiningStop> Stops { get; init; }
   public required bool IsFinalProcess { get; init; }
   public required string? OutputQueue { get; init; }
+  public required TimeSpan? ExpectedLoadTimeForOnePieceOfMaterial { get; init; }
   public required TimeSpan? ExpectedUnloadTimeForOnePieceOfMaterial { get; init; }
 }
 

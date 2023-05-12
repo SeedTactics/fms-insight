@@ -932,35 +932,10 @@ public static class BuildCellState
       .Select(face =>
       {
         var job = jobs.Lookup(face.First().JobUnique);
-        TimeSpan activeTime = TimeSpan.Zero;
-        if (job != null)
-        {
-          activeTime = TimeSpan.FromTicks(
-            face.Sum(
-              m =>
-                (
-                  job.Processes[(m.Action.ProcessAfterLoad ?? 1) - 1].Paths[(m.Action.PathAfterLoad ?? 1) - 1]
-                    .ExpectedLoadTime
-                    .Ticks
-                )
-            )
-          );
-        }
-
         var process = face.First().Action.ProcessAfterLoad ?? 1;
         var path = face.First().Action.PathAfterLoad ?? 1;
-        var matToLoad = (
-          new MaterialToLoadOntoFace()
-          {
-            FaceNum = face.Key,
-            Process = process,
-            Path = path,
-            ActiveOperationTime = activeTime,
-            MaterialIDs = face.Select(m => m.MaterialID).ToImmutableList()
-          }
-        );
 
-        var matOnFace = face.Select(
+        var matOnFaceAfterLoad = face.Select(
             m =>
               m with
               {
@@ -981,24 +956,38 @@ public static class BuildCellState
         IReadOnlyList<MachiningStop> stops;
         bool isFinalProcess;
         string? outputQueue;
+        TimeSpan? expectedLoadTimeForOnePieceOfMaterial;
         TimeSpan? expectedUnloadTimeForOnePieceOfMaterial;
         if (job != null)
         {
           stops = job.Processes[process - 1].Paths[path - 1].Stops;
           isFinalProcess = process == job.Processes.Count;
           outputQueue = job.Processes[process - 1].Paths[path - 1].OutputQueue;
+          expectedLoadTimeForOnePieceOfMaterial = job.Processes[process - 1].Paths[path - 1].ExpectedLoadTime;
           expectedUnloadTimeForOnePieceOfMaterial = job.Processes[process - 1].Paths[
             path - 1
           ].ExpectedUnloadTime;
         }
         else
         {
-          var info = jobs.DefaultPathInfo(matOnFace);
+          var info = jobs.DefaultPathInfo(matOnFaceAfterLoad);
           stops = info.Stops;
           isFinalProcess = info.IsFinalProcess;
           outputQueue = info.OutputQueue;
+          expectedLoadTimeForOnePieceOfMaterial = info.ExpectedLoadTimeForOnePieceOfMaterial;
           expectedUnloadTimeForOnePieceOfMaterial = info.ExpectedUnloadTimeForOnePieceOfMaterial;
         }
+
+        var matToLoad = (
+          new MaterialToLoadOntoFace()
+          {
+            FaceNum = face.Key,
+            Process = process,
+            Path = path,
+            ActiveOperationTime = (expectedLoadTimeForOnePieceOfMaterial ?? TimeSpan.Zero) * face.Count(),
+            MaterialIDs = face.Select(m => m.MaterialID).ToImmutableList()
+          }
+        );
 
         Func<IEnumerable<LogEntry>, LoadedFace> newFace = loadEnds =>
           new LoadedFace()
@@ -1032,7 +1021,7 @@ public static class BuildCellState
                   }
               )
               .ToImmutableList(),
-            Material = matOnFace,
+            Material = matOnFaceAfterLoad,
             UnloadStart = null,
             UnloadEnd = null
           };
