@@ -67,6 +67,7 @@ import {
 } from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
+import { ErrorBoundary } from "react-error-boundary";
 
 export class PartIdenticon extends React.PureComponent<{
   part: string;
@@ -776,10 +777,12 @@ export const MaterialDialog = React.memo(function MaterialDialog(props: Material
         </DialogContent>
         <DialogActions>
           {dialogOpen && (props.buttons || props.allowNote) ? (
-            <DisplayLoadingAndError fallback={<CircularProgress />}>
-              {dialogOpen && props.allowNote ? <AddNoteButton setNotesOpen={setNotesOpen} /> : undefined}
-              {props.buttons}
-            </DisplayLoadingAndError>
+            <ErrorBoundary fallback={<div />}>
+              <React.Suspense fallback={<div />}>
+                {dialogOpen && props.allowNote ? <AddNoteButton setNotesOpen={setNotesOpen} /> : undefined}
+                {props.buttons}
+              </React.Suspense>
+            </ErrorBoundary>
           ) : null}
           <Button onClick={close} color="secondary">
             Close
