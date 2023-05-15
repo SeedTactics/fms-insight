@@ -59,7 +59,7 @@ import { BarcodeListener } from "./BarcodeScanning.js";
 import { ManualScanButton } from "./ManualScan.js";
 import { OperatorSelect } from "./ChooseOperator.js";
 import { MaterialDialog } from "./station-monitor/Material.js";
-import { RecentSchedulesPage } from "./operations/RecentSchedules.js";
+import { RecentSchedulesPage, existRecentScheduledJobs } from "./operations/RecentSchedules.js";
 import { AllMaterial } from "./operations/AllMaterial.js";
 import { FailedPartLookup } from "./quality/FailedPartLookup.js";
 import { QualityPaths } from "./quality/QualityPaths.js";
@@ -103,12 +103,15 @@ export function NavTabs({ children }: { children?: React.ReactNode }) {
 }
 
 function OperationsTabs() {
+  const existSch = useRecoilValue(existRecentScheduledJobs);
   return (
     <NavTabs>
       <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
       <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
       <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
-      <Tab label="Schedules" value={routes.RouteLocation.Operations_RecentSchedules} />
+      {existSch ? (
+        <Tab label="Schedules" value={routes.RouteLocation.Operations_RecentSchedules} />
+      ) : undefined}
       <Tab label="Production" value={routes.RouteLocation.Operations_Production} />
       <Tab label="Cell" value={routes.RouteLocation.Operations_SystemOverview} />
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
