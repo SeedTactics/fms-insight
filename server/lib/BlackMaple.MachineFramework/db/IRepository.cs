@@ -64,7 +64,8 @@ namespace BlackMaple.MachineFramework
     DateTime MaxLogDate();
     string ForeignIDForCounter(long counter);
     bool CycleExists(DateTime endUTC, string pal, LogType logTy, string locName, int locNum);
-    List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorders);
+    ImmutableList<ActiveWorkorder> GetActiveWorkordersForSchedule(string scheduleId);
+    ImmutableList<ActiveWorkorder> GetActiveWorkordersForMostRecentSchedule();
     ImmutableList<string> GetWorkordersForUnique(string jobUnique);
 
     // --------------------------------------------------------------------------------
