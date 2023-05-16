@@ -658,7 +658,7 @@ const CycleChartTooltip = React.memo(function CycleChartTooltip({
 }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip style={{ left: tooltip.left, top: tooltip.top }}>
+    <ChartTooltip left={tooltip.left} top={tooltip.top}>
       <Stack direction="column" spacing={0.6}>
         <div>Time: {format(tooltip.pt.x, "MMM d, yyyy, h:mm aaaa")}</div>
         <div>

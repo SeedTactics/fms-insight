@@ -258,7 +258,7 @@ const HeatTooltip = React.memo(function HeatTooltip({
 }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip style={{ left: tooltip.left, top: tooltip.top }}>
+    <ChartTooltip left={tooltip.left} top={tooltip.top}>
       <Stack direction="column" spacing={0.6}>
         <div>
           {yType}: {tooltip.data.y}

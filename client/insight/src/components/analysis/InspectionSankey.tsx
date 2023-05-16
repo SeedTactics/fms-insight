@@ -182,7 +182,7 @@ const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
 const LinkTooltip = React.memo(function LinkTooltip({ tooltip }: { readonly tooltip: TooltipData | null }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip style={{ left: tooltip.left, top: tooltip.top }}>
+    <ChartTooltip left={tooltip.left} top={tooltip.top}>
       {tooltip.data.source.name} ➞ {tooltip.data.target.name}: {tooltip.data.value} parts
     </ChartTooltip>
   );

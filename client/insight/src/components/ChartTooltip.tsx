@@ -31,11 +31,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import * as React from "react";
 import { styled } from "@mui/material/styles";
 import { grey } from "@mui/material/colors";
+import { TooltipWithBounds } from "@visx/tooltip";
 
-export const ChartTooltip = styled("div")({
-  position: "absolute",
+const ChartTooltipContent = styled("div")({
   backgroundColor: grey[700],
   color: "white",
   padding: "0.3rem 0.5rem",
@@ -43,3 +44,21 @@ export const ChartTooltip = styled("div")({
   boxShadow: "0 1px 2px rgba(33, 33, 33, 0.2)",
   pointerEvents: "none",
 });
+
+export function ChartTooltip({
+  left,
+  top,
+  children,
+  zIndex,
+}: {
+  left: number;
+  top: number;
+  children: React.ReactNode;
+  zIndex?: number;
+}) {
+  return (
+    <TooltipWithBounds top={top} left={left} unstyled applyPositionStyle>
+      <ChartTooltipContent style={zIndex ? { zIndex } : undefined}>{children}</ChartTooltipContent>
+    </TooltipWithBounds>
+  );
+}

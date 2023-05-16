@@ -423,7 +423,7 @@ const Tooltip = React.memo(function Tooltip() {
   if (tooltip === null) return null;
 
   return (
-    <ChartTooltip style={{ top: tooltip.top, left: tooltip.left }}>
+    <ChartTooltip top={tooltip.top} left={tooltip.left}>
       <Stack>
         {tooltip.data.kind === "actual" ? (
           <>

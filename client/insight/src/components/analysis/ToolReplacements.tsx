@@ -236,7 +236,7 @@ const ReplacementGraph = React.memo(function ReplacementGraph({
         ))}
       </svg>
       {tooltip !== null ? (
-        <ChartTooltip style={{ left: tooltip.left, top: 0, zIndex: 10 }}>
+        <ChartTooltip left={tooltip.left} top={0} zIndex={10}>
           <Stack spacing={0.5}>
             <div>Tool: {tooltip.r.tool}</div>
             <div>Pocket: {tooltip.r.pocket}</div>

@@ -32,6 +32,7 @@
     "@visx/responsive": "^3.0.0",
     "@visx/scale": "^3.0.0",
     "@visx/shape": "^3.0.0",
+    "@visx/tooltip": "^3.1.2",
     "@visx/xychart": "^3.1.2",
     "copy-to-clipboard": "^3.3.3",
     "d3-sankey": "^0.12.3",
