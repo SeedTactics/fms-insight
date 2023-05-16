@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import {
   Box,
   IconButton,
+  Paper,
   Stack,
   Table,
   TableCell,
@@ -329,8 +330,9 @@ const RecentProductionToolbar = function RecentProductionToolbar({
   readonly rows: ReadonlyArray<ProdRow>;
 }): JSX.Element {
   return (
-    <Box
+    <Paper
       component="nav"
+      elevation={4}
       sx={{
         display: "grid",
         gridTemplate: {
@@ -360,7 +362,7 @@ const RecentProductionToolbar = function RecentProductionToolbar({
           </IconButton>
         </Tooltip>
       </Box>
-    </Box>
+    </Paper>
   );
 };
 
