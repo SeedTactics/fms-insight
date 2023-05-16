@@ -75,6 +75,9 @@ namespace BlackMaple.MachineFramework
     [DataMember(Name = "MachineLocations", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<MachineLocation>? MachineLocations { get; init; }
 
+    [DataMember(Name = "Workorders", IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<ActiveWorkorder>? Workorders { get; init; } = null;
+
     public static CurrentStatus operator %(CurrentStatus s, Action<ICurrentStatusDraft> f) => s.Produce(f);
   }
 

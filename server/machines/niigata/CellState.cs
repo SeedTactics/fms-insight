@@ -188,7 +188,8 @@ namespace BlackMaple.FMSInsight.Niigata
                 .Select(mc => "Machine " + mc.MachineNumber.ToString() + " has an alarm")
             )
             .Concat(status.Alarm ? new[] { "ICC has an alarm" } : new string[] { })
-            .ToImmutableList()
+            .ToImmutableList(),
+          Workorders = logDB.GetActiveWorkordersForMostRecentSchedule()
         }
       };
     }

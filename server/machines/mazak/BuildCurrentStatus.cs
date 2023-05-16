@@ -459,7 +459,8 @@ namespace MazakMachineInterface
               ? new[] { "Queue contents and Mazak schedule quantity mismatch." }
               : new string[] { }
           )
-          .ToImmutableList()
+          .ToImmutableList(),
+        Workorders = jobDB.GetActiveWorkordersForMostRecentSchedule()
       };
     }
 
