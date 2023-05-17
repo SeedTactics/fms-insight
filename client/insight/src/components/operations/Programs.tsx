@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Box, Fab, styled } from "@mui/material";
+import { Box, Fab, FormControl, styled } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
@@ -773,7 +773,7 @@ function ProgNavHeader() {
           display: "flex",
           minHeight: "2.5em",
           alignItems: "center",
-          width: "100%",
+          maxWidth: "calc(100vw - 24px - 24px)",
         }}
       >
         <Tooltip title="Refresh Programs">
@@ -787,18 +787,20 @@ function ProgNavHeader() {
           Programs from <TimeAgo date={reloadTime} />
         </span>
         <div style={{ flexGrow: 1 }} />
-        <Select
-          autoWidth
-          value={filter}
-          onChange={(e) => setFilter(e.target.value as "AllPrograms" | "ActivePrograms")}
-        >
-          <MenuItem key="AllPrograms" value="AllPrograms">
-            All Programs
-          </MenuItem>
-          <MenuItem key="ActivePrograms" value="ActivePrograms">
-            Active Programs
-          </MenuItem>
-        </Select>
+        <FormControl size="small">
+          <Select
+            autoWidth
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as "AllPrograms" | "ActivePrograms")}
+          >
+            <MenuItem key="AllPrograms" value="AllPrograms">
+              All Programs
+            </MenuItem>
+            <MenuItem key="ActivePrograms" value="ActivePrograms">
+              Active Programs
+            </MenuItem>
+          </Select>
+        </FormControl>
       </Box>
     );
   }

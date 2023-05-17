@@ -82,7 +82,7 @@ export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
           display: "flex",
           minHeight: "2.5em",
           alignItems: "center",
-          width: "100%",
+          maxWidth: "calc(100vw - 24px - 24px)",
         }}
       >
         <Typography variant="subtitle1">

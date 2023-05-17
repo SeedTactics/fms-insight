@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Fab, styled, Box } from "@mui/material";
+import { Fab, styled, Box, FormControl } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import TimeAgo from "react-timeago";
 import { Table } from "@mui/material";
@@ -618,7 +618,7 @@ function ToolNavHeader() {
           display: "flex",
           minHeight: "2.5em",
           alignItems: "center",
-          width: "100%",
+          maxWidth: "calc(100vw - 24px - 24px)",
         }}
       >
         <Tooltip title="Refresh Tools">
@@ -632,30 +632,32 @@ function ToolNavHeader() {
           Tools from <TimeAgo date={reloadTime} />
         </span>
         <div style={{ flexGrow: "1" }} />
-        <Select
-          autoWidth
-          displayEmpty
-          value={machineFilter ?? FilterAnyMachineKey}
-          style={{ marginLeft: "1em" }}
-          onChange={(e) => {
-            if (e.target.value === FilterAnyMachineKey) {
-              setMachineFilter(null);
-            } else {
-              setMachineFilter(e.target.value);
-            }
-          }}
-        >
-          <MenuItem value={FilterAnyMachineKey}>
-            <em>All Machines</em>
-          </MenuItem>
-          {machineNames.map((n) => (
-            <MenuItem key={n} value={n}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <span style={{ marginRight: "1em" }}>{n}</span>
-              </div>
+        <FormControl size="small">
+          <Select
+            autoWidth
+            displayEmpty
+            value={machineFilter ?? FilterAnyMachineKey}
+            style={{ marginLeft: "1em" }}
+            onChange={(e) => {
+              if (e.target.value === FilterAnyMachineKey) {
+                setMachineFilter(null);
+              } else {
+                setMachineFilter(e.target.value);
+              }
+            }}
+          >
+            <MenuItem value={FilterAnyMachineKey}>
+              <em>All Machines</em>
             </MenuItem>
-          ))}
-        </Select>
+            {machineNames.map((n) => (
+              <MenuItem key={n} value={n}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={{ marginRight: "1em" }}>{n}</span>
+                </div>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
         <Tooltip title="Copy to Clipboard">
           <IconButton
             style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}

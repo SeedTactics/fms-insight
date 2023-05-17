@@ -152,7 +152,7 @@ export function NavTabs({ children }: { children?: React.ReactNode }) {
       value={isOperationReport ? OperationsReportsTab : route.route}
       onChange={(e, v) => {
         if (v === OperationsReportsTab) {
-          setRoute({ route: routes.RouteLocation.Operations_Tools });
+          setRoute({ route: routes.RouteLocation.Operations_MachineCycles });
         } else {
           setRoute({ route: v as routes.RouteLocation } as routes.RouteState);
         }

@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, FormControl, Typography } from "@mui/material";
 import { addDays, startOfToday } from "date-fns";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
@@ -143,102 +143,111 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
           display: "flex",
           minHeight: "2.5em",
           alignItems: "center",
-          width: "100%",
+          maxWidth: "calc(100vw - 24px - 24px)",
         }}
       >
         <Typography variant="subtitle1">
           Recent {ty === "labor" ? "Load/Unload Occupancy" : "Machine Cycles"}
         </Typography>
         <Box flexGrow={1} />
-
-        <Select
-          name="Station-Cycles-chart-or-table-select"
-          autoWidth
-          value={showGraph ? "graph" : "table"}
-          onChange={(e) => setShowGraph(e.target.value === "graph")}
-        >
-          <MenuItem key="graph" value="graph">
-            Graph
-          </MenuItem>
-          <MenuItem key="table" value="table">
-            Table
-          </MenuItem>
-        </Select>
-        <Select
-          autoWidth
-          displayEmpty
-          value={
-            selectedPart
-              ? points.allPartAndProcNames.findIndex(
-                  (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
-                )
-              : -1
-          }
-          style={{ marginLeft: "1em" }}
-          onChange={(e) => {
-            setSelectedPart(
-              e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
-            );
-            setSelectedOperation(undefined);
-          }}
-        >
-          <MenuItem key={0} value={-1}>
-            <em>Any Part</em>
-          </MenuItem>
-          {points.allPartAndProcNames.map((n, idx) => (
-            <MenuItem key={idx} value={idx}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <PartIdenticon part={n.part} size={20} />
-                <span style={{ marginRight: "1em" }}>
-                  {n.part}-{n.proc}
-                </span>
-              </div>
-            </MenuItem>
-          ))}
-        </Select>
-        {ty === "machine" ? (
+        <FormControl size="small">
           <Select
-            name="Station-Cycles-cycle-chart-station-select"
+            name="Station-Cycles-chart-or-table-select"
+            autoWidth
+            value={showGraph ? "graph" : "table"}
+            onChange={(e) => setShowGraph(e.target.value === "graph")}
+          >
+            <MenuItem key="graph" value="graph">
+              Graph
+            </MenuItem>
+            <MenuItem key="table" value="table">
+              Table
+            </MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <Select
             autoWidth
             displayEmpty
             value={
-              curOperation ? points.allMachineOperations.findIndex((o) => curOperation.compare(o) === 0) : -1
+              selectedPart
+                ? points.allPartAndProcNames.findIndex(
+                    (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                  )
+                : -1
             }
             style={{ marginLeft: "1em" }}
-            onChange={(e) => setSelectedOperation(points.allMachineOperations[e.target.value as number])}
+            onChange={(e) => {
+              setSelectedPart(
+                e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+              );
+              setSelectedOperation(undefined);
+            }}
           >
-            {points.allMachineOperations.length === 0 ? (
-              <MenuItem value={-1}>
-                <em>Any Operation</em>
-              </MenuItem>
-            ) : (
-              points.allMachineOperations.map((oper, idx) => (
-                <MenuItem key={idx} value={idx}>
-                  {oper.statGroup} {oper.operation}
-                </MenuItem>
-              ))
-            )}
-          </Select>
-        ) : undefined}
-        <Select
-          name="Station-Cycles-cycle-chart-station-pallet"
-          autoWidth
-          displayEmpty
-          value={selectedPallet || ""}
-          style={{ marginLeft: "1em" }}
-          onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
-        >
-          <MenuItem key={0} value="">
-            <em>Any Pallet</em>
-          </MenuItem>
-          {points.allPalletNames.map((n) => (
-            <MenuItem key={n} value={n}>
-              <div style={{ display: "flex", alignItems: "center" }}>
-                <span style={{ marginRight: "1em" }}>{n}</span>
-              </div>
+            <MenuItem key={0} value={-1}>
+              <em>Any Part</em>
             </MenuItem>
-          ))}
-        </Select>
+            {points.allPartAndProcNames.map((n, idx) => (
+              <MenuItem key={idx} value={idx}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <PartIdenticon part={n.part} size={20} />
+                  <span style={{ marginRight: "1em" }}>
+                    {n.part}-{n.proc}
+                  </span>
+                </div>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        {ty === "machine" ? (
+          <FormControl size="small">
+            <Select
+              name="Station-Cycles-cycle-chart-station-select"
+              autoWidth
+              displayEmpty
+              value={
+                curOperation
+                  ? points.allMachineOperations.findIndex((o) => curOperation.compare(o) === 0)
+                  : -1
+              }
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => setSelectedOperation(points.allMachineOperations[e.target.value as number])}
+            >
+              {points.allMachineOperations.length === 0 ? (
+                <MenuItem value={-1}>
+                  <em>Any Operation</em>
+                </MenuItem>
+              ) : (
+                points.allMachineOperations.map((oper, idx) => (
+                  <MenuItem key={idx} value={idx}>
+                    {oper.statGroup} {oper.operation}
+                  </MenuItem>
+                ))
+              )}
+            </Select>
+          </FormControl>
+        ) : undefined}
+        <FormControl size="small">
+          <Select
+            name="Station-Cycles-cycle-chart-station-pallet"
+            autoWidth
+            displayEmpty
+            value={selectedPallet || ""}
+            style={{ marginLeft: "1em" }}
+            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
+          >
+            <MenuItem key={0} value="">
+              <em>Any Pallet</em>
+            </MenuItem>
+            {points.allPalletNames.map((n) => (
+              <MenuItem key={n} value={n}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={{ marginRight: "1em" }}>{n}</span>
+                </div>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
         <Tooltip title="Copy to Clipboard">
           <IconButton
             onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined, ty === "labor")}

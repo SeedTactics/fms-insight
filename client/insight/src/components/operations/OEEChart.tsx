@@ -40,6 +40,7 @@ import {
   Select,
   MenuItem,
   Typography,
+  FormControl,
 } from "@mui/material";
 
 import { Column, DataTableHead, DataTableBody, useColSort } from "../analysis/DataTable.js";
@@ -220,24 +221,28 @@ export function StationOEEPage({ ty }: { readonly ty: OEEType }) {
           display: "flex",
           minHeight: "2.5em",
           alignItems: "center",
-          width: "100%",
+          maxWidth: "calc(100vw - 24px - 24px)",
         }}
       >
-        <Typography variant="subtitle1">{ty === "labor" ? "Load/Unload" : "Machine"} OEE</Typography>
+        <Typography variant="subtitle1">
+          {ty === "labor" ? "Load/Unload" : "Machine"} OEE: comparing flexplan hours between actual and
+          simulated production
+        </Typography>
         <Box flexGrow={1} />
-        <Select
-          name="Station-OEE-chart-or-table-select"
-          autoWidth
-          value={showChart ? "chart" : "table"}
-          onChange={(e) => setShowChart(e.target.value === "chart")}
-        >
-          <MenuItem key="chart" value="chart">
-            Chart
-          </MenuItem>
-          <MenuItem key="table" value="table">
-            Table
-          </MenuItem>
-        </Select>
+        <FormControl size="small">
+          <Select
+            autoWidth
+            value={showChart ? "chart" : "table"}
+            onChange={(e) => setShowChart(e.target.value === "chart")}
+          >
+            <MenuItem key="chart" value="chart">
+              Chart
+            </MenuItem>
+            <MenuItem key="table" value="table">
+              Table
+            </MenuItem>
+          </Select>
+        </FormControl>
         <MuiTooltip title="Copy to Clipboard">
           <IconButton
             style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}

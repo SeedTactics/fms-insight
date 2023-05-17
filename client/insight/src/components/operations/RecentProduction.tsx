@@ -339,7 +339,7 @@ const RecentProductionToolbar = function RecentProductionToolbar({
         },
         minHeight: "2.5em",
         alignItems: "center",
-        width: "100%",
+        maxWidth: "calc(100vw - 24px - 24px)",
       }}
     >
       <Box gridArea="shifts" justifySelf="flex-start">

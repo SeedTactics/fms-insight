@@ -48,6 +48,9 @@ import {
   ListItemText,
   ListSubheader,
   Paper,
+  Select,
+  MenuItem,
+  FormControl,
 } from "@mui/material";
 import { startOfToday, differenceInDays } from "date-fns";
 import { useRecoilValue, useRecoilValueLoadable } from "recoil";
@@ -79,6 +82,30 @@ function ShowLicense({ d }: { d: Date }) {
   } else {
     return <Typography variant="h6">License expired on {d.toDateString()}</Typography>;
   }
+}
+
+function Brand() {
+  const fmsInfoM = useRecoilValueLoadable(fmsInformation);
+  const fmsInfo = fmsInfoM.valueMaybe();
+
+  let tooltip: JSX.Element | string = "";
+  if (fmsInfo) {
+    tooltip = (fmsInfo.name || "") + " " + (fmsInfo.version || "");
+  }
+
+  return (
+    <>
+      <Tooltip title={tooltip}>
+        <div>
+          <SeedtacticLogo />
+        </div>
+      </Tooltip>
+      <Typography variant="h6" style={{ marginLeft: "1em", marginRight: "2em" }}>
+        Insight
+      </Typography>
+      {fmsInfo?.licenseExpires ? <ShowLicense d={fmsInfo.licenseExpires} /> : undefined}
+    </>
+  );
 }
 
 function Alarms() {
@@ -116,8 +143,65 @@ function LogoutButton() {
   );
 }
 
-function SearchButtons() {
-  return <ManualScanButton />;
+function ToolButtons({
+  showAlarms,
+  showLogout,
+  showSearch,
+}: {
+  showAlarms: boolean;
+  showLogout: boolean;
+  showSearch: boolean;
+}) {
+  return (
+    <>
+      <LoadingIcon />
+      <CustomStationMonitorDialog />
+      {showSearch ? <ManualScanButton /> : undefined}
+      <HelpButton />
+      {showLogout ? <LogoutButton /> : undefined}
+      {showAlarms ? <Alarms /> : undefined}
+    </>
+  );
+}
+
+function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
+  const [curRoute, setCurrentRoute] = useCurrentRoute();
+  return (
+    <FormControl size="small">
+      <Select
+        value={curRoute.route}
+        sx={{ width: "15em" }}
+        onChange={(e) => {
+          const item = menuNavs.find((i) => ("separator" in i ? false : i.route.route === e.target.value));
+          if (!item || "separator" in item) return;
+          setCurrentRoute(item.route);
+        }}
+        renderValue={() => {
+          const item = menuNavs.find((i) => ("separator" in i ? false : i.route.route === curRoute.route));
+          if (!item || "separator" in item) return null;
+          return (
+            <Box display="flex" alignItems="center">
+              {item.icon}
+              <Typography variant="h6" style={{ marginLeft: "1em" }}>
+                {item.name}
+              </Typography>
+            </Box>
+          );
+        }}
+      >
+        {menuNavs.map((item) =>
+          "separator" in item ? (
+            <ListSubheader key={item.separator}>{item.separator}</ListSubheader>
+          ) : (
+            <MenuItem key={item.name} value={item.route.route}>
+              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemText primary={item.name} />
+            </MenuItem>
+          )
+        )}
+      </Select>
+    </FormControl>
+  );
 }
 
 export function Header({
@@ -127,7 +211,7 @@ export function Header({
   showOperator,
   Nav1,
   Nav2,
-  menuNavs: _,
+  menuNavs,
 }: {
   showAlarms: boolean;
   showLogout: boolean;
@@ -137,14 +221,6 @@ export function Header({
   Nav2: React.ComponentType | undefined;
   menuNavs?: ReadonlyArray<MenuNavItem>;
 }) {
-  const fmsInfoM = useRecoilValueLoadable(fmsInformation);
-  const fmsInfo = fmsInfoM.valueMaybe();
-
-  let tooltip: JSX.Element | string = "";
-  if (fmsInfo) {
-    tooltip = (fmsInfo.name || "") + " " + (fmsInfo.version || "");
-  }
-
   return (
     <>
       <AppBar position="static" sx={{ display: { xs: "none", md: "block" } }}>
@@ -156,15 +232,7 @@ export function Header({
             gridTemplateAreas={Nav2 ? '"nav navCenter tools"' : '"nav tools"'}
           >
             <Box gridArea="nav" display="flex" alignItems="center">
-              <Tooltip title={tooltip}>
-                <div>
-                  <SeedtacticLogo />
-                </div>
-              </Tooltip>
-              <Typography variant="h6" style={{ marginLeft: "1em", marginRight: "2em" }}>
-                Insight
-              </Typography>
-              {fmsInfo?.licenseExpires ? <ShowLicense d={fmsInfo.licenseExpires} /> : undefined}
+              <Brand />
               {Nav1 ? <Nav1 /> : undefined}
             </Box>
             {Nav2 ? (
@@ -173,41 +241,33 @@ export function Header({
               </Box>
             ) : undefined}
             <Box gridArea="tools" display="flex" alignItems="center" justifyContent="flex-end">
-              <LoadingIcon />
               {showOperator ? <OperatorSelect /> : undefined}
-              {showOperator ? <CustomStationMonitorDialog /> : undefined}
-              {showSearch ? <SearchButtons /> : undefined}
-              <HelpButton />
-              {showLogout ? <LogoutButton /> : undefined}
-              {showAlarms ? <Alarms /> : undefined}
+              <ToolButtons {...{ showAlarms, showLogout, showSearch }} />
             </Box>
           </Box>
         </Toolbar>
       </AppBar>
       <AppBar position="static" sx={{ display: { xs: "block", md: "none" } }}>
         <Toolbar>
-          <Tooltip title={tooltip}>
-            <div>
-              <SeedtacticLogo />
-            </div>
-          </Tooltip>
-          <Typography variant="h6" style={{ marginLeft: "4px" }}>
-            Insight
-          </Typography>
-          {fmsInfo?.licenseExpires ? <ShowLicense d={fmsInfo.licenseExpires} /> : undefined}
+          <Brand />
           <div style={{ flexGrow: 1 }} />
-          <LoadingIcon />
-          {showOperator ? <CustomStationMonitorDialog /> : undefined}
-          {showSearch ? <SearchButtons /> : undefined}
-          <HelpButton />
-          {showLogout ? <LogoutButton /> : undefined}
-          {showAlarms ? <Alarms /> : undefined}
+          <ToolButtons {...{ showAlarms, showLogout, showSearch }} />
         </Toolbar>
         <Box display="grid" gridTemplateColumns="minmax(200px, 1fr) auto">
           <Box gridColumn="1">{Nav1 ? <Nav1 /> : undefined}</Box>
           <Box gridColumn="2">{Nav2 ? <Nav2 /> : undefined}</Box>
         </Box>
       </AppBar>
+      {menuNavs && menuNavs.length > 0 ? (
+        <Paper
+          elevation={4}
+          square
+          component="nav"
+          sx={{ display: { xs: "block", xl: "none" }, padding: "2px" }}
+        >
+          <MenuNavSelect menuNavs={menuNavs} />
+        </Paper>
+      ) : undefined}
     </>
   );
 }
@@ -225,7 +285,7 @@ export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem>
       square
       sx={{
         flexShrink: 0,
-        display: { sm: "none", md: "block" },
+        display: { xs: "none", xl: "block" },
         minHeight: "calc(100vh - 64px)",
         zIndex: 1,
       }}
