@@ -165,19 +165,21 @@ export interface OEEBarSeries {
   readonly points: ReadonlyArray<OEEBarPoint>;
 }
 
+export type OEEType = "labor" | "machine";
+
 export function buildOeeSeries(
   start: Date,
   end: Date,
-  isLabor: boolean,
+  ty: OEEType,
   cycles: Iterable<PartCycleData>,
   statUse: Iterable<SimStationUse>
 ): ReadonlyArray<OEEBarSeries> {
   const filteredCycles = LazySeq.of(cycles).filter(
-    (e) => isLabor === e.isLabor && e.x >= start && e.x <= end
+    (e) => (ty === "labor") === e.isLabor && e.x >= start && e.x <= end
   );
   const actualBins = binActiveCyclesByDayAndStat(filteredCycles);
   const filteredStatUse = LazySeq.of(statUse).filter(
-    (e) => isLabor === e.station.startsWith("L/U") && e.end >= start && e.start <= end
+    (e) => (ty === "labor") === e.station.startsWith("L/U") && e.end >= start && e.start <= end
   );
   const plannedBins = binSimStationUseByDayAndStat(filteredStatUse);
 

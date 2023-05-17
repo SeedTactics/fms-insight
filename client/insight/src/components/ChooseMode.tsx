@@ -124,7 +124,7 @@ export const defaultChooseModes: ReadonlyArray<ChooseModeItem> = [
   },
   {
     type: "Link",
-    route: { route: RouteLocation.Engineering },
+    route: { route: RouteLocation.Engineering_Cycles },
     icon: <MemoryIcon />,
     label: "Engineering",
   },

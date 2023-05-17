@@ -224,6 +224,7 @@ export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem>
       elevation={3}
       square
       sx={{
+        flexShrink: 0,
         display: { sm: "none", md: "block" },
         minHeight: "calc(100vh - 64px)",
         zIndex: 1,

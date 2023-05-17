@@ -37,10 +37,16 @@ import { Tab } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { Button } from "@mui/material";
 import { useRecoilValueLoadable } from "recoil";
-import { Dns as ToolIcon, Build as BuildIcon, Receipt as ProgramIcon } from "@mui/icons-material";
+import {
+  Dns as ToolIcon,
+  Build as BuildIcon,
+  Receipt as ProgramIcon,
+  BugReport as BugIcon,
+  HourglassFull as HourglassIcon,
+  Work as WorkIcon,
+} from "@mui/icons-material";
 
 import OperationDashboard from "./operations/Dashboard.js";
-import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationOverview.js";
 import CostPerPiece from "./analysis/CostPerPiece.js";
 import Efficiency from "./analysis/EfficiencyPage.js";
 import DataExport from "./analysis/DataExport.js";
@@ -69,12 +75,45 @@ import { StationToolbar, StationToolbarOverviewButton } from "./station-monitor/
 import { RecentProductionPage } from "./operations/RecentProduction.js";
 import { VerboseLoggingPage } from "./VerboseLogging.js";
 import { Header, MenuNavItem, SideMenu } from "./Navigation.js";
+import { OutlierCycles } from "./operations/Outliers.js";
+import { StationOEEPage } from "./operations/OEEChart.js";
+import { RecentStationCycleChart } from "./operations/RecentStationCycles.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
 const operationsReports: ReadonlyArray<MenuNavItem> = [
   { separator: "Load/Unload" },
+  {
+    name: "L/U Outliers",
+    route: { route: routes.RouteLocation.Operations_LoadOutliers },
+    icon: <BugIcon />,
+  },
+  {
+    name: "L/U Hours",
+    route: { route: routes.RouteLocation.Operations_LoadHours },
+    icon: <HourglassIcon />,
+  },
+  {
+    name: "L/U Cycles",
+    route: { route: routes.RouteLocation.Operations_LoadCycles },
+    icon: <WorkIcon />,
+  },
   { separator: "Machines" },
+  {
+    name: "MC Outliers",
+    route: { route: routes.RouteLocation.Operations_MachineOutliers },
+    icon: <BugIcon />,
+  },
+  {
+    name: "MC Hours",
+    route: { route: routes.RouteLocation.Operations_MachineHours },
+    icon: <HourglassIcon />,
+  },
+  {
+    name: "MC Cycles",
+    route: { route: routes.RouteLocation.Operations_MachineCycles },
+    icon: <WorkIcon />,
+  },
   {
     name: "Tools",
     route: { route: routes.RouteLocation.Operations_Tools },
@@ -135,8 +174,6 @@ function OperationsTabs() {
       <Tab label="Cell" value={routes.RouteLocation.Operations_SystemOverview} />
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
       <Tab label="Reports" value={OperationsReportsTab} />
-      <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
-      <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
     </NavTabs>
   );
 }
@@ -157,6 +194,16 @@ function ToolsTabs() {
     <NavTabs>
       <Tab label="Tools" value={routes.RouteLocation.Tools_Dashboard} />
       <Tab label="Programs" value={routes.RouteLocation.Tools_Programs} />
+    </NavTabs>
+  );
+}
+
+function EngineeringTabs() {
+  return (
+    <NavTabs>
+      <Tab label="Cycles" value={routes.RouteLocation.Engineering_Cycles} />
+      <Tab label="Hours" value={routes.RouteLocation.Engineering_Hours} />
+      <Tab label="Outliers" value={routes.RouteLocation.Engineering_Outliers} />
     </NavTabs>
   );
 }
@@ -275,14 +322,6 @@ const App = React.memo(function App(props: AppProps) {
         page = <OperationDashboard />;
         nav1 = OperationsTabs;
         break;
-      case routes.RouteLocation.Operations_LoadStation:
-        page = <OperationLoadUnload />;
-        nav1 = OperationsTabs;
-        break;
-      case routes.RouteLocation.Operations_Machines:
-        page = <OperationMachines />;
-        nav1 = OperationsTabs;
-        break;
       case routes.RouteLocation.Operations_SystemOverview:
         page = <SystemOverviewPage ignoreOperator />;
         nav1 = OperationsTabs;
@@ -292,6 +331,36 @@ const App = React.memo(function App(props: AppProps) {
         page = <AllMaterial displaySystemBins />;
         nav1 = OperationsTabs;
         addBasicMaterialDialog = false;
+        break;
+      case routes.RouteLocation.Operations_LoadOutliers:
+        page = <OutlierCycles outlierTy="labor" />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        break;
+      case routes.RouteLocation.Operations_LoadHours:
+        page = <StationOEEPage ty="labor" />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        break;
+      case routes.RouteLocation.Operations_LoadCycles:
+        page = <RecentStationCycleChart ty="labor" />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        break;
+      case routes.RouteLocation.Operations_MachineOutliers:
+        page = <OutlierCycles outlierTy="machine" />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        break;
+      case routes.RouteLocation.Operations_MachineHours:
+        page = <StationOEEPage ty="machine" />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        break;
+      case routes.RouteLocation.Operations_MachineCycles:
+        page = <RecentStationCycleChart ty="machine" />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
         break;
       case routes.RouteLocation.Operations_RecentSchedules:
         page = <RecentSchedulesPage />;
@@ -314,9 +383,20 @@ const App = React.memo(function App(props: AppProps) {
         menuNavItems = operationsReports;
         break;
 
-      case routes.RouteLocation.Engineering:
-        page = <OperationMachines />;
+      case routes.RouteLocation.Engineering_Cycles:
+        page = <RecentStationCycleChart ty="machine" />;
         showAlarms = false;
+        nav1 = EngineeringTabs;
+        break;
+      case routes.RouteLocation.Engineering_Hours:
+        page = <StationOEEPage ty="machine" />;
+        showAlarms = false;
+        nav1 = EngineeringTabs;
+        break;
+      case routes.RouteLocation.Engineering_Outliers:
+        page = <OutlierCycles outlierTy="machine" />;
+        showAlarms = false;
+        nav1 = EngineeringTabs;
         break;
 
       case routes.RouteLocation.Quality_Dashboard:

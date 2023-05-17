@@ -56,8 +56,12 @@ export enum RouteLocation {
   Station_Overview = "/station/overview",
 
   Operations_Dashboard = "/operations",
-  Operations_LoadStation = "/operations/loadunload",
-  Operations_Machines = "/operations/machines",
+  Operations_LoadOutliers = "/operations/load-outliers",
+  Operations_LoadHours = "/operations/load-hours",
+  Operations_LoadCycles = "/operations/load-cycles",
+  Operations_MachineOutliers = "/operations/machine-outliers",
+  Operations_MachineHours = "/operations/machine-hours",
+  Operations_MachineCycles = "/operations/machine-cycles",
   Operations_SystemOverview = "/operations/system-overview",
   Operations_AllMaterial = "/operations/material",
   Operations_RecentSchedules = "/operations/recent-schedules",
@@ -65,7 +69,9 @@ export enum RouteLocation {
   Operations_Tools = "/operations/tools",
   Operations_Programs = "/operations/programs",
 
-  Engineering = "/engineering",
+  Engineering_Cycles = "/engineering",
+  Engineering_Hours = "/engineering/hours",
+  Engineering_Outliers = "/engineering/outliers",
 
   Quality_Dashboard = "/quality",
   Quality_Serials = "/quality/serials",
@@ -111,15 +117,21 @@ export type RouteState =
   | { route: RouteLocation.Station_Queues; queues: ReadonlyArray<string> }
   | { route: RouteLocation.Station_Overview }
   | { route: RouteLocation.Operations_Dashboard }
-  | { route: RouteLocation.Operations_LoadStation }
-  | { route: RouteLocation.Operations_Machines }
+  | { route: RouteLocation.Operations_LoadOutliers }
+  | { route: RouteLocation.Operations_LoadHours }
+  | { route: RouteLocation.Operations_LoadCycles }
+  | { route: RouteLocation.Operations_MachineOutliers }
+  | { route: RouteLocation.Operations_MachineHours }
+  | { route: RouteLocation.Operations_MachineCycles }
   | { route: RouteLocation.Operations_SystemOverview }
   | { route: RouteLocation.Operations_AllMaterial }
   | { route: RouteLocation.Operations_RecentSchedules }
   | { route: RouteLocation.Operations_Production }
   | { route: RouteLocation.Operations_Tools }
   | { route: RouteLocation.Operations_Programs }
-  | { route: RouteLocation.Engineering }
+  | { route: RouteLocation.Engineering_Cycles }
+  | { route: RouteLocation.Engineering_Outliers }
+  | { route: RouteLocation.Engineering_Hours }
   | { route: RouteLocation.Quality_Dashboard }
   | { route: RouteLocation.Quality_Serials }
   | { route: RouteLocation.Quality_Paths }
@@ -299,8 +311,12 @@ export function helpUrl(r: RouteState): string {
       return "https://www.seedtactics.com/docs/fms-insight/client-station-monitor";
 
     case RouteLocation.Operations_Dashboard:
-    case RouteLocation.Operations_LoadStation:
-    case RouteLocation.Operations_Machines:
+    case RouteLocation.Operations_LoadOutliers:
+    case RouteLocation.Operations_LoadHours:
+    case RouteLocation.Operations_LoadCycles:
+    case RouteLocation.Operations_MachineOutliers:
+    case RouteLocation.Operations_MachineHours:
+    case RouteLocation.Operations_MachineCycles:
     case RouteLocation.Operations_SystemOverview:
     case RouteLocation.Operations_AllMaterial:
     case RouteLocation.Operations_RecentSchedules:
@@ -311,7 +327,9 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Operations_Programs:
       return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
 
-    case RouteLocation.Engineering:
+    case RouteLocation.Engineering_Cycles:
+    case RouteLocation.Engineering_Outliers:
+    case RouteLocation.Engineering_Hours:
       return "https://www.seedtactics.com/docs/fms-insight/client-engineering";
 
     case RouteLocation.Quality_Dashboard:
