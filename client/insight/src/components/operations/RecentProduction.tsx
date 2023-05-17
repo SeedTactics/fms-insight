@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import {
   Box,
   IconButton,
-  Paper,
   Stack,
   Table,
   TableCell,
@@ -330,20 +329,14 @@ const RecentProductionToolbar = function RecentProductionToolbar({
   readonly rows: ReadonlyArray<ProdRow>;
 }): JSX.Element {
   return (
-    <Paper
+    <Box
       component="nav"
-      elevation={4}
       sx={{
         display: "grid",
         gridTemplate: {
           md: mdGridTemplate,
           xs: xsGridTemplate,
         },
-        backgroundColor: "#E0E0E0",
-        paddingLeft: "24px",
-        paddingRight: "24px",
-        paddingTop: "4px",
-        paddingBottom: "4px",
         minHeight: "2.5em",
         alignItems: "center",
         width: "100%",
@@ -362,7 +355,7 @@ const RecentProductionToolbar = function RecentProductionToolbar({
           </IconButton>
         </Tooltip>
       </Box>
-    </Paper>
+    </Box>
   );
 };
 
@@ -374,11 +367,11 @@ export function RecentProductionPage(): JSX.Element {
   const columns = useColumns(day);
   const rows = useRows(day);
   return (
-    <>
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
       <RecentProductionToolbar day={day} setDay={setDay} rows={rows} columns={columns} />
-      <main style={{ padding: "24px" }}>
+      <main>
         <RecentProductionTable rows={rows} columns={columns} />
       </main>
-    </>
+    </Box>
   );
 }

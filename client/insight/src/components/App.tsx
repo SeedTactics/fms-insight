@@ -36,7 +36,8 @@ import { Tabs } from "@mui/material";
 import { Tab } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { Button } from "@mui/material";
-import { useRecoilValue, useRecoilValueLoadable } from "recoil";
+import { useRecoilValueLoadable } from "recoil";
+import { Dns as ToolIcon, Build as BuildIcon, Receipt as ProgramIcon } from "@mui/icons-material";
 
 import OperationDashboard from "./operations/Dashboard.js";
 import { OperationLoadUnload, OperationMachines } from "./operations/DailyStationOverview.js";
@@ -48,7 +49,7 @@ import * as routes from "./routes.js";
 import * as serverSettings from "../network/server-settings.js";
 import { BarcodeListener } from "./BarcodeScanning.js";
 import { MaterialDialog } from "./station-monitor/Material.js";
-import { RecentSchedulesPage, existRecentScheduledJobs } from "./operations/RecentSchedules.js";
+import { RecentSchedulesPage } from "./operations/RecentSchedules.js";
 import { AllMaterial } from "./operations/AllMaterial.js";
 import { FailedPartLookup } from "./quality/FailedPartLookup.js";
 import { QualityPaths } from "./quality/QualityPaths.js";
@@ -69,16 +70,54 @@ import { RecentProductionPage } from "./operations/RecentProduction.js";
 import { VerboseLoggingPage } from "./VerboseLogging.js";
 import { Header, MenuNavItem, SideMenu } from "./Navigation.js";
 
+const OperationsReportsTab = "bms-operations-reports-tab";
+
+const operationsReports: ReadonlyArray<MenuNavItem> = [
+  { separator: "Load/Unload" },
+  { separator: "Machines" },
+  {
+    name: "Tools",
+    route: { route: routes.RouteLocation.Operations_Tools },
+    icon: <ToolIcon />,
+  },
+  {
+    name: "Programs",
+    route: { route: routes.RouteLocation.Operations_Programs },
+    icon: <ProgramIcon />,
+  },
+  { separator: "Cell" },
+  {
+    name: "Schedules",
+    route: { route: routes.RouteLocation.Operations_RecentSchedules },
+    icon: <BuildIcon />,
+  },
+  {
+    name: "Production",
+    route: { route: routes.RouteLocation.Operations_Production },
+    icon: <BuildIcon />,
+  },
+];
+
 export function NavTabs({ children }: { children?: React.ReactNode }) {
   const [route, setRoute] = routes.useCurrentRoute();
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
 
+  const isOperationReport = operationsReports.some((r) =>
+    "separator" in r ? false : r.route.route === route.route
+  );
+
   return (
     <Tabs
       variant={full && (!Array.isArray(children) || children.length < 5) ? "fullWidth" : "scrollable"}
-      value={route.route}
-      onChange={(e, v) => setRoute({ route: v as routes.RouteLocation } as routes.RouteState)}
+      value={isOperationReport ? OperationsReportsTab : route.route}
+      onChange={(e, v) => {
+        if (v === OperationsReportsTab) {
+          setRoute({ route: routes.RouteLocation.Operations_Tools });
+        } else {
+          setRoute({ route: v as routes.RouteLocation } as routes.RouteState);
+        }
+      }}
       textColor="inherit"
       scrollButtons
       allowScrollButtonsMobile
@@ -90,20 +129,14 @@ export function NavTabs({ children }: { children?: React.ReactNode }) {
 }
 
 function OperationsTabs() {
-  const existSch = useRecoilValue(existRecentScheduledJobs);
   return (
     <NavTabs>
       <Tab label="Operations" value={routes.RouteLocation.Operations_Dashboard} />
-      <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
-      <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
-      {existSch ? (
-        <Tab label="Schedules" value={routes.RouteLocation.Operations_RecentSchedules} />
-      ) : undefined}
-      <Tab label="Production" value={routes.RouteLocation.Operations_Production} />
       <Tab label="Cell" value={routes.RouteLocation.Operations_SystemOverview} />
       <Tab label="Material" value={routes.RouteLocation.Operations_AllMaterial} />
-      <Tab label="Tools" value={routes.RouteLocation.Operations_Tools} />
-      <Tab label="Programs" value={routes.RouteLocation.Operations_Programs} />
+      <Tab label="Reports" value={OperationsReportsTab} />
+      <Tab label="Load/Unload" value={routes.RouteLocation.Operations_LoadStation} />
+      <Tab label="Machines" value={routes.RouteLocation.Operations_Machines} />
     </NavTabs>
   );
 }
@@ -241,7 +274,6 @@ const App = React.memo(function App(props: AppProps) {
       case routes.RouteLocation.Operations_Dashboard:
         page = <OperationDashboard />;
         nav1 = OperationsTabs;
-        menuNavItems = [];
         break;
       case routes.RouteLocation.Operations_LoadStation:
         page = <OperationLoadUnload />;
@@ -264,18 +296,22 @@ const App = React.memo(function App(props: AppProps) {
       case routes.RouteLocation.Operations_RecentSchedules:
         page = <RecentSchedulesPage />;
         nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
         break;
       case routes.RouteLocation.Operations_Production:
         page = <RecentProductionPage />;
         nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
         break;
       case routes.RouteLocation.Operations_Tools:
         page = <ToolReportPage />;
         nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
         break;
       case routes.RouteLocation.Operations_Programs:
         page = <ProgramReportPage />;
         nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
         break;
 
       case routes.RouteLocation.Engineering:

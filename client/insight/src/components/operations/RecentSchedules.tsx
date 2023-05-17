@@ -56,7 +56,7 @@ import {
 } from "@mui/icons-material";
 import { JobDetails } from "../station-monitor/JobDetails.js";
 import { Collapse } from "@mui/material";
-import { selector, useRecoilValue } from "recoil";
+import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
@@ -374,11 +374,6 @@ export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.El
       <EditNoteDialog job={curEditNoteJob?.historicJob ?? null} closeDialog={() => setCurEditNoteJob(null)} />
     </>
   );
-});
-
-export const existRecentScheduledJobs = selector<boolean>({
-  key: "insight-exist-recent-scheduled-jobs",
-  get: ({ get }) => Object.keys(get(currentStatus).jobs).length > 0 || get(last30Jobs).size > 0,
 });
 
 export function RecentSchedulesPage(): JSX.Element {

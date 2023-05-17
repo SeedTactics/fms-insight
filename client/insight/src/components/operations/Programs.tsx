@@ -36,7 +36,6 @@ import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
 import TimeAgo from "react-timeago";
-import { CardHeader } from "@mui/material";
 import { Table } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
@@ -53,7 +52,6 @@ import {
   KeyboardArrowRight,
   History as HistoryIcon,
   Refresh as RefreshIcon,
-  Receipt as ProgramIcon,
   Code as CodeIcon,
 } from "@mui/icons-material";
 
@@ -246,7 +244,6 @@ export function ProgramSummaryTable(): JSX.Element {
   const report = useRecoilValue(currentProgramReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ProgramName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
-  const [filter, setFilter] = useRecoilState(programFilter);
 
   if (report === null) {
     return <div />;
@@ -348,125 +345,100 @@ export function ProgramSummaryTable(): JSX.Element {
   }
 
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <ProgramIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Cell Controller Programs</div>
-            <div style={{ flexGrow: 1 }} />
-            <Select
-              autoWidth
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as "AllPrograms" | "ActivePrograms")}
+    <Table>
+      <TableHead>
+        <TableRow>
+          <TableCell />
+          <TableCell sortDirection={sortCol === "ProgramName" ? sortDir : false}>
+            <TableSortLabel
+              active={sortCol === "ProgramName"}
+              direction={sortDir}
+              onClick={() => toggleSort("ProgramName")}
             >
-              <MenuItem key="AllPrograms" value="AllPrograms">
-                All Programs
-              </MenuItem>
-              <MenuItem key="ActivePrograms" value="ActivePrograms">
-                Active Programs
-              </MenuItem>
-            </Select>
-          </div>
-        }
-      />
-      <CardContent>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell />
-              <TableCell sortDirection={sortCol === "ProgramName" ? sortDir : false}>
-                <TableSortLabel
-                  active={sortCol === "ProgramName"}
-                  direction={sortDir}
-                  onClick={() => toggleSort("ProgramName")}
-                >
-                  Program Name
-                </TableSortLabel>
-              </TableCell>
-              {report.cellNameDifferentFromProgName ? (
-                <TableCell sortDirection={sortCol === "CellProgName" ? sortDir : false}>
-                  <TableSortLabel
-                    active={sortCol === "CellProgName"}
-                    direction={sortDir}
-                    onClick={() => toggleSort("CellProgName")}
-                  >
-                    Cell Controller Program
-                  </TableSortLabel>
-                </TableCell>
-              ) : undefined}
-              <TableCell sortDirection={sortCol === "PartName" ? sortDir : false}>
-                <TableSortLabel
-                  active={sortCol === "PartName"}
-                  direction={sortDir}
-                  onClick={() => toggleSort("PartName")}
-                >
-                  Part
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sortDirection={sortCol === "Comment" ? sortDir : false}>
-                <TableSortLabel
-                  active={sortCol === "Comment"}
-                  direction={sortDir}
-                  onClick={() => toggleSort("Comment")}
-                >
-                  Comment
-                </TableSortLabel>
-              </TableCell>
-              {report.hasRevisions ? (
-                <TableCell sortDirection={sortCol === "Revision" ? sortDir : false}>
-                  <TableSortLabel
-                    active={sortCol === "Revision"}
-                    direction={sortDir}
-                    onClick={() => toggleSort("Revision")}
-                  >
-                    Revision
-                  </TableSortLabel>
-                </TableCell>
-              ) : undefined}
-              <TableCell sortDirection={sortCol === "MedianTime" ? sortDir : false} align="right">
-                <TableSortLabel
-                  active={sortCol === "MedianTime"}
-                  direction={sortDir}
-                  onClick={() => toggleSort("MedianTime")}
-                >
-                  Median Time / Material (min)
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sortDirection={sortCol === "DeviationAbove" ? sortDir : false} align="right">
-                <TableSortLabel
-                  active={sortCol === "DeviationAbove"}
-                  direction={sortDir}
-                  onClick={() => toggleSort("DeviationAbove")}
-                >
-                  Deviation Above Median
-                </TableSortLabel>
-              </TableCell>
-              <TableCell sortDirection={sortCol === "DeviationBelow" ? sortDir : false} align="right">
-                <TableSortLabel
-                  active={sortCol === "DeviationBelow"}
-                  direction={sortDir}
-                  onClick={() => toggleSort("DeviationBelow")}
-                >
-                  Deviation Below Median
-                </TableSortLabel>
-              </TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {LazySeq.of(rows).map((program, idx) => (
-              <ProgramRow
-                key={idx}
-                program={program}
-                showCellCtrlCol={report.cellNameDifferentFromProgName}
-                showRevCol={report.hasRevisions}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              Program Name
+            </TableSortLabel>
+          </TableCell>
+          {report.cellNameDifferentFromProgName ? (
+            <TableCell sortDirection={sortCol === "CellProgName" ? sortDir : false}>
+              <TableSortLabel
+                active={sortCol === "CellProgName"}
+                direction={sortDir}
+                onClick={() => toggleSort("CellProgName")}
+              >
+                Cell Controller Program
+              </TableSortLabel>
+            </TableCell>
+          ) : undefined}
+          <TableCell sortDirection={sortCol === "PartName" ? sortDir : false}>
+            <TableSortLabel
+              active={sortCol === "PartName"}
+              direction={sortDir}
+              onClick={() => toggleSort("PartName")}
+            >
+              Part
+            </TableSortLabel>
+          </TableCell>
+          <TableCell sortDirection={sortCol === "Comment" ? sortDir : false}>
+            <TableSortLabel
+              active={sortCol === "Comment"}
+              direction={sortDir}
+              onClick={() => toggleSort("Comment")}
+            >
+              Comment
+            </TableSortLabel>
+          </TableCell>
+          {report.hasRevisions ? (
+            <TableCell sortDirection={sortCol === "Revision" ? sortDir : false}>
+              <TableSortLabel
+                active={sortCol === "Revision"}
+                direction={sortDir}
+                onClick={() => toggleSort("Revision")}
+              >
+                Revision
+              </TableSortLabel>
+            </TableCell>
+          ) : undefined}
+          <TableCell sortDirection={sortCol === "MedianTime" ? sortDir : false} align="right">
+            <TableSortLabel
+              active={sortCol === "MedianTime"}
+              direction={sortDir}
+              onClick={() => toggleSort("MedianTime")}
+            >
+              Median Time / Material (min)
+            </TableSortLabel>
+          </TableCell>
+          <TableCell sortDirection={sortCol === "DeviationAbove" ? sortDir : false} align="right">
+            <TableSortLabel
+              active={sortCol === "DeviationAbove"}
+              direction={sortDir}
+              onClick={() => toggleSort("DeviationAbove")}
+            >
+              Deviation Above Median
+            </TableSortLabel>
+          </TableCell>
+          <TableCell sortDirection={sortCol === "DeviationBelow" ? sortDir : false} align="right">
+            <TableSortLabel
+              active={sortCol === "DeviationBelow"}
+              direction={sortDir}
+              onClick={() => toggleSort("DeviationBelow")}
+            >
+              Deviation Below Median
+            </TableSortLabel>
+          </TableCell>
+          <TableCell />
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {LazySeq.of(rows).map((program, idx) => (
+          <ProgramRow
+            key={idx}
+            program={program}
+            showCellCtrlCol={report.cellNameDifferentFromProgName}
+            showRevCol={report.hasRevisions}
+          />
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -762,6 +734,7 @@ function ProgNavHeader() {
   const [loading, setLoading] = React.useState(false);
   const refreshPrograms = useRefreshProgramReport();
   const demo = useIsDemo();
+  const [filter, setFilter] = useRecoilState(programFilter);
 
   function refresh() {
     setLoading(true);
@@ -794,14 +767,13 @@ function ProgNavHeader() {
     );
   } else {
     return (
-      <nav
-        style={{
+      <Box
+        component="nav"
+        sx={{
           display: "flex",
-          backgroundColor: "#E0E0E0",
-          paddingLeft: "24px",
-          paddingRight: "24px",
           minHeight: "2.5em",
           alignItems: "center",
+          width: "100%",
         }}
       >
         <Tooltip title="Refresh Programs">
@@ -814,7 +786,20 @@ function ProgNavHeader() {
         <span style={{ marginLeft: "1em" }}>
           Programs from <TimeAgo date={reloadTime} />
         </span>
-      </nav>
+        <div style={{ flexGrow: 1 }} />
+        <Select
+          autoWidth
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as "AllPrograms" | "ActivePrograms")}
+        >
+          <MenuItem key="AllPrograms" value="AllPrograms">
+            All Programs
+          </MenuItem>
+          <MenuItem key="ActivePrograms" value="ActivePrograms">
+            Active Programs
+          </MenuItem>
+        </Select>
+      </Box>
     );
   }
 }
@@ -825,15 +810,15 @@ export function ProgramReportPage(): JSX.Element {
   }, []);
 
   return (
-    <>
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
       <ProgNavHeader />
-      <main style={{ padding: "24px" }}>
+      <main>
         <DisplayLoadingAndError>
           <ProgramSummaryTable />
         </DisplayLoadingAndError>
       </main>
       <ProgramContentDialog />
       <ProgramHistoryDialog />
-    </>
+    </Box>
   );
 }

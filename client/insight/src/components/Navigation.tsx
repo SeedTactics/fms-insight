@@ -33,7 +33,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as React from "react";
 import { Notifications, HelpOutline, ExitToApp } from "@mui/icons-material";
-import { Typography, Tooltip, Badge, IconButton, AppBar, Toolbar, Box } from "@mui/material";
+import {
+  Typography,
+  Tooltip,
+  Badge,
+  IconButton,
+  AppBar,
+  Toolbar,
+  Box,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemButton,
+  ListItemText,
+  ListSubheader,
+  Paper,
+} from "@mui/material";
 import { startOfToday, differenceInDays } from "date-fns";
 import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 import { currentStatus } from "../cell-status/current-status";
@@ -42,14 +57,16 @@ import { OperatorSelect } from "./ChooseOperator";
 import { LoadingIcon } from "./LoadingIcon";
 import { ManualScanButton } from "./ManualScan";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog";
-import { RouteLocation, helpUrl, useCurrentRoute } from "./routes";
+import { RouteState, helpUrl, useCurrentRoute } from "./routes";
 import { fmsInformation, logout } from "../network/server-settings";
 
-export type MenuNavItem = {
-  readonly name: string;
-  readonly icon: React.ReactNode;
-  readonly route: RouteLocation;
-};
+export type MenuNavItem =
+  | {
+      readonly name: string;
+      readonly icon: React.ReactNode;
+      readonly route: RouteState;
+    }
+  | { readonly separator: string };
 
 function ShowLicense({ d }: { d: Date }) {
   const today = startOfToday();
@@ -195,6 +212,40 @@ export function Header({
   );
 }
 
-export function SideMenu({ menuItems: _ }: { menuItems?: ReadonlyArray<MenuNavItem> }) {
-  return null;
+export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem> }) {
+  const [curRoute, setCurrentRoute] = useCurrentRoute();
+
+  if (!menuItems || menuItems.length === 0) {
+    return null;
+  }
+
+  return (
+    <Paper
+      elevation={3}
+      square
+      sx={{
+        display: { sm: "none", md: "block" },
+        minHeight: "calc(100vh - 64px)",
+        zIndex: 1,
+      }}
+    >
+      <List>
+        {menuItems?.map((item) =>
+          "separator" in item ? (
+            <ListSubheader key={item.separator}>{item.separator}</ListSubheader>
+          ) : (
+            <ListItem key={item.name}>
+              <ListItemButton
+                selected={curRoute.route === item.route.route}
+                onClick={() => setCurrentRoute(item.route)}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.name} />
+              </ListItemButton>
+            </ListItem>
+          )
+        )}
+      </List>
+    </Paper>
+  );
 }

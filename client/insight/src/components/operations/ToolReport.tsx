@@ -33,10 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Fab, styled, Box } from "@mui/material";
 import { CircularProgress } from "@mui/material";
-import { Card } from "@mui/material";
-import { CardContent } from "@mui/material";
 import TimeAgo from "react-timeago";
-import { CardHeader } from "@mui/material";
 import { Table } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
@@ -50,7 +47,6 @@ import { MenuItem } from "@mui/material";
 import { Collapse } from "@mui/material";
 
 import {
-  Dns as ToolIcon,
   Refresh as RefreshIcon,
   ImportExport,
   KeyboardArrowDown as KeyboardArrowDownIcon,
@@ -385,14 +381,12 @@ type SortColumn =
 const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
 
 export function ToolSummaryTable(): JSX.Element {
-  const [machineFilter, setMachineFilter] = useRecoilState(toolReportMachineFilter);
+  const machineFilter = useRecoilValue(toolReportMachineFilter);
   const tools = useRecoilValue(currentToolReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
-  const machineNames = useRecoilValue(machinesWithTools);
   const showTime = useRecoilValue(toolReportHasTimeUsage);
   const showCnts = useRecoilValue(toolReportHasCntUsage);
-  const copyToolReportToClipboard = useCopyToolReportToClipboard();
 
   if (tools === null) {
     return <div />;
@@ -456,183 +450,135 @@ export function ToolSummaryTable(): JSX.Element {
   }
 
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <ToolIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Tools</div>
-            <div style={{ flexGrow: 1 }} />
-            <Select
-              autoWidth
-              displayEmpty
-              value={machineFilter ?? FilterAnyMachineKey}
-              style={{ marginLeft: "1em" }}
-              onChange={(e) => {
-                if (e.target.value === FilterAnyMachineKey) {
-                  setMachineFilter(null);
-                } else {
-                  setMachineFilter(e.target.value);
-                }
-              }}
+    <Table>
+      <TableHead>
+        <ToolTableRow>
+          <TableCell />
+          <TableCell sortDirection={sortCol === "ToolName" ? sortDir : false}>
+            <TableSortLabel
+              active={sortCol === "ToolName"}
+              direction={sortDir}
+              onClick={() => toggleSort("ToolName")}
             >
-              <MenuItem value={FilterAnyMachineKey}>
-                <em>All Machines</em>
-              </MenuItem>
-              {machineNames.map((n) => (
-                <MenuItem key={n} value={n}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ marginRight: "1em" }}>{n}</span>
-                  </div>
-                </MenuItem>
-              ))}
-            </Select>
-            <Tooltip title="Copy to Clipboard">
-              <IconButton
-                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={copyToolReportToClipboard}
-                size="large"
-              >
-                <ImportExport />
-              </IconButton>
-            </Tooltip>
-          </div>
-        }
-      />
-      <CardContent>
-        <Table>
-          <TableHead>
-            <ToolTableRow>
-              <TableCell />
-              <TableCell sortDirection={sortCol === "ToolName" ? sortDir : false}>
-                <TableSortLabel
-                  active={sortCol === "ToolName"}
-                  direction={sortDir}
-                  onClick={() => toggleSort("ToolName")}
-                >
-                  Tool
-                </TableSortLabel>
+              Tool
+            </TableSortLabel>
+          </TableCell>
+          {showTime ? (
+            <>
+              <TableCell sortDirection={sortCol === "ScheduledUseMin" ? sortDir : false} align="right">
+                <Tooltip title="Expected use for all currently scheduled parts">
+                  <TableSortLabel
+                    active={sortCol === "ScheduledUseMin"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("ScheduledUseMin")}
+                  >
+                    Scheduled Use (minutes)
+                  </TableSortLabel>
+                </Tooltip>
               </TableCell>
+              <TableCell sortDirection={sortCol === "RemainingTotalMin" ? sortDir : false} align="right">
+                <Tooltip
+                  title={
+                    showingMultipleMachines
+                      ? "Remaining life summed over all machines"
+                      : "Remaining life of all tools in the machine"
+                  }
+                >
+                  <TableSortLabel
+                    active={sortCol === "RemainingTotalMin"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("RemainingTotalMin")}
+                  >
+                    {showingMultipleMachines ? "Total Remaining Life (minutes)" : "Remaining Life (minutes)"}
+                  </TableSortLabel>
+                </Tooltip>
+              </TableCell>
+            </>
+          ) : undefined}
+          {showCnts ? (
+            <>
+              <TableCell sortDirection={sortCol === "ScheduledUseCnt" ? sortDir : false} align="right">
+                <Tooltip title="Expected use for all currently scheduled parts">
+                  <TableSortLabel
+                    active={sortCol === "ScheduledUseCnt"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("ScheduledUseCnt")}
+                  >
+                    Scheduled Use (count)
+                  </TableSortLabel>
+                </Tooltip>
+              </TableCell>
+              <TableCell sortDirection={sortCol === "RemainingTotalCnt" ? sortDir : false} align="right">
+                <Tooltip
+                  title={
+                    showingMultipleMachines
+                      ? "Remaining life summed over all machines"
+                      : "Remaining life of all tools in the machine"
+                  }
+                >
+                  <TableSortLabel
+                    active={sortCol === "RemainingTotalCnt"}
+                    direction={sortDir}
+                    onClick={() => toggleSort("RemainingTotalCnt")}
+                  >
+                    {showingMultipleMachines ? "Total Remaining Life (count)" : "Remaining Life (count)"}
+                  </TableSortLabel>
+                </Tooltip>
+              </TableCell>
+            </>
+          ) : undefined}
+          {showingMultipleMachines ? (
+            <>
               {showTime ? (
-                <>
-                  <TableCell sortDirection={sortCol === "ScheduledUseMin" ? sortDir : false} align="right">
-                    <Tooltip title="Expected use for all currently scheduled parts">
-                      <TableSortLabel
-                        active={sortCol === "ScheduledUseMin"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("ScheduledUseMin")}
-                      >
-                        Scheduled Use (minutes)
-                      </TableSortLabel>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell sortDirection={sortCol === "RemainingTotalMin" ? sortDir : false} align="right">
-                    <Tooltip
-                      title={
-                        showingMultipleMachines
-                          ? "Remaining life summed over all machines"
-                          : "Remaining life of all tools in the machine"
-                      }
+                <TableCell
+                  sortDirection={sortCol === "MinRemainingLifeMinutes" ? sortDir : false}
+                  align="right"
+                >
+                  <Tooltip title="Machine with the least remaining life">
+                    <TableSortLabel
+                      active={sortCol === "MinRemainingLifeMinutes"}
+                      direction={sortDir}
+                      onClick={() => toggleSort("MinRemainingLifeMinutes")}
                     >
-                      <TableSortLabel
-                        active={sortCol === "RemainingTotalMin"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("RemainingTotalMin")}
-                      >
-                        {showingMultipleMachines
-                          ? "Total Remaining Life (minutes)"
-                          : "Remaining Life (minutes)"}
-                      </TableSortLabel>
-                    </Tooltip>
-                  </TableCell>
-                </>
+                      Smallest Remaining Life (minutes)
+                    </TableSortLabel>
+                  </Tooltip>
+                </TableCell>
               ) : undefined}
               {showCnts ? (
-                <>
-                  <TableCell sortDirection={sortCol === "ScheduledUseCnt" ? sortDir : false} align="right">
-                    <Tooltip title="Expected use for all currently scheduled parts">
-                      <TableSortLabel
-                        active={sortCol === "ScheduledUseCnt"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("ScheduledUseCnt")}
-                      >
-                        Scheduled Use (count)
-                      </TableSortLabel>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell sortDirection={sortCol === "RemainingTotalCnt" ? sortDir : false} align="right">
-                    <Tooltip
-                      title={
-                        showingMultipleMachines
-                          ? "Remaining life summed over all machines"
-                          : "Remaining life of all tools in the machine"
-                      }
+                <TableCell sortDirection={sortCol === "MinRemainingLifeCnt" ? sortDir : false} align="right">
+                  <Tooltip title="Machine with the least remaining life">
+                    <TableSortLabel
+                      active={sortCol === "MinRemainingLifeCnt"}
+                      direction={sortDir}
+                      onClick={() => toggleSort("MinRemainingLifeCnt")}
                     >
-                      <TableSortLabel
-                        active={sortCol === "RemainingTotalCnt"}
-                        direction={sortDir}
-                        onClick={() => toggleSort("RemainingTotalCnt")}
-                      >
-                        {showingMultipleMachines ? "Total Remaining Life (count)" : "Remaining Life (count)"}
-                      </TableSortLabel>
-                    </Tooltip>
-                  </TableCell>
-                </>
+                      Smallest Remaining Life (count)
+                    </TableSortLabel>
+                  </Tooltip>
+                </TableCell>
               ) : undefined}
-              {showingMultipleMachines ? (
-                <>
-                  {showTime ? (
-                    <TableCell
-                      sortDirection={sortCol === "MinRemainingLifeMinutes" ? sortDir : false}
-                      align="right"
-                    >
-                      <Tooltip title="Machine with the least remaining life">
-                        <TableSortLabel
-                          active={sortCol === "MinRemainingLifeMinutes"}
-                          direction={sortDir}
-                          onClick={() => toggleSort("MinRemainingLifeMinutes")}
-                        >
-                          Smallest Remaining Life (minutes)
-                        </TableSortLabel>
-                      </Tooltip>
-                    </TableCell>
-                  ) : undefined}
-                  {showCnts ? (
-                    <TableCell
-                      sortDirection={sortCol === "MinRemainingLifeCnt" ? sortDir : false}
-                      align="right"
-                    >
-                      <Tooltip title="Machine with the least remaining life">
-                        <TableSortLabel
-                          active={sortCol === "MinRemainingLifeCnt"}
-                          direction={sortDir}
-                          onClick={() => toggleSort("MinRemainingLifeCnt")}
-                        >
-                          Smallest Remaining Life (count)
-                        </TableSortLabel>
-                      </Tooltip>
-                    </TableCell>
-                  ) : undefined}
-                </>
-              ) : undefined}
-              <TableCell />
-            </ToolTableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((tool) => (
-              <ToolRow key={tool.toolName} tool={tool} showingMultipleMachines={showingMultipleMachines} />
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </>
+          ) : undefined}
+          <TableCell />
+        </ToolTableRow>
+      </TableHead>
+      <TableBody>
+        {rows.map((tool) => (
+          <ToolRow key={tool.toolName} tool={tool} showingMultipleMachines={showingMultipleMachines} />
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
 function ToolNavHeader() {
+  const [machineFilter, setMachineFilter] = useRecoilState(toolReportMachineFilter);
   const reloadTime = useRecoilValue(toolReportRefreshTime);
   const [loading, setLoading] = React.useState(false);
   const refreshToolReport = useRefreshToolReport();
+  const machineNames = useRecoilValue(machinesWithTools);
+  const copyToolReportToClipboard = useCopyToolReportToClipboard();
   const demo = useIsDemo();
 
   function refresh() {
@@ -666,14 +612,13 @@ function ToolNavHeader() {
     );
   } else {
     return (
-      <nav
-        style={{
+      <Box
+        component="nav"
+        sx={{
           display: "flex",
-          backgroundColor: "#E0E0E0",
-          paddingLeft: "24px",
-          paddingRight: "24px",
           minHeight: "2.5em",
           alignItems: "center",
+          width: "100%",
         }}
       >
         <Tooltip title="Refresh Tools">
@@ -686,7 +631,41 @@ function ToolNavHeader() {
         <span style={{ marginLeft: "1em" }}>
           Tools from <TimeAgo date={reloadTime} />
         </span>
-      </nav>
+        <div style={{ flexGrow: "1" }} />
+        <Select
+          autoWidth
+          displayEmpty
+          value={machineFilter ?? FilterAnyMachineKey}
+          style={{ marginLeft: "1em" }}
+          onChange={(e) => {
+            if (e.target.value === FilterAnyMachineKey) {
+              setMachineFilter(null);
+            } else {
+              setMachineFilter(e.target.value);
+            }
+          }}
+        >
+          <MenuItem value={FilterAnyMachineKey}>
+            <em>All Machines</em>
+          </MenuItem>
+          {machineNames.map((n) => (
+            <MenuItem key={n} value={n}>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span style={{ marginRight: "1em" }}>{n}</span>
+              </div>
+            </MenuItem>
+          ))}
+        </Select>
+        <Tooltip title="Copy to Clipboard">
+          <IconButton
+            style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+            onClick={copyToolReportToClipboard}
+            size="large"
+          >
+            <ImportExport />
+          </IconButton>
+        </Tooltip>
+      </Box>
     );
   }
 }
@@ -697,13 +676,13 @@ export function ToolReportPage(): JSX.Element {
   }, []);
 
   return (
-    <>
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
       <ToolNavHeader />
-      <main style={{ padding: "24px" }}>
+      <main>
         <DisplayLoadingAndError>
           <ToolSummaryTable />
         </DisplayLoadingAndError>
       </main>
-    </>
+    </Box>
   );
 }
