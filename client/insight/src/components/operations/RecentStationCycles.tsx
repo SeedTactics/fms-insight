@@ -151,17 +151,6 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
         </Typography>
         <Box flexGrow={1} />
 
-        {points.data.size > 0 ? (
-          <Tooltip title="Copy to Clipboard">
-            <IconButton
-              onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined, ty === "labor")}
-              style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-              size="large"
-            >
-              <ImportExport />
-            </IconButton>
-          </Tooltip>
-        ) : undefined}
         <Select
           name="Station-Cycles-chart-or-table-select"
           autoWidth
@@ -250,6 +239,15 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
             </MenuItem>
           ))}
         </Select>
+        <Tooltip title="Copy to Clipboard">
+          <IconButton
+            onClick={() => copyCyclesToClipboard(points, matSummary.matsById, undefined, ty === "labor")}
+            style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+            size="large"
+          >
+            <ImportExport />
+          </IconButton>
+        </Tooltip>
       </Box>
       <main>
         {showGraph ? (
