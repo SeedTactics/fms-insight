@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -62,11 +62,5 @@ export function QualityPaths(): JSX.Element {
   React.useEffect(() => {
     document.title = "Paths - FMS Insight";
   }, []);
-  return (
-    <main style={{ padding: "24px" }}>
-      <div data-testid="failed-parts">
-        <SelectedInspections />
-      </div>
-    </main>
-  );
+  return <SelectedInspections />;
 }

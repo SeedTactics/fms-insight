@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Card, CardContent, CardHeader, Select, MenuItem, Tooltip, IconButton, Box } from "@mui/material";
-import { Search as SearchIcon, ImportExport } from "@mui/icons-material";
+import { Select, MenuItem, Tooltip, IconButton, Box, Typography, FormControl } from "@mui/material";
+import { ImportExport } from "@mui/icons-material";
 import { sankey, sankeyJustify, sankeyLinkHorizontal, SankeyNode as D3SankeyNode } from "d3-sankey";
 
 import { PartIdenticon } from "../station-monitor/Material.js";
@@ -196,7 +196,7 @@ const InspectionDiagram = React.memo(function InspectionDiagram({
   const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
   return (
     <div style={{ position: "relative" }}>
-      <Box sx={{ height: "calc(100vh - 100px)", width: "100%" }}>
+      <Box sx={{ height: "calc(100vh - 130px)", width: "100%" }}>
         <ParentSize>
           {(parent) => (
             <SankeyDisplay
@@ -250,97 +250,95 @@ export function InspectionSankey(props: InspectionSankeyProps) {
     .distinct()
     .toSortedArray((x) => x);
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          minHeight: "2.5em",
+          alignItems: "center",
+          maxWidth: "calc(100vw - 24px - 24px)",
+        }}
+      >
+        {props.subtitle ? <Typography variant="subtitle1">{props.subtitle}</Typography> : undefined}
+        <Box flexGrow={1} />
+        <FormControl size="small">
+          <Select
+            autoWidth
+            value={showTable ? "table" : "sankey"}
+            onChange={(e) => setShowTable(e.target.value === "table")}
           >
-            <SearchIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Inspections</div>
-            <div style={{ flexGrow: 1 }} />
-            {curData ? (
-              <Tooltip title="Copy to Clipboard">
-                <IconButton
-                  onClick={() =>
-                    curData
-                      ? copyInspectionEntriesToClipboard(
-                          selectedPart || "",
-                          selectedInspectType || "",
-                          curData
-                        )
-                      : undefined
-                  }
-                  style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                  size="large"
-                >
-                  <ImportExport />
-                </IconButton>
-              </Tooltip>
-            ) : undefined}
-            <Select
-              autoWidth
-              value={showTable ? "table" : "sankey"}
-              onChange={(e) => setShowTable(e.target.value === "table")}
-            >
-              <MenuItem key="sankey" value="sankey">
-                Sankey
+            <MenuItem key="sankey" value="sankey">
+              Sankey
+            </MenuItem>
+            <MenuItem key="table" value="table">
+              Table
+            </MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <Select
+            name="inspection-sankey-select-type"
+            autoWidth
+            displayEmpty
+            style={{ marginRight: "1em", marginLeft: "1em" }}
+            value={selectedInspectType || ""}
+            onChange={(e) => setSelectedInspectType(e.target.value)}
+          >
+            {selectedInspectType ? undefined : (
+              <MenuItem key={0} value="">
+                <em>Select Inspection Type</em>
               </MenuItem>
-              <MenuItem key="table" value="table">
-                Table
+            )}
+            {inspTypes.map((n) => (
+              <MenuItem key={n} value={n}>
+                {n}
               </MenuItem>
-            </Select>
+            ))}
+          </Select>
+        </FormControl>
+        {props.restrictToPart === undefined ? (
+          <FormControl size="small">
             <Select
-              name="inspection-sankey-select-type"
+              name="inspection-sankey-select-part"
               autoWidth
               displayEmpty
-              style={{ marginRight: "1em", marginLeft: "1em" }}
-              value={selectedInspectType || ""}
-              onChange={(e) => setSelectedInspectType(e.target.value)}
+              value={selectedPart || ""}
+              onChange={(e) => setSelectedPart(e.target.value)}
             >
-              {selectedInspectType ? undefined : (
+              {selectedPart ? undefined : (
                 <MenuItem key={0} value="">
-                  <em>Select Inspection Type</em>
+                  <em>Select Part</em>
                 </MenuItem>
               )}
-              {inspTypes.map((n) => (
+              {parts.map((n) => (
                 <MenuItem key={n} value={n}>
-                  {n}
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <PartIdenticon part={n} size={30} />
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
                 </MenuItem>
               ))}
             </Select>
-            {props.restrictToPart === undefined ? (
-              <Select
-                name="inspection-sankey-select-part"
-                autoWidth
-                displayEmpty
-                value={selectedPart || ""}
-                onChange={(e) => setSelectedPart(e.target.value)}
-              >
-                {selectedPart ? undefined : (
-                  <MenuItem key={0} value="">
-                    <em>Select Part</em>
-                  </MenuItem>
-                )}
-                {parts.map((n) => (
-                  <MenuItem key={n} value={n}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <PartIdenticon part={n} size={30} />
-                      <span style={{ marginRight: "1em" }}>{n}</span>
-                    </div>
-                  </MenuItem>
-                ))}
-              </Select>
-            ) : undefined}
-          </div>
-        }
-        subheader={props.subtitle}
-      />
-      <CardContent>
+          </FormControl>
+        ) : undefined}
+        {curData ? (
+          <Tooltip title="Copy to Clipboard">
+            <IconButton
+              onClick={() =>
+                curData
+                  ? copyInspectionEntriesToClipboard(selectedPart || "", selectedInspectType || "", curData)
+                  : undefined
+              }
+              style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+              size="large"
+            >
+              <ImportExport />
+            </IconButton>
+          </Tooltip>
+        ) : undefined}
+      </Box>
+      <main>
         {curData ? (
           showTable ? (
             <InspectionDataTable
@@ -354,7 +352,7 @@ export function InspectionSankey(props: InspectionSankeyProps) {
             <InspectionDiagram data={curData} />
           )
         ) : undefined}
-      </CardContent>
-    </Card>
+      </main>
+    </Box>
   );
 }

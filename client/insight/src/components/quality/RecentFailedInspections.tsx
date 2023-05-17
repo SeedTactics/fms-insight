@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -31,13 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Card } from "@mui/material";
-import { CardHeader } from "@mui/material";
-import { CardContent } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { Table } from "@mui/material";
-import { BugReport as BugIcon, ImportExport } from "@mui/icons-material";
+import { ImportExport } from "@mui/icons-material";
 import {
   extractFailedInspections,
   FailedInspectionEntry,
@@ -156,30 +154,32 @@ export function RecentFailedInspectionsTable() {
     return extractFailedInspections(allEvts, addDays(today, -4), addDays(today, 1));
   }, [inspections]);
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <BugIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Recent Failed Inspections</div>
-            <div style={{ flexGrow: 1 }} />
-            <Tooltip title="Copy to Clipboard">
-              <IconButton
-                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyFailedInspectionsToClipboard(failed)}
-                size="large"
-              >
-                <ImportExport />
-              </IconButton>
-            </Tooltip>
-          </div>
-        }
-        subheader="Inspections marked as failed in the last 5 days"
-      />
-      <CardContent>
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          minHeight: "2.5em",
+          alignItems: "center",
+          maxWidth: "calc(100vw - 24px - 24px)",
+        }}
+      >
+        <Typography variant="subtitle1">Inspections marked as failed in the last 5 days</Typography>
+        <Box flexGrow={1} />
+        <Tooltip title="Copy to Clipboard">
+          <IconButton
+            style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+            onClick={() => copyFailedInspectionsToClipboard(failed)}
+            size="large"
+          >
+            <ImportExport />
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <main>
         <RecentFailedTable failed={failed} />
-      </CardContent>
-    </Card>
+      </main>
+    </Box>
   );
 }
 
@@ -187,11 +187,5 @@ export function QualityDashboard(): JSX.Element {
   React.useEffect(() => {
     document.title = "Quality - FMS Insight";
   }, []);
-  return (
-    <main style={{ padding: "24px" }}>
-      <div data-testid="recent-failed">
-        <RecentFailedInspectionsTable />
-      </div>
-    </main>
-  );
+  return <RecentFailedInspectionsTable />;
 }
