@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { addDays, format } from "date-fns";
-import { Card, CardContent, CardHeader, Select, MenuItem, Tooltip, IconButton, Stack } from "@mui/material";
+import { Select, MenuItem, Tooltip, IconButton, Stack, Box, Typography, FormControl } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 import { PickD3Scale, scaleBand, scaleLinear } from "@visx/scale";
 import { ParentSize } from "@visx/responsive";
@@ -310,8 +310,7 @@ const HeatChart = React.memo(function HeatChart(props: HeatChartProps & { readon
 //--------------------------------------------------------------------------------
 
 export interface SelectableHeatCardProps<T extends string> {
-  readonly icon: JSX.Element;
-  readonly card_label: string;
+  readonly label: string;
   readonly onExport: () => void;
 
   readonly cur_selected: T;
@@ -319,13 +318,36 @@ export interface SelectableHeatCardProps<T extends string> {
   readonly options: ReadonlyArray<T>;
 }
 
-function CardTitle<T extends string>(props: SelectableHeatCardProps<T>) {
+function ChartToolbar<T extends string>(props: SelectableHeatCardProps<T>) {
   const setSelected = props.setSelected;
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-      {props.icon}
-      <div style={{ marginLeft: "10px", marginRight: "3em" }}>{props.card_label}</div>
-      <div style={{ flexGrow: 1 }} />
+    <Box
+      component="nav"
+      sx={{
+        display: "flex",
+        minHeight: "2.5em",
+        alignItems: "center",
+        maxWidth: "calc(100vw - 24px - 24px)",
+      }}
+    >
+      <Typography variant="subtitle1">{props.label}</Typography>
+      <Box flexGrow={1} />
+      {setSelected ? (
+        <FormControl size="small">
+          <Select
+            autoWidth
+            displayEmpty
+            value={props.cur_selected}
+            onChange={(e) => setSelected(e.target.value as T)}
+          >
+            {props.options.map((v, idx) => (
+              <MenuItem key={idx} value={v}>
+                {v}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      ) : undefined}
       <Tooltip title="Copy to Clipboard">
         <IconButton
           onClick={props.onExport}
@@ -335,22 +357,7 @@ function CardTitle<T extends string>(props: SelectableHeatCardProps<T>) {
           <ImportExport />
         </IconButton>
       </Tooltip>
-      {setSelected ? (
-        <Select
-          name={props.card_label.replace(" ", "-") + "-heatchart-planned-or-actual"}
-          autoWidth
-          displayEmpty
-          value={props.cur_selected}
-          onChange={(e) => setSelected(e.target.value as T)}
-        >
-          {props.options.map((v, idx) => (
-            <MenuItem key={idx} value={v}>
-              {v}
-            </MenuItem>
-          ))}
-        </Select>
-      ) : undefined}
-    </div>
+    </Box>
   );
 }
 
@@ -358,20 +365,15 @@ export type SelectableHeatChartProps<T extends string> = HeatChartProps & Select
 
 export function SelectableHeatChart<T extends string>(props: SelectableHeatChartProps<T>) {
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <CardTitle
-            icon={props.icon}
-            card_label={props.card_label}
-            setSelected={props.setSelected}
-            cur_selected={props.cur_selected}
-            onExport={props.onExport}
-            options={props.options}
-          />
-        }
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <ChartToolbar
+        label={props.label}
+        setSelected={props.setSelected}
+        cur_selected={props.cur_selected}
+        onExport={props.onExport}
+        options={props.options}
       />
-      <CardContent>
+      <main>
         <ParentSize>
           {(parent) => (
             <HeatChart
@@ -383,7 +385,7 @@ export function SelectableHeatChart<T extends string>(props: SelectableHeatChart
             />
           )}
         </ParentSize>
-      </CardContent>
-    </Card>
+      </main>
+    </Box>
   );
 }

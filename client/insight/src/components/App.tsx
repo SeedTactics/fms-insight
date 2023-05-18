@@ -47,11 +47,14 @@ import {
   CalendarMonth as ScheduleIcon,
   CheckCircle as ProductionIcon,
   AltRoute as InspectionIcon,
+  DonutSmall as BufferIcon,
+  Extension as ExtensionIcon,
+  AccountBox as LoadUnloadIcon,
+  ShoppingBasket as PalletIcon,
 } from "@mui/icons-material";
 
 import OperationDashboard from "./operations/Dashboard.js";
 import CostPerPiece from "./analysis/CostPerPiece.js";
-import Efficiency from "./analysis/EfficiencyPage.js";
 import DataExport from "./analysis/DataExport.js";
 import ChooseMode, { ChooseModeItem } from "./ChooseMode.js";
 import * as routes from "./routes.js";
@@ -70,8 +73,7 @@ import { ToolReportPage } from "./operations/ToolReport.js";
 import { ProgramReportPage } from "./operations/Programs.js";
 import { WebsocketConnection } from "../network/websocket.js";
 import { ScheduleHistory } from "./analysis/ScheduleHistory.js";
-import { AnalysisCyclePage } from "./analysis/AnalysisCyclesPage.js";
-import { QualityPage } from "./analysis/QualityPage.js";
+import { AnalysisQualityPage } from "./analysis/QualityPage.js";
 import { SystemOverviewPage } from "./station-monitor/SystemOverview.js";
 import { StationToolbar, StationToolbarOverviewButton } from "./station-monitor/StationToolbar.js";
 import { RecentProductionPage } from "./operations/RecentProduction.js";
@@ -80,6 +82,12 @@ import { Header, MenuNavItem, SideMenu } from "./Navigation.js";
 import { OutlierCycles } from "./operations/Outliers.js";
 import { StationOEEPage } from "./operations/OEEChart.js";
 import { RecentStationCycleChart } from "./operations/RecentStationCycles.js";
+import { AnalysisSelectToolbar } from "./analysis/AnalysisSelectToolbar.js";
+import { BufferOccupancyChart } from "./analysis/BufferChart.js";
+import { CompletedCountHeatmap, StationOeeHeatmap } from "./analysis/EfficiencyPage.js";
+import { PartLoadStationCycleChart, PartMachineCycleChart } from "./analysis/PartCycleCards.js";
+import { PalletCycleChart } from "./analysis/PalletCycleCards.js";
+import { ToolReplacementPage } from "./analysis/ToolReplacements.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -147,6 +155,49 @@ const operationsReports: ReadonlyArray<MenuNavItem> = [
     name: "Production",
     route: { route: routes.RouteLocation.Operations_Production },
     icon: <ProductionIcon />,
+  },
+];
+
+const analysisReports: ReadonlyArray<MenuNavItem> = [
+  { separator: "Efficiency" },
+  { name: "Buffers", route: { route: routes.RouteLocation.Analysis_Buffers }, icon: <BufferIcon /> },
+  {
+    name: "Station OEE",
+    route: { route: routes.RouteLocation.Analysis_StationOEE },
+    icon: <HourglassIcon />,
+  },
+  {
+    name: "Completed Parts",
+    route: { route: routes.RouteLocation.Analysis_PartsCompleted },
+    icon: <ExtensionIcon />,
+  },
+  { separator: "Cycles" },
+  {
+    name: "Machine Cycles",
+    route: { route: routes.RouteLocation.Analysis_MachineCycles },
+    icon: <WorkIcon />,
+  },
+  {
+    name: "L/U Cycles",
+    route: { route: routes.RouteLocation.Analysis_LoadCycles },
+    icon: <LoadUnloadIcon />,
+  },
+  {
+    name: "Pallet Cycles",
+    route: { route: routes.RouteLocation.Analysis_PalletCycles },
+    icon: <PalletIcon />,
+  },
+  { separator: "Cell" },
+  { name: "Quality", route: { route: routes.RouteLocation.Analysis_Quality }, icon: <BuildIcon /> },
+  {
+    name: "Tool Replacements",
+    route: { route: routes.RouteLocation.Analysis_ToolReplacements },
+    icon: <ToolIcon />,
+  },
+  {
+    name: "Schedules",
+    route: { route: routes.RouteLocation.Analysis_Schedules },
+    icon: <ScheduleIcon />,
   },
 ];
 
@@ -223,11 +274,7 @@ function EngineeringTabs() {
 function AnalysisTabs() {
   return (
     <NavTabs>
-      <Tab label="Cycles" value={routes.RouteLocation.Analysis_Cycles} />
-      <Tab label="Efficiency" value={routes.RouteLocation.Analysis_Efficiency} />
-      <Tab label="Quality" value={routes.RouteLocation.Analysis_Quality} />
       <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
-      <Tab label="Schedules" value={routes.RouteLocation.Analysis_Schedules} />
       <Tab label="Data Export" value={routes.RouteLocation.Analysis_DataExport} />
     </NavTabs>
   );
@@ -304,24 +351,58 @@ const App = React.memo(function App(props: AppProps) {
         nav1 = AnalysisTabs;
         showAlarms = false;
         break;
-      case routes.RouteLocation.Analysis_Cycles:
-        page = <AnalysisCyclePage />;
-        nav1 = AnalysisTabs;
-        showAlarms = false;
-        break;
-      case routes.RouteLocation.Analysis_Efficiency:
-        page = <Efficiency />;
-        nav1 = AnalysisTabs;
-        showAlarms = false;
-        break;
       case routes.RouteLocation.Analysis_Quality:
-        page = <QualityPage />;
-        nav1 = AnalysisTabs;
+        page = <AnalysisQualityPage />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_ToolReplacements:
+        page = <ToolReplacementPage />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_Schedules:
         page = <ScheduleHistory />;
-        nav1 = AnalysisTabs;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_Buffers:
+        page = <BufferOccupancyChart />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_StationOEE:
+        page = <StationOeeHeatmap />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_PartsCompleted:
+        page = <CompletedCountHeatmap />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_MachineCycles:
+        page = <PartMachineCycleChart />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_LoadCycles:
+        page = <PartLoadStationCycleChart />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_PalletCycles:
+        page = <PalletCycleChart />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
         showAlarms = false;
         break;
       case routes.RouteLocation.Analysis_DataExport:

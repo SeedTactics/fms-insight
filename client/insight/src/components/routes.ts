@@ -82,11 +82,17 @@ export enum RouteLocation {
   Tools_Dashboard = "/tools",
   Tools_Programs = "/tools/programs",
 
-  Analysis_Cycles = "/analysis/cycles",
-  Analysis_Efficiency = "/analysis/efficiency",
-  Analysis_Quality = "/analysis/quality",
-  Analysis_CostPerPiece = "/analysis/cost",
+  Analysis_Buffers = "/analysis/buffers",
+  Analysis_StationOEE = "/analysis/station-oee",
+  Analysis_PartsCompleted = "/analysis/parts-completed",
+  Analysis_MachineCycles = "/analysis/machine-cycles",
+  Analysis_LoadCycles = "/analysis/load-cycles",
+  Analysis_PalletCycles = "/analysis/pallet-cycles",
   Analysis_Schedules = "/analysis/schedules",
+  Analysis_Quality = "/analysis/quality",
+  Analysis_ToolReplacements = "/analysis/tool-replacements",
+
+  Analysis_CostPerPiece = "/analysis/cost",
   Analysis_DataExport = "/analysis/data-export",
 
   VerboseLogging = "/logging",
@@ -140,9 +146,14 @@ export type RouteState =
   | { route: RouteLocation.Quality_Quarantine }
   | { route: RouteLocation.Tools_Dashboard }
   | { route: RouteLocation.Tools_Programs }
-  | { route: RouteLocation.Analysis_Cycles }
-  | { route: RouteLocation.Analysis_Efficiency }
+  | { route: RouteLocation.Analysis_Buffers }
+  | { route: RouteLocation.Analysis_StationOEE }
+  | { route: RouteLocation.Analysis_PartsCompleted }
   | { route: RouteLocation.Analysis_Quality }
+  | { route: RouteLocation.Analysis_ToolReplacements }
+  | { route: RouteLocation.Analysis_MachineCycles }
+  | { route: RouteLocation.Analysis_LoadCycles }
+  | { route: RouteLocation.Analysis_PalletCycles }
   | { route: RouteLocation.Analysis_CostPerPiece }
   | { route: RouteLocation.Analysis_Schedules }
   | { route: RouteLocation.Analysis_DataExport }
@@ -345,9 +356,14 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Tools_Programs:
       return "https://www.seedtactics.com/docs/fms-insight/client-operations";
 
-    case RouteLocation.Analysis_Cycles:
-    case RouteLocation.Analysis_Efficiency:
+    case RouteLocation.Analysis_Buffers:
+    case RouteLocation.Analysis_StationOEE:
+    case RouteLocation.Analysis_PartsCompleted:
+    case RouteLocation.Analysis_MachineCycles:
+    case RouteLocation.Analysis_LoadCycles:
+    case RouteLocation.Analysis_PalletCycles:
     case RouteLocation.Analysis_Quality:
+    case RouteLocation.Analysis_ToolReplacements:
     case RouteLocation.Analysis_DataExport:
       return "https://www.seedtactics.com/docs/fms-insight/client-flexibility-analysis";
 

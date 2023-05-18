@@ -137,7 +137,7 @@ export const defaultChooseModes: ReadonlyArray<ChooseModeItem> = [
   { type: "Subheader", caption: "Monthly Review" },
   {
     type: "Link",
-    route: { route: RouteLocation.Analysis_Efficiency },
+    route: { route: RouteLocation.Analysis_Buffers },
     icon: <ChartIcon />,
     label: "Flexibility Analysis",
   },

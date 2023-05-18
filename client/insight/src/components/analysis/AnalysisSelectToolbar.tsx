@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Radio } from "@mui/material";
+import { Radio, Stack } from "@mui/material";
 import { FormControlLabel } from "@mui/material";
 import { useRecoilValue } from "recoil";
 
@@ -44,17 +44,7 @@ import {
   useSetLast30,
 } from "../../network/load-specific-month.js";
 
-const toolbarStyle = {
-  display: "flex",
-  backgroundColor: "#E0E0E0",
-  paddingLeft: "24px",
-  paddingRight: "24px",
-  minHeight: "2.5em",
-  alignItems: "center",
-  justifyContent: "space-evenly",
-};
-
-export default React.memo(function AnalysisSelectToolbar() {
+export const AnalysisSelectToolbar = React.memo(function AnalysisSelectToolbar() {
   const period = useRecoilValue(selectedAnalysisPeriod);
   const selMonth = useRecoilValue(selectedMonth);
   const analyzeMonth = useLoadSpecificMonth();
@@ -62,9 +52,22 @@ export default React.memo(function AnalysisSelectToolbar() {
   const setLast30 = useSetLast30();
 
   return (
-    <nav style={toolbarStyle}>
+    <Stack
+      component="nav"
+      direction="row"
+      spacing={3}
+      paddingLeft="24px"
+      paddingRight="24px"
+      alignItems="center"
+    >
       <FormControlLabel
-        control={<Radio checked={period.type === "Last30"} onChange={(e, checked) => (checked ? setLast30() : null)} />}
+        control={
+          <Radio
+            checked={period.type === "Last30"}
+            color="secondary"
+            onChange={(e, checked) => (checked ? setLast30() : null)}
+          />
+        }
         label="Last 30 days"
       />
       <div style={{ display: "flex", alignItems: "center" }}>
@@ -72,6 +75,7 @@ export default React.memo(function AnalysisSelectToolbar() {
           control={
             <Radio
               checked={period.type === "SpecificMonth"}
+              color="secondary"
               onChange={(e, checked) => (checked ? analyzeMonth(selMonth) : null)}
             />
           }
@@ -90,6 +94,6 @@ export default React.memo(function AnalysisSelectToolbar() {
           }}
         />
       </div>
-    </nav>
+    </Stack>
   );
 });

@@ -41,7 +41,6 @@ import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
 import { TextField } from "@mui/material";
 import { AttachMoney as MoneyIcon, ImportExport, Build as BuildIcon, CallSplit } from "@mui/icons-material";
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import * as localForage from "localforage";
@@ -62,6 +61,7 @@ import { Typography } from "@mui/material";
 import { useRecoilValue } from "recoil";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
+import { AnalysisSelectToolbar } from "./AnalysisSelectToolbar.js";
 
 async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
   return (await localForage.getItem("MachineCostPerYear")) ?? {};

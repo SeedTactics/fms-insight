@@ -31,17 +31,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import {
-  Card,
-  CardContent,
-  CardHeader,
+  Box,
+  FormControl,
   IconButton,
   MenuItem,
   Select,
   Stack,
   Table,
   Tooltip,
+  Typography,
 } from "@mui/material";
-import { ImportExport, Dns as ToolIcon } from "@mui/icons-material";
+import { ImportExport } from "@mui/icons-material";
 import * as React from "react";
 import { useRecoilValue } from "recoil";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
@@ -522,6 +522,34 @@ const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
   const selMachineIdx = props.station !== null ? machines.indexOf(props.station) : -1;
   return (
     <>
+      <FormControl size="small">
+        <Select
+          autoWidth
+          value={selMachineIdx}
+          style={{ marginLeft: "1em" }}
+          onChange={(e) => {
+            const v = e.target.value as number;
+            if (v === -1) {
+              props.setSelectedStation(null);
+            } else {
+              props.setSelectedStation(machines[v]);
+            }
+          }}
+        >
+          <MenuItem value={-1}>
+            <em>Any Machine</em>
+          </MenuItem>
+          {machines.map((n, idx) => (
+            <MenuItem key={idx} value={idx}>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span style={{ marginRight: "1em" }}>
+                  {n.group} #{n.num}
+                </span>
+              </div>
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
       <Tooltip title="Copy to Clipboard">
         <IconButton
           onClick={() => copyToClipboard(replacements, props.displayType)}
@@ -531,78 +559,50 @@ const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
           <ImportExport />
         </IconButton>
       </Tooltip>
-      <Select
-        autoWidth
-        value={selMachineIdx}
-        style={{ marginLeft: "1em" }}
-        onChange={(e) => {
-          const v = e.target.value as number;
-          if (v === -1) {
-            props.setSelectedStation(null);
-          } else {
-            props.setSelectedStation(machines[v]);
-          }
-        }}
-      >
-        <MenuItem value={-1}>
-          <em>Any Machine</em>
-        </MenuItem>
-        {machines.map((n, idx) => (
-          <MenuItem key={idx} value={idx}>
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <span style={{ marginRight: "1em" }}>
-                {n.group} #{n.num}
-              </span>
-            </div>
-          </MenuItem>
-        ))}
-      </Select>
     </>
   );
 });
 
-export const ToolReplacementCard = React.memo(function ToolReplacementCard() {
+export const ToolReplacementPage = React.memo(function ToolReplacementCard() {
+  React.useEffect(() => {
+    document.title = "Quality - FMS Insight";
+  }, []);
   const [selectedMachine, setSelectedMachine] = React.useState<StationGroupAndNum | null>(null);
   const [type, setType] = React.useState<"summary" | "details">("summary");
 
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          minHeight: "2.5em",
+          alignItems: "center",
+          maxWidth: "calc(100vw - 24px - 24px)",
+        }}
+      >
+        <Typography variant="subtitle1">Tool Replacements</Typography>
+        <Box flexGrow={1} />
+        <FormControl size="small">
+          <Select
+            autoWidth
+            value={type}
+            style={{ marginLeft: "1em" }}
+            onChange={(e) => setType(e.target.value as "summary" | "details")}
           >
-            <ToolIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Tool Replacements</div>
-            <div style={{ flexGrow: 1 }} />
-            <ChooseMachine
-              station={selectedMachine}
-              setSelectedStation={setSelectedMachine}
-              displayType={type}
-            />
-            <Select
-              autoWidth
-              value={type}
-              style={{ marginLeft: "1em" }}
-              onChange={(e) => setType(e.target.value as "summary" | "details")}
-            >
-              <MenuItem value="summary">Summary</MenuItem>
-              <MenuItem value="details">Details</MenuItem>
-            </Select>
-          </div>
-        }
-      />
-      <CardContent>
+            <MenuItem value="summary">Summary</MenuItem>
+            <MenuItem value="details">Details</MenuItem>
+          </Select>
+        </FormControl>
+        <ChooseMachine station={selectedMachine} setSelectedStation={setSelectedMachine} displayType={type} />
+      </Box>
+      <main>
         {type === "summary" ? (
           <SummaryTable station={selectedMachine} />
         ) : (
           <AllReplacementTable station={selectedMachine} />
         )}
-      </CardContent>
-    </Card>
+      </main>
+    </Box>
   );
 });

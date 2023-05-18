@@ -32,14 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { addMonths, addDays, startOfToday } from "date-fns";
-import { Card } from "@mui/material";
-import { CardHeader } from "@mui/material";
+import { Box, FormControl, Typography } from "@mui/material";
 import { Select } from "@mui/material";
 import { MenuItem } from "@mui/material";
-import { CardContent } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
-import { Work as WorkIcon, ImportExport, AccountBox as AccountIcon } from "@mui/icons-material";
+import { ImportExport } from "@mui/icons-material";
 
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart.js";
@@ -78,6 +76,9 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 // --------------------------------------------------------------------------------
 
 export function PartMachineCycleChart() {
+  React.useEffect(() => {
+    document.title = "Machine Cycles - FMS Insight";
+  }, []);
   const setMatToShow = matDetails.useSetMaterialToShowInDialog();
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
@@ -156,140 +157,148 @@ export function PartMachineCycleChart() {
   }, [points, curOperation]);
 
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <WorkIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Machine Cycles</div>
-            <div style={{ flexGrow: 1 }} />
-            {points.data.size > 0 ? (
-              <Tooltip title="Copy to Clipboard">
-                <IconButton
-                  onClick={() => copyCyclesToClipboard(points, matSummary.matsById, zoomDateRange)}
-                  style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                  size="large"
-                >
-                  <ImportExport />
-                </IconButton>
-              </Tooltip>
-            ) : undefined}
-            <Select
-              name="Station-Cycles-chart-or-table-select"
-              autoWidth
-              value={showGraph ? "graph" : "table"}
-              onChange={(e) => setShowGraph(e.target.value === "graph")}
-            >
-              <MenuItem key="graph" value="graph">
-                Graph
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          minHeight: "2.5em",
+          alignItems: "center",
+          maxWidth: "calc(100vw - 24px - 24px)",
+        }}
+      >
+        <Typography variant="subtitle1">Machine Cycles</Typography>
+        <Box flexGrow={1} />
+        <FormControl size="small">
+          <Select
+            autoWidth
+            value={showGraph ? "graph" : "table"}
+            onChange={(e) => setShowGraph(e.target.value === "graph")}
+          >
+            <MenuItem key="graph" value="graph">
+              Graph
+            </MenuItem>
+            <MenuItem key="table" value="table">
+              Table
+            </MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <Select
+            autoWidth
+            displayEmpty
+            value={
+              selectedPart
+                ? points.allPartAndProcNames.findIndex(
+                    (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                  )
+                : -1
+            }
+            style={{ marginLeft: "1em" }}
+            onChange={(e) => {
+              setSelectedPart(
+                e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+              );
+              setSelectedOperation(undefined);
+            }}
+          >
+            <MenuItem key={0} value={-1}>
+              <em>Any Part</em>
+            </MenuItem>
+            {points.allPartAndProcNames.map((n, idx) => (
+              <MenuItem key={idx} value={idx}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <PartIdenticon part={n.part} size={20} />
+                  <span style={{ marginRight: "1em" }}>
+                    {n.part}-{n.proc}
+                  </span>
+                </div>
               </MenuItem>
-              <MenuItem key="table" value="table">
-                Table
-              </MenuItem>
-            </Select>
-            <Select
-              name="Station-Cycles-cycle-chart-select"
-              autoWidth
-              displayEmpty
-              value={
-                selectedPart
-                  ? points.allPartAndProcNames.findIndex(
-                      (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
-                    )
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <Select
+            autoWidth
+            displayEmpty
+            value={
+              selectedPart
+                ? curOperation
+                  ? points.allMachineOperations.findIndex((o) => curOperation.compare(o) === 0)
                   : -1
+                : selectedMachine
+            }
+            style={{ marginLeft: "1em" }}
+            onChange={(e) => {
+              if (selectedPart) {
+                setSelectedOperation(points.allMachineOperations[e.target.value as number]);
+              } else {
+                setSelectedMachine(e.target.value as string);
               }
-              style={{ marginLeft: "1em" }}
-              onChange={(e) => {
-                setSelectedPart(
-                  e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
-                );
-                setSelectedOperation(undefined);
-              }}
-            >
-              <MenuItem key={0} value={-1}>
-                <em>Any Part</em>
-              </MenuItem>
-              {points.allPartAndProcNames.map((n, idx) => (
-                <MenuItem key={idx} value={idx}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <PartIdenticon part={n.part} size={20} />
-                    <span style={{ marginRight: "1em" }}>
-                      {n.part}-{n.proc}
-                    </span>
-                  </div>
+            }}
+          >
+            {selectedPart ? (
+              points.allMachineOperations.length === 0 ? (
+                <MenuItem value={-1}>
+                  <em>Any Operation</em>
                 </MenuItem>
-              ))}
-            </Select>
-            <Select
-              name="Station-Cycles-cycle-chart-station-select"
-              autoWidth
-              displayEmpty
-              value={
-                selectedPart
-                  ? curOperation
-                    ? points.allMachineOperations.findIndex((o) => curOperation.compare(o) === 0)
-                    : -1
-                  : selectedMachine
-              }
-              style={{ marginLeft: "1em" }}
-              onChange={(e) => {
-                if (selectedPart) {
-                  setSelectedOperation(points.allMachineOperations[e.target.value as number]);
-                } else {
-                  setSelectedMachine(e.target.value as string);
-                }
-              }}
-            >
-              {selectedPart ? (
-                points.allMachineOperations.length === 0 ? (
-                  <MenuItem value={-1}>
-                    <em>Any Operation</em>
-                  </MenuItem>
-                ) : (
-                  points.allMachineOperations.map((oper, idx) => (
-                    <MenuItem key={idx} value={idx}>
-                      {oper.statGroup} {oper.operation}
-                    </MenuItem>
-                  ))
-                )
               ) : (
-                [
-                  <MenuItem key={-1} value={FilterAnyMachineKey}>
-                    <em>Any Machine</em>
-                  </MenuItem>,
-                  points.allMachineNames.map((n) => (
-                    <MenuItem key={n} value={n}>
-                      <div style={{ display: "flex", alignItems: "center" }}>
-                        <span style={{ marginRight: "1em" }}>{n}</span>
-                      </div>
-                    </MenuItem>
-                  )),
-                ]
-              )}
-            </Select>
-            <Select
-              name="Station-Cycles-cycle-chart-station-pallet"
-              autoWidth
-              displayEmpty
-              value={selectedPallet || ""}
-              style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
-            >
-              <MenuItem key={0} value="">
-                <em>Any Pallet</em>
+                points.allMachineOperations.map((oper, idx) => (
+                  <MenuItem key={idx} value={idx}>
+                    {oper.statGroup} {oper.operation}
+                  </MenuItem>
+                ))
+              )
+            ) : (
+              [
+                <MenuItem key={-1} value={FilterAnyMachineKey}>
+                  <em>Any Machine</em>
+                </MenuItem>,
+                points.allMachineNames.map((n) => (
+                  <MenuItem key={n} value={n}>
+                    <div style={{ display: "flex", alignItems: "center" }}>
+                      <span style={{ marginRight: "1em" }}>{n}</span>
+                    </div>
+                  </MenuItem>
+                )),
+              ]
+            )}
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <Select
+            name="Station-Cycles-cycle-chart-station-pallet"
+            autoWidth
+            displayEmpty
+            value={selectedPallet || ""}
+            style={{ marginLeft: "1em" }}
+            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
+          >
+            <MenuItem key={0} value="">
+              <em>Any Pallet</em>
+            </MenuItem>
+            {points.allPalletNames.map((n) => (
+              <MenuItem key={n} value={n}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={{ marginRight: "1em" }}>{n}</span>
+                </div>
               </MenuItem>
-              {points.allPalletNames.map((n) => (
-                <MenuItem key={n} value={n}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ marginRight: "1em" }}>{n}</span>
-                  </div>
-                </MenuItem>
-              ))}
-            </Select>
-          </div>
-        }
-      />
-      <CardContent>
+            ))}
+          </Select>
+        </FormControl>
+        {points.data.size > 0 ? (
+          <Tooltip title="Copy to Clipboard">
+            <IconButton
+              onClick={() => copyCyclesToClipboard(points, matSummary.matsById, zoomDateRange)}
+              style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+              size="large"
+            >
+              <ImportExport />
+            </IconButton>
+          </Tooltip>
+        ) : undefined}
+      </Box>
+      <main>
         {showGraph ? (
           <CycleChart
             points={points.data}
@@ -315,8 +324,8 @@ export function PartMachineCycleChart() {
             emptyMessage="Select part, station, or pallet to see cycles."
           />
         )}
-      </CardContent>
-    </Card>
+      </main>
+    </Box>
   );
 }
 
@@ -327,6 +336,9 @@ export function PartMachineCycleChart() {
 type LoadCycleFilter = "LULOccupancy" | "LoadOp" | "UnloadOp";
 
 export function PartLoadStationCycleChart() {
+  React.useEffect(() => {
+    document.title = "L/U Cycles - FMS Insight";
+  }, []);
   const setMatToShow = matDetails.useSetMaterialToShowInDialog();
   const extraLoadCycleTooltip = React.useCallback(
     function extraLoadCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
@@ -411,138 +423,145 @@ export function PartLoadStationCycleChart() {
   }, [points, selectedOperation]);
 
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <AccountIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Load/Unload Cycles</div>
-            <div style={{ flexGrow: 1 }} />
-            {points.data.size > 0 ? (
-              <Tooltip title="Copy to Clipboard">
-                <IconButton
-                  onClick={() =>
-                    copyCyclesToClipboard(
-                      points,
-                      matSummary.matsById,
-                      zoomDateRange,
-                      selectedOperation === "LULOccupancy"
-                    )
-                  }
-                  style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                  size="large"
-                >
-                  <ImportExport />
-                </IconButton>
-              </Tooltip>
-            ) : undefined}
-            <Select
-              name="Station-Cycles-chart-or-table-select"
-              autoWidth
-              value={showGraph ? "graph" : "table"}
-              onChange={(e) => setShowGraph(e.target.value === "graph")}
-            >
-              <MenuItem key="graph" value="graph">
-                Graph
-              </MenuItem>
-              <MenuItem key="table" value="table">
-                Table
-              </MenuItem>
-            </Select>
-            <Select
-              autoWidth
-              displayEmpty
-              value={
-                selectedPart
-                  ? points.allPartAndProcNames.findIndex(
-                      (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
-                    )
-                  : -1
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          minHeight: "2.5em",
+          alignItems: "center",
+          maxWidth: "calc(100vw - 24px - 24px)",
+        }}
+      >
+        <Typography variant="subtitle1">Load/Unload Cycles</Typography>
+        <Box flexGrow={1} />
+        <FormControl size="small">
+          <Select
+            autoWidth
+            value={showGraph ? "graph" : "table"}
+            onChange={(e) => setShowGraph(e.target.value === "graph")}
+          >
+            <MenuItem key="graph" value="graph">
+              Graph
+            </MenuItem>
+            <MenuItem key="table" value="table">
+              Table
+            </MenuItem>
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <Select
+            autoWidth
+            displayEmpty
+            value={
+              selectedPart
+                ? points.allPartAndProcNames.findIndex(
+                    (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                  )
+                : -1
+            }
+            style={{ marginLeft: "1em" }}
+            onChange={(e) => {
+              if (e.target.value === -1) {
+                setSelectedPart(undefined);
+                setSelectedOperation("LULOccupancy");
+              } else {
+                setSelectedPart(
+                  e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+                );
               }
-              style={{ marginLeft: "1em" }}
-              onChange={(e) => {
-                if (e.target.value === -1) {
-                  setSelectedPart(undefined);
-                  setSelectedOperation("LULOccupancy");
-                } else {
-                  setSelectedPart(
-                    e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
-                  );
-                }
-              }}
-            >
-              <MenuItem key={0} value={-1}>
-                <em>Any Part</em>
+            }}
+          >
+            <MenuItem key={0} value={-1}>
+              <em>Any Part</em>
+            </MenuItem>
+            {points.allPartAndProcNames.map((n, idx) => (
+              <MenuItem key={idx} value={idx}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <PartIdenticon part={n.part} size={20} />
+                  <span style={{ marginRight: "1em" }}>
+                    {n.part}-{n.proc}
+                  </span>
+                </div>
               </MenuItem>
-              {points.allPartAndProcNames.map((n, idx) => (
-                <MenuItem key={idx} value={idx}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <PartIdenticon part={n.part} size={20} />
-                    <span style={{ marginRight: "1em" }}>
-                      {n.part}-{n.proc}
-                    </span>
-                  </div>
-                </MenuItem>
-              ))}
-            </Select>
-            <Select
-              name="Station-Cycles-cycle-chart-station-select"
-              autoWidth
-              displayEmpty
-              value={selectedOperation}
-              style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedOperation(e.target.value as LoadCycleFilter)}
-            >
-              <MenuItem value={"LULOccupancy"}>L/U Occupancy</MenuItem>
-              {selectedPart ? <MenuItem value={"LoadOp"}>Load Operation (estimated)</MenuItem> : undefined}
-              {selectedPart ? (
-                <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem>
-              ) : undefined}
-            </Select>
-            <Select
-              name="Station-Cycles-cycle-chart-station-select"
-              autoWidth
-              displayEmpty
-              value={selectedLoadStation}
-              style={{ marginLeft: "1em" }}
-              onChange={(e) => {
-                setSelectedLoadStation(e.target.value);
-              }}
-            >
-              <MenuItem key={-1} value={FilterAnyLoadKey}>
-                <em>Any Station</em>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <Select
+            autoWidth
+            displayEmpty
+            value={selectedOperation}
+            style={{ marginLeft: "1em" }}
+            onChange={(e) => setSelectedOperation(e.target.value as LoadCycleFilter)}
+          >
+            <MenuItem value={"LULOccupancy"}>L/U Occupancy</MenuItem>
+            {selectedPart ? <MenuItem value={"LoadOp"}>Load Operation (estimated)</MenuItem> : undefined}
+            {selectedPart ? <MenuItem value={"UnloadOp"}>Unload Operation (estimated)</MenuItem> : undefined}
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <Select
+            autoWidth
+            displayEmpty
+            value={selectedLoadStation}
+            style={{ marginLeft: "1em" }}
+            onChange={(e) => {
+              setSelectedLoadStation(e.target.value);
+            }}
+          >
+            <MenuItem key={-1} value={FilterAnyLoadKey}>
+              <em>Any Station</em>
+            </MenuItem>
+            {points.allLoadStationNames.map((n) => (
+              <MenuItem key={n} value={n}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={{ marginRight: "1em" }}>{n}</span>
+                </div>
               </MenuItem>
-              {points.allLoadStationNames.map((n) => (
-                <MenuItem key={n} value={n}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ marginRight: "1em" }}>{n}</span>
-                  </div>
-                </MenuItem>
-              ))}
-            </Select>
-            <Select
-              name="Station-Cycles-cycle-chart-station-pallet"
-              autoWidth
-              displayEmpty
-              value={selectedPallet || ""}
-              style={{ marginLeft: "1em" }}
-              onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
-            >
-              <MenuItem key={0} value="">
-                <em>Any Pallet</em>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small">
+          <Select
+            autoWidth
+            displayEmpty
+            value={selectedPallet || ""}
+            style={{ marginLeft: "1em" }}
+            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
+          >
+            <MenuItem key={0} value="">
+              <em>Any Pallet</em>
+            </MenuItem>
+            {points.allPalletNames.map((n) => (
+              <MenuItem key={n} value={n}>
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  <span style={{ marginRight: "1em" }}>{n}</span>
+                </div>
               </MenuItem>
-              {points.allPalletNames.map((n) => (
-                <MenuItem key={n} value={n}>
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ marginRight: "1em" }}>{n}</span>
-                  </div>
-                </MenuItem>
-              ))}
-            </Select>
-          </div>
-        }
-      />
-      <CardContent>
+            ))}
+          </Select>
+        </FormControl>
+        {points.data.size > 0 ? (
+          <Tooltip title="Copy to Clipboard">
+            <IconButton
+              onClick={() =>
+                copyCyclesToClipboard(
+                  points,
+                  matSummary.matsById,
+                  zoomDateRange,
+                  selectedOperation === "LULOccupancy"
+                )
+              }
+              style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+              size="large"
+            >
+              <ImportExport />
+            </IconButton>
+          </Tooltip>
+        ) : undefined}
+      </Box>
+      <main>
         {showGraph ? (
           <CycleChart
             points={points.data}
@@ -566,7 +585,7 @@ export function PartLoadStationCycleChart() {
             emptyMessage="Select part, operation, or pallet to see cycles."
           />
         )}
-      </CardContent>
-    </Card>
+      </main>
+    </Box>
   );
 }

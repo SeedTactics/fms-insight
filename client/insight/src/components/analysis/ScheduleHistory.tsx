@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { useRecoilValue } from "recoil";
 import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs.js";
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import {
@@ -178,7 +177,6 @@ export function ScheduleHistory(): JSX.Element {
   }, []);
   return (
     <>
-      <AnalysisSelectToolbar />
       <main style={{ padding: "24px" }}>
         <ScheduleTable />
       </main>

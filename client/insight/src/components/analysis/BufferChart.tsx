@@ -41,8 +41,7 @@ import { useRecoilValue } from "recoil";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers.js";
-import { Box, ToggleButton, Card, CardContent, CardHeader, Slider } from "@mui/material";
-import { DonutSmall as DonutIcon } from "@mui/icons-material";
+import { Box, ToggleButton, Slider, Typography } from "@mui/material";
 import { useImmer } from "../../util/recoil-util.js";
 
 type BufferChartProps = {
@@ -139,31 +138,41 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
 const SliderAny: React.ComponentType<any> = Slider;
 
 export function BufferOccupancyChart() {
+  React.useEffect(() => {
+    document.title = "Buffer Occupancy - FMS Insight";
+  }, []);
+
   const [movingAverageHours, setMovingAverage] = React.useState(12);
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <DonutIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Buffer Occupancy</div>
-            <div style={{ flexGrow: 1 }} />
-            <span style={{ fontSize: "small", marginRight: "1em" }}>Moving Average Window: </span>
-            <SliderAny
-              style={{ width: "10em" }}
-              min={1}
-              max={36}
-              steps={0.2}
-              valueLabelDisplay="off"
-              value={movingAverageHours}
-              onChange={(e: React.ChangeEvent<unknown>, v: number) => setMovingAverage(v)}
-            />
-          </div>
-        }
-      />
-      <CardContent>
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          minHeight: "2.5em",
+          alignItems: "center",
+          maxWidth: "calc(100vw - 24px - 24px)",
+        }}
+      >
+        <Typography variant="subtitle1">
+          Average material occupancy of rotary tables and stocker positions over time
+        </Typography>
+        <Box flexGrow={1} />
+        <span style={{ fontSize: "small", marginRight: "1em" }}>Moving Average Window: </span>
+        <SliderAny
+          style={{ width: "10em" }}
+          min={1}
+          max={36}
+          steps={0.2}
+          valueLabelDisplay="off"
+          value={movingAverageHours}
+          onChange={(e: React.ChangeEvent<unknown>, v: number) => setMovingAverage(v)}
+        />
+      </Box>
+
+      <main>
         <BufferChart movingAverageDistanceInHours={movingAverageHours} />
-      </CardContent>
-    </Card>
+      </main>
+    </Box>
   );
 }
