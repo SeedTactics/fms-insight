@@ -43,7 +43,10 @@ import {
   Receipt as ProgramIcon,
   BugReport as BugIcon,
   HourglassFull as HourglassIcon,
-  Work as WorkIcon,
+  Timeline as WorkIcon,
+  CalendarMonth as ScheduleIcon,
+  CheckCircle as ProductionIcon,
+  AltRoute as InspectionIcon,
 } from "@mui/icons-material";
 
 import OperationDashboard from "./operations/Dashboard.js";
@@ -123,16 +126,27 @@ const operationsReports: ReadonlyArray<MenuNavItem> = [
     route: { route: routes.RouteLocation.Operations_Programs },
     icon: <ProgramIcon />,
   },
+  { separator: "Material" },
+  {
+    name: "Quality",
+    route: { route: routes.RouteLocation.Operations_Quality },
+    icon: <BuildIcon />,
+  },
+  {
+    name: "Inspections",
+    route: { route: routes.RouteLocation.Operations_Inspections },
+    icon: <InspectionIcon />,
+  },
   { separator: "Cell" },
   {
     name: "Schedules",
     route: { route: routes.RouteLocation.Operations_RecentSchedules },
-    icon: <BuildIcon />,
+    icon: <ScheduleIcon />,
   },
   {
     name: "Production",
     route: { route: routes.RouteLocation.Operations_Production },
-    icon: <BuildIcon />,
+    icon: <ProductionIcon />,
   },
 ];
 
@@ -370,6 +384,17 @@ const App = React.memo(function App(props: AppProps) {
         nav1 = OperationsTabs;
         menuNavItems = operationsReports;
         break;
+      case routes.RouteLocation.Operations_Quality:
+        page = <QualityMaterialPage />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        addBasicMaterialDialog = false;
+        break;
+      case routes.RouteLocation.Operations_Inspections:
+        page = <QualityPaths />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        break;
       case routes.RouteLocation.Operations_Tools:
         page = <ToolReportPage />;
         nav1 = OperationsTabs;
@@ -401,13 +426,13 @@ const App = React.memo(function App(props: AppProps) {
         page = <QualityMaterialPage />;
         nav1 = QualityTabs;
         showAlarms = false;
+        addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Quality_Paths:
         page = <QualityPaths />;
         nav1 = QualityTabs;
         showAlarms = false;
         break;
-
       case routes.RouteLocation.Quality_Quarantine:
         page = <AllMaterial displaySystemBins={false} />;
         nav1 = QualityTabs;

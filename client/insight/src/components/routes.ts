@@ -68,6 +68,8 @@ export enum RouteLocation {
   Operations_Production = "/operations/recent-production",
   Operations_Tools = "/operations/tools",
   Operations_Programs = "/operations/programs",
+  Operations_Quality = "/operations/quality",
+  Operations_Inspections = "/operations/inspections",
 
   Engineering_Cycles = "/engineering",
   Engineering_Hours = "/engineering/hours",
@@ -128,6 +130,8 @@ export type RouteState =
   | { route: RouteLocation.Operations_Production }
   | { route: RouteLocation.Operations_Tools }
   | { route: RouteLocation.Operations_Programs }
+  | { route: RouteLocation.Operations_Quality }
+  | { route: RouteLocation.Operations_Inspections }
   | { route: RouteLocation.Engineering_Cycles }
   | { route: RouteLocation.Engineering_Outliers }
   | { route: RouteLocation.Engineering_Hours }
@@ -319,6 +323,8 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Operations_AllMaterial:
     case RouteLocation.Operations_RecentSchedules:
     case RouteLocation.Operations_Production:
+    case RouteLocation.Operations_Quality:
+    case RouteLocation.Operations_Inspections:
       return "https://www.seedtactics.com/docs/fms-insight/client-operations";
 
     case RouteLocation.Operations_Tools:

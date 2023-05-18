@@ -304,7 +304,7 @@ export function PartLookupStepper() {
 
 export function QualityMaterialPage() {
   React.useEffect(() => {
-    document.title = "Failed Part Lookup - FMS Insight";
+    document.title = "Quality Material - FMS Insight";
   }, []);
   return (
     <main style={{ padding: "24px" }}>

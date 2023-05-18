@@ -290,7 +290,7 @@ export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem>
         zIndex: 1,
       }}
     >
-      <List>
+      <List dense>
         {menuItems?.map((item) =>
           "separator" in item ? (
             <ListSubheader key={item.separator}>{item.separator}</ListSubheader>
