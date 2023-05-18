@@ -902,62 +902,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<Workorder> MostRecentUnfilledWorkordersForPart(string part)
+    public ImmutableList<ActiveWorkorder> MostRecentUnfilledWorkordersForPart(string part)
     {
       using (var trans = _connection.BeginTransaction())
-      using (var cmd = _connection.CreateCommand())
       {
-        cmd.Transaction = trans;
-
         var sid = LatestScheduleId(trans);
-
-        var ret = new Dictionary<string, (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)>();
-        cmd.CommandText =
-          "SELECT w.Workorder, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision"
-          + " FROM unfilled_workorders w "
-          + " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part "
-          + " WHERE w.ScheduleId = $sid AND w.Part = $part AND (Archived IS NULL OR Archived != 1)";
-        cmd.Parameters.Add("sid", SqliteType.Text).Value = sid;
-        cmd.Parameters.Add("part", SqliteType.Text).Value = part;
-
-        using (IDataReader reader = cmd.ExecuteReader())
-        {
-          while (reader.Read())
-          {
-            var workId = reader.GetString(0);
-            if (!ret.ContainsKey(workId))
-            {
-              var workorder = new Workorder()
-              {
-                WorkorderId = workId,
-                Part = part,
-                Quantity = reader.GetInt32(1),
-                DueDate = new DateTime(reader.GetInt64(2)),
-                Priority = reader.GetInt32(3)
-              };
-              ret.Add(workId, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
-            }
-
-            if (reader.IsDBNull(4))
-              continue;
-
-            // add the program
-            ret[workId].progs.Add(
-              new ProgramForJobStep()
-              {
-                ProcessNumber = reader.GetInt32(4),
-                StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
-                ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
-              }
-            );
-          }
-        }
-
-        trans.Commit();
-        return ret.Values
-          .Select(w => w.progs.Count == 0 ? w.work : w.work with { Programs = w.progs.ToImmutable() })
-          .ToList();
+        if (string.IsNullOrEmpty(sid))
+          return null;
+        return GetActiveWorkordersForSchedule(trans, sid, partToFilter: part);
       }
     }
 

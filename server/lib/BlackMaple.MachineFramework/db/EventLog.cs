@@ -770,7 +770,8 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableList<ActiveWorkorder> GetActiveWorkordersForSchedule(
       SqliteTransaction trans,
-      string scheduleId
+      string scheduleId,
+      string partToFilter = null
     )
     {
       var workQry =
@@ -809,6 +810,11 @@ namespace BlackMaple.MachineFramework
           FROM unfilled_workorders uw
           WHERE uw.ScheduleId = $schid
       ";
+
+      if (!string.IsNullOrEmpty(partToFilter))
+      {
+        workQry += " AND uw.Part = $part";
+      }
 
       var serialQry =
         @"
@@ -850,6 +856,10 @@ namespace BlackMaple.MachineFramework
       workCmd.Parameters.Add("schid", SqliteType.Text).Value = scheduleId;
       workCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
       workCmd.Parameters.Add("workty", SqliteType.Integer).Value = (int)LogType.FinalizeWorkorder;
+      if (!string.IsNullOrEmpty(partToFilter))
+      {
+        workCmd.Parameters.Add("part", SqliteType.Text).Value = partToFilter;
+      }
       serialCmd.CommandText = serialQry;
       serialCmd.Parameters.Add("workid", SqliteType.Text);
       serialCmd.Parameters.Add("partname", SqliteType.Text);

@@ -42,7 +42,7 @@ export interface JobAPI {
     alreadyKnownSchIds: string[]
   ): Promise<Readonly<api.IHistoricData>>;
   currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
-  mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IWorkorder>>>;
+  mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IActiveWorkorder>>>;
   setJobComment(unique: string, comment: string): Promise<void>;
 
   removeMaterialFromAllQueues(materialId: number, operatorName: string | undefined): Promise<void>;
@@ -105,7 +105,6 @@ export interface LogAPI {
   logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  getWorkorders(ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>>;
   materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>>;
 
   setInspectionDecision(

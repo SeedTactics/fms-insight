@@ -222,8 +222,26 @@ export function registerMockBackend(
     currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
       return data.then((d) => d.curSt);
     },
-    mostRecentUnfilledWorkordersForPart(part: string): Promise<ReadonlyArray<Readonly<api.IWorkorder>>> {
-      return data.then((d) => d.workorders.get(part) || []);
+    mostRecentUnfilledWorkordersForPart(
+      part: string
+    ): Promise<ReadonlyArray<Readonly<api.IActiveWorkorder>>> {
+      return data.then((d) => {
+        const ws = d.workorders.get(part);
+        if (!ws) {
+          return [];
+        }
+        return ws.map((w) => ({
+          workorderId: w.workorderId,
+          part: w.part,
+          plannedQuantity: w.quantity,
+          dueDate: w.dueDate,
+          priority: w.priority,
+          completedQuantity: 0,
+          serials: [],
+          elapsedStationTime: {},
+          activeStationTime: {},
+        }));
+      });
     },
     setJobComment(_uniq: string, _comment: string): Promise<void> {
       // do nothing
@@ -306,10 +324,6 @@ export function registerMockBackend(
           return Promise.resolve([]);
         }
       });
-    },
-    getWorkorders(_ids: string[]): Promise<ReadonlyArray<Readonly<api.IWorkorderSummary>>> {
-      // no workorder summaries
-      return Promise.resolve([]);
     },
     async materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>> {
       if (!serial || serial === "") return [];

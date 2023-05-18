@@ -373,7 +373,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Workorder"
+                    "$ref": "#/components/schemas/ActiveWorkorder"
                   }
                 }
               }

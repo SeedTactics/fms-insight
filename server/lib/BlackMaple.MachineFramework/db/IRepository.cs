@@ -468,7 +468,7 @@ namespace BlackMaple.MachineFramework
     HistoricData LoadJobsAfterScheduleId(string schId);
     PlannedSchedule LoadMostRecentSchedule();
     IReadOnlyList<Workorder> MostRecentWorkorders();
-    List<Workorder> MostRecentUnfilledWorkordersForPart(string part);
+    ImmutableList<ActiveWorkorder> MostRecentUnfilledWorkordersForPart(string part);
     ImmutableList<Workorder> WorkordersById(string workorderId);
     ImmutableDictionary<string, ImmutableList<Workorder>> WorkordersById(IReadOnlySet<string> workorderId);
 

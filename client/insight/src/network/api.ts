@@ -387,7 +387,7 @@ export class JobsClient {
         return Promise.resolve<PlannedSchedule>(null as any);
     }
 
-    mostRecentUnfilledWorkordersForPart(part: string): Promise<Workorder[]> {
+    mostRecentUnfilledWorkordersForPart(part: string): Promise<ActiveWorkorder[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-part/{part}";
         if (part === undefined || part === null)
             throw new Error("The parameter 'part' must be defined.");
@@ -406,7 +406,7 @@ export class JobsClient {
         });
     }
 
-    protected processMostRecentUnfilledWorkordersForPart(response: Response): Promise<Workorder[]> {
+    protected processMostRecentUnfilledWorkordersForPart(response: Response): Promise<ActiveWorkorder[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -416,7 +416,7 @@ export class JobsClient {
             if (Array.isArray(resultData200)) {
                 result200 = [] as any;
                 for (let item of resultData200)
-                    result200!.push(Workorder.fromJS(item));
+                    result200!.push(ActiveWorkorder.fromJS(item));
             }
             else {
                 result200 = <any>null;
@@ -428,7 +428,7 @@ export class JobsClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<Workorder[]>(null as any);
+        return Promise.resolve<ActiveWorkorder[]>(null as any);
     }
 
     replaceWorkordersForScheduleId(scheduleId: string, workorders: WorkordersAndPrograms): Promise<void> {
