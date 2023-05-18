@@ -774,6 +774,18 @@ namespace BlackMaple.MachineFramework
       string partToFilter = null
     )
     {
+      // we distinguish between a cell never using workorders at all and return null
+      // vs a cell that has no workorders currently active where we return an empty list
+
+      using (var checkExistingRowCmd = _connection.CreateCommand())
+      {
+        checkExistingRowCmd.CommandText = "SELECT EXISTS (SELECT 1 FROM unfilled_workorders LIMIT 1)";
+        if (!Convert.ToBoolean(checkExistingRowCmd.ExecuteScalar()))
+        {
+          return null;
+        }
+      }
+
       var workQry =
         @"
           SELECT uw.Workorder, uw.Part, uw.Quantity, uw.DueDate, uw.Priority,
@@ -822,7 +834,9 @@ namespace BlackMaple.MachineFramework
 				    WHERE
 					    matdetails.Workorder = $workid
               AND
-              matdetails.PartName = $partname";
+              matdetails.PartName = $partname
+              AND
+              matdetails.Serial IS NOT NULL";
 
       var timeQry =
         @"
