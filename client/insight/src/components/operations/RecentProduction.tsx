@@ -58,6 +58,7 @@ import { last30SimProduction, SimPartCompleted } from "../../cell-status/sim-pro
 import { last30StationCycles, StationCyclesByCntr } from "../../cell-status/station-cycles.js";
 import { useRecoilValue } from "recoil";
 import { PartIdenticon } from "../station-monitor/Material.js";
+import { useSetTitle } from "../routes.js";
 
 enum ColumnId {
   Part,
@@ -360,10 +361,8 @@ const RecentProductionToolbar = function RecentProductionToolbar({
 };
 
 export function RecentProductionPage(): JSX.Element {
+  useSetTitle("Recent Completed Parts");
   const [day, setDay] = React.useState<Date>(startOfToday);
-  React.useEffect(() => {
-    document.title = "Recent Completed Parts - FMS Insight";
-  }, []);
   const columns = useColumns(day);
   const rows = useRows(day);
   return (

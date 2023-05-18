@@ -69,6 +69,7 @@ import { Circle } from "@visx/shape";
 import { addDays, addMonths, startOfToday } from "date-fns";
 import { ChartTooltip } from "../ChartTooltip.js";
 import { localPoint } from "@visx/event";
+import { useSetTitle } from "../routes.js";
 
 type ReplacementTableProps = {
   readonly station: StationGroupAndNum | null;
@@ -564,9 +565,7 @@ const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
 });
 
 export const ToolReplacementPage = React.memo(function ToolReplacementCard() {
-  React.useEffect(() => {
-    document.title = "Quality - FMS Insight";
-  }, []);
+  useSetTitle("Tool Replacements");
   const [selectedMachine, setSelectedMachine] = React.useState<StationGroupAndNum | null>(null);
   const [type, setType] = React.useState<"summary" | "details">("summary");
 

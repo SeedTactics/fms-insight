@@ -83,6 +83,7 @@ import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { SortableRegion } from "./Whiteboard.js";
 import { MultiMaterialDialog, QueuedMaterialDialog } from "./QueuesMatDialog.js";
+import { useSetTitle } from "../routes.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -582,9 +583,7 @@ export const Queues = (props: QueueProps) => {
 };
 
 export default function QueuesPage(props: QueueProps): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Material Queues - FMS Insight";
-  }, []);
+  useSetTitle("Queues");
 
   return (
     <Box

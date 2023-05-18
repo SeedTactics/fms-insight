@@ -69,7 +69,7 @@ import {
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { useRecoilState, useRecoilValue } from "recoil";
-import { useIsDemo } from "../routes.js";
+import { useIsDemo, useSetTitle } from "../routes.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 
 interface ToolRowProps {
@@ -673,9 +673,7 @@ function ToolNavHeader() {
 }
 
 export function ToolReportPage(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Tool Report - FMS Insight";
-  }, []);
+  useSetTitle("Tool Report");
 
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">

@@ -53,6 +53,7 @@ import {
 import { JobDetailRow, JobTableRow } from "../operations/RecentSchedules.js";
 import { JobDetails } from "../station-monitor/JobDetails.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
+import { useSetTitle } from "../routes.js";
 
 enum ScheduleCols {
   Date,
@@ -172,9 +173,7 @@ export function ScheduleTable() {
 }
 
 export function ScheduleHistory(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Scheduled Jobs - FMS Insight";
-  }, []);
+  useSetTitle("Scheduled Jobs");
   return (
     <>
       <main style={{ padding: "24px" }}>

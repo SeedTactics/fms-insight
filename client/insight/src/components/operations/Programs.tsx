@@ -76,7 +76,7 @@ import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
 import { Button } from "@mui/material";
 import { DialogActions } from "@mui/material";
-import { useIsDemo } from "../routes.js";
+import { useIsDemo, useSetTitle } from "../routes.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { IProgramRevision } from "../../network/api.js";
 import { MachineBackend } from "../../network/backend.js";
@@ -807,9 +807,7 @@ function ProgNavHeader() {
 }
 
 export function ProgramReportPage(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Programs - FMS Insight";
-  }, []);
+  useSetTitle("Programs");
 
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">

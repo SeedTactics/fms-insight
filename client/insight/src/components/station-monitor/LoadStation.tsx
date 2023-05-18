@@ -63,7 +63,7 @@ import { Fab } from "@mui/material";
 import { useRecoilValue, useRecoilValueLoadable, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
-import { useIsDemo } from "../routes.js";
+import { useIsDemo, useSetTitle } from "../routes.js";
 import { PrintOnClientButton } from "./QueuesMatDialog.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { durationToSeconds } from "../../util/parseISODuration.js";
@@ -866,9 +866,7 @@ export function LoadStation(props: LoadStationProps) {
 }
 
 function LoadStationCheckWidth(props: LoadStationProps): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Load " + props.loadNum.toString() + " - FMS Insight";
-  }, [props.loadNum]);
+  useSetTitle("Load " + props.loadNum.toString());
   return <LoadStation {...props} />;
 }
 

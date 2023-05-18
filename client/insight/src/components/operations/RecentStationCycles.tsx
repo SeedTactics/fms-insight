@@ -61,10 +61,12 @@ import {
 } from "../../cell-status/estimated-cycle-times.js";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
+import { useSetTitle } from "../routes.js";
 
 export type CycleType = "labor" | "machine";
 
 export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
+  useSetTitle(ty === "labor" ? "L/U Cycles" : "Machine Cycles");
   const setMatToShow = matDetails.useSetMaterialToShowInDialog();
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {

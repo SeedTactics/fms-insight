@@ -83,6 +83,7 @@ import {
 } from "@dnd-kit/core";
 import { useRecoilConduit } from "../../util/recoil-util.js";
 import { QuarantineMatButton } from "../station-monitor/QuarantineButton.js";
+import { useSetTitle } from "../routes.js";
 
 type ColWithTitleProps = {
   readonly label: string;
@@ -433,9 +434,7 @@ type CurActiveDrag =
   | { readonly type: "column"; readonly bin: MaterialBin };
 
 export function AllMaterial(props: AllMaterialProps) {
-  React.useEffect(() => {
-    document.title = "All Material - FMS Insight";
-  }, []);
+  useSetTitle("All Material");
   const st = useRecoilValue(currentSt.currentStatus);
   const [matBinOrder, setMatBinOrder] = useRecoilState(currentMaterialBinOrder);
   const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();

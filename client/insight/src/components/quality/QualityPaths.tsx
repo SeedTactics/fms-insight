@@ -35,8 +35,10 @@ import { addDays, startOfToday } from "date-fns";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
 import { useRecoilValue } from "recoil";
 import { last30Inspections } from "../../cell-status/inspections.js";
+import { useSetTitle } from "../routes.js";
 
-const SelectedInspections = React.memo(function SelectedInspections() {
+export const QualityPaths = React.memo(function SelectedInspections() {
+  useSetTitle("Paths");
   const inspections = useRecoilValue(last30Inspections);
   const filtered = React.useMemo(() => {
     const today = startOfToday();
@@ -57,10 +59,3 @@ const SelectedInspections = React.memo(function SelectedInspections() {
     />
   );
 });
-
-export function QualityPaths(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Paths - FMS Insight";
-  }, []);
-  return <SelectedInspections />;
-}

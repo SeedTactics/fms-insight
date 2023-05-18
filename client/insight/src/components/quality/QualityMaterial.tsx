@@ -49,7 +49,7 @@ import { startOfToday, addDays, startOfDay, endOfDay } from "date-fns";
 import { ApiException, ILogEntry, LogType } from "../../network/api.js";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
 import { DataTableActionZoomType } from "../analysis/DataTable.js";
-import { useIsDemo } from "../routes.js";
+import { useIsDemo, useSetTitle } from "../routes.js";
 import { useRecoilState, useRecoilValue, useRecoilValueLoadable, useSetRecoilState } from "recoil";
 import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
@@ -303,9 +303,7 @@ export function PartLookupStepper() {
 }
 
 export function QualityMaterialPage() {
-  React.useEffect(() => {
-    document.title = "Quality Material - FMS Insight";
-  }, []);
+  useSetTitle("Quality Material");
   return (
     <main style={{ padding: "24px" }}>
       <PartLookupStepper />

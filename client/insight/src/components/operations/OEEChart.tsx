@@ -59,6 +59,7 @@ import { useRecoilValue } from "recoil";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
 import { ImportExport } from "@mui/icons-material";
+import { useSetTitle } from "../routes.js";
 
 export interface OEEProps {
   readonly points: ReadonlyArray<OEEBarSeries>;
@@ -201,6 +202,7 @@ export const OEETable = React.memo(function OEETableF(p: OEEProps) {
 });
 
 export function StationOEEPage({ ty }: { readonly ty: OEEType }) {
+  useSetTitle(ty === "labor" ? "L/U OEE" : "Machine OEE");
   const [showChart, setShowChart] = React.useState(true);
 
   const start = addDays(startOfToday(), -6);

@@ -38,11 +38,10 @@ import { InspectionSankey } from "./InspectionSankey.js";
 import { DataTableActionZoomType } from "./DataTable.js";
 import { useRecoilValue } from "recoil";
 import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections.js";
+import { useSetTitle } from "../routes.js";
 
 export function AnalysisQualityPage() {
-  React.useEffect(() => {
-    document.title = "Quality - FMS Insight";
-  }, []);
+  useSetTitle("Quality");
   const period = useRecoilValue(selectedAnalysisPeriod);
 
   const inspectionlogs = useRecoilValue(

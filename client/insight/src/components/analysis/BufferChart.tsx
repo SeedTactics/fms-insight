@@ -43,6 +43,7 @@ import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers.js";
 import { Box, ToggleButton, Slider, Typography } from "@mui/material";
 import { useImmer } from "../../util/recoil-util.js";
+import { useSetTitle } from "../routes.js";
 
 type BufferChartProps = {
   readonly movingAverageDistanceInHours: number;
@@ -138,9 +139,7 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
 const SliderAny: React.ComponentType<any> = Slider;
 
 export function BufferOccupancyChart() {
-  React.useEffect(() => {
-    document.title = "Buffer Occupancy - FMS Insight";
-  }, []);
+  useSetTitle("Buffer Occupancy");
 
   const [movingAverageHours, setMovingAverage] = React.useState(12);
   return (

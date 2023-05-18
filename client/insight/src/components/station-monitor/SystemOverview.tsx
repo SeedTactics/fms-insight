@@ -77,6 +77,7 @@ import {
 } from "./InvalidateCycle.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
+import { useSetTitle } from "../routes.js";
 
 const CollapsedIconSize = 45;
 const rowSize = CollapsedIconSize + 10; // each material row has 5px above and 5px below for padding
@@ -904,9 +905,7 @@ const SystemOverviewMaterialDialog = React.memo(function SystemOverviewMaterialD
 });
 
 export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolean }) {
-  React.useEffect(() => {
-    document.title = "System Overview - FMS Insight";
-  }, []);
+  useSetTitle("System Overview");
   const overview = useCellOverview();
 
   return (

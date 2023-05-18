@@ -43,6 +43,7 @@ import { useRecoilValue } from "recoil";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
+import { useSetTitle } from "../routes.js";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -51,6 +52,7 @@ import { last30StationCycles } from "../../cell-status/station-cycles.js";
 export type OutlierType = "labor" | "machine";
 
 export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
+  useSetTitle(outlierTy === "machine" ? "Machine Outliers" : "L/U Outliers");
   const matSummary = useRecoilValue(last30MaterialSummary);
   const today = startOfToday();
   const estimatedCycleTimes = useRecoilValue(last30EstimatedCycleTimes);

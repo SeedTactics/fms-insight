@@ -42,12 +42,13 @@ import { ImportExport } from "@mui/icons-material";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { CycleChart, CycleChartPoint } from "./CycleChart.js";
 import { copyPalletCyclesToClipboard } from "../../data/results.cycles.js";
-import { useIsDemo } from "../routes.js";
+import { useIsDemo, useSetTitle } from "../routes.js";
 import { useRecoilValue } from "recoil";
 import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status/pallet-cycles.js";
 
 export function PalletCycleChart() {
   const demo = useIsDemo();
+  useSetTitle("Pallet Cycles");
   const [selectedPallet, setSelectedPallet] = React.useState<string | undefined>(demo ? "3" : undefined);
   const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
 

@@ -56,7 +56,7 @@ import {
 } from "../../data/results.cycles.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import StationDataTable from "./StationDataTable.js";
-import { useIsDemo } from "../routes.js";
+import { useIsDemo, useSetTitle } from "../routes.js";
 import { useRecoilValue } from "recoil";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import {
@@ -76,9 +76,7 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 // --------------------------------------------------------------------------------
 
 export function PartMachineCycleChart() {
-  React.useEffect(() => {
-    document.title = "Machine Cycles - FMS Insight";
-  }, []);
+  useSetTitle("Machine Cycles");
   const setMatToShow = matDetails.useSetMaterialToShowInDialog();
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
@@ -336,9 +334,7 @@ export function PartMachineCycleChart() {
 type LoadCycleFilter = "LULOccupancy" | "LoadOp" | "UnloadOp";
 
 export function PartLoadStationCycleChart() {
-  React.useEffect(() => {
-    document.title = "L/U Cycles - FMS Insight";
-  }, []);
+  useSetTitle("L/U Cycles");
   const setMatToShow = matDetails.useSetMaterialToShowInDialog();
   const extraLoadCycleTooltip = React.useCallback(
     function extraLoadCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {

@@ -65,6 +65,7 @@ import {
   specificMonthStationCycles,
 } from "../../cell-status/station-cycles.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { useSetTitle } from "../routes.js";
 
 // --------------------------------------------------------------------------------
 // Oee Heatmap
@@ -87,9 +88,7 @@ function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
 }
 
 export function StationOeeHeatmap() {
-  React.useEffect(() => {
-    document.title = "Station OEE - FMS Insight";
-  }, []);
+  useSetTitle("Station OEE");
   const [selected, setSelected] = React.useState<StationOeeHeatmapTypes>("Standard OEE");
 
   const period = useRecoilValue(selectedAnalysisPeriod);
@@ -169,9 +168,7 @@ function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
 }
 
 export function CompletedCountHeatmap() {
-  React.useEffect(() => {
-    document.title = "Part Production - FMS Insight";
-  }, []);
+  useSetTitle("Part Production");
   const [selected, setSelected] = React.useState<CompletedPartsHeatmapTypes>("Completed");
 
   const period = useRecoilValue(selectedAnalysisPeriod);

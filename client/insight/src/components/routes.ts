@@ -313,6 +313,13 @@ export function useIsDemo(): boolean {
   return useRecoilValue(isDemoAtom);
 }
 
+export function useSetTitle(title: string): void {
+  const demo = useIsDemo();
+  useEffect(() => {
+    document.title = title + " - FMS Insight";
+  }, [demo, title]);
+}
+
 export function helpUrl(r: RouteState): string {
   switch (r.route) {
     case RouteLocation.Station_LoadMonitor:

@@ -59,6 +59,7 @@ import { Typography } from "@mui/material";
 import { useRecoilValue } from "recoil";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
+import { useSetTitle } from "../routes.js";
 
 async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
   return (await localForage.getItem("MachineCostPerYear")) ?? {};
@@ -214,9 +215,7 @@ const pctFormat = new Intl.NumberFormat(undefined, {
 });
 
 export function CostBreakdownPage() {
-  React.useEffect(() => {
-    document.title = "Cost Breakdown - FMS Insight";
-  }, []);
+  useSetTitle("Cost Percentages");
   const period = useRecoilValue(selectedAnalysisPeriod);
   const month = period.type === "Last30" ? null : period.month;
   const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
@@ -386,9 +385,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
 }
 
 export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
-  React.useEffect(() => {
-    document.title = "Cost Per Piece - FMS Insight";
-  }, []);
+  useSetTitle("Cost Per Piece");
   const [loading, setLoading] = React.useState(false);
   const [machineCostPerYear, setMachineCostPerYear] = React.useState<MachineCostPerYear>({});
   const [last30LaborCost, setLast30LaborCost] = React.useState<number | null>(null);
