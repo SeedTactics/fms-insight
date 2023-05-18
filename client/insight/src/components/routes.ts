@@ -74,7 +74,6 @@ export enum RouteLocation {
   Engineering_Outliers = "/engineering/outliers",
 
   Quality_Dashboard = "/quality",
-  Quality_Serials = "/quality/serials",
   Quality_Paths = "/quality/paths",
   Quality_Quarantine = "/quality/quarantine",
 
@@ -133,7 +132,6 @@ export type RouteState =
   | { route: RouteLocation.Engineering_Outliers }
   | { route: RouteLocation.Engineering_Hours }
   | { route: RouteLocation.Quality_Dashboard }
-  | { route: RouteLocation.Quality_Serials }
   | { route: RouteLocation.Quality_Paths }
   | { route: RouteLocation.Quality_Quarantine }
   | { route: RouteLocation.Tools_Dashboard }
@@ -333,7 +331,6 @@ export function helpUrl(r: RouteState): string {
       return "https://www.seedtactics.com/docs/fms-insight/client-engineering";
 
     case RouteLocation.Quality_Dashboard:
-    case RouteLocation.Quality_Serials:
     case RouteLocation.Quality_Paths:
     case RouteLocation.Quality_Quarantine:
       return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";

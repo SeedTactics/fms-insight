@@ -57,9 +57,8 @@ import { BarcodeListener } from "./BarcodeScanning.js";
 import { MaterialDialog } from "./station-monitor/Material.js";
 import { RecentSchedulesPage } from "./operations/RecentSchedules.js";
 import { AllMaterial } from "./operations/AllMaterial.js";
-import { FailedPartLookup } from "./quality/FailedPartLookup.js";
+import { QualityMaterialPage } from "./quality/QualityMaterial.js";
 import { QualityPaths } from "./quality/QualityPaths.js";
-import { QualityDashboard } from "./quality/RecentFailedInspections.js";
 import LoadStation from "./station-monitor/LoadStation.js";
 import Inspection from "./station-monitor/Inspection.js";
 import { CloseoutPage } from "./station-monitor/Closeout.js";
@@ -181,8 +180,7 @@ function OperationsTabs() {
 function QualityTabs() {
   return (
     <NavTabs>
-      <Tab label="Quality" value={routes.RouteLocation.Quality_Dashboard} />
-      <Tab label="Failed Part Lookup" value={routes.RouteLocation.Quality_Serials} />
+      <Tab label="Material" value={routes.RouteLocation.Quality_Dashboard} />
       <Tab label="Paths" value={routes.RouteLocation.Quality_Paths} />
       <Tab label="Quarantine Material" value={routes.RouteLocation.Quality_Quarantine} />
     </NavTabs>
@@ -400,14 +398,8 @@ const App = React.memo(function App(props: AppProps) {
         break;
 
       case routes.RouteLocation.Quality_Dashboard:
-        page = <QualityDashboard />;
+        page = <QualityMaterialPage />;
         nav1 = QualityTabs;
-        showAlarms = false;
-        break;
-      case routes.RouteLocation.Quality_Serials:
-        page = <FailedPartLookup />;
-        nav1 = QualityTabs;
-        addBasicMaterialDialog = false;
         showAlarms = false;
         break;
       case routes.RouteLocation.Quality_Paths:

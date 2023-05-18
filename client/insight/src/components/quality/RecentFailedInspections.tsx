@@ -52,7 +52,7 @@ import {
   useTablePage,
 } from "../analysis/DataTable.js";
 import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
-import { RouteLocation, useCurrentRoute, useIsDemo } from "../routes.js";
+import { useIsDemo } from "../routes.js";
 import { useRecoilValue } from "recoil";
 import { last30Inspections } from "../../cell-status/inspections.js";
 
@@ -106,7 +106,6 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   const demo = useIsDemo();
   const sort = useColSort(ColumnId.Date, columns);
   const tpage = useTablePage();
-  const [, setRoute] = useCurrentRoute();
   const setMatToShow = useSetMaterialToShowInDialog();
 
   const curPage = Math.min(tpage.page, Math.ceil(props.failed.length / tpage.rowsPerPage));
@@ -136,7 +135,6 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
                       signaledInspections: [],
                     },
                   });
-                  setRoute({ route: RouteLocation.Quality_Serials });
                 }
           }
         />
@@ -154,7 +152,7 @@ export function RecentFailedInspectionsTable() {
     return extractFailedInspections(allEvts, addDays(today, -4), addDays(today, 1));
   }, [inspections]);
   return (
-    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+    <div>
       <Box
         component="nav"
         sx={{
@@ -176,16 +174,7 @@ export function RecentFailedInspectionsTable() {
           </IconButton>
         </Tooltip>
       </Box>
-      <main>
-        <RecentFailedTable failed={failed} />
-      </main>
-    </Box>
+      <RecentFailedTable failed={failed} />
+    </div>
   );
-}
-
-export function QualityDashboard(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Quality - FMS Insight";
-  }, []);
-  return <RecentFailedInspectionsTable />;
 }
