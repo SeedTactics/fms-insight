@@ -91,9 +91,9 @@ export enum RouteLocation {
   Analysis_Schedules = "/analysis/schedules",
   Analysis_Quality = "/analysis/quality",
   Analysis_ToolReplacements = "/analysis/tool-replacements",
+  Analysis_CostPercents = "/analysis/cost-percents",
 
   Analysis_CostPerPiece = "/analysis/cost",
-  Analysis_DataExport = "/analysis/data-export",
 
   VerboseLogging = "/logging",
 
@@ -156,7 +156,7 @@ export type RouteState =
   | { route: RouteLocation.Analysis_PalletCycles }
   | { route: RouteLocation.Analysis_CostPerPiece }
   | { route: RouteLocation.Analysis_Schedules }
-  | { route: RouteLocation.Analysis_DataExport }
+  | { route: RouteLocation.Analysis_CostPercents }
   | { route: RouteLocation.VerboseLogging }
   | { route: RouteLocation.Client_Custom; custom: ReadonlyArray<string> };
 
@@ -363,8 +363,8 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Analysis_LoadCycles:
     case RouteLocation.Analysis_PalletCycles:
     case RouteLocation.Analysis_Quality:
+    case RouteLocation.Analysis_CostPercents:
     case RouteLocation.Analysis_ToolReplacements:
-    case RouteLocation.Analysis_DataExport:
       return "https://www.seedtactics.com/docs/fms-insight/client-flexibility-analysis";
 
     case RouteLocation.Analysis_CostPerPiece:

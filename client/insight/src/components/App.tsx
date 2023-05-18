@@ -51,11 +51,12 @@ import {
   Extension as ExtensionIcon,
   AccountBox as LoadUnloadIcon,
   ShoppingBasket as PalletIcon,
+  CallSplit,
+  AttachMoney as CostIcon,
 } from "@mui/icons-material";
 
 import OperationDashboard from "./operations/Dashboard.js";
-import CostPerPiece from "./analysis/CostPerPiece.js";
-import DataExport from "./analysis/DataExport.js";
+import { CostPerPiecePage, CostBreakdownPage } from "./analysis/CostPerPiece.js";
 import ChooseMode, { ChooseModeItem } from "./ChooseMode.js";
 import * as routes from "./routes.js";
 import * as serverSettings from "../network/server-settings.js";
@@ -199,6 +200,17 @@ const analysisReports: ReadonlyArray<MenuNavItem> = [
     route: { route: routes.RouteLocation.Analysis_Schedules },
     icon: <ScheduleIcon />,
   },
+  { separator: "Costs" },
+  {
+    name: "Percentages",
+    route: { route: routes.RouteLocation.Analysis_CostPercents },
+    icon: <CallSplit />,
+  },
+  {
+    name: "Cost/Piece",
+    route: { route: routes.RouteLocation.Analysis_CostPerPiece },
+    icon: <CostIcon />,
+  },
 ];
 
 export function NavTabs({ children }: { children?: React.ReactNode }) {
@@ -271,15 +283,6 @@ function EngineeringTabs() {
   );
 }
 
-function AnalysisTabs() {
-  return (
-    <NavTabs>
-      <Tab label="Cost/Piece" value={routes.RouteLocation.Analysis_CostPerPiece} />
-      <Tab label="Data Export" value={routes.RouteLocation.Analysis_DataExport} />
-    </NavTabs>
-  );
-}
-
 export interface AppProps {
   readonly renderCustomPage?: (custom: ReadonlyArray<string>) => {
     readonly nav: React.ComponentType | undefined;
@@ -346,11 +349,6 @@ const App = React.memo(function App(props: AppProps) {
         addBasicMaterialDialog = false;
         break;
 
-      case routes.RouteLocation.Analysis_CostPerPiece:
-        page = <CostPerPiece />;
-        nav1 = AnalysisTabs;
-        showAlarms = false;
-        break;
       case routes.RouteLocation.Analysis_Quality:
         page = <AnalysisQualityPage />;
         nav1 = AnalysisSelectToolbar;
@@ -405,9 +403,16 @@ const App = React.memo(function App(props: AppProps) {
         menuNavItems = analysisReports;
         showAlarms = false;
         break;
-      case routes.RouteLocation.Analysis_DataExport:
-        page = <DataExport />;
-        nav1 = AnalysisTabs;
+      case routes.RouteLocation.Analysis_CostPercents:
+        page = <CostBreakdownPage />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Analysis_CostPerPiece:
+        page = <CostPerPiecePage />;
+        nav1 = AnalysisSelectToolbar;
+        menuNavItems = analysisReports;
         showAlarms = false;
         break;
 

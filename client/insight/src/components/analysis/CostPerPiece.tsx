@@ -31,27 +31,25 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Box, Card } from "@mui/material";
-import { CardHeader } from "@mui/material";
-import { CardContent } from "@mui/material";
+import { Box, Stack } from "@mui/material";
 import { Table } from "@mui/material";
 import { TableBody } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
 import { TextField } from "@mui/material";
-import { AttachMoney as MoneyIcon, ImportExport, Build as BuildIcon, CallSplit } from "@mui/icons-material";
+import { ImportExport } from "@mui/icons-material";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
+import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import * as localForage from "localforage";
 import { CircularProgress } from "@mui/material";
 import {
   MachineCostPerYear,
-  compute_monthly_cost,
   copyCostPerPieceToClipboard,
   CostData,
-  PartCost,
   copyCostBreakdownToClipboard,
+  compute_monthly_cost_percentages,
+  convert_cost_percent_to_cost_per_piece,
 } from "../../data/cost-per-piece.js";
 import { format, startOfToday, addDays } from "date-fns";
 import { Tooltip } from "@mui/material";
@@ -61,7 +59,6 @@ import { Typography } from "@mui/material";
 import { useRecoilValue } from "recoil";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
-import { AnalysisSelectToolbar } from "./AnalysisSelectToolbar.js";
 
 async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
   return (await localForage.getItem("MachineCostPerYear")) ?? {};
@@ -163,7 +160,7 @@ function LaborCost(props: LaborCostProps) {
 }
 
 interface StationCostInputProps {
-  readonly statGroups: ReadonlyArray<string>;
+  readonly machineQuantities: OrderedMap<string, number>;
   readonly machineCostPerYear: MachineCostPerYear;
   readonly setMachineCostPerYear: (m: MachineCostPerYear) => void;
 }
@@ -199,7 +196,7 @@ function SingleStationCostInput(props: StationCostInputProps & { readonly machin
 function StationCostInputs(props: StationCostInputProps) {
   return (
     <>
-      {props.statGroups.map((s, idx) => (
+      {props.machineQuantities.keysToAscLazySeq().map((s, idx) => (
         <SingleStationCostInput key={idx} {...props} machineGroup={s} />
       ))}
     </>
@@ -216,38 +213,57 @@ const pctFormat = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 1,
 });
 
-interface CostBreakdownProps {
-  readonly costs: CostData;
-}
+export function CostBreakdownPage() {
+  React.useEffect(() => {
+    document.title = "Cost Breakdown - FMS Insight";
+  }, []);
+  const period = useRecoilValue(selectedAnalysisPeriod);
+  const month = period.type === "Last30" ? null : period.month;
+  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const matIds = useRecoilValue(
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
+  );
 
-function CostBreakdown(props: CostBreakdownProps) {
+  const thirtyDaysAgo = addDays(startOfToday(), -30);
+
+  const costs = React.useMemo(() => {
+    return compute_monthly_cost_percentages(
+      cycles.valuesToLazySeq(),
+      matIds.matsById,
+      month ? { month: month } : { thirtyDaysAgo }
+    );
+  }, [cycles, matIds, month, thirtyDaysAgo]);
+
   return (
-    <Card style={{ marginTop: "2em" }}>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <CallSplit style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Part Cost Percentage Breakdown</div>
-            <div style={{ flexGrow: 1 }} />
-            <Tooltip title="Copy to Clipboard">
-              <IconButton
-                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyCostBreakdownToClipboard(props.costs)}
-                size="large"
-              >
-                <ImportExport />
-              </IconButton>
-            </Tooltip>
-          </div>
-        }
-      />
-      <CardContent>
-        <Table data-testid="part-cost-pct-table">
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          minHeight: "2.5em",
+          alignItems: "center",
+          maxWidth: "calc(100vw - 24px - 24px)",
+        }}
+      >
+        <Typography variant="subtitle1">Part Cost Percentage Breakdown</Typography>
+        <Box flexGrow={1} />
+        <Tooltip title="Copy to Clipboard">
+          <IconButton
+            style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+            onClick={() => copyCostBreakdownToClipboard(costs)}
+            size="large"
+          >
+            <ImportExport />
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <main>
+        <Table>
           <TableHead>
             <TableRow>
               <TableCell>Part</TableCell>
               <TableCell align="right">Completed Quantity</TableCell>
-              {props.costs.machineCostGroups.map((m) => (
+              {costs.machineQuantities.keysToAscLazySeq().map((m) => (
                 <TableCell align="right" key={m}>
                   {m} Cost %
                 </TableCell>
@@ -257,7 +273,7 @@ function CostBreakdown(props: CostBreakdownProps) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {LazySeq.of(props.costs.parts)
+            {LazySeq.of(costs.parts)
               .sortBy((c) => c.part)
               .map((c, idx) => (
                 <TableRow key={idx}>
@@ -279,40 +295,19 @@ function CostBreakdown(props: CostBreakdownProps) {
                     </Box>
                   </TableCell>
                   <TableCell align="right">{c.parts_completed}</TableCell>
-                  {props.costs.machineCostGroups.map((m) => (
+                  {costs.machineQuantities.keysToAscLazySeq().map((m) => (
                     <TableCell align="right" key={m}>
-                      {pctFormat.format(c.machine.pctPerStat.get(m) ?? 0)}
+                      {pctFormat.format(c.machine.get(m) ?? 0)}
                     </TableCell>
                   ))}
-                  <TableCell align="right">{pctFormat.format(c.labor.percent)}</TableCell>
-                  <TableCell align="right">{pctFormat.format(c.automation_pct)}</TableCell>
+                  <TableCell align="right">{pctFormat.format(c.labor)}</TableCell>
+                  <TableCell align="right">{pctFormat.format(c.automation)}</TableCell>
                 </TableRow>
               ))}
           </TableBody>
         </Table>
-      </CardContent>
-    </Card>
-  );
-}
-
-function MachineCostTooltip({
-  part,
-  machineCostForPeriod,
-}: {
-  readonly part: PartCost;
-  readonly machineCostForPeriod: ReadonlyMap<string, number>;
-}) {
-  return (
-    <div>
-      {LazySeq.of(part.machine.pctPerStat)
-        .sortBy(([stat]) => stat)
-        .map(([stat, pct]) => (
-          <div key={stat}>
-            {stat}: {pctFormat.format(pct)} of {decimalFormat.format(machineCostForPeriod.get(stat) ?? 0)}{" "}
-            total machine cost
-          </div>
-        ))}
-    </div>
+      </main>
+    </Box>
   );
 }
 
@@ -322,13 +317,20 @@ interface CostPerPieceOutputProps {
 
 function CostOutputCard(props: CostPerPieceOutputProps) {
   return (
-    <Card style={{ marginTop: "2em" }}>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <BuildIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Part Cost/Piece</div>
-            <div style={{ flexGrow: 1 }} />
+    <Table data-testid="part-cost-table">
+      <TableHead>
+        <TableRow>
+          <TableCell>Part</TableCell>
+          <TableCell align="right">Completed Quantity</TableCell>
+          {props.costs.machineQuantities.keysToAscLazySeq().map((m) => (
+            <TableCell align="right" key={m}>
+              {m} Cost
+            </TableCell>
+          ))}
+          <TableCell align="right">Labor Cost</TableCell>
+          <TableCell align="right">Automation Cost</TableCell>
+          <TableCell align="right">
+            <span>Total</span>
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
@@ -338,131 +340,55 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
                 <ImportExport />
               </IconButton>
             </Tooltip>
-          </div>
-        }
-      />
-      <CardContent>
-        <Table data-testid="part-cost-table">
-          <TableHead>
-            <TableRow>
-              <TableCell>Part</TableCell>
-              <TableCell align="right">Completed Quantity</TableCell>
-              <TableCell align="right">Machine Cost</TableCell>
-              <TableCell align="right">Labor Cost</TableCell>
-              <TableCell align="right">Automation Cost</TableCell>
-              <TableCell align="right">Total</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {LazySeq.of(props.costs.parts)
-              .sortBy((c) => c.part)
-              .map((c, idx) => (
-                <TableRow key={idx}>
-                  <TableCell>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Box sx={{ mr: "0.2em" }}>
-                        <PartIdenticon part={c.part} size={25} />
-                      </Box>
-                      <div>
-                        <Typography variant="body2" component="span" display="block">
-                          {c.part}
-                        </Typography>
-                      </div>
-                    </Box>
-                  </TableCell>
-                  <TableCell align="right">{c.parts_completed}</TableCell>
-                  <TableCell align="right">
-                    <Tooltip
-                      title={
-                        <MachineCostTooltip
-                          part={c}
-                          machineCostForPeriod={props.costs.stationCostForPeriod}
-                        />
-                      }
-                    >
-                      <span>
-                        {c.parts_completed > 0 ? decimalFormat.format(c.machine.cost / c.parts_completed) : 0}
-                      </span>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip
-                      title={
-                        pctFormat.format(c.labor.percent) +
-                        " of " +
-                        decimalFormat.format(props.costs.totalLaborCostForPeriod) +
-                        " total labor cost"
-                      }
-                    >
-                      <span>
-                        {c.parts_completed > 0 ? decimalFormat.format(c.labor.cost / c.parts_completed) : 0}
-                      </span>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Tooltip
-                      title={
-                        pctFormat.format(c.automation_pct) +
-                        " of " +
-                        decimalFormat.format(props.costs.automationCostForPeriod) +
-                        " total automation cost"
-                      }
-                    >
-                      <span>
-                        {c.parts_completed > 0
-                          ? decimalFormat.format(
-                              (c.automation_pct * props.costs.automationCostForPeriod) / c.parts_completed
-                            )
-                          : 0}
-                      </span>
-                    </Tooltip>
-                  </TableCell>
-                  <TableCell align="right">
-                    {c.parts_completed > 0
-                      ? decimalFormat.format(
-                          c.machine.cost / c.parts_completed +
-                            c.labor.cost / c.parts_completed +
-                            (c.automation_pct * props.costs.automationCostForPeriod) / c.parts_completed
-                        )
-                      : ""}
-                  </TableCell>
-                </TableRow>
+          </TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {LazySeq.of(props.costs.parts)
+          .sortBy((c) => c.part)
+          .map((c, idx) => (
+            <TableRow key={idx}>
+              <TableCell>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <Box sx={{ mr: "0.2em" }}>
+                    <PartIdenticon part={c.part} size={25} />
+                  </Box>
+                  <div>
+                    <Typography variant="body2" component="span" display="block">
+                      {c.part}
+                    </Typography>
+                  </div>
+                </Box>
+              </TableCell>
+              <TableCell align="right">{c.parts_completed}</TableCell>
+              {props.costs.machineQuantities.keysToAscLazySeq().map((m) => (
+                <TableCell align="right" key={m}>
+                  {decimalFormat.format(c.machine.get(m) ?? 0)}
+                </TableCell>
               ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
-
-function CostInputCard(props: { children: React.ReactNode }) {
-  return (
-    <Card style={{ maxWidth: "45em", width: "100%", marginTop: "2em" }}>
-      <CardHeader
-        title={
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <MoneyIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Cost Inputs</div>
-          </div>
-        }
-      />
-      <CardContent>{props.children}</CardContent>
-    </Card>
+              <TableCell align="right">{decimalFormat.format(c.labor)}</TableCell>
+              <TableCell align="right">{decimalFormat.format(c.automation)}</TableCell>
+              <TableCell align="right">
+                {decimalFormat.format(
+                  c.machine.valuesToAscLazySeq().sumBy((x) => x) + c.labor + c.automation
+                )}
+              </TableCell>
+            </TableRow>
+          ))}
+      </TableBody>
+    </Table>
   );
 }
 
 export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
+  React.useEffect(() => {
+    document.title = "Cost Per Piece - FMS Insight";
+  }, []);
   const [loading, setLoading] = React.useState(false);
   const [machineCostPerYear, setMachineCostPerYear] = React.useState<MachineCostPerYear>({});
   const [last30LaborCost, setLast30LaborCost] = React.useState<number | null>(null);
@@ -472,13 +398,6 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
   const period = useRecoilValue(selectedAnalysisPeriod);
   const month = period.type === "Last30" ? null : period.month;
   const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const statGroups = React.useMemo(() => {
-    const groups = new Set<string>();
-    for (const c of cycles.valuesToLazySeq()) {
-      groups.add(c.stationGroup);
-    }
-    return Array.from(groups).sort((a, b) => a.localeCompare(b));
-  }, [cycles]);
   const matIds = useRecoilValue(
     period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
   );
@@ -512,12 +431,10 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
   const computedCosts = React.useMemo(() => {
     if (loading) {
       return {
-        totalLaborCostForPeriod: 0,
-        automationCostForPeriod: 0,
-        stationCostForPeriod: new Map<string, number>(),
-        machineCostGroups: [],
+        machineQuantities: OrderedMap.empty<string, number>(),
         parts: [],
-      };
+        type: month ? { month } : { thirtyDaysAgo },
+      } satisfies CostData;
     }
     let totalLaborCost = 0;
     if (month) {
@@ -525,13 +442,16 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
     } else {
       totalLaborCost = last30LaborCost ?? 0;
     }
-    return compute_monthly_cost(
-      machineCostPerYear,
-      automationCostPerYear,
-      totalLaborCost,
+    const costPcts = compute_monthly_cost_percentages(
       cycles.valuesToLazySeq(),
       matIds.matsById,
       month ? { month: month } : { thirtyDaysAgo }
+    );
+    return convert_cost_percent_to_cost_per_piece(
+      costPcts,
+      machineCostPerYear,
+      automationCostPerYear,
+      totalLaborCost
     );
   }, [
     machineCostPerYear,
@@ -553,43 +473,26 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
   }
 
   return (
-    <>
-      <CostBreakdown costs={computedCosts} />
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <CostInputCard>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {month === null ? (
-              <LaborCost month={null} laborCost={last30LaborCost} setLaborCost={setLast30LaborCost} />
-            ) : (
-              <LaborCost month={month} laborCost={curMonthLaborCost} setLaborCost={setCurMonthLaborCost} />
-            )}
-            <AutomationCostInput
-              automationCostPerYear={automationCostPerYear}
-              setAutomationCostPerYear={setAutomationCostPerYear}
-            />
-            <StationCostInputs
-              statGroups={statGroups}
-              machineCostPerYear={machineCostPerYear}
-              setMachineCostPerYear={setMachineCostPerYear}
-            />
-          </div>
-        </CostInputCard>
-      </div>
-      <CostOutputCard costs={computedCosts} />
-    </>
+    <Box component="main" paddingLeft="24px" paddingRight="24px" paddingTop="20px">
+      <Stack direction="column" spacing={4}>
+        <Stack direction="column" spacing={2}>
+          {month === null ? (
+            <LaborCost month={null} laborCost={last30LaborCost} setLaborCost={setLast30LaborCost} />
+          ) : (
+            <LaborCost month={month} laborCost={curMonthLaborCost} setLaborCost={setCurMonthLaborCost} />
+          )}
+          <AutomationCostInput
+            automationCostPerYear={automationCostPerYear}
+            setAutomationCostPerYear={setAutomationCostPerYear}
+          />
+          <StationCostInputs
+            machineQuantities={computedCosts.machineQuantities}
+            machineCostPerYear={machineCostPerYear}
+            setMachineCostPerYear={setMachineCostPerYear}
+          />
+        </Stack>
+        <CostOutputCard costs={computedCosts} />
+      </Stack>
+    </Box>
   );
 });
-
-export default function CostPerPiece(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Cost/Piece - FMS Insight";
-  }, []);
-  return (
-    <>
-      <AnalysisSelectToolbar />
-      <main style={{ padding: "8px" }}>
-        <CostPerPiecePage />
-      </main>
-    </>
-  );
-}
