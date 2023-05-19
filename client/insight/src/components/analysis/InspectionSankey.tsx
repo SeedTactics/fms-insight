@@ -196,7 +196,12 @@ const InspectionDiagram = React.memo(function InspectionDiagram({
   const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
   return (
     <div style={{ position: "relative" }}>
-      <Box sx={{ height: "calc(100vh - 130px)", width: "100%" }}>
+      <Box
+        sx={{
+          height: { xs: "calc(100vh - 230px)", md: "calc(100vh - 182px)", xl: "calc(100vh - 130px)" },
+          width: "100%",
+        }}
+      >
         <ParentSize>
           {(parent) => (
             <SankeyDisplay

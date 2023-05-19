@@ -775,7 +775,9 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
 
   return (
     <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
-      <Box sx={{ height: { xs: "calc(100vh - 285px)", xl: "calc(100vh - 250px)" } }}>
+      <Box
+        sx={{ height: { xs: "calc(100vh - 320px)", md: "calc(100vh - 280px)", xl: "calc(100vh - 220px)" } }}
+      >
         <ParentSize>
           {(parent) => (
             <CycleChartSvg

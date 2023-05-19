@@ -76,7 +76,9 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
 
   return (
     <div>
-      <Box sx={{ height: "calc(100vh - 220px)" }}>
+      <Box
+        sx={{ height: { xs: "calc(100vh - 350px)", md: "calc(100vh - 285px)", xl: "calc(100vh - 220px)" } }}
+      >
         <XYChart xScale={{ type: "time" }} yScale={{ type: "linear" }} theme={chartTheme}>
           <AnimatedAxis orientation="bottom" />
           <AnimatedAxis orientation="left" label="Buffer Size" />
