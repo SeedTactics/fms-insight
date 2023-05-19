@@ -534,18 +534,19 @@ export function AllMaterial(props: AllMaterialProps) {
       onDragCancel={() => setActiveDrag(null)}
     >
       <SortableContext items={curBins.map((b) => b.binId)} strategy={horizontalListSortingStrategy}>
-        <main
-          style={{
+        <Box
+          component="main"
+          sx={{
             display: "flex",
             flexWrap: "nowrap",
             backgroundColor: "#F8F8F8",
-            minHeight: "calc(100vh - 64px)",
+            minHeight: { xs: "calc(100vh - 64px - 48px)", md: "calc(100vh - 64px)" },
           }}
         >
           {curBins.map((matBin) => (
             <MaterialBinColumn key={matBin.binId} matBin={matBin} />
           ))}
-        </main>
+        </Box>
       </SortableContext>
       <DragOverlay>
         {activeDrag?.type === "material" ? (

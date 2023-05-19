@@ -590,7 +590,11 @@ export default function QueuesPage(props: QueueProps): JSX.Element {
       component="main"
       sx={{
         backgroundColor: "#F8F8F8",
-        minHeight: { sm: "calc(100vh - 64px - 40px)", md: "calc(100vh - 64px)" },
+        minHeight: {
+          xs: "calc(100vh - 64px - 32px)",
+          sm: "calc(100vh - 64px - 40px)",
+          md: "calc(100vh - 64px)",
+        },
       }}
     >
       <Queues {...props} />

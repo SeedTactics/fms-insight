@@ -136,10 +136,10 @@ export default function Dashboard() {
   useSetTitle("Dashboard");
   return (
     <div>
-      <Box sx={{ display: { xs: "none", lg: "block" } }}>
+      <Box sx={{ display: { xs: "none", md: "block" } }}>
         <FillViewportDashboard />
       </Box>
-      <Box sx={{ display: { xs: "block", lg: "none" } }}>
+      <Box sx={{ display: { xs: "block", md: "none" } }}>
         <ScrollableDashboard />
       </Box>
     </div>

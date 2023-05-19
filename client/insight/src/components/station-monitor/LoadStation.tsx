@@ -821,6 +821,7 @@ export function LoadStation(props: LoadStationProps) {
           display: "grid",
           gridTemplate: grid,
           minHeight: {
+            xs: "calc(100vh - 64px - 32px)",
             sm: "calc(100vh - 64px - 40px)",
             md: "calc(100vh - 64px)",
           },
