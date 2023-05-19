@@ -1328,5 +1328,41 @@
   "Queues": {
     "Queue1": {},
     "Queue2": {}
-  }
+  },
+  "Workorders": [
+    {
+      "WorkorderId": "work1",
+      "Part": "part1",
+      "PlannedQuantity": 10,
+      "DueDate": "2023-05-19",
+      "Priority": 3,
+      "CompletedQuantity": 8,
+      "Serials": ["00000000aa", "00000000ab"],
+      "ElapsedStationTime": {
+        "MC": "PT10M",
+        "L/U": "PT8M"
+      },
+      "ActiveStationTime": {
+        "MC": "PT5M",
+        "L/U": "PT3M"
+      }
+    },
+    {
+      "WorkorderId": "work2",
+      "Part": "part2",
+      "PlannedQuantity": 12,
+      "DueDate": "2023-05-20",
+      "Priority": 6,
+      "CompletedQuantity": 12,
+      "Serials": ["00000000bb", "00000000bc"],
+      "ElapsedStationTime": {
+        "MC": "PT4M",
+        "L/U": "PT55M"
+      },
+      "ActiveStationTime": {
+        "MC": "PT50M",
+        "L/U": "PT33M"
+      }
+    }
+  ]
 }

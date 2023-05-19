@@ -65,6 +65,7 @@ export enum RouteLocation {
   Operations_SystemOverview = "/operations/system-overview",
   Operations_AllMaterial = "/operations/material",
   Operations_RecentSchedules = "/operations/recent-schedules",
+  Operations_CurrentWorkorders = "/operations/current-workorders",
   Operations_Production = "/operations/recent-production",
   Operations_Tools = "/operations/tools",
   Operations_Programs = "/operations/programs",
@@ -133,6 +134,7 @@ export type RouteState =
   | { route: RouteLocation.Operations_SystemOverview }
   | { route: RouteLocation.Operations_AllMaterial }
   | { route: RouteLocation.Operations_RecentSchedules }
+  | { route: RouteLocation.Operations_CurrentWorkorders }
   | { route: RouteLocation.Operations_Production }
   | { route: RouteLocation.Operations_Tools }
   | { route: RouteLocation.Operations_Programs }
@@ -340,6 +342,7 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Operations_SystemOverview:
     case RouteLocation.Operations_AllMaterial:
     case RouteLocation.Operations_RecentSchedules:
+    case RouteLocation.Operations_CurrentWorkorders:
     case RouteLocation.Operations_Production:
     case RouteLocation.Operations_Quality:
     case RouteLocation.Operations_Inspections:

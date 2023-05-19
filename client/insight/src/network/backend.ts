@@ -138,6 +138,7 @@ export interface LogAPI {
     operatorName: string | null,
     notes: string
   ): Promise<Readonly<api.ILogEntry>>;
+  finalizeWorkorder(workorder: string): Promise<Readonly<api.ILogEntry>>;
 }
 
 export interface MachineAPI {

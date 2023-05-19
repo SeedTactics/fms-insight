@@ -89,6 +89,7 @@ import { CompletedCountHeatmap, StationOeeHeatmap } from "./analysis/EfficiencyP
 import { PartLoadStationCycleChart, PartMachineCycleChart } from "./analysis/PartCycleCards.js";
 import { PalletCycleChart } from "./analysis/PalletCycleCards.js";
 import { ToolReplacementPage } from "./analysis/ToolReplacements.js";
+import { CurrentWorkordersPage } from "./operations/CurrentWorkorders.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -151,6 +152,11 @@ const operationsReports: ReadonlyArray<MenuNavItem> = [
     name: "Schedules",
     route: { route: routes.RouteLocation.Operations_RecentSchedules },
     icon: <ScheduleIcon />,
+  },
+  {
+    name: "Workorders",
+    route: { route: routes.RouteLocation.Operations_CurrentWorkorders },
+    icon: <ExtensionIcon />,
   },
   {
     name: "Production",
@@ -462,6 +468,11 @@ const App = React.memo(function App(props: AppProps) {
         break;
       case routes.RouteLocation.Operations_RecentSchedules:
         page = <RecentSchedulesPage />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        break;
+      case routes.RouteLocation.Operations_CurrentWorkorders:
+        page = <CurrentWorkordersPage />;
         nav1 = OperationsTabs;
         menuNavItems = operationsReports;
         break;

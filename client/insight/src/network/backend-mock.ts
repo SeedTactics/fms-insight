@@ -522,6 +522,22 @@ export function registerMockBackend(
         })
       );
     },
+    finalizeWorkorder(workorder: string) {
+      return Promise.resolve({
+        counter: 0,
+        material: [],
+        pal: "",
+        type: api.LogType.FinalizeWorkorder,
+        startofcycle: false,
+        endUTC: new Date(),
+        loc: "FinalizeWorkorder",
+        locnum: 1,
+        result: workorder,
+        program: "",
+        elapsed: "PT0S",
+        active: "PT0S",
+      });
+    },
   };
 
   const machineB = {
