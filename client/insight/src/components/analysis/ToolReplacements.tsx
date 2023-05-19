@@ -43,7 +43,7 @@ import {
 } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 import * as React from "react";
-import { useRecoilValue } from "recoil";
+import { atom, useRecoilState, useRecoilValue } from "recoil";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import {
   last30ToolReplacements,
@@ -564,10 +564,19 @@ const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
   );
 });
 
+const selectedMachineAtom = atom<StationGroupAndNum | null>({
+  key: "insight-tool-replacements-selectedMachineAtom",
+  default: null,
+});
+const selectedType = atom<"summary" | "details">({
+  key: "insight-tool-replacements-selectedType",
+  default: "summary",
+});
+
 export const ToolReplacementPage = React.memo(function ToolReplacementCard() {
   useSetTitle("Tool Replacements");
-  const [selectedMachine, setSelectedMachine] = React.useState<StationGroupAndNum | null>(null);
-  const [type, setType] = React.useState<"summary" | "details">("summary");
+  const [selectedMachine, setSelectedMachine] = useRecoilState(selectedMachineAtom);
+  const [type, setType] = useRecoilState(selectedType);
 
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">

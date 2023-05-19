@@ -170,7 +170,7 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
     <FormControl size="small">
       <Select
         value={curRoute.route}
-        sx={{ width: "15em" }}
+        sx={{ width: "16.5em" }}
         onChange={(e) => {
           const item = menuNavs.find((i) => ("separator" in i ? false : i.route.route === e.target.value));
           if (!item || "separator" in item) return;
