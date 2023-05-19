@@ -53,7 +53,7 @@ import {
 } from "../../data/results.cycles.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { CycleChart, CycleChartPoint, ExtraTooltip, YZoomRange } from "../analysis/CycleChart.js";
-import { useRecoilValue } from "recoil";
+import { atom, useRecoilState, useRecoilValue } from "recoil";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import {
   last30EstimatedCycleTimes,
@@ -64,6 +64,51 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
 
 export type CycleType = "labor" | "machine";
+
+const lulShowGraphAtom = atom<boolean>({
+  key: "insight-recent-lul-cycle-chart-show-graph",
+  default: true,
+});
+const machineShowGraphAtom = atom<boolean>({
+  key: "insight-recent-machine-cycle-chart-show-graph",
+  default: true,
+});
+const lulSelectedPartAtom = atom<PartAndProcess | undefined>({
+  key: "insight-recent-lul-cycle-chart-selected-part",
+  default: undefined,
+});
+const machineSelectedPartAtom = atom<PartAndProcess | undefined>({
+  key: "insight-recent-machine-cycle-chart-selected-part",
+  default: undefined,
+});
+const machineSelectedOperation = atom<PartAndStationOperation | undefined>({
+  key: "insight-recent-machine-cycle-chart-selected-operation",
+  default: undefined,
+});
+const lulSelectedPalletAtom = atom<string | undefined>({
+  key: "insight-recent-lul-cycle-chart-selected-pallet",
+  default: undefined,
+});
+const machineSelectedPalletAtom = atom<string | undefined>({
+  key: "insight-recent-machine-cycle-chart-selected-pallet",
+  default: undefined,
+});
+const lulChartZoomAtom = atom<{ zoom?: { start: Date; end: Date } }>({
+  key: "insight-recent-lul-cycle-chart-zoom",
+  default: {},
+});
+const machineChartZoomAtom = atom<{ zoom?: { start: Date; end: Date } }>({
+  key: "insight-recent-machine-cycle-chart-zoom",
+  default: {},
+});
+const lulYZoomAtom = atom<YZoomRange | null>({
+  key: "insight-recent-lul-cycle-chart-y-zoom",
+  default: null,
+});
+const machineYZoomAtom = atom<YZoomRange | null>({
+  key: "insight-recent-machine-cycle-chart-y-zoom",
+  default: null,
+});
 
 export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
   useSetTitle(ty === "labor" ? "L/U Cycles" : "Machine Cycles");
@@ -94,12 +139,16 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
     [setMatToShow]
   );
 
-  const [showGraph, setShowGraph] = React.useState(true);
-  const [chartZoom, setChartZoom] = React.useState<{ zoom?: { start: Date; end: Date } }>({});
-  const [selectedPart, setSelectedPart] = React.useState<PartAndProcess>();
-  const [selectedOperation, setSelectedOperation] = React.useState<PartAndStationOperation>();
-  const [selectedPallet, setSelectedPallet] = React.useState<string>();
-  const [yZoom, setYZoom] = React.useState<YZoomRange | null>(null);
+  const [showGraph, setShowGraph] = useRecoilState(ty === "labor" ? lulShowGraphAtom : machineShowGraphAtom);
+  const [chartZoom, setChartZoom] = useRecoilState(ty === "labor" ? lulChartZoomAtom : machineChartZoomAtom);
+  const [selectedPart, setSelectedPart] = useRecoilState(
+    ty === "labor" ? lulSelectedPartAtom : machineSelectedPartAtom
+  );
+  const [selectedOperation, setSelectedOperation] = useRecoilState(machineSelectedOperation);
+  const [selectedPallet, setSelectedPallet] = useRecoilState(
+    ty === "labor" ? lulSelectedPalletAtom : machineSelectedPalletAtom
+  );
+  const [yZoom, setYZoom] = useRecoilState(ty === "labor" ? lulYZoomAtom : machineYZoomAtom);
 
   const estimatedCycleTimes = useRecoilValue(last30EstimatedCycleTimes);
   const default_date_range = [addDays(startOfToday(), -4), addDays(startOfToday(), 1)];

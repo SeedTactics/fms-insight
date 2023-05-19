@@ -225,6 +225,7 @@ export interface InspectionSankeyProps {
   readonly zoomType?: DataTableActionZoomType;
   readonly subtitle?: string;
   readonly restrictToPart?: string;
+  readonly onlyTable?: boolean;
   readonly extendDateRange?: (numDays: number) => void;
   readonly hideOpenDetailColumn?: boolean;
 }
@@ -283,20 +284,22 @@ export function InspectionSankey(props: InspectionSankeyProps) {
       >
         {props.subtitle ? <Typography variant="subtitle1">{props.subtitle}</Typography> : undefined}
         <Box flexGrow={1} />
-        <FormControl size="small">
-          <Select
-            autoWidth
-            value={showTable ? "table" : "sankey"}
-            onChange={(e) => setShowTable(e.target.value === "table")}
-          >
-            <MenuItem key="sankey" value="sankey">
-              Sankey
-            </MenuItem>
-            <MenuItem key="table" value="table">
-              Table
-            </MenuItem>
-          </Select>
-        </FormControl>
+        {props.onlyTable ? undefined : (
+          <FormControl size="small">
+            <Select
+              autoWidth
+              value={showTable ? "table" : "sankey"}
+              onChange={(e) => setShowTable(e.target.value === "table")}
+            >
+              <MenuItem key="sankey" value="sankey">
+                Sankey
+              </MenuItem>
+              <MenuItem key="table" value="table">
+                Table
+              </MenuItem>
+            </Select>
+          </FormControl>
+        )}
         <FormControl size="small">
           <Select
             name="inspection-sankey-select-type"
@@ -361,7 +364,7 @@ export function InspectionSankey(props: InspectionSankeyProps) {
       </Box>
       <main>
         {curData ? (
-          showTable ? (
+          showTable || props.onlyTable ? (
             <InspectionDataTable
               zoomType={props.zoomType}
               points={curData}

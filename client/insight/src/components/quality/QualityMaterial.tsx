@@ -238,6 +238,7 @@ function PathLookupStep(props: PathLookupProps) {
         zoomType={searchRange ? DataTableActionZoomType.ExtendDays : undefined}
         extendDateRange={extendDateRange}
         hideOpenDetailColumn
+        onlyTable
       />
       <Button
         variant="contained"

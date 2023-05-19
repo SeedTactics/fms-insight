@@ -55,7 +55,7 @@ import {
 import { AnimatedAxis, AnimatedBarGroup, AnimatedBarSeries, Tooltip, XYChart } from "@visx/xychart";
 import { seriesColor, chartTheme } from "../../util/chart-colors.js";
 import { addDays, startOfToday } from "date-fns";
-import { useRecoilValue } from "recoil";
+import { atom, useRecoilState, useRecoilValue } from "recoil";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
 import { ImportExport } from "@mui/icons-material";
@@ -201,9 +201,18 @@ export const OEETable = React.memo(function OEETableF(p: OEEProps) {
   );
 });
 
+const lulShowChart = atom<boolean>({
+  key: "insight-oee-chart-labor",
+  default: true,
+});
+const mcShowChart = atom<boolean>({
+  key: "insight-oee-chart-machine",
+  default: true,
+});
+
 export function StationOEEPage({ ty }: { readonly ty: OEEType }) {
   useSetTitle(ty === "labor" ? "L/U OEE" : "Machine OEE");
-  const [showChart, setShowChart] = React.useState(true);
+  const [showChart, setShowChart] = useRecoilState(ty === "labor" ? lulShowChart : mcShowChart);
 
   const start = addDays(startOfToday(), -6);
   const end = addDays(startOfToday(), 1);
