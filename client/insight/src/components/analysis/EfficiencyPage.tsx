@@ -47,7 +47,7 @@ import {
   binSimProductionByDayAndPart,
   copyCompletedPartsHeatmapToClipboard,
 } from "../../data/results.completed-parts.js";
-import { useRecoilValue } from "recoil";
+import { atom, useRecoilState, useRecoilValue } from "recoil";
 import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use.js";
 import {
   last30SimProduction,
@@ -87,9 +87,14 @@ function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
     .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
 }
 
+const selectedStationOeeHeatmapType = atom<StationOeeHeatmapTypes>({
+  key: "fms-insight-selected-station-oee-heatmap-type",
+  default: "Standard OEE",
+});
+
 export function StationOeeHeatmap() {
   useSetTitle("Station OEE");
-  const [selected, setSelected] = React.useState<StationOeeHeatmapTypes>("Standard OEE");
+  const [selected, setSelected] = useRecoilState(selectedStationOeeHeatmapType);
 
   const period = useRecoilValue(selectedAnalysisPeriod);
   const dateRange: [Date, Date] =
@@ -130,6 +135,11 @@ export function StationOeeHeatmap() {
 
 type CompletedPartsHeatmapTypes = "Planned" | "Completed";
 
+const selectedCompletedPartsHeatmapType = atom<CompletedPartsHeatmapTypes>({
+  key: "fms-insight-selected-completed-parts-heatmap-type",
+  default: "Completed",
+});
+
 function partsCompletedPoints(
   partCycles: Iterable<PartCycleData>,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
@@ -169,7 +179,7 @@ function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
 
 export function CompletedCountHeatmap() {
   useSetTitle("Part Production");
-  const [selected, setSelected] = React.useState<CompletedPartsHeatmapTypes>("Completed");
+  const [selected, setSelected] = useRecoilState(selectedCompletedPartsHeatmapType);
 
   const period = useRecoilValue(selectedAnalysisPeriod);
   const dateRange: [Date, Date] =

@@ -52,7 +52,7 @@ import {
   PartAndProcess,
 } from "../../data/results.cycles.js";
 import * as matDetails from "../../cell-status/material-details.js";
-import { CycleChart, CycleChartPoint, ExtraTooltip } from "../analysis/CycleChart.js";
+import { CycleChart, CycleChartPoint, ExtraTooltip, YZoomRange } from "../analysis/CycleChart.js";
 import { useRecoilValue } from "recoil";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import {
@@ -99,6 +99,7 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
   const [selectedPart, setSelectedPart] = React.useState<PartAndProcess>();
   const [selectedOperation, setSelectedOperation] = React.useState<PartAndStationOperation>();
   const [selectedPallet, setSelectedPallet] = React.useState<string>();
+  const [yZoom, setYZoom] = React.useState<YZoomRange | null>(null);
 
   const estimatedCycleTimes = useRecoilValue(last30EstimatedCycleTimes);
   const default_date_range = [addDays(startOfToday(), -4), addDays(startOfToday(), 1)];
@@ -269,6 +270,8 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={chartZoom.zoom}
             set_date_zoom_range={setChartZoom}
+            yZoom={yZoom}
+            setYZoom={setYZoom}
             stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
             partCntPerPoint={
               curOperation ? LazySeq.of(points.data).head()?.[1]?.[0]?.material?.length : undefined

@@ -40,7 +40,7 @@ import { IconButton } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
-import { CycleChart, CycleChartPoint, ExtraTooltip } from "./CycleChart.js";
+import { CycleChart, CycleChartPoint, ExtraTooltip, YZoomRange } from "./CycleChart.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import {
   filterStationCycles,
@@ -56,8 +56,8 @@ import {
 } from "../../data/results.cycles.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import StationDataTable from "./StationDataTable.js";
-import { useIsDemo, useSetTitle } from "../routes.js";
-import { useRecoilValue } from "recoil";
+import { useSetTitle, isDemoAtom } from "../routes.js";
+import { atom, selector, useRecoilState, useRecoilValue } from "recoil";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import {
   last30EstimatedCycleTimes,
@@ -74,6 +74,38 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 // --------------------------------------------------------------------------------
 // Machine Cycles
 // --------------------------------------------------------------------------------
+
+const machineShowGraph = atom<boolean>({
+  key: "insight-part-cycles-machineShowGraph",
+  default: true,
+});
+const machineSelectedPart = atom<PartAndProcess | undefined>({
+  key: "insight-part-cycles-machineSelectedPart",
+  default: selector<PartAndProcess | undefined>({
+    key: "insight-default-part-cycles-chart-machine-selected-part",
+    get: ({ get }) => (get(isDemoAtom) ? { part: "aaa", proc: 2 } : undefined),
+  }),
+});
+const machineSelectedMachine = atom<string>({
+  key: "insight-part-cycles-machineSelectedMachine",
+  default: FilterAnyMachineKey,
+});
+const machineSelectedOperation = atom<PartAndStationOperation | undefined>({
+  key: "insight-part-cycles-machineSelectedOperation",
+  default: undefined,
+});
+const machineSelectedPallet = atom<string | undefined>({
+  key: "insight-part-cycles-machineSelectedPallet",
+  default: undefined,
+});
+const machineZoomDateRange = atom<{ start: Date; end: Date } | undefined>({
+  key: "insight-part-cycles-machineZoomDateRange",
+  default: undefined,
+});
+const machineYZoom = atom<YZoomRange | null>({
+  key: "insight-part-cycles-machineYZoom",
+  default: null,
+});
 
 export function PartMachineCycleChart() {
   useSetTitle("Machine Cycles");
@@ -104,15 +136,13 @@ export function PartMachineCycleChart() {
   );
 
   // filter/display state
-  const demo = useIsDemo();
-  const [showGraph, setShowGraph] = React.useState(true);
-  const [selectedPart, setSelectedPart] = React.useState<PartAndProcess | undefined>(
-    demo ? { part: "aaa", proc: 2 } : undefined
-  );
-  const [selectedMachine, setSelectedMachine] = React.useState<string>(FilterAnyMachineKey);
-  const [selectedOperation, setSelectedOperation] = React.useState<PartAndStationOperation>();
-  const [selectedPallet, setSelectedPallet] = React.useState<string>();
-  const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
+  const [showGraph, setShowGraph] = useRecoilState(machineShowGraph);
+  const [selectedPart, setSelectedPart] = useRecoilState(machineSelectedPart);
+  const [selectedMachine, setSelectedMachine] = useRecoilState(machineSelectedMachine);
+  const [selectedOperation, setSelectedOperation] = useRecoilState(machineSelectedOperation);
+  const [selectedPallet, setSelectedPallet] = useRecoilState(machineSelectedPallet);
+  const [zoomDateRange, setZoomRange] = useRecoilState(machineZoomDateRange);
+  const [yZoom, setYZoom] = useRecoilState(machineYZoom);
 
   // calculate points
   const defaultDateRange =
@@ -305,6 +335,8 @@ export function PartMachineCycleChart() {
             extra_tooltip={extraStationCycleTooltip}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
+            yZoom={yZoom}
+            setYZoom={setYZoom}
             stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
             partCntPerPoint={
               curOperation ? LazySeq.of(points.data).head()?.[1]?.[0]?.material?.length : undefined
@@ -333,6 +365,41 @@ export function PartMachineCycleChart() {
 
 type LoadCycleFilter = "LULOccupancy" | "LoadOp" | "UnloadOp";
 
+const loadShowGraph = atom<boolean>({
+  key: "insight-part-cycles-loadShowGraph",
+  default: true,
+});
+const loadSelectedPart = atom<PartAndProcess | undefined>({
+  key: "insight-part-cycles-loadSelectedPart",
+  default: selector<PartAndProcess | undefined>({
+    key: "insight-default-load-part-cycles-selected-part",
+    get: ({ get }) => (get(isDemoAtom) ? { part: "aaa", proc: 2 } : undefined),
+  }),
+});
+const loadSelectedOperation = atom<LoadCycleFilter>({
+  key: "insight-part-cycles-loadSelectedOperation",
+  default: selector<LoadCycleFilter>({
+    key: "insight-default-load-part-cycles-selected-operation",
+    get: ({ get }) => (get(isDemoAtom) ? "LoadOp" : "LULOccupancy"),
+  }),
+});
+const loadSelectedLoad = atom<string>({
+  key: "insight-part-cycles-loadSelectedLoad",
+  default: FilterAnyLoadKey,
+});
+const loadSelectedPallet = atom<string | undefined>({
+  key: "insight-part-cycles-loadSelectedPallet",
+  default: undefined,
+});
+const loadZoomDateRange = atom<{ start: Date; end: Date } | undefined>({
+  key: "insight-part-cycles-loadZoomDateRange",
+  default: undefined,
+});
+const loadYZoom = atom<YZoomRange | null>({
+  key: "insight-part-cycles-loadYZoom",
+  default: null,
+});
+
 export function PartLoadStationCycleChart() {
   useSetTitle("L/U Cycles");
   const setMatToShow = matDetails.useSetMaterialToShowInDialog();
@@ -356,17 +423,13 @@ export function PartLoadStationCycleChart() {
 
   const period = useRecoilValue(selectedAnalysisPeriod);
 
-  const demo = useIsDemo();
-  const [showGraph, setShowGraph] = React.useState(true);
-  const [selectedPart, setSelectedPart] = React.useState<PartAndProcess | undefined>(
-    demo ? { part: "aaa", proc: 2 } : undefined
-  );
-  const [selectedOperation, setSelectedOperation] = React.useState<LoadCycleFilter>(
-    demo ? "LoadOp" : "LULOccupancy"
-  );
-  const [selectedLoadStation, setSelectedLoadStation] = React.useState<string>(FilterAnyLoadKey);
-  const [selectedPallet, setSelectedPallet] = React.useState<string>();
-  const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
+  const [showGraph, setShowGraph] = useRecoilState(loadShowGraph);
+  const [selectedPart, setSelectedPart] = useRecoilState(loadSelectedPart);
+  const [selectedOperation, setSelectedOperation] = useRecoilState(loadSelectedOperation);
+  const [selectedLoadStation, setSelectedLoadStation] = useRecoilState(loadSelectedLoad);
+  const [selectedPallet, setSelectedPallet] = useRecoilState(loadSelectedPallet);
+  const [zoomDateRange, setZoomRange] = useRecoilState(loadZoomDateRange);
+  const [yZoom, setYZoom] = useRecoilState(loadYZoom);
   const curOperation =
     selectedPart && selectedOperation === "LoadOp"
       ? new PartAndStationOperation(selectedPart.part, "L/U", "LOAD" + "-" + selectedPart.proc.toString())
@@ -566,6 +629,8 @@ export function PartLoadStationCycleChart() {
             extra_tooltip={extraLoadCycleTooltip}
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
+            yZoom={yZoom}
+            setYZoom={setYZoom}
             stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
             plannedTimeMinutes={plannedMinutes}
           />
