@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* eslint-disable react/prop-types */
 import * as React from "react";
-import { Table, Box, styled } from "@mui/material";
+import { Table, Box, styled, Stack } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableRow } from "@mui/material";
@@ -227,6 +227,8 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
     [props.queue, currentSt]
   );
 
+  if (jobs.length === 0) return null;
+
   return (
     <Table size="small">
       <TableHead>
@@ -251,6 +253,73 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
     </Table>
   );
 }
+
+const RawMaterialWorkorderRow = React.memo(function RawMaterialWorkorderRow({
+  workorder,
+  inProc,
+}: {
+  workorder: Readonly<api.IActiveWorkorder>;
+  inProc: number;
+}) {
+  return (
+    <TableRow>
+      <TableCell>{workorder.workorderId}</TableCell>
+      <TableCell>{workorder.part}</TableCell>
+      <TableCell>{workorder.dueDate.toLocaleDateString()}</TableCell>
+      <TableCell>{workorder.finalizedTimeUTC ? workorder.finalizedTimeUTC.toLocaleString() : ""}</TableCell>
+      <TableCell>{workorder.priority}</TableCell>
+      <TableCell>{workorder.plannedQuantity}</TableCell>
+      <TableCell>{workorder.completedQuantity}</TableCell>
+      <TableCell>{inProc}</TableCell>
+      <TableCell>{Math.max(0, workorder.plannedQuantity - workorder.completedQuantity - inProc)}</TableCell>
+    </TableRow>
+  );
+});
+
+const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable() {
+  const curSt = useRecoilValue(currentStatus);
+  if (!curSt.workorders || curSt.workorders.length === 0) return null;
+
+  const sorted = LazySeq.of(curSt.workorders).sortBy(
+    (w) => (w.finalizedTimeUTC ? 1 : 0),
+    (w) => w.dueDate,
+    (w) => w.priority
+  );
+
+  const inProcByWorkorder = LazySeq.of(curSt.material)
+    .filter((m) => !!m.workorderId && m.workorderId !== "")
+    .buildHashMap<string, number>(
+      (m) => m.workorderId ?? "",
+      (old) => (old ?? 0) + 1
+    );
+
+  return (
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          <TableCell>Workorder</TableCell>
+          <TableCell>Part</TableCell>
+          <TableCell>Due Date</TableCell>
+          <TableCell>Finalized</TableCell>
+          <TableCell>Priority</TableCell>
+          <TableCell>Planned Qty</TableCell>
+          <TableCell>Completed Qty</TableCell>
+          <TableCell>In Process</TableCell>
+          <TableCell>Remaining To Assign</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {sorted.map((w) => (
+          <RawMaterialWorkorderRow
+            key={`${w.workorderId}-${w.part}`}
+            workorder={w}
+            inProc={inProcByWorkorder.get(w.workorderId) ?? 0}
+          />
+        ))}
+      </TableBody>
+    </Table>
+  );
+});
 
 interface EditNoteDialogProps {
   readonly job: {
@@ -555,13 +624,14 @@ export const Queues = (props: QueueProps) => {
                     )
                   : undefined}
                 {region.rawMaterialQueue ? (
-                  <div style={{ margin: "1em 5em 1em 5em", width: "100%" }}>
+                  <Stack direction="column" spacing={2} margin="1em 5em 1em 5em" width="100%">
                     <RawMaterialJobTable
                       queue={region.label}
                       editNote={setChangeNoteForJob}
                       editQty={setEditQtyForJob}
                     />
-                  </div>
+                    <RawMaterialWorkorderTable />
+                  </Stack>
                 ) : undefined}
               </Box>
             </Box>
