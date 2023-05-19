@@ -237,7 +237,6 @@ function PathLookupStep(props: PathLookupProps) {
         default_date_range={searchRange ? [searchRange.curStart, searchRange.curEnd] : []}
         zoomType={searchRange ? DataTableActionZoomType.ExtendDays : undefined}
         extendDateRange={extendDateRange}
-        defaultToTable
         hideOpenDetailColumn
       />
       <Button

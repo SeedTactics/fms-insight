@@ -54,7 +54,6 @@ export const QualityPaths = React.memo(function SelectedInspections() {
     <InspectionSankey
       inspectionlogs={filtered}
       default_date_range={[addDays(startOfToday(), -6), addDays(startOfToday(), 1)]}
-      defaultToTable={false}
       subtitle="Paths from the last 7 days"
     />
   );

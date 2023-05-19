@@ -46,12 +46,13 @@ import {
 import InspectionDataTable from "./InspectionDataTable.js";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection.js";
 import { DataTableActionZoomType } from "./DataTable.js";
-import { useIsDemo } from "../routes.js";
+import { isDemoAtom } from "../routes.js";
 import { Group } from "@visx/group";
 import { green } from "@mui/material/colors";
 import { localPoint } from "@visx/event";
 import { ParentSize } from "@visx/responsive";
 import { ChartTooltip } from "../ChartTooltip.js";
+import { atom, selector, useRecoilState } from "recoil";
 
 type NodeWithData = D3SankeyNode<SankeyNode, { readonly value: number }>;
 type LinkWithData = {
@@ -224,18 +225,33 @@ export interface InspectionSankeyProps {
   readonly zoomType?: DataTableActionZoomType;
   readonly subtitle?: string;
   readonly restrictToPart?: string;
-  readonly defaultToTable: boolean;
   readonly extendDateRange?: (numDays: number) => void;
   readonly hideOpenDetailColumn?: boolean;
 }
 
+const selectedPartAtom = atom<string | undefined>({
+  key: "insight-inspection-sankey-selectedPart",
+  default: selector({
+    key: "insight-inspection-sankey-selectedPart-default",
+    get: ({ get }) => (get(isDemoAtom) ? "aaa" : undefined),
+  }),
+});
+const selectedInspTypeAtom = atom<string | undefined>({
+  key: "insight-inspection-sankey-selectedInspType",
+  default: selector({
+    key: "insight-inspection-sankey-selectedInspType-default",
+    get: ({ get }) => (get(isDemoAtom) ? "CMM" : undefined),
+  }),
+});
+const showTableAtom = atom<boolean>({
+  key: "insight-inspection-sankey-showTable",
+  default: false,
+});
+
 export function InspectionSankey(props: InspectionSankeyProps) {
-  const demo = useIsDemo();
-  const [curPart, setSelectedPart] = React.useState<string | undefined>(demo ? "aaa" : undefined);
-  const [selectedInspectType, setSelectedInspectType] = React.useState<string | undefined>(
-    demo ? "CMM" : undefined
-  );
-  const [showTable, setShowTable] = React.useState<boolean>(props.defaultToTable);
+  const [curPart, setSelectedPart] = useRecoilState(selectedPartAtom);
+  const [selectedInspectType, setSelectedInspectType] = useRecoilState(selectedInspTypeAtom);
+  const [showTable, setShowTable] = useRecoilState(showTableAtom);
 
   let curData: Iterable<InspectionLogEntry> | undefined;
   const selectedPart = props.restrictToPart || curPart;

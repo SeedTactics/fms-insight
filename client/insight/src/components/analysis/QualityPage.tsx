@@ -60,7 +60,6 @@ export function AnalysisQualityPage() {
       inspectionlogs={inspectionlogs}
       zoomType={zoomType}
       default_date_range={default_date_range}
-      defaultToTable={false}
     />
   );
 }
