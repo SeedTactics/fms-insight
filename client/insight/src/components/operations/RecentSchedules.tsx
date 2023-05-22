@@ -61,6 +61,7 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
+import { useSetTitle } from "../routes.js";
 
 export const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
   (props: { $darkRow?: boolean }) => ({
@@ -377,9 +378,7 @@ export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.El
 });
 
 export function RecentSchedulesPage(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Scheduled Jobs - FMS Insight";
-  }, []);
+  useSetTitle("Scheduled Jobs");
   return (
     <main style={{ padding: "24px" }}>
       <RecentSchedulesCard />

@@ -70,8 +70,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     _checkJobsMock = Substitute.For<ICheckJobsValid>();
 
     _settings = new FMSSettings();
-    _settings.Queues.Add("q1", new QueueSize());
-    _settings.Queues.Add("q2", new QueueSize());
+    _settings.Queues.Add("q1", new QueueInfo());
+    _settings.Queues.Add("q2", new QueueInfo());
   }
 
   void IDisposable.Dispose()
@@ -125,7 +125,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
           Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
           Material = ImmutableList<InProcessMaterial>.Empty,
           Alarms = ImmutableList<string>.Empty,
-          QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+          Queues = ImmutableDictionary<string, QueueInfo>.Empty
         }
       };
       return true;
@@ -157,7 +157,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
-        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty
       };
     _curSt = new MockCellState()
     {
@@ -258,7 +258,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
-        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty
       }
     );
 
@@ -336,7 +336,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
-        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty
       }
     );
 
@@ -1153,7 +1153,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
-        QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty
       }
     );
 

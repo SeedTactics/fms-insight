@@ -31,9 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
-import { ICurrentStatus, IHistoricData, IJob, ILogEntry, LogType } from "../network/api.js";
+import { ICurrentStatus, IHistoricData, IJob, ILogEntry, LogType, QueueRole } from "../network/api.js";
 import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 const rawMaterialQueuesRW = atom<ReadonlySet<string>>({
   key: "rawMaterialQueueNames",
@@ -111,6 +112,20 @@ function onNewJobs(t: TransactionInterface_UNSTABLE, newJobs: ReadonlyArray<Read
 
 function onCurrentStatus(t: TransactionInterface_UNSTABLE, st: Readonly<ICurrentStatus>): void {
   onNewJobs(t, Object.values(st.jobs));
+
+  const rawMatQueues = t.get(rawMaterialQueuesRW);
+
+  const newQ = new Set<string>();
+  for (const [queue, info] of LazySeq.ofObject(st.queues)) {
+    if (info.role === QueueRole.RawMaterial) {
+      if (!rawMatQueues.has(queue)) {
+        newQ.add(queue);
+      }
+    }
+  }
+  if (newQ.size > 0) {
+    t.set(rawMaterialQueuesRW, new Set([...rawMatQueues, ...newQ]));
+  }
 }
 
 function onLog(t: TransactionInterface_UNSTABLE, evts: Iterable<Readonly<ILogEntry>>): void {

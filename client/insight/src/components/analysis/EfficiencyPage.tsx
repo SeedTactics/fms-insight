@@ -32,9 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { addMonths, addDays, startOfToday } from "date-fns";
-import { Extension as ExtensionIcon, HourglassFull as HourglassIcon } from "@mui/icons-material";
 
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { SelectableHeatChart } from "./HeatChart.js";
 import {
@@ -49,8 +47,7 @@ import {
   binSimProductionByDayAndPart,
   copyCompletedPartsHeatmapToClipboard,
 } from "../../data/results.completed-parts.js";
-import { BufferOccupancyChart } from "./BufferChart.js";
-import { useRecoilValue } from "recoil";
+import { atom, useRecoilState, useRecoilValue } from "recoil";
 import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use.js";
 import {
   last30SimProduction,
@@ -68,6 +65,7 @@ import {
   specificMonthStationCycles,
 } from "../../cell-status/station-cycles.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { useSetTitle } from "../routes.js";
 
 // --------------------------------------------------------------------------------
 // Oee Heatmap
@@ -89,8 +87,14 @@ function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
     .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
 }
 
-function StationOeeHeatmap() {
-  const [selected, setSelected] = React.useState<StationOeeHeatmapTypes>("Standard OEE");
+const selectedStationOeeHeatmapType = atom<StationOeeHeatmapTypes>({
+  key: "fms-insight-selected-station-oee-heatmap-type",
+  default: "Standard OEE",
+});
+
+export function StationOeeHeatmap() {
+  useSetTitle("Station OEE");
+  const [selected, setSelected] = useRecoilState(selectedStationOeeHeatmapType);
 
   const period = useRecoilValue(selectedAnalysisPeriod);
   const dateRange: [Date, Date] =
@@ -112,11 +116,10 @@ function StationOeeHeatmap() {
 
   return (
     <SelectableHeatChart<StationOeeHeatmapTypes>
-      card_label="Station Use"
+      label="Station Usage Per Day"
       y_title="Station"
       label_title={selected === "Occupied" ? "Occupied" : "OEE"}
       dateRange={dateRange}
-      icon={<HourglassIcon style={{ color: "#6D4C41" }} />}
       cur_selected={selected}
       options={["Standard OEE", "Occupied", "Planned OEE"]}
       setSelected={setSelected}
@@ -131,6 +134,11 @@ function StationOeeHeatmap() {
 // --------------------------------------------------------------------------------
 
 type CompletedPartsHeatmapTypes = "Planned" | "Completed";
+
+const selectedCompletedPartsHeatmapType = atom<CompletedPartsHeatmapTypes>({
+  key: "fms-insight-selected-completed-parts-heatmap-type",
+  default: "Completed",
+});
 
 function partsCompletedPoints(
   partCycles: Iterable<PartCycleData>,
@@ -169,8 +177,9 @@ function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
     .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
 }
 
-function CompletedCountHeatmap() {
-  const [selected, setSelected] = React.useState<CompletedPartsHeatmapTypes>("Completed");
+export function CompletedCountHeatmap() {
+  useSetTitle("Part Production");
+  const [selected, setSelected] = useRecoilState(selectedCompletedPartsHeatmapType);
 
   const period = useRecoilValue(selectedAnalysisPeriod);
   const dateRange: [Date, Date] =
@@ -197,50 +206,15 @@ function CompletedCountHeatmap() {
   }, [selected, cycles, matSummary, productionCounts]);
   return (
     <SelectableHeatChart
-      card_label="Part Production"
+      label="Part Production Per Day"
       y_title="Part"
       label_title={selected}
       dateRange={dateRange}
-      icon={<ExtensionIcon style={{ color: "#6D4C41" }} />}
       cur_selected={selected}
       options={["Completed", "Planned"]}
       setSelected={setSelected}
       points={points}
       onExport={() => copyCompletedPartsHeatmapToClipboard(points)}
     />
-  );
-}
-
-// --------------------------------------------------------------------------------
-// Efficiency
-// --------------------------------------------------------------------------------
-
-export function EfficiencyCards(): JSX.Element {
-  return (
-    <>
-      <div style={{ marginTop: "3em" }}>
-        <BufferOccupancyChart />
-      </div>
-      <div style={{ marginTop: "3em" }}>
-        <StationOeeHeatmap />
-      </div>
-      <div style={{ marginTop: "3em" }}>
-        <CompletedCountHeatmap />
-      </div>
-    </>
-  );
-}
-
-export default function Efficiency(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Efficiency - FMS Insight";
-  }, []);
-  return (
-    <>
-      <AnalysisSelectToolbar />
-      <main style={{ padding: "24px" }}>
-        <EfficiencyCards />
-      </main>
-    </>
   );
 }

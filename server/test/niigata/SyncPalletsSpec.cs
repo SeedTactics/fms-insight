@@ -65,8 +65,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
       };
       _fmsSt = new FMSSettings();
-      _fmsSt.Queues.Add("Transfer", new QueueSize() { MaxSizeBeforeStopUnloading = -1 });
-      _fmsSt.Queues.Add("sizedQ", new QueueSize() { MaxSizeBeforeStopUnloading = 1 });
+      _fmsSt.Queues.Add("Transfer", new QueueInfo() { MaxSizeBeforeStopUnloading = -1 });
+      _fmsSt.Queues.Add("sizedQ", new QueueInfo() { MaxSizeBeforeStopUnloading = 1 });
 
       _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(_serialSt);
       _logDB = _logDBCfg.OpenConnection();

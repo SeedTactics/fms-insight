@@ -1459,6 +1459,33 @@ namespace MachineWatchTest
     {
       var t = DateTime.UtcNow.AddHours(-1);
 
+      var earlierWork = _fixture.Create<Workorder>() with { WorkorderId = "earlierwork" };
+      var work1part1 = _fixture.Create<Workorder>() with { WorkorderId = "work1", Part = "part1" };
+      var work1part2 = _fixture.Create<Workorder>() with { WorkorderId = "work1", Part = "part2" };
+      var work2 = _fixture.Create<Workorder>() with { WorkorderId = "work2", Part = "part3" };
+
+      _jobLog.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = "aaaa",
+          Jobs = ImmutableList<Job>.Empty,
+          CurrentUnfilledWorkorders = ImmutableList.Create(earlierWork),
+        },
+        null,
+        true
+      );
+
+      _jobLog.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = "cccc",
+          Jobs = ImmutableList<Job>.Empty,
+          CurrentUnfilledWorkorders = ImmutableList.Create(work1part1, work1part2, work2),
+        },
+        null,
+        true
+      );
+
       //one material across two processes
       var mat1 = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
       var mat1_proc1 = new LogMaterial(mat1, "uniq1", 1, "part1", 2, "", "", "");
@@ -1632,61 +1659,91 @@ namespace MachineWatchTest
       _jobLog.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(mat6), "work2");
       Assert.Equal("work2", _jobLog.GetMaterialDetails(mat5.MaterialID).Workorder);
 
-      var summary = _jobLog.GetWorkorderSummaries(new[] { "work1", "work2" });
-      Assert.Equal(2, summary.Count);
-
-      //work1 contains part1 from mat1 and mat3, and part2 from mat4
-      Assert.Equal("work1", summary[0].WorkorderId);
-      Assert.False(summary[0].FinalizedTimeUTC.HasValue);
-      Assert.Equal(new[] { "serial1", "serial3", "serial4" }, summary[0].Serials);
-      var work1Parts = summary[0].Parts;
-      Assert.Equal(2, work1Parts.Count);
-      var work1Part1 = work1Parts[0];
-      var work1Part2 = work1Parts[1];
-
-      Assert.Equal("part1", work1Part1.Part);
-      Assert.Equal(2, work1Part1.PartsCompleted); //mat1 and mat3
-      Assert.Equal(2, work1Part1.ElapsedStationTime.Count);
-      Assert.Equal(2, work1Part1.ActiveStationTime.Count);
-
       double c2Cnt = 4; //number of material on cycle 2
 
-      //10 + 30 from mat1, 3*1/4 for mat3
-      Assert.Equal(TimeSpan.FromMinutes(10 + 30 + 3 * 1 / c2Cnt), work1Part1.ElapsedStationTime["MC"]);
+      var expectedActiveWorks = new[]
+      {
+        new ActiveWorkorder()
+        {
+          WorkorderId = "work1",
+          Part = work1part1.Part,
+          PlannedQuantity = work1part1.Quantity,
+          DueDate = work1part1.DueDate,
+          Priority = work1part1.Priority,
+          CompletedQuantity = 2, // mat1 and mat3
+          Serials = ImmutableList.Create("serial1", "serial3"),
+          FinalizedTimeUTC = null,
+          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty
+            .Add("MC", TimeSpan.FromMinutes(10 + 30 + 3 * 1 / c2Cnt)) //10 + 30 from mat1, 3*1/4 for mat3
+            .Add(
+              "Load",
+              TimeSpan.FromMinutes(50 / 2 + 5 * 1 / c2Cnt)
+            ) //50/2 from mat1_proc2, and 5*1/4 for mat3
+          ,
+          ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
+            .Add("MC", TimeSpan.FromMinutes(20 + 40 + 4 * 1 / c2Cnt)) //20 + 40 from mat1, 4*1/4 for mat3
+            .Add("Load", TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt)) //60/2 from mat1_proc2, and 6*1/4 for mat3
+        },
+        new ActiveWorkorder()
+        {
+          WorkorderId = "work1",
+          Part = work1part2.Part,
+          PlannedQuantity = work1part2.Quantity,
+          DueDate = work1part2.DueDate,
+          Priority = work1part2.Priority,
+          CompletedQuantity = 1,
+          Serials = ImmutableList.Create("serial4"),
+          FinalizedTimeUTC = null,
+          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty
+            .Add("MC", TimeSpan.FromMinutes(3 * 1 / c2Cnt))
+            .Add("Load", TimeSpan.FromMinutes(5 * 1 / c2Cnt)),
+          ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
+            .Add("MC", TimeSpan.FromMinutes(4 * 1 / c2Cnt))
+            .Add("Load", TimeSpan.FromMinutes(6 * 1 / c2Cnt))
+        },
+        new ActiveWorkorder()
+        {
+          WorkorderId = "work2",
+          Part = work2.Part,
+          PlannedQuantity = work2.Quantity,
+          DueDate = work2.DueDate,
+          Priority = work2.Priority,
+          CompletedQuantity = 2,
+          Serials = ImmutableList.Create("serial5", "serial6"),
+          FinalizedTimeUTC = null,
+          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty
+            .Add("MC", TimeSpan.FromMinutes(3 * 2 / c2Cnt))
+            .Add("Load", TimeSpan.FromMinutes(5 * 2 / c2Cnt)),
+          ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
+            .Add("MC", TimeSpan.FromMinutes(4 * 2 / c2Cnt))
+            .Add("Load", TimeSpan.FromMinutes(6 * 2 / c2Cnt))
+        }
+      };
 
-      //50/2 from mat1_proc2, and 5*1/4 for mat3
-      Assert.Equal(TimeSpan.FromMinutes(50 / 2 + 5 * 1 / c2Cnt), work1Part1.ElapsedStationTime["Load"]);
-
-      //20 + 40 from mat1, 4*1/4 for mat3
-      Assert.Equal(TimeSpan.FromMinutes(20 + 40 + 4 * 1 / c2Cnt), work1Part1.ActiveStationTime["MC"]);
-
-      //60/2 from mat1_proc2, and 6*1/4 for mat3
-      Assert.Equal(TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt), work1Part1.ActiveStationTime["Load"]);
-
-      Assert.Equal("part2", work1Part2.Part);
-      Assert.Equal(1, work1Part2.PartsCompleted); //part2 is just mat4
-      Assert.Equal(2, work1Part2.ElapsedStationTime.Count);
-      Assert.Equal(2, work1Part2.ActiveStationTime.Count);
-      Assert.Equal(TimeSpan.FromMinutes(3 * 1 / c2Cnt), work1Part2.ElapsedStationTime["MC"]);
-      Assert.Equal(TimeSpan.FromMinutes(5 * 1 / c2Cnt), work1Part2.ElapsedStationTime["Load"]);
-      Assert.Equal(TimeSpan.FromMinutes(4 * 1 / c2Cnt), work1Part2.ActiveStationTime["MC"]);
-      Assert.Equal(TimeSpan.FromMinutes(6 * 1 / c2Cnt), work1Part2.ActiveStationTime["Load"]);
-
-      //------- work2
-
-      Assert.Equal("work2", summary[1].WorkorderId);
-      Assert.False(summary[1].FinalizedTimeUTC.HasValue);
-      Assert.Equal(new[] { "serial5", "serial6" }, summary[1].Serials);
-      summary[1].Parts.Count.Should().Be(1);
-      var work2Part2 = summary[1].Parts[0];
-      Assert.Equal("part3", work2Part2.Part); //part3 is mat5 and 6
-      Assert.Equal(2, work2Part2.PartsCompleted); //part3 is mat5 and 6
-      Assert.Equal(2, work2Part2.ElapsedStationTime.Count);
-      Assert.Equal(2, work2Part2.ActiveStationTime.Count);
-      Assert.Equal(TimeSpan.FromMinutes(3 * 2 / c2Cnt), work2Part2.ElapsedStationTime["MC"]);
-      Assert.Equal(TimeSpan.FromMinutes(5 * 2 / c2Cnt), work2Part2.ElapsedStationTime["Load"]);
-      Assert.Equal(TimeSpan.FromMinutes(4 * 2 / c2Cnt), work2Part2.ActiveStationTime["MC"]);
-      Assert.Equal(TimeSpan.FromMinutes(6 * 2 / c2Cnt), work2Part2.ActiveStationTime["Load"]);
+      _jobLog.GetActiveWorkordersForSchedule(scheduleId: "cccc").Should().BeEquivalentTo(expectedActiveWorks);
+      _jobLog.GetActiveWorkordersForMostRecentSchedule().Should().BeEquivalentTo(expectedActiveWorks);
+      _jobLog.GetActiveWorkordersForSchedule(scheduleId: "unused").Should().BeEmpty();
+      _jobLog
+        .GetActiveWorkordersForSchedule(scheduleId: "aaaa")
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            new ActiveWorkorder()
+            {
+              WorkorderId = "earlierwork",
+              Part = earlierWork.Part,
+              PlannedQuantity = earlierWork.Quantity,
+              DueDate = earlierWork.DueDate,
+              Priority = earlierWork.Priority,
+              CompletedQuantity = 0,
+              Serials = ImmutableList<string>.Empty,
+              FinalizedTimeUTC = null,
+              ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
+            }
+          }
+        );
 
       //---- test finalize
       var finalizedEntry = _jobLog.RecordFinalizedWorkorder("work1");
@@ -1694,14 +1751,23 @@ namespace MachineWatchTest
       Assert.Equal("work1", finalizedEntry.Result);
       Assert.Equal(LogType.FinalizeWorkorder, finalizedEntry.LogType);
 
-      summary = _jobLog.GetWorkorderSummaries(new[] { "work1" });
-      Assert.Equal("work1", summary[0].WorkorderId);
-      Assert.True(summary[0].FinalizedTimeUTC.HasValue);
-      Assert.InRange(
-        summary[0].FinalizedTimeUTC.Value.Subtract(DateTime.UtcNow),
-        TimeSpan.FromSeconds(-1),
-        TimeSpan.FromSeconds(1)
-      );
+      _jobLog
+        .GetActiveWorkordersForMostRecentSchedule()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            expectedActiveWorks[0] with
+            {
+              FinalizedTimeUTC = finalizedEntry.EndTimeUTC
+            },
+            expectedActiveWorks[1] with
+            {
+              FinalizedTimeUTC = finalizedEntry.EndTimeUTC
+            },
+            expectedActiveWorks[2]
+          }
+        );
     }
 
     [Fact]

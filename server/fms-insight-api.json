@@ -373,7 +373,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/Workorder"
+                    "$ref": "#/components/schemas/ActiveWorkorder"
                   }
                 }
               }
@@ -1498,84 +1498,6 @@
                   "items": {
                     "$ref": "#/components/schemas/MaterialDetails"
                   }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/log/workorders": {
-      "get": {
-        "tags": [
-          "log"
-        ],
-        "operationId": "log_GetWorkorders",
-        "parameters": [
-          {
-            "name": "ids",
-            "in": "query",
-            "style": "form",
-            "explode": true,
-            "required": true,
-            "schema": {
-              "type": "array",
-              "nullable": true,
-              "items": {
-                "type": "string"
-              }
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WorkorderSummary"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/log/workorders.csv": {
-      "get": {
-        "tags": [
-          "log"
-        ],
-        "operationId": "log_GetWorkordersCSV",
-        "parameters": [
-          {
-            "name": "ids",
-            "in": "query",
-            "style": "form",
-            "explode": true,
-            "required": true,
-            "schema": {
-              "type": "array",
-              "nullable": true,
-              "items": {
-                "type": "string"
-              }
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
                 }
               }
             }
@@ -3097,7 +3019,7 @@
           "Queues": {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/QueueSize"
+              "$ref": "#/components/schemas/QueueInfo"
             }
           },
           "MachineLocations": {
@@ -3105,6 +3027,13 @@
             "nullable": true,
             "items": {
               "$ref": "#/components/schemas/MachineLocation"
+            }
+          },
+          "Workorders": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/ActiveWorkorder"
             }
           }
         }
@@ -3476,7 +3405,7 @@
           "Machining"
         ]
       },
-      "QueueSize": {
+      "QueueInfo": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -3484,8 +3413,32 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "Role": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/QueueRole"
+              }
+            ]
           }
         }
+      },
+      "QueueRole": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "RawMaterial",
+          "InProcessTransfer",
+          "Quarantine",
+          "Other"
+        ],
+        "enum": [
+          "RawMaterial",
+          "InProcessTransfer",
+          "Quarantine",
+          "Other"
+        ]
       },
       "MachineLocation": {
         "type": "object",
@@ -3518,6 +3471,70 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          }
+        }
+      },
+      "ActiveWorkorder": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "WorkorderId",
+          "Part",
+          "PlannedQuantity",
+          "DueDate",
+          "Priority",
+          "CompletedQuantity",
+          "Serials",
+          "ElapsedStationTime",
+          "ActiveStationTime"
+        ],
+        "properties": {
+          "WorkorderId": {
+            "type": "string"
+          },
+          "Part": {
+            "type": "string"
+          },
+          "PlannedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "DueDate": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "Priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "CompletedQuantity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "Serials": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "FinalizedTimeUTC": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "ElapsedStationTime": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "duration"
+            }
+          },
+          "ActiveStationTime": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "format": "duration"
+            }
           }
         }
       },
@@ -3763,70 +3780,6 @@
           "Quantity": {
             "type": "integer",
             "format": "int32"
-          }
-        }
-      },
-      "WorkorderSummary": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "parts",
-          "serials"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "parts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/WorkorderPartSummary"
-            }
-          },
-          "serials": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "finalized": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        }
-      },
-      "WorkorderPartSummary": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "name",
-          "completed-qty",
-          "elapsed-station-time",
-          "active-stat-time"
-        ],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "completed-qty": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "elapsed-station-time": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "format": "duration"
-            }
-          },
-          "active-stat-time": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "format": "duration"
-            }
           }
         }
       },

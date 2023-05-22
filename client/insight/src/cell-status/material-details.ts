@@ -48,13 +48,11 @@ import {
   ILogEntry,
   ILogMaterial,
   IMaterialDetails,
-  IWorkorder,
-  IWorkorderPartSummary,
-  IWorkorderSummary,
   LogType,
   NewInspectionCompleted,
   NewCloseout,
   QueuePosition,
+  IActiveWorkorder,
 } from "../network/api.js";
 import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
@@ -315,40 +313,18 @@ export const materialInDialogInspections = selector<MaterialToShowInspections>({
 // Workorders
 //--------------------------------------------------------------------------------
 
-export interface WorkorderPlanAndSummary {
-  readonly plan: Readonly<IWorkorder>;
-  readonly summary?: Readonly<IWorkorderPartSummary>;
-}
-
-export const possibleWorkordersForMaterialInDialog = selector<ReadonlyArray<WorkorderPlanAndSummary>>({
+export const possibleWorkordersForMaterialInDialog = selector<ReadonlyArray<IActiveWorkorder>>({
   key: "possible-workorders-for-mat-in-dialog",
   get: async ({ get }) => {
     const mat = get(materialInDialogInfo);
     if (mat === null || mat.partName === "") return [];
 
     const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName);
-    const summaries: IWorkorderSummary[] = [];
-    for (const ws of LazySeq.of(works).chunk(16)) {
-      summaries.push(...(await LogBackend.getWorkorders(ws.map((w) => w.workorderId))));
-    }
 
-    const workMap = new Map<string, WorkorderPlanAndSummary>();
-    for (const w of works) {
-      workMap.set(w.workorderId, { plan: w });
-    }
-    for (const s of summaries) {
-      for (const w of s.parts) {
-        if (w.name === mat.partName) {
-          const planAndS = workMap.get(s.id);
-          if (planAndS) {
-            workMap.set(s.id, { ...planAndS, summary: w });
-          }
-        }
-      }
-    }
-    return LazySeq.of(workMap.values()).toSortedArray(
-      (w) => w.plan.dueDate.getTime(),
-      (w) => -w.plan.priority
+    return LazySeq.of(works).toSortedArray(
+      (w) => (w.finalizedTimeUTC ? 1 : 0),
+      (w) => w.dueDate.getTime(),
+      (w) => -w.priority
     );
   },
   cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },

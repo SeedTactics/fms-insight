@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { useRecoilValue } from "recoil";
 import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs.js";
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import {
@@ -54,6 +53,7 @@ import {
 import { JobDetailRow, JobTableRow } from "../operations/RecentSchedules.js";
 import { JobDetails } from "../station-monitor/JobDetails.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
+import { useSetTitle } from "../routes.js";
 
 enum ScheduleCols {
   Date,
@@ -173,12 +173,9 @@ export function ScheduleTable() {
 }
 
 export function ScheduleHistory(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Scheduled Jobs - FMS Insight";
-  }, []);
+  useSetTitle("Scheduled Jobs");
   return (
     <>
-      <AnalysisSelectToolbar />
       <main style={{ padding: "24px" }}>
         <ScheduleTable />
       </main>

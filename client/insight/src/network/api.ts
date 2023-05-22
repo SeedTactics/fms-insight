@@ -387,7 +387,7 @@ export class JobsClient {
         return Promise.resolve<PlannedSchedule>(null as any);
     }
 
-    mostRecentUnfilledWorkordersForPart(part: string): Promise<Workorder[]> {
+    mostRecentUnfilledWorkordersForPart(part: string): Promise<ActiveWorkorder[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-part/{part}";
         if (part === undefined || part === null)
             throw new Error("The parameter 'part' must be defined.");
@@ -406,7 +406,7 @@ export class JobsClient {
         });
     }
 
-    protected processMostRecentUnfilledWorkordersForPart(response: Response): Promise<Workorder[]> {
+    protected processMostRecentUnfilledWorkordersForPart(response: Response): Promise<ActiveWorkorder[]> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -416,7 +416,7 @@ export class JobsClient {
             if (Array.isArray(resultData200)) {
                 result200 = [] as any;
                 for (let item of resultData200)
-                    result200!.push(Workorder.fromJS(item));
+                    result200!.push(ActiveWorkorder.fromJS(item));
             }
             else {
                 result200 = <any>null;
@@ -428,7 +428,7 @@ export class JobsClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<Workorder[]>(null as any);
+        return Promise.resolve<ActiveWorkorder[]>(null as any);
     }
 
     replaceWorkordersForScheduleId(scheduleId: string, workorders: WorkordersAndPrograms): Promise<void> {
@@ -1554,93 +1554,6 @@ export class LogClient {
             });
         }
         return Promise.resolve<MaterialDetails[]>(null as any);
-    }
-
-    getWorkorders(ids: string[] | null): Promise<WorkorderSummary[]> {
-        let url_ = this.baseUrl + "/api/v1/log/workorders?";
-        if (ids === undefined)
-            throw new Error("The parameter 'ids' must be defined.");
-        else if(ids !== null)
-            ids && ids.forEach(item => { url_ += "ids=" + encodeURIComponent("" + item) + "&"; });
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetWorkorders(_response);
-        });
-    }
-
-    protected processGetWorkorders(response: Response): Promise<WorkorderSummary[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(WorkorderSummary.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<WorkorderSummary[]>(null as any);
-    }
-
-    getWorkordersCSV(ids: string[] | null): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/v1/log/workorders.csv?";
-        if (ids === undefined)
-            throw new Error("The parameter 'ids' must be defined.");
-        else if(ids !== null)
-            ids && ids.forEach(item => { url_ += "ids=" + encodeURIComponent("" + item) + "&"; });
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/octet-stream"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetWorkordersCSV(_response);
-        });
-    }
-
-    protected processGetWorkordersCSV(response: Response): Promise<FileResponse> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return response.blob().then(blob => { return { fileName: fileName, data: blob, status: status, headers: _headers }; });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<FileResponse>(null as any);
     }
 
     setSerial(materialID: number, process: number | undefined, serial: string): Promise<LogEntry> {
@@ -3661,8 +3574,9 @@ export class CurrentStatus implements ICurrentStatus {
     pallets!: { [key: string]: PalletStatus; };
     material!: InProcessMaterial[];
     alarms!: string[];
-    queues!: { [key: string]: QueueSize; };
+    queues!: { [key: string]: QueueInfo; };
     machineLocations?: MachineLocation[] | undefined;
+    workorders?: ActiveWorkorder[] | undefined;
 
     constructor(data?: ICurrentStatus) {
         if (data) {
@@ -3711,13 +3625,18 @@ export class CurrentStatus implements ICurrentStatus {
                 this.queues = {} as any;
                 for (let key in _data["Queues"]) {
                     if (_data["Queues"].hasOwnProperty(key))
-                        (<any>this.queues)![key] = _data["Queues"][key] ? QueueSize.fromJS(_data["Queues"][key]) : new QueueSize();
+                        (<any>this.queues)![key] = _data["Queues"][key] ? QueueInfo.fromJS(_data["Queues"][key]) : new QueueInfo();
                 }
             }
             if (Array.isArray(_data["MachineLocations"])) {
                 this.machineLocations = [] as any;
                 for (let item of _data["MachineLocations"])
                     this.machineLocations!.push(MachineLocation.fromJS(item));
+            }
+            if (Array.isArray(_data["Workorders"])) {
+                this.workorders = [] as any;
+                for (let item of _data["Workorders"])
+                    this.workorders!.push(ActiveWorkorder.fromJS(item));
             }
         }
     }
@@ -3768,6 +3687,11 @@ export class CurrentStatus implements ICurrentStatus {
             for (let item of this.machineLocations)
                 data["MachineLocations"].push(item.toJSON());
         }
+        if (Array.isArray(this.workorders)) {
+            data["Workorders"] = [];
+            for (let item of this.workorders)
+                data["Workorders"].push(item.toJSON());
+        }
         return data;
     }
 }
@@ -3778,8 +3702,9 @@ export interface ICurrentStatus {
     pallets: { [key: string]: PalletStatus; };
     material: InProcessMaterial[];
     alarms: string[];
-    queues: { [key: string]: QueueSize; };
+    queues: { [key: string]: QueueInfo; };
     machineLocations?: MachineLocation[] | undefined;
+    workorders?: ActiveWorkorder[] | undefined;
 }
 
 export class HistoricJob extends Job implements IHistoricJob {
@@ -4302,10 +4227,11 @@ export enum ActionType {
     Machining = "Machining",
 }
 
-export class QueueSize implements IQueueSize {
+export class QueueInfo implements IQueueInfo {
     maxSizeBeforeStopUnloading?: number | undefined;
+    role?: QueueRole | undefined;
 
-    constructor(data?: IQueueSize) {
+    constructor(data?: IQueueInfo) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -4317,12 +4243,13 @@ export class QueueSize implements IQueueSize {
     init(_data?: any) {
         if (_data) {
             this.maxSizeBeforeStopUnloading = _data["MaxSizeBeforeStopUnloading"];
+            this.role = _data["Role"];
         }
     }
 
-    static fromJS(data: any): QueueSize {
+    static fromJS(data: any): QueueInfo {
         data = typeof data === 'object' ? data : {};
-        let result = new QueueSize();
+        let result = new QueueInfo();
         result.init(data);
         return result;
     }
@@ -4330,12 +4257,21 @@ export class QueueSize implements IQueueSize {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["MaxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
+        data["Role"] = this.role;
         return data;
     }
 }
 
-export interface IQueueSize {
+export interface IQueueInfo {
     maxSizeBeforeStopUnloading?: number | undefined;
+    role?: QueueRole | undefined;
+}
+
+export enum QueueRole {
+    RawMaterial = "RawMaterial",
+    InProcessTransfer = "InProcessTransfer",
+    Quarantine = "Quarantine",
+    Other = "Other",
 }
 
 export class MachineLocation implements IMachineLocation {
@@ -4399,6 +4335,115 @@ export interface IMachineLocation {
     moving: boolean;
     possibleLoadStations: number[];
     currentLoadStation?: number | undefined;
+}
+
+export class ActiveWorkorder implements IActiveWorkorder {
+    workorderId!: string;
+    part!: string;
+    plannedQuantity!: number;
+    dueDate!: Date;
+    priority!: number;
+    completedQuantity!: number;
+    serials!: string[];
+    finalizedTimeUTC?: Date | undefined;
+    elapsedStationTime!: { [key: string]: string; };
+    activeStationTime!: { [key: string]: string; };
+
+    constructor(data?: IActiveWorkorder) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+        if (!data) {
+            this.serials = [];
+            this.elapsedStationTime = {};
+            this.activeStationTime = {};
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.workorderId = _data["WorkorderId"];
+            this.part = _data["Part"];
+            this.plannedQuantity = _data["PlannedQuantity"];
+            this.dueDate = _data["DueDate"] ? new Date(_data["DueDate"].toString()) : <any>undefined;
+            this.priority = _data["Priority"];
+            this.completedQuantity = _data["CompletedQuantity"];
+            if (Array.isArray(_data["Serials"])) {
+                this.serials = [] as any;
+                for (let item of _data["Serials"])
+                    this.serials!.push(item);
+            }
+            this.finalizedTimeUTC = _data["FinalizedTimeUTC"] ? new Date(_data["FinalizedTimeUTC"].toString()) : <any>undefined;
+            if (_data["ElapsedStationTime"]) {
+                this.elapsedStationTime = {} as any;
+                for (let key in _data["ElapsedStationTime"]) {
+                    if (_data["ElapsedStationTime"].hasOwnProperty(key))
+                        (<any>this.elapsedStationTime)![key] = _data["ElapsedStationTime"][key];
+                }
+            }
+            if (_data["ActiveStationTime"]) {
+                this.activeStationTime = {} as any;
+                for (let key in _data["ActiveStationTime"]) {
+                    if (_data["ActiveStationTime"].hasOwnProperty(key))
+                        (<any>this.activeStationTime)![key] = _data["ActiveStationTime"][key];
+                }
+            }
+        }
+    }
+
+    static fromJS(data: any): ActiveWorkorder {
+        data = typeof data === 'object' ? data : {};
+        let result = new ActiveWorkorder();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["WorkorderId"] = this.workorderId;
+        data["Part"] = this.part;
+        data["PlannedQuantity"] = this.plannedQuantity;
+        data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
+        data["Priority"] = this.priority;
+        data["CompletedQuantity"] = this.completedQuantity;
+        if (Array.isArray(this.serials)) {
+            data["Serials"] = [];
+            for (let item of this.serials)
+                data["Serials"].push(item);
+        }
+        data["FinalizedTimeUTC"] = this.finalizedTimeUTC ? this.finalizedTimeUTC.toISOString() : <any>undefined;
+        if (this.elapsedStationTime) {
+            data["ElapsedStationTime"] = {};
+            for (let key in this.elapsedStationTime) {
+                if (this.elapsedStationTime.hasOwnProperty(key))
+                    (<any>data["ElapsedStationTime"])[key] = (<any>this.elapsedStationTime)[key];
+            }
+        }
+        if (this.activeStationTime) {
+            data["ActiveStationTime"] = {};
+            for (let key in this.activeStationTime) {
+                if (this.activeStationTime.hasOwnProperty(key))
+                    (<any>data["ActiveStationTime"])[key] = (<any>this.activeStationTime)[key];
+            }
+        }
+        return data;
+    }
+}
+
+export interface IActiveWorkorder {
+    workorderId: string;
+    part: string;
+    plannedQuantity: number;
+    dueDate: Date;
+    priority: number;
+    completedQuantity: number;
+    serials: string[];
+    finalizedTimeUTC?: Date | undefined;
+    elapsedStationTime: { [key: string]: string; };
+    activeStationTime: { [key: string]: string; };
 }
 
 export class EditMaterialInLogEvents implements IEditMaterialInLogEvents {
@@ -4938,150 +4983,6 @@ export interface IJobAndDecrementQuantity {
     timeUTC: Date;
     part: string;
     quantity: number;
-}
-
-export class WorkorderSummary implements IWorkorderSummary {
-    id!: string;
-    parts!: WorkorderPartSummary[];
-    serials!: string[];
-    finalized?: Date | undefined;
-
-    constructor(data?: IWorkorderSummary) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.parts = [];
-            this.serials = [];
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            if (Array.isArray(_data["parts"])) {
-                this.parts = [] as any;
-                for (let item of _data["parts"])
-                    this.parts!.push(WorkorderPartSummary.fromJS(item));
-            }
-            if (Array.isArray(_data["serials"])) {
-                this.serials = [] as any;
-                for (let item of _data["serials"])
-                    this.serials!.push(item);
-            }
-            this.finalized = _data["finalized"] ? new Date(_data["finalized"].toString()) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): WorkorderSummary {
-        data = typeof data === 'object' ? data : {};
-        let result = new WorkorderSummary();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        if (Array.isArray(this.parts)) {
-            data["parts"] = [];
-            for (let item of this.parts)
-                data["parts"].push(item.toJSON());
-        }
-        if (Array.isArray(this.serials)) {
-            data["serials"] = [];
-            for (let item of this.serials)
-                data["serials"].push(item);
-        }
-        data["finalized"] = this.finalized ? this.finalized.toISOString() : <any>undefined;
-        return data;
-    }
-}
-
-export interface IWorkorderSummary {
-    id: string;
-    parts: WorkorderPartSummary[];
-    serials: string[];
-    finalized?: Date | undefined;
-}
-
-export class WorkorderPartSummary implements IWorkorderPartSummary {
-    name!: string;
-    completedQty!: number;
-    elapsedStationTime!: { [key: string]: string; };
-    activeStatTime!: { [key: string]: string; };
-
-    constructor(data?: IWorkorderPartSummary) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.elapsedStationTime = {};
-            this.activeStatTime = {};
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.name = _data["name"];
-            this.completedQty = _data["completed-qty"];
-            if (_data["elapsed-station-time"]) {
-                this.elapsedStationTime = {} as any;
-                for (let key in _data["elapsed-station-time"]) {
-                    if (_data["elapsed-station-time"].hasOwnProperty(key))
-                        (<any>this.elapsedStationTime)![key] = _data["elapsed-station-time"][key];
-                }
-            }
-            if (_data["active-stat-time"]) {
-                this.activeStatTime = {} as any;
-                for (let key in _data["active-stat-time"]) {
-                    if (_data["active-stat-time"].hasOwnProperty(key))
-                        (<any>this.activeStatTime)![key] = _data["active-stat-time"][key];
-                }
-            }
-        }
-    }
-
-    static fromJS(data: any): WorkorderPartSummary {
-        data = typeof data === 'object' ? data : {};
-        let result = new WorkorderPartSummary();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["name"] = this.name;
-        data["completed-qty"] = this.completedQty;
-        if (this.elapsedStationTime) {
-            data["elapsed-station-time"] = {};
-            for (let key in this.elapsedStationTime) {
-                if (this.elapsedStationTime.hasOwnProperty(key))
-                    (<any>data["elapsed-station-time"])[key] = (<any>this.elapsedStationTime)[key];
-            }
-        }
-        if (this.activeStatTime) {
-            data["active-stat-time"] = {};
-            for (let key in this.activeStatTime) {
-                if (this.activeStatTime.hasOwnProperty(key))
-                    (<any>data["active-stat-time"])[key] = (<any>this.activeStatTime)[key];
-            }
-        }
-        return data;
-    }
-}
-
-export interface IWorkorderPartSummary {
-    name: string;
-    completedQty: number;
-    elapsedStationTime: { [key: string]: string; };
-    activeStatTime: { [key: string]: string; };
 }
 
 export class NewInspectionCompleted implements INewInspectionCompleted {

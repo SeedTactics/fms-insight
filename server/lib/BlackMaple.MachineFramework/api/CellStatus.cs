@@ -40,13 +40,24 @@ using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
+  public enum QueueRole
+  {
+    RawMaterial,
+    InProcessTransfer,
+    Quarantine,
+    Other
+  }
+
   [DataContract]
-  public record QueueSize
+  public record QueueInfo
   {
     //once an output queue grows to this size, stop unloading parts
     //and keep them in the buffer inside the cell
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? MaxSizeBeforeStopUnloading { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public QueueRole? Role { get; init; }
   }
 
   [DataContract, Draftable]
@@ -68,12 +79,15 @@ namespace BlackMaple.MachineFramework
     public required ImmutableList<string> Alarms { get; init; }
 
     [DataMember(Name = "Queues", IsRequired = true)]
-    public required ImmutableDictionary<string, QueueSize> QueueSizes { get; init; }
+    public required ImmutableDictionary<string, QueueInfo> Queues { get; init; }
 
     // The following is only filled in if the machines move to the load station
     // instead of the pallets moving to the machine
     [DataMember(Name = "MachineLocations", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<MachineLocation>? MachineLocations { get; init; }
+
+    [DataMember(Name = "Workorders", IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<ActiveWorkorder>? Workorders { get; init; } = null;
 
     public static CurrentStatus operator %(CurrentStatus s, Action<ICurrentStatusDraft> f) => s.Produce(f);
   }

@@ -36,6 +36,7 @@ using System.Collections.Generic;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Runtime.Serialization;
+using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
@@ -107,7 +108,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("unfilled-workorders/by-part/{part}")]
-    public IList<Workorder> MostRecentUnfilledWorkordersForPart(string part)
+    public ImmutableList<ActiveWorkorder> MostRecentUnfilledWorkordersForPart(string part)
     {
       if (string.IsNullOrEmpty(part))
         throw new BadRequestException("Part must be non-empty");

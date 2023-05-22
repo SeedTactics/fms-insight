@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button } from "@mui/material";
+import { Button, Box, ListItemButton } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -48,33 +48,27 @@ import { Check as CheckmarkIcon, ShoppingBasket as ShoppingBasketIcon } from "@m
 
 import * as matDetails from "../../cell-status/material-details.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
+import { IActiveWorkorder } from "../../network/api.js";
 
 export const selectWorkorderDialogOpen = atom<boolean>({
   key: "selectWorkorderDialogOpen",
   default: false,
 });
 
-function workorderComplete(w: matDetails.WorkorderPlanAndSummary): string {
-  let completed = 0;
-  if (w.summary) {
-    completed = w.summary.completedQty;
+function workorderComplete(w: IActiveWorkorder) {
+  if (w.finalizedTimeUTC) {
+    return (
+      <Box component="span" color="grey.500">
+        Finalized {w.finalizedTimeUTC.toLocaleDateString()}; Completed {w.completedQuantity} of{" "}
+        {w.plannedQuantity}
+      </Box>
+    );
   }
-  return (
-    "Due " +
-    w.plan.dueDate.toDateString() +
-    "; Completed " +
-    completed.toString() +
-    " of " +
-    w.plan.quantity.toString()
-  );
+  return `Due ${w.dueDate.toLocaleDateString()}; Completed ${w.completedQuantity} of ${w.plannedQuantity}`;
 }
 
-function WorkorderIcon({ work }: { work: matDetails.WorkorderPlanAndSummary }) {
-  let completed = 0;
-  if (work.summary) {
-    completed = work.summary.completedQty;
-  }
-  if (work.plan.quantity <= completed) {
+function WorkorderIcon({ work }: { work: IActiveWorkorder }) {
+  if (work.plannedQuantity <= work.completedQuantity) {
     return <CheckmarkIcon />;
   } else {
     return <ShoppingBasketIcon />;
@@ -112,19 +106,28 @@ function WorkorderList() {
     <List>
       {workorders.map((w) => (
         <ListItem
-          key={w.plan.workorderId}
-          button
-          onClick={() => {
-            if (mat) {
-              assignWorkorder(mat, w.plan.workorderId);
-            }
-            setWorkDialogOpen(false);
-          }}
+          key={w.workorderId}
+          sx={
+            w.finalizedTimeUTC
+              ? {
+                  color: "grey.500",
+                }
+              : undefined
+          }
         >
-          <ListItemIcon>
-            <WorkorderIcon work={w} />
-          </ListItemIcon>
-          <ListItemText primary={w.plan.workorderId} secondary={workorderComplete(w)} />
+          <ListItemButton
+            onClick={() => {
+              if (mat) {
+                assignWorkorder(mat, w.workorderId);
+              }
+              setWorkDialogOpen(false);
+            }}
+          >
+            <ListItemIcon>
+              <WorkorderIcon work={w} />
+            </ListItemIcon>
+            <ListItemText primary={w.workorderId} secondary={workorderComplete(w)} />
+          </ListItemButton>
         </ListItem>
       ))}
     </List>

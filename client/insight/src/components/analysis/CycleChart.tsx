@@ -82,6 +82,8 @@ export interface ScaleZoomProps {
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
+  readonly yZoom: YZoomRange | null;
+  readonly setYZoom: (a: React.SetStateAction<YZoomRange | null>) => void;
 }
 
 export type CycleChartProps = DataToPlotProps &
@@ -242,7 +244,7 @@ const AxisAndGrid = React.memo(function AxisAndGrid({ xScale, yScale }: CycleCha
   );
 });
 
-interface YZoomRange {
+export interface YZoomRange {
   readonly y_low: number;
   readonly y_high: number;
 }
@@ -658,7 +660,7 @@ const CycleChartTooltip = React.memo(function CycleChartTooltip({
 }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip style={{ left: tooltip.left, top: tooltip.top }}>
+    <ChartTooltip left={tooltip.left} top={tooltip.top}>
       <Stack direction="column" spacing={0.6}>
         <div>Time: {format(tooltip.pt.x, "MMM d, yyyy, h:mm aaaa")}</div>
         <div>
@@ -697,8 +699,6 @@ function CycleChartSvg(
     DataToPlot & {
       readonly containerHeight: number;
       readonly containerWidth: number;
-      readonly yZoom: YZoomRange | null;
-      readonly setYZoom: (a: React.SetStateAction<YZoomRange | null>) => void;
       readonly highlightStart: { readonly x: number; readonly y: number; readonly nowMS: number } | null;
       readonly setHighlightStart: (
         p: { readonly x: number; readonly y: number; readonly nowMS: number } | null
@@ -711,6 +711,7 @@ function CycleChartSvg(
   const { width, height, xScale, yScale } = useScales({
     points: props.points,
     yZoom: props.yZoom,
+    setYZoom: props.setYZoom,
     default_date_range: props.default_date_range,
     current_date_zoom: props.current_date_zoom,
     set_date_zoom_range: props.set_date_zoom_range,
@@ -754,7 +755,6 @@ function CycleChartSvg(
 export const CycleChart = React.memo(function CycleChart(props: CycleChartProps) {
   // the state of the chart
   const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
-  const [yZoom, setYZoom] = React.useState<YZoomRange | null>(null);
   const [disabledSeries, adjustDisabled] = useImmer<ReadonlySet<string>>(new Set());
   const [highlightStart, setHighlightStart] = React.useState<{
     readonly x: number;
@@ -775,7 +775,9 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
 
   return (
     <div style={{ position: "relative" }} onPointerLeave={pointerLeave}>
-      <Box sx={{ height: "calc(100vh - 250px)" }}>
+      <Box
+        sx={{ height: { xs: "calc(100vh - 320px)", md: "calc(100vh - 280px)", xl: "calc(100vh - 220px)" } }}
+      >
         <ParentSize>
           {(parent) => (
             <CycleChartSvg
@@ -784,8 +786,8 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
               containerWidth={parent.width}
               series={series}
               median={median}
-              yZoom={yZoom}
-              setYZoom={setYZoom}
+              yZoom={props.yZoom}
+              setYZoom={props.setYZoom}
               highlightStart={highlightStart}
               setHighlightStart={setHighlightStart}
               showTooltip={setTooltip}
@@ -800,8 +802,8 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
         <ChartZoomButtons
           set_date_zoom_range={props.set_date_zoom_range}
           current_date_zoom={props.current_date_zoom}
-          yZoom={yZoom}
-          setYZoom={setYZoom}
+          yZoom={props.yZoom}
+          setYZoom={props.setYZoom}
           median={median}
         />
       </div>

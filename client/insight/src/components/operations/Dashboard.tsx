@@ -38,6 +38,7 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { IProcPathInfo } from "../../network/api.js";
 import { ParentSize } from "@visx/responsive";
 import { RecentCycleChart } from "./RecentCycleChart.js";
+import { useSetTitle } from "../routes.js";
 
 const pctFormat = new Intl.NumberFormat(undefined, { style: "percent", minimumFractionDigits: 1 });
 
@@ -132,15 +133,13 @@ export function ScrollableDashboard() {
 }
 
 export default function Dashboard() {
-  React.useEffect(() => {
-    document.title = "Dashboard - FMS Insight";
-  }, []);
+  useSetTitle("Dashboard");
   return (
     <div>
-      <Box sx={{ display: { xs: "none", lg: "block" } }}>
+      <Box sx={{ display: { xs: "none", md: "block" } }}>
         <FillViewportDashboard />
       </Box>
-      <Box sx={{ display: { xs: "block", lg: "none" } }}>
+      <Box sx={{ display: { xs: "block", md: "none" } }}>
         <ScrollableDashboard />
       </Box>
     </div>

@@ -56,31 +56,45 @@ export enum RouteLocation {
   Station_Overview = "/station/overview",
 
   Operations_Dashboard = "/operations",
-  Operations_LoadStation = "/operations/loadunload",
-  Operations_Machines = "/operations/machines",
+  Operations_LoadOutliers = "/operations/load-outliers",
+  Operations_LoadHours = "/operations/load-hours",
+  Operations_LoadCycles = "/operations/load-cycles",
+  Operations_MachineOutliers = "/operations/machine-outliers",
+  Operations_MachineHours = "/operations/machine-hours",
+  Operations_MachineCycles = "/operations/machine-cycles",
   Operations_SystemOverview = "/operations/system-overview",
   Operations_AllMaterial = "/operations/material",
   Operations_RecentSchedules = "/operations/recent-schedules",
+  Operations_CurrentWorkorders = "/operations/current-workorders",
   Operations_Production = "/operations/recent-production",
   Operations_Tools = "/operations/tools",
   Operations_Programs = "/operations/programs",
+  Operations_Quality = "/operations/quality",
+  Operations_Inspections = "/operations/inspections",
 
-  Engineering = "/engineering",
+  Engineering_Cycles = "/engineering",
+  Engineering_Hours = "/engineering/hours",
+  Engineering_Outliers = "/engineering/outliers",
 
   Quality_Dashboard = "/quality",
-  Quality_Serials = "/quality/serials",
   Quality_Paths = "/quality/paths",
   Quality_Quarantine = "/quality/quarantine",
 
   Tools_Dashboard = "/tools",
   Tools_Programs = "/tools/programs",
 
-  Analysis_Cycles = "/analysis/cycles",
-  Analysis_Efficiency = "/analysis/efficiency",
-  Analysis_Quality = "/analysis/quality",
-  Analysis_CostPerPiece = "/analysis/cost",
+  Analysis_Buffers = "/analysis/buffers",
+  Analysis_StationOEE = "/analysis/station-oee",
+  Analysis_PartsCompleted = "/analysis/parts-completed",
+  Analysis_MachineCycles = "/analysis/machine-cycles",
+  Analysis_LoadCycles = "/analysis/load-cycles",
+  Analysis_PalletCycles = "/analysis/pallet-cycles",
   Analysis_Schedules = "/analysis/schedules",
-  Analysis_DataExport = "/analysis/data-export",
+  Analysis_Quality = "/analysis/quality",
+  Analysis_ToolReplacements = "/analysis/tool-replacements",
+  Analysis_CostPercents = "/analysis/cost-percents",
+
+  Analysis_CostPerPiece = "/analysis/cost",
 
   VerboseLogging = "/logging",
 
@@ -111,27 +125,40 @@ export type RouteState =
   | { route: RouteLocation.Station_Queues; queues: ReadonlyArray<string> }
   | { route: RouteLocation.Station_Overview }
   | { route: RouteLocation.Operations_Dashboard }
-  | { route: RouteLocation.Operations_LoadStation }
-  | { route: RouteLocation.Operations_Machines }
+  | { route: RouteLocation.Operations_LoadOutliers }
+  | { route: RouteLocation.Operations_LoadHours }
+  | { route: RouteLocation.Operations_LoadCycles }
+  | { route: RouteLocation.Operations_MachineOutliers }
+  | { route: RouteLocation.Operations_MachineHours }
+  | { route: RouteLocation.Operations_MachineCycles }
   | { route: RouteLocation.Operations_SystemOverview }
   | { route: RouteLocation.Operations_AllMaterial }
   | { route: RouteLocation.Operations_RecentSchedules }
+  | { route: RouteLocation.Operations_CurrentWorkorders }
   | { route: RouteLocation.Operations_Production }
   | { route: RouteLocation.Operations_Tools }
   | { route: RouteLocation.Operations_Programs }
-  | { route: RouteLocation.Engineering }
+  | { route: RouteLocation.Operations_Quality }
+  | { route: RouteLocation.Operations_Inspections }
+  | { route: RouteLocation.Engineering_Cycles }
+  | { route: RouteLocation.Engineering_Outliers }
+  | { route: RouteLocation.Engineering_Hours }
   | { route: RouteLocation.Quality_Dashboard }
-  | { route: RouteLocation.Quality_Serials }
   | { route: RouteLocation.Quality_Paths }
   | { route: RouteLocation.Quality_Quarantine }
   | { route: RouteLocation.Tools_Dashboard }
   | { route: RouteLocation.Tools_Programs }
-  | { route: RouteLocation.Analysis_Cycles }
-  | { route: RouteLocation.Analysis_Efficiency }
+  | { route: RouteLocation.Analysis_Buffers }
+  | { route: RouteLocation.Analysis_StationOEE }
+  | { route: RouteLocation.Analysis_PartsCompleted }
   | { route: RouteLocation.Analysis_Quality }
+  | { route: RouteLocation.Analysis_ToolReplacements }
+  | { route: RouteLocation.Analysis_MachineCycles }
+  | { route: RouteLocation.Analysis_LoadCycles }
+  | { route: RouteLocation.Analysis_PalletCycles }
   | { route: RouteLocation.Analysis_CostPerPiece }
   | { route: RouteLocation.Analysis_Schedules }
-  | { route: RouteLocation.Analysis_DataExport }
+  | { route: RouteLocation.Analysis_CostPercents }
   | { route: RouteLocation.VerboseLogging }
   | { route: RouteLocation.Client_Custom; custom: ReadonlyArray<string> };
 
@@ -288,6 +315,13 @@ export function useIsDemo(): boolean {
   return useRecoilValue(isDemoAtom);
 }
 
+export function useSetTitle(title: string): void {
+  const demo = useIsDemo();
+  useEffect(() => {
+    document.title = title + " - FMS Insight";
+  }, [demo, title]);
+}
+
 export function helpUrl(r: RouteState): string {
   switch (r.route) {
     case RouteLocation.Station_LoadMonitor:
@@ -299,23 +333,31 @@ export function helpUrl(r: RouteState): string {
       return "https://www.seedtactics.com/docs/fms-insight/client-station-monitor";
 
     case RouteLocation.Operations_Dashboard:
-    case RouteLocation.Operations_LoadStation:
-    case RouteLocation.Operations_Machines:
+    case RouteLocation.Operations_LoadOutliers:
+    case RouteLocation.Operations_LoadHours:
+    case RouteLocation.Operations_LoadCycles:
+    case RouteLocation.Operations_MachineOutliers:
+    case RouteLocation.Operations_MachineHours:
+    case RouteLocation.Operations_MachineCycles:
     case RouteLocation.Operations_SystemOverview:
     case RouteLocation.Operations_AllMaterial:
     case RouteLocation.Operations_RecentSchedules:
+    case RouteLocation.Operations_CurrentWorkorders:
     case RouteLocation.Operations_Production:
+    case RouteLocation.Operations_Quality:
+    case RouteLocation.Operations_Inspections:
       return "https://www.seedtactics.com/docs/fms-insight/client-operations";
 
     case RouteLocation.Operations_Tools:
     case RouteLocation.Operations_Programs:
       return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
 
-    case RouteLocation.Engineering:
+    case RouteLocation.Engineering_Cycles:
+    case RouteLocation.Engineering_Outliers:
+    case RouteLocation.Engineering_Hours:
       return "https://www.seedtactics.com/docs/fms-insight/client-engineering";
 
     case RouteLocation.Quality_Dashboard:
-    case RouteLocation.Quality_Serials:
     case RouteLocation.Quality_Paths:
     case RouteLocation.Quality_Quarantine:
       return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
@@ -324,10 +366,15 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Tools_Programs:
       return "https://www.seedtactics.com/docs/fms-insight/client-operations";
 
-    case RouteLocation.Analysis_Cycles:
-    case RouteLocation.Analysis_Efficiency:
+    case RouteLocation.Analysis_Buffers:
+    case RouteLocation.Analysis_StationOEE:
+    case RouteLocation.Analysis_PartsCompleted:
+    case RouteLocation.Analysis_MachineCycles:
+    case RouteLocation.Analysis_LoadCycles:
+    case RouteLocation.Analysis_PalletCycles:
     case RouteLocation.Analysis_Quality:
-    case RouteLocation.Analysis_DataExport:
+    case RouteLocation.Analysis_CostPercents:
+    case RouteLocation.Analysis_ToolReplacements:
       return "https://www.seedtactics.com/docs/fms-insight/client-flexibility-analysis";
 
     case RouteLocation.Analysis_CostPerPiece:

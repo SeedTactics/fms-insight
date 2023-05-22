@@ -33,15 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { addMonths, addDays, startOfToday } from "date-fns";
 
-import AnalysisSelectToolbar from "./AnalysisSelectToolbar.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { InspectionSankey } from "./InspectionSankey.js";
 import { DataTableActionZoomType } from "./DataTable.js";
 import { useRecoilValue } from "recoil";
 import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections.js";
-import { ToolReplacementCard } from "./ToolReplacements.js";
+import { useSetTitle } from "../routes.js";
 
-function ConnectedInspection() {
+export function AnalysisQualityPage() {
+  useSetTitle("Quality");
   const period = useRecoilValue(selectedAnalysisPeriod);
 
   const inspectionlogs = useRecoilValue(
@@ -56,41 +56,10 @@ function ConnectedInspection() {
 
   return (
     <InspectionSankey
+      subtitle="Inspection decisions grouped by path"
       inspectionlogs={inspectionlogs}
       zoomType={zoomType}
       default_date_range={default_date_range}
-      defaultToTable={false}
     />
-  );
-}
-
-// --------------------------------------------------------------------------------
-// Efficiency
-// --------------------------------------------------------------------------------
-
-export function QualityCards(): JSX.Element {
-  return (
-    <>
-      <div style={{ marginTop: "3em" }}>
-        <ConnectedInspection />
-      </div>
-      <div style={{ marginTop: "3em" }}>
-        <ToolReplacementCard />
-      </div>
-    </>
-  );
-}
-
-export function QualityPage(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Efficiency - FMS Insight";
-  }, []);
-  return (
-    <>
-      <AnalysisSelectToolbar />
-      <main style={{ padding: "24px" }}>
-        <QualityCards />
-      </main>
-    </>
   );
 }

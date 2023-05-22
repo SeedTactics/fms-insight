@@ -179,6 +179,14 @@ export function selectAllMaterialIntoBins(
       if (path.outputQueue !== undefined) q.push(path.outputQueue);
       return q;
     })
+    .concat(
+      LazySeq.ofObject(curSt.queues)
+        .filter(
+          ([, info]) =>
+            info.role === api.QueueRole.RawMaterial || info.role === api.QueueRole.InProcessTransfer
+        )
+        .map(([qname, _]) => qname)
+    )
     .toRSet((x) => x);
   const quarantineQueues = LazySeq.ofObject(curSt.queues)
     .filter(([qname, _]) => !activeQueues.has(qname))

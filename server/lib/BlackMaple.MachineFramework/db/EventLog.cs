@@ -735,51 +735,116 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<WorkorderSummary> GetWorkorderSummaries(IEnumerable<string> workorders)
+    public ImmutableList<ActiveWorkorder> GetActiveWorkordersForSchedule(string scheduleId)
     {
-      var countQry =
+      using var trans = _connection.BeginTransaction();
+      return GetActiveWorkordersForSchedule(trans, scheduleId);
+    }
+
+    public ImmutableList<ActiveWorkorder> GetActiveWorkordersForMostRecentSchedule()
+    {
+      using var trans = _connection.BeginTransaction();
+
+      var lastSchIdCmd = _connection.CreateCommand();
+      lastSchIdCmd.CommandText =
+        "SELECT MAX(ScheduleId) FROM unfilled_workorders WHERE ScheduleId IS NOT NULL";
+      var lastWorkSchId = lastSchIdCmd.ExecuteScalar() as string;
+      var lastJobSchId = LatestScheduleId(trans);
+      var lastSchId = string.IsNullOrEmpty(lastWorkSchId)
+        ? lastJobSchId
+        : string.IsNullOrEmpty(lastJobSchId)
+          ? lastWorkSchId
+          : lastWorkSchId.CompareTo(lastJobSchId) > 0
+            ? lastWorkSchId
+            : lastJobSchId;
+
+      if (string.IsNullOrEmpty(lastSchId))
+      {
+        return ImmutableList<ActiveWorkorder>.Empty;
+      }
+      else
+      {
+        return GetActiveWorkordersForSchedule(trans, lastSchId);
+      }
+    }
+
+    public ImmutableList<ActiveWorkorder> GetActiveWorkordersForSchedule(
+      SqliteTransaction trans,
+      string scheduleId,
+      string partToFilter = null
+    )
+    {
+      // we distinguish between a cell never using workorders at all and return null
+      // vs a cell that has no workorders currently active where we return an empty list
+
+      using (var checkExistingRowCmd = _connection.CreateCommand())
+      {
+        checkExistingRowCmd.CommandText = "SELECT EXISTS (SELECT 1 FROM unfilled_workorders LIMIT 1)";
+        if (!Convert.ToBoolean(checkExistingRowCmd.ExecuteScalar()))
+        {
+          return null;
+        }
+      }
+
+      var workQry =
         @"
-				SELECT matdetails.PartName, COUNT(stations_mat.MaterialID) FROM stations, stations_mat, matdetails
-  					WHERE
-   						stations.Counter = stations_mat.Counter
-   						AND
-   						stations.StationLoc = $loadty
-                        AND
-                        stations.Result = 'UNLOAD'
-                        AND
-                        stations.Start = 0
-   						AND
-   						stations_mat.MaterialID = matdetails.MaterialID
-   						AND
-   						matdetails.Workorder = $workid
-                        AND
-                        stations_mat.Process == matdetails.NumProcesses
-                    GROUP BY
-                        matdetails.PartName";
+          SELECT uw.Workorder, uw.Part, uw.Quantity, uw.DueDate, uw.Priority,
+          (
+            SELECT COUNT(matdetails.MaterialID)
+            FROM stations, stations_mat, matdetails
+            WHERE
+            stations.Counter = stations_mat.Counter
+            AND
+            stations.StationLoc = $loadty
+            AND
+            stations.Result = 'UNLOAD'
+            AND
+            stations.Start = 0
+            AND
+            stations_mat.Process = matdetails.NumProcesses
+            AND
+            stations_mat.MaterialID = matdetails.MaterialID
+            AND
+            matdetails.Workorder = uw.Workorder
+            AND
+            matdetails.PartName = uw.Part
+          ) AS Completed,
+          (
+            SELECT MAX(stations.TimeUTC) FROM stations
+            WHERE
+            stations.Pallet = ''
+            AND
+            stations.Result = uw.Workorder
+            AND
+            stations.StationLoc = $workty
+          ) AS Finalized
+
+          FROM unfilled_workorders uw
+          WHERE uw.ScheduleId = $schid
+      ";
+
+      if (!string.IsNullOrEmpty(partToFilter))
+      {
+        workQry += " AND uw.Part = $part";
+      }
 
       var serialQry =
         @"
 				SELECT DISTINCT Serial FROM matdetails
 				    WHERE
-					    matdetails.Workorder = $workid";
-
-      var finalizedQry =
-        @"
-                SELECT MAX(TimeUTC) FROM stations
-                    WHERE
-                        Pallet = ''
-                        AND
-                        Result = $workid
-                        AND
-                        StationLoc = $workloc"; //use the (Pallet, Result) index
+					    matdetails.Workorder = $workid
+              AND
+              matdetails.PartName = $partname
+              AND
+              matdetails.Serial IS NOT NULL";
 
       var timeQry =
         @"
-                SELECT PartName, StationName, SUM(Elapsed / totcount), SUM(ActiveTime / totcount)
+                SELECT StationName, SUM(Elapsed / totcount), SUM(ActiveTime / totcount)
                     FROM
                         (
-                            SELECT s.StationName, matdetails.PartName, s.Elapsed, s.ActiveTime,
-                                 (SELECT COUNT(*) FROM stations_mat AS m2 WHERE m2.Counter = s.Counter) totcount
+                            SELECT s.StationName, s.Elapsed, s.ActiveTime,
+                                   (SELECT COUNT(*) FROM stations_mat AS m2 WHERE m2.Counter = s.Counter) totcount
                               FROM stations AS s, stations_mat AS m, matdetails
                               WHERE
                                 s.Counter = m.Counter
@@ -788,117 +853,99 @@ namespace BlackMaple.MachineFramework
                                 AND
                                 matdetails.Workorder = $workid
                                 AND
+                                matdetails.PartName = $partname
+                                AND
                                 s.Start = 0
+                                AND
+                                s.StationLoc IN ($loadty, $mcty)
                         )
-                    GROUP BY PartName, StationName";
+                    GROUP BY StationName";
 
-      using (var countCmd = _connection.CreateCommand())
-      using (var serialCmd = _connection.CreateCommand())
-      using (var finalizedCmd = _connection.CreateCommand())
-      using (var timeCmd = _connection.CreateCommand())
+      using var workCmd = _connection.CreateCommand();
+      using var serialCmd = _connection.CreateCommand();
+      using var timeCmd = _connection.CreateCommand();
+
+      workCmd.Transaction = trans;
+      workCmd.CommandText = workQry;
+      workCmd.Parameters.Add("schid", SqliteType.Text).Value = scheduleId;
+      workCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+      workCmd.Parameters.Add("workty", SqliteType.Integer).Value = (int)LogType.FinalizeWorkorder;
+      if (!string.IsNullOrEmpty(partToFilter))
       {
-        countCmd.CommandText = countQry;
-        countCmd.Parameters.Add("workid", SqliteType.Text);
-        countCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
-        serialCmd.CommandText = serialQry;
-        serialCmd.Parameters.Add("workid", SqliteType.Text);
-        finalizedCmd.CommandText = finalizedQry;
-        finalizedCmd.Parameters.Add("workid", SqliteType.Text);
-        finalizedCmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)LogType.FinalizeWorkorder;
-        timeCmd.CommandText = timeQry;
-        timeCmd.Parameters.Add("workid", SqliteType.Text);
-
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          countCmd.Transaction = trans;
-          serialCmd.Transaction = trans;
-          finalizedCmd.Transaction = trans;
-          timeCmd.Transaction = trans;
-
-          var ret = new List<WorkorderSummary>();
-          foreach (var w in workorders)
-          {
-            var emptySummary = new WorkorderSummary()
-            {
-              WorkorderId = w,
-              Parts = ImmutableList<WorkorderPartSummary>.Empty,
-              Serials = ImmutableList<string>.Empty
-            };
-            ret.Add(
-              emptySummary
-                % (
-                  summary =>
-                  {
-                    var partMap = new Dictionary<string, WorkorderPartSummary>();
-
-                    countCmd.Parameters[0].Value = w;
-                    using (var reader = countCmd.ExecuteReader())
-                    {
-                      while (reader.Read())
-                      {
-                        var wPart = new WorkorderPartSummary
-                        {
-                          Part = reader.GetString(0),
-                          PartsCompleted = reader.GetInt32(1),
-                          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-                          ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
-                        };
-                        partMap.Add(wPart.Part, wPart);
-                      }
-                    }
-
-                    serialCmd.Parameters[0].Value = w;
-                    using (var reader = serialCmd.ExecuteReader())
-                    {
-                      while (reader.Read())
-                        summary.Serials.Add(reader.GetString(0));
-                    }
-
-                    finalizedCmd.Parameters[0].Value = w;
-                    using (var reader = finalizedCmd.ExecuteReader())
-                    {
-                      if (reader.Read() && !reader.IsDBNull(0))
-                      {
-                        summary.FinalizedTimeUTC = new DateTime(reader.GetInt64(0), DateTimeKind.Utc);
-                      }
-                    }
-
-                    timeCmd.Parameters[0].Value = w;
-                    using (var reader = timeCmd.ExecuteReader())
-                    {
-                      while (reader.Read())
-                      {
-                        var partName = reader.GetString(0);
-                        var stat = reader.GetString(1);
-                        //part name should exist because material query should return it
-                        if (partMap.ContainsKey(partName))
-                        {
-                          if (!reader.IsDBNull(2))
-                            partMap[partName] %= draft =>
-                              draft.ElapsedStationTime[stat] = TimeSpan.FromTicks((long)reader.GetDecimal(2));
-                          if (!reader.IsDBNull(3))
-                            partMap[partName] %= draft =>
-                              draft.ActiveStationTime[stat] = TimeSpan.FromTicks((long)reader.GetDecimal(3));
-                        }
-                      }
-                    }
-
-                    summary.Parts.AddRange(partMap.Values);
-                  }
-                )
-            );
-          }
-
-          trans.Commit();
-          return ret;
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        workCmd.Parameters.Add("part", SqliteType.Text).Value = partToFilter;
       }
+      serialCmd.CommandText = serialQry;
+      serialCmd.Parameters.Add("workid", SqliteType.Text);
+      serialCmd.Parameters.Add("partname", SqliteType.Text);
+      timeCmd.CommandText = timeQry;
+      timeCmd.Parameters.Add("workid", SqliteType.Text);
+      timeCmd.Parameters.Add("partname", SqliteType.Text);
+      timeCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+      timeCmd.Parameters.Add("mcty", SqliteType.Integer).Value = (int)LogType.MachineCycle;
+
+      var ret = ImmutableList.CreateBuilder<ActiveWorkorder>();
+
+      using var workReader = workCmd.ExecuteReader();
+
+      while (workReader.Read())
+      {
+        var workorder = workReader.GetString(0);
+        var part = workReader.GetString(1);
+        var qty = workReader.GetInt32(2);
+        var dueDate = new DateTime(workReader.GetInt64(3));
+        var priority = workReader.GetInt32(4);
+        var completed = workReader.IsDBNull(5) ? 0 : workReader.GetInt32(5);
+        var finalized = workReader.IsDBNull(6) ? null : (DateTime?)new DateTime(workReader.GetInt64(6));
+
+        serialCmd.Parameters[0].Value = workorder;
+        serialCmd.Parameters[1].Value = part;
+        var serials = ImmutableList.CreateBuilder<string>();
+        using (var serialReader = serialCmd.ExecuteReader())
+        {
+          while (serialReader.Read())
+          {
+            serials.Add(serialReader.GetString(0));
+          }
+        }
+
+        timeCmd.Parameters[0].Value = workorder;
+        timeCmd.Parameters[1].Value = part;
+        var elapsed = ImmutableDictionary.CreateBuilder<string, TimeSpan>();
+        var active = ImmutableDictionary.CreateBuilder<string, TimeSpan>();
+        using (var timeReader = timeCmd.ExecuteReader())
+        {
+          while (timeReader.Read())
+          {
+            var station = timeReader.GetString(0);
+            var el = timeReader.IsDBNull(1)
+              ? TimeSpan.Zero
+              : TimeSpan.FromTicks((long)timeReader.GetDecimal(1));
+            var ac = timeReader.IsDBNull(2)
+              ? TimeSpan.Zero
+              : TimeSpan.FromTicks((long)timeReader.GetDecimal(2));
+            elapsed.Add(station, el);
+            active.Add(station, ac);
+          }
+        }
+
+        ret.Add(
+          new ActiveWorkorder()
+          {
+            WorkorderId = workorder,
+            Part = part,
+            PlannedQuantity = qty,
+            DueDate = dueDate,
+            Priority = priority,
+            FinalizedTimeUTC = finalized,
+            CompletedQuantity = completed,
+            Serials = serials.ToImmutable(),
+            ElapsedStationTime = elapsed.ToImmutable(),
+            ActiveStationTime = active.ToImmutable()
+          }
+        );
+      }
+
+      return ret.ToImmutable();
     }
 
     public ImmutableList<string> GetWorkordersForUnique(string jobUnique)

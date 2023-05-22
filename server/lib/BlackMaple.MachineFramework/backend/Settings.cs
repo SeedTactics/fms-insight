@@ -156,7 +156,7 @@ namespace BlackMaple.MachineFramework
 
     public string QuarantineQueue { get; set; }
 
-    public Dictionary<string, QueueSize> Queues { get; } = new Dictionary<string, QueueSize>();
+    public Dictionary<string, QueueInfo> Queues { get; } = new Dictionary<string, QueueInfo>();
 
     // key is queue name, value is IP address or DNS name of fms insight server with the queue
     public Dictionary<string, string> ExternalQueues { get; } = new Dictionary<string, string>();
@@ -200,7 +200,7 @@ namespace BlackMaple.MachineFramework
         var key = q.Key.Substring(q.Key.IndexOf(':') + 1);
         if (q.Key.IndexOf(':') >= 0 && !string.IsNullOrEmpty(key) && int.TryParse(q.Value, out int count))
         {
-          Queues[key] = new QueueSize() { MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null };
+          Queues[key] = new QueueInfo() { MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null };
         }
       }
 

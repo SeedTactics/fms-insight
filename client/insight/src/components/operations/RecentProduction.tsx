@@ -58,6 +58,7 @@ import { last30SimProduction, SimPartCompleted } from "../../cell-status/sim-pro
 import { last30StationCycles, StationCyclesByCntr } from "../../cell-status/station-cycles.js";
 import { useRecoilValue } from "recoil";
 import { PartIdenticon } from "../station-monitor/Material.js";
+import { useSetTitle } from "../routes.js";
 
 enum ColumnId {
   Part,
@@ -337,14 +338,9 @@ const RecentProductionToolbar = function RecentProductionToolbar({
           md: mdGridTemplate,
           xs: xsGridTemplate,
         },
-        backgroundColor: "#E0E0E0",
-        paddingLeft: "24px",
-        paddingRight: "24px",
-        paddingTop: "4px",
-        paddingBottom: "4px",
         minHeight: "2.5em",
         alignItems: "center",
-        width: "100%",
+        maxWidth: "calc(100vw - 24px - 24px)",
       }}
     >
       <Box gridArea="shifts" justifySelf="flex-start">
@@ -365,18 +361,16 @@ const RecentProductionToolbar = function RecentProductionToolbar({
 };
 
 export function RecentProductionPage(): JSX.Element {
+  useSetTitle("Recent Completed Parts");
   const [day, setDay] = React.useState<Date>(startOfToday);
-  React.useEffect(() => {
-    document.title = "Recent Completed Parts - FMS Insight";
-  }, []);
   const columns = useColumns(day);
   const rows = useRows(day);
   return (
-    <>
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
       <RecentProductionToolbar day={day} setDay={setDay} rows={rows} columns={columns} />
-      <main style={{ padding: "24px" }}>
+      <main>
         <RecentProductionTable rows={rows} columns={columns} />
       </main>
-    </>
+    </Box>
   );
 }

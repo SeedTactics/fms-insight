@@ -234,13 +234,23 @@ export function computeArrows(
               // move to different face
               const face = byKind.faces.get(mat.action.loadOntoFace);
               if (face) {
-                arrows.push({
-                  fromX: rect.left,
-                  fromY: rect.top + rect.height / 2,
-                  toX: rect.left,
-                  toY: face.top - 20,
-                  curveDirection: 1,
-                });
+                if (mat.action.loadOntoFace < (mat.location.face ?? 0)) {
+                  arrows.push({
+                    fromX: rect.left,
+                    fromY: rect.top + rect.height / 2,
+                    toX: rect.left,
+                    toY: face.bottom + 20,
+                    curveDirection: -1,
+                  });
+                } else {
+                  arrows.push({
+                    fromX: rect.left,
+                    fromY: rect.top + rect.height / 2,
+                    toX: rect.left,
+                    toY: face.top - 20,
+                    curveDirection: 1,
+                  });
+                }
               }
             }
           } else {

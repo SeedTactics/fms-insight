@@ -155,7 +155,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
   const paths = LazySeq.of(groups).toSortedArray(([x]) => x);
 
   return (
-    <div style={{ width: "100%" }}>
+    <div style={{ width: "100%", marginTop: "1em" }}>
       {paths.map(([path, points]) => {
         const page = Math.min(pages.get(path) ?? 0, Math.ceil(points.material.length / rowsPerPage));
         return (

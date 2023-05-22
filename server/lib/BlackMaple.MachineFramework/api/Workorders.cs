@@ -35,53 +35,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Runtime.Serialization;
-using System.Linq;
 using Germinate;
 using System.Collections.Immutable;
-using System.Collections.Generic;
 
 namespace BlackMaple.MachineFramework
 {
-  [DataContract, Draftable]
-  public record WorkorderPartSummary
-  {
-    [DataMember(Name = "name", IsRequired = true)]
-    public required string Part { get; init; }
-
-    [DataMember(Name = "completed-qty", IsRequired = true)]
-    public required int PartsCompleted { get; init; }
-
-    [DataMember(Name = "elapsed-station-time", IsRequired = true)]
-    public required ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; }
-
-    [DataMember(Name = "active-stat-time", IsRequired = true)]
-    public required ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; }
-
-    public static WorkorderPartSummary operator %(
-      WorkorderPartSummary m,
-      Action<IWorkorderPartSummaryDraft> f
-    ) => m.Produce(f);
-  }
-
-  [DataContract, Draftable]
-  public record WorkorderSummary
-  {
-    [DataMember(Name = "id", IsRequired = true)]
-    public required string WorkorderId { get; init; }
-
-    [DataMember(Name = "parts", IsRequired = true)]
-    public required ImmutableList<WorkorderPartSummary> Parts { get; init; }
-
-    [DataMember(Name = "serials", IsRequired = true)]
-    public required ImmutableList<string> Serials { get; init; }
-
-    [DataMember(Name = "finalized", IsRequired = false, EmitDefaultValue = false)]
-    public DateTime? FinalizedTimeUTC { get; init; }
-
-    public static WorkorderSummary operator %(WorkorderSummary m, Action<IWorkorderSummaryDraft> f) =>
-      m.Produce(f);
-  }
-
   [DataContract, Draftable]
   public record Workorder
   {
@@ -105,5 +63,42 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<ProgramForJobStep>? Programs { get; init; }
 
     public static Workorder operator %(Workorder w, Action<IWorkorderDraft> f) => w.Produce(f);
+  }
+
+  [DataContract]
+  public record ActiveWorkorder
+  {
+    // original workorder details
+
+    [DataMember(IsRequired = true)]
+    public required string WorkorderId { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required string Part { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required int PlannedQuantity { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required DateTime DueDate { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required int Priority { get; init; }
+
+    // active data
+    [DataMember(IsRequired = true)]
+    public required int CompletedQuantity { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required ImmutableList<string> Serials { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public DateTime? FinalizedTimeUTC { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; }
   }
 }

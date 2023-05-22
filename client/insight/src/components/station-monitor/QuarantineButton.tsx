@@ -43,7 +43,7 @@ import {
   useSignalForQuarantine,
 } from "../../cell-status/material-details.js";
 import { currentOperator } from "../../data/operators.js";
-import { ActionType, LocType } from "../../network/api.js";
+import { ActionType, LocType, QueueRole } from "../../network/api.js";
 import { fmsInformation } from "../../network/server-settings.js";
 
 type QuarantineMaterialData = {
@@ -75,6 +75,13 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
       if (path.outputQueue !== undefined) q.push(path.outputQueue);
       return q;
     })
+    .concat(
+      LazySeq.ofObject(curSt.queues)
+        .filter(
+          ([, info]) => info.role === QueueRole.RawMaterial || info.role === QueueRole.InProcessTransfer
+        )
+        .map(([qname, _]) => qname)
+    )
     .toRSet((x) => x);
   const quarantineQueues = LazySeq.ofObject(curSt.queues)
     .filter(([qname, _]) => !activeQueues.has(qname))

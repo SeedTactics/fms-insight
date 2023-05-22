@@ -293,7 +293,21 @@ namespace MachineWatchTest
         .Should()
         .BeEquivalentTo(
           // ignores job2 since manually created
-          new[] { job1UnfilledWorks[0] }
+          new[]
+          {
+            new ActiveWorkorder()
+            {
+              WorkorderId = job1UnfilledWorks[0].WorkorderId,
+              Part = job1UnfilledWorks[0].Part,
+              PlannedQuantity = job1UnfilledWorks[0].Quantity,
+              CompletedQuantity = 0,
+              DueDate = job1UnfilledWorks[0].DueDate,
+              Priority = job1UnfilledWorks[0].Priority,
+              Serials = ImmutableList<string>.Empty,
+              ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+            }
+          }
         );
 
       var belowJob2 = job2.UniqueStr.Substring(0, job2.UniqueStr.Length / 2);
@@ -1054,7 +1068,23 @@ namespace MachineWatchTest
       _jobDB
         .MostRecentUnfilledWorkordersForPart(initialWorks[0].Part)
         .Should()
-        .BeEquivalentTo(new[] { initialWorks[0] });
+        .BeEquivalentTo(
+          new[]
+          {
+            new ActiveWorkorder()
+            {
+              WorkorderId = initialWorks[0].WorkorderId,
+              Part = initialWorks[0].Part,
+              PlannedQuantity = initialWorks[0].Quantity,
+              CompletedQuantity = 0,
+              DueDate = initialWorks[0].DueDate,
+              Priority = initialWorks[0].Priority,
+              Serials = ImmutableList<string>.Empty,
+              ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+            }
+          }
+        );
 
       _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] });
       _jobDB

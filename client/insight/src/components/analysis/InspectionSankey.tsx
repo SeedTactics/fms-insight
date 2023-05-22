@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Card, CardContent, CardHeader, Select, MenuItem, Tooltip, IconButton, Box } from "@mui/material";
-import { Search as SearchIcon, ImportExport } from "@mui/icons-material";
+import { Select, MenuItem, Tooltip, IconButton, Box, Typography, FormControl } from "@mui/material";
+import { ImportExport } from "@mui/icons-material";
 import { sankey, sankeyJustify, sankeyLinkHorizontal, SankeyNode as D3SankeyNode } from "d3-sankey";
 
 import { PartIdenticon } from "../station-monitor/Material.js";
@@ -46,12 +46,13 @@ import {
 import InspectionDataTable from "./InspectionDataTable.js";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection.js";
 import { DataTableActionZoomType } from "./DataTable.js";
-import { useIsDemo } from "../routes.js";
+import { isDemoAtom } from "../routes.js";
 import { Group } from "@visx/group";
 import { green } from "@mui/material/colors";
 import { localPoint } from "@visx/event";
 import { ParentSize } from "@visx/responsive";
 import { ChartTooltip } from "../ChartTooltip.js";
+import { atom, selector, useRecoilState } from "recoil";
 
 type NodeWithData = D3SankeyNode<SankeyNode, { readonly value: number }>;
 type LinkWithData = {
@@ -182,7 +183,7 @@ const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
 const LinkTooltip = React.memo(function LinkTooltip({ tooltip }: { readonly tooltip: TooltipData | null }) {
   if (tooltip === null) return null;
   return (
-    <ChartTooltip style={{ left: tooltip.left, top: tooltip.top }}>
+    <ChartTooltip left={tooltip.left} top={tooltip.top}>
       {tooltip.data.source.name} ➞ {tooltip.data.target.name}: {tooltip.data.value} parts
     </ChartTooltip>
   );
@@ -196,7 +197,12 @@ const InspectionDiagram = React.memo(function InspectionDiagram({
   const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
   return (
     <div style={{ position: "relative" }}>
-      <Box sx={{ height: "calc(100vh - 100px)", width: "100%" }}>
+      <Box
+        sx={{
+          height: { xs: "calc(100vh - 230px)", md: "calc(100vh - 182px)", xl: "calc(100vh - 130px)" },
+          width: "100%",
+        }}
+      >
         <ParentSize>
           {(parent) => (
             <SankeyDisplay
@@ -219,18 +225,34 @@ export interface InspectionSankeyProps {
   readonly zoomType?: DataTableActionZoomType;
   readonly subtitle?: string;
   readonly restrictToPart?: string;
-  readonly defaultToTable: boolean;
+  readonly onlyTable?: boolean;
   readonly extendDateRange?: (numDays: number) => void;
   readonly hideOpenDetailColumn?: boolean;
 }
 
+const selectedPartAtom = atom<string | undefined>({
+  key: "insight-inspection-sankey-selectedPart",
+  default: selector({
+    key: "insight-inspection-sankey-selectedPart-default",
+    get: ({ get }) => (get(isDemoAtom) ? "aaa" : undefined),
+  }),
+});
+const selectedInspTypeAtom = atom<string | undefined>({
+  key: "insight-inspection-sankey-selectedInspType",
+  default: selector({
+    key: "insight-inspection-sankey-selectedInspType-default",
+    get: ({ get }) => (get(isDemoAtom) ? "CMM" : undefined),
+  }),
+});
+const showTableAtom = atom<boolean>({
+  key: "insight-inspection-sankey-showTable",
+  default: false,
+});
+
 export function InspectionSankey(props: InspectionSankeyProps) {
-  const demo = useIsDemo();
-  const [curPart, setSelectedPart] = React.useState<string | undefined>(demo ? "aaa" : undefined);
-  const [selectedInspectType, setSelectedInspectType] = React.useState<string | undefined>(
-    demo ? "CMM" : undefined
-  );
-  const [showTable, setShowTable] = React.useState<boolean>(props.defaultToTable);
+  const [curPart, setSelectedPart] = useRecoilState(selectedPartAtom);
+  const [selectedInspectType, setSelectedInspectType] = useRecoilState(selectedInspTypeAtom);
+  const [showTable, setShowTable] = useRecoilState(showTableAtom);
 
   let curData: Iterable<InspectionLogEntry> | undefined;
   const selectedPart = props.restrictToPart || curPart;
@@ -250,38 +272,20 @@ export function InspectionSankey(props: InspectionSankeyProps) {
     .distinct()
     .toSortedArray((x) => x);
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            <SearchIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Inspections</div>
-            <div style={{ flexGrow: 1 }} />
-            {curData ? (
-              <Tooltip title="Copy to Clipboard">
-                <IconButton
-                  onClick={() =>
-                    curData
-                      ? copyInspectionEntriesToClipboard(
-                          selectedPart || "",
-                          selectedInspectType || "",
-                          curData
-                        )
-                      : undefined
-                  }
-                  style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                  size="large"
-                >
-                  <ImportExport />
-                </IconButton>
-              </Tooltip>
-            ) : undefined}
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          minHeight: "2.5em",
+          alignItems: "center",
+          maxWidth: "calc(100vw - 24px - 24px)",
+        }}
+      >
+        {props.subtitle ? <Typography variant="subtitle1">{props.subtitle}</Typography> : undefined}
+        <Box flexGrow={1} />
+        {props.onlyTable ? undefined : (
+          <FormControl size="small">
             <Select
               autoWidth
               value={showTable ? "table" : "sankey"}
@@ -294,55 +298,73 @@ export function InspectionSankey(props: InspectionSankeyProps) {
                 Table
               </MenuItem>
             </Select>
+          </FormControl>
+        )}
+        <FormControl size="small">
+          <Select
+            name="inspection-sankey-select-type"
+            autoWidth
+            displayEmpty
+            style={{ marginRight: "1em", marginLeft: "1em" }}
+            value={selectedInspectType || ""}
+            onChange={(e) => setSelectedInspectType(e.target.value)}
+          >
+            {selectedInspectType ? undefined : (
+              <MenuItem key={0} value="">
+                <em>Select Inspection Type</em>
+              </MenuItem>
+            )}
+            {inspTypes.map((n) => (
+              <MenuItem key={n} value={n}>
+                {n}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        {props.restrictToPart === undefined ? (
+          <FormControl size="small">
             <Select
-              name="inspection-sankey-select-type"
+              name="inspection-sankey-select-part"
               autoWidth
               displayEmpty
-              style={{ marginRight: "1em", marginLeft: "1em" }}
-              value={selectedInspectType || ""}
-              onChange={(e) => setSelectedInspectType(e.target.value)}
+              value={selectedPart || ""}
+              onChange={(e) => setSelectedPart(e.target.value)}
             >
-              {selectedInspectType ? undefined : (
+              {selectedPart ? undefined : (
                 <MenuItem key={0} value="">
-                  <em>Select Inspection Type</em>
+                  <em>Select Part</em>
                 </MenuItem>
               )}
-              {inspTypes.map((n) => (
+              {parts.map((n) => (
                 <MenuItem key={n} value={n}>
-                  {n}
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <PartIdenticon part={n} size={30} />
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
                 </MenuItem>
               ))}
             </Select>
-            {props.restrictToPart === undefined ? (
-              <Select
-                name="inspection-sankey-select-part"
-                autoWidth
-                displayEmpty
-                value={selectedPart || ""}
-                onChange={(e) => setSelectedPart(e.target.value)}
-              >
-                {selectedPart ? undefined : (
-                  <MenuItem key={0} value="">
-                    <em>Select Part</em>
-                  </MenuItem>
-                )}
-                {parts.map((n) => (
-                  <MenuItem key={n} value={n}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <PartIdenticon part={n} size={30} />
-                      <span style={{ marginRight: "1em" }}>{n}</span>
-                    </div>
-                  </MenuItem>
-                ))}
-              </Select>
-            ) : undefined}
-          </div>
-        }
-        subheader={props.subtitle}
-      />
-      <CardContent>
+          </FormControl>
+        ) : undefined}
         {curData ? (
-          showTable ? (
+          <Tooltip title="Copy to Clipboard">
+            <IconButton
+              onClick={() =>
+                curData
+                  ? copyInspectionEntriesToClipboard(selectedPart || "", selectedInspectType || "", curData)
+                  : undefined
+              }
+              style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+              size="large"
+            >
+              <ImportExport />
+            </IconButton>
+          </Tooltip>
+        ) : undefined}
+      </Box>
+      <main>
+        {curData ? (
+          showTable || props.onlyTable ? (
             <InspectionDataTable
               zoomType={props.zoomType}
               points={curData}
@@ -354,7 +376,7 @@ export function InspectionSankey(props: InspectionSankeyProps) {
             <InspectionDiagram data={curData} />
           )
         ) : undefined}
-      </CardContent>
-    </Card>
+      </main>
+    </Box>
   );
 }

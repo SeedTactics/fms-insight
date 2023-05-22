@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* eslint-disable react/prop-types */
 import * as React from "react";
-import { Table, Box, styled } from "@mui/material";
+import { Table, Box, styled, Stack } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableRow } from "@mui/material";
@@ -83,6 +83,7 @@ import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { SortableRegion } from "./Whiteboard.js";
 import { MultiMaterialDialog, QueuedMaterialDialog } from "./QueuesMatDialog.js";
+import { useSetTitle } from "../routes.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -226,6 +227,8 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
     [props.queue, currentSt]
   );
 
+  if (jobs.length === 0) return null;
+
   return (
     <Table size="small">
       <TableHead>
@@ -250,6 +253,89 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
     </Table>
   );
 }
+
+const RawMaterialWorkorderRow = React.memo(function RawMaterialWorkorderRow({
+  workorder,
+  inProc,
+}: {
+  workorder: Readonly<api.IActiveWorkorder>;
+  inProc: number;
+}) {
+  return (
+    <TableRow>
+      <TableCell>{workorder.workorderId}</TableCell>
+      <TableCell>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <Box sx={{ mr: "0.2em" }}>
+            <PartIdenticon part={workorder.part} size={25} />
+          </Box>
+          <Typography variant="body2" display="block">
+            {workorder.part}
+          </Typography>
+        </Box>
+      </TableCell>
+      <TableCell>{workorder.dueDate.toLocaleDateString()}</TableCell>
+      <TableCell>{workorder.finalizedTimeUTC ? workorder.finalizedTimeUTC.toLocaleString() : ""}</TableCell>
+      <TableCell>{workorder.priority}</TableCell>
+      <TableCell>{workorder.plannedQuantity}</TableCell>
+      <TableCell>{workorder.completedQuantity}</TableCell>
+      <TableCell>{inProc}</TableCell>
+      <TableCell>{Math.max(0, workorder.plannedQuantity - workorder.completedQuantity - inProc)}</TableCell>
+    </TableRow>
+  );
+});
+
+const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable() {
+  const curSt = useRecoilValue(currentStatus);
+  if (!curSt.workorders || curSt.workorders.length === 0) return null;
+
+  const sorted = LazySeq.of(curSt.workorders).sortBy(
+    (w) => (w.finalizedTimeUTC ? 1 : 0),
+    (w) => w.dueDate,
+    (w) => w.priority
+  );
+
+  const inProcByWorkorder = LazySeq.of(curSt.material)
+    .filter((m) => !!m.workorderId && m.workorderId !== "")
+    .toLookupMap<string, string, number>(
+      (m) => m.workorderId ?? "",
+      (m) => m.partName,
+      () => 1,
+      (a, b) => a + b
+    );
+
+  return (
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          <TableCell>Workorder</TableCell>
+          <TableCell>Part</TableCell>
+          <TableCell>Due Date</TableCell>
+          <TableCell>Finalized</TableCell>
+          <TableCell>Priority</TableCell>
+          <TableCell>Planned Qty</TableCell>
+          <TableCell>Completed Qty</TableCell>
+          <TableCell>In Process</TableCell>
+          <TableCell>Remaining To Assign</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {sorted.map((w) => (
+          <RawMaterialWorkorderRow
+            key={`${w.workorderId}-${w.part}`}
+            workorder={w}
+            inProc={inProcByWorkorder.get(w.workorderId)?.get(w.part) ?? 0}
+          />
+        ))}
+      </TableBody>
+    </Table>
+  );
+});
 
 interface EditNoteDialogProps {
   readonly job: {
@@ -480,6 +566,7 @@ export const Queues = (props: QueueProps) => {
     () => selectQueueData(props.queues, currentSt, rawMatQueues),
     [currentSt, props.queues, rawMatQueues]
   );
+  const hasJobs = !LazySeq.ofObject(currentSt.jobs).isEmpty();
 
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IActiveJob> | null>(null);
   const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
@@ -507,7 +594,7 @@ export const Queues = (props: QueueProps) => {
               <DragOverlayInProcMaterial
                 mat={mat}
                 hideEmptySerial
-                displayJob={region.rawMaterialQueue}
+                displayJob={hasJobs && region.rawMaterialQueue}
                 fsize="normal"
               />
             )}
@@ -528,7 +615,7 @@ export const Queues = (props: QueueProps) => {
                     mat={m}
                     hideEmptySerial
                     fsize="normal"
-                    displayJob={region.rawMaterialQueue}
+                    displayJob={hasJobs && region.rawMaterialQueue}
                   />
                 ))}
                 {region.groupedRawMat && region.groupedRawMat.length > 0
@@ -539,7 +626,7 @@ export const Queues = (props: QueueProps) => {
                           mat={matGroup.material[0]}
                           hideEmptySerial
                           fsize="normal"
-                          displayJob={region.rawMaterialQueue}
+                          displayJob={hasJobs && region.rawMaterialQueue}
                         />
                       ) : (
                         <MultiMaterial
@@ -554,13 +641,14 @@ export const Queues = (props: QueueProps) => {
                     )
                   : undefined}
                 {region.rawMaterialQueue ? (
-                  <div style={{ margin: "1em 5em 1em 5em", width: "100%" }}>
+                  <Stack direction="column" spacing={2} margin="1em 5em 1em 5em" width="100%">
                     <RawMaterialJobTable
                       queue={region.label}
                       editNote={setChangeNoteForJob}
                       editQty={setEditQtyForJob}
                     />
-                  </div>
+                    <RawMaterialWorkorderTable />
+                  </Stack>
                 ) : undefined}
               </Box>
             </Box>
@@ -582,16 +670,18 @@ export const Queues = (props: QueueProps) => {
 };
 
 export default function QueuesPage(props: QueueProps): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Material Queues - FMS Insight";
-  }, []);
+  useSetTitle("Queues");
 
   return (
     <Box
       component="main"
       sx={{
         backgroundColor: "#F8F8F8",
-        minHeight: { sm: "calc(100vh - 64px - 40px)", md: "calc(100vh - 64px)" },
+        minHeight: {
+          xs: "calc(100vh - 64px - 32px)",
+          sm: "calc(100vh - 64px - 40px)",
+          md: "calc(100vh - 64px)",
+        },
       }}
     >
       <Queues {...props} />

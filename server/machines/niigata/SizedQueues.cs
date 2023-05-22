@@ -42,9 +42,9 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<SizedQueues>();
 
-    private readonly IReadOnlyDictionary<string, MachineFramework.QueueSize> _queueSizes;
+    private readonly IReadOnlyDictionary<string, MachineFramework.QueueInfo> _queueSizes;
 
-    public SizedQueues(IReadOnlyDictionary<string, MachineFramework.QueueSize> queues)
+    public SizedQueues(IReadOnlyDictionary<string, MachineFramework.QueueInfo> queues)
     {
       if (
         queues != null

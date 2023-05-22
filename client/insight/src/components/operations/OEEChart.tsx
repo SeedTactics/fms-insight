@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -31,19 +31,37 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Box, Grid } from "@mui/material";
-import { Table } from "@mui/material";
+import {
+  Box,
+  Grid,
+  IconButton,
+  Table,
+  Tooltip as MuiTooltip,
+  Select,
+  MenuItem,
+  Typography,
+  FormControl,
+} from "@mui/material";
 
 import { Column, DataTableHead, DataTableBody, useColSort } from "../analysis/DataTable.js";
 import { LazySeq, ToComparable } from "@seedtactics/immutable-collections";
-import { OEEBarSeries, OEEBarPoint } from "../../data/results.oee.js";
+import {
+  OEEBarSeries,
+  OEEBarPoint,
+  OEEType,
+  buildOeeSeries,
+  copyOeeToClipboard,
+} from "../../data/results.oee.js";
 import { AnimatedAxis, AnimatedBarGroup, AnimatedBarSeries, Tooltip, XYChart } from "@visx/xychart";
 import { seriesColor, chartTheme } from "../../util/chart-colors.js";
+import { addDays, startOfToday } from "date-fns";
+import { atom, useRecoilState, useRecoilValue } from "recoil";
+import { last30StationCycles } from "../../cell-status/station-cycles.js";
+import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
+import { ImportExport } from "@mui/icons-material";
+import { useSetTitle } from "../routes.js";
 
 export interface OEEProps {
-  readonly showLabor: boolean;
-  readonly start: Date;
-  readonly end: Date;
   readonly points: ReadonlyArray<OEEBarSeries>;
 }
 
@@ -182,3 +200,71 @@ export const OEETable = React.memo(function OEETableF(p: OEEProps) {
     </Table>
   );
 });
+
+const lulShowChart = atom<boolean>({
+  key: "insight-oee-chart-labor",
+  default: true,
+});
+const mcShowChart = atom<boolean>({
+  key: "insight-oee-chart-machine",
+  default: true,
+});
+
+export function StationOEEPage({ ty }: { readonly ty: OEEType }) {
+  useSetTitle(ty === "labor" ? "L/U OEE" : "Machine OEE");
+  const [showChart, setShowChart] = useRecoilState(ty === "labor" ? lulShowChart : mcShowChart);
+
+  const start = addDays(startOfToday(), -6);
+  const end = addDays(startOfToday(), 1);
+
+  const cycles = useRecoilValue(last30StationCycles);
+  const statUse = useRecoilValue(last30SimStationUse);
+  const points = React.useMemo(
+    () => buildOeeSeries(start, end, ty, cycles.valuesToLazySeq(), statUse),
+    [start, end, ty, cycles, statUse]
+  );
+
+  return (
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          minHeight: "2.5em",
+          alignItems: "center",
+          maxWidth: "calc(100vw - 24px - 24px)",
+        }}
+      >
+        <Typography variant="subtitle1">
+          {ty === "labor" ? "Load/Unload" : "Machine"} OEE: comparing flexplan hours between actual and
+          simulated production
+        </Typography>
+        <Box flexGrow={1} />
+        <FormControl size="small">
+          <Select
+            autoWidth
+            value={showChart ? "chart" : "table"}
+            onChange={(e) => setShowChart(e.target.value === "chart")}
+          >
+            <MenuItem key="chart" value="chart">
+              Chart
+            </MenuItem>
+            <MenuItem key="table" value="table">
+              Table
+            </MenuItem>
+          </Select>
+        </FormControl>
+        <MuiTooltip title="Copy to Clipboard">
+          <IconButton
+            style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+            onClick={() => copyOeeToClipboard(points)}
+            size="large"
+          >
+            <ImportExport />
+          </IconButton>
+        </MuiTooltip>
+      </Box>
+      <main>{showChart ? <OEEChart points={points} /> : <OEETable points={points} />}</main>
+    </Box>
+  );
+}

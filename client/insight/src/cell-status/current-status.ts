@@ -39,6 +39,7 @@ import {
   LogType,
   LocType,
   ActiveJob,
+  ActiveWorkorder,
 } from "../network/api.js";
 import {
   atom,
@@ -242,6 +243,36 @@ export const reorderQueuedMatInCurrentStatus = conduit<QueueReordering>(
       });
 
       return { ...curSt, material: newMats };
+    });
+  }
+);
+
+export const updateWorkorderFinalizedConduit = conduit<{
+  readonly workorder: string;
+  readonly finalized: Date;
+}>(
+  (
+    t: TransactionInterface_UNSTABLE,
+    { workorder, finalized }: { readonly workorder: string; readonly finalized: Date }
+  ) => {
+    t.set(currentStatusRW, (curSt) => {
+      if (!curSt.workorders) return curSt;
+
+      let found = false;
+      const newWorks = curSt.workorders.map((w) => {
+        if (w.workorderId === workorder) {
+          found = true;
+          return new ActiveWorkorder({ ...w, finalizedTimeUTC: finalized });
+        } else {
+          return w;
+        }
+      });
+
+      if (found) {
+        return { ...curSt, workorders: newWorks };
+      } else {
+        return curSt;
+      }
     });
   }
 );

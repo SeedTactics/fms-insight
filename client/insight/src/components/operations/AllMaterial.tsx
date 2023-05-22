@@ -83,6 +83,7 @@ import {
 } from "@dnd-kit/core";
 import { useRecoilConduit } from "../../util/recoil-util.js";
 import { QuarantineMatButton } from "../station-monitor/QuarantineButton.js";
+import { useSetTitle } from "../routes.js";
 
 type ColWithTitleProps = {
   readonly label: string;
@@ -433,9 +434,7 @@ type CurActiveDrag =
   | { readonly type: "column"; readonly bin: MaterialBin };
 
 export function AllMaterial(props: AllMaterialProps) {
-  React.useEffect(() => {
-    document.title = "All Material - FMS Insight";
-  }, []);
+  useSetTitle("All Material");
   const st = useRecoilValue(currentSt.currentStatus);
   const [matBinOrder, setMatBinOrder] = useRecoilState(currentMaterialBinOrder);
   const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
@@ -535,18 +534,19 @@ export function AllMaterial(props: AllMaterialProps) {
       onDragCancel={() => setActiveDrag(null)}
     >
       <SortableContext items={curBins.map((b) => b.binId)} strategy={horizontalListSortingStrategy}>
-        <main
-          style={{
+        <Box
+          component="main"
+          sx={{
             display: "flex",
             flexWrap: "nowrap",
             backgroundColor: "#F8F8F8",
-            minHeight: "calc(100vh - 64px)",
+            minHeight: { xs: "calc(100vh - 64px - 48px)", md: "calc(100vh - 64px)" },
           }}
         >
           {curBins.map((matBin) => (
             <MaterialBinColumn key={matBin.binId} matBin={matBin} />
           ))}
-        </main>
+        </Box>
       </SortableContext>
       <DragOverlay>
         {activeDrag?.type === "material" ? (

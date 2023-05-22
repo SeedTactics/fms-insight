@@ -80,9 +80,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
       };
       _settings = new FMSSettings() { QuarantineQueue = "Quarantine" };
-      _settings.Queues.Add("thequeue", new MachineFramework.QueueSize());
-      _settings.Queues.Add("qqq", new MachineFramework.QueueSize());
-      _settings.Queues.Add("Quarantine", new MachineFramework.QueueSize());
+      _settings.Queues.Add("thequeue", new MachineFramework.QueueInfo());
+      _settings.Queues.Add("qqq", new MachineFramework.QueueInfo());
+      _settings.Queues.Add("Quarantine", new MachineFramework.QueueInfo());
 
       _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(_serialSt);
       _logDB = _logDBCfg.OpenConnection();
@@ -102,11 +102,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           new AssignNewRoutesOnPallets(_statNames),
           new SizedQueues(
-            new Dictionary<string, QueueSize>()
+            new Dictionary<string, QueueInfo>()
             {
               {
                 "sizedQ",
-                new QueueSize() { MaxSizeBeforeStopUnloading = 1 }
+                new QueueInfo() { MaxSizeBeforeStopUnloading = 1 }
               }
             }
           )
@@ -1578,7 +1578,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .Should()
         .BeEquivalentTo(_expectedMaterial.Values.Concat(_expectedLoadCastings));
 
-      actualSt.CurrentStatus.QueueSizes.Should().BeEquivalentTo(_settings.Queues);
+      actualSt.CurrentStatus.Queues.Should().BeEquivalentTo(_settings.Queues);
 
       actualSt.CurrentStatus.Alarms
         .Should()

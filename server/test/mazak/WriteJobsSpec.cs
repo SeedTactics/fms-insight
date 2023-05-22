@@ -253,10 +253,10 @@ namespace MachineWatchTest
         );
 
       _settings = new FMSSettings();
-      _settings.Queues["castings"] = new QueueSize();
-      _settings.Queues["queueAAA"] = new QueueSize();
-      _settings.Queues["queueBBB"] = new QueueSize();
-      _settings.Queues["queueCCC"] = new QueueSize();
+      _settings.Queues["castings"] = new QueueInfo();
+      _settings.Queues["queueAAA"] = new QueueInfo();
+      _settings.Queues["queueBBB"] = new QueueInfo();
+      _settings.Queues["queueCCC"] = new QueueInfo();
 
       _writeJobs = new WriteJobs(
         _writeMock,

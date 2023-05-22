@@ -35,29 +35,21 @@ import { addMonths, getDaysInMonth, addDays } from "date-fns";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
 import copy from "copy-to-clipboard";
 import { PartCycleData } from "../cell-status/station-cycles.js";
-import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { HashMap, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 
 export interface PartCost {
   readonly part: string;
   readonly parts_completed: number;
-
-  // accumulation of machine costs over all cycles.  Cost be divided by parts_completed to get cost/piece
-  readonly machine: { readonly cost: number; readonly pctPerStat: ReadonlyMap<string, number> };
-
-  // accumulation of labor costs over all cycles.  Cost must be divided by parts_completed to get cost/piece
-  readonly labor: { readonly cost: number; readonly percent: number };
-
-  // percent split of yearly automation cost over all use
-  readonly automation_pct: number;
+  readonly machine: OrderedMap<string, number>;
+  readonly labor: number;
+  readonly automation: number;
 }
 
 export type MachineCostPerYear = { readonly [stationGroup: string]: number };
 
 export interface CostData {
-  readonly totalLaborCostForPeriod: number;
-  readonly automationCostForPeriod: number;
-  readonly stationCostForPeriod: ReadonlyMap<string, number>;
-  readonly machineCostGroups: ReadonlyArray<string>;
+  readonly machineQuantities: OrderedMap<string, number>;
+  readonly type: { month: Date } | { thirtyDaysAgo: Date };
   readonly parts: ReadonlyArray<PartCost>;
 }
 
@@ -69,20 +61,17 @@ function isMonthType(type: { month: Date } | { thirtyDaysAgo: Date }): type is {
   return Object.prototype.hasOwnProperty.call(type, "month");
 }
 
-export function compute_monthly_cost(
-  machineCostPerYear: MachineCostPerYear,
-  automationCostPerYear: number | null,
-  totalLaborCostForPeriod: number,
+export function compute_monthly_cost_percentages(
   cycles: Iterable<PartCycleData>,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   type: { month: Date } | { thirtyDaysAgo: Date }
 ): CostData {
-  const days = isMonthType(type) ? getDaysInMonth(type.month) : 30;
   const start = isMonthType(type) ? type.month : type.thirtyDaysAgo;
   const end = isMonthType(type) ? addMonths(type.month, 1) : addDays(type.thirtyDaysAgo, 31);
 
   let totalPalletCycles = 0;
   const totalStatUseMinutes = new Map<string, number>();
+  let totalLaborUseMinutes = 0;
   const stationCount = new Map<string, Set<number>>();
 
   for (const c of cycles) {
@@ -90,20 +79,21 @@ export function compute_monthly_cost(
     if (isUnloadCycle(c)) {
       totalPalletCycles += 1;
     }
-    totalStatUseMinutes.set(c.stationGroup, c.activeMinutes + (totalStatUseMinutes.get(c.stationGroup) ?? 0));
-    const s = stationCount.get(c.stationGroup);
-    if (s) {
-      s.add(c.stationNumber);
+    if (c.isLabor) {
+      totalLaborUseMinutes += c.activeMinutes;
     } else {
-      stationCount.set(c.stationGroup, new Set<number>([c.stationNumber]));
+      totalStatUseMinutes.set(
+        c.stationGroup,
+        c.activeMinutes + (totalStatUseMinutes.get(c.stationGroup) ?? 0)
+      );
+      const s = stationCount.get(c.stationGroup);
+      if (s) {
+        s.add(c.stationNumber);
+      } else {
+        stationCount.set(c.stationGroup, new Set<number>([c.stationNumber]));
+      }
     }
   }
-
-  const automationCostForPeriod = automationCostPerYear ? (automationCostPerYear * days) / 365 : 0;
-  const stationCostForPeriod = LazySeq.of(stationCount).toRMap(
-    ([statGroup, cnt]) => [statGroup, ((machineCostPerYear[statGroup] ?? 0) * cnt.size * days) / 365],
-    (x, y) => x + y
-  );
 
   const completed = LazySeq.of(matsById)
     .filter(([, details]) => {
@@ -124,48 +114,57 @@ export function compute_monthly_cost(
       parts_completed: completed.get(partName) ?? 0,
       machine: LazySeq.of(forPart)
         .filter((c) => !c.isLabor)
-        .aggregate(
+        .buildOrderedMap<string, number>(
           (c) => c.stationGroup,
-          (c) => c.activeMinutes,
-          (a1, a2) => a1 + a2
+          (old, c) => (old ?? 0) + c.activeMinutes
         )
-        .foldLeft({ cost: 0, pctPerStat: new Map<string, number>() }, (x, [statGroup, minutes]) => {
+        .mapValues((minutes, statGroup) => {
           const totalUse = totalStatUseMinutes.get(statGroup) ?? 1;
-          const totalMachineCost = stationCostForPeriod.get(statGroup) ?? 0;
-          x.pctPerStat.set(statGroup, minutes / totalUse + (x.pctPerStat.get(statGroup) ?? 0));
-          return { cost: x.cost + (minutes / totalUse) * totalMachineCost, pctPerStat: x.pctPerStat };
+          return minutes / totalUse;
         }),
       labor: LazySeq.of(forPart)
         .filter((c) => c.isLabor)
-        .aggregate(
-          (c) => c.stationGroup,
-          (c) => c.activeMinutes,
-          (a1, a2) => a1 + a2
-        )
-        .foldLeft({ cost: 0, percent: 0 }, (x, [statGroup, minutes]) => {
-          const total = totalStatUseMinutes.get(statGroup) ?? 1;
-          return {
-            cost: x.cost + (minutes / total) * totalLaborCostForPeriod,
-            percent: x.percent + minutes / total,
-          };
-        }),
-      automation_pct: automationCostPerYear
-        ? forPart.reduce((acc, v) => (isUnloadCycle(v) ? acc + 1 : acc), 0) / totalPalletCycles
-        : 0,
+        .sumBy((c) => c.activeMinutes / totalLaborUseMinutes),
+      automation: forPart.reduce((acc, v) => (isUnloadCycle(v) ? acc + 1 : acc), 0) / totalPalletCycles,
     }))
     .toRArray();
 
-  const machineCostGroups = LazySeq.of(parts)
-    .flatMap((p) => p.machine.pctPerStat.keys())
-    .distinct()
-    .toSortedArray((a) => a);
+  const machineQuantities = LazySeq.of(stationCount).toOrderedMap(([statGroup, nums]) => [
+    statGroup,
+    nums.size,
+  ]);
 
   return {
     parts,
-    totalLaborCostForPeriod,
-    automationCostForPeriod,
-    stationCostForPeriod: stationCostForPeriod,
-    machineCostGroups,
+    machineQuantities,
+    type,
+  };
+}
+
+export function convert_cost_percent_to_cost_per_piece(
+  costs: CostData,
+  machineCostPerYear: MachineCostPerYear,
+  automationCostPerYear: number | null,
+  totalLaborCostForPeriod: number
+): CostData {
+  const days = isMonthType(costs.type) ? getDaysInMonth(costs.type.month) : 30;
+  const automationCostForPeriod = automationCostPerYear ? (automationCostPerYear * days) / 365 : 0;
+  const stationCostForPeriod = costs.machineQuantities.mapValues(
+    (cnt, statGroup) => ((machineCostPerYear[statGroup] ?? 0) * cnt * days) / 365
+  );
+
+  return {
+    machineQuantities: costs.machineQuantities,
+    type: costs.type,
+    parts: costs.parts.map((p) => ({
+      part: p.part,
+      parts_completed: p.parts_completed,
+      machine: p.machine.mapValues((pct, statGroup) =>
+        p.parts_completed > 0 ? (pct * (stationCostForPeriod.get(statGroup) ?? 0)) / p.parts_completed : 0
+      ),
+      labor: p.parts_completed > 0 ? (p.labor * totalLaborCostForPeriod) / p.parts_completed : 0,
+      automation: p.parts_completed > 0 ? (p.automation * automationCostForPeriod) / p.parts_completed : 0,
+    })),
   };
 }
 
@@ -173,10 +172,11 @@ export function buildCostPerPieceTable(costs: CostData): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Part</th>";
   table += "<th>Completed Quantity</th>";
-  table += "<th>Machine Cost</th>";
+  for (const m of costs.machineQuantities.keys()) {
+    table += "<th>" + m + " Cost %</th>";
+  }
   table += "<th>Labor Cost</th>";
   table += "<th>Automation Cost</th>";
-  table += "<th>Total</th>";
   table += "</tr></thead>\n<tbody>\n";
 
   const rows = LazySeq.of(costs.parts).sortBy((c) => c.part);
@@ -187,26 +187,11 @@ export function buildCostPerPieceTable(costs: CostData): string {
   for (const c of rows) {
     table += "<tr><td>" + c.part + "</td>";
     table += "<td>" + c.parts_completed.toString() + "</td>";
-    table +=
-      "<td>" + (c.parts_completed > 0 ? format.format(c.machine.cost / c.parts_completed) : "0") + "</td>";
-    table +=
-      "<td>" + (c.parts_completed > 0 ? format.format(c.labor.cost / c.parts_completed) : "0") + "</td>";
-    table +=
-      "<td>" +
-      (c.parts_completed > 0
-        ? format.format((c.automation_pct * costs.automationCostForPeriod) / c.parts_completed)
-        : "0") +
-      "</td>";
-    table +=
-      "<td>" +
-      (c.parts_completed > 0
-        ? format.format(
-            c.machine.cost / c.parts_completed +
-              c.labor.cost / c.parts_completed +
-              (c.automation_pct * costs.automationCostForPeriod) / c.parts_completed
-          )
-        : "") +
-      "</td>";
+    for (const m of costs.machineQuantities.keys()) {
+      table += "<td>" + format.format(c.machine.get(m) ?? 0) + "</td>";
+    }
+    table += "<td>" + (c.parts_completed > 0 ? format.format(c.labor) : "0") + "</td>";
+    table += "<td>" + (c.parts_completed > 0 ? format.format(c.automation) : "0") + "</td>";
     table += "</tr>\n";
   }
 
@@ -222,7 +207,7 @@ export function buildCostBreakdownTable(costs: CostData): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Part</th>";
   table += "<th>Completed Quantity</th>";
-  for (const m of costs.machineCostGroups) {
+  for (const m of costs.machineQuantities.keys()) {
     table += "<th>" + m + " Cost %</th>";
   }
   table += "<th>Labor Cost %</th>";
@@ -239,11 +224,11 @@ export function buildCostBreakdownTable(costs: CostData): string {
   for (const c of rows) {
     table += "<tr><td>" + c.part + "</td>";
     table += "<td>" + c.parts_completed.toString() + "</td>";
-    for (const m of costs.machineCostGroups) {
-      table += "<td>" + pctFormat.format(c.machine.pctPerStat.get(m) ?? 0) + "</td>";
+    for (const m of costs.machineQuantities.keys()) {
+      table += "<td>" + pctFormat.format(c.machine.get(m) ?? 0) + "</td>";
     }
-    table += "<td>" + pctFormat.format(c.labor.percent) + "</td>";
-    table += "<td>" + pctFormat.format(c.automation_pct) + "</td>";
+    table += "<td>" + pctFormat.format(c.labor) + "</td>";
+    table += "<td>" + pctFormat.format(c.automation) + "</td>";
     table += "</tr>\n";
   }
 

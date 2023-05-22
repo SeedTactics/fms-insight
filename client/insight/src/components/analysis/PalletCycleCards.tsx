@@ -32,26 +32,41 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { addMonths, addDays, startOfToday } from "date-fns";
-import { Card } from "@mui/material";
-import { CardHeader } from "@mui/material";
+import { Box, FormControl, Typography } from "@mui/material";
 import { Select } from "@mui/material";
 import { MenuItem } from "@mui/material";
-import { CardContent } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
-import { ShoppingBasket as BasketIcon, ImportExport } from "@mui/icons-material";
+import { ImportExport } from "@mui/icons-material";
 
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
-import { CycleChart, CycleChartPoint } from "./CycleChart.js";
+import { CycleChart, CycleChartPoint, YZoomRange } from "./CycleChart.js";
 import { copyPalletCyclesToClipboard } from "../../data/results.cycles.js";
-import { useIsDemo } from "../routes.js";
-import { useRecoilValue } from "recoil";
+import { isDemoAtom, useSetTitle } from "../routes.js";
+import { atom, selector, useRecoilState, useRecoilValue } from "recoil";
 import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status/pallet-cycles.js";
 
+const selectedPalletAtom = atom<string | undefined>({
+  key: "insight-pallet-cycles-selectedPallet",
+  default: selector({
+    key: "insight-default-pallet-cycles-selectedPallet",
+    get: ({ get }) => (get(isDemoAtom) ? "3" : undefined),
+  }),
+});
+const zoomDateRangeAtom = atom<{ start: Date; end: Date } | undefined>({
+  key: "insight-pallet-cycles-zoomDateRange",
+  default: undefined,
+});
+const yZoomAtom = atom<YZoomRange | null>({
+  key: "insight-pallet-cycles-yZoom",
+  default: null,
+});
+
 export function PalletCycleChart() {
-  const demo = useIsDemo();
-  const [selectedPallet, setSelectedPallet] = React.useState<string | undefined>(demo ? "3" : undefined);
-  const [zoomDateRange, setZoomRange] = React.useState<{ start: Date; end: Date }>();
+  useSetTitle("Pallet Cycles");
+  const [selectedPallet, setSelectedPallet] = useRecoilState(selectedPalletAtom);
+  const [zoomDateRange, setZoomRange] = useRecoilState(zoomDateRangeAtom);
+  const [yZoom, setYZoom] = useRecoilState(yZoomAtom);
 
   const period = useRecoilValue(selectedAnalysisPeriod);
   const defaultDateRange =
@@ -74,57 +89,63 @@ export function PalletCycleChart() {
     return new Map<string, ReadonlyArray<CycleChartPoint>>();
   }, [selectedPallet, palletCycles]);
   return (
-    <Card raised>
-      <CardHeader
-        title={
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center" }}>
-            <BasketIcon style={{ color: "#6D4C41" }} />
-            <div style={{ marginLeft: "10px", marginRight: "3em" }}>Pallet Cycles</div>
-            <div style={{ flexGrow: 1 }} />
-            <Tooltip title="Copy to Clipboard">
-              <IconButton
-                onClick={() => copyPalletCyclesToClipboard(palletCycles)}
-                style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                size="large"
-              >
-                <ImportExport />
-              </IconButton>
-            </Tooltip>
-            <Select
-              name={"Pallet-Cycles-cycle-chart-select"}
-              autoWidth
-              displayEmpty
-              value={selectedPallet || ""}
-              onChange={(e) => setSelectedPallet(e.target.value)}
-            >
-              {selectedPallet !== undefined ? undefined : (
-                <MenuItem key={0} value="">
-                  <em>Select Pallet</em>
+    <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
+      <Box
+        component="nav"
+        sx={{
+          display: "flex",
+          minHeight: "2.5em",
+          alignItems: "center",
+          maxWidth: "calc(100vw - 24px - 24px)",
+        }}
+      >
+        <Typography variant="subtitle1">Pallet Cycles</Typography>
+        <Box flexGrow={1} />
+        <FormControl size="small">
+          <Select
+            autoWidth
+            displayEmpty
+            value={selectedPallet || ""}
+            onChange={(e) => setSelectedPallet(e.target.value)}
+          >
+            {selectedPallet !== undefined ? undefined : (
+              <MenuItem key={0} value="">
+                <em>Select Pallet</em>
+              </MenuItem>
+            )}
+            {palletCycles
+              .keysToLazySeq()
+              .sortBy((x) => x)
+              .map((n) => (
+                <MenuItem key={n} value={n}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span style={{ marginRight: "1em" }}>{n}</span>
+                  </div>
                 </MenuItem>
-              )}
-              {palletCycles
-                .keysToLazySeq()
-                .sortBy((x) => x)
-                .map((n) => (
-                  <MenuItem key={n} value={n}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <span style={{ marginRight: "1em" }}>{n}</span>
-                    </div>
-                  </MenuItem>
-                ))}
-            </Select>
-          </div>
-        }
-      />
-      <CardContent>
+              ))}
+          </Select>
+        </FormControl>
+        <Tooltip title="Copy to Clipboard">
+          <IconButton
+            onClick={() => copyPalletCyclesToClipboard(palletCycles)}
+            style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
+            size="large"
+          >
+            <ImportExport />
+          </IconButton>
+        </Tooltip>
+      </Box>
+      <main>
         <CycleChart
           points={points}
           series_label="Pallet"
           default_date_range={defaultDateRange}
           current_date_zoom={zoomDateRange}
           set_date_zoom_range={(z) => setZoomRange(z.zoom)}
+          yZoom={yZoom}
+          setYZoom={setYZoom}
         />
-      </CardContent>
-    </Card>
+      </main>
+    </Box>
   );
 }

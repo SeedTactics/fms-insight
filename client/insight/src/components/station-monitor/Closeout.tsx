@@ -57,6 +57,7 @@ import {
 import { LogType } from "../../network/api.js";
 import { instructionUrl } from "../../network/backend.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { useSetTitle } from "../routes.js";
 
 function CompleteButton() {
   const fmsInfo = useRecoilValue(fmsInformation);
@@ -250,9 +251,7 @@ export function Closeout(): JSX.Element {
 }
 
 export function CloseoutPage(): JSX.Element {
-  React.useEffect(() => {
-    document.title = "Close Out - FMS Insight";
-  }, []);
+  useSetTitle("Close Out");
 
   return (
     <Box

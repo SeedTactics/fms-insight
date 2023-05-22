@@ -47,6 +47,7 @@ import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { instructionUrl } from "../../network/backend.js";
 import { LogType } from "../../network/api.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { useSetTitle } from "../routes.js";
 
 interface InspButtonsProps {
   readonly inspection_type: string;
@@ -296,13 +297,11 @@ function extractRecentInspections(
 }
 
 export default function InspectionPage(props: InspectionProps): JSX.Element {
-  React.useEffect(() => {
-    let title = "Inspection - FMS Insight";
-    if (props.focusInspectionType != null && props.focusInspectionType !== "") {
-      title = "Inspection " + props.focusInspectionType + " - FMS Insight";
-    }
-    document.title = title;
-  }, [props.focusInspectionType]);
+  useSetTitle(
+    props.focusInspectionType && props.focusInspectionType !== ""
+      ? `Inspection ${props.focusInspectionType}`
+      : "Inspection"
+  );
 
   return (
     <Box

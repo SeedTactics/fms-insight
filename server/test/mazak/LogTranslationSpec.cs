@@ -70,7 +70,7 @@ namespace MachineWatchTest
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10),
       };
       settings = new FMSSettings() { QuarantineQueue = "quarantineQ" };
-      settings.Queues["thequeue"] = new QueueSize() { MaxSizeBeforeStopUnloading = -1 };
+      settings.Queues["thequeue"] = new QueueInfo() { MaxSizeBeforeStopUnloading = -1 };
       settings.ExternalQueues["externalq"] = "testserver";
 
       _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(serialSt);

@@ -39,7 +39,7 @@ import {
   Stepper,
   Step,
   StepLabel,
-  StepContent,
+  Typography,
 } from "@mui/material";
 
 import * as matDetails from "../../cell-status/material-details.js";
@@ -49,12 +49,13 @@ import { startOfToday, addDays, startOfDay, endOfDay } from "date-fns";
 import { ApiException, ILogEntry, LogType } from "../../network/api.js";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
 import { DataTableActionZoomType } from "../analysis/DataTable.js";
-import { useIsDemo } from "../routes.js";
+import { useIsDemo, useSetTitle } from "../routes.js";
 import { useRecoilState, useRecoilValue, useRecoilValueLoadable, useSetRecoilState } from "recoil";
 import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { LogBackend } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
+import { RecentFailedInspectionsTable } from "./RecentFailedInspections.js";
 
 function SerialLookup() {
   const demo = useIsDemo();
@@ -92,8 +93,8 @@ function SerialLookup() {
   }
 
   return (
-    <div style={{ textAlign: "center" }}>
-      <Stack direction="column" spacing={2}>
+    <>
+      <Stack direction="row" spacing={2} alignItems="center" marginLeft="auto" marginRight="auto">
         <div>
           <TextField
             label={serial === "" ? "Serial" : "Serial (press enter)"}
@@ -107,7 +108,6 @@ function SerialLookup() {
             }}
           />
         </div>
-        {error && error !== "" ? <div>{error}</div> : undefined}
         <div>
           <Button variant="contained" color="secondary" disabled={serial === "" || loading} onClick={lookup}>
             {loading ? (
@@ -120,7 +120,8 @@ function SerialLookup() {
           </Button>
         </div>
       </Stack>
-    </div>
+      {error && error !== "" ? <div>{error}</div> : undefined}
+    </>
   );
 }
 
@@ -236,8 +237,8 @@ function PathLookupStep(props: PathLookupProps) {
         default_date_range={searchRange ? [searchRange.curStart, searchRange.curEnd] : []}
         zoomType={searchRange ? DataTableActionZoomType.ExtendDays : undefined}
         extendDateRange={extendDateRange}
-        defaultToTable
         hideOpenDetailColumn
+        onlyTable
       />
       <Button
         variant="contained"
@@ -263,40 +264,46 @@ export function PartLookupStepper() {
     step = 1;
   }
   return (
-    <Stepper activeStep={step} orientation="vertical">
-      <Step>
-        <StepLabel>Enter or scan a serial</StepLabel>
-        <StepContent>
+    <Stack direction="column" spacing={2}>
+      <Stepper activeStep={step} orientation="horizontal">
+        <Step>
+          <StepLabel>Select Material</StepLabel>
+        </Step>
+        <Step>
+          <StepLabel>
+            <DetailsStepTitle />
+          </StepLabel>
+        </Step>
+        <Step>
+          <StepLabel>Lookup similar paths</StepLabel>
+        </Step>
+      </Stepper>
+      {step === 0 ? (
+        <Stack direction="column" spacing={4}>
+          <Typography>
+            Enter a serial number, scan a barcode, or click on a material in the table below to see details.
+          </Typography>
           <SerialLookup />
-        </StepContent>
-      </Step>
-      <Step>
-        <StepLabel>
-          <DetailsStepTitle />
-        </StepLabel>
-        <StepContent>
+          <RecentFailedInspectionsTable />
+        </Stack>
+      ) : step === 1 ? (
+        <>
           <DisplayLoadingAndError fallback={<MaterialLoading />}>
             <MaterialDetailContent />
           </DisplayLoadingAndError>
           <DetailsStepButtons setStep={setStep} />
-        </StepContent>
-      </Step>
-      <Step>
-        <StepLabel>Lookup similar paths</StepLabel>
-        <StepContent>
-          <DisplayLoadingAndError>
-            <PathLookupStep setStep={setStep} />
-          </DisplayLoadingAndError>
-        </StepContent>
-      </Step>
-    </Stepper>
+        </>
+      ) : step === 2 ? (
+        <DisplayLoadingAndError>
+          <PathLookupStep setStep={setStep} />
+        </DisplayLoadingAndError>
+      ) : undefined}
+    </Stack>
   );
 }
 
-export function FailedPartLookup() {
-  React.useEffect(() => {
-    document.title = "Failed Part Lookup - FMS Insight";
-  }, []);
+export function QualityMaterialPage() {
+  useSetTitle("Quality Material");
   return (
     <main style={{ padding: "24px" }}>
       <PartLookupStepper />

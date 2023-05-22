@@ -262,42 +262,6 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
-    [HttpGet("workorders")]
-    public List<WorkorderSummary> GetWorkorders([FromQuery] IEnumerable<string> ids)
-    {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
-      {
-        return db.GetWorkorderSummaries(ids);
-      }
-    }
-
-    [HttpGet("workorders.csv")]
-    [Produces("text/csv")]
-    public IActionResult GetWorkordersCSV([FromQuery] IEnumerable<string> ids)
-    {
-      IEnumerable<WorkorderSummary> workorders;
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
-      {
-        workorders = db.GetWorkorderSummaries(ids);
-      }
-
-      var ms = new System.IO.MemoryStream();
-      try
-      {
-        var tx = new System.IO.StreamWriter(ms);
-        CSVWorkorderConverter.WriteCSV(tx, workorders);
-        tx.Flush();
-      }
-      catch
-      {
-        ms.Close();
-        throw;
-      }
-      ms.Position = 0;
-      // filestreamresult will close the memorystream
-      return new FileStreamResult(ms, "text/csv") { FileDownloadName = "workorders.csv" };
-    }
-
     [HttpPost("material-details/{materialID}/serial")]
     public LogEntry SetSerial(long materialID, [FromBody] string serial, [FromQuery] int process = 1)
     {
