@@ -264,7 +264,21 @@ const RawMaterialWorkorderRow = React.memo(function RawMaterialWorkorderRow({
   return (
     <TableRow>
       <TableCell>{workorder.workorderId}</TableCell>
-      <TableCell>{workorder.part}</TableCell>
+      <TableCell>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <Box sx={{ mr: "0.2em" }}>
+            <PartIdenticon part={workorder.part} size={25} />
+          </Box>
+          <Typography variant="body2" display="block">
+            {workorder.part}
+          </Typography>
+        </Box>
+      </TableCell>
       <TableCell>{workorder.dueDate.toLocaleDateString()}</TableCell>
       <TableCell>{workorder.finalizedTimeUTC ? workorder.finalizedTimeUTC.toLocaleString() : ""}</TableCell>
       <TableCell>{workorder.priority}</TableCell>
@@ -288,9 +302,11 @@ const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable(
 
   const inProcByWorkorder = LazySeq.of(curSt.material)
     .filter((m) => !!m.workorderId && m.workorderId !== "")
-    .buildHashMap<string, number>(
+    .toLookupMap<string, string, number>(
       (m) => m.workorderId ?? "",
-      (old) => (old ?? 0) + 1
+      (m) => m.partName,
+      () => 1,
+      (a, b) => a + b
     );
 
   return (
@@ -313,7 +329,7 @@ const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable(
           <RawMaterialWorkorderRow
             key={`${w.workorderId}-${w.part}`}
             workorder={w}
-            inProc={inProcByWorkorder.get(w.workorderId) ?? 0}
+            inProc={inProcByWorkorder.get(w.workorderId)?.get(w.part) ?? 0}
           />
         ))}
       </TableBody>
@@ -550,6 +566,7 @@ export const Queues = (props: QueueProps) => {
     () => selectQueueData(props.queues, currentSt, rawMatQueues),
     [currentSt, props.queues, rawMatQueues]
   );
+  const hasJobs = !LazySeq.ofObject(currentSt.jobs).isEmpty();
 
   const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IActiveJob> | null>(null);
   const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
@@ -577,7 +594,7 @@ export const Queues = (props: QueueProps) => {
               <DragOverlayInProcMaterial
                 mat={mat}
                 hideEmptySerial
-                displayJob={region.rawMaterialQueue}
+                displayJob={hasJobs && region.rawMaterialQueue}
                 fsize="normal"
               />
             )}
@@ -598,7 +615,7 @@ export const Queues = (props: QueueProps) => {
                     mat={m}
                     hideEmptySerial
                     fsize="normal"
-                    displayJob={region.rawMaterialQueue}
+                    displayJob={hasJobs && region.rawMaterialQueue}
                   />
                 ))}
                 {region.groupedRawMat && region.groupedRawMat.length > 0
@@ -609,7 +626,7 @@ export const Queues = (props: QueueProps) => {
                           mat={matGroup.material[0]}
                           hideEmptySerial
                           fsize="normal"
-                          displayJob={region.rawMaterialQueue}
+                          displayJob={hasJobs && region.rawMaterialQueue}
                         />
                       ) : (
                         <MultiMaterial

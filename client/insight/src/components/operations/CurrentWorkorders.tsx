@@ -196,6 +196,7 @@ function WorkorderRow({ workorder }: { readonly workorder: IActiveWorkorder }) {
         </TableCell>
         <TableCell align="right">{workorder.priority}</TableCell>
         <TableCell align="right">{workorder.plannedQuantity}</TableCell>
+        <TableCell align="right">{workorder.serials.length}</TableCell>
         <TableCell align="right">{workorder.completedQuantity}</TableCell>
         <TableCell>
           <Tooltip title="Show Details">
@@ -223,6 +224,7 @@ enum SortColumn {
   DueDate,
   Priority,
   CompletedQty,
+  AssignedQty,
   FinalizedTime,
 }
 
@@ -250,6 +252,9 @@ function sortWorkorders(
       break;
     case SortColumn.CompletedQty:
       sortCol = (j) => j.completedQuantity;
+      break;
+    case SortColumn.AssignedQty:
+      sortCol = (j) => j.serials.length;
       break;
     case SortColumn.FinalizedTime:
       sortCol = (j) => j.finalizedTimeUTC ?? null;
@@ -360,10 +365,13 @@ const WorkorderHeader = React.memo(function WorkorderHeader(props: {
           Priority
         </SortColHeader>
         <SortColHeader align="right" col={SortColumn.PlannedQty} {...sort}>
-          Planned Qty
+          Planned Quantity
+        </SortColHeader>
+        <SortColHeader align="right" col={SortColumn.AssignedQty} {...sort}>
+          Started Quantity
         </SortColHeader>
         <SortColHeader align="right" col={SortColumn.CompletedQty} {...sort}>
-          Completed Qty
+          Completed Quantity
         </SortColHeader>
         <TableCell>
           <Tooltip title="Copy to Clipboard">
