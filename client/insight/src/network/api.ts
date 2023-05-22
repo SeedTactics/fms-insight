@@ -3574,7 +3574,7 @@ export class CurrentStatus implements ICurrentStatus {
     pallets!: { [key: string]: PalletStatus; };
     material!: InProcessMaterial[];
     alarms!: string[];
-    queues!: { [key: string]: QueueSize; };
+    queues!: { [key: string]: QueueInfo; };
     machineLocations?: MachineLocation[] | undefined;
     workorders?: ActiveWorkorder[] | undefined;
 
@@ -3625,7 +3625,7 @@ export class CurrentStatus implements ICurrentStatus {
                 this.queues = {} as any;
                 for (let key in _data["Queues"]) {
                     if (_data["Queues"].hasOwnProperty(key))
-                        (<any>this.queues)![key] = _data["Queues"][key] ? QueueSize.fromJS(_data["Queues"][key]) : new QueueSize();
+                        (<any>this.queues)![key] = _data["Queues"][key] ? QueueInfo.fromJS(_data["Queues"][key]) : new QueueInfo();
                 }
             }
             if (Array.isArray(_data["MachineLocations"])) {
@@ -3702,7 +3702,7 @@ export interface ICurrentStatus {
     pallets: { [key: string]: PalletStatus; };
     material: InProcessMaterial[];
     alarms: string[];
-    queues: { [key: string]: QueueSize; };
+    queues: { [key: string]: QueueInfo; };
     machineLocations?: MachineLocation[] | undefined;
     workorders?: ActiveWorkorder[] | undefined;
 }
@@ -4227,10 +4227,11 @@ export enum ActionType {
     Machining = "Machining",
 }
 
-export class QueueSize implements IQueueSize {
+export class QueueInfo implements IQueueInfo {
     maxSizeBeforeStopUnloading?: number | undefined;
+    role?: QueueRole | undefined;
 
-    constructor(data?: IQueueSize) {
+    constructor(data?: IQueueInfo) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -4242,12 +4243,13 @@ export class QueueSize implements IQueueSize {
     init(_data?: any) {
         if (_data) {
             this.maxSizeBeforeStopUnloading = _data["MaxSizeBeforeStopUnloading"];
+            this.role = _data["Role"];
         }
     }
 
-    static fromJS(data: any): QueueSize {
+    static fromJS(data: any): QueueInfo {
         data = typeof data === 'object' ? data : {};
-        let result = new QueueSize();
+        let result = new QueueInfo();
         result.init(data);
         return result;
     }
@@ -4255,12 +4257,21 @@ export class QueueSize implements IQueueSize {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["MaxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
+        data["Role"] = this.role;
         return data;
     }
 }
 
-export interface IQueueSize {
+export interface IQueueInfo {
     maxSizeBeforeStopUnloading?: number | undefined;
+    role?: QueueRole | undefined;
+}
+
+export enum QueueRole {
+    RawMaterial = "RawMaterial",
+    InProcessTransfer = "InProcessTransfer",
+    Quarantine = "Quarantine",
+    Other = "Other",
 }
 
 export class MachineLocation implements IMachineLocation {

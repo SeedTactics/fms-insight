@@ -3019,7 +3019,7 @@
           "Queues": {
             "type": "object",
             "additionalProperties": {
-              "$ref": "#/components/schemas/QueueSize"
+              "$ref": "#/components/schemas/QueueInfo"
             }
           },
           "MachineLocations": {
@@ -3405,7 +3405,7 @@
           "Machining"
         ]
       },
-      "QueueSize": {
+      "QueueInfo": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -3413,8 +3413,32 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "Role": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/QueueRole"
+              }
+            ]
           }
         }
+      },
+      "QueueRole": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "RawMaterial",
+          "InProcessTransfer",
+          "Quarantine",
+          "Other"
+        ],
+        "enum": [
+          "RawMaterial",
+          "InProcessTransfer",
+          "Quarantine",
+          "Other"
+        ]
       },
       "MachineLocation": {
         "type": "object",

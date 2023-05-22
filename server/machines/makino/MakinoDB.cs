@@ -886,7 +886,7 @@ namespace Makino
           Pallets = palMap.Pallets.ToImmutableDictionary(),
           Material = palMap.Material.ToImmutableList(),
           Alarms = ImmutableList<string>.Empty,
-          QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+          Queues = ImmutableDictionary<string, QueueInfo>.Empty
         };
       }
     }

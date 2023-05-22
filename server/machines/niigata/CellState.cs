@@ -179,7 +179,7 @@ namespace BlackMaple.FMSInsight.Niigata
             .Select(m => m.Mat)
             .Concat(SetLongTool(pals))
             .ToImmutableList(),
-          QueueSizes = _settings.Queues.ToImmutableDictionary(),
+          Queues = _settings.Queues.ToImmutableDictionary(),
           Alarms = pals.Where(pal => pal.Status.Tracking.Alarm)
             .Select(pal => AlarmCodeToString(pal.Status.Master.PalletNum, pal.Status.Tracking.AlarmCode))
             .Concat(

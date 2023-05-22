@@ -450,7 +450,7 @@ namespace MazakMachineInterface
           .ToImmutableDictionary(j => j.UniqueStr),
         Pallets = palletsByName.ToImmutable(),
         Material = material.ToImmutable(),
-        QueueSizes = fmsSettings.Queues.ToImmutableDictionary(),
+        Queues = fmsSettings.Queues.ToImmutableDictionary(),
         Alarms = (mazakData.Alarms ?? Enumerable.Empty<MazakAlarmRow>())
           .Where(a => !string.IsNullOrEmpty(a.AlarmMessage))
           .Select(a => a.AlarmMessage)

@@ -74,7 +74,7 @@ namespace Makino
           Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
           Material = ImmutableList<InProcessMaterial>.Empty,
           Alarms = ImmutableList<string>.Empty,
-          QueueSizes = ImmutableDictionary<string, QueueSize>.Empty
+          Queues = ImmutableDictionary<string, QueueInfo>.Empty
         };
       else
         return _db.LoadCurrentInfo();
