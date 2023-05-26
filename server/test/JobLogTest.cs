@@ -1768,6 +1768,40 @@ namespace MachineWatchTest
             expectedActiveWorks[2]
           }
         );
+
+      // test it doesn't load archived orders
+      var newWork = _fixture.Create<Workorder>() with
+      {
+        WorkorderId = "newwork"
+      };
+      var adjustedWork2 = work2 with { Quantity = work2.Quantity + 50 };
+      _jobLog.ReplaceWorkordersForSchedule(scheduleId: "cccc", new[] { newWork, adjustedWork2 }, null);
+
+      _jobLog
+        .GetActiveWorkordersForSchedule(scheduleId: "cccc")
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            expectedActiveWorks[2] with
+            {
+              PlannedQuantity = work2.Quantity + 50
+            },
+            new ActiveWorkorder()
+            {
+              WorkorderId = "newwork",
+              Part = newWork.Part,
+              PlannedQuantity = newWork.Quantity,
+              DueDate = newWork.DueDate,
+              Priority = newWork.Priority,
+              CompletedQuantity = 0,
+              Serials = ImmutableList<string>.Empty,
+              FinalizedTimeUTC = null,
+              ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
+            }
+          }
+        );
     }
 
     [Fact]

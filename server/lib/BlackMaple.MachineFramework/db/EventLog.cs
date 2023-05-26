@@ -821,6 +821,7 @@ namespace BlackMaple.MachineFramework
 
           FROM unfilled_workorders uw
           WHERE uw.ScheduleId = $schid
+          AND (uw.Archived IS NULL OR uw.Archived != 1)
       ";
 
       if (!string.IsNullOrEmpty(partToFilter))
