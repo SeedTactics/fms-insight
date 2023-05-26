@@ -351,9 +351,6 @@ public static class BuildCellState
     {
       public required int LoadNum { get; init; }
       public required ImmutableList<InProcessMaterial> Material { get; init; }
-
-      // normally, elapsed load time is calculated from the LoadBegin event
-      public TimeSpan? OverrideElapsedLoadTime { get; init; } = null;
     }
 
     public record MachineStopped() : LoadedPalletStatus;
@@ -401,8 +398,7 @@ public static class BuildCellState
           material: loadFinished.Material,
           db: db,
           nowUTC: nowUTC,
-          jobs: jobs,
-          overrideElapsedLoadTime: loadFinished.OverrideElapsedLoadTime
+          jobs: jobs
         );
 
       case LoadedPalletStatus.MachineStopped machineStopped:
@@ -492,8 +488,7 @@ public static class BuildCellState
     ImmutableList<InProcessMaterial> material,
     IRepository db,
     IJobCacheWithDefaultStops jobs,
-    DateTime nowUTC,
-    TimeSpan? overrideElapsedLoadTime = null
+    DateTime nowUTC
   )
   {
     var matToLoad = CalcMaterialToLoad(palletNum: pal.PalletNum, materialToLoad: material, jobs: jobs);
@@ -526,17 +521,12 @@ public static class BuildCellState
       }
     }
 
-    TimeSpan? elapsedTime = null;
-    if (overrideElapsedLoadTime.HasValue)
+    TimeSpan? elapsedTime = material
+      .Select(m => m.Action.ElapsedLoadUnloadTime)
+      .FirstOrDefault(t => t.HasValue);
+    if (!elapsedTime.HasValue && pal.LoadBegin != null)
     {
-      elapsedTime = overrideElapsedLoadTime.Value;
-    }
-    else
-    {
-      if (pal.LoadBegin != null)
-      {
-        elapsedTime = nowUTC - pal.LoadBegin.EndTimeUTC;
-      }
+      elapsedTime = nowUTC - pal.LoadBegin.EndTimeUTC;
     }
 
     var loadEnds = db.RecordLoadEnd(
@@ -1069,7 +1059,13 @@ public static class BuildCellState
       newFaces.Add(loadedFace.FaceNum, loadedFace);
     }
 
-    pal = pal with { Faces = newFaces.ToImmutable(), Log = loadEvts.ToImmutableList(), NewLogEvents = true };
+    pal = pal with
+    {
+      Faces = newFaces.ToImmutable(),
+      Log = loadEvts.ToImmutableList(),
+      NewLogEvents = true,
+      LastPalletCycle = cycleEvt
+    };
 
     return pal;
   }
