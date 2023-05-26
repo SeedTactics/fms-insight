@@ -280,7 +280,6 @@ const RawMaterialWorkorderRow = React.memo(function RawMaterialWorkorderRow({
         </Box>
       </TableCell>
       <TableCell>{workorder.dueDate.toLocaleDateString()}</TableCell>
-      <TableCell>{workorder.finalizedTimeUTC ? workorder.finalizedTimeUTC.toLocaleString() : ""}</TableCell>
       <TableCell>{workorder.priority}</TableCell>
       <TableCell>{workorder.plannedQuantity}</TableCell>
       <TableCell>{workorder.completedQuantity}</TableCell>
@@ -316,7 +315,6 @@ const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable(
           <TableCell>Workorder</TableCell>
           <TableCell>Part</TableCell>
           <TableCell>Due Date</TableCell>
-          <TableCell>Finalized</TableCell>
           <TableCell>Priority</TableCell>
           <TableCell>Planned Qty</TableCell>
           <TableCell>Completed Qty</TableCell>

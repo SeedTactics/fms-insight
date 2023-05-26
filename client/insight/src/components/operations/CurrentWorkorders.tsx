@@ -31,18 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Stack,
-  styled,
-  TableSortLabel,
-} from "@mui/material";
+import { Box, Stack, styled, TableSortLabel } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { Typography } from "@mui/material";
@@ -57,18 +46,15 @@ import {
   KeyboardArrowUp as KeyboardArrowUpIcon,
   ImportExport,
   MoreHoriz,
-  CheckCircleOutline,
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
-import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
-import { currentStatus, updateWorkorderFinalizedConduit } from "../../cell-status/current-status.js";
+import { useRecoilValue } from "recoil";
+import { currentStatus } from "../../cell-status/current-status.js";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
 import { IActiveWorkorder } from "../../network/api.js";
 import { durationToMinutes } from "../../util/parseISODuration.js";
 import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
-import { LogBackend } from "../../network/backend.js";
-import { useRecoilConduit } from "../../util/recoil-util.js";
 import copy from "copy-to-clipboard";
 
 const WorkorderTableRow = styled(TableRow)({
@@ -78,11 +64,6 @@ const WorkorderTableRow = styled(TableRow)({
 });
 
 const numFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
-
-const workorderToFinalizeDialog = atom<string | null>({
-  key: "insight-workorderToFinalizeDialog",
-  default: null,
-});
 
 const WorkorderDetails = React.memo(function WorkorderDetails({
   workorder,
@@ -157,7 +138,6 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
 
 function WorkorderRow({ workorder }: { readonly workorder: IActiveWorkorder }) {
   const [open, setOpen] = React.useState<boolean>(false);
-  const setFinalizeDialogOpen = useSetRecoilState(workorderToFinalizeDialog);
 
   const colCnt = 8;
 
@@ -183,17 +163,6 @@ function WorkorderRow({ workorder }: { readonly workorder: IActiveWorkorder }) {
           </Box>
         </TableCell>
         <TableCell>{workorder.dueDate === null ? "" : workorder.dueDate.toLocaleDateString()}</TableCell>
-        <TableCell>
-          {workorder.finalizedTimeUTC ? (
-            <span>{workorder.finalizedTimeUTC.toLocaleString()}</span>
-          ) : (
-            <Tooltip title="Mark as Finalized">
-              <IconButton size="small" onClick={() => setFinalizeDialogOpen(workorder.workorderId)}>
-                <CheckCircleOutline />
-              </IconButton>
-            </Tooltip>
-          )}
-        </TableCell>
         <TableCell align="right">{workorder.priority}</TableCell>
         <TableCell align="right">{workorder.plannedQuantity}</TableCell>
         <TableCell align="right">{workorder.serials.length}</TableCell>
@@ -225,7 +194,6 @@ enum SortColumn {
   Priority,
   CompletedQty,
   AssignedQty,
-  FinalizedTime,
 }
 
 function sortWorkorders(
@@ -256,9 +224,6 @@ function sortWorkorders(
     case SortColumn.AssignedQty:
       sortCol = (j) => j.serials.length;
       break;
-    case SortColumn.FinalizedTime:
-      sortCol = (j) => j.finalizedTimeUTC ?? null;
-      break;
   }
   return LazySeq.of(workorders).toSortedArray(order === "asc" ? { asc: sortCol } : { desc: sortCol });
 }
@@ -268,7 +233,6 @@ function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>) 
   table += "<th>Workorder</th>";
   table += "<th>Part</th>";
   table += "<th>Due Date</th>";
-  table += "<th>Finalized</th>";
   table += "<th>Priority</th>";
   table += "<th>Planned Qty</th>";
   table += "<th>Completed Qty</th>";
@@ -282,7 +246,6 @@ function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>) 
     table += `<td>${w.workorderId}</td>`;
     table += `<td>${w.part}</td>`;
     table += `<td>${w.dueDate === null ? "" : w.dueDate.toLocaleDateString()}</td>`;
-    table += `<td>${w.finalizedTimeUTC ? w.finalizedTimeUTC.toLocaleString() : ""}</td>`;
     table += `<td>${w.priority}</td>`;
     table += `<td>${w.plannedQuantity}</td>`;
     table += `<td>${w.completedQuantity}</td>`;
@@ -358,9 +321,6 @@ const WorkorderHeader = React.memo(function WorkorderHeader(props: {
         <SortColHeader align="left" col={SortColumn.DueDate} {...sort}>
           Due Date
         </SortColHeader>
-        <SortColHeader align="left" col={SortColumn.FinalizedTime} {...sort}>
-          Finalized
-        </SortColHeader>
         <SortColHeader align="right" col={SortColumn.Priority} {...sort}>
           Priority
         </SortColHeader>
@@ -386,57 +346,6 @@ const WorkorderHeader = React.memo(function WorkorderHeader(props: {
         </TableCell>
       </TableRow>
     </TableHead>
-  );
-});
-
-const FinalizeDialog = React.memo(function FinalizeDialog() {
-  const [workorder, setWorkorder] = useRecoilState(workorderToFinalizeDialog);
-  const [updating, setUpdating] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const updateFinalizedTime = useRecoilConduit(updateWorkorderFinalizedConduit);
-
-  function finalizeWorkorder() {
-    if (workorder !== null) {
-      setUpdating(true);
-      setError(null);
-      LogBackend.finalizeWorkorder(workorder)
-        .then((log) => {
-          updateFinalizedTime({ workorder, finalized: log.endUTC });
-          setWorkorder(null);
-        })
-        .catch(() => setError("Error finalizing workorder"))
-        .finally(() => setUpdating(false));
-    }
-  }
-
-  return (
-    <Dialog open={workorder !== null} onClose={() => setWorkorder(null)}>
-      <DialogTitle>Mark workorder {workorder} as finalized?</DialogTitle>
-      <DialogContent>
-        <Stack direction="column" spacing={2}>
-          <Typography variant="body1">
-            Even after being finalized, the workorder will still appear in the list until it is removed from
-            the ERP. Marking a workorder as finalized is just a signal to the operators on the shop floor that
-            the order is complete and no more parts should be assigned. (The operators can still assign parts
-            to this workorder, it is just a visual signal.)
-          </Typography>
-          {error !== null ? (
-            <Typography variant="body1" color="error">
-              {error}
-            </Typography>
-          ) : undefined}
-        </Stack>
-      </DialogContent>
-      <DialogActions>
-        <Button disabled={updating} onClick={finalizeWorkorder}>
-          {updating ? <CircularProgress /> : undefined}
-          Finalize
-        </Button>
-        <Button color="secondary" onClick={() => setWorkorder(null)}>
-          Cancel
-        </Button>
-      </DialogActions>
-    </Dialog>
   );
 });
 
@@ -467,7 +376,6 @@ export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage():
           ))}
         </TableBody>
       </Table>
-      <FinalizeDialog />
     </Box>
   );
 });
