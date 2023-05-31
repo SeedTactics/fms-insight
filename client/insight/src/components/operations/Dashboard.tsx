@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { Box, LinearProgress, Typography } from "@mui/material";
-import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { IProcPathInfo } from "../../network/api.js";
 import { ParentSize } from "@visx/responsive";
 import { RecentCycleChart } from "./RecentCycleChart.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue } from "jotai";
 
 const pctFormat = new Intl.NumberFormat(undefined, { style: "percent", minimumFractionDigits: 1 });
 
@@ -56,7 +56,7 @@ function countExpectedAtNow(): (p: Readonly<IProcPathInfo>) => number {
 }
 
 const CompletedParts = React.memo(function CompletedParts() {
-  const currentSt = useRecoilValue(currentStatus);
+  const currentSt = useAtomValue(currentStatus);
 
   const completed = LazySeq.ofObject(currentSt.jobs).sumBy(([, j]) =>
     LazySeq.of(j.completed ?? []).sumBy((c) => LazySeq.of(c).sumBy((d) => d))

@@ -48,7 +48,6 @@ import {
   MoreHoriz,
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
-import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
@@ -56,6 +55,7 @@ import { IActiveWorkorder } from "../../network/api.js";
 import { durationToMinutes } from "../../util/parseISODuration.js";
 import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
+import { useAtomValue } from "jotai";
 
 const WorkorderTableRow = styled(TableRow)({
   "& > *": {
@@ -353,7 +353,7 @@ export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage():
   useSetTitle("Workorders");
   const [sortBy, setSortBy] = React.useState<SortColumn>(SortColumn.WorkorderId);
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
-  const currentSt = useRecoilValue(currentStatus);
+  const currentSt = useAtomValue(currentStatus);
 
   const sorted = React.useMemo(
     () => sortWorkorders(currentSt.workorders ?? [], sortBy, order),

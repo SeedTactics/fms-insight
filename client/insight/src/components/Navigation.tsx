@@ -53,7 +53,7 @@ import {
   FormControl,
 } from "@mui/material";
 import { startOfToday, differenceInDays } from "date-fns";
-import { useRecoilValue, useRecoilValueLoadable } from "recoil";
+import { useRecoilValueLoadable } from "recoil";
 import { currentStatus } from "../cell-status/current-status";
 import { SeedtacticLogo } from "../seedtactics-logo";
 import { OperatorSelect } from "./ChooseOperator";
@@ -62,6 +62,7 @@ import { ManualScanButton } from "./ManualScan";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog";
 import { RouteState, helpUrl, useCurrentRoute } from "./routes";
 import { fmsInformation, logout } from "../network/server-settings";
+import { useAtomValue } from "jotai";
 
 export type MenuNavItem =
   | {
@@ -109,7 +110,7 @@ function Brand() {
 }
 
 function Alarms() {
-  const alarms = useRecoilValue(currentStatus).alarms;
+  const alarms = useAtomValue(currentStatus).alarms;
   const hasAlarms = alarms && alarms.length > 0;
 
   const alarmTooltip = hasAlarms ? alarms.join(". ") : "No Alarms";

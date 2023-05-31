@@ -62,6 +62,7 @@ import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue } from "jotai";
 
 export const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
   (props: { $darkRow?: boolean }) => ({
@@ -325,7 +326,7 @@ export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.El
 
   const matIds = useRecoilValue(last30MaterialSummary);
   const schJobs = useRecoilValue(last30Jobs);
-  const currentSt = useRecoilValue(currentStatus);
+  const currentSt = useAtomValue(currentStatus);
 
   const showMaterial = React.useMemo(() => {
     for (const [, newJob] of schJobs) {

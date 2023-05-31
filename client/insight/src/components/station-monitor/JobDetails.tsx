@@ -50,6 +50,7 @@ import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-
 import { LazySeq, HashMap, HashSet } from "@seedtactics/immutable-collections";
 
 import { MoreHoriz } from "@mui/icons-material";
+import { useAtomValue } from "jotai";
 
 interface JobDisplayProps {
   readonly job: Readonly<api.IActiveJob>;
@@ -173,7 +174,7 @@ interface JobMaterialProps {
 }
 
 function JobMaterial(props: JobMaterialProps) {
-  const currentMaterial = useRecoilValue(currentStatus).material;
+  const currentMaterial = useAtomValue(currentStatus).material;
   const setMatToShow = useSetMaterialToShowInDialog();
 
   const mats = LazySeq.of(props.matIdsForJob.get(props.unique) ?? HashSet.empty<number>())

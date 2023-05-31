@@ -51,6 +51,7 @@ import { ChartTooltip } from "../ChartTooltip.js";
 import { CurrentCycle, currentCycles } from "../../data/current-cycles.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
+import { useAtomValue } from "jotai";
 
 const projectedColor = green[200];
 const activeColor = green[600];
@@ -530,7 +531,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   const last30Cycles = useRecoilValue(last30StationCycles);
   const estimated = useRecoilValue(last30EstimatedCycleTimes);
   const sim = useSimCycles();
-  const currentSt = useRecoilValue(currentStatus);
+  const currentSt = useAtomValue(currentStatus);
 
   const cycles = React.useMemo(() => {
     const cutoff = addHours(new Date(), -12);

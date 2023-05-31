@@ -61,6 +61,7 @@ import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { castingNames, rawMaterialQueues } from "../../cell-status/names.js";
+import { useAtomValue } from "jotai";
 
 const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $expandedOpen?: boolean;
@@ -85,7 +86,7 @@ type CurrentCollapseOpen =
   | { readonly kind: "RawMat" };
 
 function useCastingNames(): LazySeq<readonly [string, number]> {
-  const currentSt = useRecoilValue(currentStatus);
+  const currentSt = useAtomValue(currentStatus);
   const castNames = useRecoilValue(castingNames);
   return React.useMemo(
     () =>
@@ -144,7 +145,7 @@ interface SelectJobProps {
 }
 
 function SelectJob({ queue, selectedJob, onSelectJob, curCollapse, setCurCollapse, indent }: SelectJobProps) {
-  const currentSt = useRecoilValue(currentStatus);
+  const currentSt = useAtomValue(currentStatus);
   const fmsInfo = useRecoilValue(fmsInformation);
   const jobs: ReadonlyArray<JobAndGroups> = React.useMemo(
     () =>

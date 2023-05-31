@@ -62,6 +62,7 @@ import {
   PromptForJob,
 } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { useAtomValue } from "jotai";
 
 export function PrintOnClientButton({
   mat,
@@ -295,7 +296,7 @@ export interface MultiMaterialDialogProps {
 
 export const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
   const fmsInfo = useRecoilValue(fmsInformation);
-  const jobs = useRecoilValue(currentStatus).jobs;
+  const jobs = useAtomValue(currentStatus).jobs;
   const [printLabel, printingLabel] = matDetails.usePrintLabel();
 
   const [loading, setLoading] = React.useState(false);

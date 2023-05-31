@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "../network/api.js";
 import { durationToMinutes } from "../util/parseISODuration.js";
-import { atom, selector, useRecoilCallback } from "recoil";
 import { MachineBackend } from "../network/backend.js";
 import { currentStatus } from "../cell-status/current-status.js";
 import copy from "copy-to-clipboard";
@@ -46,6 +45,8 @@ import {
 } from "../cell-status/estimated-cycle-times.js";
 import { stat_name_and_num } from "../cell-status/station-cycles.js";
 import { LazySeq, HashMap, hashValues } from "@seedtactics/immutable-collections";
+import { atom, useStore } from "jotai";
+import { useCallback } from "react";
 
 function averageToolUse(
   usage: ToolUsage,
@@ -259,112 +260,67 @@ export function calcToolReport(
     .toRArray();
 }
 
-export const toolReportMachineFilter = atom<string | null>({
-  key: "tool-report-machine-filter",
-  default: null,
+export const toolReportMachineFilter = atom<string | null>(null);
+
+type ToolsInMachine = {
+  readonly tools: ReadonlyArray<IToolInMachine>;
+  readonly time: Date;
+};
+
+const toolsInMachine = atom<ToolsInMachine | null>(null);
+
+export const toolReportRefreshTime = atom<Date | null, [Date], Promise<void>>(
+  (get) => get(toolsInMachine)?.time ?? null,
+  async (_, set, time) => {
+    set(toolsInMachine, {
+      tools: await MachineBackend.getToolsInMachines(),
+      time,
+    });
+  }
+);
+
+export const machinesWithTools = atom<ReadonlyArray<string>>((get) => {
+  const toolsInMach = get(toolsInMachine);
+  if (toolsInMach === null) return [];
+  const names = new Set<string>();
+  for (const t of toolsInMach.tools) {
+    names.add(stat_name_and_num(t.machineGroupName, t.machineNum));
+  }
+  return Array.from(names).sort((a, b) => a.localeCompare(b));
 });
 
-export const toolReportRefreshTime = atom<Date | null>({
-  key: "tool-report-refresh-time",
-  default: null,
+export const currentToolReport = atom<ReadonlyArray<ToolReport> | null>((get) => {
+  const toolsInMach = get(toolsInMachine);
+  if (toolsInMach === null) return null;
+  const machineFilter = get(toolReportMachineFilter);
+  const currentSt = get(currentStatus);
+  const usage = get(last30ToolUse);
+  return calcToolReport(currentSt, toolsInMach.tools, usage, machineFilter);
 });
 
-/*
-This code is the way when we can use react concurrent mode and useTransition,
-otherwise the table flashes each time the currentStatus changes.
-
-export const currentToolReport = selector<L.List<ToolReport> | null>({
-  key: "tool-report",
-  get: async ({ get }) => {
-    const t = get(toolReportRefreshTime);
-    if (t === null) {
-      return null;
-    } else {
-      if (reduxStore === null) return null;
-      const machineFilter = get(toolReportMachineFilter);
-      const currentSt = get(currentStatus);
-      const toolsInMach = await MachineBackend.getToolsInMachines();
-      const usage = reduxStore.getState().Events.last30.cycles.tool_usage;
-      return calcToolReport(currentSt, usage, machineFilter);
-    }
-  },
-});
-*/
-
-const toolsInMachine = atom<ReadonlyArray<Readonly<IToolInMachine>> | null>({
-  key: "tools-in-machines",
-  default: null,
+export const toolReportHasSerial = atom<boolean>((get) => {
+  const report = get(currentToolReport);
+  if (!report) return false;
+  return LazySeq.of(report)
+    .flatMap((r) => r.machines)
+    .anyMatch((t) => t.serial != null && t.serial !== "");
 });
 
-export const machinesWithTools = selector<ReadonlyArray<string>>({
-  key: "machines-with-tools",
-  get: ({ get }) => {
-    const toolsInMach = get(toolsInMachine);
-    if (toolsInMach === null) return [];
-    const names = new Set<string>();
-    for (const t of toolsInMach) {
-      names.add(stat_name_and_num(t.machineGroupName, t.machineNum));
-    }
-    return Array.from(names).sort((a, b) => a.localeCompare(b));
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+export const toolReportHasTimeUsage = atom<boolean>((get) => {
+  const report = get(currentToolReport);
+  if (!report) return false;
+  return LazySeq.of(report)
+    .flatMap((r) => r.machines)
+    .anyMatch((t) => t.currentUseMinutes != null);
 });
 
-export const currentToolReport = selector<ReadonlyArray<ToolReport> | null>({
-  key: "tool-report",
-  get: ({ get }) => {
-    const toolsInMach = get(toolsInMachine);
-    if (toolsInMach === null) return null;
-    const machineFilter = get(toolReportMachineFilter);
-    const currentSt = get(currentStatus);
-    const usage = get(last30ToolUse);
-    return calcToolReport(currentSt, toolsInMach, usage, machineFilter);
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+export const toolReportHasCntUsage = atom<boolean>((get) => {
+  const report = get(currentToolReport);
+  if (!report) return false;
+  return LazySeq.of(report)
+    .flatMap((r) => r.machines)
+    .anyMatch((t) => t.currentUseCnt != null);
 });
-
-export const toolReportHasSerial = selector<boolean>({
-  key: "tool-report-has-serial",
-  get: ({ get }) => {
-    const report = get(currentToolReport);
-    if (!report) return false;
-    return LazySeq.of(report)
-      .flatMap((r) => r.machines)
-      .anyMatch((t) => t.serial != null && t.serial !== "");
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-export const toolReportHasTimeUsage = selector<boolean>({
-  key: "tool-report-has-time-usage",
-  get: ({ get }) => {
-    const report = get(currentToolReport);
-    if (!report) return false;
-    return LazySeq.of(report)
-      .flatMap((r) => r.machines)
-      .anyMatch((t) => t.currentUseMinutes != null);
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-export const toolReportHasCntUsage = selector<boolean>({
-  key: "tool-report-has-cnt-usage",
-  get: ({ get }) => {
-    const report = get(currentToolReport);
-    if (!report) return false;
-    return LazySeq.of(report)
-      .flatMap((r) => r.machines)
-      .anyMatch((t) => t.currentUseCnt != null);
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-export function useRefreshToolReport(): () => Promise<void> {
-  return useRecoilCallback(({ set }) => async () => {
-    set(toolsInMachine, await MachineBackend.getToolsInMachines());
-    set(toolReportRefreshTime, new Date());
-  });
-}
 
 function buildToolReportHTML(
   tools: Iterable<ToolReport>,
@@ -413,20 +369,17 @@ function buildToolReportHTML(
 }
 
 export function useCopyToolReportToClipboard(): () => void {
-  return useRecoilCallback(
-    ({ snapshot }) =>
-      () => {
-        const tools = snapshot.getLoadable(currentToolReport).valueMaybe();
-        if (!tools) return;
-        copy(
-          buildToolReportHTML(tools, {
-            showTime: snapshot.getLoadable(toolReportHasTimeUsage).valueMaybe() ?? false,
-            showCnts: snapshot.getLoadable(toolReportHasCntUsage).valueMaybe() ?? false,
-          })
-        );
-      },
-    []
-  );
+  const store = useStore();
+  return useCallback(() => {
+    const tools = store.get(currentToolReport);
+    if (!tools) return;
+    copy(
+      buildToolReportHTML(tools, {
+        showTime: store.get(toolReportHasTimeUsage),
+        showCnts: store.get(toolReportHasCntUsage),
+      })
+    );
+  }, []);
 }
 
 export interface CellControllerProgram {
@@ -488,94 +441,76 @@ export function calcProgramReport(
   };
 }
 
-export const programReportRefreshTime = atom<Date | null>({
-  key: "program-report-refresh-time",
-  default: null,
+export const programFilter = atom<"AllPrograms" | "ActivePrograms">("AllPrograms");
+
+type ProgsInCellCtrl = {
+  readonly progs: ReadonlyArray<Readonly<IProgramInCellController>>;
+  readonly time: Date;
+};
+
+const programsInCellCtrl = atom<ProgsInCellCtrl | null>(null);
+
+export const programReportRefreshTime = atom<Date | null, [Date], Promise<void>>(
+  (get) => get(programsInCellCtrl)?.time ?? null,
+  async (_, set, time) => {
+    set(programsInCellCtrl, {
+      progs: await MachineBackend.getProgramsInCellController(),
+      time,
+    });
+  }
+);
+
+export const currentProgramReport = atom<ProgramReport | null>((get) => {
+  const time = get(programReportRefreshTime);
+  if (time === null) return null;
+
+  const filter = get(programFilter);
+  let progsToShow: ReadonlySet<string> | null = null;
+  if (filter === "ActivePrograms") {
+    const status = get(currentStatus);
+    progsToShow = new Set(
+      LazySeq.ofObject(status.jobs)
+        .flatMap(([, job]) => job.procsAndPaths)
+        .flatMap((p) => p.paths)
+        .flatMap((p) => p.stops)
+        .filter((s) => s.program !== null && s.program !== undefined && s.program !== "")
+        .map((s) => s.program ?? "")
+    );
+  }
+
+  const progsInCell = get(programsInCellCtrl);
+  if (progsInCell === null) return null;
+
+  return calcProgramReport(
+    get(last30ToolUse),
+    get(last30EstimatedCycleTimes),
+    progsInCell.progs,
+    progsToShow
+  );
 });
 
-export const programFilter = atom<"AllPrograms" | "ActivePrograms">({
-  key: "program-report-filter",
-  default: "AllPrograms",
-});
-
-const programsInCellCtrl = atom<ReadonlyArray<Readonly<IProgramInCellController>> | null>({
-  key: "programs-in-cell-controller",
-  default: null,
-});
-
-export const currentProgramReport = selector<ProgramReport | null>({
-  key: "cell-controller-programs",
-  get: ({ get }) => {
-    const time = get(programReportRefreshTime);
-    if (time === null) return null;
-
-    const filter = get(programFilter);
-    let progsToShow: ReadonlySet<string> | null = null;
-    if (filter === "ActivePrograms") {
-      const status = get(currentStatus);
-      progsToShow = new Set(
-        LazySeq.ofObject(status.jobs)
-          .flatMap(([, job]) => job.procsAndPaths)
-          .flatMap((p) => p.paths)
-          .flatMap((p) => p.stops)
-          .filter((s) => s.program !== null && s.program !== undefined && s.program !== "")
-          .map((s) => s.program ?? "")
-      );
-    }
-
-    /*
-    This code is the way when we can use react concurrent mode and useTransition,
-    otherwise the table flashes each time the currentStatus changes.
-
-    const progsInCell = await MachineBackend.getProgramsInCellController();
-    */
-    const progsInCell = get(programsInCellCtrl);
-    if (progsInCell === null) return null;
-
-    return calcProgramReport(get(last30ToolUse), get(last30EstimatedCycleTimes), progsInCell, progsToShow);
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-export function useRefreshProgramReport(): () => Promise<void> {
-  return useRecoilCallback(({ set }) => async () => {
-    set(programsInCellCtrl, await MachineBackend.getProgramsInCellController());
-    set(programReportRefreshTime, new Date());
-  });
-}
-
-export interface ProgramNameAndRevision {
+export type ProgramNameAndRevision = {
   readonly programName: string;
   readonly revision: number | null;
   readonly partName: string | null;
-}
+};
 
-export const programToShowContent = atom<ProgramNameAndRevision | null>({
-  key: "program-to-show-content",
-  default: null,
+export const programToShowContent = atom<ProgramNameAndRevision | null>(null);
+
+export const programContent = atom<Promise<string>>(async (get) => {
+  const prog = get(programToShowContent);
+  if (prog === null) {
+    return "";
+  } else if (prog.revision === null) {
+    return await MachineBackend.getLatestProgramRevisionContent(prog.programName);
+  } else {
+    return await MachineBackend.getProgramRevisionContent(prog.programName, prog.revision);
+  }
 });
 
-export const programContent = selector<string>({
-  key: "program-content",
-  get: async ({ get }) => {
-    const prog = get(programToShowContent);
-    if (prog === null) {
-      return "";
-    } else if (prog.revision === null) {
-      return await MachineBackend.getLatestProgramRevisionContent(prog.programName);
-    } else {
-      return await MachineBackend.getProgramRevisionContent(prog.programName, prog.revision);
-    }
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-export interface ProgramHistoryRequest {
+export type ProgramHistoryRequest = {
   readonly programName: string;
   readonly partName: string | null;
-}
+};
 
-export const programToShowHistory = atom<ProgramHistoryRequest | null>({
-  key: "program-to-show-history",
-  default: null,
-});
+export const programToShowHistory = atom<ProgramHistoryRequest | null>(null);

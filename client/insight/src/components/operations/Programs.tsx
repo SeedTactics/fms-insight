@@ -58,7 +58,6 @@ import {
 import {
   programReportRefreshTime,
   currentProgramReport,
-  useRefreshProgramReport,
   CellControllerProgram,
   programToShowContent,
   programContent,
@@ -70,7 +69,6 @@ import { IconButton } from "@mui/material";
 import { Collapse } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { PartIdenticon } from "../station-monitor/Material.js";
-import { useSetRecoilState, useRecoilState, useRecoilValue } from "recoil";
 import { Dialog } from "@mui/material";
 import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
@@ -82,6 +80,7 @@ import { IProgramRevision } from "../../network/api.js";
 import { MachineBackend } from "../../network/backend.js";
 import { Select } from "@mui/material";
 import { MenuItem } from "@mui/material";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 interface ProgramRowProps {
   readonly program: CellControllerProgram;
@@ -108,8 +107,8 @@ function programFilename(program: string): string {
 
 function ProgramRow(props: ProgramRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
-  const setProgramToShowContent = useSetRecoilState(programToShowContent);
-  const setProgramToShowHistory = useSetRecoilState(programToShowHistory);
+  const setProgramToShowContent = useSetAtom(programToShowContent);
+  const setProgramToShowHistory = useSetAtom(programToShowHistory);
 
   const numCols = 8 + (props.showCellCtrlCol ? 1 : 0) + (props.showRevCol ? 1 : 0);
 
@@ -241,7 +240,7 @@ type SortColumn =
   | "DeviationBelow";
 
 export function ProgramSummaryTable(): JSX.Element {
-  const report = useRecoilValue(currentProgramReport);
+  const report = useAtomValue(currentProgramReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ProgramName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
 
@@ -443,7 +442,7 @@ export function ProgramSummaryTable(): JSX.Element {
 }
 
 function ProgramContentCode() {
-  const ct = useRecoilValue(programContent);
+  const ct = useAtomValue(programContent);
   const [highlighted, setHighlighted] = React.useState<string | null>(null);
 
   const worker = React.useMemo(
@@ -481,8 +480,8 @@ function ProgramContentCode() {
 }
 
 export function ProgramContentDialog(): JSX.Element {
-  const [program, setProgramToShowContent] = useRecoilState(programToShowContent);
-  const history = useRecoilValue(programToShowHistory);
+  const [program, setProgramToShowContent] = useAtom(programToShowContent);
+  const history = useAtomValue(programToShowHistory);
 
   // when history is open, content is shown on the history dialog
   return (
@@ -534,8 +533,8 @@ interface ProgramRevisionTableProps {
 const revisionsPerPage = 10;
 
 function ProgramRevisionTable(props: ProgramRevisionTableProps) {
-  const program = useRecoilValue(programToShowHistory);
-  const setProgramToShowContent = useSetRecoilState(programToShowContent);
+  const program = useAtomValue(programToShowHistory);
+  const setProgramToShowContent = useSetAtom(programToShowContent);
 
   return (
     <Table>
@@ -599,8 +598,8 @@ interface LastPage {
 }
 
 export function ProgramHistoryDialog(): JSX.Element {
-  const [program, setProgram] = useRecoilState(programToShowHistory);
-  const [programForContent, setProgramForContent] = useRecoilState(programToShowContent);
+  const [program, setProgram] = useAtom(programToShowHistory);
+  const [programForContent, setProgramForContent] = useAtom(programToShowContent);
 
   // TODO: switch to persistent list
   const [revisions, setRevisions] = React.useState<ReadonlyArray<Readonly<IProgramRevision>> | null>(null);
@@ -730,15 +729,14 @@ export function ProgramHistoryDialog(): JSX.Element {
 }
 
 function ProgNavHeader() {
-  const reloadTime = useRecoilValue(programReportRefreshTime);
+  const [reloadTime, refreshPrograms] = useAtom(programReportRefreshTime);
   const [loading, setLoading] = React.useState(false);
-  const refreshPrograms = useRefreshProgramReport();
   const demo = useIsDemo();
-  const [filter, setFilter] = useRecoilState(programFilter);
+  const [filter, setFilter] = useAtom(programFilter);
 
   function refresh() {
     setLoading(true);
-    refreshPrograms().finally(() => setLoading(false));
+    refreshPrograms(new Date()).finally(() => setLoading(false));
   }
 
   if (demo) {

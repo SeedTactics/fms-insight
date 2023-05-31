@@ -45,6 +45,7 @@ import {
 import { currentOperator } from "../../data/operators.js";
 import { ActionType, LocType, QueueRole } from "../../network/api.js";
 import { fmsInformation } from "../../network/server-settings.js";
+import { useAtomValue } from "jotai";
 
 type QuarantineMaterialData = {
   readonly type: "Remove" | "Scrap" | "Quarantine" | "Signal";
@@ -58,7 +59,7 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
   const [removeFromQueue, removingFromQueue] = useRemoveFromQueue();
   const [signalQuarantine, signalingQuarantine] = useSignalForQuarantine();
   const inProcMat = useRecoilValue(inProcessMaterialInDialog);
-  const curSt = useRecoilValue(currentStatus);
+  const curSt = useAtomValue(currentStatus);
   let operator = useRecoilValue(currentOperator);
   if (ignoreOperator) operator = null;
 

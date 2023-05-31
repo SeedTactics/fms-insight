@@ -79,6 +79,7 @@ import {
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { addHours } from "date-fns";
 import { AddToQueueButton, PromptForQueue } from "./QueuesAddMaterial.js";
+import { useAtomValue } from "jotai";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -290,8 +291,8 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
 }
 
 function ElapsedLoadTime({ elapsedLoadTime }: { elapsedLoadTime: string | null }) {
-  const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
-  const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
+  const currentStTime = useAtomValue(currentStatus).timeOfCurrentStatusUTC;
+  const secondsSinceEpoch = useAtomValue(secondsSinceEpochAtom);
 
   if (elapsedLoadTime) {
     const elapsedSecsInCurSt = durationToSeconds(elapsedLoadTime);
@@ -574,7 +575,7 @@ function useAllowAddMaterial(queues: ReadonlyArray<string>): boolean {
   const toShow = useRecoilValue(matDetails.materialDialogOpen);
   const mat = useRecoilValue(matDetails.materialInDialogInfo);
   const inProcMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  const curSt = useRecoilValue(currentStatus);
+  const curSt = useAtomValue(currentStatus);
   const evts = useRecoilValueLoadable(matDetails.materialInDialogEvents);
 
   if (toShow === null) return false;
@@ -772,7 +773,7 @@ function useGridLayout({
 }
 
 export function LoadStation(props: LoadStationProps) {
-  const currentSt = useRecoilValue(currentStatus);
+  const currentSt = useAtomValue(currentStatus);
   const data = React.useMemo(
     () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt),
     [currentSt, props.loadNum, props.queues]

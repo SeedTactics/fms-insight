@@ -42,6 +42,7 @@ import { RouteLocation, useCurrentRoute } from "../routes.js";
 import { last30InspectionTypes } from "../../cell-status/names.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { SystemOverviewDialogButton } from "./SystemOverview.js";
+import { useAtomValue } from "jotai";
 
 const toolbarStyle = {
   display: "flex",
@@ -73,7 +74,7 @@ enum StationMonitorType {
 export function StationToolbar(): JSX.Element {
   const [route, setRoute] = useCurrentRoute();
   const inspTypes = useRecoilValue(last30InspectionTypes);
-  const queueNames = Object.keys(useRecoilValue(currentStatus).queues).sort();
+  const queueNames = Object.keys(useAtomValue(currentStatus).queues).sort();
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
 

@@ -40,6 +40,8 @@
     "highlight.js": "^11.8.0",
     "immer": "^10.0.1",
     "jdenticon": "^3.2.0",
+    "jotai": "^2.1.0",
+    "jotai-immer": "^0.2.0",
     "jsbarcode": "^3.11.5",
     "localforage": "^1.10.0",
     "oidc-client-ts": "^2.2.3",

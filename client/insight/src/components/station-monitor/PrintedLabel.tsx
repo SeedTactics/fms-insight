@@ -35,8 +35,8 @@ import * as React from "react";
 import JsBarcode from "jsbarcode";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { format } from "date-fns";
-import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
+import { useAtomValue } from "jotai";
 
 interface BarcodeProps {
   readonly text: string;
@@ -136,7 +136,7 @@ function SinglePage(props: SinglePageProps) {
 }
 
 function OneJobPerPage(props: PrintedLabelProps) {
-  const allJobs = useRecoilValue(currentStatus).jobs;
+  const allJobs = useAtomValue(currentStatus).jobs;
 
   const assignments = React.useMemo(
     () =>
@@ -209,7 +209,7 @@ function CombinedToOnePage(props: PrintedLabelProps) {
     [props.material]
   );
 
-  const allJobs = useRecoilValue(currentStatus).jobs;
+  const allJobs = useAtomValue(currentStatus).jobs;
 
   const notes = React.useMemo(
     () =>

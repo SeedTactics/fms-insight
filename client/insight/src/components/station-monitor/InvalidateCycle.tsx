@@ -43,6 +43,7 @@ import { inProcessMaterialInDialog, useCloseMaterialDialog } from "../../cell-st
 import { useRecoilValue } from "recoil";
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
+import { useAtomValue } from "jotai";
 
 interface InvalidateCycle {
   readonly process: number | null;
@@ -188,7 +189,7 @@ export interface SwapMaterialProps {
 }
 
 export function SwapMaterialDialogContent(props: SwapMaterialProps): JSX.Element {
-  const status = useRecoilValue(currentStatus);
+  const status = useAtomValue(currentStatus);
   const curMat = useRecoilValue(inProcessMaterialInDialog);
 
   if (curMat === null || props.st === null) return <div />;

@@ -69,6 +69,7 @@ import { currentOperator } from "../../data/operators.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { ErrorBoundary } from "react-error-boundary";
 import { currentStatus } from "../../cell-status/current-status.js";
+import { useAtomValue } from "jotai";
 
 export class PartIdenticon extends React.PureComponent<{
   part: string;
@@ -183,7 +184,7 @@ export function MaterialAction({
   displayActionForSinglePallet?: string;
   fsize?: MatCardFontSize;
 }): JSX.Element | null {
-  const curSt = useRecoilValue(currentStatus);
+  const curSt = useAtomValue(currentStatus);
 
   switch (mat.action.type) {
     case api.ActionType.Loading:
