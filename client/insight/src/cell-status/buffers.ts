@@ -30,13 +30,12 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { ILogEntry, LogType } from "../network/api.js";
 import { durationToSeconds } from "../util/parseISODuration.js";
 import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
+import { Atom, atom } from "jotai";
 
 export type BufferType =
   | { readonly type: "Rotary"; readonly machineGroup: string; readonly machineNum: number }
@@ -53,18 +52,11 @@ export interface BufferEntry {
 
 export type BufferEntryByCntr = HashMap<number, BufferEntry>;
 
-const last30BufferEntriesRW = atom<BufferEntryByCntr>({
-  key: "last30Buffers",
-  default: HashMap.empty(),
-});
-export const last30BufferEntries: RecoilValueReadOnly<BufferEntryByCntr> = last30BufferEntriesRW;
+const last30BufferEntriesRW = atom<BufferEntryByCntr>(HashMap.empty<number, BufferEntry>());
+export const last30BufferEntries: Atom<BufferEntryByCntr> = last30BufferEntriesRW;
 
-const specificMonthBufferEntriesRW = atom<BufferEntryByCntr>({
-  key: "specificMonthBuffers",
-  default: HashMap.empty(),
-});
-export const specificMonthBufferEntries: RecoilValueReadOnly<BufferEntryByCntr> =
-  specificMonthBufferEntriesRW;
+const specificMonthBufferEntriesRW = atom<BufferEntryByCntr>(HashMap.empty<number, BufferEntry>());
+export const specificMonthBufferEntries: Atom<BufferEntryByCntr> = specificMonthBufferEntriesRW;
 
 function convertEntry(e: Readonly<ILogEntry>): [number, BufferEntry] | null {
   if (e.elapsed === "") return null;
@@ -126,42 +118,36 @@ function convertEntry(e: Readonly<ILogEntry>): [number, BufferEntry] | null {
   }
 }
 
-export const setLast30Buffer = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(last30BufferEntriesRW, (oldEntries) =>
-      oldEntries.union(
-        LazySeq.of(log)
-          .collect(convertEntry)
-          .toHashMap((x) => x)
-      )
-    );
-  }
-);
-
-export const updateLast30Buffer = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
-    if (!evt.logEntry) return;
-    const log = convertEntry(evt.logEntry);
-    if (!log) return;
-
-    t.set(last30BufferEntriesRW, (entries) => {
-      if (expire) {
-        const expireD = addDays(now, -30);
-        entries = entries.filter((e) => e.endTime >= expireD);
-      }
-
-      return entries.set(log[0], log[1]);
-    });
-  }
-);
-
-export const setSpecificMonthBuffer = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(
-      specificMonthBufferEntriesRW,
+export const setLast30Buffer = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(last30BufferEntriesRW, (oldEntries) =>
+    oldEntries.union(
       LazySeq.of(log)
         .collect(convertEntry)
         .toHashMap((x) => x)
-    );
-  }
-);
+    )
+  );
+});
+
+export const updateLast30Buffer = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
+  if (!evt.logEntry) return;
+  const log = convertEntry(evt.logEntry);
+  if (!log) return;
+
+  set(last30BufferEntriesRW, (entries) => {
+    if (expire) {
+      const expireD = addDays(now, -30);
+      entries = entries.filter((e) => e.endTime >= expireD);
+    }
+
+    return entries.set(log[0], log[1]);
+  });
+});
+
+export const setSpecificMonthBuffer = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(
+    specificMonthBufferEntriesRW,
+    LazySeq.of(log)
+      .collect(convertEntry)
+      .toHashMap((x) => x)
+  );
+});

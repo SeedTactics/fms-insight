@@ -44,6 +44,7 @@ import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-stat
 import { Box, ToggleButton, Slider, Typography } from "@mui/material";
 import { useImmer } from "../../util/recoil-util.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue } from "jotai";
 
 type BufferChartProps = {
   readonly movingAverageDistanceInHours: number;
@@ -55,7 +56,7 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
-  const entries = useRecoilValue(period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries);
+  const entries = useAtomValue(period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries);
   const rawMatQueues = useRecoilValue(rawMaterialQueues);
 
   const [disabledBuffers, setDisabledBuffers] = useImmer<ReadonlySet<string>>(new Set<string>());
