@@ -32,10 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { useSetMaterialToShowInDialog } from "../cell-status/material-details.js";
+import { materialDialogOpen } from "../cell-status/material-details.js";
+import { useSetAtom } from "jotai";
 
 export const BarcodeListener = React.memo(function BarcodeListener(): null {
-  const setBarcode = useSetMaterialToShowInDialog();
+  const setBarcode = useSetAtom(materialDialogOpen);
   React.useEffect(() => {
     let timeout: number | undefined;
     let scanActive = false;

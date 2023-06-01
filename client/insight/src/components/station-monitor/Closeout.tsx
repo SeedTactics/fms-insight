@@ -47,7 +47,6 @@ import {
   materialDialogOpen,
   materialInDialogEvents,
   materialInDialogInfo,
-  useCloseMaterialDialog,
   useCompleteCloseout,
 } from "../../cell-status/material-details.js";
 import {
@@ -58,14 +57,14 @@ import { LogType } from "../../network/api.js";
 import { instructionUrl } from "../../network/backend.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { useSetTitle } from "../routes.js";
+import { useAtom, useAtomValue } from "jotai";
 
 function CompleteButton() {
   const fmsInfo = useRecoilValue(fmsInformation);
-  const mat = useRecoilValue(materialInDialogInfo);
+  const mat = useAtomValue(materialInDialogInfo);
   const [complete, isCompleting] = useCompleteCloseout();
   const operator = useRecoilValue(currentOperator);
-  const closeMatDialog = useCloseMaterialDialog();
-  const toShow = useRecoilValue(materialDialogOpen);
+  const [toShow, setToShow] = useAtom(materialDialogOpen);
 
   if (mat === null) return null;
 
@@ -91,7 +90,7 @@ function CompleteButton() {
       mat,
       operator: operator,
     });
-    closeMatDialog();
+    setToShow(null);
   }
 
   if (disallowCompleteReason) {
@@ -114,8 +113,8 @@ function CompleteButton() {
 }
 
 function InstrButton() {
-  const material = useRecoilValue(materialInDialogInfo);
-  const matEvents = useRecoilValue(materialInDialogEvents);
+  const material = useAtomValue(materialInDialogInfo);
+  const matEvents = useAtomValue(materialInDialogEvents);
   const operator = useRecoilValue(currentOperator);
 
   if (material === null || material.partName === "") return null;
@@ -142,7 +141,7 @@ function InstrButton() {
 
 function AssignWorkorderButton() {
   const setWorkorderDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
-  const mat = useRecoilValue(materialInDialogInfo);
+  const mat = useAtomValue(materialInDialogInfo);
   if (mat === null) return null;
 
   return (

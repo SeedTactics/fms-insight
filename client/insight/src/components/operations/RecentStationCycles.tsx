@@ -62,6 +62,7 @@ import {
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
+import { useSetAtom } from "jotai";
 
 export type CycleType = "labor" | "machine";
 
@@ -112,7 +113,7 @@ const machineYZoomAtom = atom<YZoomRange | null>({
 
 export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
   useSetTitle(ty === "labor" ? "L/U Cycles" : "Machine Cycles");
-  const setMatToShow = matDetails.useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as LoadCycleData;

@@ -53,9 +53,9 @@ import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
 import { IActiveWorkorder } from "../../network/api.js";
 import { durationToMinutes } from "../../util/parseISODuration.js";
-import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
+import { materialDialogOpen } from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 const WorkorderTableRow = styled(TableRow)({
   "& > *": {
@@ -70,7 +70,7 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
 }: {
   readonly workorder: IActiveWorkorder;
 }) {
-  const setMatToShow = useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(materialDialogOpen);
 
   const stationNames = LazySeq.ofObject(workorder.activeStationTime ?? {})
     .concat(LazySeq.ofObject(workorder.elapsedStationTime ?? {}))

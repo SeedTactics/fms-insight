@@ -39,14 +39,15 @@ import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
 import { Search as SearchIcon } from "@mui/icons-material";
 import { TextField } from "@mui/material";
-import { useSetMaterialToShowInDialog } from "../cell-status/material-details.js";
+import { materialDialogOpen } from "../cell-status/material-details.js";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
+import { useSetAtom } from "jotai";
 
 export const ManualScanButton = React.memo(function ManualScan() {
   const [serial, setSerial] = React.useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
-  const setMatToShowDialog = useSetMaterialToShowInDialog();
+  const setMatToShowDialog = useSetAtom(materialDialogOpen);
 
   function close() {
     setDialogOpen(false);

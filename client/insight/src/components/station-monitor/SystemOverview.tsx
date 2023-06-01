@@ -63,7 +63,7 @@ import {
 import { useRecoilValue } from "recoil";
 import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { ComparableObj, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
-import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
+import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { addDays } from "date-fns";
 import { durationToSeconds } from "../../util/parseISODuration.js";
@@ -78,7 +78,7 @@ import {
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
 import { useSetTitle } from "../routes.js";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 const CollapsedIconSize = 45;
 const rowSize = CollapsedIconSize + 10; // each material row has 5px above and 5px below for padding
@@ -338,7 +338,7 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
   const closeTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const btnRef = React.useRef<HTMLButtonElement | null>(null);
   const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
-  const setMatToShow = useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(materialDialogOpen);
 
   function enter() {
     if (closeTimeout.current !== null) {

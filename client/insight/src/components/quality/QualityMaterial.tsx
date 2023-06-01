@@ -50,16 +50,18 @@ import { ApiException, ILogEntry, LogType } from "../../network/api.js";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
 import { DataTableActionZoomType } from "../analysis/DataTable.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
-import { useRecoilState, useRecoilValue, useRecoilValueLoadable, useSetRecoilState } from "recoil";
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { LogBackend } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { RecentFailedInspectionsTable } from "./RecentFailedInspections.js";
+import { useAtomValue, useSetAtom } from "jotai";
+import { loadable } from "jotai/utils";
 
 function SerialLookup() {
   const demo = useIsDemo();
-  const setMatToShow = matDetails.useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
   const [serial, setSerial] = React.useState(demo ? "00000000i9" : "");
   const [loading, setLoading] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -140,21 +142,19 @@ function lastMachineTime(evts: ReadonlyArray<Readonly<ILogEntry>>): Date {
 }
 
 function DetailsStepTitle() {
-  const matL = useRecoilValueLoadable(matDetails.materialInDialogInfo);
-  const matEvents = useRecoilValueLoadable(matDetails.materialInDialogEvents);
-  const mat = matL.valueMaybe();
+  const matL = useAtomValue(loadable(matDetails.materialInDialogInfo));
+  const matEvents = useAtomValue(matDetails.materialInDialogEvents);
+  const mat = matL.state === "hasData" ? matL.data : null;
   if (mat) {
     return (
       <MaterialDetailTitle
         partName={mat.partName}
         serial={mat.serial}
         subtitle={
-          matEvents.state === "hasValue"
-            ? "Path " +
-              buildPathString(extractPath(matEvents.getValue())) +
-              " at " +
-              lastMachineTime(matEvents.getValue()).toLocaleString()
-            : undefined
+          "Path " +
+          buildPathString(extractPath(matEvents)) +
+          " at " +
+          lastMachineTime(matEvents).toLocaleString()
         }
       />
     );
@@ -164,10 +164,11 @@ function DetailsStepTitle() {
 }
 
 function DetailsStepButtons({ setStep }: { setStep: (step: number) => void }) {
-  const mat = useRecoilValueLoadable(matDetails.materialInDialogInfo).valueMaybe();
-  const matEvents = useRecoilValueLoadable(matDetails.materialInDialogEvents);
+  const matL = useAtomValue(loadable(matDetails.materialInDialogInfo));
+  const mat = matL.state === "hasData" ? matL.data : null;
+  const matEvents = useAtomValue(matDetails.materialInDialogEvents);
   const setSearchRange = useSetRecoilState(pathLookupRange);
-  const closeMatDialog = matDetails.useCloseMaterialDialog();
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
   return (
     <Stack direction="row" spacing={2} mt="2em">
@@ -175,9 +176,8 @@ function DetailsStepButtons({ setStep }: { setStep: (step: number) => void }) {
         <Button
           variant="contained"
           color="secondary"
-          disabled={matEvents.state !== "hasValue"}
           onClick={() => {
-            const d = lastMachineTime(matEvents.getValue());
+            const d = lastMachineTime(matEvents);
             setSearchRange({
               part: mat?.partName ?? "",
               curStart: startOfDay(addDays(d, -5)),
@@ -193,7 +193,7 @@ function DetailsStepButtons({ setStep }: { setStep: (step: number) => void }) {
         variant="contained"
         style={{ marginLeft: "2em" }}
         onClick={() => {
-          closeMatDialog();
+          setMatToShow(null);
           setSearchRange(null);
           setStep(0);
         }}
@@ -209,11 +209,11 @@ interface PathLookupProps {
 }
 
 function PathLookupStep(props: PathLookupProps) {
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
-  const matEvents = useRecoilValueLoadable(matDetails.materialInDialogEvents);
+  const mat = useAtomValue(matDetails.materialInDialogInfo);
+  const matEvents = useAtomValue(matDetails.materialInDialogEvents);
   const [searchRange, setSearchRange] = useRecoilState(pathLookupRange);
   const logs = useRecoilValue(inspectionLogEntries);
-  const closeMatDialog = matDetails.useCloseMaterialDialog();
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
   if (mat === null) return null;
 
@@ -226,14 +226,7 @@ function PathLookupStep(props: PathLookupProps) {
       <InspectionSankey
         inspectionlogs={logs}
         restrictToPart={mat.partName}
-        subtitle={
-          matEvents.state === "hasValue"
-            ? "Paths for " +
-              mat.partName +
-              " around " +
-              lastMachineTime(matEvents.getValue()).toLocaleString()
-            : undefined
-        }
+        subtitle={"Paths for " + mat.partName + " around " + lastMachineTime(matEvents).toLocaleString()}
         default_date_range={searchRange ? [searchRange.curStart, searchRange.curEnd] : []}
         zoomType={searchRange ? DataTableActionZoomType.ExtendDays : undefined}
         extendDateRange={extendDateRange}
@@ -244,7 +237,7 @@ function PathLookupStep(props: PathLookupProps) {
         variant="contained"
         style={{ marginTop: "2em" }}
         onClick={() => {
-          closeMatDialog();
+          setMatToShow(null);
           setSearchRange(null);
           props.setStep(0);
         }}
@@ -257,7 +250,7 @@ function PathLookupStep(props: PathLookupProps) {
 
 export function PartLookupStepper() {
   const [origStep, setStep] = React.useState(0);
-  const matToShow = useRecoilValue(matDetails.materialDialogOpen);
+  const matToShow = useAtomValue(matDetails.materialDialogOpen);
 
   let step = origStep;
   if (step === 0 && matToShow) {

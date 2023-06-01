@@ -48,6 +48,7 @@ import { instructionUrl } from "../../network/backend.js";
 import { LogType } from "../../network/api.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue, useSetAtom } from "jotai";
 
 interface InspButtonsProps {
   readonly inspection_type: string;
@@ -55,10 +56,10 @@ interface InspButtonsProps {
 
 function InspButtons(props: InspButtonsProps) {
   const operator = useRecoilValue(currentOperator);
-  const material = useRecoilValue(matDetails.materialInDialogInfo);
-  const matEvents = useRecoilValue(matDetails.materialInDialogEvents);
+  const material = useAtomValue(matDetails.materialInDialogInfo);
+  const matEvents = useAtomValue(matDetails.materialInDialogEvents);
   const [completeInsp, completeInspUpdating] = matDetails.useCompleteInspection();
-  const closeMatDialog = matDetails.useCloseMaterialDialog();
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
   if (material === null) return null;
 
@@ -74,7 +75,7 @@ function InspButtons(props: InspButtonsProps) {
       operator: operator,
     });
 
-    closeMatDialog();
+    setMatToShow(null);
   }
 
   const maxProc =
@@ -121,7 +122,7 @@ interface InspDialogProps {
 }
 
 function DialogBodyInspButtons({ focusInspectionType }: InspDialogProps) {
-  const material = useRecoilValue(matDetails.materialInDialogInspections);
+  const material = useAtomValue(matDetails.materialInDialogInspections);
   if (material === null || focusInspectionType || material.signaledInspections.length === 1) return null;
 
   return (
@@ -136,7 +137,7 @@ function DialogBodyInspButtons({ focusInspectionType }: InspDialogProps) {
 }
 
 function DialogActionInspButtons({ focusInspectionType }: InspDialogProps) {
-  const material = useRecoilValue(matDetails.materialInDialogInspections);
+  const material = useAtomValue(matDetails.materialInDialogInspections);
   let singleInspectionType: string;
   if (focusInspectionType) {
     singleInspectionType = focusInspectionType;

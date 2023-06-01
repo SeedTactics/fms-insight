@@ -49,7 +49,7 @@ import { addDays, addHours, addMonths } from "date-fns";
 import * as api from "../../network/api.js";
 import { Menu } from "@mui/material";
 import { MenuItem } from "@mui/material";
-import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
+import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
 import { PartCycleData } from "../../cell-status/station-cycles.js";
 import {
@@ -59,6 +59,7 @@ import {
   ToComparableBase,
 } from "@seedtactics/immutable-collections";
 import { SelectedAnalysisPeriod } from "../../network/load-specific-month.js";
+import { useSetAtom } from "jotai";
 
 enum ColumnId {
   Date,
@@ -263,7 +264,7 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
   const tpage = useTablePage();
   const zoom = useZoom(props);
   const [detailMenu, setDetailMenu] = React.useState<DetailMenuData | null>(null);
-  const setMatToShow = useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(materialDialogOpen);
 
   const allData = extractData(props.points, columns, props.current_date_zoom, sort.orderBy, sort.order);
   const totalDataLength = allData.length;

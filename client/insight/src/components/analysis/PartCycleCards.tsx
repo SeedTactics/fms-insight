@@ -70,6 +70,7 @@ import {
   specificMonthStationCycles,
 } from "../../cell-status/station-cycles.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
+import { useSetAtom } from "jotai";
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -109,7 +110,7 @@ const machineYZoom = atom<YZoomRange | null>({
 
 export function PartMachineCycleChart() {
   useSetTitle("Machine Cycles");
-  const setMatToShow = matDetails.useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
   const extraStationCycleTooltip = React.useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as PartCycleData;
@@ -402,7 +403,7 @@ const loadYZoom = atom<YZoomRange | null>({
 
 export function PartLoadStationCycleChart() {
   useSetTitle("L/U Cycles");
-  const setMatToShow = matDetails.useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
   const extraLoadCycleTooltip = React.useCallback(
     function extraLoadCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as LoadCycleData;

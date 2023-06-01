@@ -43,14 +43,14 @@ import { format } from "date-fns";
 import { useRecoilValue } from "recoil";
 import { durationToMinutes } from "../../util/parseISODuration.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
-import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
+import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import { LazySeq, HashMap, HashSet } from "@seedtactics/immutable-collections";
 
 import { MoreHoriz } from "@mui/icons-material";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 interface JobDisplayProps {
   readonly job: Readonly<api.IActiveJob>;
@@ -175,7 +175,7 @@ interface JobMaterialProps {
 
 function JobMaterial(props: JobMaterialProps) {
   const currentMaterial = useAtomValue(currentStatus).material;
-  const setMatToShow = useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(materialDialogOpen);
 
   const mats = LazySeq.of(props.matIdsForJob.get(props.unique) ?? HashSet.empty<number>())
     .collect((matId) => props.matsFromEvents.get(matId))

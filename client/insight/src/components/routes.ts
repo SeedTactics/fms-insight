@@ -43,7 +43,8 @@ import {
   useSetRecoilState,
 } from "recoil";
 import "urlpattern-polyfill";
-import { useCloseMaterialDialog } from "../cell-status/material-details.js";
+import { materialDialogOpen } from "../cell-status/material-details.js";
+import { useSetAtom } from "jotai";
 
 export enum RouteLocation {
   ChooseMode = "/",
@@ -296,11 +297,11 @@ export function useSetCurrentRoute(): (r: RouteState) => void {
 export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
   const isDemo = useRecoilValue(isDemoAtom);
   const [curRoute, setCurRoute] = useRecoilState(currentRouteLocation);
-  const closeMatDialog = useCloseMaterialDialog();
+  const setMatToShow = useSetAtom(materialDialogOpen);
 
   const setRouteAndUpdateHistory = useCallback((to: RouteState) => {
     setCurRoute(to);
-    closeMatDialog();
+    setMatToShow(null);
     history.pushState(null, "", routeToUrl(to));
   }, []);
 
