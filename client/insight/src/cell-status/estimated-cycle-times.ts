@@ -31,12 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { differenceInSeconds } from "date-fns";
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, LogType } from "../network/api.js";
 import { LazySeq, HashMap, hashValues, OrderedMapKey } from "@seedtactics/immutable-collections";
 import { durationToMinutes } from "../util/parseISODuration.js";
-import { conduit } from "../util/recoil-util.js";
 import type { PartCycleData } from "./station-cycles.js";
+import { Atom, atom } from "jotai";
 
 export interface StatisticalCycleTime {
   readonly medianMinutesForSingleMat: number;
@@ -83,18 +82,15 @@ export class PartAndStationOperation {
 
 export type EstimatedCycleTimes = HashMap<PartAndStationOperation, StatisticalCycleTime>;
 
-const last30EstimatedTimesRW = atom<EstimatedCycleTimes>({
-  key: "last30Estimatedcycletimes",
-  default: HashMap.empty(),
-});
-export const last30EstimatedCycleTimes: RecoilValueReadOnly<EstimatedCycleTimes> = last30EstimatedTimesRW;
+const last30EstimatedTimesRW = atom<EstimatedCycleTimes>(
+  HashMap.empty<PartAndStationOperation, StatisticalCycleTime>()
+);
+export const last30EstimatedCycleTimes: Atom<EstimatedCycleTimes> = last30EstimatedTimesRW;
 
-const specificMonthEstimatedTimesRW = atom<EstimatedCycleTimes>({
-  key: "specificMonthEstimatedcycleTimes",
-  default: HashMap.empty(),
-});
-export const specificMonthEstimatedCycleTimes: RecoilValueReadOnly<EstimatedCycleTimes> =
-  specificMonthEstimatedTimesRW;
+const specificMonthEstimatedTimesRW = atom<EstimatedCycleTimes>(
+  HashMap.empty<PartAndStationOperation, StatisticalCycleTime>()
+);
+export const specificMonthEstimatedCycleTimes: Atom<EstimatedCycleTimes> = specificMonthEstimatedTimesRW;
 
 // Assume: samples come from two distributions:
 //  - the program runs without interruption, giving a guassian iid around the cycle time.
@@ -322,14 +318,13 @@ function estimateCycleTimesOfParts(cycles: Iterable<Readonly<ILogEntry>>): Estim
   return machines.union(loads);
 }
 
-export const setLast30EstimatedCycleTimes = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(last30EstimatedTimesRW, (old) => (old.size === 0 ? estimateCycleTimesOfParts(log) : old));
-  }
-);
+export const setLast30EstimatedCycleTimes = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(last30EstimatedTimesRW, (old) => (old.size === 0 ? estimateCycleTimesOfParts(log) : old));
+});
 
-export const setSpecificMonthEstimatedCycleTimes = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(specificMonthEstimatedTimesRW, estimateCycleTimesOfParts(log));
+export const setSpecificMonthEstimatedCycleTimes = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(specificMonthEstimatedTimesRW, estimateCycleTimesOfParts(log));
   }
 );
