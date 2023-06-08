@@ -31,53 +31,21 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { atom, DefaultValue, selector } from "recoil";
-import { LazySeq } from "@seedtactics/immutable-collections";
 import { fmsInformation } from "../network/server-settings.js";
+import { atomWithStorage } from "jotai/utils";
+import { atom } from "jotai";
 
-const selectedOperator = atom<string | null>({
-  key: "selected-operator",
-  default: typeof localStorage !== "undefined" ? localStorage.getItem("current-operator") || null : null,
-  effects: [
-    ({ onSet }) => {
-      onSet((newVal) => {
-        if (newVal === null) {
-          localStorage.removeItem("current-operator");
-        } else {
-          localStorage.setItem("current-operator", newVal);
-        }
-      });
-    },
-  ],
-});
+const selectedOperator = atomWithStorage<string | null>("current-operator", null);
 
-export const allOperators = atom<ReadonlySet<string>>({
-  key: "all-operators",
-  default: LazySeq.of<string>(
-    JSON.parse(typeof localStorage !== "undefined" ? localStorage.getItem("operators") || "[]" : "[]")
-  ).toRSet((x) => x),
-  effects: [
-    ({ onSet }) => {
-      onSet((newVal) => {
-        if (newVal instanceof DefaultValue) {
-          localStorage.removeItem("operators");
-        } else {
-          localStorage.setItem("operators", JSON.stringify(Array.from(newVal)));
-        }
-      });
-    },
-  ],
-});
+export const allOperators = atomWithStorage<ReadonlyArray<string>>("operators", []);
 
-export const currentOperator = selector<string | null>({
-  key: "current-operator",
-  get: ({ get }) => {
+export const currentOperator = atom(
+  async (get) => {
     const selected = get(selectedOperator);
-    const fmsInfo = get(fmsInformation);
+    const fmsInfo = await get(fmsInformation);
     return fmsInfo.user ? fmsInfo.user.profile.name || fmsInfo.user.profile.sub || null : selected;
   },
-  set: ({ set }, newVal) => {
+  (_, set, newVal: string | null) => {
     set(selectedOperator, newVal);
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
+  }
+);

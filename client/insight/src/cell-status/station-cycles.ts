@@ -30,9 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { IEditMaterialInLogEvents, ILogEntry, ILogMaterial, LogType } from "../network/api.js";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
 import {
   activeMinutes,
@@ -46,6 +44,7 @@ import {
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { addDays } from "date-fns";
 import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
+import { Atom, atom } from "jotai";
 
 export interface PartCycleData {
   readonly x: Date;
@@ -86,18 +85,11 @@ export function splitElapsedLoadTimeAmongCycles(
   );
 }
 
-const last30StationCyclesRW = atom<StationCyclesByCntr>({
-  key: "last30StationCycles",
-  default: HashMap.empty(),
-});
-export const last30StationCycles: RecoilValueReadOnly<StationCyclesByCntr> = last30StationCyclesRW;
+const last30StationCyclesRW = atom<StationCyclesByCntr>(HashMap.empty<number, PartCycleData>());
+export const last30StationCycles: Atom<StationCyclesByCntr> = last30StationCyclesRW;
 
-const specificMonthStationCyclesRW = atom<StationCyclesByCntr>({
-  key: "specificMonthStationCycles",
-  default: HashMap.empty(),
-});
-export const specificMonthStationCycles: RecoilValueReadOnly<StationCyclesByCntr> =
-  specificMonthStationCyclesRW;
+const specificMonthStationCyclesRW = atom<StationCyclesByCntr>(HashMap.empty<number, PartCycleData>());
+export const specificMonthStationCycles: Atom<StationCyclesByCntr> = specificMonthStationCyclesRW;
 
 function convertLogToCycle(
   estimatedCycleTimes: EstimatedCycleTimes,
@@ -151,62 +143,59 @@ function process_swap(
   return partCycles;
 }
 
-export const setLast30StationCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    const estimatedCycleTimes = t.get(last30EstimatedCycleTimes);
-    t.set(last30StationCyclesRW, (oldCycles) =>
-      oldCycles.union(
-        LazySeq.of(log)
-          .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
-          .toHashMap((x) => x)
-      )
-    );
-  }
-);
+export const setLast30StationCycles = atom(null, (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  const estimatedCycleTimes = get(last30EstimatedCycleTimes);
+  set(last30StationCyclesRW, (oldCycles) =>
+    oldCycles.union(
+      LazySeq.of(log)
+        .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
+        .toHashMap((x) => x)
+    )
+  );
+});
 
-export const updateLast30StationCycles = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
-    if (evt.logEntry && evt.logEntry.type === LogType.InvalidateCycle) {
-      const cntrs = evt.logEntry.details?.["EditedCounters"];
-      const invalidatedCycles = cntrs ? new Set(cntrs.split(",").map((i) => parseInt(i))) : new Set<number>();
+export const updateLast30StationCycles = atom(null, (get, set, { evt, now, expire }: ServerEventAndTime) => {
+  if (evt.logEntry && evt.logEntry.type === LogType.InvalidateCycle) {
+    const cntrs = evt.logEntry.details?.["EditedCounters"];
+    const invalidatedCycles = cntrs ? new Set(cntrs.split(",").map((i) => parseInt(i))) : new Set<number>();
 
-      if (invalidatedCycles.size > 0) {
-        t.set(last30StationCyclesRW, (cycles) => {
-          for (const invalid of invalidatedCycles) {
-            const c = cycles.get(invalid);
-            if (c !== undefined) {
-              cycles = cycles.set(invalid, { ...c, activeMinutes: 0 });
-            }
+    if (invalidatedCycles.size > 0) {
+      set(last30StationCyclesRW, (cycles) => {
+        for (const invalid of invalidatedCycles) {
+          const c = cycles.get(invalid);
+          if (c !== undefined) {
+            cycles = cycles.set(invalid, { ...c, activeMinutes: 0 });
           }
-          return cycles;
-        });
-      }
-    } else if (evt.logEntry) {
-      const estimatedCycleTimes = t.get(last30EstimatedCycleTimes);
-      const converted = convertLogToCycle(estimatedCycleTimes, evt.logEntry);
-      if (!converted) return;
-
-      t.set(last30StationCyclesRW, (cycles) => {
-        if (expire) {
-          const thirtyDaysAgo = addDays(now, -30);
-          cycles = cycles.filter((e) => e.x >= thirtyDaysAgo);
         }
-
-        cycles = cycles.set(converted[0], converted[1]);
-
         return cycles;
       });
-    } else if (evt.editMaterialInLog) {
-      const edit = evt.editMaterialInLog;
-      t.set(last30StationCyclesRW, (oldCycles) => process_swap(edit, oldCycles));
     }
-  }
-);
+  } else if (evt.logEntry) {
+    const estimatedCycleTimes = get(last30EstimatedCycleTimes);
+    const converted = convertLogToCycle(estimatedCycleTimes, evt.logEntry);
+    if (!converted) return;
 
-export const setSpecificMonthStationCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    const estimatedCycleTimes = t.get(specificMonthEstimatedCycleTimes);
-    t.set(
+    set(last30StationCyclesRW, (cycles) => {
+      if (expire) {
+        const thirtyDaysAgo = addDays(now, -30);
+        cycles = cycles.filter((e) => e.x >= thirtyDaysAgo);
+      }
+
+      cycles = cycles.set(converted[0], converted[1]);
+
+      return cycles;
+    });
+  } else if (evt.editMaterialInLog) {
+    const edit = evt.editMaterialInLog;
+    set(last30StationCyclesRW, (oldCycles) => process_swap(edit, oldCycles));
+  }
+});
+
+export const setSpecificMonthStationCycles = atom(
+  null,
+  (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    const estimatedCycleTimes = get(specificMonthEstimatedCycleTimes);
+    set(
       specificMonthStationCyclesRW,
       LazySeq.of(log)
         .collect((c) => convertLogToCycle(estimatedCycleTimes, c))

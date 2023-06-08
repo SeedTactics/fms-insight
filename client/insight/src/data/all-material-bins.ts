@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import * as api from "../network/api.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { atom } from "recoil";
+import { atomWithStorage } from "jotai/utils";
 
 export type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -46,17 +46,7 @@ export interface MaterialBinState {
   readonly curBinOrder: ReadonlyArray<MaterialBinId>;
 }
 
-export const currentMaterialBinOrder = atom<ReadonlyArray<MaterialBinId>>({
-  key: "current-material-bin-order",
-  default: JSON.parse(localStorage.getItem("material-bins") || "[]") as ReadonlyArray<MaterialBinId>,
-  effects: [
-    ({ onSet }) => {
-      onSet((newBins) => {
-        localStorage.setItem("material-bins", JSON.stringify(newBins));
-      });
-    },
-  ],
-});
+export const currentMaterialBinOrder = atomWithStorage<ReadonlyArray<MaterialBinId>>("material-bins", []);
 
 export function moveMaterialBin(
   curBinOrder: ReadonlyArray<MaterialBinId>,

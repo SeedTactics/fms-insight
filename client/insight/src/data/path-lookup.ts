@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { LogBackend, OtherLogBackends } from "../network/backend.js";
 import { addDays } from "date-fns";
-import { atom, selector, waitForAny } from "recoil";
 import {
   convertLogToInspections,
   PartAndInspType,
@@ -41,6 +40,8 @@ import {
 } from "../cell-status/inspections.js";
 import { ILogEntry } from "../network/api.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { atom } from "jotai";
+import { loadable } from "jotai/utils";
 
 export type PathLookupLogEntries = HashMap<PartAndInspType, InspectionLogsByCntr>;
 
@@ -50,77 +51,72 @@ export interface PathLookupRange {
   readonly curEnd: Date;
 }
 
-export const pathLookupRange = atom<PathLookupRange | null>({
-  key: "path-lookup-range",
-  default: null,
+export const pathLookupRange = atom<PathLookupRange | null>(null);
+
+const localLogEntries = atom<Promise<PathLookupLogEntries>>(async (get) => {
+  const range = get(pathLookupRange);
+  if (range == null) return HashMap.empty();
+
+  const events = await LogBackend.get(range.curStart, range.curEnd);
+  return LazySeq.of(events)
+    .flatMap(convertLogToInspections)
+    .filter((e) => e.key.part === range.part)
+    .toLookupMap(
+      (e) => e.key,
+      (e) => e.entry.cntr,
+      (e) => e.entry
+    );
 });
 
-const localLogEntries = selector<PathLookupLogEntries>({
-  key: "path-lookup-local",
-  get: async ({ get }) => {
-    const range = get(pathLookupRange);
-    if (range == null) return HashMap.empty();
+const localLogLoadable = loadable(localLogEntries);
 
-    const events = await LogBackend.get(range.curStart, range.curEnd);
-    return LazySeq.of(events)
-      .flatMap(convertLogToInspections)
-      .filter((e) => e.key.part === range.part)
-      .toLookupMap(
-        (e) => e.key,
-        (e) => e.entry.cntr,
-        (e) => e.entry
-      );
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+const otherLogEntries = atom<Promise<PathLookupLogEntries>>(async (get) => {
+  const range = get(pathLookupRange);
+  if (range == null) return HashMap.empty();
+
+  const allEvts: Array<ReadonlyArray<Readonly<ILogEntry>>> = [];
+
+  for (const b of OtherLogBackends) {
+    allEvts.push(await b.get(range.curStart, range.curEnd));
+  }
+
+  return LazySeq.of(allEvts)
+    .flatMap((es) => es)
+    .flatMap(convertLogToInspections)
+    .filter((e) => e.key.part === range.part)
+    .toLookupMap(
+      (e) => e.key,
+      (e) => e.entry.cntr,
+      (e) => e.entry
+    );
 });
 
-const otherLogEntries = selector<PathLookupLogEntries>({
-  key: "path-lookup-other",
-  get: async ({ get }) => {
-    const range = get(pathLookupRange);
-    if (range == null) return HashMap.empty();
+const otherLogLoadable = loadable(otherLogEntries);
 
-    const allEvts: Array<ReadonlyArray<Readonly<ILogEntry>>> = [];
+export const inspectionLogEntries = atom<PathLookupLogEntries>((get) => {
+  const localEvts = get(localLogLoadable);
+  const otherEvts = get(otherLogLoadable);
+  const localData = localEvts.state === "hasData" ? localEvts.data : null;
+  const otherData = otherEvts.state === "hasData" ? otherEvts.data : null;
 
-    for (const b of OtherLogBackends) {
-      allEvts.push(await b.get(range.curStart, range.curEnd));
-    }
-
-    return LazySeq.of(allEvts)
-      .flatMap((es) => es)
-      .flatMap(convertLogToInspections)
-      .filter((e) => e.key.part === range.part)
-      .toLookupMap(
-        (e) => e.key,
-        (e) => e.entry.cntr,
-        (e) => e.entry
-      );
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-export const inspectionLogEntries = selector<PathLookupLogEntries>({
-  key: "path-lookup-logs",
-  get: ({ get }) => {
-    const entries = get(waitForAny([localLogEntries, otherLogEntries]));
-
-    const vals = entries
-      .filter((e) => e.state === "hasValue")
-      .map((e) => e.valueOrThrow())
-      .filter((e) => e.size > 0);
-    if (vals.length === 0) {
-      return HashMap.empty();
-    } else if (vals.length === 1) {
-      return vals[0];
+  if (localData) {
+    if (!otherData) {
+      return localData;
     } else {
       return HashMap.union(
         (inspsByCntr1: InspectionLogsByCntr, inspsByCntr2: InspectionLogsByCntr) =>
           inspsByCntr1.union(inspsByCntr2),
-        ...vals
+        localData,
+        otherData
       );
     }
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+  } else {
+    if (otherData) {
+      return otherData;
+    } else {
+      return HashMap.empty();
+    }
+  }
 });
 
 export function extendRange(numDays: number): (range: PathLookupRange | null) => PathLookupRange | null {

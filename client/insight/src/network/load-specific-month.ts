@@ -32,86 +32,64 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { addMonths, startOfMonth } from "date-fns";
-import { atom, RecoilState, RecoilValueReadOnly, selector, useRecoilCallback, useSetRecoilState } from "recoil";
 import { onLoadSpecificMonthJobs, onLoadSpecificMonthLog } from "../cell-status/loading.js";
 import { JobsBackend, LogBackend } from "./backend.js";
-import { RecoilConduit } from "../util/recoil-util.js";
+import { Atom, Setter, atom, useSetAtom } from "jotai";
 
-const selectType = atom<"Last30" | "SpecificMonth">({
-  key: "analysisSelectType",
-  default: "Last30",
-});
+const selectType = atom<"Last30" | "SpecificMonth">("Last30");
 
-const selectMonth = atom<Date>({ key: "analysisSelectMonth", default: startOfMonth(new Date()) });
-export const selectedMonth: RecoilValueReadOnly<Date> = selectMonth;
+const selectMonth = atom<Date>(startOfMonth(new Date()));
+export const selectedMonth = atom(
+  (get) => get(selectMonth),
+  (get, set, m: Date) => {
+    set(selectType, "SpecificMonth");
+    set(selectMonth, m);
+    if (get(loadedMonth) !== m && !get(loadingSpecificMonthRW)) {
+      loadMonth(m, set);
+    }
+  }
+);
 
 export type SelectedAnalysisPeriod = { type: "Last30" } | { type: "SpecificMonth"; month: Date };
-export const selectedAnalysisPeriod = selector<SelectedAnalysisPeriod>({
-  key: "selectedAnalysisPeriod",
-  get: ({ get }) => {
-    const ty = get(selectType);
-    if (ty === "Last30") {
-      return { type: "Last30" };
-    } else {
-      return { type: "SpecificMonth", month: get(selectMonth) };
-    }
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+export const selectedAnalysisPeriod = atom<SelectedAnalysisPeriod>((get) => {
+  const ty = get(selectType);
+  if (ty === "Last30") {
+    return { type: "Last30" };
+  } else {
+    return { type: "SpecificMonth", month: get(selectMonth) };
+  }
 });
 
-const loadedMonth = atom<Date | null>({ key: "specific-month-loaded", default: null });
+const loadedMonth = atom<Date | null>(null);
 
-const loadingSpecificMonthRW = atom<boolean>({ key: "loading-specific-month-data", default: false });
-export const loadingSpecificMonthData: RecoilValueReadOnly<boolean> = loadingSpecificMonthRW;
+const loadingSpecificMonthRW = atom<boolean>(false);
+export const loadingSpecificMonthData: Atom<boolean> = loadingSpecificMonthRW;
 
-const errorLoadingSpecificMonthRW = atom<string | null>({ key: "error-loading-specific-moneth-data", default: null });
-export const errorLoadingSpecificMonthData: RecoilValueReadOnly<string | null> = errorLoadingSpecificMonthRW;
+const errorLoadingSpecificMonthRW = atom<string | null>(null);
+export const errorLoadingSpecificMonthData: Atom<string | null> = errorLoadingSpecificMonthRW;
 
-function loadMonth(
-  month: Date,
-  set: <T>(s: RecoilState<T>, t: T) => void,
-  push: <T>(c: RecoilConduit<T>) => (t: T) => void
-): void {
+function loadMonth(month: Date, set: Setter): void {
   set(loadingSpecificMonthRW, true);
   set(errorLoadingSpecificMonthRW, null);
 
   const startOfNextMonth = addMonths(month, 1);
 
-  const jobsProm = JobsBackend.history(month, startOfNextMonth).then(push(onLoadSpecificMonthJobs));
-  const logProm = LogBackend.get(month, startOfNextMonth).then(push(onLoadSpecificMonthLog));
+  const jobsProm = JobsBackend.history(month, startOfNextMonth).then((j) => set(onLoadSpecificMonthJobs, j));
+  const logProm = LogBackend.get(month, startOfNextMonth).then((log) => set(onLoadSpecificMonthLog, log));
 
   Promise.all([jobsProm, logProm])
     .then(() => set(loadedMonth, month))
-    .catch((e: Record<string, string | undefined>) => set(errorLoadingSpecificMonthRW, e.message ?? e.toString()))
+    .catch((e: Record<string, string | undefined>) =>
+      set(errorLoadingSpecificMonthRW, e.message ?? e.toString())
+    )
     .finally(() => set(loadingSpecificMonthRW, false));
 }
 
-export function useLoadSpecificMonth(): (m: Date) => void {
-  return useRecoilCallback(
-    ({ set, snapshot, transact_UNSTABLE }) =>
-      (m: Date) => {
-        function push<T>(c: RecoilConduit<T>): (t: T) => void {
-          return (t) => transact_UNSTABLE((trans) => c.transform(trans, t));
-        }
-
-        set(selectType, "SpecificMonth");
-        set(selectMonth, m);
-        if (
-          snapshot.getLoadable(loadedMonth).valueMaybe() !== m &&
-          !snapshot.getLoadable(loadingSpecificMonthRW).valueMaybe()
-        ) {
-          loadMonth(m, set, push);
-        }
-      },
-    []
-  );
-}
-
 export function useSetLast30(): () => void {
-  const setLast30 = useSetRecoilState(selectType);
+  const setLast30 = useSetAtom(selectType);
   return () => setLast30("Last30");
 }
 
 export function useSetSpecificMonthWithoutLoading(): (m: Date) => void {
-  return useSetRecoilState(selectMonth);
+  return useSetAtom(selectMonth);
 }

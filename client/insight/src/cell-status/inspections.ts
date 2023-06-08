@@ -32,11 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { hashValues } from "@seedtactics/immutable-collections";
 import { addDays } from "date-fns";
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, IMaterialProcessActualPath, LogType, MaterialProcessActualPath } from "../network/api.js";
 import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
+import { Atom, atom } from "jotai";
 
 export enum InspectionLogResultType {
   Triggered,
@@ -92,18 +91,15 @@ export class PartAndInspType {
 
 export type InspectionsByPartAndType = HashMap<PartAndInspType, InspectionLogsByCntr>;
 
-const last30InspectionsRW = atom<InspectionsByPartAndType>({
-  key: "last30Inspections",
-  default: HashMap.empty(),
-});
-export const last30Inspections: RecoilValueReadOnly<InspectionsByPartAndType> = last30InspectionsRW;
+const last30InspectionsRW = atom<InspectionsByPartAndType>(
+  HashMap.empty<PartAndInspType, InspectionLogsByCntr>()
+);
+export const last30Inspections: Atom<InspectionsByPartAndType> = last30InspectionsRW;
 
-const specificMonthInspectionsRW = atom<InspectionsByPartAndType>({
-  key: "specificMonthInspections",
-  default: HashMap.empty(),
-});
-export const specificMonthInspections: RecoilValueReadOnly<InspectionsByPartAndType> =
-  specificMonthInspectionsRW;
+const specificMonthInspectionsRW = atom<InspectionsByPartAndType>(
+  HashMap.empty<PartAndInspType, InspectionLogsByCntr>()
+);
+export const specificMonthInspections: Atom<InspectionsByPartAndType> = specificMonthInspectionsRW;
 
 export function convertLogToInspections(
   c: Readonly<ILogEntry>
@@ -200,88 +196,82 @@ export function convertLogToInspections(
   });
 }
 
-export const setLast30Inspections = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(last30InspectionsRW, (oldEntries) =>
-      oldEntries.union(
-        LazySeq.of(log)
-          .flatMap(convertLogToInspections)
-          .toLookupMap(
-            (e) => e.key,
-            (e) => e.entry.cntr,
-            (e) => e.entry
-          ),
-        (e1, e2) => e1.union(e2)
-      )
-    );
-  }
-);
-
-export const updateLast30Inspections = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
-    if (evt.logEntry) {
-      const log = convertLogToInspections(evt.logEntry);
-      if (log.length === 0) return;
-
-      t.set(last30InspectionsRW, (parts) => {
-        if (expire) {
-          const expireD = addDays(now, -30);
-          parts = parts.collectValues((entries) => {
-            const newEntries = entries.filter((e) => e.time >= expireD);
-            if (newEntries.size === 0) {
-              return null;
-            } else {
-              return newEntries;
-            }
-          });
-        }
-
-        return parts.union(
-          LazySeq.of(log).toLookupMap(
-            (e) => e.key,
-            (e) => e.entry.cntr,
-            (e) => e.entry
-          ),
-          (e1, e2) => e1.union(e2)
-        );
-      });
-    } else if (evt.editMaterialInLog) {
-      const changedByCntr = evt.editMaterialInLog.editedEvents;
-
-      t.set(last30InspectionsRW, (parts) =>
-        parts.collectValues((entries) => {
-          for (const changed of changedByCntr) {
-            // inspection logs have only a single material
-            const mat = changed?.material[0];
-            const old = entries.get(changed.counter);
-            if (old !== undefined && mat) {
-              const newEntry = {
-                ...old,
-                materialID: mat.id,
-                serial: mat.serial,
-                workorder: mat.workorder,
-              };
-              entries = entries.set(changed.counter, newEntry);
-            }
-          }
-          return entries;
-        })
-      );
-    }
-  }
-);
-
-export const setSpecificMonthInspections = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(
-      specificMonthInspectionsRW,
+export const setLast30Inspections = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(last30InspectionsRW, (oldEntries) =>
+    oldEntries.union(
       LazySeq.of(log)
         .flatMap(convertLogToInspections)
         .toLookupMap(
           (e) => e.key,
           (e) => e.entry.cntr,
           (e) => e.entry
-        )
+        ),
+      (e1, e2) => e1.union(e2)
+    )
+  );
+});
+
+export const updateLast30Inspections = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
+  if (evt.logEntry) {
+    const log = convertLogToInspections(evt.logEntry);
+    if (log.length === 0) return;
+
+    set(last30InspectionsRW, (parts) => {
+      if (expire) {
+        const expireD = addDays(now, -30);
+        parts = parts.collectValues((entries) => {
+          const newEntries = entries.filter((e) => e.time >= expireD);
+          if (newEntries.size === 0) {
+            return null;
+          } else {
+            return newEntries;
+          }
+        });
+      }
+
+      return parts.union(
+        LazySeq.of(log).toLookupMap(
+          (e) => e.key,
+          (e) => e.entry.cntr,
+          (e) => e.entry
+        ),
+        (e1, e2) => e1.union(e2)
+      );
+    });
+  } else if (evt.editMaterialInLog) {
+    const changedByCntr = evt.editMaterialInLog.editedEvents;
+
+    set(last30InspectionsRW, (parts) =>
+      parts.collectValues((entries) => {
+        for (const changed of changedByCntr) {
+          // inspection logs have only a single material
+          const mat = changed?.material[0];
+          const old = entries.get(changed.counter);
+          if (old !== undefined && mat) {
+            const newEntry = {
+              ...old,
+              materialID: mat.id,
+              serial: mat.serial,
+              workorder: mat.workorder,
+            };
+            entries = entries.set(changed.counter, newEntry);
+          }
+        }
+        return entries;
+      })
     );
   }
-);
+});
+
+export const setSpecificMonthInspections = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(
+    specificMonthInspectionsRW,
+    LazySeq.of(log)
+      .flatMap(convertLogToInspections)
+      .toLookupMap(
+        (e) => e.key,
+        (e) => e.entry.cntr,
+        (e) => e.entry
+      )
+  );
+});

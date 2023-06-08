@@ -34,7 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { User, UserManager } from "oidc-client-ts";
 import * as api from "./api.js";
 import { FmsServerBackend, setOtherLogBackends, setUserToken } from "./backend.js";
-import { selector } from "recoil";
+import { atom } from "jotai";
+import { loadable } from "jotai/utils";
 
 export interface FMSInfoAndUser extends Readonly<api.IFMSInfo> {
   readonly user?: User;
@@ -90,11 +91,8 @@ async function loadInfo(): Promise<FMSInfoAndUser> {
   return { ...fmsInfo, user: user === null ? undefined : user };
 }
 
-export const fmsInformation = selector<FMSInfoAndUser>({
-  key: "fms-info",
-  get: () => loadInfo(),
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
+export const fmsInformation = atom<Promise<FMSInfoAndUser>>(loadInfo());
+export const fmsInformationLoadable = loadable(fmsInformation);
 
 export function login(fmsInfo: FMSInfoAndUser) {
   if (userManager && !fmsInfo.user) {

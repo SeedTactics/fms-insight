@@ -32,11 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { IHistoricData, IJob } from "../network/api.js";
+import { Atom, atom } from "jotai";
 
 export interface SimPartCompleted {
   readonly partName: string;
@@ -47,19 +46,13 @@ export interface SimPartCompleted {
   readonly expectedMachineMins: number; // expected machine minutes to entirely produce quantity
 }
 
-const last30SimProductionRW = atom<ReadonlyArray<SimPartCompleted>>({
-  key: "last30SimProduction",
-  default: [], // TODO: switch to persistent list
-});
-export const last30SimProduction: RecoilValueReadOnly<ReadonlyArray<SimPartCompleted>> =
-  last30SimProductionRW;
+const last30SimProductionRW = atom<ReadonlyArray<SimPartCompleted>>(
+  [] // TODO: switch to persistent list
+);
+export const last30SimProduction: Atom<ReadonlyArray<SimPartCompleted>> = last30SimProductionRW;
 
-const specificMonthSimProductionRW = atom<ReadonlyArray<SimPartCompleted>>({
-  key: "specificMonthSimProduction",
-  default: [],
-});
-export const specificMonthSimProduction: RecoilValueReadOnly<ReadonlyArray<SimPartCompleted>> =
-  specificMonthSimProductionRW;
+const specificMonthSimProductionRW = atom<ReadonlyArray<SimPartCompleted>>([]);
+export const specificMonthSimProduction: Atom<ReadonlyArray<SimPartCompleted>> = specificMonthSimProductionRW;
 
 function* jobToPartCompleted(jobs: Iterable<Readonly<IJob>>): Iterable<SimPartCompleted> {
   for (const j of jobs) {
@@ -88,39 +81,30 @@ function* jobToPartCompleted(jobs: Iterable<Readonly<IJob>>): Iterable<SimPartCo
   }
 }
 
-export const setLast30JobProduction = conduit<Readonly<IHistoricData>>(
-  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-    t.set(last30SimProductionRW, (oldProd) => [
-      ...oldProd,
-      ...jobToPartCompleted(Object.values(history.jobs)),
-    ]);
-  }
-);
+export const setLast30JobProduction = atom(null, (_, set, history: Readonly<IHistoricData>) => {
+  set(last30SimProductionRW, (oldProd) => [...oldProd, ...jobToPartCompleted(Object.values(history.jobs))]);
+});
 
-export const updateLast30JobProduction = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
-    if (evt.newJobs) {
-      const apiNewJobs = evt.newJobs.jobs;
-      t.set(last30SimProductionRW, (simProd) => {
-        if (expire) {
-          const expire = addDays(now, -30);
-          // check if nothing to expire and no new data
-          const minProd = LazySeq.of(simProd).minBy((e) => e.completeTime.getTime());
-          if ((minProd === undefined || minProd.completeTime >= expire) && apiNewJobs.length === 0) {
-            return simProd;
-          }
-
-          simProd = simProd.filter((e) => e.completeTime >= expire);
+export const updateLast30JobProduction = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
+  if (evt.newJobs) {
+    const apiNewJobs = evt.newJobs.jobs;
+    set(last30SimProductionRW, (simProd) => {
+      if (expire) {
+        const expire = addDays(now, -30);
+        // check if nothing to expire and no new data
+        const minProd = LazySeq.of(simProd).minBy((e) => e.completeTime.getTime());
+        if ((minProd === undefined || minProd.completeTime >= expire) && apiNewJobs.length === 0) {
+          return simProd;
         }
 
-        return [...simProd, ...jobToPartCompleted(apiNewJobs)];
-      });
-    }
-  }
-);
+        simProd = simProd.filter((e) => e.completeTime >= expire);
+      }
 
-export const setSpecificMonthJobProduction = conduit<Readonly<IHistoricData>>(
-  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-    t.set(specificMonthSimProductionRW, Array.from(jobToPartCompleted(Object.values(history.jobs))));
+      return [...simProd, ...jobToPartCompleted(apiNewJobs)];
+    });
   }
-);
+});
+
+export const setSpecificMonthJobProduction = atom(null, (_, set, history: Readonly<IHistoricData>) => {
+  set(specificMonthSimProductionRW, Array.from(jobToPartCompleted(Object.values(history.jobs))));
+});

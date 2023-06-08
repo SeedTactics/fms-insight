@@ -30,9 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, LogType } from "../network/api.js";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import {
@@ -42,6 +40,7 @@ import {
   PartAndStationOperation,
 } from "./estimated-cycle-times.js";
 import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
+import { Atom, atom } from "jotai";
 
 export interface ProgramToolUseInSingleCycle {
   readonly tools: ReadonlyArray<{
@@ -54,11 +53,10 @@ export interface ProgramToolUseInSingleCycle {
 
 export type ToolUsage = HashMap<PartAndStationOperation, ReadonlyArray<ProgramToolUseInSingleCycle>>;
 
-const last30ToolUseRW = atom<ToolUsage>({
-  key: "last30ToolUse",
-  default: HashMap.empty(),
-});
-export const last30ToolUse: RecoilValueReadOnly<ToolUsage> = last30ToolUseRW;
+const last30ToolUseRW = atom<ToolUsage>(
+  HashMap.empty<PartAndStationOperation, ReadonlyArray<ProgramToolUseInSingleCycle>>()
+);
+export const last30ToolUse: Atom<ToolUsage> = last30ToolUseRW;
 
 function process_tools(
   cycle: Readonly<ILogEntry>,
@@ -112,21 +110,17 @@ function process_tools(
   });
 }
 
-export const setLast30ToolUse = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    const estimated = t.get(last30EstimatedCycleTimes);
-    t.set(last30ToolUseRW, (oldUsage) =>
-      log.reduce((usage, log) => process_tools(log, estimated, usage), oldUsage)
-    );
-  }
-);
+export const setLast30ToolUse = atom(null, (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  const estimated = get(last30EstimatedCycleTimes);
+  set(last30ToolUseRW, (oldUsage) =>
+    log.reduce((usage, log) => process_tools(log, estimated, usage), oldUsage)
+  );
+});
 
-export const updateLast30ToolUse = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt }: ServerEventAndTime) => {
-    if (evt.logEntry) {
-      const log = evt.logEntry;
-      const estimated = t.get(last30EstimatedCycleTimes);
-      t.set(last30ToolUseRW, (oldUsage) => process_tools(log, estimated, oldUsage));
-    }
+export const updateLast30ToolUse = atom(null, (get, set, { evt }: ServerEventAndTime) => {
+  if (evt.logEntry) {
+    const log = evt.logEntry;
+    const estimated = get(last30EstimatedCycleTimes);
+    set(last30ToolUseRW, (oldUsage) => process_tools(log, estimated, oldUsage));
   }
-);
+});

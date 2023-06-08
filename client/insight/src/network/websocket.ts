@@ -33,9 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { ServerEvent } from "./api.js";
 import { JobsBackend, LogBackend } from "./backend.js";
-import { fmsInformation } from "./server-settings.js";
-import { atom, RecoilState, RecoilValueReadOnly, useRecoilCallback, useRecoilValueLoadable } from "recoil";
-import { useEffect, useRef } from "react";
+import { fmsInformationLoadable } from "./server-settings.js";
+import { useCallback, useEffect, useRef } from "react";
 import {
   lastEventCounter,
   onLoadCurrentSt,
@@ -44,47 +43,36 @@ import {
   onServerEvent,
 } from "../cell-status/loading.js";
 import { addDays } from "date-fns";
-import { RecoilConduit } from "../util/recoil-util.js";
 import { last30SchIds } from "../cell-status/scheduled-jobs.js";
 import { HashSet } from "@seedtactics/immutable-collections";
+import { Atom, Setter, atom, useAtomValue, useSetAtom } from "jotai";
 
-const websocketReconnectingAtom = atom<boolean>({
-  key: "websocket-reconnecting",
-  default: false,
-});
-export const websocketReconnecting: RecoilValueReadOnly<boolean> = websocketReconnectingAtom;
+const websocketReconnectingAtom = atom<boolean>(false);
+export const websocketReconnecting: Atom<boolean> = websocketReconnectingAtom;
 
-const errorLoadingLast30RW = atom<string | null>({ key: "error-last30-data", default: null });
-export const errorLoadingLast30: RecoilValueReadOnly<string | null> = errorLoadingLast30RW;
+const errorLoadingLast30RW = atom<string | null>(null);
+export const errorLoadingLast30: Atom<string | null> = errorLoadingLast30RW;
 
-function loadInitial(
-  set: <T>(s: RecoilState<T>, t: T) => void,
-  push: <T>(c: RecoilConduit<T>) => (t: T) => void
-): void {
+function loadInitial(set: Setter): void {
   const now = new Date();
   const thirtyDaysAgo = addDays(now, -30);
 
-  const curStProm = JobsBackend.currentStatus().then(push(onLoadCurrentSt));
-  const jobsProm = JobsBackend.history(thirtyDaysAgo, now).then(push(onLoadLast30Jobs));
-  const logProm = LogBackend.get(thirtyDaysAgo, now).then(push(onLoadLast30Log));
+  const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
+  const jobsProm = JobsBackend.history(thirtyDaysAgo, now).then((j) => set(onLoadLast30Jobs, j));
+  const logProm = LogBackend.get(thirtyDaysAgo, now).then((log) => set(onLoadLast30Log, log));
 
   Promise.all([curStProm, jobsProm, logProm])
     .catch((e: Record<string, string | undefined>) => set(errorLoadingLast30RW, e.message ?? e.toString()))
     .finally(() => set(websocketReconnectingAtom, false));
 }
 
-function loadMissed(
-  lastCntr: number,
-  schIds: HashSet<string> | undefined,
-  set: <T>(s: RecoilState<T>, t: T) => void,
-  push: <T>(c: RecoilConduit<T>) => (t: T) => void
-): void {
+function loadMissed(lastCntr: number, schIds: HashSet<string> | undefined, set: Setter): void {
   const now = new Date();
-  const curStProm = JobsBackend.currentStatus().then(push(onLoadCurrentSt));
+  const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
   const jobsProm = JobsBackend.filteredHistory(now, addDays(now, -30), schIds ? Array.from(schIds) : []).then(
-    push(onLoadLast30Jobs)
+    (j) => set(onLoadLast30Jobs, j)
   );
-  const logProm = LogBackend.recent(lastCntr, undefined).then(push(onLoadLast30Log));
+  const logProm = LogBackend.recent(lastCntr, undefined).then((log) => set(onLoadLast30Log, log));
 
   Promise.all([curStProm, jobsProm, logProm])
     .catch((e: Record<string, string | undefined>) => set(errorLoadingLast30RW, e.message ?? e.toString()))
@@ -152,53 +140,36 @@ class ReconnectingWebsocket {
   }
 }
 
+const onOpenAtom = atom(null, (get, set) => {
+  const lastSeenCntr = get(lastEventCounter);
+  const schIds = get(last30SchIds);
+  set(websocketReconnectingAtom, true);
+  set(errorLoadingLast30RW, null);
+  if (lastSeenCntr !== null && lastSeenCntr !== undefined) {
+    loadMissed(lastSeenCntr, schIds, set);
+  } else {
+    loadInitial(set);
+  }
+});
+
+const onMessageAtom = atom(null, (_, set, evt: MessageEvent<string>) => {
+  const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
+  set(onServerEvent, { evt: serverEvt, now: new Date(), expire: true });
+});
+
 export function WebsocketConnection(): null {
-  const onOpen = useRecoilCallback(
-    ({ set, snapshot, transact_UNSTABLE }) =>
-      () => {
-        function push<T>(c: RecoilConduit<T>): (t: T) => void {
-          return (t) => transact_UNSTABLE((trans) => c.transform(trans, t));
-        }
-        const lastSeenCntr = snapshot.getLoadable(lastEventCounter).valueMaybe();
-        const schIds = snapshot.getLoadable(last30SchIds).valueMaybe();
-        set(websocketReconnectingAtom, true);
-        set(errorLoadingLast30RW, null);
-        if (lastSeenCntr !== null && lastSeenCntr !== undefined) {
-          loadMissed(lastSeenCntr, schIds, set, push);
-        } else {
-          loadInitial(set, push);
-        }
-      },
-    []
-  );
-
-  const onReconnecting = useRecoilCallback(
-    ({ set }) =>
-      () => {
-        set(websocketReconnectingAtom, true);
-      },
-    []
-  );
-
-  const onMessage = useRecoilCallback(
-    ({ transact_UNSTABLE }) =>
-      (evt: MessageEvent<string>) => {
-        const serverEvt = ServerEvent.fromJS(JSON.parse(evt.data));
-        transact_UNSTABLE((trans) =>
-          onServerEvent.transform(trans, { evt: serverEvt, now: new Date(), expire: true })
-        );
-      },
-    []
-  );
-
-  const fmsInfoLoadable = useRecoilValueLoadable(fmsInformation);
+  const onOpen = useSetAtom(onOpenAtom);
+  const setReconnecting = useSetAtom(websocketReconnectingAtom);
+  const onReconnecting = useCallback(() => setReconnecting(true), [setReconnecting]);
+  const onMessage = useSetAtom(onMessageAtom);
+  const fmsInfoLoadable = useAtomValue(fmsInformationLoadable);
   const websocketRef = useRef<ReconnectingWebsocket | null>(null);
 
   useEffect(() => {
-    if (fmsInfoLoadable.state !== "hasValue") return;
+    if (fmsInfoLoadable.state !== "hasData") return;
     if (websocketRef.current) return;
 
-    const user = fmsInfoLoadable.valueOrThrow().user ?? null;
+    const user = fmsInfoLoadable.data.user ?? null;
 
     const loc = window.location;
     let uri: string;
