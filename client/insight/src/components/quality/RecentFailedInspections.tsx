@@ -53,9 +53,8 @@ import {
 } from "../analysis/DataTable.js";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { useIsDemo } from "../routes.js";
-import { useRecoilValue } from "recoil";
 import { last30Inspections } from "../../cell-status/inspections.js";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 interface RecentFailedInspectionsProps {
   readonly failed: ReadonlyArray<FailedInspectionEntry>;
@@ -146,7 +145,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
 }
 
 export function RecentFailedInspectionsTable() {
-  const inspections = useRecoilValue(last30Inspections);
+  const inspections = useAtomValue(last30Inspections);
   const failed = React.useMemo(() => {
     const today = startOfToday();
     const allEvts = LazySeq.of(inspections).flatMap(([_, evts]) => evts.valuesToLazySeq());

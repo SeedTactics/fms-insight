@@ -32,8 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { fakeCycle } from "../../test/events.fake.js";
-import { Snapshot, snapshot_UNSTABLE } from "recoil";
-import { applyConduitToSnapshot } from "../util/recoil-util.js";
 import { lastEventCounter, onLoadLast30Log, onLoadSpecificMonthLog, onServerEvent } from "./loading.js";
 import { addDays } from "date-fns";
 import { last30BufferEntries, specificMonthBufferEntries } from "./buffers.js";
@@ -47,20 +45,17 @@ import { LogEntry } from "../network/api.js";
 import { it, expect } from "vitest";
 
 import { toRawJs } from "../../test/to-raw-js.js";
+import { createStore } from "jotai";
 
-function checkLast30(snapshot: Snapshot, msg: string) {
-  expect(toRawJs(snapshot.getLoadable(last30BufferEntries).valueOrThrow())).toMatchSnapshot(msg + " - buffers");
-  expect(toRawJs(snapshot.getLoadable(last30EstimatedCycleTimes).valueOrThrow())).toMatchSnapshot(
-    msg + " - estimated cycle times"
-  );
-  expect(toRawJs(snapshot.getLoadable(last30Inspections).valueOrThrow())).toMatchSnapshot(msg + " - inspections");
-  expect(toRawJs(snapshot.getLoadable(last30MaterialSummary).valueOrThrow())).toMatchSnapshot(
-    msg + " - material summary"
-  );
-  expect(toRawJs(snapshot.getLoadable(last30PalletCycles).valueOrThrow())).toMatchSnapshot(msg + " - pallet cycles");
-  expect(toRawJs(snapshot.getLoadable(last30StationCycles).valueOrThrow())).toMatchSnapshot(msg + " - station cycles");
-  expect(toRawJs(snapshot.getLoadable(last30ToolUse).valueOrThrow())).toMatchSnapshot(msg + " - tool use");
-  expect(toRawJs(snapshot.getLoadable(lastEventCounter).valueOrThrow())).toMatchSnapshot(msg + " - event counter");
+function checkLast30(snapshot: ReturnType<typeof createStore>, msg: string) {
+  expect(toRawJs(snapshot.get(last30BufferEntries))).toMatchSnapshot(msg + " - buffers");
+  expect(toRawJs(snapshot.get(last30EstimatedCycleTimes))).toMatchSnapshot(msg + " - estimated cycle times");
+  expect(toRawJs(snapshot.get(last30Inspections))).toMatchSnapshot(msg + " - inspections");
+  expect(toRawJs(snapshot.get(last30MaterialSummary))).toMatchSnapshot(msg + " - material summary");
+  expect(toRawJs(snapshot.get(last30PalletCycles))).toMatchSnapshot(msg + " - pallet cycles");
+  expect(toRawJs(snapshot.get(last30StationCycles))).toMatchSnapshot(msg + " - station cycles");
+  expect(toRawJs(snapshot.get(last30ToolUse))).toMatchSnapshot(msg + " - tool use");
+  expect(toRawJs(snapshot.get(lastEventCounter))).toMatchSnapshot(msg + " - event counter");
 }
 
 function twentySevenTwoAndTodayCycles(now: Date) {
@@ -104,12 +99,8 @@ it("processes last 30 events", () => {
   // start with cycles from 27 days ago, 2 days ago, and today
   const { twentySevenCycle, twoDaysAgoCycle, todayCycle } = twentySevenTwoAndTodayCycles(now);
 
-  let snapshot = snapshot_UNSTABLE();
-  snapshot = applyConduitToSnapshot(snapshot, onLoadLast30Log, [
-    ...twentySevenCycle,
-    ...twoDaysAgoCycle,
-    ...todayCycle,
-  ]);
+  const snapshot = createStore();
+  snapshot.set(onLoadLast30Log, [...twentySevenCycle, ...twoDaysAgoCycle, ...todayCycle]);
 
   checkLast30(snapshot, "initial 27 days ago, two days ago, and today");
 
@@ -126,7 +117,7 @@ it("processes last 30 events", () => {
   });
 
   for (const c of sixDaysCycle) {
-    snapshot = applyConduitToSnapshot(snapshot, onServerEvent, {
+    snapshot.set(onServerEvent, {
       now: sixDays,
       expire: true,
       evt: {
@@ -144,21 +135,13 @@ it("processes events in a specific month", () => {
 
   const { twentySevenCycle, twoDaysAgoCycle, todayCycle } = twentySevenTwoAndTodayCycles(now);
 
-  let snapshot = snapshot_UNSTABLE();
-  snapshot = applyConduitToSnapshot(snapshot, onLoadSpecificMonthLog, [
-    ...twentySevenCycle,
-    ...twoDaysAgoCycle,
-    ...todayCycle,
-  ]);
+  const snapshot = createStore();
+  snapshot.set(onLoadSpecificMonthLog, [...twentySevenCycle, ...twoDaysAgoCycle, ...todayCycle]);
 
-  expect(toRawJs(snapshot.getLoadable(specificMonthBufferEntries).valueOrThrow())).toMatchSnapshot("buffers");
-  expect(toRawJs(snapshot.getLoadable(specificMonthEstimatedCycleTimes).valueOrThrow())).toMatchSnapshot(
-    "estimated cycle times"
-  );
-  expect(toRawJs(snapshot.getLoadable(specificMonthInspections).valueOrThrow())).toMatchSnapshot("inspections");
-  expect(toRawJs(snapshot.getLoadable(specificMonthMaterialSummary).valueOrThrow())).toMatchSnapshot(
-    "material summary"
-  );
-  expect(toRawJs(snapshot.getLoadable(specificMonthPalletCycles).valueOrThrow())).toMatchSnapshot("pallet cycles");
-  expect(toRawJs(snapshot.getLoadable(specificMonthStationCycles).valueOrThrow())).toMatchSnapshot("station cycles");
+  expect(toRawJs(snapshot.get(specificMonthBufferEntries))).toMatchSnapshot("buffers");
+  expect(toRawJs(snapshot.get(specificMonthEstimatedCycleTimes))).toMatchSnapshot("estimated cycle times");
+  expect(toRawJs(snapshot.get(specificMonthInspections))).toMatchSnapshot("inspections");
+  expect(toRawJs(snapshot.get(specificMonthMaterialSummary))).toMatchSnapshot("material summary");
+  expect(toRawJs(snapshot.get(specificMonthPalletCycles))).toMatchSnapshot("pallet cycles");
+  expect(toRawJs(snapshot.get(specificMonthStationCycles))).toMatchSnapshot("station cycles");
 });

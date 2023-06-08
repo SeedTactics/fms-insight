@@ -39,11 +39,11 @@ import { ImportExport } from "@mui/icons-material";
 
 import StationDataTable from "../analysis/StationDataTable.js";
 import { outlierMachineCycles, outlierLoadCycles, copyCyclesToClipboard } from "../../data/results.cycles.js";
-import { useRecoilValue } from "recoil";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue } from "jotai";
 
 // -----------------------------------------------------------------------------------
 // Outliers
@@ -53,10 +53,10 @@ export type OutlierType = "labor" | "machine";
 
 export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
   useSetTitle(outlierTy === "machine" ? "Machine Outliers" : "L/U Outliers");
-  const matSummary = useRecoilValue(last30MaterialSummary);
+  const matSummary = useAtomValue(last30MaterialSummary);
   const today = startOfToday();
-  const estimatedCycleTimes = useRecoilValue(last30EstimatedCycleTimes);
-  const allCycles = useRecoilValue(last30StationCycles);
+  const estimatedCycleTimes = useAtomValue(last30EstimatedCycleTimes);
+  const allCycles = useAtomValue(last30StationCycles);
   const points = React.useMemo(() => {
     const today = startOfToday();
     if (outlierTy === "labor") {

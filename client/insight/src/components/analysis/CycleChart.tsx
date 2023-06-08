@@ -48,7 +48,6 @@ import { ZoomIn } from "@mui/icons-material";
 import { StatisticalCycleTime } from "../../cell-status/estimated-cycle-times.js";
 import { chartTheme, seriesColor } from "../../util/chart-colors.js";
 import { grey } from "@mui/material/colors";
-import { useImmer } from "../../util/recoil-util.js";
 import { localPoint } from "@visx/event";
 import { PickD3Scale, scaleLinear, scaleTime } from "@visx/scale";
 import { Group } from "@visx/group";
@@ -58,6 +57,7 @@ import { GridColumns, GridRows } from "@visx/grid";
 import { useSpring, useSprings, animated } from "@react-spring/web";
 import { ParentSize } from "@visx/responsive";
 import { LazySeq } from "@seedtactics/immutable-collections";
+import { produce } from "immer";
 
 export interface CycleChartPoint {
   readonly cntr: number;
@@ -755,7 +755,9 @@ function CycleChartSvg(
 export const CycleChart = React.memo(function CycleChart(props: CycleChartProps) {
   // the state of the chart
   const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
-  const [disabledSeries, adjustDisabled] = useImmer<ReadonlySet<string>>(new Set());
+  const [disabledSeries, setDisabled] = React.useState<ReadonlySet<string>>(new Set());
+  const adjustDisabled = React.useCallback(() => produce(setDisabled), [setDisabled]);
+
   const [highlightStart, setHighlightStart] = React.useState<{
     readonly x: number;
     readonly y: number;

@@ -50,13 +50,12 @@ import { ApiException, ILogEntry, LogType } from "../../network/api.js";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
 import { DataTableActionZoomType } from "../analysis/DataTable.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
-import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { LogBackend } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { RecentFailedInspectionsTable } from "./RecentFailedInspections.js";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { loadable } from "jotai/utils";
 
 function SerialLookup() {
@@ -167,7 +166,7 @@ function DetailsStepButtons({ setStep }: { setStep: (step: number) => void }) {
   const matL = useAtomValue(loadable(matDetails.materialInDialogInfo));
   const mat = matL.state === "hasData" ? matL.data : null;
   const matEvents = useAtomValue(matDetails.materialInDialogEvents);
-  const setSearchRange = useSetRecoilState(pathLookupRange);
+  const setSearchRange = useSetAtom(pathLookupRange);
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
   return (
@@ -211,8 +210,8 @@ interface PathLookupProps {
 function PathLookupStep(props: PathLookupProps) {
   const mat = useAtomValue(matDetails.materialInDialogInfo);
   const matEvents = useAtomValue(matDetails.materialInDialogEvents);
-  const [searchRange, setSearchRange] = useRecoilState(pathLookupRange);
-  const logs = useRecoilValue(inspectionLogEntries);
+  const [searchRange, setSearchRange] = useAtom(pathLookupRange);
+  const logs = useAtomValue(inspectionLogEntries);
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
   if (mat === null) return null;

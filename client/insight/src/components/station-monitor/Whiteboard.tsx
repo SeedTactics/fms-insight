@@ -51,9 +51,8 @@ import { IInProcessMaterial } from "../../network/api.js";
 import { SortableMatData } from "./Material.js";
 import { useAddExistingMaterialToQueue } from "../../cell-status/material-details.js";
 import { reorderQueuedMatInCurrentStatus } from "../../cell-status/current-status.js";
-import { useRecoilValue } from "recoil";
 import { currentOperator } from "../../data/operators.js";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 export interface SortableRegionProps {
   readonly matIds: ReadonlyArray<number>;
@@ -67,7 +66,7 @@ export const SortableRegion = React.memo(function SortableRegion(props: Sortable
   const [activeMat, setActiveMat] = React.useState<Readonly<IInProcessMaterial> | undefined>(undefined);
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
   const reorderQueuedMat = useSetAtom(reorderQueuedMatInCurrentStatus);
-  const operator = useRecoilValue(currentOperator);
+  const operator = useAtomValue(currentOperator);
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {

@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
 import {
   inProcessMaterialInDialog,
@@ -55,12 +54,12 @@ type QuarantineMaterialData = {
 };
 
 function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData | null {
-  const fmsInfo = useRecoilValue(fmsInformation);
+  const fmsInfo = useAtomValue(fmsInformation);
   const [removeFromQueue, removingFromQueue] = useRemoveFromQueue();
   const [signalQuarantine, signalingQuarantine] = useSignalForQuarantine();
   const inProcMat = useAtomValue(inProcessMaterialInDialog);
   const curSt = useAtomValue(currentStatus);
-  let operator = useRecoilValue(currentOperator);
+  let operator = useAtomValue(currentOperator);
   if (ignoreOperator) operator = null;
 
   if (inProcMat === null || inProcMat.materialID < 0) return null;

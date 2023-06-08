@@ -56,7 +56,6 @@ import {
 } from "@mui/icons-material";
 import { JobDetails } from "../station-monitor/JobDetails.js";
 import { Collapse } from "@mui/material";
-import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
@@ -324,8 +323,8 @@ export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.El
   const [sortBy, setSortBy] = React.useState<SortColumn>(SortColumn.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("desc");
 
-  const matIds = useRecoilValue(last30MaterialSummary);
-  const schJobs = useRecoilValue(last30Jobs);
+  const matIds = useAtomValue(last30MaterialSummary);
+  const schJobs = useAtomValue(last30Jobs);
   const currentSt = useAtomValue(currentStatus);
 
   const showMaterial = React.useMemo(() => {

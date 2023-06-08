@@ -56,7 +56,6 @@ import {
 import TimeAgo from "react-timeago";
 import { DragIndicator, Warning as WarningIcon, Search as SearchIcon } from "@mui/icons-material";
 import { useSortable } from "@dnd-kit/sortable";
-import { useRecoilValue } from "recoil";
 
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
@@ -691,7 +690,7 @@ interface NotesDialogBodyProps {
 
 function NotesDialogBody(props: NotesDialogBodyProps) {
   const [curNote, setCurNote] = React.useState<string>("");
-  const operator = useRecoilValue(currentOperator);
+  const operator = useAtomValue(currentOperator);
   const [addNote] = matDetails.useAddNote();
   const mat = useAtomValue(matDetails.materialInDialogInfo);
   if (mat === null) return null;

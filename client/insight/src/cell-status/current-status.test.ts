@@ -42,10 +42,9 @@ import {
   fakeInspForce,
   fakeInProcMaterial,
 } from "../../test/events.fake.js";
-import { Snapshot, snapshot_UNSTABLE } from "recoil";
-import { applyConduitToSnapshot } from "../util/recoil-util.js";
 import { onLoadCurrentSt, onServerEvent } from "./loading.js";
 import { it, expect } from "vitest";
+import { createStore } from "jotai";
 
 const statusWithMat: api.ICurrentStatus = {
   timeOfCurrentStatusUTC: new Date(),
@@ -77,22 +76,22 @@ const statusWithMat: api.ICurrentStatus = {
   ],
 };
 
-function applyEvent(e: api.ILogEntry): Snapshot {
-  let snapshot = snapshot_UNSTABLE();
-  snapshot = applyConduitToSnapshot(snapshot, onLoadCurrentSt, statusWithMat);
-  snapshot = applyConduitToSnapshot(snapshot, onServerEvent, {
+function applyEvent(e: api.ILogEntry): ReturnType<typeof createStore> {
+  const store = createStore();
+  store.set(onLoadCurrentSt, statusWithMat);
+  store.set(onServerEvent, {
     evt: { logEntry: new api.LogEntry(e) },
     expire: false,
     now: new Date(),
   });
 
-  return snapshot;
+  return store;
 }
 
 it("sets the serial", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 10 });
-  const snapshot = applyEvent(fakeSerial(mat, "serial12345"));
-  const newStatus = snapshot.getLoadable(cs.currentStatus).valueOrThrow();
+  const store = applyEvent(fakeSerial(mat, "serial12345"));
+  const newStatus = store.get(cs.currentStatus);
 
   const actualInProcMat = newStatus.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.serial).toEqual("serial12345");
@@ -100,8 +99,8 @@ it("sets the serial", () => {
 
 it("sets a workorder", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
-  const snapshot = applyEvent(fakeWorkorderAssign(mat, "work7777"));
-  const st = snapshot.getLoadable(cs.currentStatus).valueOrThrow();
+  const store = applyEvent(fakeWorkorderAssign(mat, "work7777"));
+  const st = store.get(cs.currentStatus);
 
   const actualInProcMat = st.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.workorderId).toEqual("work7777");
@@ -110,7 +109,7 @@ it("sets a workorder", () => {
 it("sets an inspection", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
   const snapshot = applyEvent(fakeInspSignal(mat, "insp11"));
-  const st = snapshot.getLoadable(cs.currentStatus).valueOrThrow();
+  const st = snapshot.get(cs.currentStatus);
 
   const actualInProcMat = st.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp11"]);
@@ -119,7 +118,7 @@ it("sets an inspection", () => {
 it("sets a forced inspection", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 20 });
   const snapshot = applyEvent(fakeInspForce(mat, "insp55"));
-  const st = snapshot.getLoadable(cs.currentStatus).valueOrThrow();
+  const st = snapshot.get(cs.currentStatus);
 
   const actualInProcMat = st.material.filter((m) => m.materialID === mat.id)[0];
   expect(actualInProcMat.signaledInspections).toEqual(["aaa", "insp55"]);
@@ -128,7 +127,7 @@ it("sets a forced inspection", () => {
 it("ignores other cycles", () => {
   const mat = new api.LogMaterial({ ...fakeMaterial(), id: 10 });
   const snapshot = applyEvent(fakeInspComplete(mat));
-  const st = snapshot.getLoadable(cs.currentStatus).valueOrThrow();
+  const st = snapshot.get(cs.currentStatus);
 
   expect(st).toBe(statusWithMat);
 });
@@ -145,11 +144,11 @@ function adjPos(m: api.InProcessMaterial, newPos: number, newQueue?: string): ap
 }
 
 function reorderStatus(st: api.ICurrentStatus, reorder: cs.QueueReordering): api.ICurrentStatus {
-  let snapshot = snapshot_UNSTABLE();
-  snapshot = applyConduitToSnapshot(snapshot, onLoadCurrentSt, st);
-  snapshot = applyConduitToSnapshot(snapshot, cs.reorderQueuedMatInCurrentStatus, reorder);
+  const snapshot = createStore();
+  snapshot.set(onLoadCurrentSt, st);
+  snapshot.set(cs.reorderQueuedMatInCurrentStatus, reorder);
 
-  return snapshot.getLoadable(cs.currentStatus).valueOrThrow();
+  return snapshot.get(cs.currentStatus);
 }
 
 it("reorders in-process material backwards", () => {

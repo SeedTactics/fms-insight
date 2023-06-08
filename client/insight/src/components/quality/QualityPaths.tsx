@@ -33,13 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { addDays, startOfToday } from "date-fns";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
-import { useRecoilValue } from "recoil";
 import { last30Inspections } from "../../cell-status/inspections.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue } from "jotai";
 
 export const QualityPaths = React.memo(function SelectedInspections() {
   useSetTitle("Paths");
-  const inspections = useRecoilValue(last30Inspections);
+  const inspections = useAtomValue(last30Inspections);
   const filtered = React.useMemo(() => {
     const today = startOfToday();
     const start = addDays(today, -6);

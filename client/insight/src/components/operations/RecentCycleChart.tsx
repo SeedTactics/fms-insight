@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { atom, useRecoilValue, useSetRecoilState } from "recoil";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
@@ -51,7 +50,7 @@ import { ChartTooltip } from "../ChartTooltip.js";
 import { CurrentCycle, currentCycles } from "../../data/current-cycles.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
-import { useAtomValue } from "jotai";
+import { atom, useAtomValue, useSetAtom } from "jotai";
 
 const projectedColor = green[200];
 const activeColor = green[600];
@@ -70,8 +69,8 @@ type SimCycle = {
 };
 
 function useSimCycles(): ReadonlyArray<SimCycle> {
-  const jobs = useRecoilValue(last30Jobs);
-  const statUse = useRecoilValue(last30SimStationUse);
+  const jobs = useAtomValue(last30Jobs);
+  const statUse = useAtomValue(last30SimStationUse);
   return React.useMemo(() => {
     const cutoff = addHours(new Date(), -12);
     return LazySeq.of(statUse)
@@ -104,10 +103,7 @@ interface TooltipData {
     | { kind: "current"; cycle: CurrentCycle; now: Date };
 }
 
-const tooltipData = atom<TooltipData | null>({
-  key: "insight-recent-cycles-tooltip-data",
-  default: null,
-});
+const tooltipData = atom<TooltipData | null>(null);
 
 interface ChartScales {
   readonly xScale: PickD3Scale<"time", number>;
@@ -204,7 +200,7 @@ function RecentSeries({
   hideTooltipRef: React.MutableRefObject<NodeJS.Timeout | null>;
 }): JSX.Element {
   const actualOffset = actualPlannedScale("actual") ?? 0;
-  const setTooltip = useSetRecoilState(tooltipData);
+  const setTooltip = useSetAtom(tooltipData);
 
   function showTooltip(c: RecentCycle): (e: React.PointerEvent<SVGGElement>) => void {
     return (e) => {
@@ -285,7 +281,7 @@ function CurrentSeries({
   hideTooltipRef: React.MutableRefObject<NodeJS.Timeout | null>;
 }): JSX.Element {
   const actualOffset = actualPlannedScale("actual") ?? 0;
-  const setTooltip = useSetRecoilState(tooltipData);
+  const setTooltip = useSetAtom(tooltipData);
 
   function showTooltip(c: CurrentCycle): (e: React.PointerEvent<SVGGElement>) => void {
     return (e) => {
@@ -367,7 +363,7 @@ function SimSeries({
 }): JSX.Element {
   const plannedOffset = actualPlannedScale("planned") ?? 0;
 
-  const setTooltip = useSetRecoilState(tooltipData);
+  const setTooltip = useSetAtom(tooltipData);
 
   function showTooltip(c: SimCycle): (e: React.PointerEvent<SVGGElement>) => void {
     return (e) => {
@@ -419,7 +415,7 @@ function SimSeries({
 }
 
 const Tooltip = React.memo(function Tooltip() {
-  const tooltip = useRecoilValue(tooltipData);
+  const tooltip = useAtomValue(tooltipData);
 
   if (tooltip === null) return null;
 
@@ -528,8 +524,8 @@ function NowLine({
 }
 
 export function RecentCycleChart({ height, width }: { height: number; width: number }) {
-  const last30Cycles = useRecoilValue(last30StationCycles);
-  const estimated = useRecoilValue(last30EstimatedCycleTimes);
+  const last30Cycles = useAtomValue(last30StationCycles);
+  const estimated = useAtomValue(last30EstimatedCycleTimes);
   const sim = useSimCycles();
   const currentSt = useAtomValue(currentStatus);
 

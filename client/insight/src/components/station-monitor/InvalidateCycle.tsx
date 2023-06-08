@@ -40,7 +40,6 @@ import { JobsBackend } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { inProcessMaterialInDialog, materialDialogOpen } from "../../cell-status/material-details.js";
-import { useRecoilValue } from "recoil";
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -95,10 +94,10 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
 export function InvalidateCycleDialogButtons(
   props: InvalidateCycleProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean }
 ) {
-  const fmsInfo = useRecoilValue(fmsInformation);
+  const fmsInfo = useAtomValue(fmsInformation);
   const curMat = useAtomValue(inProcessMaterialInDialog);
   const setMatToShow = useSetAtom(materialDialogOpen);
-  let operator = useRecoilValue(currentOperator);
+  let operator = useAtomValue(currentOperator);
 
   if (!fmsInfo.allowSwapAndInvalidateMaterialAtLoadStation) return null;
 
@@ -241,10 +240,10 @@ export function SwapMaterialDialogContent(props: SwapMaterialProps): JSX.Element
 export function SwapMaterialButtons(
   props: SwapMaterialProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean }
 ) {
-  const fmsInfo = useRecoilValue(fmsInformation);
+  const fmsInfo = useAtomValue(fmsInformation);
   const curMat = useAtomValue(inProcessMaterialInDialog);
   const closeMatDialog = useSetAtom(materialDialogOpen);
-  let operator = useRecoilValue(currentOperator);
+  let operator = useAtomValue(currentOperator);
 
   if (!fmsInfo.allowSwapAndInvalidateMaterialAtLoadStation) return null;
 

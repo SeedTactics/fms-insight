@@ -48,7 +48,6 @@ import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { PrintedLabel, PrintMaterial } from "./PrintedLabel.js";
-import { useRecoilValue } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { JobsBackend } from "../../network/backend.js";
@@ -99,8 +98,8 @@ export function PrintOnClientButton({
 }
 
 function PrintLabelButton() {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const curMat = useAtomValue(matDetails.inProcessMaterialInDialog);
   const [printLabel, printingLabel] = matDetails.usePrintLabel();
 
   if (curMat === null || !fmsInfo.usingLabelPrinterForSerials) return null;
@@ -126,9 +125,9 @@ function PrintLabelButton() {
 }
 
 function useQueueDialogKind(queueNames: ReadonlyArray<string>): "None" | "MatInQueue" | "AddToQueue" {
-  const existingMat = useRecoilValue(matDetails.materialInDialogInfo);
-  const inProcMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  const fmsInfo = useRecoilValue(fmsInformation);
+  const existingMat = useAtomValue(matDetails.materialInDialogInfo);
+  const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
+  const fmsInfo = useAtomValue(fmsInformation);
 
   const curInQueueOnScreen =
     inProcMat !== null &&
@@ -169,7 +168,7 @@ function QueuesDialogCt({
   queueNames: ReadonlyArray<string>;
 }) {
   const kind = useQueueDialogKind(queueNames);
-  const toShow = useRecoilValue(matDetails.materialDialogOpen);
+  const toShow = useAtomValue(matDetails.materialDialogOpen);
 
   const requireSelectQueue = queueNames.length > 1 && toShow?.type !== "AddMatWithEnteredSerial";
 
@@ -239,7 +238,7 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
 }: {
   queueNames: ReadonlyArray<string>;
 }) {
-  const toShow = useRecoilValue(matDetails.materialDialogOpen);
+  const toShow = useAtomValue(matDetails.materialDialogOpen);
   const [selectedQueue, setSelectedQueue] = React.useState<string | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
   const [selectedJob, setSelectedJob] = React.useState<AddNewJobProcessState | null>(null);
@@ -295,7 +294,7 @@ export interface MultiMaterialDialogProps {
 }
 
 export const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
-  const fmsInfo = useRecoilValue(fmsInformation);
+  const fmsInfo = useAtomValue(fmsInformation);
   const jobs = useAtomValue(currentStatus).jobs;
   const [printLabel, printingLabel] = matDetails.usePrintLabel();
 

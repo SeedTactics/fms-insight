@@ -56,10 +56,10 @@ import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { Typography } from "@mui/material";
-import { useRecoilValue } from "recoil";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue } from "jotai";
 
 async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
   return (await localForage.getItem("MachineCostPerYear")) ?? {};
@@ -216,10 +216,10 @@ const pctFormat = new Intl.NumberFormat(undefined, {
 
 export function CostBreakdownPage() {
   useSetTitle("Cost Percentages");
-  const period = useRecoilValue(selectedAnalysisPeriod);
+  const period = useAtomValue(selectedAnalysisPeriod);
   const month = period.type === "Last30" ? null : period.month;
-  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const matIds = useRecoilValue(
+  const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const matIds = useAtomValue(
     period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
   );
 
@@ -392,10 +392,10 @@ export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
   const [curMonthLaborCost, setCurMonthLaborCost] = React.useState<number | null | "LOADING">(null);
   const [automationCostPerYear, setAutomationCostPerYear] = React.useState<number | null>(null);
 
-  const period = useRecoilValue(selectedAnalysisPeriod);
+  const period = useAtomValue(selectedAnalysisPeriod);
   const month = period.type === "Last30" ? null : period.month;
-  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const matIds = useRecoilValue(
+  const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const matIds = useAtomValue(
     period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
   );
 

@@ -42,7 +42,6 @@ import "@fontsource/roboto/700.css";
 
 import { green, brown } from "@mui/material/colors";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { RecoilRoot } from "recoil";
 import { enableMapSet } from "immer";
 enableMapSet();
 
@@ -60,11 +59,9 @@ export function render(appProps: AppProps | null, elem: HTMLElement): void {
   root.render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <RecoilRoot>
-        <React.StrictMode>
-          <App {...appProps} />
-        </React.StrictMode>
-      </RecoilRoot>
+      <React.StrictMode>
+        <App {...appProps} />
+      </React.StrictMode>
     </ThemeProvider>
   );
 }

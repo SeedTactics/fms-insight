@@ -44,15 +44,15 @@ import { Error as ErrorIcon } from "@mui/icons-material";
 
 import { Tooltip } from "@mui/material";
 import { errorLoadingLast30, websocketReconnecting } from "../network/websocket.js";
-import { useRecoilValue } from "recoil";
 import { errorLoadingSpecificMonthData, loadingSpecificMonthData } from "../network/load-specific-month.js";
+import { useAtomValue } from "jotai";
 
 export const LoadingIcon = React.memo(function LoadingIcon() {
-  const websocketLoading = useRecoilValue(websocketReconnecting);
-  const specificMonthLoading = useRecoilValue(loadingSpecificMonthData);
+  const websocketLoading = useAtomValue(websocketReconnecting);
+  const specificMonthLoading = useAtomValue(loadingSpecificMonthData);
 
-  const last30Error = useRecoilValue(errorLoadingLast30);
-  const specificMonthError = useRecoilValue(errorLoadingSpecificMonthData);
+  const last30Error = useAtomValue(errorLoadingLast30);
+  const specificMonthError = useAtomValue(errorLoadingSpecificMonthData);
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
 

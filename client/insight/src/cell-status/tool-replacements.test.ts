@@ -31,9 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { snapshot_UNSTABLE } from "recoil";
 import { toRawJs } from "../../test/to-raw-js.js";
-import { applyConduitToSnapshot } from "../util/recoil-util.js";
 import { onLoadLast30Log, onServerEvent } from "./loading.js";
 import { last30ToolReplacements } from "./tool-replacements.js";
 import { it, expect } from "vitest";
@@ -45,6 +43,7 @@ import {
 } from "../../test/events.fake.js";
 import { addDays, addMinutes } from "date-fns";
 import { LogEntry } from "../network/api.js";
+import { createStore } from "jotai";
 
 const machCycle = {
   part: "abc",
@@ -98,8 +97,9 @@ it("calculates last 30 tool replacements", () => {
     }),
   ];
 
-  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
-  let tools = snapshot.getLoadable(last30ToolReplacements).valueOrThrow();
+  const snapshot = createStore();
+  snapshot.set(onLoadLast30Log, evts);
+  let tools = snapshot.get(last30ToolReplacements);
   expect(toRawJs(tools)).toMatchSnapshot("tools");
 
   // now changes on machine 6
@@ -116,13 +116,13 @@ it("calculates last 30 tool replacements", () => {
     ],
   })[1];
 
-  const afterAdd = applyConduitToSnapshot(snapshot, onServerEvent, {
+  snapshot.set(onServerEvent, {
     now: addMinutes(start, 30),
     evt: { logEntry: new LogEntry(machEndMc6) },
     expire: true,
   });
 
-  tools = afterAdd.getLoadable(last30ToolReplacements).valueOrThrow();
+  tools = snapshot.get(last30ToolReplacements);
   expect(toRawJs(tools)).toMatchSnapshot("after machine 6 changes");
 
   // now another change on machine 4, far in the future so it should filter
@@ -139,11 +139,11 @@ it("calculates last 30 tool replacements", () => {
     ],
   })[1];
 
-  const afterAdd2 = applyConduitToSnapshot(afterAdd, onServerEvent, {
+  snapshot.set(onServerEvent, {
     now: addDays(start, 33),
     evt: { logEntry: new LogEntry(machEndMc4) },
     expire: true,
   });
-  tools = afterAdd2.getLoadable(last30ToolReplacements).valueOrThrow();
+  tools = snapshot.get(last30ToolReplacements);
   expect(toRawJs(tools)).toMatchSnapshot("after machine 4 changes");
 });

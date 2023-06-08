@@ -37,13 +37,12 @@ import { fakeCycle } from "../../test/events.fake.js";
 import { ILogEntry } from "../network/api.js";
 import { binCyclesByDayAndPart, buildCompletedPartsHeatmapTable } from "./results.completed-parts.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { applyConduitToSnapshot } from "../util/recoil-util.js";
-import { snapshot_UNSTABLE } from "recoil";
 import { onLoadLast30Log } from "../cell-status/loading.js";
 import { last30StationCycles } from "../cell-status/station-cycles.js";
 import { last30MaterialSummary } from "../cell-status/material-summary.js";
 import { it, expect } from "vitest";
 import { toRawJs } from "../../test/to-raw-js.js";
+import { createStore } from "jotai";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -53,9 +52,10 @@ it("bins actual cycles by day", () => {
     fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
     fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
   );
-  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
-  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
-  const matSummary = snapshot.getLoadable(last30MaterialSummary).valueOrThrow();
+  const store = createStore();
+  store.set(onLoadLast30Log, evts);
+  const cycles = store.get(last30StationCycles);
+  const matSummary = store.get(last30MaterialSummary);
 
   let byDayAndPart = binCyclesByDayAndPart(
     cycles.valuesToLazySeq(),

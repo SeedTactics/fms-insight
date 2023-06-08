@@ -36,7 +36,6 @@ import { Tabs } from "@mui/material";
 import { Tab } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { Button } from "@mui/material";
-import { useRecoilValueLoadable } from "recoil";
 import {
   Dns as ToolIcon,
   Build as BuildIcon,
@@ -90,6 +89,7 @@ import { PartLoadStationCycleChart, PartMachineCycleChart } from "./analysis/Par
 import { PalletCycleChart } from "./analysis/PalletCycleCards.js";
 import { ToolReplacementPage } from "./analysis/ToolReplacements.js";
 import { CurrentWorkordersPage } from "./operations/CurrentWorkorders.js";
+import { useAtom, useAtomValue } from "jotai";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -220,7 +220,7 @@ const analysisReports: ReadonlyArray<MenuNavItem> = [
 ];
 
 export function NavTabs({ children }: { children?: React.ReactNode }) {
-  const [route, setRoute] = routes.useCurrentRoute();
+  const [route, setRoute] = useAtom(routes.currentRoute);
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -299,10 +299,10 @@ export interface AppProps {
 
 const App = React.memo(function App(props: AppProps) {
   routes.useWatchHistory();
-  const fmsInfoLoadable = useRecoilValueLoadable(serverSettings.fmsInformation);
-  const [route, setRoute] = routes.useCurrentRoute();
+  const fmsInfoLoadable = useAtomValue(serverSettings.fmsInformationLoadable);
+  const [route, setRoute] = useAtom(routes.currentRoute);
 
-  const fmsInfo = fmsInfoLoadable.valueMaybe();
+  const fmsInfo = fmsInfoLoadable.state === "hasData" ? fmsInfoLoadable.data : null;
   const showLogout = !!fmsInfo && fmsInfo.user !== null && fmsInfo.user !== undefined;
 
   let page: JSX.Element;

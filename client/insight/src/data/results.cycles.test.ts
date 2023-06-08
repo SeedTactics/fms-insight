@@ -42,8 +42,6 @@ import {
   outlierMachineCycles,
   recentCycles,
 } from "./results.cycles.js";
-import { applyConduitToSnapshot } from "../util/recoil-util.js";
-import { snapshot_UNSTABLE } from "recoil";
 import { onLoadLast30Log } from "../cell-status/loading.js";
 import { last30StationCycles } from "../cell-status/station-cycles.js";
 import { last30MaterialSummary } from "../cell-status/material-summary.js";
@@ -54,6 +52,7 @@ import {
 } from "../cell-status/estimated-cycle-times.js";
 import { it, expect } from "vitest";
 import { HashMap } from "@seedtactics/immutable-collections";
+import { createStore } from "jotai";
 
 it("creates cycles clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -63,9 +62,10 @@ it("creates cycles clipboard table", () => {
     fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
     fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
   );
-  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
-  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
-  const matSummary = snapshot.getLoadable(last30MaterialSummary).valueOrThrow();
+  const snapshot = createStore();
+  snapshot.set(onLoadLast30Log, evts);
+  const cycles = snapshot.get(last30StationCycles);
+  const matSummary = snapshot.get(last30MaterialSummary);
 
   const data = filterStationCycles(cycles.valuesToLazySeq(), {});
 
@@ -85,9 +85,10 @@ it("loads outlier cycles", () => {
     fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
     fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
   );
-  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
-  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
-  const estimatedCycleTimes = snapshot.getLoadable(last30EstimatedCycleTimes).valueOrThrow();
+  const snapshot = createStore();
+  snapshot.set(onLoadLast30Log, evts);
+  const cycles = snapshot.get(last30StationCycles);
+  const estimatedCycleTimes = snapshot.get(last30EstimatedCycleTimes);
 
   const loadOutliers = outlierLoadCycles(
     cycles.valuesToLazySeq(),
@@ -222,7 +223,8 @@ it("calculates recent cycles", () => {
     ],
   ]);
 
-  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
-  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
+  const snapshot = createStore();
+  snapshot.set(onLoadLast30Log, evts);
+  const cycles = snapshot.get(last30StationCycles);
   expect(recentCycles(cycles.valuesToLazySeq(), expected)).toMatchSnapshot("recent cycles");
 });

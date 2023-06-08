@@ -31,8 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Snapshot, snapshot_UNSTABLE } from "recoil";
-import { applyConduitToSnapshot } from "../util/recoil-util.js";
 import { onLoadLast30Jobs, onLoadSpecificMonthJobs, onServerEvent } from "./loading.js";
 import { addDays } from "date-fns";
 import { HistoricJob, IHistoricData, NewJobs } from "../network/api.js";
@@ -43,16 +41,13 @@ import newJobsJson from "../../test/newjobs.json";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { it, expect } from "vitest";
 import { toRawJs } from "../../test/to-raw-js.js";
+import { createStore } from "jotai";
 const newJobs = newJobsJson.map((j) => NewJobs.fromJS(j));
 
-function checkLast30(snapshot: Snapshot, msg: string) {
-  expect(toRawJs(snapshot.getLoadable(last30SimProduction).valueOrThrow())).toMatchSnapshot(
-    msg + " - sim production"
-  );
-  expect(toRawJs(snapshot.getLoadable(last30SimStationUse).valueOrThrow())).toMatchSnapshot(
-    msg + " - sim stations"
-  );
-  expect(toRawJs(snapshot.getLoadable(last30Jobs).valueOrThrow())).toMatchSnapshot(msg + " - jobs");
+function checkLast30(snapshot: ReturnType<typeof createStore>, msg: string) {
+  expect(toRawJs(snapshot.get(last30SimProduction))).toMatchSnapshot(msg + " - sim production");
+  expect(toRawJs(snapshot.get(last30SimStationUse))).toMatchSnapshot(msg + " - sim stations");
+  expect(toRawJs(snapshot.get(last30Jobs))).toMatchSnapshot(msg + " - jobs");
 }
 
 function jobsToHistory(newJs: Iterable<NewJobs>): IHistoricData {
@@ -74,8 +69,8 @@ it("processes last 30 jobs", () => {
 
   // start with cycles from 27 days ago, 2 days ago, and today
 
-  let snapshot = snapshot_UNSTABLE();
-  snapshot = applyConduitToSnapshot(snapshot, onLoadLast30Jobs, jobsToHistory(firstHalf));
+  const snapshot = createStore();
+  snapshot.set(onLoadLast30Jobs, jobsToHistory(firstHalf));
 
   checkLast30(snapshot, "first half");
 
@@ -84,7 +79,7 @@ it("processes last 30 jobs", () => {
   const now = addDays(secondHalf[secondHalf.length - 1].jobs[0].routeEndUTC, 10);
 
   for (const nj of secondHalf) {
-    snapshot = applyConduitToSnapshot(snapshot, onServerEvent, {
+    snapshot.set(onServerEvent, {
       now,
       expire: true,
       evt: {
@@ -97,15 +92,11 @@ it("processes last 30 jobs", () => {
 });
 
 it("processes jobs in a specific month", () => {
-  let snapshot = snapshot_UNSTABLE();
+  const snapshot = createStore();
   // only the first 10 just to keep the size of the snapshots down
-  snapshot = applyConduitToSnapshot(snapshot, onLoadSpecificMonthJobs, jobsToHistory(newJobs.slice(0, 10)));
+  snapshot.set(onLoadSpecificMonthJobs, jobsToHistory(newJobs.slice(0, 10)));
 
-  expect(toRawJs(snapshot.getLoadable(specificMonthSimProduction).valueOrThrow())).toMatchSnapshot(
-    "sim production"
-  );
-  expect(toRawJs(snapshot.getLoadable(specificMonthSimStationUse).valueOrThrow())).toMatchSnapshot(
-    "sim stations"
-  );
-  expect(toRawJs(snapshot.getLoadable(specificMonthJobs).valueOrThrow())).toMatchSnapshot("jobs");
+  expect(toRawJs(snapshot.get(specificMonthSimProduction))).toMatchSnapshot("sim production");
+  expect(toRawJs(snapshot.get(specificMonthSimStationUse))).toMatchSnapshot("sim stations");
+  expect(toRawJs(snapshot.get(specificMonthJobs))).toMatchSnapshot("jobs");
 });

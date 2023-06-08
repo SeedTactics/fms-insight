@@ -40,7 +40,6 @@ import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
 import { format } from "date-fns";
-import { useRecoilValue } from "recoil";
 import { durationToMinutes } from "../../util/parseISODuration.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
@@ -251,8 +250,8 @@ export interface JobDetailsProps {
 }
 
 export function JobDetails(props: JobDetailsProps): JSX.Element {
-  const period = useRecoilValue(selectedAnalysisPeriod);
-  const matsFromEvents = useRecoilValue(
+  const period = useAtomValue(selectedAnalysisPeriod);
+  const matsFromEvents = useAtomValue(
     props.checkAnalysisMonth && period.type === "SpecificMonth"
       ? specificMonthMaterialSummary
       : last30MaterialSummary

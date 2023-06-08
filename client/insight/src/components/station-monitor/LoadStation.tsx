@@ -60,7 +60,6 @@ import { currentOperator } from "../../data/operators.js";
 import { instructionUrl } from "../../network/backend.js";
 import { Tooltip } from "@mui/material";
 import { Fab } from "@mui/material";
-import { useRecoilValue, useRecoilValueLoadable, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
@@ -79,7 +78,7 @@ import {
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { addHours } from "date-fns";
 import { AddToQueueButton, PromptForQueue } from "./QueuesAddMaterial.js";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -220,7 +219,7 @@ function selectLoadStationAndQueueProps(
 
 function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
   const isDemo = useIsDemo();
-  const operator = useRecoilValue(currentOperator);
+  const operator = useAtomValue(currentOperator);
   const urls = React.useMemo(() => {
     const pal = loadData.pallet;
     if (pal) {
@@ -434,7 +433,7 @@ function MaterialColumn({
 }
 
 function RecentCompletedMaterial() {
-  const matSummary = useRecoilValue(last30MaterialSummary);
+  const matSummary = useAtomValue(last30MaterialSummary);
   const recentCompleted = React.useMemo(() => {
     const cutoff = addHours(new Date(), -5);
     return matSummary.matsById
@@ -508,8 +507,8 @@ interface LoadMatDialogProps {
 }
 
 function InstructionButton({ pallet }: { pallet: string | null }) {
-  const material = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  const operator = useRecoilValue(currentOperator);
+  const material = useAtomValue(matDetails.inProcessMaterialInDialog);
+  const operator = useAtomValue(currentOperator);
 
   if (material === null) return null;
 
@@ -545,8 +544,8 @@ function InstructionButton({ pallet }: { pallet: string | null }) {
 }
 
 function PrintSerialButton() {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const curMat = useAtomValue(matDetails.inProcessMaterialInDialog);
   const [printLabel, printingLabel] = matDetails.usePrintLabel();
 
   if (curMat === null || !fmsInfo.usingLabelPrinterForSerials || curMat.materialID < 0) return null;
@@ -572,16 +571,15 @@ function PrintSerialButton() {
 }
 
 function useAllowAddMaterial(queues: ReadonlyArray<string>): boolean {
-  const toShow = useRecoilValue(matDetails.materialDialogOpen);
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
-  const inProcMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
+  const toShow = useAtomValue(matDetails.materialDialogOpen);
+  const mat = useAtomValue(matDetails.materialInDialogInfo);
+  const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
   const curSt = useAtomValue(currentStatus);
-  const evts = useRecoilValueLoadable(matDetails.materialInDialogEvents);
+  const evts = useAtomValue(matDetails.materialInDialogEvents);
 
   if (toShow === null) return false;
   if (toShow.type !== "Barcode" && toShow.type !== "ManuallyEnteredSerial") return false;
   if (mat === null) return false;
-  if (evts.state !== "hasValue") return false;
 
   const curInQueueOnScreen =
     inProcMat !== null &&
@@ -597,7 +595,7 @@ function useAllowAddMaterial(queues: ReadonlyArray<string>): boolean {
   const job = curSt.jobs[mat.jobUnique];
   if (!job) return false;
   const lastProc =
-    LazySeq.of(evts.getValue())
+    LazySeq.of(evts)
       .filter(
         (e) =>
           e.details?.["PalletCycleInvalidated"] !== "1" &&
@@ -644,9 +642,9 @@ function AddMatButton({
 }
 
 function AssignWorkorderButton() {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const setWorkorderDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const setWorkorderDialogOpen = useSetAtom(selectWorkorderDialogOpen);
+  const mat = useAtomValue(matDetails.materialInDialogInfo);
 
   if (!fmsInfo.allowChangeWorkorderAtLoadStation) {
     return null;

@@ -76,7 +76,6 @@ import { selectQueueData, extractJobRawMaterial, JobRawMaterialData } from "../.
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
 import { JobDetails } from "./JobDetails.js";
-import { useRecoilValue, useSetRecoilState } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus, setJobComment } from "../../cell-status/current-status.js";
 import { Collapse } from "@mui/material";
@@ -114,8 +113,7 @@ export interface RawMaterialJobRowProps {
 }
 
 function RawMaterialJobRow(props: RawMaterialJobRowProps) {
-  const allowEditQty =
-    (useRecoilValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
+  const allowEditQty = (useAtomValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
   const [open, setOpen] = React.useState<boolean>(false);
 
   const j = props.job;
@@ -409,7 +407,7 @@ interface EditJobPlanQtyProps {
 const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: EditJobPlanQtyProps) {
   const [running, setRunning] = React.useState(false);
   const [newQty, setNewQty] = React.useState<number | null>(null);
-  const allowEditQtyUrl = useRecoilValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null;
+  const allowEditQtyUrl = useAtomValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null;
 
   function close() {
     if (running) return;
@@ -497,9 +495,9 @@ interface AddMaterialButtonsProps {
 
 const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
   const currentJobs = useAtomValue(currentStatus).jobs;
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const setBulkAddCastings = useSetRecoilState(bulkAddCastingToQueue);
-  const setAddBySerial = useSetRecoilState(enterSerialForNewMaterialDialog);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const setBulkAddCastings = useSetAtom(bulkAddCastingToQueue);
+  const setAddBySerial = useSetAtom(enterSerialForNewMaterialDialog);
 
   const jobExistsWithInputQueue = React.useMemo(() => {
     return LazySeq.ofObject(currentJobs)
@@ -554,9 +552,9 @@ interface QueueProps {
 }
 
 export const Queues = (props: QueueProps) => {
-  const operator = useRecoilValue(currentOperator);
+  const operator = useAtomValue(currentOperator);
   const currentSt = useAtomValue(currentStatus);
-  const rawMatQueues = useRecoilValue(rawMaterialQueues);
+  const rawMatQueues = useAtomValue(rawMaterialQueues);
   const data = React.useMemo(
     () => selectQueueData(props.queues, currentSt, rawMatQueues),
     [currentSt, props.queues, rawMatQueues]

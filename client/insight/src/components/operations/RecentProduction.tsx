@@ -56,9 +56,9 @@ import { SkipPrevious as SkipPrevIcon, SkipNext as SkipNextIcon, ImportExport } 
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { last30SimProduction, SimPartCompleted } from "../../cell-status/sim-production.js";
 import { last30StationCycles, StationCyclesByCntr } from "../../cell-status/station-cycles.js";
-import { useRecoilValue } from "recoil";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue } from "jotai";
 
 enum ColumnId {
   Part,
@@ -131,8 +131,8 @@ function binCompleted(
 }
 
 function useRows(day: Date): ReadonlyArray<ProdRow> {
-  const cycles = useRecoilValue(last30StationCycles);
-  const sim = useRecoilValue(last30SimProduction);
+  const cycles = useAtomValue(last30StationCycles);
+  const sim = useAtomValue(last30SimProduction);
   const shifts = useShifts(day);
   return React.useMemo(() => {
     const planned = binSimProduction(sim, shifts);

@@ -60,7 +60,6 @@ import {
   LocType,
   PalletLocationEnum,
 } from "../../network/api.js";
-import { useRecoilValue } from "recoil";
 import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { ComparableObj, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
@@ -126,7 +125,7 @@ class PalletNum implements ComparableObj {
 
 function useCellOverview(): CellOverview {
   const currentSt = useAtomValue(currentStatus);
-  const jobs = useRecoilValue(last30Jobs);
+  const jobs = useAtomValue(last30Jobs);
 
   const matByPal = LazySeq.of(currentSt.material)
     .filter((m) => m.location.type === LocType.OnPallet || m.action.type === ActionType.Loading)

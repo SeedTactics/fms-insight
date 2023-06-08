@@ -33,21 +33,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Radio, Stack } from "@mui/material";
 import { FormControlLabel } from "@mui/material";
-import { useRecoilValue } from "recoil";
 
 import MonthSelect from "../MonthSelect.js";
 import {
   selectedAnalysisPeriod,
   selectedMonth,
   useSetSpecificMonthWithoutLoading,
-  useLoadSpecificMonth,
   useSetLast30,
 } from "../../network/load-specific-month.js";
+import { useAtom, useAtomValue } from "jotai";
 
 export const AnalysisSelectToolbar = React.memo(function AnalysisSelectToolbar() {
-  const period = useRecoilValue(selectedAnalysisPeriod);
-  const selMonth = useRecoilValue(selectedMonth);
-  const analyzeMonth = useLoadSpecificMonth();
+  const period = useAtomValue(selectedAnalysisPeriod);
+  const [selMonth, analyzeMonth] = useAtom(selectedMonth);
   const setMonthWithoutLoading = useSetSpecificMonthWithoutLoading();
   const setLast30 = useSetLast30();
 

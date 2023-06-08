@@ -41,7 +41,6 @@ import { MaterialDialog, MatSummary } from "./Material.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";
-import { useRecoilValue } from "recoil";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { instructionUrl } from "../../network/backend.js";
@@ -55,7 +54,7 @@ interface InspButtonsProps {
 }
 
 function InspButtons(props: InspButtonsProps) {
-  const operator = useRecoilValue(currentOperator);
+  const operator = useAtomValue(currentOperator);
   const material = useAtomValue(matDetails.materialInDialogInfo);
   const matEvents = useAtomValue(matDetails.materialInDialogEvents);
   const [completeInsp, completeInspUpdating] = matDetails.useCompleteInspection();
@@ -170,7 +169,7 @@ interface InspectionProps {
 }
 
 export function Inspection(props: InspectionProps): JSX.Element {
-  const matSummary = useRecoilValue(last30MaterialSummary);
+  const matSummary = useAtomValue(last30MaterialSummary);
   const recent_inspections = React.useMemo(
     () => extractRecentInspections(matSummary.matsById, props.focusInspectionType),
     [matSummary, props.focusInspectionType]

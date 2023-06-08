@@ -42,7 +42,6 @@ import { Tooltip } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
-import { atom, useRecoilValue, useSetRecoilState } from "recoil";
 import {
   materialDialogOpen,
   materialInDialogEvents,
@@ -57,13 +56,13 @@ import { LogType } from "../../network/api.js";
 import { instructionUrl } from "../../network/backend.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { useSetTitle } from "../routes.js";
-import { useAtom, useAtomValue } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
 function CompleteButton() {
-  const fmsInfo = useRecoilValue(fmsInformation);
+  const fmsInfo = useAtomValue(fmsInformation);
   const mat = useAtomValue(materialInDialogInfo);
   const [complete, isCompleting] = useCompleteCloseout();
-  const operator = useRecoilValue(currentOperator);
+  const operator = useAtomValue(currentOperator);
   const [toShow, setToShow] = useAtom(materialDialogOpen);
 
   if (mat === null) return null;
@@ -115,7 +114,7 @@ function CompleteButton() {
 function InstrButton() {
   const material = useAtomValue(materialInDialogInfo);
   const matEvents = useAtomValue(materialInDialogEvents);
-  const operator = useRecoilValue(currentOperator);
+  const operator = useAtomValue(currentOperator);
 
   if (material === null || material.partName === "") return null;
 
@@ -140,7 +139,7 @@ function InstrButton() {
 }
 
 function AssignWorkorderButton() {
-  const setWorkorderDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
+  const setWorkorderDialogOpen = useSetAtom(selectWorkorderDialogOpen);
   const mat = useAtomValue(materialInDialogInfo);
   if (mat === null) return null;
 
@@ -167,22 +166,18 @@ const CloseoutMaterialDialog = React.memo(function CloseoutDialog() {
   );
 });
 
-const currentNearestMinutes = atom<Date>({
-  key: "closeout/nearestminute",
-  default: new Date(),
-  effects: [
-    ({ setSelf }) => {
-      const interval = setInterval(() => {
-        setSelf(new Date());
-      }, 1000 * 60);
-      return () => clearInterval(interval);
-    },
-  ],
-});
+const currentNearestMinutes = atom<Date>(new Date());
+currentNearestMinutes.onMount = (set) => {
+  set(new Date());
+  const interval = setInterval(() => {
+    set(new Date());
+  }, 1000 * 60);
+  return () => clearInterval(interval);
+};
 
 export function Closeout(): JSX.Element {
-  const matSummary = useRecoilValue(last30MaterialSummary);
-  const nearestMinute = useRecoilValue(currentNearestMinutes);
+  const matSummary = useAtomValue(last30MaterialSummary);
+  const nearestMinute = useAtomValue(currentNearestMinutes);
 
   const material = React.useMemo(() => {
     const cutoff = addHours(nearestMinute, -48);
