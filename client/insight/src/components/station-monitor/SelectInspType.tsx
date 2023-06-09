@@ -50,7 +50,7 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
-const selectInspTypeDialogOpen = atom<boolean>(true);
+const selectInspTypeDialogOpen = atom<boolean>(false);
 
 function ManualInspTypeEntry(): JSX.Element {
   const [inspType, setInspType] = React.useState<string | null>(null);
