@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { ServerEvent } from "./api.js";
 import { JobsBackend, LogBackend } from "./backend.js";
-import { fmsInformationLoadable } from "./server-settings.js";
+import { fmsInformation } from "./server-settings.js";
 import { useCallback, useEffect, useRef } from "react";
 import {
   lastEventCounter,
@@ -162,14 +162,13 @@ export function WebsocketConnection(): null {
   const setReconnecting = useSetAtom(websocketReconnectingAtom);
   const onReconnecting = useCallback(() => setReconnecting(true), [setReconnecting]);
   const onMessage = useSetAtom(onMessageAtom);
-  const fmsInfoLoadable = useAtomValue(fmsInformationLoadable);
+  const fmsInfoLoadable = useAtomValue(fmsInformation);
   const websocketRef = useRef<ReconnectingWebsocket | null>(null);
 
   useEffect(() => {
-    if (fmsInfoLoadable.state !== "hasData") return;
     if (websocketRef.current) return;
 
-    const user = fmsInfoLoadable.data.user ?? null;
+    const user = fmsInfoLoadable.user ?? null;
 
     const loc = window.location;
     let uri: string;

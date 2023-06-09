@@ -46,8 +46,13 @@ import { enableMapSet } from "immer";
 enableMapSet();
 
 import App, { AppProps } from "./components/App.js";
+import { Provider, createStore } from "jotai";
 
-export function render(appProps: AppProps | null, elem: HTMLElement): void {
+export function render(
+  appProps: AppProps | null,
+  elem: HTMLElement,
+  store: ReturnType<typeof createStore>
+): void {
   const theme = createTheme({
     palette: {
       primary: green,
@@ -60,7 +65,9 @@ export function render(appProps: AppProps | null, elem: HTMLElement): void {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <React.StrictMode>
-        <App {...appProps} />
+        <Provider store={store}>
+          <App {...appProps} />
+        </Provider>
       </React.StrictMode>
     </ThemeProvider>
   );

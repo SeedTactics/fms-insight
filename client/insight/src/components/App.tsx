@@ -34,7 +34,6 @@ import * as React from "react";
 import { useMediaQuery, useTheme } from "@mui/material";
 import { Tabs } from "@mui/material";
 import { Tab } from "@mui/material";
-import { CircularProgress } from "@mui/material";
 import { Button } from "@mui/material";
 import {
   Dns as ToolIcon,
@@ -299,11 +298,10 @@ export interface AppProps {
 
 const App = React.memo(function App(props: AppProps) {
   routes.useWatchHistory();
-  const fmsInfoLoadable = useAtomValue(serverSettings.fmsInformationLoadable);
+  const fmsInfo = useAtomValue(serverSettings.fmsInformation);
   const [route, setRoute] = useAtom(routes.currentRoute);
 
-  const fmsInfo = fmsInfoLoadable.state === "hasData" ? fmsInfoLoadable.data : null;
-  const showLogout = !!fmsInfo && fmsInfo.user !== null && fmsInfo.user !== undefined;
+  const showLogout = fmsInfo.user !== null && fmsInfo.user !== undefined;
 
   let page: JSX.Element;
   let nav1: React.ComponentType | undefined = undefined;
@@ -313,7 +311,19 @@ const App = React.memo(function App(props: AppProps) {
   let showSearch = true;
   let showOperator = false;
   let addBasicMaterialDialog = true;
-  if (fmsInfo && (!serverSettings.requireLogin(fmsInfo) || fmsInfo.user)) {
+
+  if (serverSettings.requireLogin(fmsInfo) && !fmsInfo.user) {
+    page = (
+      <div style={{ textAlign: "center", marginTop: "4em" }}>
+        <h3>Please Login</h3>
+        <Button variant="contained" color="primary" onClick={() => serverSettings.login(fmsInfo)}>
+          Login
+        </Button>
+      </div>
+    );
+    showAlarms = false;
+    showSearch = false;
+  } else {
     switch (route.route) {
       case routes.RouteLocation.Station_LoadMonitor:
         page = <LoadStation loadNum={route.loadNum} queues={route.queues} completed={route.completed} />;
@@ -566,26 +576,6 @@ const App = React.memo(function App(props: AppProps) {
         showSearch = false;
         showAlarms = false;
     }
-  } else if (fmsInfo && serverSettings.requireLogin(fmsInfo)) {
-    page = (
-      <div style={{ textAlign: "center", marginTop: "4em" }}>
-        <h3>Please Login</h3>
-        <Button variant="contained" color="primary" onClick={() => serverSettings.login(fmsInfo)}>
-          Login
-        </Button>
-      </div>
-    );
-    showAlarms = false;
-    showSearch = false;
-  } else {
-    page = (
-      <div style={{ textAlign: "center", marginTop: "4em" }}>
-        <CircularProgress />
-        <p>Loading</p>
-      </div>
-    );
-    showAlarms = false;
-    showSearch = false;
   }
   return (
     <div id="App">

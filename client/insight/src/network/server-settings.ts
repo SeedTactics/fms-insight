@@ -35,7 +35,6 @@ import { User, UserManager } from "oidc-client-ts";
 import * as api from "./api.js";
 import { FmsServerBackend, setOtherLogBackends, setUserToken } from "./backend.js";
 import { atom } from "jotai";
-import { loadable } from "jotai/utils";
 
 export interface FMSInfoAndUser extends Readonly<api.IFMSInfo> {
   readonly user?: User;
@@ -52,7 +51,7 @@ export function requireLogin(fmsInfo: Readonly<api.IFMSInfo>): boolean {
   }
 }
 
-async function loadInfo(): Promise<FMSInfoAndUser> {
+export async function loadInfo(): Promise<FMSInfoAndUser> {
   const fmsInfo = await FmsServerBackend.fMSInformation();
 
   if (fmsInfo.additionalLogServers && fmsInfo.additionalLogServers.length > 0) {
@@ -91,8 +90,7 @@ async function loadInfo(): Promise<FMSInfoAndUser> {
   return { ...fmsInfo, user: user === null ? undefined : user };
 }
 
-export const fmsInformation = atom<Promise<FMSInfoAndUser>>(loadInfo());
-export const fmsInformationLoadable = loadable(fmsInformation);
+export const fmsInformation = atom<FMSInfoAndUser>({});
 
 export function login(fmsInfo: FMSInfoAndUser) {
   if (userManager && !fmsInfo.user) {

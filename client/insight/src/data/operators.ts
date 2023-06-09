@@ -40,9 +40,9 @@ const selectedOperator = atomWithStorage<string | null>("current-operator", null
 export const allOperators = atomWithStorage<ReadonlyArray<string>>("operators", []);
 
 export const currentOperator = atom(
-  async (get) => {
+  (get) => {
     const selected = get(selectedOperator);
-    const fmsInfo = await get(fmsInformation);
+    const fmsInfo = get(fmsInformation);
     return fmsInfo.user ? fmsInfo.user.profile.name || fmsInfo.user.profile.sub || null : selected;
   },
   (_, set, newVal: string | null) => {

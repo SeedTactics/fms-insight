@@ -60,7 +60,7 @@ import { LoadingIcon } from "./LoadingIcon";
 import { ManualScanButton } from "./ManualScan";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog";
 import { RouteState, currentRoute, helpUrl } from "./routes";
-import { fmsInformationLoadable, logout } from "../network/server-settings";
+import { fmsInformation, logout } from "../network/server-settings";
 import { useAtom, useAtomValue } from "jotai";
 
 export type MenuNavItem =
@@ -85,12 +85,13 @@ function ShowLicense({ d }: { d: Date }) {
 }
 
 function Brand() {
-  const fmsInfoM = useAtomValue(fmsInformationLoadable);
-  const fmsInfo = fmsInfoM.state === "hasData" ? fmsInfoM.data : null;
+  const fmsInfo = useAtomValue(fmsInformation);
 
   let tooltip: JSX.Element | string = "";
-  if (fmsInfo) {
+  if (fmsInfo.name) {
     tooltip = (fmsInfo.name || "") + " " + (fmsInfo.version || "");
+  } else {
+    tooltip = "SeedTactic FMS Insight";
   }
 
   return (
