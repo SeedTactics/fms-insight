@@ -175,7 +175,7 @@ currentNearestMinutes.onMount = (set) => {
   return () => clearInterval(interval);
 };
 
-export function Closeout(): JSX.Element {
+export function Closeout({ forceSingleColumn }: { forceSingleColumn?: boolean }): JSX.Element {
   const matSummary = useAtomValue(last30MaterialSummary);
   const nearestMinute = useAtomValue(currentNearestMinutes);
 
@@ -212,14 +212,14 @@ export function Closeout(): JSX.Element {
 
   return (
     <>
-      <Box sx={{ display: { md: "flex" } }}>
+      <Box sx={{ display: forceSingleColumn ? undefined : { md: "flex" } }}>
         <Box
           padding="8px"
           sx={{
-            minHeight: { md: "calc(100vh - 64px)" },
-            width: { md: "50vw" },
-            borderRight: { md: "1px solid black" },
-            borderBottom: { sm: "1px solid black", md: "none" },
+            minHeight: forceSingleColumn ? undefined : { md: "calc(100vh - 64px)" },
+            width: forceSingleColumn ? "100%" : { md: "50vw" },
+            borderRight: forceSingleColumn ? undefined : { md: "1px solid black" },
+            borderBottom: forceSingleColumn ? "1px solid black" : { sm: "1px solid black", md: "none" },
           }}
         >
           <Typography variant="h4">Recently Completed</Typography>
@@ -229,7 +229,7 @@ export function Closeout(): JSX.Element {
             ))}
           </Box>
         </Box>
-        <Box padding="8px" sx={{ width: { md: "50vw" } }}>
+        <Box padding="8px" sx={{ width: forceSingleColumn ? "100%" : { md: "50vw" } }}>
           <Typography variant="h4">Recently Closed Out</Typography>
           <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
             {material.closed.map((m, idx) => (

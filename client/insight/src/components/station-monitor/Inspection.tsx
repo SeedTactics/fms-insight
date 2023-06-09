@@ -166,54 +166,45 @@ interface PartsForInspection {
 
 interface InspectionProps {
   readonly focusInspectionType: string | null;
+  readonly forceSingleColumn?: boolean;
 }
 
-export function Inspection(props: InspectionProps): JSX.Element {
+export function Inspection({ focusInspectionType, forceSingleColumn }: InspectionProps): JSX.Element {
   const matSummary = useAtomValue(last30MaterialSummary);
   const recent_inspections = React.useMemo(
-    () => extractRecentInspections(matSummary.matsById, props.focusInspectionType),
-    [matSummary, props.focusInspectionType]
+    () => extractRecentInspections(matSummary.matsById, focusInspectionType),
+    [matSummary, focusInspectionType]
   );
 
   return (
     <>
-      <Box sx={{ display: { md: "flex" } }}>
+      <Box sx={{ display: forceSingleColumn ? undefined : { md: "flex" } }}>
         <Box
           padding="8px"
           sx={{
-            minHeight: { md: "calc(100vh - 64px)" },
-            width: { md: "50vw" },
-            borderRight: { md: "1px solid black" },
-            borderBottom: { sm: "1px solid black", md: "none" },
+            minHeight: forceSingleColumn ? undefined : { md: "calc(100vh - 64px)" },
+            width: forceSingleColumn ? "100%" : { md: "50vw" },
+            borderRight: forceSingleColumn ? undefined : { md: "1px solid black" },
+            borderBottom: forceSingleColumn ? "1px solid black" : { sm: "1px solid black", md: "none" },
           }}
         >
           <Typography variant="h4">Parts to Inspect</Typography>
-          <Box display="flex" justifyContent="space-between" flexWrap="wrap">
+          <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
             {recent_inspections.waiting_to_inspect.map((m, idx) => (
-              <MatSummary
-                key={idx}
-                mat={m}
-                focusInspectionType={props.focusInspectionType}
-                hideInspectionIcon
-              />
+              <MatSummary key={idx} mat={m} focusInspectionType={focusInspectionType} hideInspectionIcon />
             ))}
           </Box>
         </Box>
-        <Box padding="8px" sx={{ width: { md: "50vw" } }}>
+        <Box padding="8px" sx={{ width: forceSingleColumn ? "100%" : { md: "50vw" } }}>
           <Typography variant="h4">Recently Inspected</Typography>
-          <Box display="flex" justifyContent="space-between" flexWrap="wrap">
+          <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
             {recent_inspections.inspect_completed.map((m, idx) => (
-              <MatSummary
-                key={idx}
-                mat={m}
-                focusInspectionType={props.focusInspectionType}
-                hideInspectionIcon
-              />
+              <MatSummary key={idx} mat={m} focusInspectionType={focusInspectionType} hideInspectionIcon />
             ))}
           </Box>
         </Box>
       </Box>
-      <InspMaterialDialog focusInspectionType={props.focusInspectionType} />
+      <InspMaterialDialog focusInspectionType={focusInspectionType} />
     </>
   );
 }

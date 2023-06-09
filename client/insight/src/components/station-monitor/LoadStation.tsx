@@ -723,6 +723,7 @@ interface LoadStationProps {
   readonly loadNum: number;
   readonly queues: ReadonlyArray<string>;
   readonly completed: boolean;
+  readonly whiteBackground?: boolean;
 }
 
 function useGridLayout({
@@ -816,7 +817,7 @@ export function LoadStation(props: LoadStationProps) {
         component="main"
         sx={{
           width: "100%",
-          bgcolor: "#F8F8F8",
+          bgcolor: props.whiteBackground ? "white" : "#F8F8F8",
           display: "grid",
           gridTemplate: grid,
           minHeight: {
