@@ -904,7 +904,13 @@ const SystemOverviewMaterialDialog = React.memo(function SystemOverviewMaterialD
   );
 });
 
-export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolean }) {
+export function SystemOverviewPage({
+  ignoreOperator,
+  whiteBackground,
+}: {
+  ignoreOperator?: boolean;
+  whiteBackground?: boolean;
+}) {
   useSetTitle("System Overview");
   const overview = useCellOverview();
 
@@ -913,7 +919,7 @@ export function SystemOverviewPage({ ignoreOperator }: { ignoreOperator?: boolea
       style={{
         padding: "10px",
         minHeight: "calc(100vh - 64px)",
-        backgroundColor: "#F8F8F8",
+        backgroundColor: whiteBackground ? "white" : "#F8F8F8",
       }}
     >
       <SystemOverview overview={overview} />
