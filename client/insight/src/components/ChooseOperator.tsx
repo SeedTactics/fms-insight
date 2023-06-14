@@ -118,6 +118,7 @@ export const OperatorSelect = React.memo(function OperatorSelectF() {
             label="New Name"
             variant="outlined"
             autoFocus
+            sx={{ mt: "0.5em" }}
             onKeyUp={(evt) => {
               if (evt.keyCode === 13) {
                 addOperator();
