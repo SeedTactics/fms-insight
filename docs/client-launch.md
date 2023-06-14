@@ -39,7 +39,7 @@ and [quality control](client-quality).
 
 FMS Insight supports continuous improvement by assisting with a monthly review.
 We suggest that approximately once a month, all stakeholders review the operation of the cell and
-decide on potential improvements. FMS Insight provides a [flexibility analysis](client-flexibility-analysis)
+decide on potential improvements. FMS Insight provides a [flexibility analysis](client-efficiency)
 page which displays a monthly summary of the cell, displays cost/piece, and helps identify areas for improvement.
 
 ## Browser Page

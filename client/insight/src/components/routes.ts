@@ -293,17 +293,21 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Operations_LoadOutliers:
     case RouteLocation.Operations_LoadHours:
     case RouteLocation.Operations_LoadCycles:
-    case RouteLocation.Operations_MachineOutliers:
-    case RouteLocation.Operations_MachineHours:
-    case RouteLocation.Operations_MachineCycles:
     case RouteLocation.Operations_SystemOverview:
     case RouteLocation.Operations_AllMaterial:
     case RouteLocation.Operations_RecentSchedules:
     case RouteLocation.Operations_CurrentWorkorders:
     case RouteLocation.Operations_Production:
+      return "https://www.seedtactics.com/docs/fms-insight/client-operations";
+
+    case RouteLocation.Operations_MachineOutliers:
+    case RouteLocation.Operations_MachineHours:
+    case RouteLocation.Operations_MachineCycles:
+      return "https://www.seedtactics.com/docs/fms-insight/client-engineering";
+
     case RouteLocation.Operations_Quality:
     case RouteLocation.Operations_Inspections:
-      return "https://www.seedtactics.com/docs/fms-insight/client-operations";
+      return "https://www.seedtactics.com/docs/fms-insight/client-quality";
 
     case RouteLocation.Operations_Tools:
     case RouteLocation.Operations_Programs:
@@ -317,12 +321,13 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Quality_Dashboard:
     case RouteLocation.Quality_Paths:
     case RouteLocation.Quality_Quarantine:
-      return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
+      return "https://www.seedtactics.com/docs/fms-insight/client-quality";
 
     case RouteLocation.Tools_Dashboard:
     case RouteLocation.Tools_Programs:
-      return "https://www.seedtactics.com/docs/fms-insight/client-operations";
+      return "https://www.seedtactics.com/docs/fms-insight/client-tools-programs";
 
+    case RouteLocation.Analysis_Schedules:
     case RouteLocation.Analysis_Buffers:
     case RouteLocation.Analysis_StationOEE:
     case RouteLocation.Analysis_PartsCompleted:
@@ -332,10 +337,8 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Analysis_Quality:
     case RouteLocation.Analysis_CostPercents:
     case RouteLocation.Analysis_ToolReplacements:
-      return "https://www.seedtactics.com/docs/fms-insight/client-flexibility-analysis";
-
     case RouteLocation.Analysis_CostPerPiece:
-      return "https://www.seedtactics.com/docs/fms-insight/client-cost-per-piece";
+      return "https://www.seedtactics.com/docs/fms-insight/client-efficiency";
 
     case RouteLocation.ChooseMode:
     case RouteLocation.VerboseLogging:
