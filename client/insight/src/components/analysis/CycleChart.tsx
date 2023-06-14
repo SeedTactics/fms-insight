@@ -56,8 +56,7 @@ import { Axis } from "@visx/axis";
 import { GridColumns, GridRows } from "@visx/grid";
 import { useSpring, useSprings, animated } from "@react-spring/web";
 import { ParentSize } from "@visx/responsive";
-import { LazySeq } from "@seedtactics/immutable-collections";
-import { produce } from "immer";
+import { HashSet, LazySeq } from "@seedtactics/immutable-collections";
 
 export interface CycleChartPoint {
   readonly cntr: number;
@@ -467,7 +466,7 @@ const Legend = React.memo(function Legend({
     readonly points: ReadonlyArray<CycleChartPoint>;
   }>;
   readonly disabledSeries: ReadonlySet<string>;
-  readonly adjustDisabled: (f: (s: Set<string>) => void) => void;
+  readonly adjustDisabled: (f: (s: HashSet<string>) => HashSet<string>) => void;
 }) {
   return (
     <div style={{ marginTop: "1em", display: "flex", flexWrap: "wrap", justifyContent: "space-around" }}>
@@ -755,8 +754,7 @@ function CycleChartSvg(
 export const CycleChart = React.memo(function CycleChart(props: CycleChartProps) {
   // the state of the chart
   const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
-  const [disabledSeries, setDisabled] = React.useState<ReadonlySet<string>>(new Set());
-  const adjustDisabled = React.useCallback(() => produce(setDisabled), [setDisabled]);
+  const [disabledSeries, setDisabled] = React.useState(HashSet.empty<string>());
 
   const [highlightStart, setHighlightStart] = React.useState<{
     readonly x: number;
@@ -809,7 +807,7 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
           median={median}
         />
       </div>
-      <Legend series={series} disabledSeries={disabledSeries} adjustDisabled={adjustDisabled} />
+      <Legend series={series} disabledSeries={disabledSeries} adjustDisabled={setDisabled} />
       <CycleChartTooltip
         tooltip={tooltip}
         seriesLabel={props.series_label}

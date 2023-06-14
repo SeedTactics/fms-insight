@@ -43,7 +43,7 @@ import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-stat
 import { Box, ToggleButton, Slider, Typography } from "@mui/material";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
-import { produce } from "immer";
+import { HashSet } from "@seedtactics/immutable-collections";
 
 type BufferChartProps = {
   readonly movingAverageDistanceInHours: number;
@@ -58,7 +58,7 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
   const entries = useAtomValue(period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries);
   const rawMatQueues = useAtomValue(rawMaterialQueues);
 
-  const [disabledBuffers, setDisabledBuffers] = React.useState<ReadonlySet<string>>(new Set<string>());
+  const [disabledBuffers, setDisabledBuffers] = React.useState(HashSet.empty<string>());
 
   const series = React.useMemo(
     () =>
@@ -114,15 +114,7 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
             selected={!disabledBuffers.has(s.label)}
             value={s.label}
             onChange={() =>
-              setDisabledBuffers(
-                produce((db) => {
-                  if (db.has(s.label)) {
-                    db.delete(s.label);
-                  } else {
-                    db.add(s.label);
-                  }
-                })
-              )
+              setDisabledBuffers((db) => (db.has(s.label) ? db.delete(s.label) : db.add(s.label)))
             }
           >
             <div style={{ display: "flex", alignItems: "center" }}>

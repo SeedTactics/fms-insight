@@ -42,8 +42,6 @@ import "@fontsource/roboto/700.css";
 
 import { green, brown } from "@mui/material/colors";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { enableMapSet } from "immer";
-enableMapSet();
 
 import App, { AppProps } from "./components/App.js";
 import { Provider, createStore } from "jotai";
