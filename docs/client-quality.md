@@ -16,41 +16,26 @@ the past few days of inspections and cell operation and allow the engineers visi
 instead be addressed in a [monthly review](improve-fms).)
 
 We suggest that the quality dashboard is bookmarked by the engineers and visited directly.
-There is also a tab for searching for parts similar to a failed part and a tab which displays recent
-inspections.
+All data available here is also available in the reports tab of the [operations page](client-operations). The quality
+page just provides a dedicated place for engineers to bookmark and visit directly.
 
-## Dashboard
+## Material
 
-The dashboard is intended to be kept open by the quality engineers to monitor
-the cell. It displays all inspections marked as failed in the past 5 days.
-(An inspection is marked as failed by an operator on the [inspection station
-monitor page](client-station-monitor).) Clicking on the three dots icon
-in each row will open more details about the part.
+![Screenshot of quality dashboard](screenshots/insight-quality-material.png)
 
-![Screenshot of quality dashboard](screenshots/insight-quality-dashboard.png)
+The material tab allows to search or lookup details about a piece of material (typically a piece of material
+which failed inspection or failed after being sent out of the cell). The serial can be manually entered,
+[scanned](client-scanners), or selected from the list of recent failed serials.
 
-## Failed Part Lookup
+![Screenshot of material details](screenshots/insight-quality-material-details.png)
 
-The _Failed Part Lookup_ tab allows an engineer to lookup the specific information about a part by serial and also
-search for similar paths. This is done in three steps:
-
-1. First, the serial for a part is manually entered or [scanned](client-scanners).
-
-2. The details for this specific serial is loaded and displayed. FMS Insight also extracts the path and time that
-   machining completed.
-
-3. Similar paths are displayed. FMS Insight initially searches for all paths for this part within 5 days of the time that
-   machining completed. The data is grouped by inspection type and path, allowing other parts signaled for inspections
-   to be seen. **In order to see any data, a specific inspection type must be selected!**
+Once selected, the details of the material are displayed. A button at the bottom can then search
+for similar paths.
 
 ![Screenshot of similar paths](screenshots/insight-quality-similar-paths.png)
 
-Initially, only 5 days around the completed time are loaded (in the above screenshot, the range is from 4/4/2019
-to 4/14/2019.) The arrow buttons next to the dates in the bottom right corner can be used to load additional days and
-extend the range, to perhaps find more parts.
-
-We suggest copying data to the clipboard and pasting it in a spreadsheet to provide a checklist to quarantine
-parts.
+The similar paths are displayed in a table grouped by inspection type and path. The table shows
+each path and can be expanded to view the specific serials which followed that path.
 
 ## Paths
 
@@ -61,7 +46,7 @@ Anything older than 7
 days is available as part of the [monthly review](improve-fms) on the
 [flexibility analysis page](client-flexibility-analysis).
 
-![Screenshot of path sankey](screenshots/insight-quality-recent-sankey.png)
+![Screenshot of path sankey](screenshots/insight-quality-sankey.png)
 
 The chart shows a Sankey diagram of the material paths and
 inspection results. First, select an inspection type and then select a part

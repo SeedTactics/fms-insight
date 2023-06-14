@@ -42,9 +42,6 @@ We suggest that approximately once a month, all stakeholders review the operatio
 decide on potential improvements. FMS Insight provides a [flexibility analysis](client-flexibility-analysis)
 page which displays a monthly summary of the cell, displays cost/piece, and helps identify areas for improvement.
 
-FMS Insight also provides a [Backup Viewer](client-backup-viewer), which is a standalone program to
-view data directly historical backups.
-
 ## Browser Page
 
 Once installed, the FMS Insight client can be launched by connecting to the
