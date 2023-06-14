@@ -117,19 +117,19 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           Mar 4, 2018, 9:05 AM
         </td>
         <td>
-          partk-3
+          partz-3
         </td>
         <td>
           L/U #1
         </td>
         <td>
-          pali
+          palw
         </td>
         <td>
-          serialo
+          serialH
         </td>
         <td>
-          workw
+          workU
         </td>
         <td>
           Insp1[success]
@@ -154,19 +154,19 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           Mar 4, 2018, 9:28 AM
         </td>
         <td>
-          partk-3
+          partz-3
         </td>
         <td>
           MC #1
         </td>
         <td>
-          pali
+          palw
         </td>
         <td>
-          serialo
+          serialH
         </td>
         <td>
-          workw
+          workU
         </td>
         <td>
           Insp1[success]
@@ -191,19 +191,19 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           Mar 4, 2018, 9:38 AM
         </td>
         <td>
-          partk-3
+          partz-3
         </td>
         <td>
           L/U #2
         </td>
         <td>
-          pali
+          palw
         </td>
         <td>
-          serialo
+          serialH
         </td>
         <td>
-          workw
+          workU
         </td>
         <td>
           Insp1[success]
@@ -228,19 +228,19 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           Mar 4, 2018, 9:05 PM
         </td>
         <td>
-          partm-2
+          partC-2
         </td>
         <td>
           L/U #1
         </td>
         <td>
-          palc
+          pall
         </td>
         <td>
-          serialf
+          serialr
         </td>
         <td>
-          workv
+          workR
         </td>
         <td>
           Insp1[success]
@@ -265,19 +265,19 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           Mar 4, 2018, 9:33 PM
         </td>
         <td>
-          partm-2
+          partC-2
         </td>
         <td>
           MC #1
         </td>
         <td>
-          palc
+          pall
         </td>
         <td>
-          serialf
+          serialr
         </td>
         <td>
-          workv
+          workR
         </td>
         <td>
           Insp1[success]
@@ -302,19 +302,19 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           Mar 4, 2018, 9:43 PM
         </td>
         <td>
-          partm-2
+          partC-2
         </td>
         <td>
           L/U #2
         </td>
         <td>
-          palc
+          pall
         </td>
         <td>
-          serialf
+          serialr
         </td>
         <td>
-          workv
+          workR
         </td>
         <td>
           Insp1[success]
@@ -339,19 +339,19 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           Mar 5, 2018, 12:05 AM
         </td>
         <td>
-          part4-1
+          part7-1
         </td>
         <td>
           L/U #1
         </td>
         <td>
-          palp
+          palH
         </td>
         <td>
-          serialt
+          serialP
         </td>
         <td>
-          work5
+          work9
         </td>
         <td>
           Insp1[success]
@@ -376,19 +376,19 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           Mar 5, 2018, 12:43 AM
         </td>
         <td>
-          part4-1
+          part7-1
         </td>
         <td>
           MC #1
         </td>
         <td>
-          palp
+          palH
         </td>
         <td>
-          serialt
+          serialP
         </td>
         <td>
-          work5
+          work9
         </td>
         <td>
           Insp1[success]
@@ -413,19 +413,19 @@ exports[`creates cycles clipboard table > cycle clipboard table 1`] = `
           Mar 5, 2018, 12:53 AM
         </td>
         <td>
-          part4-1
+          part7-1
         </td>
         <td>
           L/U #2
         </td>
         <td>
-          palp
+          palH
         </td>
         <td>
-          serialt
+          serialP
         </td>
         <td>
-          work5
+          work9
         </td>
         <td>
           Insp1[success]
@@ -504,19 +504,19 @@ exports[`creates cycles clipboard table > cycle filtered clipboard table 1`] = `
           Mar 4, 2018, 9:05 PM
         </td>
         <td>
-          partm-2
+          partC-2
         </td>
         <td>
           L/U #1
         </td>
         <td>
-          palc
+          pall
         </td>
         <td>
-          serialf
+          serialr
         </td>
         <td>
-          workv
+          workR
         </td>
         <td>
           Insp1[success]
@@ -541,19 +541,19 @@ exports[`creates cycles clipboard table > cycle filtered clipboard table 1`] = `
           Mar 4, 2018, 9:33 PM
         </td>
         <td>
-          partm-2
+          partC-2
         </td>
         <td>
           MC #1
         </td>
         <td>
-          palc
+          pall
         </td>
         <td>
-          serialf
+          serialr
         </td>
         <td>
-          workv
+          workR
         </td>
         <td>
           Insp1[success]
@@ -578,19 +578,19 @@ exports[`creates cycles clipboard table > cycle filtered clipboard table 1`] = `
           Mar 4, 2018, 9:43 PM
         </td>
         <td>
-          partm-2
+          partC-2
         </td>
         <td>
           L/U #2
         </td>
         <td>
-          palc
+          pall
         </td>
         <td>
-          serialf
+          serialr
         </td>
         <td>
-          workv
+          workR
         </td>
         <td>
           Insp1[success]
@@ -663,19 +663,19 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 5, 2018, 12:05 AM
         </td>
         <td>
-          part5-3
+          part9-3
         </td>
         <td>
           L/U #1
         </td>
         <td>
-          pals
+          palM
         </td>
         <td>
-          serial2
+          serial4
         </td>
         <td>
-          work6
+          workb
         </td>
         <td>
           LOAD
@@ -694,19 +694,19 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 5, 2018, 12:10 AM
         </td>
         <td>
-          part5-3
+          part9-3
         </td>
         <td>
           Stocker
         </td>
         <td>
-          pals
+          palM
         </td>
         <td>
-          serial2
+          serial4
         </td>
         <td>
-          work6
+          workb
         </td>
         <td />
         <td>
@@ -723,22 +723,22 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 5, 2018, 12:43 AM
         </td>
         <td>
-          part5-3
+          part9-3
         </td>
         <td>
           MC #1
         </td>
         <td>
-          pals
+          palM
         </td>
         <td>
-          serial2
+          serial4
         </td>
         <td>
-          work6
+          workb
         </td>
         <td>
-          progv
+          progS
         </td>
         <td>
           30.0
@@ -754,19 +754,19 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 5, 2018, 12:53 AM
         </td>
         <td>
-          part5-3
+          part9-3
         </td>
         <td>
           L/U #2
         </td>
         <td>
-          pals
+          palM
         </td>
         <td>
-          serial2
+          serial4
         </td>
         <td>
-          work6
+          workb
         </td>
         <td>
           UNLOAD
@@ -785,17 +785,46 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 5, 2018, 12:58 AM
         </td>
         <td>
-          part5-3
+          part9-3
         </td>
         <td>
           Signal Insp1
         </td>
         <td />
         <td>
-          serial2
+          serial4
         </td>
         <td>
-          work6
+          workb
+        </td>
+        <td>
+          True
+        </td>
+        <td>
+          0.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 5, 2018, 12:58 AM
+        </td>
+        <td>
+          part9-3
+        </td>
+        <td>
+          Signal Insp1
+        </td>
+        <td />
+        <td>
+          serial4
+        </td>
+        <td>
+          workb
         </td>
         <td>
           True
@@ -814,17 +843,17 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 5, 2018, 1:05 AM
         </td>
         <td>
-          part5-3
+          part9-3
         </td>
         <td>
           Inspect Insp1
         </td>
         <td />
         <td>
-          serial2
+          serial4
         </td>
         <td>
-          work6
+          workb
         </td>
         <td>
           Succeeded
@@ -843,19 +872,19 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:05 PM
         </td>
         <td>
-          partx-2
+          partU-2
         </td>
         <td>
           L/U #1
         </td>
         <td>
-          palo
+          palF
         </td>
         <td>
-          serialx
+          serialV
         </td>
         <td>
-          workb
+          workj
         </td>
         <td>
           LOAD
@@ -874,19 +903,19 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:10 PM
         </td>
         <td>
-          partx-2
+          partU-2
         </td>
         <td>
           Stocker
         </td>
         <td>
-          palo
+          palF
         </td>
         <td>
-          serialx
+          serialV
         </td>
         <td>
-          workb
+          workj
         </td>
         <td />
         <td>
@@ -903,22 +932,22 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:33 PM
         </td>
         <td>
-          partx-2
+          partU-2
         </td>
         <td>
           MC #1
         </td>
         <td>
-          palo
+          palF
         </td>
         <td>
-          serialx
+          serialV
         </td>
         <td>
-          workb
+          workj
         </td>
         <td>
-          progp
+          progH
         </td>
         <td>
           20.0
@@ -934,19 +963,19 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:43 PM
         </td>
         <td>
-          partx-2
+          partU-2
         </td>
         <td>
           L/U #2
         </td>
         <td>
-          palo
+          palF
         </td>
         <td>
-          serialx
+          serialV
         </td>
         <td>
-          workb
+          workj
         </td>
         <td>
           UNLOAD
@@ -965,17 +994,46 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:48 PM
         </td>
         <td>
-          partx-2
+          partU-2
         </td>
         <td>
           Signal Insp1
         </td>
         <td />
         <td>
-          serialx
+          serialV
         </td>
         <td>
-          workb
+          workj
+        </td>
+        <td>
+          True
+        </td>
+        <td>
+          0.0
+        </td>
+        <td>
+          0.0
+        </td>
+      </tr>
+      
+
+      <tr>
+        <td>
+          Mar 4, 2018, 9:48 PM
+        </td>
+        <td>
+          partU-2
+        </td>
+        <td>
+          Signal Insp1
+        </td>
+        <td />
+        <td>
+          serialV
+        </td>
+        <td>
+          workj
         </td>
         <td>
           True
@@ -994,17 +1052,17 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:55 PM
         </td>
         <td>
-          partx-2
+          partU-2
         </td>
         <td>
           Inspect Insp1
         </td>
         <td />
         <td>
-          serialx
+          serialV
         </td>
         <td>
-          workb
+          workj
         </td>
         <td>
           Succeeded
@@ -1023,7 +1081,7 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:05 AM
         </td>
         <td>
-          part4-1
+          part8-1
         </td>
         <td>
           L/U #1
@@ -1032,10 +1090,10 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           pal0
         </td>
         <td>
-          serialo
+          serialF
         </td>
         <td>
-          work2
+          work4
         </td>
         <td>
           LOAD
@@ -1054,7 +1112,7 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:10 AM
         </td>
         <td>
-          part4-1
+          part8-1
         </td>
         <td>
           Stocker
@@ -1063,10 +1121,10 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           pal0
         </td>
         <td>
-          serialo
+          serialF
         </td>
         <td>
-          work2
+          work4
         </td>
         <td />
         <td>
@@ -1083,7 +1141,7 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:28 AM
         </td>
         <td>
-          part4-1
+          part8-1
         </td>
         <td>
           MC #1
@@ -1092,13 +1150,13 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           pal0
         </td>
         <td>
-          serialo
+          serialF
         </td>
         <td>
-          work2
+          work4
         </td>
         <td>
-          progk
+          progy
         </td>
         <td>
           15.0
@@ -1114,7 +1172,7 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:38 AM
         </td>
         <td>
-          part4-1
+          part8-1
         </td>
         <td>
           L/U #2
@@ -1123,10 +1181,10 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           pal0
         </td>
         <td>
-          serialo
+          serialF
         </td>
         <td>
-          work2
+          work4
         </td>
         <td>
           UNLOAD
@@ -1145,46 +1203,17 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:43 AM
         </td>
         <td>
-          part4-1
+          part8-1
         </td>
         <td>
           Signal Insp1
         </td>
         <td />
         <td>
-          serialo
+          serialF
         </td>
         <td>
-          work2
-        </td>
-        <td>
-          True
-        </td>
-        <td>
-          0.0
-        </td>
-        <td>
-          0.0
-        </td>
-      </tr>
-      
-
-      <tr>
-        <td>
-          Mar 4, 2018, 9:43 AM
-        </td>
-        <td>
-          part4-1
-        </td>
-        <td>
-          Signal Insp1
-        </td>
-        <td />
-        <td>
-          serialo
-        </td>
-        <td>
-          work2
+          work4
         </td>
         <td>
           True
@@ -1203,17 +1232,17 @@ exports[`creates log entries clipboard table > events clipboard table 1`] = `
           Mar 4, 2018, 9:50 AM
         </td>
         <td>
-          part4-1
+          part8-1
         </td>
         <td>
           Inspect Insp1
         </td>
         <td />
         <td>
-          serialo
+          serialF
         </td>
         <td>
-          work2
+          work4
         </td>
         <td>
           Succeeded
