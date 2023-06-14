@@ -84,6 +84,9 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
       m.location.face = parseInt(m.location.face, 10);
     }
   }
+  for (const w of status.workorders ?? []) {
+    w.dueDate = addSeconds(w.dueDate, offsetSeconds);
+  }
 
   const allNewJobs = mockD.jobs.map(api.NewJobs.fromJS);
   const historicJobs: { [key: string]: api.HistoricJob } = {};
