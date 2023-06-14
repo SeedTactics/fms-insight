@@ -32,11 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { addDays } from "date-fns";
 import type { ServerEventAndTime } from "./loading.js";
-import { conduit } from "../util/recoil-util.js";
 import { IHistoricData, ISimulatedStationUtilization } from "../network/api.js";
+import { Atom, atom } from "jotai";
 
 export interface SimStationUse {
   readonly station: string;
@@ -47,18 +46,13 @@ export interface SimStationUse {
   readonly parts?: ReadonlyArray<{ readonly uniq: string; readonly proc: number; readonly path: number }>;
 }
 
-const last30SimStationUseRW = atom<ReadonlyArray<SimStationUse>>({
-  key: "last30SimStationUse",
-  default: [], // TODO: switch to persistent list
-});
-export const last30SimStationUse: RecoilValueReadOnly<ReadonlyArray<SimStationUse>> = last30SimStationUseRW;
+const last30SimStationUseRW = atom<ReadonlyArray<SimStationUse>>(
+  [] // TODO: switch to persistent list
+);
+export const last30SimStationUse: Atom<ReadonlyArray<SimStationUse>> = last30SimStationUseRW;
 
-const specificMonthSimStationUseRW = atom<ReadonlyArray<SimStationUse>>({
-  key: "specificMonthSimStationUse",
-  default: [],
-});
-export const specificMonthSimStationUse: RecoilValueReadOnly<ReadonlyArray<SimStationUse>> =
-  specificMonthSimStationUseRW;
+const specificMonthSimStationUseRW = atom<ReadonlyArray<SimStationUse>>([]);
+export const specificMonthSimStationUse: Atom<ReadonlyArray<SimStationUse>> = specificMonthSimStationUseRW;
 
 function procSimUse(apiSimUse: ReadonlyArray<ISimulatedStationUtilization>): ReadonlyArray<SimStationUse> {
   return apiSimUse.map((simUse) => ({
@@ -71,36 +65,30 @@ function procSimUse(apiSimUse: ReadonlyArray<ISimulatedStationUtilization>): Rea
   }));
 }
 
-export const setLast30SimStatUse = conduit<Readonly<IHistoricData>>(
-  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-    t.set(last30SimStationUseRW, (oldSimUse) => oldSimUse.concat(procSimUse(history.stationUse)));
-  }
-);
+export const setLast30SimStatUse = atom(null, (_, set, history: Readonly<IHistoricData>) => {
+  set(last30SimStationUseRW, (oldSimUse) => oldSimUse.concat(procSimUse(history.stationUse)));
+});
 
-export const updateLast30SimStatUse = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
-    if (evt.newJobs?.stationUse) {
-      const apiSimUse = evt.newJobs?.stationUse;
-      t.set(last30SimStationUseRW, (simUse) => {
-        if (expire) {
-          const expireT = addDays(now, -30);
-          // check if nothing to expire and no new data
-          const minStat = LazySeq.of(simUse).minBy((e) => e.end.getTime());
-          if ((minStat === undefined || minStat.start >= expireT) && apiSimUse.length === 0) {
-            return simUse;
-          }
-
-          simUse = simUse.filter((e) => e.start >= expireT);
+export const updateLast30SimStatUse = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
+  if (evt.newJobs?.stationUse) {
+    const apiSimUse = evt.newJobs?.stationUse;
+    set(last30SimStationUseRW, (simUse) => {
+      if (expire) {
+        const expireT = addDays(now, -30);
+        // check if nothing to expire and no new data
+        const minStat = LazySeq.of(simUse).minBy((e) => e.end.getTime());
+        if ((minStat === undefined || minStat.start >= expireT) && apiSimUse.length === 0) {
+          return simUse;
         }
 
-        return simUse.concat(procSimUse(apiSimUse));
-      });
-    }
-  }
-);
+        simUse = simUse.filter((e) => e.start >= expireT);
+      }
 
-export const setSpecificMonthSimStatUse = conduit<Readonly<IHistoricData>>(
-  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-    t.set(specificMonthSimStationUseRW, procSimUse(history.stationUse));
+      return simUse.concat(procSimUse(apiSimUse));
+    });
   }
-);
+});
+
+export const setSpecificMonthSimStatUse = atom(null, (_, set, history: Readonly<IHistoricData>) => {
+  set(specificMonthSimStationUseRW, procSimUse(history.stationUse));
+});

@@ -60,10 +60,9 @@ import {
   LocType,
   PalletLocationEnum,
 } from "../../network/api.js";
-import { useRecoilValue } from "recoil";
 import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { ComparableObj, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
-import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
+import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { addDays } from "date-fns";
 import { durationToSeconds } from "../../util/parseISODuration.js";
@@ -78,6 +77,7 @@ import {
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue, useSetAtom } from "jotai";
 
 const CollapsedIconSize = 45;
 const rowSize = CollapsedIconSize + 10; // each material row has 5px above and 5px below for padding
@@ -124,8 +124,8 @@ class PalletNum implements ComparableObj {
 }
 
 function useCellOverview(): CellOverview {
-  const currentSt = useRecoilValue(currentStatus);
-  const jobs = useRecoilValue(last30Jobs);
+  const currentSt = useAtomValue(currentStatus);
+  const jobs = useAtomValue(last30Jobs);
 
   const matByPal = LazySeq.of(currentSt.material)
     .filter((m) => m.location.type === LocType.OnPallet || m.action.type === ActionType.Loading)
@@ -337,7 +337,7 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
   const closeTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const btnRef = React.useRef<HTMLButtonElement | null>(null);
   const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
-  const setMatToShow = useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(materialDialogOpen);
 
   function enter() {
     if (closeTimeout.current !== null) {
@@ -508,8 +508,8 @@ function useRemainingMachineTime(
   const mat = material?.find((m) => m.action.type === ActionType.Machining);
   const elapsedDurationFromCurSt = mat?.action?.elapsedMachiningTime;
   const remainingDurationFromCurSt = mat?.action.expectedRemainingMachiningTime;
-  const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
-  const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
+  const currentStTime = useAtomValue(currentStatus).timeOfCurrentStatusUTC;
+  const secondsSinceEpoch = useAtomValue(secondsSinceEpochAtom);
 
   let remainingSecs: number | null = null;
   if (remainingDurationFromCurSt) {
@@ -633,8 +633,8 @@ function useElapsedLoadTime(
       m.action.type === ActionType.UnloadToInProcess
   );
   const elapsedDurationFromCurSt = mat?.action?.elapsedLoadUnloadTime;
-  const currentStTime = useRecoilValue(currentStatus).timeOfCurrentStatusUTC;
-  const secondsSinceEpoch = useRecoilValue(secondsSinceEpochAtom);
+  const currentStTime = useAtomValue(currentStatus).timeOfCurrentStatusUTC;
+  const secondsSinceEpoch = useAtomValue(secondsSinceEpochAtom);
 
   let elapsedSecs: number | null = null;
   if (elapsedDurationFromCurSt) {

@@ -36,15 +36,15 @@ import { addMonths, addDays, startOfToday } from "date-fns";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { InspectionSankey } from "./InspectionSankey.js";
 import { DataTableActionZoomType } from "./DataTable.js";
-import { useRecoilValue } from "recoil";
 import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue } from "jotai";
 
 export function AnalysisQualityPage() {
   useSetTitle("Quality");
-  const period = useRecoilValue(selectedAnalysisPeriod);
+  const period = useAtomValue(selectedAnalysisPeriod);
 
-  const inspectionlogs = useRecoilValue(
+  const inspectionlogs = useAtomValue(
     period.type === "Last30" ? last30Inspections : specificMonthInspections
   );
   const zoomType =

@@ -56,8 +56,6 @@ import {
 import {
   ToolReport,
   currentToolReport,
-  useRefreshToolReport,
-  toolReportMachineFilter,
   toolReportRefreshTime,
   machinesWithTools,
   toolReportHasSerial,
@@ -65,12 +63,13 @@ import {
   toolReportHasCntUsage,
   useCopyToolReportToClipboard,
   ToolInMachine,
+  toolReportMachineFilter,
 } from "../../data/tools-programs.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { PartIdenticon } from "../station-monitor/Material.js";
-import { useRecoilState, useRecoilValue } from "recoil";
 import { useIsDemo, useSetTitle } from "../routes.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
+import { useAtom, useAtomValue } from "jotai";
 
 interface ToolRowProps {
   readonly tool: ToolReport;
@@ -110,7 +109,7 @@ const ToolDetailSummaryRow = styled(TableRow)({
 });
 
 function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> }) {
-  const showSerial = useRecoilValue(toolReportHasSerial);
+  const showSerial = useAtomValue(toolReportHasSerial);
   const showTime = LazySeq.of(machines).anyMatch(
     (m) => m.currentUseMinutes != null || m.lifetimeMinutes != null
   );
@@ -231,8 +230,8 @@ function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> })
 
 function ToolRow(props: ToolRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
-  const showTime = useRecoilValue(toolReportHasTimeUsage);
-  const showCnts = useRecoilValue(toolReportHasCntUsage);
+  const showTime = useAtomValue(toolReportHasTimeUsage);
+  const showCnts = useAtomValue(toolReportHasCntUsage);
 
   const schUseMin = LazySeq.of(props.tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
   const totalLifeMin = LazySeq.of(props.tool.machines).sumBy((m) => m.remainingMinutes ?? 0);
@@ -381,12 +380,12 @@ type SortColumn =
 const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
 
 export function ToolSummaryTable(): JSX.Element {
-  const machineFilter = useRecoilValue(toolReportMachineFilter);
-  const tools = useRecoilValue(currentToolReport);
+  const machineFilter = useAtomValue(toolReportMachineFilter);
+  const tools = useAtomValue(currentToolReport);
   const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
   const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
-  const showTime = useRecoilValue(toolReportHasTimeUsage);
-  const showCnts = useRecoilValue(toolReportHasCntUsage);
+  const showTime = useAtomValue(toolReportHasTimeUsage);
+  const showCnts = useAtomValue(toolReportHasCntUsage);
 
   if (tools === null) {
     return <div />;
@@ -573,17 +572,16 @@ export function ToolSummaryTable(): JSX.Element {
 }
 
 function ToolNavHeader() {
-  const [machineFilter, setMachineFilter] = useRecoilState(toolReportMachineFilter);
-  const reloadTime = useRecoilValue(toolReportRefreshTime);
+  const [machineFilter, setMachineFilter] = useAtom(toolReportMachineFilter);
+  const [reloadTime, refreshReport] = useAtom(toolReportRefreshTime);
   const [loading, setLoading] = React.useState(false);
-  const refreshToolReport = useRefreshToolReport();
-  const machineNames = useRecoilValue(machinesWithTools);
+  const machineNames = useAtomValue(machinesWithTools);
   const copyToolReportToClipboard = useCopyToolReportToClipboard();
   const demo = useIsDemo();
 
   function refresh() {
     setLoading(true);
-    refreshToolReport().finally(() => setLoading(false));
+    refreshReport(new Date()).finally(() => setLoading(false));
   }
 
   if (demo) {

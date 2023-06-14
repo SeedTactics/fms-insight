@@ -30,12 +30,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { IEditMaterialInLogEvents, IInProcessMaterial, ILogEntry, LogType } from "../network/api.js";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { addDays } from "date-fns";
 import { HashMap, LazySeq, HashSet } from "@seedtactics/immutable-collections";
+import { Atom, atom } from "jotai";
 
 export interface MaterialSummary {
   readonly materialID: number;
@@ -67,24 +66,17 @@ export interface MatSummaryState {
   readonly matIdsForJob: HashMap<string, HashSet<number>>;
 }
 
-const last30MaterialSummaryRW = atom<MatSummaryState>({
-  key: "last30-material-summary",
-  default: {
-    matsById: HashMap.empty(),
-    matIdsForJob: HashMap.empty(),
-  },
-});
-export const last30MaterialSummary: RecoilValueReadOnly<MatSummaryState> = last30MaterialSummaryRW;
+const last30MaterialSummaryRW = atom({
+  matsById: HashMap.empty(),
+  matIdsForJob: HashMap.empty(),
+} satisfies MatSummaryState);
+export const last30MaterialSummary: Atom<MatSummaryState> = last30MaterialSummaryRW;
 
 const specificMonthMaterialSummaryRW = atom<MatSummaryState>({
-  key: "month-material-summary",
-  default: {
-    matsById: HashMap.empty(),
-    matIdsForJob: HashMap.empty(),
-  },
-});
-export const specificMonthMaterialSummary: RecoilValueReadOnly<MatSummaryState> =
-  specificMonthMaterialSummaryRW;
+  matsById: HashMap.empty(),
+  matIdsForJob: HashMap.empty(),
+} satisfies MatSummaryState);
+export const specificMonthMaterialSummary: Atom<MatSummaryState> = specificMonthMaterialSummaryRW;
 
 export function inproc_mat_to_summary(mat: Readonly<IInProcessMaterial>): MaterialSummary {
   return {
@@ -323,39 +315,33 @@ function process_swap(swap: Readonly<IEditMaterialInLogEvents>, st: MatSummarySt
   };
 }
 
-export const setLast30MatSummary = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(last30MaterialSummaryRW, (st) => log.reduce(process_event, st));
-  }
-);
+export const setLast30MatSummary = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(last30MaterialSummaryRW, (st) => log.reduce(process_event, st));
+});
 
-export const updateLast30MatSummary = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
-    if (evt.logEntry) {
-      const log = evt.logEntry;
-      t.set(last30MaterialSummaryRW, (st) => {
-        const newSt = process_event(st, log);
-        if (newSt === st || !expire) {
-          return st;
-        } else {
-          return filter_old(addDays(now, -30), newSt);
-        }
-      });
-    } else if (evt.editMaterialInLog) {
-      const edit = evt.editMaterialInLog;
-      t.set(last30MaterialSummaryRW, (st) => process_swap(edit, st));
-    }
+export const updateLast30MatSummary = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
+  if (evt.logEntry) {
+    const log = evt.logEntry;
+    set(last30MaterialSummaryRW, (st) => {
+      const newSt = process_event(st, log);
+      if (newSt === st || !expire) {
+        return st;
+      } else {
+        return filter_old(addDays(now, -30), newSt);
+      }
+    });
+  } else if (evt.editMaterialInLog) {
+    const edit = evt.editMaterialInLog;
+    set(last30MaterialSummaryRW, (st) => process_swap(edit, st));
   }
-);
+});
 
-export const setSpecificMonthMatSummary = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(
-      specificMonthMaterialSummaryRW,
-      log.reduce<MatSummaryState>(process_event, {
-        matsById: HashMap.empty(),
-        matIdsForJob: HashMap.empty(),
-      })
-    );
-  }
-);
+export const setSpecificMonthMatSummary = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(
+    specificMonthMaterialSummaryRW,
+    log.reduce<MatSummaryState>(process_event, {
+      matsById: HashMap.empty(),
+      matIdsForJob: HashMap.empty(),
+    })
+  );
+});

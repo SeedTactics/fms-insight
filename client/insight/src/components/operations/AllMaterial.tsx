@@ -64,7 +64,6 @@ import {
   SwapMaterialDialogContent,
   SwapMaterialState,
 } from "../station-monitor/InvalidateCycle.js";
-import { useRecoilState, useRecoilValue } from "recoil";
 import {
   horizontalListSortingStrategy,
   SortableContext,
@@ -81,9 +80,9 @@ import {
   pointerWithin,
   rectIntersection,
 } from "@dnd-kit/core";
-import { useRecoilConduit } from "../../util/recoil-util.js";
 import { QuarantineMatButton } from "../station-monitor/QuarantineButton.js";
 import { useSetTitle } from "../routes.js";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 type ColWithTitleProps = {
   readonly label: string;
@@ -435,10 +434,10 @@ type CurActiveDrag =
 
 export function AllMaterial(props: AllMaterialProps) {
   useSetTitle("All Material");
-  const st = useRecoilValue(currentSt.currentStatus);
-  const [matBinOrder, setMatBinOrder] = useRecoilState(currentMaterialBinOrder);
+  const st = useAtomValue(currentSt.currentStatus);
+  const [matBinOrder, setMatBinOrder] = useAtom(currentMaterialBinOrder);
   const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
-  const reorderQueuedMat = useRecoilConduit(currentSt.reorderQueuedMatInCurrentStatus);
+  const reorderQueuedMat = useSetAtom(currentSt.reorderQueuedMatInCurrentStatus);
   const [activeDrag, setActiveDrag] = React.useState<CurActiveDrag | null>(null);
 
   const allBins = React.useMemo(() => {

@@ -51,10 +51,10 @@ import {
   useColSort,
   useTablePage,
 } from "../analysis/DataTable.js";
-import { useSetMaterialToShowInDialog } from "../../cell-status/material-details.js";
+import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { useIsDemo } from "../routes.js";
-import { useRecoilValue } from "recoil";
 import { last30Inspections } from "../../cell-status/inspections.js";
+import { useAtomValue, useSetAtom } from "jotai";
 
 interface RecentFailedInspectionsProps {
   readonly failed: ReadonlyArray<FailedInspectionEntry>;
@@ -106,7 +106,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
   const demo = useIsDemo();
   const sort = useColSort(ColumnId.Date, columns);
   const tpage = useTablePage();
-  const setMatToShow = useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(materialDialogOpen);
 
   const curPage = Math.min(tpage.page, Math.ceil(props.failed.length / tpage.rowsPerPage));
   const points = LazySeq.of(props.failed).sortBy(sort.sortOn);
@@ -145,7 +145,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
 }
 
 export function RecentFailedInspectionsTable() {
-  const inspections = useRecoilValue(last30Inspections);
+  const inspections = useAtomValue(last30Inspections);
   const failed = React.useMemo(() => {
     const today = startOfToday();
     const allEvts = LazySeq.of(inspections).flatMap(([_, evts]) => evts.valuesToLazySeq());

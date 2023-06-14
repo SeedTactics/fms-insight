@@ -55,11 +55,11 @@ import {
 import { AnimatedAxis, AnimatedBarGroup, AnimatedBarSeries, Tooltip, XYChart } from "@visx/xychart";
 import { seriesColor, chartTheme } from "../../util/chart-colors.js";
 import { addDays, startOfToday } from "date-fns";
-import { atom, useRecoilState, useRecoilValue } from "recoil";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
 import { ImportExport } from "@mui/icons-material";
 import { useSetTitle } from "../routes.js";
+import { atom, useAtom, useAtomValue } from "jotai";
 
 export interface OEEProps {
   readonly points: ReadonlyArray<OEEBarSeries>;
@@ -201,24 +201,18 @@ export const OEETable = React.memo(function OEETableF(p: OEEProps) {
   );
 });
 
-const lulShowChart = atom<boolean>({
-  key: "insight-oee-chart-labor",
-  default: true,
-});
-const mcShowChart = atom<boolean>({
-  key: "insight-oee-chart-machine",
-  default: true,
-});
+const lulShowChart = atom<boolean>(true);
+const mcShowChart = atom<boolean>(true);
 
 export function StationOEEPage({ ty }: { readonly ty: OEEType }) {
   useSetTitle(ty === "labor" ? "L/U OEE" : "Machine OEE");
-  const [showChart, setShowChart] = useRecoilState(ty === "labor" ? lulShowChart : mcShowChart);
+  const [showChart, setShowChart] = useAtom(ty === "labor" ? lulShowChart : mcShowChart);
 
   const start = addDays(startOfToday(), -6);
   const end = addDays(startOfToday(), 1);
 
-  const cycles = useRecoilValue(last30StationCycles);
-  const statUse = useRecoilValue(last30SimStationUse);
+  const cycles = useAtomValue(last30StationCycles);
+  const statUse = useAtomValue(last30SimStationUse);
   const points = React.useMemo(
     () => buildOeeSeries(start, end, ty, cycles.valuesToLazySeq(), statUse),
     [start, end, ty, cycles, statUse]

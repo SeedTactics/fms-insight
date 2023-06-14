@@ -30,54 +30,42 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
+import { Atom, Getter, Setter, atom } from "jotai";
 import { ICurrentStatus, IHistoricData, IJob, ILogEntry, LogType, QueueRole } from "../network/api.js";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
-const rawMaterialQueuesRW = atom<ReadonlySet<string>>({
-  key: "rawMaterialQueueNames",
-  default: new Set(),
-});
-export const rawMaterialQueues: RecoilValueReadOnly<ReadonlySet<string>> = rawMaterialQueuesRW;
+const rawMaterialQueuesRW = atom<ReadonlySet<string>>(new Set<string>());
+export const rawMaterialQueues: Atom<ReadonlySet<string>> = rawMaterialQueuesRW;
 
-const castingNamesRW = atom<ReadonlySet<string>>({
-  key: "castingNames",
-  default: new Set(),
-});
-export const castingNames: RecoilValueReadOnly<ReadonlySet<string>> = castingNamesRW;
+const castingNamesRW = atom<ReadonlySet<string>>(new Set<string>());
+export const castingNames: Atom<ReadonlySet<string>> = castingNamesRW;
 
-const inspectionTypesRW = atom<ReadonlySet<string>>({
-  key: "last30-inspectionTypes",
-  default: new Set(),
-});
-export const last30InspectionTypes: RecoilValueReadOnly<ReadonlySet<string>> = inspectionTypesRW;
+const inspectionTypesRW = atom<ReadonlySet<string>>(new Set<string>());
+export const last30InspectionTypes: Atom<ReadonlySet<string>> = inspectionTypesRW;
 
-export const updateNames = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt }: ServerEventAndTime) => {
-    if (evt.newJobs) {
-      onNewJobs(t, evt.newJobs.jobs);
-    } else if (evt.logEntry) {
-      onLog(t, [evt.logEntry]);
-    } else if (evt.newCurrentStatus) {
-      onCurrentStatus(t, evt.newCurrentStatus);
-    }
+export const updateNames = atom(null, (get, set, { evt }: ServerEventAndTime) => {
+  if (evt.newJobs) {
+    onNewJobs(set, evt.newJobs.jobs);
+  } else if (evt.logEntry) {
+    onLog(set, [evt.logEntry]);
+  } else if (evt.newCurrentStatus) {
+    onCurrentStatus(get, set, evt.newCurrentStatus);
   }
+});
+
+export const setNamesFromLast30Jobs = atom(null, (_, set, history: Readonly<IHistoricData>) => {
+  onNewJobs(set, Object.values(history.jobs));
+});
+
+export const setNamesFromLast30Evts = atom(null, (_, set, logs: ReadonlyArray<Readonly<ILogEntry>>) =>
+  onLog(set, logs)
 );
 
-export const setNamesFromLast30Jobs = conduit<Readonly<IHistoricData>>(
-  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-    onNewJobs(t, Object.values(history.jobs));
-  }
-);
+export const setNamesFromCurrentStatus = atom(null, onCurrentStatus);
 
-export const setNamesFromLast30Evts = conduit<ReadonlyArray<Readonly<ILogEntry>>>(onLog);
-
-export const setNamesFromCurrentStatus = conduit<Readonly<ICurrentStatus>>(onCurrentStatus);
-
-function onNewJobs(t: TransactionInterface_UNSTABLE, newJobs: ReadonlyArray<Readonly<IJob>>): void {
-  t.set(rawMaterialQueuesRW, (queues) => {
+function onNewJobs(set: Setter, newJobs: ReadonlyArray<Readonly<IJob>>): void {
+  set(rawMaterialQueuesRW, (queues) => {
     const newQ = new Set<string>();
     for (const j of newJobs) {
       for (const path of j.procsAndPaths[0].paths) {
@@ -93,7 +81,7 @@ function onNewJobs(t: TransactionInterface_UNSTABLE, newJobs: ReadonlyArray<Read
     }
   });
 
-  t.set(castingNamesRW, (names) => {
+  set(castingNamesRW, (names) => {
     const newC = new Set<string>();
     for (const j of newJobs) {
       for (const path of j.procsAndPaths[0].paths) {
@@ -110,10 +98,10 @@ function onNewJobs(t: TransactionInterface_UNSTABLE, newJobs: ReadonlyArray<Read
   });
 }
 
-function onCurrentStatus(t: TransactionInterface_UNSTABLE, st: Readonly<ICurrentStatus>): void {
-  onNewJobs(t, Object.values(st.jobs));
+function onCurrentStatus(get: Getter, set: Setter, st: Readonly<ICurrentStatus>): void {
+  onNewJobs(set, Object.values(st.jobs));
 
-  const rawMatQueues = t.get(rawMaterialQueuesRW);
+  const rawMatQueues = get(rawMaterialQueuesRW);
 
   const newQ = new Set<string>();
   for (const [queue, info] of LazySeq.ofObject(st.queues)) {
@@ -124,12 +112,12 @@ function onCurrentStatus(t: TransactionInterface_UNSTABLE, st: Readonly<ICurrent
     }
   }
   if (newQ.size > 0) {
-    t.set(rawMaterialQueuesRW, new Set([...rawMatQueues, ...newQ]));
+    set(rawMaterialQueuesRW, new Set([...rawMatQueues, ...newQ]));
   }
 }
 
-function onLog(t: TransactionInterface_UNSTABLE, evts: Iterable<Readonly<ILogEntry>>): void {
-  t.set(inspectionTypesRW, (inspTypes) => {
+function onLog(set: Setter, evts: Iterable<Readonly<ILogEntry>>): void {
+  set(inspectionTypesRW, (inspTypes) => {
     const newC = new Set<string>();
     for (const evt of evts) {
       switch (evt.type) {

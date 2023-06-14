@@ -41,24 +41,24 @@ import { MaterialDialog, MatSummary } from "./Material.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { MaterialSummaryAndCompletedData, MaterialSummary } from "../../cell-status/material-summary.js";
 import { currentOperator } from "../../data/operators.js";
-import { useRecoilValue } from "recoil";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { instructionUrl } from "../../network/backend.js";
 import { LogType } from "../../network/api.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue, useSetAtom } from "jotai";
 
 interface InspButtonsProps {
   readonly inspection_type: string;
 }
 
 function InspButtons(props: InspButtonsProps) {
-  const operator = useRecoilValue(currentOperator);
-  const material = useRecoilValue(matDetails.materialInDialogInfo);
-  const matEvents = useRecoilValue(matDetails.materialInDialogEvents);
+  const operator = useAtomValue(currentOperator);
+  const material = useAtomValue(matDetails.materialInDialogInfo);
+  const matEvents = useAtomValue(matDetails.materialInDialogEvents);
   const [completeInsp, completeInspUpdating] = matDetails.useCompleteInspection();
-  const closeMatDialog = matDetails.useCloseMaterialDialog();
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
   if (material === null) return null;
 
@@ -74,7 +74,7 @@ function InspButtons(props: InspButtonsProps) {
       operator: operator,
     });
 
-    closeMatDialog();
+    setMatToShow(null);
   }
 
   const maxProc =
@@ -121,7 +121,7 @@ interface InspDialogProps {
 }
 
 function DialogBodyInspButtons({ focusInspectionType }: InspDialogProps) {
-  const material = useRecoilValue(matDetails.materialInDialogInspections);
+  const material = useAtomValue(matDetails.materialInDialogInspections);
   if (material === null || focusInspectionType || material.signaledInspections.length === 1) return null;
 
   return (
@@ -136,7 +136,7 @@ function DialogBodyInspButtons({ focusInspectionType }: InspDialogProps) {
 }
 
 function DialogActionInspButtons({ focusInspectionType }: InspDialogProps) {
-  const material = useRecoilValue(matDetails.materialInDialogInspections);
+  const material = useAtomValue(matDetails.materialInDialogInspections);
   let singleInspectionType: string;
   if (focusInspectionType) {
     singleInspectionType = focusInspectionType;
@@ -169,7 +169,7 @@ interface InspectionProps {
 }
 
 export function Inspection(props: InspectionProps): JSX.Element {
-  const matSummary = useRecoilValue(last30MaterialSummary);
+  const matSummary = useAtomValue(last30MaterialSummary);
   const recent_inspections = React.useMemo(
     () => extractRecentInspections(matSummary.matsById, props.focusInspectionType),
     [matSummary, props.focusInspectionType]

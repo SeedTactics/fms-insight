@@ -45,21 +45,18 @@ import { Search as SearchIcon } from "@mui/icons-material";
 import { TextField } from "@mui/material";
 
 import * as matDetails from "../../cell-status/material-details.js";
-import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { last30InspectionTypes } from "../../cell-status/names.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
-const selectInspTypeDialogOpen = atom<boolean>({
-  key: "select-insp-dialog-open",
-  default: false,
-});
+const selectInspTypeDialogOpen = atom<boolean>(false);
 
 function ManualInspTypeEntry(): JSX.Element {
   const [inspType, setInspType] = React.useState<string | null>(null);
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  const mat = useAtomValue(matDetails.materialInDialogInfo);
   const [forceInsp] = matDetails.useForceInspection();
-  const close = useSetRecoilState(selectInspTypeDialogOpen);
+  const close = useSetAtom(selectInspTypeDialogOpen);
 
   return (
     <TextField
@@ -83,11 +80,11 @@ function ManualInspTypeEntry(): JSX.Element {
 }
 
 function InspectionList() {
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  const mat = useAtomValue(matDetails.materialInDialogInfo);
   const [forceInsp] = matDetails.useForceInspection();
-  const inspTypes = useRecoilValue(last30InspectionTypes);
+  const inspTypes = useAtomValue(last30InspectionTypes);
   const sortedInspTypes = LazySeq.of(inspTypes).sortBy((x) => x);
-  const close = useSetRecoilState(selectInspTypeDialogOpen);
+  const close = useSetAtom(selectInspTypeDialogOpen);
 
   if (mat === null) return null;
   return (
@@ -112,8 +109,8 @@ function InspectionList() {
 }
 
 export function SignalInspectionButton() {
-  const setForceInspOpen = useSetRecoilState(selectInspTypeDialogOpen);
-  const curMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
+  const setForceInspOpen = useSetAtom(selectInspTypeDialogOpen);
+  const curMat = useAtomValue(matDetails.inProcessMaterialInDialog);
   if (curMat === null || curMat.materialID < 0) return null;
   return (
     <Button color="primary" onClick={() => setForceInspOpen(true)}>
@@ -123,7 +120,7 @@ export function SignalInspectionButton() {
 }
 
 export const SelectInspTypeDialog = React.memo(function SelectInspTypeDialog() {
-  const [dialogOpen, setDialogOpen] = useRecoilState(selectInspTypeDialogOpen);
+  const [dialogOpen, setDialogOpen] = useAtom(selectInspTypeDialogOpen);
 
   let body: JSX.Element | undefined;
   if (dialogOpen === false) {

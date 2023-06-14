@@ -30,37 +30,21 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import {
-  atom,
-  DefaultValue,
-  RecoilValueReadOnly,
-  selectorFamily,
-  TransactionInterface_UNSTABLE,
-} from "recoil";
 import { addDays } from "date-fns";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { IHistoricData, IHistoricJob } from "../network/api.js";
 import { HashMap, HashSet, LazySeq } from "@seedtactics/immutable-collections";
+import { Atom, atom } from "jotai";
+import { atomFamily } from "jotai/utils";
 
-const last30JobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
-  key: "last30Jobs",
-  default: HashMap.empty(),
-});
-export const last30Jobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> = last30JobsRW;
+const last30JobsRW = atom(HashMap.empty<string, Readonly<IHistoricJob>>());
+export const last30Jobs: Atom<HashMap<string, Readonly<IHistoricJob>>> = last30JobsRW;
 
-const last30SchIdsRW = atom<HashSet<string>>({
-  key: "last30SchIds",
-  default: HashSet.empty(),
-});
-export const last30SchIds: RecoilValueReadOnly<HashSet<string>> = last30SchIdsRW;
+const last30SchIdsRW = atom(HashSet.empty<string>());
+export const last30SchIds: Atom<HashSet<string>> = last30SchIdsRW;
 
-const specificMonthJobsRW = atom<HashMap<string, Readonly<IHistoricJob>>>({
-  key: "specificMonthJobs",
-  default: HashMap.empty(),
-});
-export const specificMonthJobs: RecoilValueReadOnly<HashMap<string, Readonly<IHistoricJob>>> =
-  specificMonthJobsRW;
+const specificMonthJobsRW = atom(HashMap.empty<string, Readonly<IHistoricJob>>());
+export const specificMonthJobs: Atom<HashMap<string, Readonly<IHistoricJob>>> = specificMonthJobsRW;
 
 export function filterExistingJobs(
   schIds: HashSet<string>,
@@ -79,9 +63,9 @@ export function filterExistingJobs(
   return newHistory;
 }
 
-export const setLast30Jobs = conduit((t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-  t.set(last30JobsRW, (oldJobs) => oldJobs.union(LazySeq.ofObject(history.jobs).toHashMap((x) => x)));
-  t.set(last30SchIdsRW, (oldIds) =>
+export const setLast30Jobs = atom(null, (_, set, history: Readonly<IHistoricData>) => {
+  set(last30JobsRW, (oldJobs) => oldJobs.union(LazySeq.ofObject(history.jobs).toHashMap((x) => x)));
+  set(last30SchIdsRW, (oldIds) =>
     oldIds.union(
       LazySeq.ofObject(history.jobs)
         .collect(([, x]) => x.scheduleId)
@@ -90,45 +74,36 @@ export const setLast30Jobs = conduit((t: TransactionInterface_UNSTABLE, history:
   );
 });
 
-export const updateLast30Jobs = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
-    if (evt.newJobs) {
-      const schId = evt.newJobs.scheduleId;
-      const newJobs = LazySeq.of(evt.newJobs.jobs);
-      t.set(last30JobsRW, (oldJobs) => {
-        if (expire) {
-          const expire = addDays(now, -30);
-          oldJobs = oldJobs.filter((j) => j.routeStartUTC >= expire);
-        }
-
-        return oldJobs.union(newJobs.toHashMap((j) => [j.unique, { ...j, copiedToSystem: true }]));
-      });
-      if (schId) {
-        t.set(last30SchIdsRW, (oldIds) => oldIds.add(schId));
+export const updateLast30Jobs = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
+  if (evt.newJobs) {
+    const schId = evt.newJobs.scheduleId;
+    const newJobs = LazySeq.of(evt.newJobs.jobs);
+    set(last30JobsRW, (oldJobs) => {
+      if (expire) {
+        const expire = addDays(now, -30);
+        oldJobs = oldJobs.filter((j) => j.routeStartUTC >= expire);
       }
+
+      return oldJobs.union(newJobs.toHashMap((j) => [j.unique, { ...j, copiedToSystem: true }]));
+    });
+    if (schId) {
+      set(last30SchIdsRW, (oldIds) => oldIds.add(schId));
     }
   }
-);
+});
 
-export const updateSpecificMonthJobs = conduit(
-  (t: TransactionInterface_UNSTABLE, history: Readonly<IHistoricData>) => {
-    t.set(
-      specificMonthJobsRW,
-      LazySeq.ofObject(history.jobs).toHashMap((x) => x)
-    );
-  }
-);
+export const updateSpecificMonthJobs = atom(null, (_, set, history: Readonly<IHistoricData>) => {
+  set(
+    specificMonthJobsRW,
+    LazySeq.ofObject(history.jobs).toHashMap((x) => x)
+  );
+});
 
-export const last30JobComment = selectorFamily<string | null, string>({
-  key: "last-30-job-comment",
-  get:
-    (uniq) =>
-    ({ get }) =>
-      get(last30Jobs).get(uniq)?.comment ?? null,
-  set:
-    (uniq) =>
-    ({ set }, newVal) => {
-      const newComment = newVal instanceof DefaultValue || newVal === null ? "" : newVal;
+export const last30JobComment = atomFamily((uniq: string) =>
+  atom(
+    (get) => get(last30Jobs).get(uniq)?.comment ?? null,
+    (_, set, newVal: string | null) => {
+      const newComment = newVal === null ? "" : newVal;
 
       set(last30JobsRW, (oldJobs) => {
         const old = oldJobs.get(uniq);
@@ -138,6 +113,6 @@ export const last30JobComment = selectorFamily<string | null, string>({
           return oldJobs;
         }
       });
-    },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
+    }
+  )
+);

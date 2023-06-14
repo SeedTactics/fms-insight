@@ -56,7 +56,6 @@ import {
 import TimeAgo from "react-timeago";
 import { DragIndicator, Warning as WarningIcon, Search as SearchIcon } from "@mui/icons-material";
 import { useSortable } from "@dnd-kit/sortable";
-import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
@@ -69,6 +68,8 @@ import { currentOperator } from "../../data/operators.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { ErrorBoundary } from "react-error-boundary";
 import { currentStatus } from "../../cell-status/current-status.js";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { loadable } from "jotai/utils";
 
 export class PartIdenticon extends React.PureComponent<{
   part: string;
@@ -95,14 +96,17 @@ const shakeHorizKeyframes = keyframes`
 const shakeHorizAnimation = `${shakeHorizKeyframes} 1s ease-in-out infinite`;
 
 // global sync of all shake animations
+// the start time can drift due to the pause on hover, so to keep it in sync always
+// round the start time down to be a multiple of the duration (1s)
 function shakeAnimationIteration(event: React.AnimationEvent<HTMLDivElement>) {
   const anim = event.currentTarget
     .getAnimations()
     .find((a) => (a as CSSAnimation).animationName === shakeHorizKeyframes.name);
-  if (anim && anim.startTime) {
-    // the start time can drift due to the pause on hover, so to keep it in sync always
-    // round the start time down to be a multiple of the duration (1s)
+  if (anim && typeof anim.startTime === "number") {
     anim.startTime = anim.startTime - (anim.startTime % 1000);
+  } else if (anim && typeof anim.startTime === "object" && anim.startTime instanceof CSSNumericValue) {
+    const msecs = anim.startTime.to("ms").value;
+    anim.startTime = CSS.ms(msecs - (msecs % 1000));
   }
 }
 
@@ -183,7 +187,7 @@ export function MaterialAction({
   displayActionForSinglePallet?: string;
   fsize?: MatCardFontSize;
 }): JSX.Element | null {
-  const curSt = useRecoilValue(currentStatus);
+  const curSt = useAtomValue(currentStatus);
 
   switch (mat.action.type) {
     case api.ActionType.Loading:
@@ -285,7 +289,7 @@ const MatCard = React.forwardRef(function MatCard(
   props: MaterialSummaryProps & MaterialDragProps,
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
-  const setMatToShow = matDetails.useSetMaterialToShowInDialog();
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
   const inspections = props.mat.signaledInspections.join(", ");
   const completed = props.mat.completedInspections || {};
@@ -600,13 +604,15 @@ export const MaterialDetailTitle = React.memo(function MaterialDetailTitle({
 });
 
 function MaterialDialogTitle({ notes }: { notes?: boolean }) {
-  const mat = useRecoilValueLoadable(matDetails.materialInDialogInfo).valueMaybe();
-  const serial = useRecoilValueLoadable(matDetails.serialInMaterialDialog).valueMaybe();
+  const matL = useAtomValue(loadable(matDetails.materialInDialogInfo));
+  const serialL = useAtomValue(loadable(matDetails.serialInMaterialDialog));
+  const mat = matL.state === "hasData" ? matL.data : null;
+  const serial = serialL.state === "hasData" ? serialL.data : null;
   return <MaterialDetailTitle notes={notes} partName={mat?.partName ?? ""} serial={mat?.serial ?? serial} />;
 }
 
 function MaterialInspections() {
-  const insps = useRecoilValue(matDetails.materialInDialogInspections);
+  const insps = useAtomValue(matDetails.materialInDialogInspections);
   function colorForInspType(type: string): string {
     if (insps.completedInspections.includes(type)) {
       return "black";
@@ -632,7 +638,7 @@ function MaterialInspections() {
 }
 
 function MaterialEvents({ highlightProcess }: { highlightProcess?: number }) {
-  const events = useRecoilValue(matDetails.materialInDialogEvents);
+  const events = useAtomValue(matDetails.materialInDialogEvents);
   return <LogEntries entries={events} copyToClipboard highlightProcess={highlightProcess} />;
 }
 
@@ -641,8 +647,8 @@ export const MaterialDetailContent = React.memo(function MaterialDetailContent({
 }: {
   highlightProcess?: number;
 }) {
-  const toShow = useRecoilValue(matDetails.materialDialogOpen);
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  const toShow = useAtomValue(matDetails.materialDialogOpen);
+  const mat = useAtomValue(matDetails.materialInDialogInfo);
 
   if (toShow === null) return null;
 
@@ -687,9 +693,9 @@ interface NotesDialogBodyProps {
 
 function NotesDialogBody(props: NotesDialogBodyProps) {
   const [curNote, setCurNote] = React.useState<string>("");
-  const operator = useRecoilValue(currentOperator);
+  const operator = useAtomValue(currentOperator);
   const [addNote] = matDetails.useAddNote();
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  const mat = useAtomValue(matDetails.materialInDialogInfo);
   if (mat === null) return null;
 
   return (
@@ -732,7 +738,7 @@ function NotesDialogBody(props: NotesDialogBodyProps) {
 }
 
 export function MaterialLoading() {
-  const toShow = useRecoilValue(matDetails.materialDialogOpen);
+  const toShow = useAtomValue(matDetails.materialDialogOpen);
   if (toShow === null) return null;
 
   let msg: string;
@@ -758,7 +764,7 @@ export function MaterialLoading() {
 }
 
 function AddNoteButton({ setNotesOpen }: { setNotesOpen: (o: boolean) => void }) {
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  const mat = useAtomValue(matDetails.materialInDialogInfo);
   if (mat === null || mat.materialID < 0) return null;
 
   return (
@@ -778,11 +784,10 @@ export interface MaterialDialogProps {
 
 export const MaterialDialog = React.memo(function MaterialDialog(props: MaterialDialogProps) {
   const [notesOpen, setNotesOpen] = React.useState<boolean>(false);
-  const closeMatDialog = matDetails.useCloseMaterialDialog();
-  const dialogOpen = useRecoilValue(matDetails.materialDialogOpen);
+  const [dialogOpen, setOpen] = useAtom(matDetails.materialDialogOpen);
 
   function close() {
-    closeMatDialog();
+    setOpen(null);
     if (props.onClose) props.onClose();
   }
 

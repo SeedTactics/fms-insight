@@ -52,7 +52,8 @@ import { green } from "@mui/material/colors";
 import { localPoint } from "@visx/event";
 import { ParentSize } from "@visx/responsive";
 import { ChartTooltip } from "../ChartTooltip.js";
-import { atom, selector, useRecoilState } from "recoil";
+import { atom, useAtom } from "jotai";
+import { atomWithDefault } from "jotai/utils";
 
 type NodeWithData = D3SankeyNode<SankeyNode, { readonly value: number }>;
 type LinkWithData = {
@@ -230,29 +231,16 @@ export interface InspectionSankeyProps {
   readonly hideOpenDetailColumn?: boolean;
 }
 
-const selectedPartAtom = atom<string | undefined>({
-  key: "insight-inspection-sankey-selectedPart",
-  default: selector({
-    key: "insight-inspection-sankey-selectedPart-default",
-    get: ({ get }) => (get(isDemoAtom) ? "aaa" : undefined),
-  }),
-});
-const selectedInspTypeAtom = atom<string | undefined>({
-  key: "insight-inspection-sankey-selectedInspType",
-  default: selector({
-    key: "insight-inspection-sankey-selectedInspType-default",
-    get: ({ get }) => (get(isDemoAtom) ? "CMM" : undefined),
-  }),
-});
-const showTableAtom = atom<boolean>({
-  key: "insight-inspection-sankey-showTable",
-  default: false,
-});
+const selectedPartAtom = atomWithDefault<string | undefined>((get) => (get(isDemoAtom) ? "aaa" : undefined));
+const selectedInspTypeAtom = atomWithDefault<string | undefined>((get) =>
+  get(isDemoAtom) ? "CMM" : undefined
+);
+const showTableAtom = atom<boolean>(false);
 
 export function InspectionSankey(props: InspectionSankeyProps) {
-  const [curPart, setSelectedPart] = useRecoilState(selectedPartAtom);
-  const [selectedInspectType, setSelectedInspectType] = useRecoilState(selectedInspTypeAtom);
-  const [showTable, setShowTable] = useRecoilState(showTableAtom);
+  const [curPart, setSelectedPart] = useAtom(selectedPartAtom);
+  const [selectedInspectType, setSelectedInspectType] = useAtom(selectedInspTypeAtom);
+  const [showTable, setShowTable] = useAtom(showTableAtom);
 
   let curData: Iterable<InspectionLogEntry> | undefined;
   const selectedPart = props.restrictToPart || curPart;

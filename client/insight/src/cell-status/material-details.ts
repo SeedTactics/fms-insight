@@ -35,15 +35,6 @@ import { JobsBackend, LogBackend, OtherLogBackends, FmsServerBackend } from "../
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { MaterialSummary } from "./material-summary.js";
 import {
-  atom,
-  noWait,
-  RecoilValueReadOnly,
-  selector,
-  useRecoilTransaction_UNSTABLE,
-  useSetRecoilState,
-  waitForNone,
-} from "recoil";
-import {
   IInProcessMaterial,
   ILogEntry,
   ILogMaterial,
@@ -56,6 +47,8 @@ import {
 } from "../network/api.js";
 import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
+import { atom, useSetAtom } from "jotai";
+import { loadable } from "jotai/utils";
 
 export type MaterialToShow =
   | { readonly type: "InProcMat"; readonly inproc: Readonly<IInProcessMaterial> }
@@ -66,43 +59,31 @@ export type MaterialToShow =
   | { readonly type: "ManuallyEnteredSerial"; readonly serial: string }
   | { readonly type: "AddMatWithEnteredSerial"; readonly serial: string; readonly toQueue: string };
 
-const matToShow = atom<MaterialToShow | null>({
-  key: "mat-to-show-in-dialog",
-  default: null,
-});
+const matToShow = atom<MaterialToShow | null>(null);
 
-export function useSetMaterialToShowInDialog(): (mat: MaterialToShow) => void {
-  return useSetRecoilState(matToShow);
-}
-
-export const materialDialogOpen: RecoilValueReadOnly<MaterialToShow | null> = matToShow;
-
-export function useCloseMaterialDialog(): () => void {
-  return useRecoilTransaction_UNSTABLE(
-    ({ set }) =>
-      () => {
-        set(matToShow, null);
-        set(extraLogEventsFromUpdates, []);
-      },
-    []
-  );
-}
+export const materialDialogOpen = atom(
+  (get) => get(matToShow),
+  (_, set, mat: MaterialToShow | null) => {
+    if (mat === null) {
+      set(matToShow, null);
+      set(extraLogEventsFromUpdates, []);
+    } else {
+      set(matToShow, mat);
+    }
+  }
+);
 
 //--------------------------------------------------------------------------------
 // Material Details
 //--------------------------------------------------------------------------------
 
-const barcodeMaterialDetail = selector<Readonly<IMaterialDetails> | null>({
-  key: "barcode-material-detail",
-  get: async ({ get }) => {
-    const toShow = get(matToShow);
-    if (toShow && toShow.type === "Barcode") {
-      return await FmsServerBackend.parseBarcode(toShow.barcode);
-    } else {
-      return null;
-    }
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+const barcodeMaterialDetail = atom<Promise<Readonly<IMaterialDetails> | null>>(async (get) => {
+  const toShow = get(matToShow);
+  if (toShow && toShow.type === "Barcode") {
+    return await FmsServerBackend.parseBarcode(toShow.barcode);
+  } else {
+    return null;
+  }
 });
 
 export interface MaterialToShowInfo {
@@ -113,141 +94,119 @@ export interface MaterialToShowInfo {
   readonly workorderId?: string;
 }
 
-export const materialInDialogInfo = selector<MaterialToShowInfo | null>({
-  key: "material-detail",
-  get: async ({ get }) => {
-    const curMat = get(matToShow);
-    if (curMat === null) return null;
-    switch (curMat.type) {
-      case "InProcMat":
-        return curMat.inproc;
-      case "MatSummary":
-        return curMat.summary;
-      case "MatDetails":
-        return {
-          ...curMat.details,
-          jobUnique: curMat.details.jobUnique ?? "",
-        };
-      case "LogMat":
-        return {
-          materialID: curMat.logMat.id,
-          jobUnique: curMat.logMat.uniq,
-          partName: curMat.logMat.part,
-          serial: curMat.logMat.serial,
-          workorderId: curMat.logMat.workorder,
-        };
-      case "Barcode": {
-        const mat = get(barcodeMaterialDetail);
-        if (mat && mat.materialID >= 0) {
-          return { ...mat, jobUnique: mat.jobUnique ?? "" };
-        } else {
-          return null;
-        }
-      }
-      case "ManuallyEnteredSerial":
-      case "AddMatWithEnteredSerial": {
-        const mat = (await LogBackend.materialForSerial(curMat.serial))?.[0] ?? null;
-        return mat ? { ...mat, jobUnique: mat.jobUnique ?? "" } : null;
+export const materialInDialogInfo = atom<Promise<MaterialToShowInfo | null>>(async (get) => {
+  const curMat = get(matToShow);
+  if (curMat === null) return null;
+  switch (curMat.type) {
+    case "InProcMat":
+      return curMat.inproc;
+    case "MatSummary":
+      return curMat.summary;
+    case "MatDetails":
+      return {
+        ...curMat.details,
+        jobUnique: curMat.details.jobUnique ?? "",
+      };
+    case "LogMat":
+      return {
+        materialID: curMat.logMat.id,
+        jobUnique: curMat.logMat.uniq,
+        partName: curMat.logMat.part,
+        serial: curMat.logMat.serial,
+        workorderId: curMat.logMat.workorder,
+      };
+    case "Barcode": {
+      const mat = await get(barcodeMaterialDetail);
+      if (mat && mat.materialID >= 0) {
+        return { ...mat, jobUnique: mat.jobUnique ?? "" };
+      } else {
+        return null;
       }
     }
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-export const inProcessMaterialInDialog = selector<IInProcessMaterial | null>({
-  key: "material-inproc-mat-in-dialog",
-  get: ({ get }) => {
-    const status = get(currentStatus);
-    const toShow = get(matToShow);
-    if (toShow === null) return null;
-    if (toShow.type === "InProcMat") return toShow.inproc;
-    const matId = get(materialInDialogInfo)?.materialID ?? null;
-    return matId !== null && matId >= 0 ? status.material.find((m) => m.materialID === matId) ?? null : null;
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-export const serialInMaterialDialog = selector<string | null>({
-  key: "serial-in-material-dialog",
-  get: ({ get }) => {
-    const toShow = get(matToShow);
-    if (toShow === null) return null;
-    switch (toShow.type) {
-      case "InProcMat":
-        return toShow.inproc.serial ?? null;
-      case "MatSummary":
-        return toShow.summary.serial ?? null;
-      case "MatDetails":
-        return toShow.details.serial ?? null;
-      case "LogMat":
-        return toShow.logMat.serial ?? null;
-      case "Barcode":
-        return get(barcodeMaterialDetail)?.serial ?? null;
-      case "ManuallyEnteredSerial":
-      case "AddMatWithEnteredSerial":
-        return toShow.serial;
+    case "ManuallyEnteredSerial":
+    case "AddMatWithEnteredSerial": {
+      const mat = (await LogBackend.materialForSerial(curMat.serial))?.[0] ?? null;
+      return mat ? { ...mat, jobUnique: mat.jobUnique ?? "" } : null;
     }
-  },
+  }
+});
+
+export const inProcessMaterialInDialog = atom<Promise<IInProcessMaterial | null>>(async (get) => {
+  const status = get(currentStatus);
+  const toShow = get(matToShow);
+  if (toShow === null) return null;
+  if (toShow.type === "InProcMat") return toShow.inproc;
+  const matId = (await get(materialInDialogInfo))?.materialID ?? null;
+  return matId !== null && matId >= 0 ? status.material.find((m) => m.materialID === matId) ?? null : null;
+});
+
+export const serialInMaterialDialog = atom<Promise<string | null>>(async (get) => {
+  const toShow = get(matToShow);
+  if (toShow === null) return null;
+  switch (toShow.type) {
+    case "InProcMat":
+      return toShow.inproc.serial ?? null;
+    case "MatSummary":
+      return toShow.summary.serial ?? null;
+    case "MatDetails":
+      return toShow.details.serial ?? null;
+    case "LogMat":
+      return toShow.logMat.serial ?? null;
+    case "Barcode":
+      return (await get(barcodeMaterialDetail))?.serial ?? null;
+    case "ManuallyEnteredSerial":
+    case "AddMatWithEnteredSerial":
+      return toShow.serial;
+  }
 });
 
 //--------------------------------------------------------------------------------
 // Events
 //--------------------------------------------------------------------------------
 
-const extraLogEventsFromUpdates = atom<ReadonlyArray<ILogEntry>>({
-  key: "extra-mat-events",
-  default: [],
+const extraLogEventsFromUpdates = atom<ReadonlyArray<ILogEntry>>([]);
+
+const localMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(async (get) => {
+  const mat = await get(materialInDialogInfo);
+  if (mat === null) {
+    return [];
+  } else if (mat.materialID >= 0) {
+    return await LogBackend.logForMaterial(mat.materialID);
+  } else if (mat.serial && mat.serial !== "") {
+    return await LogBackend.logForSerial(mat.serial);
+  } else {
+    return [];
+  }
+});
+const localMatEventsLoadable = loadable(localMatEvents);
+
+const otherMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(async (get) => {
+  const serial = await get(serialInMaterialDialog);
+  if (serial === null || serial === "") return [];
+
+  const evts: Array<Readonly<ILogEntry>> = [];
+
+  for (const b of OtherLogBackends) {
+    evts.push.apply(await b.logForSerial(serial));
+  }
+
+  return evts;
 });
 
-const localMatEvents = selector<ReadonlyArray<Readonly<ILogEntry>>>({
-  key: "mat-to-show-local-evts",
-  get: async ({ get }) => {
-    const mat = get(materialInDialogInfo);
-    if (mat === null) {
-      return [];
-    } else if (mat.materialID >= 0) {
-      return await LogBackend.logForMaterial(mat.materialID);
-    } else if (mat.serial && mat.serial !== "") {
-      return await LogBackend.logForSerial(mat.serial);
-    } else {
-      return [];
-    }
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
+const otherMatEventsLoadable = loadable(otherMatEvents);
 
-const otherMatEvents = selector<ReadonlyArray<Readonly<ILogEntry>>>({
-  key: "mat-to-show-other-evts",
-  get: async ({ get }) => {
-    const serial = get(serialInMaterialDialog);
-    if (serial === null || serial === "") return [];
-
-    const evts: Array<Readonly<ILogEntry>> = [];
-
-    for (const b of OtherLogBackends) {
-      evts.push.apply(await b.logForSerial(serial));
-    }
-
-    return evts;
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-export const materialInDialogEvents = selector<ReadonlyArray<Readonly<ILogEntry>>>({
-  key: "material-in-dialog-events",
-  get: ({ get }) => {
-    const [localEvts, otherEvts] = get(waitForNone([localMatEvents, otherMatEvents]));
-    const evtsFromUpdate = get(extraLogEventsFromUpdates);
-    return LazySeq.of(localEvts.state === "hasValue" ? localEvts.valueOrThrow() : [])
-      .concat(otherEvts.state === "hasValue" ? otherEvts.valueOrThrow() : [])
-      .sortBy(
-        (e) => e.endUTC.getTime(),
-        (e) => e.counter
-      )
-      .concat(evtsFromUpdate)
-      .toRArray();
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
+export const materialInDialogEvents = atom<ReadonlyArray<Readonly<ILogEntry>>>((get) => {
+  const localEvts = get(localMatEventsLoadable);
+  const otherEvts = get(otherMatEventsLoadable);
+  const evtsFromUpdate = get(extraLogEventsFromUpdates);
+  return LazySeq.of(localEvts.state === "hasData" ? localEvts.data : [])
+    .concat(otherEvts.state === "hasData" ? otherEvts.data : [])
+    .sortBy(
+      (e) => e.endUTC.getTime(),
+      (e) => e.counter
+    )
+    .concat(evtsFromUpdate)
+    .toRArray();
 });
 
 //--------------------------------------------------------------------------------
@@ -259,64 +218,59 @@ export interface MaterialToShowInspections {
   readonly completedInspections: ReadonlyArray<string>;
 }
 
-export const materialInDialogInspections = selector<MaterialToShowInspections>({
-  key: "material-in-dialog-inspections",
-  get: ({ get }) => {
-    const curMat = get(matToShow);
-    const evtsLoadable = get(noWait(materialInDialogEvents));
-    const evts = evtsLoadable.valueMaybe() ?? [];
+export const materialInDialogInspections = atom<MaterialToShowInspections>((get) => {
+  const curMat = get(matToShow);
+  const evts = get(materialInDialogEvents);
 
-    if (curMat === null) {
-      return { signaledInspections: [], completedInspections: [] };
+  if (curMat === null) {
+    return { signaledInspections: [], completedInspections: [] };
+  }
+
+  const inspTypes = new Set<string>(
+    curMat.type === "MatSummary"
+      ? curMat.summary.signaledInspections
+      : curMat.type === "InProcMat"
+      ? curMat.inproc.signaledInspections
+      : []
+  );
+  const completedTypes = new Set<string>();
+
+  evts.forEach((e) => {
+    switch (e.type) {
+      case LogType.Inspection:
+        if (e.result.toLowerCase() === "true" || e.result === "1") {
+          const itype = (e.details || {}).InspectionType;
+          if (itype) {
+            inspTypes.add(itype);
+          }
+        }
+        break;
+
+      case LogType.InspectionForce:
+        if (e.result.toLowerCase() === "true" || e.result === "1") {
+          inspTypes.add(e.program);
+        }
+        break;
+
+      case LogType.InspectionResult:
+        completedTypes.add(e.program);
+        break;
     }
+  });
 
-    const inspTypes = new Set<string>(
-      curMat.type === "MatSummary"
-        ? curMat.summary.signaledInspections
-        : curMat.type === "InProcMat"
-        ? curMat.inproc.signaledInspections
-        : []
-    );
-    const completedTypes = new Set<string>();
-
-    evts.forEach((e) => {
-      switch (e.type) {
-        case LogType.Inspection:
-          if (e.result.toLowerCase() === "true" || e.result === "1") {
-            const itype = (e.details || {}).InspectionType;
-            if (itype) {
-              inspTypes.add(itype);
-            }
-          }
-          break;
-
-        case LogType.InspectionForce:
-          if (e.result.toLowerCase() === "true" || e.result === "1") {
-            inspTypes.add(e.program);
-          }
-          break;
-
-        case LogType.InspectionResult:
-          completedTypes.add(e.program);
-          break;
-      }
-    });
-
-    return {
-      signaledInspections: LazySeq.of(inspTypes).toSortedArray((x) => x),
-      completedInspections: LazySeq.of(completedTypes).toSortedArray((x) => x),
-    };
-  },
+  return {
+    signaledInspections: LazySeq.of(inspTypes).toSortedArray((x) => x),
+    completedInspections: LazySeq.of(completedTypes).toSortedArray((x) => x),
+  };
 });
 
 //--------------------------------------------------------------------------------
 // Workorders
 //--------------------------------------------------------------------------------
 
-export const possibleWorkordersForMaterialInDialog = selector<ReadonlyArray<IActiveWorkorder>>({
-  key: "possible-workorders-for-mat-in-dialog",
-  get: async ({ get }) => {
-    const mat = get(materialInDialogInfo);
+export const possibleWorkordersForMaterialInDialog = atom<Promise<ReadonlyArray<IActiveWorkorder>>>(
+  async (get) => {
+    const mat = await get(materialInDialogInfo);
     if (mat === null || mat.partName === "") return [];
 
     const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName);
@@ -326,9 +280,8 @@ export const possibleWorkordersForMaterialInDialog = selector<ReadonlyArray<IAct
       (w) => w.dueDate.getTime(),
       (w) => -w.priority
     );
-  },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
+  }
+);
 
 //--------------------------------------------------------------------------------
 // Updates
@@ -342,7 +295,7 @@ export interface ForceInspectionData {
 
 export function useForceInspection(): [(data: ForceInspectionData) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
+  const setExtraLogEvts = useSetAtom(extraLogEventsFromUpdates);
   const callback = useCallback((data: ForceInspectionData) => {
     setUpdating(true);
     LogBackend.setInspectionDecision(
@@ -419,7 +372,7 @@ export function useCompleteCloseout(): [(d: CompleteCloseoutData) => void, boole
 
 export function useAssignWorkorder(): [(mat: MaterialToShowInfo, workorder: string) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
+  const setExtraLogEvts = useSetAtom(extraLogEventsFromUpdates);
   const callback = useCallback((mat: MaterialToShowInfo, workorder: string) => {
     setUpdating(true);
     LogBackend.setWorkorder(mat.materialID, 1, workorder, mat.jobUnique, mat.partName)
@@ -439,7 +392,7 @@ export interface AddNoteData {
 
 export function useAddNote(): [(data: AddNoteData) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
-  const setExtraLogEvts = useSetRecoilState(extraLogEventsFromUpdates);
+  const setExtraLogEvts = useSetAtom(extraLogEventsFromUpdates);
   const callback = useCallback((data: AddNoteData) => {
     setUpdating(true);
     LogBackend.recordOperatorNotes(data.matId, data.process, data.operator, data.notes)

@@ -42,13 +42,15 @@ import "@fontsource/roboto/700.css";
 
 import { green, brown } from "@mui/material/colors";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { RecoilRoot } from "recoil";
-import { enableMapSet } from "immer";
-enableMapSet();
 
 import App, { AppProps } from "./components/App.js";
+import { Provider, createStore } from "jotai";
 
-export function render(appProps: AppProps | null, elem: HTMLElement): void {
+export function render(
+  appProps: AppProps | null,
+  elem: HTMLElement,
+  store: ReturnType<typeof createStore>
+): void {
   const theme = createTheme({
     palette: {
       primary: green,
@@ -60,11 +62,11 @@ export function render(appProps: AppProps | null, elem: HTMLElement): void {
   root.render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <RecoilRoot>
-        <React.StrictMode>
+      <React.StrictMode>
+        <Provider store={store}>
           <App {...appProps} />
-        </React.StrictMode>
-      </RecoilRoot>
+        </Provider>
+      </React.StrictMode>
     </ThemeProvider>
   );
 }

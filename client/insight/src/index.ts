@@ -33,11 +33,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { render } from "./renderer.js";
 import { registerNetworkBackend } from "./network/backend.js";
+import { fmsInformation, loadInfo } from "./network/server-settings.js";
+import { ApiException } from "./network/api.js";
+import { createStore } from "jotai";
 
-registerNetworkBackend();
+async function main(): Promise<void> {
+  registerNetworkBackend();
+  const store = createStore();
+  store.set(fmsInformation, await loadInfo());
 
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-render(null, document.getElementById("root")!);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  render(null, document.getElementById("root")!, store);
+}
+
+main().catch((e) => {
+  console.log(e);
+  let msg = "Error loading Insight: " + (e as object).toString();
+  if (e instanceof ApiException) {
+    msg = "Error loading Insight: " + e.message + " " + e.response;
+  }
+  const p = document.createElement("p");
+  p.textContent = msg;
+  (document.getElementById("loading") ?? document.body).appendChild(p);
+});
 
 if ("serviceWorker" in navigator) {
   void navigator.serviceWorker.getRegistrations().then((registrations) => {

@@ -37,28 +37,28 @@ import { curveCatmullRom } from "@visx/curve";
 import { XYChart, AnimatedAxis, AnimatedLineSeries, Grid } from "@visx/xychart";
 import { BufferChartPoint, buildBufferChart } from "../../data/results.bufferchart.js";
 import { chartTheme, seriesColor } from "../../util/chart-colors.js";
-import { useRecoilValue } from "recoil";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers.js";
 import { Box, ToggleButton, Slider, Typography } from "@mui/material";
-import { useImmer } from "../../util/recoil-util.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue } from "jotai";
+import { HashSet } from "@seedtactics/immutable-collections";
 
 type BufferChartProps = {
   readonly movingAverageDistanceInHours: number;
 };
 
 const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
-  const period = useRecoilValue(selectedAnalysisPeriod);
+  const period = useAtomValue(selectedAnalysisPeriod);
   const defaultDateRange =
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
-  const entries = useRecoilValue(period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries);
-  const rawMatQueues = useRecoilValue(rawMaterialQueues);
+  const entries = useAtomValue(period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries);
+  const rawMatQueues = useAtomValue(rawMaterialQueues);
 
-  const [disabledBuffers, setDisabledBuffers] = useImmer<ReadonlySet<string>>(new Set<string>());
+  const [disabledBuffers, setDisabledBuffers] = React.useState(HashSet.empty<string>());
 
   const series = React.useMemo(
     () =>
@@ -114,13 +114,7 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
             selected={!disabledBuffers.has(s.label)}
             value={s.label}
             onChange={() =>
-              setDisabledBuffers((db) => {
-                if (db.has(s.label)) {
-                  db.delete(s.label);
-                } else {
-                  db.add(s.label);
-                }
-              })
+              setDisabledBuffers((db) => (db.has(s.label) ? db.delete(s.label) : db.add(s.label)))
             }
           >
             <div style={{ display: "flex", alignItems: "center" }}>

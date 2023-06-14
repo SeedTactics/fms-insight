@@ -31,12 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays } from "date-fns";
-import { atom, selector, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, LogType, ToolUse } from "../network/api.js";
 import { LazySeq, HashMap, OrderedMap, HashableObj, hashValues } from "@seedtactics/immutable-collections";
 import { durationToMinutes } from "../util/parseISODuration.js";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
+import { atom } from "jotai";
 
 export type ToolReplacement =
   | {
@@ -102,25 +101,15 @@ const emptyReplacementsAndUse: ReplacementsAndMostRecentUse = {
   recentUse: HashMap.empty(),
 };
 
-const last30ToolReplacementsRW = atom<ReplacementsAndMostRecentUse>({
-  key: "last30ToolReplacementsAndUse",
-  default: emptyReplacementsAndUse,
-});
-export const last30ToolReplacements = selector<ToolReplacementsByStation>({
-  key: "last30ToolReplacements",
-  get: ({ get }) => get(last30ToolReplacementsRW).replacements,
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
+const last30ToolReplacementsRW = atom<ReplacementsAndMostRecentUse>(emptyReplacementsAndUse);
+export const last30ToolReplacements = atom<ToolReplacementsByStation>(
+  (get) => get(last30ToolReplacementsRW).replacements
+);
 
-const specificMonthToolReplacementsRW = atom<ReplacementsAndMostRecentUse>({
-  key: "specificMonthToolReplacementsAndUse",
-  default: emptyReplacementsAndUse,
-});
-export const specificMonthToolReplacements = selector<ToolReplacementsByStation>({
-  key: "specificMonthToolReplacements",
-  get: ({ get }) => get(specificMonthToolReplacementsRW).replacements,
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
+const specificMonthToolReplacementsRW = atom<ReplacementsAndMostRecentUse>(emptyReplacementsAndUse);
+export const specificMonthToolReplacements = atom<ToolReplacementsByStation>(
+  (get) => get(specificMonthToolReplacementsRW).replacements
+);
 
 function addReplacementsFromLog(
   old: ReplacementsAndMostRecentUse,
@@ -197,48 +186,45 @@ function addReplacementsFromLog(
   return { replacements: newReplacements, recentUse: newRecent };
 }
 
-export const setLast30ToolReplacements = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(last30ToolReplacementsRW, (oldCycles) =>
-      LazySeq.of(log)
-        .filter(
-          (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0
-        )
-        .foldLeft(oldCycles, addReplacementsFromLog)
-    );
+export const setLast30ToolReplacements = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(last30ToolReplacementsRW, (oldCycles) =>
+    LazySeq.of(log)
+      .filter(
+        (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0
+      )
+      .foldLeft(oldCycles, addReplacementsFromLog)
+  );
+});
+
+export const updateLastToolReplacements = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
+  if (
+    evt.logEntry &&
+    !evt.logEntry.startofcycle &&
+    evt.logEntry.type === LogType.MachineCycle &&
+    evt.logEntry.tooluse &&
+    evt.logEntry.tooluse.length > 0
+  ) {
+    const log = evt.logEntry;
+
+    set(last30ToolReplacementsRW, (oldCycles) => {
+      if (expire) {
+        const thirtyDaysAgo = addDays(now, -30);
+        const newReplace = oldCycles.replacements.collectValues((es) => {
+          const newEs = es.filter((e) => e.time >= thirtyDaysAgo);
+          return newEs.size > 0 ? newEs : null;
+        });
+        oldCycles = { replacements: newReplace, recentUse: oldCycles.recentUse };
+      }
+
+      return addReplacementsFromLog(oldCycles, log);
+    });
   }
-);
+});
 
-export const updateLastToolReplacements = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
-    if (
-      evt.logEntry &&
-      !evt.logEntry.startofcycle &&
-      evt.logEntry.type === LogType.MachineCycle &&
-      evt.logEntry.tooluse &&
-      evt.logEntry.tooluse.length > 0
-    ) {
-      const log = evt.logEntry;
-
-      t.set(last30ToolReplacementsRW, (oldCycles) => {
-        if (expire) {
-          const thirtyDaysAgo = addDays(now, -30);
-          const newReplace = oldCycles.replacements.collectValues((es) => {
-            const newEs = es.filter((e) => e.time >= thirtyDaysAgo);
-            return newEs.size > 0 ? newEs : null;
-          });
-          oldCycles = { replacements: newReplace, recentUse: oldCycles.recentUse };
-        }
-
-        return addReplacementsFromLog(oldCycles, log);
-      });
-    }
-  }
-);
-
-export const setSpecificMonthToolReplacements = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(
+export const setSpecificMonthToolReplacements = atom(
+  null,
+  (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+    set(
       specificMonthToolReplacementsRW,
       LazySeq.of(log)
         .filter(

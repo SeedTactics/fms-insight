@@ -47,7 +47,6 @@ import {
   binSimProductionByDayAndPart,
   copyCompletedPartsHeatmapToClipboard,
 } from "../../data/results.completed-parts.js";
-import { atom, useRecoilState, useRecoilValue } from "recoil";
 import { last30SimStationUse, specificMonthSimStationUse } from "../../cell-status/sim-station-use.js";
 import {
   last30SimProduction,
@@ -66,6 +65,7 @@ import {
 } from "../../cell-status/station-cycles.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
+import { atom, useAtom, useAtomValue } from "jotai";
 
 // --------------------------------------------------------------------------------
 // Oee Heatmap
@@ -87,23 +87,20 @@ function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
     .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
 }
 
-const selectedStationOeeHeatmapType = atom<StationOeeHeatmapTypes>({
-  key: "fms-insight-selected-station-oee-heatmap-type",
-  default: "Standard OEE",
-});
+const selectedStationOeeHeatmapType = atom<StationOeeHeatmapTypes>("Standard OEE");
 
 export function StationOeeHeatmap() {
   useSetTitle("Station OEE");
-  const [selected, setSelected] = useRecoilState(selectedStationOeeHeatmapType);
+  const [selected, setSelected] = useAtom(selectedStationOeeHeatmapType);
 
-  const period = useRecoilValue(selectedAnalysisPeriod);
+  const period = useAtomValue(selectedAnalysisPeriod);
   const dateRange: [Date, Date] =
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
 
-  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const statUse = useRecoilValue(period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse);
+  const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const statUse = useAtomValue(period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse);
   const points = React.useMemo(() => {
     if (selected === "Standard OEE") {
       return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(cycles.valuesToLazySeq()));
@@ -135,10 +132,7 @@ export function StationOeeHeatmap() {
 
 type CompletedPartsHeatmapTypes = "Planned" | "Completed";
 
-const selectedCompletedPartsHeatmapType = atom<CompletedPartsHeatmapTypes>({
-  key: "fms-insight-selected-completed-parts-heatmap-type",
-  default: "Completed",
-});
+const selectedCompletedPartsHeatmapType = atom<CompletedPartsHeatmapTypes>("Completed");
 
 function partsCompletedPoints(
   partCycles: Iterable<PartCycleData>,
@@ -179,19 +173,19 @@ function partsPlannedPoints(prod: Iterable<SimPartCompleted>) {
 
 export function CompletedCountHeatmap() {
   useSetTitle("Part Production");
-  const [selected, setSelected] = useRecoilState(selectedCompletedPartsHeatmapType);
+  const [selected, setSelected] = useAtom(selectedCompletedPartsHeatmapType);
 
-  const period = useRecoilValue(selectedAnalysisPeriod);
+  const period = useAtomValue(selectedAnalysisPeriod);
   const dateRange: [Date, Date] =
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
 
-  const cycles = useRecoilValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const productionCounts = useRecoilValue(
+  const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const productionCounts = useAtomValue(
     period.type === "Last30" ? last30SimProduction : specificMonthSimProduction
   );
-  const matSummary = useRecoilValue(
+  const matSummary = useAtomValue(
     period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
   );
   const points = React.useMemo(() => {

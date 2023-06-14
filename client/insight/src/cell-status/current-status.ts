@@ -39,87 +39,59 @@ import {
   LogType,
   LocType,
   ActiveJob,
-  ActiveWorkorder,
 } from "../network/api.js";
-import {
-  atom,
-  DefaultValue,
-  RecoilValueReadOnly,
-  selectorFamily,
-  TransactionInterface_UNSTABLE,
-} from "recoil";
 import { last30JobComment } from "./scheduled-jobs.js";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
+import { Atom, atom } from "jotai";
 
 const currentStatusRW = atom<Readonly<ICurrentStatus>>({
-  key: "current-status",
-  default: {
-    timeOfCurrentStatusUTC: new Date(),
-    jobs: {},
-    pallets: {},
-    material: [],
-    alarms: [],
-    queues: {},
-  },
+  timeOfCurrentStatusUTC: new Date(),
+  jobs: {},
+  pallets: {},
+  material: [],
+  alarms: [],
+  queues: {},
 });
-export const currentStatus: RecoilValueReadOnly<ICurrentStatus> = currentStatusRW;
+export const currentStatus: Atom<ICurrentStatus> = currentStatusRW;
 
-export const secondsSinceEpochAtom = atom<number>({
-  key: "system-overview/seconds-since-epoch",
-  default: Math.floor(Date.now() / 1000),
-  effects: [
-    ({ setSelf }) => {
-      const interval = setInterval(() => {
-        setSelf(Math.floor(Date.now() / 1000));
-      }, 1000);
-      return () => clearInterval(interval);
-    },
-  ],
-});
+export const secondsSinceEpochAtom = atom(Math.floor(Date.now() / 1000));
+secondsSinceEpochAtom.onMount = (setSelf) => {
+  const interval = setInterval(() => {
+    setSelf(Math.floor(Date.now() / 1000));
+  }, 1000);
+  return () => clearInterval(interval);
+};
 
-export const currentStatusJobComment = selectorFamily<string | null, string>({
-  key: "current-status-job-comment",
-  get:
-    (uniq) =>
-    ({ get }) =>
-      get(currentStatus).jobs[uniq]?.comment ?? null,
-  set:
-    (uniq) =>
-    ({ set }, newVal) => {
-      const newComment = newVal instanceof DefaultValue || newVal === null ? "" : newVal;
+export const setJobComment = atom(null, (_, set, uniq: string, newVal: string | null) => {
+  const newComment = newVal === null ? "" : newVal;
 
-      set(currentStatusRW, (st) => {
-        const oldJob = st.jobs[uniq];
-        if (oldJob) {
-          const newJob = new ActiveJob(oldJob);
-          newJob.comment = newComment;
-          return { ...st, jobs: { ...st.jobs, [uniq]: newJob } };
-        } else {
-          return st;
-        }
-      });
-
-      set(last30JobComment(uniq), newComment);
-
-      void JobsBackend.setJobComment(uniq, newComment);
-    },
-  cachePolicy_UNSTABLE: { eviction: "lru", maxSize: 1 },
-});
-
-export const setCurrentStatus = conduit<Readonly<ICurrentStatus>>((t: TransactionInterface_UNSTABLE, st) =>
-  t.set(currentStatusRW, st)
-);
-
-export const updateCurrentStatus = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt }: ServerEventAndTime) => {
-    if (evt.logEntry) {
-      t.set(currentStatusRW, processEventsIntoCurrentStatus(evt.logEntry));
-    } else if (evt.newCurrentStatus) {
-      t.set(currentStatusRW, evt.newCurrentStatus);
+  set(currentStatusRW, (st) => {
+    const oldJob = st.jobs[uniq];
+    if (oldJob) {
+      const newJob = new ActiveJob(oldJob);
+      newJob.comment = newComment;
+      return { ...st, jobs: { ...st.jobs, [uniq]: newJob } };
+    } else {
+      return st;
     }
-  }
+  });
+
+  set(last30JobComment(uniq), newComment);
+
+  void JobsBackend.setJobComment(uniq, newComment);
+});
+
+export const setCurrentStatus = atom(null, (_, set, st: Readonly<ICurrentStatus>) =>
+  set(currentStatusRW, st)
 );
+
+export const updateCurrentStatus = atom(null, (_, set, { evt }: ServerEventAndTime) => {
+  if (evt.logEntry) {
+    set(currentStatusRW, processEventsIntoCurrentStatus(evt.logEntry));
+  } else if (evt.newCurrentStatus) {
+    set(currentStatusRW, evt.newCurrentStatus);
+  }
+});
 
 function processEventsIntoCurrentStatus(
   entry: Readonly<ILogEntry>
@@ -189,9 +161,10 @@ export interface QueueReordering {
   readonly newIdx: number;
 }
 
-export const reorderQueuedMatInCurrentStatus = conduit<QueueReordering>(
-  (t: TransactionInterface_UNSTABLE, { queue, matId, newIdx }: QueueReordering) => {
-    t.set(currentStatusRW, (curSt) => {
+export const reorderQueuedMatInCurrentStatus = atom(
+  null,
+  (_, set, { queue, matId, newIdx }: QueueReordering) => {
+    set(currentStatusRW, (curSt) => {
       const oldMat = curSt.material.find((i) => i.materialID === matId);
       if (!oldMat || oldMat.location.type !== LocType.InQueue) {
         return curSt;
@@ -243,36 +216,6 @@ export const reorderQueuedMatInCurrentStatus = conduit<QueueReordering>(
       });
 
       return { ...curSt, material: newMats };
-    });
-  }
-);
-
-export const updateWorkorderFinalizedConduit = conduit<{
-  readonly workorder: string;
-  readonly finalized: Date;
-}>(
-  (
-    t: TransactionInterface_UNSTABLE,
-    { workorder, finalized }: { readonly workorder: string; readonly finalized: Date }
-  ) => {
-    t.set(currentStatusRW, (curSt) => {
-      if (!curSt.workorders) return curSt;
-
-      let found = false;
-      const newWorks = curSt.workorders.map((w) => {
-        if (w.workorderId === workorder) {
-          found = true;
-          return new ActiveWorkorder({ ...w, finalizedTimeUTC: finalized });
-        } else {
-          return w;
-        }
-      });
-
-      if (found) {
-        return { ...curSt, workorders: newWorks };
-      } else {
-        return curSt;
-      }
     });
   }
 );

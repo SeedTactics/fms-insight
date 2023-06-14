@@ -43,38 +43,27 @@ import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { CycleChart, CycleChartPoint, YZoomRange } from "./CycleChart.js";
 import { copyPalletCyclesToClipboard } from "../../data/results.cycles.js";
 import { isDemoAtom, useSetTitle } from "../routes.js";
-import { atom, selector, useRecoilState, useRecoilValue } from "recoil";
 import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status/pallet-cycles.js";
+import { atom, useAtom, useAtomValue } from "jotai";
+import { atomWithDefault } from "jotai/utils";
 
-const selectedPalletAtom = atom<string | undefined>({
-  key: "insight-pallet-cycles-selectedPallet",
-  default: selector({
-    key: "insight-default-pallet-cycles-selectedPallet",
-    get: ({ get }) => (get(isDemoAtom) ? "3" : undefined),
-  }),
-});
-const zoomDateRangeAtom = atom<{ start: Date; end: Date } | undefined>({
-  key: "insight-pallet-cycles-zoomDateRange",
-  default: undefined,
-});
-const yZoomAtom = atom<YZoomRange | null>({
-  key: "insight-pallet-cycles-yZoom",
-  default: null,
-});
+const selectedPalletAtom = atomWithDefault<string | undefined>((get) => (get(isDemoAtom) ? "3" : undefined));
+const zoomDateRangeAtom = atom<{ start: Date; end: Date } | undefined>(undefined);
+const yZoomAtom = atom<YZoomRange | null>(null);
 
 export function PalletCycleChart() {
   useSetTitle("Pallet Cycles");
-  const [selectedPallet, setSelectedPallet] = useRecoilState(selectedPalletAtom);
-  const [zoomDateRange, setZoomRange] = useRecoilState(zoomDateRangeAtom);
-  const [yZoom, setYZoom] = useRecoilState(yZoomAtom);
+  const [selectedPallet, setSelectedPallet] = useAtom(selectedPalletAtom);
+  const [zoomDateRange, setZoomRange] = useAtom(zoomDateRangeAtom);
+  const [yZoom, setYZoom] = useAtom(yZoomAtom);
 
-  const period = useRecoilValue(selectedAnalysisPeriod);
+  const period = useAtomValue(selectedAnalysisPeriod);
   const defaultDateRange =
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
 
-  const palletCycles = useRecoilValue(
+  const palletCycles = useAtomValue(
     period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles
   );
   const points = React.useMemo(() => {

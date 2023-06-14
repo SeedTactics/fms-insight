@@ -56,11 +56,11 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { JobAndGroups, extractJobGroups } from "../../data/queue-material.js";
 import { currentOperator } from "../../data/operators.js";
 import { PrintedLabel } from "./PrintedLabel.js";
-import { atom, useRecoilState, useRecoilValue, useRecoilValueLoadable } from "recoil";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { castingNames, rawMaterialQueues } from "../../cell-status/names.js";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
 const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $expandedOpen?: boolean;
@@ -85,8 +85,8 @@ type CurrentCollapseOpen =
   | { readonly kind: "RawMat" };
 
 function useCastingNames(): LazySeq<readonly [string, number]> {
-  const currentSt = useRecoilValue(currentStatus);
-  const castNames = useRecoilValue(castingNames);
+  const currentSt = useAtomValue(currentStatus);
+  const castNames = useAtomValue(castingNames);
   return React.useMemo(
     () =>
       LazySeq.ofObject(currentSt.jobs)
@@ -144,8 +144,8 @@ interface SelectJobProps {
 }
 
 function SelectJob({ queue, selectedJob, onSelectJob, curCollapse, setCurCollapse, indent }: SelectJobProps) {
-  const currentSt = useRecoilValue(currentStatus);
-  const fmsInfo = useRecoilValue(fmsInformation);
+  const currentSt = useAtomValue(currentStatus);
+  const fmsInfo = useAtomValue(fmsInformation);
   const jobs: ReadonlyArray<JobAndGroups> = React.useMemo(
     () =>
       LazySeq.ofObject(currentSt.jobs)
@@ -303,10 +303,10 @@ export function PromptForJob({
   setSelectedJob: (j: AddNewJobProcessState | null) => void;
   toQueue: string | null;
 }) {
-  const serial = useRecoilValue(matDetails.serialInMaterialDialog);
-  const existingMat = useRecoilValue(matDetails.materialInDialogInfo);
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const rawMatQueues = useRecoilValue(rawMaterialQueues);
+  const serial = useAtomValue(matDetails.serialInMaterialDialog);
+  const existingMat = useAtomValue(matDetails.materialInDialogInfo);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const rawMatQueues = useAtomValue(rawMaterialQueues);
   const [curCollapse, setCurCollapse] = React.useState<CurrentCollapseOpen | null>(null);
 
   if (existingMat) return null;
@@ -373,7 +373,7 @@ export function PromptForOperator({
   enteredOperator: string | null;
   setEnteredOperator: (op: string) => void;
 }) {
-  const fmsInfo = useRecoilValue(fmsInformation);
+  const fmsInfo = useAtomValue(fmsInformation);
   if (!fmsInfo.requireOperatorNamePromptWhenAddingMaterial) return null;
 
   return (
@@ -400,14 +400,14 @@ export function AddToQueueButton({
   toQueue: string | null;
   onClose: () => void;
 }) {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const operator = useRecoilValue(currentOperator);
-  const closeMatDialog = matDetails.useCloseMaterialDialog();
+  const fmsInfo = useAtomValue(fmsInformation);
+  const operator = useAtomValue(currentOperator);
+  const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
-  const newSerial = useRecoilValue(matDetails.serialInMaterialDialog);
-  const existingMat = useRecoilValue(matDetails.materialInDialogInfo);
-  const inProcMat = useRecoilValue(matDetails.inProcessMaterialInDialog);
-  const evts = useRecoilValueLoadable(matDetails.materialInDialogEvents);
+  const newSerial = useAtomValue(matDetails.serialInMaterialDialog);
+  const existingMat = useAtomValue(matDetails.materialInDialogInfo);
+  const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
+  const evts = useAtomValue(matDetails.materialInDialogEvents);
 
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addNewMat, addingNewMat] = matDetails.useAddNewMaterialToQueue();
@@ -415,21 +415,19 @@ export function AddToQueueButton({
 
   let addProcMsg = "";
   if (existingMat !== null) {
-    if (evts.state === "hasValue") {
-      const lastProc =
-        LazySeq.of(evts.getValue())
-          .filter(
-            (e) =>
-              e.details?.["PalletCycleInvalidated"] !== "1" &&
-              (e.type === api.LogType.LoadUnloadCycle ||
-                e.type === api.LogType.MachineCycle ||
-                e.type === api.LogType.AddToQueue)
-          )
-          .flatMap((e) => e.material)
-          .filter((m) => m.id === existingMat.materialID)
-          .maxBy((m) => m.proc)?.proc ?? 0;
-      addProcMsg = " To Run Process " + (lastProc + 1).toString();
-    }
+    const lastProc =
+      LazySeq.of(evts)
+        .filter(
+          (e) =>
+            e.details?.["PalletCycleInvalidated"] !== "1" &&
+            (e.type === api.LogType.LoadUnloadCycle ||
+              e.type === api.LogType.MachineCycle ||
+              e.type === api.LogType.AddToQueue)
+        )
+        .flatMap((e) => e.material)
+        .filter((m) => m.id === existingMat.materialID)
+        .maxBy((m) => m.proc)?.proc ?? 0;
+    addProcMsg = " To Run Process " + (lastProc + 1).toString();
   } else {
     if (selectedJob?.kind === "JobAndProc" && selectedJob?.last_proc !== undefined) {
       addProcMsg = " To Run Process " + (selectedJob.last_proc + 1).toString();
@@ -450,7 +448,6 @@ export function AddToQueueButton({
     <Button
       color="primary"
       disabled={
-        evts.state === "loading" ||
         toQueue === null ||
         addingExistingMat === true ||
         addingNewMat === true ||
@@ -485,7 +482,7 @@ export function AddToQueueButton({
             operator: enteredOperator ?? operator,
           });
         }
-        closeMatDialog();
+        setMatToShow(null);
         onClose();
       }}
     >
@@ -502,14 +499,11 @@ export function AddToQueueButton({
   );
 }
 
-export const enterSerialForNewMaterialDialog = atom<string | null>({
-  key: "add-by-serial-dialog",
-  default: null,
-});
+export const enterSerialForNewMaterialDialog = atom<string | null>(null);
 
 export const AddBySerialDialog = React.memo(function AddBySerialDialog() {
-  const [queue, setQueue] = useRecoilState(enterSerialForNewMaterialDialog);
-  const setMatToDisplay = matDetails.useSetMaterialToShowInDialog();
+  const [queue, setQueue] = useAtom(enterSerialForNewMaterialDialog);
+  const setMatToDisplay = useSetAtom(matDetails.materialDialogOpen);
   const [serial, setSerial] = React.useState<string | undefined>(undefined);
 
   function lookup() {
@@ -553,10 +547,7 @@ export const AddBySerialDialog = React.memo(function AddBySerialDialog() {
   );
 });
 
-export const bulkAddCastingToQueue = atom<string | null>({
-  key: "bulk-add-casting-dialog",
-  default: null,
-});
+export const bulkAddCastingToQueue = atom<string | null>(null);
 
 function AddAndPrintOnClientButton({
   operator,
@@ -627,10 +618,10 @@ function AddAndPrintOnClientButton({
 }
 
 export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCastingWithoutSerialDialog() {
-  const [queue, setQueue] = useRecoilState(bulkAddCastingToQueue);
+  const [queue, setQueue] = useAtom(bulkAddCastingToQueue);
 
-  const operator = useRecoilValue(currentOperator);
-  const fmsInfo = useRecoilValue(fmsInformation);
+  const operator = useAtomValue(currentOperator);
+  const fmsInfo = useAtomValue(fmsInformation);
   const printOnAdd = fmsInfo.usingLabelPrinterForSerials && fmsInfo.useClientPrinterForLabels;
   const [addNewCasting] = useAddNewCastingToQueue();
 

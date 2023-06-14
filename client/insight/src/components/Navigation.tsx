@@ -53,15 +53,15 @@ import {
   FormControl,
 } from "@mui/material";
 import { startOfToday, differenceInDays } from "date-fns";
-import { useRecoilValue, useRecoilValueLoadable } from "recoil";
 import { currentStatus } from "../cell-status/current-status";
 import { SeedtacticLogo } from "../seedtactics-logo";
 import { OperatorSelect } from "./ChooseOperator";
 import { LoadingIcon } from "./LoadingIcon";
 import { ManualScanButton } from "./ManualScan";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog";
-import { RouteState, helpUrl, useCurrentRoute } from "./routes";
+import { RouteState, currentRoute, helpUrl } from "./routes";
 import { fmsInformation, logout } from "../network/server-settings";
+import { useAtom, useAtomValue } from "jotai";
 
 export type MenuNavItem =
   | {
@@ -85,12 +85,13 @@ function ShowLicense({ d }: { d: Date }) {
 }
 
 function Brand() {
-  const fmsInfoM = useRecoilValueLoadable(fmsInformation);
-  const fmsInfo = fmsInfoM.valueMaybe();
+  const fmsInfo = useAtomValue(fmsInformation);
 
   let tooltip: JSX.Element | string = "";
-  if (fmsInfo) {
+  if (fmsInfo.name) {
     tooltip = (fmsInfo.name || "") + " " + (fmsInfo.version || "");
+  } else {
+    tooltip = "SeedTactic FMS Insight";
   }
 
   return (
@@ -109,7 +110,7 @@ function Brand() {
 }
 
 function Alarms() {
-  const alarms = useRecoilValue(currentStatus).alarms;
+  const alarms = useAtomValue(currentStatus).alarms;
   const hasAlarms = alarms && alarms.length > 0;
 
   const alarmTooltip = hasAlarms ? alarms.join(". ") : "No Alarms";
@@ -123,7 +124,7 @@ function Alarms() {
 }
 
 function HelpButton() {
-  const [route] = useCurrentRoute();
+  const route = useAtomValue(currentRoute);
   return (
     <Tooltip title="Help">
       <IconButton aria-label="Help" href={helpUrl(route)} target="_help" size="large">
@@ -165,7 +166,7 @@ function ToolButtons({
 }
 
 function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
-  const [curRoute, setCurrentRoute] = useCurrentRoute();
+  const [curRoute, setCurrentRoute] = useAtom(currentRoute);
   return (
     <FormControl size="small">
       <Select
@@ -273,7 +274,7 @@ export function Header({
 }
 
 export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem> }) {
-  const [curRoute, setCurrentRoute] = useCurrentRoute();
+  const [curRoute, setCurrentRoute] = useAtom(currentRoute);
 
   if (!menuItems || menuItems.length === 0) {
     return null;

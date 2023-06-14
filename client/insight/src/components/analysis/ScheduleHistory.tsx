@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { useRecoilValue } from "recoil";
 import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
@@ -54,6 +53,7 @@ import { JobDetailRow, JobTableRow } from "../operations/RecentSchedules.js";
 import { JobDetails } from "../station-monitor/JobDetails.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { useSetTitle } from "../routes.js";
+import { useAtomValue } from "jotai";
 
 enum ScheduleCols {
   Date,
@@ -134,15 +134,15 @@ function JobRow({ job }: { readonly job: ScheduledJobDisplay }) {
 }
 
 export function ScheduleTable() {
-  const period = useRecoilValue(selectedAnalysisPeriod);
+  const period = useAtomValue(selectedAnalysisPeriod);
   const tpage = useTablePage();
   const zoom = useTableZoomForPeriod(period);
   const sort = useColSort(ScheduleCols.Date, cols);
 
-  const matIds = useRecoilValue(
+  const matIds = useAtomValue(
     period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
   );
-  const schJobs = useRecoilValue(period.type === "Last30" ? last30Jobs : specificMonthJobs);
+  const schJobs = useAtomValue(period.type === "Last30" ? last30Jobs : specificMonthJobs);
 
   const jobs = React.useMemo(
     () => buildScheduledJobs(zoom.zoomRange, matIds.matsById, schJobs, null),

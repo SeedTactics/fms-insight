@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -36,12 +36,12 @@ import { MenuItem } from "@mui/material";
 import { Input } from "@mui/material";
 import { FormControl } from "@mui/material";
 
-import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
-import { RouteLocation, useCurrentRoute } from "../routes.js";
+import { RouteLocation, currentRoute } from "../routes.js";
 import { last30InspectionTypes } from "../../cell-status/names.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { SystemOverviewDialogButton } from "./SystemOverview.js";
+import { useAtom, useAtomValue } from "jotai";
 
 const toolbarStyle = {
   display: "flex",
@@ -71,9 +71,9 @@ enum StationMonitorType {
 }
 
 export function StationToolbar(): JSX.Element {
-  const [route, setRoute] = useCurrentRoute();
-  const inspTypes = useRecoilValue(last30InspectionTypes);
-  const queueNames = Object.keys(useRecoilValue(currentStatus).queues).sort();
+  const [route, setRoute] = useAtom(currentRoute);
+  const inspTypes = useAtomValue(last30InspectionTypes);
+  const queueNames = Object.keys(useAtomValue(currentStatus).queues).sort();
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
 

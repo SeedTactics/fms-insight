@@ -41,12 +41,11 @@ import {
   binOccupiedCyclesByDayAndStat,
   buildOeeHeatmapTable,
 } from "./results.oee.js";
-import { snapshot_UNSTABLE } from "recoil";
-import { applyConduitToSnapshot } from "../util/recoil-util.js";
 import { onLoadLast30Log } from "../cell-status/loading.js";
 import { last30StationCycles } from "../cell-status/station-cycles.js";
 import { it, expect } from "vitest";
 import { toRawJs } from "../../test/to-raw-js.js";
+import { createStore } from "jotai";
 
 it("bins actual cycles by day", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
@@ -78,8 +77,9 @@ it("bins actual cycles by day", () => {
       .toRArray()
   );
 
-  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
-  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
+  const snapshot = createStore();
+  snapshot.set(onLoadLast30Log, evts);
+  const cycles = snapshot.get(last30StationCycles);
 
   let byDayAndStat = binActiveCyclesByDayAndStat(cycles.valuesToLazySeq());
 
@@ -112,8 +112,9 @@ it("creates points clipboard table", () => {
     fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
   );
 
-  const snapshot = applyConduitToSnapshot(snapshot_UNSTABLE(), onLoadLast30Log, evts);
-  const cycles = snapshot.getLoadable(last30StationCycles).valueOrThrow();
+  const snapshot = createStore();
+  snapshot.set(onLoadLast30Log, evts);
+  const cycles = snapshot.get(last30StationCycles);
 
   const byDayAndStat = binActiveCyclesByDayAndStat(cycles.valuesToLazySeq());
 

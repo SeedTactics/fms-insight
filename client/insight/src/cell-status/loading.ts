@@ -31,9 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ICurrentStatus, IHistoricData, ILogEntry, IServerEvent } from "../network/api.js";
-import { conduit } from "../util/recoil-util.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
 import * as simProd from "./sim-production.js";
@@ -49,6 +47,7 @@ import * as tool from "./tool-usage.js";
 import * as palCycles from "./pallet-cycles.js";
 import * as statCycles from "./station-cycles.js";
 import * as toolReplace from "./tool-replacements.js";
+import { Atom, atom } from "jotai";
 
 export interface ServerEventAndTime {
   readonly evt: Readonly<IServerEvent>;
@@ -56,84 +55,69 @@ export interface ServerEventAndTime {
   readonly expire: boolean;
 }
 
-const lastEventCounterRW = atom<number | null>({
-  key: "log-last-event-counter",
-  default: null,
+const lastEventCounterRW = atom<number | null>(null);
+export const lastEventCounter: Atom<number | null> = lastEventCounterRW;
+
+export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
+  set(simProd.updateLast30JobProduction, evt);
+  set(simUse.updateLast30SimStatUse, evt);
+  set(schJobs.updateLast30Jobs, evt);
+  set(buffers.updateLast30Buffer, evt);
+  set(currentSt.updateCurrentStatus, evt);
+  set(mats.updateLast30MatSummary, evt);
+  set(insp.updateLast30Inspections, evt);
+  set(names.updateNames, evt);
+  set(tool.updateLast30ToolUse, evt);
+  set(palCycles.updateLast30PalletCycles, evt);
+  set(toolReplace.updateLastToolReplacements, evt);
+  set(statCycles.updateLast30StationCycles, evt);
+
+  if (evt.evt.logEntry) {
+    const newCntr = evt.evt.logEntry.counter;
+    set(lastEventCounterRW, (old) => (old === null ? old : Math.max(old, newCntr)));
+  }
 });
-export const lastEventCounter: RecoilValueReadOnly<number | null> = lastEventCounterRW;
 
-export const onServerEvent = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, evt: ServerEventAndTime) => {
-    simProd.updateLast30JobProduction.transform(t, evt);
-    simUse.updateLast30SimStatUse.transform(t, evt);
-    schJobs.updateLast30Jobs.transform(t, evt);
-    buffers.updateLast30Buffer.transform(t, evt);
-    currentSt.updateCurrentStatus.transform(t, evt);
-    mats.updateLast30MatSummary.transform(t, evt);
-    insp.updateLast30Inspections.transform(t, evt);
-    names.updateNames.transform(t, evt);
-    tool.updateLast30ToolUse.transform(t, evt);
-    palCycles.updateLast30PalletCycles.transform(t, evt);
-    toolReplace.updateLastToolReplacements.transform(t, evt);
-    statCycles.updateLast30StationCycles.transform(t, evt);
+export const onLoadLast30Jobs = atom(null, (get, set, historicData: Readonly<IHistoricData>) => {
+  const filtered = schJobs.filterExistingJobs(get(schJobs.last30SchIds), historicData);
+  set(simUse.setLast30SimStatUse, filtered);
+  set(simProd.setLast30JobProduction, filtered);
+  set(schJobs.setLast30Jobs, filtered);
+  set(names.setNamesFromLast30Jobs, filtered);
+});
 
-    if (evt.evt.logEntry) {
-      const newCntr = evt.evt.logEntry.counter;
-      t.set(lastEventCounterRW, (old) => (old === null ? old : Math.max(old, newCntr)));
-    }
-  }
-);
+export const onLoadLast30Log = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(estimated.setLast30EstimatedCycleTimes, log);
+  set(buffers.setLast30Buffer, log);
+  set(insp.setLast30Inspections, log);
+  set(mats.setLast30MatSummary, log);
+  set(names.setNamesFromLast30Evts, log);
+  set(tool.setLast30ToolUse, log);
+  set(palCycles.setLast30PalletCycles, log);
+  set(toolReplace.setLast30ToolReplacements, log);
+  set(statCycles.setLast30StationCycles, log);
 
-export const onLoadLast30Jobs = conduit<Readonly<IHistoricData>>(
-  (t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>) => {
-    const filtered = schJobs.filterExistingJobs(t.get(schJobs.last30SchIds), historicData);
-    simUse.setLast30SimStatUse.transform(t, filtered);
-    simProd.setLast30JobProduction.transform(t, filtered);
-    schJobs.setLast30Jobs.transform(t, filtered);
-    names.setNamesFromLast30Jobs.transform(t, filtered);
-  }
-);
+  const newCntr = LazySeq.of(log).maxBy((x) => x.counter)?.counter ?? null;
+  set(lastEventCounterRW, (oldCntr) => (oldCntr === null ? newCntr : Math.max(oldCntr, newCntr ?? -1)));
+});
 
-export const onLoadLast30Log = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    estimated.setLast30EstimatedCycleTimes.transform(t, log);
-    buffers.setLast30Buffer.transform(t, log);
-    insp.setLast30Inspections.transform(t, log);
-    mats.setLast30MatSummary.transform(t, log);
-    names.setNamesFromLast30Evts.transform(t, log);
-    tool.setLast30ToolUse.transform(t, log);
-    palCycles.setLast30PalletCycles.transform(t, log);
-    toolReplace.setLast30ToolReplacements.transform(t, log);
-    statCycles.setLast30StationCycles.transform(t, log);
+export const onLoadCurrentSt = atom(null, (_, set, curSt: Readonly<ICurrentStatus>) => {
+  set(currentSt.setCurrentStatus, curSt);
+  set(names.setNamesFromCurrentStatus, curSt);
+});
 
-    const newCntr = LazySeq.of(log).maxBy((x) => x.counter)?.counter ?? null;
-    t.set(lastEventCounterRW, (oldCntr) => (oldCntr === null ? newCntr : Math.max(oldCntr, newCntr ?? -1)));
-  }
-);
+export const onLoadSpecificMonthJobs = atom(null, (_, set, historicData: Readonly<IHistoricData>) => {
+  set(simUse.setSpecificMonthSimStatUse, historicData);
+  set(simProd.setSpecificMonthJobProduction, historicData);
+  set(schJobs.updateSpecificMonthJobs, historicData);
+});
 
-export const onLoadCurrentSt = conduit<Readonly<ICurrentStatus>>(
-  (t: TransactionInterface_UNSTABLE, curSt: Readonly<ICurrentStatus>) => {
-    currentSt.setCurrentStatus.transform(t, curSt);
-    names.setNamesFromCurrentStatus.transform(t, curSt);
-  }
-);
-
-export const onLoadSpecificMonthJobs = conduit<Readonly<IHistoricData>>(
-  (t: TransactionInterface_UNSTABLE, historicData: Readonly<IHistoricData>) => {
-    simUse.setSpecificMonthSimStatUse.transform(t, historicData);
-    simProd.setSpecificMonthJobProduction.transform(t, historicData);
-    schJobs.updateSpecificMonthJobs.transform(t, historicData);
-  }
-);
-
-export const onLoadSpecificMonthLog = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    estimated.setSpecificMonthEstimatedCycleTimes.transform(t, log);
-    buffers.setSpecificMonthBuffer.transform(t, log);
-    insp.setSpecificMonthInspections.transform(t, log);
-    mats.setSpecificMonthMatSummary.transform(t, log);
-    palCycles.setSpecificMonthPalletCycles.transform(t, log);
-    toolReplace.setSpecificMonthToolReplacements.transform(t, log);
-    statCycles.setSpecificMonthStationCycles.transform(t, log);
-  }
-);
+export const onLoadSpecificMonthLog = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(estimated.setSpecificMonthEstimatedCycleTimes, log);
+  set(buffers.setSpecificMonthBuffer, log);
+  set(insp.setSpecificMonthInspections, log);
+  set(mats.setSpecificMonthMatSummary, log);
+  set(palCycles.setSpecificMonthPalletCycles, log);
+  set(toolReplace.setSpecificMonthToolReplacements, log);
+  set(statCycles.setSpecificMonthStationCycles, log);
+});

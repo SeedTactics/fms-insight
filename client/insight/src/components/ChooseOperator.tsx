@@ -45,18 +45,17 @@ import { DialogContent } from "@mui/material";
 import { DialogActions } from "@mui/material";
 import { Button } from "@mui/material";
 
-import { useRecoilState, useRecoilValue } from "recoil";
 import { allOperators, currentOperator } from "../data/operators.js";
 import { fmsInformation } from "../network/server-settings.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { useRecoilStateDraft } from "../util/recoil-util.js";
+import { useAtom, useAtomValue } from "jotai";
 
 const NewOper = "__FMS_INSIGHT_NEW_OPERATOR__" as const;
 
 export const OperatorSelect = React.memo(function OperatorSelectF() {
-  const fmsInfo = useRecoilValue(fmsInformation);
-  const [operator, setOperator] = useRecoilState(currentOperator);
-  const [allOpers, setAllOpers] = useRecoilStateDraft(allOperators);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const [operator, setOperator] = useAtom(currentOperator);
+  const [allOpers, setAllOpers] = useAtom(allOperators);
 
   const [newOperOpen, setNewOperOpen] = React.useState(false);
   const [newOperName, setNewOperName] = React.useState("");
@@ -70,12 +69,12 @@ export const OperatorSelect = React.memo(function OperatorSelectF() {
   }
 
   function removeOperator(oper: string) {
-    setAllOpers((s) => s.delete(oper));
+    setAllOpers((s) => s.filter((o) => o !== oper));
   }
 
   function addOperator() {
     if (newOperName !== "") {
-      setAllOpers((s) => s.add(newOperName));
+      setAllOpers((s) => [...s.filter((o) => o !== newOperName), newOperName]);
       setOperator(newOperName);
       setNewOperName("");
       setNewOperOpen(false);
@@ -119,6 +118,7 @@ export const OperatorSelect = React.memo(function OperatorSelectF() {
             label="New Name"
             variant="outlined"
             autoFocus
+            sx={{ mt: "0.5em" }}
             onKeyUp={(evt) => {
               if (evt.keyCode === 13) {
                 addOperator();

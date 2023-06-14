@@ -43,7 +43,6 @@ import {
 } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 import * as React from "react";
-import { atom, useRecoilState, useRecoilValue } from "recoil";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import {
   last30ToolReplacements,
@@ -70,6 +69,7 @@ import { addDays, addMonths, startOfToday } from "date-fns";
 import { ChartTooltip } from "../ChartTooltip.js";
 import { localPoint } from "@visx/event";
 import { useSetTitle } from "../routes.js";
+import { atom, useAtom, useAtomValue } from "jotai";
 
 type ReplacementTableProps = {
   readonly station: StationGroupAndNum | null;
@@ -322,12 +322,12 @@ const summaryColumns: ReadonlyArray<Column<SummaryColumnId, ToolReplacementSumma
 ];
 
 const SummaryTable = React.memo(function ReplacementTable(props: ReplacementTableProps) {
-  const period = useRecoilValue(selectedAnalysisPeriod);
+  const period = useAtomValue(selectedAnalysisPeriod);
   const tpage = useTablePage();
   const zoom = useTableZoomForPeriod(period);
   const sort = useColSort(SummaryColumnId.Tool, summaryColumns);
 
-  const allReplacements = useRecoilValue(
+  const allReplacements = useAtomValue(
     period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
   );
   const allSorted = React.useMemo(
@@ -467,12 +467,12 @@ const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolR
 ];
 
 const AllReplacementTable = React.memo(function ReplacementTable(props: ReplacementTableProps) {
-  const period = useRecoilValue(selectedAnalysisPeriod);
+  const period = useAtomValue(selectedAnalysisPeriod);
   const tpage = useTablePage();
   const zoom = useTableZoomForPeriod(period);
   const sort = useColSort(AllReplacementColumnId.Date, allReplacementsColumns);
 
-  const allReplacements = useRecoilValue(
+  const allReplacements = useAtomValue(
     period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
   );
   const allSorted = React.useMemo(
@@ -515,8 +515,8 @@ const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
   readonly setSelectedStation: (station: StationGroupAndNum | null) => void;
   readonly displayType: "summary" | "details";
 }) {
-  const period = useRecoilValue(selectedAnalysisPeriod);
-  const replacements = useRecoilValue(
+  const period = useAtomValue(selectedAnalysisPeriod);
+  const replacements = useAtomValue(
     period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
   );
   const machines = Array.from(replacements.keys());
@@ -564,19 +564,13 @@ const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
   );
 });
 
-const selectedMachineAtom = atom<StationGroupAndNum | null>({
-  key: "insight-tool-replacements-selectedMachineAtom",
-  default: null,
-});
-const selectedType = atom<"summary" | "details">({
-  key: "insight-tool-replacements-selectedType",
-  default: "summary",
-});
+const selectedMachineAtom = atom<StationGroupAndNum | null>(null);
+const selectedType = atom<"summary" | "details">("summary");
 
 export const ToolReplacementPage = React.memo(function ToolReplacementCard() {
   useSetTitle("Tool Replacements");
-  const [selectedMachine, setSelectedMachine] = useRecoilState(selectedMachineAtom);
-  const [type, setType] = useRecoilState(selectedType);
+  const [selectedMachine, setSelectedMachine] = useAtom(selectedMachineAtom);
+  const [type, setType] = useAtom(selectedType);
 
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">

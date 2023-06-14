@@ -32,18 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { useCallback, useEffect } from "react";
-import {
-  atom,
-  RecoilState,
-  RecoilValueReadOnly,
-  useRecoilCallback,
-  useRecoilState,
-  useRecoilValue,
-  useSetRecoilState,
-} from "recoil";
+import { useEffect } from "react";
 import "urlpattern-polyfill";
-import { useCloseMaterialDialog } from "../cell-status/material-details.js";
+import { materialDialogOpen } from "../cell-status/material-details.js";
+import { atom, useAtomValue, useSetAtom } from "jotai";
 
 export enum RouteLocation {
   ChooseMode = "/",
@@ -244,21 +236,24 @@ function urlToRoute(url: URL): RouteState {
   return { route: RouteLocation.ChooseMode };
 }
 
-const currentRouteLocation = atom<RouteState>({
-  key: "fms-insight-location",
-  default: urlToRoute(new URL(location.href)),
-});
-export const isDemoAtom = atom<boolean>({ key: "fms-insight-demo", default: false });
-export const currentRoute: RecoilValueReadOnly<RouteState> = currentRouteLocation;
+const currentRouteLocation = atom<RouteState>(urlToRoute(new URL(location.href)));
+export const isDemoAtom = atom<boolean>(false);
 
-export function setRouteFromCallback(set: <T>(rval: RecoilState<T>, val: T) => void, to: RouteState) {
-  set(currentRouteLocation, to);
-  history.pushState(null, "", routeToUrl(to));
-}
+export const currentRoute = atom(
+  (get) => get(currentRouteLocation),
+  (get, set, to: RouteState) => {
+    const demo = get(isDemoAtom);
+    set(currentRouteLocation, to);
+    set(materialDialogOpen, null);
+    if (!demo) {
+      history.pushState(null, "", routeToUrl(to));
+    }
+  }
+);
 
 export function useWatchHistory(): void {
-  const isDemo = useRecoilValue(isDemoAtom);
-  const setCurRoute = useSetRecoilState(currentRouteLocation);
+  const isDemo = useAtomValue(isDemoAtom);
+  const setCurRoute = useSetAtom(currentRouteLocation);
 
   // check for changes in history (back, forwards)
   useEffect(() => {
@@ -273,46 +268,8 @@ export function useWatchHistory(): void {
   }, [isDemo]);
 }
 
-export function useSetCurrentRoute(): (r: RouteState) => void {
-  const isDemo = useRecoilValue(isDemoAtom);
-  const setCurRoute = useSetRecoilState(currentRouteLocation);
-
-  const setRouteAndUpdateHistory = useRecoilCallback(
-    ({ set }) =>
-      (to: RouteState) => {
-        setRouteFromCallback(set, to);
-        history.pushState(null, "", routeToUrl(to));
-      },
-    []
-  );
-
-  if (isDemo) {
-    return setCurRoute;
-  } else {
-    return setRouteAndUpdateHistory;
-  }
-}
-
-export function useCurrentRoute(): [RouteState, (r: RouteState) => void] {
-  const isDemo = useRecoilValue(isDemoAtom);
-  const [curRoute, setCurRoute] = useRecoilState(currentRouteLocation);
-  const closeMatDialog = useCloseMaterialDialog();
-
-  const setRouteAndUpdateHistory = useCallback((to: RouteState) => {
-    setCurRoute(to);
-    closeMatDialog();
-    history.pushState(null, "", routeToUrl(to));
-  }, []);
-
-  if (isDemo) {
-    return [curRoute, setCurRoute];
-  } else {
-    return [curRoute, setRouteAndUpdateHistory];
-  }
-}
-
 export function useIsDemo(): boolean {
-  return useRecoilValue(isDemoAtom);
+  return useAtomValue(isDemoAtom);
 }
 
 export function useSetTitle(title: string): void {

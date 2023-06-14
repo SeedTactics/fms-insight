@@ -42,18 +42,15 @@ import { DialogActions } from "@mui/material";
 import { DialogContent } from "@mui/material";
 import { DialogTitle } from "@mui/material";
 import { TextField } from "@mui/material";
-import { atom, useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 
 import { Check as CheckmarkIcon, ShoppingBasket as ShoppingBasketIcon } from "@mui/icons-material";
 
 import * as matDetails from "../../cell-status/material-details.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { IActiveWorkorder } from "../../network/api.js";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
-export const selectWorkorderDialogOpen = atom<boolean>({
-  key: "selectWorkorderDialogOpen",
-  default: false,
-});
+export const selectWorkorderDialogOpen = atom<boolean>(false);
 
 function workorderComplete(w: IActiveWorkorder) {
   if (w.finalizedTimeUTC) {
@@ -77,9 +74,9 @@ function WorkorderIcon({ work }: { work: IActiveWorkorder }) {
 
 function ManualWorkorderEntry() {
   const [workorder, setWorkorder] = React.useState<string | null>(null);
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
+  const mat = useAtomValue(matDetails.materialInDialogInfo);
   const [assignWorkorder] = matDetails.useAssignWorkorder();
-  const setWorkDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
+  const setWorkDialogOpen = useSetAtom(selectWorkorderDialogOpen);
   return (
     <TextField
       sx={{ mt: "5px" }}
@@ -98,9 +95,9 @@ function ManualWorkorderEntry() {
 }
 
 function WorkorderList() {
-  const mat = useRecoilValue(matDetails.materialInDialogInfo);
-  const workorders = useRecoilValue(matDetails.possibleWorkordersForMaterialInDialog);
-  const setWorkDialogOpen = useSetRecoilState(selectWorkorderDialogOpen);
+  const mat = useAtomValue(matDetails.materialInDialogInfo);
+  const workorders = useAtomValue(matDetails.possibleWorkordersForMaterialInDialog);
+  const setWorkDialogOpen = useSetAtom(selectWorkorderDialogOpen);
   const [assignWorkorder] = matDetails.useAssignWorkorder();
   return (
     <List>
@@ -135,7 +132,7 @@ function WorkorderList() {
 }
 
 export const SelectWorkorderDialog = React.memo(function SelectWorkorderDialog() {
-  const [workDialogOpen, setWorkDialogOpen] = useRecoilState(selectWorkorderDialogOpen);
+  const [workDialogOpen, setWorkDialogOpen] = useAtom(selectWorkorderDialogOpen);
 
   let body: JSX.Element | undefined;
   if (workDialogOpen === false) {

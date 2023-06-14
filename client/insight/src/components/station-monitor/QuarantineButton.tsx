@@ -34,17 +34,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { useRecoilValue } from "recoil";
 import { currentStatus } from "../../cell-status/current-status.js";
 import {
   inProcessMaterialInDialog,
-  useCloseMaterialDialog,
+  materialDialogOpen,
   useRemoveFromQueue,
   useSignalForQuarantine,
 } from "../../cell-status/material-details.js";
 import { currentOperator } from "../../data/operators.js";
 import { ActionType, LocType, QueueRole } from "../../network/api.js";
 import { fmsInformation } from "../../network/server-settings.js";
+import { useAtomValue, useSetAtom } from "jotai";
 
 type QuarantineMaterialData = {
   readonly type: "Remove" | "Scrap" | "Quarantine" | "Signal";
@@ -54,12 +54,12 @@ type QuarantineMaterialData = {
 };
 
 function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData | null {
-  const fmsInfo = useRecoilValue(fmsInformation);
+  const fmsInfo = useAtomValue(fmsInformation);
   const [removeFromQueue, removingFromQueue] = useRemoveFromQueue();
   const [signalQuarantine, signalingQuarantine] = useSignalForQuarantine();
-  const inProcMat = useRecoilValue(inProcessMaterialInDialog);
-  const curSt = useRecoilValue(currentStatus);
-  let operator = useRecoilValue(currentOperator);
+  const inProcMat = useAtomValue(inProcessMaterialInDialog);
+  const curSt = useAtomValue(currentStatus);
+  let operator = useAtomValue(currentOperator);
   if (ignoreOperator) operator = null;
 
   if (inProcMat === null || inProcMat.materialID < 0) return null;
@@ -165,7 +165,7 @@ export function QuarantineMatButton({
   const [open, setOpen] = React.useState(false);
   const [reason, setReason] = React.useState("");
   const q = useQuarantineMaterial(!!ignoreOperator);
-  const closeMatDialog = useCloseMaterialDialog();
+  const setMatToShow = useSetAtom(materialDialogOpen);
 
   if (q === null) return null;
 
@@ -194,7 +194,7 @@ export function QuarantineMatButton({
 
   function quarantine() {
     q?.quarantine(reason);
-    closeMatDialog();
+    setMatToShow(null);
     setOpen(false);
     setReason("");
     onClose?.();

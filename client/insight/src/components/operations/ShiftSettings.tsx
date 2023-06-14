@@ -34,33 +34,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { ButtonBase, Stack, TextField, Tooltip } from "@mui/material";
 import * as React from "react";
 import { Clear as ClearIcon } from "@mui/icons-material";
-import { atom, useRecoilValue } from "recoil";
-import { useRecoilStateDraft } from "../../util/recoil-util.js";
 import { addDays, addMinutes } from "date-fns";
+import { atom, useAtom, useAtomValue } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 
-const shiftStartAtom = atom<ReadonlyMap<number, number>>({
-  key: "fmsinsight-shift-starts",
-  default: new Map([
-    [1, 6 * 60],
-    [2, 14 * 60],
-    [3, 22 * 60],
-  ]),
-  effects: [
-    ({ setSelf, onSet }) => {
-      const saved = localStorage.getItem("shift-starts");
-      if (saved != null && saved != "{}") {
-        setSelf(new Map(JSON.parse(saved) as ReadonlyArray<[number, number]>));
-      }
-      onSet((newVal, _, isReset) => {
-        if (isReset) {
-          localStorage.removeItem("shift-starts");
-        } else {
-          localStorage.setItem("shift-starts", JSON.stringify(Array.from(newVal.entries())));
-        }
-      });
-    },
-  ],
-});
+const shiftStartStorage = atomWithStorage<ReadonlyArray<[number, number]>>("shift-starts", [
+  [1, 6 * 60],
+  [2, 14 * 60],
+  [3, 22 * 60],
+]);
+
+const shiftStartAtom = atom(
+  (get) => new Map(get(shiftStartStorage)),
+  (get, set, update: (shifts: Map<number, number>) => void) => {
+    const shifts = new Map(get(shiftStartStorage));
+    update(shifts);
+    set(shiftStartStorage, Array.from(shifts.entries()));
+  }
+);
 
 export type ShiftStartAndEnd = {
   readonly start: Date;
@@ -68,7 +59,7 @@ export type ShiftStartAndEnd = {
 };
 
 export function useShifts(day: Date): ReadonlyArray<ShiftStartAndEnd> {
-  const shifts = useRecoilValue(shiftStartAtom);
+  const shifts = useAtomValue(shiftStartAtom);
   return React.useMemo(() => {
     const starts: Array<number> = [];
     for (let i = 1; i <= 3; i++) {
@@ -133,7 +124,7 @@ function shiftError(shiftNum: number, starts: ReadonlyMap<number, number>): bool
 }
 
 function ShiftStartInput({ shiftNum }: { shiftNum: number }) {
-  const [shifts, setShifts] = useRecoilStateDraft(shiftStartAtom);
+  const [shifts, setShifts] = useAtom(shiftStartAtom);
   const val = shifts.get(shiftNum);
   return (
     <TextField

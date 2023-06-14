@@ -31,12 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays } from "date-fns";
-import { atom, RecoilValueReadOnly, TransactionInterface_UNSTABLE } from "recoil";
 import { ILogEntry, LogType } from "../network/api.js";
 import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
 import { durationToMinutes } from "../util/parseISODuration.js";
-import { conduit } from "../util/recoil-util.js";
 import type { ServerEventAndTime } from "./loading.js";
+import { Atom, atom } from "jotai";
 
 export interface PalletCycleData {
   readonly cntr: number;
@@ -48,18 +47,11 @@ export interface PalletCycleData {
 export type PalletCyclesByCntr = HashMap<number, PalletCycleData>;
 export type PalletCyclesByPallet = HashMap<string, PalletCyclesByCntr>;
 
-const last30PalletCyclesRW = atom<PalletCyclesByPallet>({
-  key: "last30PalletCycles",
-  default: HashMap.empty(),
-});
-export const last30PalletCycles: RecoilValueReadOnly<PalletCyclesByPallet> = last30PalletCyclesRW;
+const last30PalletCyclesRW = atom(HashMap.empty<string, PalletCyclesByCntr>());
+export const last30PalletCycles: Atom<PalletCyclesByPallet> = last30PalletCyclesRW;
 
-const specificMonthPalletCyclesRW = atom<PalletCyclesByPallet>({
-  key: "specificMonthPalletCycles",
-  default: HashMap.empty(),
-});
-export const specificMonthPalletCycles: RecoilValueReadOnly<PalletCyclesByPallet> =
-  specificMonthPalletCyclesRW;
+const specificMonthPalletCyclesRW = atom<PalletCyclesByPallet>(HashMap.empty<string, PalletCyclesByCntr>());
+export const specificMonthPalletCycles: Atom<PalletCyclesByPallet> = specificMonthPalletCyclesRW;
 
 function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
   return {
@@ -70,61 +62,55 @@ function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
   };
 }
 
-export const setLast30PalletCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(last30PalletCyclesRW, (oldCycles) =>
-      oldCycles.union(
-        LazySeq.of(log)
-          .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
-          .toLookupMap(
-            (c) => c.pal,
-            (c) => c.counter,
-            logToPalletCycle
-          ),
-        (e1, e2) => e1.union(e2)
-      )
-    );
-  }
-);
-
-export const updateLast30PalletCycles = conduit<ServerEventAndTime>(
-  (t: TransactionInterface_UNSTABLE, { evt, now, expire }: ServerEventAndTime) => {
-    if (
-      evt.logEntry &&
-      !evt.logEntry.startofcycle &&
-      evt.logEntry.type === LogType.PalletCycle &&
-      evt.logEntry.pal !== ""
-    ) {
-      const log = evt.logEntry;
-
-      t.set(last30PalletCyclesRW, (oldCycles) => {
-        if (expire) {
-          const thirtyDaysAgo = addDays(now, -30);
-          oldCycles = oldCycles.collectValues((es) => {
-            const newEs = es.filter((e) => e.x >= thirtyDaysAgo);
-            return newEs.size > 0 ? newEs : null;
-          });
-        }
-
-        return oldCycles.modify(log.pal, (old) =>
-          (old ?? HashMap.empty()).set(log.counter, logToPalletCycle(log))
-        );
-      });
-    }
-  }
-);
-
-export const setSpecificMonthPalletCycles = conduit<ReadonlyArray<Readonly<ILogEntry>>>(
-  (t: TransactionInterface_UNSTABLE, log: ReadonlyArray<Readonly<ILogEntry>>) => {
-    t.set(
-      specificMonthPalletCyclesRW,
+export const setLast30PalletCycles = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(last30PalletCyclesRW, (oldCycles) =>
+    oldCycles.union(
       LazySeq.of(log)
         .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
         .toLookupMap(
           (c) => c.pal,
           (c) => c.counter,
           logToPalletCycle
-        )
-    );
+        ),
+      (e1, e2) => e1.union(e2)
+    )
+  );
+});
+
+export const updateLast30PalletCycles = atom(null, (_, set, { evt, now, expire }: ServerEventAndTime) => {
+  if (
+    evt.logEntry &&
+    !evt.logEntry.startofcycle &&
+    evt.logEntry.type === LogType.PalletCycle &&
+    evt.logEntry.pal !== ""
+  ) {
+    const log = evt.logEntry;
+
+    set(last30PalletCyclesRW, (oldCycles) => {
+      if (expire) {
+        const thirtyDaysAgo = addDays(now, -30);
+        oldCycles = oldCycles.collectValues((es) => {
+          const newEs = es.filter((e) => e.x >= thirtyDaysAgo);
+          return newEs.size > 0 ? newEs : null;
+        });
+      }
+
+      return oldCycles.modify(log.pal, (old) =>
+        (old ?? HashMap.empty()).set(log.counter, logToPalletCycle(log))
+      );
+    });
   }
-);
+});
+
+export const setSpecificMonthPalletCycles = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
+  set(
+    specificMonthPalletCyclesRW,
+    LazySeq.of(log)
+      .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
+      .toLookupMap(
+        (c) => c.pal,
+        (c) => c.counter,
+        logToPalletCycle
+      )
+  );
+});
