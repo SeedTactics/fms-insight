@@ -96,14 +96,17 @@ const shakeHorizKeyframes = keyframes`
 const shakeHorizAnimation = `${shakeHorizKeyframes} 1s ease-in-out infinite`;
 
 // global sync of all shake animations
+// the start time can drift due to the pause on hover, so to keep it in sync always
+// round the start time down to be a multiple of the duration (1s)
 function shakeAnimationIteration(event: React.AnimationEvent<HTMLDivElement>) {
   const anim = event.currentTarget
     .getAnimations()
     .find((a) => (a as CSSAnimation).animationName === shakeHorizKeyframes.name);
-  if (anim && anim.startTime) {
-    // the start time can drift due to the pause on hover, so to keep it in sync always
-    // round the start time down to be a multiple of the duration (1s)
+  if (anim && typeof anim.startTime === "number") {
     anim.startTime = anim.startTime - (anim.startTime % 1000);
+  } else if (anim && typeof anim.startTime === "object" && anim.startTime instanceof CSSNumericValue) {
+    const msecs = anim.startTime.to("ms").value;
+    anim.startTime = CSS.ms(msecs - (msecs % 1000));
   }
 }
 
