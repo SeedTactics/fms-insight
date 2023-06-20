@@ -266,7 +266,30 @@ pallet cycle times vary wildly, there is likely traffic jams or other flow probl
 
 ## Cell
 
-TODO
+#### Quality
+
+The quality shows all paths taken by parts through the system for each inspection.
+The inspections can be viewed either as a sankey diagram or as a table.
+
+![Screenshot of path sankey](screenshots/insight-quality-sankey.png)
+
+#### Tool Replacements
+
+The tool replacement chart shows data about tool replacements over the month. Each
+tool is shown with the number of replacements, average usage at replacement, and average
+count at replacement. These numbers are approximate if a tool replacement happpens during
+a cycle, since we do not know the exact time of the replacement. Each tool also shows a graph
+of all replacements over the whole month, with the red line the average and a black dot for each
+replacement. A replacement can be hovered for more information.
+
+![Screenshot of tool replacements](screenshots/insight-tool-replacements.png)
+
+#### Schedules
+
+The schedules report shows all the scheduled jobs for the month, details about the schedule, and
+a list of all serials machined on the schedule.
+
+![Screenshot of schedules](screenshots/insight-monthly-schedules.png)
 
 ## Cost/Piece
 
