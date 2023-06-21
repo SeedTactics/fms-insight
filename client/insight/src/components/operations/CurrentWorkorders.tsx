@@ -132,6 +132,26 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
           </TableBody>
         </Table>
       </div>
+      {workorder.comments && workorder.comments.length > 0 ? (
+        <div>
+          <Table size="small">
+            <TableHead>
+              <TableCell>Time</TableCell>
+              <TableCell>Comment</TableCell>
+              <TableCell>Operator</TableCell>
+            </TableHead>
+            <TableBody>
+              {workorder.comments.map((c, idx) => (
+                <TableRow key={idx}>
+                  <TableCell>{c.timeUTC.toLocaleString()}</TableCell>
+                  <TableCell>{c.comment}</TableCell>
+                  <TableCell>{c.operator}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : undefined}
     </Stack>
   );
 });

@@ -53,7 +53,13 @@ import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 export const selectWorkorderDialogOpen = atom<boolean>(false);
 
 function workorderComplete(w: IActiveWorkorder) {
-  return `Due ${w.dueDate.toLocaleDateString()}; Completed ${w.completedQuantity} of ${w.plannedQuantity}`;
+  let comment = "";
+  if (w.comments && w.comments.length > 0) {
+    comment = "; " + w.comments[w.comments.length - 1].comment;
+  }
+  return `Due ${w.dueDate.toLocaleDateString()}; Completed ${w.completedQuantity} of ${
+    w.plannedQuantity
+  }${comment}`;
 }
 
 function WorkorderIcon({ work }: { work: IActiveWorkorder }) {
