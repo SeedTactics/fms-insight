@@ -133,7 +133,7 @@ async function loadEventsJson(
   return LazySeq.of(await evts)
     .map((evtJson) => {
       const tools = toolUse[(evtJson as { counter: number }).counter.toString()];
-      const e = api.LogEntry.fromJS(tools ? { ...evtJson, tools } : evtJson);
+      const e = api.LogEntry.fromJS(tools ? { ...evtJson, tooluse: tools } : evtJson);
       e.endUTC = addSeconds(e.endUTC, offsetSeconds);
       return e;
     })
