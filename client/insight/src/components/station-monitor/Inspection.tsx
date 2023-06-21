@@ -46,7 +46,7 @@ import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { instructionUrl } from "../../network/backend.js";
 import { LogType } from "../../network/api.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
-import { useSetTitle } from "../routes.js";
+import { useIsDemo, useSetTitle } from "../routes.js";
 import { useAtomValue, useSetAtom } from "jotai";
 
 interface InspButtonsProps {
@@ -54,6 +54,7 @@ interface InspButtonsProps {
 }
 
 function InspButtons(props: InspButtonsProps) {
+  const demo = useIsDemo();
   const operator = useAtomValue(currentOperator);
   const material = useAtomValue(matDetails.materialInDialogInfo);
   const matEvents = useAtomValue(matDetails.materialInDialogEvents);
@@ -101,9 +102,13 @@ function InspButtons(props: InspButtonsProps) {
   return (
     <>
       {material.partName !== "" ? (
-        <Button href={url} target="bms-instructions" color="primary">
-          Instructions
-        </Button>
+        demo ? (
+          <Button color="primary">Instructions</Button>
+        ) : (
+          <Button href={url} target="bms-instructions" color="primary">
+            Instructions
+          </Button>
+        )
       ) : undefined}
       <QuarantineMatButton />
       <Button color="primary" disabled={completeInspUpdating} onClick={() => markInspComplete(true)}>

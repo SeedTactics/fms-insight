@@ -509,6 +509,7 @@ interface LoadMatDialogProps {
 function InstructionButton({ pallet }: { pallet: string | null }) {
   const material = useAtomValue(matDetails.inProcessMaterialInDialog);
   const operator = useAtomValue(currentOperator);
+  const demo = useIsDemo();
 
   if (material === null) return null;
 
@@ -536,11 +537,16 @@ function InstructionButton({ pallet }: { pallet: string | null }) {
       : material.process,
     operator
   );
-  return (
-    <Button href={url} target="bms-instructions" color="primary">
-      Instructions
-    </Button>
-  );
+
+  if (demo) {
+    return <Button color="primary">Instructions</Button>;
+  } else {
+    return (
+      <Button href={url} target="bms-instructions" color="primary">
+        Instructions
+      </Button>
+    );
+  }
 }
 
 function PrintSerialButton() {

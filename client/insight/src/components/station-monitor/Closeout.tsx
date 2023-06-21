@@ -55,7 +55,7 @@ import {
 import { LogType } from "../../network/api.js";
 import { instructionUrl } from "../../network/backend.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
-import { useSetTitle } from "../routes.js";
+import { useIsDemo, useSetTitle } from "../routes.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
 function CompleteButton() {
@@ -112,6 +112,7 @@ function CompleteButton() {
 }
 
 function InstrButton() {
+  const demo = useIsDemo();
   const material = useAtomValue(materialInDialogInfo);
   const matEvents = useAtomValue(materialInDialogEvents);
   const operator = useAtomValue(currentOperator);
@@ -131,11 +132,15 @@ function InstrButton() {
       .filter((e) => e.id === material.materialID)
       .maxBy((e) => e.proc)?.proc ?? null;
   const url = instructionUrl(material.partName, "closeout", material.materialID, null, maxProc, operator);
-  return (
-    <Button href={url} target="bms-instructions" color="primary">
-      Instructions
-    </Button>
-  );
+  if (demo) {
+    return <Button color="primary">Instructions</Button>;
+  } else {
+    return (
+      <Button href={url} target="bms-instructions" color="primary">
+        Instructions
+      </Button>
+    );
+  }
 }
 
 function AssignWorkorderButton() {
