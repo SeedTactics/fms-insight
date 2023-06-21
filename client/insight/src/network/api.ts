@@ -1817,26 +1817,32 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    finalizeWorkorder(workorder: string): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/finalize";
+    recordWorkorderComment(workorder: string, operatorName: string | null | undefined, comment: string): Promise<LogEntry> {
+        let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/comment?";
         if (workorder === undefined || workorder === null)
             throw new Error("The parameter 'workorder' must be defined.");
         url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
+        if (operatorName !== undefined && operatorName !== null)
+            url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
+        const content_ = JSON.stringify(comment);
+
         let options_: RequestInit = {
+            body: content_,
             method: "POST",
             headers: {
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             }
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processFinalizeWorkorder(_response);
+            return this.processRecordWorkorderComment(_response);
         });
     }
 
-    protected processFinalizeWorkorder(response: Response): Promise<LogEntry> {
+    protected processRecordWorkorderComment(response: Response): Promise<LogEntry> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -2447,7 +2453,7 @@ export enum LogType {
     OrderAssignment = "OrderAssignment",
     GeneralMessage = "GeneralMessage",
     PalletCycle = "PalletCycle",
-    FinalizeWorkorder = "FinalizeWorkorder",
+    WorkorderComment = "WorkorderComment",
     InspectionResult = "InspectionResult",
     CloseOut = "CloseOut",
     AddToQueue = "AddToQueue",
@@ -4345,7 +4351,7 @@ export class ActiveWorkorder implements IActiveWorkorder {
     priority!: number;
     completedQuantity!: number;
     serials!: string[];
-    finalizedTimeUTC?: Date | undefined;
+    comments?: WorkorderComment[] | undefined;
     elapsedStationTime!: { [key: string]: string; };
     activeStationTime!: { [key: string]: string; };
 
@@ -4376,7 +4382,11 @@ export class ActiveWorkorder implements IActiveWorkorder {
                 for (let item of _data["Serials"])
                     this.serials!.push(item);
             }
-            this.finalizedTimeUTC = _data["FinalizedTimeUTC"] ? new Date(_data["FinalizedTimeUTC"].toString()) : <any>undefined;
+            if (Array.isArray(_data["Comments"])) {
+                this.comments = [] as any;
+                for (let item of _data["Comments"])
+                    this.comments!.push(WorkorderComment.fromJS(item));
+            }
             if (_data["ElapsedStationTime"]) {
                 this.elapsedStationTime = {} as any;
                 for (let key in _data["ElapsedStationTime"]) {
@@ -4414,7 +4424,11 @@ export class ActiveWorkorder implements IActiveWorkorder {
             for (let item of this.serials)
                 data["Serials"].push(item);
         }
-        data["FinalizedTimeUTC"] = this.finalizedTimeUTC ? this.finalizedTimeUTC.toISOString() : <any>undefined;
+        if (Array.isArray(this.comments)) {
+            data["Comments"] = [];
+            for (let item of this.comments)
+                data["Comments"].push(item.toJSON());
+        }
         if (this.elapsedStationTime) {
             data["ElapsedStationTime"] = {};
             for (let key in this.elapsedStationTime) {
@@ -4441,9 +4455,53 @@ export interface IActiveWorkorder {
     priority: number;
     completedQuantity: number;
     serials: string[];
-    finalizedTimeUTC?: Date | undefined;
+    comments?: WorkorderComment[] | undefined;
     elapsedStationTime: { [key: string]: string; };
     activeStationTime: { [key: string]: string; };
+}
+
+export class WorkorderComment implements IWorkorderComment {
+    comment!: string;
+    timeUTC!: Date;
+    operator?: string | undefined;
+
+    constructor(data?: IWorkorderComment) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.comment = _data["Comment"];
+            this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
+            this.operator = _data["Operator"];
+        }
+    }
+
+    static fromJS(data: any): WorkorderComment {
+        data = typeof data === 'object' ? data : {};
+        let result = new WorkorderComment();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["Comment"] = this.comment;
+        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
+        data["Operator"] = this.operator;
+        return data;
+    }
+}
+
+export interface IWorkorderComment {
+    comment: string;
+    timeUTC: Date;
+    operator?: string | undefined;
 }
 
 export class EditMaterialInLogEvents implements IEditMaterialInLogEvents {

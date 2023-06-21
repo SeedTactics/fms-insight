@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* eslint-disable react/prop-types */
 import * as React from "react";
-import { Table, Box, styled, Stack } from "@mui/material";
+import { Table, Box, styled } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableRow } from "@mui/material";
@@ -293,7 +293,6 @@ const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable(
   if (!curSt.workorders || curSt.workorders.length === 0) return null;
 
   const sorted = LazySeq.of(curSt.workorders).sortBy(
-    (w) => (w.finalizedTimeUTC ? 1 : 0),
     (w) => w.dueDate,
     (w) => w.priority
   );

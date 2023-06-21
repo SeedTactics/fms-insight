@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button, Box, ListItemButton } from "@mui/material";
+import { Button, ListItemButton } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -53,14 +53,6 @@ import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 export const selectWorkorderDialogOpen = atom<boolean>(false);
 
 function workorderComplete(w: IActiveWorkorder) {
-  if (w.finalizedTimeUTC) {
-    return (
-      <Box component="span" color="grey.500">
-        Finalized {w.finalizedTimeUTC.toLocaleDateString()}; Completed {w.completedQuantity} of{" "}
-        {w.plannedQuantity}
-      </Box>
-    );
-  }
   return `Due ${w.dueDate.toLocaleDateString()}; Completed ${w.completedQuantity} of ${w.plannedQuantity}`;
 }
 
@@ -102,16 +94,7 @@ function WorkorderList() {
   return (
     <List>
       {workorders.map((w) => (
-        <ListItem
-          key={w.workorderId}
-          sx={
-            w.finalizedTimeUTC
-              ? {
-                  color: "grey.500",
-                }
-              : undefined
-          }
-        >
+        <ListItem key={w.workorderId}>
           <ListItemButton
             onClick={() => {
               if (mat) {
