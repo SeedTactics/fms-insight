@@ -345,13 +345,15 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
-    [HttpPost("workorder/{workorder}/finalize")]
-    public LogEntry FinalizeWorkorder(string workorder)
+    [HttpPost("workorder/{workorder}/comment")]
+    public LogEntry RecordWorkorderComment(
+      string workorder,
+      [FromBody] string comment,
+      [FromQuery] string operatorName = null
+    )
     {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
-      {
-        return db.RecordFinalizedWorkorder(workorder);
-      }
+      using var db = _impl.Backend.RepoConfig.OpenConnection();
+      return db.RecordWorkorderComment(workorder: workorder, comment: comment, operName: operatorName);
     }
   }
 }

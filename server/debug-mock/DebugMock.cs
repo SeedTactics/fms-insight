@@ -682,9 +682,14 @@ namespace DebugMachineWatchApiServer
               e.EndTimeUTC.Add(offset)
             );
         }
-        else if (e.LogType == LogType.FinalizeWorkorder)
+        else if (e.LogType == LogType.WorkorderComment)
         {
-          LogDB.RecordFinalizedWorkorder(e.Result, e.EndTimeUTC.Add(offset));
+          LogDB.RecordWorkorderComment(
+            e.Result,
+            e.ProgramDetails["Comment"],
+            e.ProgramDetails["Operator"],
+            e.EndTimeUTC.Add(offset)
+          );
         }
         else
         {

@@ -476,7 +476,7 @@ namespace BlackMaple.MachineFramework
           + "    OR (Pallet = '' AND Result = $work AND StationLoc = $workloc) "
           + " ORDER BY Counter ASC";
         cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
-        cmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)LogType.FinalizeWorkorder;
+        cmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)LogType.WorkorderComment;
 
         using (var reader = cmd.ExecuteReader())
         {
@@ -808,16 +808,7 @@ namespace BlackMaple.MachineFramework
             matdetails.Workorder = uw.Workorder
             AND
             matdetails.PartName = uw.Part
-          ) AS Completed,
-          (
-            SELECT MAX(stations.TimeUTC) FROM stations
-            WHERE
-            stations.Pallet = ''
-            AND
-            stations.Result = uw.Workorder
-            AND
-            stations.StationLoc = $workty
-          ) AS Finalized
+          ) AS Completed
 
           FROM unfilled_workorders uw
           WHERE uw.ScheduleId = $schid
@@ -862,15 +853,33 @@ namespace BlackMaple.MachineFramework
                         )
                     GROUP BY StationName";
 
+      var commentQry =
+        @"
+          SELECT
+            TimeUTC,
+            (SELECT pd.Value FROM program_details AS pd WHERE pd.Counter = s.Counter AND pd.Key = 'Comment')
+              AS Comment,
+            (SELECT pd.Value FROM program_details AS pd WHERE pd.Counter = s.Counter AND pd.Key = 'Operator')
+              AS Operator
+          FROM
+            stations AS s
+          WHERE
+            s.Pallet = ''
+            AND
+            s.Result = $workid
+            AND
+            s.StationLoc = $workty
+        ";
+
       using var workCmd = _connection.CreateCommand();
       using var serialCmd = _connection.CreateCommand();
       using var timeCmd = _connection.CreateCommand();
+      using var commentCmd = _connection.CreateCommand();
 
       workCmd.Transaction = trans;
       workCmd.CommandText = workQry;
       workCmd.Parameters.Add("schid", SqliteType.Text).Value = scheduleId;
       workCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
-      workCmd.Parameters.Add("workty", SqliteType.Integer).Value = (int)LogType.FinalizeWorkorder;
       if (!string.IsNullOrEmpty(partToFilter))
       {
         workCmd.Parameters.Add("part", SqliteType.Text).Value = partToFilter;
@@ -883,6 +892,10 @@ namespace BlackMaple.MachineFramework
       timeCmd.Parameters.Add("partname", SqliteType.Text);
       timeCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
       timeCmd.Parameters.Add("mcty", SqliteType.Integer).Value = (int)LogType.MachineCycle;
+      commentCmd.CommandText = commentQry;
+      commentCmd.Transaction = trans;
+      commentCmd.Parameters.Add("workty", SqliteType.Integer).Value = (int)LogType.WorkorderComment;
+      var commentWorkParam = commentCmd.Parameters.Add("workid", SqliteType.Text);
 
       var ret = ImmutableList.CreateBuilder<ActiveWorkorder>();
 
@@ -896,7 +909,6 @@ namespace BlackMaple.MachineFramework
         var dueDate = new DateTime(workReader.GetInt64(3));
         var priority = workReader.GetInt32(4);
         var completed = workReader.IsDBNull(5) ? 0 : workReader.GetInt32(5);
-        var finalized = workReader.IsDBNull(6) ? null : (DateTime?)new DateTime(workReader.GetInt64(6));
 
         serialCmd.Parameters[0].Value = workorder;
         serialCmd.Parameters[1].Value = part;
@@ -929,6 +941,23 @@ namespace BlackMaple.MachineFramework
           }
         }
 
+        var comments = ImmutableList.CreateBuilder<WorkorderComment>();
+        commentWorkParam.Value = workorder;
+        using (var commentReader = commentCmd.ExecuteReader())
+        {
+          while (commentReader.Read())
+          {
+            comments.Add(
+              new WorkorderComment()
+              {
+                TimeUTC = new DateTime(commentReader.GetInt64(0)),
+                Comment = commentReader.IsDBNull(1) ? "" : commentReader.GetString(1),
+                Operator = commentReader.IsDBNull(2) ? null : commentReader.GetString(2)
+              }
+            );
+          }
+        }
+
         ret.Add(
           new ActiveWorkorder()
           {
@@ -937,7 +966,7 @@ namespace BlackMaple.MachineFramework
             PlannedQuantity = qty,
             DueDate = dueDate,
             Priority = priority,
-            FinalizedTimeUTC = finalized,
+            Comments = comments.Count == 0 ? null : comments.ToImmutable(),
             CompletedQuantity = completed,
             Serials = serials.ToImmutable(),
             ElapsedStationTime = elapsed.ToImmutable(),
@@ -2037,25 +2066,30 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
     }
 
-    public LogEntry RecordFinalizedWorkorder(string workorder)
-    {
-      return RecordFinalizedWorkorder(workorder, DateTime.UtcNow);
-    }
-
-    public LogEntry RecordFinalizedWorkorder(string workorder, DateTime finalizedUTC)
+    public LogEntry RecordWorkorderComment(
+      string workorder,
+      string comment,
+      string operName,
+      DateTime? timeUTC = null
+    )
     {
       var log = new NewEventLogEntry()
       {
-        Material = new EventLogMaterial[] { },
+        Material = Array.Empty<EventLogMaterial>(),
         Pallet = "",
-        LogType = LogType.FinalizeWorkorder,
-        LocationName = "FinalizeWorkorder",
+        LogType = LogType.WorkorderComment,
+        LocationName = "WorkorderComment",
         LocationNum = 1,
         Program = "",
         StartOfCycle = false,
-        EndTimeUTC = finalizedUTC,
+        EndTimeUTC = timeUTC ?? DateTime.UtcNow,
         Result = workorder,
       };
+      log.ProgramDetails.Add("Comment", comment);
+      if (!string.IsNullOrEmpty(operName))
+      {
+        log.ProgramDetails.Add("Operator", operName);
+      }
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, null, null));
     }
 

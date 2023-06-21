@@ -66,6 +66,19 @@ namespace BlackMaple.MachineFramework
   }
 
   [DataContract]
+  public record WorkorderComment
+  {
+    [DataMember(IsRequired = true)]
+    public required string Comment { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required DateTime TimeUTC { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? Operator { get; init; }
+  }
+
+  [DataContract]
   public record ActiveWorkorder
   {
     // original workorder details
@@ -93,7 +106,7 @@ namespace BlackMaple.MachineFramework
     public required ImmutableList<string> Serials { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public DateTime? FinalizedTimeUTC { get; init; }
+    public ImmutableList<WorkorderComment>? Comments { get; init; }
 
     [DataMember(IsRequired = true)]
     public required ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; }

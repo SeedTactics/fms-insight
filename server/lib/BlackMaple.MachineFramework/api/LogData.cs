@@ -120,7 +120,7 @@ namespace BlackMaple.MachineFramework
     PalletCycle = 101,
 
     [EnumMember]
-    FinalizeWorkorder = 102,
+    WorkorderComment = 102,
 
     [EnumMember]
     InspectionResult = 103,
