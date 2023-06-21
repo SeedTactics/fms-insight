@@ -77,13 +77,13 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
 import { JobDetails } from "./JobDetails.js";
 import { fmsInformation } from "../../network/server-settings.js";
-import { currentStatus, setJobComment } from "../../cell-status/current-status.js";
+import { addWorkorderComment, currentStatus, setJobComment } from "../../cell-status/current-status.js";
 import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { SortableRegion } from "./Whiteboard.js";
 import { MultiMaterialDialog, QueuedMaterialDialog } from "./QueuesMatDialog.js";
 import { useSetTitle } from "../routes.js";
-import { useAtomValue, useSetAtom } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -260,6 +260,7 @@ const RawMaterialWorkorderRow = React.memo(function RawMaterialWorkorderRow({
   workorder: Readonly<api.IActiveWorkorder>;
   inProc: number;
 }) {
+  const setDialog = useSetAtom(workorderCommentDialogAtom);
   return (
     <TableRow>
       <TableCell>{workorder.workorderId}</TableCell>
@@ -277,6 +278,17 @@ const RawMaterialWorkorderRow = React.memo(function RawMaterialWorkorderRow({
             {workorder.part}
           </Typography>
         </Box>
+      </TableCell>
+      <TableCell>
+        {workorder.comments && workorder.comments.length > 0
+          ? workorder.comments[workorder.comments.length - 1].comment
+          : ""}
+
+        <Tooltip title="Edit">
+          <IconButton size="small" onClick={() => setDialog(workorder)}>
+            <EditIcon />
+          </IconButton>
+        </Tooltip>
       </TableCell>
       <TableCell>{workorder.dueDate.toLocaleDateString()}</TableCell>
       <TableCell>{workorder.priority}</TableCell>
@@ -312,6 +324,7 @@ const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable(
         <TableRow>
           <TableCell>Workorder</TableCell>
           <TableCell>Part</TableCell>
+          <TableCell>Comment</TableCell>
           <TableCell>Due Date</TableCell>
           <TableCell>Priority</TableCell>
           <TableCell>Planned Qty</TableCell>
@@ -487,6 +500,77 @@ const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: Edit
   );
 });
 
+const workorderCommentDialogAtom = atom<Readonly<api.IActiveWorkorder> | null>(null);
+
+function WorkorderCommentDialog() {
+  const [workorder, setWorkorder] = useAtom(workorderCommentDialogAtom);
+  const [comment, setComment] = React.useState<string | null>(null);
+  const addComment = useSetAtom(addWorkorderComment);
+
+  function close() {
+    setWorkorder(null);
+    setComment(null);
+  }
+
+  function save() {
+    if (workorder && comment && comment !== "") {
+      addComment({ workorder: workorder.workorderId, comment: comment });
+    }
+    close();
+  }
+
+  return (
+    <Dialog open={workorder !== null} onClose={close}>
+      {workorder !== null ? (
+        <>
+          <DialogTitle>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div>
+                <PartIdenticon part={workorder.part} size={40} />
+              </div>
+              <div style={{ marginLeft: "1em", flexGrow: 1 }}>Add Comment For {workorder.workorderId}</div>
+            </div>
+          </DialogTitle>
+          <DialogContent>
+            <ul>
+              {(workorder.comments ?? []).map((c, idx) => (
+                <li key={idx}>
+                  <Typography variant="body1">
+                    {c.timeUTC.toLocaleString()}: {c.comment}
+                    {c.operator && c.operator !== "" ? " by " + c.operator : ""}
+                  </Typography>
+                </li>
+              ))}
+            </ul>
+            <TextField
+              variant="outlined"
+              sx={{ mt: "1em" }}
+              fullWidth
+              autoFocus
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && comment !== null && comment !== "") {
+                  save();
+                  e.preventDefault();
+                }
+              }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button color="primary" onClick={save}>
+              Save Comment
+            </Button>
+            <Button color="primary" onClick={close}>
+              Cancel
+            </Button>
+          </DialogActions>
+        </>
+      ) : undefined}
+    </Dialog>
+  );
+}
+
 interface AddMaterialButtonsProps {
   readonly label: string;
   readonly rawMatQueue: boolean;
@@ -653,6 +737,7 @@ export const Queues = (props: QueueProps) => {
       <BulkAddCastingWithoutSerialDialog />
       <EditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
+      <WorkorderCommentDialog />
       <MultiMaterialDialog
         material={multiMaterialDialog}
         closeDialog={closeMultiMatDialog}

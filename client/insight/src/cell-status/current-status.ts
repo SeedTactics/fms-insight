@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { JobsBackend } from "../network/backend.js";
+import { JobsBackend, LogBackend } from "../network/backend.js";
 import {
   InProcessMaterial,
   ICurrentStatus,
@@ -39,10 +39,13 @@ import {
   LogType,
   LocType,
   ActiveJob,
+  WorkorderComment,
+  ActiveWorkorder,
 } from "../network/api.js";
 import { last30JobComment } from "./scheduled-jobs.js";
 import type { ServerEventAndTime } from "./loading.js";
 import { Atom, atom } from "jotai";
+import { currentOperator } from "../data/operators.js";
 
 const currentStatusRW = atom<Readonly<ICurrentStatus>>({
   timeOfCurrentStatusUTC: new Date(),
@@ -80,6 +83,32 @@ export const setJobComment = atom(null, (_, set, uniq: string, newVal: string | 
 
   void JobsBackend.setJobComment(uniq, newComment);
 });
+
+export const addWorkorderComment = atom(
+  null,
+  (get, set, { workorder, comment }: { workorder: string; comment: string }) => {
+    const operator = get(currentOperator);
+    set(currentStatusRW, (st) => {
+      if (!st.workorders) return st;
+      return {
+        ...st,
+        workorders: st.workorders.map((w) =>
+          w.workorderId === workorder
+            ? new ActiveWorkorder({
+                ...w,
+                comments: [
+                  ...(w.comments ?? []),
+                  new WorkorderComment({ comment, operator: operator ?? undefined, timeUTC: new Date() }),
+                ],
+              })
+            : w
+        ),
+      };
+    });
+
+    void LogBackend.recordWorkorderComment(workorder, operator, comment);
+  }
+);
 
 export const setCurrentStatus = atom(null, (_, set, st: Readonly<ICurrentStatus>) =>
   set(currentStatusRW, st)
