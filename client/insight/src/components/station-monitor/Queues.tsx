@@ -634,14 +634,15 @@ export const Queues = (props: QueueProps) => {
                     )
                   : undefined}
                 {region.rawMaterialQueue ? (
-                  <Stack direction="column" spacing={2} margin="1em 5em 1em 5em" width="100%">
+                  hasJobs ? (
                     <RawMaterialJobTable
                       queue={region.label}
                       editNote={setChangeNoteForJob}
                       editQty={setEditQtyForJob}
                     />
+                  ) : (
                     <RawMaterialWorkorderTable />
-                  </Stack>
+                  )
                 ) : undefined}
               </Box>
             </Box>
