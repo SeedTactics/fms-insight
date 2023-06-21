@@ -59,7 +59,7 @@ The main table shows the following columns:
 - _Part_: the part and process number that uses this program.
 - _Revision_: this shows the program revision, but will only appear if program revisions are used as part of
   a downloaded job. If revisions are not used, this column will not appear.
-- _Median Time and Deviation_: For the [flexibility analysis](client-flexibility-analysis), FMS Insight
+- _Median Time and Deviation_: For the [flexibility analysis](client-efficiency), FMS Insight
   uses the data from the last 30 days to calculate a statistical median and deviation running time for each
   program. Because times above the median (likely due to program interruptions) is a different probability
   distribution to times below the median (likely due to normal Gaussian noise), we calculate deviations

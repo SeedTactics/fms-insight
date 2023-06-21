@@ -54,5 +54,3 @@ are deleted (and recreated) the cell will continue to operate just fine in
 the future (minus the historical data). Thus it is not necessary to backup
 the databases (but of course you can if you want to preserve historical
 data).
-
-The [Backup Viewer Program](client-backup-viewer) can be used to view the data inside the databases.

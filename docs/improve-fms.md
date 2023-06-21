@@ -38,7 +38,7 @@ therefore if the process change should be kept or adjusted. The entire business 
 visible and accurate cost-per-piece metrics, because various departments and employees can see that
 even if a change requires them to perform extra work, it improves the overall business value of the
 system. The only data required from daily operations is the monthly quantity of parts produced,
-and it is implemented on the [flexibility analysis page](client-flexibility-analysis).
+and it is implemented on the [flexibility analysis page](client-efficiency).
 
 While it is the ultimate goal, overall cost-per-piece is not a useful metric to improve the system.
 Sure, a cost-per-piece breakdown will show the costs of labor, machining, and tooling but how do
@@ -61,7 +61,7 @@ department and component of the system, and the council's job is to decide on th
 operation. By combining representatives from all areas of the system, the tactics council can
 produce actions (changes in how the system operates) based on the information and metrics on OEE and
 system performance. Helpful efficiency metrics and graphs are displayed in the
-[flexibility analysis page](client-flexibility-analysis).
+[flexibility analysis page](client-efficiency).
 
 ## Tactics Council
 

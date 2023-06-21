@@ -259,7 +259,7 @@ the bottom-right.
 
 The pallet cycle chart is best used to determine if the cell is running lean
 and validate the [daily allocation and scheduling
-technique](https://www.seedtactics.com/docs/concepts/preventing-traffic-jams)
+technique](https://www.seedtactics.com/docs/tactics/preventing-traffic-jams)
 to determine if there are traffic jams occurring in the pallets. In a lean,
 healthy cell, most pallet cycles should be low and reasonably consistent. If
 pallet cycle times vary wildly, there is likely traffic jams or other flow problems.

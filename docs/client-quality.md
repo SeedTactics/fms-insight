@@ -44,7 +44,7 @@ a Sankey chart or a table and shows signaled, succeeded, and failed inspections.
 the paths that have occurred recently via the Sankey diagram or investigating the paths in detail via the table.
 Anything older than 7
 days is available as part of the [monthly review](improve-fms) on the
-[flexibility analysis page](client-flexibility-analysis).
+[flexibility analysis page](client-efficiency).
 
 ![Screenshot of path sankey](screenshots/insight-quality-sankey.png)
 

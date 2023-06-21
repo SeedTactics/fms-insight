@@ -24,7 +24,7 @@ be zoomed by clicking and dragging, filtered to specific parts and/or
 pallets, and toggled to a table. Clicking on any point allows more details
 about the cycle to be loaded. Anything older than 3
 days is available as part of the [monthly review](improve-fms) on the
-[flexibility analysis page](client-flexibility-analysis).
+[flexibility analysis page](client-efficiency).
 
 ## Hours
 
@@ -33,7 +33,7 @@ days is available as part of the [monthly review](improve-fms) on the
 In the Hours tab, the planned and actual machine hours for the past 7 days are shown. The
 data can be toggled between a bar chart and a table. Anything older than 7
 days is available as part of the [monthly review](improve-fms) on the
-[flexibility analysis page](client-flexibility-analysis).
+[flexibility analysis page](client-efficiency).
 
 ## Outliers
 

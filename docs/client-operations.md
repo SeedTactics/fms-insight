@@ -75,7 +75,7 @@ must be added or removed on the [shop floor](client-station-monitor) using the Q
 
 The Reports tab shows a collection of reports useful for the floor supervisor. These reports focus on the
 past few days of operations and highlight places where the cell is performing well or poorly.
-More detailed reports are available on the [flexibility analysis page](client-flexibility-analysis).
+More detailed reports are available on the [flexibility analysis page](client-efficiency).
 In our experience, the floor supervisor should focus only on keeping the cell running; longer-term analysis
 is best done by a one-a-month or once-a-quarter review.
 

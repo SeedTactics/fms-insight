@@ -86,7 +86,7 @@ in a table. This table can be used by the operators to decide which material to 
 
 By clicking or tapping on a material sticky note, a dialog will open with
 details about the specific piece of material. The dialog will have a variety of
-actions for the specific material. An attached [barcode scanner](client-scanners.md) can
+actions for the specific material. An attached [barcode scanner](client-scanners) can
 also be used to open the material dialog.
 
 ## Inspection
