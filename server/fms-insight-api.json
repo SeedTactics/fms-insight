@@ -3575,10 +3575,6 @@
           "TimeUTC": {
             "type": "string",
             "format": "date-time"
-          },
-          "Operator": {
-            "type": "string",
-            "nullable": true
           }
         }
       },

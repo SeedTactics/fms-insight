@@ -4463,7 +4463,6 @@ export interface IActiveWorkorder {
 export class WorkorderComment implements IWorkorderComment {
     comment!: string;
     timeUTC!: Date;
-    operator?: string | undefined;
 
     constructor(data?: IWorkorderComment) {
         if (data) {
@@ -4478,7 +4477,6 @@ export class WorkorderComment implements IWorkorderComment {
         if (_data) {
             this.comment = _data["Comment"];
             this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
-            this.operator = _data["Operator"];
         }
     }
 
@@ -4493,7 +4491,6 @@ export class WorkorderComment implements IWorkorderComment {
         data = typeof data === 'object' ? data : {};
         data["Comment"] = this.comment;
         data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
-        data["Operator"] = this.operator;
         return data;
     }
 }
@@ -4501,7 +4498,6 @@ export class WorkorderComment implements IWorkorderComment {
 export interface IWorkorderComment {
     comment: string;
     timeUTC: Date;
-    operator?: string | undefined;
 }
 
 export class EditMaterialInLogEvents implements IEditMaterialInLogEvents {

@@ -858,9 +858,7 @@ namespace BlackMaple.MachineFramework
           SELECT
             TimeUTC,
             (SELECT pd.Value FROM program_details AS pd WHERE pd.Counter = s.Counter AND pd.Key = 'Comment')
-              AS Comment,
-            (SELECT pd.Value FROM program_details AS pd WHERE pd.Counter = s.Counter AND pd.Key = 'Operator')
-              AS Operator
+              AS Comment
           FROM
             stations AS s
           WHERE
@@ -952,7 +950,6 @@ namespace BlackMaple.MachineFramework
               {
                 TimeUTC = new DateTime(commentReader.GetInt64(0)),
                 Comment = commentReader.IsDBNull(1) ? "" : commentReader.GetString(1),
-                Operator = commentReader.IsDBNull(2) ? null : commentReader.GetString(2)
               }
             );
           }

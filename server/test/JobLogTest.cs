@@ -1760,12 +1760,7 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           new Dictionary<string, string> { { "Comment", "work1ccc" }, { "Operator", "oper1" } }
         );
-      var expectedComment1 = new WorkorderComment()
-      {
-        Comment = "work1ccc",
-        Operator = "oper1",
-        TimeUTC = t.AddHours(222)
-      };
+      var expectedComment1 = new WorkorderComment() { Comment = "work1ccc", TimeUTC = t.AddHours(222) };
 
       _jobLog
         .GetActiveWorkordersForMostRecentSchedule()
@@ -1787,12 +1782,7 @@ namespace MachineWatchTest
 
       // add a second comment
       _jobLog.RecordWorkorderComment("work1", comment: "work1ddd", operName: null, timeUTC: t.AddHours(333));
-      var expectedComment2 = new WorkorderComment()
-      {
-        Comment = "work1ddd",
-        Operator = null,
-        TimeUTC = t.AddHours(333)
-      };
+      var expectedComment2 = new WorkorderComment() { Comment = "work1ddd", TimeUTC = t.AddHours(333) };
 
       _jobLog
         .GetActiveWorkordersForMostRecentSchedule()

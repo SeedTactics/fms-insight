@@ -537,7 +537,6 @@ function WorkorderCommentDialog() {
                 <li key={idx}>
                   <Typography variant="body1">
                     {c.timeUTC.toLocaleString()}: {c.comment}
-                    {c.operator && c.operator !== "" ? " by " + c.operator : ""}
                   </Typography>
                 </li>
               ))}

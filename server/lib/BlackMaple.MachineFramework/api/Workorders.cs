@@ -73,9 +73,6 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(IsRequired = true)]
     public required DateTime TimeUTC { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string? Operator { get; init; }
   }
 
   [DataContract]

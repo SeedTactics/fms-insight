@@ -96,10 +96,7 @@ export const addWorkorderComment = atom(
           w.workorderId === workorder
             ? new ActiveWorkorder({
                 ...w,
-                comments: [
-                  ...(w.comments ?? []),
-                  new WorkorderComment({ comment, operator: operator ?? undefined, timeUTC: new Date() }),
-                ],
+                comments: [...(w.comments ?? []), new WorkorderComment({ comment, timeUTC: new Date() })],
               })
             : w
         ),
