@@ -1326,7 +1326,7 @@
   ],
   "Alarms": [],
   "Queues": {
-    "Queue1": {},
+    "Queue1": { "Role": "RawMaterial" },
     "Queue2": {}
   },
   "Workorders": [

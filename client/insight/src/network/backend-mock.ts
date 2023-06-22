@@ -525,20 +525,24 @@ export function registerMockBackend(
         })
       );
     },
-    finalizeWorkorder(workorder: string) {
+    recordWorkorderComment(workorder: string, operName: string | null | undefined, comment: string) {
       return Promise.resolve({
         counter: 0,
         material: [],
         pal: "",
-        type: api.LogType.FinalizeWorkorder,
+        type: api.LogType.WorkorderComment,
         startofcycle: false,
         endUTC: new Date(),
-        loc: "FinalizeWorkorder",
+        loc: "WorkorderComment",
         locnum: 1,
         result: workorder,
         program: "",
         elapsed: "PT0S",
         active: "PT0S",
+        details: {
+          Comment: comment,
+          Operator: operName ?? "",
+        },
       });
     },
   };

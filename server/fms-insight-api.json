@@ -1803,12 +1803,12 @@
         }
       }
     },
-    "/api/v1/log/workorder/{workorder}/finalize": {
+    "/api/v1/log/workorder/{workorder}/comment": {
       "post": {
         "tags": [
           "log"
         ],
-        "operationId": "log_FinalizeWorkorder",
+        "operationId": "log_RecordWorkorderComment",
         "parameters": [
           {
             "name": "workorder",
@@ -1818,8 +1818,29 @@
               "type": "string"
             },
             "x-position": 1
+          },
+          {
+            "name": "operatorName",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 3
           }
         ],
+        "requestBody": {
+          "x-name": "comment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
         "responses": {
           "200": {
             "description": "",
@@ -2290,7 +2311,7 @@
           "OrderAssignment",
           "GeneralMessage",
           "PalletCycle",
-          "FinalizeWorkorder",
+          "WorkorderComment",
           "InspectionResult",
           "CloseOut",
           "AddToQueue",
@@ -2310,7 +2331,7 @@
           "OrderAssignment",
           "GeneralMessage",
           "PalletCycle",
-          "FinalizeWorkorder",
+          "WorkorderComment",
           "InspectionResult",
           "CloseOut",
           "AddToQueue",
@@ -3517,10 +3538,12 @@
               "type": "string"
             }
           },
-          "FinalizedTimeUTC": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+          "Comments": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/WorkorderComment"
+            }
           },
           "ElapsedStationTime": {
             "type": "object",
@@ -3535,6 +3558,23 @@
               "type": "string",
               "format": "duration"
             }
+          }
+        }
+      },
+      "WorkorderComment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "Comment",
+          "TimeUTC"
+        ],
+        "properties": {
+          "Comment": {
+            "type": "string"
+          },
+          "TimeUTC": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

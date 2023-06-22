@@ -276,7 +276,6 @@ export const possibleWorkordersForMaterialInDialog = atom<Promise<ReadonlyArray<
     const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName);
 
     return LazySeq.of(works).toSortedArray(
-      (w) => (w.finalizedTimeUTC ? 1 : 0),
       (w) => w.dueDate.getTime(),
       (w) => -w.priority
     );

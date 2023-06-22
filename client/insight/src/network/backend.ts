@@ -138,7 +138,11 @@ export interface LogAPI {
     operatorName: string | null,
     notes: string
   ): Promise<Readonly<api.ILogEntry>>;
-  finalizeWorkorder(workorder: string): Promise<Readonly<api.ILogEntry>>;
+  recordWorkorderComment(
+    workorder: string,
+    operName: string | null | undefined,
+    comment: string
+  ): Promise<Readonly<api.ILogEntry>>;
 }
 
 export interface MachineAPI {

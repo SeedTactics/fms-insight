@@ -266,8 +266,12 @@ namespace BlackMaple.MachineFramework
       TimeSpan active,
       DateTime completeTimeUTC
     );
-    LogEntry RecordFinalizedWorkorder(string workorder);
-    LogEntry RecordFinalizedWorkorder(string workorder, DateTime finalizedUTC);
+    LogEntry RecordWorkorderComment(
+      string workorder,
+      string comment,
+      string operName,
+      DateTime? timeUTC = null
+    );
     IEnumerable<LogEntry> RecordAddMaterialToQueue(
       EventLogMaterial mat,
       string queue,

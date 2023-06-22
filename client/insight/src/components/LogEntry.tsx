@@ -108,8 +108,8 @@ function logType(entry: api.ILogEntry): string {
     case api.LogType.PalletCycle:
       return "Pallet Cycle";
 
-    case api.LogType.FinalizeWorkorder:
-      return "Finalize Workorder";
+    case api.LogType.WorkorderComment:
+      return "Workorder";
 
     case api.LogType.CloseOut:
       return "CloseOut";
@@ -254,8 +254,8 @@ function display(props: LogEntryProps): JSX.Element {
       }
     }
 
-    case api.LogType.FinalizeWorkorder:
-      return <span>Finalize workorder {entry.result}</span>;
+    case api.LogType.WorkorderComment:
+      return <span>Workorder {entry.result} Comment</span>;
 
     case api.LogType.InspectionResult:
       if (entry.result.toLowerCase() === "false") {

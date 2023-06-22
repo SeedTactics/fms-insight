@@ -31,7 +31,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { Box, Stack, styled, TableSortLabel } from "@mui/material";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  styled,
+  TableSortLabel,
+  TextField,
+} from "@mui/material";
 import { IconButton } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { Typography } from "@mui/material";
@@ -48,14 +59,14 @@ import {
   MoreHoriz,
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
-import { currentStatus } from "../../cell-status/current-status.js";
+import { addWorkorderComment, currentStatus } from "../../cell-status/current-status.js";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
 import { IActiveWorkorder } from "../../network/api.js";
 import { durationToMinutes } from "../../util/parseISODuration.js";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
-import { useAtomValue, useSetAtom } from "jotai";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
 const WorkorderTableRow = styled(TableRow)({
   "& > *": {
@@ -71,6 +82,7 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
   readonly workorder: IActiveWorkorder;
 }) {
   const setMatToShow = useSetAtom(materialDialogOpen);
+  const setCommentDialog = useSetAtom(workorderCommentDialogAtom);
 
   const stationNames = LazySeq.ofObject(workorder.activeStationTime ?? {})
     .concat(LazySeq.ofObject(workorder.elapsedStationTime ?? {}))
@@ -131,6 +143,25 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
             ))}
           </TableBody>
         </Table>
+      </div>
+      <div>
+        <Table size="small">
+          <TableHead>
+            <TableCell>Time</TableCell>
+            <TableCell>Comment</TableCell>
+          </TableHead>
+          <TableBody>
+            {(workorder.comments ?? []).map((c, idx) => (
+              <TableRow key={idx}>
+                <TableCell>{c.timeUTC.toLocaleString()}</TableCell>
+                <TableCell>{c.comment}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <Button sx={{ mt: "0.5em" }} onClick={() => setCommentDialog(workorder)}>
+          Add Comment
+        </Button>
       </div>
     </Stack>
   );
@@ -349,6 +380,67 @@ const WorkorderHeader = React.memo(function WorkorderHeader(props: {
   );
 });
 
+const workorderCommentDialogAtom = atom<Readonly<IActiveWorkorder> | null>(null);
+
+function WorkorderCommentDialog() {
+  const [workorder, setWorkorder] = useAtom(workorderCommentDialogAtom);
+  const [comment, setComment] = React.useState<string | null>(null);
+  const addComment = useSetAtom(addWorkorderComment);
+
+  function close() {
+    setWorkorder(null);
+    setComment(null);
+  }
+
+  function save() {
+    if (workorder && comment && comment !== "") {
+      addComment({ workorder: workorder.workorderId, comment: comment });
+    }
+    close();
+  }
+
+  return (
+    <Dialog open={workorder !== null} onClose={close}>
+      {workorder !== null ? (
+        <>
+          <DialogTitle>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <div>
+                <PartIdenticon part={workorder.part} size={40} />
+              </div>
+              <div style={{ marginLeft: "1em", flexGrow: 1 }}>Add Comment For {workorder.workorderId}</div>
+            </div>
+          </DialogTitle>
+          <DialogContent>
+            <TextField
+              variant="outlined"
+              sx={{ mt: "1em" }}
+              fullWidth
+              autoFocus
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && comment !== null && comment !== "") {
+                  save();
+                  e.preventDefault();
+                }
+              }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button color="primary" onClick={save}>
+              Save Comment
+            </Button>
+            <Button color="primary" onClick={close}>
+              Cancel
+            </Button>
+          </DialogActions>
+        </>
+      ) : undefined}
+    </Dialog>
+  );
+}
+
 export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage(): JSX.Element {
   useSetTitle("Workorders");
   const [sortBy, setSortBy] = React.useState<SortColumn>(SortColumn.WorkorderId);
@@ -376,6 +468,7 @@ export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage():
           ))}
         </TableBody>
       </Table>
+      <WorkorderCommentDialog />
     </Box>
   );
 });

@@ -823,7 +823,7 @@ namespace MachineWatchTest
       logsForMat1 = logsForMat1.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
       logs = logs.Select(TransformLog(mat1.MaterialID, SetWorkorderInMat("work1"))).ToList();
       mat1 = SetWorkorderInMat("work1")(mat1);
-      var finalize = _jobLog.RecordFinalizedWorkorder("work1");
+      var finalize = _jobLog.RecordWorkorderComment("work1", "ccc", null);
       CheckLog(logsForMat1.Append(finalize).ToList(), _jobLog.GetLogForWorkorder("work1").ToList(), start);
       _jobLog.GetLogForWorkorder("work2").Should().BeEmpty();
 
@@ -1672,7 +1672,7 @@ namespace MachineWatchTest
           Priority = work1part1.Priority,
           CompletedQuantity = 2, // mat1 and mat3
           Serials = ImmutableList.Create("serial1", "serial3"),
-          FinalizedTimeUTC = null,
+          Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             .Add("MC", TimeSpan.FromMinutes(10 + 30 + 3 * 1 / c2Cnt)) //10 + 30 from mat1, 3*1/4 for mat3
             .Add(
@@ -1693,7 +1693,7 @@ namespace MachineWatchTest
           Priority = work1part2.Priority,
           CompletedQuantity = 1,
           Serials = ImmutableList.Create("serial4"),
-          FinalizedTimeUTC = null,
+          Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             .Add("MC", TimeSpan.FromMinutes(3 * 1 / c2Cnt))
             .Add("Load", TimeSpan.FromMinutes(5 * 1 / c2Cnt)),
@@ -1710,7 +1710,7 @@ namespace MachineWatchTest
           Priority = work2.Priority,
           CompletedQuantity = 2,
           Serials = ImmutableList.Create("serial5", "serial6"),
-          FinalizedTimeUTC = null,
+          Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             .Add("MC", TimeSpan.FromMinutes(3 * 2 / c2Cnt))
             .Add("Load", TimeSpan.FromMinutes(5 * 2 / c2Cnt)),
@@ -1738,18 +1738,29 @@ namespace MachineWatchTest
               Priority = earlierWork.Priority,
               CompletedQuantity = 0,
               Serials = ImmutableList<string>.Empty,
-              FinalizedTimeUTC = null,
+              Comments = null,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             }
           }
         );
 
-      //---- test finalize
-      var finalizedEntry = _jobLog.RecordFinalizedWorkorder("work1");
+      //---- test comments
+      var finalizedEntry = _jobLog.RecordWorkorderComment(
+        "work1",
+        comment: "work1ccc",
+        operName: "oper1",
+        timeUTC: t.AddHours(222)
+      );
       Assert.Equal("", finalizedEntry.Pallet);
       Assert.Equal("work1", finalizedEntry.Result);
-      Assert.Equal(LogType.FinalizeWorkorder, finalizedEntry.LogType);
+      Assert.Equal(LogType.WorkorderComment, finalizedEntry.LogType);
+      finalizedEntry.ProgramDetails
+        .Should()
+        .BeEquivalentTo(
+          new Dictionary<string, string> { { "Comment", "work1ccc" }, { "Operator", "oper1" } }
+        );
+      var expectedComment1 = new WorkorderComment() { Comment = "work1ccc", TimeUTC = t.AddHours(222) };
 
       _jobLog
         .GetActiveWorkordersForMostRecentSchedule()
@@ -1759,11 +1770,33 @@ namespace MachineWatchTest
           {
             expectedActiveWorks[0] with
             {
-              FinalizedTimeUTC = finalizedEntry.EndTimeUTC
+              Comments = ImmutableList.Create(expectedComment1)
             },
             expectedActiveWorks[1] with
             {
-              FinalizedTimeUTC = finalizedEntry.EndTimeUTC
+              Comments = ImmutableList.Create(expectedComment1)
+            },
+            expectedActiveWorks[2]
+          }
+        );
+
+      // add a second comment
+      _jobLog.RecordWorkorderComment("work1", comment: "work1ddd", operName: null, timeUTC: t.AddHours(333));
+      var expectedComment2 = new WorkorderComment() { Comment = "work1ddd", TimeUTC = t.AddHours(333) };
+
+      _jobLog
+        .GetActiveWorkordersForMostRecentSchedule()
+        .Should()
+        .BeEquivalentTo(
+          new[]
+          {
+            expectedActiveWorks[0] with
+            {
+              Comments = ImmutableList.Create(expectedComment1, expectedComment2)
+            },
+            expectedActiveWorks[1] with
+            {
+              Comments = ImmutableList.Create(expectedComment1, expectedComment2)
             },
             expectedActiveWorks[2]
           }
@@ -1796,7 +1829,7 @@ namespace MachineWatchTest
               Priority = newWork.Priority,
               CompletedQuantity = 0,
               Serials = ImmutableList<string>.Empty,
-              FinalizedTimeUTC = null,
+              Comments = null,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             }
