@@ -575,12 +575,12 @@ namespace MazakMachineInterface
         };
 
         //Planned Pallets
-        var pals = ImmutableList.CreateBuilder<string>();
+        var pals = ImmutableList.CreateBuilder<int>();
         foreach (var palRow in mazakData.Pallets)
         {
           if (palRow.PalletNumber > 0 && palRow.Fixture == partProcRow.Fixture)
           {
-            pals.Add(palRow.PalletNumber.ToString());
+            pals.Add(palRow.PalletNumber);
           }
         }
 

@@ -1708,7 +1708,7 @@ namespace MachineWatchTest
               {
                 InputQueue = "castingQ",
                 Casting = casting,
-                Pallets = matchingPallets ? ImmutableList.Create("1", "3") : ImmutableList.Create("1"),
+                Pallets = matchingPallets ? ImmutableList.Create(1, 3) : ImmutableList.Create(1),
                 Fixture = matchingFixtures ? "fixA" : null,
                 Face = matchingFixtures ? 10 : null,
               }
@@ -1720,7 +1720,7 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "transQ",
-                Pallets = ImmutableList.Create("2"),
+                Pallets = ImmutableList.Create(2),
               }
             )
           }
@@ -1743,7 +1743,7 @@ namespace MachineWatchTest
               {
                 InputQueue = "castingQ",
                 Casting = casting,
-                Pallets = ImmutableList.Create("3"),
+                Pallets = ImmutableList.Create(3),
                 Fixture = matchingFixtures ? "fixA" : null,
                 Face = matchingFixtures ? 10 : null,
               }
@@ -1755,7 +1755,7 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "transQ",
-                Pallets = ImmutableList.Create("4"),
+                Pallets = ImmutableList.Create(4),
               }
             )
           }

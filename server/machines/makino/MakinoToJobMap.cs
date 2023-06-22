@@ -192,8 +192,7 @@ namespace Makino
       if (pals == null)
         return;
 
-      _byPartID[_procIDToPartID[processID]] %= j =>
-        j.AdjustPath(procNum, 1, p => p.Pallets.AddRange(pals.Select(pal => pal.ToString())));
+      _byPartID[_procIDToPartID[processID]] %= j => j.AdjustPath(procNum, 1, p => p.Pallets.AddRange(pals));
     }
 
     public BlackMaple.MachineFramework.ActiveJob DuplicateForOrder(int orderID, string order, int partID)

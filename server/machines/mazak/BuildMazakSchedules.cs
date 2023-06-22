@@ -241,7 +241,7 @@ namespace MazakMachineInterface
 
       // first, calculate the fixtures and faces used by the job to check
       var usedFixtureFaces = new HashSet<ValueTuple<string, string>>();
-      var usedPallets = new HashSet<string>();
+      var usedPallets = new HashSet<int>();
       for (int proc = 1; proc <= jobToCheck.Processes.Count; proc++)
       {
         var plannedFix = jobToCheck.Processes[proc - 1].Paths[0].Fixture;

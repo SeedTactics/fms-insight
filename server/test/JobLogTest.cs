@@ -56,7 +56,7 @@ namespace MachineWatchTest
   {
     public static readonly ProcPathInfo EmptyPath = new ProcPathInfo()
     {
-      Pallets = ImmutableList<string>.Empty,
+      Pallets = ImmutableList<int>.Empty,
       Load = ImmutableList<int>.Empty,
       Unload = ImmutableList<int>.Empty,
       ExpectedLoadTime = TimeSpan.Zero,

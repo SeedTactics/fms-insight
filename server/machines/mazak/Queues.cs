@@ -532,7 +532,7 @@ namespace MazakMachineInterface
     )
     {
       var usedFixtureFaces = new HashSet<(string fixture, int face)>();
-      var usedPallets = new HashSet<string>();
+      var usedPallets = new HashSet<int>();
       foreach (var proc in currentSch.Procs)
       {
         var plannedInfo = currentSch.Job.Processes[proc.Key - 1].Paths[proc.Value.Path - 1];

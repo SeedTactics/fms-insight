@@ -183,7 +183,7 @@ namespace BlackMaple.MachineFramework
   public record ProcPathInfo
   {
     [DataMember(IsRequired = true)]
-    public required ImmutableList<string> Pallets { get; init; }
+    public required ImmutableList<int> Pallets { get; init; }
 
     [DataMember(IsRequired = false)]
     public string? Fixture { get; init; }

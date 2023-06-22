@@ -204,7 +204,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE pallets(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet TEXT, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
+          "CREATE TABLE pallets(UniqueStr TEXT, Process INTEGER, Path INTEGER, Pallet INTEGER, PRIMARY KEY(UniqueStr,Process,Path,Pallet))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =

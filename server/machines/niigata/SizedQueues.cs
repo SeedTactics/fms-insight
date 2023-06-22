@@ -282,10 +282,10 @@ namespace BlackMaple.FMSInsight.Niigata
       string queue
     )
     {
-      var availPallets = new HashSet<string>(
+      var availPallets = new HashSet<int>(
         cellState.Pallets
           .Where(pal => !pal.Status.HasWork && !pal.ManualControl)
-          .Select(pal => pal.Status.Master.PalletNum.ToString())
+          .Select(pal => pal.Status.Master.PalletNum)
       );
 
       return mats.All(mat =>

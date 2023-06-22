@@ -85,13 +85,6 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add("Part " + j.PartName + " does not have any pallets");
             }
-            foreach (var pal in pathData.Pallets)
-            {
-              if (!int.TryParse(pal, out var p))
-              {
-                errors.Add("Part " + j.PartName + " has non-integer pallets");
-              }
-            }
             if (
               !string.IsNullOrEmpty(pathData.InputQueue) && !_settings.Queues.ContainsKey(pathData.InputQueue)
             )
