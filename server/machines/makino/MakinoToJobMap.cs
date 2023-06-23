@@ -256,7 +256,7 @@ namespace Makino
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.OnPallet,
-          Pallet = palletNum.ToString(),
+          Pallet = palletNum,
           Face = face
         }
       };
@@ -300,9 +300,9 @@ namespace Makino
     private Dictionary<int, List<InProcessMaterial>> _fixPalIDToMaterial =
       new Dictionary<int, List<InProcessMaterial>>();
     private Dictionary<int, List<int>> _fixIDToPallets = new Dictionary<int, List<int>>();
-    private Dictionary<string, PalletStatus> _pallets = new Dictionary<string, PalletStatus>();
+    private Dictionary<int, PalletStatus> _pallets = new Dictionary<int, PalletStatus>();
 
-    public IDictionary<string, PalletStatus> Pallets
+    public IDictionary<int, PalletStatus> Pallets
     {
       get { return _pallets; }
     }
@@ -327,9 +327,9 @@ namespace Makino
         _fixIDToPallets.Add(fixtureID, new List<int>());
       _fixIDToPallets[fixtureID].Add(palletNum);
 
-      if (_pallets.ContainsKey(palletNum.ToString()))
+      if (_pallets.ContainsKey(palletNum))
       {
-        _pallets[palletNum.ToString()] %= p => p.NumFaces = Math.Max(p.NumFaces, fixtureNum);
+        _pallets[palletNum] %= p => p.NumFaces = Math.Max(p.NumFaces, fixtureNum);
         return;
       }
 
@@ -337,14 +337,14 @@ namespace Makino
 
       pal = new PalletStatus()
       {
-        Pallet = palletNum.ToString(),
+        Pallet = palletNum,
         CurrentPalletLocation = loc,
         NumFaces = fixtureNum,
         FixtureOnPallet = "",
         OnHold = false,
       };
 
-      _pallets.Add(palletNum.ToString(), pal);
+      _pallets.Add(palletNum, pal);
     }
 
     public IEnumerable<int> PalletsForFixture(int fixtureID)
@@ -373,7 +373,7 @@ namespace Makino
       }
 
       var palletNum = _fixPalIDToPalNum[fixturePalletID];
-      var pal = _pallets[palletNum.ToString()];
+      var pal = _pallets[palletNum];
 
       if (pal.CurrentPalletLocation.Location == PalletLocationEnum.Machine && mat.Action.Program != "")
       {
@@ -390,7 +390,7 @@ namespace Makino
     public void SetMaterialAsUnload(int fixturePalletID, bool completed)
     {
       var palletNum = _fixPalIDToPalNum[fixturePalletID];
-      var pal = _pallets[palletNum.ToString()];
+      var pal = _pallets[palletNum];
       var face = _fixPalIDToFixNum[fixturePalletID].ToString();
 
       if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
@@ -418,7 +418,7 @@ namespace Makino
     public void AddMaterialToLoad(int fixturePalletID, string unique, string partName, int procNum, int qty)
     {
       var palletNum = _fixPalIDToPalNum[fixturePalletID];
-      var pal = _pallets[palletNum.ToString()];
+      var pal = _pallets[palletNum];
       var face = _fixPalIDToFixNum[fixturePalletID];
 
       List<InProcessMaterial> ms;

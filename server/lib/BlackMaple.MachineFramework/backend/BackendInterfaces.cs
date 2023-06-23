@@ -126,7 +126,7 @@ namespace BlackMaple.MachineFramework
 
     void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
 
-    void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null);
+    void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null);
     event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     void InvalidatePalletCycle(

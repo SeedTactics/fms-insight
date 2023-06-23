@@ -509,7 +509,7 @@ namespace DebugMachineWatchApiServer
             Process = mat.Process,
             Face = ""
           },
-          pallet: mat.Location.Pallet,
+          pallet: mat.Location.Pallet ?? 0,
           queue: _fmsSettings.QuarantineQueue,
           operatorName: operatorName,
           reason: reason
@@ -855,14 +855,14 @@ namespace DebugMachineWatchApiServer
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
         Queues = ImmutableDictionary<string, QueueInfo>.Empty
       };
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
+    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       using var LogDB = RepoConfig.OpenConnection();
       Serilog.Log.Information(

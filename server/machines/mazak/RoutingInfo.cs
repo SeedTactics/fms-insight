@@ -658,7 +658,7 @@ namespace MazakMachineInterface
                   Process = mat.Process,
                   Face = ""
                 },
-                pallet: mat.Location.Pallet,
+                pallet: mat.Location.Pallet ?? 0,
                 queue: fmsSettings.QuarantineQueue ?? "",
                 timeUTC: null,
                 operatorName: operatorName,
@@ -721,7 +721,7 @@ namespace MazakMachineInterface
       logReader.RecheckQueues(wait: true);
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
+    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
 

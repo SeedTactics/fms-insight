@@ -71,7 +71,7 @@ namespace Makino
         {
           TimeOfCurrentStatusUTC = DateTime.UtcNow,
           Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-          Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
           Material = ImmutableList<InProcessMaterial>.Empty,
           Alarms = ImmutableList<string>.Empty,
           Queues = ImmutableDictionary<string, QueueInfo>.Empty
@@ -199,7 +199,7 @@ namespace Makino
       // do nothing
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
+    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       // do nothing
     }

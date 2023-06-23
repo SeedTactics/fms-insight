@@ -56,14 +56,14 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> StationLogByForeignID(string foreignID);
     LogEntry MostRecentLogEntryForForeignID(string foreignID);
-    List<LogEntry> CurrentPalletLog(string pallet, bool includeLastPalletCycleEvt = false);
+    List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
     string OriginalMessageByForeignID(string foreignID);
-    DateTime LastPalletCycleTime(string pallet);
+    DateTime LastPalletCycleTime(int pallet);
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     string MaxForeignID();
     DateTime MaxLogDate();
     string ForeignIDForCounter(long counter);
-    bool CycleExists(DateTime endUTC, string pal, LogType logTy, string locName, int locNum);
+    bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkordersForSchedule(string scheduleId);
     ImmutableList<ActiveWorkorder> GetActiveWorkordersForMostRecentSchedule();
     ImmutableList<string> GetWorkordersForUnique(string jobUnique);
@@ -73,7 +73,7 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     LogEntry RecordLoadStart(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
@@ -81,14 +81,14 @@ namespace BlackMaple.MachineFramework
     );
     IEnumerable<LogEntry> RecordLoadEnd(
       IEnumerable<MaterialToLoadOntoPallet> toLoad,
-      string pallet,
+      int pallet,
       DateTime timeUTC,
       string foreignId = null,
       string originalMessage = null
     );
     LogEntry RecordUnloadStart(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
@@ -96,7 +96,7 @@ namespace BlackMaple.MachineFramework
     );
     IEnumerable<LogEntry> RecordUnloadEnd(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int lulNum,
       DateTime timeUTC,
       TimeSpan elapsed,
@@ -107,7 +107,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordManualWorkAtLULStart(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int lulNum,
       DateTime timeUTC,
       string operationName,
@@ -116,7 +116,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordManualWorkAtLULEnd(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int lulNum,
       DateTime timeUTC,
       TimeSpan elapsed,
@@ -127,7 +127,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordMachineStart(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       string statName,
       int statNum,
       string program,
@@ -139,7 +139,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordMachineEnd(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       string statName,
       int statNum,
       string program,
@@ -156,7 +156,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordPalletArriveRotaryInbound(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       string statName,
       int statNum,
       DateTime timeUTC,
@@ -165,7 +165,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordPalletDepartRotaryInbound(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       string statName,
       int statNum,
       DateTime timeUTC,
@@ -176,7 +176,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordPalletArriveStocker(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int stockerNum,
       DateTime timeUTC,
       bool waitForMachine,
@@ -185,7 +185,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry RecordPalletDepartStocker(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int stockerNum,
       DateTime timeUTC,
       bool waitForMachine,
@@ -309,7 +309,7 @@ namespace BlackMaple.MachineFramework
       EventLogMaterial mat,
       string program,
       string result,
-      string pallet = "",
+      int pallet = 0,
       DateTime? timeUTC = null,
       string foreignId = null,
       string originalMessage = null,
@@ -325,7 +325,7 @@ namespace BlackMaple.MachineFramework
     );
     LogEntry SignalMaterialForQuarantine(
       EventLogMaterial mat,
-      string pallet,
+      int pallet,
       string queue,
       string operatorName,
       string reason,
@@ -334,7 +334,7 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     );
     SwapMaterialResult SwapMaterialInCurrentPalletCycle(
-      string pallet,
+      int pallet,
       long oldMatId,
       long newMatId,
       string operatorName,
@@ -411,20 +411,13 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     // Pending Loads
     // --------------------------------------------------------------------------------
-    void AddPendingLoad(
-      string pal,
-      string key,
-      int load,
-      TimeSpan elapsed,
-      TimeSpan active,
-      string foreignID
-    );
-    List<PendingLoad> PendingLoads(string pallet);
+    void AddPendingLoad(int pal, string key, int load, TimeSpan elapsed, TimeSpan active, string foreignID);
+    List<PendingLoad> PendingLoads(int pallet);
     List<PendingLoad> AllPendingLoads();
     void CancelPendingLoads(string foreignID);
-    LogEntry CompletePalletCycle(string pal, DateTime timeUTC, string foreignID = null);
+    LogEntry CompletePalletCycle(int pal, DateTime timeUTC, string foreignID = null);
     (LogEntry, IEnumerable<LogEntry>) CompletePalletCycle(
-      string pal,
+      int pal,
       DateTime timeUTC,
       IReadOnlyDictionary<string, IEnumerable<EventLogMaterial>> matFromPendingLoads,
       IEnumerable<MaterialToLoadOntoPallet> additionalLoads,
@@ -572,7 +565,7 @@ namespace BlackMaple.MachineFramework
 
   public record PendingLoad
   {
-    public required string Pallet { get; init; }
+    public required int Pallet { get; init; }
     public required string Key { get; init; }
     public required int LoadStation { get; init; }
     public required TimeSpan Elapsed { get; init; }

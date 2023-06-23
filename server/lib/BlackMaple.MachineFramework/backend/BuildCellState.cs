@@ -146,7 +146,7 @@ public static class BuildCellState
   public static Pallet CurrentMaterialOnPallet(int pallet, IRepository db, IJobCacheWithDefaultStops jobs)
   {
     var faces = ImmutableDictionary.CreateBuilder<int, LoadedFace>();
-    var log = db.CurrentPalletLog(pallet.ToString(), includeLastPalletCycleEvt: true).ToImmutableList();
+    var log = db.CurrentPalletLog(pallet, includeLastPalletCycleEvt: true).ToImmutableList();
 
     var lastPalletCycle = log.LastOrDefault(e => e.LogType == LogType.PalletCycle);
 
@@ -191,7 +191,7 @@ public static class BuildCellState
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.OnPallet,
-              Pallet = pallet.ToString(),
+              Pallet = pallet,
               Face = face.Face,
             },
             Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
@@ -330,7 +330,7 @@ public static class BuildCellState
     {
       var loadBegin = db.RecordLoadStart(
         mats: new EventLogMaterial[] { },
-        pallet: pal.PalletNum.ToString(),
+        pallet: pal.PalletNum,
         lulNum: pal.PalletNum,
         timeUTC: nowUTC
       );
@@ -539,7 +539,7 @@ public static class BuildCellState
           Faces = matToLoad.Select(m => m.Item1).ToImmutableList()
         }
       },
-      pallet: pal.PalletNum.ToString(),
+      pallet: pal.PalletNum,
       timeUTC: nowUTC.AddSeconds(1)
     );
 
@@ -607,7 +607,7 @@ public static class BuildCellState
                 }
             )
         ),
-        pallet: pal.PalletNum.ToString(),
+        pallet: pal.PalletNum,
         statName: groupName,
         statNum: machineNum,
         program: program,
@@ -708,7 +708,7 @@ public static class BuildCellState
                 }
             )
         ),
-        pallet: pal.PalletNum.ToString(),
+        pallet: pal.PalletNum,
         statName: machineStart.LocationName,
         statNum: machineStart.LocationNum,
         program: machineStart.Program,
@@ -787,7 +787,7 @@ public static class BuildCellState
                 Face = faceNum.ToString()
               }
           ),
-          pallet: pal.PalletNum.ToString(),
+          pallet: pal.PalletNum,
           lulNum: lulNum,
           timeUTC: nowUTC
         )
@@ -882,7 +882,7 @@ public static class BuildCellState
               Face = faceNum.ToString()
             }
         ),
-        pallet: pal.PalletNum.ToString(),
+        pallet: pal.PalletNum,
         lulNum: lulNum,
         timeUTC: nowUTC,
         elapsed: face.UnloadStart != null ? nowUTC - face.UnloadStart.EndTimeUTC : TimeSpan.Zero,
@@ -915,8 +915,7 @@ public static class BuildCellState
     return materialToLoad
       .Where(
         m =>
-          m.Action.Type == InProcessMaterialAction.ActionType.Loading
-          && m.Action.LoadOntoPallet == palletNum.ToString()
+          m.Action.Type == InProcessMaterialAction.ActionType.Loading && m.Action.LoadOntoPallet == palletNum
       )
       .GroupBy(m => m.Action.LoadOntoFace ?? 1)
       .Select(face =>
@@ -936,7 +935,7 @@ public static class BuildCellState
                 Location = new InProcessMaterialLocation()
                 {
                   Type = InProcessMaterialLocation.LocType.OnPallet,
-                  Pallet = palletNum.ToString(),
+                  Pallet = palletNum,
                   Face = face.Key
                 }
               }
@@ -1037,7 +1036,7 @@ public static class BuildCellState
         : ImmutableList<(MaterialToLoadOntoFace, Func<IEnumerable<LogEntry>, LoadedFace>)>.Empty;
 
     var (cycleEvt, loadEvts) = db.CompletePalletCycle(
-      pal: pal.PalletNum.ToString(),
+      pal: pal.PalletNum,
       timeUTC: nowUTC,
       generateSerials: false,
       matFromPendingLoads: null,

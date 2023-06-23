@@ -283,7 +283,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 {
                   MaterialID = 0,
                   Process = 1,
-                  Pallet = "1",
+                  Pallet = 1,
                   LoadStation = 1,
                   UnloadStation = -1,
                   Stops = ImmutableList.Create(
@@ -435,7 +435,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 {
                   MaterialID = 0,
                   Process = 1,
-                  Pallet = "1",
+                  Pallet = 1,
                   LoadStation = 4,
                   UnloadStation = -1,
                   Stops = ImmutableList.Create(
@@ -567,7 +567,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = 1.ToString(),
+                LoadOntoPallet = 1,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 1,
                 PathAfterLoad = 1
@@ -619,7 +619,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "1",
+                Pallet = 1,
                 Face = 1
               }
             );
@@ -847,7 +847,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           im =>
           {
             im.Action.Type = InProcessMaterialAction.ActionType.Loading;
-            im.Action.LoadOntoPallet = "1";
+            im.Action.LoadOntoPallet = 1;
             im.Action.ProcessAfterLoad = 2;
             im.Action.PathAfterLoad = 1;
             im.Action.LoadOntoFace = 2;
@@ -1015,7 +1015,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
                 LoadOntoFace = 2,
-                LoadOntoPallet = "1",
+                LoadOntoPallet = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1,
                 ElapsedLoadUnloadTime = TimeSpan.Zero
@@ -1188,7 +1188,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
                 LoadOntoFace = 2,
-                LoadOntoPallet = "1",
+                LoadOntoPallet = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1,
                 ElapsedLoadUnloadTime = TimeSpan.Zero
@@ -1374,7 +1374,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
                 LoadOntoFace = 2,
-                LoadOntoPallet = "1",
+                LoadOntoPallet = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1,
                 ElapsedLoadUnloadTime = TimeSpan.Zero
@@ -1686,7 +1686,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "2",
+                LoadOntoPallet = 2,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1
@@ -1764,7 +1764,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "2",
+                Pallet = 2,
                 Face = 1
               }
             );
@@ -2078,7 +2078,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
                 LoadOntoFace = 1,
-                LoadOntoPallet = "2",
+                LoadOntoPallet = 2,
                 PathAfterLoad = 1,
                 ProcessAfterLoad = 2,
                 ElapsedLoadUnloadTime = TimeSpan.Zero
@@ -2109,7 +2109,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "2",
+                Pallet = 2,
                 Face = 1
               }
             );
@@ -2320,7 +2320,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "2",
+                LoadOntoPallet = 2,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1
@@ -2376,7 +2376,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "2",
+                Pallet = 2,
                 Face = 1
               }
             );
@@ -2559,7 +2559,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "2",
+                LoadOntoPallet = 2,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1
@@ -2647,7 +2647,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "2",
+                Pallet = 2,
                 Face = 1
               }
             );
@@ -3294,7 +3294,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = 1.ToString(),
+                LoadOntoPallet = 1,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 1,
                 PathAfterLoad = 1
@@ -3363,7 +3363,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "1",
+                Pallet = 1,
                 Face = 1
               }
             );
@@ -3562,7 +3562,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = 2.ToString(),
+                LoadOntoPallet = 2,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 1,
                 PathAfterLoad = 1
@@ -3616,7 +3616,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "2",
+                Pallet = 2,
                 Face = 1
               }
             );
@@ -3711,7 +3711,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "3",
+                LoadOntoPallet = 3,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 1,
                 PathAfterLoad = 1
@@ -3868,7 +3868,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = 4.ToString(),
+                LoadOntoPallet = 4,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1
@@ -3932,7 +3932,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "4",
+                Pallet = 4,
                 Face = 1
               }
             );
@@ -4400,7 +4400,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "4",
+                LoadOntoPallet = 4,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1
@@ -4475,7 +4475,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "4",
+                Pallet = 4,
                 Face = 1
               }
             );
@@ -4984,7 +4984,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "4",
+                LoadOntoPallet = 4,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1
@@ -5075,7 +5075,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "4",
+                Pallet = 4,
                 Face = 1
               }
             );
@@ -5634,7 +5634,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "2",
+                LoadOntoPallet = 2,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1
@@ -5876,7 +5876,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "2",
+                LoadOntoPallet = 2,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1
@@ -6170,7 +6170,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "1",
+                LoadOntoPallet = 1,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 1,
                 PathAfterLoad = 1
@@ -6215,7 +6215,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "1",
+                Pallet = 1,
                 Face = 1
               }
             );
@@ -6524,7 +6524,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "1",
+                LoadOntoPallet = 1,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 1,
                 PathAfterLoad = 1
@@ -6562,7 +6562,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "1",
+                Pallet = 1,
                 Face = 1
               }
             );
@@ -6704,7 +6704,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = "2",
+                LoadOntoPallet = 2,
                 LoadOntoFace = 1,
                 ProcessAfterLoad = 2,
                 PathAfterLoad = 1,
@@ -6751,7 +6751,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = "2",
+                Pallet = 2,
                 Face = 1
               }
             );

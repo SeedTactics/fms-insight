@@ -2799,7 +2799,7 @@ namespace MachineWatchTest
 
       //add a pending load
       _logDB.AddPendingLoad(
-        "pal1",
+        1,
         "pppp:10:1,unused",
         load: 5,
         elapsed: TimeSpan.FromMinutes(2),
@@ -2811,7 +2811,7 @@ namespace MachineWatchTest
       trans.Should().BeNull();
 
       _logDB.CompletePalletCycle(
-        pal: "pal1",
+        pal: 1,
         timeUTC: DateTime.UtcNow,
         matFromPendingLoads: new Dictionary<string, IEnumerable<EventLogMaterial>>()
         {

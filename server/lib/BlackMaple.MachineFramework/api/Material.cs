@@ -63,7 +63,7 @@ namespace BlackMaple.MachineFramework
 
     // If Type = Loading
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string? LoadOntoPallet { get; init; }
+    public int? LoadOntoPallet { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? LoadOntoFace { get; init; }
@@ -112,7 +112,7 @@ namespace BlackMaple.MachineFramework
 
     //If Type == OnPallet
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string? Pallet { get; init; }
+    public int? Pallet { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? Face { get; init; }

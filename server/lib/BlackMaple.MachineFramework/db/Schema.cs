@@ -84,7 +84,7 @@ namespace BlackMaple.MachineFramework
         //LogType, LocationName, and LocationNum but the column names are kept for backwards
         //compatibility
         cmd.CommandText =
-          "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet TEXT,"
+          "CREATE TABLE stations(Counter INTEGER PRIMARY KEY AUTOINCREMENT,  Pallet INTEGER,"
           + "StationLoc INTEGER, StationName TEXT, StationNum INTEGER, Program TEXT, Start INTEGER, TimeUTC INTEGER,"
           + "Result TEXT, EndOfRoute INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT, OriginalMessage TEXT)";
         cmd.ExecuteNonQuery();
@@ -129,7 +129,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT)";
+          "CREATE TABLE pendingloads(Pallet INTEGER, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT)";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX pending_pal on pendingloads(Pallet)";
         cmd.ExecuteNonQuery();
@@ -591,7 +591,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "CREATE TABLE pendingloads(Pallet TEXT, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ForeignID TEXT)";
+          "CREATE TABLE pendingloads(Pallet INTEGER, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ForeignID TEXT)";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "CREATE INDEX pending_pal on pendingloads(Pallet)";
         cmd.ExecuteNonQuery();

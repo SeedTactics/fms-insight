@@ -361,7 +361,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         expected.Add(e =>
         {
-          e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+          e.Pallet.Should().BeOneOf(pals[proc - 1]);
           e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
           e.LogType.Should().Be(LogType.LoadUnloadCycle);
           e.StartOfCycle.Should().BeFalse();
@@ -372,7 +372,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Pallet.Should().BeOneOf(pals[proc - 1]);
             e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
             e.LogType.Should().Be(LogType.MachineCycle);
             e.LocationName.Should().Be(group);
@@ -387,7 +387,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           });
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Pallet.Should().BeOneOf(pals[proc - 1]);
             e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
             e.LogType.Should().Be(LogType.MachineCycle);
             e.LocationName.Should().Be(group);
@@ -406,7 +406,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Pallet.Should().BeOneOf(pals[proc - 1]);
             e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
             e.LogType.Should().Be(LogType.LoadUnloadCycle);
             e.Program.Should().Be("TestReclamp");
@@ -415,7 +415,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           });
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Pallet.Should().BeOneOf(pals[proc - 1]);
             e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
             e.LogType.Should().Be(LogType.LoadUnloadCycle);
             e.Program.Should().Be("TestReclamp");
@@ -436,7 +436,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         expected.Add(e =>
         {
-          e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+          e.Pallet.Should().BeOneOf(pals[proc - 1]);
           e.LogType.Should().Be(LogType.LoadUnloadCycle);
           e.StartOfCycle.Should().BeFalse();
           e.Result.Should().Be("UNLOAD");
@@ -656,7 +656,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
       byMat.Count.Should().Be(7);
 
-      var byPath = byMat.ToLookup(mat => (new[] { "1", "2" }).Contains(mat.Skip(1).First().Pallet));
+      var byPath = byMat.ToLookup(mat => (new[] { 1, 2 }).Contains(mat.Skip(1).First().Pallet));
       byPath[true].Count().Should().BeGreaterThan(0); // true is pallets 1 or 2, path 1
       byPath[false].Count().Should().BeGreaterThan(0); // false is pallets 5 or 6, path 2
 
@@ -811,7 +811,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var byPath = matIds
         .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
-        .ToLookup(mat => (new[] { "1", "2" }).Contains(mat.logs.Skip(1).First().Pallet));
+        .ToLookup(mat => (new[] { 1, 2 }).Contains(mat.logs.Skip(1).First().Pallet));
       byPath[true].Count().Should().BeGreaterThan(0); // true is pallets 1 or 2, path 1
       byPath[false].Count().Should().BeGreaterThan(0); // false is pallets 3 or 4, path 2
 

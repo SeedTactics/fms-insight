@@ -188,13 +188,13 @@ namespace MazakMachineInterface
       }
 
       //Now add pallets
-      var palletsByName = ImmutableDictionary.CreateBuilder<string, PalletStatus>();
+      var palletsByName = ImmutableDictionary.CreateBuilder<int, PalletStatus>();
       var material = ImmutableList.CreateBuilder<InProcessMaterial>();
       foreach (var palRow in mazakData.Pallets)
       {
-        if (palRow.PalletNumber > 0 && !palletsByName.ContainsKey(palRow.PalletNumber.ToString()))
+        if (palRow.PalletNumber > 0 && !palletsByName.ContainsKey(palRow.PalletNumber))
         {
-          var palName = palRow.PalletNumber.ToString();
+          var palName = palRow.PalletNumber;
           var palLoc = FindPalletLocation(machineGroupName, mazakData, dbType, palRow.PalletNumber);
 
           //Create the pallet
@@ -714,7 +714,7 @@ namespace MazakMachineInterface
     private static void AddRemainingLoadsAndUnloads(
       IRepository log,
       List<LoadAction> currentActions,
-      string palletName,
+      int palletName,
       PalletLocation palLoc,
       TimeSpan? elapsedLoadTime,
       IList<InProcessMaterial> material,

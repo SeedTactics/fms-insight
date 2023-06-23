@@ -49,7 +49,7 @@ namespace BlackMaple.MachineFramework
     public required int LocationNum { get; init; }
 
     public required bool StartOfCycle { get; init; }
-    public required string Pallet { get; init; }
+    public required int Pallet { get; init; }
     public required string Program { get; init; }
     public required string Result { get; init; }
 

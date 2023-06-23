@@ -444,7 +444,7 @@ namespace MachineWatchTest
               workorder: ""
             )
         ),
-        pal: mats.First().Pallet.ToString(),
+        pal: mats.First().Pallet,
         ty: LogType.MachineCycle,
         locName: "machinespec",
         locNum: e2.StationNumber,
@@ -521,7 +521,7 @@ namespace MachineWatchTest
               workorder: ""
             )
         ),
-        pal: mats.First().Pallet.ToString(),
+        pal: mats.First().Pallet,
         ty: LogType.MachineCycle,
         locName: "machinespec",
         locNum: e2.StationNumber,
@@ -566,7 +566,7 @@ namespace MachineWatchTest
             workorder: ""
           )
         },
-        pal: "",
+        pal: 0,
         ty: LogType.Inspection,
         locName: "Inspect",
         locNum: 1,
@@ -624,7 +624,7 @@ namespace MachineWatchTest
               workorder: ""
             )
           },
-          pal: mats.First().Pallet.ToString(),
+          pal: mats.First().Pallet,
           ty: LogType.LoadUnloadCycle,
           locName: "L/U",
           locNum: e2.StationNumber,
@@ -693,7 +693,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
           ),
-          pal: mats.First().Pallet.ToString(),
+          pal: mats.First().Pallet,
           ty: LogType.LoadUnloadCycle,
           locName: "L/U",
           locNum: e2.StationNumber,
@@ -726,7 +726,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
             },
-            pal: "",
+            pal: 0,
             ty: LogType.PartMark,
             locName: "Mark",
             locNum: 1,
@@ -780,7 +780,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
           ),
-          pal: mats.First().Pallet.ToString(),
+          pal: mats.First().Pallet,
           ty: LogType.LoadUnloadCycle,
           locName: "L/U",
           locNum: e2.StationNumber,
@@ -841,7 +841,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
           ),
-          pal: mats.First().Pallet.ToString(),
+          pal: mats.First().Pallet,
           ty: LogType.LoadUnloadCycle,
           locName: "L/U",
           locNum: e2.StationNumber,
@@ -879,7 +879,7 @@ namespace MachineWatchTest
           new BlackMaple.MachineFramework.LogEntry(
             cntr: -1,
             mat: new LogMaterial[] { },
-            pal: pal.ToString(),
+            pal: pal,
             ty: LogType.PalletCycle,
             locName: "Pallet Cycle",
             locNum: 1,
@@ -928,7 +928,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
           ),
-          pal: mats.First().Pallet.ToString(),
+          pal: mats.First().Pallet,
           ty: LogType.PalletInStocker,
           locName: "Stocker",
           locNum: stocker,
@@ -981,7 +981,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
           ),
-          pal: mats.First().Pallet.ToString(),
+          pal: mats.First().Pallet,
           ty: LogType.PalletInStocker,
           locName: "Stocker",
           locNum: stocker,
@@ -1030,7 +1030,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
           ),
-          pal: mats.First().Pallet.ToString(),
+          pal: mats.First().Pallet,
           ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
           locNum: mc,
@@ -1076,7 +1076,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
           ),
-          pal: mats.First().Pallet.ToString(),
+          pal: mats.First().Pallet,
           ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
           locNum: mc,
@@ -1124,7 +1124,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
           ),
-          pal: mats.First().Pallet.ToString(),
+          pal: mats.First().Pallet,
           ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
           locNum: mc,
@@ -1191,7 +1191,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
             },
-            pal: "",
+            pal: 0,
             ty: LogType.AddToQueue,
             locName: queue,
             locNum: startPos,
@@ -1241,7 +1241,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
             },
-            pal: "",
+            pal: 0,
             ty: LogType.RemoveFromQueue,
             locName: queue,
             locNum: startingPos,
@@ -1271,7 +1271,7 @@ namespace MachineWatchTest
             Process = mat.Process,
             Face = mat.Face
           },
-          pallet: mat.Pallet.ToString(),
+          pallet: mat.Pallet,
           queue: queue,
           operatorName: null,
           reason: null,
@@ -1294,7 +1294,7 @@ namespace MachineWatchTest
                 workorder: ""
               )
             },
-            pal: mat.Pallet.ToString(),
+            pal: mat.Pallet,
             ty: LogType.SignalQuarantine,
             locName: queue,
             locNum: -1,
@@ -1311,7 +1311,7 @@ namespace MachineWatchTest
     {
       var time = matOnPal.EventStartTime.AddMinutes(offset);
       var swap = jobLog.SwapMaterialInCurrentPalletCycle(
-        pallet: matOnPal.Pallet.ToString(),
+        pallet: matOnPal.Pallet,
         oldMatId: matOnPal.MaterialID,
         newMatId: matToAdd.MaterialID,
         operatorName: null,
@@ -1322,7 +1322,7 @@ namespace MachineWatchTest
       for (int i = 0; i < expected.Count; i++)
       {
         if (
-          expected[i].Pallet == matOnPal.Pallet.ToString()
+          expected[i].Pallet == matOnPal.Pallet
           && expected[i].Material.Any(m => m.MaterialID == matOnPal.MaterialID)
         )
         {
@@ -2241,7 +2241,7 @@ namespace MachineWatchTest
           {
             MaterialID = proc1.MaterialID,
             Process = 1,
-            Pallet = "2",
+            Pallet = 2,
             LoadStation = 6,
             Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() { StationName = "machinespec", StationNum = 4 }
@@ -2271,7 +2271,7 @@ namespace MachineWatchTest
           {
             MaterialID = proc1.MaterialID,
             Process = 1,
-            Pallet = "2",
+            Pallet = 2,
             LoadStation = 6,
             Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() { StationName = "machinespec", StationNum = 4 }
@@ -2282,7 +2282,7 @@ namespace MachineWatchTest
           {
             MaterialID = proc1.MaterialID,
             Process = 2,
-            Pallet = "2",
+            Pallet = 2,
             LoadStation = 1,
             Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() { StationName = "machinespec", StationNum = 7 }

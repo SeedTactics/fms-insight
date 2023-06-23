@@ -95,7 +95,7 @@ namespace MachineWatchTest
             new LogEntry(
               cntr: -1,
               mat: new[] { mat1_1, mat2_1 },
-              pal: "3",
+              pal: 3,
               ty: LogType.MachineCycle,
               locName: "MC",
               locNum: 1,
@@ -107,7 +107,7 @@ namespace MachineWatchTest
             new LogEntry(
               cntr: -1,
               mat: new[] { mat1_2, mat2_2 },
-              pal: "5",
+              pal: 5,
               ty: LogType.MachineCycle,
               locName: "MC",
               locNum: 1,
@@ -119,7 +119,7 @@ namespace MachineWatchTest
             new LogEntry(
               cntr: -1,
               mat: new[] { mat1_1 },
-              pal: "",
+              pal: 0,
               ty: LogType.PartMark,
               locName: "Mark",
               locNum: 1,
@@ -131,7 +131,7 @@ namespace MachineWatchTest
             new LogEntry(
               cntr: -1,
               mat: new[] { mat1_1 },
-              pal: "",
+              pal: 0,
               ty: LogType.OrderAssignment,
               locName: "Order",
               locNum: 1,
@@ -143,7 +143,7 @@ namespace MachineWatchTest
             new LogEntry(
               cntr: -1,
               mat: new[] { mat2_2 },
-              pal: "",
+              pal: 0,
               ty: LogType.PartMark,
               locName: "Mark",
               locNum: 1,
@@ -155,7 +155,7 @@ namespace MachineWatchTest
             new LogEntry(
               cntr: -1,
               mat: new[] { mat3 },
-              pal: "1",
+              pal: 1,
               ty: LogType.LoadUnloadCycle,
               locName: "L/U",
               locNum: 5,
@@ -167,7 +167,7 @@ namespace MachineWatchTest
             new LogEntry(
               cntr: -1,
               mat: new[] { mat3 },
-              pal: "",
+              pal: 0,
               ty: LogType.OrderAssignment,
               locName: "Order",
               locNum: 1,

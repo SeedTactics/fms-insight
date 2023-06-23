@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
   public record PalletStatus
   {
     [DataMember(IsRequired = true)]
-    public required string Pallet { get; init; }
+    public required int Pallet { get; init; }
 
     [DataMember(IsRequired = true)]
     public required string FixtureOnPallet { get; init; }

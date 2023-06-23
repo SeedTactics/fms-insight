@@ -70,7 +70,7 @@ namespace BlackMaple.MachineFramework
     public required ImmutableDictionary<string, MachineFramework.ActiveJob> Jobs { get; init; }
 
     [DataMember(Name = "Pallets", IsRequired = true)]
-    public required ImmutableDictionary<string, PalletStatus> Pallets { get; init; }
+    public required ImmutableDictionary<int, PalletStatus> Pallets { get; init; }
 
     [DataMember(Name = "Material", IsRequired = true)]
     public required ImmutableList<InProcessMaterial> Material { get; init; }

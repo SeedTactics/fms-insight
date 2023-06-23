@@ -279,8 +279,8 @@ namespace MachineWatchTest
         + "-"
         + PathInspection.StationFormatFlag(2, 2);
 
-      var expandedCounter1 = "counter1-1-2-3-4-P1-P2-10-11-12-13";
-      var expandedCounter2 = "counter1-6-8-7-9-P5-P4-15-16-18-19";
+      var expandedCounter1 = "counter1-1-2-3-4-1-2-10-11-12-13";
+      var expandedCounter2 = "counter1-6-8-7-9-5-4-15-16-18-19";
 
       //set the count as zero, otherwise it chooses a random
       var cnt = new InspectCount()
@@ -304,23 +304,23 @@ namespace MachineWatchTest
 
       _lastCycleTime = DateTime.UtcNow.AddDays(-1);
 
-      AddCycle(mat1Proc1, "P1", LogType.LoadUnloadCycle, 1);
-      AddCycle(mat2Proc1, "P5", LogType.LoadUnloadCycle, 6);
-      AddCycle(mat1Proc1, "P1", LogType.MachineCycle, 10);
-      AddCycle(mat2Proc1, "P5", LogType.MachineCycle, 15);
-      AddCycle(mat1Proc1, "P1", LogType.MachineCycle, 11);
-      AddCycle(mat2Proc1, "P5", LogType.MachineCycle, 16);
-      AddCycle(mat1Proc1, "P1", LogType.LoadUnloadCycle, 2);
-      AddCycle(mat2Proc1, "P5", LogType.LoadUnloadCycle, 8);
+      AddCycle(mat1Proc1, 1, LogType.LoadUnloadCycle, 1);
+      AddCycle(mat2Proc1, 5, LogType.LoadUnloadCycle, 6);
+      AddCycle(mat1Proc1, 1, LogType.MachineCycle, 10);
+      AddCycle(mat2Proc1, 5, LogType.MachineCycle, 15);
+      AddCycle(mat1Proc1, 1, LogType.MachineCycle, 11);
+      AddCycle(mat2Proc1, 5, LogType.MachineCycle, 16);
+      AddCycle(mat1Proc1, 1, LogType.LoadUnloadCycle, 2);
+      AddCycle(mat2Proc1, 5, LogType.LoadUnloadCycle, 8);
 
-      AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 3);
-      AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 7);
-      AddCycle(mat1Proc2, "P2", LogType.MachineCycle, 12);
-      AddCycle(mat2Proc2, "P4", LogType.MachineCycle, 18);
-      AddCycle(mat1Proc2, "P2", LogType.MachineCycle, 13);
-      AddCycle(mat2Proc2, "P4", LogType.MachineCycle, 19);
-      AddCycle(mat1Proc2, "P2", LogType.LoadUnloadCycle, 4);
-      AddCycle(mat2Proc2, "P4", LogType.LoadUnloadCycle, 9);
+      AddCycle(mat1Proc2, 2, LogType.LoadUnloadCycle, 3);
+      AddCycle(mat2Proc2, 4, LogType.LoadUnloadCycle, 7);
+      AddCycle(mat1Proc2, 2, LogType.MachineCycle, 12);
+      AddCycle(mat2Proc2, 4, LogType.MachineCycle, 18);
+      AddCycle(mat1Proc2, 2, LogType.MachineCycle, 13);
+      AddCycle(mat2Proc2, 4, LogType.MachineCycle, 19);
+      AddCycle(mat1Proc2, 2, LogType.LoadUnloadCycle, 4);
+      AddCycle(mat2Proc2, 4, LogType.LoadUnloadCycle, 9);
 
       var inspProg = new PathInspection()
       {
@@ -346,7 +346,7 @@ namespace MachineWatchTest
           {
             MaterialID = 1,
             Process = 1,
-            Pallet = "P1",
+            Pallet = 1,
             LoadStation = 1,
             Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 10 },
@@ -358,7 +358,7 @@ namespace MachineWatchTest
           {
             MaterialID = 1,
             Process = 2,
-            Pallet = "P2",
+            Pallet = 2,
             LoadStation = 3,
             Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 12 },
@@ -380,7 +380,7 @@ namespace MachineWatchTest
           {
             MaterialID = 2,
             Process = 1,
-            Pallet = "P5",
+            Pallet = 5,
             LoadStation = 6,
             Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 15 },
@@ -392,7 +392,7 @@ namespace MachineWatchTest
           {
             MaterialID = 2,
             Process = 2,
-            Pallet = "P4",
+            Pallet = 4,
             LoadStation = 7,
             Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 18 },
@@ -437,7 +437,7 @@ namespace MachineWatchTest
 
     private DateTime _lastCycleTime;
 
-    private void AddCycle(LogMaterial[] mat, string pal, LogType loc, int statNum)
+    private void AddCycle(LogMaterial[] mat, int pal, LogType loc, int statNum)
     {
       string name = loc == LogType.MachineCycle ? "MC" : "Load";
       ((Repository)_insp).AddLogEntryFromUnitTest(

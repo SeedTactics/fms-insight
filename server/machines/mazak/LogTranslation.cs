@@ -98,7 +98,7 @@ namespace MazakMachineInterface
       var cycle = new List<MWI.LogEntry>();
       IEnumerable<BlackMaple.MachineFramework.MaterialToSendToExternalQueue> sendToExternal = null;
       if (e.Pallet >= 1)
-        cycle = _log.CurrentPalletLog(e.Pallet.ToString());
+        cycle = _log.CurrentPalletLog(e.Pallet);
 
       Log.Debug("Handling mazak event {@event}", e);
 
@@ -108,7 +108,7 @@ namespace MazakMachineInterface
 
           _log.RecordLoadStart(
             mats: CreateMaterialWithoutIDs(e),
-            pallet: e.Pallet.ToString(),
+            pallet: e.Pallet,
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
             foreignId: e.ForeignID
@@ -119,7 +119,7 @@ namespace MazakMachineInterface
         case LogCode.LoadEnd:
 
           _log.AddPendingLoad(
-            e.Pallet.ToString(),
+            e.Pallet,
             PendingLoadKey(e),
             e.StationNumber,
             CalculateElapsed(e, cycle, LogType.LoadUnloadCycle, e.StationNumber),
@@ -143,7 +143,7 @@ namespace MazakMachineInterface
           LookupProgram(machineMats, e, out var progName, out var progRev);
           _log.RecordMachineStart(
             mats: machineMats.Select(m => m.Mat),
-            pallet: e.Pallet.ToString(),
+            pallet: e.Pallet,
             statName: _machGroupName.MachineGroupName,
             statNum: e.StationNumber,
             program: progName,
@@ -194,7 +194,7 @@ namespace MazakMachineInterface
             LookupProgram(machineMats, e, out var progName, out var progRev);
             var s = _log.RecordMachineEnd(
               mats: machineMats.Select(m => m.Mat),
-              pallet: e.Pallet.ToString(),
+              pallet: e.Pallet,
               statName: _machGroupName.MachineGroupName,
               statNum: e.StationNumber,
               program: progName,
@@ -228,7 +228,7 @@ namespace MazakMachineInterface
 
           _log.RecordUnloadStart(
             mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
-            pallet: e.Pallet.ToString(),
+            pallet: e.Pallet,
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
             foreignId: e.ForeignID
@@ -247,7 +247,7 @@ namespace MazakMachineInterface
 
           _log.RecordUnloadEnd(
             mats: mats.Select(m => m.Mat),
-            pallet: e.Pallet.ToString(),
+            pallet: e.Pallet,
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
             elapsed: loadElapsed,
@@ -261,7 +261,7 @@ namespace MazakMachineInterface
         case LogCode.StartRotatePalletIntoMachine:
           _log.RecordPalletDepartRotaryInbound(
             mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-            pallet: e.Pallet.ToString(),
+            pallet: e.Pallet,
             statName: _machGroupName.MachineGroupName,
             statNum: e.StationNumber,
             timeUTC: e.TimeUTC,
@@ -290,7 +290,7 @@ namespace MazakMachineInterface
             {
               _log.RecordPalletDepartRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: e.Pallet.ToString(),
+                pallet: e.Pallet,
                 statName: _machGroupName.MachineGroupName,
                 statNum: mcNum,
                 rotateIntoWorktable: false,
@@ -306,7 +306,7 @@ namespace MazakMachineInterface
             {
               _log.RecordPalletDepartStocker(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: e.Pallet.ToString(),
+                pallet: e.Pallet,
                 stockerNum: stockerNum,
                 timeUTC: e.TimeUTC,
                 waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
@@ -330,7 +330,7 @@ namespace MazakMachineInterface
             {
               _log.RecordPalletArriveRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: e.Pallet.ToString(),
+                pallet: e.Pallet,
                 statName: _machGroupName.MachineGroupName,
                 statNum: mcNum,
                 timeUTC: e.TimeUTC,
@@ -344,7 +344,7 @@ namespace MazakMachineInterface
             {
               _log.RecordPalletArriveStocker(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
-                pallet: e.Pallet.ToString(),
+                pallet: e.Pallet,
                 stockerNum: stockerNum,
                 waitForMachine: !cycle.Any(c => c.LogType == LogType.MachineCycle),
                 timeUTC: e.TimeUTC,
@@ -553,7 +553,7 @@ namespace MazakMachineInterface
       List<MWI.LogEntry> cycle
     )
     {
-      var pending = _log.PendingLoads(pallet.ToString());
+      var pending = _log.PendingLoads(pallet);
 
       if (pending.Count == 0)
       {
@@ -564,7 +564,7 @@ namespace MazakMachineInterface
             if (e.LogType == LogType.LoadUnloadCycle && e.StartOfCycle == false && e.Result == "UNLOAD")
               hasCompletedUnload = true;
           if (hasCompletedUnload)
-            _log.CompletePalletCycle(pallet.ToString(), t, foreignID);
+            _log.CompletePalletCycle(pallet, t, foreignID);
           else
             Log.Debug(
               "Skipping pallet cycle at time {time} because we detected a pallet cycle without unload",
@@ -764,7 +764,7 @@ namespace MazakMachineInterface
       }
 
       _log.CompletePalletCycle(
-        pal: pallet.ToString(),
+        pal: pallet,
         timeUTC: t,
         foreignID: foreignID,
         matFromPendingLoads: mat,
@@ -775,7 +775,7 @@ namespace MazakMachineInterface
       if (palletCycle)
         return cycle;
       else
-        return _log.CurrentPalletLog(pallet.ToString());
+        return _log.CurrentPalletLog(pallet);
     }
 
     private Dictionary<long, string> FindUnloadQueues(
@@ -854,7 +854,7 @@ namespace MazakMachineInterface
       bool matMovedToQueue = false;
       foreach (var pal in _mazakSchedules.PalletPositions.Where(p => !p.PalletPosition.StartsWith("LS")))
       {
-        var oldEvts = _log.CurrentPalletLog(pal.PalletNumber.ToString());
+        var oldEvts = _log.CurrentPalletLog(pal.PalletNumber);
 
         // start with everything on the pallet
         List<LogMaterial> matsOnPal = GetAllMaterialOnPallet(oldEvts);
