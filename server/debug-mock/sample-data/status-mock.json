@@ -37,7 +37,7 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["1", "2"],
+              "PalletNums": [1, 2],
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
@@ -129,7 +129,7 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["1", "2"],
+              "PalletNums": [1, 2],
               "Load": [1, 2],
               "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
@@ -256,7 +256,7 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["1", "2", "3"],
+              "PalletNums": [1, 2, 3],
               "Load": [1, 2],
               "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
@@ -324,7 +324,7 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["1", "2", "3"],
+              "PalletNums": [1, 2, 3],
               "Load": [1, 2],
               "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
@@ -427,7 +427,7 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["3", "4"],
+              "PalletNums": [3, 4],
               "Load": [1, 2],
               "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
@@ -523,7 +523,7 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["3", "4"],
+              "PalletNums": [3, 4],
               "Load": [1, 2],
               "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
@@ -637,7 +637,7 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["6", "7"],
+              "PalletNums": [6, 7],
               "Load": [1, 2],
               "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
@@ -695,7 +695,7 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["8", "9"],
+              "PalletNums": [8, 9],
               "Load": [1, 2],
               "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
@@ -915,7 +915,7 @@
   },
   "Pallets": {
     "1": {
-      "Pallet": "1",
+      "PalletNum": 1,
       "FixtureOnPallet": "fix1",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -926,7 +926,7 @@
       "NumFaces": 2
     },
     "2": {
-      "Pallet": "2",
+      "PalletNum": 2,
       "FixtureOnPallet": "fix2",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -943,7 +943,7 @@
       "PercentMoveCompleted": 0.7
     },
     "3": {
-      "Pallet": "3",
+      "PalletNum": 3,
       "FixtureOnPallet": "fix3",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -954,7 +954,7 @@
       "NumFaces": 2
     },
     "4": {
-      "Pallet": "4",
+      "PalletNum": 4,
       "FixtureOnPallet": "fix4",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -965,7 +965,7 @@
       "NumFaces": 2
     },
     "5": {
-      "Pallet": "5",
+      "PalletNum": 5,
       "FixtureOnPallet": "fix5",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -976,7 +976,7 @@
       "NumFaces": 1
     },
     "6": {
-      "Pallet": "6",
+      "PalletNum": 6,
       "FixtureOnPallet": "fix6",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -987,7 +987,7 @@
       "NumFaces": 1
     },
     "7": {
-      "Pallet": "7",
+      "PalletNum": 7,
       "FixtureOnPallet": "fix7",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -998,7 +998,7 @@
       "NumFaces": 1
     },
     "8": {
-      "Pallet": "8",
+      "PalletNum": 8,
       "FixtureOnPallet": "fix8",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -1020,7 +1020,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 1,
+        "PalletNum": 1,
         "Face": "2"
       },
       "Action": {
@@ -1038,12 +1038,12 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 1,
+        "PalletNum": 1,
         "Face": "1"
       },
       "Action": {
         "Type": "Loading",
-        "LoadOntoPallet": "1",
+        "LoadOntoPalletNum": 1,
         "LoadOntoFace": 2,
         "ProcessAfterLoad": 2,
         "PathAfterLoad": 1,
@@ -1063,7 +1063,7 @@
       },
       "Action": {
         "Type": "Loading",
-        "LoadOntoPallet": "1",
+        "LoadOntoPalletNum": 1,
         "LoadOntoFace": 1,
         "ProcessAfterLoad": 1,
         "PathAfterLoad": 1,
@@ -1080,7 +1080,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 2,
+        "PalletNum": 2,
         "Face": "2"
       },
       "Action": {
@@ -1097,7 +1097,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 2,
+        "PalletNum": 2,
         "Face": "1"
       },
       "Action": {
@@ -1114,7 +1114,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 4,
+        "PalletNum": 4,
         "Face": "2"
       },
       "Action": {
@@ -1134,7 +1134,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 4,
+        "PalletNum": 4,
         "Face": "1"
       },
       "Action": {
@@ -1151,7 +1151,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 5,
+        "PalletNum": 5,
         "Face": "1"
       },
       "Action": {
@@ -1174,7 +1174,7 @@
       },
       "Action": {
         "Type": "Loading",
-        "LoadOntoPallet": "5",
+        "LoadOntoPalletNum": 5,
         "LoadOntoFace": 1,
         "ProcessAfterLoad": 1,
         "PathAfterLoad": 1,
@@ -1191,7 +1191,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 6,
+        "PalletNum": 6,
         "Face": "1"
       },
       "Action": {
@@ -1211,7 +1211,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 7,
+        "PalletNum": 7,
         "Face": "1"
       },
       "Action": {
@@ -1228,7 +1228,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 7,
+        "PalletNum": 7,
         "Face": "1"
       },
       "Action": {
@@ -1245,7 +1245,7 @@
       "SignaledInspections": [],
       "Location": {
         "Type": "OnPallet",
-        "Pallet": 8,
+        "PalletNum": 8,
         "Face": "1"
       },
       "Action": {

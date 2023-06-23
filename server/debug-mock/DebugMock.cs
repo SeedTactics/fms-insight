@@ -641,7 +641,12 @@ namespace DebugMachineWatchApiServer
           var reader = new System.IO.StreamReader(file);
           while (reader.Peek() >= 0)
           {
-            var evtJson = reader.ReadLine();
+            // replace empty pal "" with zero.  The pallet type changed to int and I didn't
+            // want to regenerate all the sample data
+            var evtJson = reader
+              .ReadLine()
+              .Replace("\"pal\":\"\"", "\"pal\":0")
+              .Replace("\"pal\": \"\"", "\"pal\":0");
             var e = (LogEntry)JsonConvert.DeserializeObject(evtJson, typeof(LogEntry), _jsonSettings);
             evts.Add(e);
           }
