@@ -167,7 +167,7 @@ namespace BlackMaple.FMSInsight.Niigata
             pal =>
               new MachineFramework.PalletStatus()
               {
-                Pallet = pal.Status.Master.PalletNum,
+                PalletNum = pal.Status.Master.PalletNum,
                 FixtureOnPallet = "",
                 OnHold = pal.Status.Master.Skip,
                 CurrentPalletLocation = pal.Status.CurStation.Location,
@@ -263,7 +263,7 @@ namespace BlackMaple.FMSInsight.Niigata
           Location = new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
-            Pallet = pallet.Master.PalletNum,
+            PalletNum = pallet.Master.PalletNum,
             Face = int.Parse(m.Face)
           },
           Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
@@ -383,14 +383,14 @@ namespace BlackMaple.FMSInsight.Niigata
                     : new InProcessMaterialLocation()
                     {
                       Type = InProcessMaterialLocation.LocType.OnPallet,
-                      Pallet = pallet.Status.Master.PalletNum,
+                      PalletNum = pallet.Status.Master.PalletNum,
                       Face = face.Face
                     },
                   Action = actionIsLoading
                     ? new InProcessMaterialAction()
                     {
                       Type = InProcessMaterialAction.ActionType.Loading,
-                      LoadOntoPallet = pallet.Status.Master.PalletNum,
+                      LoadOntoPalletNum = pallet.Status.Master.PalletNum,
                       ProcessAfterLoad = face.Process,
                       PathAfterLoad = face.Path,
                       LoadOntoFace = face.Face,
@@ -470,14 +470,14 @@ namespace BlackMaple.FMSInsight.Niigata
                     : new InProcessMaterialLocation()
                     {
                       Type = InProcessMaterialLocation.LocType.OnPallet,
-                      Pallet = pallet.Status.Master.PalletNum,
+                      PalletNum = pallet.Status.Master.PalletNum,
                       Face = face.Face
                     },
                   Action = actionIsLoading
                     ? new InProcessMaterialAction()
                     {
                       Type = InProcessMaterialAction.ActionType.Loading,
-                      LoadOntoPallet = pallet.Status.Master.PalletNum,
+                      LoadOntoPalletNum = pallet.Status.Master.PalletNum,
                       ProcessAfterLoad = face.Process,
                       PathAfterLoad = face.Path,
                       LoadOntoFace = face.Face,
@@ -520,20 +520,20 @@ namespace BlackMaple.FMSInsight.Niigata
                       ? new InProcessMaterialLocation()
                       {
                         Type = InProcessMaterialLocation.LocType.OnPallet,
-                        Pallet = pallet.Status.Master.PalletNum,
+                        PalletNum = pallet.Status.Master.PalletNum,
                         Face = mat.Location.Face
                       }
                       : new InProcessMaterialLocation()
                       {
                         Type = InProcessMaterialLocation.LocType.OnPallet,
-                        Pallet = pallet.Status.Master.PalletNum,
+                        PalletNum = pallet.Status.Master.PalletNum,
                         Face = face.Face
                       },
                     Action = actionIsLoading
                       ? new InProcessMaterialAction()
                       {
                         Type = InProcessMaterialAction.ActionType.Loading,
-                        LoadOntoPallet = pallet.Status.Master.PalletNum,
+                        LoadOntoPalletNum = pallet.Status.Master.PalletNum,
                         ProcessAfterLoad = face.Process,
                         PathAfterLoad = face.Path,
                         LoadOntoFace = face.Face,
@@ -619,14 +619,14 @@ namespace BlackMaple.FMSInsight.Niigata
                       : new InProcessMaterialLocation()
                       {
                         Type = InProcessMaterialLocation.LocType.OnPallet,
-                        Pallet = pallet.Status.Master.PalletNum,
+                        PalletNum = pallet.Status.Master.PalletNum,
                         Face = face.Face
                       },
                     Action = actionIsLoading
                       ? new InProcessMaterialAction()
                       {
                         Type = InProcessMaterialAction.ActionType.Loading,
-                        LoadOntoPallet = pallet.Status.Master.PalletNum,
+                        LoadOntoPalletNum = pallet.Status.Master.PalletNum,
                         ProcessAfterLoad = face.Process,
                         PathAfterLoad = face.Path,
                         LoadOntoFace = face.Face,
@@ -698,14 +698,14 @@ namespace BlackMaple.FMSInsight.Niigata
                       : new InProcessMaterialLocation()
                       {
                         Type = InProcessMaterialLocation.LocType.OnPallet,
-                        Pallet = pallet.Status.Master.PalletNum,
+                        PalletNum = pallet.Status.Master.PalletNum,
                         Face = face.Face
                       },
                     Action = actionIsLoading
                       ? new InProcessMaterialAction()
                       {
                         Type = InProcessMaterialAction.ActionType.Loading,
-                        LoadOntoPallet = pallet.Status.Master.PalletNum,
+                        LoadOntoPalletNum = pallet.Status.Master.PalletNum,
                         ProcessAfterLoad = face.Process,
                         PathAfterLoad = face.Path,
                         LoadOntoFace = face.Face,
@@ -2251,7 +2251,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 Action = new InProcessMaterialAction()
                 {
                   Type = InProcessMaterialAction.ActionType.Loading,
-                  LoadOntoPallet = pal.Status.Master.PalletNum,
+                  LoadOntoPalletNum = pal.Status.Master.PalletNum,
                   LoadOntoFace = 1,
                   ProcessAfterLoad = 1,
                   PathAfterLoad = 1
@@ -2273,7 +2273,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 Location = new InProcessMaterialLocation()
                 {
                   Type = InProcessMaterialLocation.LocType.OnPallet,
-                  Pallet = pal.Status.Master.PalletNum,
+                  PalletNum = pal.Status.Master.PalletNum,
                   Face = 1
                 },
                 Action = new InProcessMaterialAction()

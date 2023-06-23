@@ -509,7 +509,7 @@ namespace DebugMachineWatchApiServer
             Process = mat.Process,
             Face = ""
           },
-          pallet: mat.Location.Pallet ?? 0,
+          pallet: mat.Location.PalletNum ?? 0,
           queue: _fmsSettings.QuarantineQueue,
           operatorName: operatorName,
           reason: reason

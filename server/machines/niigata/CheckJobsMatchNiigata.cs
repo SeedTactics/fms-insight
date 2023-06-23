@@ -81,7 +81,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add("Part " + j.PartName + " does not have an assigned fixture");
             }
-            if (!pathData.Pallets.Any())
+            if (!pathData.PalletNums.Any())
             {
               errors.Add("Part " + j.PartName + " does not have any pallets");
             }

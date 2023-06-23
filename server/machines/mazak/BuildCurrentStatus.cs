@@ -202,7 +202,7 @@ namespace MazakMachineInterface
             palName,
             new PalletStatus()
             {
-              Pallet = palName,
+              PalletNum = palName,
               CurrentPalletLocation = palLoc,
               FixtureOnPallet = palRow.Fixture,
               NumFaces = 1,
@@ -270,7 +270,7 @@ namespace MazakMachineInterface
                 {
                   Type = InProcessMaterialAction.ActionType.Loading,
                   LoadOntoFace = palSub.PartProcessNumber + 1,
-                  LoadOntoPallet = palName,
+                  LoadOntoPalletNum = palName,
                   ProcessAfterLoad = palSub.PartProcessNumber + 1,
                   PathAfterLoad = procToPath.PathForProc(palSub.PartProcessNumber + 1),
                   ElapsedLoadUnloadTime = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null
@@ -341,7 +341,7 @@ namespace MazakMachineInterface
                   Location = new InProcessMaterialLocation()
                   {
                     Type = InProcessMaterialLocation.LocType.OnPallet,
-                    Pallet = palName,
+                    PalletNum = palName,
                     Face = face
                   },
                   Action = action
@@ -586,7 +586,7 @@ namespace MazakMachineInterface
 
         job.Processes[partProcRow.ProcessNumber - 1][path - 1] = new ProcPathInfo()
         {
-          Pallets = pals.ToImmutable(),
+          PalletNums = pals.ToImmutable(),
           Fixture = dbPath?.Fixture,
           Face = dbPath?.Face,
           Load = loads.ToImmutable(),
@@ -762,7 +762,7 @@ namespace MazakMachineInterface
               loadAction = new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = palletName,
+                LoadOntoPalletNum = palletName,
                 LoadOntoFace = loadAct.Process,
                 ProcessAfterLoad = loadAct.Process,
                 PathAfterLoad = 1,
@@ -843,7 +843,7 @@ namespace MazakMachineInterface
               Location = new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
-                Pallet = palletName,
+                PalletNum = palletName,
                 Face = unload.Process
               },
               Action = action
@@ -933,7 +933,7 @@ namespace MazakMachineInterface
               Action = new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = palletName,
+                LoadOntoPalletNum = palletName,
                 LoadOntoFace = operation.Process,
                 ProcessAfterLoad = operation.Process,
                 PathAfterLoad = operation.Path,

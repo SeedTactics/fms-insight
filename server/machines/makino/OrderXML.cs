@@ -111,7 +111,7 @@ namespace Makino
           {
             for (var proc = 1; proc <= j.Processes.Count; proc++)
             {
-              foreach (var palNum in j.Processes[proc - 1].Paths[0].Pallets)
+              foreach (var palNum in j.Processes[proc - 1].Paths[0].PalletNums)
               {
                 string fixName;
                 fixName = "P" + palNum.ToString().PadLeft(2, '0');

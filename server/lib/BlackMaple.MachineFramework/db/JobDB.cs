@@ -478,7 +478,7 @@ namespace BlackMaple.MachineFramework
                       p =>
                         new ProcPathInfo()
                         {
-                          Pallets = p.Pals.ToImmutable(),
+                          PalletNums = p.Pals.ToImmutable(),
                           Fixture = p.Fixture,
                           Face = p.Face,
                           Load = p.Loads.ToImmutable(),
@@ -1320,7 +1320,7 @@ namespace BlackMaple.MachineFramework
           for (int j = 1; j <= proc.Paths.Count; j++)
           {
             var path = proc.Paths[j - 1];
-            foreach (var pal in path.Pallets)
+            foreach (var pal in path.PalletNums)
             {
               cmd.Parameters[1].Value = i;
               cmd.Parameters[2].Value = j;

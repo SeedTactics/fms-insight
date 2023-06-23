@@ -538,7 +538,7 @@ namespace MazakMachineInterface
         var plannedInfo = currentSch.Job.Processes[proc.Key - 1].Paths[proc.Value.Path - 1];
         if (string.IsNullOrEmpty(plannedInfo.Fixture))
         {
-          foreach (var p in plannedInfo.Pallets)
+          foreach (var p in plannedInfo.PalletNums)
           {
             usedPallets.Add(p);
           }
@@ -564,7 +564,7 @@ namespace MazakMachineInterface
             {
               var info = s.Job.Processes[p.Key - 1].Paths[p.Value.Path - 1];
               return usedFixtureFaces.Contains((fixture: info.Fixture, face: info.Face ?? 1))
-                || info.Pallets.Any(usedPallets.Contains);
+                || info.PalletNums.Any(usedPallets.Contains);
             })
         )
         ?.SchRow.DueDate;

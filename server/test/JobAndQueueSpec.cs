@@ -1211,7 +1211,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
           Location = new InProcessMaterialLocation()
           {
             Type = data.LocType,
-            Pallet = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? 4 : null
+            PalletNum = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? 4 : null
           }
         }
       )
@@ -1517,7 +1517,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Location = new InProcessMaterialLocation()
       {
         Type = InProcessMaterialLocation.LocType.OnPallet,
-        Pallet = pal,
+        PalletNum = pal,
       },
       Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
     };

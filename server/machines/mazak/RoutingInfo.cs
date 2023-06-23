@@ -658,7 +658,7 @@ namespace MazakMachineInterface
                   Process = mat.Process,
                   Face = ""
                 },
-                pallet: mat.Location.Pallet ?? 0,
+                pallet: mat.Location.PalletNum ?? 0,
                 queue: fmsSettings.QuarantineQueue ?? "",
                 timeUTC: null,
                 operatorName: operatorName,

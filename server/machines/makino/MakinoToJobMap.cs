@@ -192,7 +192,8 @@ namespace Makino
       if (pals == null)
         return;
 
-      _byPartID[_procIDToPartID[processID]] %= j => j.AdjustPath(procNum, 1, p => p.Pallets.AddRange(pals));
+      _byPartID[_procIDToPartID[processID]] %= j =>
+        j.AdjustPath(procNum, 1, p => p.PalletNums.AddRange(pals));
     }
 
     public BlackMaple.MachineFramework.ActiveJob DuplicateForOrder(int orderID, string order, int partID)
@@ -256,7 +257,7 @@ namespace Makino
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.OnPallet,
-          Pallet = palletNum,
+          PalletNum = palletNum,
           Face = face
         }
       };
@@ -337,7 +338,7 @@ namespace Makino
 
       pal = new PalletStatus()
       {
-        Pallet = palletNum,
+        PalletNum = palletNum,
         CurrentPalletLocation = loc,
         NumFaces = fixtureNum,
         FixtureOnPallet = "",
@@ -444,7 +445,7 @@ namespace Makino
           ProcessAfterLoad = procNum,
           PathAfterLoad = 1,
           LoadOntoFace = face,
-          LoadOntoPallet = pal.Pallet
+          LoadOntoPalletNum = pal.PalletNum
         },
         SignaledInspections = ImmutableList<string>.Empty
       };

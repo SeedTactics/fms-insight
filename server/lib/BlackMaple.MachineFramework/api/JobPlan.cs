@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.Serialization;
 using Germinate;
 
@@ -182,8 +183,9 @@ namespace BlackMaple.MachineFramework
   [DataContract, Draftable]
   public record ProcPathInfo
   {
-    [DataMember(IsRequired = true)]
-    public required ImmutableList<int> Pallets { get; init; }
+    // not required only for backwards compatibility, make required once Pallets as strings is removed
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public required ImmutableList<int> PalletNums { get; init; }
 
     [DataMember(IsRequired = false)]
     public string? Fixture { get; init; }
@@ -235,6 +237,21 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Casting { get; init; }
+
+    // for backwards compatibility
+    [DataMember(IsRequired = false, EmitDefaultValue = true), Obsolete]
+    public ImmutableList<string> Pallets
+    {
+      get => PalletNums?.Select(n => n.ToString())?.ToImmutableList() ?? ImmutableList<string>.Empty;
+      init
+      {
+        if (PalletNums != null && PalletNums.Count > 0)
+          return;
+        PalletNums = value
+          .SelectMany(s => int.TryParse(s, out var n) ? new[] { n } : Enumerable.Empty<int>())
+          .ToImmutableList();
+      }
+    }
 
     public static ProcPathInfo operator %(ProcPathInfo v, Action<IProcPathInfoDraft> f) => v.Produce(f);
   }

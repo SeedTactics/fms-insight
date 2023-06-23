@@ -191,7 +191,7 @@ public static class BuildCellState
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.OnPallet,
-              Pallet = pallet,
+              PalletNum = pallet,
               Face = face.Face,
             },
             Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
@@ -915,7 +915,8 @@ public static class BuildCellState
     return materialToLoad
       .Where(
         m =>
-          m.Action.Type == InProcessMaterialAction.ActionType.Loading && m.Action.LoadOntoPallet == palletNum
+          m.Action.Type == InProcessMaterialAction.ActionType.Loading
+          && m.Action.LoadOntoPalletNum == palletNum
       )
       .GroupBy(m => m.Action.LoadOntoFace ?? 1)
       .Select(face =>
@@ -935,7 +936,7 @@ public static class BuildCellState
                 Location = new InProcessMaterialLocation()
                 {
                   Type = InProcessMaterialLocation.LocType.OnPallet,
-                  Pallet = palletNum,
+                  PalletNum = palletNum,
                   Face = face.Key
                 }
               }

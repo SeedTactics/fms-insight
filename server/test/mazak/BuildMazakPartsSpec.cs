@@ -865,7 +865,7 @@ namespace MachineWatchTest
                 Paths = ImmutableList.Create(
                   new ProcPathInfo()
                   {
-                    Pallets = ImmutableList.CreateRange(pals[p - 1]),
+                    PalletNums = ImmutableList.CreateRange(pals[p - 1]),
                     SimulatedStartingUTC = (p == 1 ? simStart : null) ?? DateTime.MinValue,
                     SimulatedAverageFlowTime = TimeSpan.Zero,
                     Load = ImmutableList.Create(1),

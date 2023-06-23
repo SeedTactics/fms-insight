@@ -286,7 +286,7 @@ namespace MazakMachineInterface
 
     public override IEnumerable<int> Pallets()
     {
-      return PathInfo.Pallets ?? Enumerable.Empty<int>();
+      return PathInfo.PalletNums ?? Enumerable.Empty<int>();
     }
 
     public override (string fixture, int? face) FixtureFace()
@@ -374,7 +374,7 @@ namespace MazakMachineInterface
 
     public override IEnumerable<int> Pallets()
     {
-      return PathInfo.Pallets;
+      return PathInfo.PalletNums;
     }
 
     public override (string fixture, int? face) FixtureFace() => (null, null);

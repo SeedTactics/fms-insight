@@ -300,7 +300,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var nextJobProcInfo = mat.Job.Processes[nextProc - 1];
         foreach (var pathInfo in nextJobProcInfo.Paths)
         {
-          if (pathInfo.InputQueue == queue && pathInfo.Pallets.Any(p => availPallets.Contains(p)))
+          if (pathInfo.InputQueue == queue && pathInfo.PalletNums.Any(p => availPallets.Contains(p)))
           {
             return true;
           }

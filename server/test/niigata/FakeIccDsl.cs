@@ -720,7 +720,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Action = new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = c.pal,
+                LoadOntoPalletNum = c.pal,
                 LoadOntoFace = c.face,
                 ProcessAfterLoad = 1,
                 PathAfterLoad = c.path,
@@ -737,7 +737,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       for (int i = 0; i < _expectedLoadCastings.Count; i++)
       {
         var m = _expectedLoadCastings[i];
-        if (m.Action.LoadOntoPallet == pal)
+        if (m.Action.LoadOntoPalletNum == pal)
         {
           _expectedLoadCastings[i] =
             m % (mat => mat.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(mins));
@@ -883,7 +883,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
-            Pallet = pal,
+            PalletNum = pal,
             Face = oldMatOnPal.Location.Face
           }
         );
@@ -1068,7 +1068,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins),
                   PartsPerPallet = partsPerPal,
-                  Pallets = pals.ToImmutableList(),
+                  PalletNums = pals.ToImmutableList(),
                   Fixture = fixture,
                   Face = face,
                   InputQueue = queue,
@@ -1176,7 +1176,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins),
                   PartsPerPallet = partsPerPal,
-                  Pallets = pals.ToImmutableList(),
+                  PalletNums = pals.ToImmutableList(),
                   Fixture = fixture,
                   Face = face,
                   InputQueue = queue,
@@ -1239,7 +1239,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins1),
                   PartsPerPallet = partsPerPal,
-                  Pallets = pals.ToImmutableList(),
+                  PalletNums = pals.ToImmutableList(),
                   Fixture = fixture,
                   Face = face1,
                   SimulatedAverageFlowTime = TimeSpan.Zero,
@@ -1268,7 +1268,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
                   PartsPerPallet = partsPerPal,
                   SimulatedAverageFlowTime = TimeSpan.Zero,
-                  Pallets = pals.ToImmutableList(),
+                  PalletNums = pals.ToImmutableList(),
                   Fixture = fixture,
                   Face = face2,
                   Stops = ImmutableList.Create(
@@ -1394,7 +1394,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins1),
                   PartsPerPallet = partsPerPal,
-                  Pallets = pals1.ToImmutableList(),
+                  PalletNums = pals1.ToImmutableList(),
                   Fixture = fixture,
                   Face = 1,
                   SimulatedStartingUTC = DateTime.MinValue,
@@ -1416,7 +1416,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
                   PartsPerPallet = partsPerPal,
-                  Pallets = pals2.ToImmutableList(),
+                  PalletNums = pals2.ToImmutableList(),
                   Fixture = fixture,
                   Face = 1,
                   SimulatedStartingUTC = DateTime.MinValue,
@@ -1503,18 +1503,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 if (m.Action.Type == InProcessMaterialAction.ActionType.Loading)
                 {
-                  if (m.Action.LoadOntoPallet == null)
+                  if (m.Action.LoadOntoPalletNum == null)
                   {
-                    return m.Location.Pallet == palNum;
+                    return m.Location.PalletNum == palNum;
                   }
                   else
                   {
-                    return m.Action.LoadOntoPallet == palNum;
+                    return m.Action.LoadOntoPalletNum == palNum;
                   }
                 }
                 else if (m.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
                 {
-                  return m.Location.Pallet == palNum;
+                  return m.Location.PalletNum == palNum;
                 }
                 return false;
               }),
@@ -1526,7 +1526,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           .BeEquivalentTo(
             new MachineFramework.PalletStatus()
             {
-              Pallet = palNum,
+              PalletNum = palNum,
               FixtureOnPallet = "",
               OnHold = _status.Pallets[palNum - 1].Master.Skip,
               CurrentPalletLocation = _status.Pallets[palNum - 1].CurStation.Location,
@@ -2580,7 +2580,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Location = new InProcessMaterialLocation()
                   {
                     Type = InProcessMaterialLocation.LocType.OnPallet,
-                    Pallet = load.Pallet,
+                    PalletNum = load.Pallet,
                     Face = load.Face
                   },
                   Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }

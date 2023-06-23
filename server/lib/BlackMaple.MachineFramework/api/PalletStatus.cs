@@ -86,7 +86,7 @@ namespace BlackMaple.MachineFramework
   public record PalletStatus
   {
     [DataMember(IsRequired = true)]
-    public required int Pallet { get; init; }
+    public required int PalletNum { get; init; }
 
     [DataMember(IsRequired = true)]
     public required string FixtureOnPallet { get; init; }
@@ -114,6 +114,10 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public decimal? PercentMoveCompleted { get; init; }
+
+    // For backwards compatibility with older network clients
+    [DataMember(IsRequired = false, EmitDefaultValue = true), Obsolete]
+    public string Pallet => PalletNum.ToString();
 
     public static PalletStatus operator %(PalletStatus s, Action<IPalletStatusDraft> f) => s.Produce(f);
   }
