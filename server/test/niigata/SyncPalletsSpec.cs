@@ -1145,21 +1145,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         for (int jobIdx = 0; jobIdx < j.Jobs.Count; jobIdx++)
         {
-          j.Jobs[jobIdx] %= draftJob =>
-            draftJob.AdjustAllPaths(
-              (proc, path, draftPath) =>
+          j.Jobs[jobIdx] = j.Jobs[jobIdx].AdjustAllPaths(
+            (proc, path, draftPath) =>
+              draftPath with
               {
-                if (proc == 1)
-                {
-                  draftPath.InputQueue = "castingQ";
-                }
-                draftPath.Stops.AdjustAll(d =>
-                {
-                  d.Program = null;
-                  d.ProgramRevision = null;
-                });
+                InputQueue = proc == 1 ? "castingQ" : draftPath.InputQueue,
+                Stops = draftPath.Stops
+                  .Select(d => d with { Program = null, ProgramRevision = null })
+                  .ToImmutableList()
               }
-            );
+          );
         }
         j.CurrentUnfilledWorkorders.AddRange(
           new[]

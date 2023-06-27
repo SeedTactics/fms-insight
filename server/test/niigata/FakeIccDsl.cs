@@ -2966,16 +2966,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           proc,
           path,
           p =>
-            p.Inspections.Add(
-              new PathInspection()
-              {
-                InspectionType = inspTy,
-                Counter = cntr,
-                MaxVal = max,
-                RandomFreq = 0,
-                TimeInterval = TimeSpan.Zero
-              }
-            )
+            p with
+            {
+              Inspections = (p.Inspections ?? ImmutableList<PathInspection>.Empty).Add(
+                new PathInspection()
+                {
+                  InspectionType = inspTy,
+                  Counter = cntr,
+                  MaxVal = max,
+                  RandomFreq = 0,
+                  TimeInterval = TimeSpan.Zero
+                }
+              )
+            }
         ),
         job.Item2
       );

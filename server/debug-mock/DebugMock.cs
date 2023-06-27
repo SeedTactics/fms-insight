@@ -305,7 +305,7 @@ namespace DebugMachineWatchApiServer
       {
         if (draft.Jobs.ContainsKey(jobUnique))
         {
-          draft.Jobs[jobUnique] %= j => j.Comment = comment;
+          draft.Jobs[jobUnique] = draft.Jobs[jobUnique] with { Comment = comment };
         }
       });
       OnNewCurrentStatus?.Invoke(CurrentStatus);
@@ -798,16 +798,31 @@ namespace DebugMachineWatchApiServer
 
     public static Job OffsetJob(Job originalJob, TimeSpan offset)
     {
-      return originalJob.Produce(j =>
+      return originalJob with
       {
-        j.RouteStartUTC = j.RouteStartUTC.Add(offset);
-        j.RouteEndUTC = j.RouteEndUTC.Add(offset);
-        j.AdjustAllPaths(path =>
-        {
-          path.SimulatedStartingUTC += offset;
-          path.SimulatedProduction.AdjustAll(prod => prod.TimeUTC += offset);
-        });
-      });
+        RouteStartUTC = originalJob.RouteStartUTC.Add(offset),
+        RouteEndUTC = originalJob.RouteEndUTC.Add(offset),
+        Processes = originalJob.Processes
+          .Select(
+            p =>
+              p with
+              {
+                Paths = p.Paths
+                  .Select(
+                    path =>
+                      path with
+                      {
+                        SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
+                        SimulatedProduction = path.SimulatedProduction
+                          .Select(prod => prod with { TimeUTC = prod.TimeUTC.Add(offset) })
+                          .ToImmutableList()
+                      }
+                  )
+                  .ToImmutableList()
+              }
+          )
+          .ToImmutableList()
+      };
       // not converted: hold patterns
     }
 

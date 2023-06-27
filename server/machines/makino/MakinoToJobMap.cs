@@ -134,13 +134,19 @@ namespace Makino
 
         if (jobNum == 1)
         {
-          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] %= j =>
-            j.AdjustPath(proc, 1, p => p.Load.Add(loc.Num));
+          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] = job.AdjustPath(
+            proc,
+            1,
+            p => p with { Load = p.Load.Add(loc.Num) }
+          );
         }
         else
         {
-          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] %= j =>
-            j.AdjustPath(proc, 1, p => p.Unload.Add(loc.Num));
+          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] = job.AdjustPath(
+            proc,
+            1,
+            p => p with { Unload = p.Unload.Add(loc.Num) }
+          );
         }
       }
       else
@@ -160,7 +166,8 @@ namespace Makino
         }
         else
         {
-          _stops[jobID] %= s => s.Stations.Add(loc.Num);
+          var s = _stops[jobID];
+          _stops[jobID] = s with { Stations = s.Stations.Add(loc.Num) };
         }
       }
     }
@@ -181,7 +188,11 @@ namespace Makino
         }
 
         if (stops.Count > 0)
-          _byPartID[proc.Value] %= j => j.AdjustPath(procNum, 1, d => d.Stops.AddRange(stops.Values));
+          _byPartID[proc.Value] = _byPartID[proc.Value].AdjustPath(
+            procNum,
+            1,
+            d => d with { Stops = d.Stops.AddRange(stops.Values) }
+          );
       }
     }
 
@@ -192,8 +203,11 @@ namespace Makino
       if (pals == null)
         return;
 
-      _byPartID[_procIDToPartID[processID]] %= j =>
-        j.AdjustPath(procNum, 1, p => p.PalletNums.AddRange(pals));
+      _byPartID[_procIDToPartID[processID]] = _byPartID[_procIDToPartID[processID]].AdjustPath(
+        procNum,
+        1,
+        p => p with { PalletNums = p.PalletNums.AddRange(pals) }
+      );
     }
 
     public BlackMaple.MachineFramework.ActiveJob DuplicateForOrder(int orderID, string order, int partID)
@@ -213,9 +227,9 @@ namespace Makino
       var job = _byOrderID[orderID];
       var procNum = _procIDToProcNum[processID];
 
-      _byOrderID[orderID] %= j =>
+      _byOrderID[orderID] = job with
       {
-        j.Completed[procNum - 1] = ImmutableList.Create(completed);
+        Completed = job.Completed.SetItem(procNum - 1, job.Completed[procNum - 1])
       };
     }
 
