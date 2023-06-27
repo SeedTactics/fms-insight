@@ -74,11 +74,6 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
     offsetJob(j, offsetSeconds);
   }
   for (const m of status.material) {
-    // for some reason, status-mock.json uses numbers instead of strings for pallets
-    // and strings instead of numbers for face
-    if (m.location.pallet) {
-      m.location.pallet = m.location.pallet.toString();
-    }
     if (m.location.face && typeof m.location.face === "string") {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       m.location.face = parseInt(m.location.face, 10);
@@ -364,7 +359,7 @@ export function registerMockBackend(
       const evt = {
         counter: 0,
         material: [mat],
-        pal: "",
+        pal: 0,
         type: api.LogType.Inspection,
         startofcycle: false,
         endUTC: new Date(),
@@ -401,7 +396,7 @@ export function registerMockBackend(
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
-        pal: "",
+        pal: 0,
         type: api.LogType.InspectionResult,
         startofcycle: false,
         endUTC: new Date(),
@@ -436,7 +431,7 @@ export function registerMockBackend(
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
-        pal: "",
+        pal: 0,
         type: api.LogType.CloseOut,
         startofcycle: false,
         endUTC: new Date(),
@@ -473,7 +468,7 @@ export function registerMockBackend(
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
-        pal: "",
+        pal: 0,
         type: api.LogType.OrderAssignment,
         startofcycle: false,
         endUTC: new Date(),
@@ -503,7 +498,7 @@ export function registerMockBackend(
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
-        pal: "",
+        pal: 0,
         type: api.LogType.GeneralMessage,
         startofcycle: false,
         endUTC: new Date(),
@@ -529,7 +524,7 @@ export function registerMockBackend(
       return Promise.resolve({
         counter: 0,
         material: [],
-        pal: "",
+        pal: 0,
         type: api.LogType.WorkorderComment,
         startofcycle: false,
         endUTC: new Date(),

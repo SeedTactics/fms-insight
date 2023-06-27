@@ -70,8 +70,8 @@ const machineShowGraphAtom = atom<boolean>(true);
 const lulSelectedPartAtom = atom<PartAndProcess | undefined>(undefined);
 const machineSelectedPartAtom = atom<PartAndProcess | undefined>(undefined);
 const machineSelectedOperation = atom<PartAndStationOperation | undefined>(undefined);
-const lulSelectedPalletAtom = atom<string | undefined>(undefined);
-const machineSelectedPalletAtom = atom<string | undefined>(undefined);
+const lulSelectedPalletAtom = atom<number | undefined>(undefined);
+const machineSelectedPalletAtom = atom<number | undefined>(undefined);
 const lulChartZoomAtom = atom<{ zoom?: { start: Date; end: Date } }>({});
 const machineChartZoomAtom = atom<{ zoom?: { start: Date; end: Date } }>({});
 const lulYZoomAtom = atom<YZoomRange | null>(null);
@@ -253,7 +253,9 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
             displayEmpty
             value={selectedPallet || ""}
             style={{ marginLeft: "1em" }}
-            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
+            onChange={(e) =>
+              setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as number))
+            }
           >
             <MenuItem key={0} value="">
               <em>Any Pallet</em>

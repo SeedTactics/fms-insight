@@ -45,12 +45,12 @@ export interface PalletCycleData {
 }
 
 export type PalletCyclesByCntr = HashMap<number, PalletCycleData>;
-export type PalletCyclesByPallet = HashMap<string, PalletCyclesByCntr>;
+export type PalletCyclesByPallet = HashMap<number, PalletCyclesByCntr>;
 
-const last30PalletCyclesRW = atom(HashMap.empty<string, PalletCyclesByCntr>());
+const last30PalletCyclesRW = atom(HashMap.empty<number, PalletCyclesByCntr>());
 export const last30PalletCycles: Atom<PalletCyclesByPallet> = last30PalletCyclesRW;
 
-const specificMonthPalletCyclesRW = atom<PalletCyclesByPallet>(HashMap.empty<string, PalletCyclesByCntr>());
+const specificMonthPalletCyclesRW = atom<PalletCyclesByPallet>(HashMap.empty<number, PalletCyclesByCntr>());
 export const specificMonthPalletCycles: Atom<PalletCyclesByPallet> = specificMonthPalletCyclesRW;
 
 function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
@@ -66,7 +66,7 @@ export const setLast30PalletCycles = atom(null, (_, set, log: ReadonlyArray<Read
   set(last30PalletCyclesRW, (oldCycles) =>
     oldCycles.union(
       LazySeq.of(log)
-        .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
+        .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== 0)
         .toLookupMap(
           (c) => c.pal,
           (c) => c.counter,
@@ -82,7 +82,7 @@ export const updateLast30PalletCycles = atom(null, (_, set, { evt, now, expire }
     evt.logEntry &&
     !evt.logEntry.startofcycle &&
     evt.logEntry.type === LogType.PalletCycle &&
-    evt.logEntry.pal !== ""
+    evt.logEntry.pal !== 0
   ) {
     const log = evt.logEntry;
 
@@ -106,7 +106,7 @@ export const setSpecificMonthPalletCycles = atom(null, (_, set, log: ReadonlyArr
   set(
     specificMonthPalletCyclesRW,
     LazySeq.of(log)
-      .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== "")
+      .filter((c) => !c.startofcycle && c.type === LogType.PalletCycle && c.pal !== 0)
       .toLookupMap(
         (c) => c.pal,
         (c) => c.counter,

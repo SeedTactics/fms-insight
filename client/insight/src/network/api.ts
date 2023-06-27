@@ -52,7 +52,7 @@ export class FmsClient {
         return Promise.resolve<FMSInfo>(null as any);
     }
 
-    findInstructions(part: string, type: string | null, process: number | null | undefined, materialID: number | null | undefined, operatorName: string | null | undefined, pallet: string | null | undefined): Promise<void> {
+    findInstructions(part: string, type: string | null, process: number | null | undefined, materialID: number | null | undefined, operatorName: string | null | undefined, pallet: number | undefined): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/fms/find-instructions/{part}?";
         if (part === undefined || part === null)
             throw new Error("The parameter 'part' must be defined.");
@@ -67,7 +67,9 @@ export class FmsClient {
             url_ += "materialID=" + encodeURIComponent("" + materialID) + "&";
         if (operatorName !== undefined && operatorName !== null)
             url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&";
-        if (pallet !== undefined && pallet !== null)
+        if (pallet === null)
+            throw new Error("The parameter 'pallet' cannot be null.");
+        else if (pallet !== undefined)
             url_ += "pallet=" + encodeURIComponent("" + pallet) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -2270,7 +2272,7 @@ export class LogEntry implements ILogEntry {
     endUTC!: Date;
     loc!: string;
     locnum!: number;
-    pal!: string;
+    pal!: number;
     program!: string;
     result!: string;
     elapsed!: string;
@@ -2372,7 +2374,7 @@ export interface ILogEntry {
     endUTC: Date;
     loc: string;
     locnum: number;
-    pal: string;
+    pal: number;
     program: string;
     result: string;
     elapsed: string;
@@ -2545,7 +2547,7 @@ export interface IToolUse {
 export class MaterialProcessActualPath implements IMaterialProcessActualPath {
     materialID!: number;
     process!: number;
-    pallet!: string;
+    pallet!: number;
     loadStation!: number;
     stops!: Stop[];
     unloadStation!: number;
@@ -2603,7 +2605,7 @@ export class MaterialProcessActualPath implements IMaterialProcessActualPath {
 export interface IMaterialProcessActualPath {
     materialID: number;
     process: number;
-    pallet: string;
+    pallet: number;
     loadStation: number;
     stops: Stop[];
     unloadStation: number;
@@ -2966,7 +2968,7 @@ export interface IProcessInfo {
 }
 
 export class ProcPathInfo implements IProcPathInfo {
-    pallets!: string[];
+    palletNums?: number[];
     fixture?: string | undefined;
     face?: number | undefined;
     load!: number[];
@@ -2993,7 +2995,6 @@ export class ProcPathInfo implements IProcPathInfo {
             }
         }
         if (!data) {
-            this.pallets = [];
             this.load = [];
             this.unload = [];
             this.stops = [];
@@ -3002,10 +3003,10 @@ export class ProcPathInfo implements IProcPathInfo {
 
     init(_data?: any) {
         if (_data) {
-            if (Array.isArray(_data["Pallets"])) {
-                this.pallets = [] as any;
-                for (let item of _data["Pallets"])
-                    this.pallets!.push(item);
+            if (Array.isArray(_data["PalletNums"])) {
+                this.palletNums = [] as any;
+                for (let item of _data["PalletNums"])
+                    this.palletNums!.push(item);
             }
             this.fixture = _data["Fixture"];
             this.face = _data["Face"];
@@ -3056,10 +3057,10 @@ export class ProcPathInfo implements IProcPathInfo {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.pallets)) {
-            data["Pallets"] = [];
-            for (let item of this.pallets)
-                data["Pallets"].push(item);
+        if (Array.isArray(this.palletNums)) {
+            data["PalletNums"] = [];
+            for (let item of this.palletNums)
+                data["PalletNums"].push(item);
         }
         data["Fixture"] = this.fixture;
         data["Face"] = this.face;
@@ -3103,7 +3104,7 @@ export class ProcPathInfo implements IProcPathInfo {
 }
 
 export interface IProcPathInfo {
-    pallets: string[];
+    palletNums?: number[];
     fixture?: string | undefined;
     face?: number | undefined;
     load: number[];
@@ -3876,7 +3877,7 @@ export interface IDecrementQuantity {
 }
 
 export class PalletStatus implements IPalletStatus {
-    pallet!: string;
+    palletNum!: number;
     fixtureOnPallet!: string;
     onHold!: boolean;
     currentPalletLocation!: PalletLocation;
@@ -3900,7 +3901,7 @@ export class PalletStatus implements IPalletStatus {
 
     init(_data?: any) {
         if (_data) {
-            this.pallet = _data["Pallet"];
+            this.palletNum = _data["PalletNum"];
             this.fixtureOnPallet = _data["FixtureOnPallet"];
             this.onHold = _data["OnHold"];
             this.currentPalletLocation = _data["CurrentPalletLocation"] ? PalletLocation.fromJS(_data["CurrentPalletLocation"]) : new PalletLocation();
@@ -3925,7 +3926,7 @@ export class PalletStatus implements IPalletStatus {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["Pallet"] = this.pallet;
+        data["PalletNum"] = this.palletNum;
         data["FixtureOnPallet"] = this.fixtureOnPallet;
         data["OnHold"] = this.onHold;
         data["CurrentPalletLocation"] = this.currentPalletLocation ? this.currentPalletLocation.toJSON() : <any>undefined;
@@ -3943,7 +3944,7 @@ export class PalletStatus implements IPalletStatus {
 }
 
 export interface IPalletStatus {
-    pallet: string;
+    palletNum: number;
     fixtureOnPallet: string;
     onHold: boolean;
     currentPalletLocation: PalletLocation;
@@ -4097,7 +4098,7 @@ export interface IInProcessMaterial {
 
 export class InProcessMaterialLocation implements IInProcessMaterialLocation {
     type!: LocType;
-    pallet?: string | undefined;
+    palletNum?: number | undefined;
     face?: number | undefined;
     currentQueue?: string | undefined;
     queuePosition?: number | undefined;
@@ -4114,7 +4115,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
     init(_data?: any) {
         if (_data) {
             this.type = _data["Type"];
-            this.pallet = _data["Pallet"];
+            this.palletNum = _data["PalletNum"];
             this.face = _data["Face"];
             this.currentQueue = _data["CurrentQueue"];
             this.queuePosition = _data["QueuePosition"];
@@ -4131,7 +4132,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["Type"] = this.type;
-        data["Pallet"] = this.pallet;
+        data["PalletNum"] = this.palletNum;
         data["Face"] = this.face;
         data["CurrentQueue"] = this.currentQueue;
         data["QueuePosition"] = this.queuePosition;
@@ -4141,7 +4142,7 @@ export class InProcessMaterialLocation implements IInProcessMaterialLocation {
 
 export interface IInProcessMaterialLocation {
     type: LocType;
-    pallet?: string | undefined;
+    palletNum?: number | undefined;
     face?: number | undefined;
     currentQueue?: string | undefined;
     queuePosition?: number | undefined;
@@ -4155,7 +4156,7 @@ export enum LocType {
 
 export class InProcessMaterialAction implements IInProcessMaterialAction {
     type!: ActionType;
-    loadOntoPallet?: string | undefined;
+    loadOntoPalletNum?: number | undefined;
     loadOntoFace?: number | undefined;
     processAfterLoad?: number | undefined;
     pathAfterLoad?: number | undefined;
@@ -4177,7 +4178,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
     init(_data?: any) {
         if (_data) {
             this.type = _data["Type"];
-            this.loadOntoPallet = _data["LoadOntoPallet"];
+            this.loadOntoPalletNum = _data["LoadOntoPalletNum"];
             this.loadOntoFace = _data["LoadOntoFace"];
             this.processAfterLoad = _data["ProcessAfterLoad"];
             this.pathAfterLoad = _data["PathAfterLoad"];
@@ -4199,7 +4200,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["Type"] = this.type;
-        data["LoadOntoPallet"] = this.loadOntoPallet;
+        data["LoadOntoPalletNum"] = this.loadOntoPalletNum;
         data["LoadOntoFace"] = this.loadOntoFace;
         data["ProcessAfterLoad"] = this.processAfterLoad;
         data["PathAfterLoad"] = this.pathAfterLoad;
@@ -4214,7 +4215,7 @@ export class InProcessMaterialAction implements IInProcessMaterialAction {
 
 export interface IInProcessMaterialAction {
     type: ActionType;
-    loadOntoPallet?: string | undefined;
+    loadOntoPalletNum?: number | undefined;
     loadOntoFace?: number | undefined;
     processAfterLoad?: number | undefined;
     pathAfterLoad?: number | undefined;
@@ -4948,7 +4949,7 @@ export interface IQueuePosition {
 }
 
 export class MatToPutOnPallet implements IMatToPutOnPallet {
-    pallet!: string | undefined;
+    pallet!: number;
     materialIDToSetOnPallet!: number;
 
     constructor(data?: IMatToPutOnPallet) {
@@ -4983,7 +4984,7 @@ export class MatToPutOnPallet implements IMatToPutOnPallet {
 }
 
 export interface IMatToPutOnPallet {
-    pallet: string | undefined;
+    pallet: number;
     materialIDToSetOnPallet: number;
 }
 

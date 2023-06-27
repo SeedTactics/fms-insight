@@ -50,9 +50,9 @@ import {
   ProcPathInfo,
 } from "../network/api.js";
 
-function fakePalAtMachine(pal: string, num: number): PalletStatus {
+function fakePalAtMachine(pal: number, num: number): PalletStatus {
   return new PalletStatus({
-    pallet: pal,
+    palletNum: pal,
     fixtureOnPallet: "",
     onHold: false,
     currentPalletLocation: new PalletLocation({
@@ -64,9 +64,9 @@ function fakePalAtMachine(pal: string, num: number): PalletStatus {
   });
 }
 
-function fakePalAtLoad(pal: string, num: number): PalletStatus {
+function fakePalAtLoad(pal: number, num: number): PalletStatus {
   return new PalletStatus({
-    pallet: pal,
+    palletNum: pal,
     fixtureOnPallet: "",
     onHold: false,
     currentPalletLocation: new PalletLocation({
@@ -90,7 +90,7 @@ function fakeMC({
   part: string;
   proc: number;
   path?: number;
-  pal: string;
+  pal: number;
   prog: string;
   elapsedMin: number;
   remainMin: number;
@@ -110,7 +110,7 @@ function fakeMC({
     }),
     location: new InProcessMaterialLocation({
       type: LocType.OnPallet,
-      pallet: pal,
+      palletNum: pal,
     }),
   });
 }
@@ -129,7 +129,7 @@ function fakeLoad({
   proc: number;
   path?: number;
   ty: "load" | "unload" | "completed";
-  pal: string;
+  pal: number;
   elapsedMin: number;
 }): InProcessMaterial {
   return new InProcessMaterial({
@@ -147,7 +147,7 @@ function fakeLoad({
           ? ActionType.UnloadToInProcess
           : ActionType.UnloadToCompletedMaterial,
       elapsedLoadUnloadTime: `PT${elapsedMin}M`,
-      loadOntoPallet: ty === "load" ? pal : undefined,
+      loadOntoPalletNum: ty === "load" ? pal : undefined,
       processAfterLoad: ty === "load" ? proc : undefined,
       pathAfterLoad: ty === "load" ? path ?? 1 : undefined,
     }),
@@ -158,7 +158,7 @@ function fakeLoad({
           })
         : new InProcessMaterialLocation({
             type: LocType.OnPallet,
-            pallet: pal,
+            palletNum: pal,
           }),
   });
 }
@@ -170,46 +170,46 @@ it("calculates current cycles", () => {
     timeOfCurrentStatusUTC: now,
     jobs: {},
     pallets: {
-      1: fakePalAtLoad("1", 10),
-      2: fakePalAtLoad("2", 20),
-      3: fakePalAtMachine("3", 6),
-      4: fakePalAtMachine("4", 2),
-      5: fakePalAtMachine("5", 1),
-      6: fakePalAtLoad("6", 30),
+      1: fakePalAtLoad(1, 10),
+      2: fakePalAtLoad(2, 20),
+      3: fakePalAtMachine(3, 6),
+      4: fakePalAtMachine(4, 2),
+      5: fakePalAtMachine(5, 1),
+      6: fakePalAtLoad(6, 30),
     },
     material: [
       // one cycle just getting started
-      fakeMC({ part: "part1", proc: 1, pal: "3", prog: "abcd", elapsedMin: 10, remainMin: 18 }),
-      fakeMC({ part: "part1", proc: 1, pal: "3", prog: "abcd", elapsedMin: 10, remainMin: 18 }),
-      fakeMC({ part: "part1", proc: 1, pal: "3", prog: "abcd", elapsedMin: 10, remainMin: 18 }),
+      fakeMC({ part: "part1", proc: 1, pal: 3, prog: "abcd", elapsedMin: 10, remainMin: 18 }),
+      fakeMC({ part: "part1", proc: 1, pal: 3, prog: "abcd", elapsedMin: 10, remainMin: 18 }),
+      fakeMC({ part: "part1", proc: 1, pal: 3, prog: "abcd", elapsedMin: 10, remainMin: 18 }),
 
       // one cycle just passed completed
-      fakeMC({ part: "part1", proc: 1, pal: "4", prog: "abcd", elapsedMin: 30, remainMin: -2 }),
-      fakeMC({ part: "part1", proc: 1, pal: "4", prog: "abcd", elapsedMin: 30, remainMin: -2 }),
-      fakeMC({ part: "part1", proc: 1, pal: "4", prog: "abcd", elapsedMin: 30, remainMin: -2 }),
+      fakeMC({ part: "part1", proc: 1, pal: 4, prog: "abcd", elapsedMin: 30, remainMin: -2 }),
+      fakeMC({ part: "part1", proc: 1, pal: 4, prog: "abcd", elapsedMin: 30, remainMin: -2 }),
+      fakeMC({ part: "part1", proc: 1, pal: 4, prog: "abcd", elapsedMin: 30, remainMin: -2 }),
 
       // one cycle long passed completed
-      fakeMC({ part: "part1", proc: 1, pal: "5", prog: "abcd", elapsedMin: 50, remainMin: -22 }),
-      fakeMC({ part: "part1", proc: 1, pal: "5", prog: "abcd", elapsedMin: 50, remainMin: -22 }),
-      fakeMC({ part: "part1", proc: 1, pal: "5", prog: "abcd", elapsedMin: 50, remainMin: -22 }),
+      fakeMC({ part: "part1", proc: 1, pal: 5, prog: "abcd", elapsedMin: 50, remainMin: -22 }),
+      fakeMC({ part: "part1", proc: 1, pal: 5, prog: "abcd", elapsedMin: 50, remainMin: -22 }),
+      fakeMC({ part: "part1", proc: 1, pal: 5, prog: "abcd", elapsedMin: 50, remainMin: -22 }),
 
       // loading but very short
-      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: "1", ty: "load", elapsedMin: 10 }),
-      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: "1", ty: "load", elapsedMin: 10 }),
-      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: "1", ty: "unload", elapsedMin: 10 }),
-      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: "1", ty: "completed", elapsedMin: 10 }),
+      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: 1, ty: "load", elapsedMin: 10 }),
+      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: 1, ty: "load", elapsedMin: 10 }),
+      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: 1, ty: "unload", elapsedMin: 10 }),
+      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: 1, ty: "completed", elapsedMin: 10 }),
 
       // loading but at the expected time
-      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: "2", ty: "load", elapsedMin: 20 }),
-      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: "2", ty: "load", elapsedMin: 20 }),
-      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: "2", ty: "unload", elapsedMin: 20 }),
-      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: "2", ty: "completed", elapsedMin: 20 }),
+      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: 2, ty: "load", elapsedMin: 20 }),
+      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: 2, ty: "load", elapsedMin: 20 }),
+      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: 2, ty: "unload", elapsedMin: 20 }),
+      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: 2, ty: "completed", elapsedMin: 20 }),
 
       // loading far past the expected time
-      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: "6", ty: "load", elapsedMin: 50 }),
-      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: "6", ty: "load", elapsedMin: 50 }),
-      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: "6", ty: "unload", elapsedMin: 50 }),
-      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: "6", ty: "completed", elapsedMin: 50 }),
+      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: 6, ty: "load", elapsedMin: 50 }),
+      fakeLoad({ uniq: "uniq3", part: "part3", proc: 1, pal: 6, ty: "load", elapsedMin: 50 }),
+      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: 6, ty: "unload", elapsedMin: 50 }),
+      fakeLoad({ uniq: "uniq4", part: "part4", proc: 2, pal: 6, ty: "completed", elapsedMin: 50 }),
     ],
     alarms: [],
     queues: {},

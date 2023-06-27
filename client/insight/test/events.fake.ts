@@ -54,24 +54,24 @@ faker.seed(0x6f79);
 
 export function fakeMaterial(part?: string, proc?: number): LogMaterial {
   return new LogMaterial({
-    id: faker.datatype.number(),
-    uniq: "uniq" + faker.random.alphaNumeric(),
-    part: part || "part" + faker.random.alphaNumeric(),
-    proc: proc || faker.datatype.number({ max: 4 }),
-    numproc: faker.datatype.number({ max: 4 }),
-    face: "face" + faker.random.alphaNumeric(),
-    serial: "serial" + faker.random.alphaNumeric(),
-    workorder: "work" + faker.random.alphaNumeric(),
+    id: faker.number.int(),
+    uniq: "uniq" + faker.string.alphanumeric(),
+    part: part || "part" + faker.string.alphanumeric(),
+    proc: proc || faker.number.int({ max: 4 }),
+    numproc: faker.number.int({ max: 4 }),
+    face: "face" + faker.string.alphanumeric(),
+    serial: "serial" + faker.string.alphanumeric(),
+    workorder: "work" + faker.string.alphanumeric(),
   });
 }
 
 export function fakeInProcMaterial(matId: number, queue?: string, queuePos?: number): InProcessMaterial {
   return new InProcessMaterial({
     materialID: matId,
-    jobUnique: "uniq" + faker.random.alphaNumeric(),
-    partName: "part" + faker.random.alphaNumeric(),
-    path: faker.datatype.number({ max: 100 }),
-    process: faker.datatype.number({ max: 100 }),
+    jobUnique: "uniq" + faker.string.alphanumeric(),
+    partName: "part" + faker.string.alphanumeric(),
+    path: faker.number.int({ max: 100 }),
+    process: faker.number.int({ max: 100 }),
     signaledInspections: [],
     location:
       queue && queuePos
@@ -119,7 +119,7 @@ export function fakeInspSignal(
     new MaterialProcessActualPath({
       materialID: mat.id,
       process: 1,
-      pallet: "6",
+      pallet: 6,
       loadStation: 1,
       stops: [new Stop({ stationName: "MC", stationNum: 4 })],
       unloadStation: 2,
@@ -128,7 +128,7 @@ export function fakeInspSignal(
   return {
     counter: counter,
     material: [mat],
-    pal: "",
+    pal: 0,
     type: LogType.Inspection,
     startofcycle: false,
     endUTC: now,
@@ -153,7 +153,7 @@ export function fakeInspForce(mat?: LogMaterial, inspType?: string, now?: Date, 
   return {
     counter: counter,
     material: [mat],
-    pal: "",
+    pal: 0,
     type: LogType.InspectionForce,
     startofcycle: false,
     endUTC: now,
@@ -181,7 +181,7 @@ export function fakeInspComplete(
   return {
     counter,
     material: [mat],
-    pal: "",
+    pal: 0,
     type: LogType.InspectionResult,
     startofcycle: false,
     endUTC: now,
@@ -212,7 +212,7 @@ export function fakeMachineCycle({
   numMats?: number;
   part: string;
   proc: number;
-  pal?: string;
+  pal?: number;
   program: string;
   mcName?: string;
   mcNum?: number;
@@ -229,7 +229,7 @@ export function fakeMachineCycle({
   addStartAndEnd(es, {
     counter,
     material,
-    pal: pal ?? faker.datatype.string(),
+    pal: pal ?? faker.number.int(),
     type: LogType.MachineCycle,
     startofcycle: false,
     endUTC: time,
@@ -259,7 +259,7 @@ export function fakeLoadOrUnload({
   numMats?: number;
   part: string;
   proc: number;
-  pal?: string;
+  pal?: number;
   isLoad: boolean;
   time: Date;
   elapsedMin: number;
@@ -273,7 +273,7 @@ export function fakeLoadOrUnload({
   addStartAndEnd(es, {
     counter,
     material,
-    pal: pal ?? faker.datatype.string(),
+    pal: pal ?? faker.number.int(),
     type: LogType.LoadUnloadCycle,
     startofcycle: false,
     endUTC: time,
@@ -303,14 +303,14 @@ export function fakeCycle({
   machineTime: number;
   part?: string;
   proc?: number;
-  pallet?: string;
+  pallet?: number;
   noInspections?: boolean;
   includeTools?: boolean;
   program?: string;
   activeTimeMins?: number;
   counter: number;
 }): ReadonlyArray<ILogEntry> {
-  const pal = pallet || "pal" + faker.random.alphaNumeric();
+  const pal = pallet || faker.number.int();
   const material = [fakeMaterial(part, proc)];
 
   time = addMinutes(time, 5);
@@ -364,7 +364,7 @@ export function fakeCycle({
     loc: "MC",
     locnum: 1,
     result: "",
-    program: program ?? "prog" + faker.random.alphaNumeric(),
+    program: program ?? "prog" + faker.string.alphanumeric(),
     elapsed: elapsed,
     active: activeTimeMins ? `PT${activeTimeMins}M` : elapsed,
   });
@@ -432,7 +432,7 @@ export function fakeSerial(mat?: LogMaterial, serial?: string): ILogEntry {
   return {
     counter: 100,
     material: [mat],
-    pal: faker.random.alphaNumeric(),
+    pal: faker.number.int(),
     type: LogType.PartMark,
     startofcycle: false,
     endUTC: new Date(2017, 9, 5),
@@ -450,7 +450,7 @@ export function fakeCloseoutComplete(mat?: LogMaterial): ILogEntry {
   return {
     counter: 100,
     material: [mat],
-    pal: faker.random.alphaNumeric(),
+    pal: faker.number.int(),
     type: LogType.CloseOut,
     startofcycle: false,
     endUTC: new Date(2017, 9, 5),
@@ -469,7 +469,7 @@ export function fakeWorkorderAssign(mat?: LogMaterial, workorder?: string): ILog
   return {
     counter: 100,
     material: [mat],
-    pal: faker.random.alphaNumeric(),
+    pal: faker.number.int(),
     type: LogType.OrderAssignment,
     startofcycle: false,
     endUTC: new Date(2017, 9, 5),
@@ -487,7 +487,7 @@ export function fakeAddToQueue(queue?: string, mat?: LogMaterial): ILogEntry {
   return {
     counter: 100,
     material: [mat],
-    pal: "",
+    pal: 0,
     type: LogType.AddToQueue,
     startofcycle: false,
     endUTC: new Date(2017, 9, 5),
@@ -505,7 +505,7 @@ export function fakeRemoveFromQueue(queue?: string, mat?: LogMaterial): ILogEntr
   return {
     counter: 100,
     material: [mat],
-    pal: "",
+    pal: 0,
     type: LogType.RemoveFromQueue,
     startofcycle: false,
     endUTC: new Date(2017, 9, 5),
@@ -519,17 +519,17 @@ export function fakeRemoveFromQueue(queue?: string, mat?: LogMaterial): ILogEntr
 }
 
 export function fakeToolUsage(): Array<ToolUse> {
-  const use = faker.datatype.number({ min: 5, max: 30 });
+  const use = faker.number.int({ min: 5, max: 30 });
   return [
     new ToolUse({
-      tool: faker.random.alphaNumeric(),
-      pocket: faker.datatype.number(),
+      tool: faker.string.alphanumeric(),
+      pocket: faker.number.int(),
       toolUseDuringCycle: "PT" + use.toString() + "S",
       totalToolUseAtEndOfCycle: "PT" + (use * 2).toString() + "S",
     }),
     new ToolUse({
-      tool: faker.random.alphaNumeric(),
-      pocket: faker.datatype.number(),
+      tool: faker.string.alphanumeric(),
+      pocket: faker.number.int(),
       toolUseDuringCycle: "PT" + (use + 5).toString() + "S",
       totalToolUseAtEndOfCycle: "PT" + (use + 20).toString() + "S",
       toolChangeOccurred: true,
@@ -549,7 +549,7 @@ export function fakeNormalToolUsage({
   return {
     tool,
     pocket,
-    toolUseDuringCycle: `PT${faker.datatype.number(10000)}S`,
+    toolUseDuringCycle: `PT${faker.number.int(10000)}S`,
     totalToolUseAtEndOfCycle: `PT${minsAtEnd}M`,
   };
 }

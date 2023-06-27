@@ -106,7 +106,7 @@ function JobDisplay(props: JobDisplayProps) {
                 <dd>
                   <JobCompleted job={props.job} procIdx={procIdx} pathIdx={pathIdx} />
                   <div>Estimated Start: {displayDate(path.simulatedStartingUTC)}</div>
-                  <div>Pallets: {path.pallets.join(",")}</div>
+                  <div>Pallets: {(path.palletNums ?? []).map((p) => p.toString()).join(",")}</div>
                   {path.fixture ? (
                     <div>
                       Fixture: {path.fixture}{" "}
@@ -153,7 +153,7 @@ interface MaterialStatusProps {
 
 function MaterialStatus(props: MaterialStatusProps) {
   if (props.inProcMat !== null && props.inProcMat.location.type === api.LocType.OnPallet) {
-    return <span>On pallet {props.inProcMat.location.pallet ?? ""}</span>;
+    return <span>On pallet {props.inProcMat.location.palletNum ?? ""}</span>;
   } else if (props.inProcMat !== null && props.inProcMat.location.type === api.LocType.InQueue) {
     return <span>In queue {props.inProcMat.location.currentQueue ?? ""}</span>;
   } else if (props.matSummary?.completed_last_proc_machining) {

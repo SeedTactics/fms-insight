@@ -86,8 +86,9 @@
             "name": "pallet",
             "in": "query",
             "schema": {
-              "type": "string",
-              "nullable": true
+              "type": "integer",
+              "format": "int32",
+              "default": 0
             },
             "x-position": 6
           }
@@ -2225,7 +2226,8 @@
             "format": "int32"
           },
           "pal": {
-            "type": "string"
+            "type": "integer",
+            "format": "int32"
           },
           "program": {
             "type": "string"
@@ -2424,7 +2426,8 @@
             "format": "int32"
           },
           "Pallet": {
-            "type": "string"
+            "type": "integer",
+            "format": "int32"
           },
           "LoadStation": {
             "type": "integer",
@@ -2631,7 +2634,6 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "Pallets",
           "Load",
           "ExpectedLoadTime",
           "Unload",
@@ -2642,10 +2644,11 @@
           "PartsPerPallet"
         ],
         "properties": {
-          "Pallets": {
+          "PalletNums": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "integer",
+              "format": "int32"
             }
           },
           "Fixture": {
@@ -3163,15 +3166,16 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "Pallet",
+          "PalletNum",
           "FixtureOnPallet",
           "OnHold",
           "CurrentPalletLocation",
           "NumFaces"
         ],
         "properties": {
-          "Pallet": {
-            "type": "string"
+          "PalletNum": {
+            "type": "integer",
+            "format": "int32"
           },
           "FixtureOnPallet": {
             "type": "string"
@@ -3320,8 +3324,9 @@
           "Type": {
             "$ref": "#/components/schemas/LocType"
           },
-          "Pallet": {
-            "type": "string",
+          "PalletNum": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           },
           "Face": {
@@ -3364,8 +3369,9 @@
           "Type": {
             "$ref": "#/components/schemas/ActionType"
           },
-          "LoadOntoPallet": {
-            "type": "string",
+          "LoadOntoPalletNum": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           },
           "LoadOntoFace": {
@@ -3783,8 +3789,8 @@
         ],
         "properties": {
           "Pallet": {
-            "type": "string",
-            "nullable": true
+            "type": "integer",
+            "format": "int32"
           },
           "MaterialIDToSetOnPallet": {
             "type": "integer",

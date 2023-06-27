@@ -203,7 +203,7 @@ export function instructionUrl(
   partName: string,
   type: string,
   matId: number,
-  pallet: string | null,
+  pallet: number | null,
   proc: number | null,
   operator: string | null
 ): string {

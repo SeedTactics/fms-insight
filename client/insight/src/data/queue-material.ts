@@ -48,7 +48,11 @@ export interface JobAndGroups {
 
 function describePath(path: Readonly<api.IProcPathInfo>): string {
   return `${
-    path.pallets.length > 1 ? "Pallets " + path.pallets.join(",") : "Pallet " + path.pallets[0]
+    path.palletNums && path.palletNums.length > 1
+      ? "Pallets " + path.palletNums.map((p) => p.toString()).join(",")
+      : path.palletNums && path.palletNums.length == 1
+      ? "Pallet " + path.palletNums[0].toString()
+      : "Pallet"
   }; ${path.stops.map((s) => s.stationGroup + "#" + (s.stationNums ?? []).join(",")).join("->")}`;
 }
 

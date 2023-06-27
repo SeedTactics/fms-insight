@@ -117,7 +117,7 @@ function selectLoadStationAndQueueProps(
     for (const m of curSt.material) {
       if (
         m.action.type === api.ActionType.Loading &&
-        m.action.loadOntoPallet === pal.pallet &&
+        m.action.loadOntoPalletNum === pal.palletNum &&
         m.location.type === api.LocType.InQueue &&
         m.location.currentQueue
       ) {
@@ -129,7 +129,7 @@ function selectLoadStationAndQueueProps(
           m.action.type === api.ActionType.UnloadToCompletedMaterial) &&
         m.action.unloadIntoQueue &&
         m.location.type === api.LocType.OnPallet &&
-        m.location.pallet === pal.pallet
+        m.location.palletNum === pal.palletNum
       ) {
         queuesToShow.add(m.action.unloadIntoQueue);
       }
@@ -153,7 +153,7 @@ function selectLoadStationAndQueueProps(
   for (const m of curSt.material) {
     if (pal) {
       // if loading onto pallet, set elapsed load time, ensure face exists, and set free loading
-      if (m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === pal.pallet) {
+      if (m.action.type === api.ActionType.Loading && m.action.loadOntoPalletNum === pal.palletNum) {
         if (m.action.elapsedLoadUnloadTime) {
           elapsedLoadingTime = m.action.elapsedLoadUnloadTime;
         }
@@ -168,7 +168,7 @@ function selectLoadStationAndQueueProps(
       }
 
       // if currently on the pallet, set elapsed load time and add it to the pallet face
-      if (m.location.type === api.LocType.OnPallet && m.location.pallet === pal.pallet) {
+      if (m.location.type === api.LocType.OnPallet && m.location.palletNum === pal.palletNum) {
         if (
           (m.action.type === api.ActionType.UnloadToCompletedMaterial ||
             m.action.type === api.ActionType.UnloadToInProcess) &&
@@ -230,28 +230,45 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
         .collect((mat) => {
           if (
             mat.action.type === api.ActionType.Loading &&
-            mat.action.loadOntoPallet === pal.pallet &&
+            mat.action.loadOntoPalletNum === pal.palletNum &&
             mat.location.type === api.LocType.OnPallet &&
-            mat.location.pallet === pal.pallet
+            mat.location.palletNum === pal.palletNum
           ) {
             // transfer, but use unload type
-            return instructionUrl(mat.partName, "unload", mat.materialID, pal.pallet, mat.process, operator);
-          } else if (mat.action.type === api.ActionType.Loading && mat.action.loadOntoPallet === pal.pallet) {
+            return instructionUrl(
+              mat.partName,
+              "unload",
+              mat.materialID,
+              pal.palletNum,
+              mat.process,
+              operator
+            );
+          } else if (
+            mat.action.type === api.ActionType.Loading &&
+            mat.action.loadOntoPalletNum === pal.palletNum
+          ) {
             return instructionUrl(
               mat.partName,
               "load",
               mat.materialID,
-              pal.pallet,
+              pal.palletNum,
               mat.action.processAfterLoad ?? mat.process,
               operator
             );
           } else if (
             mat.location.type === api.LocType.OnPallet &&
-            mat.location.pallet === pal.pallet &&
+            mat.location.palletNum === pal.palletNum &&
             (mat.action.type === api.ActionType.UnloadToCompletedMaterial ||
               mat.action.type === api.ActionType.UnloadToInProcess)
           ) {
-            return instructionUrl(mat.partName, "unload", mat.materialID, pal.pallet, mat.process, operator);
+            return instructionUrl(
+              mat.partName,
+              "unload",
+              mat.materialID,
+              pal.palletNum,
+              mat.process,
+              operator
+            );
           } else {
             return null;
           }
@@ -310,7 +327,7 @@ function PalletFace({ data, faceNum }: { data: LoadStationData; faceNum: number 
     <div>
       {faceNum === 1 ? (
         <Box display="grid" gridTemplateColumns={data.pallet.numFaces > 1 ? "1fr 1fr 1fr" : "1fr 1fr"}>
-          <Typography variant="h4">Pallet {data.pallet.pallet}</Typography>
+          <Typography variant="h4">Pallet {data.pallet.palletNum}</Typography>
           {data.pallet.numFaces > 1 ? (
             <Typography variant="h6" justifySelf="center">
               {data.pallet.faceNames?.[faceNum - 1] ?? "Face 1"}
@@ -358,24 +375,26 @@ function MaterialRegion({
           key={matIdx}
           kind={{
             type: MoveMaterialNodeKindType.Material,
-            material: data.pallet && m.action.loadOntoPallet === data.pallet.pallet ? m : null,
+            material: data.pallet && m.action.loadOntoPalletNum === data.pallet.palletNum ? m : null,
           }}
         >
           {mat.isFree ? (
             <InProcMaterial
               mat={m}
-              displayActionForSinglePallet={data.pallet ? data.pallet.pallet : ""}
+              displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
               fsize={data.fsize}
             />
           ) : (
             <SortableInProcMaterial
               mat={m}
-              displayActionForSinglePallet={data.pallet ? data.pallet.pallet : ""}
+              displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
               shake={
-                m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === data.pallet?.pallet
+                m.action.type === api.ActionType.Loading &&
+                m.action.loadOntoPalletNum === data.pallet?.palletNum
               }
               fsize={
-                m.action.type === api.ActionType.Loading && m.action.loadOntoPallet === data.pallet?.pallet
+                m.action.type === api.ActionType.Loading &&
+                m.action.loadOntoPalletNum === data.pallet?.palletNum
                   ? data.fsize
                   : undefined
               }
@@ -415,10 +434,10 @@ function MaterialColumn({
           renderDragOverlay={(mat) => (
             <DragOverlayInProcMaterial
               mat={mat}
-              displayActionForSinglePallet={data.pallet ? data.pallet.pallet : ""}
+              displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
               fsize={
                 mat.action.type === api.ActionType.Loading &&
-                mat.action.loadOntoPallet === data.pallet?.pallet
+                mat.action.loadOntoPalletNum === data.pallet?.palletNum
                   ? data.fsize
                   : undefined
               }
@@ -502,11 +521,11 @@ const CompletedCol = React.memo(function CompletedCol({
 });
 
 interface LoadMatDialogProps {
-  readonly pallet: string | null;
+  readonly pallet: number | null;
   readonly queues: ReadonlyArray<string>;
 }
 
-function InstructionButton({ pallet }: { pallet: string | null }) {
+function InstructionButton({ pallet }: { pallet: number | null }) {
   const material = useAtomValue(matDetails.inProcessMaterialInDialog);
   const operator = useAtomValue(currentOperator);
   const demo = useIsDemo();
@@ -514,13 +533,13 @@ function InstructionButton({ pallet }: { pallet: string | null }) {
   if (material === null) return null;
 
   let type: string | undefined;
-  if (material.action.type === api.ActionType.Loading && material.action.loadOntoPallet === pallet) {
+  if (material.action.type === api.ActionType.Loading && material.action.loadOntoPalletNum === pallet) {
     type = "load";
   } else if (
     (material.action.type === api.ActionType.UnloadToInProcess ||
       material.action.type === api.ActionType.UnloadToCompletedMaterial) &&
     material.location.type === api.LocType.OnPallet &&
-    material.location.pallet === pallet
+    material.location.palletNum === pallet
   ) {
     type = "unload";
   }
@@ -866,7 +885,7 @@ export function LoadStation(props: LoadStationProps) {
         <MultiInstructionButton loadData={data} />
         <SelectWorkorderDialog />
         <SelectInspTypeDialog />
-        <LoadMatDialog pallet={data.pallet?.pallet ?? null} queues={props.queues} />
+        <LoadMatDialog pallet={data.pallet?.palletNum ?? null} queues={props.queues} />
       </Box>
     </MoveMaterialArrowContainer>
   );

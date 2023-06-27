@@ -263,7 +263,7 @@ export function SwapMaterialButtons(
     if (curMat && props.st && props.st.selectedMatToSwap && curMat.location.type === LocType.OnPallet) {
       props.setState({ selectedMatToSwap: props.st.selectedMatToSwap, updating: true });
       JobsBackend.swapMaterialOnPallet(curMat.materialID, operator, {
-        pallet: curMat.location.pallet ?? "",
+        pallet: curMat.location.palletNum ?? 0,
         materialIDToSetOnPallet: props.st.selectedMatToSwap.materialID,
       }).finally(() => {
         closeMatDialog(null);
