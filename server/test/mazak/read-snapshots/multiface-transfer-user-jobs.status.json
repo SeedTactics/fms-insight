@@ -3,7 +3,7 @@
   "Jobs": {},
   "Pallets": {
     "4": {
-      "Pallet": "4",
+      "PalletNum": 4,
       "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -14,7 +14,7 @@
       "NumFaces": 1
     },
     "3": {
-      "Pallet": "3",
+      "PalletNum": 3,
       "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -25,7 +25,7 @@
       "NumFaces": 1
     },
     "1": {
-      "Pallet": "1",
+      "PalletNum": 1,
       "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -36,7 +36,7 @@
       "NumFaces": 1
     },
     "2": {
-      "Pallet": "2",
+      "PalletNum": 2,
       "FixtureOnPallet": "F:1:abfix:1",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -58,12 +58,12 @@
       "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
-        "Pallet": "1",
+        "PalletNum": 1,
         "Face": 1
       },
       "Action": {
         "Type": "Loading",
-        "LoadOntoPallet": "1",
+        "LoadOntoPalletNum": 1,
         "LoadOntoFace": 2,
         "ProcessAfterLoad": 2,
         "PathAfterLoad": 1
@@ -79,7 +79,7 @@
       "LastCompletedMachiningRouteStopIndex": null,
       "Location": {
         "Type": "OnPallet",
-        "Pallet": "1",
+        "PalletNum": 1,
         "Face": 2
       },
       "Action": {
@@ -99,7 +99,7 @@
       },
       "Action": {
         "Type": "Loading",
-        "LoadOntoPallet": "1",
+        "LoadOntoPalletNum": 1,
         "LoadOntoFace": 1,
         "ProcessAfterLoad": 1,
         "PathAfterLoad": 1

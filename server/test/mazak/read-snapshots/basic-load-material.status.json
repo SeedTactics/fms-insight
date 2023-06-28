@@ -21,7 +21,7 @@
         {
           "paths": [
             {
-              "Pallets": ["2"],
+              "PalletNums": [2],
               "Fixture": "fixtureBB",
               "Face": 1,
               "Load": [1, 2],
@@ -130,7 +130,7 @@
         {
           "paths": [
             {
-              "Pallets": ["2"],
+              "PalletNums": [2],
               "Fixture": "fixtureBB",
               "Face": 1,
               "Load": [1, 2],
@@ -257,7 +257,7 @@
         {
           "paths": [
             {
-              "Pallets": ["1"],
+              "PalletNums": [1],
               "Fixture": "fixtureAA1",
               "Face": 1,
               "Load": [1, 2],
@@ -330,7 +330,7 @@
         {
           "paths": [
             {
-              "Pallets": ["1"],
+              "PalletNums": [1],
               "Fixture": "fixtureAA2",
               "Face": 2,
               "Load": [1, 2],
@@ -421,7 +421,7 @@
         {
           "paths": [
             {
-              "Pallets": ["5"],
+              "PalletNums": [5],
               "Fixture": "fixtureCC5",
               "Face": 1,
               "Load": [1, 2],
@@ -525,7 +525,7 @@
         {
           "paths": [
             {
-              "Pallets": ["6"],
+              "PalletNums": [6],
               "Fixture": "fixtureCC6",
               "Face": 2,
               "Load": [1, 2],
@@ -631,7 +631,7 @@
   },
   "Pallets": {
     "5": {
-      "Pallet": "5",
+      "PalletNum": 5,
       "FixtureOnPallet": "F:0:fixtureCC:1",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -642,7 +642,7 @@
       "NumFaces": 1
     },
     "1": {
-      "Pallet": "1",
+      "PalletNum": 1,
       "FixtureOnPallet": "F:0:fixtureAA1:1",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -653,7 +653,7 @@
       "NumFaces": 1
     },
     "6": {
-      "Pallet": "6",
+      "PalletNum": 6,
       "FixtureOnPallet": "F:0:fixtureCC:2",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -664,7 +664,7 @@
       "NumFaces": 1
     },
     "2": {
-      "Pallet": "2",
+      "PalletNum": 2,
       "FixtureOnPallet": "F:0:fixtureBB:1",
       "OnHold": false,
       "CurrentPalletLocation": {
@@ -689,7 +689,7 @@
       },
       "Action": {
         "Type": "Loading",
-        "LoadOntoPallet": "5",
+        "LoadOntoPalletNum": 5,
         "LoadOntoFace": 1,
         "ProcessAfterLoad": 1,
         "PathAfterLoad": 1
@@ -708,7 +708,7 @@
       },
       "Action": {
         "Type": "Loading",
-        "LoadOntoPallet": "5",
+        "LoadOntoPalletNum": 5,
         "LoadOntoFace": 1,
         "ProcessAfterLoad": 1,
         "PathAfterLoad": 1
