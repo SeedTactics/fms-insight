@@ -2486,6 +2486,13 @@
               "$ref": "#/components/schemas/SimulatedStationUtilization"
             }
           },
+          "SimDayUsage": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/SimulatedDayUsage"
+            }
+          },
           "ExtraParts": {
             "type": "object",
             "nullable": true,
@@ -2910,6 +2917,32 @@
           }
         }
       },
+      "SimulatedDayUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ScheduleId",
+          "Day",
+          "MachineGroup",
+          "UsagePct"
+        ],
+        "properties": {
+          "ScheduleId": {
+            "type": "string"
+          },
+          "Day": {
+            "type": "string",
+            "format": "date"
+          },
+          "MachineGroup": {
+            "type": "string"
+          },
+          "UsagePct": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
       "Workorder": {
         "type": "object",
         "additionalProperties": false,
@@ -2938,6 +2971,16 @@
           "Priority": {
             "type": "integer",
             "format": "int32"
+          },
+          "SimulatedStartUTC": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "SimulatedFilledUTC": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           },
           "Programs": {
             "type": "array",
@@ -3534,6 +3577,16 @@
             "type": "integer",
             "format": "int32"
           },
+          "SimulatedStartUTC": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "SimulatedFilledUTC": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "CompletedQuantity": {
             "type": "integer",
             "format": "int32"
@@ -3701,6 +3754,13 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SimulatedStationUtilization"
+            }
+          },
+          "SimDayUsage": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/SimulatedDayUsage"
             }
           }
         }

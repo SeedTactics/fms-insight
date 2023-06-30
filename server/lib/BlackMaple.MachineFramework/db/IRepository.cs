@@ -460,9 +460,10 @@ namespace BlackMaple.MachineFramework
     HistoricData LoadJobHistory(
       DateTime startUTC,
       DateTime endUTC,
+      LoadHistoricDataSimDayUsage loadSimDays,
       IEnumerable<string> alreadyKnownSchIds = null
     );
-    HistoricData LoadJobsAfterScheduleId(string schId);
+    HistoricData LoadJobsAfterScheduleId(string schId, LoadHistoricDataSimDayUsage loadSimDays);
     PlannedSchedule LoadMostRecentSchedule();
     IReadOnlyList<Workorder> MostRecentWorkorders();
     ImmutableList<ActiveWorkorder> MostRecentUnfilledWorkordersForPart(string part);

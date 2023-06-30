@@ -796,7 +796,7 @@ namespace BlackMaple.MachineFramework
 
       var workQry =
         @"
-          SELECT uw.Workorder, uw.Part, uw.Quantity, uw.DueDate, uw.Priority,
+          SELECT uw.Workorder, uw.Part, uw.Quantity, uw.DueDate, uw.Priority, uw.SimulatedStartUTC, uw.SimulatedFilledUTC,
           (
             SELECT COUNT(matdetails.MaterialID)
             FROM stations, stations_mat, matdetails
@@ -914,7 +914,9 @@ namespace BlackMaple.MachineFramework
         var qty = workReader.GetInt32(2);
         var dueDate = new DateTime(workReader.GetInt64(3));
         var priority = workReader.GetInt32(4);
-        var completed = workReader.IsDBNull(5) ? 0 : workReader.GetInt32(5);
+        var startUTC = workReader.IsDBNull(5) ? (DateTime?)null : new DateTime(workReader.GetInt64(5));
+        var filledUTC = workReader.IsDBNull(6) ? (DateTime?)null : new DateTime(workReader.GetInt64(6));
+        var completed = workReader.IsDBNull(7) ? 0 : workReader.GetInt32(7);
 
         serialCmd.Parameters[0].Value = workorder;
         serialCmd.Parameters[1].Value = part;
@@ -971,6 +973,8 @@ namespace BlackMaple.MachineFramework
             PlannedQuantity = qty,
             DueDate = dueDate,
             Priority = priority,
+            SimulatedStartUTC = startUTC,
+            SimulatedFilledUTC = filledUTC,
             Comments = comments.Count == 0 ? null : comments.ToImmutable(),
             CompletedQuantity = completed,
             Serials = serials.ToImmutable(),

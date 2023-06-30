@@ -119,6 +119,17 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(IsRequired = true)]
     public required ImmutableList<SimulatedStationUtilization> StationUse { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<SimulatedDayUsage>? SimDayUsage { get; init; }
+  }
+
+  [DataContract]
+  public enum LoadHistoricDataSimDayUsage
+  {
+    DoNotLoadSimDayUsage,
+    LoadOnlyMostRecent,
+    LoadAll
   }
 
   [DataContract]

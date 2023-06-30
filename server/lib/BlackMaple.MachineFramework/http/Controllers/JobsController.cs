@@ -62,11 +62,15 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("history")]
-    public HistoricData History([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
+    public HistoricData History(
+      [FromQuery] DateTime startUTC,
+      [FromQuery] DateTime endUTC,
+      [FromQuery] LoadHistoricDataSimDayUsage loadSimDays = LoadHistoricDataSimDayUsage.DoNotLoadSimDayUsage
+    )
     {
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.LoadJobHistory(startUTC, endUTC);
+        return db.LoadJobHistory(startUTC, endUTC, loadSimDays: loadSimDays);
       }
     }
 
@@ -74,7 +78,8 @@ namespace BlackMaple.MachineFramework.Controllers
     public HistoricData FilteredHistory(
       [FromQuery] DateTime startUTC,
       [FromQuery] DateTime endUTC,
-      [FromBody] List<string> alreadyKnownSchIds
+      [FromBody] List<string> alreadyKnownSchIds,
+      [FromQuery] LoadHistoricDataSimDayUsage loadSimDays = LoadHistoricDataSimDayUsage.DoNotLoadSimDayUsage
     )
     {
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
@@ -82,19 +87,23 @@ namespace BlackMaple.MachineFramework.Controllers
         return db.LoadJobHistory(
           startUTC,
           endUTC,
-          new HashSet<string>(alreadyKnownSchIds ?? new List<string>())
+          loadSimDays: loadSimDays,
+          alreadyKnownSchIds: new HashSet<string>(alreadyKnownSchIds ?? new List<string>())
         );
       }
     }
 
     [HttpGet("recent")]
-    public HistoricData Recent([FromQuery] string afterScheduleId)
+    public HistoricData Recent(
+      [FromQuery] string afterScheduleId,
+      [FromQuery] LoadHistoricDataSimDayUsage loadSimDays = LoadHistoricDataSimDayUsage.DoNotLoadSimDayUsage
+    )
     {
       if (string.IsNullOrEmpty(afterScheduleId))
         throw new BadRequestException("After schedule ID must be non-empty");
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.LoadJobsAfterScheduleId(afterScheduleId);
+        return db.LoadJobsAfterScheduleId(afterScheduleId, loadSimDays: loadSimDays);
       }
     }
 
