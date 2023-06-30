@@ -128,6 +128,11 @@ async function loadEventsJson(
   return LazySeq.of(await evts)
     .map((evtJson) => {
       const tools = toolUse[(evtJson as { counter: number }).counter.toString()];
+      // the type of pal switched from string to int and I didn't want
+      // to regenerate all the data
+      if ("pal" in evtJson && typeof evtJson.pal === "string") {
+        evtJson.pal = parseInt(evtJson.pal);
+      }
       const e = api.LogEntry.fromJS(tools ? { ...evtJson, tooluse: tools } : evtJson);
       e.endUTC = addSeconds(e.endUTC, offsetSeconds);
       return e;

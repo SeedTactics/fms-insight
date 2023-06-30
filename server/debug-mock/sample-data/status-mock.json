@@ -41,6 +41,7 @@
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
+              "InputQueue": "Queue1",
               "Unload": [1, 2],
               "Stops": [
                 {
@@ -259,6 +260,7 @@
               "PalletNums": [1, 2, 3],
               "Load": [1, 2],
               "Unload": [1, 2],
+              "InputQueue": "Queue1",
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
@@ -429,6 +431,7 @@
               "PathGroup": 0,
               "PalletNums": [3, 4],
               "Load": [1, 2],
+              "InputQueue": "Queue1",
               "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
