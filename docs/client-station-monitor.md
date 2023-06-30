@@ -76,7 +76,7 @@ The queues screen shows the material currently inside one or more queues. On the
 one or more queues can be selected and the virtual whiteboard regions for the selected queues
 are then displayed. The material in the queue can be re-ordered by clicking and dragging on the
 6-dot icon on the left of each piece of material. Depending on the configuration and
-which specific queue is selected, material can be added to a queue by clickong the plus icon
+which specific queue is selected, material can be added to a queue by clicking the plus icon
 in the top-right corner.
 
 On raw material queues, the list of in-process jobs and/or unfilled workorders will be displayed
@@ -117,7 +117,7 @@ any part by scanned serial (even if the part is not on the screen).
 
 The close out screen shows completed material from the last 36 hours. On the left
 is the virtual whiteboard region for completed but not yet closed out material
-and on the right is material which has completed final wash.
+and on the right is material which has completed closeout.
 Closeout is optional but intended for any final manual process needed before the
 part can be shipped; typically this includes a final wash or workorder assignment or
 other tasks.

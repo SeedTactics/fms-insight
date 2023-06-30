@@ -20,7 +20,7 @@ efficiency calculations.
 
 At the top of the page are two radio buttons allowing you to analyze either the last
 30 days or a specific calendar month. You can then select from a variety of reports
-to investiage the cell.
+to investigate the cell.
 
 The best metric for continuous improvement of an FMS is not cost/piece but
 instead is the bottlenecks and utilization of system resources (the
@@ -277,7 +277,7 @@ The inspections can be viewed either as a sankey diagram or as a table.
 
 The tool replacement chart shows data about tool replacements over the month. Each
 tool is shown with the number of replacements, average usage at replacement, and average
-count at replacement. These numbers are approximate if a tool replacement happpens during
+count at replacement. These numbers are approximate if a tool replacement happens during
 a cycle, since we do not know the exact time of the replacement. Each tool also shows a graph
 of all replacements over the whole month, with the red line the average and a black dot for each
 replacement. A replacement can be hovered for more information.
