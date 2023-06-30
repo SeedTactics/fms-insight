@@ -43,10 +43,14 @@ and a gray bar for each simulated cycle. For machine cycles which are currently
 executing or load/unloads in progress, a light-green bar is shown for the
 expected remaining time in that cycle.
 
-In addition, if a cycle is a statistical outlier (the cycle is longer than the
-expected cycle time), then the portion of the cycle which is beyond the expected
-is shown in red. You can therefore gauge at a glance how many cycles have run
-long and by how much.
+The color of each bar indicates the status of the cycle compared to the statistics
+of previous cycles in the past month. If the cycle is at or below the expected cycle
+time, it will be shown in green. If the cycle is longer than the expected cycle
+but still within the statistical deviation, the portion of the cycle beyond the
+expected time will be shown in dark green. If
+the cycle is longer than the expected cycle and outside the statistical deviation,
+it is classified as an outlier and the portion of the cycle beyond the expected time will be shown in red.
+In addition, a list of all the outlier cycles (those with red) can be viewed in the reports tab.
 
 ## Cell
 
