@@ -305,7 +305,7 @@ namespace DebugMachineWatchApiServer
       {
         if (draft.Jobs.ContainsKey(jobUnique))
         {
-          draft.Jobs[jobUnique] %= j => j.Comment = comment;
+          draft.Jobs[jobUnique] = draft.Jobs[jobUnique] with { Comment = comment };
         }
       });
       OnNewCurrentStatus?.Invoke(CurrentStatus);
@@ -509,7 +509,7 @@ namespace DebugMachineWatchApiServer
             Process = mat.Process,
             Face = ""
           },
-          pallet: mat.Location.Pallet,
+          pallet: mat.Location.PalletNum ?? 0,
           queue: _fmsSettings.QuarantineQueue,
           operatorName: operatorName,
           reason: reason
@@ -641,7 +641,12 @@ namespace DebugMachineWatchApiServer
           var reader = new System.IO.StreamReader(file);
           while (reader.Peek() >= 0)
           {
-            var evtJson = reader.ReadLine();
+            // replace empty pal "" with zero.  The pallet type changed to int and I didn't
+            // want to regenerate all the sample data
+            var evtJson = reader
+              .ReadLine()
+              .Replace("\"pal\":\"\"", "\"pal\":0")
+              .Replace("\"pal\": \"\"", "\"pal\":0");
             var e = (LogEntry)JsonConvert.DeserializeObject(evtJson, typeof(LogEntry), _jsonSettings);
             evts.Add(e);
           }
@@ -793,16 +798,31 @@ namespace DebugMachineWatchApiServer
 
     public static Job OffsetJob(Job originalJob, TimeSpan offset)
     {
-      return originalJob.Produce(j =>
+      return originalJob with
       {
-        j.RouteStartUTC = j.RouteStartUTC.Add(offset);
-        j.RouteEndUTC = j.RouteEndUTC.Add(offset);
-        j.AdjustAllPaths(path =>
-        {
-          path.SimulatedStartingUTC += offset;
-          path.SimulatedProduction.AdjustAll(prod => prod.TimeUTC += offset);
-        });
-      });
+        RouteStartUTC = originalJob.RouteStartUTC.Add(offset),
+        RouteEndUTC = originalJob.RouteEndUTC.Add(offset),
+        Processes = originalJob.Processes
+          .Select(
+            p =>
+              p with
+              {
+                Paths = p.Paths
+                  .Select(
+                    path =>
+                      path with
+                      {
+                        SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
+                        SimulatedProduction = path.SimulatedProduction
+                          .Select(prod => prod with { TimeUTC = prod.TimeUTC.Add(offset) })
+                          .ToImmutableList()
+                      }
+                  )
+                  .ToImmutableList()
+              }
+          )
+          .ToImmutableList()
+      };
       // not converted: hold patterns
     }
 
@@ -855,14 +875,14 @@ namespace DebugMachineWatchApiServer
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
         Queues = ImmutableDictionary<string, QueueInfo>.Empty
       };
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
+    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       using var LogDB = RepoConfig.OpenConnection();
       Serilog.Log.Information(

@@ -54,7 +54,7 @@ namespace MachineWatchTest
         uniq: "Job1",
         part: "Part1",
         numProc: 2,
-        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } }
+        pals: new[] { new[] { 4, 5 }, new[] { 4, 5 } }
       );
 
       var job2 = CreateBasicStopsWithProg(
@@ -62,14 +62,14 @@ namespace MachineWatchTest
         part: "Part2",
         numProc: 2,
         //process groups on the same pallet.
-        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } }
+        pals: new[] { new[] { 4, 5 }, new[] { 4, 5 } }
       );
 
       var job3 = CreateBasicStopsWithProg(
         uniq: "Job3",
         part: "Part3",
         numProc: 1,
-        pals: new[] { new[] { "20", "21" } }
+        pals: new[] { new[] { 20, 21 } }
       );
 
       var log = new List<string>();
@@ -132,21 +132,21 @@ namespace MachineWatchTest
         uniq: "Job1",
         part: "Part1",
         numProc: 2,
-        pals: new[] { new[] { "10", "11", "12" }, new[] { "10", "11", "12" } }
+        pals: new[] { new[] { 10, 11, 12 }, new[] { 10, 11, 12 } }
       );
 
       var job2 = CreateBasicStopsWithProg(
         uniq: "Job2",
         part: "Part2",
         numProc: 2,
-        pals: new[] { new[] { "10", "11", "12" }, new[] { "10", "11", "12" } }
+        pals: new[] { new[] { 10, 11, 12 }, new[] { 10, 11, 12 } }
       );
 
       var job3 = CreateBasicStopsWithProg(
         uniq: "Job3",
         part: "Part3",
         numProc: 1,
-        pals: new[] { new[] { "30", "31" } }
+        pals: new[] { new[] { 30, 31 } }
       );
 
       var log = new List<string>();
@@ -247,21 +247,21 @@ namespace MachineWatchTest
         uniq: "Job1",
         part: "Part1",
         numProc: 2,
-        pals: new[] { new[] { "4", "5" }, new[] { "40", "50" } }
+        pals: new[] { new[] { 4, 5 }, new[] { 40, 50 } }
       );
 
       var job2 = CreateBasicStopsWithProg(
         uniq: "Job2",
         part: "Part2",
         numProc: 2,
-        pals: new[] { new[] { "4", "5" }, new[] { "40", "50" } }
+        pals: new[] { new[] { 4, 5 }, new[] { 40, 50 } }
       );
 
       var job3 = CreateBasicStopsWithProg(
         uniq: "Job3",
         part: "Part3",
         numProc: 2,
-        pals: new[] { new[] { "4", "5" }, new[] { "30", "31" } }
+        pals: new[] { new[] { 4, 5 }, new[] { 30, 31 } }
       );
 
       var log = new List<string>();
@@ -314,7 +314,7 @@ namespace MachineWatchTest
         uniq: "Job1",
         part: "Part1",
         numProc: 2,
-        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } },
+        pals: new[] { new[] { 4, 5 }, new[] { 4, 5 } },
         fixtures: new[] { ("fixAA", 1), ("fixAA", 2) }
       );
 
@@ -322,7 +322,7 @@ namespace MachineWatchTest
         uniq: "Job2",
         part: "Part2",
         numProc: 2,
-        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } },
+        pals: new[] { new[] { 4, 5 }, new[] { 4, 5 } },
         fixtures: new[] { ("fixAA", 1), ("fixAA", 2) }
       );
 
@@ -331,7 +331,7 @@ namespace MachineWatchTest
         uniq: "Job3",
         part: "Part3",
         numProc: 1,
-        pals: new[] { new[] { "20", "21" } },
+        pals: new[] { new[] { 20, 21 } },
         fixtures: new[] { ("fix3", 1) }
       );
 
@@ -339,7 +339,7 @@ namespace MachineWatchTest
         uniq: "Job4",
         part: "Part3",
         numProc: 1,
-        pals: new[] { new[] { "20", "21" } },
+        pals: new[] { new[] { 20, 21 } },
         fixtures: new[] { ("fix4", 1) } // different than job3
       );
 
@@ -401,7 +401,7 @@ namespace MachineWatchTest
         uniq: "Job1",
         part: "Part1",
         numProc: 2,
-        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } },
+        pals: new[] { new[] { 4, 5 }, new[] { 4, 5 } },
         simStart: new DateTime(2020, 08, 20, 3, 4, 5, DateTimeKind.Utc)
       );
 
@@ -410,7 +410,7 @@ namespace MachineWatchTest
         part: "Part2",
         numProc: 2,
         //process groups on the same pallet.
-        pals: new[] { new[] { "4", "5" }, new[] { "4", "5" } },
+        pals: new[] { new[] { 4, 5 }, new[] { 4, 5 } },
         simStart: new DateTime(2020, 08, 10, 3, 4, 5, DateTimeKind.Utc)
       );
 
@@ -420,8 +420,8 @@ namespace MachineWatchTest
         numProc: 2,
         simStart: new DateTime(2020, 08, 15, 3, 4, 5, DateTimeKind.Utc),
         pals: sharePallets
-          ? new[] { new[] { "4", "5", "6" }, new[] { "4", "5", "6" } }
-          : new[] { new[] { "10", "11" }, new[] { "10", "11" } }
+          ? new[] { new[] { 4, 5, 6 }, new[] { 4, 5, 6 } }
+          : new[] { new[] { 10, 11 }, new[] { 10, 11 } }
       );
 
       // job3 is between job2 and job1 in simulated starting time, and if sharePallets is true also has an extra pallet 6
@@ -511,7 +511,7 @@ namespace MachineWatchTest
         uniq: "Job1",
         part: "Part1",
         numProc: 2,
-        pals: new[] { new[] { "4", "5" }, new[] { "40", "50" } }
+        pals: new[] { new[] { 4, 5 }, new[] { 40, 50 } }
       );
 
       var dset = CreateReadSet();
@@ -584,7 +584,7 @@ namespace MachineWatchTest
         uniq: "Job1",
         part: "Part1",
         numProc: 2,
-        pals: new[] { new[] { "4" }, new[] { "40" } }
+        pals: new[] { new[] { 4 }, new[] { 40 } }
       );
 
       var dset = CreateReadSet();
@@ -629,7 +629,7 @@ namespace MachineWatchTest
         uniq: "Job1",
         part: "Part1",
         numProc: 4,
-        pals: new[] { new[] { "4" }, new[] { "10" }, new[] { "10" }, new[] { "3" } },
+        pals: new[] { new[] { 4 }, new[] { 10 }, new[] { 10 }, new[] { 3 } },
         // repeat program to check if only adds once
         progs: new[] { ("aaa", (int?)null), ("bbb", 7), ("ccc", 9), ("aaa", null) }
       );
@@ -731,7 +731,7 @@ namespace MachineWatchTest
         uniq: "Job1",
         part: "Part1",
         numProc: 2,
-        pals: new[] { new[] { "4" }, new[] { "10" } },
+        pals: new[] { new[] { 4 }, new[] { 10 } },
         progs: new[] { ("aaa", (int?)null), ("bbb", 7) }
       );
 
@@ -842,7 +842,7 @@ namespace MachineWatchTest
       string uniq,
       string part,
       int numProc,
-      string[][] pals,
+      int[][] pals,
       (string fix, int face)[] fixtures = null,
       DateTime? simStart = null,
       (string prog, int? rev)[] progs = null
@@ -865,7 +865,7 @@ namespace MachineWatchTest
                 Paths = ImmutableList.Create(
                   new ProcPathInfo()
                   {
-                    Pallets = ImmutableList.CreateRange(pals[p - 1]),
+                    PalletNums = ImmutableList.CreateRange(pals[p - 1]),
                     SimulatedStartingUTC = (p == 1 ? simStart : null) ?? DateTime.MinValue,
                     SimulatedAverageFlowTime = TimeSpan.Zero,
                     Load = ImmutableList.Create(1),

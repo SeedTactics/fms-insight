@@ -73,7 +73,15 @@ namespace BlackMaple.MachineFramework
         while (reader.Read())
         {
           long ctr = reader.GetInt64(0);
-          string pal = reader.GetString(1);
+          int pal;
+          if (reader.GetFieldType(1) == typeof(string))
+          {
+            int.TryParse(reader.GetString(1), out pal);
+          }
+          else
+          {
+            pal = reader.GetInt32(1);
+          }
           int logType = reader.GetInt32(2);
           int locNum = reader.GetInt32(3);
           string prog = reader.GetString(4);
@@ -473,7 +481,7 @@ namespace BlackMaple.MachineFramework
           "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
           + " FROM stations "
           + " WHERE Counter IN (SELECT stations_mat.Counter FROM matdetails INNER JOIN stations_mat ON stations_mat.MaterialID = matdetails.MaterialID WHERE matdetails.Workorder = $work) "
-          + "    OR (Pallet = '' AND Result = $work AND StationLoc = $workloc) "
+          + "    OR (Pallet = 0 AND Result = $work AND StationLoc = $workloc) "
           + " ORDER BY Counter ASC";
         cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
         cmd.Parameters.Add("workloc", SqliteType.Integer).Value = (int)LogType.WorkorderComment;
@@ -536,14 +544,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public DateTime LastPalletCycleTime(string pallet)
+    public DateTime LastPalletCycleTime(int pallet)
     {
       using (var cmd = _connection.CreateCommand())
       {
         cmd.CommandText =
           "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' "
           + "ORDER BY Counter DESC LIMIT 1";
-        cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
+        cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
 
         var date = cmd.ExecuteScalar();
         if (date == null || date == DBNull.Value)
@@ -554,7 +562,7 @@ namespace BlackMaple.MachineFramework
     }
 
     //Loads the log for the current pallet cycle, which is all events from the last Result = "PalletCycle"
-    public List<LogEntry> CurrentPalletLog(string pallet, bool includeLastPalletCycleEvt = false)
+    public List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false)
     {
       using (var trans = _connection.BeginTransaction())
       {
@@ -565,7 +573,7 @@ namespace BlackMaple.MachineFramework
     }
 
     private List<LogEntry> CurrentPalletLog(
-      string pallet,
+      int pallet,
       bool includeLastPalletCycleEvt,
       SqliteTransaction trans
     )
@@ -583,7 +591,7 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText = "SELECT MAX(Counter) FROM stations where Pallet = $pal AND Result = 'PalletCycle'";
-        cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
+        cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
 
         var counter = cmd.ExecuteScalar();
 
@@ -714,7 +722,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public bool CycleExists(DateTime endUTC, string pal, LogType logTy, string locName, int locNum)
+    public bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum)
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -722,7 +730,7 @@ namespace BlackMaple.MachineFramework
           "SELECT COUNT(*) FROM stations WHERE "
           + "TimeUTC = $time AND Pallet = $pal AND StationLoc = $loc AND StationNum = $locnum AND StationName = $locname";
         cmd.Parameters.Add("time", SqliteType.Integer).Value = endUTC.Ticks;
-        cmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
+        cmd.Parameters.Add("pal", SqliteType.Integer).Value = pal;
         cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)logTy;
         cmd.Parameters.Add("locnum", SqliteType.Integer).Value = locNum;
         cmd.Parameters.Add("locname", SqliteType.Text).Value = locName;
@@ -862,7 +870,7 @@ namespace BlackMaple.MachineFramework
           FROM
             stations AS s
           WHERE
-            s.Pallet = ''
+            s.Pallet = 0
             AND
             s.Result = $workid
             AND
@@ -1011,7 +1019,7 @@ namespace BlackMaple.MachineFramework
       public required DateTime EndTimeUTC { get; init; }
       public required string LocationName { get; init; }
       public required int LocationNum { get; init; }
-      public required string Pallet { get; init; }
+      public required int Pallet { get; init; }
       public required string Program { get; init; }
       public required string Result { get; init; }
       public TimeSpan ElapsedTime { get; init; } = TimeSpan.FromMinutes(-1); //time from cycle-start to cycle-stop
@@ -1106,7 +1114,7 @@ namespace BlackMaple.MachineFramework
           "INSERT INTO stations(Pallet, StationLoc, StationName, StationNum, Program, Start, TimeUTC, Result, Elapsed, ActiveTime, ForeignID,OriginalMessage)"
           + "VALUES ($pal,$loc,$locname,$locnum,$prog,$start,$time,$result,$elapsed,$active,$foreign,$orig)";
 
-        cmd.Parameters.Add("pal", SqliteType.Text).Value = log.Pallet;
+        cmd.Parameters.Add("pal", SqliteType.Integer).Value = log.Pallet;
         cmd.Parameters.Add("loc", SqliteType.Integer).Value = (int)log.LogType;
         cmd.Parameters.Add("locname", SqliteType.Text).Value = log.LocationName;
         cmd.Parameters.Add("locnum", SqliteType.Integer).Value = log.LocationNum;
@@ -1345,7 +1353,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordLoadStart(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
@@ -1369,7 +1377,7 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<LogEntry> RecordLoadEnd(
       IEnumerable<MaterialToLoadOntoPallet> toLoad,
-      string pallet,
+      int pallet,
       DateTime timeUTC,
       string foreignId = null,
       string originalMessage = null
@@ -1389,7 +1397,7 @@ namespace BlackMaple.MachineFramework
     }
 
     private IReadOnlyList<LogEntry> RecordLoadEnd(
-      string pallet,
+      int pallet,
       DateTime timeUTC,
       IEnumerable<MaterialToLoadOntoPallet> toLoad,
       string foreignId,
@@ -1453,7 +1461,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordUnloadStart(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int lulNum,
       DateTime timeUTC,
       string foreignId = null,
@@ -1477,7 +1485,7 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<LogEntry> RecordUnloadEnd(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int lulNum,
       DateTime timeUTC,
       TimeSpan elapsed,
@@ -1531,7 +1539,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordManualWorkAtLULStart(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int lulNum,
       DateTime timeUTC,
       string operationName,
@@ -1560,7 +1568,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordManualWorkAtLULEnd(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int lulNum,
       DateTime timeUTC,
       TimeSpan elapsed,
@@ -1593,7 +1601,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordMachineStart(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       string statName,
       int statNum,
       string program,
@@ -1627,7 +1635,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordMachineEnd(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       string statName,
       int statNum,
       string program,
@@ -1685,7 +1693,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordPalletArriveRotaryInbound(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       string statName,
       int statNum,
       DateTime timeUTC,
@@ -1717,7 +1725,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordPalletDepartRotaryInbound(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       string statName,
       int statNum,
       DateTime timeUTC,
@@ -1752,7 +1760,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordPalletArriveStocker(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int stockerNum,
       DateTime timeUTC,
       bool waitForMachine,
@@ -1784,7 +1792,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry RecordPalletDepartStocker(
       IEnumerable<EventLogMaterial> mats,
-      string pallet,
+      int pallet,
       int stockerNum,
       DateTime timeUTC,
       bool waitForMachine,
@@ -1860,7 +1868,7 @@ namespace BlackMaple.MachineFramework
       var log = new NewEventLogEntry()
       {
         Material = new[] { mat },
-        Pallet = "",
+        Pallet = 0,
         LogType = LogType.PartMark,
         LocationName = "Mark",
         LocationNum = 1,
@@ -1908,7 +1916,7 @@ namespace BlackMaple.MachineFramework
       var log = new NewEventLogEntry()
       {
         Material = new[] { mat },
-        Pallet = "",
+        Pallet = 0,
         LogType = LogType.OrderAssignment,
         LocationName = "Order",
         LocationNum = 1,
@@ -1986,7 +1994,7 @@ namespace BlackMaple.MachineFramework
       var log = new NewEventLogEntry()
       {
         Material = new[] { mat },
-        Pallet = "",
+        Pallet = 0,
         LogType = LogType.InspectionResult,
         LocationName = "Inspection",
         LocationNum = inspectionLocNum,
@@ -2047,7 +2055,7 @@ namespace BlackMaple.MachineFramework
       var log = new NewEventLogEntry()
       {
         Material = new[] { mat },
-        Pallet = "",
+        Pallet = 0,
         LogType = LogType.CloseOut,
         LocationName = "CloseOut",
         LocationNum = locNum,
@@ -2073,7 +2081,7 @@ namespace BlackMaple.MachineFramework
       var log = new NewEventLogEntry()
       {
         Material = Array.Empty<EventLogMaterial>(),
-        Pallet = "",
+        Pallet = 0,
         LogType = LogType.WorkorderComment,
         LocationName = "WorkorderComment",
         LocationNum = 1,
@@ -2182,7 +2190,7 @@ namespace BlackMaple.MachineFramework
 
     public LogEntry SignalMaterialForQuarantine(
       EventLogMaterial mat,
-      string pallet,
+      int pallet,
       string queue,
       string operatorName,
       string reason,
@@ -2219,7 +2227,7 @@ namespace BlackMaple.MachineFramework
       EventLogMaterial mat,
       string program,
       string result,
-      string pallet = "",
+      int pallet = 0,
       DateTime? timeUTC = null,
       string foreignId = null,
       string originalMessage = null,
@@ -2280,7 +2288,7 @@ namespace BlackMaple.MachineFramework
     }
 
     public SwapMaterialResult SwapMaterialInCurrentPalletCycle(
-      string pallet,
+      int pallet,
       long oldMatId,
       long newMatId,
       string operatorName,
@@ -2593,16 +2601,31 @@ namespace BlackMaple.MachineFramework
           addMessageCmd.Transaction = trans;
 
           // load old events
-          string pallet = "";
+          int pallet = 0;
           var invalidatedCntrs = new List<long>();
           var allMatIds = new HashSet<long>();
           using (var reader = getCycles.ExecuteReader())
           {
             while (reader.Read())
             {
-              if (!reader.IsDBNull(1) && !string.IsNullOrEmpty(reader.GetString(1)))
+              if (!reader.IsDBNull(1))
               {
-                pallet = reader.GetString(1);
+                if (reader.GetFieldType(1) == typeof(string))
+                {
+                  var palStr = reader.GetString(1);
+                  if (!string.IsNullOrEmpty(palStr))
+                  {
+                    int.TryParse(palStr, out pallet);
+                  }
+                }
+                else
+                {
+                  var palNum = reader.GetInt32(1);
+                  if (palNum > 0)
+                  {
+                    pallet = palNum;
+                  }
+                }
               }
               var cntr = reader.GetInt64(0);
               invalidatedCntrs.Add(cntr);
@@ -2636,7 +2659,7 @@ namespace BlackMaple.MachineFramework
                   Face = ""
                 }
             ),
-            Pallet = "",
+            Pallet = 0,
             LogType = LogType.InvalidateCycle,
             LocationName = "InvalidateCycle",
             LocationNum = 1,
@@ -3281,7 +3304,7 @@ namespace BlackMaple.MachineFramework
       var log = new NewEventLogEntry()
       {
         Material = new[] { mat },
-        Pallet = "",
+        Pallet = 0,
         LogType = LogType.AddToQueue,
         LocationName = queue,
         LocationNum = resultingPosition,
@@ -3358,7 +3381,7 @@ namespace BlackMaple.MachineFramework
             var log = new NewEventLogEntry()
             {
               Material = new[] { mat },
-              Pallet = "",
+              Pallet = 0,
               LogType = LogType.RemoveFromQueue,
               LocationName = queue,
               LocationNum = pos,
@@ -3456,7 +3479,7 @@ namespace BlackMaple.MachineFramework
                     Face = ""
                   }
                 },
-                Pallet = "",
+                Pallet = 0,
                 LogType = LogType.PartMark,
                 LocationName = "Mark",
                 LocationNum = 1,
@@ -3483,7 +3506,7 @@ namespace BlackMaple.MachineFramework
                   Face = ""
                 }
               },
-              Pallet = "",
+              Pallet = 0,
               LogType = LogType.AddToQueue,
               LocationName = queue,
               LocationNum = maxExistingPos + i + 1,
@@ -3893,7 +3916,7 @@ namespace BlackMaple.MachineFramework
     #region Pending Loads
 
     public void AddPendingLoad(
-      string pal,
+      int pal,
       string key,
       int load,
       TimeSpan elapsed,
@@ -3915,7 +3938,7 @@ namespace BlackMaple.MachineFramework
               "INSERT INTO pendingloads(Pallet, Key, LoadStation, Elapsed, ActiveTime, ForeignID)"
               + "VALUES ($pal,$key,$load,$elapsed,$active,$foreign)";
 
-            cmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
+            cmd.Parameters.Add("pal", SqliteType.Integer).Value = pal;
             cmd.Parameters.Add("key", SqliteType.Text).Value = key;
             cmd.Parameters.Add("load", SqliteType.Integer).Value = load;
             cmd.Parameters.Add("elapsed", SqliteType.Integer).Value = elapsed.Ticks;
@@ -3938,7 +3961,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<PendingLoad> PendingLoads(string pallet)
+    public List<PendingLoad> PendingLoads(int pallet)
     {
       var trans = _connection.BeginTransaction();
       try
@@ -3954,7 +3977,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private List<PendingLoad> PendingLoads(string pallet, IDbTransaction trans)
+    private List<PendingLoad> PendingLoads(int pallet, IDbTransaction trans)
     {
       var ret = new List<PendingLoad>();
       using (var cmd = _connection.CreateCommand())
@@ -3963,7 +3986,7 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
-        cmd.Parameters.Add("pal", SqliteType.Text).Value = pallet;
+        cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
 
         using (var reader = cmd.ExecuteReader())
         {
@@ -4018,6 +4041,15 @@ namespace BlackMaple.MachineFramework
           {
             while (reader.Read())
             {
+              int pal;
+              if (reader.GetFieldType(5) == typeof(string))
+              {
+                int.TryParse(reader.GetString(5), out pal);
+              }
+              else
+              {
+                pal = reader.GetInt32(5);
+              }
               var p = new PendingLoad()
               {
                 Key = reader.GetString(0),
@@ -4027,7 +4059,7 @@ namespace BlackMaple.MachineFramework
                   ? TimeSpan.FromTicks(reader.GetInt64(3))
                   : TimeSpan.Zero,
                 ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
-                Pallet = reader.GetString(5),
+                Pallet = pal,
               };
               ret.Add(p);
             }
@@ -4045,7 +4077,7 @@ namespace BlackMaple.MachineFramework
       return ret;
     }
 
-    public LogEntry CompletePalletCycle(string pal, DateTime timeUTC, string foreignID = null)
+    public LogEntry CompletePalletCycle(int pal, DateTime timeUTC, string foreignID = null)
     {
       return CompletePalletCycle(
         pal: pal,
@@ -4058,7 +4090,7 @@ namespace BlackMaple.MachineFramework
     }
 
     public (LogEntry, IEnumerable<LogEntry>) CompletePalletCycle(
-      string pal,
+      int pal,
       DateTime timeUTC,
       IReadOnlyDictionary<string, IEnumerable<EventLogMaterial>> matFromPendingLoads,
       IEnumerable<MaterialToLoadOntoPallet> additionalLoads,
@@ -4079,7 +4111,7 @@ namespace BlackMaple.MachineFramework
             lastTimeCmd.CommandText =
               "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' "
               + "ORDER BY Counter DESC LIMIT 1";
-            lastTimeCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
+            lastTimeCmd.Parameters.Add("pal", SqliteType.Integer).Value = pal;
 
             var elapsedTime = TimeSpan.Zero;
             var lastCycleTime = lastTimeCmd.ExecuteScalar();
@@ -4218,7 +4250,7 @@ namespace BlackMaple.MachineFramework
                         new NewEventLogEntry()
                         {
                           Material = newFace.mats,
-                          Pallet = "",
+                          Pallet = 0,
                           LogType = LogType.PartMark,
                           LocationName = "Mark",
                           LocationNum = 1,
@@ -4264,7 +4296,7 @@ namespace BlackMaple.MachineFramework
                           new NewEventLogEntry()
                           {
                             Material = new[] { m },
-                            Pallet = "",
+                            Pallet = 0,
                             LogType = LogType.PartMark,
                             LocationName = "Mark",
                             LocationNum = 1,
@@ -4350,7 +4382,7 @@ namespace BlackMaple.MachineFramework
             {
               delCmd.Transaction = trans;
               delCmd.CommandText = "DELETE FROM pendingloads WHERE Pallet = $pal";
-              delCmd.Parameters.Add("pal", SqliteType.Text).Value = pal;
+              delCmd.Parameters.Add("pal", SqliteType.Integer).Value = pal;
               delCmd.ExecuteNonQuery();
             }
 
@@ -4509,7 +4541,7 @@ namespace BlackMaple.MachineFramework
           {
             MaterialID = matID,
             Process = proc,
-            Pallet = null,
+            Pallet = 0,
             LoadStation = -1,
             UnloadStation = -1,
             Stops = ImmutableList<MaterialProcessActualPath.Stop>.Empty
@@ -4539,7 +4571,15 @@ namespace BlackMaple.MachineFramework
           {
             //for each log entry, we search for a matching route stop in the job
             //if we find one, we replace the counter in the program
-            string pal = reader.GetString(0);
+            int pal;
+            if (reader.GetFieldType(0) == typeof(string))
+            {
+              int.TryParse(reader.GetString(0), out pal);
+            }
+            else
+            {
+              pal = reader.GetInt32(0);
+            }
             var logTy = (LogType)reader.GetInt32(1);
             string statName = reader.GetString(2);
             int statNum = reader.GetInt32(3);
@@ -4549,7 +4589,7 @@ namespace BlackMaple.MachineFramework
               process,
               mat =>
               {
-                if (!string.IsNullOrEmpty(pal))
+                if (pal > 0)
                   mat.Pallet = pal;
 
                 switch (logTy)
@@ -4584,7 +4624,7 @@ namespace BlackMaple.MachineFramework
     {
       foreach (var p in actualPath.Values)
       {
-        counter = counter.Replace(PathInspection.PalletFormatFlag(p.Process), p.Pallet);
+        counter = counter.Replace(PathInspection.PalletFormatFlag(p.Process), p.Pallet.ToString());
         counter = counter.Replace(PathInspection.LoadFormatFlag(p.Process), p.LoadStation.ToString());
         counter = counter.Replace(PathInspection.UnloadFormatFlag(p.Process), p.UnloadStation.ToString());
         for (int stopNum = 1; stopNum <= p.Stops.Count; stopNum++)
@@ -4873,7 +4913,7 @@ namespace BlackMaple.MachineFramework
       var log = new NewEventLogEntry()
       {
         Material = new[] { mat },
-        Pallet = "",
+        Pallet = 0,
         LogType = LogType.Inspection,
         LocationName = "Inspect",
         LocationNum = 1,
@@ -4935,7 +4975,7 @@ namespace BlackMaple.MachineFramework
       var log = new NewEventLogEntry()
       {
         Material = new[] { mat },
-        Pallet = "",
+        Pallet = 0,
         LogType = LogType.InspectionForce,
         LocationName = "Inspect",
         LocationNum = 1,

@@ -58,7 +58,7 @@ export interface PartAndProcess {
 
 export interface CycleFilterOptions {
   readonly allPartAndProcNames: ReadonlyArray<PartAndProcess>;
-  readonly allPalletNames: ReadonlyArray<string>;
+  readonly allPalletNames: ReadonlyArray<number>;
   readonly allLoadStationNames: ReadonlyArray<string>;
   readonly allMachineNames: ReadonlyArray<string>;
   readonly allMachineOperations: ReadonlyArray<PartAndStationOperation>;
@@ -68,7 +68,7 @@ function extractFilterOptions(
   cycles: Iterable<PartCycleData>,
   selectedPart?: PartAndProcess
 ): CycleFilterOptions {
-  const palNames = new Set<string>();
+  const palNames = new Set<number>();
   const lulNames = new Set<string>();
   const mcNames = new Set<string>();
   let partNames = HashMap.empty<string, HashSet<number>>();
@@ -97,7 +97,7 @@ function extractFilterOptions(
   }
 
   return {
-    allPalletNames: Array.from(palNames).sort((a, b) => a.localeCompare(b)),
+    allPalletNames: Array.from(palNames).sort(),
     allLoadStationNames: Array.from(lulNames).sort((a, b) => a.localeCompare(b)),
     allMachineNames: Array.from(mcNames).sort((a, b) => a.localeCompare(b)),
     allPartAndProcNames: LazySeq.of(partNames)
@@ -125,7 +125,7 @@ export const FilterAnyLoadKey = "@@@_FMSInsigt_FilterAnyLoadKey_@@@";
 export interface StationCycleFilter {
   readonly zoom?: { start: Date; end: Date };
   readonly partAndProc?: PartAndProcess;
-  readonly pallet?: string;
+  readonly pallet?: number;
   readonly station?: string;
   readonly operation?: PartAndStationOperation;
 }
@@ -186,7 +186,7 @@ export function filterStationCycles(
       })
       .toRLookup((e) => {
         if (groupByPal) {
-          return e.pallet;
+          return e.pallet.toString();
         } else if (groupByPart) {
           return (
             e.part +
@@ -219,7 +219,7 @@ export interface FilteredLoadCycles {
 export interface LoadCycleFilter {
   readonly zoom?: { start: Date; end: Date };
   readonly partAndProc?: PartAndProcess;
-  readonly pallet?: string;
+  readonly pallet?: number;
   readonly station?: string;
 }
 
@@ -291,7 +291,7 @@ export function loadOccupancyCycles(
 
 export interface LoadOpFilters {
   readonly operation: PartAndStationOperation;
-  readonly pallet?: string;
+  readonly pallet?: number;
   readonly station?: string;
   readonly zoom?: { readonly start: Date; readonly end: Date };
 }
@@ -582,7 +582,7 @@ export function buildCycleTable(
         .join(":") +
       "</td>";
     table += "<td>" + stat_name_and_num(cycle.stationGroup, cycle.stationNumber) + "</td>";
-    table += "<td>" + cycle.pallet + "</td>";
+    table += "<td>" + cycle.pallet.toString() + "</td>";
     table +=
       "<td>" +
       cycle.material
@@ -631,7 +631,7 @@ export function buildPalletCycleTable(points: PalletCyclesByPallet): string {
   for (const pal of pals) {
     for (const cycle of points.get(pal)?.valuesToLazySeq() ?? []) {
       table += "<tr>";
-      table += "<td>" + pal + "</td>";
+      table += "<td>" + pal.toString() + "</td>";
       table += "<td>" + format(cycle.x, "MMM d, yyyy, h:mm aa") + "</td>";
       table += "<td>" + cycle.y.toFixed(1) + "</td>";
       table += "</tr>\n";
@@ -711,7 +711,7 @@ export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>):
       table += "<td>" + format(cycle.endUTC, "MMM d, yyyy, h:mm aa") + "</td>";
       table += "<td>" + mat.part + "-" + mat.proc.toString() + "</td>";
       table += "<td>" + stat_name(cycle) + "</td>";
-      table += "<td>" + cycle.pal + "</td>";
+      table += "<td>" + cycle.pal.toString() + "</td>";
       table += "<td>" + (mat.serial || "") + "</td>";
       table += "<td>" + (mat.workorder || "") + "</td>";
       table += "<td>" + result(cycle) + "</td>";

@@ -692,7 +692,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         _logDB.SignalMaterialForQuarantine(
           EventLogMaterial.FromLogMat(mat),
-          pallet: pal.ToString(),
+          pallet: pal,
           queue: q,
           operatorName: null,
           reason: null,
@@ -720,7 +720,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Action = new InProcessMaterialAction()
               {
                 Type = InProcessMaterialAction.ActionType.Loading,
-                LoadOntoPallet = c.pal.ToString(),
+                LoadOntoPalletNum = c.pal,
                 LoadOntoFace = c.face,
                 ProcessAfterLoad = 1,
                 PathAfterLoad = c.path,
@@ -737,7 +737,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       for (int i = 0; i < _expectedLoadCastings.Count; i++)
       {
         var m = _expectedLoadCastings[i];
-        if (m.Action.LoadOntoPallet == pal.ToString())
+        if (m.Action.LoadOntoPalletNum == pal)
         {
           _expectedLoadCastings[i] =
             m % (mat => mat.Action.ElapsedLoadUnloadTime = TimeSpan.FromMinutes(mins));
@@ -840,7 +840,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     )
     {
       var swap = _logDB.SwapMaterialInCurrentPalletCycle(
-        pallet: pal.ToString(),
+        pallet: pal,
         oldMatId: matOnPalId,
         newMatId: matToAddId,
         operatorName: null,
@@ -883,7 +883,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
-            Pallet = pal.ToString(),
+            PalletNum = pal,
             Face = oldMatOnPal.Location.Face
           }
         );
@@ -1068,7 +1068,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins),
                   PartsPerPallet = partsPerPal,
-                  Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
+                  PalletNums = pals.ToImmutableList(),
                   Fixture = fixture,
                   Face = face,
                   InputQueue = queue,
@@ -1176,7 +1176,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins),
                   PartsPerPallet = partsPerPal,
-                  Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
+                  PalletNums = pals.ToImmutableList(),
                   Fixture = fixture,
                   Face = face,
                   InputQueue = queue,
@@ -1239,7 +1239,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins1),
                   PartsPerPallet = partsPerPal,
-                  Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
+                  PalletNums = pals.ToImmutableList(),
                   Fixture = fixture,
                   Face = face1,
                   SimulatedAverageFlowTime = TimeSpan.Zero,
@@ -1268,7 +1268,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
                   PartsPerPallet = partsPerPal,
                   SimulatedAverageFlowTime = TimeSpan.Zero,
-                  Pallets = pals.Select(p => p.ToString()).ToImmutableList(),
+                  PalletNums = pals.ToImmutableList(),
                   Fixture = fixture,
                   Face = face2,
                   Stops = ImmutableList.Create(
@@ -1394,7 +1394,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins1),
                   PartsPerPallet = partsPerPal,
-                  Pallets = pals1.Select(p => p.ToString()).ToImmutableList(),
+                  PalletNums = pals1.ToImmutableList(),
                   Fixture = fixture,
                   Face = 1,
                   SimulatedStartingUTC = DateTime.MinValue,
@@ -1416,7 +1416,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
                   PartsPerPallet = partsPerPal,
-                  Pallets = pals2.Select(p => p.ToString()).ToImmutableList(),
+                  PalletNums = pals2.ToImmutableList(),
                   Fixture = fixture,
                   Face = 1,
                   SimulatedStartingUTC = DateTime.MinValue,
@@ -1503,30 +1503,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               {
                 if (m.Action.Type == InProcessMaterialAction.ActionType.Loading)
                 {
-                  if (string.IsNullOrEmpty(m.Action.LoadOntoPallet))
+                  if (m.Action.LoadOntoPalletNum == null)
                   {
-                    return m.Location.Pallet == palNum.ToString();
+                    return m.Location.PalletNum == palNum;
                   }
                   else
                   {
-                    return m.Action.LoadOntoPallet == palNum.ToString();
+                    return m.Action.LoadOntoPalletNum == palNum;
                   }
                 }
                 else if (m.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
                 {
-                  return m.Location.Pallet == palNum.ToString();
+                  return m.Location.PalletNum == palNum;
                 }
                 return false;
               }),
             options => options.ComparingByMembers<InProcessMaterial>()
           );
 
-        actualSt.CurrentStatus.Pallets[palNum.ToString()]
+        actualSt.CurrentStatus.Pallets[palNum]
           .Should()
           .BeEquivalentTo(
             new MachineFramework.PalletStatus()
             {
-              Pallet = palNum.ToString(),
+              PalletNum = palNum,
               FixtureOnPallet = "",
               OnHold = _status.Pallets[palNum - 1].Master.Skip,
               CurrentPalletLocation = _status.Pallets[palNum - 1].CurStation.Location,
@@ -2329,7 +2329,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             new LogEntry(
               cntr: -1,
               mat: Enumerable.Empty<LogMaterial>(),
-              pal: pal.ToString(),
+              pal: pal,
               ty: LogType.GeneralMessage,
               locName: "Message",
               locNum: 1,
@@ -2457,7 +2457,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 new LogEntry(
                   cntr: -1,
                   mat: Enumerable.Empty<LogMaterial>(),
-                  pal: palletCycleChange.Pallet.ToString(),
+                  pal: palletCycleChange.Pallet,
                   ty: LogType.PalletCycle,
                   locName: "Pallet Cycle",
                   locNum: 1,
@@ -2477,7 +2477,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 new LogEntry(
                   cntr: -1,
                   mat: Enumerable.Empty<LogMaterial>(),
-                  pal: loadBegin.Pallet.ToString(),
+                  pal: loadBegin.Pallet,
                   ty: LogType.LoadUnloadCycle,
                   locName: "L/U",
                   locNum: loadBegin.LoadStation,
@@ -2523,7 +2523,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 new LogEntry(
                   cntr: -1,
                   mat: load.OutMaterial,
-                  pal: load.Pallet.ToString(),
+                  pal: load.Pallet,
                   ty: LogType.LoadUnloadCycle,
                   locName: "L/U",
                   locNum: load.LoadStation,
@@ -2553,7 +2553,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                           face: ""
                         )
                       },
-                      pal: "",
+                      pal: 0,
                       ty: LogType.PartMark,
                       locName: "Mark",
                       locNum: 1,
@@ -2580,7 +2580,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   Location = new InProcessMaterialLocation()
                   {
                     Type = InProcessMaterialLocation.LocType.OnPallet,
-                    Pallet = load.Pallet.ToString(),
+                    PalletNum = load.Pallet,
                     Face = load.Face
                   },
                   Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
@@ -2599,7 +2599,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 new LogEntry(
                   cntr: -1,
                   mat: load.Material,
-                  pal: load.Pallet.ToString(),
+                  pal: load.Pallet,
                   ty: LogType.LoadUnloadCycle,
                   locName: "L/U",
                   locNum: load.LoadStation,
@@ -2632,7 +2632,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                           face: m.Face
                         )
                       },
-                      pal: "",
+                      pal: 0,
                       ty: LogType.RemoveFromQueue,
                       locName: removeFromQueueEvt.FromQueue,
                       locNum: removeFromQueueEvt.Position,
@@ -2655,7 +2655,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 new LogEntry(
                   cntr: -1,
                   mat: unload.Material,
-                  pal: unload.Pallet.ToString(),
+                  pal: unload.Pallet,
                   ty: LogType.LoadUnloadCycle,
                   locName: "L/U",
                   locNum: unload.LoadStation,
@@ -2688,7 +2688,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                           face: m.Face
                         )
                       },
-                      pal: "",
+                      pal: 0,
                       ty: LogType.AddToQueue,
                       locName: addToQueueEvt.ToQueue,
                       locNum: addToQueueEvt.Position,
@@ -2709,7 +2709,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   {
                     Counter = -1,
                     Material = machBegin.Material.ToImmutableList(),
-                    Pallet = machBegin.Pallet.ToString(),
+                    Pallet = machBegin.Pallet,
                     LogType = LogType.MachineCycle,
                     LocationName = "TestMC",
                     LocationNum = 100 + machBegin.Machine,
@@ -2738,7 +2738,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   {
                     Counter = -1,
                     Material = machEnd.Material.ToImmutableList(),
-                    Pallet = machEnd.Pallet.ToString(),
+                    Pallet = machEnd.Pallet,
                     LogType = LogType.MachineCycle,
                     LocationName = "TestMC",
                     LocationNum = 100 + machEnd.Machine,
@@ -2766,7 +2766,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   new LogEntry(
                     cntr: -1,
                     mat: reclampBegin.Material,
-                    pal: reclampBegin.Pallet.ToString(),
+                    pal: reclampBegin.Pallet,
                     ty: LogType.LoadUnloadCycle,
                     locName: "L/U",
                     locNum: reclampBegin.LoadStation,
@@ -2786,7 +2786,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   new LogEntry(
                     cntr: -1,
                     mat: reclampEnd.Material,
-                    pal: reclampEnd.Pallet.ToString(),
+                    pal: reclampEnd.Pallet,
                     ty: LogType.LoadUnloadCycle,
                     locName: "L/U",
                     locNum: reclampEnd.LoadStation,
@@ -2808,7 +2808,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   new LogEntry(
                     cntr: -1,
                     mat: stockerStart.Material,
-                    pal: stockerStart.Pallet.ToString(),
+                    pal: stockerStart.Pallet,
                     ty: LogType.PalletInStocker,
                     locName: "Stocker",
                     locNum: stockerStart.Stocker,
@@ -2828,7 +2828,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   new LogEntry(
                     cntr: -1,
                     mat: stockerEnd.Material,
-                    pal: stockerEnd.Pallet.ToString(),
+                    pal: stockerEnd.Pallet,
                     ty: LogType.PalletInStocker,
                     locName: "Stocker",
                     locNum: stockerEnd.Stocker,
@@ -2850,7 +2850,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   new LogEntry(
                     cntr: -1,
                     mat: rotaryStart.Material,
-                    pal: rotaryStart.Pallet.ToString(),
+                    pal: rotaryStart.Pallet,
                     ty: LogType.PalletOnRotaryInbound,
                     locName: "TestMC",
                     locNum: 100 + rotaryStart.Machine,
@@ -2870,7 +2870,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   new LogEntry(
                     cntr: -1,
                     mat: rotaryEnd.Material,
-                    pal: rotaryEnd.Pallet.ToString(),
+                    pal: rotaryEnd.Pallet,
                     ty: LogType.PalletOnRotaryInbound,
                     locName: "TestMC",
                     locNum: 100 + rotaryEnd.Machine,
@@ -2904,7 +2904,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                         face: ""
                       )
                     ),
-                    Pallet = "",
+                    Pallet = 0,
                     LogType = LogType.Inspection,
                     LocationName = "Inspect",
                     LocationNum = 1,
@@ -2966,16 +2966,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           proc,
           path,
           p =>
-            p.Inspections.Add(
-              new PathInspection()
-              {
-                InspectionType = inspTy,
-                Counter = cntr,
-                MaxVal = max,
-                RandomFreq = 0,
-                TimeInterval = TimeSpan.Zero
-              }
-            )
+            p with
+            {
+              Inspections = (p.Inspections ?? ImmutableList<PathInspection>.Empty).Add(
+                new PathInspection()
+                {
+                  InspectionType = inspTy,
+                  Counter = cntr,
+                  MaxVal = max,
+                  RandomFreq = 0,
+                  TimeInterval = TimeSpan.Zero
+                }
+              )
+            }
         ),
         job.Item2
       );

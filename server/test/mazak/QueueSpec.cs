@@ -1708,7 +1708,7 @@ namespace MachineWatchTest
               {
                 InputQueue = "castingQ",
                 Casting = casting,
-                Pallets = matchingPallets ? ImmutableList.Create("1", "3") : ImmutableList.Create("1"),
+                PalletNums = matchingPallets ? ImmutableList.Create(1, 3) : ImmutableList.Create(1),
                 Fixture = matchingFixtures ? "fixA" : null,
                 Face = matchingFixtures ? 10 : null,
               }
@@ -1720,7 +1720,7 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "transQ",
-                Pallets = ImmutableList.Create("2"),
+                PalletNums = ImmutableList.Create(2),
               }
             )
           }
@@ -1743,7 +1743,7 @@ namespace MachineWatchTest
               {
                 InputQueue = "castingQ",
                 Casting = casting,
-                Pallets = ImmutableList.Create("3"),
+                PalletNums = ImmutableList.Create(3),
                 Fixture = matchingFixtures ? "fixA" : null,
                 Face = matchingFixtures ? 10 : null,
               }
@@ -1755,7 +1755,7 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "transQ",
-                Pallets = ImmutableList.Create("4"),
+                PalletNums = ImmutableList.Create(4),
               }
             )
           }
@@ -2799,7 +2799,7 @@ namespace MachineWatchTest
 
       //add a pending load
       _logDB.AddPendingLoad(
-        "pal1",
+        1,
         "pppp:10:1,unused",
         load: 5,
         elapsed: TimeSpan.FromMinutes(2),
@@ -2811,7 +2811,7 @@ namespace MachineWatchTest
       trans.Should().BeNull();
 
       _logDB.CompletePalletCycle(
-        pal: "pal1",
+        pal: 1,
         timeUTC: DateTime.UtcNow,
         matFromPendingLoads: new Dictionary<string, IEnumerable<EventLogMaterial>>()
         {

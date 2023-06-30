@@ -254,7 +254,7 @@ namespace MazakMachineInterface
       Path = path;
     }
 
-    public abstract IEnumerable<string> Pallets();
+    public abstract IEnumerable<int> Pallets();
     public abstract (string fixture, int? face) FixtureFace();
     public abstract ProgramRevision PartProgram { get; set; }
 
@@ -284,9 +284,9 @@ namespace MazakMachineInterface
       PartProgram = prog;
     }
 
-    public override IEnumerable<string> Pallets()
+    public override IEnumerable<int> Pallets()
     {
-      return PathInfo.Pallets ?? Enumerable.Empty<string>();
+      return PathInfo.PalletNums ?? Enumerable.Empty<int>();
     }
 
     public override (string fixture, int? face) FixtureFace()
@@ -372,9 +372,9 @@ namespace MazakMachineInterface
       };
     }
 
-    public override IEnumerable<string> Pallets()
+    public override IEnumerable<int> Pallets()
     {
-      return PathInfo.Pallets;
+      return PathInfo.PalletNums;
     }
 
     public override (string fixture, int? face) FixtureFace() => (null, null);
@@ -444,7 +444,7 @@ namespace MazakMachineInterface
     public string JobFixtureName { get; set; }
     public string Face { get; set; }
     public List<MazakProcess> Processes = new List<MazakProcess>();
-    public HashSet<string> Pallets = new HashSet<string>();
+    public HashSet<int> Pallets = new HashSet<int>();
     public string MazakFixtureName { get; set; }
 
     // When a robot is configured in the Mazak software, it can jump ahead when searching
@@ -461,10 +461,8 @@ namespace MazakMachineInterface
     public IEnumerable<MazakPalletRow> CreateDatabasePalletRows(MazakAllData oldData, int downloadUID)
     {
       var ret = new List<MazakPalletRow>();
-      foreach (var pallet in Pallets.OrderBy(p => p))
+      foreach (var palNum in Pallets.OrderBy(p => p))
       {
-        int palNum = int.Parse(pallet);
-
         bool foundExisting = false;
         foreach (var palRow in oldData.Pallets)
         {
@@ -789,14 +787,6 @@ namespace MazakMachineInterface
           for (int path = 1; path <= part.Processes[proc - 1].Paths.Count; path++)
           {
             var info = part.Processes[proc - 1].Paths[path - 1];
-            foreach (string palName in info.Pallets)
-            {
-              int v;
-              if (!int.TryParse(palName, out v))
-              {
-                errs.Add("Invalid pallet->part mapping. " + palName + " is not numeric.");
-              }
-            }
 
             var inQueue = info.InputQueue;
             if (!string.IsNullOrEmpty(inQueue) && !fmsSettings.Queues.ContainsKey(inQueue))
@@ -1120,7 +1110,7 @@ namespace MazakMachineInterface
       foreach (var proc in sortedProcs)
       {
         var (jobFixtureName, faceN) = proc.FixtureFace();
-        var pallets = new HashSet<string>(proc.Pallets());
+        var pallets = new HashSet<int>(proc.Pallets());
         var face = !faceN.HasValue || faceN.Value <= 0 ? proc.ProcessNumber : faceN.Value;
         if (jobFixtureName == "")
           jobFixtureName = null;
@@ -1280,12 +1270,12 @@ namespace MazakMachineInterface
           continue;
 
         //check pallets match
-        var onPallets = new HashSet<string>();
+        var onPallets = new HashSet<int>();
         foreach (var palRow in mazakData.Pallets)
         {
           if (palRow.Fixture == mazakFixtureName)
           {
-            onPallets.Add(palRow.PalletNumber.ToString());
+            onPallets.Add(palRow.PalletNumber);
           }
         }
 

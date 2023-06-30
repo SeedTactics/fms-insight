@@ -124,7 +124,7 @@ namespace BlackMaple.FMSInsight.Niigata
         mat: null,
         program: "Assign",
         result: "New Niigata Route",
-        pallet: pal.ToString(),
+        pallet: pal,
         foreignId: "faces:" + guid64,
         originalMessage: json,
         timeUTC: nowUtc

@@ -282,10 +282,10 @@ namespace BlackMaple.FMSInsight.Niigata
       string queue
     )
     {
-      var availPallets = new HashSet<string>(
+      var availPallets = new HashSet<int>(
         cellState.Pallets
           .Where(pal => !pal.Status.HasWork && !pal.ManualControl)
-          .Select(pal => pal.Status.Master.PalletNum.ToString())
+          .Select(pal => pal.Status.Master.PalletNum)
       );
 
       return mats.All(mat =>
@@ -300,7 +300,7 @@ namespace BlackMaple.FMSInsight.Niigata
         var nextJobProcInfo = mat.Job.Processes[nextProc - 1];
         foreach (var pathInfo in nextJobProcInfo.Paths)
         {
-          if (pathInfo.InputQueue == queue && pathInfo.Pallets.Any(p => availPallets.Contains(p)))
+          if (pathInfo.InputQueue == queue && pathInfo.PalletNums.Any(p => availPallets.Contains(p)))
           {
             return true;
           }

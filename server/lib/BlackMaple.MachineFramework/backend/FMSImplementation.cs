@@ -44,7 +44,7 @@ namespace BlackMaple.MachineFramework
     string type,
     long? materialID,
     string operatorName,
-    string pallet
+    int pallet
   );
   public delegate void PrintLabelForMaterial(long materialId, int process, System.Uri httpReferer = null);
 

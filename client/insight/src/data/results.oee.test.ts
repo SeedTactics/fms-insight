@@ -62,7 +62,7 @@ it("bins actual cycles by day", () => {
         return {
           counter: 1,
           material,
-          pal: "2",
+          pal: 2,
           type: LogType.LoadUnloadCycle,
           startofcycle: false,
           endUTC: addHours(now, -4), // same time for both cycles

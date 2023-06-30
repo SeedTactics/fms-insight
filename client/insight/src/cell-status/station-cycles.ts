@@ -54,7 +54,7 @@ export interface PartCycleData {
   readonly stationGroup: string;
   readonly stationNumber: number;
   readonly operation: string;
-  readonly pallet: string;
+  readonly pallet: number;
   readonly activeMinutes: number; // active time in minutes
   readonly medianCycleMinutes: number;
   readonly MAD_aboveMinutes: number;

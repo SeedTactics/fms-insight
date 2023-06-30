@@ -138,7 +138,7 @@ namespace MachineWatchTest
                 ).ToUniversalTime(),
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 1,
-                Pallets = conflictByFixture ? ImmutableList<string>.Empty : ImmutableList.Create("palA")
+                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1)
               }
             }.ToImmutableList()
           },
@@ -150,7 +150,7 @@ namespace MachineWatchTest
               {
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 2,
-                Pallets = conflictByFixture ? ImmutableList<string>.Empty : ImmutableList.Create("palA")
+                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1)
               }
             }.ToImmutableList()
           }
@@ -185,7 +185,7 @@ namespace MachineWatchTest
                 ).ToUniversalTime(),
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 1,
-                Pallets = conflictByFixture ? ImmutableList<string>.Empty : ImmutableList.Create("palA")
+                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1)
               }
             }.ToImmutableList()
           },
@@ -197,7 +197,7 @@ namespace MachineWatchTest
               {
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 2,
-                Pallets = conflictByFixture ? ImmutableList<string>.Empty : ImmutableList.Create("palA")
+                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1)
               }
             }.ToImmutableList()
           }
@@ -234,7 +234,7 @@ namespace MachineWatchTest
                 // conflicts with both uniq1 and uniq2
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 2,
-                Pallets = conflictByFixture ? ImmutableList<string>.Empty : ImmutableList.Create("palA"),
+                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1),
                 InputQueue = "aaa"
               }
             }.ToImmutableList()
@@ -247,7 +247,7 @@ namespace MachineWatchTest
               {
                 Fixture = null,
                 Face = 1,
-                Pallets = ImmutableList<string>.Empty,
+                PalletNums = ImmutableList<int>.Empty,
               }
             }.ToImmutableList()
           }
@@ -282,7 +282,7 @@ namespace MachineWatchTest
                 ).ToUniversalTime(),
                 Fixture = null,
                 Face = 1,
-                Pallets = ImmutableList<string>.Empty,
+                PalletNums = ImmutableList<int>.Empty,
                 InputQueue = "bbb"
               }
             }.ToImmutableList()
@@ -296,7 +296,7 @@ namespace MachineWatchTest
                 // no conflicts
                 Fixture = conflictByFixture ? "fixB" : null,
                 Face = 2,
-                Pallets = conflictByFixture ? ImmutableList<string>.Empty : ImmutableList.Create("palB"),
+                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(2),
               }
             }.ToImmutableList()
           }

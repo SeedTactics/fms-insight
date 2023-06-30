@@ -35,8 +35,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.Serialization;
-using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
@@ -95,7 +95,7 @@ namespace BlackMaple.MachineFramework
     }
   }
 
-  [DataContract, Draftable]
+  [DataContract]
   public record MachiningStop
   {
     [DataMember(Name = "StationGroup", IsRequired = true)]
@@ -132,11 +132,9 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(Name = "Tools", IsRequired = false, EmitDefaultValue = true)]
     public ImmutableDictionary<string, TimeSpan>? Tools { get; init; } //key is tool, value is expected cutting time
-
-    public static MachiningStop operator %(MachiningStop s, Action<IMachiningStopDraft> f) => s.Produce(f);
   }
 
-  [DataContract, Draftable]
+  [DataContract]
   public record HoldPattern
   {
     // All of the following hold types are an OR, meaning if any one of them says a hold is in effect,
@@ -160,7 +158,7 @@ namespace BlackMaple.MachineFramework
     public required bool HoldUnholdPatternRepeats { get; init; }
   }
 
-  [DataContract, Draftable]
+  [DataContract]
   public record SimulatedProduction
   {
     [DataMember(IsRequired = true)]
@@ -170,20 +168,19 @@ namespace BlackMaple.MachineFramework
     public required int Quantity { get; init; } //total quantity simulated to be completed at TimeUTC
   }
 
-  [DataContract, Draftable]
+  [DataContract]
   public record ProcessInfo
   {
     [DataMember(Name = "paths", IsRequired = true)]
     public required ImmutableList<ProcPathInfo> Paths { get; init; } = ImmutableList<ProcPathInfo>.Empty;
-
-    public static ProcessInfo operator %(ProcessInfo v, Action<IProcessInfoDraft> f) => v.Produce(f);
   }
 
-  [DataContract, Draftable]
+  [DataContract]
   public record ProcPathInfo
   {
-    [DataMember(IsRequired = true)]
-    public required ImmutableList<string> Pallets { get; init; }
+    // not required only for backwards compatibility, make required once Pallets as strings is removed
+    [DataMember(IsRequired = false, EmitDefaultValue = true)]
+    public required ImmutableList<int> PalletNums { get; init; }
 
     [DataMember(IsRequired = false)]
     public string? Fixture { get; init; }
@@ -236,10 +233,23 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Casting { get; init; }
 
-    public static ProcPathInfo operator %(ProcPathInfo v, Action<IProcPathInfoDraft> f) => v.Produce(f);
+    // for backwards compatibility
+    [DataMember(IsRequired = false, EmitDefaultValue = true), Obsolete]
+    public ImmutableList<string> Pallets
+    {
+      get => PalletNums?.Select(n => n.ToString())?.ToImmutableList() ?? ImmutableList<string>.Empty;
+      init
+      {
+        if (PalletNums != null && PalletNums.Count > 0)
+          return;
+        PalletNums = value
+          .SelectMany(s => int.TryParse(s, out var n) ? new[] { n } : Enumerable.Empty<int>())
+          .ToImmutableList();
+      }
+    }
   }
 
-  [DataContract, Draftable]
+  [DataContract]
   public record Job
   {
     [DataMember(Name = "Unique", IsRequired = true)]
@@ -277,8 +287,6 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(Name = "ProcsAndPaths", IsRequired = true)]
     public required ImmutableList<ProcessInfo> Processes { get; init; }
-
-    public static Job operator %(Job j, Action<IJobDraft> f) => j.Produce(f);
   }
 
   [DataContract]
@@ -294,7 +302,7 @@ namespace BlackMaple.MachineFramework
     public required int Quantity { get; init; }
   }
 
-  [DataContract, Draftable]
+  [DataContract]
   public record HistoricJob : Job
   {
     [DataMember(Name = "ScheduleId", IsRequired = false, EmitDefaultValue = false)]
@@ -307,7 +315,7 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<DecrementQuantity>? Decrements { get; init; }
   }
 
-  [DataContract, Draftable]
+  [DataContract]
   public record ActiveJob : HistoricJob
   {
     [DataMember(Name = "Completed", IsRequired = false, EmitDefaultValue = false)]
@@ -323,66 +331,48 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(Name = "RemainingToStart", IsRequired = false, EmitDefaultValue = false)]
     public long? RemainingToStart { get; init; }
-
-    public static ActiveJob operator %(ActiveJob j, Action<IActiveJobDraft> f) => j.Produce(f);
   }
 
   public static class JobAdjustment
   {
-    public static Job AdjustPath(this Job job, int proc, int path, Action<IProcPathInfoDraft> f)
+    public static Job AdjustPath(this Job job, int proc, int path, Func<ProcPathInfo, ProcPathInfo> f)
     {
-      return job.Produce(d => AdjustPath(d, proc, path, f));
-    }
-
-    public static void AdjustPath(this IJobDraft job, int proc, int path, Action<IProcPathInfoDraft> f)
-    {
-      job.Processes[proc - 1] %= procDraft =>
+      return job with
       {
-        procDraft.Paths[path - 1] %= f;
+        Processes = job.Processes
+          .Select(
+            (p, i) =>
+              i == proc - 1
+                ? p with
+                {
+                  Paths = p.Paths.Select((pa, j) => j == path - 1 ? f(pa) : pa).ToImmutableList()
+                }
+                : p
+          )
+          .ToImmutableList()
       };
     }
 
-    public static Job AdjustAllPaths(this Job job, Action<IProcPathInfoDraft> f)
+    public static Job AdjustAllPaths(this Job job, Func<ProcPathInfo, ProcPathInfo> f)
     {
-      return job.Produce(d => AdjustAllPaths(d, f));
-    }
-
-    public static void AdjustAllPaths(this IJobDraft job, Action<IProcPathInfoDraft> f)
-    {
-      for (int proc = 0; proc < job.Processes.Count; proc++)
+      return job with
       {
-        job.Processes[proc] %= draftProc =>
-        {
-          for (int path = 0; path < draftProc.Paths.Count; path++)
-          {
-            draftProc.Paths[path] %= f;
-          }
-        };
-      }
+        Processes = job.Processes
+          .Select(p => p with { Paths = p.Paths.Select(f).ToImmutableList() })
+          .ToImmutableList()
+      };
     }
 
-    public static Job AdjustAllPaths(this Job job, Action<int, int, IProcPathInfoDraft> f)
+    public static Job AdjustAllPaths(this Job job, Func<int, int, ProcPathInfo, ProcPathInfo> f)
     {
-      return job.Produce(d => AdjustAllPaths(d, f));
-    }
-
-    public static HistoricJob AdjustAllPaths(this HistoricJob job, Action<int, int, IProcPathInfoDraft> f)
-    {
-      return job.Produce(d => AdjustAllPaths(d, f));
-    }
-
-    public static void AdjustAllPaths(this IJobDraft job, Action<int, int, IProcPathInfoDraft> f)
-    {
-      for (int proc = 0; proc < job.Processes.Count; proc++)
+      return job with
       {
-        job.Processes[proc] %= draftProc =>
-        {
-          for (int path = 0; path < draftProc.Paths.Count; path++)
-          {
-            draftProc.Paths[path] %= p => f(proc + 1, path + 1, p);
-          }
-        };
-      }
+        Processes = job.Processes
+          .Select(
+            (p, i) => p with { Paths = p.Paths.Select((pa, j) => f(i + 1, j + 1, pa)).ToImmutableList() }
+          )
+          .ToImmutableList()
+      };
     }
   }
 }

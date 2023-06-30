@@ -284,7 +284,7 @@ namespace BlackMaple.FMSInsight.Niigata
         )
         .Where(j => j.Process > 1 || !string.IsNullOrEmpty(j.PathInfo.InputQueue) || j.RemainingProc1ToRun)
         .Where(j => loadStation == null || j.PathInfo.Load.Contains(loadStation.Value))
-        .Where(j => j.PathInfo.Pallets.Contains(pallet.ToString()))
+        .Where(j => j.PathInfo.PalletNums.Contains(pallet))
         .Where(
           j =>
             _extraPathFilter == null

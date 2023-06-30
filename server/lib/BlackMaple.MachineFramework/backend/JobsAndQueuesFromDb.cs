@@ -756,7 +756,7 @@ namespace BlackMaple.MachineFramework
                       Process = mat.Process,
                       Face = ""
                     },
-                    pallet: mat.Location.Pallet,
+                    pallet: mat.Location.PalletNum ?? 0,
                     queue: _settings.QuarantineQueue ?? "",
                     timeUTC: null,
                     operatorName: operatorName,
@@ -832,7 +832,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
+    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       Log.Debug("Overriding {oldMat} to {newMat} on pallet {pal}", oldMatId, newMatId, pallet);
 

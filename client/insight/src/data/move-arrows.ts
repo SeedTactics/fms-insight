@@ -219,7 +219,7 @@ export function computeArrows(
         if (mat.action.loadOntoFace) {
           if (mat.location.type === api.LocType.OnPallet) {
             if (
-              mat.location.pallet === mat.action.loadOntoPallet &&
+              mat.location.palletNum === mat.action.loadOntoPalletNum &&
               mat.location.face === mat.action.loadOntoFace
             ) {
               // reclamp

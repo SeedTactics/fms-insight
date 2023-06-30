@@ -54,13 +54,13 @@ export type CurrentCycle = {
 function machiningCurrentCycles(
   currentSt: ICurrentStatus,
   estimated: EstimatedCycleTimes,
-  palToLoc: ReadonlyMap<string, PalletLocation>
+  palToLoc: ReadonlyMap<number, PalletLocation>
 ): LazySeq<CurrentCycle> {
   return LazySeq.of(currentSt.material)
     .collect((m) => {
       if (m.action.type !== ActionType.Machining) return null;
-      if (!m.location.pallet) return null;
-      const loc = palToLoc.get(m.location.pallet);
+      if (!m.location.palletNum) return null;
+      const loc = palToLoc.get(m.location.palletNum);
       if (!loc) return null;
       return { mat: m, loc };
     })
@@ -88,7 +88,7 @@ function machiningCurrentCycles(
 function loadCurrentCycles(
   currentSt: ICurrentStatus,
   estimated: EstimatedCycleTimes,
-  palToLoc: ReadonlyMap<string, PalletLocation>
+  palToLoc: ReadonlyMap<number, PalletLocation>
 ): LazySeq<CurrentCycle> {
   return LazySeq.of(currentSt.material)
     .collect((m) => {
@@ -96,13 +96,13 @@ function loadCurrentCycles(
         m.action.type === ActionType.UnloadToCompletedMaterial ||
         m.action.type === ActionType.UnloadToInProcess
       ) {
-        if (!m.location.pallet) return null;
-        const loc = palToLoc.get(m.location.pallet);
+        if (!m.location.palletNum) return null;
+        const loc = palToLoc.get(m.location.palletNum);
         if (!loc) return null;
         return { mat: m, material: [m], proc: m.process, path: m.path, loc };
       } else if (m.action.type === ActionType.Loading) {
-        if (!m.action.loadOntoPallet) return null;
-        const loc = palToLoc.get(m.action.loadOntoPallet);
+        if (!m.action.loadOntoPalletNum) return null;
+        const loc = palToLoc.get(m.action.loadOntoPalletNum);
         if (!loc) return null;
         return {
           mat: m,
@@ -179,8 +179,8 @@ export function currentCycles(
   currentSt: ICurrentStatus,
   estimated: EstimatedCycleTimes
 ): ReadonlyArray<CurrentCycle> {
-  const palToLoc = LazySeq.ofObject(currentSt.pallets).buildHashMap<string, PalletLocation>(
-    ([p]) => p,
+  const palToLoc = LazySeq.ofObject(currentSt.pallets).buildHashMap<number, PalletLocation>(
+    ([, p]) => p.palletNum,
     (_old, [, pal]) => pal.currentPalletLocation
   );
 

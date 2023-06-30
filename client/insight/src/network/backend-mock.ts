@@ -74,11 +74,6 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
     offsetJob(j, offsetSeconds);
   }
   for (const m of status.material) {
-    // for some reason, status-mock.json uses numbers instead of strings for pallets
-    // and strings instead of numbers for face
-    if (m.location.pallet) {
-      m.location.pallet = m.location.pallet.toString();
-    }
     if (m.location.face && typeof m.location.face === "string") {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       m.location.face = parseInt(m.location.face, 10);
@@ -133,6 +128,11 @@ async function loadEventsJson(
   return LazySeq.of(await evts)
     .map((evtJson) => {
       const tools = toolUse[(evtJson as { counter: number }).counter.toString()];
+      // the type of pal switched from string to int and I didn't want
+      // to regenerate all the data
+      if ("pal" in evtJson && typeof evtJson.pal === "string") {
+        evtJson.pal = parseInt(evtJson.pal);
+      }
       const e = api.LogEntry.fromJS(tools ? { ...evtJson, tooluse: tools } : evtJson);
       e.endUTC = addSeconds(e.endUTC, offsetSeconds);
       return e;
@@ -364,7 +364,7 @@ export function registerMockBackend(
       const evt = {
         counter: 0,
         material: [mat],
-        pal: "",
+        pal: 0,
         type: api.LogType.Inspection,
         startofcycle: false,
         endUTC: new Date(),
@@ -401,7 +401,7 @@ export function registerMockBackend(
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
-        pal: "",
+        pal: 0,
         type: api.LogType.InspectionResult,
         startofcycle: false,
         endUTC: new Date(),
@@ -436,7 +436,7 @@ export function registerMockBackend(
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
-        pal: "",
+        pal: 0,
         type: api.LogType.CloseOut,
         startofcycle: false,
         endUTC: new Date(),
@@ -473,7 +473,7 @@ export function registerMockBackend(
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
-        pal: "",
+        pal: 0,
         type: api.LogType.OrderAssignment,
         startofcycle: false,
         endUTC: new Date(),
@@ -503,7 +503,7 @@ export function registerMockBackend(
       const evt: api.ILogEntry = {
         counter: 0,
         material: [mat],
-        pal: "",
+        pal: 0,
         type: api.LogType.GeneralMessage,
         startofcycle: false,
         endUTC: new Date(),
@@ -529,7 +529,7 @@ export function registerMockBackend(
       return Promise.resolve({
         counter: 0,
         material: [],
-        pal: "",
+        pal: 0,
         type: api.LogType.WorkorderComment,
         startofcycle: false,
         endUTC: new Date(),

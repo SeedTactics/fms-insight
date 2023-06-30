@@ -175,7 +175,7 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] int? process = null,
       [FromQuery] long? materialID = null,
       [FromQuery] string operatorName = null,
-      [FromQuery] string pallet = null
+      [FromQuery] int pallet = 0
     )
     {
       try

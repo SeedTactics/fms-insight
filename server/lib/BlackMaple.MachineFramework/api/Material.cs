@@ -63,7 +63,7 @@ namespace BlackMaple.MachineFramework
 
     // If Type = Loading
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string? LoadOntoPallet { get; init; }
+    public int? LoadOntoPalletNum { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? LoadOntoFace { get; init; }
@@ -91,6 +91,10 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public TimeSpan? ExpectedRemainingMachiningTime { get; init; }
+
+    // for backwards compatibility
+    [DataMember(IsRequired = false, EmitDefaultValue = false), Obsolete]
+    public string? LoadOntoPallet => LoadOntoPalletNum?.ToString();
   }
 
   ///Stores the current location of a piece of material.  If a transfer operation is currently in process
@@ -112,7 +116,7 @@ namespace BlackMaple.MachineFramework
 
     //If Type == OnPallet
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public string? Pallet { get; init; }
+    public int? PalletNum { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? Face { get; init; }
@@ -124,6 +128,10 @@ namespace BlackMaple.MachineFramework
     //If Type == InQueue or Type == Free
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? QueuePosition { get; init; }
+
+    //For backwards compatibility
+    [DataMember(IsRequired = false, EmitDefaultValue = false), Obsolete]
+    public string? Pallet => PalletNum?.ToString();
   }
 
   //Stores information about a piece of material, where it is, and what is happening to it.

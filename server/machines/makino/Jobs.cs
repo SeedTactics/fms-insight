@@ -35,7 +35,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
-using Germinate;
 
 namespace Makino
 {
@@ -71,7 +70,7 @@ namespace Makino
         {
           TimeOfCurrentStatusUTC = DateTime.UtcNow,
           Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-          Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
           Material = ImmutableList<InProcessMaterial>.Empty,
           Alarms = ImmutableList<string>.Empty,
           Queues = ImmutableDictionary<string, QueueInfo>.Empty
@@ -95,10 +94,13 @@ namespace Makino
           Jobs = newJ.Jobs
             .Select(
               j =>
-                j.AdjustAllPaths(path =>
-                {
-                  path.Stops.AdjustAll(stop => stop.StationGroup = "MC");
-                })
+                j.AdjustAllPaths(
+                  path =>
+                    path with
+                    {
+                      Stops = path.Stops.Select(s => s with { StationGroup = "MC" }).ToImmutableList()
+                    }
+                )
             )
             .ToImmutableList(),
         };
@@ -199,7 +201,7 @@ namespace Makino
       // do nothing
     }
 
-    public void SwapMaterialOnPallet(string pallet, long oldMatId, long newMatId, string operatorName = null)
+    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null)
     {
       // do nothing
     }

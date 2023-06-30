@@ -122,7 +122,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         {
           TimeOfCurrentStatusUTC = DateTime.UtcNow,
           Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-          Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
           Material = ImmutableList<InProcessMaterial>.Empty,
           Alarms = ImmutableList<string>.Empty,
           Queues = ImmutableDictionary<string, QueueInfo>.Empty
@@ -154,7 +154,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
         Queues = ImmutableDictionary<string, QueueInfo>.Empty
@@ -255,7 +255,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty
           .Add(completedActive.UniqueStr, completedActive)
           .Add(toKeepJob.UniqueStr, toKeepActive),
-        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
         Queues = ImmutableDictionary<string, QueueInfo>.Empty
@@ -333,7 +333,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty
           .Add(j1.UniqueStr, j1Active)
           .Add(j2.UniqueStr, j2Active),
-        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
         Queues = ImmutableDictionary<string, QueueInfo>.Empty
@@ -1150,7 +1150,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty.Add(job.UniqueStr, job),
-        Pallets = ImmutableDictionary<string, PalletStatus>.Empty,
+        Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
         Queues = ImmutableDictionary<string, QueueInfo>.Empty
@@ -1211,7 +1211,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
           Location = new InProcessMaterialLocation()
           {
             Type = data.LocType,
-            Pallet = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? "4" : null
+            PalletNum = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? 4 : null
           }
         }
       )
@@ -1238,7 +1238,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
           SignalQuarantineExpectedEntry(
             logMat,
             cntr: expectedLog.Count + 1,
-            pal: "4",
+            pal: 4,
             queue: data.QuarantineQueue ?? "",
             operName: "theoper",
             reason: "signaling reason"
@@ -1309,7 +1309,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var e = new LogEntry(
       cntr: cntr,
       mat: new[] { mat },
-      pal: "",
+      pal: 0,
       ty: LogType.PartMark,
       locName: "Mark",
       locNum: 1,
@@ -1324,7 +1324,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   private LogEntry LoadStartExpectedEntry(
     LogMaterial mat,
     long cntr,
-    string pal,
+    int pal,
     int lul,
     DateTime? timeUTC = null
   )
@@ -1357,7 +1357,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var e = new LogEntry(
       cntr: cntr,
       mat: new[] { mat },
-      pal: "",
+      pal: 0,
       ty: LogType.AddToQueue,
       locName: queue,
       locNum: position,
@@ -1376,7 +1376,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   private LogEntry SignalQuarantineExpectedEntry(
     LogMaterial mat,
     long cntr,
-    string pal,
+    int pal,
     string queue,
     DateTime? timeUTC = null,
     string operName = null,
@@ -1419,7 +1419,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var e = new LogEntry(
       cntr: cntr,
       mat: new[] { mat },
-      pal: "",
+      pal: 0,
       ty: LogType.RemoveFromQueue,
       locName: queue,
       locNum: position,
@@ -1478,7 +1478,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var e = new LogEntry(
       cntr: cntr,
       mat: new[] { mat },
-      pal: "",
+      pal: 0,
       ty: LogType.GeneralMessage,
       locName: "Message",
       locNum: 1,
@@ -1502,7 +1502,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     int proc,
     int path,
     string serial,
-    string pal
+    int pal
   )
   {
     return new InProcessMaterial()
@@ -1517,7 +1517,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Location = new InProcessMaterialLocation()
       {
         Type = InProcessMaterialLocation.LocType.OnPallet,
-        Pallet = pal,
+        PalletNum = pal,
       },
       Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
     };

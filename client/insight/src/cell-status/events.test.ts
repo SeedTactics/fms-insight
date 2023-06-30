@@ -69,7 +69,7 @@ function twentySevenTwoAndTodayCycles(now: Date) {
       machineTime: 30,
       part: "part111",
       proc: 1,
-      pallet: "palbb",
+      pallet: 222,
       includeTools: true,
     }),
     twoDaysAgoCycle: fakeCycle({
@@ -78,7 +78,7 @@ function twentySevenTwoAndTodayCycles(now: Date) {
       machineTime: 24,
       part: "part222",
       proc: 1,
-      pallet: "palbb",
+      pallet: 222,
       includeTools: true,
     }),
     twentySevenCycle: fakeCycle({
@@ -87,7 +87,7 @@ function twentySevenTwoAndTodayCycles(now: Date) {
       machineTime: 18,
       part: "part222",
       proc: 2,
-      pallet: "palaa",
+      pallet: 111,
       includeTools: true,
     }),
   };
@@ -111,7 +111,7 @@ it("processes last 30 events", () => {
     machineTime: 12,
     part: "part111",
     proc: 1,
-    pallet: "palcc",
+    pallet: 333,
     includeTools: true,
     counter: 400,
   });

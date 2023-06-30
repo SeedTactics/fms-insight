@@ -110,16 +110,21 @@ export function selectAllMaterialIntoBins(
   const pallets = new Map<string, Array<Readonly<api.IInProcessMaterial>>>();
   const queues = new Map<string, Array<Readonly<api.IInProcessMaterial>>>();
 
-  const palLoc = LazySeq.ofObject(curSt.pallets).toRMap(([k, st]) => [
-    k,
-    " (" + st.currentPalletLocation.group + " #" + st.currentPalletLocation.num.toString() + ")",
+  const palLoc = LazySeq.ofObject(curSt.pallets).toRMap(([, st]) => [
+    st.palletNum,
+    st.palletNum.toString() +
+      " (" +
+      st.currentPalletLocation.group +
+      " #" +
+      st.currentPalletLocation.num.toString() +
+      ")",
   ]);
 
   for (const mat of curSt.material) {
     switch (mat.location.type) {
       case api.LocType.InQueue:
         if (mat.action.type === api.ActionType.Loading) {
-          const pal = curSt.pallets[mat.action.loadOntoPallet ?? ""];
+          const pal = curSt.pallets[mat.action.loadOntoPalletNum ?? 0];
           if (pal && pal.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload) {
             const lul = pal.currentPalletLocation.num;
             addToMap(loadStations, lul, mat);
@@ -132,13 +137,12 @@ export function selectAllMaterialIntoBins(
         break;
 
       case api.LocType.OnPallet:
-        if (mat.location.pallet) {
-          const palSt = curSt.pallets[mat.location.pallet];
+        if (mat.location.palletNum) {
+          const palSt = curSt.pallets[mat.location.palletNum];
           if (palSt.currentPalletLocation.loc === api.PalletLocationEnum.LoadUnload) {
             addToMap(loadStations, palSt.currentPalletLocation.num, mat);
           } else {
-            const loc = palLoc.get(mat.location.pallet) ?? "";
-            addToMap(pallets, mat.location.pallet + loc, mat);
+            addToMap(pallets, palLoc.get(mat.location.palletNum) ?? "", mat);
           }
         } else {
           addToMap(pallets, "Pallet", mat);
@@ -148,7 +152,7 @@ export function selectAllMaterialIntoBins(
       case api.LocType.Free:
         switch (mat.action.type) {
           case api.ActionType.Loading: {
-            const lul = curSt.pallets[mat.action.loadOntoPallet ?? ""]?.currentPalletLocation.num;
+            const lul = curSt.pallets[mat.action.loadOntoPalletNum ?? 0]?.currentPalletLocation.num;
             addToMap(loadStations, lul, mat);
             break;
           }

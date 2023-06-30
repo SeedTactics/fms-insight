@@ -184,7 +184,7 @@ export function MaterialAction({
   fsize,
 }: {
   mat: Readonly<api.IInProcessMaterial>;
-  displayActionForSinglePallet?: string;
+  displayActionForSinglePallet?: number;
   fsize?: MatCardFontSize;
 }): JSX.Element | null {
   const curSt = useAtomValue(currentStatus);
@@ -195,7 +195,7 @@ export function MaterialAction({
         case api.LocType.OnPallet:
           if (
             displayActionForSinglePallet === undefined ||
-            displayActionForSinglePallet === mat.location.pallet
+            displayActionForSinglePallet === mat.location.palletNum
           ) {
             if (mat.action.loadOntoFace === undefined || mat.action.loadOntoFace === mat.location.face) {
               // material is not moving, just having some manual work done on it
@@ -210,8 +210,8 @@ export function MaterialAction({
               }
             } else {
               const faceNum = mat.action.loadOntoFace ?? 0;
-              const faceName = mat.location.pallet
-                ? curSt.pallets[mat.location.pallet]?.faceNames?.[faceNum - 1]
+              const faceName = mat.location.palletNum
+                ? curSt.pallets[mat.location.palletNum]?.faceNames?.[faceNum - 1]
                 : null;
               return <MatCardDetail fsize={fsize}>Transfer to {faceName ?? `face ${faceNum}`}</MatCardDetail>;
             }
@@ -220,16 +220,16 @@ export function MaterialAction({
           }
         default: {
           const faceNum = mat.action.loadOntoFace ?? 0;
-          const faceName = mat.action.loadOntoPallet
-            ? curSt.pallets[mat.action.loadOntoPallet]?.faceNames?.[faceNum - 1]
+          const faceName = mat.action.loadOntoPalletNum
+            ? curSt.pallets[mat.action.loadOntoPalletNum]?.faceNames?.[faceNum - 1]
             : null;
           if (displayActionForSinglePallet === undefined) {
             return (
               <MatCardDetail fsize={fsize}>
-                Load to {faceName ?? `face ${faceNum}`} of pal {mat.action.loadOntoPallet ?? ""}
+                Load to {faceName ?? `face ${faceNum}`} of pal {mat.action.loadOntoPalletNum ?? ""}
               </MatCardDetail>
             );
-          } else if (displayActionForSinglePallet === mat.action.loadOntoPallet) {
+          } else if (displayActionForSinglePallet === mat.action.loadOntoPalletNum) {
             return <MatCardDetail fsize={fsize}>Load to {faceName ?? `face ${faceNum}`}</MatCardDetail>;
           } else {
             return null;
@@ -277,7 +277,7 @@ export interface MaterialSummaryProps {
   readonly mat: Readonly<MaterialSummaryAndCompletedData>;
   readonly inProcMat?: Readonly<api.IInProcessMaterial>;
   readonly fsize?: MatCardFontSize;
-  readonly displayActionForSinglePallet?: string;
+  readonly displayActionForSinglePallet?: number;
   readonly focusInspectionType?: string | null;
   readonly hideInspectionIcon?: boolean;
   readonly displayJob?: boolean;
@@ -426,7 +426,7 @@ export const MatSummary: React.ComponentType<MaterialSummaryProps> = React.memo(
 export type InProcMaterialProps = {
   readonly mat: Readonly<api.IInProcessMaterial>;
   readonly fsize?: MatCardFontSize;
-  readonly displayActionForSinglePallet?: string;
+  readonly displayActionForSinglePallet?: number;
   readonly displayJob?: boolean;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;

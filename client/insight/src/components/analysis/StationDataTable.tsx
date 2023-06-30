@@ -116,7 +116,8 @@ function buildColumns(
       id: ColumnId.Pallet,
       numeric: false,
       label: "Pallet",
-      getDisplay: (c) => c.pallet,
+      getDisplay: (c) => c.pallet.toString(),
+      getForSort: (c) => c.pallet,
     },
     {
       id: ColumnId.Serial,

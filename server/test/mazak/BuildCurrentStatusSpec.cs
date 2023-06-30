@@ -266,7 +266,7 @@ namespace MachineWatchTest
       );
 
       _memoryLog.AddPendingLoad(
-        "1",
+        1,
         "thekey",
         1,
         TimeSpan.FromMinutes(1),
@@ -367,7 +367,7 @@ namespace MachineWatchTest
           Process = 1,
           Face = "1"
         },
-        pallet: "5",
+        pallet: 5,
         queue: "QuarantineQ",
         operatorName: "theoper",
         reason: "a reason",

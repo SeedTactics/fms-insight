@@ -241,14 +241,14 @@ namespace MazakMachineInterface
 
       // first, calculate the fixtures and faces used by the job to check
       var usedFixtureFaces = new HashSet<ValueTuple<string, string>>();
-      var usedPallets = new HashSet<string>();
+      var usedPallets = new HashSet<int>();
       for (int proc = 1; proc <= jobToCheck.Processes.Count; proc++)
       {
         var plannedFix = jobToCheck.Processes[proc - 1].Paths[0].Fixture;
         var plannedFace = jobToCheck.Processes[proc - 1].Paths[0].Face ?? 1;
         if (string.IsNullOrEmpty(plannedFix))
         {
-          foreach (var p in jobToCheck.Processes[proc - 1].Paths[0].Pallets)
+          foreach (var p in jobToCheck.Processes[proc - 1].Paths[0].PalletNums)
           {
             usedPallets.Add(p);
           }
@@ -285,7 +285,7 @@ namespace MazakMachineInterface
             earlierConflicts += 1;
             goto checkNextPath;
           }
-          if (otherJob.Processes[otherProc - 1].Paths[0].Pallets.Any(usedPallets.Contains))
+          if (otherJob.Processes[otherProc - 1].Paths[0].PalletNums.Any(usedPallets.Contains))
           {
             earlierConflicts += 1;
             goto checkNextPath;

@@ -12,7 +12,7 @@ exports[`creates all material > all material bins 1`] = `
             "elapsedMachiningTime": undefined,
             "expectedRemainingMachiningTime": undefined,
             "loadOntoFace": undefined,
-            "loadOntoPallet": undefined,
+            "loadOntoPalletNum": undefined,
             "pathAfterLoad": undefined,
             "processAfterLoad": undefined,
             "program": undefined,
@@ -24,7 +24,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "2",
-            "pallet": 1,
+            "palletNum": 1,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -42,7 +42,7 @@ exports[`creates all material > all material bins 1`] = `
             "elapsedMachiningTime": undefined,
             "expectedRemainingMachiningTime": undefined,
             "loadOntoFace": 2,
-            "loadOntoPallet": "1",
+            "loadOntoPalletNum": "1",
             "pathAfterLoad": 1,
             "processAfterLoad": 2,
             "program": undefined,
@@ -54,7 +54,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "1",
-            "pallet": 1,
+            "palletNum": 1,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -72,7 +72,7 @@ exports[`creates all material > all material bins 1`] = `
             "elapsedMachiningTime": undefined,
             "expectedRemainingMachiningTime": undefined,
             "loadOntoFace": 1,
-            "loadOntoPallet": "1",
+            "loadOntoPalletNum": "1",
             "pathAfterLoad": 1,
             "processAfterLoad": 1,
             "program": undefined,
@@ -84,7 +84,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": undefined,
-            "pallet": undefined,
+            "palletNum": undefined,
             "queuePosition": undefined,
             "type": "Free",
           },
@@ -104,7 +104,7 @@ exports[`creates all material > all material bins 1`] = `
             "elapsedMachiningTime": undefined,
             "expectedRemainingMachiningTime": undefined,
             "loadOntoFace": undefined,
-            "loadOntoPallet": undefined,
+            "loadOntoPalletNum": undefined,
             "pathAfterLoad": undefined,
             "processAfterLoad": undefined,
             "program": undefined,
@@ -116,7 +116,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "1",
-            "pallet": 5,
+            "palletNum": 5,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -134,7 +134,7 @@ exports[`creates all material > all material bins 1`] = `
             "elapsedMachiningTime": undefined,
             "expectedRemainingMachiningTime": undefined,
             "loadOntoFace": 1,
-            "loadOntoPallet": "5",
+            "loadOntoPalletNum": "5",
             "pathAfterLoad": 1,
             "processAfterLoad": 1,
             "program": undefined,
@@ -146,7 +146,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": "Queue1",
             "face": undefined,
-            "pallet": undefined,
+            "palletNum": undefined,
             "queuePosition": 2,
             "type": "InQueue",
           },
@@ -165,14 +165,14 @@ exports[`creates all material > all material bins 1`] = `
   {
     "binId": "__FMS_INSIGHT_PALLETS_BIN__",
     "byPallet": Map {
-      "2" => [
+      "2 (Cart #1)" => [
         {
           "action": {
             "elapsedLoadUnloadTime": undefined,
             "elapsedMachiningTime": undefined,
             "expectedRemainingMachiningTime": undefined,
             "loadOntoFace": undefined,
-            "loadOntoPallet": undefined,
+            "loadOntoPalletNum": undefined,
             "pathAfterLoad": undefined,
             "processAfterLoad": undefined,
             "program": undefined,
@@ -184,7 +184,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "2",
-            "pallet": 2,
+            "palletNum": 2,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -202,7 +202,7 @@ exports[`creates all material > all material bins 1`] = `
             "elapsedMachiningTime": undefined,
             "expectedRemainingMachiningTime": undefined,
             "loadOntoFace": undefined,
-            "loadOntoPallet": undefined,
+            "loadOntoPalletNum": undefined,
             "pathAfterLoad": undefined,
             "processAfterLoad": undefined,
             "program": undefined,
@@ -214,7 +214,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "1",
-            "pallet": 2,
+            "palletNum": 2,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -227,14 +227,14 @@ exports[`creates all material > all material bins 1`] = `
           "workorderId": undefined,
         },
       ],
-      "4" => [
+      "4 (Machine #1)" => [
         {
           "action": {
             "elapsedLoadUnloadTime": undefined,
             "elapsedMachiningTime": "PT10M",
             "expectedRemainingMachiningTime": "PT20M",
             "loadOntoFace": undefined,
-            "loadOntoPallet": undefined,
+            "loadOntoPalletNum": undefined,
             "pathAfterLoad": undefined,
             "processAfterLoad": undefined,
             "program": "prog-ccc-2",
@@ -246,7 +246,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "2",
-            "pallet": 4,
+            "palletNum": 4,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -264,7 +264,7 @@ exports[`creates all material > all material bins 1`] = `
             "elapsedMachiningTime": undefined,
             "expectedRemainingMachiningTime": undefined,
             "loadOntoFace": undefined,
-            "loadOntoPallet": undefined,
+            "loadOntoPalletNum": undefined,
             "pathAfterLoad": undefined,
             "processAfterLoad": undefined,
             "program": undefined,
@@ -276,7 +276,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "1",
-            "pallet": 4,
+            "palletNum": 4,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -289,14 +289,14 @@ exports[`creates all material > all material bins 1`] = `
           "workorderId": undefined,
         },
       ],
-      "6" => [
+      "6 (Machine #2)" => [
         {
           "action": {
             "elapsedLoadUnloadTime": undefined,
             "elapsedMachiningTime": "PT10M",
             "expectedRemainingMachiningTime": "PT50M",
             "loadOntoFace": undefined,
-            "loadOntoPallet": undefined,
+            "loadOntoPalletNum": undefined,
             "pathAfterLoad": undefined,
             "processAfterLoad": undefined,
             "program": "prog-zzz",
@@ -308,7 +308,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "1",
-            "pallet": 6,
+            "palletNum": 6,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -321,14 +321,14 @@ exports[`creates all material > all material bins 1`] = `
           "workorderId": undefined,
         },
       ],
-      "7" => [
+      "7 (Machine #2)" => [
         {
           "action": {
             "elapsedLoadUnloadTime": undefined,
             "elapsedMachiningTime": undefined,
             "expectedRemainingMachiningTime": undefined,
             "loadOntoFace": undefined,
-            "loadOntoPallet": undefined,
+            "loadOntoPalletNum": undefined,
             "pathAfterLoad": undefined,
             "processAfterLoad": undefined,
             "program": undefined,
@@ -340,7 +340,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "1",
-            "pallet": 7,
+            "palletNum": 7,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -358,7 +358,7 @@ exports[`creates all material > all material bins 1`] = `
             "elapsedMachiningTime": undefined,
             "expectedRemainingMachiningTime": undefined,
             "loadOntoFace": undefined,
-            "loadOntoPallet": undefined,
+            "loadOntoPalletNum": undefined,
             "pathAfterLoad": undefined,
             "processAfterLoad": undefined,
             "program": undefined,
@@ -370,7 +370,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "1",
-            "pallet": 7,
+            "palletNum": 7,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -383,14 +383,14 @@ exports[`creates all material > all material bins 1`] = `
           "workorderId": undefined,
         },
       ],
-      "8" => [
+      "8 (Machine #3)" => [
         {
           "action": {
             "elapsedLoadUnloadTime": undefined,
             "elapsedMachiningTime": "PT10M",
             "expectedRemainingMachiningTime": "PT45M",
             "loadOntoFace": undefined,
-            "loadOntoPallet": undefined,
+            "loadOntoPalletNum": undefined,
             "pathAfterLoad": undefined,
             "processAfterLoad": undefined,
             "program": "prog-xxx",
@@ -402,7 +402,7 @@ exports[`creates all material > all material bins 1`] = `
           "location": {
             "currentQueue": undefined,
             "face": "1",
-            "pallet": 8,
+            "palletNum": 8,
             "queuePosition": undefined,
             "type": "OnPallet",
           },
@@ -432,7 +432,7 @@ exports[`creates all material > all material bins 1`] = `
           "elapsedMachiningTime": undefined,
           "expectedRemainingMachiningTime": undefined,
           "loadOntoFace": undefined,
-          "loadOntoPallet": undefined,
+          "loadOntoPalletNum": undefined,
           "pathAfterLoad": undefined,
           "processAfterLoad": undefined,
           "program": undefined,
@@ -444,7 +444,7 @@ exports[`creates all material > all material bins 1`] = `
         "location": {
           "currentQueue": "Queue1",
           "face": undefined,
-          "pallet": undefined,
+          "palletNum": undefined,
           "queuePosition": 0,
           "type": "InQueue",
         },
@@ -462,7 +462,7 @@ exports[`creates all material > all material bins 1`] = `
           "elapsedMachiningTime": undefined,
           "expectedRemainingMachiningTime": undefined,
           "loadOntoFace": undefined,
-          "loadOntoPallet": undefined,
+          "loadOntoPalletNum": undefined,
           "pathAfterLoad": undefined,
           "processAfterLoad": undefined,
           "program": undefined,
@@ -474,7 +474,7 @@ exports[`creates all material > all material bins 1`] = `
         "location": {
           "currentQueue": "Queue1",
           "face": undefined,
-          "pallet": undefined,
+          "palletNum": undefined,
           "queuePosition": 1,
           "type": "InQueue",
         },
@@ -499,7 +499,7 @@ exports[`creates all material > all material bins 1`] = `
           "elapsedMachiningTime": undefined,
           "expectedRemainingMachiningTime": undefined,
           "loadOntoFace": undefined,
-          "loadOntoPallet": undefined,
+          "loadOntoPalletNum": undefined,
           "pathAfterLoad": undefined,
           "processAfterLoad": undefined,
           "program": undefined,
@@ -511,7 +511,7 @@ exports[`creates all material > all material bins 1`] = `
         "location": {
           "currentQueue": "Queue2",
           "face": undefined,
-          "pallet": undefined,
+          "palletNum": undefined,
           "queuePosition": 0,
           "type": "InQueue",
         },
@@ -529,7 +529,7 @@ exports[`creates all material > all material bins 1`] = `
           "elapsedMachiningTime": undefined,
           "expectedRemainingMachiningTime": undefined,
           "loadOntoFace": undefined,
-          "loadOntoPallet": undefined,
+          "loadOntoPalletNum": undefined,
           "pathAfterLoad": undefined,
           "processAfterLoad": undefined,
           "program": undefined,
@@ -541,7 +541,7 @@ exports[`creates all material > all material bins 1`] = `
         "location": {
           "currentQueue": "Queue2",
           "face": undefined,
-          "pallet": undefined,
+          "palletNum": undefined,
           "queuePosition": 1,
           "type": "InQueue",
         },

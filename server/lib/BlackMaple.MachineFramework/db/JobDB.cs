@@ -95,7 +95,7 @@ namespace BlackMaple.MachineFramework
       public ImmutableList<int>.Builder Unloads { get; } = ImmutableList.CreateBuilder<int>();
       public ImmutableList<PathInspection>.Builder Insps { get; } =
         ImmutableList.CreateBuilder<PathInspection>();
-      public ImmutableList<string>.Builder Pals { get; } = ImmutableList.CreateBuilder<string>();
+      public ImmutableList<int>.Builder Pals { get; } = ImmutableList.CreateBuilder<int>();
       public ImmutableList<SimulatedProduction>.Builder SimProd { get; } =
         ImmutableList.CreateBuilder<SimulatedProduction>();
       public SortedList<int, PathStopRow> Stops { get; } = new SortedList<int, PathStopRow>();
@@ -225,7 +225,19 @@ namespace BlackMaple.MachineFramework
               pathDatRows.TryGetValue((proc: reader.GetInt32(0), path: reader.GetInt32(1)), out var pathRow)
             )
             {
-              pathRow.Pals.Add(reader.GetString(2));
+              // old versions of insight stored pallets as strings
+              var palTy = reader.GetFieldType(2);
+              if (palTy == typeof(string))
+              {
+                if (int.TryParse(reader.GetString(2), out int p))
+                {
+                  pathRow.Pals.Add(p);
+                }
+              }
+              else
+              {
+                pathRow.Pals.Add(reader.GetInt32(2));
+              }
             }
           }
         }
@@ -466,7 +478,7 @@ namespace BlackMaple.MachineFramework
                       p =>
                         new ProcPathInfo()
                         {
-                          Pallets = p.Pals.ToImmutable(),
+                          PalletNums = p.Pals.ToImmutable(),
                           Fixture = p.Fixture,
                           Face = p.Face,
                           Load = p.Loads.ToImmutable(),
@@ -1300,7 +1312,7 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
         cmd.Parameters.Add("proc", SqliteType.Integer);
         cmd.Parameters.Add("path", SqliteType.Integer);
-        cmd.Parameters.Add("pal", SqliteType.Text);
+        cmd.Parameters.Add("pal", SqliteType.Integer);
 
         for (int i = 1; i <= job.Processes.Count; i++)
         {
@@ -1308,7 +1320,7 @@ namespace BlackMaple.MachineFramework
           for (int j = 1; j <= proc.Paths.Count; j++)
           {
             var path = proc.Paths[j - 1];
-            foreach (string pal in path.Pallets)
+            foreach (var pal in path.PalletNums)
             {
               cmd.Parameters[1].Value = i;
               cmd.Parameters[2].Value = j;

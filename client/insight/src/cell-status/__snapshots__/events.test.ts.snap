@@ -97,7 +97,7 @@ Map {
     "108" => {
       "cntr": 108,
       "inspType": "Insp1",
-      "materialID": 63186,
+      "materialID": 5691322440613888,
       "part": "part111",
       "result": {
         "success": true,
@@ -110,14 +110,14 @@ Map {
     "107" => {
       "cntr": 107,
       "inspType": "Insp1",
-      "materialID": 63186,
+      "materialID": 5691322440613888,
       "part": "part111",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 63186,
-            "pallet": "6",
+            "materialID": 5691322440613888,
+            "pallet": 6,
             "process": 1,
             "stops": [
               {
@@ -140,7 +140,7 @@ Map {
     "309" => {
       "cntr": 309,
       "inspType": "Insp1",
-      "materialID": 92455,
+      "materialID": 8327686449528832,
       "part": "part222",
       "result": {
         "success": true,
@@ -153,14 +153,14 @@ Map {
     "308" => {
       "cntr": 308,
       "inspType": "Insp1",
-      "materialID": 92455,
+      "materialID": 8327686449528832,
       "part": "part222",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 92455,
-            "pallet": "6",
+            "materialID": 8327686449528832,
+            "pallet": 6,
             "process": 1,
             "stops": [
               {
@@ -181,7 +181,7 @@ Map {
     "307" => {
       "cntr": 307,
       "inspType": "Insp1",
-      "materialID": 92455,
+      "materialID": 8327686449528832,
       "part": "part222",
       "result": {
         "toInspect": true,
@@ -194,7 +194,7 @@ Map {
     "208" => {
       "cntr": 208,
       "inspType": "Insp1",
-      "materialID": 83004,
+      "materialID": 7476405772222464,
       "part": "part222",
       "result": {
         "success": true,
@@ -207,14 +207,14 @@ Map {
     "207" => {
       "cntr": 207,
       "inspType": "Insp1",
-      "materialID": 83004,
+      "materialID": 7476405772222464,
       "part": "part222",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 83004,
-            "pallet": "6",
+            "materialID": 7476405772222464,
+            "pallet": 6,
             "process": 1,
             "stops": [
               {
@@ -240,61 +240,17 @@ exports[`processes events in a specific month > material summary 1`] = `
 {
   "matIdsForJob": Map {
     "uniqC" => [
-      92455,
+      8327686449528832,
     ],
     "uniqM" => [
-      83004,
+      7476405772222464,
     ],
     "uniqp" => [
-      63186,
+      5691322440613888,
     ],
   },
   "matsById": Map {
-    "83004" => {
-      "completedInspections": {
-        "Insp1": {
-          "success": true,
-          "time": 2018-01-31T10:03:05.000Z,
-        },
-      },
-      "completed_inspect_time": 2018-01-31T10:03:05.000Z,
-      "jobUnique": "uniqM",
-      "last_event": 2018-01-31T10:03:05.000Z,
-      "last_unload_time": 2018-01-31T09:51:05.000Z,
-      "materialID": 83004,
-      "numProcesses": 2,
-      "partName": "part222",
-      "signaledInspections": [
-        "Insp1",
-      ],
-      "startedProcess1": true,
-      "unloaded_processes": {
-        "1": 2018-01-31T09:51:05.000Z,
-      },
-    },
-    "63186" => {
-      "completedInspections": {
-        "Insp1": {
-          "success": true,
-          "time": 2018-02-02T10:09:05.000Z,
-        },
-      },
-      "completed_inspect_time": 2018-02-02T10:09:05.000Z,
-      "jobUnique": "uniqp",
-      "last_event": 2018-02-02T10:09:05.000Z,
-      "last_unload_time": 2018-02-02T09:57:05.000Z,
-      "materialID": 63186,
-      "numProcesses": 2,
-      "partName": "part111",
-      "signaledInspections": [
-        "Insp1",
-      ],
-      "startedProcess1": true,
-      "unloaded_processes": {
-        "1": 2018-02-02T09:57:05.000Z,
-      },
-    },
-    "92455" => {
+    "8327686449528832" => {
       "completedInspections": {
         "Insp1": {
           "success": true,
@@ -305,7 +261,7 @@ exports[`processes events in a specific month > material summary 1`] = `
       "jobUnique": "uniqC",
       "last_event": 2018-01-06T09:57:10.000Z,
       "last_unload_time": 2018-01-06T09:45:05.000Z,
-      "materialID": 92455,
+      "materialID": 8327686449528832,
       "numProcesses": 4,
       "partName": "part222",
       "signaledInspections": [
@@ -317,21 +273,57 @@ exports[`processes events in a specific month > material summary 1`] = `
         "2": 2018-01-06T09:45:05.000Z,
       },
     },
+    "5691322440613888" => {
+      "completedInspections": {
+        "Insp1": {
+          "success": true,
+          "time": 2018-02-02T10:09:05.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-02-02T10:09:05.000Z,
+      "jobUnique": "uniqp",
+      "last_event": 2018-02-02T10:09:05.000Z,
+      "last_unload_time": 2018-02-02T09:57:05.000Z,
+      "materialID": 5691322440613888,
+      "numProcesses": 2,
+      "partName": "part111",
+      "signaledInspections": [
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": {
+        "1": 2018-02-02T09:57:05.000Z,
+      },
+    },
+    "7476405772222464" => {
+      "completedInspections": {
+        "Insp1": {
+          "success": true,
+          "time": 2018-01-31T10:03:05.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-01-31T10:03:05.000Z,
+      "jobUnique": "uniqM",
+      "last_event": 2018-01-31T10:03:05.000Z,
+      "last_unload_time": 2018-01-31T09:51:05.000Z,
+      "materialID": 7476405772222464,
+      "numProcesses": 2,
+      "partName": "part222",
+      "signaledInspections": [
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": {
+        "1": 2018-01-31T09:51:05.000Z,
+      },
+    },
   },
 }
 `;
 
 exports[`processes events in a specific month > pallet cycles 1`] = `
 Map {
-  "palaa" => Map {
-    "309" => {
-      "active": -1,
-      "cntr": 309,
-      "x": 2018-01-06T09:50:10.000Z,
-      "y": 44,
-    },
-  },
-  "palbb" => Map {
+  "222" => Map {
     "208" => {
       "active": -1,
       "cntr": 208,
@@ -342,6 +334,14 @@ Map {
       "active": -1,
       "cntr": 108,
       "x": 2018-02-02T10:02:05.000Z,
+      "y": 44,
+    },
+  },
+  "111" => Map {
+    "309" => {
+      "active": -1,
+      "cntr": 309,
+      "x": 2018-01-06T09:50:10.000Z,
       "y": 44,
     },
   },
@@ -358,7 +358,7 @@ Map {
     "material": [
       {
         "face": "facev",
-        "id": 92455,
+        "id": 8327686449528832,
         "numproc": 4,
         "part": "part222",
         "proc": 2,
@@ -370,7 +370,7 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": "palaa",
+    "pallet": 111,
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 2,
@@ -385,7 +385,7 @@ Map {
     "material": [
       {
         "face": "facev",
-        "id": 92455,
+        "id": 8327686449528832,
         "numproc": 4,
         "part": "part222",
         "proc": 2,
@@ -397,7 +397,7 @@ Map {
     "medianCycleMinutes": 18,
     "operation": "progV",
     "operator": "",
-    "pallet": "palaa",
+    "pallet": 111,
     "part": "part222",
     "stationGroup": "MC",
     "stationNumber": 1,
@@ -412,7 +412,7 @@ Map {
     "material": [
       {
         "face": "faceF",
-        "id": 83004,
+        "id": 7476405772222464,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
@@ -424,7 +424,7 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 2,
@@ -439,7 +439,7 @@ Map {
     "material": [
       {
         "face": "facev",
-        "id": 92455,
+        "id": 8327686449528832,
         "numproc": 4,
         "part": "part222",
         "proc": 2,
@@ -451,7 +451,7 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": "palaa",
+    "pallet": 111,
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 1,
@@ -466,7 +466,7 @@ Map {
     "material": [
       {
         "face": "faceF",
-        "id": 83004,
+        "id": 7476405772222464,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
@@ -478,7 +478,7 @@ Map {
     "medianCycleMinutes": 24,
     "operation": "progz",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part222",
     "stationGroup": "MC",
     "stationNumber": 1,
@@ -493,7 +493,7 @@ Map {
     "material": [
       {
         "face": "facep",
-        "id": 63186,
+        "id": 5691322440613888,
         "numproc": 2,
         "part": "part111",
         "proc": 1,
@@ -505,7 +505,7 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 2,
@@ -520,7 +520,7 @@ Map {
     "material": [
       {
         "face": "faceF",
-        "id": 83004,
+        "id": 7476405772222464,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
@@ -532,7 +532,7 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 1,
@@ -547,7 +547,7 @@ Map {
     "material": [
       {
         "face": "facep",
-        "id": 63186,
+        "id": 5691322440613888,
         "numproc": 2,
         "part": "part111",
         "proc": 1,
@@ -559,7 +559,7 @@ Map {
     "medianCycleMinutes": 30,
     "operation": "progt",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part111",
     "stationGroup": "MC",
     "stationNumber": 1,
@@ -574,7 +574,7 @@ Map {
     "material": [
       {
         "face": "facep",
-        "id": 63186,
+        "id": 5691322440613888,
         "numproc": 2,
         "part": "part111",
         "proc": 1,
@@ -586,7 +586,7 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 1,
@@ -695,7 +695,7 @@ Map {
     "408" => {
       "cntr": 408,
       "inspType": "Insp1",
-      "materialID": 77508,
+      "materialID": 6981347895672832,
       "part": "part111",
       "result": {
         "success": true,
@@ -708,14 +708,14 @@ Map {
     "407" => {
       "cntr": 407,
       "inspType": "Insp1",
-      "materialID": 77508,
+      "materialID": 6981347895672832,
       "part": "part111",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 77508,
-            "pallet": "6",
+            "materialID": 6981347895672832,
+            "pallet": 6,
             "process": 1,
             "stops": [
               {
@@ -736,7 +736,7 @@ Map {
     "108" => {
       "cntr": 108,
       "inspType": "Insp1",
-      "materialID": 70329,
+      "materialID": 6334762285268992,
       "part": "part111",
       "result": {
         "success": true,
@@ -749,14 +749,14 @@ Map {
     "107" => {
       "cntr": 107,
       "inspType": "Insp1",
-      "materialID": 70329,
+      "materialID": 6334762285268992,
       "part": "part111",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 70329,
-            "pallet": "6",
+            "materialID": 6334762285268992,
+            "pallet": 6,
             "process": 1,
             "stops": [
               {
@@ -779,7 +779,7 @@ Map {
     "208" => {
       "cntr": 208,
       "inspType": "Insp1",
-      "materialID": 48405,
+      "materialID": 4359947557011456,
       "part": "part222",
       "result": {
         "success": true,
@@ -792,14 +792,14 @@ Map {
     "207" => {
       "cntr": 207,
       "inspType": "Insp1",
-      "materialID": 48405,
+      "materialID": 4359947557011456,
       "part": "part222",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 48405,
-            "pallet": "6",
+            "materialID": 4359947557011456,
+            "pallet": 6,
             "process": 1,
             "stops": [
               {
@@ -825,61 +825,17 @@ exports[`processes last 30 events > after filter - material summary 1`] = `
 {
   "matIdsForJob": Map {
     "uniqt" => [
-      77508,
+      6981347895672832,
     ],
     "uniqv" => [
-      70329,
+      6334762285268992,
     ],
     "uniqC" => [
-      48405,
+      4359947557011456,
     ],
   },
   "matsById": Map {
-    "70329" => {
-      "completedInspections": {
-        "Insp1": {
-          "success": true,
-          "time": 2018-02-02T10:09:05.000Z,
-        },
-      },
-      "completed_inspect_time": 2018-02-02T10:09:05.000Z,
-      "jobUnique": "uniqv",
-      "last_event": 2018-02-02T10:09:05.000Z,
-      "last_unload_time": 2018-02-02T09:57:05.000Z,
-      "materialID": 70329,
-      "numProcesses": 4,
-      "partName": "part111",
-      "signaledInspections": [
-        "Insp1",
-      ],
-      "startedProcess1": true,
-      "unloaded_processes": {
-        "1": 2018-02-02T09:57:05.000Z,
-      },
-    },
-    "48405" => {
-      "completedInspections": {
-        "Insp1": {
-          "success": true,
-          "time": 2018-01-31T10:03:05.000Z,
-        },
-      },
-      "completed_inspect_time": 2018-01-31T10:03:05.000Z,
-      "jobUnique": "uniqC",
-      "last_event": 2018-01-31T10:03:05.000Z,
-      "last_unload_time": 2018-01-31T09:51:05.000Z,
-      "materialID": 48405,
-      "numProcesses": 2,
-      "partName": "part222",
-      "signaledInspections": [
-        "Insp1",
-      ],
-      "startedProcess1": true,
-      "unloaded_processes": {
-        "1": 2018-01-31T09:51:05.000Z,
-      },
-    },
-    "77508" => {
+    "6981347895672832" => {
       "completedInspections": {
         "Insp1": {
           "success": true,
@@ -890,7 +846,7 @@ exports[`processes last 30 events > after filter - material summary 1`] = `
       "jobUnique": "uniqt",
       "last_event": 2018-02-08T09:51:05.000Z,
       "last_unload_time": 2018-02-08T09:39:05.000Z,
-      "materialID": 77508,
+      "materialID": 6981347895672832,
       "numProcesses": 4,
       "partName": "part111",
       "signaledInspections": [
@@ -901,21 +857,57 @@ exports[`processes last 30 events > after filter - material summary 1`] = `
         "1": 2018-02-08T09:39:05.000Z,
       },
     },
+    "4359947557011456" => {
+      "completedInspections": {
+        "Insp1": {
+          "success": true,
+          "time": 2018-01-31T10:03:05.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-01-31T10:03:05.000Z,
+      "jobUnique": "uniqC",
+      "last_event": 2018-01-31T10:03:05.000Z,
+      "last_unload_time": 2018-01-31T09:51:05.000Z,
+      "materialID": 4359947557011456,
+      "numProcesses": 2,
+      "partName": "part222",
+      "signaledInspections": [
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": {
+        "1": 2018-01-31T09:51:05.000Z,
+      },
+    },
+    "6334762285268992" => {
+      "completedInspections": {
+        "Insp1": {
+          "success": true,
+          "time": 2018-02-02T10:09:05.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-02-02T10:09:05.000Z,
+      "jobUnique": "uniqv",
+      "last_event": 2018-02-02T10:09:05.000Z,
+      "last_unload_time": 2018-02-02T09:57:05.000Z,
+      "materialID": 6334762285268992,
+      "numProcesses": 4,
+      "partName": "part111",
+      "signaledInspections": [
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": {
+        "1": 2018-02-02T09:57:05.000Z,
+      },
+    },
   },
 }
 `;
 
 exports[`processes last 30 events > after filter - pallet cycles 1`] = `
 Map {
-  "palcc" => Map {
-    "408" => {
-      "active": -1,
-      "cntr": 408,
-      "x": 2018-02-08T09:44:05.000Z,
-      "y": 44,
-    },
-  },
-  "palbb" => Map {
+  "222" => Map {
     "208" => {
       "active": -1,
       "cntr": 208,
@@ -926,6 +918,14 @@ Map {
       "active": -1,
       "cntr": 108,
       "x": 2018-02-02T10:02:05.000Z,
+      "y": 44,
+    },
+  },
+  "333" => Map {
+    "408" => {
+      "active": -1,
+      "cntr": 408,
+      "x": 2018-02-08T09:44:05.000Z,
       "y": 44,
     },
   },
@@ -942,7 +942,7 @@ Map {
     "material": [
       {
         "face": "faceN",
-        "id": 77508,
+        "id": 6981347895672832,
         "numproc": 4,
         "part": "part111",
         "proc": 1,
@@ -954,7 +954,7 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": "palcc",
+    "pallet": 333,
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 2,
@@ -969,7 +969,7 @@ Map {
     "material": [
       {
         "face": "faceN",
-        "id": 77508,
+        "id": 6981347895672832,
         "numproc": 4,
         "part": "part111",
         "proc": 1,
@@ -981,7 +981,7 @@ Map {
     "medianCycleMinutes": 0,
     "operation": "progE",
     "operator": "",
-    "pallet": "palcc",
+    "pallet": 333,
     "part": "part111",
     "stationGroup": "MC",
     "stationNumber": 1,
@@ -996,7 +996,7 @@ Map {
     "material": [
       {
         "face": "faceN",
-        "id": 77508,
+        "id": 6981347895672832,
         "numproc": 4,
         "part": "part111",
         "proc": 1,
@@ -1008,7 +1008,7 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": "palcc",
+    "pallet": 333,
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 1,
@@ -1023,7 +1023,7 @@ Map {
     "material": [
       {
         "face": "faceT",
-        "id": 48405,
+        "id": 4359947557011456,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
@@ -1035,7 +1035,7 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 2,
@@ -1050,7 +1050,7 @@ Map {
     "material": [
       {
         "face": "faceT",
-        "id": 48405,
+        "id": 4359947557011456,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
@@ -1062,7 +1062,7 @@ Map {
     "medianCycleMinutes": 24,
     "operation": "progR",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part222",
     "stationGroup": "MC",
     "stationNumber": 1,
@@ -1077,7 +1077,7 @@ Map {
     "material": [
       {
         "face": "face7",
-        "id": 70329,
+        "id": 6334762285268992,
         "numproc": 4,
         "part": "part111",
         "proc": 1,
@@ -1089,7 +1089,7 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 2,
@@ -1104,7 +1104,7 @@ Map {
     "material": [
       {
         "face": "faceT",
-        "id": 48405,
+        "id": 4359947557011456,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
@@ -1116,7 +1116,7 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 1,
@@ -1131,7 +1131,7 @@ Map {
     "material": [
       {
         "face": "face7",
-        "id": 70329,
+        "id": 6334762285268992,
         "numproc": 4,
         "part": "part111",
         "proc": 1,
@@ -1143,7 +1143,7 @@ Map {
     "medianCycleMinutes": 30,
     "operation": "progZ",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part111",
     "stationGroup": "MC",
     "stationNumber": 1,
@@ -1158,7 +1158,7 @@ Map {
     "material": [
       {
         "face": "face7",
-        "id": 70329,
+        "id": 6334762285268992,
         "numproc": 4,
         "part": "part111",
         "proc": 1,
@@ -1170,7 +1170,7 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 1,
@@ -1332,7 +1332,7 @@ Map {
     "108" => {
       "cntr": 108,
       "inspType": "Insp1",
-      "materialID": 70329,
+      "materialID": 6334762285268992,
       "part": "part111",
       "result": {
         "success": true,
@@ -1345,14 +1345,14 @@ Map {
     "107" => {
       "cntr": 107,
       "inspType": "Insp1",
-      "materialID": 70329,
+      "materialID": 6334762285268992,
       "part": "part111",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 70329,
-            "pallet": "6",
+            "materialID": 6334762285268992,
+            "pallet": 6,
             "process": 1,
             "stops": [
               {
@@ -1375,7 +1375,7 @@ Map {
     "309" => {
       "cntr": 309,
       "inspType": "Insp1",
-      "materialID": 70517,
+      "materialID": 6351644323217408,
       "part": "part222",
       "result": {
         "success": true,
@@ -1388,14 +1388,14 @@ Map {
     "308" => {
       "cntr": 308,
       "inspType": "Insp1",
-      "materialID": 70517,
+      "materialID": 6351644323217408,
       "part": "part222",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 70517,
-            "pallet": "6",
+            "materialID": 6351644323217408,
+            "pallet": 6,
             "process": 1,
             "stops": [
               {
@@ -1416,7 +1416,7 @@ Map {
     "307" => {
       "cntr": 307,
       "inspType": "Insp1",
-      "materialID": 70517,
+      "materialID": 6351644323217408,
       "part": "part222",
       "result": {
         "toInspect": true,
@@ -1429,7 +1429,7 @@ Map {
     "208" => {
       "cntr": 208,
       "inspType": "Insp1",
-      "materialID": 48405,
+      "materialID": 4359947557011456,
       "part": "part222",
       "result": {
         "success": true,
@@ -1442,14 +1442,14 @@ Map {
     "207" => {
       "cntr": 207,
       "inspType": "Insp1",
-      "materialID": 48405,
+      "materialID": 4359947557011456,
       "part": "part222",
       "result": {
         "actualPath": [
           {
             "loadStation": 1,
-            "materialID": 48405,
-            "pallet": "6",
+            "materialID": 4359947557011456,
+            "pallet": 6,
             "process": 1,
             "stops": [
               {
@@ -1475,17 +1475,39 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
 {
   "matIdsForJob": Map {
     "uniqv" => [
-      70329,
+      6334762285268992,
     ],
     "uniqQ" => [
-      70517,
+      6351644323217408,
     ],
     "uniqC" => [
-      48405,
+      4359947557011456,
     ],
   },
   "matsById": Map {
-    "70329" => {
+    "4359947557011456" => {
+      "completedInspections": {
+        "Insp1": {
+          "success": true,
+          "time": 2018-01-31T10:03:05.000Z,
+        },
+      },
+      "completed_inspect_time": 2018-01-31T10:03:05.000Z,
+      "jobUnique": "uniqC",
+      "last_event": 2018-01-31T10:03:05.000Z,
+      "last_unload_time": 2018-01-31T09:51:05.000Z,
+      "materialID": 4359947557011456,
+      "numProcesses": 2,
+      "partName": "part222",
+      "signaledInspections": [
+        "Insp1",
+      ],
+      "startedProcess1": true,
+      "unloaded_processes": {
+        "1": 2018-01-31T09:51:05.000Z,
+      },
+    },
+    "6334762285268992" => {
       "completedInspections": {
         "Insp1": {
           "success": true,
@@ -1496,7 +1518,7 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
       "jobUnique": "uniqv",
       "last_event": 2018-02-02T10:09:05.000Z,
       "last_unload_time": 2018-02-02T09:57:05.000Z,
-      "materialID": 70329,
+      "materialID": 6334762285268992,
       "numProcesses": 4,
       "partName": "part111",
       "signaledInspections": [
@@ -1507,7 +1529,7 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
         "1": 2018-02-02T09:57:05.000Z,
       },
     },
-    "70517" => {
+    "6351644323217408" => {
       "completedInspections": {
         "Insp1": {
           "success": true,
@@ -1518,7 +1540,7 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
       "jobUnique": "uniqQ",
       "last_event": 2018-01-06T09:57:10.000Z,
       "last_unload_time": 2018-01-06T09:45:05.000Z,
-      "materialID": 70517,
+      "materialID": 6351644323217408,
       "numProcesses": 1,
       "partName": "part222",
       "signaledInspections": [
@@ -1530,43 +1552,13 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
         "2": 2018-01-06T09:45:05.000Z,
       },
     },
-    "48405" => {
-      "completedInspections": {
-        "Insp1": {
-          "success": true,
-          "time": 2018-01-31T10:03:05.000Z,
-        },
-      },
-      "completed_inspect_time": 2018-01-31T10:03:05.000Z,
-      "jobUnique": "uniqC",
-      "last_event": 2018-01-31T10:03:05.000Z,
-      "last_unload_time": 2018-01-31T09:51:05.000Z,
-      "materialID": 48405,
-      "numProcesses": 2,
-      "partName": "part222",
-      "signaledInspections": [
-        "Insp1",
-      ],
-      "startedProcess1": true,
-      "unloaded_processes": {
-        "1": 2018-01-31T09:51:05.000Z,
-      },
-    },
   },
 }
 `;
 
 exports[`processes last 30 events > initial 27 days ago, two days ago, and today - pallet cycles 1`] = `
 Map {
-  "palaa" => Map {
-    "309" => {
-      "active": -1,
-      "cntr": 309,
-      "x": 2018-01-06T09:50:10.000Z,
-      "y": 44,
-    },
-  },
-  "palbb" => Map {
+  "222" => Map {
     "208" => {
       "active": -1,
       "cntr": 208,
@@ -1577,6 +1569,14 @@ Map {
       "active": -1,
       "cntr": 108,
       "x": 2018-02-02T10:02:05.000Z,
+      "y": 44,
+    },
+  },
+  "111" => Map {
+    "309" => {
+      "active": -1,
+      "cntr": 309,
+      "x": 2018-01-06T09:50:10.000Z,
       "y": 44,
     },
   },
@@ -1593,7 +1593,7 @@ Map {
     "material": [
       {
         "face": "faceH",
-        "id": 70517,
+        "id": 6351644323217408,
         "numproc": 1,
         "part": "part222",
         "proc": 2,
@@ -1605,7 +1605,7 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": "palaa",
+    "pallet": 111,
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 2,
@@ -1620,7 +1620,7 @@ Map {
     "material": [
       {
         "face": "faceH",
-        "id": 70517,
+        "id": 6351644323217408,
         "numproc": 1,
         "part": "part222",
         "proc": 2,
@@ -1632,7 +1632,7 @@ Map {
     "medianCycleMinutes": 18,
     "operation": "prog6",
     "operator": "",
-    "pallet": "palaa",
+    "pallet": 111,
     "part": "part222",
     "stationGroup": "MC",
     "stationNumber": 1,
@@ -1647,7 +1647,7 @@ Map {
     "material": [
       {
         "face": "faceT",
-        "id": 48405,
+        "id": 4359947557011456,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
@@ -1659,7 +1659,7 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 2,
@@ -1674,7 +1674,7 @@ Map {
     "material": [
       {
         "face": "faceH",
-        "id": 70517,
+        "id": 6351644323217408,
         "numproc": 1,
         "part": "part222",
         "proc": 2,
@@ -1686,7 +1686,7 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": "palaa",
+    "pallet": 111,
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 1,
@@ -1701,7 +1701,7 @@ Map {
     "material": [
       {
         "face": "faceT",
-        "id": 48405,
+        "id": 4359947557011456,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
@@ -1713,7 +1713,7 @@ Map {
     "medianCycleMinutes": 24,
     "operation": "progR",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part222",
     "stationGroup": "MC",
     "stationNumber": 1,
@@ -1728,7 +1728,7 @@ Map {
     "material": [
       {
         "face": "face7",
-        "id": 70329,
+        "id": 6334762285268992,
         "numproc": 4,
         "part": "part111",
         "proc": 1,
@@ -1740,7 +1740,7 @@ Map {
     "medianCycleMinutes": 3,
     "operation": "UNLOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 2,
@@ -1755,7 +1755,7 @@ Map {
     "material": [
       {
         "face": "faceT",
-        "id": 48405,
+        "id": 4359947557011456,
         "numproc": 2,
         "part": "part222",
         "proc": 1,
@@ -1767,7 +1767,7 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 1,
@@ -1782,7 +1782,7 @@ Map {
     "material": [
       {
         "face": "face7",
-        "id": 70329,
+        "id": 6334762285268992,
         "numproc": 4,
         "part": "part111",
         "proc": 1,
@@ -1794,7 +1794,7 @@ Map {
     "medianCycleMinutes": 30,
     "operation": "progZ",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part111",
     "stationGroup": "MC",
     "stationNumber": 1,
@@ -1809,7 +1809,7 @@ Map {
     "material": [
       {
         "face": "face7",
-        "id": 70329,
+        "id": 6334762285268992,
         "numproc": 4,
         "part": "part111",
         "proc": 1,
@@ -1821,7 +1821,7 @@ Map {
     "medianCycleMinutes": 6,
     "operation": "LOAD",
     "operator": "",
-    "pallet": "palbb",
+    "pallet": 222,
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 1,

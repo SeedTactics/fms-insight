@@ -293,7 +293,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public record MatToPutOnPallet
     {
       [DataMember(IsRequired = true)]
-      public required string Pallet { get; init; }
+      public required int Pallet { get; init; }
 
       [DataMember(IsRequired = true)]
       public required long MaterialIDToSetOnPallet { get; init; }

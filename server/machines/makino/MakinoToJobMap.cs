@@ -107,7 +107,29 @@ namespace Makino
           RouteStartUTC = DateTime.MinValue,
           RouteEndUTC = DateTime.MinValue,
           Archived = false,
-          Processes = ImmutableList<ProcessInfo>.Empty,
+          Processes = Enumerable
+            .Range(1, numProc)
+            .Select(
+              procNum =>
+                new ProcessInfo()
+                {
+                  Paths = ImmutableList.Create(
+                    new ProcPathInfo()
+                    {
+                      PalletNums = ImmutableList<int>.Empty,
+                      Load = ImmutableList<int>.Empty,
+                      Unload = ImmutableList<int>.Empty,
+                      Stops = ImmutableList<MachiningStop>.Empty,
+                      PartsPerPallet = 1,
+                      SimulatedStartingUTC = DateTime.MinValue,
+                      SimulatedAverageFlowTime = TimeSpan.Zero,
+                      ExpectedLoadTime = TimeSpan.Zero,
+                      ExpectedUnloadTime = TimeSpan.Zero,
+                    }
+                  )
+                }
+            )
+            .ToImmutableList(),
           Cycles = 0
         }
       );
@@ -134,13 +156,19 @@ namespace Makino
 
         if (jobNum == 1)
         {
-          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] %= j =>
-            j.AdjustPath(proc, 1, p => p.Load.Add(loc.Num));
+          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] = job.AdjustPath(
+            proc,
+            1,
+            p => p with { Load = p.Load.Add(loc.Num) }
+          );
         }
         else
         {
-          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] %= j =>
-            j.AdjustPath(proc, 1, p => p.Unload.Add(loc.Num));
+          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] = job.AdjustPath(
+            proc,
+            1,
+            p => p with { Unload = p.Unload.Add(loc.Num) }
+          );
         }
       }
       else
@@ -160,7 +188,8 @@ namespace Makino
         }
         else
         {
-          _stops[jobID] %= s => s.Stations.Add(loc.Num);
+          var s = _stops[jobID];
+          _stops[jobID] = s with { Stations = s.Stations.Add(loc.Num) };
         }
       }
     }
@@ -181,7 +210,11 @@ namespace Makino
         }
 
         if (stops.Count > 0)
-          _byPartID[proc.Value] %= j => j.AdjustPath(procNum, 1, d => d.Stops.AddRange(stops.Values));
+          _byPartID[proc.Value] = _byPartID[proc.Value].AdjustPath(
+            procNum,
+            1,
+            d => d with { Stops = d.Stops.AddRange(stops.Values) }
+          );
       }
     }
 
@@ -192,8 +225,11 @@ namespace Makino
       if (pals == null)
         return;
 
-      _byPartID[_procIDToPartID[processID]] %= j =>
-        j.AdjustPath(procNum, 1, p => p.Pallets.AddRange(pals.Select(pal => pal.ToString())));
+      _byPartID[_procIDToPartID[processID]] = _byPartID[_procIDToPartID[processID]].AdjustPath(
+        procNum,
+        1,
+        p => p with { PalletNums = p.PalletNums.AddRange(pals) }
+      );
     }
 
     public BlackMaple.MachineFramework.ActiveJob DuplicateForOrder(int orderID, string order, int partID)
@@ -213,9 +249,9 @@ namespace Makino
       var job = _byOrderID[orderID];
       var procNum = _procIDToProcNum[processID];
 
-      _byOrderID[orderID] %= j =>
+      _byOrderID[orderID] = job with
       {
-        j.Completed[procNum - 1] = ImmutableList.Create(completed);
+        Completed = job.Completed.SetItem(procNum - 1, job.Completed[procNum - 1])
       };
     }
 
@@ -257,7 +293,7 @@ namespace Makino
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.OnPallet,
-          Pallet = palletNum.ToString(),
+          PalletNum = palletNum,
           Face = face
         }
       };
@@ -301,9 +337,9 @@ namespace Makino
     private Dictionary<int, List<InProcessMaterial>> _fixPalIDToMaterial =
       new Dictionary<int, List<InProcessMaterial>>();
     private Dictionary<int, List<int>> _fixIDToPallets = new Dictionary<int, List<int>>();
-    private Dictionary<string, PalletStatus> _pallets = new Dictionary<string, PalletStatus>();
+    private Dictionary<int, PalletStatus> _pallets = new Dictionary<int, PalletStatus>();
 
-    public IDictionary<string, PalletStatus> Pallets
+    public IDictionary<int, PalletStatus> Pallets
     {
       get { return _pallets; }
     }
@@ -328,9 +364,9 @@ namespace Makino
         _fixIDToPallets.Add(fixtureID, new List<int>());
       _fixIDToPallets[fixtureID].Add(palletNum);
 
-      if (_pallets.ContainsKey(palletNum.ToString()))
+      if (_pallets.ContainsKey(palletNum))
       {
-        _pallets[palletNum.ToString()] %= p => p.NumFaces = Math.Max(p.NumFaces, fixtureNum);
+        _pallets[palletNum] %= p => p.NumFaces = Math.Max(p.NumFaces, fixtureNum);
         return;
       }
 
@@ -338,14 +374,14 @@ namespace Makino
 
       pal = new PalletStatus()
       {
-        Pallet = palletNum.ToString(),
+        PalletNum = palletNum,
         CurrentPalletLocation = loc,
         NumFaces = fixtureNum,
         FixtureOnPallet = "",
         OnHold = false,
       };
 
-      _pallets.Add(palletNum.ToString(), pal);
+      _pallets.Add(palletNum, pal);
     }
 
     public IEnumerable<int> PalletsForFixture(int fixtureID)
@@ -374,7 +410,7 @@ namespace Makino
       }
 
       var palletNum = _fixPalIDToPalNum[fixturePalletID];
-      var pal = _pallets[palletNum.ToString()];
+      var pal = _pallets[palletNum];
 
       if (pal.CurrentPalletLocation.Location == PalletLocationEnum.Machine && mat.Action.Program != "")
       {
@@ -391,7 +427,7 @@ namespace Makino
     public void SetMaterialAsUnload(int fixturePalletID, bool completed)
     {
       var palletNum = _fixPalIDToPalNum[fixturePalletID];
-      var pal = _pallets[palletNum.ToString()];
+      var pal = _pallets[palletNum];
       var face = _fixPalIDToFixNum[fixturePalletID].ToString();
 
       if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
@@ -419,7 +455,7 @@ namespace Makino
     public void AddMaterialToLoad(int fixturePalletID, string unique, string partName, int procNum, int qty)
     {
       var palletNum = _fixPalIDToPalNum[fixturePalletID];
-      var pal = _pallets[palletNum.ToString()];
+      var pal = _pallets[palletNum];
       var face = _fixPalIDToFixNum[fixturePalletID];
 
       List<InProcessMaterial> ms;
@@ -445,7 +481,7 @@ namespace Makino
           ProcessAfterLoad = procNum,
           PathAfterLoad = 1,
           LoadOntoFace = face,
-          LoadOntoPallet = pal.Pallet
+          LoadOntoPalletNum = pal.PalletNum
         },
         SignaledInspections = ImmutableList<string>.Empty
       };

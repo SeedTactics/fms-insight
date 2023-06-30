@@ -82,7 +82,7 @@ const machineSelectedPart = atomWithDefault<PartAndProcess | undefined>((get) =>
 );
 const machineSelectedMachine = atom<string>(FilterAnyMachineKey);
 const machineSelectedOperation = atom<PartAndStationOperation | undefined>(undefined);
-const machineSelectedPallet = atom<string | undefined>(undefined);
+const machineSelectedPallet = atom<number | undefined>(undefined);
 const machineZoomDateRange = atom<{ start: Date; end: Date } | undefined>(undefined);
 const machineYZoom = atom<YZoomRange | null>(null);
 
@@ -274,12 +274,13 @@ export function PartMachineCycleChart() {
         </FormControl>
         <FormControl size="small">
           <Select
-            name="Station-Cycles-cycle-chart-station-pallet"
             autoWidth
             displayEmpty
             value={selectedPallet || ""}
             style={{ marginLeft: "1em" }}
-            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
+            onChange={(e) =>
+              setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as number))
+            }
           >
             <MenuItem key={0} value="">
               <em>Any Pallet</em>
@@ -352,7 +353,7 @@ const loadSelectedOperation = atomWithDefault<LoadCycleFilter>((get) =>
   get(isDemoAtom) ? "LoadOp" : "LULOccupancy"
 );
 const loadSelectedLoad = atom<string>(FilterAnyLoadKey);
-const loadSelectedPallet = atom<string | undefined>(undefined);
+const loadSelectedPallet = atom<number | undefined>(undefined);
 const loadZoomDateRange = atom<{ start: Date; end: Date } | undefined>(undefined);
 const loadYZoom = atom<YZoomRange | null>(null);
 
@@ -543,7 +544,9 @@ export function PartLoadStationCycleChart() {
             displayEmpty
             value={selectedPallet || ""}
             style={{ marginLeft: "1em" }}
-            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
+            onChange={(e) =>
+              setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as number))
+            }
           >
             <MenuItem key={0} value="">
               <em>Any Pallet</em>

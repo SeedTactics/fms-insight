@@ -361,7 +361,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         expected.Add(e =>
         {
-          e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+          e.Pallet.Should().BeOneOf(pals[proc - 1]);
           e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
           e.LogType.Should().Be(LogType.LoadUnloadCycle);
           e.StartOfCycle.Should().BeFalse();
@@ -372,7 +372,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Pallet.Should().BeOneOf(pals[proc - 1]);
             e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
             e.LogType.Should().Be(LogType.MachineCycle);
             e.LocationName.Should().Be(group);
@@ -387,7 +387,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           });
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Pallet.Should().BeOneOf(pals[proc - 1]);
             e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
             e.LogType.Should().Be(LogType.MachineCycle);
             e.LocationName.Should().Be(group);
@@ -406,7 +406,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Pallet.Should().BeOneOf(pals[proc - 1]);
             e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
             e.LogType.Should().Be(LogType.LoadUnloadCycle);
             e.Program.Should().Be("TestReclamp");
@@ -415,7 +415,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           });
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+            e.Pallet.Should().BeOneOf(pals[proc - 1]);
             e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
             e.LogType.Should().Be(LogType.LoadUnloadCycle);
             e.Program.Should().Be("TestReclamp");
@@ -436,7 +436,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
         expected.Add(e =>
         {
-          e.Pallet.Should().BeOneOf(pals[proc - 1].Select(p => p.ToString()));
+          e.Pallet.Should().BeOneOf(pals[proc - 1]);
           e.LogType.Should().Be(LogType.LoadUnloadCycle);
           e.StartOfCycle.Should().BeFalse();
           e.Result.Should().Be("UNLOAD");
@@ -555,7 +555,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(8),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(5),
                 PartsPerPallet = 1,
-                Pallets = ImmutableList.Create("1", "2"),
+                PalletNums = ImmutableList.Create(1, 2),
                 Fixture = "fix1",
                 Face = 1,
                 OutputQueue = "transQ",
@@ -578,7 +578,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(7),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(4),
                 PartsPerPallet = 1,
-                Pallets = ImmutableList.Create("5", "6"),
+                PalletNums = ImmutableList.Create(5, 6),
                 Fixture = "fix1",
                 Face = 1,
                 OutputQueue = "transQ",
@@ -606,7 +606,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(3),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(6),
                 PartsPerPallet = 1,
-                Pallets = ImmutableList.Create("3", "4"),
+                PalletNums = ImmutableList.Create(3, 4),
                 Fixture = "fix2",
                 Face = 1,
                 InputQueue = "transQ",
@@ -629,7 +629,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(3),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(3),
                 PartsPerPallet = 1,
-                Pallets = ImmutableList.Create("7", "8"),
+                PalletNums = ImmutableList.Create(7, 8),
                 Fixture = "fix2",
                 Face = 1,
                 InputQueue = "transQ",
@@ -656,7 +656,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
       byMat.Count.Should().Be(7);
 
-      var byPath = byMat.ToLookup(mat => (new[] { "1", "2" }).Contains(mat.Skip(1).First().Pallet));
+      var byPath = byMat.ToLookup(mat => (new[] { 1, 2 }).Contains(mat.Skip(1).First().Pallet));
       byPath[true].Count().Should().BeGreaterThan(0); // true is pallets 1 or 2, path 1
       byPath[false].Count().Should().BeGreaterThan(0); // false is pallets 5 or 6, path 2
 
@@ -711,7 +711,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(8),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(5),
                 PartsPerPallet = 2,
-                Pallets = ImmutableList.Create("1", "2"),
+                PalletNums = ImmutableList.Create(1, 2),
                 Fixture = "fix1",
                 Face = 1,
                 SimulatedStartingUTC = DateTime.MinValue,
@@ -733,7 +733,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(7),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(4),
                 PartsPerPallet = 2,
-                Pallets = ImmutableList.Create("3", "4"),
+                PalletNums = ImmutableList.Create(3, 4),
                 Fixture = "fix1",
                 Face = 1,
                 SimulatedStartingUTC = DateTime.MinValue,
@@ -760,7 +760,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(3),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(6),
                 PartsPerPallet = 2,
-                Pallets = ImmutableList.Create("1", "2"),
+                PalletNums = ImmutableList.Create(1, 2),
                 Fixture = "fix1",
                 Face = 2,
                 SimulatedStartingUTC = DateTime.MinValue,
@@ -782,7 +782,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(3),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(3),
                 PartsPerPallet = 2,
-                Pallets = ImmutableList.Create("3", "4"),
+                PalletNums = ImmutableList.Create(3, 4),
                 Fixture = "fix1",
                 Face = 2,
                 SimulatedStartingUTC = DateTime.MinValue,
@@ -811,7 +811,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var byPath = matIds
         .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
-        .ToLookup(mat => (new[] { "1", "2" }).Contains(mat.logs.Skip(1).First().Pallet));
+        .ToLookup(mat => (new[] { 1, 2 }).Contains(mat.logs.Skip(1).First().Pallet));
       byPath[true].Count().Should().BeGreaterThan(0); // true is pallets 1 or 2, path 1
       byPath[false].Count().Should().BeGreaterThan(0); // false is pallets 3 or 4, path 2
 
@@ -866,7 +866,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(2),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(3),
                 PartsPerPallet = 1,
-                Pallets = ImmutableList.Create("1", "2", "3", "4"),
+                PalletNums = ImmutableList.Create(1, 2, 3, 4),
                 Fixture = "fix1",
                 Face = 1,
                 OutputQueue = "sizedQ",
@@ -895,7 +895,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(3),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(4),
                 PartsPerPallet = 1,
-                Pallets = ImmutableList.Create("5", "6"),
+                PalletNums = ImmutableList.Create(5, 6),
                 Fixture = "fix2",
                 Face = 1,
                 InputQueue = "sizedQ",
@@ -971,7 +971,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(2),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(3),
                 PartsPerPallet = 1,
-                Pallets = ImmutableList.Create("1", "2", "3", "4"),
+                PalletNums = ImmutableList.Create(1, 2, 3, 4),
                 Fixture = "fix1",
                 Face = 1,
                 OutputQueue = "sizedQ",
@@ -1006,7 +1006,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 ExpectedLoadTime = TimeSpan.FromMinutes(3),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(4),
                 PartsPerPallet = 1,
-                Pallets = ImmutableList.Create("5", "6"),
+                PalletNums = ImmutableList.Create(5, 6),
                 Fixture = "fix2",
                 Face = 1,
                 InputQueue = "sizedQ",
@@ -1145,21 +1145,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         for (int jobIdx = 0; jobIdx < j.Jobs.Count; jobIdx++)
         {
-          j.Jobs[jobIdx] %= draftJob =>
-            draftJob.AdjustAllPaths(
-              (proc, path, draftPath) =>
+          j.Jobs[jobIdx] = j.Jobs[jobIdx].AdjustAllPaths(
+            (proc, path, draftPath) =>
+              draftPath with
               {
-                if (proc == 1)
-                {
-                  draftPath.InputQueue = "castingQ";
-                }
-                draftPath.Stops.AdjustAll(d =>
-                {
-                  d.Program = null;
-                  d.ProgramRevision = null;
-                });
+                InputQueue = proc == 1 ? "castingQ" : draftPath.InputQueue,
+                Stops = draftPath.Stops
+                  .Select(d => d with { Program = null, ProgramRevision = null })
+                  .ToImmutableList()
               }
-            );
+          );
         }
         j.CurrentUnfilledWorkorders.AddRange(
           new[]

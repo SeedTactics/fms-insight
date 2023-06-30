@@ -47,7 +47,7 @@ import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status
 import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithDefault } from "jotai/utils";
 
-const selectedPalletAtom = atomWithDefault<string | undefined>((get) => (get(isDemoAtom) ? "3" : undefined));
+const selectedPalletAtom = atomWithDefault<number | undefined>((get) => (get(isDemoAtom) ? 3 : undefined));
 const zoomDateRangeAtom = atom<{ start: Date; end: Date } | undefined>(undefined);
 const yZoomAtom = atom<YZoomRange | null>(null);
 
@@ -71,7 +71,7 @@ export function PalletCycleChart() {
       const palData = palletCycles.get(selectedPallet);
       if (palData !== undefined) {
         return new Map<string, ReadonlyArray<CycleChartPoint>>([
-          [selectedPallet, Array.from(palData.valuesToLazySeq())],
+          [selectedPallet.toString(), Array.from(palData.valuesToLazySeq())],
         ]);
       }
     }
@@ -95,7 +95,7 @@ export function PalletCycleChart() {
             autoWidth
             displayEmpty
             value={selectedPallet || ""}
-            onChange={(e) => setSelectedPallet(e.target.value)}
+            onChange={(e) => setSelectedPallet(e.target.value as number)}
           >
             {selectedPallet !== undefined ? undefined : (
               <MenuItem key={0} value="">

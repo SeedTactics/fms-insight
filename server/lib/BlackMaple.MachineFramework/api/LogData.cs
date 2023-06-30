@@ -179,7 +179,7 @@ namespace BlackMaple.MachineFramework
     public required int LocationNum { get; init; }
 
     [DataMember(Name = "pal", IsRequired = true)]
-    public required string Pallet { get; init; }
+    public required int Pallet { get; init; }
 
     [DataMember(Name = "program", IsRequired = true)]
     public required string Program { get; init; }
@@ -205,7 +205,7 @@ namespace BlackMaple.MachineFramework
     public LogEntry(
       long cntr,
       IEnumerable<LogMaterial> mat,
-      string pal,
+      int pal,
       LogType ty,
       string locName,
       int locNum,
@@ -267,7 +267,7 @@ namespace BlackMaple.MachineFramework
     public required int Process { get; init; }
 
     [DataMember(IsRequired = true)]
-    public required string Pallet { get; init; }
+    public required int Pallet { get; init; }
 
     [DataMember(IsRequired = true)]
     public required int LoadStation { get; init; }

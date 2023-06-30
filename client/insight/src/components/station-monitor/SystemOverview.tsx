@@ -61,7 +61,7 @@ import {
   PalletLocationEnum,
 } from "../../network/api.js";
 import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
-import { ComparableObj, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
+import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { addDays } from "date-fns";
@@ -116,20 +116,13 @@ type CellOverview = {
   readonly maxNumFacesOnPallet: number;
 };
 
-class PalletNum implements ComparableObj {
-  constructor(public readonly name: string) {}
-  compare(other: PalletNum): number {
-    return this.name.localeCompare(other.name, undefined, { numeric: true });
-  }
-}
-
 function useCellOverview(): CellOverview {
   const currentSt = useAtomValue(currentStatus);
   const jobs = useAtomValue(last30Jobs);
 
   const matByPal = LazySeq.of(currentSt.material)
     .filter((m) => m.location.type === LocType.OnPallet || m.action.type === ActionType.Loading)
-    .toRLookup((m) => m.location.pallet ?? m.action.loadOntoPallet ?? "");
+    .toRLookup((m) => m.location.palletNum ?? m.action.loadOntoPalletNum ?? 0);
 
   let loads: OrderedMap<number, LoadStatus> = LazySeq.ofObject(currentSt.pallets)
     .filter(([_, p]) => p.currentPalletLocation.loc === PalletLocationEnum.LoadUnload)
@@ -137,7 +130,7 @@ function useCellOverview(): CellOverview {
       p.currentPalletLocation.num,
       {
         lulNum: p.currentPalletLocation.num,
-        pal: { pallet: p, mats: matByPal.get(p.pallet) ?? [] },
+        pal: { pallet: p, mats: matByPal.get(p.palletNum) ?? [] },
       },
     ]);
 
@@ -157,9 +150,9 @@ function useCellOverview(): CellOverview {
       ([[_statGroup, statNum], _pals]) => statNum,
       ([[statGroup, statNum], pals]) => {
         const worktable = pals.find((p) => p.currentPalletLocation.loc === PalletLocationEnum.Machine);
-        const worktableMats = worktable ? matByPal.get(worktable.pallet) ?? [] : null;
+        const worktableMats = worktable ? matByPal.get(worktable.palletNum) ?? [] : null;
         const rotary = pals.find((p) => p.currentPalletLocation.loc === PalletLocationEnum.MachineQueue);
-        const rotaryMats = rotary ? matByPal.get(rotary.pallet) ?? [] : null;
+        const rotaryMats = rotary ? matByPal.get(rotary.palletNum) ?? [] : null;
 
         let isInbound = true;
         const rotaryMat0 = rotaryMats?.[0];
@@ -202,11 +195,11 @@ function useCellOverview(): CellOverview {
         p.currentPalletLocation.loc === PalletLocationEnum.Cart
     )
     .collect(([_, p]) => {
-      const mats = matByPal.get(p.pallet);
+      const mats = matByPal.get(p.palletNum);
       if (!mats || mats.length === 0) return null;
       return { pallet: p, mats };
     })
-    .toOrderedMap((p) => [new PalletNum(p.pallet.pallet), p]);
+    .toOrderedMap((p) => [p.pallet.palletNum, p]);
 
   let maxLoadNum = 1;
   let maxNumFacesOnPallet = 1;
@@ -577,7 +570,7 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
           </Typography>
           {machine.inbound ? (
             <Typography variant="h6" textAlign="center">
-              {machine.inbound.pallet.pallet}
+              {machine.inbound.pallet.palletNum}
             </Typography>
           ) : undefined}
         </Stack>
@@ -592,7 +585,7 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
           </Typography>
           {machine.worktable ? (
             <Typography variant="h6" textAlign="center">
-              {machine.worktable.pallet.pallet}
+              {machine.worktable.pallet.palletNum}
             </Typography>
           ) : undefined}
         </Stack>
@@ -609,7 +602,7 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
           </Typography>
           {machine.outbound ? (
             <Typography variant="h6" textAlign="center">
-              {machine.outbound.pallet.pallet}
+              {machine.outbound.pallet.palletNum}
             </Typography>
           ) : undefined}
         </Stack>
@@ -694,7 +687,7 @@ function LoadStation({ maxNumFaces, load }: { maxNumFaces: number; load: LoadSta
           </Typography>
           {load.pal ? (
             <Typography variant="h6" textAlign="center">
-              {load.pal.pallet.pallet}
+              {load.pal.pallet.palletNum}
             </Typography>
           ) : undefined}
         </Stack>
@@ -812,7 +805,7 @@ function StockerPallet({ maxNumFaces, pallet }: { maxNumFaces: number; pallet: P
       gridTemplateAreas={`"palname" "palmat"`}
     >
       <Typography variant="h5" gridArea="palname" padding="0.2em" borderBottom="1px solid black">
-        Pallet {pallet.pallet.pallet}
+        Pallet {pallet.pallet.palletNum}
       </Typography>
       <Box gridArea="palmat">
         <PalletFaces mats={pallet.mats} maxNumFaces={maxNumFaces} />
@@ -848,7 +841,11 @@ export const SystemOverview = React.memo(function SystemOverview({ overview }: {
       {overview.stockerPals.length > 0 ? (
         <Box display="flex" flexWrap="wrap" justifyContent="space-evenly">
           {overview.stockerPals.map((pal) => (
-            <StockerPallet key={pal.pallet.pallet} pallet={pal} maxNumFaces={overview.maxNumFacesOnPallet} />
+            <StockerPallet
+              key={pal.pallet.palletNum}
+              pallet={pal}
+              maxNumFaces={overview.maxNumFacesOnPallet}
+            />
           ))}
         </Box>
       ) : undefined}

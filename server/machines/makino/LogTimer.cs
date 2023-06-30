@@ -187,7 +187,7 @@ namespace Makino
       //check if the cycle already exists
       if (
         timeToSkip == m.EndDateTimeUTC
-        && logDb.CycleExists(m.EndDateTimeUTC, m.PalletID.ToString(), LogType.MachineCycle, "MC", loc.Num)
+        && logDb.CycleExists(m.EndDateTimeUTC, m.PalletID, LogType.MachineCycle, "MC", loc.Num)
       )
       {
         return;
@@ -215,7 +215,7 @@ namespace Makino
       }
       logDb.RecordMachineEnd(
         mats: matList,
-        pallet: m.PalletID.ToString(),
+        pallet: m.PalletID,
         statName: "MC",
         statNum: loc.Num,
         program: m.Program,
@@ -294,19 +294,13 @@ namespace Makino
         //check if the cycle already exists
         if (
           timeToSkip == w.EndDateTimeUTC
-          && logDb.CycleExists(
-            w.EndDateTimeUTC,
-            w.PalletID.ToString(),
-            LogType.LoadUnloadCycle,
-            "L/U",
-            loc.Num
-          )
+          && logDb.CycleExists(w.EndDateTimeUTC, w.PalletID, LogType.LoadUnloadCycle, "L/U", loc.Num)
         )
           return;
 
         logDb.RecordUnloadEnd(
           mats: matList,
-          pallet: w.PalletID.ToString(),
+          pallet: w.PalletID,
           lulNum: loc.Num,
           timeUTC: w.EndDateTimeUTC,
           elapsed: elapsed,
@@ -315,7 +309,7 @@ namespace Makino
       }
 
       //Pallet Cycle
-      logDb.CompletePalletCycle(w.PalletID.ToString(), w.EndDateTimeUTC, "");
+      logDb.CompletePalletCycle(w.PalletID, w.EndDateTimeUTC, "");
 
       //now the load cycle
       numParts = 0;
@@ -355,7 +349,7 @@ namespace Makino
               )
             }
           },
-          pallet: w.PalletID.ToString(),
+          pallet: w.PalletID,
           timeUTC: w.EndDateTimeUTC.AddSeconds(1)
         );
       }
