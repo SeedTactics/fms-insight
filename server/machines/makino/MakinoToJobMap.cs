@@ -107,7 +107,29 @@ namespace Makino
           RouteStartUTC = DateTime.MinValue,
           RouteEndUTC = DateTime.MinValue,
           Archived = false,
-          Processes = ImmutableList<ProcessInfo>.Empty,
+          Processes = Enumerable
+            .Range(1, numProc)
+            .Select(
+              procNum =>
+                new ProcessInfo()
+                {
+                  Paths = ImmutableList.Create(
+                    new ProcPathInfo()
+                    {
+                      PalletNums = ImmutableList<int>.Empty,
+                      Load = ImmutableList<int>.Empty,
+                      Unload = ImmutableList<int>.Empty,
+                      Stops = ImmutableList<MachiningStop>.Empty,
+                      PartsPerPallet = 1,
+                      SimulatedStartingUTC = DateTime.MinValue,
+                      SimulatedAverageFlowTime = TimeSpan.Zero,
+                      ExpectedLoadTime = TimeSpan.Zero,
+                      ExpectedUnloadTime = TimeSpan.Zero,
+                    }
+                  )
+                }
+            )
+            .ToImmutableList(),
           Cycles = 0
         }
       );
