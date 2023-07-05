@@ -1340,6 +1340,8 @@
       "DueDate": "2023-05-19",
       "Priority": 3,
       "CompletedQuantity": 8,
+      "SimulatedStartUTC": "2023-05-19T22:00:00Z",
+      "SimulatedFilledUTC": "2023-05-27T03:00:00Z",
       "Serials": ["00000000aa", "00000000ab"],
       "ElapsedStationTime": {
         "MC": "PT10M",
@@ -1357,6 +1359,8 @@
       "DueDate": "2023-05-20",
       "Priority": 6,
       "CompletedQuantity": 12,
+      "SimulatedStartUTC": "2023-05-20T11:00:00Z",
+      "SimulatedFilledUTC": "2023-06-02T14:00:00Z",
       "Serials": ["00000000bb", "00000000bc"],
       "ElapsedStationTime": {
         "MC": "PT4M",

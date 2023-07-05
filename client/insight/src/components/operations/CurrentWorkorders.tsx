@@ -38,6 +38,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
+  MenuItem,
+  Select,
   Stack,
   styled,
   TableSortLabel,
@@ -57,6 +60,7 @@ import {
   KeyboardArrowUp as KeyboardArrowUpIcon,
   ImportExport,
   MoreHoriz,
+  Warning as WarningIcon,
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
 import { addWorkorderComment, currentStatus } from "../../cell-status/current-status.js";
@@ -67,6 +71,7 @@ import { durationToMinutes } from "../../util/parseISODuration.js";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import TimeAgo from "react-timeago";
 
 const WorkorderTableRow = styled(TableRow)({
   "& > *": {
@@ -167,10 +172,16 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
   );
 });
 
-function WorkorderRow({ workorder }: { readonly workorder: IActiveWorkorder }) {
+function WorkorderRow({
+  workorder,
+  showSim,
+}: {
+  readonly workorder: IActiveWorkorder;
+  readonly showSim: boolean;
+}) {
   const [open, setOpen] = React.useState<boolean>(false);
 
-  const colCnt = 8;
+  const colCnt = showSim ? 10 : 8;
 
   return (
     <>
@@ -198,6 +209,12 @@ function WorkorderRow({ workorder }: { readonly workorder: IActiveWorkorder }) {
         <TableCell align="right">{workorder.plannedQuantity}</TableCell>
         <TableCell align="right">{workorder.serials.length}</TableCell>
         <TableCell align="right">{workorder.completedQuantity}</TableCell>
+        {showSim ? (
+          <>
+            <TableCell align="left">{workorder.simulatedStartUTC?.toLocaleDateString() ?? ""}</TableCell>
+            <TableCell align="left">{workorder.simulatedFilledUTC?.toLocaleDateString() ?? ""}</TableCell>
+          </>
+        ) : undefined}
         <TableCell>
           <Tooltip title="Show Details">
             <IconButton size="small" onClick={() => setOpen(!open)}>
@@ -225,6 +242,8 @@ enum SortColumn {
   Priority,
   CompletedQty,
   AssignedQty,
+  SimulatedStart,
+  SimulatedFilled,
 }
 
 function sortWorkorders(
@@ -255,11 +274,17 @@ function sortWorkorders(
     case SortColumn.AssignedQty:
       sortCol = (j) => j.serials.length;
       break;
+    case SortColumn.SimulatedStart:
+      sortCol = (j) => j.simulatedStartUTC ?? null;
+      break;
+    case SortColumn.SimulatedFilled:
+      sortCol = (j) => j.simulatedFilledUTC ?? null;
+      break;
   }
   return LazySeq.of(workorders).toSortedArray(order === "asc" ? { asc: sortCol } : { desc: sortCol });
 }
 
-function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>) {
+function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>, showSim: boolean) {
   let table = "<table>\n<thead><tr>";
   table += "<th>Workorder</th>";
   table += "<th>Part</th>";
@@ -267,6 +292,10 @@ function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>) 
   table += "<th>Priority</th>";
   table += "<th>Planned Qty</th>";
   table += "<th>Completed Qty</th>";
+  if (showSim) {
+    table += "<th>Simulated Start</th>";
+    table += "<th>Simulated Filled</th>";
+  }
   table += "<th>Serials</th>";
   table += "<th>Active Time (mins)</th>";
   table += "<th>Elapsed Time (mins)</th>";
@@ -280,6 +309,10 @@ function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>) 
     table += `<td>${w.priority}</td>`;
     table += `<td>${w.plannedQuantity}</td>`;
     table += `<td>${w.completedQuantity}</td>`;
+    if (showSim) {
+      table += `<td>${w.simulatedStartUTC?.toDateString() ?? ""}</td>`;
+      table += `<td>${w.simulatedFilledUTC?.toDateString() ?? ""}</td>`;
+    }
     table += `<td>${w.serials.join(";")}</td>`;
     table += `<td>${LazySeq.ofObject(w.activeStationTime ?? {})
       .map(([st, t]) => `${st}: ${durationToMinutes(t)}`)
@@ -306,8 +339,8 @@ function SortColHeader(props: {
   readonly children: React.ReactNode;
 }) {
   return (
-    <Tooltip title="Sort" enterDelay={300}>
-      <TableCell align={props.align} sortDirection={props.sortBy === props.col ? props.order : false}>
+    <TableCell align={props.align} sortDirection={props.sortBy === props.col ? props.order : false}>
+      <Tooltip title="Sort" enterDelay={300}>
         <TableSortLabel
           active={props.sortBy === props.col}
           direction={props.order}
@@ -322,13 +355,62 @@ function SortColHeader(props: {
         >
           {props.children}
         </TableSortLabel>
-      </TableCell>
-    </Tooltip>
+      </Tooltip>
+    </TableCell>
   );
 }
 
+const tableOrGantt = atom<"table" | "gantt">("table");
+
+const SimulatedWarning = React.memo(function SimulatedWarning() {
+  const currentSt = useAtomValue(currentStatus);
+  const start = LazySeq.ofObject(currentSt.jobs ?? {}).maxBy(([, j]) => j.routeStartUTC)?.[1]?.routeStartUTC;
+  const end = LazySeq.ofObject(currentSt.jobs ?? {}).maxBy(([, j]) => j.routeEndUTC)?.[1]?.routeEndUTC;
+  const [selected, setSelected] = useAtom(tableOrGantt);
+
+  return (
+    <Stack direction="row" spacing={2} justifyContent="flex-end" alignItems="center">
+      <WarningIcon fontSize="small" />
+      <Tooltip
+        title={
+          <span>
+            Projected dates do not take into account any recent changes to workorders.
+            {end ? (
+              <>
+                {" "}
+                The next simulation is expected <TimeAgo date={end} />.
+              </>
+            ) : undefined}
+          </span>
+        }
+      >
+        <Typography variant="caption">
+          {start ? (
+            <>
+              Projected Start and Filled were estimated <TimeAgo date={start} />
+            </>
+          ) : (
+            <>Projected Start and Filled are estimates</>
+          )}
+        </Typography>
+      </Tooltip>
+      <FormControl size="small">
+        <Select
+          variant="outlined"
+          value={selected}
+          onChange={(e) => setSelected(e.target.value as "table" | "gantt")}
+        >
+          <MenuItem value="table">Table</MenuItem>
+          <MenuItem value="gantt">Gantt</MenuItem>
+        </Select>
+      </FormControl>
+    </Stack>
+  );
+});
+
 const WorkorderHeader = React.memo(function WorkorderHeader(props: {
   readonly workorders: ReadonlyArray<IActiveWorkorder>;
+  readonly showSim: boolean;
   readonly order: "asc" | "desc";
   readonly setOrder: (o: "asc" | "desc") => void;
   readonly sortBy: SortColumn;
@@ -364,12 +446,22 @@ const WorkorderHeader = React.memo(function WorkorderHeader(props: {
         <SortColHeader align="right" col={SortColumn.CompletedQty} {...sort}>
           Completed Quantity
         </SortColHeader>
+        {props.showSim ? (
+          <>
+            <SortColHeader align="left" col={SortColumn.SimulatedStart} {...sort}>
+              Projected Start
+            </SortColHeader>
+            <SortColHeader align="left" col={SortColumn.SimulatedFilled} {...sort}>
+              Projected Filled
+            </SortColHeader>
+          </>
+        ) : undefined}
         <TableCell>
           <Tooltip title="Copy to Clipboard">
             <IconButton
               style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
               size="large"
-              onClick={() => copyWorkordersToClipboard(props.workorders)}
+              onClick={() => copyWorkordersToClipboard(props.workorders, props.showSim)}
             >
               <ImportExport />
             </IconButton>
@@ -441,33 +533,51 @@ function WorkorderCommentDialog() {
   );
 }
 
-export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage(): JSX.Element {
-  useSetTitle("Workorders");
+function WorkorderTable({ showSim }: { showSim: boolean }) {
   const [sortBy, setSortBy] = React.useState<SortColumn>(SortColumn.WorkorderId);
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
   const currentSt = useAtomValue(currentStatus);
-
   const sorted = React.useMemo(
     () => sortWorkorders(currentSt.workorders ?? [], sortBy, order),
     [currentSt.workorders, sortBy, order]
   );
+  return (
+    <Table>
+      <WorkorderHeader
+        workorders={currentSt?.workorders ?? []}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        showSim={showSim}
+        order={order}
+        setOrder={setOrder}
+      />
+      <TableBody>
+        {sorted.map((workorder) => (
+          <WorkorderRow
+            key={`${workorder.workorderId}-${workorder.part}`}
+            workorder={workorder}
+            showSim={showSim}
+          />
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage(): JSX.Element {
+  useSetTitle("Workorders");
+  const currentSt = useAtomValue(currentStatus);
+  const display = useAtomValue(tableOrGantt);
+
+  const showSim = React.useMemo(
+    () => currentSt.workorders?.some((w) => !!w.simulatedStartUTC || !!w.simulatedFilledUTC) ?? false,
+    [currentSt.workorders]
+  );
 
   return (
     <Box component="main" padding="24px">
-      <Table>
-        <WorkorderHeader
-          workorders={currentSt?.workorders ?? []}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-          order={order}
-          setOrder={setOrder}
-        />
-        <TableBody>
-          {sorted.map((workorder) => (
-            <WorkorderRow key={`${workorder.workorderId}-${workorder.part}`} workorder={workorder} />
-          ))}
-        </TableBody>
-      </Table>
+      {showSim ? <SimulatedWarning /> : undefined}
+      {display === "table" ? <WorkorderTable showSim={showSim} /> : <p>Gantt</p>}
       <WorkorderCommentDialog />
     </Box>
   );
