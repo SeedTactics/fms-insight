@@ -229,7 +229,7 @@ export class JobsClient {
         this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
     }
 
-    history(startUTC: Date, endUTC: Date): Promise<HistoricData> {
+    history(startUTC: Date, endUTC: Date, loadSimDays: LoadHistoricDataSimDayUsage | undefined): Promise<HistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/history?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
@@ -239,6 +239,10 @@ export class JobsClient {
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
             url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
+        if (loadSimDays === null)
+            throw new Error("The parameter 'loadSimDays' cannot be null.");
+        else if (loadSimDays !== undefined)
+            url_ += "loadSimDays=" + encodeURIComponent("" + loadSimDays) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -271,7 +275,7 @@ export class JobsClient {
         return Promise.resolve<HistoricData>(null as any);
     }
 
-    filteredHistory(startUTC: Date, endUTC: Date, alreadyKnownSchIds: string[]): Promise<HistoricData> {
+    filteredHistory(startUTC: Date, endUTC: Date, loadSimDays: LoadHistoricDataSimDayUsage | undefined, alreadyKnownSchIds: string[]): Promise<HistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/history?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
@@ -281,6 +285,10 @@ export class JobsClient {
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
             url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
+        if (loadSimDays === null)
+            throw new Error("The parameter 'loadSimDays' cannot be null.");
+        else if (loadSimDays !== undefined)
+            url_ += "loadSimDays=" + encodeURIComponent("" + loadSimDays) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(alreadyKnownSchIds);
@@ -317,12 +325,16 @@ export class JobsClient {
         return Promise.resolve<HistoricData>(null as any);
     }
 
-    recent(afterScheduleId: string | null): Promise<HistoricData> {
+    recent(afterScheduleId: string | null, loadSimDays: LoadHistoricDataSimDayUsage | undefined): Promise<HistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/recent?";
         if (afterScheduleId === undefined)
             throw new Error("The parameter 'afterScheduleId' must be defined.");
         else if(afterScheduleId !== null)
             url_ += "afterScheduleId=" + encodeURIComponent("" + afterScheduleId) + "&";
+        if (loadSimDays === null)
+            throw new Error("The parameter 'loadSimDays' cannot be null.");
+        else if (loadSimDays !== undefined)
+            url_ += "loadSimDays=" + encodeURIComponent("" + loadSimDays) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -4858,6 +4870,12 @@ export interface IHistoricData {
     jobs: { [key: string]: HistoricJob; };
     stationUse: SimulatedStationUtilization[];
     simDayUsage?: SimulatedDayUsage[] | undefined;
+}
+
+export enum LoadHistoricDataSimDayUsage {
+    DoNotLoadSimDayUsage = "DoNotLoadSimDayUsage",
+    LoadOnlyMostRecent = "LoadOnlyMostRecent",
+    LoadAll = "LoadAll",
 }
 
 export class PlannedSchedule implements IPlannedSchedule {

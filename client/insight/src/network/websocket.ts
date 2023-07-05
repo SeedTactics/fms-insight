@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ServerEvent } from "./api.js";
+import { LoadHistoricDataSimDayUsage, ServerEvent } from "./api.js";
 import { JobsBackend, LogBackend } from "./backend.js";
 import { fmsInformation } from "./server-settings.js";
 import { useCallback, useEffect, useRef } from "react";
@@ -58,7 +58,11 @@ function loadInitial(set: Setter): void {
   const thirtyDaysAgo = addDays(now, -30);
 
   const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
-  const jobsProm = JobsBackend.history(thirtyDaysAgo, now).then((j) => set(onLoadLast30Jobs, j));
+  const jobsProm = JobsBackend.history(
+    thirtyDaysAgo,
+    now,
+    LoadHistoricDataSimDayUsage.LoadOnlyMostRecent
+  ).then((j) => set(onLoadLast30Jobs, j));
   const logProm = LogBackend.get(thirtyDaysAgo, now).then((log) => set(onLoadLast30Log, log));
 
   Promise.all([curStProm, jobsProm, logProm])
@@ -69,9 +73,12 @@ function loadInitial(set: Setter): void {
 function loadMissed(lastCntr: number, schIds: HashSet<string> | undefined, set: Setter): void {
   const now = new Date();
   const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
-  const jobsProm = JobsBackend.filteredHistory(now, addDays(now, -30), schIds ? Array.from(schIds) : []).then(
-    (j) => set(onLoadLast30Jobs, j)
-  );
+  const jobsProm = JobsBackend.filteredHistory(
+    now,
+    addDays(now, -30),
+    LoadHistoricDataSimDayUsage.LoadOnlyMostRecent,
+    schIds ? Array.from(schIds) : []
+  ).then((j) => set(onLoadLast30Jobs, j));
   const logProm = LogBackend.recent(lastCntr, undefined).then((log) => set(onLoadLast30Log, log));
 
   Promise.all([curStProm, jobsProm, logProm])

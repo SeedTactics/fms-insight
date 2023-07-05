@@ -226,6 +226,19 @@
               "format": "date-time"
             },
             "x-position": 2
+          },
+          {
+            "name": "loadSimDays",
+            "in": "query",
+            "schema": {
+              "default": "DoNotLoadSimDayUsage",
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/LoadHistoricDataSimDayUsage"
+                }
+              ]
+            },
+            "x-position": 3
           }
         ],
         "responses": {
@@ -266,6 +279,19 @@
               "format": "date-time"
             },
             "x-position": 2
+          },
+          {
+            "name": "loadSimDays",
+            "in": "query",
+            "schema": {
+              "default": "DoNotLoadSimDayUsage",
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/LoadHistoricDataSimDayUsage"
+                }
+              ]
+            },
+            "x-position": 4
           }
         ],
         "requestBody": {
@@ -313,6 +339,19 @@
               "nullable": true
             },
             "x-position": 1
+          },
+          {
+            "name": "loadSimDays",
+            "in": "query",
+            "schema": {
+              "default": "DoNotLoadSimDayUsage",
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/LoadHistoricDataSimDayUsage"
+                }
+              ]
+            },
+            "x-position": 2
           }
         ],
         "responses": {
@@ -3764,6 +3803,20 @@
             }
           }
         }
+      },
+      "LoadHistoricDataSimDayUsage": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "DoNotLoadSimDayUsage",
+          "LoadOnlyMostRecent",
+          "LoadAll"
+        ],
+        "enum": [
+          "DoNotLoadSimDayUsage",
+          "LoadOnlyMostRecent",
+          "LoadAll"
+        ]
       },
       "PlannedSchedule": {
         "type": "object",

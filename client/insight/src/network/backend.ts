@@ -35,10 +35,15 @@ import * as api from "./api.js";
 import { User } from "oidc-client-ts";
 
 export interface JobAPI {
-  history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;
+  history(
+    startUTC: Date,
+    endUTC: Date,
+    loadSimDays: api.LoadHistoricDataSimDayUsage | undefined
+  ): Promise<Readonly<api.IHistoricData>>;
   filteredHistory(
     startUTC: Date,
     endUTC: Date,
+    loadSimDays: api.LoadHistoricDataSimDayUsage | undefined,
     alreadyKnownSchIds: string[]
   ): Promise<Readonly<api.IHistoricData>>;
   currentStatus(): Promise<Readonly<api.ICurrentStatus>>;
