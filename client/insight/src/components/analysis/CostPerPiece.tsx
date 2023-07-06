@@ -41,12 +41,9 @@ import { TextField } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
-import * as localForage from "localforage";
-import { CircularProgress } from "@mui/material";
 import {
   MachineCostPerYear,
   copyCostPerPieceToClipboard,
-  CostData,
   copyCostBreakdownToClipboard,
   compute_monthly_cost_percentages,
   convert_cost_percent_to_cost_per_piece,
@@ -59,49 +56,42 @@ import { Typography } from "@mui/material";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
 import { useSetTitle } from "../routes.js";
-import { useAtomValue } from "jotai";
+import { atom, useAtom, useAtomValue } from "jotai";
+import { atomWithStorage, atomFamily } from "jotai/utils";
 
-async function loadMachineCostPerYear(): Promise<MachineCostPerYear> {
-  return (await localForage.getItem("MachineCostPerYear")) ?? {};
-}
+const machineCostPerYear = atomWithStorage<MachineCostPerYear>("MachineCostPerYear", {});
+const automationCostPerYear = atomWithStorage<number | null>("AutomationCostPerYear", null);
+const last30LaborCost = atomWithStorage<number | null>("Last30LaborCost", null);
+const perMonthLaborCost = atomFamily((month: Date) =>
+  atomWithStorage<number | null>(
+    "PerMonthLabor-" + month.getFullYear().toString() + "-" + month.getMonth().toString(),
+    null
+  )
+);
 
-async function saveMachineCostPerYear(m: MachineCostPerYear): Promise<void> {
-  await localForage.setItem("MachineCostPerYear", m);
-}
+const computedCosts = atom((get) => {
+  const period = get(selectedAnalysisPeriod);
 
-async function loadAutomationCostPerYear(): Promise<number | null> {
-  return await localForage.getItem("AutomationCostPerYear");
-}
+  const machineCosts = get(machineCostPerYear);
+  const automationCosts = get(automationCostPerYear);
+  const laborCosts = get(period.type === "Last30" ? last30LaborCost : perMonthLaborCost(period.month));
+  const cycles = get(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const matIds = get(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
 
-async function saveAutomationCostPerYear(n: number | null): Promise<void> {
-  await localForage.setItem("AutomationCostPerYear", n);
-}
+  const thirtyDaysAgo = addDays(startOfToday(), -30);
+  const month = period.type === "Last30" ? null : period.month;
 
-async function loadLast30LaborCost(): Promise<number | null> {
-  return await localForage.getItem("Last30TotalLaborCost");
-}
+  const costPcts = compute_monthly_cost_percentages(
+    cycles.valuesToLazySeq(),
+    matIds.matsById,
+    month ? { month: month } : { thirtyDaysAgo }
+  );
+  return convert_cost_percent_to_cost_per_piece(costPcts, machineCosts, automationCosts, laborCosts ?? 0);
+});
 
-async function saveLast30LaborCost(c: number | null): Promise<void> {
-  await localForage.setItem("Last30TotalLaborCost", c);
-}
-
-async function loadPerMonthLabor(month: Date): Promise<number | null> {
-  const key = "PerMonthLabor-" + month.getFullYear().toString() + "-" + month.getMonth().toString();
-  return await localForage.getItem(key);
-}
-
-async function savePerMonthLabor(month: Date, cost: number | null): Promise<void> {
-  const key = "PerMonthLabor-" + month.getFullYear().toString() + "-" + month.getMonth().toString();
-  await localForage.setItem(key, cost);
-}
-
-interface AutomationCostInputProps {
-  readonly automationCostPerYear: number | null;
-  readonly setAutomationCostPerYear: (n: number | null) => void;
-}
-
-function AutomationCostInput(props: AutomationCostInputProps) {
+function AutomationCostInput() {
   const [cost, setCost] = React.useState<number | null>(null);
+  const [automationCost, saveAutomationCostPerYear] = useAtom(automationCostPerYear);
 
   return (
     <TextField
@@ -111,13 +101,12 @@ function AutomationCostInput(props: AutomationCostInputProps) {
       style={{ marginTop: "1.5em" }}
       inputProps={{ min: 0 }}
       variant="outlined"
-      value={cost === null ? props.automationCostPerYear ?? "" : isNaN(cost) ? "" : cost}
+      value={cost === null ? automationCost ?? "" : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
       onBlur={() => {
         if (cost != null) {
           const newCost = isNaN(cost) ? null : cost;
-          void saveAutomationCostPerYear(newCost);
-          props.setAutomationCostPerYear(newCost);
+          saveAutomationCostPerYear(newCost);
         }
         setCost(null);
       }}
@@ -125,34 +114,24 @@ function AutomationCostInput(props: AutomationCostInputProps) {
   );
 }
 
-interface LaborCostProps {
-  readonly month: Date | null;
-  readonly laborCost: number | null;
-  readonly setLaborCost: (n: number | null) => void;
-}
-
-function LaborCost(props: LaborCostProps) {
+function LaborCost() {
+  const period = useAtomValue(selectedAnalysisPeriod);
+  const month = period.type === "Last30" ? null : period.month;
   const [cost, setCost] = React.useState<number | null>(null);
+  const [laborCost, saveCost] = useAtom(month === null ? last30LaborCost : perMonthLaborCost(month));
 
   return (
     <TextField
       type="number"
-      label={
-        "Total labor cost for " + (props.month === null ? "last 30 days" : format(props.month, "MMMM yyyy"))
-      }
+      label={"Total labor cost for " + (month === null ? "last 30 days" : format(month, "MMMM yyyy"))}
       inputProps={{ min: 0 }}
       variant="outlined"
-      value={cost === null ? props.laborCost ?? "" : isNaN(cost) ? "" : cost}
+      value={cost === null ? laborCost ?? "" : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
       onBlur={() => {
         if (cost != null) {
           const newCost = isNaN(cost) ? null : cost;
-          if (props.month === null) {
-            void saveLast30LaborCost(newCost);
-          } else {
-            void savePerMonthLabor(props.month, newCost);
-          }
-          props.setLaborCost(newCost);
+          saveCost(newCost);
         }
         setCost(null);
       }}
@@ -162,12 +141,11 @@ function LaborCost(props: LaborCostProps) {
 
 interface StationCostInputProps {
   readonly machineQuantities: OrderedMap<string, number>;
-  readonly machineCostPerYear: MachineCostPerYear;
-  readonly setMachineCostPerYear: (m: MachineCostPerYear) => void;
 }
 
 function SingleStationCostInput(props: StationCostInputProps & { readonly machineGroup: string }) {
   const [cost, setCost] = React.useState<number | null>(null);
+  const [machineCost, saveCost] = useAtom(machineCostPerYear);
   return (
     <TextField
       type="number"
@@ -175,18 +153,17 @@ function SingleStationCostInput(props: StationCostInputProps & { readonly machin
       variant="outlined"
       label={"Cost for " + props.machineGroup + " per station per year"}
       style={{ marginTop: "1.5em" }}
-      value={cost === null ? props.machineCostPerYear[props.machineGroup] ?? "" : isNaN(cost) ? "" : cost}
+      value={cost === null ? machineCost[props.machineGroup] ?? "" : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
       onBlur={() => {
         if (cost != null) {
-          const newCost = { ...props.machineCostPerYear };
+          const newCost = { ...machineCost };
           if (isNaN(cost)) {
             delete newCost[props.machineGroup];
           } else {
             newCost[props.machineGroup] = cost;
           }
-          void saveMachineCostPerYear(newCost);
-          props.setMachineCostPerYear(newCost);
+          saveCost(newCost);
         }
         setCost(null);
       }}
@@ -194,11 +171,12 @@ function SingleStationCostInput(props: StationCostInputProps & { readonly machin
   );
 }
 
-function StationCostInputs(props: StationCostInputProps) {
+function StationCostInputs() {
+  const costs = useAtomValue(computedCosts);
   return (
     <>
-      {props.machineQuantities.keysToAscLazySeq().map((s, idx) => (
-        <SingleStationCostInput key={idx} {...props} machineGroup={s} />
+      {costs.machineQuantities.keysToAscLazySeq().map((s, idx) => (
+        <SingleStationCostInput key={idx} machineQuantities={costs.machineQuantities} machineGroup={s} />
       ))}
     </>
   );
@@ -310,18 +288,15 @@ export function CostBreakdownPage() {
   );
 }
 
-interface CostPerPieceOutputProps {
-  readonly costs: CostData;
-}
-
-function CostOutputCard(props: CostPerPieceOutputProps) {
+function CostOutputCard() {
+  const costs = useAtomValue(computedCosts);
   return (
-    <Table data-testid="part-cost-table">
+    <Table>
       <TableHead>
         <TableRow>
           <TableCell>Part</TableCell>
           <TableCell align="right">Completed Quantity</TableCell>
-          {props.costs.machineQuantities.keysToAscLazySeq().map((m) => (
+          {costs.machineQuantities.keysToAscLazySeq().map((m) => (
             <TableCell align="right" key={m}>
               {m} Cost
             </TableCell>
@@ -333,7 +308,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
             <Tooltip title="Copy to Clipboard">
               <IconButton
                 style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}
-                onClick={() => copyCostPerPieceToClipboard(props.costs)}
+                onClick={() => copyCostPerPieceToClipboard(costs)}
                 size="large"
               >
                 <ImportExport />
@@ -343,7 +318,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
         </TableRow>
       </TableHead>
       <TableBody>
-        {LazySeq.of(props.costs.parts)
+        {LazySeq.of(costs.parts)
           .sortBy((c) => c.part)
           .map((c, idx) => (
             <TableRow key={idx}>
@@ -365,7 +340,7 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
                 </Box>
               </TableCell>
               <TableCell align="right">{c.parts_completed}</TableCell>
-              {props.costs.machineQuantities.keysToAscLazySeq().map((m) => (
+              {costs.machineQuantities.keysToAscLazySeq().map((m) => (
                 <TableCell align="right" key={m}>
                   {decimalFormat.format(c.machine.get(m) ?? 0)}
                 </TableCell>
@@ -386,109 +361,16 @@ function CostOutputCard(props: CostPerPieceOutputProps) {
 
 export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
   useSetTitle("Cost Per Piece");
-  const [loading, setLoading] = React.useState(false);
-  const [machineCostPerYear, setMachineCostPerYear] = React.useState<MachineCostPerYear>({});
-  const [last30LaborCost, setLast30LaborCost] = React.useState<number | null>(null);
-  const [curMonthLaborCost, setCurMonthLaborCost] = React.useState<number | null | "LOADING">(null);
-  const [automationCostPerYear, setAutomationCostPerYear] = React.useState<number | null>(null);
-
-  const period = useAtomValue(selectedAnalysisPeriod);
-  const month = period.type === "Last30" ? null : period.month;
-  const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const matIds = useAtomValue(
-    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
-  );
-
-  const thirtyDaysAgo = addDays(startOfToday(), -30);
-
-  React.useEffect(() => {
-    void (async () => {
-      setLoading(true);
-      try {
-        await Promise.all([
-          loadMachineCostPerYear().then(setMachineCostPerYear),
-          loadLast30LaborCost().then(setLast30LaborCost),
-          loadAutomationCostPerYear().then(setAutomationCostPerYear),
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
-
-  React.useEffect(() => {
-    if (month) {
-      setCurMonthLaborCost("LOADING");
-      loadPerMonthLabor(month)
-        .then(setCurMonthLaborCost)
-        .catch(() => setCurMonthLaborCost(null));
-    }
-  }, [month]);
-
-  const computedCosts = React.useMemo(() => {
-    if (loading) {
-      return {
-        machineQuantities: OrderedMap.empty<string, number>(),
-        parts: [],
-        type: month ? { month } : { thirtyDaysAgo },
-      } satisfies CostData;
-    }
-    let totalLaborCost = 0;
-    if (month) {
-      totalLaborCost = curMonthLaborCost !== "LOADING" ? curMonthLaborCost ?? 0 : 0;
-    } else {
-      totalLaborCost = last30LaborCost ?? 0;
-    }
-    const costPcts = compute_monthly_cost_percentages(
-      cycles.valuesToLazySeq(),
-      matIds.matsById,
-      month ? { month: month } : { thirtyDaysAgo }
-    );
-    return convert_cost_percent_to_cost_per_piece(
-      costPcts,
-      machineCostPerYear,
-      automationCostPerYear,
-      totalLaborCost
-    );
-  }, [
-    machineCostPerYear,
-    automationCostPerYear,
-    cycles,
-    matIds,
-    month,
-    curMonthLaborCost,
-    last30LaborCost,
-    loading,
-  ]);
-
-  if (loading || curMonthLaborCost === "LOADING") {
-    return (
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        <CircularProgress />
-      </div>
-    );
-  }
 
   return (
     <Box component="main" paddingLeft="24px" paddingRight="24px" paddingTop="20px">
       <Stack direction="column" spacing={4}>
         <Stack direction="column" spacing={2}>
-          {month === null ? (
-            <LaborCost month={null} laborCost={last30LaborCost} setLaborCost={setLast30LaborCost} />
-          ) : (
-            <LaborCost month={month} laborCost={curMonthLaborCost} setLaborCost={setCurMonthLaborCost} />
-          )}
-          <AutomationCostInput
-            automationCostPerYear={automationCostPerYear}
-            setAutomationCostPerYear={setAutomationCostPerYear}
-          />
-          <StationCostInputs
-            machineQuantities={computedCosts.machineQuantities}
-            machineCostPerYear={machineCostPerYear}
-            setMachineCostPerYear={setMachineCostPerYear}
-          />
+          <LaborCost />
+          <AutomationCostInput />
+          <StationCostInputs />
         </Stack>
-        <CostOutputCard costs={computedCosts} />
+        <CostOutputCard />
       </Stack>
     </Box>
   );
