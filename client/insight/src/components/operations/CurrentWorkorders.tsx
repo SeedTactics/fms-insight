@@ -72,6 +72,7 @@ import { materialDialogOpen } from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import TimeAgo from "react-timeago";
+import { WorkorderGantt } from "./WorkorderGantt.js";
 
 const WorkorderTableRow = styled(TableRow)({
   "& > *": {
@@ -152,8 +153,10 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
       <div>
         <Table size="small">
           <TableHead>
-            <TableCell>Time</TableCell>
-            <TableCell>Comment</TableCell>
+            <TableRow>
+              <TableCell>Time</TableCell>
+              <TableCell>Comment</TableCell>
+            </TableRow>
           </TableHead>
           <TableBody>
             {(workorder.comments ?? []).map((c, idx) => (
@@ -577,7 +580,7 @@ export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage():
   return (
     <Box component="main" padding="24px">
       {showSim ? <SimulatedWarning /> : undefined}
-      {display === "table" ? <WorkorderTable showSim={showSim} /> : <p>Gantt</p>}
+      {display === "table" ? <WorkorderTable showSim={showSim} /> : <WorkorderGantt />}
       <WorkorderCommentDialog />
     </Box>
   );
