@@ -50,6 +50,7 @@ import {
   Opacity as OpacityIcon,
   Memory as MemoryIcon,
   CalendarViewMonth,
+  Paid as SalesIcon,
 } from "@mui/icons-material";
 
 import { RouteState, RouteLocation } from "./routes.js";
@@ -133,6 +134,12 @@ export const defaultChooseModes: ReadonlyArray<ChooseModeItem> = [
     route: { route: RouteLocation.Quality_Dashboard },
     icon: <StarIcon />,
     label: "Quality Analysis",
+  },
+  {
+    type: "Link",
+    route: { route: RouteLocation.Sales_Dashboard },
+    icon: <SalesIcon />,
+    label: "Sales",
   },
   { type: "Subheader", caption: "Monthly Review" },
   {

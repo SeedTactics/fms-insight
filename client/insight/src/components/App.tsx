@@ -288,6 +288,15 @@ function EngineeringTabs() {
   );
 }
 
+function SalesTabs() {
+  return (
+    <NavTabs>
+      <Tab label="Workorders" value={routes.RouteLocation.Sales_Dashboard} />
+      <Tab label="Projections" value={routes.RouteLocation.Sales_ProjectedUsage} />
+    </NavTabs>
+  );
+}
+
 export interface AppProps {
   readonly renderCustomPage?: (custom: ReadonlyArray<string>) => {
     readonly nav: React.ComponentType | undefined;
@@ -554,6 +563,15 @@ const App = React.memo(function App(props: AppProps) {
       case routes.RouteLocation.Tools_Programs:
         page = <ProgramReportPage />;
         nav1 = ToolsTabs;
+        break;
+
+      case routes.RouteLocation.Sales_Dashboard:
+        page = <CurrentWorkordersPage />;
+        nav1 = SalesTabs;
+        break;
+      case routes.RouteLocation.Sales_ProjectedUsage:
+        page = <p>Usage</p>;
+        nav1 = SalesTabs;
         break;
 
       case routes.RouteLocation.VerboseLogging:
