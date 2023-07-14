@@ -48,7 +48,7 @@ import {
   compute_monthly_cost_percentages,
   convert_cost_percent_to_cost_per_piece,
 } from "../../data/cost-per-piece.js";
-import { format, startOfToday, addDays } from "date-fns";
+import { startOfToday, addDays } from "date-fns";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { PartIdenticon } from "../station-monitor/Material.js";
@@ -123,7 +123,12 @@ function LaborCost() {
   return (
     <TextField
       type="number"
-      label={"Total labor cost for " + (month === null ? "last 30 days" : format(month, "MMMM yyyy"))}
+      label={
+        "Total labor cost for " +
+        (month === null
+          ? "last 30 days"
+          : month.toLocaleDateString(undefined, { month: "long", year: "numeric" }))
+      }
       inputProps={{ min: 0 }}
       variant="outlined"
       value={cost === null ? laborCost ?? "" : isNaN(cost) ? "" : cost}

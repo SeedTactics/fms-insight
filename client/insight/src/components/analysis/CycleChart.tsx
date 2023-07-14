@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { format } from "date-fns";
 import {
   Dialog,
   DialogContent,
@@ -661,7 +660,16 @@ const CycleChartTooltip = React.memo(function CycleChartTooltip({
   return (
     <ChartTooltip left={tooltip.left} top={tooltip.top}>
       <Stack direction="column" spacing={0.6}>
-        <div>Time: {format(tooltip.pt.x, "MMM d, yyyy, h:mm aaaa")}</div>
+        <div>
+          Time:{" "}
+          {tooltip.pt.x.toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          })}
+        </div>
         <div>
           {seriesLabel}: {tooltip.seriesName}
         </div>
