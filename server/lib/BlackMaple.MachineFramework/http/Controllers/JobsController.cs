@@ -62,15 +62,11 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("history")]
-    public HistoricData History(
-      [FromQuery] DateTime startUTC,
-      [FromQuery] DateTime endUTC,
-      [FromQuery] LoadHistoricDataSimDayUsage loadSimDays = LoadHistoricDataSimDayUsage.DoNotLoadSimDayUsage
-    )
+    public HistoricData History([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.LoadJobHistory(startUTC, endUTC, loadSimDays: loadSimDays);
+        return db.LoadJobHistory(startUTC, endUTC);
       }
     }
 
@@ -78,8 +74,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public HistoricData FilteredHistory(
       [FromQuery] DateTime startUTC,
       [FromQuery] DateTime endUTC,
-      [FromBody] List<string> alreadyKnownSchIds,
-      [FromQuery] LoadHistoricDataSimDayUsage loadSimDays = LoadHistoricDataSimDayUsage.DoNotLoadSimDayUsage
+      [FromBody] List<string> alreadyKnownSchIds
     )
     {
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
@@ -87,23 +82,20 @@ namespace BlackMaple.MachineFramework.Controllers
         return db.LoadJobHistory(
           startUTC,
           endUTC,
-          loadSimDays: loadSimDays,
           alreadyKnownSchIds: new HashSet<string>(alreadyKnownSchIds ?? new List<string>())
         );
       }
     }
 
-    [HttpGet("recent")]
-    public HistoricData Recent(
-      [FromQuery] string afterScheduleId,
-      [FromQuery] LoadHistoricDataSimDayUsage loadSimDays = LoadHistoricDataSimDayUsage.DoNotLoadSimDayUsage
+    [HttpPost("recent")]
+    public RecentHistoricData Recent(
+      [FromQuery] DateTime startUTC,
+      [FromBody] List<string> alreadyKnownSchIds
     )
     {
-      if (string.IsNullOrEmpty(afterScheduleId))
-        throw new BadRequestException("After schedule ID must be non-empty");
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.LoadJobsAfterScheduleId(afterScheduleId, loadSimDays: loadSimDays);
+        return db.LoadRecentJobHistory(startUTC, alreadyKnownSchIds);
       }
     }
 

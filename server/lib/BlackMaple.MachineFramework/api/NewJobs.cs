@@ -89,9 +89,6 @@ namespace BlackMaple.MachineFramework
   public record SimulatedDayUsage
   {
     [DataMember(IsRequired = true)]
-    public required string ScheduleId { get; init; }
-
-    [DataMember(IsRequired = true)]
     public required DateOnly Day { get; init; }
 
     [DataMember(IsRequired = true)]
@@ -115,6 +112,9 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedDayUsage>? SimDayUsage { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? SimDayUsageWarning { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableDictionary<string, int>? ExtraParts { get; init; }

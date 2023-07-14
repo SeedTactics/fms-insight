@@ -239,7 +239,7 @@ export function WorkorderGantt() {
         <YAxis workorders={sortedWorkorders} />
       </Box>
       <Box flexGrow={1} width={0} position="relative">
-        <div style={{ overflowX: "auto" }}>
+        <div style={{ overflowX: "visible" }}>
           <svg
             height={yScale.range()[1] + marginTop + marginBottom}
             width={xScale.range()[1] + marginRight + marginLeft}

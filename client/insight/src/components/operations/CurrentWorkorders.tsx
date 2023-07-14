@@ -71,8 +71,8 @@ import { durationToMinutes } from "../../util/parseISODuration.js";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
-import TimeAgo from "react-timeago";
 import { WorkorderGantt } from "./WorkorderGantt.js";
+import { latestSimDayUsage } from "../../cell-status/sim-day-usage.js";
 
 const WorkorderTableRow = styled(TableRow)({
   "& > *": {
@@ -366,36 +366,25 @@ function SortColHeader(props: {
 const tableOrGantt = atom<"table" | "gantt">("table");
 
 const SimulatedWarning = React.memo(function SimulatedWarning() {
-  const currentSt = useAtomValue(currentStatus);
-  const start = LazySeq.ofObject(currentSt.jobs ?? {}).maxBy(([, j]) => j.routeStartUTC)?.[1]?.routeStartUTC;
-  const end = LazySeq.ofObject(currentSt.jobs ?? {}).maxBy(([, j]) => j.routeEndUTC)?.[1]?.routeEndUTC;
+  const warning = useAtomValue(latestSimDayUsage)?.warning;
   const [selected, setSelected] = useAtom(tableOrGantt);
 
   return (
     <Stack direction="row" spacing={2} justifyContent="flex-end" alignItems="center">
-      <WarningIcon fontSize="small" />
       <Tooltip
         title={
           <span>
-            Projected dates do not take into account any recent changes to workorders.
-            {end ? (
-              <>
-                {" "}
-                The next simulation is expected <TimeAgo date={end} />.
-              </>
-            ) : undefined}
+            Projected dates are estimates.
+            {warning && warning !== "" ? " " + warning : undefined}
           </span>
         }
       >
-        <Typography variant="caption">
-          {start ? (
-            <>
-              Projected Start and Filled were estimated <TimeAgo date={start} />
-            </>
-          ) : (
-            <>Projected Start and Filled are estimates</>
-          )}
-        </Typography>
+        <Stack direction="row" spacing={2} alignItems="center" flexGrow={1}>
+          <WarningIcon fontSize="small" />
+          <Typography variant="caption">
+            Projected dates do not take into account any recent changes to workorders.
+          </Typography>
+        </Stack>
       </Tooltip>
       <FormControl size="small">
         <Select

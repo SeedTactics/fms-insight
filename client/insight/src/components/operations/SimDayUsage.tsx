@@ -39,6 +39,7 @@ import { latestSimDayUsage } from "../../cell-status/sim-day-usage";
 import { ISimulatedDayUsage } from "../../network/api";
 import { useSetTitle } from "../routes";
 import { scaleLinear } from "@visx/scale";
+import { Warning as WarningIcon } from "@mui/icons-material";
 
 const color1 = green[50];
 const color2 = green[600];
@@ -110,6 +111,19 @@ function ShowMonth({
   );
 }
 
+function Warning() {
+  const warning = useAtomValue(latestSimDayUsage)?.warning;
+  return (
+    <Stack direction="row" spacing={2} alignItems="center">
+      <WarningIcon fontSize="small" />
+      <Typography variant="caption">
+        Projections are estimates and do not take into account any recent changes to workorders.
+        {warning ? ` ${warning}` : ""}
+      </Typography>
+    </Stack>
+  );
+}
+
 function MonthHeatmap({ group, month }: { group: string; month: Date }) {
   const usage = useAtomValue(groupedSimDayUsage);
 
@@ -149,6 +163,7 @@ export function SimDayUsagePage() {
   return (
     <Box component="main" padding="24px">
       <Stack direction="column" spacing={5}>
+        <Warning />
         {groups.toAscLazySeq().map((g) => (
           <div key={g}>
             <Typography variant="h4">{g}</Typography>

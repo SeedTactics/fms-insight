@@ -35,7 +35,6 @@ import { addMonths, startOfMonth } from "date-fns";
 import { onLoadSpecificMonthJobs, onLoadSpecificMonthLog } from "../cell-status/loading.js";
 import { JobsBackend, LogBackend } from "./backend.js";
 import { Atom, Setter, atom, useSetAtom } from "jotai";
-import { LoadHistoricDataSimDayUsage } from "./api.js";
 
 const selectType = atom<"Last30" | "SpecificMonth">("Last30");
 
@@ -75,11 +74,7 @@ function loadMonth(month: Date, set: Setter): void {
 
   const startOfNextMonth = addMonths(month, 1);
 
-  const jobsProm = JobsBackend.history(
-    month,
-    startOfNextMonth,
-    LoadHistoricDataSimDayUsage.DoNotLoadSimDayUsage
-  ).then((j) => set(onLoadSpecificMonthJobs, j));
+  const jobsProm = JobsBackend.history(month, startOfNextMonth).then((j) => set(onLoadSpecificMonthJobs, j));
   const logProm = LogBackend.get(month, startOfNextMonth).then((log) => set(onLoadSpecificMonthLog, log));
 
   Promise.all([jobsProm, logProm])

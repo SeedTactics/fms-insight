@@ -248,7 +248,11 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE sim_day_usage(SimId TEXT NOT NULL, Day INTEGER NOT NULL, Station TEXT NOT NULL, Usage INTEGER NOT NULL, PRIMARY KEY(SimId, Day, Station))";
+          "CREATE TABLE sim_day_usage(SimId TEXT NOT NULL, Day INTEGER NOT NULL, Station TEXT NOT NULL, Usage NUMERIC NOT NULL, PRIMARY KEY(SimId, Day, Station))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE sim_day_usage_warning(SimId TEXT NOT NULL, Warning TEXT, PRIMARY KEY(SimId))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -1049,7 +1053,11 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE sim_day_usage(SimId TEXT NOT NULL, Day INTEGER NOT NULL, Station TEXT NOT NULL, Usage INTEGER NOT NULL, PRIMARY KEY(SimId, Day, Station))";
+          "CREATE TABLE sim_day_usage(SimId TEXT NOT NULL, Day INTEGER NOT NULL, Station TEXT NOT NULL, Usage NUMERIC NOT NULL, PRIMARY KEY(SimId, Day, Station))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE sim_day_usage_warning(SimId TEXT NOT NULL, Warning TEXT, PRIMARY KEY(SimId))";
         cmd.ExecuteNonQuery();
       }
     }

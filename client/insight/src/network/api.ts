@@ -229,7 +229,7 @@ export class JobsClient {
         this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
     }
 
-    history(startUTC: Date, endUTC: Date, loadSimDays: LoadHistoricDataSimDayUsage | undefined): Promise<HistoricData> {
+    history(startUTC: Date, endUTC: Date): Promise<HistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/history?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
@@ -239,10 +239,6 @@ export class JobsClient {
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
             url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
-        if (loadSimDays === null)
-            throw new Error("The parameter 'loadSimDays' cannot be null.");
-        else if (loadSimDays !== undefined)
-            url_ += "loadSimDays=" + encodeURIComponent("" + loadSimDays) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -275,7 +271,7 @@ export class JobsClient {
         return Promise.resolve<HistoricData>(null as any);
     }
 
-    filteredHistory(startUTC: Date, endUTC: Date, loadSimDays: LoadHistoricDataSimDayUsage | undefined, alreadyKnownSchIds: string[]): Promise<HistoricData> {
+    filteredHistory(startUTC: Date, endUTC: Date, alreadyKnownSchIds: string[]): Promise<HistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/history?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
@@ -285,10 +281,6 @@ export class JobsClient {
             throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
         else
             url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
-        if (loadSimDays === null)
-            throw new Error("The parameter 'loadSimDays' cannot be null.");
-        else if (loadSimDays !== undefined)
-            url_ += "loadSimDays=" + encodeURIComponent("" + loadSimDays) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(alreadyKnownSchIds);
@@ -325,21 +317,21 @@ export class JobsClient {
         return Promise.resolve<HistoricData>(null as any);
     }
 
-    recent(afterScheduleId: string | null, loadSimDays: LoadHistoricDataSimDayUsage | undefined): Promise<HistoricData> {
+    recent(startUTC: Date, alreadyKnownSchIds: string[]): Promise<RecentHistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/recent?";
-        if (afterScheduleId === undefined)
-            throw new Error("The parameter 'afterScheduleId' must be defined.");
-        else if(afterScheduleId !== null)
-            url_ += "afterScheduleId=" + encodeURIComponent("" + afterScheduleId) + "&";
-        if (loadSimDays === null)
-            throw new Error("The parameter 'loadSimDays' cannot be null.");
-        else if (loadSimDays !== undefined)
-            url_ += "loadSimDays=" + encodeURIComponent("" + loadSimDays) + "&";
+        if (startUTC === undefined || startUTC === null)
+            throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+        else
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
         url_ = url_.replace(/[?&]$/, "");
 
+        const content_ = JSON.stringify(alreadyKnownSchIds);
+
         let options_: RequestInit = {
-            method: "GET",
+            body: content_,
+            method: "POST",
             headers: {
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             }
         };
@@ -349,14 +341,14 @@ export class JobsClient {
         });
     }
 
-    protected processRecent(response: Response): Promise<HistoricData> {
+    protected processRecent(response: Response): Promise<RecentHistoricData> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = HistoricData.fromJS(resultData200);
+            result200 = RecentHistoricData.fromJS(resultData200);
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -364,7 +356,7 @@ export class JobsClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<HistoricData>(null as any);
+        return Promise.resolve<RecentHistoricData>(null as any);
     }
 
     latestSchedule(): Promise<PlannedSchedule> {
@@ -2668,6 +2660,7 @@ export class NewJobs implements INewJobs {
     jobs!: Job[];
     stationUse?: SimulatedStationUtilization[] | undefined;
     simDayUsage?: SimulatedDayUsage[] | undefined;
+    simDayUsageWarning?: string | undefined;
     extraParts?: { [key: string]: number; } | undefined;
     currentUnfilledWorkorders?: Workorder[] | undefined;
     programs?: NewProgramContent[] | undefined;
@@ -2703,6 +2696,7 @@ export class NewJobs implements INewJobs {
                 for (let item of _data["SimDayUsage"])
                     this.simDayUsage!.push(SimulatedDayUsage.fromJS(item));
             }
+            this.simDayUsageWarning = _data["SimDayUsageWarning"];
             if (_data["ExtraParts"]) {
                 this.extraParts = {} as any;
                 for (let key in _data["ExtraParts"]) {
@@ -2749,6 +2743,7 @@ export class NewJobs implements INewJobs {
             for (let item of this.simDayUsage)
                 data["SimDayUsage"].push(item.toJSON());
         }
+        data["SimDayUsageWarning"] = this.simDayUsageWarning;
         if (this.extraParts) {
             data["ExtraParts"] = {};
             for (let key in this.extraParts) {
@@ -2776,6 +2771,7 @@ export interface INewJobs {
     jobs: Job[];
     stationUse?: SimulatedStationUtilization[] | undefined;
     simDayUsage?: SimulatedDayUsage[] | undefined;
+    simDayUsageWarning?: string | undefined;
     extraParts?: { [key: string]: number; } | undefined;
     currentUnfilledWorkorders?: Workorder[] | undefined;
     programs?: NewProgramContent[] | undefined;
@@ -3440,7 +3436,6 @@ export interface ISimulatedStationPart {
 }
 
 export class SimulatedDayUsage implements ISimulatedDayUsage {
-    scheduleId!: string;
     day!: Date;
     machineGroup!: string;
     usagePct!: number;
@@ -3456,7 +3451,6 @@ export class SimulatedDayUsage implements ISimulatedDayUsage {
 
     init(_data?: any) {
         if (_data) {
-            this.scheduleId = _data["ScheduleId"];
             this.day = _data["Day"] ? new Date(_data["Day"].toString()) : <any>undefined;
             this.machineGroup = _data["MachineGroup"];
             this.usagePct = _data["UsagePct"];
@@ -3472,7 +3466,6 @@ export class SimulatedDayUsage implements ISimulatedDayUsage {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["ScheduleId"] = this.scheduleId;
         data["Day"] = this.day ? formatDate(this.day) : <any>undefined;
         data["MachineGroup"] = this.machineGroup;
         data["UsagePct"] = this.usagePct;
@@ -3481,7 +3474,6 @@ export class SimulatedDayUsage implements ISimulatedDayUsage {
 }
 
 export interface ISimulatedDayUsage {
-    scheduleId: string;
     day: Date;
     machineGroup: string;
     usagePct: number;
@@ -4799,7 +4791,6 @@ export interface IMaterialDetails {
 export class HistoricData implements IHistoricData {
     jobs!: { [key: string]: HistoricJob; };
     stationUse!: SimulatedStationUtilization[];
-    simDayUsage?: SimulatedDayUsage[] | undefined;
 
     constructor(data?: IHistoricData) {
         if (data) {
@@ -4828,11 +4819,6 @@ export class HistoricData implements IHistoricData {
                 for (let item of _data["StationUse"])
                     this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
             }
-            if (Array.isArray(_data["SimDayUsage"])) {
-                this.simDayUsage = [] as any;
-                for (let item of _data["SimDayUsage"])
-                    this.simDayUsage!.push(SimulatedDayUsage.fromJS(item));
-            }
         }
     }
 
@@ -4857,11 +4843,6 @@ export class HistoricData implements IHistoricData {
             for (let item of this.stationUse)
                 data["StationUse"].push(item.toJSON());
         }
-        if (Array.isArray(this.simDayUsage)) {
-            data["SimDayUsage"] = [];
-            for (let item of this.simDayUsage)
-                data["SimDayUsage"].push(item.toJSON());
-        }
         return data;
     }
 }
@@ -4869,13 +4850,55 @@ export class HistoricData implements IHistoricData {
 export interface IHistoricData {
     jobs: { [key: string]: HistoricJob; };
     stationUse: SimulatedStationUtilization[];
-    simDayUsage?: SimulatedDayUsage[] | undefined;
 }
 
-export enum LoadHistoricDataSimDayUsage {
-    DoNotLoadSimDayUsage = "DoNotLoadSimDayUsage",
-    LoadOnlyMostRecent = "LoadOnlyMostRecent",
-    LoadAll = "LoadAll",
+export class RecentHistoricData extends HistoricData implements IRecentHistoricData {
+    mostRecentSimulationId?: string | undefined;
+    mostRecentSimDayUsage?: SimulatedDayUsage[] | undefined;
+    mostRecentSimDayUsageWarning?: string | undefined;
+
+    constructor(data?: IRecentHistoricData) {
+        super(data);
+    }
+
+    init(_data?: any) {
+        super.init(_data);
+        if (_data) {
+            this.mostRecentSimulationId = _data["MostRecentSimulationId"];
+            if (Array.isArray(_data["MostRecentSimDayUsage"])) {
+                this.mostRecentSimDayUsage = [] as any;
+                for (let item of _data["MostRecentSimDayUsage"])
+                    this.mostRecentSimDayUsage!.push(SimulatedDayUsage.fromJS(item));
+            }
+            this.mostRecentSimDayUsageWarning = _data["MostRecentSimDayUsageWarning"];
+        }
+    }
+
+    static fromJS(data: any): RecentHistoricData {
+        data = typeof data === 'object' ? data : {};
+        let result = new RecentHistoricData();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["MostRecentSimulationId"] = this.mostRecentSimulationId;
+        if (Array.isArray(this.mostRecentSimDayUsage)) {
+            data["MostRecentSimDayUsage"] = [];
+            for (let item of this.mostRecentSimDayUsage)
+                data["MostRecentSimDayUsage"].push(item.toJSON());
+        }
+        data["MostRecentSimDayUsageWarning"] = this.mostRecentSimDayUsageWarning;
+        super.toJSON(data);
+        return data;
+    }
+}
+
+export interface IRecentHistoricData extends IHistoricData {
+    mostRecentSimulationId?: string | undefined;
+    mostRecentSimDayUsage?: SimulatedDayUsage[] | undefined;
+    mostRecentSimDayUsageWarning?: string | undefined;
 }
 
 export class PlannedSchedule implements IPlannedSchedule {

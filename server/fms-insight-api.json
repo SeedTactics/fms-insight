@@ -226,19 +226,6 @@
               "format": "date-time"
             },
             "x-position": 2
-          },
-          {
-            "name": "loadSimDays",
-            "in": "query",
-            "schema": {
-              "default": "DoNotLoadSimDayUsage",
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/LoadHistoricDataSimDayUsage"
-                }
-              ]
-            },
-            "x-position": 3
           }
         ],
         "responses": {
@@ -279,19 +266,6 @@
               "format": "date-time"
             },
             "x-position": 2
-          },
-          {
-            "name": "loadSimDays",
-            "in": "query",
-            "schema": {
-              "default": "DoNotLoadSimDayUsage",
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/LoadHistoricDataSimDayUsage"
-                }
-              ]
-            },
-            "x-position": 4
           }
         ],
         "requestBody": {
@@ -324,43 +298,45 @@
       }
     },
     "/api/v1/jobs/recent": {
-      "get": {
+      "post": {
         "tags": [
           "jobs"
         ],
         "operationId": "jobs_Recent",
         "parameters": [
           {
-            "name": "afterScheduleId",
+            "name": "startUTC",
             "in": "query",
             "required": true,
             "schema": {
               "type": "string",
-              "nullable": true
+              "format": "date-time"
             },
             "x-position": 1
-          },
-          {
-            "name": "loadSimDays",
-            "in": "query",
-            "schema": {
-              "default": "DoNotLoadSimDayUsage",
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/LoadHistoricDataSimDayUsage"
-                }
-              ]
-            },
-            "x-position": 2
           }
         ],
+        "requestBody": {
+          "x-name": "alreadyKnownSchIds",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HistoricData"
+                  "$ref": "#/components/schemas/RecentHistoricData"
                 }
               }
             }
@@ -2532,6 +2508,10 @@
               "$ref": "#/components/schemas/SimulatedDayUsage"
             }
           },
+          "SimDayUsageWarning": {
+            "type": "string",
+            "nullable": true
+          },
           "ExtraParts": {
             "type": "object",
             "nullable": true,
@@ -2960,15 +2940,11 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "ScheduleId",
           "Day",
           "MachineGroup",
           "UsagePct"
         ],
         "properties": {
-          "ScheduleId": {
-            "type": "string"
-          },
           "Day": {
             "type": "string",
             "format": "date"
@@ -3794,28 +3770,35 @@
             "items": {
               "$ref": "#/components/schemas/SimulatedStationUtilization"
             }
-          },
-          "SimDayUsage": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/SimulatedDayUsage"
-            }
           }
         }
       },
-      "LoadHistoricDataSimDayUsage": {
-        "type": "string",
-        "description": "",
-        "x-enumNames": [
-          "DoNotLoadSimDayUsage",
-          "LoadOnlyMostRecent",
-          "LoadAll"
-        ],
-        "enum": [
-          "DoNotLoadSimDayUsage",
-          "LoadOnlyMostRecent",
-          "LoadAll"
+      "RecentHistoricData": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/HistoricData"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "MostRecentSimulationId": {
+                "type": "string",
+                "nullable": true
+              },
+              "MostRecentSimDayUsage": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "$ref": "#/components/schemas/SimulatedDayUsage"
+                }
+              },
+              "MostRecentSimDayUsageWarning": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
         ]
       },
       "PlannedSchedule": {

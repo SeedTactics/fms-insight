@@ -31,7 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ICurrentStatus, IHistoricData, ILogEntry, IServerEvent } from "../network/api.js";
+import {
+  ICurrentStatus,
+  IHistoricData,
+  ILogEntry,
+  IRecentHistoricData,
+  IServerEvent,
+} from "../network/api.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
 import * as simProd from "./sim-production.js";
@@ -80,7 +86,7 @@ export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
   }
 });
 
-export const onLoadLast30Jobs = atom(null, (get, set, historicData: Readonly<IHistoricData>) => {
+export const onLoadLast30Jobs = atom(null, (get, set, historicData: Readonly<IRecentHistoricData>) => {
   const filtered = schJobs.filterExistingJobs(get(schJobs.last30SchIds), historicData);
   set(simUse.setLast30SimStatUse, filtered);
   set(simProd.setLast30JobProduction, filtered);

@@ -32,34 +32,50 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { Atom, Getter, Setter, atom } from "jotai";
-import { IHistoricData, ISimulatedDayUsage } from "../network/api";
+import { IRecentHistoricData, ISimulatedDayUsage } from "../network/api";
 import { ServerEventAndTime } from "./loading";
 
 export type LatestSimDayUsage = {
   readonly simId: string;
   readonly usage: ReadonlyArray<Readonly<ISimulatedDayUsage>>;
+  readonly warning: string | null;
 };
 
 const latestUsageRW = atom<LatestSimDayUsage | null>(null);
 export const latestSimDayUsage: Atom<LatestSimDayUsage | null> = latestUsageRW;
 
-function update(get: Getter, set: Setter, usage: ReadonlyArray<Readonly<ISimulatedDayUsage>>) {
-  const simId = usage[0].scheduleId;
+function update(
+  get: Getter,
+  set: Setter,
+  schId: string,
+  usage: ReadonlyArray<Readonly<ISimulatedDayUsage>>,
+  warning: string | undefined
+) {
   const old = get(latestSimDayUsage);
-  if (old === null || old.simId < simId) {
-    set(latestUsageRW, { simId, usage });
+  if (old === null || old.simId < schId) {
+    set(latestUsageRW, { simId: schId, usage, warning: warning ?? null });
   }
 }
 
-export const setLatestSimDayUsage = atom(null, (get, set, history: Readonly<IHistoricData>) => {
-  if (!history.simDayUsage || history.simDayUsage.length === 0) {
+export const setLatestSimDayUsage = atom(null, (get, set, history: Readonly<IRecentHistoricData>) => {
+  if (
+    !history.mostRecentSimulationId ||
+    !history.mostRecentSimDayUsage ||
+    history.mostRecentSimDayUsage.length === 0
+  ) {
     return;
   }
-  update(get, set, history.simDayUsage);
+  update(
+    get,
+    set,
+    history.mostRecentSimulationId,
+    history.mostRecentSimDayUsage,
+    history.mostRecentSimDayUsageWarning
+  );
 });
 
 export const updateLatestSimDayUsage = atom(null, (get, set, { evt }: ServerEventAndTime) => {
   if (evt.newJobs && evt.newJobs.simDayUsage && evt.newJobs.simDayUsage.length > 0) {
-    update(get, set, evt.newJobs.simDayUsage);
+    update(get, set, evt.newJobs.scheduleId, evt.newJobs.simDayUsage, evt.newJobs.simDayUsageWarning);
   }
 });
