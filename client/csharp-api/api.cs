@@ -598,14 +598,14 @@ namespace BlackMaple.FMSInsight.API
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<HistoricData> HistoryAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, LoadHistoricDataSimDayUsage? loadSimDays)
+        public virtual System.Threading.Tasks.Task<HistoricData> HistoryAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC)
         {
-            return HistoryAsync(startUTC, endUTC, loadSimDays, System.Threading.CancellationToken.None);
+            return HistoryAsync(startUTC, endUTC, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<HistoricData> HistoryAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, LoadHistoricDataSimDayUsage? loadSimDays, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<HistoricData> HistoryAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, System.Threading.CancellationToken cancellationToken)
         {
             if (startUTC == null)
                 throw new System.ArgumentNullException("startUTC");
@@ -617,10 +617,6 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/history?");
             urlBuilder_.Append(System.Uri.EscapeDataString("startUTC") + "=").Append(System.Uri.EscapeDataString(startUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append(System.Uri.EscapeDataString("endUTC") + "=").Append(System.Uri.EscapeDataString(endUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            if (loadSimDays != null)
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("loadSimDays") + "=").Append(System.Uri.EscapeDataString(ConvertToString(loadSimDays, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
             urlBuilder_.Length--;
 
             var client_ = _httpClient;
@@ -683,14 +679,14 @@ namespace BlackMaple.FMSInsight.API
         }
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<HistoricData> FilteredHistoryAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, LoadHistoricDataSimDayUsage? loadSimDays, System.Collections.Generic.IEnumerable<string> alreadyKnownSchIds)
+        public virtual System.Threading.Tasks.Task<HistoricData> FilteredHistoryAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, System.Collections.Generic.IEnumerable<string> alreadyKnownSchIds)
         {
-            return FilteredHistoryAsync(startUTC, endUTC, loadSimDays, alreadyKnownSchIds, System.Threading.CancellationToken.None);
+            return FilteredHistoryAsync(startUTC, endUTC, alreadyKnownSchIds, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<HistoricData> FilteredHistoryAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, LoadHistoricDataSimDayUsage? loadSimDays, System.Collections.Generic.IEnumerable<string> alreadyKnownSchIds, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<HistoricData> FilteredHistoryAsync(System.DateTimeOffset startUTC, System.DateTimeOffset endUTC, System.Collections.Generic.IEnumerable<string> alreadyKnownSchIds, System.Threading.CancellationToken cancellationToken)
         {
             if (startUTC == null)
                 throw new System.ArgumentNullException("startUTC");
@@ -705,10 +701,6 @@ namespace BlackMaple.FMSInsight.API
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/history?");
             urlBuilder_.Append(System.Uri.EscapeDataString("startUTC") + "=").Append(System.Uri.EscapeDataString(startUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Append(System.Uri.EscapeDataString("endUTC") + "=").Append(System.Uri.EscapeDataString(endUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            if (loadSimDays != null)
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("loadSimDays") + "=").Append(System.Uri.EscapeDataString(ConvertToString(loadSimDays, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
             urlBuilder_.Length--;
 
             var client_ = _httpClient;
@@ -775,22 +767,24 @@ namespace BlackMaple.FMSInsight.API
         }
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<HistoricData> RecentAsync(string afterScheduleId, LoadHistoricDataSimDayUsage? loadSimDays)
+        public virtual System.Threading.Tasks.Task<RecentHistoricData> RecentAsync(System.DateTimeOffset startUTC, System.Collections.Generic.IEnumerable<string> alreadyKnownSchIds)
         {
-            return RecentAsync(afterScheduleId, loadSimDays, System.Threading.CancellationToken.None);
+            return RecentAsync(startUTC, alreadyKnownSchIds, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<HistoricData> RecentAsync(string afterScheduleId, LoadHistoricDataSimDayUsage? loadSimDays, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<RecentHistoricData> RecentAsync(System.DateTimeOffset startUTC, System.Collections.Generic.IEnumerable<string> alreadyKnownSchIds, System.Threading.CancellationToken cancellationToken)
         {
+            if (startUTC == null)
+                throw new System.ArgumentNullException("startUTC");
+
+            if (alreadyKnownSchIds == null)
+                throw new System.ArgumentNullException("alreadyKnownSchIds");
+
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/recent?");
-            urlBuilder_.Append(System.Uri.EscapeDataString("afterScheduleId") + "=").Append(System.Uri.EscapeDataString(afterScheduleId != null ? ConvertToString(afterScheduleId, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
-            if (loadSimDays != null)
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("loadSimDays") + "=").Append(System.Uri.EscapeDataString(ConvertToString(loadSimDays, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
+            urlBuilder_.Append(System.Uri.EscapeDataString("startUTC") + "=").Append(System.Uri.EscapeDataString(startUTC.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             urlBuilder_.Length--;
 
             var client_ = _httpClient;
@@ -799,7 +793,11 @@ namespace BlackMaple.FMSInsight.API
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    var json_ = Newtonsoft.Json.JsonConvert.SerializeObject(alreadyKnownSchIds, _settings.Value);
+                    var content_ = new System.Net.Http.StringContent(json_);
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
 
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -825,7 +823,7 @@ namespace BlackMaple.FMSInsight.API
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<HistoricData>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<RecentHistoricData>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -4796,6 +4794,9 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("SimDayUsage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<SimulatedDayUsage> SimDayUsage { get; set; }
 
+        [Newtonsoft.Json.JsonProperty("SimDayUsageWarning", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string SimDayUsageWarning { get; set; }
+
         [Newtonsoft.Json.JsonProperty("ExtraParts", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, int> ExtraParts { get; set; }
 
@@ -5071,10 +5072,6 @@ namespace BlackMaple.FMSInsight.API
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.19.0.0 (NJsonSchema v10.9.0.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class SimulatedDayUsage
     {
-        [Newtonsoft.Json.JsonProperty("ScheduleId", Required = Newtonsoft.Json.Required.Always)]
-        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-        public string ScheduleId { get; set; }
-
         [Newtonsoft.Json.JsonProperty("Day", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
@@ -5646,23 +5643,19 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<SimulatedStationUtilization> StationUse { get; set; } = new System.Collections.ObjectModel.Collection<SimulatedStationUtilization>();
 
-        [Newtonsoft.Json.JsonProperty("SimDayUsage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.Collections.Generic.ICollection<SimulatedDayUsage> SimDayUsage { get; set; }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.19.0.0 (NJsonSchema v10.9.0.0 (Newtonsoft.Json v13.0.0.0))")]
-    public enum LoadHistoricDataSimDayUsage
+    public partial class RecentHistoricData : HistoricData
     {
+        [Newtonsoft.Json.JsonProperty("MostRecentSimulationId", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string MostRecentSimulationId { get; set; }
 
-        [System.Runtime.Serialization.EnumMember(Value = @"DoNotLoadSimDayUsage")]
-        DoNotLoadSimDayUsage = 0,
+        [Newtonsoft.Json.JsonProperty("MostRecentSimDayUsage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<SimulatedDayUsage> MostRecentSimDayUsage { get; set; }
 
-        [System.Runtime.Serialization.EnumMember(Value = @"LoadOnlyMostRecent")]
-        LoadOnlyMostRecent = 1,
-
-        [System.Runtime.Serialization.EnumMember(Value = @"LoadAll")]
-        LoadAll = 2,
+        [Newtonsoft.Json.JsonProperty("MostRecentSimDayUsageWarning", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string MostRecentSimDayUsageWarning { get; set; }
 
     }
 
