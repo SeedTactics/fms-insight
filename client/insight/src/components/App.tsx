@@ -89,6 +89,8 @@ import { PalletCycleChart } from "./analysis/PalletCycleCards.js";
 import { ToolReplacementPage } from "./analysis/ToolReplacements.js";
 import { CurrentWorkordersPage } from "./operations/CurrentWorkorders.js";
 import { useAtom, useAtomValue } from "jotai";
+import { SimDayUsagePage } from "./operations/SimDayUsage.js";
+import { latestSimDayUsage } from "../cell-status/sim-day-usage.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -289,6 +291,8 @@ function EngineeringTabs() {
 }
 
 function SalesTabs() {
+  const usage = useAtomValue(latestSimDayUsage);
+  if (usage === null) return null;
   return (
     <NavTabs>
       <Tab label="Workorders" value={routes.RouteLocation.Sales_Dashboard} />
@@ -570,7 +574,7 @@ const App = React.memo(function App(props: AppProps) {
         nav1 = SalesTabs;
         break;
       case routes.RouteLocation.Sales_ProjectedUsage:
-        page = <p>Usage</p>;
+        page = <SimDayUsagePage />;
         nav1 = SalesTabs;
         break;
 

@@ -47,6 +47,7 @@ import * as tool from "./tool-usage.js";
 import * as palCycles from "./pallet-cycles.js";
 import * as statCycles from "./station-cycles.js";
 import * as toolReplace from "./tool-replacements.js";
+import * as simDayUsage from "./sim-day-usage.js";
 import { Atom, atom } from "jotai";
 
 export interface ServerEventAndTime {
@@ -71,6 +72,7 @@ export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
   set(palCycles.updateLast30PalletCycles, evt);
   set(toolReplace.updateLastToolReplacements, evt);
   set(statCycles.updateLast30StationCycles, evt);
+  set(simDayUsage.updateLatestSimDayUsage, evt);
 
   if (evt.evt.logEntry) {
     const newCntr = evt.evt.logEntry.counter;
@@ -84,6 +86,7 @@ export const onLoadLast30Jobs = atom(null, (get, set, historicData: Readonly<IHi
   set(simProd.setLast30JobProduction, filtered);
   set(schJobs.setLast30Jobs, filtered);
   set(names.setNamesFromLast30Jobs, filtered);
+  set(simDayUsage.setLatestSimDayUsage, filtered);
 });
 
 export const onLoadLast30Log = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {

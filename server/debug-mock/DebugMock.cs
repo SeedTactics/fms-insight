@@ -747,6 +747,17 @@ namespace DebugMachineWatchApiServer
           {
             newJobsDraft.CurrentUnfilledWorkorders[i] %= w => w.DueDate = w.DueDate.Add(offset);
           }
+          if (newJobs.SimDayUsage != null)
+          {
+            for (int i = 0; i < newJobs.SimDayUsage.Count; i++)
+            {
+              var old = newJobsDraft.SimDayUsage[i];
+              newJobsDraft.SimDayUsage[i] = old with
+              {
+                Day = old.Day.AddDays((int)Math.Round(offset.TotalDays))
+              };
+            }
+          }
         });
 
         LogDB.AddJobs(newJobsOffset, null, addAsCopiedToSystem: true);
