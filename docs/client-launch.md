@@ -33,7 +33,7 @@ for the remaining schedule in the cell controller.
 
 FMS Insight provides targeted pages to assist with the day-to-day operation of the cell.
 There is a targeted page for [factory floor supervisors](client-operations), [engineering/programming](client-engineering),
-and [quality control](client-quality).
+[quality control](client-quality), and [sales](client-sales).
 
 ## Monthly Review
 

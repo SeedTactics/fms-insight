@@ -572,10 +572,12 @@ const App = React.memo(function App(props: AppProps) {
       case routes.RouteLocation.Sales_Dashboard:
         page = <CurrentWorkordersPage />;
         nav1 = SalesTabs;
+        showAlarms = false;
         break;
       case routes.RouteLocation.Sales_ProjectedUsage:
         page = <SimDayUsagePage />;
         nav1 = SalesTabs;
+        showAlarms = false;
         break;
 
       case routes.RouteLocation.VerboseLogging:
