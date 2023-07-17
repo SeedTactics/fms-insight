@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -31,14 +31,51 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
-import { format } from "date-fns";
+import { Atom, Getter, Setter, atom } from "jotai";
+import { IRecentHistoricData, ISimulatedDayUsage } from "../network/api";
+import { ServerEventAndTime } from "./loading";
 
-export interface DateTimeDisplayProps {
-  date: Date;
-  formatStr: string;
+export type LatestSimDayUsage = {
+  readonly simId: string;
+  readonly usage: ReadonlyArray<Readonly<ISimulatedDayUsage>>;
+  readonly warning: string | null;
+};
+
+const latestUsageRW = atom<LatestSimDayUsage | null>(null);
+export const latestSimDayUsage: Atom<LatestSimDayUsage | null> = latestUsageRW;
+
+function update(
+  get: Getter,
+  set: Setter,
+  schId: string,
+  usage: ReadonlyArray<Readonly<ISimulatedDayUsage>>,
+  warning: string | undefined
+) {
+  const old = get(latestSimDayUsage);
+  if (old === null || old.simId < schId) {
+    set(latestUsageRW, { simId: schId, usage, warning: warning ?? null });
+  }
 }
 
-export default function DateTimeDisplay(props: DateTimeDisplayProps) {
-  return <span>{format(props.date, props.formatStr)}</span>;
-}
+export const setLatestSimDayUsage = atom(null, (get, set, history: Readonly<IRecentHistoricData>) => {
+  if (
+    !history.mostRecentSimulationId ||
+    !history.mostRecentSimDayUsage ||
+    history.mostRecentSimDayUsage.length === 0
+  ) {
+    return;
+  }
+  update(
+    get,
+    set,
+    history.mostRecentSimulationId,
+    history.mostRecentSimDayUsage,
+    history.mostRecentSimDayUsageWarning
+  );
+});
+
+export const updateLatestSimDayUsage = atom(null, (get, set, { evt }: ServerEventAndTime) => {
+  if (evt.newJobs && evt.newJobs.simDayUsage && evt.newJobs.simDayUsage.length > 0) {
+    update(get, set, evt.newJobs.scheduleId, evt.newJobs.simDayUsage, evt.newJobs.simDayUsageWarning);
+  }
+});

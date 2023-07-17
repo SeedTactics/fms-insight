@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays } from "date-fns";
 import type { ServerEventAndTime } from "./loading.js";
-import { IHistoricData, IHistoricJob } from "../network/api.js";
+import { IHistoricData, IHistoricJob, IRecentHistoricData } from "../network/api.js";
 import { HashMap, HashSet, LazySeq } from "@seedtactics/immutable-collections";
 import { Atom, atom } from "jotai";
 import { atomFamily } from "jotai/utils";
@@ -48,10 +48,11 @@ export const specificMonthJobs: Atom<HashMap<string, Readonly<IHistoricJob>>> = 
 
 export function filterExistingJobs(
   schIds: HashSet<string>,
-  history: Readonly<IHistoricData>
-): Readonly<IHistoricData> {
+  history: Readonly<IRecentHistoricData>
+): Readonly<IRecentHistoricData> {
   if (schIds.size === 0) return history;
   const newHistory = {
+    ...history,
     jobs: { ...history.jobs },
     stationUse: history.stationUse.filter((s) => !schIds.has(s.scheduleId)),
   };

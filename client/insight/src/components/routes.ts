@@ -85,8 +85,10 @@ export enum RouteLocation {
   Analysis_Quality = "/analysis/quality",
   Analysis_ToolReplacements = "/analysis/tool-replacements",
   Analysis_CostPercents = "/analysis/cost-percents",
-
   Analysis_CostPerPiece = "/analysis/cost",
+
+  Sales_Dashboard = "/sales",
+  Sales_ProjectedUsage = "/sales/projected-usage",
 
   VerboseLogging = "/logging",
 
@@ -151,6 +153,8 @@ export type RouteState =
   | { route: RouteLocation.Analysis_CostPerPiece }
   | { route: RouteLocation.Analysis_Schedules }
   | { route: RouteLocation.Analysis_CostPercents }
+  | { route: RouteLocation.Sales_Dashboard }
+  | { route: RouteLocation.Sales_ProjectedUsage }
   | { route: RouteLocation.VerboseLogging }
   | { route: RouteLocation.Client_Custom; custom: ReadonlyArray<string> };
 
@@ -339,6 +343,10 @@ export function helpUrl(r: RouteState): string {
     case RouteLocation.Analysis_ToolReplacements:
     case RouteLocation.Analysis_CostPerPiece:
       return "https://www.seedtactics.com/docs/fms-insight/client-efficiency";
+
+    case RouteLocation.Sales_Dashboard:
+    case RouteLocation.Sales_ProjectedUsage:
+      return "https://www.seedtactics.com/docs/fms-insight/client-sales";
 
     case RouteLocation.ChooseMode:
     case RouteLocation.VerboseLogging:

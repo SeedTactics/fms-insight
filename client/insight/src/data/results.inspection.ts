@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as api from "../network/api.js";
 import { InspectionLogEntry, InspectionLogResultType } from "../cell-status/inspections.js";
 import { LazySeq, mkCompareByProperties, ToComparable } from "@seedtactics/immutable-collections";
-import { format } from "date-fns";
 import copy from "copy-to-clipboard";
 
 export interface TriggeredInspectionEntry {
@@ -194,7 +193,16 @@ export function buildInspectionTable(
       for (const mat of data.material) {
         table += "<tr>";
         table += "<td>" + path + "</td>";
-        table += "<td>" + format(mat.time, "MMM d, yyyy, h:mm aa") + "</td>";
+        table +=
+          "<td>" +
+          mat.time.toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          }) +
+          "</td>";
         table += "<td>" + part + "</td>";
         table += "<td>" + inspType + "</td>";
         table += "<td>" + (mat.serial || "") + "</td>";

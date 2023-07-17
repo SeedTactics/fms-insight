@@ -82,19 +82,20 @@ namespace BlackMaple.MachineFramework.Controllers
         return db.LoadJobHistory(
           startUTC,
           endUTC,
-          new HashSet<string>(alreadyKnownSchIds ?? new List<string>())
+          alreadyKnownSchIds: new HashSet<string>(alreadyKnownSchIds ?? new List<string>())
         );
       }
     }
 
-    [HttpGet("recent")]
-    public HistoricData Recent([FromQuery] string afterScheduleId)
+    [HttpPost("recent")]
+    public RecentHistoricData Recent(
+      [FromQuery] DateTime startUTC,
+      [FromBody] List<string> alreadyKnownSchIds
+    )
     {
-      if (string.IsNullOrEmpty(afterScheduleId))
-        throw new BadRequestException("After schedule ID must be non-empty");
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.LoadJobsAfterScheduleId(afterScheduleId);
+        return db.LoadRecentJobHistory(startUTC, alreadyKnownSchIds);
       }
     }
 

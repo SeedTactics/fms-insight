@@ -89,6 +89,8 @@ import { PalletCycleChart } from "./analysis/PalletCycleCards.js";
 import { ToolReplacementPage } from "./analysis/ToolReplacements.js";
 import { CurrentWorkordersPage } from "./operations/CurrentWorkorders.js";
 import { useAtom, useAtomValue } from "jotai";
+import { SimDayUsagePage } from "./operations/SimDayUsage.js";
+import { latestSimDayUsage } from "../cell-status/sim-day-usage.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -284,6 +286,17 @@ function EngineeringTabs() {
       <Tab label="Cycles" value={routes.RouteLocation.Engineering_Cycles} />
       <Tab label="Hours" value={routes.RouteLocation.Engineering_Hours} />
       <Tab label="Outliers" value={routes.RouteLocation.Engineering_Outliers} />
+    </NavTabs>
+  );
+}
+
+function SalesTabs() {
+  const usage = useAtomValue(latestSimDayUsage);
+  if (usage === null) return null;
+  return (
+    <NavTabs>
+      <Tab label="Workorders" value={routes.RouteLocation.Sales_Dashboard} />
+      <Tab label="Projections" value={routes.RouteLocation.Sales_ProjectedUsage} />
     </NavTabs>
   );
 }
@@ -554,6 +567,17 @@ const App = React.memo(function App(props: AppProps) {
       case routes.RouteLocation.Tools_Programs:
         page = <ProgramReportPage />;
         nav1 = ToolsTabs;
+        break;
+
+      case routes.RouteLocation.Sales_Dashboard:
+        page = <CurrentWorkordersPage />;
+        nav1 = SalesTabs;
+        showAlarms = false;
+        break;
+      case routes.RouteLocation.Sales_ProjectedUsage:
+        page = <SimDayUsagePage />;
+        nav1 = SalesTabs;
+        showAlarms = false;
         break;
 
       case routes.RouteLocation.VerboseLogging:

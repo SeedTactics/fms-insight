@@ -31,7 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ICurrentStatus, IHistoricData, ILogEntry, IServerEvent } from "../network/api.js";
+import {
+  ICurrentStatus,
+  IHistoricData,
+  ILogEntry,
+  IRecentHistoricData,
+  IServerEvent,
+} from "../network/api.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 
 import * as simProd from "./sim-production.js";
@@ -47,6 +53,7 @@ import * as tool from "./tool-usage.js";
 import * as palCycles from "./pallet-cycles.js";
 import * as statCycles from "./station-cycles.js";
 import * as toolReplace from "./tool-replacements.js";
+import * as simDayUsage from "./sim-day-usage.js";
 import { Atom, atom } from "jotai";
 
 export interface ServerEventAndTime {
@@ -71,6 +78,7 @@ export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
   set(palCycles.updateLast30PalletCycles, evt);
   set(toolReplace.updateLastToolReplacements, evt);
   set(statCycles.updateLast30StationCycles, evt);
+  set(simDayUsage.updateLatestSimDayUsage, evt);
 
   if (evt.evt.logEntry) {
     const newCntr = evt.evt.logEntry.counter;
@@ -78,12 +86,13 @@ export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
   }
 });
 
-export const onLoadLast30Jobs = atom(null, (get, set, historicData: Readonly<IHistoricData>) => {
+export const onLoadLast30Jobs = atom(null, (get, set, historicData: Readonly<IRecentHistoricData>) => {
   const filtered = schJobs.filterExistingJobs(get(schJobs.last30SchIds), historicData);
   set(simUse.setLast30SimStatUse, filtered);
   set(simProd.setLast30JobProduction, filtered);
   set(schJobs.setLast30Jobs, filtered);
   set(names.setNamesFromLast30Jobs, filtered);
+  set(simDayUsage.setLatestSimDayUsage, filtered);
 });
 
 export const onLoadLast30Log = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {

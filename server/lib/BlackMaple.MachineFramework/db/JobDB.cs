@@ -593,7 +593,7 @@ namespace BlackMaple.MachineFramework
             (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)
           >();
         cmd.CommandText =
-          "SELECT w.Workorder, w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision "
+          "SELECT w.Workorder, w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision, w.SimulatedStartUTC, w.SimulatedFilledUTC "
           + " FROM unfilled_workorders w "
           + " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part "
           + " WHERE w.ScheduleId == $sid AND (Archived IS NULL OR Archived != 1)";
@@ -613,6 +613,8 @@ namespace BlackMaple.MachineFramework
                 Quantity = reader.GetInt32(2),
                 DueDate = new DateTime(reader.GetInt64(3)),
                 Priority = reader.GetInt32(4),
+                SimulatedStartUTC = reader.IsDBNull(9) ? null : new DateTime(reader.GetInt64(9)),
+                SimulatedFilledUTC = reader.IsDBNull(10) ? null : new DateTime(reader.GetInt64(10))
               };
               ret.Add(
                 (work: workId, part: part),
@@ -686,7 +688,10 @@ namespace BlackMaple.MachineFramework
       {
         ((IDbCommand)cmd).Transaction = trans;
 
-        cmd.CommandText = "SELECT 1 FROM jobs WHERE ScheduleId = $sid LIMIT 1";
+        cmd.CommandText =
+          "SELECT EXISTS(SELECT 1 FROM jobs WHERE ScheduleId = $sid LIMIT 1) OR "
+          + "EXISTS(SELECT 1 FROM unfilled_workorders WHERE ScheduleId = $sid LIMIT 1) OR "
+          + "EXISTS(SELECT 1 FROM sim_day_usage WHERE SimId = $sid LIMIT 1)";
         var param = cmd.Parameters.Add("sid", SqliteType.Text);
 
         foreach (var schId in schIDs)
@@ -694,7 +699,7 @@ namespace BlackMaple.MachineFramework
           param.Value = schId;
 
           object val = cmd.ExecuteScalar();
-          if (val == null)
+          if (val == null || val == DBNull.Value || ((long)val == 0))
           {
             throw new ConflictRequestException($"Schedule ID {schId} does not exist");
           }
@@ -773,9 +778,58 @@ namespace BlackMaple.MachineFramework
         .ToImmutableList();
     }
 
-    private HistoricData LoadHistory(
+    private ImmutableList<SimulatedDayUsage> LoadSimDayUsage(string simId, SqliteTransaction trans)
+    {
+      if (string.IsNullOrEmpty(simId))
+        return null;
+
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText = "SELECT Day, Station, Usage FROM sim_day_usage WHERE SimId = $simId";
+      cmd.Parameters.Add("simId", SqliteType.Text).Value = simId;
+
+      var ret = ImmutableList.CreateBuilder<SimulatedDayUsage>();
+      using var reader = cmd.ExecuteReader();
+      while (reader.Read())
+      {
+        ret.Add(
+          new SimulatedDayUsage()
+          {
+            Day = DateOnly.FromDayNumber(reader.GetInt32(0)),
+            MachineGroup = reader.GetString(1),
+            UsagePct = reader.GetDouble(2)
+          }
+        );
+      }
+      return ret.Count > 0 ? ret.ToImmutable() : null;
+    }
+
+    private string LoadSimDayUsageWarning(string simId, SqliteTransaction trans)
+    {
+      if (string.IsNullOrEmpty(simId))
+        return null;
+
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText = "SELECT Warning FROM sim_day_usage_warning WHERE SimId = $simId";
+      cmd.Parameters.Add("simId", SqliteType.Text).Value = simId;
+
+      var msg = cmd.ExecuteScalar();
+
+      if (msg != null && msg != DBNull.Value)
+      {
+        return (string)msg;
+      }
+      else
+      {
+        return null;
+      }
+    }
+
+    private RecentHistoricData LoadHistory(
       SqliteCommand createTempCmd,
-      IEnumerable<string> alreadyKnownSchIds = null
+      bool includeRecentSimDayUsage,
+      IEnumerable<string> alreadyKnownSchIds
     )
     {
       using (var trans = _connection.BeginTransaction())
@@ -788,17 +842,21 @@ namespace BlackMaple.MachineFramework
         createTempCmd.Transaction = trans;
         createTempCmd.ExecuteNonQuery();
 
-        if (alreadyKnownSchIds != null)
+        string simIdForDayUsage = null;
+        if (includeRecentSimDayUsage)
         {
-          using (var delSchIds = _connection.CreateCommand())
+          using (var maxSimId = _connection.CreateCommand())
           {
-            delSchIds.Transaction = trans;
-            delSchIds.CommandText = "DELETE FROM temp_sch_ids WHERE ScheduleId = $schId";
-            delSchIds.Parameters.Add("schId", SqliteType.Text);
-            foreach (var schId in alreadyKnownSchIds)
+            maxSimId.Transaction = trans;
+            maxSimId.CommandText = "SELECT MAX(SimId) FROM sim_day_usage";
+            var max = maxSimId.ExecuteScalar();
+            if (
+              max != null
+              && max != DBNull.Value
+              && (alreadyKnownSchIds == null || !alreadyKnownSchIds.Contains(max))
+            )
             {
-              delSchIds.Parameters["schId"].Value = schId;
-              delSchIds.ExecuteNonQuery();
+              simIdForDayUsage = (string)max;
             }
           }
         }
@@ -821,10 +879,28 @@ namespace BlackMaple.MachineFramework
           "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path "
           + " FROM sim_station_use_parts WHERE SimId IN temp_sch_ids";
 
-        var history = new HistoricData()
+        if (alreadyKnownSchIds != null)
+        {
+          using (var delSchIds = _connection.CreateCommand())
+          {
+            delSchIds.Transaction = trans;
+            delSchIds.CommandText = "DELETE FROM temp_sch_ids WHERE ScheduleId = $schId";
+            delSchIds.Parameters.Add("schId", SqliteType.Text);
+            foreach (var schId in alreadyKnownSchIds)
+            {
+              delSchIds.Parameters["schId"].Value = schId;
+              delSchIds.ExecuteNonQuery();
+            }
+          }
+        }
+
+        var history = new RecentHistoricData()
         {
           Jobs = LoadJobsHelper(jobCmd, trans).ToImmutableDictionary(j => j.UniqueStr),
-          StationUse = LoadSimulatedStationUse(simCmd, simPartCmd)
+          StationUse = LoadSimulatedStationUse(simCmd, simPartCmd),
+          MostRecentSimulationId = simIdForDayUsage,
+          MostRecentSimDayUsage = LoadSimDayUsage(simIdForDayUsage, trans),
+          MostRecentSimDayUsageWarning = LoadSimDayUsageWarning(simIdForDayUsage, trans)
         };
 
         trans.Rollback();
@@ -890,18 +966,29 @@ namespace BlackMaple.MachineFramework
           "CREATE TEMP TABLE temp_sch_ids AS SELECT DISTINCT ScheduleId FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND ScheduleId IS NOT NULL";
         createTempCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
         createTempCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-        return LoadHistory(createTempCmd, alreadyKnownSchIds);
+        return LoadHistory(
+          createTempCmd,
+          includeRecentSimDayUsage: false,
+          alreadyKnownSchIds: alreadyKnownSchIds
+        );
       }
     }
 
-    public HistoricData LoadJobsAfterScheduleId(string schId)
+    public RecentHistoricData LoadRecentJobHistory(
+      DateTime startUTC,
+      IEnumerable<string> alreadyKnownSchIds = null
+    )
     {
       using (var createTempCmd = _connection.CreateCommand())
       {
         createTempCmd.CommandText =
-          "CREATE TEMP TABLE temp_sch_ids AS SELECT DISTINCT ScheduleId FROM jobs WHERE ScheduleId > $sid AND ScheduleId IS NOT NULL";
-        createTempCmd.Parameters.Add("sid", SqliteType.Text).Value = schId;
-        return LoadHistory(createTempCmd, new[] { schId });
+          "CREATE TEMP TABLE temp_sch_ids AS SELECT DISTINCT ScheduleId FROM jobs WHERE EndUTC >= $start AND ScheduleId IS NOT NULL";
+        createTempCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
+        return LoadHistory(
+          createTempCmd,
+          includeRecentSimDayUsage: true,
+          alreadyKnownSchIds: alreadyKnownSchIds
+        );
       }
     }
 
@@ -938,7 +1025,7 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.CommandText =
-          "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision"
+          "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision, w.SimulatedStartUTC, w.SimulatedFilledUTC"
           + " FROM unfilled_workorders w "
           + " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part "
           + " WHERE "
@@ -966,7 +1053,9 @@ namespace BlackMaple.MachineFramework
                   Part = part,
                   Quantity = reader.GetInt32(1),
                   DueDate = new DateTime(reader.GetInt64(2)),
-                  Priority = reader.GetInt32(3)
+                  Priority = reader.GetInt32(3),
+                  SimulatedStartUTC = reader.IsDBNull(8) ? (DateTime?)null : new DateTime(reader.GetInt64(8)),
+                  SimulatedFilledUTC = reader.IsDBNull(9) ? (DateTime?)null : new DateTime(reader.GetInt64(9))
                 };
                 byPart.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
               }
@@ -1162,6 +1251,7 @@ namespace BlackMaple.MachineFramework
           }
 
           AddSimulatedStations(trans, newJobs.StationUse);
+          AddSimDayUsage(newJobs.ScheduleId, newJobs.SimDayUsage, newJobs.SimDayUsageWarning, trans);
 
           if (newJobs.ExtraParts != null)
           {
@@ -1673,6 +1763,51 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    private void AddSimDayUsage(
+      string simId,
+      ImmutableList<SimulatedDayUsage> dayUsage,
+      string dayUsageWarning,
+      IDbTransaction trans
+    )
+    {
+      if (dayUsage != null && dayUsage.Count > 0)
+      {
+        using (var dayCmd = _connection.CreateCommand())
+        {
+          ((IDbCommand)dayCmd).Transaction = trans;
+
+          dayCmd.CommandText =
+            "INSERT OR REPLACE INTO sim_day_usage(SimId, Day, Station, Usage) VALUES ($simid,$day,$station,$usage)";
+          dayCmd.Parameters.Add("simid", SqliteType.Text).Value = simId;
+          dayCmd.Parameters.Add("day", SqliteType.Integer);
+          dayCmd.Parameters.Add("station", SqliteType.Text);
+          dayCmd.Parameters.Add("usage", SqliteType.Integer);
+
+          foreach (var day in dayUsage)
+          {
+            dayCmd.Parameters[1].Value = day.Day.DayNumber;
+            dayCmd.Parameters[2].Value = day.MachineGroup;
+            dayCmd.Parameters[3].Value = day.UsagePct;
+            dayCmd.ExecuteNonQuery();
+          }
+        }
+      }
+
+      if (!string.IsNullOrEmpty(dayUsageWarning))
+      {
+        using (var warningCmd = _connection.CreateCommand())
+        {
+          ((IDbCommand)warningCmd).Transaction = trans;
+
+          warningCmd.CommandText =
+            "INSERT OR REPLACE INTO sim_day_usage_warning(SimId, Warning) VALUES ($simid,$warning)";
+          warningCmd.Parameters.Add("simid", SqliteType.Text).Value = simId;
+          warningCmd.Parameters.Add("warning", SqliteType.Text).Value = dayUsageWarning;
+          warningCmd.ExecuteNonQuery();
+        }
+      }
+    }
+
     private void AddExtraParts(IDbTransaction trans, string scheduleId, IDictionary<string, int> extraParts)
     {
       using (var cmd = _connection.CreateCommand())
@@ -1708,7 +1843,7 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)prgCmd).Transaction = trans;
 
         cmd.CommandText =
-          "INSERT OR REPLACE INTO unfilled_workorders(ScheduleId, Workorder, Part, Quantity, DueDate, Priority, Archived) VALUES ($sid,$work,$part,$qty,$due,$pri,NULL)";
+          "INSERT OR REPLACE INTO unfilled_workorders(ScheduleId, Workorder, Part, Quantity, DueDate, Priority, Archived, SimulatedStartUTC, SimulatedFilledUTC) VALUES ($sid,$work,$part,$qty,$due,$pri,NULL,$start,$filled)";
         cmd.Parameters.Clear();
         cmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
         cmd.Parameters.Add("work", SqliteType.Text);
@@ -1716,6 +1851,8 @@ namespace BlackMaple.MachineFramework
         cmd.Parameters.Add("qty", SqliteType.Integer);
         cmd.Parameters.Add("due", SqliteType.Integer);
         cmd.Parameters.Add("pri", SqliteType.Integer);
+        cmd.Parameters.Add("start", SqliteType.Integer);
+        cmd.Parameters.Add("filled", SqliteType.Integer);
 
         prgCmd.CommandText =
           "INSERT OR REPLACE INTO workorder_programs(ScheduleId, Workorder, Part, ProcessNumber, StopIndex, ProgramName, Revision) VALUES ($sid,$work,$part,$proc,$stop,$name,$rev)";
@@ -1734,6 +1871,12 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[3].Value = w.Quantity;
           cmd.Parameters[4].Value = w.DueDate.Ticks;
           cmd.Parameters[5].Value = w.Priority;
+          cmd.Parameters[6].Value = w.SimulatedStartUTC.HasValue
+            ? w.SimulatedStartUTC.Value.Ticks
+            : DBNull.Value;
+          cmd.Parameters[7].Value = w.SimulatedFilledUTC.HasValue
+            ? w.SimulatedFilledUTC.Value.Ticks
+            : DBNull.Value;
           cmd.ExecuteNonQuery();
 
           if (w.Programs != null)

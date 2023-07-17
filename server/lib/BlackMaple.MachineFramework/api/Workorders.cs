@@ -58,6 +58,12 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = true)]
     public required int Priority { get; init; }
 
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public DateTime? SimulatedStartUTC { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public DateTime? SimulatedFilledUTC { get; init; }
+
     ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<ProgramForJobStep>? Programs { get; init; }
@@ -94,6 +100,12 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(IsRequired = true)]
     public required int Priority { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public DateTime? SimulatedStartUTC { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public DateTime? SimulatedFilledUTC { get; init; }
 
     // active data
     [DataMember(IsRequired = true)]

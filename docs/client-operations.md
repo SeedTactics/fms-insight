@@ -85,4 +85,4 @@ is best done by a one-a-month or once-a-quarter review.
 
 Reports include the data from the [machine engineering page](client-engineering) and similar
 reports for the load station, data for [tools and programs](client-tools-programs), reports for
-[quality control](client-quality), and more.
+[quality control](client-quality), information for [sales](client-sales), and more.

@@ -139,4 +139,25 @@ namespace MachineWatchTest
       return new AutoFixture.Kernel.NoSpecimen();
     }
   }
+
+  public class DateOnlySpecimenBuilder : AutoFixture.Kernel.ISpecimenBuilder
+  {
+    private readonly RandomNumericSequenceGenerator randomizer = new RandomNumericSequenceGenerator(
+      DateOnly.FromDateTime(DateTime.Today).AddYears(-2).DayNumber,
+      DateOnly.FromDateTime(DateTime.Today).AddYears(2).DayNumber
+    );
+
+    public object Create(object request, AutoFixture.Kernel.ISpecimenContext context)
+    {
+      var t = request as Type;
+      if (t != null && t == typeof(DateOnly))
+      {
+        return DateOnly.FromDayNumber((int)randomizer.Create(typeof(int), context));
+      }
+      else
+      {
+        return new AutoFixture.Kernel.NoSpecimen();
+      }
+    }
+  }
 }

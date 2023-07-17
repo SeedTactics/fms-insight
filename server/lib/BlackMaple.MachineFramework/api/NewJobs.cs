@@ -85,6 +85,19 @@ namespace BlackMaple.MachineFramework
     ) => s.Produce(f);
   }
 
+  [DataContract]
+  public record SimulatedDayUsage
+  {
+    [DataMember(IsRequired = true)]
+    public required DateOnly Day { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required string MachineGroup { get; init; }
+
+    [DataMember(IsRequired = true)]
+    public required double UsagePct { get; init; }
+  }
+
   [DataContract, Germinate.Draftable]
   public record NewJobs
   {
@@ -96,6 +109,12 @@ namespace BlackMaple.MachineFramework
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedStationUtilization>? StationUse { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<SimulatedDayUsage>? SimDayUsage { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? SimDayUsageWarning { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableDictionary<string, int>? ExtraParts { get; init; }

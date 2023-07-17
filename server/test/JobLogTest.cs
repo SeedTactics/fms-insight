@@ -1682,7 +1682,9 @@ namespace MachineWatchTest
           ,
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             .Add("MC", TimeSpan.FromMinutes(20 + 40 + 4 * 1 / c2Cnt)) //20 + 40 from mat1, 4*1/4 for mat3
-            .Add("Load", TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt)) //60/2 from mat1_proc2, and 6*1/4 for mat3
+            .Add("Load", TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt)), //60/2 from mat1_proc2, and 6*1/4 for mat3
+          SimulatedFilledUTC = work1part1.SimulatedFilledUTC,
+          SimulatedStartUTC = work1part1.SimulatedStartUTC,
         },
         new ActiveWorkorder()
         {
@@ -1699,7 +1701,9 @@ namespace MachineWatchTest
             .Add("Load", TimeSpan.FromMinutes(5 * 1 / c2Cnt)),
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             .Add("MC", TimeSpan.FromMinutes(4 * 1 / c2Cnt))
-            .Add("Load", TimeSpan.FromMinutes(6 * 1 / c2Cnt))
+            .Add("Load", TimeSpan.FromMinutes(6 * 1 / c2Cnt)),
+          SimulatedFilledUTC = work1part2.SimulatedFilledUTC,
+          SimulatedStartUTC = work1part2.SimulatedStartUTC
         },
         new ActiveWorkorder()
         {
@@ -1716,7 +1720,9 @@ namespace MachineWatchTest
             .Add("Load", TimeSpan.FromMinutes(5 * 2 / c2Cnt)),
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             .Add("MC", TimeSpan.FromMinutes(4 * 2 / c2Cnt))
-            .Add("Load", TimeSpan.FromMinutes(6 * 2 / c2Cnt))
+            .Add("Load", TimeSpan.FromMinutes(6 * 2 / c2Cnt)),
+          SimulatedFilledUTC = work2.SimulatedFilledUTC,
+          SimulatedStartUTC = work2.SimulatedStartUTC,
         }
       };
 
@@ -1740,7 +1746,9 @@ namespace MachineWatchTest
               Serials = ImmutableList<string>.Empty,
               Comments = null,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
+              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              SimulatedFilledUTC = earlierWork.SimulatedFilledUTC,
+              SimulatedStartUTC = earlierWork.SimulatedStartUTC,
             }
           }
         );
@@ -1831,7 +1839,9 @@ namespace MachineWatchTest
               Serials = ImmutableList<string>.Empty,
               Comments = null,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
+              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              SimulatedFilledUTC = newWork.SimulatedFilledUTC,
+              SimulatedStartUTC = newWork.SimulatedStartUTC,
             }
           }
         );

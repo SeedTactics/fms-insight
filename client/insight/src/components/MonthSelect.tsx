@@ -38,8 +38,11 @@ import { IconButton } from "@mui/material";
 import { CalendarToday as CalendarIcon } from "@mui/icons-material";
 import { Dialog } from "@mui/material";
 import { DialogContent } from "@mui/material";
-import { format, startOfMonth, addYears } from "date-fns";
-import { KeyboardArrowLeft as LeftArrowIcon, KeyboardArrowRight as RightArrowIcon } from "@mui/icons-material";
+import { startOfMonth, addYears } from "date-fns";
+import {
+  KeyboardArrowLeft as LeftArrowIcon,
+  KeyboardArrowRight as RightArrowIcon,
+} from "@mui/icons-material";
 import { Button } from "@mui/material";
 import { Typography } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
@@ -61,7 +64,10 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
     <>
       <Input
         type="text"
-        value={format(tempDialogCurMonth || props.curMonth, "LLLL yyyy")}
+        value={(tempDialogCurMonth || props.curMonth).toLocaleDateString(undefined, {
+          month: "long",
+          year: "numeric",
+        })}
         readOnly
         endAdornment={
           <InputAdornment position="end">
@@ -97,7 +103,7 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
             </IconButton>
             <div style={{ flexGrow: 1 }}>
               <Typography variant="h5" align="center" data-testid="select-month-dialog-current-year">
-                {format(tempDialogCurMonth || props.curMonth, "yyyy")}
+                {(tempDialogCurMonth || props.curMonth).toLocaleDateString(undefined, { year: "numeric" })}
               </Typography>
             </div>
             <IconButton
@@ -123,7 +129,7 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
                       setDialogOpen(false);
                     }}
                   >
-                    {format(month, "MMM")}
+                    {month.toLocaleDateString(undefined, { month: "short" })}
                   </Button>
                 ))}
               </div>

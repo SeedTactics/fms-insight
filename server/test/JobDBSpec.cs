@@ -56,6 +56,7 @@ namespace MachineWatchTest
       _jobDB = _repoCfg.OpenConnection();
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
+      _fixture.Customizations.Add(new DateOnlySpecimenBuilder());
     }
 
     public void Dispose()
@@ -253,10 +254,24 @@ namespace MachineWatchTest
         );
 
       _jobDB
-        .LoadJobsAfterScheduleId(schId)
+        .LoadRecentJobHistory(job1.RouteStartUTC.AddHours(-1))
         .Should()
         .BeEquivalentTo(
-          new HistoricData()
+          new RecentHistoricData()
+          {
+            Jobs = ImmutableDictionary
+              .Create<string, HistoricJob>()
+              .Add(job1.UniqueStr, job1history)
+              .Add(job2.UniqueStr, job2history),
+            StationUse = job1StatUse.AddRange(job2SimUse)
+          }
+        );
+
+      _jobDB
+        .LoadRecentJobHistory(job1.RouteStartUTC.AddHours(-1), new[] { schId })
+        .Should()
+        .BeEquivalentTo(
+          new RecentHistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
             StationUse = job2SimUse
@@ -264,10 +279,32 @@ namespace MachineWatchTest
         );
 
       _jobDB
-        .LoadJobsAfterScheduleId(schId2)
+        .LoadRecentJobHistory(job1.RouteEndUTC.AddHours(1))
         .Should()
         .BeEquivalentTo(
-          new HistoricData()
+          new RecentHistoricData()
+          {
+            Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
+            StationUse = job2SimUse
+          }
+        );
+
+      _jobDB
+        .LoadRecentJobHistory(job1.RouteEndUTC.AddHours(1), new[] { schId2 })
+        .Should()
+        .BeEquivalentTo(
+          new RecentHistoricData()
+          {
+            Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty
+          }
+        );
+
+      _jobDB
+        .LoadRecentJobHistory(job2.RouteEndUTC.AddHours(1))
+        .Should()
+        .BeEquivalentTo(
+          new RecentHistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
             StationUse = ImmutableList<SimulatedStationUtilization>.Empty
@@ -306,6 +343,8 @@ namespace MachineWatchTest
               Serials = ImmutableList<string>.Empty,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              SimulatedFilledUTC = job1UnfilledWorks[0].SimulatedFilledUTC,
+              SimulatedStartUTC = job1UnfilledWorks[0].SimulatedStartUTC,
             }
           }
         );
@@ -335,6 +374,192 @@ namespace MachineWatchTest
         _jobDB.LoadJobsBetween(aboveJob2, aboveJob1).Should().BeEquivalentTo(new[] { job1history });
         _jobDB.LoadJobsBetween(aboveJob2, belowJob1).Should().BeEmpty();
       }
+    }
+
+    [Fact]
+    public void SimDays()
+    {
+      var now = DateTime.UtcNow;
+      var schId1 = "schId" + _fixture.Create<string>();
+      var job1 = RandJob() with { RouteStartUTC = now, RouteEndUTC = now.AddHours(1) };
+      var simDays1 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
+      var warning = _fixture.Create<string>();
+      var job1history = job1.CloneToDerived<HistoricJob, Job>() with
+      {
+        ScheduleId = schId1,
+        CopiedToSystem = true,
+        Decrements = ImmutableList<DecrementQuantity>.Empty
+      };
+
+      simDays1.Count.Should().BeGreaterThan(0);
+
+      _jobDB.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = schId1,
+          Jobs = ImmutableList.Create(job1),
+          SimDayUsage = simDays1,
+          SimDayUsageWarning = warning
+        },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      _jobDB
+        .LoadJobHistory(now, now)
+        .Should()
+        .BeEquivalentTo(
+          new HistoricData()
+          {
+            Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job1.UniqueStr, job1history),
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+          }
+        );
+
+      _jobDB
+        .LoadRecentJobHistory(now)
+        .Should()
+        .BeEquivalentTo(
+          new RecentHistoricData()
+          {
+            Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job1.UniqueStr, job1history),
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+            MostRecentSimulationId = schId1,
+            MostRecentSimDayUsage = simDays1,
+            MostRecentSimDayUsageWarning = warning
+          }
+        );
+
+      _jobDB
+        .LoadRecentJobHistory(now, new[] { schId1 })
+        .Should()
+        .BeEquivalentTo(
+          new RecentHistoricData()
+          {
+            Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+          }
+        );
+
+      var schId2 = schId1 + "222";
+      var job2 = RandJob() with { RouteStartUTC = now, RouteEndUTC = now.AddHours(2) };
+      var simDays2 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
+      var job2history = job2.CloneToDerived<HistoricJob, Job>() with
+      {
+        ScheduleId = schId2,
+        CopiedToSystem = true,
+        Decrements = ImmutableList<DecrementQuantity>.Empty
+      };
+
+      _jobDB.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = schId2,
+          Jobs = ImmutableList.Create(job2),
+          SimDayUsage = simDays2,
+          SimDayUsageWarning = null
+        },
+        schId1,
+        addAsCopiedToSystem: true
+      );
+
+      _jobDB
+        .LoadRecentJobHistory(now)
+        .Should()
+        .BeEquivalentTo(
+          new RecentHistoricData()
+          {
+            Jobs = ImmutableDictionary
+              .Create<string, HistoricJob>()
+              .Add(job1.UniqueStr, job1history)
+              .Add(job2.UniqueStr, job2history),
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+            MostRecentSimulationId = schId2,
+            MostRecentSimDayUsage = simDays2,
+            MostRecentSimDayUsageWarning = null
+          }
+        );
+
+      _jobDB
+        .LoadRecentJobHistory(now, new[] { schId2 })
+        .Should()
+        .BeEquivalentTo(
+          new RecentHistoricData()
+          {
+            Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job1.UniqueStr, job1history),
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+          }
+        );
+      _jobDB
+        .LoadRecentJobHistory(now, new[] { schId1 })
+        .Should()
+        .BeEquivalentTo(
+          new RecentHistoricData()
+          {
+            Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+            MostRecentSimulationId = schId2,
+            MostRecentSimDayUsage = simDays2,
+            MostRecentSimDayUsageWarning = null
+          }
+        );
+    }
+
+    [Fact]
+    public void SimDaysWithoutJobs()
+    {
+      var now = DateTime.UtcNow;
+      var schId1 = "schId" + _fixture.Create<string>();
+      var simDays1 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
+      var warning = _fixture.Create<string>();
+
+      _jobDB.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = schId1,
+          Jobs = ImmutableList<Job>.Empty,
+          SimDayUsage = simDays1,
+          SimDayUsageWarning = warning
+        },
+        null,
+        addAsCopiedToSystem: true
+      );
+
+      _jobDB
+        .LoadJobHistory(now, now)
+        .Should()
+        .BeEquivalentTo(
+          new HistoricData()
+          {
+            Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+          }
+        );
+
+      _jobDB
+        .LoadRecentJobHistory(now)
+        .Should()
+        .BeEquivalentTo(
+          new RecentHistoricData()
+          {
+            Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+            MostRecentSimulationId = schId1,
+            MostRecentSimDayUsage = simDays1,
+            MostRecentSimDayUsageWarning = warning
+          }
+        );
+
+      _jobDB
+        .LoadRecentJobHistory(now, new[] { schId1 })
+        .Should()
+        .BeEquivalentTo(
+          new RecentHistoricData()
+          {
+            Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+          }
+        );
     }
 
     [Fact]
@@ -1092,6 +1317,8 @@ namespace MachineWatchTest
               Serials = ImmutableList<string>.Empty,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              SimulatedStartUTC = initialWorks[0].SimulatedStartUTC,
+              SimulatedFilledUTC = initialWorks[0].SimulatedFilledUTC
             }
           }
         );

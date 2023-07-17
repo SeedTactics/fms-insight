@@ -58,7 +58,7 @@ function loadInitial(set: Setter): void {
   const thirtyDaysAgo = addDays(now, -30);
 
   const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
-  const jobsProm = JobsBackend.history(thirtyDaysAgo, now).then((j) => set(onLoadLast30Jobs, j));
+  const jobsProm = JobsBackend.recent(thirtyDaysAgo, []).then((j) => set(onLoadLast30Jobs, j));
   const logProm = LogBackend.get(thirtyDaysAgo, now).then((log) => set(onLoadLast30Log, log));
 
   Promise.all([curStProm, jobsProm, logProm])
@@ -69,8 +69,8 @@ function loadInitial(set: Setter): void {
 function loadMissed(lastCntr: number, schIds: HashSet<string> | undefined, set: Setter): void {
   const now = new Date();
   const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
-  const jobsProm = JobsBackend.filteredHistory(now, addDays(now, -30), schIds ? Array.from(schIds) : []).then(
-    (j) => set(onLoadLast30Jobs, j)
+  const jobsProm = JobsBackend.recent(addDays(now, -30), schIds ? Array.from(schIds) : []).then((j) =>
+    set(onLoadLast30Jobs, j)
   );
   const logProm = LogBackend.recent(lastCntr, undefined).then((log) => set(onLoadLast30Log, log));
 

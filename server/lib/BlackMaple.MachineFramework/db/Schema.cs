@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 29;
+    private const int Version = 30;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -248,6 +248,14 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
+          "CREATE TABLE sim_day_usage(SimId TEXT NOT NULL, Day INTEGER NOT NULL, Station TEXT NOT NULL, Usage NUMERIC NOT NULL, PRIMARY KEY(SimId, Day, Station))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE sim_day_usage_warning(SimId TEXT NOT NULL, Warning TEXT, PRIMARY KEY(SimId))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
           "CREATE TABLE scheduled_bookings(UniqueStr TEXT NOT NULL, BookingId TEXT NOT NULL, PRIMARY KEY(UniqueStr, BookingId))";
         cmd.ExecuteNonQuery();
 
@@ -269,7 +277,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, Archived INTEGER, PRIMARY KEY(ScheduleId, Part, Workorder))";
+          "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, Archived INTEGER, SimulatedStartUTC INTEGER, SimulatedFilledUTC INTEGER, PRIMARY KEY(ScheduleId, Part, Workorder))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX workorder_id_idx ON unfilled_workorders(Workorder, ScheduleId)";
@@ -446,6 +454,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 29)
             Ver28ToVer29(trans);
+
+          if (curVersion < 30)
+            Ver29ToVer30(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -909,7 +920,6 @@ namespace BlackMaple.MachineFramework
             "scheduled_parts",
             "job_decrements",
             "schedule_debug",
-            "unfilled_workorders",
             "workorder_programs",
             "program_revisions"
           };
@@ -927,6 +937,11 @@ namespace BlackMaple.MachineFramework
           // pathdata PathGroup column is removed
           cmd.CommandText =
             "INSERT INTO main.pathdata(UniqueStr,Process,Path,StartingUTC,PartsPerPallet,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting) SELECT UniqueStr,Process,Path,StartingUTC,PartsPerPallet,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting FROM jobs.pathdata";
+          cmd.ExecuteNonQuery();
+
+          // unfilled_workorders added new columns
+          cmd.CommandText =
+            "INSERT INTO main.unfilled_workorders(ScheduleId,Workorder,Part,Quantity,DueDate,Priority,Archived) SELECT ScheduleId,Workorder,Part,Quantity,DueDate,Priority,Archived FROM jobs.unfilled_workorders";
           cmd.ExecuteNonQuery();
 
           attachedOldJobDb = true;
@@ -1023,6 +1038,28 @@ namespace BlackMaple.MachineFramework
       cmd.ExecuteNonQuery();
       cmd.CommandText = "ALTER TABLE station_tool_use ADD LifeCount INTEGER";
       cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver29ToVer30(IDbTransaction transaction, bool updateJobTables)
+    {
+      using var cmd = transaction.Connection.CreateCommand();
+      cmd.Transaction = transaction;
+
+      if (updateJobTables)
+      {
+        cmd.CommandText = "ALTER TABLE unfilled_workorders ADD SimulatedStartUTC INTEGER";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText = "ALTER TABLE unfilled_workorders ADD SimulatedFilledUTC INTEGER";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE sim_day_usage(SimId TEXT NOT NULL, Day INTEGER NOT NULL, Station TEXT NOT NULL, Usage NUMERIC NOT NULL, PRIMARY KEY(SimId, Day, Station))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE sim_day_usage_warning(SimId TEXT NOT NULL, Warning TEXT, PRIMARY KEY(SimId))";
+        cmd.ExecuteNonQuery();
+      }
     }
 
     #endregion

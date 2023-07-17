@@ -298,30 +298,45 @@
       }
     },
     "/api/v1/jobs/recent": {
-      "get": {
+      "post": {
         "tags": [
           "jobs"
         ],
         "operationId": "jobs_Recent",
         "parameters": [
           {
-            "name": "afterScheduleId",
+            "name": "startUTC",
             "in": "query",
             "required": true,
             "schema": {
               "type": "string",
-              "nullable": true
+              "format": "date-time"
             },
             "x-position": 1
           }
         ],
+        "requestBody": {
+          "x-name": "alreadyKnownSchIds",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
         "responses": {
           "200": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HistoricData"
+                  "$ref": "#/components/schemas/RecentHistoricData"
                 }
               }
             }
@@ -2486,6 +2501,17 @@
               "$ref": "#/components/schemas/SimulatedStationUtilization"
             }
           },
+          "SimDayUsage": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/SimulatedDayUsage"
+            }
+          },
+          "SimDayUsageWarning": {
+            "type": "string",
+            "nullable": true
+          },
           "ExtraParts": {
             "type": "object",
             "nullable": true,
@@ -2910,6 +2936,28 @@
           }
         }
       },
+      "SimulatedDayUsage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "Day",
+          "MachineGroup",
+          "UsagePct"
+        ],
+        "properties": {
+          "Day": {
+            "type": "string",
+            "format": "date"
+          },
+          "MachineGroup": {
+            "type": "string"
+          },
+          "UsagePct": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
       "Workorder": {
         "type": "object",
         "additionalProperties": false,
@@ -2938,6 +2986,16 @@
           "Priority": {
             "type": "integer",
             "format": "int32"
+          },
+          "SimulatedStartUTC": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "SimulatedFilledUTC": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           },
           "Programs": {
             "type": "array",
@@ -3534,6 +3592,16 @@
             "type": "integer",
             "format": "int32"
           },
+          "SimulatedStartUTC": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "SimulatedFilledUTC": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "CompletedQuantity": {
             "type": "integer",
             "format": "int32"
@@ -3704,6 +3772,34 @@
             }
           }
         }
+      },
+      "RecentHistoricData": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/HistoricData"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "MostRecentSimulationId": {
+                "type": "string",
+                "nullable": true
+              },
+              "MostRecentSimDayUsage": {
+                "type": "array",
+                "nullable": true,
+                "items": {
+                  "$ref": "#/components/schemas/SimulatedDayUsage"
+                }
+              },
+              "MostRecentSimDayUsageWarning": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          }
+        ]
       },
       "PlannedSchedule": {
         "type": "object",

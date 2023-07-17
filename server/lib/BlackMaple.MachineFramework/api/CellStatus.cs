@@ -122,6 +122,19 @@ namespace BlackMaple.MachineFramework
   }
 
   [DataContract]
+  public record RecentHistoricData : HistoricData
+  {
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? MostRecentSimulationId { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<SimulatedDayUsage>? MostRecentSimDayUsage { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? MostRecentSimDayUsageWarning { get; init; }
+  }
+
+  [DataContract]
   public record PlannedSchedule
   {
     [DataMember(IsRequired = true)]

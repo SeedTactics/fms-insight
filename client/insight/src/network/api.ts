@@ -317,17 +317,21 @@ export class JobsClient {
         return Promise.resolve<HistoricData>(null as any);
     }
 
-    recent(afterScheduleId: string | null): Promise<HistoricData> {
+    recent(startUTC: Date, alreadyKnownSchIds: string[]): Promise<RecentHistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/recent?";
-        if (afterScheduleId === undefined)
-            throw new Error("The parameter 'afterScheduleId' must be defined.");
-        else if(afterScheduleId !== null)
-            url_ += "afterScheduleId=" + encodeURIComponent("" + afterScheduleId) + "&";
+        if (startUTC === undefined || startUTC === null)
+            throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+        else
+            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
         url_ = url_.replace(/[?&]$/, "");
 
+        const content_ = JSON.stringify(alreadyKnownSchIds);
+
         let options_: RequestInit = {
-            method: "GET",
+            body: content_,
+            method: "POST",
             headers: {
+                "Content-Type": "application/json",
                 "Accept": "application/json"
             }
         };
@@ -337,14 +341,14 @@ export class JobsClient {
         });
     }
 
-    protected processRecent(response: Response): Promise<HistoricData> {
+    protected processRecent(response: Response): Promise<RecentHistoricData> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = HistoricData.fromJS(resultData200);
+            result200 = RecentHistoricData.fromJS(resultData200);
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -352,7 +356,7 @@ export class JobsClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<HistoricData>(null as any);
+        return Promise.resolve<RecentHistoricData>(null as any);
     }
 
     latestSchedule(): Promise<PlannedSchedule> {
@@ -2655,6 +2659,8 @@ export class NewJobs implements INewJobs {
     scheduleId!: string;
     jobs!: Job[];
     stationUse?: SimulatedStationUtilization[] | undefined;
+    simDayUsage?: SimulatedDayUsage[] | undefined;
+    simDayUsageWarning?: string | undefined;
     extraParts?: { [key: string]: number; } | undefined;
     currentUnfilledWorkorders?: Workorder[] | undefined;
     programs?: NewProgramContent[] | undefined;
@@ -2685,6 +2691,12 @@ export class NewJobs implements INewJobs {
                 for (let item of _data["StationUse"])
                     this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
             }
+            if (Array.isArray(_data["SimDayUsage"])) {
+                this.simDayUsage = [] as any;
+                for (let item of _data["SimDayUsage"])
+                    this.simDayUsage!.push(SimulatedDayUsage.fromJS(item));
+            }
+            this.simDayUsageWarning = _data["SimDayUsageWarning"];
             if (_data["ExtraParts"]) {
                 this.extraParts = {} as any;
                 for (let key in _data["ExtraParts"]) {
@@ -2726,6 +2738,12 @@ export class NewJobs implements INewJobs {
             for (let item of this.stationUse)
                 data["StationUse"].push(item.toJSON());
         }
+        if (Array.isArray(this.simDayUsage)) {
+            data["SimDayUsage"] = [];
+            for (let item of this.simDayUsage)
+                data["SimDayUsage"].push(item.toJSON());
+        }
+        data["SimDayUsageWarning"] = this.simDayUsageWarning;
         if (this.extraParts) {
             data["ExtraParts"] = {};
             for (let key in this.extraParts) {
@@ -2752,6 +2770,8 @@ export interface INewJobs {
     scheduleId: string;
     jobs: Job[];
     stationUse?: SimulatedStationUtilization[] | undefined;
+    simDayUsage?: SimulatedDayUsage[] | undefined;
+    simDayUsageWarning?: string | undefined;
     extraParts?: { [key: string]: number; } | undefined;
     currentUnfilledWorkorders?: Workorder[] | undefined;
     programs?: NewProgramContent[] | undefined;
@@ -3415,12 +3435,58 @@ export interface ISimulatedStationPart {
     path: number;
 }
 
+export class SimulatedDayUsage implements ISimulatedDayUsage {
+    day!: Date;
+    machineGroup!: string;
+    usagePct!: number;
+
+    constructor(data?: ISimulatedDayUsage) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.day = _data["Day"] ? new Date(_data["Day"].toString()) : <any>undefined;
+            this.machineGroup = _data["MachineGroup"];
+            this.usagePct = _data["UsagePct"];
+        }
+    }
+
+    static fromJS(data: any): SimulatedDayUsage {
+        data = typeof data === 'object' ? data : {};
+        let result = new SimulatedDayUsage();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["Day"] = this.day ? formatDate(this.day) : <any>undefined;
+        data["MachineGroup"] = this.machineGroup;
+        data["UsagePct"] = this.usagePct;
+        return data;
+    }
+}
+
+export interface ISimulatedDayUsage {
+    day: Date;
+    machineGroup: string;
+    usagePct: number;
+}
+
 export class Workorder implements IWorkorder {
     workorderId!: string;
     part!: string;
     quantity!: number;
     dueDate!: Date;
     priority!: number;
+    simulatedStartUTC?: Date | undefined;
+    simulatedFilledUTC?: Date | undefined;
     programs?: ProgramForJobStep[] | undefined;
 
     constructor(data?: IWorkorder) {
@@ -3439,6 +3505,8 @@ export class Workorder implements IWorkorder {
             this.quantity = _data["Quantity"];
             this.dueDate = _data["DueDate"] ? new Date(_data["DueDate"].toString()) : <any>undefined;
             this.priority = _data["Priority"];
+            this.simulatedStartUTC = _data["SimulatedStartUTC"] ? new Date(_data["SimulatedStartUTC"].toString()) : <any>undefined;
+            this.simulatedFilledUTC = _data["SimulatedFilledUTC"] ? new Date(_data["SimulatedFilledUTC"].toString()) : <any>undefined;
             if (Array.isArray(_data["Programs"])) {
                 this.programs = [] as any;
                 for (let item of _data["Programs"])
@@ -3461,6 +3529,8 @@ export class Workorder implements IWorkorder {
         data["Quantity"] = this.quantity;
         data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
         data["Priority"] = this.priority;
+        data["SimulatedStartUTC"] = this.simulatedStartUTC ? this.simulatedStartUTC.toISOString() : <any>undefined;
+        data["SimulatedFilledUTC"] = this.simulatedFilledUTC ? this.simulatedFilledUTC.toISOString() : <any>undefined;
         if (Array.isArray(this.programs)) {
             data["Programs"] = [];
             for (let item of this.programs)
@@ -3476,6 +3546,8 @@ export interface IWorkorder {
     quantity: number;
     dueDate: Date;
     priority: number;
+    simulatedStartUTC?: Date | undefined;
+    simulatedFilledUTC?: Date | undefined;
     programs?: ProgramForJobStep[] | undefined;
 }
 
@@ -4350,6 +4422,8 @@ export class ActiveWorkorder implements IActiveWorkorder {
     plannedQuantity!: number;
     dueDate!: Date;
     priority!: number;
+    simulatedStartUTC?: Date | undefined;
+    simulatedFilledUTC?: Date | undefined;
     completedQuantity!: number;
     serials!: string[];
     comments?: WorkorderComment[] | undefined;
@@ -4377,6 +4451,8 @@ export class ActiveWorkorder implements IActiveWorkorder {
             this.plannedQuantity = _data["PlannedQuantity"];
             this.dueDate = _data["DueDate"] ? new Date(_data["DueDate"].toString()) : <any>undefined;
             this.priority = _data["Priority"];
+            this.simulatedStartUTC = _data["SimulatedStartUTC"] ? new Date(_data["SimulatedStartUTC"].toString()) : <any>undefined;
+            this.simulatedFilledUTC = _data["SimulatedFilledUTC"] ? new Date(_data["SimulatedFilledUTC"].toString()) : <any>undefined;
             this.completedQuantity = _data["CompletedQuantity"];
             if (Array.isArray(_data["Serials"])) {
                 this.serials = [] as any;
@@ -4419,6 +4495,8 @@ export class ActiveWorkorder implements IActiveWorkorder {
         data["PlannedQuantity"] = this.plannedQuantity;
         data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
         data["Priority"] = this.priority;
+        data["SimulatedStartUTC"] = this.simulatedStartUTC ? this.simulatedStartUTC.toISOString() : <any>undefined;
+        data["SimulatedFilledUTC"] = this.simulatedFilledUTC ? this.simulatedFilledUTC.toISOString() : <any>undefined;
         data["CompletedQuantity"] = this.completedQuantity;
         if (Array.isArray(this.serials)) {
             data["Serials"] = [];
@@ -4454,6 +4532,8 @@ export interface IActiveWorkorder {
     plannedQuantity: number;
     dueDate: Date;
     priority: number;
+    simulatedStartUTC?: Date | undefined;
+    simulatedFilledUTC?: Date | undefined;
     completedQuantity: number;
     serials: string[];
     comments?: WorkorderComment[] | undefined;
@@ -4770,6 +4850,55 @@ export class HistoricData implements IHistoricData {
 export interface IHistoricData {
     jobs: { [key: string]: HistoricJob; };
     stationUse: SimulatedStationUtilization[];
+}
+
+export class RecentHistoricData extends HistoricData implements IRecentHistoricData {
+    mostRecentSimulationId?: string | undefined;
+    mostRecentSimDayUsage?: SimulatedDayUsage[] | undefined;
+    mostRecentSimDayUsageWarning?: string | undefined;
+
+    constructor(data?: IRecentHistoricData) {
+        super(data);
+    }
+
+    init(_data?: any) {
+        super.init(_data);
+        if (_data) {
+            this.mostRecentSimulationId = _data["MostRecentSimulationId"];
+            if (Array.isArray(_data["MostRecentSimDayUsage"])) {
+                this.mostRecentSimDayUsage = [] as any;
+                for (let item of _data["MostRecentSimDayUsage"])
+                    this.mostRecentSimDayUsage!.push(SimulatedDayUsage.fromJS(item));
+            }
+            this.mostRecentSimDayUsageWarning = _data["MostRecentSimDayUsageWarning"];
+        }
+    }
+
+    static fromJS(data: any): RecentHistoricData {
+        data = typeof data === 'object' ? data : {};
+        let result = new RecentHistoricData();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["MostRecentSimulationId"] = this.mostRecentSimulationId;
+        if (Array.isArray(this.mostRecentSimDayUsage)) {
+            data["MostRecentSimDayUsage"] = [];
+            for (let item of this.mostRecentSimDayUsage)
+                data["MostRecentSimDayUsage"].push(item.toJSON());
+        }
+        data["MostRecentSimDayUsageWarning"] = this.mostRecentSimDayUsageWarning;
+        super.toJSON(data);
+        return data;
+    }
+}
+
+export interface IRecentHistoricData extends IHistoricData {
+    mostRecentSimulationId?: string | undefined;
+    mostRecentSimDayUsage?: SimulatedDayUsage[] | undefined;
+    mostRecentSimDayUsageWarning?: string | undefined;
 }
 
 export class PlannedSchedule implements IPlannedSchedule {
@@ -5379,6 +5508,12 @@ export interface IProgramRevision {
     revision: number;
     comment?: string | undefined;
     cellControllerProgramName?: string | undefined;
+}
+
+function formatDate(d: Date) {
+    return d.getFullYear() + '-' + 
+        (d.getMonth() < 9 ? ('0' + (d.getMonth()+1)) : (d.getMonth()+1)) + '-' +
+        (d.getDate() < 10 ? ('0' + d.getDate()) : d.getDate());
 }
 
 export interface FileResponse {

@@ -39,7 +39,6 @@ import { TableBody } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
-import { format } from "date-fns";
 import { durationToMinutes } from "../../util/parseISODuration.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
@@ -56,7 +55,13 @@ interface JobDisplayProps {
 }
 
 function displayDate(d: Date) {
-  return format(d, "MMM d, yyyy h:mm aa");
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 function JobCompleted(props: JobDisplayProps & { procIdx: number; pathIdx: number }) {

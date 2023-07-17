@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
-import { addDays, format } from "date-fns";
+import { addDays } from "date-fns";
 import { Select, MenuItem, Tooltip, IconButton, Stack, Box, Typography, FormControl } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 import { PickD3Scale, scaleBand, scaleLinear } from "@visx/scale";
@@ -157,7 +157,7 @@ const HeatAxis = React.memo(function HeatAxis({ xScale, yScale }: HeatChartScale
         top={yScale.range()[1]}
         orientation="bottom"
         numTicks={15}
-        tickFormat={(d) => format(d, "MMM d")}
+        tickFormat={(d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}
         labelProps={chartTheme.axisStyles.y.left.axisLabel}
         stroke={chartTheme.axisStyles.x.bottom.axisLine.stroke}
         strokeWidth={chartTheme.axisStyles.x.bottom.axisLine.strokeWidth}

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api.js";
-import { format, differenceInSeconds, addMinutes } from "date-fns";
+import { differenceInSeconds, addMinutes } from "date-fns";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
 import copy from "copy-to-clipboard";
@@ -570,7 +570,16 @@ export function buildCycleTable(
     .toSortedArray((a) => a.x.getTime());
   for (const cycle of filteredCycles) {
     table += "<tr>";
-    table += "<td>" + format(cycle.x, "MMM d, yyyy, h:mm aa") + "</td>";
+    table +=
+      "<td>" +
+      cycle.x.toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }) +
+      "</td>";
     table +=
       "<td>" +
       cycle.part +
@@ -632,7 +641,16 @@ export function buildPalletCycleTable(points: PalletCyclesByPallet): string {
     for (const cycle of points.get(pal)?.valuesToLazySeq() ?? []) {
       table += "<tr>";
       table += "<td>" + pal.toString() + "</td>";
-      table += "<td>" + format(cycle.x, "MMM d, yyyy, h:mm aa") + "</td>";
+      table +=
+        "<td>" +
+        cycle.x.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }) +
+        "</td>";
       table += "<td>" + cycle.y.toFixed(1) + "</td>";
       table += "</tr>\n";
     }
@@ -708,7 +726,16 @@ export function buildLogEntriesTable(cycles: Iterable<Readonly<api.ILogEntry>>):
     }
     for (const mat of cycle.material) {
       table += "<tr>";
-      table += "<td>" + format(cycle.endUTC, "MMM d, yyyy, h:mm aa") + "</td>";
+      table +=
+        "<td>" +
+        cycle.endUTC.toLocaleString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }) +
+        "</td>";
       table += "<td>" + mat.part + "-" + mat.proc.toString() + "</td>";
       table += "<td>" + stat_name(cycle) + "</td>";
       table += "<td>" + cycle.pal.toString() + "</td>";

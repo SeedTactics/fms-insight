@@ -37,7 +37,6 @@ import { TableBody } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableRow } from "@mui/material";
-import DateTimeDisplay from "./DateTimeDisplay.js";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { ChevronRight as ChevronRightIcon, ImportExport } from "@mui/icons-material";
@@ -473,10 +472,17 @@ export const LogEntry = React.memo(function LogEntry(props: LogEntryProps) {
         $invalidCycle={props.entry.details?.["PalletCycleInvalidated"] === "1"}
       >
         <TableCell size="small">
-          <DateTimeDisplay date={props.entry.endUTC} formatStr={"MMM d, yy"} />
+          {props.entry.endUTC.toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+            year: "2-digit",
+          })}
         </TableCell>
         <TableCell size="small">
-          <DateTimeDisplay date={props.entry.endUTC} formatStr={"hh:mm aa"} />
+          {props.entry.endUTC.toLocaleTimeString(undefined, {
+            hour: "numeric",
+            minute: "2-digit",
+          })}
         </TableCell>
         <TableCell size="small">{logType(props.entry)}</TableCell>
         <TableCell size="small">{display(props)}</TableCell>

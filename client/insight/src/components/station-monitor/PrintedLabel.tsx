@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import JsBarcode from "jsbarcode";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { format } from "date-fns";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useAtomValue } from "jotai";
 
@@ -98,7 +97,17 @@ function SinglePage(props: SinglePageProps) {
         <h2>SeedTactic: FMS Insight</h2>
       </div>
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <p style={{ fontSize: "x-large" }}>{format(new Date(), "eeee MMMM d, yyyy HH:mm:ss")}</p>
+        <p style={{ fontSize: "x-large" }}>
+          {new Date().toLocaleString(undefined, {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            second: "2-digit",
+          })}
+        </p>
       </div>
       <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
         <Barcode text={props.materialName ?? props.partName} />
@@ -229,7 +238,17 @@ function CombinedToOnePage(props: PrintedLabelProps) {
         <h2>SeedTactic: FMS Insight</h2>
       </div>
       <div style={{ display: "flex", justifyContent: "center" }}>
-        <p style={{ fontSize: "x-large" }}>{format(new Date(), "eeee MMMM d, yyyy HH:mm:ss")}</p>
+        <p style={{ fontSize: "x-large" }}>
+          {new Date().toLocaleString(undefined, {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            second: "2-digit",
+          })}
+        </p>
       </div>
       <div style={{ marginTop: "2em", display: "flex", justifyContent: "space-around" }}>
         <Barcode text={props.materialName ?? props.material[0].partName} />
