@@ -119,9 +119,9 @@ namespace DebugMachineWatchApiServer
             loadStation
           );
         },
-        ParseBarcode = (barcode, type, referer) =>
+        ParseBarcode = (barcode, referer) =>
         {
-          Serilog.Log.Information("Parsing barcode {barcode} {type} {referer}", barcode, type, referer);
+          Serilog.Log.Information("Parsing barcode {barcode} {referer}", barcode, referer);
           System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
           var commaIdx = barcode.IndexOf(',');
           if (commaIdx >= 0)
@@ -131,16 +131,11 @@ namespace DebugMachineWatchApiServer
             var mats = conn.GetMaterialDetailsForSerial(barcode);
             if (mats.Count > 0)
             {
-              return mats[mats.Count - 1];
+              return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
             }
             else
             {
-              return new MaterialDetails()
-              {
-                MaterialID = -1,
-                Serial = barcode,
-                PartName = "",
-              };
+              return new ScannedMaterial() { Casting = new ScannedCasting() { Serial = barcode }, };
             }
           }
         }

@@ -318,14 +318,14 @@ namespace BlackMaple.FMSInsight.API
         }
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<MaterialDetails> ParseBarcodeAsync(string barcode)
+        public virtual System.Threading.Tasks.Task<ScannedMaterial> ParseBarcodeAsync(string barcode)
         {
             return ParseBarcodeAsync(barcode, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<MaterialDetails> ParseBarcodeAsync(string barcode, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<ScannedMaterial> ParseBarcodeAsync(string barcode, System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/fms/parse-barcode?");
@@ -365,7 +365,7 @@ namespace BlackMaple.FMSInsight.API
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 200)
                         {
-                            var objectResponse_ = await ReadObjectResponseAsync<MaterialDetails>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            var objectResponse_ = await ReadObjectResponseAsync<ScannedMaterial>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
                             {
                                 throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
@@ -5606,6 +5606,17 @@ namespace BlackMaple.FMSInsight.API
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.19.0.0 (NJsonSchema v10.9.0.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class ScannedMaterial
+    {
+        [Newtonsoft.Json.JsonProperty("ExistingMaterial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public MaterialDetails ExistingMaterial { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("Casting", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public ScannedCasting Casting { get; set; }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.19.0.0 (NJsonSchema v10.9.0.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class MaterialDetails
     {
         [Newtonsoft.Json.JsonProperty("MaterialID", Required = Newtonsoft.Json.Required.Always)]
@@ -5629,6 +5640,23 @@ namespace BlackMaple.FMSInsight.API
 
         [Newtonsoft.Json.JsonProperty("Paths", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.IDictionary<string, int> Paths { get; set; }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.19.0.0 (NJsonSchema v10.9.0.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class ScannedCasting
+    {
+        [Newtonsoft.Json.JsonProperty("PossibleJobUniques", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<string> PossibleJobUniques { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("PossibleCastings", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<string> PossibleCastings { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("Workorder", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Workorder { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("Serial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Serial { get; set; }
 
     }
 

@@ -179,7 +179,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MaterialDetails"
+                  "$ref": "#/components/schemas/ScannedMaterial"
                 }
               }
             }
@@ -3710,6 +3710,28 @@
           }
         }
       },
+      "ScannedMaterial": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ExistingMaterial": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MaterialDetails"
+              }
+            ]
+          },
+          "Casting": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ScannedCasting"
+              }
+            ]
+          }
+        }
+      },
       "MaterialDetails": {
         "type": "object",
         "additionalProperties": false,
@@ -3748,6 +3770,34 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        }
+      },
+      "ScannedCasting": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "PossibleJobUniques": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "PossibleCastings": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "Workorder": {
+            "type": "string",
+            "nullable": true
+          },
+          "Serial": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

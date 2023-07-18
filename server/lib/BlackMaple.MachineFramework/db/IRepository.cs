@@ -405,7 +405,8 @@ namespace BlackMaple.MachineFramework
       IList<string> serials,
       string operatorName,
       string reason = null,
-      DateTime? timeUTC = null
+      DateTime? timeUTC = null,
+      bool throwOnExistingSerial = false
     );
 
     // --------------------------------------------------------------------------------

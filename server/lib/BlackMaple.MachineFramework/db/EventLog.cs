@@ -3421,7 +3421,8 @@ namespace BlackMaple.MachineFramework
       IList<string> serials,
       string operatorName,
       string reason = null,
-      DateTime? timeUTC = null
+      DateTime? timeUTC = null,
+      bool throwOnExistingSerial = false
     )
     {
       var ret = new List<LogEntry>();
@@ -3433,6 +3434,8 @@ namespace BlackMaple.MachineFramework
         using (var trans = _connection.BeginTransaction())
         using (var maxPosCmd = _connection.CreateCommand())
         using (var allocateCmd = _connection.CreateCommand())
+        using (var updatePartCmd = _connection.CreateCommand())
+        using (var checkCmd = _connection.CreateCommand())
         using (var getMatIdCmd = _connection.CreateCommand())
         using (var addToQueueCmd = _connection.CreateCommand())
         {
@@ -3446,11 +3449,32 @@ namespace BlackMaple.MachineFramework
             maxExistingPos = Convert.ToInt32(posObj);
           }
 
+          checkCmd.Transaction = trans;
+          checkCmd.CommandText =
+            "SELECT matdetails.MaterialID, "
+            + "(SELECT COUNT(*) FROM stations, stations_mat "
+            + "  WHERE stations.Counter = stations_mat.Counter "
+            + "  AND stations_mat.MaterialID = matdetails.MaterialID "
+            + "  AND stations.StationLoc IN ($lulLoc, $mcLoc)"
+            + ") as Started, "
+            + "(SELECT COUNT(*) FROM queues WHERE queues.MaterialID = matdetails.MaterialID) as Queued "
+            + "FROM matdetails "
+            + "WHERE matdetails.Serial = $ser "
+            + "ORDER BY matdetails.MaterialID DESC LIMIT 1";
+          checkCmd.Parameters.Add("$lulLoc", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+          checkCmd.Parameters.Add("$mcLoc", SqliteType.Integer).Value = (int)LogType.MachineCycle;
+          var checkSerialParam = checkCmd.Parameters.Add("ser", SqliteType.Text);
+
           allocateCmd.Transaction = trans;
           allocateCmd.CommandText =
             "INSERT INTO matdetails(PartName, NumProcesses, Serial) VALUES ($casting,1,$serial)";
           allocateCmd.Parameters.Add("casting", SqliteType.Text).Value = casting;
           var allocateSerialParam = allocateCmd.Parameters.Add("serial", SqliteType.Text);
+
+          updatePartCmd.Transaction = trans;
+          updatePartCmd.CommandText = "UPDATE matdetails SET PartName = $part WHERE MaterialID = $matid";
+          var updatePartPartParam = updatePartCmd.Parameters.Add("part", SqliteType.Text);
+          var updatePartMatIdParam = updatePartCmd.Parameters.Add("matid", SqliteType.Integer);
 
           getMatIdCmd.Transaction = trans;
           getMatIdCmd.CommandText = "SELECT last_insert_rowid()";
@@ -3465,9 +3489,45 @@ namespace BlackMaple.MachineFramework
 
           for (int i = 0; i < qty; i++)
           {
-            allocateSerialParam.Value = i < serials.Count ? (object)serials[i] : DBNull.Value;
-            allocateCmd.ExecuteNonQuery();
-            var matID = (long)getMatIdCmd.ExecuteScalar();
+            long matID = -1;
+
+            if (i < serials.Count)
+            {
+              checkSerialParam.Value = serials[i];
+              using (var reader = checkCmd.ExecuteReader())
+              {
+                if (reader.Read())
+                {
+                  var started = reader.GetInt32(1);
+                  var queued = reader.GetInt32(2);
+                  if (started == 0 && queued == 0 && !reader.IsDBNull(0))
+                  {
+                    matID = reader.GetInt64(0);
+                    // material has not yet started or in a queue, so we can reuse it
+                    updatePartPartParam.Value = casting;
+                    updatePartMatIdParam.Value = matID;
+                    updatePartCmd.ExecuteNonQuery();
+                  }
+                  else if (!reader.IsDBNull(0) && throwOnExistingSerial)
+                  {
+                    throw new Exception(
+                      "Serial "
+                        + serials[i]
+                        + " already exists in the database with MaterialID "
+                        + reader.GetInt64(0).ToString()
+                    );
+                  }
+                }
+              }
+            }
+
+            if (matID < 0)
+            {
+              allocateSerialParam.Value = i < serials.Count ? (object)serials[i] : DBNull.Value;
+              allocateCmd.ExecuteNonQuery();
+              matID = (long)getMatIdCmd.ExecuteScalar();
+            }
+
             matIds.Add(matID);
 
             if (i < serials.Count)

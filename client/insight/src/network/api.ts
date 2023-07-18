@@ -150,7 +150,7 @@ export class FmsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    parseBarcode(barcode: string | null): Promise<MaterialDetails> {
+    parseBarcode(barcode: string | null): Promise<ScannedMaterial> {
         let url_ = this.baseUrl + "/api/v1/fms/parse-barcode?";
         if (barcode === undefined)
             throw new Error("The parameter 'barcode' must be defined.");
@@ -170,14 +170,14 @@ export class FmsClient {
         });
     }
 
-    protected processParseBarcode(response: Response): Promise<MaterialDetails> {
+    protected processParseBarcode(response: Response): Promise<ScannedMaterial> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = MaterialDetails.fromJS(resultData200);
+            result200 = ScannedMaterial.fromJS(resultData200);
             return result200;
             });
         } else if (status !== 200 && status !== 204) {
@@ -185,7 +185,7 @@ export class FmsClient {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<MaterialDetails>(null as any);
+        return Promise.resolve<ScannedMaterial>(null as any);
     }
 
     enableVerboseLoggingForFiveMinutes(): Promise<void> {
@@ -4716,6 +4716,46 @@ export interface IProblemDetails {
     [key: string]: any;
 }
 
+export class ScannedMaterial implements IScannedMaterial {
+    existingMaterial?: MaterialDetails | undefined;
+    casting?: ScannedCasting | undefined;
+
+    constructor(data?: IScannedMaterial) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.existingMaterial = _data["ExistingMaterial"] ? MaterialDetails.fromJS(_data["ExistingMaterial"]) : <any>undefined;
+            this.casting = _data["Casting"] ? ScannedCasting.fromJS(_data["Casting"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): ScannedMaterial {
+        data = typeof data === 'object' ? data : {};
+        let result = new ScannedMaterial();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["ExistingMaterial"] = this.existingMaterial ? this.existingMaterial.toJSON() : <any>undefined;
+        data["Casting"] = this.casting ? this.casting.toJSON() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IScannedMaterial {
+    existingMaterial?: MaterialDetails | undefined;
+    casting?: ScannedCasting | undefined;
+}
+
 export class MaterialDetails implements IMaterialDetails {
     materialID!: number;
     jobUnique?: string | undefined;
@@ -4786,6 +4826,70 @@ export interface IMaterialDetails {
     workorder?: string | undefined;
     serial?: string | undefined;
     paths?: { [key: string]: number; } | undefined;
+}
+
+export class ScannedCasting implements IScannedCasting {
+    possibleJobUniques?: string[] | undefined;
+    possibleCastings?: string[] | undefined;
+    workorder?: string | undefined;
+    serial?: string | undefined;
+
+    constructor(data?: IScannedCasting) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            if (Array.isArray(_data["PossibleJobUniques"])) {
+                this.possibleJobUniques = [] as any;
+                for (let item of _data["PossibleJobUniques"])
+                    this.possibleJobUniques!.push(item);
+            }
+            if (Array.isArray(_data["PossibleCastings"])) {
+                this.possibleCastings = [] as any;
+                for (let item of _data["PossibleCastings"])
+                    this.possibleCastings!.push(item);
+            }
+            this.workorder = _data["Workorder"];
+            this.serial = _data["Serial"];
+        }
+    }
+
+    static fromJS(data: any): ScannedCasting {
+        data = typeof data === 'object' ? data : {};
+        let result = new ScannedCasting();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        if (Array.isArray(this.possibleJobUniques)) {
+            data["PossibleJobUniques"] = [];
+            for (let item of this.possibleJobUniques)
+                data["PossibleJobUniques"].push(item);
+        }
+        if (Array.isArray(this.possibleCastings)) {
+            data["PossibleCastings"] = [];
+            for (let item of this.possibleCastings)
+                data["PossibleCastings"].push(item);
+        }
+        data["Workorder"] = this.workorder;
+        data["Serial"] = this.serial;
+        return data;
+    }
+}
+
+export interface IScannedCasting {
+    possibleJobUniques?: string[] | undefined;
+    possibleCastings?: string[] | undefined;
+    workorder?: string | undefined;
+    serial?: string | undefined;
 }
 
 export class HistoricData implements IHistoricData {
