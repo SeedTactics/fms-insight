@@ -54,6 +54,7 @@ namespace BlackMaple.MachineFramework
   {
     AddAsUnassigned,
     RequireExistingMaterial,
+    RequireBarcodeScan,
     AddAndSpecifyJob
   }
 

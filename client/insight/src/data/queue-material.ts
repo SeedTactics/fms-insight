@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -35,16 +35,26 @@ import * as api from "../network/api.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { LogBackend } from "../network/backend.js";
 import { differenceInSeconds } from "date-fns";
+import { useAtomValue } from "jotai";
+import { currentStatus } from "../cell-status/current-status.js";
+import { fmsInformation } from "../network/server-settings.js";
+import { castingNames } from "../cell-status/names.js";
+import { barcodeMaterialDetail } from "../cell-status/material-details.js";
+import { useMemo } from "react";
 
-export interface JobAndGroups {
+export type SelectableJob = {
   readonly job: Readonly<api.IActiveJob>;
   readonly machinedProcs: ReadonlyArray<{
     readonly lastProc: number;
     readonly disabledMsg: string | null;
     readonly details?: string;
-    readonly queues: ReadonlySet<string>;
   }>;
-}
+};
+
+export type SelectableMaterialType = {
+  readonly castings: ReadonlyArray<string>;
+  readonly jobs: ReadonlyArray<SelectableJob>;
+};
 
 function describePath(path: Readonly<api.IProcPathInfo>): string {
   return `${
@@ -56,93 +66,96 @@ function describePath(path: Readonly<api.IProcPathInfo>): string {
   }; ${path.stops.map((s) => s.stationGroup + "#" + (s.stationNums ?? []).join(",")).join("->")}`;
 }
 
-interface RawMatDetails {
-  readonly path: string;
-  readonly queue: string | null;
-}
-
-function rawMatDetails(job: Readonly<api.IActiveJob>, pathIdx: number): RawMatDetails {
-  const queue = job.procsAndPaths[0].paths[pathIdx].inputQueue;
-  return {
-    path: describePath(job.procsAndPaths[0].paths[pathIdx]),
-    queue: queue !== undefined && queue !== "" ? queue : null,
-  };
-}
-
-function joinRawMatDetails(details: ReadonlyArray<RawMatDetails>): string {
-  return LazySeq.of(details).foldLeft("", (x, details) => x + " | " + details.path);
-}
-
-interface PathDetails {
-  readonly path: string;
-  readonly queue: string | null;
-}
-
-function pathDetails(job: Readonly<api.IActiveJob>, procIdx: number, pathIdx: number): PathDetails {
-  const queue = job.procsAndPaths[0].paths[pathIdx].outputQueue;
-  return {
-    path: describePath(job.procsAndPaths[procIdx].paths[pathIdx]),
-    queue: queue !== undefined && queue !== "" ? queue : null,
-  };
-}
-
-function joinDetails(details: ReadonlyArray<PathDetails>): string {
-  return LazySeq.of(details).foldLeft("", (x, details) =>
-    x === "" ? details.path : x + " | " + details.path
-  );
-}
-
-export function extractJobGroups(
+function extractJobGroups(
   job: Readonly<api.IActiveJob>,
-  fmsInfo: Readonly<api.IFMSInfo>
-): JobAndGroups {
+  fmsInfo: Readonly<api.IFMSInfo>,
+  toQueue: string
+): SelectableJob | null {
   const machinedProcs: {
     readonly lastProc: number;
     readonly disabledMsg: string | null;
     readonly details?: string;
-    readonly queues: ReadonlySet<string>;
   }[] = [];
 
-  const proc0Disabled =
-    fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAsUnassigned
-      ? "Raw material is added as unassigned to a specific job"
-      : fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireExistingMaterial
-      ? "Cannot add raw material that has not yet been created in the system"
-      : null;
+  const rawMatQueue = LazySeq.of(job.procsAndPaths?.[0].paths ?? []).anyMatch(
+    (p) => p.inputQueue === toQueue
+  );
 
-  const inProcDisabled =
-    fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.RequireExistingMaterial
-      ? "Cannot add in-process material that has not yet been created in the system"
-      : null;
-
-  // Raw material
-  const rawMatPaths = job.procsAndPaths[0].paths.map((_, pathIdx) => rawMatDetails(job, pathIdx));
-  machinedProcs.push({
-    lastProc: 0,
-    details: joinRawMatDetails(rawMatPaths),
-    disabledMsg: proc0Disabled,
-    queues: LazySeq.of(rawMatPaths)
-      .collect((p) => p.queue)
-      .toRSet((p) => p),
-  });
-
-  // paths besides the final path
-  for (let procIdx = 0; procIdx < job.procsAndPaths.length - 1; procIdx++) {
-    const paths = job.procsAndPaths[procIdx].paths.map((_, pathIdx) => pathDetails(job, procIdx, pathIdx));
+  if (rawMatQueue && fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAndSpecifyJob) {
+    // Raw material
     machinedProcs.push({
-      lastProc: procIdx + 1,
-      details: joinDetails(paths),
-      disabledMsg: inProcDisabled,
-      queues: LazySeq.of(paths)
-        .collect((p) => p.queue)
-        .toRSet((p) => p),
+      lastProc: 0,
+      details: job.procsAndPaths[0].paths.map(describePath).join(" | "),
+      disabledMsg: null,
     });
   }
 
-  return {
-    job,
-    machinedProcs,
-  };
+  if (fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.AddAndSpecifyJob) {
+    // paths besides the final path
+    for (let procIdx = 0; procIdx < job.procsAndPaths.length - 1; procIdx++) {
+      const matchingQueue = LazySeq.of(job.procsAndPaths[procIdx + 1].paths).anyMatch(
+        (p) => p.inputQueue === toQueue
+      );
+      machinedProcs.push({
+        lastProc: procIdx + 1,
+        details: job.procsAndPaths[procIdx].paths.map(describePath).join(" | "),
+        disabledMsg: matchingQueue ? "Material for this process is not loaded to " + toQueue : null,
+      });
+    }
+  }
+
+  const anyGoodPath = LazySeq.of(machinedProcs).anyMatch((p) => p.disabledMsg === null);
+
+  if (anyGoodPath) {
+    return {
+      job,
+      machinedProcs,
+    };
+  } else {
+    return null;
+  }
+}
+
+function possibleCastings(
+  currentSt: Readonly<api.ICurrentStatus>,
+  historicCastingNames: ReadonlySet<string>,
+  barcode: Readonly<api.IScannedMaterial> | null,
+  fmsInfo: Readonly<api.IFMSInfo>
+): ReadonlyArray<string> {
+  if (barcode?.casting?.possibleCastings && barcode.casting.possibleCastings.length > 0) {
+    return LazySeq.of(barcode.casting.possibleCastings)
+      .distinctAndSortBy((c) => c)
+      .toRArray();
+  } else if (fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireBarcodeScan) {
+    return [];
+  } else {
+    return LazySeq.ofObject(currentSt.jobs)
+      .flatMap(([, j]) => j.procsAndPaths[0].paths)
+      .collect((p) => (p.casting === "" ? null : p.casting))
+      .concat(historicCastingNames)
+      .distinctAndSortBy((c) => c)
+      .toRArray();
+  }
+}
+
+export function usePossibleNewMaterialTypes(toQueue: string | null): SelectableMaterialType {
+  const currentSt = useAtomValue(currentStatus);
+  const fmsInfo = useAtomValue(fmsInformation);
+  const castingsFromHistoric = useAtomValue(castingNames);
+  const barcode = useAtomValue(barcodeMaterialDetail);
+
+  return useMemo(() => {
+    if (toQueue === null) {
+      return { castings: [], jobs: [] };
+    } else {
+      return {
+        castings: possibleCastings(currentSt, castingsFromHistoric, barcode, fmsInfo),
+        jobs: LazySeq.ofObject(currentSt.jobs)
+          .collect(([, j]) => extractJobGroups(j, fmsInfo, toQueue))
+          .toSortedArray((j) => j.job.partName),
+      };
+    }
+  }, [currentSt, fmsInfo, toQueue, castingsFromHistoric, barcode]);
 }
 
 export interface JobRawMaterialData {

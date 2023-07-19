@@ -57,8 +57,8 @@ import {
   PromptForOperator,
   PromptForQueue,
   AddToQueueButton,
-  AddNewJobProcessState,
-  PromptForJob,
+  NewMaterialToQueueType,
+  PromptForMaterialType,
 } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { useAtomValue } from "jotai";
@@ -139,6 +139,10 @@ function useQueueDialogKind(queueNames: ReadonlyArray<string>): "None" | "MatInQ
   const curOnPallet = inProcMat !== null && inProcMat.location.type === api.LocType.OnPallet;
   if (curOnPallet) return "None";
 
+  // this is just a prelimiary check to see if we should show the dialog at all,
+  // other combinations of addInProcessMaterial and addRawMaterial are handled by the details
+  // shown inside the dialog, perhaps preventing the user from selecting a queue or job
+  // in certian cases (with an appropriate error message).
   const missingButMatRequired =
     existingMat === null &&
     fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.RequireExistingMaterial &&
@@ -154,8 +158,8 @@ function QueuesDialogCt({
   setEnteredOperator,
   selectedQueue,
   setSelectedQueue,
-  selectedJob,
-  setSelectedJob,
+  newMaterialTy,
+  setNewMaterialTy,
   queueNames,
 }: {
   toQueue: string | null;
@@ -163,8 +167,8 @@ function QueuesDialogCt({
   setEnteredOperator: (operator: string | null) => void;
   selectedQueue: string | null;
   setSelectedQueue: (q: string | null) => void;
-  selectedJob: AddNewJobProcessState | null;
-  setSelectedJob: (job: AddNewJobProcessState | null) => void;
+  newMaterialTy: NewMaterialToQueueType | null;
+  setNewMaterialTy: (job: NewMaterialToQueueType | null) => void;
   queueNames: ReadonlyArray<string>;
 }) {
   const kind = useQueueDialogKind(queueNames);
@@ -184,12 +188,16 @@ function QueuesDialogCt({
               selectedQueue={selectedQueue}
               setSelectedQueue={(q) => {
                 setSelectedQueue(q);
-                setSelectedJob(null);
+                setNewMaterialTy(null);
               }}
               queueNames={queueNames}
             />
           ) : undefined}
-          <PromptForJob selectedJob={selectedJob} setSelectedJob={setSelectedJob} toQueue={toQueue} />
+          <PromptForMaterialType
+            newMaterialTy={newMaterialTy}
+            setNewMaterialTy={setNewMaterialTy}
+            toQueue={toQueue}
+          />
           <PromptForOperator enteredOperator={enteredOperator} setEnteredOperator={setEnteredOperator} />
         </>
       );
@@ -199,13 +207,13 @@ function QueuesDialogCt({
 function QueueButtons({
   toQueue,
   enteredOperator,
-  selectedJob,
+  newMaterialTy,
   queueNames,
   onClose,
 }: {
   toQueue: string | null;
   enteredOperator: string | null;
-  selectedJob: AddNewJobProcessState | null;
+  newMaterialTy: NewMaterialToQueueType | null;
   queueNames: ReadonlyArray<string>;
   onClose: () => void;
 }) {
@@ -224,7 +232,7 @@ function QueueButtons({
     case "AddToQueue":
       return (
         <AddToQueueButton
-          selectedJob={selectedJob}
+          newMaterialTy={newMaterialTy}
           toQueue={toQueue}
           enteredOperator={enteredOperator}
           onClose={onClose}
@@ -241,7 +249,7 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
   const toShow = useAtomValue(matDetails.materialDialogOpen);
   const [selectedQueue, setSelectedQueue] = React.useState<string | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
-  const [selectedJob, setSelectedJob] = React.useState<AddNewJobProcessState | null>(null);
+  const [newMaterialTy, setNewMaterialTy] = React.useState<NewMaterialToQueueType | null>(null);
 
   let toQueue: string | null = null;
   if (toShow && toShow.type === "AddMatWithEnteredSerial") {
@@ -255,8 +263,8 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
   const onClose = React.useCallback(() => {
     setSelectedQueue(null);
     setEnteredOperator(null);
-    setSelectedJob(null);
-  }, [setSelectedQueue, setEnteredOperator, setSelectedJob]);
+    setNewMaterialTy(null);
+  }, [setSelectedQueue, setEnteredOperator, setNewMaterialTy]);
 
   return (
     <MaterialDialog
@@ -269,14 +277,14 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
           setEnteredOperator={setEnteredOperator}
           selectedQueue={selectedQueue}
           setSelectedQueue={setSelectedQueue}
-          selectedJob={selectedJob}
-          setSelectedJob={setSelectedJob}
+          newMaterialTy={newMaterialTy}
+          setNewMaterialTy={setNewMaterialTy}
           queueNames={queueNames}
         />
       }
       buttons={
         <QueueButtons
-          selectedJob={selectedJob}
+          newMaterialTy={newMaterialTy}
           toQueue={toQueue}
           enteredOperator={enteredOperator}
           queueNames={queueNames}

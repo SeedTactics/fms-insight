@@ -2212,6 +2212,7 @@ export interface IFMSInfo {
 export enum AddRawMaterialType {
     AddAsUnassigned = "AddAsUnassigned",
     RequireExistingMaterial = "RequireExistingMaterial",
+    RequireBarcodeScan = "RequireBarcodeScan",
     AddAndSpecifyJob = "AddAndSpecifyJob",
 }
 

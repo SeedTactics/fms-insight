@@ -78,7 +78,7 @@ export const materialDialogOpen = atom(
 // Material Details
 //--------------------------------------------------------------------------------
 
-const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | null>>(async (get) => {
+export const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | null>>(async (get) => {
   const toShow = get(matToShow);
   if (toShow && toShow.type === "Barcode") {
     return await FmsServerBackend.parseBarcode(toShow.barcode);
