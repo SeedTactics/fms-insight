@@ -52,8 +52,9 @@ import { useReactToPrint } from "react-to-print";
 import { PartIdenticon } from "./Material.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
-import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
+import { LazySeq } from "@seedtactics/immutable-collections";
 import {
+  SelectableCasting,
   SelectableJob,
   SelectableMaterialType,
   usePossibleNewMaterialTypes,
@@ -96,21 +97,21 @@ function SelectRawMaterial({
 }: {
   readonly newMaterialTy: NewMaterialToQueueType | null;
   readonly setNewMaterialTy: (j: NewMaterialToQueueType | null) => void;
-  readonly castings: OrderedSet<string>;
+  readonly castings: ReadonlyArray<SelectableCasting>;
   readonly indent?: boolean;
 }) {
   return (
     <List sx={indent ? (theme) => ({ pl: theme.spacing(4) }) : undefined}>
-      {castings.toAscLazySeq().map((casting) => (
-        <ListItem key={casting}>
+      {castings.map((casting) => (
+        <ListItem key={casting.casting}>
           <ListItemButton
-            selected={newMaterialTy?.kind === "RawMat" && newMaterialTy?.rawMatName === casting}
-            onClick={() => setNewMaterialTy({ kind: "RawMat", rawMatName: casting })}
+            selected={newMaterialTy?.kind === "RawMat" && newMaterialTy?.rawMatName === casting.casting}
+            onClick={() => setNewMaterialTy({ kind: "RawMat", rawMatName: casting.casting })}
           >
             <ListItemIcon>
-              <PartIdenticon part={casting} />
+              <PartIdenticon part={casting.casting} />
             </ListItemIcon>
-            <ListItemText primary={casting} />
+            <ListItemText primary={casting.casting} secondary={casting.message ?? undefined} />
           </ListItemButton>
         </ListItem>
       ))}
@@ -292,7 +293,7 @@ export function PromptForMaterialType({
   if (existingMat) return null;
   if (serial === null) return null;
 
-  if (materialTypes.castings.size === 0 && materialTypes.jobs.length === 0) {
+  if (materialTypes.castings.length === 0 && materialTypes.jobs.length === 0) {
     return <div>No scheduled material uses this queue</div>;
   }
 
@@ -306,7 +307,7 @@ export function PromptForMaterialType({
     );
   }
 
-  if (materialTypes.castings.size === 0) {
+  if (materialTypes.castings.length === 0) {
     return (
       <SelectJob
         jobs={materialTypes.jobs}
@@ -375,6 +376,27 @@ export function PromptForOperator({
         required={true}
         onChange={(e) => setEnteredOperator(e.target.value)}
       />
+    </div>
+  );
+}
+
+export function WorkorderFromBarcode() {
+  const currentSt = useAtomValue(currentStatus);
+  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
+
+  const workorderId = barcode?.casting?.workorder;
+  if (!workorderId) return null;
+
+  const comments = currentSt.workorders?.find((w) => w.workorderId === workorderId)?.comments ?? [];
+
+  return (
+    <div style={{ marginTop: "1em", marginLeft: "1em" }}>
+      <p>Workorder: {workorderId}</p>
+      <ul>
+        {comments.map((c, idx) => (
+          <li key={idx}>{c.comment}</li>
+        ))}
+      </ul>
     </div>
   );
 }

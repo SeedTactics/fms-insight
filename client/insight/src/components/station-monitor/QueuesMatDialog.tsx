@@ -59,6 +59,7 @@ import {
   AddToQueueButton,
   NewMaterialToQueueType,
   PromptForMaterialType,
+  WorkorderFromBarcode,
 } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { useAtomValue } from "jotai";
@@ -183,6 +184,7 @@ function QueuesDialogCt({
     case "AddToQueue":
       return (
         <>
+          <WorkorderFromBarcode />
           {requireSelectQueue ? (
             <PromptForQueue
               selectedQueue={selectedQueue}

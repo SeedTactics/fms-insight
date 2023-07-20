@@ -140,7 +140,8 @@ namespace DebugMachineWatchApiServer
                 Casting = new ScannedCasting()
                 {
                   Serial = barcode,
-                  PossibleCastings = ImmutableList.Create("Ccc", "Ddd")
+                  Workorder = "work1",
+                  PossibleCastings = ImmutableList.Create("part1", "part2")
                 },
               };
             }
