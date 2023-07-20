@@ -26,6 +26,7 @@
                 "Load": [1, 2],
                 "ExpectedLoadTime": "PT2M30S",
                 "Unload": [1, 2],
+                "Casting": "HistoricCasting",
                 "ExpectedUnloadTime": "PT2M30S",
                 "Stops": [
                   {

@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
+import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 import { LogBackend } from "../network/backend.js";
 import { differenceInSeconds } from "date-fns";
 import { useAtomValue } from "jotai";
 import { currentStatus } from "../cell-status/current-status.js";
 import { fmsInformation } from "../network/server-settings.js";
-import { castingNames } from "../cell-status/names.js";
+import { castingNames, rawMaterialQueues } from "../cell-status/names.js";
 import { barcodeMaterialDetail } from "../cell-status/material-details.js";
 import { useMemo } from "react";
 
@@ -52,7 +52,7 @@ export type SelectableJob = {
 };
 
 export type SelectableMaterialType = {
-  readonly castings: ReadonlyArray<string>;
+  readonly castings: OrderedSet<string>;
   readonly jobs: ReadonlyArray<SelectableJob>;
 };
 
@@ -77,11 +77,11 @@ function extractJobGroups(
     readonly details?: string;
   }[] = [];
 
-  const rawMatQueue = LazySeq.of(job.procsAndPaths?.[0].paths ?? []).anyMatch(
+  const matchesRawMatQueue = LazySeq.of(job.procsAndPaths?.[0].paths ?? []).anyMatch(
     (p) => p.inputQueue === toQueue
   );
 
-  if (rawMatQueue && fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAndSpecifyJob) {
+  if (matchesRawMatQueue && fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAndSpecifyJob) {
     // Raw material
     machinedProcs.push({
       lastProc: 0,
@@ -99,7 +99,7 @@ function extractJobGroups(
       machinedProcs.push({
         lastProc: procIdx + 1,
         details: job.procsAndPaths[procIdx].paths.map(describePath).join(" | "),
-        disabledMsg: matchingQueue ? "Material for this process is not loaded to " + toQueue : null,
+        disabledMsg: !matchingQueue ? "Material for this process is not loaded to " + toQueue : null,
       });
     }
   }
@@ -121,20 +121,24 @@ function possibleCastings(
   historicCastingNames: ReadonlySet<string>,
   barcode: Readonly<api.IScannedMaterial> | null,
   fmsInfo: Readonly<api.IFMSInfo>
-): ReadonlyArray<string> {
+): OrderedSet<string> {
   if (barcode?.casting?.possibleCastings && barcode.casting.possibleCastings.length > 0) {
-    return LazySeq.of(barcode.casting.possibleCastings)
-      .distinctAndSortBy((c) => c)
-      .toRArray();
-  } else if (fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireBarcodeScan) {
-    return [];
-  } else {
-    return LazySeq.ofObject(currentSt.jobs)
-      .flatMap(([, j]) => j.procsAndPaths[0].paths)
-      .collect((p) => (p.casting === "" ? null : p.casting))
-      .concat(historicCastingNames)
-      .distinctAndSortBy((c) => c)
-      .toRArray();
+    return OrderedSet.from(barcode.casting.possibleCastings);
+  }
+
+  switch (fmsInfo.addRawMaterial) {
+    case api.AddRawMaterialType.AddAndSpecifyJob:
+    case api.AddRawMaterialType.RequireBarcodeScan:
+    case api.AddRawMaterialType.RequireExistingMaterial:
+    case undefined:
+      return OrderedSet.empty();
+
+    case api.AddRawMaterialType.AddAsUnassigned:
+      return LazySeq.ofObject(currentSt.jobs)
+        .flatMap(([, j]) => j.procsAndPaths[0].paths)
+        .collect((p) => (p.casting === "" ? null : p.casting))
+        .concat(historicCastingNames)
+        .transform(OrderedSet.from);
   }
 }
 
@@ -143,13 +147,16 @@ export function usePossibleNewMaterialTypes(toQueue: string | null): SelectableM
   const fmsInfo = useAtomValue(fmsInformation);
   const castingsFromHistoric = useAtomValue(castingNames);
   const barcode = useAtomValue(barcodeMaterialDetail);
+  const rawMatQueues = useAtomValue(rawMaterialQueues);
 
   return useMemo(() => {
     if (toQueue === null) {
-      return { castings: [], jobs: [] };
+      return { castings: OrderedSet.empty(), jobs: [] };
     } else {
       return {
-        castings: possibleCastings(currentSt, castingsFromHistoric, barcode, fmsInfo),
+        castings: rawMatQueues.has(toQueue)
+          ? possibleCastings(currentSt, castingsFromHistoric, barcode, fmsInfo)
+          : OrderedSet.empty(),
         jobs: LazySeq.ofObject(currentSt.jobs)
           .collect(([, j]) => extractJobGroups(j, fmsInfo, toQueue))
           .toSortedArray((j) => j.job.partName),

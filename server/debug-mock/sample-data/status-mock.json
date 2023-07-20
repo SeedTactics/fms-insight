@@ -135,6 +135,7 @@
               "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "ExpectedUnloadTime": "PT5M",
+              "InputQueue": "Queue2",
               "Stops": [
                 {
                   "Tools": {},

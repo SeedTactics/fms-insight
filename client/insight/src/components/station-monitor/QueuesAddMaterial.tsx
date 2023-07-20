@@ -52,7 +52,7 @@ import { useReactToPrint } from "react-to-print";
 import { PartIdenticon } from "./Material.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
+import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 import {
   SelectableJob,
   SelectableMaterialType,
@@ -92,15 +92,17 @@ function SelectRawMaterial({
   newMaterialTy,
   setNewMaterialTy,
   castings,
+  indent,
 }: {
   readonly newMaterialTy: NewMaterialToQueueType | null;
   readonly setNewMaterialTy: (j: NewMaterialToQueueType | null) => void;
-  readonly castings: ReadonlyArray<string>;
+  readonly castings: OrderedSet<string>;
+  readonly indent?: boolean;
 }) {
   return (
-    <List>
-      {castings.map((casting) => (
-        <ListItem key={casting} sx={(theme) => ({ pl: theme.spacing(4) })}>
+    <List sx={indent ? (theme) => ({ pl: theme.spacing(4) }) : undefined}>
+      {castings.toAscLazySeq().map((casting) => (
+        <ListItem key={casting}>
           <ListItemButton
             selected={newMaterialTy?.kind === "RawMat" && newMaterialTy?.rawMatName === casting}
             onClick={() => setNewMaterialTy({ kind: "RawMat", rawMatName: casting })}
@@ -169,7 +171,7 @@ function SelectJob({
             {j.machinedProcs.map((p, idx) => (
               <Tooltip title={p.disabledMsg ?? ""} key={idx}>
                 <div>
-                  <ListItem sx={(theme) => ({ pl: theme.spacing(4) })}>
+                  <ListItem sx={(theme) => ({ pl: theme.spacing(indent ? 8 : 4) })}>
                     <ListItemButton
                       disabled={!!p.disabledMsg}
                       selected={
@@ -232,6 +234,7 @@ function SelectRawMatAndJob({
           castings={options.castings}
           newMaterialTy={newMaterialTy}
           setNewMaterialTy={setNewMaterialTy}
+          indent
         />
       </Collapse>
       <ListItem>
@@ -289,8 +292,8 @@ export function PromptForMaterialType({
   if (existingMat) return null;
   if (serial === null) return null;
 
-  if (materialTypes.castings.length === 0 && materialTypes.jobs.length === 0) {
-    return <div>No material can be added to this queue</div>;
+  if (materialTypes.castings.size === 0 && materialTypes.jobs.length === 0) {
+    return <div>No scheduled material uses this queue</div>;
   }
 
   if (materialTypes.jobs.length === 0) {
@@ -303,7 +306,7 @@ export function PromptForMaterialType({
     );
   }
 
-  if (materialTypes.castings.length === 0) {
+  if (materialTypes.castings.size === 0) {
     return (
       <SelectJob
         jobs={materialTypes.jobs}
@@ -514,7 +517,7 @@ export const AddBySerialDialog = React.memo(function AddBySerialDialog() {
           autoFocus
           value={serial || ""}
           onChange={(e) => setSerial(e.target.value)}
-          onKeyPress={(e) => {
+          onKeyDown={(e) => {
             if (e.key === "Enter" && serial && serial !== "") {
               e.preventDefault();
               lookup();

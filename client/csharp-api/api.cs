@@ -4520,8 +4520,11 @@ namespace BlackMaple.FMSInsight.API
         [System.Runtime.Serialization.EnumMember(Value = @"RequireExistingMaterial")]
         RequireExistingMaterial = 1,
 
+        [System.Runtime.Serialization.EnumMember(Value = @"RequireBarcodeScan")]
+        RequireBarcodeScan = 2,
+
         [System.Runtime.Serialization.EnumMember(Value = @"AddAndSpecifyJob")]
-        AddAndSpecifyJob = 2,
+        AddAndSpecifyJob = 3,
 
     }
 
@@ -5646,9 +5649,6 @@ namespace BlackMaple.FMSInsight.API
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "13.19.0.0 (NJsonSchema v10.9.0.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class ScannedCasting
     {
-        [Newtonsoft.Json.JsonProperty("PossibleJobUniques", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.Collections.Generic.ICollection<string> PossibleJobUniques { get; set; }
-
         [Newtonsoft.Json.JsonProperty("PossibleCastings", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<string> PossibleCastings { get; set; }
 

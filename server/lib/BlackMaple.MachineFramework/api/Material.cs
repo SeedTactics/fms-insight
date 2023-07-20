@@ -209,9 +209,6 @@ namespace BlackMaple.MachineFramework
   public record ScannedCasting
   {
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public ImmutableList<string>? PossibleJobUniques { get; init; }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<string>? PossibleCastings { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]

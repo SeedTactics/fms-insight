@@ -135,10 +135,19 @@ namespace DebugMachineWatchApiServer
             }
             else
             {
-              return new ScannedMaterial() { Casting = new ScannedCasting() { Serial = barcode }, };
+              return new ScannedMaterial()
+              {
+                Casting = new ScannedCasting()
+                {
+                  Serial = barcode,
+                  PossibleCastings = ImmutableList.Create("Ccc", "Ddd")
+                },
+              };
             }
           }
-        }
+        },
+        AddRawMaterial = AddRawMaterialType.RequireBarcodeScan,
+        AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial
       };
 
       var hostB = BlackMaple.MachineFramework.Program.CreateHostBuilder(

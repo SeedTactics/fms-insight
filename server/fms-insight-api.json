@@ -3779,13 +3779,6 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "PossibleJobUniques": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "type": "string"
-            }
-          },
           "PossibleCastings": {
             "type": "array",
             "nullable": true,

@@ -4830,7 +4830,6 @@ export interface IMaterialDetails {
 }
 
 export class ScannedCasting implements IScannedCasting {
-    possibleJobUniques?: string[] | undefined;
     possibleCastings?: string[] | undefined;
     workorder?: string | undefined;
     serial?: string | undefined;
@@ -4846,11 +4845,6 @@ export class ScannedCasting implements IScannedCasting {
 
     init(_data?: any) {
         if (_data) {
-            if (Array.isArray(_data["PossibleJobUniques"])) {
-                this.possibleJobUniques = [] as any;
-                for (let item of _data["PossibleJobUniques"])
-                    this.possibleJobUniques!.push(item);
-            }
             if (Array.isArray(_data["PossibleCastings"])) {
                 this.possibleCastings = [] as any;
                 for (let item of _data["PossibleCastings"])
@@ -4870,11 +4864,6 @@ export class ScannedCasting implements IScannedCasting {
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.possibleJobUniques)) {
-            data["PossibleJobUniques"] = [];
-            for (let item of this.possibleJobUniques)
-                data["PossibleJobUniques"].push(item);
-        }
         if (Array.isArray(this.possibleCastings)) {
             data["PossibleCastings"] = [];
             for (let item of this.possibleCastings)
@@ -4887,7 +4876,6 @@ export class ScannedCasting implements IScannedCasting {
 }
 
 export interface IScannedCasting {
-    possibleJobUniques?: string[] | undefined;
     possibleCastings?: string[] | undefined;
     workorder?: string | undefined;
     serial?: string | undefined;
