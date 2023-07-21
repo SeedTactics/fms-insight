@@ -321,15 +321,17 @@ namespace DebugMachineWatchApiServer
       int qty,
       string queue,
       IList<string> serials,
-      string operatorName = null
+      string workorder,
+      string operatorName
     )
     {
       Serilog.Log.Information(
-        "AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {@serials} {oper}",
+        "AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {@serials} {workorder} {oper}",
         casting,
         qty,
         queue,
         serials,
+        workorder,
         operatorName
       );
       var ret = new List<InProcessMaterial>();
@@ -343,6 +345,7 @@ namespace DebugMachineWatchApiServer
           Process = 0,
           Path = 1,
           Serial = i < serials.Count ? serials[i] : null,
+          WorkorderId = workorder,
           Location = new InProcessMaterialLocation()
           {
             Type = InProcessMaterialLocation.LocType.InQueue,

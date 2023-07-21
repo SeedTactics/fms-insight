@@ -165,7 +165,8 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] string queue,
       [FromBody] List<string> serials,
       [FromQuery] int qty = 1,
-      [FromQuery] string operName = null
+      [FromQuery] string operName = null,
+      [FromQuery] string workorder = null
     )
     {
       if (string.IsNullOrEmpty(castingName))
@@ -173,11 +174,12 @@ namespace BlackMaple.MachineFramework.Controllers
       if (string.IsNullOrEmpty(queue))
         throw new BadRequestException("Queue must be non-empty");
       return _impl.Backend.QueueControl.AddUnallocatedCastingToQueue(
-        castingName,
-        qty,
-        queue,
-        serials,
-        operName
+        casting: castingName,
+        qty: qty,
+        queue: queue,
+        serial: serials,
+        workorder: workorder,
+        operatorName: operName
       );
     }
 

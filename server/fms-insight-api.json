@@ -544,6 +544,15 @@
               "nullable": true
             },
             "x-position": 5
+          },
+          {
+            "name": "workorder",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 6
           }
         ],
         "requestBody": {

@@ -407,6 +407,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         qty: 2,
         queue: "q1",
         serial: new[] { "aaa" },
+        workorder: null,
         operatorName: "theoper"
       )
       .Should()
@@ -917,6 +918,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         qty: 2,
         queue: "q1",
         serial: new[] { "aaa" },
+        workorder: null,
         operatorName: "theoper"
       )
       .Should()

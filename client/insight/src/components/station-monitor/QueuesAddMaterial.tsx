@@ -145,7 +145,7 @@ function SelectJob({
                 setCurCollapse(
                   curCollapse && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
                     ? null
-                    : { kind: "Job", unique: j.job.unique }
+                    : { kind: "Job", unique: j.job.unique },
                 );
               }}
             >
@@ -245,7 +245,7 @@ function SelectRawMatAndJob({
             setCurCollapse(
               curCollapse && (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")
                 ? null
-                : { kind: "AllJobs" }
+                : { kind: "AllJobs" },
             );
           }}
         >
@@ -382,9 +382,7 @@ export function PromptForOperator({
 
 export function WorkorderFromBarcode() {
   const currentSt = useAtomValue(currentStatus);
-  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
-
-  const workorderId = barcode?.casting?.workorder;
+  const workorderId = useAtomValue(matDetails.workorderInMaterialDialog);
   if (!workorderId) return null;
 
   const comments = currentSt.workorders?.find((w) => w.workorderId === workorderId)?.comments ?? [];
@@ -417,6 +415,7 @@ export function AddToQueueButton({
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
   const newSerial = useAtomValue(matDetails.serialInMaterialDialog);
+  const newWorkorder = useAtomValue(matDetails.workorderInMaterialDialog);
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
   const evts = useAtomValue(matDetails.materialInDialogEvents);
@@ -434,7 +433,7 @@ export function AddToQueueButton({
             e.details?.["PalletCycleInvalidated"] !== "1" &&
             (e.type === api.LogType.LoadUnloadCycle ||
               e.type === api.LogType.MachineCycle ||
-              e.type === api.LogType.AddToQueue)
+              e.type === api.LogType.AddToQueue),
         )
         .flatMap((e) => e.material)
         .filter((m) => m.id === existingMat.materialID)
@@ -491,6 +490,7 @@ export function AddToQueueButton({
             quantity: 1,
             queue: toQueue ?? "",
             serials: newSerial ? [newSerial] : undefined,
+            workorder: newWorkorder,
             operator: enteredOperator ?? operator,
           });
         }
@@ -599,6 +599,7 @@ function AddAndPrintOnClientButton({
         quantity: qty,
         queue: queue,
         operator: operator,
+        workorder: null,
         onNewMaterial: (mats) => {
           setMaterialToPrint(mats);
         },
@@ -654,10 +655,10 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
         .concat(LazySeq.of(historicCastNames).map((c) => ({ casting: c, cnt: 0 })))
         .buildOrderedMap<string, number>(
           (c) => c.casting,
-          (old, c) => (old === undefined ? c.cnt : old + c.cnt)
+          (old, c) => (old === undefined ? c.cnt : old + c.cnt),
         )
         .toAscLazySeq(),
-    [currentSt.jobs, historicCastNames]
+    [currentSt.jobs, historicCastNames],
   );
 
   function close() {
@@ -674,6 +675,7 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
         casting: selectedCasting,
         quantity: qty,
         queue: queue,
+        workorder: null,
         operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
       });
     }

@@ -360,6 +360,7 @@ namespace MazakMachineInterface
       int qty,
       string queue,
       IList<string> serial,
+      string workorder,
       string operatorName
     )
     {
@@ -377,7 +378,7 @@ namespace MazakMachineInterface
           qty: qty,
           queue: queue,
           serials: serial,
-          workorder: null,
+          workorder: workorder,
           operatorName: operatorName,
           reason: "SetByOperator"
         );

@@ -71,7 +71,7 @@ export const materialDialogOpen = atom(
     } else {
       set(matToShow, mat);
     }
-  }
+  },
 );
 
 //--------------------------------------------------------------------------------
@@ -163,6 +163,28 @@ export const serialInMaterialDialog = atom<Promise<string | null>>(async (get) =
   }
 });
 
+export const workorderInMaterialDialog = atom<Promise<string | null>>(async (get) => {
+  const toShow = get(matToShow);
+  if (toShow === null) return null;
+  switch (toShow.type) {
+    case "InProcMat":
+      return toShow.inproc.workorderId ?? null;
+    case "MatSummary":
+      return toShow.summary.workorderId ?? null;
+    case "MatDetails":
+      return toShow.details.workorder ?? null;
+    case "LogMat":
+      return toShow.logMat.workorder ?? null;
+    case "Barcode": {
+      const barcodeMat = await get(barcodeMaterialDetail);
+      return barcodeMat?.existingMaterial?.workorder ?? barcodeMat?.casting?.workorder ?? null;
+    }
+    case "ManuallyEnteredSerial":
+    case "AddMatWithEnteredSerial":
+      return null;
+  }
+});
+
 //--------------------------------------------------------------------------------
 // Events
 //--------------------------------------------------------------------------------
@@ -206,7 +228,7 @@ export const materialInDialogEvents = atom<ReadonlyArray<Readonly<ILogEntry>>>((
     .concat(otherEvts.state === "hasData" ? otherEvts.data : [])
     .sortBy(
       (e) => e.endUTC.getTime(),
-      (e) => e.counter
+      (e) => e.counter,
     )
     .concat(evtsFromUpdate)
     .toRArray();
@@ -234,7 +256,7 @@ export const materialInDialogInspections = atom<MaterialToShowInspections>((get)
       ? curMat.summary.signaledInspections
       : curMat.type === "InProcMat"
       ? curMat.inproc.signaledInspections
-      : []
+      : [],
   );
   const completedTypes = new Set<string>();
 
@@ -280,9 +302,9 @@ export const possibleWorkordersForMaterialInDialog = atom<Promise<ReadonlyArray<
 
     return LazySeq.of(works).toSortedArray(
       (w) => w.dueDate.getTime(),
-      (w) => -w.priority
+      (w) => -w.priority,
     );
-  }
+  },
 );
 
 //--------------------------------------------------------------------------------
@@ -306,7 +328,7 @@ export function useForceInspection(): [(data: ForceInspectionData) => void, bool
       1,
       data.inspect,
       data.mat.jobUnique,
-      data.mat.partName
+      data.mat.partName,
     )
       .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
       .finally(() => setUpdating(false));
@@ -338,7 +360,7 @@ export function useCompleteInspection(): [(data: CompleteInspectionData) => void
         extraData: data.operator ? { operator: data.operator } : undefined,
       }),
       data.mat.jobUnique,
-      data.mat.partName
+      data.mat.partName,
     ).finally(() => setUpdating(false));
   }, []);
 
@@ -365,7 +387,7 @@ export function useCompleteCloseout(): [(d: CompleteCloseoutData) => void, boole
         extraData: d.operator ? { operator: d.operator } : undefined,
       }),
       d.mat.jobUnique,
-      d.mat.partName
+      d.mat.partName,
     ).finally(() => setUpdating(false));
   }, []);
 
@@ -432,13 +454,13 @@ export function useRemoveFromQueue(): [(matId: number, operator: string | null) 
 
 export function useSignalForQuarantine(): [
   (matId: number, operator: string | null, reason: string) => void,
-  boolean
+  boolean,
 ] {
   const [updating, setUpdating] = useState<boolean>(false);
   const callback = useCallback((matId: number, operator: string | null, reason: string) => {
     setUpdating(true);
     JobsBackend.signalMaterialForQuarantine(matId, operator, reason === "" ? undefined : reason).finally(() =>
-      setUpdating(false)
+      setUpdating(false),
     );
   }, []);
 
@@ -462,7 +484,7 @@ export function useAddExistingMaterialToQueue(): [(d: AddExistingMaterialToQueue
       new QueuePosition({
         queue: d.queue,
         position: d.queuePosition,
-      })
+      }),
     ).finally(() => setUpdating(false));
   }, []);
 
@@ -492,7 +514,7 @@ export function useAddNewMaterialToQueue(): [(d: AddNewMaterialToQueueData) => v
       d.queue,
       d.queuePosition,
       d.operator,
-      d.serial || ""
+      d.serial || "",
     )
       .then((m) => {
         if (d.onNewMaterial && m) {
@@ -512,6 +534,7 @@ export interface AddNewCastingToQueueData {
   readonly quantity: number;
   readonly queue: string;
   readonly serials?: ReadonlyArray<string>;
+  readonly workorder: string | null;
   readonly operator: string | null;
   readonly onNewMaterial?: (mats: ReadonlyArray<Readonly<IInProcessMaterial>>) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -523,7 +546,7 @@ export function useAddNewCastingToQueue(): [(d: AddNewCastingToQueueData) => voi
   const callback = useCallback((d: AddNewCastingToQueueData) => {
     setUpdating(true);
 
-    JobsBackend.addUnallocatedCastingToQueue(d.casting, d.queue, d.quantity, d.operator, [
+    JobsBackend.addUnallocatedCastingToQueue(d.casting, d.queue, d.quantity, d.operator, d.workorder, [
       ...(d.serials || []),
     ])
       .then((ms) => {

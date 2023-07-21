@@ -383,6 +383,7 @@ namespace BlackMaple.MachineFramework
       int qty,
       string queue,
       IList<string> serial,
+      string workorder,
       string operatorName
     )
     {
@@ -399,7 +400,7 @@ namespace BlackMaple.MachineFramework
         qty: qty,
         queue: queue,
         serials: serial,
-        workorder: null,
+        workorder: workorder,
         operatorName: operatorName,
         reason: "SetByOperator"
       );
@@ -415,6 +416,7 @@ namespace BlackMaple.MachineFramework
             Process = 0,
             Path = 1,
             Serial = log.Material.First().Serial,
+            WorkorderId = workorder,
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.InQueue,
@@ -437,12 +439,21 @@ namespace BlackMaple.MachineFramework
       int qty,
       string queue,
       IList<string> serial,
+      string workorder,
       string operatorName
     )
     {
       using (var ldb = _repo.OpenConnection())
       {
-        return AddUnallocatedCastingToQueue(ldb, casting, qty, queue, serial, operatorName);
+        return AddUnallocatedCastingToQueue(
+          logDB: ldb,
+          casting: casting,
+          qty: qty,
+          queue: queue,
+          serial: serial,
+          workorder: workorder,
+          operatorName: operatorName
+        );
       }
     }
 
