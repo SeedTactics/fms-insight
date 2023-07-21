@@ -153,7 +153,8 @@ namespace Makino
       int qty,
       string queue,
       IList<string> serial,
-      string operatorName = null
+      string workorder,
+      string operatorName
     )
     {
       //do nothing

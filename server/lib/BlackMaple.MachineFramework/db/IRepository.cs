@@ -403,6 +403,7 @@ namespace BlackMaple.MachineFramework
       int qty,
       string queue,
       IList<string> serials,
+      string workorder,
       string operatorName,
       string reason = null,
       DateTime? timeUTC = null,

@@ -84,7 +84,8 @@ namespace BlackMaple.MachineFramework
       int qty,
       string queue,
       IList<string> serial,
-      string operatorName = null
+      string workorder,
+      string operatorName
     );
 
     /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional

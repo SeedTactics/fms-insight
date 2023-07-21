@@ -550,7 +550,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    addUnallocatedCastingToQueue(castingName: string, queue: string | null, qty: number | undefined, operName: string | null | undefined, serials: string[]): Promise<InProcessMaterial[]> {
+    addUnallocatedCastingToQueue(castingName: string, queue: string | null, qty: number | undefined, operName: string | null | undefined, workorder: string | null | undefined, serials: string[]): Promise<InProcessMaterial[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/casting/{castingName}?";
         if (castingName === undefined || castingName === null)
             throw new Error("The parameter 'castingName' must be defined.");
@@ -565,6 +565,8 @@ export class JobsClient {
             url_ += "qty=" + encodeURIComponent("" + qty) + "&";
         if (operName !== undefined && operName !== null)
             url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+        if (workorder !== undefined && workorder !== null)
+            url_ += "workorder=" + encodeURIComponent("" + workorder) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(serials);

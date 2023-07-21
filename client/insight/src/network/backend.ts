@@ -44,12 +44,12 @@ export interface JobAPI {
   removeMaterialFromAllQueues(materialId: number, operatorName: string | undefined): Promise<void>;
   bulkRemoveMaterialFromQueues(
     operatorName: string | null,
-    materialIds: ReadonlyArray<number> | null
+    materialIds: ReadonlyArray<number> | null,
   ): Promise<void>;
   setMaterialInQueue(
     materialId: number,
     operatorName: string | null,
-    queue: api.QueuePosition
+    queue: api.QueuePosition,
   ): Promise<void>;
   addUnprocessedMaterialToQueue(
     jobUnique: string,
@@ -57,7 +57,7 @@ export interface JobAPI {
     queue: string,
     pos: number,
     operatorName: string | null,
-    serial: string
+    serial: string,
   ): Promise<Readonly<api.IInProcessMaterial> | undefined>;
 
   addUnallocatedCastingToQueue(
@@ -65,23 +65,24 @@ export interface JobAPI {
     queue: string,
     qty: number,
     operatrorName: string | null,
-    serials: string[]
+    workorder: string | null,
+    serials: string[],
   ): Promise<ReadonlyArray<Readonly<api.IInProcessMaterial>>>;
   signalMaterialForQuarantine(
     materialId: number,
     operName: string | null,
-    reason: string | undefined
+    reason: string | undefined,
   ): Promise<void>;
   swapMaterialOnPallet(
     materialId: number,
     operName: string | null,
-    mat: Readonly<api.IMatToPutOnPallet>
+    mat: Readonly<api.IMatToPutOnPallet>,
   ): Promise<void>;
   invalidatePalletCycle(
     materialId: number,
     putMatInQueue: string | null,
     operName: string | null,
-    process: number
+    process: number,
   ): Promise<void>;
 }
 
@@ -96,7 +97,7 @@ export interface LogAPI {
   get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   recent(
     lastSeenCounter: number,
-    expectedEndUTCofLastSeen: Date | null | undefined
+    expectedEndUTCofLastSeen: Date | null | undefined,
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
@@ -109,35 +110,35 @@ export interface LogAPI {
     process: number,
     inspect: boolean,
     jobUnique?: string,
-    partName?: string
+    partName?: string,
   ): Promise<Readonly<api.ILogEntry>>;
   recordInspectionCompleted(
     insp: api.NewInspectionCompleted,
     jobUnique?: string,
-    partName?: string
+    partName?: string,
   ): Promise<Readonly<api.ILogEntry>>;
   recordCloseoutCompleted(
     insp: api.NewCloseout,
     jobUnique?: string,
-    partName?: string
+    partName?: string,
   ): Promise<Readonly<api.ILogEntry>>;
   setWorkorder(
     materialID: number,
     process: number,
     workorder: string,
     jobUnique?: string,
-    partName?: string
+    partName?: string,
   ): Promise<Readonly<api.ILogEntry>>;
   recordOperatorNotes(
     materialID: number,
     process: number,
     operatorName: string | null,
-    notes: string
+    notes: string,
   ): Promise<Readonly<api.ILogEntry>>;
   recordWorkorderComment(
     workorder: string,
     operName: string | null | undefined,
-    comment: string
+    comment: string,
   ): Promise<Readonly<api.ILogEntry>>;
 }
 
@@ -149,7 +150,7 @@ export interface MachineAPI {
   getProgramRevisionsInDescendingOrderOfRevision(
     programName: string | null,
     count: number,
-    revisionToStart: number | undefined
+    revisionToStart: number | undefined,
   ): Promise<ReadonlyArray<Readonly<api.IProgramRevision>>>;
 }
 
@@ -186,7 +187,7 @@ export function setUserToken(u: User): void {
       url,
       init
         ? { ...init, headers: { ...init.headers, Authorization: "Bearer " + token } }
-        : { headers: { Authorization: "Bearer " + token } }
+        : { headers: { Authorization: "Bearer " + token } },
     );
   }
   FmsServerBackend = new api.FmsClient(undefined, { fetch });
@@ -201,7 +202,7 @@ export function instructionUrl(
   matId: number,
   pallet: number | null,
   proc: number | null,
-  operator: string | null
+  operator: string | null,
 ): string {
   return (
     "/api/v1/fms/find-instructions/" +

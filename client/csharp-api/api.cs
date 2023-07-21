@@ -1227,14 +1227,14 @@ namespace BlackMaple.FMSInsight.API
         }
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<InProcessMaterial>> AddUnallocatedCastingToQueueAsync(string castingName, string queue, int? qty, string operName, System.Collections.Generic.IEnumerable<string> serials)
+        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<InProcessMaterial>> AddUnallocatedCastingToQueueAsync(string castingName, string queue, int? qty, string operName, string workorder, System.Collections.Generic.IEnumerable<string> serials)
         {
-            return AddUnallocatedCastingToQueueAsync(castingName, queue, qty, operName, serials, System.Threading.CancellationToken.None);
+            return AddUnallocatedCastingToQueueAsync(castingName, queue, qty, operName, workorder, serials, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<InProcessMaterial>> AddUnallocatedCastingToQueueAsync(string castingName, string queue, int? qty, string operName, System.Collections.Generic.IEnumerable<string> serials, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<InProcessMaterial>> AddUnallocatedCastingToQueueAsync(string castingName, string queue, int? qty, string operName, string workorder, System.Collections.Generic.IEnumerable<string> serials, System.Threading.CancellationToken cancellationToken)
         {
             if (castingName == null)
                 throw new System.ArgumentNullException("castingName");
@@ -1253,6 +1253,10 @@ namespace BlackMaple.FMSInsight.API
             if (operName != null)
             {
                 urlBuilder_.Append(System.Uri.EscapeDataString("operName") + "=").Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            if (workorder != null)
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("workorder") + "=").Append(System.Uri.EscapeDataString(ConvertToString(workorder, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
 
