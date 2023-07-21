@@ -3419,6 +3419,7 @@ namespace BlackMaple.MachineFramework
       int qty,
       string queue,
       IList<string> serials,
+      string workorder,
       string operatorName,
       string reason = null,
       DateTime? timeUTC = null,
@@ -3467,13 +3468,16 @@ namespace BlackMaple.MachineFramework
 
           allocateCmd.Transaction = trans;
           allocateCmd.CommandText =
-            "INSERT INTO matdetails(PartName, NumProcesses, Serial) VALUES ($casting,1,$serial)";
+            "INSERT INTO matdetails(PartName, NumProcesses, Serial,Workorder) VALUES ($casting,1,$serial,$workorder)";
           allocateCmd.Parameters.Add("casting", SqliteType.Text).Value = casting;
           var allocateSerialParam = allocateCmd.Parameters.Add("serial", SqliteType.Text);
+          var allocateWorkParam = allocateCmd.Parameters.Add("workorder", SqliteType.Text);
 
           updatePartCmd.Transaction = trans;
-          updatePartCmd.CommandText = "UPDATE matdetails SET PartName = $part WHERE MaterialID = $matid";
+          updatePartCmd.CommandText =
+            "UPDATE matdetails SET PartName = $part, Workorder = $work WHERE MaterialID = $matid";
           var updatePartPartParam = updatePartCmd.Parameters.Add("part", SqliteType.Text);
+          var updatePartWorkParam = updatePartCmd.Parameters.Add("work", SqliteType.Text);
           var updatePartMatIdParam = updatePartCmd.Parameters.Add("matid", SqliteType.Integer);
 
           getMatIdCmd.Transaction = trans;
@@ -3506,6 +3510,9 @@ namespace BlackMaple.MachineFramework
                     // material has not yet started or in a queue, so we can reuse it
                     updatePartPartParam.Value = casting;
                     updatePartMatIdParam.Value = matID;
+                    updatePartWorkParam.Value = string.IsNullOrEmpty(workorder)
+                      ? DBNull.Value
+                      : (object)workorder;
                     updatePartCmd.ExecuteNonQuery();
                   }
                   else if (!reader.IsDBNull(0) && throwOnExistingSerial)
@@ -3524,6 +3531,7 @@ namespace BlackMaple.MachineFramework
             if (matID < 0)
             {
               allocateSerialParam.Value = i < serials.Count ? (object)serials[i] : DBNull.Value;
+              allocateWorkParam.Value = string.IsNullOrEmpty(workorder) ? DBNull.Value : (object)workorder;
               allocateCmd.ExecuteNonQuery();
               matID = (long)getMatIdCmd.ExecuteScalar();
             }
@@ -3553,6 +3561,31 @@ namespace BlackMaple.MachineFramework
                 Result = serials[i],
               };
               ret.Add(AddLogEntry(trans, serLog, null, null));
+            }
+
+            if (!string.IsNullOrEmpty(workorder))
+            {
+              var workAssin = new NewEventLogEntry()
+              {
+                Material = new[]
+                {
+                  new EventLogMaterial()
+                  {
+                    MaterialID = matID,
+                    Process = 0,
+                    Face = ""
+                  }
+                },
+                Pallet = 0,
+                LogType = LogType.OrderAssignment,
+                LocationName = "Order",
+                LocationNum = 1,
+                Program = "",
+                StartOfCycle = false,
+                EndTimeUTC = addTimeUTC,
+                Result = workorder,
+              };
+              ret.Add(AddLogEntry(trans, workAssin, null, null));
             }
 
             addQueueMatIdParam.Value = matID;

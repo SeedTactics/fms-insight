@@ -373,11 +373,12 @@ namespace MazakMachineInterface
       using (var logDb = logDbCfg.OpenConnection())
       {
         var mats = logDb.BulkAddNewCastingsInQueue(
-          casting,
-          qty,
-          queue,
-          serial,
-          operatorName,
+          casting: casting,
+          qty: qty,
+          queue: queue,
+          serials: serial,
+          workorder: null,
+          operatorName: operatorName,
           reason: "SetByOperator"
         );
         matIds = mats.MaterialIds;

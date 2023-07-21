@@ -3228,13 +3228,18 @@ namespace MachineWatchTest
     }
 
     [Theory]
-    [InlineData(true, true)]
-    [InlineData(true, false)]
-    [InlineData(false, true)]
-    [InlineData(false, false)]
-    public void BulkAddRemoveCastings(bool useSerial, bool existingMats)
+    [InlineData(true, true, true)]
+    [InlineData(true, true, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, true)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, false, false)]
+    public void BulkAddRemoveCastings(bool useSerial, bool existingMats, bool useWorkorder)
     {
       var addTime = DateTime.UtcNow.AddHours(-2);
+      var workorder = useWorkorder ? "TheWork" : "";
 
       long matOffset = 0;
       int posOffset = 0;
@@ -3261,6 +3266,7 @@ namespace MachineWatchTest
         queue: "queueQQ",
         useSerial ? new[] { "1", "2", "3", "4", "5" } : new string[] { },
         operatorName: "operName",
+        workorder: workorder,
         reason: "TheReason",
         timeUTC: addTime
       );
@@ -3282,7 +3288,7 @@ namespace MachineWatchTest
                 part: "castingQ",
                 numProc: 1,
                 serial: useSerial ? i.ToString() : "",
-                workorder: "",
+                workorder: workorder,
                 face: ""
               )
             },
@@ -3318,7 +3324,7 @@ namespace MachineWatchTest
                       part: "castingQ",
                       numProc: 1,
                       serial: useSerial ? i.ToString() : "",
-                      workorder: "",
+                      workorder: workorder,
                       face: ""
                     )
                   },
@@ -3330,6 +3336,41 @@ namespace MachineWatchTest
                   start: false,
                   endTime: addTime,
                   result: i.ToString()
+                )
+            )
+        );
+      }
+
+      if (useWorkorder)
+      {
+        expectedLogs.AddRange(
+          Enumerable
+            .Range(1, 5)
+            .Select(
+              i =>
+                new LogEntry(
+                  cntr: -1,
+                  mat: new[]
+                  {
+                    new LogMaterial(
+                      matID: matOffset + i,
+                      uniq: "",
+                      proc: 0,
+                      part: "castingQ",
+                      numProc: 1,
+                      serial: useSerial ? i.ToString() : "",
+                      workorder: workorder,
+                      face: ""
+                    )
+                  },
+                  pal: 0,
+                  ty: LogType.OrderAssignment,
+                  locName: "Order",
+                  locNum: 1,
+                  prog: "",
+                  start: false,
+                  endTime: addTime,
+                  result: workorder
                 )
             )
         );
@@ -3400,6 +3441,12 @@ namespace MachineWatchTest
                   Serial = useSerial
                     ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
                     : null,
+                  Workorder =
+                    existingMats && i == 1
+                      ? null
+                      : useWorkorder
+                        ? workorder
+                        : null,
                   Paths = ImmutableDictionary<int, int>.Empty,
                   AddTimeUTC = addTime
                 }
@@ -3426,6 +3473,12 @@ namespace MachineWatchTest
                   Serial = useSerial
                     ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
                     : null,
+                  Workorder =
+                    existingMats && i == 1
+                      ? null
+                      : useWorkorder
+                        ? workorder
+                        : null,
                   Paths = ImmutableDictionary<int, int>.Empty,
                   AddTimeUTC = addTime
                 }
@@ -3453,7 +3506,7 @@ namespace MachineWatchTest
                     part: "castingQ",
                     numProc: 1,
                     serial: useSerial ? (existingMats ? (matId == 2 ? "1" : "") : matId.ToString()) : "",
-                    workorder: "",
+                    workorder: existingMats && matId == 1 ? "" : workorder,
                     face: ""
                   )
                 },
@@ -3492,6 +3545,12 @@ namespace MachineWatchTest
                   Serial = useSerial
                     ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
                     : null,
+                  Workorder =
+                    existingMats && i == 1
+                      ? null
+                      : useWorkorder
+                        ? workorder
+                        : null,
                   Paths = ImmutableDictionary<int, int>.Empty,
                   AddTimeUTC = addTime
                 }
@@ -3508,12 +3567,14 @@ namespace MachineWatchTest
           qty: 2,
           queue: "queueQQ",
           serials: new[] { "1", "2" },
+          workorder: "work1",
           operatorName: "theoper"
         )
         .MaterialIds.Should()
         .BeEquivalentTo(new[] { 1, 2 });
 
       _jobLog.GetMaterialDetails(1).PartName.Should().Be("castingQ");
+      _jobLog.GetMaterialDetails(1).Workorder.Should().Be("work1");
 
       //adding again should throw, since they are in the queue
       _jobLog
@@ -3524,6 +3585,7 @@ namespace MachineWatchTest
               qty: 2,
               queue: "queueQQ",
               serials: new[] { "1", "2" },
+              workorder: "work5455",
               operatorName: "theoper",
               throwOnExistingSerial: true
             )
@@ -3539,6 +3601,7 @@ namespace MachineWatchTest
           qty: 2,
           queue: "queueQQ",
           serials: new[] { "1", "2" },
+          workorder: "work2",
           operatorName: "theoper",
           throwOnExistingSerial: false
         )
@@ -3552,6 +3615,7 @@ namespace MachineWatchTest
           qty: 2,
           queue: "queueQQ",
           serials: new[] { "5", "6" },
+          workorder: null,
           operatorName: "theoper"
         )
         .MaterialIds.Should()
@@ -3607,6 +3671,7 @@ namespace MachineWatchTest
               qty: 1,
               queue: "queueQQ",
               serials: new[] { "5" },
+              workorder: null,
               operatorName: "theoper",
               throwOnExistingSerial: true
             )
@@ -3624,6 +3689,7 @@ namespace MachineWatchTest
               qty: 1,
               queue: "queueQQ",
               serials: new[] { "6" },
+              workorder: "work4",
               operatorName: "theoper",
               throwOnExistingSerial: true
             )
@@ -3639,12 +3705,14 @@ namespace MachineWatchTest
           qty: 2,
           queue: "queueQQ",
           serials: new[] { "5", "6" },
+          workorder: "work77",
           operatorName: "theoper",
           throwOnExistingSerial: false
         )
         .MaterialIds.Should()
         .BeEquivalentTo(new[] { 7, 8 });
       _jobLog.GetMaterialDetails(7).PartName.Should().Be("casting22");
+      _jobLog.GetMaterialDetails(7).Workorder.Should().Be("work77");
 
       // now adding with no load/machine and not in a queue should reuse
       _jobLog
@@ -3653,12 +3721,14 @@ namespace MachineWatchTest
           qty: 2,
           queue: "queueQQ",
           serials: new[] { "9", "10" },
+          workorder: "work12",
           operatorName: "theoper"
         )
         .MaterialIds.Should()
         .BeEquivalentTo(new[] { 9, 10 });
 
       _jobLog.GetMaterialDetails(9).PartName.Should().Be("castingQ");
+      _jobLog.GetMaterialDetails(9).Workorder.Should().Be("work12");
       _jobLog.BulkRemoveMaterialFromAllQueues(new long[] { 9, 10 });
 
       // adding serial 9 should be reused
@@ -3668,6 +3738,7 @@ namespace MachineWatchTest
           qty: 1,
           queue: "queueQQ",
           serials: new[] { "9" },
+          workorder: "updatedwork",
           operatorName: "theoper",
           throwOnExistingSerial: true
         )
@@ -3676,6 +3747,7 @@ namespace MachineWatchTest
 
       // the casting should have been updated too
       _jobLog.GetMaterialDetails(9).PartName.Should().Be("casting44");
+      _jobLog.GetMaterialDetails(9).Workorder.Should().Be("updatedwork");
     }
 
     [Fact]

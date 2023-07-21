@@ -395,11 +395,12 @@ namespace BlackMaple.MachineFramework
       var mats = new List<InProcessMaterial>();
 
       var newMats = logDB.BulkAddNewCastingsInQueue(
-        casting,
-        qty,
-        queue,
-        serial,
-        operatorName,
+        casting: casting,
+        qty: qty,
+        queue: queue,
+        serials: serial,
+        workorder: null,
+        operatorName: operatorName,
         reason: "SetByOperator"
       );
 
