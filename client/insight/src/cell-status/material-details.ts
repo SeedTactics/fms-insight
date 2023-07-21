@@ -44,6 +44,7 @@ import {
   NewCloseout,
   QueuePosition,
   IActiveWorkorder,
+  IScannedMaterial,
 } from "../network/api.js";
 import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
@@ -77,7 +78,7 @@ export const materialDialogOpen = atom(
 // Material Details
 //--------------------------------------------------------------------------------
 
-const barcodeMaterialDetail = atom<Promise<Readonly<IMaterialDetails> | null>>(async (get) => {
+export const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | null>>(async (get) => {
   const toShow = get(matToShow);
   if (toShow && toShow.type === "Barcode") {
     return await FmsServerBackend.parseBarcode(toShow.barcode);
@@ -117,8 +118,8 @@ export const materialInDialogInfo = atom<Promise<MaterialToShowInfo | null>>(asy
       };
     case "Barcode": {
       const mat = await get(barcodeMaterialDetail);
-      if (mat && mat.materialID >= 0) {
-        return { ...mat, jobUnique: mat.jobUnique ?? "" };
+      if (mat?.existingMaterial && mat.existingMaterial.materialID >= 0) {
+        return { ...mat.existingMaterial, jobUnique: mat.existingMaterial.jobUnique ?? "" };
       } else {
         return null;
       }
@@ -152,8 +153,10 @@ export const serialInMaterialDialog = atom<Promise<string | null>>(async (get) =
       return toShow.details.serial ?? null;
     case "LogMat":
       return toShow.logMat.serial ?? null;
-    case "Barcode":
-      return (await get(barcodeMaterialDetail))?.serial ?? null;
+    case "Barcode": {
+      const barcodeMat = await get(barcodeMaterialDetail);
+      return barcodeMat?.existingMaterial?.serial ?? barcodeMat?.casting?.serial ?? null;
+    }
     case "ManuallyEnteredSerial":
     case "AddMatWithEnteredSerial":
       return toShow.serial;

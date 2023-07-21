@@ -119,9 +119,9 @@ namespace DebugMachineWatchApiServer
             loadStation
           );
         },
-        ParseBarcode = (barcode, type, referer) =>
+        ParseBarcode = (barcode, referer) =>
         {
-          Serilog.Log.Information("Parsing barcode {barcode} {type} {referer}", barcode, type, referer);
+          Serilog.Log.Information("Parsing barcode {barcode} {referer}", barcode, referer);
           System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
           var commaIdx = barcode.IndexOf(',');
           if (commaIdx >= 0)
@@ -131,19 +131,24 @@ namespace DebugMachineWatchApiServer
             var mats = conn.GetMaterialDetailsForSerial(barcode);
             if (mats.Count > 0)
             {
-              return mats[mats.Count - 1];
+              return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
             }
             else
             {
-              return new MaterialDetails()
+              return new ScannedMaterial()
               {
-                MaterialID = -1,
-                Serial = barcode,
-                PartName = "",
+                Casting = new ScannedCasting()
+                {
+                  Serial = barcode,
+                  Workorder = "work1",
+                  PossibleCastings = ImmutableList.Create("part1", "part2")
+                },
               };
             }
           }
-        }
+        },
+        AddRawMaterial = AddRawMaterialType.RequireBarcodeScan,
+        AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial
       };
 
       var hostB = BlackMaple.MachineFramework.Program.CreateHostBuilder(
@@ -309,23 +314,6 @@ namespace DebugMachineWatchApiServer
         }
       });
       OnNewCurrentStatus?.Invoke(CurrentStatus);
-    }
-
-    public InProcessMaterial AddUnallocatedPartToQueue(
-      string part,
-      string queue,
-      string serial,
-      string operatorName = null
-    )
-    {
-      Serilog.Log.Information(
-        "AddUnallocatedPartToQueue: {part} {queue} {serial} {oper}",
-        part,
-        queue,
-        serial,
-        operatorName
-      );
-      return null;
     }
 
     public List<InProcessMaterial> AddUnallocatedCastingToQueue(

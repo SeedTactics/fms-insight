@@ -589,6 +589,9 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
   }, [currentJobs]);
 
   if (props.rawMatQueue) {
+    if (fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireBarcodeScan) {
+      return null;
+    }
     return (
       <Tooltip title="Add Raw Material">
         <Fab

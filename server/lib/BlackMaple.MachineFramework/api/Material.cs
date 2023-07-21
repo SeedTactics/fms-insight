@@ -204,4 +204,28 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableDictionary<int, int>? Paths { get; init; } // key is process, value is path
   }
+
+  [DataContract]
+  public record ScannedCasting
+  {
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<string>? PossibleCastings { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? Workorder { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public string? Serial { get; init; }
+  }
+
+  // This is a Sum Type, only one of the fields will be non-null
+  [DataContract]
+  public record ScannedMaterial
+  {
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public MaterialDetails? ExistingMaterial { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public ScannedCasting? Casting { get; init; }
+  }
 }

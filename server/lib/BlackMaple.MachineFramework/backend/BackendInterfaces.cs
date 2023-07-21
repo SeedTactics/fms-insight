@@ -76,16 +76,6 @@ namespace BlackMaple.MachineFramework
 
   public interface IQueueControl
   {
-    /// Add new raw material for part.  The part material has not yet been assigned to a specific job,
-    /// and will be assigned to the job with remaining demand and earliest priority.
-    /// The serial is optional and is passed only if the material has already been marked with a serial.
-    InProcessMaterial AddUnallocatedPartToQueue(
-      string partName,
-      string queue,
-      string serial,
-      string operatorName = null
-    );
-
     /// Add new castings.  The casting has not yet been assigned to a specific job,
     /// and will be assigned to the job with remaining demand and earliest priority.
     /// The serial is optional and is passed only if the material has already been marked with a serial.

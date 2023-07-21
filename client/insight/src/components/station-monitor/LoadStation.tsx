@@ -662,7 +662,9 @@ function AddMatButton({
       </Button>
     );
   } else {
-    return <AddToQueueButton enteredOperator={null} selectedJob={null} toQueue={toQueue} onClose={onClose} />;
+    return (
+      <AddToQueueButton enteredOperator={null} newMaterialTy={null} toQueue={toQueue} onClose={onClose} />
+    );
   }
 }
 

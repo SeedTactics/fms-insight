@@ -3500,6 +3500,185 @@ namespace MachineWatchTest
     }
 
     [Fact]
+    public void ReuseMatIDsWhenBulkAdding()
+    {
+      _jobLog
+        .BulkAddNewCastingsInQueue(
+          casting: "castingQ",
+          qty: 2,
+          queue: "queueQQ",
+          serials: new[] { "1", "2" },
+          operatorName: "theoper"
+        )
+        .MaterialIds.Should()
+        .BeEquivalentTo(new[] { 1, 2 });
+
+      _jobLog.GetMaterialDetails(1).PartName.Should().Be("castingQ");
+
+      //adding again should throw, since they are in the queue
+      _jobLog
+        .Invoking(
+          j =>
+            j.BulkAddNewCastingsInQueue(
+              casting: "castingQ",
+              qty: 2,
+              queue: "queueQQ",
+              serials: new[] { "1", "2" },
+              operatorName: "theoper",
+              throwOnExistingSerial: true
+            )
+        )
+        .Should()
+        .Throw<Exception>()
+        .WithMessage("Serial 1 already exists in the database with MaterialID 1");
+
+      // adding without throwing should create new material ids
+      _jobLog
+        .BulkAddNewCastingsInQueue(
+          casting: "castingQ",
+          qty: 2,
+          queue: "queueQQ",
+          serials: new[] { "1", "2" },
+          operatorName: "theoper",
+          throwOnExistingSerial: false
+        )
+        .MaterialIds.Should()
+        .BeEquivalentTo(new[] { 3, 4 });
+
+      // now try with a load and machine event
+      _jobLog
+        .BulkAddNewCastingsInQueue(
+          casting: "castingQ",
+          qty: 2,
+          queue: "queueQQ",
+          serials: new[] { "5", "6" },
+          operatorName: "theoper"
+        )
+        .MaterialIds.Should()
+        .BeEquivalentTo(new[] { 5, 6 });
+
+      _jobLog.RecordLoadEnd(
+        new[]
+        {
+          new MaterialToLoadOntoPallet()
+          {
+            LoadStation = 1,
+            Faces = ImmutableList.Create(
+              new MaterialToLoadOntoFace()
+              {
+                FaceNum = 1,
+                Process = 1,
+                Path = 1,
+                ActiveOperationTime = TimeSpan.FromMinutes(2),
+                MaterialIDs = ImmutableList.Create(5L)
+              }
+            )
+          }
+        },
+        pallet: 5,
+        timeUTC: DateTime.UtcNow
+      );
+
+      _jobLog.RecordRemoveMaterialFromAllQueues(matID: 6L, process: 0);
+
+      _jobLog.RecordMachineStart(
+        new[]
+        {
+          new EventLogMaterial()
+          {
+            MaterialID = 6,
+            Process = 1,
+            Face = ""
+          }
+        },
+        pallet: 4,
+        statName: "MC",
+        statNum: 2,
+        program: "prog",
+        timeUTC: DateTime.UtcNow
+      );
+
+      //adding again should throw, since 5 has a load event
+      _jobLog
+        .Invoking(
+          j =>
+            j.BulkAddNewCastingsInQueue(
+              casting: "castingQ",
+              qty: 1,
+              queue: "queueQQ",
+              serials: new[] { "5" },
+              operatorName: "theoper",
+              throwOnExistingSerial: true
+            )
+        )
+        .Should()
+        .Throw<Exception>()
+        .WithMessage("Serial 5 already exists in the database with MaterialID 5");
+
+      //adding again should throw, since 6 has a machine event
+      _jobLog
+        .Invoking(
+          j =>
+            j.BulkAddNewCastingsInQueue(
+              casting: "castingQ",
+              qty: 1,
+              queue: "queueQQ",
+              serials: new[] { "6" },
+              operatorName: "theoper",
+              throwOnExistingSerial: true
+            )
+        )
+        .Should()
+        .Throw<Exception>()
+        .WithMessage("Serial 6 already exists in the database with MaterialID 6");
+
+      // adding without throwing should create new
+      _jobLog
+        .BulkAddNewCastingsInQueue(
+          casting: "casting22",
+          qty: 2,
+          queue: "queueQQ",
+          serials: new[] { "5", "6" },
+          operatorName: "theoper",
+          throwOnExistingSerial: false
+        )
+        .MaterialIds.Should()
+        .BeEquivalentTo(new[] { 7, 8 });
+      _jobLog.GetMaterialDetails(7).PartName.Should().Be("casting22");
+
+      // now adding with no load/machine and not in a queue should reuse
+      _jobLog
+        .BulkAddNewCastingsInQueue(
+          casting: "castingQ",
+          qty: 2,
+          queue: "queueQQ",
+          serials: new[] { "9", "10" },
+          operatorName: "theoper"
+        )
+        .MaterialIds.Should()
+        .BeEquivalentTo(new[] { 9, 10 });
+
+      _jobLog.GetMaterialDetails(9).PartName.Should().Be("castingQ");
+      _jobLog.BulkRemoveMaterialFromAllQueues(new long[] { 9, 10 });
+
+      // adding serial 9 should be reused
+      _jobLog
+        .BulkAddNewCastingsInQueue(
+          casting: "casting44",
+          qty: 1,
+          queue: "queueQQ",
+          serials: new[] { "9" },
+          operatorName: "theoper",
+          throwOnExistingSerial: true
+        )
+        .MaterialIds.Should()
+        .BeEquivalentTo(new[] { 9 });
+
+      // the casting should have been updated too
+      _jobLog.GetMaterialDetails(9).PartName.Should().Be("casting44");
+    }
+
+    [Fact]
     public void AllocateCastingsFromQueues()
     {
       var mat1 = new LogMaterial(

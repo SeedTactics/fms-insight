@@ -267,7 +267,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("parse-barcode")]
-    public MaterialDetails ParseBarcode([FromQuery] string barcode)
+    public ScannedMaterial ParseBarcode([FromQuery] string barcode)
     {
       if (_impl == null || _impl.Backend == null)
       {
@@ -276,7 +276,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
       if (_impl.ParseBarcode != null)
       {
-        return _impl.ParseBarcode(barcode, BarcodeType.BarcodeFromScan, Request.GetTypedHeaders().Referer);
+        return _impl.ParseBarcode(barcode: barcode, httpReferer: Request.GetTypedHeaders().Referer);
       }
       else
       {
@@ -287,16 +287,11 @@ namespace BlackMaple.MachineFramework.Controllers
           var mats = conn.GetMaterialDetailsForSerial(serial);
           if (mats.Count > 0)
           {
-            return mats[mats.Count - 1];
+            return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
           }
           else
           {
-            return new MaterialDetails()
-            {
-              MaterialID = -1,
-              Serial = serial,
-              PartName = ""
-            };
+            return new ScannedMaterial() { Casting = new ScannedCasting() { Serial = serial }, };
           }
         }
       }

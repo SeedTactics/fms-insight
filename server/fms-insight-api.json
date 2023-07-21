@@ -179,7 +179,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MaterialDetails"
+                  "$ref": "#/components/schemas/ScannedMaterial"
                 }
               }
             }
@@ -496,68 +496,6 @@
         "responses": {
           "200": {
             "description": ""
-          }
-        }
-      }
-    },
-    "/api/v1/jobs/part/{partName}/casting": {
-      "post": {
-        "tags": [
-          "jobs"
-        ],
-        "operationId": "jobs_AddUnallocatedCastingToQueueByPart",
-        "parameters": [
-          {
-            "name": "partName",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "queue",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 2
-          },
-          {
-            "name": "operName",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 4
-          }
-        ],
-        "requestBody": {
-          "x-name": "serial",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 3
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InProcessMaterial"
-                }
-              }
-            }
           }
         }
       }
@@ -2137,11 +2075,13 @@
         "x-enumNames": [
           "AddAsUnassigned",
           "RequireExistingMaterial",
+          "RequireBarcodeScan",
           "AddAndSpecifyJob"
         ],
         "enum": [
           "AddAsUnassigned",
           "RequireExistingMaterial",
+          "RequireBarcodeScan",
           "AddAndSpecifyJob"
         ]
       },
@@ -3710,6 +3650,28 @@
           }
         }
       },
+      "ScannedMaterial": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ExistingMaterial": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MaterialDetails"
+              }
+            ]
+          },
+          "Casting": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ScannedCasting"
+              }
+            ]
+          }
+        }
+      },
       "MaterialDetails": {
         "type": "object",
         "additionalProperties": false,
@@ -3748,6 +3710,27 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        }
+      },
+      "ScannedCasting": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "PossibleCastings": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "Workorder": {
+            "type": "string",
+            "nullable": true
+          },
+          "Serial": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

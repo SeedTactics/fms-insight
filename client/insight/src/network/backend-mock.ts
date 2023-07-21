@@ -182,7 +182,7 @@ export function registerMockBackend(
     printLabel() {
       return Promise.resolve();
     },
-    async parseBarcode(barcode: string | null): Promise<Readonly<api.IMaterialDetails>> {
+    async parseBarcode(barcode: string | null): Promise<Readonly<api.IScannedMaterial>> {
       barcode ??= "";
       const commaIdx = barcode.indexOf(",");
       if (commaIdx >= 0) {
@@ -192,17 +192,19 @@ export function registerMockBackend(
       const mat = await serialsToMatId.then((s) => s.get(barcode ?? ""));
       if (mat) {
         return {
-          materialID: mat.matId,
-          partName: mat.part,
-          jobUnique: mat.uniq,
-          numProcesses: mat.numProc,
-          serial: barcode,
+          existingMaterial: new api.MaterialDetails({
+            materialID: mat.matId,
+            partName: mat.part,
+            jobUnique: mat.uniq,
+            numProcesses: mat.numProc,
+            serial: barcode,
+          }),
         };
       } else {
         return {
-          materialID: -1,
-          partName: "",
-          serial: barcode,
+          casting: new api.ScannedCasting({
+            serial: barcode,
+          }),
         };
       }
     },

@@ -48,22 +48,13 @@ namespace BlackMaple.MachineFramework
   );
   public delegate void PrintLabelForMaterial(long materialId, int process, System.Uri httpReferer = null);
 
-  public enum BarcodeType
-  {
-    BarcodeFromScan,
-    DirectlyEnteredSerial
-  }
-
-  public delegate MaterialDetails ParseBarcode(
-    string barcode,
-    BarcodeType type,
-    System.Uri httpReferer = null
-  );
+  public delegate ScannedMaterial ParseBarcode(string barcode, System.Uri httpReferer);
 
   public enum AddRawMaterialType
   {
     AddAsUnassigned,
     RequireExistingMaterial,
+    RequireBarcodeScan,
     AddAndSpecifyJob
   }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2023, John Lenz
 
 All rights reserved.
 
@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Box, Button, ListItemButton, styled } from "@mui/material";
+import { Button, ListItemButton, styled } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -53,13 +53,18 @@ import { PartIdenticon } from "./Material.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { JobAndGroups, extractJobGroups } from "../../data/queue-material.js";
+import {
+  SelectableCasting,
+  SelectableJob,
+  SelectableMaterialType,
+  usePossibleNewMaterialTypes,
+} from "../../data/queue-material.js";
 import { currentOperator } from "../../data/operators.js";
 import { PrintedLabel } from "./PrintedLabel.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
-import { castingNames, rawMaterialQueues } from "../../cell-status/names.js";
+import { castingNames } from "../../cell-status/names.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
 const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
@@ -71,7 +76,7 @@ const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.to
   }),
 }));
 
-export type AddNewJobProcessState =
+export type NewMaterialToQueueType =
   | {
       readonly kind: "JobAndProc";
       readonly job: Readonly<api.IActiveJob>;
@@ -84,144 +89,108 @@ type CurrentCollapseOpen =
   | { readonly kind: "Job"; readonly unique: string }
   | { readonly kind: "RawMat" };
 
-function useCastingNames(): LazySeq<readonly [string, number]> {
-  const currentSt = useAtomValue(currentStatus);
-  const castNames = useAtomValue(castingNames);
-  return React.useMemo(
-    () =>
-      LazySeq.ofObject(currentSt.jobs)
-        .flatMap(([, j]) => j.procsAndPaths[0].paths)
-        .filter((p) => p.casting !== undefined && p.casting !== "")
-        .map((p) => ({ casting: p.casting as string, cnt: 1 }))
-        .concat(LazySeq.of(castNames).map((c) => ({ casting: c, cnt: 0 })))
-        .buildOrderedMap<string, number>(
-          (c) => c.casting,
-          (old, c) => (old === undefined ? c.cnt : old + c.cnt)
-        )
-        .toAscLazySeq(),
-    [currentSt.jobs, castNames]
-  );
-}
-
 function SelectRawMaterial({
-  selectedJob,
-  onSelectJob,
+  newMaterialTy,
+  setNewMaterialTy,
+  castings,
+  indent,
 }: {
-  readonly selectedJob: AddNewJobProcessState | null;
-  readonly onSelectJob: (j: AddNewJobProcessState | null) => void;
+  readonly newMaterialTy: NewMaterialToQueueType | null;
+  readonly setNewMaterialTy: (j: NewMaterialToQueueType | null) => void;
+  readonly castings: ReadonlyArray<SelectableCasting>;
+  readonly indent?: boolean;
 }) {
-  const castings = useCastingNames();
   return (
-    <List>
-      {castings.map(([casting, jobCnt], idx) => (
-        <ListItem
-          key={idx}
-          button
-          sx={(theme) => ({ pl: theme.spacing(4) })}
-          selected={selectedJob?.kind === "RawMat" && selectedJob?.rawMatName === casting}
-          onClick={() => onSelectJob({ kind: "RawMat", rawMatName: casting })}
-        >
-          <ListItemIcon>
-            <PartIdenticon part={casting} />
-          </ListItemIcon>
-          <ListItemText
-            primary={casting}
-            secondary={jobCnt === 0 ? "Not used by any current jobs" : `Used by ${jobCnt} current jobs`}
-          />
+    <List sx={indent ? (theme) => ({ pl: theme.spacing(4) }) : undefined}>
+      {castings.map((casting) => (
+        <ListItem key={casting.casting}>
+          <ListItemButton
+            selected={newMaterialTy?.kind === "RawMat" && newMaterialTy?.rawMatName === casting.casting}
+            onClick={() => setNewMaterialTy({ kind: "RawMat", rawMatName: casting.casting })}
+          >
+            <ListItemIcon>
+              <PartIdenticon part={casting.casting} />
+            </ListItemIcon>
+            <ListItemText primary={casting.casting} secondary={casting.message ?? undefined} />
+          </ListItemButton>
         </ListItem>
       ))}
     </List>
   );
 }
 
-interface SelectJobProps {
-  readonly queue: string | null;
-  readonly selectedJob: AddNewJobProcessState | null;
-  readonly onSelectJob: (j: AddNewJobProcessState | null) => void;
+function SelectJob({
+  newMaterialTy,
+  setNewMaterialTy,
+  curCollapse,
+  setCurCollapse,
+  indent,
+  jobs,
+}: {
+  readonly jobs: ReadonlyArray<SelectableJob>;
+  readonly newMaterialTy: NewMaterialToQueueType | null;
+  readonly setNewMaterialTy: (j: NewMaterialToQueueType | null) => void;
   readonly curCollapse: CurrentCollapseOpen | null;
   readonly setCurCollapse: (c: CurrentCollapseOpen | null) => void;
   readonly indent?: boolean;
-}
-
-function SelectJob({ queue, selectedJob, onSelectJob, curCollapse, setCurCollapse, indent }: SelectJobProps) {
-  const currentSt = useAtomValue(currentStatus);
-  const fmsInfo = useAtomValue(fmsInformation);
-  const jobs: ReadonlyArray<JobAndGroups> = React.useMemo(
-    () =>
-      LazySeq.ofObject(currentSt.jobs)
-        .map(([_uniq, j]) => extractJobGroups(j, fmsInfo))
-        .toSortedArray((j) => j.job.partName),
-    [currentSt.jobs, fmsInfo]
-  );
-
-  if (
-    fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.RequireExistingMaterial &&
-    fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAsUnassigned
-  ) {
-    return (
-      <Box sx={indent ? (theme) => ({ pl: theme.spacing(4) }) : undefined}>
-        Cannot add new assigned material that has not yet been created in the system
-      </Box>
-    );
-  }
-
+}) {
   return (
     <List sx={indent ? (theme) => ({ pl: theme.spacing(4) }) : undefined}>
       {jobs.map((j, idx) => (
         <React.Fragment key={idx}>
-          <ListItem
-            button
-            onClick={() => {
-              if (selectedJob) onSelectJob(null);
-              setCurCollapse(
-                curCollapse && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
-                  ? null
-                  : { kind: "Job", unique: j.job.unique }
-              );
-            }}
-          >
-            <ListItemIcon>
-              <ExpandMore
-                $expandedOpen={
-                  curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
-                }
+          <ListItem>
+            <ListItemButton
+              onClick={() => {
+                if (newMaterialTy) setNewMaterialTy(null);
+                setCurCollapse(
+                  curCollapse && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
+                    ? null
+                    : { kind: "Job", unique: j.job.unique }
+                );
+              }}
+            >
+              <ListItemIcon>
+                <ExpandMore
+                  $expandedOpen={
+                    curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
+                  }
+                />
+              </ListItemIcon>
+              <ListItemIcon>
+                <PartIdenticon part={j.job.partName} />
+              </ListItemIcon>
+              <ListItemText
+                primary={j.job.partName + " (" + j.job.unique + ")"}
+                secondary={j.job.routeStartUTC.toLocaleString()}
               />
-            </ListItemIcon>
-            <ListItemIcon>
-              <PartIdenticon part={j.job.partName} />
-            </ListItemIcon>
-            <ListItemText
-              primary={j.job.partName + " (" + j.job.unique + ")"}
-              secondary={j.job.routeStartUTC.toLocaleString()}
-            />
+            </ListItemButton>
           </ListItem>
           <Collapse
             in={curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique}
             timeout="auto"
           >
             {j.machinedProcs.map((p, idx) => (
-              <Tooltip
-                title={queue !== null && !p.queues.has(queue) ? "Not used in " + queue : p.disabledMsg ?? ""}
-                key={idx}
-              >
+              <Tooltip title={p.disabledMsg ?? ""} key={idx}>
                 <div>
-                  <ListItem
-                    button
-                    sx={(theme) => ({ pl: theme.spacing(4) })}
-                    disabled={!!p.disabledMsg || (queue !== null && !p.queues.has(queue))}
-                    selected={
-                      selectedJob?.kind === "JobAndProc" &&
-                      selectedJob?.job.unique === j.job.unique &&
-                      selectedJob?.last_proc === p.lastProc
-                    }
-                    onClick={() => onSelectJob({ kind: "JobAndProc", job: j.job, last_proc: p.lastProc })}
-                  >
-                    <ListItemText
-                      primary={
-                        p.lastProc === 0 ? "Raw Material" : "Last machined process " + p.lastProc.toString()
+                  <ListItem sx={(theme) => ({ pl: theme.spacing(indent ? 8 : 4) })}>
+                    <ListItemButton
+                      disabled={!!p.disabledMsg}
+                      selected={
+                        newMaterialTy?.kind === "JobAndProc" &&
+                        newMaterialTy?.job.unique === j.job.unique &&
+                        newMaterialTy?.last_proc === p.lastProc
                       }
-                      secondary={p.details}
-                    />
+                      onClick={() =>
+                        setNewMaterialTy({ kind: "JobAndProc", job: j.job, last_proc: p.lastProc })
+                      }
+                    >
+                      <ListItemText
+                        primary={
+                          p.lastProc === 0 ? "Raw Material" : "Last machined process " + p.lastProc.toString()
+                        }
+                        secondary={p.details}
+                      />
+                    </ListItemButton>
                   </ListItem>
                 </div>
               </Tooltip>
@@ -234,57 +203,70 @@ function SelectJob({ queue, selectedJob, onSelectJob, curCollapse, setCurCollaps
 }
 
 function SelectRawMatAndJob({
-  queue,
-  selectedJob,
-  onSelectJob,
+  newMaterialTy,
+  options,
+  setNewMaterialTy,
   curCollapse,
   setCurCollapse,
-}: SelectJobProps) {
+}: {
+  readonly options: SelectableMaterialType;
+  readonly newMaterialTy: NewMaterialToQueueType | null;
+  readonly setNewMaterialTy: (j: NewMaterialToQueueType | null) => void;
+  readonly curCollapse: CurrentCollapseOpen | null;
+  readonly setCurCollapse: (c: CurrentCollapseOpen | null) => void;
+}) {
   return (
     <List>
-      <ListItem
-        button
-        onClick={() => {
-          if (selectedJob) onSelectJob(null);
-          setCurCollapse(curCollapse && curCollapse.kind === "RawMat" ? null : { kind: "RawMat" });
-        }}
-      >
-        <ListItemIcon>
-          <ExpandMore $expandedOpen={curCollapse !== null && curCollapse.kind === "RawMat"} />
-        </ListItemIcon>
-        <ListItemText primary="Raw Material" />
+      <ListItem>
+        <ListItemButton
+          onClick={() => {
+            if (newMaterialTy) setNewMaterialTy(null);
+            setCurCollapse(curCollapse && curCollapse.kind === "RawMat" ? null : { kind: "RawMat" });
+          }}
+        >
+          <ListItemIcon>
+            <ExpandMore $expandedOpen={curCollapse !== null && curCollapse.kind === "RawMat"} />
+          </ListItemIcon>
+          <ListItemText primary="Raw Material" />
+        </ListItemButton>
       </ListItem>
       <Collapse in={curCollapse !== null && curCollapse.kind === "RawMat"} timeout="auto">
-        <SelectRawMaterial selectedJob={selectedJob} onSelectJob={onSelectJob} />
+        <SelectRawMaterial
+          castings={options.castings}
+          newMaterialTy={newMaterialTy}
+          setNewMaterialTy={setNewMaterialTy}
+          indent
+        />
       </Collapse>
-      <ListItem
-        button
-        onClick={() => {
-          if (selectedJob) onSelectJob(null);
-          setCurCollapse(
-            curCollapse && (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")
-              ? null
-              : { kind: "AllJobs" }
-          );
-        }}
-      >
-        <ListItemIcon>
-          <ExpandMore
-            $expandedOpen={
-              curCollapse !== null && (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")
-            }
-          />
-        </ListItemIcon>
-        <ListItemText primary="Specify Job" />
+      <ListItem>
+        <ListItemButton
+          onClick={() => {
+            if (newMaterialTy) setNewMaterialTy(null);
+            setCurCollapse(
+              curCollapse && (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")
+                ? null
+                : { kind: "AllJobs" }
+            );
+          }}
+        >
+          <ListItemIcon>
+            <ExpandMore
+              $expandedOpen={
+                curCollapse !== null && (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")
+              }
+            />
+          </ListItemIcon>
+          <ListItemText primary="Specify Job" />
+        </ListItemButton>
       </ListItem>
       <Collapse
         in={curCollapse !== null && (curCollapse.kind === "AllJobs" || curCollapse.kind === "Job")}
         timeout="auto"
       >
         <SelectJob
-          queue={queue}
-          selectedJob={selectedJob}
-          onSelectJob={onSelectJob}
+          newMaterialTy={newMaterialTy}
+          jobs={options.jobs}
+          setNewMaterialTy={setNewMaterialTy}
           curCollapse={curCollapse}
           setCurCollapse={setCurCollapse}
           indent
@@ -294,49 +276,58 @@ function SelectRawMatAndJob({
   );
 }
 
-export function PromptForJob({
-  selectedJob,
-  setSelectedJob,
+export function PromptForMaterialType({
+  newMaterialTy,
+  setNewMaterialTy,
   toQueue,
 }: {
-  selectedJob: AddNewJobProcessState | null;
-  setSelectedJob: (j: AddNewJobProcessState | null) => void;
+  newMaterialTy: NewMaterialToQueueType | null;
+  setNewMaterialTy: (j: NewMaterialToQueueType | null) => void;
   toQueue: string | null;
 }) {
   const serial = useAtomValue(matDetails.serialInMaterialDialog);
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
-  const fmsInfo = useAtomValue(fmsInformation);
-  const rawMatQueues = useAtomValue(rawMaterialQueues);
   const [curCollapse, setCurCollapse] = React.useState<CurrentCollapseOpen | null>(null);
+  const materialTypes = usePossibleNewMaterialTypes(toQueue);
 
   if (existingMat) return null;
   if (serial === null) return null;
 
-  if (
-    toQueue !== null &&
-    rawMatQueues.has(toQueue) &&
-    fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAsUnassigned
-  ) {
+  if (materialTypes.castings.length === 0 && materialTypes.jobs.length === 0) {
+    return <div>No scheduled material uses this queue</div>;
+  }
+
+  if (materialTypes.jobs.length === 0) {
     return (
-      <SelectRawMatAndJob
-        queue={toQueue}
-        selectedJob={selectedJob}
-        onSelectJob={setSelectedJob}
-        curCollapse={curCollapse}
-        setCurCollapse={setCurCollapse}
+      <SelectRawMaterial
+        newMaterialTy={newMaterialTy}
+        setNewMaterialTy={setNewMaterialTy}
+        castings={materialTypes.castings}
       />
     );
-  } else {
+  }
+
+  if (materialTypes.castings.length === 0) {
     return (
       <SelectJob
-        queue={toQueue}
-        selectedJob={selectedJob}
-        onSelectJob={setSelectedJob}
+        jobs={materialTypes.jobs}
+        newMaterialTy={newMaterialTy}
+        setNewMaterialTy={setNewMaterialTy}
         curCollapse={curCollapse}
         setCurCollapse={setCurCollapse}
       />
     );
   }
+
+  return (
+    <SelectRawMatAndJob
+      options={materialTypes}
+      newMaterialTy={newMaterialTy}
+      setNewMaterialTy={setNewMaterialTy}
+      curCollapse={curCollapse}
+      setCurCollapse={setCurCollapse}
+    />
+  );
 }
 
 export function PromptForQueue({
@@ -389,14 +380,35 @@ export function PromptForOperator({
   );
 }
 
+export function WorkorderFromBarcode() {
+  const currentSt = useAtomValue(currentStatus);
+  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
+
+  const workorderId = barcode?.casting?.workorder;
+  if (!workorderId) return null;
+
+  const comments = currentSt.workorders?.find((w) => w.workorderId === workorderId)?.comments ?? [];
+
+  return (
+    <div style={{ marginTop: "1em", marginLeft: "1em" }}>
+      <p>Workorder: {workorderId}</p>
+      <ul>
+        {comments.map((c, idx) => (
+          <li key={idx}>{c.comment}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function AddToQueueButton({
   enteredOperator,
-  selectedJob,
+  newMaterialTy,
   toQueue,
   onClose,
 }: {
   enteredOperator: string | null;
-  selectedJob: AddNewJobProcessState | null;
+  newMaterialTy: NewMaterialToQueueType | null;
   toQueue: string | null;
   onClose: () => void;
 }) {
@@ -429,11 +441,11 @@ export function AddToQueueButton({
         .maxBy((m) => m.proc)?.proc ?? 0;
     addProcMsg = " To Run Process " + (lastProc + 1).toString();
   } else {
-    if (selectedJob?.kind === "JobAndProc" && selectedJob?.last_proc !== undefined) {
-      addProcMsg = " To Run Process " + (selectedJob.last_proc + 1).toString();
+    if (newMaterialTy?.kind === "JobAndProc" && newMaterialTy?.last_proc !== undefined) {
+      addProcMsg = " To Run Process " + (newMaterialTy.last_proc + 1).toString();
     }
-    if (selectedJob?.kind === "RawMat" && selectedJob?.rawMatName) {
-      addProcMsg = " As " + selectedJob.rawMatName;
+    if (newMaterialTy?.kind === "RawMat" && newMaterialTy?.rawMatName) {
+      addProcMsg = " As " + newMaterialTy.rawMatName;
     }
   }
 
@@ -452,7 +464,7 @@ export function AddToQueueButton({
         addingExistingMat === true ||
         addingNewMat === true ||
         addingNewCasting === true ||
-        (existingMat === null && selectedJob === null) ||
+        (existingMat === null && newMaterialTy === null) ||
         (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
           (enteredOperator === null || enteredOperator === ""))
       }
@@ -464,18 +476,18 @@ export function AddToQueueButton({
             queuePosition: -1,
             operator: enteredOperator ?? operator,
           });
-        } else if (selectedJob && selectedJob.kind === "JobAndProc" && selectedJob.job) {
+        } else if (newMaterialTy && newMaterialTy.kind === "JobAndProc" && newMaterialTy.job) {
           addNewMat({
-            jobUnique: selectedJob.job.unique,
-            lastCompletedProcess: selectedJob.last_proc,
+            jobUnique: newMaterialTy.job.unique,
+            lastCompletedProcess: newMaterialTy.last_proc,
             serial: newSerial ?? undefined,
             queue: toQueue ?? "",
             queuePosition: -1,
             operator: enteredOperator ?? operator,
           });
-        } else if (selectedJob && selectedJob.kind === "RawMat" && selectedJob.rawMatName) {
+        } else if (newMaterialTy && newMaterialTy.kind === "RawMat" && newMaterialTy.rawMatName) {
           addNewCasting({
-            casting: selectedJob.rawMatName,
+            casting: newMaterialTy.rawMatName,
             quantity: 1,
             queue: toQueue ?? "",
             serials: newSerial ? [newSerial] : undefined,
@@ -527,7 +539,7 @@ export const AddBySerialDialog = React.memo(function AddBySerialDialog() {
           autoFocus
           value={serial || ""}
           onChange={(e) => setSerial(e.target.value)}
-          onKeyPress={(e) => {
+          onKeyDown={(e) => {
             if (e.key === "Enter" && serial && serial !== "") {
               e.preventDefault();
               lookup();
@@ -629,7 +641,24 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
   const [qty, setQty] = React.useState<number | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
   const [adding, setAdding] = React.useState<boolean>(false);
-  const castings = useCastingNames();
+
+  const currentSt = useAtomValue(currentStatus);
+  const historicCastNames = useAtomValue(castingNames);
+
+  const castings = React.useMemo(
+    () =>
+      LazySeq.ofObject(currentSt.jobs)
+        .flatMap(([, j]) => j.procsAndPaths[0].paths)
+        .filter((p) => p.casting !== undefined && p.casting !== "")
+        .map((p) => ({ casting: p.casting as string, cnt: 1 }))
+        .concat(LazySeq.of(historicCastNames).map((c) => ({ casting: c, cnt: 0 })))
+        .buildOrderedMap<string, number>(
+          (c) => c.casting,
+          (old, c) => (old === undefined ? c.cnt : old + c.cnt)
+        )
+        .toAscLazySeq(),
+    [currentSt.jobs, historicCastNames]
+  );
 
   function close() {
     setQueue(null);
