@@ -316,23 +316,6 @@ namespace DebugMachineWatchApiServer
       OnNewCurrentStatus?.Invoke(CurrentStatus);
     }
 
-    public InProcessMaterial AddUnallocatedPartToQueue(
-      string part,
-      string queue,
-      string serial,
-      string operatorName = null
-    )
-    {
-      Serilog.Log.Information(
-        "AddUnallocatedPartToQueue: {part} {queue} {serial} {oper}",
-        part,
-        queue,
-        serial,
-        operatorName
-      );
-      return null;
-    }
-
     public List<InProcessMaterial> AddUnallocatedCastingToQueue(
       string casting,
       int qty,

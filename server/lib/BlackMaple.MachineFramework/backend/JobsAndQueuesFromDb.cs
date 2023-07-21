@@ -431,54 +431,6 @@ namespace BlackMaple.MachineFramework
       return mats;
     }
 
-    public InProcessMaterial AddUnallocatedPartToQueue(
-      string partName,
-      string queue,
-      string serial,
-      string operatorName
-    )
-    {
-      if (!_settings.Queues.ContainsKey(queue))
-      {
-        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
-      }
-
-      string casting = partName;
-
-      // try and see if there is a job for this part with an actual casting
-      IReadOnlyList<HistoricJob> unarchived;
-      using (var jdb = _repo.OpenConnection())
-      {
-        unarchived = jdb.LoadUnarchivedJobs();
-      }
-      var job = unarchived.FirstOrDefault(j => j.PartName == partName);
-      if (job != null)
-      {
-        for (int path = 1; path <= job.Processes[0].Paths.Count; path++)
-        {
-          var jobCasting = job.Processes[0].Paths[path - 1].Casting;
-          if (!string.IsNullOrEmpty(jobCasting))
-          {
-            casting = jobCasting;
-            break;
-          }
-        }
-      }
-
-      using (var ldb = _repo.OpenConnection())
-      {
-        return AddUnallocatedCastingToQueue(
-            ldb,
-            casting,
-            1,
-            queue,
-            string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial },
-            operatorName
-          )
-          .FirstOrDefault();
-      }
-    }
-
     public List<InProcessMaterial> AddUnallocatedCastingToQueue(
       string casting,
       int qty,

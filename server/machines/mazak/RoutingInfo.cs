@@ -355,45 +355,6 @@ namespace MazakMachineInterface
     #endregion
 
     #region Queues
-    InProcessMaterial BlackMaple.MachineFramework.IQueueControl.AddUnallocatedPartToQueue(
-      string partName,
-      string queue,
-      string serial,
-      string operatorName
-    )
-    {
-      string casting = partName;
-
-      // try and see if there is a job for this part with an actual casting
-      IReadOnlyList<BlackMaple.MachineFramework.HistoricJob> sch;
-      using (var jdb = logDbCfg.OpenConnection())
-      {
-        sch = jdb.LoadUnarchivedJobs();
-      }
-      var job = sch.FirstOrDefault(j => j.PartName == partName);
-      if (job != null)
-      {
-        for (int path = 1; path <= job.Processes[0].Paths.Count; path++)
-        {
-          var jobCasting = job.Processes[0].Paths[path - 1].Casting;
-          if (!string.IsNullOrEmpty(jobCasting))
-          {
-            casting = jobCasting;
-            break;
-          }
-        }
-      }
-
-      var mats = ((BlackMaple.MachineFramework.IQueueControl)this).AddUnallocatedCastingToQueue(
-        casting,
-        1,
-        queue,
-        string.IsNullOrEmpty(serial) ? new string[] { } : new string[] { serial },
-        operatorName
-      );
-      return mats.FirstOrDefault();
-    }
-
     List<InProcessMaterial> BlackMaple.MachineFramework.IQueueControl.AddUnallocatedCastingToQueue(
       string casting,
       int qty,
