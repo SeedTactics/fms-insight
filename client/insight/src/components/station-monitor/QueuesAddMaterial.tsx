@@ -67,6 +67,36 @@ import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { castingNames } from "../../cell-status/names.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
+export function useMaterialInDialogAddType(
+  queueNames: ReadonlyArray<string>,
+): "None" | "MatInQueue" | "AddToQueue" {
+  const existingMat = useAtomValue(matDetails.materialInDialogInfo);
+  const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
+  const fmsInfo = useAtomValue(fmsInformation);
+
+  const curInQueueOnScreen =
+    inProcMat !== null &&
+    inProcMat.location.type === api.LocType.InQueue &&
+    inProcMat.location.currentQueue &&
+    queueNames.includes(inProcMat.location.currentQueue);
+  if (curInQueueOnScreen) return "MatInQueue";
+
+  const curOnPallet = inProcMat !== null && inProcMat.location.type === api.LocType.OnPallet;
+  if (curOnPallet) return "None";
+
+  // this is just a prelimiary check to see if we should show the dialog at all,
+  // other combinations of addInProcessMaterial and addRawMaterial are handled by the details
+  // shown inside the dialog, perhaps preventing the user from selecting a queue or job
+  // in certian cases (with an appropriate error message).
+  const missingButMatRequired =
+    existingMat === null &&
+    fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.RequireExistingMaterial &&
+    fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireExistingMaterial;
+  if (missingButMatRequired) return "None";
+
+  return "AddToQueue";
+}
+
 const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $expandedOpen?: boolean;
 }>(({ theme, $expandedOpen }) => ({
@@ -276,7 +306,7 @@ function SelectRawMatAndJob({
   );
 }
 
-export function PromptForMaterialType({
+function PromptForMaterialType({
   newMaterialTy,
   setNewMaterialTy,
   toQueue,
@@ -330,7 +360,7 @@ export function PromptForMaterialType({
   );
 }
 
-export function PromptForQueue({
+function PromptForQueue({
   selectedQueue,
   setSelectedQueue,
   queueNames,
@@ -357,7 +387,7 @@ export function PromptForQueue({
   );
 }
 
-export function PromptForOperator({
+function PromptForOperator({
   enteredOperator,
   setEnteredOperator,
 }: {
@@ -380,7 +410,7 @@ export function PromptForOperator({
   );
 }
 
-export function WorkorderFromBarcode() {
+function WorkorderFromBarcode() {
   const currentSt = useAtomValue(currentStatus);
   const workorderId = useAtomValue(matDetails.workorderInMaterialDialog);
   if (!workorderId) return null;
@@ -396,6 +426,50 @@ export function WorkorderFromBarcode() {
         ))}
       </ul>
     </div>
+  );
+}
+
+export function AddToQueueMaterialDialogCt({
+  queueNames,
+  toQueue,
+  enteredOperator,
+  setEnteredOperator,
+  selectedQueue,
+  setSelectedQueue,
+  newMaterialTy,
+  setNewMaterialTy,
+}: {
+  queueNames: ReadonlyArray<string>;
+  toQueue: string | null;
+  enteredOperator: string | null;
+  setEnteredOperator: (operator: string | null) => void;
+  selectedQueue: string | null;
+  setSelectedQueue: (q: string | null) => void;
+  newMaterialTy: NewMaterialToQueueType | null;
+  setNewMaterialTy: (job: NewMaterialToQueueType | null) => void;
+}) {
+  const toShow = useAtomValue(matDetails.materialDialogOpen);
+  const requireSelectQueue = queueNames.length > 1 && toShow?.type !== "AddMatWithEnteredSerial";
+  return (
+    <>
+      <WorkorderFromBarcode />
+      {requireSelectQueue ? (
+        <PromptForQueue
+          selectedQueue={selectedQueue}
+          setSelectedQueue={(q) => {
+            setSelectedQueue(q);
+            setNewMaterialTy(null);
+          }}
+          queueNames={queueNames}
+        />
+      ) : undefined}
+      <PromptForMaterialType
+        newMaterialTy={newMaterialTy}
+        setNewMaterialTy={setNewMaterialTy}
+        toQueue={toQueue}
+      />
+      <PromptForOperator enteredOperator={enteredOperator} setEnteredOperator={setEnteredOperator} />
+    </>
   );
 }
 

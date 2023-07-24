@@ -54,12 +54,10 @@ import { JobsBackend } from "../../network/backend.js";
 import { LogEntries } from "../LogEntry.js";
 import { loadRawMaterialEvents } from "../../data/queue-material.js";
 import {
-  PromptForOperator,
-  PromptForQueue,
   AddToQueueButton,
   NewMaterialToQueueType,
-  PromptForMaterialType,
-  WorkorderFromBarcode,
+  AddToQueueMaterialDialogCt,
+  useMaterialInDialogAddType,
 } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { useAtomValue } from "jotai";
@@ -125,34 +123,6 @@ function PrintLabelButton() {
   }
 }
 
-function useQueueDialogKind(queueNames: ReadonlyArray<string>): "None" | "MatInQueue" | "AddToQueue" {
-  const existingMat = useAtomValue(matDetails.materialInDialogInfo);
-  const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
-  const fmsInfo = useAtomValue(fmsInformation);
-
-  const curInQueueOnScreen =
-    inProcMat !== null &&
-    inProcMat.location.type === api.LocType.InQueue &&
-    inProcMat.location.currentQueue &&
-    queueNames.includes(inProcMat.location.currentQueue);
-  if (curInQueueOnScreen) return "MatInQueue";
-
-  const curOnPallet = inProcMat !== null && inProcMat.location.type === api.LocType.OnPallet;
-  if (curOnPallet) return "None";
-
-  // this is just a prelimiary check to see if we should show the dialog at all,
-  // other combinations of addInProcessMaterial and addRawMaterial are handled by the details
-  // shown inside the dialog, perhaps preventing the user from selecting a queue or job
-  // in certian cases (with an appropriate error message).
-  const missingButMatRequired =
-    existingMat === null &&
-    fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.RequireExistingMaterial &&
-    fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireExistingMaterial;
-  if (missingButMatRequired) return "None";
-
-  return "AddToQueue";
-}
-
 function QueuesDialogCt({
   toQueue,
   enteredOperator,
@@ -172,10 +142,7 @@ function QueuesDialogCt({
   setNewMaterialTy: (job: NewMaterialToQueueType | null) => void;
   queueNames: ReadonlyArray<string>;
 }) {
-  const kind = useQueueDialogKind(queueNames);
-  const toShow = useAtomValue(matDetails.materialDialogOpen);
-
-  const requireSelectQueue = queueNames.length > 1 && toShow?.type !== "AddMatWithEnteredSerial";
+  const kind = useMaterialInDialogAddType(queueNames);
 
   switch (kind) {
     case "None":
@@ -183,25 +150,16 @@ function QueuesDialogCt({
       return null;
     case "AddToQueue":
       return (
-        <>
-          <WorkorderFromBarcode />
-          {requireSelectQueue ? (
-            <PromptForQueue
-              selectedQueue={selectedQueue}
-              setSelectedQueue={(q) => {
-                setSelectedQueue(q);
-                setNewMaterialTy(null);
-              }}
-              queueNames={queueNames}
-            />
-          ) : undefined}
-          <PromptForMaterialType
-            newMaterialTy={newMaterialTy}
-            setNewMaterialTy={setNewMaterialTy}
-            toQueue={toQueue}
-          />
-          <PromptForOperator enteredOperator={enteredOperator} setEnteredOperator={setEnteredOperator} />
-        </>
+        <AddToQueueMaterialDialogCt
+          queueNames={queueNames}
+          toQueue={toQueue}
+          enteredOperator={enteredOperator}
+          setEnteredOperator={setEnteredOperator}
+          selectedQueue={selectedQueue}
+          setSelectedQueue={setSelectedQueue}
+          newMaterialTy={newMaterialTy}
+          setNewMaterialTy={setNewMaterialTy}
+        />
       );
   }
 }
@@ -219,7 +177,7 @@ function QueueButtons({
   queueNames: ReadonlyArray<string>;
   onClose: () => void;
 }) {
-  const kind = useQueueDialogKind(queueNames);
+  const kind = useMaterialInDialogAddType(queueNames);
 
   switch (kind) {
     case "None":
@@ -331,6 +289,7 @@ export const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props
           setLastOperator(operator);
         }
       })
+      .catch(console.error)
       .finally(() => setLoading(false));
     return () => {
       isSubscribed = false;
@@ -364,7 +323,9 @@ export const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props
             .take(removeCnt)
             .map((m) => m.materialID)
             .toRArray(),
-        ).finally(close);
+        )
+          .catch(console.error)
+          .finally(close);
       }
     } else {
       setShowRemove(true);
