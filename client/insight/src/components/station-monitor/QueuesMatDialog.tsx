@@ -363,7 +363,7 @@ export const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props
           LazySeq.of(props.material || [])
             .take(removeCnt)
             .map((m) => m.materialID)
-            .toRArray()
+            .toRArray(),
         ).finally(close);
       }
     } else {

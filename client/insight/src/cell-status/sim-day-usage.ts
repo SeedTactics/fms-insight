@@ -49,7 +49,7 @@ function update(
   set: Setter,
   schId: string,
   usage: ReadonlyArray<Readonly<ISimulatedDayUsage>>,
-  warning: string | undefined
+  warning: string | undefined,
 ) {
   const old = get(latestSimDayUsage);
   if (old === null || old.simId < schId) {
@@ -70,7 +70,7 @@ export const setLatestSimDayUsage = atom(null, (get, set, history: Readonly<IRec
     set,
     history.mostRecentSimulationId,
     history.mostRecentSimDayUsage,
-    history.mostRecentSimDayUsageWarning
+    history.mostRecentSimDayUsageWarning,
   );
 });
 

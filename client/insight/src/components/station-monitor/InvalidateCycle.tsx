@@ -92,7 +92,7 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
 }
 
 export function InvalidateCycleDialogButtons(
-  props: InvalidateCycleProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean }
+  props: InvalidateCycleProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean },
 ) {
   const fmsInfo = useAtomValue(fmsInformation);
   const curMat = useAtomValue(inProcessMaterialInDialog);
@@ -154,7 +154,7 @@ function isNullOrEmpty(s: string | null | undefined): boolean {
 
 function matCanSwap(
   curMat: Readonly<IInProcessMaterial>,
-  job: Readonly<IActiveJob> | undefined
+  job: Readonly<IActiveJob> | undefined,
 ): (m: Readonly<IInProcessMaterial>) => boolean {
   return (newMat) => {
     if (isNullOrEmpty(newMat.serial)) return false;
@@ -238,7 +238,7 @@ export function SwapMaterialDialogContent(props: SwapMaterialProps): JSX.Element
 }
 
 export function SwapMaterialButtons(
-  props: SwapMaterialProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean }
+  props: SwapMaterialProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean },
 ) {
   const fmsInfo = useAtomValue(fmsInformation);
   const curMat = useAtomValue(inProcessMaterialInDialog);

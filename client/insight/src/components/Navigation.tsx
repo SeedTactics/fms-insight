@@ -198,7 +198,7 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.name} />
             </MenuItem>
-          )
+          ),
         )}
       </Select>
     </FormControl>
@@ -305,7 +305,7 @@ export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem>
                 <ListItemText primary={item.name} />
               </ListItemButton>
             </ListItem>
-          )
+          ),
         )}
       </List>
     </Paper>

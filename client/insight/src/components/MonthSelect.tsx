@@ -123,7 +123,7 @@ export default React.memo(function MonthSelect(props: MonthSelectProps) {
                     style={monthIdx > 0 ? { marginLeft: "1.2em" } : undefined}
                     onClick={() => {
                       props.onSelectMonth(
-                        new Date((tempDialogCurMonth || props.curMonth).getFullYear(), month.getMonth(), 1)
+                        new Date((tempDialogCurMonth || props.curMonth).getFullYear(), month.getMonth(), 1),
                       );
                       setTempDialogCurMonth(undefined);
                       setDialogOpen(false);

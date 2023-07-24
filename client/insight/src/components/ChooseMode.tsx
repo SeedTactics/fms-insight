@@ -167,7 +167,7 @@ export function ChooseMode(p: ChooseModeProps): JSX.Element {
               <ListItemIcon>{mode.icon}</ListItemIcon>
               <ListItemText>{mode.label}</ListItemText>
             </ListItem>
-          )
+          ),
         )}
       </List>
     </Paper>

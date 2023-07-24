@@ -100,7 +100,7 @@ type ColWithTitleSortableProps = {
 
 const ColumnWithTitle = React.forwardRef(function MaterialBin(
   props: ColWithTitleProps & ColWithTitleSortableProps,
-  ref: React.ForwardedRef<HTMLDivElement>
+  ref: React.ForwardedRef<HTMLDivElement>,
 ) {
   return (
     <Box
@@ -385,7 +385,7 @@ function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>): CollisionDe
         return closestCenter({
           ...args,
           droppableContainers: args.droppableContainers.filter(
-            (container) => typeof container.id === "string"
+            (container) => typeof container.id === "string",
           ),
         });
       }
@@ -405,7 +405,7 @@ function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>): CollisionDe
               droppableContainers: args.droppableContainers.filter(
                 (container) =>
                   container.id !== overId &&
-                  bin.bin.material.findIndex((m) => m.materialID === container.id) >= 0
+                  bin.bin.material.findIndex((m) => m.materialID === container.id) >= 0,
               ),
             })[0]?.id;
           }
@@ -415,7 +415,7 @@ function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>): CollisionDe
       }
       return [];
     },
-    [allBins]
+    [allBins],
   );
 }
 
@@ -504,8 +504,8 @@ export function AllMaterial(props: AllMaterialProps) {
               moveMaterialBin(
                 curBins.map((b) => b.binId),
                 curBins.findIndex((b) => b.binId === activeDrag.bin.binId),
-                curBins.findIndex((b) => b.binId === over.id)
-              )
+                curBins.findIndex((b) => b.binId === over.id),
+              ),
             );
           }
         } else {

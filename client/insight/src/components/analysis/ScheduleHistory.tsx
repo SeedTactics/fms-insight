@@ -140,13 +140,13 @@ export function ScheduleTable() {
   const sort = useColSort(ScheduleCols.Date, cols);
 
   const matIds = useAtomValue(
-    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary,
   );
   const schJobs = useAtomValue(period.type === "Last30" ? last30Jobs : specificMonthJobs);
 
   const jobs = React.useMemo(
     () => buildScheduledJobs(zoom.zoomRange, matIds.matsById, schJobs, null),
-    [zoom, matIds.matsById, schJobs]
+    [zoom, matIds.matsById, schJobs],
   );
   const page = React.useMemo(
     () =>
@@ -154,7 +154,7 @@ export function ScheduleTable() {
         .sortBy(sort.sortOn)
         .drop(tpage.page * tpage.rowsPerPage)
         .take(tpage.rowsPerPage),
-    [jobs, sort, tpage]
+    [jobs, sort, tpage],
   );
 
   return (

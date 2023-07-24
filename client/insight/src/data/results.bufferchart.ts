@@ -68,11 +68,11 @@ const numPoints: number = 30 * 5;
 function addEntryToPoint(
   movingAverageDistanceInMilliseconds: number,
   point: { x: Date; y: number },
-  entry: BufferEntry
+  entry: BufferEntry,
 ) {
   const startT = Math.max(
     point.x.getTime() - movingAverageDistanceInMilliseconds,
-    entry.endTime.getTime() - entry.elapsedSeconds * 1000
+    entry.endTime.getTime() - entry.elapsedSeconds * 1000,
   );
   const endT = Math.min(point.x.getTime() + movingAverageDistanceInMilliseconds, entry.endTime.getTime());
 
@@ -83,7 +83,7 @@ function calcPoints(
   absoluteStart: Date,
   absoluteEnd: Date,
   movingAverageDistanceInMilliseconds: number,
-  entries: Iterable<BufferEntry>
+  entries: Iterable<BufferEntry>,
 ): ReadonlyArray<BufferChartPoint> {
   // the actual start and end is inward from the start and end by the moving average distance
   const start = new Date(absoluteStart.getTime() + movingAverageDistanceInMilliseconds);
@@ -110,12 +110,12 @@ function calcPoints(
           e.elapsedSeconds * 1000 -
           movingAverageDistanceInMilliseconds -
           start.getTime()) /
-          gap
-      )
+          gap,
+      ),
     );
     const endIdx = Math.min(
       numPoints - 1,
-      Math.floor((e.endTime.getTime() + movingAverageDistanceInMilliseconds - start.getTime()) / gap)
+      Math.floor((e.endTime.getTime() + movingAverageDistanceInMilliseconds - start.getTime()) / gap),
     );
     for (let i = startIdx; i <= endIdx; i++) {
       addEntryToPoint(movingAverageDistanceInMilliseconds, points[i], e);
@@ -130,7 +130,7 @@ export function buildBufferChart(
   end: Date,
   movingAverageDistanceInHours: number,
   rawMatQueues: ReadonlySet<string>,
-  entries: Iterable<BufferEntry>
+  entries: Iterable<BufferEntry>,
 ): ReadonlyArray<BufferChartSeries> {
   const movingAverageDistanceInMilliseconds = movingAverageDistanceInHours * 60 * 60 * 1000;
   return LazySeq.of(entries)

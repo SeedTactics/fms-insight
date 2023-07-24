@@ -66,7 +66,7 @@ export interface CycleFilterOptions {
 
 function extractFilterOptions(
   cycles: Iterable<PartCycleData>,
-  selectedPart?: PartAndProcess
+  selectedPart?: PartAndProcess,
 ): CycleFilterOptions {
   const palNames = new Set<number>();
   const lulNames = new Set<string>();
@@ -105,11 +105,11 @@ function extractFilterOptions(
       .flatMap(([part, procs]) => procs.toLazySeq().map((proc) => ({ part: part, proc: proc })))
       .toSortedArray(
         (n) => n.part,
-        (n) => n.proc
+        (n) => n.proc,
       ),
     allMachineOperations: oper.toLazySeq().toSortedArray(
       (p) => p.statGroup,
-      (p) => p.operation
+      (p) => p.operation,
     ),
   };
 }
@@ -131,7 +131,7 @@ export interface StationCycleFilter {
 }
 
 export function emptyStationCycles(
-  allCycles: Iterable<PartCycleData>
+  allCycles: Iterable<PartCycleData>,
 ): FilteredStationCycles & CycleFilterOptions {
   return {
     ...extractFilterOptions(allCycles),
@@ -142,7 +142,7 @@ export function emptyStationCycles(
 
 export function filterStationCycles(
   allCycles: Iterable<PartCycleData>,
-  { zoom, partAndProc, pallet, station, operation }: StationCycleFilter
+  { zoom, partAndProc, pallet, station, operation }: StationCycleFilter,
 ): FilteredStationCycles & CycleFilterOptions {
   const groupByPal =
     partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
@@ -225,7 +225,7 @@ export interface LoadCycleFilter {
 
 export function loadOccupancyCycles(
   allCycles: Iterable<PartCycleData>,
-  { zoom, partAndProc, pallet, station }: LoadCycleFilter
+  { zoom, partAndProc, pallet, station }: LoadCycleFilter,
 ): FilteredLoadCycles & CycleFilterOptions {
   const filteredCycles = LazySeq.of(allCycles).filter((e) => {
     if (!station || station === FilterAnyLoadKey) {
@@ -241,7 +241,7 @@ export function loadOccupancyCycles(
     data: chunkCyclesWithSimilarEndTime(
       filteredCycles,
       (e) => stat_name_and_num(e.stationGroup, e.stationNumber),
-      (c) => c.x
+      (c) => c.x,
     )
       .map(
         ([statNameAndNum, cyclesForStat]) =>
@@ -273,7 +273,7 @@ export function loadOccupancyCycles(
                         e.material.map((mat) => ({
                           mat,
                           operation: e.operation,
-                        }))
+                        })),
                       )
                       .toRArray(),
                   };
@@ -282,7 +282,7 @@ export function loadOccupancyCycles(
                 }
               })
               .toRArray(),
-          ] as const
+          ] as const,
       )
       .filter(([, e]) => e.length > 0)
       .toRMap((x) => x),
@@ -298,7 +298,7 @@ export interface LoadOpFilters {
 
 export function estimateLulOperations(
   allCycles: Iterable<PartCycleData>,
-  { operation, pallet, zoom, station }: LoadOpFilters
+  { operation, pallet, zoom, station }: LoadOpFilters,
 ): FilteredLoadCycles & CycleFilterOptions {
   const filteredCycles = LazySeq.of(allCycles).filter((e) => {
     if (!station || station === FilterAnyLoadKey) {
@@ -313,7 +313,7 @@ export function estimateLulOperations(
     data: chunkCyclesWithSimilarEndTime(
       filteredCycles,
       (e) => stat_name_and_num(e.stationGroup, e.stationNumber),
-      (c) => c.x
+      (c) => c.x,
     )
       .map(
         ([statNameAndNum, cyclesForStat]) =>
@@ -324,7 +324,7 @@ export function estimateLulOperations(
                 const split = splitElapsedTimeAmongChunk(
                   chunk,
                   (c) => c.y,
-                  (c) => c.activeMinutes
+                  (c) => c.activeMinutes,
                 );
                 const splitCycle = split.find((e) => {
                   if (zoom && (e.cycle.x < zoom.start || e.cycle.x > zoom.end)) {
@@ -348,7 +348,7 @@ export function estimateLulOperations(
                         e.material.map((mat) => ({
                           mat,
                           operation: e.operation + (e === splitCycle.cycle ? "*" : ""),
-                        }))
+                        })),
                       )
                       .toRArray(),
                   };
@@ -357,7 +357,7 @@ export function estimateLulOperations(
                 }
               })
               .toRArray(),
-          ] as const
+          ] as const,
       )
       .filter(([_, e]) => e.length > 0)
       .toRMap((x) => x),
@@ -368,7 +368,7 @@ export function outlierMachineCycles(
   allCycles: Iterable<PartCycleData>,
   start: Date,
   end: Date,
-  estimated: EstimatedCycleTimes
+  estimated: EstimatedCycleTimes,
 ): FilteredStationCycles {
   return {
     seriesLabel: "Part",
@@ -387,7 +387,7 @@ export function outlierLoadCycles(
   allCycles: Iterable<PartCycleData>,
   start: Date,
   end: Date,
-  estimated: EstimatedCycleTimes
+  estimated: EstimatedCycleTimes,
 ): FilteredStationCycles {
   const loadCycles = LazySeq.of(allCycles).filter((e) => e.isLabor && e.x >= start && e.x <= end);
   const now = new Date();
@@ -411,7 +411,7 @@ export function outlierLoadCycles(
       })
       .toRLookup(
         (e) => e.cycle.part + "-" + e.cycle.material[0].proc.toString(),
-        (e) => e.cycle
+        (e) => e.cycle,
       ),
   };
 }
@@ -443,12 +443,12 @@ export interface RecentCycle {
 
 export function recentCycles(
   allCycles: LazySeq<PartCycleData>,
-  estimated: EstimatedCycleTimes
+  estimated: EstimatedCycleTimes,
 ): ReadonlyArray<RecentCycle> {
   return chunkCyclesWithSimilarEndTime(
     allCycles,
     (c) => stat_name_and_num(c.stationGroup, c.stationNumber),
-    (c) => c.x
+    (c) => c.x,
   )
     .flatMap(function* procChunk([station, chunks]) {
       for (const chunk of chunks) {
@@ -456,7 +456,7 @@ export function recentCycles(
           const entries = splitElapsedTimeAmongChunk(
             chunk,
             (c) => c.y,
-            (c) => c.activeMinutes
+            (c) => c.activeMinutes,
           );
           const endTime = chunk[0].x;
           const occupiedMins = chunk[0].y;
@@ -479,7 +479,7 @@ export function recentCycles(
               .distinctAndSortBy(
                 (c) => c.part,
                 (c) => c.material[0].proc, // load events have the same process on all mats on face
-                (c) => c.operation
+                (c) => c.operation,
               )
               .map((c) => ({
                 part: c.part + "-" + c.material[0].proc.toString(),
@@ -515,7 +515,7 @@ export function recentCycles(
 
 export function format_cycle_inspection(
   c: PartCycleData,
-  matsById: HashMap<number, MaterialSummaryAndCompletedData>
+  matsById: HashMap<number, MaterialSummaryAndCompletedData>,
 ): string {
   const ret = [];
   const signaled = new Set<string>();
@@ -553,7 +553,7 @@ export function buildCycleTable(
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   startD: Date | undefined,
   endD: Date | undefined,
-  hideMedian?: boolean
+  hideMedian?: boolean,
 ): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th><th>Part</th><th>Station</th><th>Pallet</th>";
@@ -623,10 +623,10 @@ export function copyCyclesToClipboard(
   cycles: FilteredStationCycles,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   zoom: { start: Date; end: Date } | undefined,
-  hideMedian?: boolean
+  hideMedian?: boolean,
 ): void {
   copy(
-    buildCycleTable(cycles, matsById, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined, hideMedian)
+    buildCycleTable(cycles, matsById, zoom ? zoom.start : undefined, zoom ? zoom.end : undefined, hideMedian),
   );
 }
 

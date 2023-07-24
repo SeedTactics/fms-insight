@@ -93,7 +93,7 @@ type ToolReplacementSummary = {
 function tool_replacements_with_station_and_date(
   zoom: TableZoom | undefined,
   allReplacements: ToolReplacementsByStation,
-  station: StationGroupAndNum | null | undefined
+  station: StationGroupAndNum | null | undefined,
 ): LazySeq<ToolReplacementAndStationDate> {
   const zoomRange = zoom?.zoomRange;
   if (station) {
@@ -101,7 +101,7 @@ function tool_replacements_with_station_and_date(
     return rsForStat
       .valuesToAscLazySeq()
       .transform((x) =>
-        zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x
+        zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x,
       )
       .flatMap((rs) => rs.replacements.map((r) => ({ ...r, station, time: rs.time })));
   } else {
@@ -109,9 +109,9 @@ function tool_replacements_with_station_and_date(
       rsByStat
         .valuesToAscLazySeq()
         .transform((x) =>
-          zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x
+          zoomRange ? x.filter((rs) => rs.time >= zoomRange.start && rs.time <= zoomRange.end) : x,
         )
-        .flatMap((rs) => rs.replacements.map((r) => ({ ...r, station, time: rs.time })))
+        .flatMap((rs) => rs.replacements.map((r) => ({ ...r, station, time: rs.time }))),
     );
   }
 }
@@ -120,7 +120,7 @@ function tool_summary(
   zoom: TableZoom | undefined,
   allReplacements: ToolReplacementsByStation,
   station: StationGroupAndNum | null | undefined,
-  sortOn: ToComparable<ToolReplacementSummary>
+  sortOn: ToComparable<ToolReplacementSummary>,
 ): ReadonlyArray<ToolReplacementSummary> {
   return tool_replacements_with_station_and_date(zoom, allReplacements, station)
     .groupBy((r) => r.tool)
@@ -328,11 +328,11 @@ const SummaryTable = React.memo(function ReplacementTable(props: ReplacementTabl
   const sort = useColSort(SummaryColumnId.Tool, summaryColumns);
 
   const allReplacements = useAtomValue(
-    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
+    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements,
   );
   const allSorted = React.useMemo(
     () => tool_summary(zoom, allReplacements, props.station, sort.sortOn),
-    [zoom, allReplacements, props.station, sort]
+    [zoom, allReplacements, props.station, sort],
   );
   const pageData = tpage
     ? allSorted.slice(tpage.page * tpage.rowsPerPage, (tpage.page + 1) * tpage.rowsPerPage)
@@ -473,14 +473,14 @@ const AllReplacementTable = React.memo(function ReplacementTable(props: Replacem
   const sort = useColSort(AllReplacementColumnId.Date, allReplacementsColumns);
 
   const allReplacements = useAtomValue(
-    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
+    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements,
   );
   const allSorted = React.useMemo(
     () =>
       tool_replacements_with_station_and_date(zoom, allReplacements, props.station).toSortedArray(
-        sort.sortOn
+        sort.sortOn,
       ),
-    [sort, zoom, allReplacements, props.station]
+    [sort, zoom, allReplacements, props.station],
   );
   const pageData = tpage
     ? allSorted.slice(tpage.page * tpage.rowsPerPage, (tpage.page + 1) * tpage.rowsPerPage)
@@ -504,7 +504,7 @@ function copyToClipboard(replacements: ToolReplacementsByStation, displayType: "
   } else {
     const r = tool_replacements_with_station_and_date(undefined, replacements, undefined).toSortedArray(
       (r) => r.tool,
-      (r) => r.time
+      (r) => r.time,
     );
     copyTableToClipboard(allReplacementsColumns, r);
   }
@@ -517,7 +517,7 @@ const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
 }) {
   const period = useAtomValue(selectedAnalysisPeriod);
   const replacements = useAtomValue(
-    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements
+    period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements,
   );
   const machines = Array.from(replacements.keys());
   const selMachineIdx = props.station !== null ? machines.indexOf(props.station) : -1;

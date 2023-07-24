@@ -72,7 +72,10 @@ export interface InspectionLogEntry {
 export type InspectionLogsByCntr = HashMap<number, InspectionLogEntry>;
 
 export class PartAndInspType {
-  public constructor(public readonly part: string, public readonly inspType: string) {}
+  public constructor(
+    public readonly part: string,
+    public readonly inspType: string,
+  ) {}
   compare(other: PartAndInspType): number {
     const cmp = this.part.localeCompare(other.part);
     if (cmp !== 0) {
@@ -92,17 +95,17 @@ export class PartAndInspType {
 export type InspectionsByPartAndType = HashMap<PartAndInspType, InspectionLogsByCntr>;
 
 const last30InspectionsRW = atom<InspectionsByPartAndType>(
-  HashMap.empty<PartAndInspType, InspectionLogsByCntr>()
+  HashMap.empty<PartAndInspType, InspectionLogsByCntr>(),
 );
 export const last30Inspections: Atom<InspectionsByPartAndType> = last30InspectionsRW;
 
 const specificMonthInspectionsRW = atom<InspectionsByPartAndType>(
-  HashMap.empty<PartAndInspType, InspectionLogsByCntr>()
+  HashMap.empty<PartAndInspType, InspectionLogsByCntr>(),
 );
 export const specificMonthInspections: Atom<InspectionsByPartAndType> = specificMonthInspectionsRW;
 
 export function convertLogToInspections(
-  c: Readonly<ILogEntry>
+  c: Readonly<ILogEntry>,
 ): ReadonlyArray<{ key: PartAndInspType; entry: InspectionLogEntry }> {
   if (
     c.type !== LogType.Inspection &&
@@ -204,10 +207,10 @@ export const setLast30Inspections = atom(null, (_, set, log: ReadonlyArray<Reado
         .toLookupMap(
           (e) => e.key,
           (e) => e.entry.cntr,
-          (e) => e.entry
+          (e) => e.entry,
         ),
-      (e1, e2) => e1.union(e2)
-    )
+      (e1, e2) => e1.union(e2),
+    ),
   );
 });
 
@@ -233,9 +236,9 @@ export const updateLast30Inspections = atom(null, (_, set, { evt, now, expire }:
         LazySeq.of(log).toLookupMap(
           (e) => e.key,
           (e) => e.entry.cntr,
-          (e) => e.entry
+          (e) => e.entry,
         ),
-        (e1, e2) => e1.union(e2)
+        (e1, e2) => e1.union(e2),
       );
     });
   } else if (evt.editMaterialInLog) {
@@ -258,7 +261,7 @@ export const updateLast30Inspections = atom(null, (_, set, { evt, now, expire }:
           }
         }
         return entries;
-      })
+      }),
     );
   }
 });
@@ -271,7 +274,7 @@ export const setSpecificMonthInspections = atom(null, (_, set, log: ReadonlyArra
       .toLookupMap(
         (e) => e.key,
         (e) => e.entry.cntr,
-        (e) => e.entry
-      )
+        (e) => e.entry,
+      ),
   );
 });

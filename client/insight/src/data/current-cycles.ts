@@ -54,7 +54,7 @@ export type CurrentCycle = {
 function machiningCurrentCycles(
   currentSt: ICurrentStatus,
   estimated: EstimatedCycleTimes,
-  palToLoc: ReadonlyMap<number, PalletLocation>
+  palToLoc: ReadonlyMap<number, PalletLocation>,
 ): LazySeq<CurrentCycle> {
   return LazySeq.of(currentSt.material)
     .collect((m) => {
@@ -66,12 +66,12 @@ function machiningCurrentCycles(
     })
     .groupBy(
       ({ loc }) => loc.group,
-      ({ loc }) => loc.num
+      ({ loc }) => loc.num,
     )
     .map(([[statGroup, statNum], mats]) => {
       // all mats currently machining at the same station should all have the same part and program
       const stats = estimated.get(
-        new PartAndStationOperation(mats[0].mat.partName, statGroup, mats[0].mat.action.program ?? "")
+        new PartAndStationOperation(mats[0].mat.partName, statGroup, mats[0].mat.action.program ?? ""),
       );
       const elapsedSec = durationToSeconds(mats[0].mat.action.elapsedMachiningTime ?? "PT0S");
       const remainingSec = durationToSeconds(mats[0].mat.action.expectedRemainingMachiningTime ?? "PT0S");
@@ -88,7 +88,7 @@ function machiningCurrentCycles(
 function loadCurrentCycles(
   currentSt: ICurrentStatus,
   estimated: EstimatedCycleTimes,
-  palToLoc: ReadonlyMap<number, PalletLocation>
+  palToLoc: ReadonlyMap<number, PalletLocation>,
 ): LazySeq<CurrentCycle> {
   return LazySeq.of(currentSt.material)
     .collect((m) => {
@@ -125,13 +125,13 @@ function loadCurrentCycles(
     })
     .groupBy(
       ({ loc }) => loc.group,
-      ({ loc }) => loc.num
+      ({ loc }) => loc.num,
     )
     .map(([[statGroup, statNum], mats]) => {
       const matsWithTime = splitElapsedTimeAmongChunk(
         mats,
         (m) => durationToMinutes(m.mat.action.elapsedLoadUnloadTime ?? "PT0S"),
-        (m) => m.expectedLoadSecs / 60
+        (m) => m.expectedLoadSecs / 60,
       );
       let outlier = false;
       let expectedSecs = 0;
@@ -142,8 +142,8 @@ function loadCurrentCycles(
             statGroup,
             m.mat.action.type === ActionType.Loading
               ? "LOAD-" + m.proc.toString()
-              : "UNLOAD-" + m.proc.toString()
-          )
+              : "UNLOAD-" + m.proc.toString(),
+          ),
         );
         if (stats && isOutlierAbove(stats, elapsedForSingleMaterialMinutes)) {
           outlier = true;
@@ -164,7 +164,7 @@ function loadCurrentCycles(
           .distinctAndSortBy(
             (m) => m.mat.partName,
             (m) => m.proc,
-            (m) => (m.mat.action.type === ActionType.Loading ? "LOAD" : "UNLOAD")
+            (m) => (m.mat.action.type === ActionType.Loading ? "LOAD" : "UNLOAD"),
           )
           .map((m) => ({
             part: m.mat.partName + "-" + m.proc.toString(),
@@ -177,11 +177,11 @@ function loadCurrentCycles(
 
 export function currentCycles(
   currentSt: ICurrentStatus,
-  estimated: EstimatedCycleTimes
+  estimated: EstimatedCycleTimes,
 ): ReadonlyArray<CurrentCycle> {
   const palToLoc = LazySeq.ofObject(currentSt.pallets).buildHashMap<number, PalletLocation>(
     ([, p]) => p.palletNum,
-    (_old, [, pal]) => pal.currentPalletLocation
+    (_old, [, pal]) => pal.currentPalletLocation,
   );
 
   return machiningCurrentCycles(currentSt, estimated, palToLoc)

@@ -71,7 +71,7 @@ export const SortableRegion = React.memo(function SortableRegion(props: Sortable
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   return (

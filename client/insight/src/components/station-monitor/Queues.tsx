@@ -223,7 +223,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const currentSt = useAtomValue(currentStatus);
   const jobs = React.useMemo(
     () => extractJobRawMaterial(props.queue, currentSt.jobs, currentSt.material),
-    [props.queue, currentSt]
+    [props.queue, currentSt],
   );
 
   if (jobs.length === 0) return null;
@@ -306,7 +306,7 @@ const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable(
 
   const sorted = LazySeq.of(curSt.workorders).sortBy(
     (w) => w.dueDate,
-    (w) => w.priority
+    (w) => w.priority,
   );
 
   const inProcByWorkorder = LazySeq.of(curSt.material)
@@ -315,7 +315,7 @@ const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable(
       (m) => m.workorderId ?? "",
       (m) => m.partName,
       () => 1,
-      (a, b) => a + b
+      (a, b) => a + b,
     );
 
   return (
@@ -642,7 +642,7 @@ export const Queues = (props: QueueProps) => {
   const rawMatQueues = useAtomValue(rawMaterialQueues);
   const data = React.useMemo(
     () => selectQueueData(props.queues, currentSt, rawMatQueues),
-    [currentSt, props.queues, rawMatQueues]
+    [currentSt, props.queues, rawMatQueues],
   );
   const hasJobs = !LazySeq.ofObject(currentSt.jobs).isEmpty();
 
@@ -715,7 +715,7 @@ export const Queues = (props: QueueProps) => {
                           fsize="normal"
                           onOpen={() => setMultiMaterialDialog(matGroup.material)}
                         />
-                      )
+                      ),
                     )
                   : undefined}
                 {region.rawMaterialQueue ? (

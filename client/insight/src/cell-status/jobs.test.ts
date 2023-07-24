@@ -56,7 +56,7 @@ function jobsToHistory(newJs: Iterable<NewJobs>): IHistoricData {
       .flatMap((s) => s.jobs)
       .toObject(
         (j) => [j.unique, new HistoricJob({ ...j, copiedToSystem: true })],
-        (a, _) => a
+        (a, _) => a,
       ),
     stationUse: LazySeq.of(newJs)
       .flatMap((s) => s.stationUse ?? [])

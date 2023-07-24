@@ -48,7 +48,7 @@ export const specificMonthJobs: Atom<HashMap<string, Readonly<IHistoricJob>>> = 
 
 export function filterExistingJobs(
   schIds: HashSet<string>,
-  history: Readonly<IRecentHistoricData>
+  history: Readonly<IRecentHistoricData>,
 ): Readonly<IRecentHistoricData> {
   if (schIds.size === 0) return history;
   const newHistory = {
@@ -70,8 +70,8 @@ export const setLast30Jobs = atom(null, (_, set, history: Readonly<IHistoricData
     oldIds.union(
       LazySeq.ofObject(history.jobs)
         .collect(([, x]) => x.scheduleId)
-        .toHashSet((s) => s)
-    )
+        .toHashSet((s) => s),
+    ),
   );
 });
 
@@ -96,7 +96,7 @@ export const updateLast30Jobs = atom(null, (_, set, { evt, now, expire }: Server
 export const updateSpecificMonthJobs = atom(null, (_, set, history: Readonly<IHistoricData>) => {
   set(
     specificMonthJobsRW,
-    LazySeq.ofObject(history.jobs).toHashMap((x) => x)
+    LazySeq.ofObject(history.jobs).toHashMap((x) => x),
   );
 });
 
@@ -114,6 +114,6 @@ export const last30JobComment = atomFamily((uniq: string) =>
           return oldJobs;
         }
       });
-    }
-  )
+    },
+  ),
 );

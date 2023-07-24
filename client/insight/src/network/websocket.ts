@@ -70,7 +70,7 @@ function loadMissed(lastCntr: number, schIds: HashSet<string> | undefined, set: 
   const now = new Date();
   const curStProm = JobsBackend.currentStatus().then((st) => set(onLoadCurrentSt, st));
   const jobsProm = JobsBackend.recent(addDays(now, -30), schIds ? Array.from(schIds) : []).then((j) =>
-    set(onLoadLast30Jobs, j)
+    set(onLoadLast30Jobs, j),
   );
   const logProm = LogBackend.recent(lastCntr, undefined).then((log) => set(onLoadLast30Log, log));
 

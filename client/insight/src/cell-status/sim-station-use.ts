@@ -47,7 +47,7 @@ export interface SimStationUse {
 }
 
 const last30SimStationUseRW = atom<ReadonlyArray<SimStationUse>>(
-  [] // TODO: switch to persistent list
+  [], // TODO: switch to persistent list
 );
 export const last30SimStationUse: Atom<ReadonlyArray<SimStationUse>> = last30SimStationUseRW;
 

@@ -223,9 +223,9 @@ export function WorkorderGantt() {
         (w) => w.simulatedFilledUTC ?? null,
         (w) => w.simulatedStartUTC ?? null,
         (w) => w.workorderId,
-        (w) => w.part
+        (w) => w.part,
       ),
-    [currentSt.workorders]
+    [currentSt.workorders],
   );
   const { xScale, yScale } = useScales(sortedWorkorders);
 

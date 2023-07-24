@@ -70,10 +70,10 @@ export const setLast30PalletCycles = atom(null, (_, set, log: ReadonlyArray<Read
         .toLookupMap(
           (c) => c.pal,
           (c) => c.counter,
-          logToPalletCycle
+          logToPalletCycle,
         ),
-      (e1, e2) => e1.union(e2)
-    )
+      (e1, e2) => e1.union(e2),
+    ),
   );
 });
 
@@ -96,7 +96,7 @@ export const updateLast30PalletCycles = atom(null, (_, set, { evt, now, expire }
       }
 
       return oldCycles.modify(log.pal, (old) =>
-        (old ?? HashMap.empty()).set(log.counter, logToPalletCycle(log))
+        (old ?? HashMap.empty()).set(log.counter, logToPalletCycle(log)),
       );
     });
   }
@@ -110,7 +110,7 @@ export const setSpecificMonthPalletCycles = atom(null, (_, set, log: ReadonlyArr
       .toLookupMap(
         (c) => c.pal,
         (c) => c.counter,
-        logToPalletCycle
-      )
+        logToPalletCycle,
+      ),
   );
 });

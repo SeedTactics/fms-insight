@@ -287,7 +287,7 @@ export interface MaterialSummaryProps {
 
 const MatCard = React.forwardRef(function MatCard(
   props: MaterialSummaryProps & MaterialDragProps,
-  ref: React.ForwardedRef<HTMLDivElement>
+  ref: React.ForwardedRef<HTMLDivElement>,
 ) {
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
@@ -360,7 +360,7 @@ const MatCard = React.forwardRef(function MatCard(
           setMatToShow(
             props.inProcMat
               ? { type: "InProcMat", inproc: props.inProcMat }
-              : { type: "MatSummary", summary: props.mat }
+              : { type: "MatSummary", summary: props.mat },
           )
         }
       >
@@ -437,7 +437,7 @@ export type ShakeProp = {
 };
 
 export const InProcMaterial = React.memo(function InProcMaterial(
-  props: InProcMaterialProps & ShakeProp & { readonly showHandle?: boolean }
+  props: InProcMaterialProps & ShakeProp & { readonly showHandle?: boolean },
 ) {
   return (
     <MatCard
@@ -459,7 +459,7 @@ export type SortableMatData = {
 };
 
 export const SortableInProcMaterial = React.memo(function SortableInProcMaterial(
-  props: InProcMaterialProps & ShakeProp
+  props: InProcMaterialProps & ShakeProp,
 ) {
   const d: SortableMatData = { mat: props.mat };
   const {

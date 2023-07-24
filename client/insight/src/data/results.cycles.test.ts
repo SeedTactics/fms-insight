@@ -60,7 +60,7 @@ it("creates cycles clipboard table", () => {
   const evts = ([] as ILogEntry[]).concat(
     fakeCycle({ time: now, machineTime: 30, counter: 100 }),
     fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 }),
   );
   const snapshot = createStore();
   snapshot.set(onLoadLast30Log, evts);
@@ -83,7 +83,7 @@ it("loads outlier cycles", () => {
   const evts = ([] as ILogEntry[]).concat(
     fakeCycle({ time: now, machineTime: 30, counter: 100 }),
     fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 }),
   );
   const snapshot = createStore();
   snapshot.set(onLoadLast30Log, evts);
@@ -94,7 +94,7 @@ it("loads outlier cycles", () => {
     cycles.valuesToLazySeq(),
     new Date(2018, 0, 1),
     new Date(2018, 11, 1),
-    estimatedCycleTimes
+    estimatedCycleTimes,
   );
   expect(loadOutliers.data.size).toBe(0);
 
@@ -102,7 +102,7 @@ it("loads outlier cycles", () => {
     cycles.valuesToLazySeq(),
     new Date(2018, 0, 1),
     new Date(2018, 11, 1),
-    estimatedCycleTimes
+    estimatedCycleTimes,
   );
   expect(machineOutliers.data.size).toBe(0);
 });
@@ -113,7 +113,7 @@ it("creates log entries clipboard table", () => {
   const evts = ([] as ILogEntry[]).concat(
     fakeCycle({ time: now, machineTime: 30, counter: 100 }),
     fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 }),
   );
   const table = document.createElement("div");
   table.innerHTML = buildLogEntriesTable(evts);

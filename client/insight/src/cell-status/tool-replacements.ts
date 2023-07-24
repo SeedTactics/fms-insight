@@ -103,17 +103,17 @@ const emptyReplacementsAndUse: ReplacementsAndMostRecentUse = {
 
 const last30ToolReplacementsRW = atom<ReplacementsAndMostRecentUse>(emptyReplacementsAndUse);
 export const last30ToolReplacements = atom<ToolReplacementsByStation>(
-  (get) => get(last30ToolReplacementsRW).replacements
+  (get) => get(last30ToolReplacementsRW).replacements,
 );
 
 const specificMonthToolReplacementsRW = atom<ReplacementsAndMostRecentUse>(emptyReplacementsAndUse);
 export const specificMonthToolReplacements = atom<ToolReplacementsByStation>(
-  (get) => get(specificMonthToolReplacementsRW).replacements
+  (get) => get(specificMonthToolReplacementsRW).replacements,
 );
 
 function addReplacementsFromLog(
   old: ReplacementsAndMostRecentUse,
-  e: Readonly<ILogEntry>
+  e: Readonly<ILogEntry>,
 ): ReplacementsAndMostRecentUse {
   const key = StationGroupAndNum.ofLogCycle(e);
   const newReplacements = old.replacements.alter(key, (cycles) => {
@@ -190,9 +190,9 @@ export const setLast30ToolReplacements = atom(null, (_, set, log: ReadonlyArray<
   set(last30ToolReplacementsRW, (oldCycles) =>
     LazySeq.of(log)
       .filter(
-        (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0
+        (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0,
       )
-      .foldLeft(oldCycles, addReplacementsFromLog)
+      .foldLeft(oldCycles, addReplacementsFromLog),
   );
 });
 
@@ -228,9 +228,9 @@ export const setSpecificMonthToolReplacements = atom(
       specificMonthToolReplacementsRW,
       LazySeq.of(log)
         .filter(
-          (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0
+          (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0,
         )
-        .foldLeft(emptyReplacementsAndUse, addReplacementsFromLog)
+        .foldLeft(emptyReplacementsAndUse, addReplacementsFromLog),
     );
-  }
+  },
 );

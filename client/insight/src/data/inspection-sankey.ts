@@ -52,7 +52,10 @@ export interface SankeyDiagram {
 }
 
 class NodeR {
-  public constructor(public readonly unique: string, public readonly name: string) {}
+  public constructor(
+    public readonly unique: string,
+    public readonly name: string,
+  ) {}
   compare(other: NodeR): number {
     const cmp = this.unique.localeCompare(other.unique);
     if (cmp === 0) {
@@ -70,7 +73,10 @@ class NodeR {
 }
 
 class Edge {
-  public constructor(public readonly from: NodeR, public readonly to: NodeR) {}
+  public constructor(
+    public readonly from: NodeR,
+    public readonly to: NodeR,
+  ) {}
   compare(other: Edge): number {
     const cmp = this.from.compare(other.from);
     if (cmp === 0) {
@@ -90,7 +96,7 @@ class Edge {
 function edgesForPath(
   actualPath: ReadonlyArray<Readonly<api.IMaterialProcessActualPath>>,
   toInspect: boolean,
-  result: boolean | undefined
+  result: boolean | undefined,
 ): Edge[] {
   let path = "";
   let prevNode = new NodeR("", "raw");
@@ -132,7 +138,7 @@ export function inspectionDataToSankey(d: Iterable<InspectionLogEntry>): SankeyD
       return edgesForPath(
         c.result.actualPath,
         c.result.toInspect,
-        matIdToInspResult.get(c.materialID) ?? false
+        matIdToInspResult.get(c.materialID) ?? false,
       );
     } else {
       return [];
@@ -156,14 +162,14 @@ export function inspectionDataToSankey(d: Iterable<InspectionLogEntry>): SankeyD
   // create a map from NodeR to index
   const nodesToIdx = nodes.toHashMap(
     (n) => [n.node, n.idx],
-    (i1, _) => i1
+    (i1, _) => i1,
   );
 
   // create the sankey links to return by counting Edges between nodes
   const sankeyLinks = edges
     .toHashMap(
       (e) => [e, 1],
-      (c1, c2) => c1 + c2
+      (c1, c2) => c1 + c2,
     )
     .toLazySeq()
     .map(([link, value]) => ({

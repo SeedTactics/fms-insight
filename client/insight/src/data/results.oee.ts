@@ -43,7 +43,10 @@ import { HashMap, hashValues, LazySeq } from "@seedtactics/immutable-collections
 // --------------------------------------------------------------------------------
 
 export class DayAndStation {
-  constructor(public readonly day: Date, public readonly station: string) {}
+  constructor(
+    public readonly day: Date,
+    public readonly station: string,
+  ) {}
   compare(other: DayAndStation): number {
     const cmp = this.day.getTime() - other.day.getTime();
     if (cmp !== 0) return cmp;
@@ -96,21 +99,21 @@ export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): Ha
         ...x,
         station: stat_name_and_num(point.stationGroup, point.stationNumber),
         isLabor: point.isLabor,
-      }))
+      })),
     )
     .toHashMap(
       (p) => [new DayAndStation(p.day, p.station), p.value],
-      (v1, v2) => v1 + v2
+      (v1, v2) => v1 + v2,
     );
 }
 
 export function binOccupiedCyclesByDayAndStat(
-  cycles: Iterable<PartCycleData>
+  cycles: Iterable<PartCycleData>,
 ): HashMap<DayAndStation, number> {
   return chunkCyclesWithSimilarEndTime(
     LazySeq.of(cycles),
     (point) => stat_name_and_num(point.stationGroup, point.stationNumber),
-    (c) => c.x
+    (c) => c.x,
   )
     .flatMap(([station, cyclesForStat]) =>
       cyclesForStat.flatMap((chunk) =>
@@ -119,12 +122,12 @@ export function binOccupiedCyclesByDayAndStat(
           ...split,
           station: station,
           isLabor: chunk[0].isLabor,
-        }))
-      )
+        })),
+      ),
     )
     .toHashMap(
       (p) => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number],
-      (v1, v2) => v1 + v2
+      (v1, v2) => v1 + v2,
     );
 }
 
@@ -133,18 +136,18 @@ export function binOccupiedCyclesByDayAndStat(
 // --------------------------------------------------------------------------------
 
 export function binSimStationUseByDayAndStat(
-  simUses: Iterable<SimStationUse>
+  simUses: Iterable<SimStationUse>,
 ): HashMap<DayAndStation, number> {
   return LazySeq.of(simUses)
     .flatMap((simUse) =>
       splitTimeToDays(simUse.start, simUse.end, simUse.utilizationTime - simUse.plannedDownTime).map((x) => ({
         ...x,
         station: simUse.station,
-      }))
+      })),
     )
     .toHashMap(
       (s) => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number],
-      (v1, v2) => v1 + v2
+      (v1, v2) => v1 + v2,
     );
 }
 
@@ -172,14 +175,14 @@ export function buildOeeSeries(
   end: Date,
   ty: OEEType,
   cycles: Iterable<PartCycleData>,
-  statUse: Iterable<SimStationUse>
+  statUse: Iterable<SimStationUse>,
 ): ReadonlyArray<OEEBarSeries> {
   const filteredCycles = LazySeq.of(cycles).filter(
-    (e) => (ty === "labor") === e.isLabor && e.x >= start && e.x <= end
+    (e) => (ty === "labor") === e.isLabor && e.x >= start && e.x <= end,
   );
   const actualBins = binActiveCyclesByDayAndStat(filteredCycles);
   const filteredStatUse = LazySeq.of(statUse).filter(
-    (e) => (ty === "labor") === e.station.startsWith("L/U") && e.end >= start && e.start <= end
+    (e) => (ty === "labor") === e.station.startsWith("L/U") && e.end >= start && e.start <= end,
   );
   const plannedBins = binSimStationUseByDayAndStat(filteredStatUse);
 
@@ -224,7 +227,10 @@ export interface HeatmapClipboardPoint {
 }
 
 class HeatmapClipboardCell {
-  public constructor(public readonly x: number, public readonly y: string) {}
+  public constructor(
+    public readonly x: number,
+    public readonly y: string,
+  ) {}
   compare(other: HeatmapClipboardCell): number {
     const cmp = this.x - other.x;
     if (cmp !== 0) return cmp;
@@ -241,7 +247,7 @@ class HeatmapClipboardCell {
 export function buildOeeHeatmapTable(yTitle: string, points: ReadonlyArray<HeatmapClipboardPoint>): string {
   const cells = LazySeq.of(points).toHashMap(
     (p) => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
-    (_, c) => c // cells should be unique, but just in case take the second
+    (_, c) => c, // cells should be unique, but just in case take the second
   );
   const days = LazySeq.of(points)
     .map((p) => p.x.getTime())
@@ -275,7 +281,7 @@ export function buildOeeHeatmapTable(yTitle: string, points: ReadonlyArray<Heatm
 
 export function copyOeeHeatmapToClipboard(
   yTitle: string,
-  points: ReadonlyArray<HeatmapClipboardPoint>
+  points: ReadonlyArray<HeatmapClipboardPoint>,
 ): void {
   copy(buildOeeHeatmapTable(yTitle, points));
 }

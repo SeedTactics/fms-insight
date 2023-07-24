@@ -342,6 +342,6 @@ export const setSpecificMonthMatSummary = atom(null, (_, set, log: ReadonlyArray
     log.reduce<MatSummaryState>(process_event, {
       matsById: HashMap.empty(),
       matIdsForJob: HashMap.empty(),
-    })
+    }),
   );
 });

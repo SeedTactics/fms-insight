@@ -85,7 +85,7 @@ function InspButtons(props: InspButtonsProps) {
           e.details?.["PalletCycleInvalidated"] !== "1" &&
           (e.type === LogType.LoadUnloadCycle ||
             e.type === LogType.MachineCycle ||
-            e.type === LogType.AddToQueue)
+            e.type === LogType.AddToQueue),
       )
       .flatMap((e) => e.material)
       .filter((e) => e.id === material.materialID)
@@ -96,7 +96,7 @@ function InspButtons(props: InspButtonsProps) {
     material.materialID,
     null,
     maxProc,
-    operator
+    operator,
   );
 
   return (
@@ -178,7 +178,7 @@ export function Inspection({ focusInspectionType, forceSingleColumn }: Inspectio
   const matSummary = useAtomValue(last30MaterialSummary);
   const recent_inspections = React.useMemo(
     () => extractRecentInspections(matSummary.matsById, focusInspectionType),
-    [matSummary, focusInspectionType]
+    [matSummary, focusInspectionType],
   );
 
   return (
@@ -216,7 +216,7 @@ export function Inspection({ focusInspectionType, forceSingleColumn }: Inspectio
 
 function extractRecentInspections(
   mats: HashMap<number, MaterialSummaryAndCompletedData>,
-  inspType: string | null
+  inspType: string | null,
 ): PartsForInspection {
   const uninspectedCutoff = addDays(new Date(), -7);
   const inspectedCutoff = addDays(new Date(), -1);
@@ -239,7 +239,7 @@ function extractRecentInspections(
               m.last_unload_time !== undefined &&
               m.last_unload_time >= uninspectedCutoff &&
               m.signaledInspections.length > 0 &&
-              !checkAllCompleted(m)
+              !checkAllCompleted(m),
           )
       : mats
           .valuesToLazySeq()
@@ -248,14 +248,14 @@ function extractRecentInspections(
               m.last_unload_time !== undefined &&
               m.last_unload_time >= uninspectedCutoff &&
               m.signaledInspections.includes(inspType) &&
-              (m.completedInspections || {})[inspType] === undefined
-          )
+              (m.completedInspections || {})[inspType] === undefined,
+          ),
   );
   // sort descending
   uninspected.sort((e1, e2) =>
     e1.last_unload_time && e2.last_unload_time
       ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime()
-      : 0
+      : 0,
   );
 
   const inspected = Array.from(
@@ -267,7 +267,7 @@ function extractRecentInspections(
               m.completed_inspect_time !== undefined &&
               m.completed_inspect_time >= inspectedCutoff &&
               m.signaledInspections.length > 0 &&
-              checkAllCompleted(m)
+              checkAllCompleted(m),
           )
       : mats
           .valuesToLazySeq()
@@ -276,14 +276,14 @@ function extractRecentInspections(
               m.completed_inspect_time !== undefined &&
               m.completed_inspect_time >= inspectedCutoff &&
               m.signaledInspections.includes(inspType) &&
-              (m.completedInspections || {})[inspType] !== undefined
-          )
+              (m.completedInspections || {})[inspType] !== undefined,
+          ),
   );
   // sort descending
   inspected.sort((e1, e2) =>
     e1.completed_inspect_time && e2.completed_inspect_time
       ? e2.completed_inspect_time.getTime() - e1.completed_inspect_time.getTime()
-      : 0
+      : 0,
   );
 
   return {
@@ -296,7 +296,7 @@ export default function InspectionPage(props: InspectionProps): JSX.Element {
   useSetTitle(
     props.focusInspectionType && props.focusInspectionType !== ""
       ? `Inspection ${props.focusInspectionType}`
-      : "Inspection"
+      : "Inspection",
   );
 
   return (

@@ -54,14 +54,14 @@ export interface ProgramToolUseInSingleCycle {
 export type ToolUsage = HashMap<PartAndStationOperation, ReadonlyArray<ProgramToolUseInSingleCycle>>;
 
 const last30ToolUseRW = atom<ToolUsage>(
-  HashMap.empty<PartAndStationOperation, ReadonlyArray<ProgramToolUseInSingleCycle>>()
+  HashMap.empty<PartAndStationOperation, ReadonlyArray<ProgramToolUseInSingleCycle>>(),
 );
 export const last30ToolUse: Atom<ToolUsage> = last30ToolUseRW;
 
 function process_tools(
   cycle: Readonly<ILogEntry>,
   estimatedCycleTimes: EstimatedCycleTimes,
-  toolUsage: ToolUsage
+  toolUsage: ToolUsage,
 ): ToolUsage {
   if (cycle.tooluse === undefined || cycle.tooluse.length === 0 || cycle.type !== LogType.MachineCycle) {
     return toolUsage;
@@ -83,7 +83,7 @@ function process_tools(
       const useDuring = LazySeq.of(uses).sumBy((use) =>
         use.toolUseDuringCycle && use.toolUseDuringCycle !== ""
           ? durationToMinutes(use.toolUseDuringCycle)
-          : 0
+          : 0,
       );
       const cntDuring = LazySeq.of(uses).sumBy((use) => use.toolUseCountDuringCycle ?? 0);
       return {
@@ -113,7 +113,7 @@ function process_tools(
 export const setLast30ToolUse = atom(null, (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
   const estimated = get(last30EstimatedCycleTimes);
   set(last30ToolUseRW, (oldUsage) =>
-    log.reduce((usage, log) => process_tools(log, estimated, usage), oldUsage)
+    log.reduce((usage, log) => process_tools(log, estimated, usage), oldUsage),
   );
 });
 

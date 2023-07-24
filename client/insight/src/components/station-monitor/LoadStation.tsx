@@ -94,7 +94,7 @@ type LoadStationData = {
 function selectLoadStationAndQueueProps(
   loadNum: number,
   queues: ReadonlyArray<string>,
-  curSt: Readonly<api.ICurrentStatus>
+  curSt: Readonly<api.ICurrentStatus>,
 ): LoadStationData {
   // search for pallet
   let pal: Readonly<api.IPalletStatus> | undefined;
@@ -137,7 +137,7 @@ function selectLoadStationAndQueueProps(
   }
 
   const queueMat = new Map<string, Array<api.IInProcessMaterial>>(
-    LazySeq.of(queuesToShow).map((q) => [q, []])
+    LazySeq.of(queuesToShow).map((q) => [q, []]),
   );
   const freeLoading: Array<Readonly<api.IInProcessMaterial>> = [];
   let palFaces = OrderedMap.empty<number, Array<api.IInProcessMaterial>>();
@@ -241,7 +241,7 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
               mat.materialID,
               pal.palletNum,
               mat.process,
-              operator
+              operator,
             );
           } else if (
             mat.action.type === api.ActionType.Loading &&
@@ -253,7 +253,7 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
               mat.materialID,
               pal.palletNum,
               mat.action.processAfterLoad ?? mat.process,
-              operator
+              operator,
             );
           } else if (
             mat.location.type === api.LocType.OnPallet &&
@@ -267,7 +267,7 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
               mat.materialID,
               pal.palletNum,
               mat.process,
-              operator
+              operator,
             );
           } else {
             return null;
@@ -461,7 +461,7 @@ function RecentCompletedMaterial() {
         (e) =>
           e.completed_last_proc_machining === true &&
           e.last_unload_time !== undefined &&
-          e.last_unload_time >= cutoff
+          e.last_unload_time >= cutoff,
       )
       .toSortedArray({ desc: (e) => e.last_unload_time?.getTime() ?? 0 });
   }, [matSummary]);
@@ -554,7 +554,7 @@ function InstructionButton({ pallet }: { pallet: number | null }) {
     material.action.type === api.ActionType.Loading
       ? material.action.processAfterLoad ?? material.process
       : material.process,
-    operator
+    operator,
   );
 
   if (demo) {
@@ -626,7 +626,7 @@ function useAllowAddMaterial(queues: ReadonlyArray<string>): boolean {
           e.details?.["PalletCycleInvalidated"] !== "1" &&
           (e.type === api.LogType.LoadUnloadCycle ||
             e.type === api.LogType.MachineCycle ||
-            e.type === api.LogType.AddToQueue)
+            e.type === api.LogType.AddToQueue),
       )
       .flatMap((e) => e.material)
       .filter((m) => m.id === mat.materialID)
@@ -701,7 +701,7 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
       setSwapSt(null);
       setInvalidateSt(null);
     },
-    [setSwapSt, setInvalidateSt]
+    [setSwapSt, setInvalidateSt],
   );
 
   return (
@@ -802,7 +802,7 @@ export function LoadStation(props: LoadStationProps) {
   const currentSt = useAtomValue(currentStatus);
   const data = React.useMemo(
     () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt),
-    [currentSt, props.loadNum, props.queues]
+    [currentSt, props.loadNum, props.queues],
   );
 
   let matColsSeq = LazySeq.of(data.queues)
@@ -828,7 +828,7 @@ export function LoadStation(props: LoadStationProps) {
       ? "(min-width: 720px)"
       : numNonPalCols === 2
       ? "(min-width: 1030px)"
-      : "(min-width: 1320px)"
+      : "(min-width: 1320px)",
   );
 
   const grid = useGridLayout({

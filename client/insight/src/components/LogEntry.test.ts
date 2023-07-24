@@ -66,5 +66,11 @@ it("doesn't filters when they are different queues", () => {
   const a2 = fakeAddToQueue("q2");
   const r2 = fakeRemoveFromQueue("q2");
 
-  expect(Array.from(filterRemoveAddQueue([...regCycle, a1, r1, a2, r2]))).toEqual([...regCycle, a1, r1, a2, r2]);
+  expect(Array.from(filterRemoveAddQueue([...regCycle, a1, r1, a2, r2]))).toEqual([
+    ...regCycle,
+    a1,
+    r1,
+    a2,
+    r2,
+  ]);
 });

@@ -111,13 +111,13 @@ const ToolDetailSummaryRow = styled(TableRow)({
 function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> }) {
   const showSerial = useAtomValue(toolReportHasSerial);
   const showTime = LazySeq.of(machines).anyMatch(
-    (m) => m.currentUseMinutes != null || m.lifetimeMinutes != null
+    (m) => m.currentUseMinutes != null || m.lifetimeMinutes != null,
   );
   const showCnts = LazySeq.of(machines).anyMatch((m) => m.currentUseCnt != null || m.lifetimeCnt != null);
 
   const byMachine = LazySeq.of(machines).toLookupOrderedMap(
     (m) => m.machineName,
-    (m) => m.pocket
+    (m) => m.pocket,
   );
 
   return (

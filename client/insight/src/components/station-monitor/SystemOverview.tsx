@@ -138,12 +138,12 @@ function useCellOverview(): CellOverview {
     .filter(
       ([, p]) =>
         p.currentPalletLocation.loc === PalletLocationEnum.Machine ||
-        p.currentPalletLocation.loc === PalletLocationEnum.MachineQueue
+        p.currentPalletLocation.loc === PalletLocationEnum.MachineQueue,
     )
     .map(([_, p]) => p)
     .groupBy(
       (p) => p.currentPalletLocation.group,
-      (p) => p.currentPalletLocation.num
+      (p) => p.currentPalletLocation.num,
     )
     .toLookupOrderedMap(
       ([[statGroup, _statNum], _pals]) => statGroup,
@@ -185,14 +185,14 @@ function useCellOverview(): CellOverview {
             outbound: rotary ? { pallet: rotary, mats: rotaryMats ?? [] } : null,
           };
         }
-      }
+      },
     );
 
   const stockerPals = LazySeq.ofObject(currentSt.pallets)
     .filter(
       ([_, p]) =>
         p.currentPalletLocation.loc === PalletLocationEnum.Buffer ||
-        p.currentPalletLocation.loc === PalletLocationEnum.Cart
+        p.currentPalletLocation.loc === PalletLocationEnum.Cart,
     )
     .collect(([_, p]) => {
       const mats = matByPal.get(p.palletNum);
@@ -382,7 +382,7 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
                           <div key={mat.materialID}>
                             <small>Serial: {mat.serial}</small>
                           </div>
-                        ) : undefined
+                        ) : undefined,
                       )}
                       <div>
                         <MaterialAction mat={mats[0]} />
@@ -412,7 +412,7 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
             >
               {mat.serial}
             </MenuItem>
-          ) : undefined
+          ) : undefined,
         )}
       </Menu>
     </Box>
@@ -448,7 +448,7 @@ function PalletFaces({
       : LazySeq.of(mats)
           .filter((m) => noFilter || m.location.type === LocType.OnPallet)
           .orderedGroupBy((m) =>
-            m.action.type === ActionType.Loading ? m.action.loadOntoFace ?? 1 : m.location.face ?? 1
+            m.action.type === ActionType.Loading ? m.action.loadOntoFace ?? 1 : m.location.face ?? 1,
           );
 
     return (
@@ -496,7 +496,7 @@ export function formatSeconds(totalSeconds: number): string {
 }
 
 function useRemainingMachineTime(
-  material: ReadonlyArray<Readonly<IInProcessMaterial>> | null | undefined
+  material: ReadonlyArray<Readonly<IInProcessMaterial>> | null | undefined,
 ): [boolean, string, number | null] {
   const mat = material?.find((m) => m.action.type === ActionType.Machining);
   const elapsedDurationFromCurSt = mat?.action?.elapsedMachiningTime;
@@ -617,13 +617,13 @@ function Machine({ maxNumFaces, machine }: { maxNumFaces: number; machine: Machi
 }
 
 function useElapsedLoadTime(
-  material: ReadonlyArray<Readonly<IInProcessMaterial>> | null | undefined
+  material: ReadonlyArray<Readonly<IInProcessMaterial>> | null | undefined,
 ): string {
   const mat = material?.find(
     (m) =>
       m.action.type === ActionType.Loading ||
       m.action.type === ActionType.UnloadToCompletedMaterial ||
-      m.action.type === ActionType.UnloadToInProcess
+      m.action.type === ActionType.UnloadToInProcess,
   );
   const elapsedDurationFromCurSt = mat?.action?.elapsedLoadUnloadTime;
   const currentStTime = useAtomValue(currentStatus).timeOfCurrentStatusUTC;

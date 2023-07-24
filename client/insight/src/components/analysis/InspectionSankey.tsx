@@ -233,7 +233,7 @@ export interface InspectionSankeyProps {
 
 const selectedPartAtom = atomWithDefault<string | undefined>((get) => (get(isDemoAtom) ? "aaa" : undefined));
 const selectedInspTypeAtom = atomWithDefault<string | undefined>((get) =>
-  get(isDemoAtom) ? "CMM" : undefined
+  get(isDemoAtom) ? "CMM" : undefined,
 );
 const showTableAtom = atom<boolean>(false);
 

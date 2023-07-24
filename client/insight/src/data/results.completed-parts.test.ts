@@ -50,7 +50,7 @@ it("bins actual cycles by day", () => {
   const evts = ([] as ILogEntry[]).concat(
     fakeCycle({ time: now, machineTime: 30, counter: 100 }),
     fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 }),
   );
   const store = createStore();
   store.set(onLoadLast30Log, evts);
@@ -61,7 +61,7 @@ it("bins actual cycles by day", () => {
     cycles.valuesToLazySeq(),
     matSummary.matsById,
     addDays(now, -30),
-    now
+    now,
   );
 
   const points = LazySeq.of(byDayAndPart)

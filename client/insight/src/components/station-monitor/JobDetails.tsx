@@ -191,11 +191,11 @@ function JobMaterial(props: JobMaterialProps) {
 
   const matsById = LazySeq.of(currentMaterial).toHashMap(
     (m) => [m.materialID, m],
-    (m1, _m2) => m1
+    (m1, _m2) => m1,
   );
 
   const anyWorkorder = LazySeq.of(mats).anyMatch(
-    (m) => m.workorderId !== undefined && m.workorderId !== "" && m.workorderId !== m.serial
+    (m) => m.workorderId !== undefined && m.workorderId !== "" && m.workorderId !== m.serial,
   );
 
   return (
@@ -259,7 +259,7 @@ export function JobDetails(props: JobDetailsProps): JSX.Element {
   const matsFromEvents = useAtomValue(
     props.checkAnalysisMonth && period.type === "SpecificMonth"
       ? specificMonthMaterialSummary
-      : last30MaterialSummary
+      : last30MaterialSummary,
   );
 
   return (

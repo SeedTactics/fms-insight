@@ -77,7 +77,7 @@ enum ColumnId {
 }
 
 function buildColumns(
-  matIds: HashMap<number, MaterialSummaryAndCompletedData>
+  matIds: HashMap<number, MaterialSummaryAndCompletedData>,
 ): ReadonlyArray<Column<ColumnId, PartCycleData>> {
   return [
     {
@@ -197,7 +197,7 @@ function extractData(
   columns: ReadonlyArray<Column<ColumnId, PartCycleData>>,
   currentZoom: { start: Date; end: Date } | undefined,
   orderBy: ColumnId,
-  order: "asc" | "desc"
+  order: "asc" | "desc",
 ): ReadonlyArray<PartCycleData> {
   let getData: ToComparableBase<PartCycleData> | undefined;
   for (const col of columns) {
@@ -217,8 +217,8 @@ function extractData(
   return arr.sort(
     mkCompareByProperties(
       order === "desc" ? { desc: getDataC } : { asc: getDataC },
-      order === "desc" ? { desc: (a) => a.x.getTime() } : { asc: (a) => a.x.getTime() }
-    )
+      order === "desc" ? { desc: (a) => a.x.getTime() } : { asc: (a) => a.x.getTime() },
+    ),
   );
 }
 
@@ -271,7 +271,7 @@ export default React.memo(function StationDataTable(props: StationDataTableProps
   const totalDataLength = allData.length;
   const pageData: ReadonlyArray<PartCycleData> = allData.slice(
     tpage.page * tpage.rowsPerPage,
-    (tpage.page + 1) * tpage.rowsPerPage
+    (tpage.page + 1) * tpage.rowsPerPage,
   );
   const filteredColumns = columns.filter((c) => {
     if (!props.showWorkorderAndInspect && c.id === ColumnId.Workorder) {

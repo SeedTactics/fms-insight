@@ -100,7 +100,7 @@ const columns: ReadonlyArray<Column<ColumnId, TriggeredInspectionEntry>> = [
 function useZoom(
   zoomType: DataTableActionZoomType | undefined,
   extendDateRange: ((numDays: number) => void) | undefined,
-  default_date_range: Date[]
+  default_date_range: Date[],
 ): TableZoom {
   const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);
 

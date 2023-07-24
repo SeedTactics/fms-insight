@@ -50,7 +50,7 @@ const shiftStartAtom = atom(
     const shifts = new Map(get(shiftStartStorage));
     update(shifts);
     set(shiftStartStorage, Array.from(shifts.entries()));
-  }
+  },
 );
 
 export type ShiftStartAndEnd = {

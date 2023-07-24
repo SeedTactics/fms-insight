@@ -409,7 +409,7 @@ function detailsForEntry(e: api.ILogEntry): ReadonlyArray<LogDetail> {
           const life = durationToSeconds(use.configuredToolLife);
           const pct = total / life;
           msg += ` Total use at end of cycle: ${(total / 60).toFixed(1)}/${(life / 60).toFixed(
-            1
+            1,
           )} minutes (${(pct * 100).toFixed(0)}%).`;
         }
       }
@@ -522,7 +522,7 @@ export const LogEntry = React.memo(function LogEntry(props: LogEntryProps) {
 });
 
 export function* filterRemoveAddQueue(
-  entries: Iterable<Readonly<api.ILogEntry>>
+  entries: Iterable<Readonly<api.ILogEntry>>,
 ): Iterable<Readonly<api.ILogEntry>> {
   let prev: Readonly<api.ILogEntry> | null = null;
 

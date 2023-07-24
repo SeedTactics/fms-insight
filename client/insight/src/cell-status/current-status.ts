@@ -98,17 +98,17 @@ export const addWorkorderComment = atom(
                 ...w,
                 comments: [...(w.comments ?? []), new WorkorderComment({ comment, timeUTC: new Date() })],
               })
-            : w
+            : w,
         ),
       };
     });
 
     void LogBackend.recordWorkorderComment(workorder, operator, comment);
-  }
+  },
 );
 
 export const setCurrentStatus = atom(null, (_, set, st: Readonly<ICurrentStatus>) =>
-  set(currentStatusRW, st)
+  set(currentStatusRW, st),
 );
 
 export const updateCurrentStatus = atom(null, (_, set, { evt }: ServerEventAndTime) => {
@@ -120,7 +120,7 @@ export const updateCurrentStatus = atom(null, (_, set, { evt }: ServerEventAndTi
 });
 
 function processEventsIntoCurrentStatus(
-  entry: Readonly<ILogEntry>
+  entry: Readonly<ILogEntry>,
 ): (curSt: Readonly<ICurrentStatus>) => Readonly<ICurrentStatus> {
   return (curSt) => {
     const mats = new Map<number, Readonly<InProcessMaterial>>();
@@ -243,5 +243,5 @@ export const reorderQueuedMatInCurrentStatus = atom(
 
       return { ...curSt, material: newMats };
     });
-  }
+  },
 );

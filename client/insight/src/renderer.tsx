@@ -49,7 +49,7 @@ import { Provider, createStore } from "jotai";
 export function render(
   appProps: AppProps | null,
   elem: HTMLElement,
-  store: ReturnType<typeof createStore>
+  store: ReturnType<typeof createStore>,
 ): void {
   const theme = createTheme({
     palette: {
@@ -67,6 +67,6 @@ export function render(
           <App {...appProps} />
         </Provider>
       </React.StrictMode>
-    </ThemeProvider>
+    </ThemeProvider>,
   );
 }

@@ -93,8 +93,8 @@ const MoveMaterialArrows = React.memo(function MoveMaterialArrows({
   const arrows = computeArrows(
     container.current ? elementToRect(container.current) : null,
     arrowsWithRefs.collectValues((r) =>
-      r.elem.current ? { ...r, elem: elementToRect(r.elem.current) } : null
-    )
+      r.elem.current ? { ...r, elem: elementToRect(r.elem.current) } : null,
+    ),
   );
 
   return (
@@ -115,7 +115,7 @@ interface MoveMaterialArrowContext {
   readonly registerNode: (
     id: MoveMaterialIdentifier,
     kind: MoveMaterialNodeKind | null,
-    ref: React.RefObject<HTMLDivElement> | null
+    ref: React.RefObject<HTMLDivElement> | null,
   ) => void;
 }
 const MoveMaterialArrowCtx = React.createContext<MoveMaterialArrowContext | undefined>(undefined);
@@ -129,7 +129,7 @@ export const MoveMaterialArrowContainer = React.memo(function MoveMaterialArrowC
 }) {
   const container = React.useRef<HTMLDivElement>(null);
   const [nodes, setNodes] = React.useState<AllMoveMaterialNodes<React.RefObject<HTMLDivElement>>>(
-    HashMap.empty()
+    HashMap.empty(),
   );
 
   const ctx: MoveMaterialArrowContext = React.useMemo(() => {
@@ -137,7 +137,7 @@ export const MoveMaterialArrowContainer = React.memo(function MoveMaterialArrowC
       registerNode(
         id: MoveMaterialIdentifier,
         kind: MoveMaterialNodeKind | null,
-        ref: React.RefObject<HTMLDivElement> | null
+        ref: React.RefObject<HTMLDivElement> | null,
       ) {
         if (kind && ref) {
           setNodes((ns) => ns.set(id, { ...kind, elem: ref }));

@@ -121,7 +121,7 @@ function useScales(
   current: ReadonlyArray<CurrentCycle>,
   now: Date,
   containerWidth: number,
-  containerHeight: number
+  containerHeight: number,
 ): ChartScales {
   const stats = OrderedSet.build(cycles, (c) => c.station).union(OrderedSet.build(current, (c) => c.station));
 
@@ -330,7 +330,7 @@ function CurrentSeries({
                     xScale(now),
                     (yScale(c.station) ?? 0) + actualOffset,
                     80, // rx
-                    actualPlannedScale.bandwidth()
+                    actualPlannedScale.bandwidth(),
                   )}
                   fill={projectedColor}
                 />
@@ -533,7 +533,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
     const cutoff = addHours(new Date(), -12);
     return recentCycles(
       last30Cycles.valuesToLazySeq().filter((e) => e.x >= cutoff),
-      estimated
+      estimated,
     );
   }, [last30Cycles, estimated]);
 
@@ -547,9 +547,12 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   const refreshRef = React.useRef<NodeJS.Timeout | null>(null);
   React.useEffect(() => {
     if (refreshRef.current !== null) clearTimeout(refreshRef.current);
-    refreshRef.current = setTimeout(() => {
-      forceRerender((x) => x + 1);
-    }, 5 * 60 * 1000);
+    refreshRef.current = setTimeout(
+      () => {
+        forceRerender((x) => x + 1);
+      },
+      5 * 60 * 1000,
+    );
   });
 
   const { xScale, yScale, actualPlannedScale } = useScales(cycles, current, now, width, height);

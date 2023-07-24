@@ -138,7 +138,7 @@ function partsCompletedPoints(
   partCycles: Iterable<PartCycleData>,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   start: Date,
-  end: Date
+  end: Date,
 ) {
   const pts = binCyclesByDayAndPart(partCycles, matsById, start, end);
   return LazySeq.of(pts)
@@ -183,10 +183,10 @@ export function CompletedCountHeatmap() {
 
   const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const productionCounts = useAtomValue(
-    period.type === "Last30" ? last30SimProduction : specificMonthSimProduction
+    period.type === "Last30" ? last30SimProduction : specificMonthSimProduction,
   );
   const matSummary = useAtomValue(
-    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary,
   );
   const points = React.useMemo(() => {
     if (selected === "Completed") {

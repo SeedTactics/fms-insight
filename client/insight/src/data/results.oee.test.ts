@@ -74,7 +74,7 @@ it("bins actual cycles by day", () => {
           active: "PT3M",
         };
       })
-      .toRArray()
+      .toRArray(),
   );
 
   const snapshot = createStore();
@@ -109,7 +109,7 @@ it("creates points clipboard table", () => {
   const evts = ([] as ILogEntry[]).concat(
     fakeCycle({ time: now, machineTime: 30, counter: 100 }),
     fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 })
+    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 }),
   );
 
   const snapshot = createStore();
