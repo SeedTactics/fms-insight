@@ -126,7 +126,7 @@ function InstrButton() {
           e.details?.["PalletCycleInvalidated"] !== "1" &&
           (e.type === LogType.LoadUnloadCycle ||
             e.type === LogType.MachineCycle ||
-            e.type === LogType.AddToQueue)
+            e.type === LogType.AddToQueue),
       )
       .flatMap((e) => e.material)
       .filter((e) => e.id === material.materialID)
@@ -203,13 +203,13 @@ export function Closeout({ forceSingleColumn }: { forceSingleColumn?: boolean })
     uncompleted.sort((e1, e2) =>
       e1.last_unload_time && e2.last_unload_time
         ? e1.last_unload_time.getTime() - e2.last_unload_time.getTime()
-        : 0
+        : 0,
     );
     // sort descending
     closed.sort((e1, e2) =>
       e1.last_unload_time && e2.last_unload_time
         ? e2.last_unload_time.getTime() - e1.last_unload_time.getTime()
-        : 0
+        : 0,
     );
 
     return { uncompleted, closed };

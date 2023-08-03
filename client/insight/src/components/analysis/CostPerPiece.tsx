@@ -65,8 +65,8 @@ const last30LaborCost = atomWithStorage<number | null>("Last30LaborCost", null);
 const perMonthLaborCost = atomFamily((month: Date) =>
   atomWithStorage<number | null>(
     "PerMonthLabor-" + month.getFullYear().toString() + "-" + month.getMonth().toString(),
-    null
-  )
+    null,
+  ),
 );
 
 const computedCosts = atom((get) => {
@@ -84,7 +84,7 @@ const computedCosts = atom((get) => {
   const costPcts = compute_monthly_cost_percentages(
     cycles.valuesToLazySeq(),
     matIds.matsById,
-    month ? { month: month } : { thirtyDaysAgo }
+    month ? { month: month } : { thirtyDaysAgo },
   );
   return convert_cost_percent_to_cost_per_piece(costPcts, machineCosts, automationCosts, laborCosts ?? 0);
 });
@@ -203,7 +203,7 @@ export function CostBreakdownPage() {
   const month = period.type === "Last30" ? null : period.month;
   const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const matIds = useAtomValue(
-    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary,
   );
 
   const thirtyDaysAgo = addDays(startOfToday(), -30);
@@ -212,7 +212,7 @@ export function CostBreakdownPage() {
     return compute_monthly_cost_percentages(
       cycles.valuesToLazySeq(),
       matIds.matsById,
-      month ? { month: month } : { thirtyDaysAgo }
+      month ? { month: month } : { thirtyDaysAgo },
     );
   }, [cycles, matIds, month, thirtyDaysAgo]);
 
@@ -354,7 +354,7 @@ function CostOutputCard() {
               <TableCell align="right">{decimalFormat.format(c.automation)}</TableCell>
               <TableCell align="right">
                 {decimalFormat.format(
-                  c.machine.valuesToAscLazySeq().sumBy((x) => x) + c.labor + c.automation
+                  c.machine.valuesToAscLazySeq().sumBy((x) => x) + c.labor + c.automation,
                 )}
               </TableCell>
             </TableRow>

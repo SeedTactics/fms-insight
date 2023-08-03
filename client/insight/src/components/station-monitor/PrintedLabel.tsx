@@ -52,7 +52,7 @@ function Barcode(props: BarcodeProps) {
       }
       ref.current = node;
     },
-    [props.text]
+    [props.text],
   );
   React.useEffect(() => {
     if (ref.current) {
@@ -163,10 +163,10 @@ function OneJobPerPage(props: PrintedLabelProps) {
                 serial1: mats[0]?.serial,
                 serial2: mats[mats.length - 1]?.serial,
               },
-            ] as const
+            ] as const,
         )
         .toSortedArray(([_, p]) => p.part),
-    [props.material, allJobs]
+    [props.material, allJobs],
   );
 
   if (!props.material || props.material.length === 0) {
@@ -215,7 +215,7 @@ function CombinedToOnePage(props: PrintedLabelProps) {
         .groupBy((m) => m.jobUnique)
         .map(([k, mats]) => [k, { length: mats.length, part: mats[0]?.partName ?? "" }] as const)
         .toSortedArray(([_, p]) => p.part),
-    [props.material]
+    [props.material],
   );
 
   const allJobs = useAtomValue(currentStatus).jobs;
@@ -226,7 +226,7 @@ function CombinedToOnePage(props: PrintedLabelProps) {
         .collect((m) => (m.jobUnique ? allJobs[m.jobUnique]?.comment : undefined))
         .distinct()
         .toSortedArray((n) => n),
-    [props.material, allJobs]
+    [props.material, allJobs],
   );
 
   if (!props.material || props.material.length === 0) {

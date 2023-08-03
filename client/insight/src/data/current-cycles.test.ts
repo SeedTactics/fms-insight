@@ -276,6 +276,6 @@ it("calculates current cycles", () => {
   };
 
   expect(currentCycles({ ...curSt, jobs }, expected)).toMatchSnapshot(
-    "current cycles with jobs and expected"
+    "current cycles with jobs and expected",
   );
 });

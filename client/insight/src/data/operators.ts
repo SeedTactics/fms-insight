@@ -47,5 +47,5 @@ export const currentOperator = atom(
   },
   (_, set, newVal: string | null) => {
     set(selectedOperator, newVal);
-  }
+  },
 );

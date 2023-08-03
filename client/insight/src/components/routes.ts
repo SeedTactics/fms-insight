@@ -252,7 +252,7 @@ export const currentRoute = atom(
     if (!demo) {
       history.pushState(null, "", routeToUrl(to));
     }
-  }
+  },
 );
 
 export function useWatchHistory(): void {

@@ -57,7 +57,7 @@ export function buildScheduledJobs(
   zoom: { readonly start: Date; readonly end: Date } | undefined,
   matIds: HashMap<number, MaterialSummaryAndCompletedData>,
   schJobs: HashMap<string, Readonly<IHistoricJob>>,
-  currentSt: Readonly<ICurrentStatus> | null
+  currentSt: Readonly<ICurrentStatus> | null,
 ): ReadonlyArray<ScheduledJobDisplay> {
   const completedMats = LazySeq.of(matIds)
     .flatMap(([matId, summary]) =>
@@ -65,13 +65,13 @@ export function buildScheduledJobs(
         matId: matId,
         proc: parseInt(proc),
         uniq: summary.jobUnique,
-      }))
+      })),
     )
     .toLookupMap(
       (m) => m.uniq,
       (m) => m.proc,
       () => 1,
-      (a, b) => a + b
+      (a, b) => a + b,
     );
 
   const result = new Map<string, WritableScheduledJob>();
@@ -166,7 +166,7 @@ export function buildScheduledJobs(
 
 export function buildScheduledJobsTable(
   jobs: ReadonlyArray<ScheduledJobDisplay>,
-  showMaterial: boolean
+  showMaterial: boolean,
 ): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Date</th>";
@@ -201,7 +201,7 @@ export function buildScheduledJobsTable(
 
 export function copyScheduledJobsToClipboard(
   jobs: ReadonlyArray<ScheduledJobDisplay>,
-  showMaterial: boolean
+  showMaterial: boolean,
 ): void {
   copy(buildScheduledJobsTable(jobs, showMaterial));
 }

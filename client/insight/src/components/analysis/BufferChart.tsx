@@ -67,9 +67,9 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
         defaultDateRange[1],
         props.movingAverageDistanceInHours,
         rawMatQueues,
-        entries.valuesToLazySeq()
+        entries.valuesToLazySeq(),
       ),
-    [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours]
+    [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours],
   );
 
   const emptySeries = series.findIndex((s) => !disabledBuffers.has(s.label)) < 0;
@@ -94,7 +94,7 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
                 xAccessor={(p) => p.x}
                 yAccessor={(p) => p.y}
               />
-            )
+            ),
           )}
           {emptySeries ? (
             <AnimatedLineSeries

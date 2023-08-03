@@ -213,7 +213,7 @@ const HeatSeries = React.memo(function HeatSeries({
       const heatPoint = points[parseInt(idxS)];
       setTooltip({ left: pt.x, top: pt.y, data: heatPoint });
     },
-    [points, setTooltip]
+    [points, setTooltip],
   );
 
   const pointerLeave = React.useCallback(() => {

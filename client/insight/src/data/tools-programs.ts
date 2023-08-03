@@ -50,7 +50,7 @@ import { useCallback } from "react";
 
 function averageToolUse(
   usage: ToolUsage,
-  sort: boolean
+  sort: boolean,
 ): HashMap<PartAndStationOperation, ProgramToolUseInSingleCycle> {
   return usage.mapValues((cycles) => {
     const tools = LazySeq.of(cycles)
@@ -100,7 +100,10 @@ export interface ToolReport {
 }
 
 class StationOperation {
-  public constructor(public readonly statGroup: string, public readonly operation: string) {}
+  public constructor(
+    public readonly statGroup: string,
+    public readonly operation: string,
+  ) {}
   compare(other: PartAndStationOperation): number {
     const c = this.statGroup.localeCompare(other.statGroup);
     if (c !== 0) return c;
@@ -118,7 +121,7 @@ export function calcToolReport(
   currentSt: Readonly<ICurrentStatus>,
   toolsInMach: ReadonlyArray<Readonly<IToolInMachine>>,
   usage: ToolUsage,
-  machineFilter: string | null
+  machineFilter: string | null,
 ): ReadonlyArray<ToolReport> {
   let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
@@ -140,13 +143,13 @@ export function calcToolReport(
                 (m.action.type === ActionType.UnloadToCompletedMaterial ||
                   m.action.type === ActionType.UnloadToInProcess ||
                   (m.lastCompletedMachiningRouteStopIndex !== undefined &&
-                    m.lastCompletedMachiningRouteStopIndex > stopIdx))
+                    m.lastCompletedMachiningRouteStopIndex > stopIdx)),
             )
             .length();
           if (stop.program !== undefined && stop.program !== "") {
             programsToAfterInProc = programsToAfterInProc.modify(
               new StationOperation(stop.stationGroup, stop.program),
-              (old) => (old ?? 0) + inProcAfter
+              (old) => (old ?? 0) + inProcAfter,
             );
           }
         }
@@ -154,7 +157,7 @@ export function calcToolReport(
       for (const [op, afterInProc] of programsToAfterInProc) {
         partPlannedQtys = partPlannedQtys.modify(
           new PartAndStationOperation(job.partName, op.statGroup, op.operation),
-          (old) => (old ?? 0) + planQty - completed - afterInProc
+          (old) => (old ?? 0) + planQty - completed - afterInProc,
         );
       }
     }
@@ -180,16 +183,16 @@ export function calcToolReport(
     })
     .sortBy(
       (p) => p.part.partName,
-      (p) => p.part.program
+      (p) => p.part.program,
     )
     .toLookup(
       (t) => t.toolName,
-      (t) => t.part
+      (t) => t.part,
     );
 
   return LazySeq.of(toolsInMach)
     .filter(
-      (t) => machineFilter === null || machineFilter === stat_name_and_num(t.machineGroupName, t.machineNum)
+      (t) => machineFilter === null || machineFilter === stat_name_and_num(t.machineGroupName, t.machineNum),
     )
     .groupBy((t) => t.toolName)
     .map(([toolName, tools]) => {
@@ -197,7 +200,7 @@ export function calcToolReport(
         .sortBy(
           (t) => t.machineGroupName,
           (t) => t.machineNum,
-          (t) => t.pocket
+          (t) => t.pocket,
         )
         .map((m) => {
           const currentUseMinutes =
@@ -237,7 +240,7 @@ export function calcToolReport(
         .map(([_, toolsForMachine]) =>
           LazySeq.of(toolsForMachine)
             .collect((m) => m.remainingMinutes)
-            .sumBy((m) => m)
+            .sumBy((m) => m),
         )
         .minBy((m) => m);
 
@@ -245,7 +248,7 @@ export function calcToolReport(
         .map(([_, toolsForMachine]) =>
           LazySeq.of(toolsForMachine)
             .collect((m) => m.remainingCnt)
-            .sumBy((m) => m)
+            .sumBy((m) => m),
         )
         .minBy((m) => m);
 
@@ -276,7 +279,7 @@ export const toolReportRefreshTime = atom<Date | null, [Date], Promise<void>>(
       tools: await MachineBackend.getToolsInMachines(),
       time,
     });
-  }
+  },
 );
 
 export const machinesWithTools = atom<ReadonlyArray<string>>((get) => {
@@ -324,7 +327,7 @@ export const toolReportHasCntUsage = atom<boolean>((get) => {
 
 function buildToolReportHTML(
   tools: Iterable<ToolReport>,
-  { showTime, showCnts }: { showTime: boolean; showCnts: boolean }
+  { showTime, showCnts }: { showTime: boolean; showCnts: boolean },
 ): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Tool</th><th>Machine</th><th>Pocket</th>";
@@ -377,7 +380,7 @@ export function useCopyToolReportToClipboard(): () => void {
       buildToolReportHTML(tools, {
         showTime: store.get(toolReportHasTimeUsage),
         showCnts: store.get(toolReportHasCntUsage),
-      })
+      }),
     );
   }, []);
 }
@@ -403,13 +406,13 @@ export function calcProgramReport(
   usage: ToolUsage,
   cycleTimes: EstimatedCycleTimes,
   progsInCellCtrl: ReadonlyArray<Readonly<IProgramInCellController>>,
-  progsToShow: ReadonlySet<string> | null
+  progsToShow: ReadonlySet<string> | null,
 ): ProgramReport {
   const tools = averageToolUse(usage, true);
 
   const progToPart = usage.keysToLazySeq().toRMap(
     (op) => [op.operation, op],
-    (_, x) => x
+    (_, x) => x,
   );
 
   let allPrograms = LazySeq.of(progsInCellCtrl);
@@ -457,7 +460,7 @@ export const programReportRefreshTime = atom<Date | null, [Date], Promise<void>>
       progs: await MachineBackend.getProgramsInCellController(),
       time,
     });
-  }
+  },
 );
 
 export const currentProgramReport = atom<ProgramReport | null>((get) => {
@@ -474,7 +477,7 @@ export const currentProgramReport = atom<ProgramReport | null>((get) => {
         .flatMap((p) => p.paths)
         .flatMap((p) => p.stops)
         .filter((s) => s.program !== null && s.program !== undefined && s.program !== "")
-        .map((s) => s.program ?? "")
+        .map((s) => s.program ?? ""),
     );
   }
 
@@ -485,7 +488,7 @@ export const currentProgramReport = atom<ProgramReport | null>((get) => {
     get(last30ToolUse),
     get(last30EstimatedCycleTimes),
     progsInCell.progs,
-    progsToShow
+    progsToShow,
   );
 });
 

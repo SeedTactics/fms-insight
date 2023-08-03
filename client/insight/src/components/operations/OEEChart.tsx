@@ -184,7 +184,7 @@ const columns: ReadonlyArray<Column<ColumnId, OEEBarPoint>> = [
 
 function dataForTable(
   series: ReadonlyArray<OEEBarSeries>,
-  sortOn: ToComparable<OEEBarPoint>
+  sortOn: ToComparable<OEEBarPoint>,
 ): ReadonlyArray<OEEBarPoint> {
   return LazySeq.of(series)
     .flatMap((e) => e.points)
@@ -215,7 +215,7 @@ export function StationOEEPage({ ty }: { readonly ty: OEEType }) {
   const statUse = useAtomValue(last30SimStationUse);
   const points = React.useMemo(
     () => buildOeeSeries(start, end, ty, cycles.valuesToLazySeq(), statUse),
-    [start, end, ty, cycles, statUse]
+    [start, end, ty, cycles, statUse],
   );
 
   return (

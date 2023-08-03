@@ -69,13 +69,13 @@ export const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.
       borderBottom: "unset",
     },
     ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
-  })
+  }),
 );
 
 export const JobDetailRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(
   (props: { $darkRow?: boolean }) => ({
     ...(props.$darkRow && { backgroundColor: "#F5F5F5" }),
-  })
+  }),
 );
 
 interface JobsRowProps {
@@ -184,7 +184,7 @@ enum SortColumn {
 function sortJobs(
   jobs: ReadonlyArray<ScheduledJobDisplay>,
   sortBy: SortColumn,
-  order: "asc" | "desc"
+  order: "asc" | "desc",
 ): ReadonlyArray<ScheduledJobDisplay> {
   let sortCol: ToComparableBase<ScheduledJobDisplay>;
   switch (sortBy) {
@@ -343,7 +343,7 @@ export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.El
       { start: addDays(startOfToday(), -6), end: addDays(startOfToday(), 1) },
       matIds.matsById,
       schJobs,
-      currentSt
+      currentSt,
     );
   }, [matIds.matsById, schJobs, currentSt]);
 

@@ -43,7 +43,10 @@ import { HashMap, hashValues, LazySeq } from "@seedtactics/immutable-collections
 // --------------------------------------------------------------------------------
 
 class DayAndPart {
-  constructor(public day: Date, public part: string) {}
+  constructor(
+    public day: Date,
+    public part: string,
+  ) {}
   compare(other: DayAndPart): number {
     const cmp = this.day.getTime() - other.day.getTime();
     if (cmp === 0) {
@@ -69,7 +72,10 @@ export interface PartsCompletedSummary {
 }
 
 class MatIdAndProcess {
-  public constructor(public readonly matId: number, public readonly proc: number) {}
+  public constructor(
+    public readonly matId: number,
+    public readonly proc: number,
+  ) {}
   compare(other: MatIdAndProcess): number {
     const cmp = this.matId - other.matId;
     if (cmp === 0) {
@@ -90,7 +96,7 @@ export function binCyclesByDayAndPart(
   cycles: Iterable<PartCycleData>,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   start: Date,
-  end: Date
+  end: Date,
 ): HashMap<DayAndPart, PartsCompletedSummary> {
   const activeTimeByMatId = LazySeq.of(cycles)
     .filter(
@@ -99,18 +105,18 @@ export function binCyclesByDayAndPart(
         cycle.x <= end &&
         !cycle.isLabor &&
         cycle.activeMinutes > 0 &&
-        cycle.material.length > 0
+        cycle.material.length > 0,
     )
     .flatMap((cycle) =>
       cycle.material.map((mat) => ({
         matId: mat.id,
         proc: mat.proc,
         active: cycle.activeMinutes / cycle.material.length,
-      }))
+      })),
     )
     .toHashMap(
       (p) => [new MatIdAndProcess(p.matId, p.proc), p.active],
-      (a1, a2) => a1 + a2
+      (a1, a2) => a1 + a2,
     );
 
   return LazySeq.of(matsById)
@@ -124,14 +130,14 @@ export function binCyclesByDayAndPart(
             count: 1,
             activeMachineMins: activeTimeByMatId.get(new MatIdAndProcess(matId, parseInt(proc))) ?? 0,
           },
-        }))
+        })),
     )
     .toHashMap(
       (p) => [new DayAndPart(p.day, p.part), p.value] as [DayAndPart, PartsCompletedSummary],
       (v1, v2) => ({
         count: v1.count + v2.count,
         activeMachineMins: v1.activeMachineMins + v2.activeMachineMins,
-      })
+      }),
     );
 }
 
@@ -140,7 +146,7 @@ export function binCyclesByDayAndPart(
 // --------------------------------------------------------------------------------
 
 export function binSimProductionByDayAndPart(
-  prod: Iterable<SimPartCompleted>
+  prod: Iterable<SimPartCompleted>,
 ): HashMap<DayAndPart, PartsCompletedSummary> {
   return LazySeq.of(prod).toHashMap(
     (p) =>
@@ -151,7 +157,7 @@ export function binSimProductionByDayAndPart(
     (v1, v2) => ({
       count: v1.count + v2.count,
       activeMachineMins: v1.activeMachineMins + v2.activeMachineMins,
-    })
+    }),
   );
 }
 
@@ -165,7 +171,10 @@ interface HeatmapClipboardPoint {
 }
 
 class HeatmapClipboardCell {
-  public constructor(public readonly x: number, public readonly y: string) {}
+  public constructor(
+    public readonly x: number,
+    public readonly y: string,
+  ) {}
   compare(other: HeatmapClipboardCell): number {
     const cmp = this.x - other.x;
     if (cmp === 0) {
@@ -183,11 +192,11 @@ class HeatmapClipboardCell {
 }
 
 export function buildCompletedPartsHeatmapTable(
-  points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>
+  points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>,
 ): string {
   const cells = LazySeq.of(points).toHashMap(
     (p) => [new HeatmapClipboardCell(p.x.getTime(), p.y), p],
-    (_, c) => c // cells should be unique, but just in case take the second
+    (_, c) => c, // cells should be unique, but just in case take the second
   );
   const days = LazySeq.of(points)
     .map((p) => p.x.getTime())
@@ -197,7 +206,7 @@ export function buildCompletedPartsHeatmapTable(
     .aggregate(
       (p) => p.y,
       (p) => p.activeMachineMins / p.count,
-      (first, snd) => (isNaN(first) ? snd : first)
+      (first, snd) => (isNaN(first) ? snd : first),
     )
     .sortBy(([name, _cycleMins]) => name);
 
@@ -226,7 +235,7 @@ export function buildCompletedPartsHeatmapTable(
 }
 
 export function copyCompletedPartsHeatmapToClipboard(
-  points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>
+  points: ReadonlyArray<HeatmapClipboardPoint & PartsCompletedSummary>,
 ): void {
   copy(buildCompletedPartsHeatmapTable(points));
 }

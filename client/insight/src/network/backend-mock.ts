@@ -121,7 +121,7 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
 async function loadEventsJson(
   offsetSeconds: number,
   mockD: Promise<MockData>,
-  evts: Promise<MockEvents>
+  evts: Promise<MockEvents>,
 ): Promise<Readonly<api.ILogEntry>[]> {
   const toolUse = (await mockD).toolUse;
 
@@ -155,15 +155,15 @@ async function loadEventsJson(
     .sort(
       mkCompareByProperties(
         (e) => e.endUTC.getTime(),
-        (e) => e.counter
-      )
+        (e) => e.counter,
+      ),
     );
 }
 
 export function registerMockBackend(
   offsetSeconds: number,
   mockD: Promise<MockData>,
-  mockEvts: Promise<MockEvents>
+  mockEvts: Promise<MockEvents>,
 ): void {
   const data = mockD.then((d) => transformTime(offsetSeconds, d));
   const events = loadEventsJson(offsetSeconds, mockD, mockEvts);
@@ -224,7 +224,7 @@ export function registerMockBackend(
       return data.then((d) => d.curSt);
     },
     mostRecentUnfilledWorkordersForPart(
-      part: string
+      part: string,
     ): Promise<ReadonlyArray<Readonly<api.IActiveWorkorder>>> {
       return data.then((d) => {
         const ws = d.workorders.get(part);
@@ -285,20 +285,20 @@ export function registerMockBackend(
         .filter((e) => e.type === api.LogType.PartMark)
         .flatMap((e) =>
           e.material.map(
-            (m) => [e.result, { matId: m.id, part: m.part, uniq: m.uniq, numProc: m.numproc }] as const
-          )
+            (m) => [e.result, { matId: m.id, part: m.part, uniq: m.uniq, numProc: m.numproc }] as const,
+          ),
         )
         .toRMap(
           (x) => x,
-          (id1, id2) => id2
-        )
-    )
+          (id1, id2) => id2,
+        ),
+    ),
   );
 
   const logB = {
     get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return data.then(() =>
-        events.then((evts) => evts.filter((e) => e.endUTC >= startUTC && e.endUTC <= endUTC))
+        events.then((evts) => evts.filter((e) => e.endUTC >= startUTC && e.endUTC <= endUTC)),
       );
     },
     recent(_lastSeenCounter: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
@@ -307,13 +307,15 @@ export function registerMockBackend(
     },
     logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return data.then(() =>
-        events.then((evts) => evts.filter((e) => LazySeq.of(e.material).anyMatch((m) => m.id === materialID)))
+        events.then((evts) =>
+          evts.filter((e) => LazySeq.of(e.material).anyMatch((m) => m.id === materialID)),
+        ),
       );
     },
     logForMaterials(materialIDs: ReadonlyArray<number>): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       const matIds = new Set(materialIDs);
       return data.then(() =>
-        events.then((evts) => evts.filter((e) => LazySeq.of(e.material).anyMatch((m) => matIds.has(m.id))))
+        events.then((evts) => evts.filter((e) => LazySeq.of(e.material).anyMatch((m) => matIds.has(m.id)))),
       );
     },
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
@@ -349,7 +351,7 @@ export function registerMockBackend(
       process: number,
       inspect: boolean,
       jobUnique?: string,
-      partName?: string
+      partName?: string,
     ): Promise<Readonly<api.ILogEntry>> {
       const mat = new api.LogMaterial({
         id: materialID,
@@ -380,13 +382,13 @@ export function registerMockBackend(
         events.then((evts) => {
           evts.push(evt);
           return evt;
-        })
+        }),
       );
     },
     recordInspectionCompleted(
       insp: api.NewInspectionCompleted,
       jobUnique?: string,
-      partName?: string
+      partName?: string,
     ): Promise<Readonly<api.ILogEntry>> {
       const mat = new api.LogMaterial({
         id: insp.materialID,
@@ -415,13 +417,13 @@ export function registerMockBackend(
         events.then((evts) => {
           evts.push(evt);
           return evt;
-        })
+        }),
       );
     },
     recordCloseoutCompleted(
       closeout: api.NewCloseout,
       jobUnique?: string,
-      partName?: string
+      partName?: string,
     ): Promise<Readonly<api.ILogEntry>> {
       const mat = new api.LogMaterial({
         id: closeout.materialID,
@@ -450,7 +452,7 @@ export function registerMockBackend(
         events.then((evts) => {
           evts.push(evt);
           return evt;
-        })
+        }),
       );
     },
     setWorkorder(
@@ -458,7 +460,7 @@ export function registerMockBackend(
       process: number,
       workorder: string,
       jobUnique?: string,
-      partName?: string
+      partName?: string,
     ): Promise<Readonly<api.ILogEntry>> {
       const mat = new api.LogMaterial({
         id: materialID,
@@ -486,7 +488,7 @@ export function registerMockBackend(
         events.then((evts) => {
           evts.push(evt);
           return evt;
-        })
+        }),
       );
     },
     recordOperatorNotes(materialID: number, process: number, operatorName: string | null, notes: string) {
@@ -520,7 +522,7 @@ export function registerMockBackend(
         events.then((evts) => {
           evts.push(evt);
           return evt;
-        })
+        }),
       );
     },
     recordWorkorderComment(workorder: string, operName: string | null | undefined, comment: string) {

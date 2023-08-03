@@ -78,7 +78,7 @@ import { atomWithDefault } from "jotai/utils";
 
 const machineShowGraph = atom<boolean>(true);
 const machineSelectedPart = atomWithDefault<PartAndProcess | undefined>((get) =>
-  get(isDemoAtom) ? { part: "aaa", proc: 2 } : undefined
+  get(isDemoAtom) ? { part: "aaa", proc: 2 } : undefined,
 );
 const machineSelectedMachine = atom<string>(FilterAnyMachineKey);
 const machineSelectedOperation = atom<PartAndStationOperation | undefined>(undefined);
@@ -102,16 +102,16 @@ export function PartMachineCycleChart() {
       }
       return ret;
     },
-    [setMatToShow]
+    [setMatToShow],
   );
 
   // values which user can select to be filtered on
   const period = useAtomValue(selectedAnalysisPeriod);
   const estimatedCycleTimes = useAtomValue(
-    period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes
+    period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes,
   );
   const matSummary = useAtomValue(
-    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary,
   );
 
   // filter/display state
@@ -197,14 +197,14 @@ export function PartMachineCycleChart() {
             value={
               selectedPart
                 ? points.allPartAndProcNames.findIndex(
-                    (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                    (o) => selectedPart.part === o.part && selectedPart.proc === o.proc,
                   )
                 : -1
             }
             style={{ marginLeft: "1em" }}
             onChange={(e) => {
               setSelectedPart(
-                e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+                e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number],
               );
               setSelectedOperation(undefined);
             }}
@@ -347,10 +347,10 @@ type LoadCycleFilter = "LULOccupancy" | "LoadOp" | "UnloadOp";
 
 const loadShowGraph = atom<boolean>(true);
 const loadSelectedPart = atomWithDefault<PartAndProcess | undefined>((get) =>
-  get(isDemoAtom) ? { part: "aaa", proc: 2 } : undefined
+  get(isDemoAtom) ? { part: "aaa", proc: 2 } : undefined,
 );
 const loadSelectedOperation = atomWithDefault<LoadCycleFilter>((get) =>
-  get(isDemoAtom) ? "LoadOp" : "LULOccupancy"
+  get(isDemoAtom) ? "LoadOp" : "LULOccupancy",
 );
 const loadSelectedLoad = atom<string>(FilterAnyLoadKey);
 const loadSelectedPallet = atom<number | undefined>(undefined);
@@ -375,7 +375,7 @@ export function PartLoadStationCycleChart() {
       }
       return ret;
     },
-    [setMatToShow]
+    [setMatToShow],
   );
 
   const period = useAtomValue(selectedAnalysisPeriod);
@@ -400,10 +400,10 @@ export function PartLoadStationCycleChart() {
       : [period.month, addMonths(period.month, 1)];
   const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const matSummary = useAtomValue(
-    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary
+    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary,
   );
   const estimatedCycleTimes = useAtomValue(
-    period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes
+    period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes,
   );
   const points = React.useMemo(() => {
     if (selectedPart || selectedPallet || selectedLoadStation !== FilterAnyLoadKey) {
@@ -472,7 +472,7 @@ export function PartLoadStationCycleChart() {
             value={
               selectedPart
                 ? points.allPartAndProcNames.findIndex(
-                    (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                    (o) => selectedPart.part === o.part && selectedPart.proc === o.proc,
                   )
                 : -1
             }
@@ -483,7 +483,7 @@ export function PartLoadStationCycleChart() {
                 setSelectedOperation("LULOccupancy");
               } else {
                 setSelectedPart(
-                  e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+                  e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number],
                 );
               }
             }}
@@ -568,7 +568,7 @@ export function PartLoadStationCycleChart() {
                   points,
                   matSummary.matsById,
                   zoomDateRange,
-                  selectedOperation === "LULOccupancy"
+                  selectedOperation === "LULOccupancy",
                 )
               }
               style={{ height: "25px", paddingTop: 0, paddingBottom: 0 }}

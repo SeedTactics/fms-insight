@@ -9,5595 +9,5677 @@
 // ReSharper disable InconsistentNaming
 
 export class FmsClient {
-    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
-    private baseUrl: string;
-    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+  private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+  private baseUrl: string;
+  protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
 
-    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
-        this.http = http ? http : window as any;
-        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+  constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+    this.http = http ? http : (window as any);
+    this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+  }
+
+  fMSInformation(): Promise<FMSInfo> {
+    let url_ = this.baseUrl + "/api/v1/fms/fms-information";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processFMSInformation(_response);
+    });
+  }
+
+  protected processFMSInformation(response: Response): Promise<FMSInfo> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    fMSInformation(): Promise<FMSInfo> {
-        let url_ = this.baseUrl + "/api/v1/fms/fms-information";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processFMSInformation(_response);
-        });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = FMSInfo.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<FMSInfo>(null as any);
+  }
 
-    protected processFMSInformation(response: Response): Promise<FMSInfo> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = FMSInfo.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<FMSInfo>(null as any);
+  findInstructions(
+    part: string,
+    type: string | null,
+    process: number | null | undefined,
+    materialID: number | null | undefined,
+    operatorName: string | null | undefined,
+    pallet: number | undefined,
+  ): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/fms/find-instructions/{part}?";
+    if (part === undefined || part === null) throw new Error("The parameter 'part' must be defined.");
+    url_ = url_.replace("{part}", encodeURIComponent("" + part));
+    if (type === undefined) throw new Error("The parameter 'type' must be defined.");
+    else if (type !== null) url_ += "type=" + encodeURIComponent("" + type) + "&";
+    if (process !== undefined && process !== null)
+      url_ += "process=" + encodeURIComponent("" + process) + "&";
+    if (materialID !== undefined && materialID !== null)
+      url_ += "materialID=" + encodeURIComponent("" + materialID) + "&";
+    if (operatorName !== undefined && operatorName !== null)
+      url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&";
+    if (pallet === null) throw new Error("The parameter 'pallet' cannot be null.");
+    else if (pallet !== undefined) url_ += "pallet=" + encodeURIComponent("" + pallet) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {},
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processFindInstructions(_response);
+    });
+  }
+
+  protected processFindInstructions(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    findInstructions(part: string, type: string | null, process: number | null | undefined, materialID: number | null | undefined, operatorName: string | null | undefined, pallet: number | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/fms/find-instructions/{part}?";
-        if (part === undefined || part === null)
-            throw new Error("The parameter 'part' must be defined.");
-        url_ = url_.replace("{part}", encodeURIComponent("" + part));
-        if (type === undefined)
-            throw new Error("The parameter 'type' must be defined.");
-        else if(type !== null)
-            url_ += "type=" + encodeURIComponent("" + type) + "&";
-        if (process !== undefined && process !== null)
-            url_ += "process=" + encodeURIComponent("" + process) + "&";
-        if (materialID !== undefined && materialID !== null)
-            url_ += "materialID=" + encodeURIComponent("" + materialID) + "&";
-        if (operatorName !== undefined && operatorName !== null)
-            url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&";
-        if (pallet === null)
-            throw new Error("The parameter 'pallet' cannot be null.");
-        else if (pallet !== undefined)
-            url_ += "pallet=" + encodeURIComponent("" + pallet) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processFindInstructions(_response);
-        });
+    if (status === 302) {
+      return response.text().then((_responseText) => {
+        return throwException("A server side error occurred.", status, _responseText, _headers);
+      });
+    } else if (status === 404) {
+      return response.text().then((_responseText) => {
+        let result404: any = null;
+        let resultData404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result404 = ProblemDetails.fromJS(resultData404);
+        return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<void>(null as any);
+  }
 
-    protected processFindInstructions(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 302) {
-            return response.text().then((_responseText) => {
-            return throwException("A server side error occurred.", status, _responseText, _headers);
-            });
-        } else if (status === 404) {
-            return response.text().then((_responseText) => {
-            let result404: any = null;
-            let resultData404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result404 = ProblemDetails.fromJS(resultData404);
-            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
+  printLabel(materialId: number, process: number | undefined): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/fms/print-label/{materialId}?";
+    if (materialId === undefined || materialId === null)
+      throw new Error("The parameter 'materialId' must be defined.");
+    url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
+    if (process === null) throw new Error("The parameter 'process' cannot be null.");
+    else if (process !== undefined) url_ += "process=" + encodeURIComponent("" + process) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "POST",
+      headers: {},
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processPrintLabel(_response);
+    });
+  }
+
+  protected processPrintLabel(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    printLabel(materialId: number, process: number | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/fms/print-label/{materialId}?";
-        if (materialId === undefined || materialId === null)
-            throw new Error("The parameter 'materialId' must be defined.");
-        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
-        if (process === null)
-            throw new Error("The parameter 'process' cannot be null.");
-        else if (process !== undefined)
-            url_ += "process=" + encodeURIComponent("" + process) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "POST",
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processPrintLabel(_response);
-        });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status === 400) {
+      return response.text().then((_responseText) => {
+        let result400: any = null;
+        let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result400 = ProblemDetails.fromJS(resultData400);
+        return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<void>(null as any);
+  }
 
-    protected processPrintLabel(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status === 400) {
-            return response.text().then((_responseText) => {
-            let result400: any = null;
-            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result400 = ProblemDetails.fromJS(resultData400);
-            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
+  parseBarcode(barcode: string | null): Promise<ScannedMaterial> {
+    let url_ = this.baseUrl + "/api/v1/fms/parse-barcode?";
+    if (barcode === undefined) throw new Error("The parameter 'barcode' must be defined.");
+    else if (barcode !== null) url_ += "barcode=" + encodeURIComponent("" + barcode) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processParseBarcode(_response);
+    });
+  }
+
+  protected processParseBarcode(response: Response): Promise<ScannedMaterial> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    parseBarcode(barcode: string | null): Promise<ScannedMaterial> {
-        let url_ = this.baseUrl + "/api/v1/fms/parse-barcode?";
-        if (barcode === undefined)
-            throw new Error("The parameter 'barcode' must be defined.");
-        else if(barcode !== null)
-            url_ += "barcode=" + encodeURIComponent("" + barcode) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "POST",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processParseBarcode(_response);
-        });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = ScannedMaterial.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<ScannedMaterial>(null as any);
+  }
 
-    protected processParseBarcode(response: Response): Promise<ScannedMaterial> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = ScannedMaterial.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<ScannedMaterial>(null as any);
+  enableVerboseLoggingForFiveMinutes(): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/fms/enable-verbose-logging-for-five-minutes";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "POST",
+      headers: {},
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processEnableVerboseLoggingForFiveMinutes(_response);
+    });
+  }
+
+  protected processEnableVerboseLoggingForFiveMinutes(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    enableVerboseLoggingForFiveMinutes(): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/fms/enable-verbose-logging-for-five-minutes";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "POST",
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processEnableVerboseLoggingForFiveMinutes(_response);
-        });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
-
-    protected processEnableVerboseLoggingForFiveMinutes(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
+    return Promise.resolve<void>(null as any);
+  }
 }
 
 export class JobsClient {
-    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
-    private baseUrl: string;
-    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+  private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+  private baseUrl: string;
+  protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
 
-    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
-        this.http = http ? http : window as any;
-        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+  constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+    this.http = http ? http : (window as any);
+    this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+  }
+
+  history(startUTC: Date, endUTC: Date): Promise<HistoricData> {
+    let url_ = this.baseUrl + "/api/v1/jobs/history?";
+    if (startUTC === undefined || startUTC === null)
+      throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+    else url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
+    if (endUTC === undefined || endUTC === null)
+      throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+    else url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processHistory(_response);
+    });
+  }
+
+  protected processHistory(response: Response): Promise<HistoricData> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    history(startUTC: Date, endUTC: Date): Promise<HistoricData> {
-        let url_ = this.baseUrl + "/api/v1/jobs/history?";
-        if (startUTC === undefined || startUTC === null)
-            throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
-        else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
-        if (endUTC === undefined || endUTC === null)
-            throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
-        else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processHistory(_response);
-        });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = HistoricData.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<HistoricData>(null as any);
+  }
 
-    protected processHistory(response: Response): Promise<HistoricData> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = HistoricData.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+  filteredHistory(startUTC: Date, endUTC: Date, alreadyKnownSchIds: string[]): Promise<HistoricData> {
+    let url_ = this.baseUrl + "/api/v1/jobs/history?";
+    if (startUTC === undefined || startUTC === null)
+      throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+    else url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
+    if (endUTC === undefined || endUTC === null)
+      throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+    else url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(alreadyKnownSchIds);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processFilteredHistory(_response);
+    });
+  }
+
+  protected processFilteredHistory(response: Response): Promise<HistoricData> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = HistoricData.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<HistoricData>(null as any);
+  }
+
+  recent(startUTC: Date, alreadyKnownSchIds: string[]): Promise<RecentHistoricData> {
+    let url_ = this.baseUrl + "/api/v1/jobs/recent?";
+    if (startUTC === undefined || startUTC === null)
+      throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+    else url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(alreadyKnownSchIds);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processRecent(_response);
+    });
+  }
+
+  protected processRecent(response: Response): Promise<RecentHistoricData> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = RecentHistoricData.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<RecentHistoricData>(null as any);
+  }
+
+  latestSchedule(): Promise<PlannedSchedule> {
+    let url_ = this.baseUrl + "/api/v1/jobs/latest-schedule";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processLatestSchedule(_response);
+    });
+  }
+
+  protected processLatestSchedule(response: Response): Promise<PlannedSchedule> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = PlannedSchedule.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<PlannedSchedule>(null as any);
+  }
+
+  mostRecentUnfilledWorkordersForPart(part: string): Promise<ActiveWorkorder[]> {
+    let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-part/{part}";
+    if (part === undefined || part === null) throw new Error("The parameter 'part' must be defined.");
+    url_ = url_.replace("{part}", encodeURIComponent("" + part));
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processMostRecentUnfilledWorkordersForPart(_response);
+    });
+  }
+
+  protected processMostRecentUnfilledWorkordersForPart(response: Response): Promise<ActiveWorkorder[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(ActiveWorkorder.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<HistoricData>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<ActiveWorkorder[]>(null as any);
+  }
 
-    filteredHistory(startUTC: Date, endUTC: Date, alreadyKnownSchIds: string[]): Promise<HistoricData> {
-        let url_ = this.baseUrl + "/api/v1/jobs/history?";
-        if (startUTC === undefined || startUTC === null)
-            throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
-        else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
-        if (endUTC === undefined || endUTC === null)
-            throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
-        else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
-        url_ = url_.replace(/[?&]$/, "");
+  replaceWorkordersForScheduleId(scheduleId: string, workorders: WorkordersAndPrograms): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-schid/{scheduleId}";
+    if (scheduleId === undefined || scheduleId === null)
+      throw new Error("The parameter 'scheduleId' must be defined.");
+    url_ = url_.replace("{scheduleId}", encodeURIComponent("" + scheduleId));
+    url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(alreadyKnownSchIds);
+    const content_ = JSON.stringify(workorders);
 
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      body: content_,
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processFilteredHistory(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processReplaceWorkordersForScheduleId(_response);
+    });
+  }
+
+  protected processReplaceWorkordersForScheduleId(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
 
-    protected processFilteredHistory(response: Response): Promise<HistoricData> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = HistoricData.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+  currentStatus(): Promise<CurrentStatus> {
+    let url_ = this.baseUrl + "/api/v1/jobs/status";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processCurrentStatus(_response);
+    });
+  }
+
+  protected processCurrentStatus(response: Response): Promise<CurrentStatus> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = CurrentStatus.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<CurrentStatus>(null as any);
+  }
+
+  add(
+    expectedPreviousScheduleId: string | null,
+    waitForCopyToCell: boolean | undefined,
+    newJobs: NewJobs,
+  ): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/add?";
+    if (expectedPreviousScheduleId === undefined)
+      throw new Error("The parameter 'expectedPreviousScheduleId' must be defined.");
+    else if (expectedPreviousScheduleId !== null)
+      url_ += "expectedPreviousScheduleId=" + encodeURIComponent("" + expectedPreviousScheduleId) + "&";
+    if (waitForCopyToCell === null) throw new Error("The parameter 'waitForCopyToCell' cannot be null.");
+    else if (waitForCopyToCell !== undefined)
+      url_ += "waitForCopyToCell=" + encodeURIComponent("" + waitForCopyToCell) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(newJobs);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processAdd(_response);
+    });
+  }
+
+  protected processAdd(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
+  addUnallocatedCastingToQueue(
+    castingName: string,
+    queue: string | null,
+    qty: number | undefined,
+    operName: string | null | undefined,
+    workorder: string | null | undefined,
+    serials: string[],
+  ): Promise<InProcessMaterial[]> {
+    let url_ = this.baseUrl + "/api/v1/jobs/casting/{castingName}?";
+    if (castingName === undefined || castingName === null)
+      throw new Error("The parameter 'castingName' must be defined.");
+    url_ = url_.replace("{castingName}", encodeURIComponent("" + castingName));
+    if (queue === undefined) throw new Error("The parameter 'queue' must be defined.");
+    else if (queue !== null) url_ += "queue=" + encodeURIComponent("" + queue) + "&";
+    if (qty === null) throw new Error("The parameter 'qty' cannot be null.");
+    else if (qty !== undefined) url_ += "qty=" + encodeURIComponent("" + qty) + "&";
+    if (operName !== undefined && operName !== null)
+      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+    if (workorder !== undefined && workorder !== null)
+      url_ += "workorder=" + encodeURIComponent("" + workorder) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(serials);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processAddUnallocatedCastingToQueue(_response);
+    });
+  }
+
+  protected processAddUnallocatedCastingToQueue(response: Response): Promise<InProcessMaterial[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(InProcessMaterial.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<HistoricData>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<InProcessMaterial[]>(null as any);
+  }
 
-    recent(startUTC: Date, alreadyKnownSchIds: string[]): Promise<RecentHistoricData> {
-        let url_ = this.baseUrl + "/api/v1/jobs/recent?";
-        if (startUTC === undefined || startUTC === null)
-            throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
-        else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
-        url_ = url_.replace(/[?&]$/, "");
+  getJobPlan(jobUnique: string): Promise<HistoricJob> {
+    let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/plan";
+    if (jobUnique === undefined || jobUnique === null)
+      throw new Error("The parameter 'jobUnique' must be defined.");
+    url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
+    url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(alreadyKnownSchIds);
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processGetJobPlan(_response);
+    });
+  }
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRecent(_response);
-        });
+  protected processGetJobPlan(response: Response): Promise<HistoricJob> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = HistoricJob.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<HistoricJob>(null as any);
+  }
 
-    protected processRecent(response: Response): Promise<RecentHistoricData> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = RecentHistoricData.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+  addUnprocessedMaterialToQueue(
+    jobUnique: string,
+    lastCompletedProcess: number,
+    queue: string | null,
+    pos: number,
+    operName: string | null | undefined,
+    serial: string,
+  ): Promise<InProcessMaterial> {
+    let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
+    if (jobUnique === undefined || jobUnique === null)
+      throw new Error("The parameter 'jobUnique' must be defined.");
+    url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
+    if (lastCompletedProcess === undefined || lastCompletedProcess === null)
+      throw new Error("The parameter 'lastCompletedProcess' must be defined and cannot be null.");
+    else url_ += "lastCompletedProcess=" + encodeURIComponent("" + lastCompletedProcess) + "&";
+    if (queue === undefined) throw new Error("The parameter 'queue' must be defined.");
+    else if (queue !== null) url_ += "queue=" + encodeURIComponent("" + queue) + "&";
+    if (pos === undefined || pos === null)
+      throw new Error("The parameter 'pos' must be defined and cannot be null.");
+    else url_ += "pos=" + encodeURIComponent("" + pos) + "&";
+    if (operName !== undefined && operName !== null)
+      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(serial);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processAddUnprocessedMaterialToQueue(_response);
+    });
+  }
+
+  protected processAddUnprocessedMaterialToQueue(response: Response): Promise<InProcessMaterial> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = InProcessMaterial.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<InProcessMaterial>(null as any);
+  }
+
+  setJobComment(jobUnique: string, comment: string): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/comment";
+    if (jobUnique === undefined || jobUnique === null)
+      throw new Error("The parameter 'jobUnique' must be defined.");
+    url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(comment);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processSetJobComment(_response);
+    });
+  }
+
+  protected processSetJobComment(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
+  setMaterialInQueue(
+    materialId: number,
+    operName: string | null | undefined,
+    queue: QueuePosition,
+  ): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue?";
+    if (materialId === undefined || materialId === null)
+      throw new Error("The parameter 'materialId' must be defined.");
+    url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
+    if (operName !== undefined && operName !== null)
+      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(queue);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processSetMaterialInQueue(_response);
+    });
+  }
+
+  protected processSetMaterialInQueue(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
+  removeMaterialFromAllQueues(materialId: number, operName: string | null | undefined): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue?";
+    if (materialId === undefined || materialId === null)
+      throw new Error("The parameter 'materialId' must be defined.");
+    url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
+    if (operName !== undefined && operName !== null)
+      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "DELETE",
+      headers: {},
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processRemoveMaterialFromAllQueues(_response);
+    });
+  }
+
+  protected processRemoveMaterialFromAllQueues(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
+  signalMaterialForQuarantine(
+    materialId: number,
+    operName: string | null | undefined,
+    reason: string | undefined,
+  ): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/signal-quarantine?";
+    if (materialId === undefined || materialId === null)
+      throw new Error("The parameter 'materialId' must be defined.");
+    url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
+    if (operName !== undefined && operName !== null)
+      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(reason);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processSignalMaterialForQuarantine(_response);
+    });
+  }
+
+  protected processSignalMaterialForQuarantine(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
+  invalidatePalletCycle(
+    materialId: number,
+    putMatInQueue: string | null | undefined,
+    operName: string | null | undefined,
+    process: number,
+  ): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/invalidate-process?";
+    if (materialId === undefined || materialId === null)
+      throw new Error("The parameter 'materialId' must be defined.");
+    url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
+    if (putMatInQueue !== undefined && putMatInQueue !== null)
+      url_ += "putMatInQueue=" + encodeURIComponent("" + putMatInQueue) + "&";
+    if (operName !== undefined && operName !== null)
+      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(process);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processInvalidatePalletCycle(_response);
+    });
+  }
+
+  protected processInvalidatePalletCycle(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
+  swapMaterialOnPallet(
+    materialId: number,
+    operName: string | null | undefined,
+    mat: MatToPutOnPallet,
+  ): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/swap-off-pallet?";
+    if (materialId === undefined || materialId === null)
+      throw new Error("The parameter 'materialId' must be defined.");
+    url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
+    if (operName !== undefined && operName !== null)
+      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(mat);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processSwapMaterialOnPallet(_response);
+    });
+  }
+
+  protected processSwapMaterialOnPallet(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
+  bulkRemoveMaterialFromQueues(operName: string | null | undefined, id: number[]): Promise<void> {
+    let url_ = this.baseUrl + "/api/v1/jobs/material?";
+    if (operName !== undefined && operName !== null)
+      url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    const content_ = JSON.stringify(id);
+
+    let options_: RequestInit = {
+      body: content_,
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processBulkRemoveMaterialFromQueues(_response);
+    });
+  }
+
+  protected processBulkRemoveMaterialFromQueues(response: Response): Promise<void> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        return;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<void>(null as any);
+  }
+
+  decrementQuantities(
+    loadDecrementsStrictlyAfterDecrementId: number | null | undefined,
+    loadDecrementsAfterTimeUTC: Date | null | undefined,
+  ): Promise<JobAndDecrementQuantity[]> {
+    let url_ = this.baseUrl + "/api/v1/jobs/planned-cycles?";
+    if (
+      loadDecrementsStrictlyAfterDecrementId !== undefined &&
+      loadDecrementsStrictlyAfterDecrementId !== null
+    )
+      url_ +=
+        "loadDecrementsStrictlyAfterDecrementId=" +
+        encodeURIComponent("" + loadDecrementsStrictlyAfterDecrementId) +
+        "&";
+    if (loadDecrementsAfterTimeUTC !== undefined && loadDecrementsAfterTimeUTC !== null)
+      url_ +=
+        "loadDecrementsAfterTimeUTC=" +
+        encodeURIComponent(loadDecrementsAfterTimeUTC ? "" + loadDecrementsAfterTimeUTC.toISOString() : "") +
+        "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "DELETE",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processDecrementQuantities(_response);
+    });
+  }
+
+  protected processDecrementQuantities(response: Response): Promise<JobAndDecrementQuantity[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(JobAndDecrementQuantity.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<RecentHistoricData>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
-
-    latestSchedule(): Promise<PlannedSchedule> {
-        let url_ = this.baseUrl + "/api/v1/jobs/latest-schedule";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processLatestSchedule(_response);
-        });
-    }
-
-    protected processLatestSchedule(response: Response): Promise<PlannedSchedule> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = PlannedSchedule.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<PlannedSchedule>(null as any);
-    }
-
-    mostRecentUnfilledWorkordersForPart(part: string): Promise<ActiveWorkorder[]> {
-        let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-part/{part}";
-        if (part === undefined || part === null)
-            throw new Error("The parameter 'part' must be defined.");
-        url_ = url_.replace("{part}", encodeURIComponent("" + part));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMostRecentUnfilledWorkordersForPart(_response);
-        });
-    }
-
-    protected processMostRecentUnfilledWorkordersForPart(response: Response): Promise<ActiveWorkorder[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(ActiveWorkorder.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<ActiveWorkorder[]>(null as any);
-    }
-
-    replaceWorkordersForScheduleId(scheduleId: string, workorders: WorkordersAndPrograms): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-schid/{scheduleId}";
-        if (scheduleId === undefined || scheduleId === null)
-            throw new Error("The parameter 'scheduleId' must be defined.");
-        url_ = url_.replace("{scheduleId}", encodeURIComponent("" + scheduleId));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(workorders);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processReplaceWorkordersForScheduleId(_response);
-        });
-    }
-
-    protected processReplaceWorkordersForScheduleId(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    currentStatus(): Promise<CurrentStatus> {
-        let url_ = this.baseUrl + "/api/v1/jobs/status";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processCurrentStatus(_response);
-        });
-    }
-
-    protected processCurrentStatus(response: Response): Promise<CurrentStatus> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = CurrentStatus.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<CurrentStatus>(null as any);
-    }
-
-    add(expectedPreviousScheduleId: string | null, waitForCopyToCell: boolean | undefined, newJobs: NewJobs): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/add?";
-        if (expectedPreviousScheduleId === undefined)
-            throw new Error("The parameter 'expectedPreviousScheduleId' must be defined.");
-        else if(expectedPreviousScheduleId !== null)
-            url_ += "expectedPreviousScheduleId=" + encodeURIComponent("" + expectedPreviousScheduleId) + "&";
-        if (waitForCopyToCell === null)
-            throw new Error("The parameter 'waitForCopyToCell' cannot be null.");
-        else if (waitForCopyToCell !== undefined)
-            url_ += "waitForCopyToCell=" + encodeURIComponent("" + waitForCopyToCell) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(newJobs);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processAdd(_response);
-        });
-    }
-
-    protected processAdd(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    addUnallocatedCastingToQueue(castingName: string, queue: string | null, qty: number | undefined, operName: string | null | undefined, workorder: string | null | undefined, serials: string[]): Promise<InProcessMaterial[]> {
-        let url_ = this.baseUrl + "/api/v1/jobs/casting/{castingName}?";
-        if (castingName === undefined || castingName === null)
-            throw new Error("The parameter 'castingName' must be defined.");
-        url_ = url_.replace("{castingName}", encodeURIComponent("" + castingName));
-        if (queue === undefined)
-            throw new Error("The parameter 'queue' must be defined.");
-        else if(queue !== null)
-            url_ += "queue=" + encodeURIComponent("" + queue) + "&";
-        if (qty === null)
-            throw new Error("The parameter 'qty' cannot be null.");
-        else if (qty !== undefined)
-            url_ += "qty=" + encodeURIComponent("" + qty) + "&";
-        if (operName !== undefined && operName !== null)
-            url_ += "operName=" + encodeURIComponent("" + operName) + "&";
-        if (workorder !== undefined && workorder !== null)
-            url_ += "workorder=" + encodeURIComponent("" + workorder) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(serials);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processAddUnallocatedCastingToQueue(_response);
-        });
-    }
-
-    protected processAddUnallocatedCastingToQueue(response: Response): Promise<InProcessMaterial[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(InProcessMaterial.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<InProcessMaterial[]>(null as any);
-    }
-
-    getJobPlan(jobUnique: string): Promise<HistoricJob> {
-        let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/plan";
-        if (jobUnique === undefined || jobUnique === null)
-            throw new Error("The parameter 'jobUnique' must be defined.");
-        url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetJobPlan(_response);
-        });
-    }
-
-    protected processGetJobPlan(response: Response): Promise<HistoricJob> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = HistoricJob.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<HistoricJob>(null as any);
-    }
-
-    addUnprocessedMaterialToQueue(jobUnique: string, lastCompletedProcess: number, queue: string | null, pos: number, operName: string | null | undefined, serial: string): Promise<InProcessMaterial> {
-        let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
-        if (jobUnique === undefined || jobUnique === null)
-            throw new Error("The parameter 'jobUnique' must be defined.");
-        url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
-        if (lastCompletedProcess === undefined || lastCompletedProcess === null)
-            throw new Error("The parameter 'lastCompletedProcess' must be defined and cannot be null.");
-        else
-            url_ += "lastCompletedProcess=" + encodeURIComponent("" + lastCompletedProcess) + "&";
-        if (queue === undefined)
-            throw new Error("The parameter 'queue' must be defined.");
-        else if(queue !== null)
-            url_ += "queue=" + encodeURIComponent("" + queue) + "&";
-        if (pos === undefined || pos === null)
-            throw new Error("The parameter 'pos' must be defined and cannot be null.");
-        else
-            url_ += "pos=" + encodeURIComponent("" + pos) + "&";
-        if (operName !== undefined && operName !== null)
-            url_ += "operName=" + encodeURIComponent("" + operName) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(serial);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processAddUnprocessedMaterialToQueue(_response);
-        });
-    }
-
-    protected processAddUnprocessedMaterialToQueue(response: Response): Promise<InProcessMaterial> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = InProcessMaterial.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<InProcessMaterial>(null as any);
-    }
-
-    setJobComment(jobUnique: string, comment: string): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/comment";
-        if (jobUnique === undefined || jobUnique === null)
-            throw new Error("The parameter 'jobUnique' must be defined.");
-        url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(comment);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSetJobComment(_response);
-        });
-    }
-
-    protected processSetJobComment(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    setMaterialInQueue(materialId: number, operName: string | null | undefined, queue: QueuePosition): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue?";
-        if (materialId === undefined || materialId === null)
-            throw new Error("The parameter 'materialId' must be defined.");
-        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
-        if (operName !== undefined && operName !== null)
-            url_ += "operName=" + encodeURIComponent("" + operName) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(queue);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSetMaterialInQueue(_response);
-        });
-    }
-
-    protected processSetMaterialInQueue(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    removeMaterialFromAllQueues(materialId: number, operName: string | null | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue?";
-        if (materialId === undefined || materialId === null)
-            throw new Error("The parameter 'materialId' must be defined.");
-        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
-        if (operName !== undefined && operName !== null)
-            url_ += "operName=" + encodeURIComponent("" + operName) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "DELETE",
-            headers: {
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRemoveMaterialFromAllQueues(_response);
-        });
-    }
-
-    protected processRemoveMaterialFromAllQueues(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    signalMaterialForQuarantine(materialId: number, operName: string | null | undefined, reason: string | undefined): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/signal-quarantine?";
-        if (materialId === undefined || materialId === null)
-            throw new Error("The parameter 'materialId' must be defined.");
-        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
-        if (operName !== undefined && operName !== null)
-            url_ += "operName=" + encodeURIComponent("" + operName) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(reason);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSignalMaterialForQuarantine(_response);
-        });
-    }
-
-    protected processSignalMaterialForQuarantine(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    invalidatePalletCycle(materialId: number, putMatInQueue: string | null | undefined, operName: string | null | undefined, process: number): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/invalidate-process?";
-        if (materialId === undefined || materialId === null)
-            throw new Error("The parameter 'materialId' must be defined.");
-        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
-        if (putMatInQueue !== undefined && putMatInQueue !== null)
-            url_ += "putMatInQueue=" + encodeURIComponent("" + putMatInQueue) + "&";
-        if (operName !== undefined && operName !== null)
-            url_ += "operName=" + encodeURIComponent("" + operName) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(process);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processInvalidatePalletCycle(_response);
-        });
-    }
-
-    protected processInvalidatePalletCycle(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    swapMaterialOnPallet(materialId: number, operName: string | null | undefined, mat: MatToPutOnPallet): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/swap-off-pallet?";
-        if (materialId === undefined || materialId === null)
-            throw new Error("The parameter 'materialId' must be defined.");
-        url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
-        if (operName !== undefined && operName !== null)
-            url_ += "operName=" + encodeURIComponent("" + operName) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(mat);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSwapMaterialOnPallet(_response);
-        });
-    }
-
-    protected processSwapMaterialOnPallet(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    bulkRemoveMaterialFromQueues(operName: string | null | undefined, id: number[]): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/material?";
-        if (operName !== undefined && operName !== null)
-            url_ += "operName=" + encodeURIComponent("" + operName) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(id);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processBulkRemoveMaterialFromQueues(_response);
-        });
-    }
-
-    protected processBulkRemoveMaterialFromQueues(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
-
-    decrementQuantities(loadDecrementsStrictlyAfterDecrementId: number | null | undefined, loadDecrementsAfterTimeUTC: Date | null | undefined): Promise<JobAndDecrementQuantity[]> {
-        let url_ = this.baseUrl + "/api/v1/jobs/planned-cycles?";
-        if (loadDecrementsStrictlyAfterDecrementId !== undefined && loadDecrementsStrictlyAfterDecrementId !== null)
-            url_ += "loadDecrementsStrictlyAfterDecrementId=" + encodeURIComponent("" + loadDecrementsStrictlyAfterDecrementId) + "&";
-        if (loadDecrementsAfterTimeUTC !== undefined && loadDecrementsAfterTimeUTC !== null)
-            url_ += "loadDecrementsAfterTimeUTC=" + encodeURIComponent(loadDecrementsAfterTimeUTC ? "" + loadDecrementsAfterTimeUTC.toISOString() : "") + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "DELETE",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processDecrementQuantities(_response);
-        });
-    }
-
-    protected processDecrementQuantities(response: Response): Promise<JobAndDecrementQuantity[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(JobAndDecrementQuantity.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<JobAndDecrementQuantity[]>(null as any);
-    }
+    return Promise.resolve<JobAndDecrementQuantity[]>(null as any);
+  }
 }
 
 export class LogClient {
-    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
-    private baseUrl: string;
-    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+  private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+  private baseUrl: string;
+  protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
 
-    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
-        this.http = http ? http : window as any;
-        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+  constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+    this.http = http ? http : (window as any);
+    this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+  }
+
+  get(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
+    let url_ = this.baseUrl + "/api/v1/log/events/all?";
+    if (startUTC === undefined || startUTC === null)
+      throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+    else url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
+    if (endUTC === undefined || endUTC === null)
+      throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+    else url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processGet(_response);
+    });
+  }
+
+  protected processGet(response: Response): Promise<LogEntry[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    get(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
-        let url_ = this.baseUrl + "/api/v1/log/events/all?";
-        if (startUTC === undefined || startUTC === null)
-            throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
-        else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
-        if (endUTC === undefined || endUTC === null)
-            throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
-        else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGet(_response);
-        });
-    }
-
-    protected processGet(response: Response): Promise<LogEntry[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(LogEntry.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(LogEntry.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<LogEntry[]>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry[]>(null as any);
+  }
 
-    getEventCSV(startUTC: Date, endUTC: Date): Promise<FileResponse> {
-        let url_ = this.baseUrl + "/api/v1/log/events.csv?";
-        if (startUTC === undefined || startUTC === null)
-            throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
-        else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
-        if (endUTC === undefined || endUTC === null)
-            throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
-        else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
-        url_ = url_.replace(/[?&]$/, "");
+  getEventCSV(startUTC: Date, endUTC: Date): Promise<FileResponse> {
+    let url_ = this.baseUrl + "/api/v1/log/events.csv?";
+    if (startUTC === undefined || startUTC === null)
+      throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+    else url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
+    if (endUTC === undefined || endUTC === null)
+      throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+    else url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/octet-stream"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/octet-stream",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetEventCSV(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processGetEventCSV(_response);
+    });
+  }
+
+  protected processGetEventCSV(response: Response): Promise<FileResponse> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
+    if (status === 200 || status === 206) {
+      const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+      let fileNameMatch = contentDisposition
+        ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition)
+        : undefined;
+      let fileName =
+        fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+      if (fileName) {
+        fileName = decodeURIComponent(fileName);
+      } else {
+        fileNameMatch = contentDisposition
+          ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition)
+          : undefined;
+        fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+      }
+      return response.blob().then((blob) => {
+        return { fileName: fileName, data: blob, status: status, headers: _headers };
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<FileResponse>(null as any);
+  }
 
-    protected processGetEventCSV(response: Response): Promise<FileResponse> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return response.blob().then(blob => { return { fileName: fileName, data: blob, status: status, headers: _headers }; });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+  getCompletedParts(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
+    let url_ = this.baseUrl + "/api/v1/log/events/all-completed-parts?";
+    if (startUTC === undefined || startUTC === null)
+      throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
+    else url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
+    if (endUTC === undefined || endUTC === null)
+      throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
+    else url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processGetCompletedParts(_response);
+    });
+  }
+
+  protected processGetCompletedParts(response: Response): Promise<LogEntry[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(LogEntry.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<FileResponse>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry[]>(null as any);
+  }
 
-    getCompletedParts(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
-        let url_ = this.baseUrl + "/api/v1/log/events/all-completed-parts?";
-        if (startUTC === undefined || startUTC === null)
-            throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
-        else
-            url_ += "startUTC=" + encodeURIComponent(startUTC ? "" + startUTC.toISOString() : "") + "&";
-        if (endUTC === undefined || endUTC === null)
-            throw new Error("The parameter 'endUTC' must be defined and cannot be null.");
-        else
-            url_ += "endUTC=" + encodeURIComponent(endUTC ? "" + endUTC.toISOString() : "") + "&";
-        url_ = url_.replace(/[?&]$/, "");
+  recent(lastSeenCounter: number, expectedEndUTCofLastSeen: Date | null | undefined): Promise<LogEntry[]> {
+    let url_ = this.baseUrl + "/api/v1/log/events/recent?";
+    if (lastSeenCounter === undefined || lastSeenCounter === null)
+      throw new Error("The parameter 'lastSeenCounter' must be defined and cannot be null.");
+    else url_ += "lastSeenCounter=" + encodeURIComponent("" + lastSeenCounter) + "&";
+    if (expectedEndUTCofLastSeen !== undefined && expectedEndUTCofLastSeen !== null)
+      url_ +=
+        "expectedEndUTCofLastSeen=" +
+        encodeURIComponent(expectedEndUTCofLastSeen ? "" + expectedEndUTCofLastSeen.toISOString() : "") +
+        "&";
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetCompletedParts(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processRecent(_response);
+    });
+  }
+
+  protected processRecent(response: Response): Promise<LogEntry[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processGetCompletedParts(response: Response): Promise<LogEntry[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(LogEntry.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(LogEntry.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<LogEntry[]>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry[]>(null as any);
+  }
 
-    recent(lastSeenCounter: number, expectedEndUTCofLastSeen: Date | null | undefined): Promise<LogEntry[]> {
-        let url_ = this.baseUrl + "/api/v1/log/events/recent?";
-        if (lastSeenCounter === undefined || lastSeenCounter === null)
-            throw new Error("The parameter 'lastSeenCounter' must be defined and cannot be null.");
-        else
-            url_ += "lastSeenCounter=" + encodeURIComponent("" + lastSeenCounter) + "&";
-        if (expectedEndUTCofLastSeen !== undefined && expectedEndUTCofLastSeen !== null)
-            url_ += "expectedEndUTCofLastSeen=" + encodeURIComponent(expectedEndUTCofLastSeen ? "" + expectedEndUTCofLastSeen.toISOString() : "") + "&";
-        url_ = url_.replace(/[?&]$/, "");
+  logForMaterial(materialID: number): Promise<LogEntry[]> {
+    let url_ = this.baseUrl + "/api/v1/log/events/for-material/{materialID}";
+    if (materialID === undefined || materialID === null)
+      throw new Error("The parameter 'materialID' must be defined.");
+    url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRecent(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processLogForMaterial(_response);
+    });
+  }
+
+  protected processLogForMaterial(response: Response): Promise<LogEntry[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processRecent(response: Response): Promise<LogEntry[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(LogEntry.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(LogEntry.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<LogEntry[]>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry[]>(null as any);
+  }
 
-    logForMaterial(materialID: number): Promise<LogEntry[]> {
-        let url_ = this.baseUrl + "/api/v1/log/events/for-material/{materialID}";
-        if (materialID === undefined || materialID === null)
-            throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processLogForMaterial(_response);
+  logForMaterials(id: number[] | null): Promise<LogEntry[]> {
+    let url_ = this.baseUrl + "/api/v1/log/events/for-material?";
+    if (id === undefined) throw new Error("The parameter 'id' must be defined.");
+    else if (id !== null)
+      id &&
+        id.forEach((item) => {
+          url_ += "id=" + encodeURIComponent("" + item) + "&";
         });
-    }
+    url_ = url_.replace(/[?&]$/, "");
 
-    protected processLogForMaterial(response: Response): Promise<LogEntry[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(LogEntry.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processLogForMaterials(_response);
+    });
+  }
+
+  protected processLogForMaterials(response: Response): Promise<LogEntry[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(LogEntry.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<LogEntry[]>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry[]>(null as any);
+  }
 
-    logForMaterials(id: number[] | null): Promise<LogEntry[]> {
-        let url_ = this.baseUrl + "/api/v1/log/events/for-material?";
-        if (id === undefined)
-            throw new Error("The parameter 'id' must be defined.");
-        else if(id !== null)
-            id && id.forEach(item => { url_ += "id=" + encodeURIComponent("" + item) + "&"; });
-        url_ = url_.replace(/[?&]$/, "");
+  logForSerial(serial: string): Promise<LogEntry[]> {
+    let url_ = this.baseUrl + "/api/v1/log/events/for-serial/{serial}";
+    if (serial === undefined || serial === null) throw new Error("The parameter 'serial' must be defined.");
+    url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processLogForMaterials(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processLogForSerial(_response);
+    });
+  }
+
+  protected processLogForSerial(response: Response): Promise<LogEntry[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processLogForMaterials(response: Response): Promise<LogEntry[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(LogEntry.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(LogEntry.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<LogEntry[]>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry[]>(null as any);
+  }
 
-    logForSerial(serial: string): Promise<LogEntry[]> {
-        let url_ = this.baseUrl + "/api/v1/log/events/for-serial/{serial}";
-        if (serial === undefined || serial === null)
-            throw new Error("The parameter 'serial' must be defined.");
-        url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
-        url_ = url_.replace(/[?&]$/, "");
+  logForWorkorder(workorder: string): Promise<LogEntry[]> {
+    let url_ = this.baseUrl + "/api/v1/log/events/for-workorder/{workorder}";
+    if (workorder === undefined || workorder === null)
+      throw new Error("The parameter 'workorder' must be defined.");
+    url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processLogForSerial(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processLogForWorkorder(_response);
+    });
+  }
+
+  protected processLogForWorkorder(response: Response): Promise<LogEntry[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processLogForSerial(response: Response): Promise<LogEntry[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(LogEntry.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(LogEntry.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<LogEntry[]>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry[]>(null as any);
+  }
 
-    logForWorkorder(workorder: string): Promise<LogEntry[]> {
-        let url_ = this.baseUrl + "/api/v1/log/events/for-workorder/{workorder}";
-        if (workorder === undefined || workorder === null)
-            throw new Error("The parameter 'workorder' must be defined.");
-        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
-        url_ = url_.replace(/[?&]$/, "");
+  materialDetails(materialID: number): Promise<MaterialDetails> {
+    let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}";
+    if (materialID === undefined || materialID === null)
+      throw new Error("The parameter 'materialID' must be defined.");
+    url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processLogForWorkorder(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processMaterialDetails(_response);
+    });
+  }
+
+  protected processMaterialDetails(response: Response): Promise<MaterialDetails> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = MaterialDetails.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
+    }
+    return Promise.resolve<MaterialDetails>(null as any);
+  }
 
-    protected processLogForWorkorder(response: Response): Promise<LogEntry[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(LogEntry.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+  materialDetailsForJob(jobUnique: string): Promise<MaterialDetails[]> {
+    let url_ = this.baseUrl + "/api/v1/log/material-for-job/{jobUnique}";
+    if (jobUnique === undefined || jobUnique === null)
+      throw new Error("The parameter 'jobUnique' must be defined.");
+    url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processMaterialDetailsForJob(_response);
+    });
+  }
+
+  protected processMaterialDetailsForJob(response: Response): Promise<MaterialDetails[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
+    }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(MaterialDetails.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<LogEntry[]>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<MaterialDetails[]>(null as any);
+  }
 
-    materialDetails(materialID: number): Promise<MaterialDetails> {
-        let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}";
-        if (materialID === undefined || materialID === null)
-            throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
-        url_ = url_.replace(/[?&]$/, "");
+  materialForSerial(serial: string): Promise<MaterialDetails[]> {
+    let url_ = this.baseUrl + "/api/v1/log/material-for-serial/{serial}";
+    if (serial === undefined || serial === null) throw new Error("The parameter 'serial' must be defined.");
+    url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMaterialDetails(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processMaterialForSerial(_response);
+    });
+  }
+
+  protected processMaterialForSerial(response: Response): Promise<MaterialDetails[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processMaterialDetails(response: Response): Promise<MaterialDetails> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = MaterialDetails.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(MaterialDetails.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<MaterialDetails>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<MaterialDetails[]>(null as any);
+  }
 
-    materialDetailsForJob(jobUnique: string): Promise<MaterialDetails[]> {
-        let url_ = this.baseUrl + "/api/v1/log/material-for-job/{jobUnique}";
-        if (jobUnique === undefined || jobUnique === null)
-            throw new Error("The parameter 'jobUnique' must be defined.");
-        url_ = url_.replace("{jobUnique}", encodeURIComponent("" + jobUnique));
-        url_ = url_.replace(/[?&]$/, "");
+  setSerial(materialID: number, process: number | undefined, serial: string): Promise<LogEntry> {
+    let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/serial?";
+    if (materialID === undefined || materialID === null)
+      throw new Error("The parameter 'materialID' must be defined.");
+    url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+    if (process === null) throw new Error("The parameter 'process' cannot be null.");
+    else if (process !== undefined) url_ += "process=" + encodeURIComponent("" + process) + "&";
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    const content_ = JSON.stringify(serial);
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMaterialDetailsForJob(_response);
-        });
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processSetSerial(_response);
+    });
+  }
+
+  protected processSetSerial(response: Response): Promise<LogEntry> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processMaterialDetailsForJob(response: Response): Promise<MaterialDetails[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(MaterialDetails.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<MaterialDetails[]>(null as any);
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = LogEntry.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry>(null as any);
+  }
 
-    materialForSerial(serial: string): Promise<MaterialDetails[]> {
-        let url_ = this.baseUrl + "/api/v1/log/material-for-serial/{serial}";
-        if (serial === undefined || serial === null)
-            throw new Error("The parameter 'serial' must be defined.");
-        url_ = url_.replace("{serial}", encodeURIComponent("" + serial));
-        url_ = url_.replace(/[?&]$/, "");
+  setWorkorder(materialID: number, process: number | undefined, workorder: string): Promise<LogEntry> {
+    let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/workorder?";
+    if (materialID === undefined || materialID === null)
+      throw new Error("The parameter 'materialID' must be defined.");
+    url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+    if (process === null) throw new Error("The parameter 'process' cannot be null.");
+    else if (process !== undefined) url_ += "process=" + encodeURIComponent("" + process) + "&";
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    const content_ = JSON.stringify(workorder);
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMaterialForSerial(_response);
-        });
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processSetWorkorder(_response);
+    });
+  }
+
+  protected processSetWorkorder(response: Response): Promise<LogEntry> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processMaterialForSerial(response: Response): Promise<MaterialDetails[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(MaterialDetails.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<MaterialDetails[]>(null as any);
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = LogEntry.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry>(null as any);
+  }
 
-    setSerial(materialID: number, process: number | undefined, serial: string): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/serial?";
-        if (materialID === undefined || materialID === null)
-            throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
-        if (process === null)
-            throw new Error("The parameter 'process' cannot be null.");
-        else if (process !== undefined)
-            url_ += "process=" + encodeURIComponent("" + process) + "&";
-        url_ = url_.replace(/[?&]$/, "");
+  setInspectionDecision(
+    materialID: number,
+    inspType: string,
+    process: number | undefined,
+    inspect: boolean,
+  ): Promise<LogEntry> {
+    let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/inspections/{inspType}?";
+    if (materialID === undefined || materialID === null)
+      throw new Error("The parameter 'materialID' must be defined.");
+    url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+    if (inspType === undefined || inspType === null)
+      throw new Error("The parameter 'inspType' must be defined.");
+    url_ = url_.replace("{inspType}", encodeURIComponent("" + inspType));
+    if (process === null) throw new Error("The parameter 'process' cannot be null.");
+    else if (process !== undefined) url_ += "process=" + encodeURIComponent("" + process) + "&";
+    url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(serial);
+    const content_ = JSON.stringify(inspect);
 
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSetSerial(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processSetInspectionDecision(_response);
+    });
+  }
+
+  protected processSetInspectionDecision(response: Response): Promise<LogEntry> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processSetSerial(response: Response): Promise<LogEntry> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = LogEntry.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<LogEntry>(null as any);
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = LogEntry.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry>(null as any);
+  }
 
-    setWorkorder(materialID: number, process: number | undefined, workorder: string): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/workorder?";
-        if (materialID === undefined || materialID === null)
-            throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
-        if (process === null)
-            throw new Error("The parameter 'process' cannot be null.");
-        else if (process !== undefined)
-            url_ += "process=" + encodeURIComponent("" + process) + "&";
-        url_ = url_.replace(/[?&]$/, "");
+  recordOperatorNotes(
+    materialID: number,
+    process: number | undefined,
+    operatorName: string | null | undefined,
+    notes: string,
+  ): Promise<LogEntry> {
+    let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/notes?";
+    if (materialID === undefined || materialID === null)
+      throw new Error("The parameter 'materialID' must be defined.");
+    url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
+    if (process === null) throw new Error("The parameter 'process' cannot be null.");
+    else if (process !== undefined) url_ += "process=" + encodeURIComponent("" + process) + "&";
+    if (operatorName !== undefined && operatorName !== null)
+      url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(workorder);
+    const content_ = JSON.stringify(notes);
 
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSetWorkorder(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processRecordOperatorNotes(_response);
+    });
+  }
+
+  protected processRecordOperatorNotes(response: Response): Promise<LogEntry> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processSetWorkorder(response: Response): Promise<LogEntry> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = LogEntry.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<LogEntry>(null as any);
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = LogEntry.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry>(null as any);
+  }
 
-    setInspectionDecision(materialID: number, inspType: string, process: number | undefined, inspect: boolean): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/inspections/{inspType}?";
-        if (materialID === undefined || materialID === null)
-            throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
-        if (inspType === undefined || inspType === null)
-            throw new Error("The parameter 'inspType' must be defined.");
-        url_ = url_.replace("{inspType}", encodeURIComponent("" + inspType));
-        if (process === null)
-            throw new Error("The parameter 'process' cannot be null.");
-        else if (process !== undefined)
-            url_ += "process=" + encodeURIComponent("" + process) + "&";
-        url_ = url_.replace(/[?&]$/, "");
+  recordInspectionCompleted(insp: NewInspectionCompleted): Promise<LogEntry> {
+    let url_ = this.baseUrl + "/api/v1/log/events/inspection-result";
+    url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(inspect);
+    const content_ = JSON.stringify(insp);
 
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSetInspectionDecision(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processRecordInspectionCompleted(_response);
+    });
+  }
+
+  protected processRecordInspectionCompleted(response: Response): Promise<LogEntry> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processSetInspectionDecision(response: Response): Promise<LogEntry> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = LogEntry.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<LogEntry>(null as any);
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = LogEntry.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry>(null as any);
+  }
 
-    recordOperatorNotes(materialID: number, process: number | undefined, operatorName: string | null | undefined, notes: string): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/notes?";
-        if (materialID === undefined || materialID === null)
-            throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
-        if (process === null)
-            throw new Error("The parameter 'process' cannot be null.");
-        else if (process !== undefined)
-            url_ += "process=" + encodeURIComponent("" + process) + "&";
-        if (operatorName !== undefined && operatorName !== null)
-            url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&";
-        url_ = url_.replace(/[?&]$/, "");
+  recordCloseoutCompleted(insp: NewCloseout): Promise<LogEntry> {
+    let url_ = this.baseUrl + "/api/v1/log/events/closeout";
+    url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(notes);
+    const content_ = JSON.stringify(insp);
 
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRecordOperatorNotes(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processRecordCloseoutCompleted(_response);
+    });
+  }
+
+  protected processRecordCloseoutCompleted(response: Response): Promise<LogEntry> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processRecordOperatorNotes(response: Response): Promise<LogEntry> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = LogEntry.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<LogEntry>(null as any);
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = LogEntry.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<LogEntry>(null as any);
+  }
 
-    recordInspectionCompleted(insp: NewInspectionCompleted): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/events/inspection-result";
-        url_ = url_.replace(/[?&]$/, "");
+  recordWorkorderComment(
+    workorder: string,
+    operatorName: string | null | undefined,
+    comment: string,
+  ): Promise<LogEntry> {
+    let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/comment?";
+    if (workorder === undefined || workorder === null)
+      throw new Error("The parameter 'workorder' must be defined.");
+    url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
+    if (operatorName !== undefined && operatorName !== null)
+      url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&";
+    url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(insp);
+    const content_ = JSON.stringify(comment);
 
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      body: content_,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRecordInspectionCompleted(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processRecordWorkorderComment(_response);
+    });
+  }
+
+  protected processRecordWorkorderComment(response: Response): Promise<LogEntry> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processRecordInspectionCompleted(response: Response): Promise<LogEntry> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = LogEntry.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<LogEntry>(null as any);
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = LogEntry.fromJS(resultData200);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
-
-    recordCloseoutCompleted(insp: NewCloseout): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/events/closeout";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(insp);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRecordCloseoutCompleted(_response);
-        });
-    }
-
-    protected processRecordCloseoutCompleted(response: Response): Promise<LogEntry> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = LogEntry.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<LogEntry>(null as any);
-    }
-
-    recordWorkorderComment(workorder: string, operatorName: string | null | undefined, comment: string): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/comment?";
-        if (workorder === undefined || workorder === null)
-            throw new Error("The parameter 'workorder' must be defined.");
-        url_ = url_.replace("{workorder}", encodeURIComponent("" + workorder));
-        if (operatorName !== undefined && operatorName !== null)
-            url_ += "operatorName=" + encodeURIComponent("" + operatorName) + "&";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(comment);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRecordWorkorderComment(_response);
-        });
-    }
-
-    protected processRecordWorkorderComment(response: Response): Promise<LogEntry> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = LogEntry.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<LogEntry>(null as any);
-    }
+    return Promise.resolve<LogEntry>(null as any);
+  }
 }
 
 export class MachinesClient {
-    private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
-    private baseUrl: string;
-    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+  private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
+  private baseUrl: string;
+  protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
 
-    constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
-        this.http = http ? http : window as any;
-        this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+  constructor(baseUrl?: string, http?: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> }) {
+    this.http = http ? http : (window as any);
+    this.baseUrl = baseUrl !== undefined && baseUrl !== null ? baseUrl : "";
+  }
+
+  getToolsInMachines(): Promise<ToolInMachine[]> {
+    let url_ = this.baseUrl + "/api/v1/machines/tools";
+    url_ = url_.replace(/[?&]$/, "");
+
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
+
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processGetToolsInMachines(_response);
+    });
+  }
+
+  protected processGetToolsInMachines(response: Response): Promise<ToolInMachine[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    getToolsInMachines(): Promise<ToolInMachine[]> {
-        let url_ = this.baseUrl + "/api/v1/machines/tools";
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetToolsInMachines(_response);
-        });
-    }
-
-    protected processGetToolsInMachines(response: Response): Promise<ToolInMachine[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(ToolInMachine.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(ToolInMachine.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<ToolInMachine[]>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<ToolInMachine[]>(null as any);
+  }
 
-    getProgramsInCellController(): Promise<ProgramInCellController[]> {
-        let url_ = this.baseUrl + "/api/v1/machines/programs-in-cell-controller";
-        url_ = url_.replace(/[?&]$/, "");
+  getProgramsInCellController(): Promise<ProgramInCellController[]> {
+    let url_ = this.baseUrl + "/api/v1/machines/programs-in-cell-controller";
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetProgramsInCellController(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processGetProgramsInCellController(_response);
+    });
+  }
+
+  protected processGetProgramsInCellController(response: Response): Promise<ProgramInCellController[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processGetProgramsInCellController(response: Response): Promise<ProgramInCellController[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(ProgramInCellController.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(ProgramInCellController.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<ProgramInCellController[]>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<ProgramInCellController[]>(null as any);
+  }
 
-    getProgramRevisionsInDescendingOrderOfRevision(programName: string, count: number, revisionToStart: number | null | undefined): Promise<ProgramRevision[]> {
-        let url_ = this.baseUrl + "/api/v1/machines/program/{programName}/revisions?";
-        if (programName === undefined || programName === null)
-            throw new Error("The parameter 'programName' must be defined.");
-        url_ = url_.replace("{programName}", encodeURIComponent("" + programName));
-        if (count === undefined || count === null)
-            throw new Error("The parameter 'count' must be defined and cannot be null.");
-        else
-            url_ += "count=" + encodeURIComponent("" + count) + "&";
-        if (revisionToStart !== undefined && revisionToStart !== null)
-            url_ += "revisionToStart=" + encodeURIComponent("" + revisionToStart) + "&";
-        url_ = url_.replace(/[?&]$/, "");
+  getProgramRevisionsInDescendingOrderOfRevision(
+    programName: string,
+    count: number,
+    revisionToStart: number | null | undefined,
+  ): Promise<ProgramRevision[]> {
+    let url_ = this.baseUrl + "/api/v1/machines/program/{programName}/revisions?";
+    if (programName === undefined || programName === null)
+      throw new Error("The parameter 'programName' must be defined.");
+    url_ = url_.replace("{programName}", encodeURIComponent("" + programName));
+    if (count === undefined || count === null)
+      throw new Error("The parameter 'count' must be defined and cannot be null.");
+    else url_ += "count=" + encodeURIComponent("" + count) + "&";
+    if (revisionToStart !== undefined && revisionToStart !== null)
+      url_ += "revisionToStart=" + encodeURIComponent("" + revisionToStart) + "&";
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetProgramRevisionsInDescendingOrderOfRevision(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processGetProgramRevisionsInDescendingOrderOfRevision(_response);
+    });
+  }
+
+  protected processGetProgramRevisionsInDescendingOrderOfRevision(
+    response: Response,
+  ): Promise<ProgramRevision[]> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
-
-    protected processGetProgramRevisionsInDescendingOrderOfRevision(response: Response): Promise<ProgramRevision[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(ProgramRevision.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        if (Array.isArray(resultData200)) {
+          result200 = [] as any;
+          for (let item of resultData200) result200!.push(ProgramRevision.fromJS(item));
+        } else {
+          result200 = <any>null;
         }
-        return Promise.resolve<ProgramRevision[]>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<ProgramRevision[]>(null as any);
+  }
 
-    getProgramRevisionContent(programName: string, revision: number): Promise<string> {
-        let url_ = this.baseUrl + "/api/v1/machines/program/{programName}/revision/{revision}/content";
-        if (programName === undefined || programName === null)
-            throw new Error("The parameter 'programName' must be defined.");
-        url_ = url_.replace("{programName}", encodeURIComponent("" + programName));
-        if (revision === undefined || revision === null)
-            throw new Error("The parameter 'revision' must be defined.");
-        url_ = url_.replace("{revision}", encodeURIComponent("" + revision));
-        url_ = url_.replace(/[?&]$/, "");
+  getProgramRevisionContent(programName: string, revision: number): Promise<string> {
+    let url_ = this.baseUrl + "/api/v1/machines/program/{programName}/revision/{revision}/content";
+    if (programName === undefined || programName === null)
+      throw new Error("The parameter 'programName' must be defined.");
+    url_ = url_.replace("{programName}", encodeURIComponent("" + programName));
+    if (revision === undefined || revision === null)
+      throw new Error("The parameter 'revision' must be defined.");
+    url_ = url_.replace("{revision}", encodeURIComponent("" + revision));
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetProgramRevisionContent(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processGetProgramRevisionContent(_response);
+    });
+  }
+
+  protected processGetProgramRevisionContent(response: Response): Promise<string> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = resultData200 !== undefined ? resultData200 : <any>null;
 
-    protected processGetProgramRevisionContent(response: Response): Promise<string> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-                result200 = resultData200 !== undefined ? resultData200 : <any>null;
-    
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<string>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<string>(null as any);
+  }
 
-    getLatestProgramRevisionContent(programName: string): Promise<string> {
-        let url_ = this.baseUrl + "/api/v1/machines/program/{programName}/latest-revision/content";
-        if (programName === undefined || programName === null)
-            throw new Error("The parameter 'programName' must be defined.");
-        url_ = url_.replace("{programName}", encodeURIComponent("" + programName));
-        url_ = url_.replace(/[?&]$/, "");
+  getLatestProgramRevisionContent(programName: string): Promise<string> {
+    let url_ = this.baseUrl + "/api/v1/machines/program/{programName}/latest-revision/content";
+    if (programName === undefined || programName === null)
+      throw new Error("The parameter 'programName' must be defined.");
+    url_ = url_.replace("{programName}", encodeURIComponent("" + programName));
+    url_ = url_.replace(/[?&]$/, "");
 
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
+    let options_: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+      },
+    };
 
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processGetLatestProgramRevisionContent(_response);
-        });
+    return this.http.fetch(url_, options_).then((_response: Response) => {
+      return this.processGetLatestProgramRevisionContent(_response);
+    });
+  }
+
+  protected processGetLatestProgramRevisionContent(response: Response): Promise<string> {
+    const status = response.status;
+    let _headers: any = {};
+    if (response.headers && response.headers.forEach) {
+      response.headers.forEach((v: any, k: any) => (_headers[k] = v));
     }
+    if (status === 200) {
+      return response.text().then((_responseText) => {
+        let result200: any = null;
+        let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+        result200 = resultData200 !== undefined ? resultData200 : <any>null;
 
-    protected processGetLatestProgramRevisionContent(response: Response): Promise<string> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-                result200 = resultData200 !== undefined ? resultData200 : <any>null;
-    
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<string>(null as any);
+        return result200;
+      });
+    } else if (status !== 200 && status !== 204) {
+      return response.text().then((_responseText) => {
+        return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+      });
     }
+    return Promise.resolve<string>(null as any);
+  }
 }
 
 export class FMSInfo implements IFMSInfo {
-    name?: string | undefined;
-    version?: string | undefined;
-    licenseExpires?: Date | undefined;
-    additionalLogServers?: string[] | undefined;
-    openIDConnectAuthority?: string | undefined;
-    localhostOpenIDConnectAuthority?: string | undefined;
-    openIDConnectClientId?: string | undefined;
-    usingLabelPrinterForSerials?: boolean;
-    useClientPrinterForLabels?: boolean | undefined;
-    allowQuarantineToCancelLoad?: boolean | undefined;
-    quarantineQueue?: string | undefined;
-    customStationMonitorDialogUrl?: string | undefined;
-    allowChangeWorkorderAtLoadStation?: boolean | undefined;
-    allowSwapAndInvalidateMaterialAtLoadStation?: boolean | undefined;
-    requireScanAtCloseout?: boolean;
-    requireWorkorderBeforeAllowCloseoutComplete?: boolean;
-    addRawMaterial?: AddRawMaterialType;
-    addInProcessMaterial?: AddInProcessMaterialType;
-    requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
-    allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
+  name?: string | undefined;
+  version?: string | undefined;
+  licenseExpires?: Date | undefined;
+  additionalLogServers?: string[] | undefined;
+  openIDConnectAuthority?: string | undefined;
+  localhostOpenIDConnectAuthority?: string | undefined;
+  openIDConnectClientId?: string | undefined;
+  usingLabelPrinterForSerials?: boolean;
+  useClientPrinterForLabels?: boolean | undefined;
+  allowQuarantineToCancelLoad?: boolean | undefined;
+  quarantineQueue?: string | undefined;
+  customStationMonitorDialogUrl?: string | undefined;
+  allowChangeWorkorderAtLoadStation?: boolean | undefined;
+  allowSwapAndInvalidateMaterialAtLoadStation?: boolean | undefined;
+  requireScanAtCloseout?: boolean;
+  requireWorkorderBeforeAllowCloseoutComplete?: boolean;
+  addRawMaterial?: AddRawMaterialType;
+  addInProcessMaterial?: AddInProcessMaterialType;
+  requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
+  allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 
-    constructor(data?: IFMSInfo) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IFMSInfo) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.name = _data["Name"];
-            this.version = _data["Version"];
-            this.licenseExpires = _data["LicenseExpires"] ? new Date(_data["LicenseExpires"].toString()) : <any>undefined;
-            if (Array.isArray(_data["AdditionalLogServers"])) {
-                this.additionalLogServers = [] as any;
-                for (let item of _data["AdditionalLogServers"])
-                    this.additionalLogServers!.push(item);
-            }
-            this.openIDConnectAuthority = _data["OpenIDConnectAuthority"];
-            this.localhostOpenIDConnectAuthority = _data["LocalhostOpenIDConnectAuthority"];
-            this.openIDConnectClientId = _data["OpenIDConnectClientId"];
-            this.usingLabelPrinterForSerials = _data["UsingLabelPrinterForSerials"];
-            this.useClientPrinterForLabels = _data["UseClientPrinterForLabels"];
-            this.allowQuarantineToCancelLoad = _data["AllowQuarantineToCancelLoad"];
-            this.quarantineQueue = _data["QuarantineQueue"];
-            this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
-            this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
-            this.allowSwapAndInvalidateMaterialAtLoadStation = _data["AllowSwapAndInvalidateMaterialAtLoadStation"];
-            this.requireScanAtCloseout = _data["RequireScanAtCloseout"];
-            this.requireWorkorderBeforeAllowCloseoutComplete = _data["RequireWorkorderBeforeAllowCloseoutComplete"];
-            this.addRawMaterial = _data["AddRawMaterial"];
-            this.addInProcessMaterial = _data["AddInProcessMaterial"];
-            this.requireOperatorNamePromptWhenAddingMaterial = _data["RequireOperatorNamePromptWhenAddingMaterial"];
-            this.allowEditJobPlanQuantityFromQueuesPage = _data["AllowEditJobPlanQuantityFromQueuesPage"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.name = _data["Name"];
+      this.version = _data["Version"];
+      this.licenseExpires = _data["LicenseExpires"]
+        ? new Date(_data["LicenseExpires"].toString())
+        : <any>undefined;
+      if (Array.isArray(_data["AdditionalLogServers"])) {
+        this.additionalLogServers = [] as any;
+        for (let item of _data["AdditionalLogServers"]) this.additionalLogServers!.push(item);
+      }
+      this.openIDConnectAuthority = _data["OpenIDConnectAuthority"];
+      this.localhostOpenIDConnectAuthority = _data["LocalhostOpenIDConnectAuthority"];
+      this.openIDConnectClientId = _data["OpenIDConnectClientId"];
+      this.usingLabelPrinterForSerials = _data["UsingLabelPrinterForSerials"];
+      this.useClientPrinterForLabels = _data["UseClientPrinterForLabels"];
+      this.allowQuarantineToCancelLoad = _data["AllowQuarantineToCancelLoad"];
+      this.quarantineQueue = _data["QuarantineQueue"];
+      this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
+      this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
+      this.allowSwapAndInvalidateMaterialAtLoadStation = _data["AllowSwapAndInvalidateMaterialAtLoadStation"];
+      this.requireScanAtCloseout = _data["RequireScanAtCloseout"];
+      this.requireWorkorderBeforeAllowCloseoutComplete = _data["RequireWorkorderBeforeAllowCloseoutComplete"];
+      this.addRawMaterial = _data["AddRawMaterial"];
+      this.addInProcessMaterial = _data["AddInProcessMaterial"];
+      this.requireOperatorNamePromptWhenAddingMaterial = _data["RequireOperatorNamePromptWhenAddingMaterial"];
+      this.allowEditJobPlanQuantityFromQueuesPage = _data["AllowEditJobPlanQuantityFromQueuesPage"];
     }
+  }
 
-    static fromJS(data: any): FMSInfo {
-        data = typeof data === 'object' ? data : {};
-        let result = new FMSInfo();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): FMSInfo {
+    data = typeof data === "object" ? data : {};
+    let result = new FMSInfo();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Name"] = this.name;
-        data["Version"] = this.version;
-        data["LicenseExpires"] = this.licenseExpires ? this.licenseExpires.toISOString() : <any>undefined;
-        if (Array.isArray(this.additionalLogServers)) {
-            data["AdditionalLogServers"] = [];
-            for (let item of this.additionalLogServers)
-                data["AdditionalLogServers"].push(item);
-        }
-        data["OpenIDConnectAuthority"] = this.openIDConnectAuthority;
-        data["LocalhostOpenIDConnectAuthority"] = this.localhostOpenIDConnectAuthority;
-        data["OpenIDConnectClientId"] = this.openIDConnectClientId;
-        data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
-        data["UseClientPrinterForLabels"] = this.useClientPrinterForLabels;
-        data["AllowQuarantineToCancelLoad"] = this.allowQuarantineToCancelLoad;
-        data["QuarantineQueue"] = this.quarantineQueue;
-        data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
-        data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
-        data["AllowSwapAndInvalidateMaterialAtLoadStation"] = this.allowSwapAndInvalidateMaterialAtLoadStation;
-        data["RequireScanAtCloseout"] = this.requireScanAtCloseout;
-        data["RequireWorkorderBeforeAllowCloseoutComplete"] = this.requireWorkorderBeforeAllowCloseoutComplete;
-        data["AddRawMaterial"] = this.addRawMaterial;
-        data["AddInProcessMaterial"] = this.addInProcessMaterial;
-        data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
-        data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Name"] = this.name;
+    data["Version"] = this.version;
+    data["LicenseExpires"] = this.licenseExpires ? this.licenseExpires.toISOString() : <any>undefined;
+    if (Array.isArray(this.additionalLogServers)) {
+      data["AdditionalLogServers"] = [];
+      for (let item of this.additionalLogServers) data["AdditionalLogServers"].push(item);
     }
+    data["OpenIDConnectAuthority"] = this.openIDConnectAuthority;
+    data["LocalhostOpenIDConnectAuthority"] = this.localhostOpenIDConnectAuthority;
+    data["OpenIDConnectClientId"] = this.openIDConnectClientId;
+    data["UsingLabelPrinterForSerials"] = this.usingLabelPrinterForSerials;
+    data["UseClientPrinterForLabels"] = this.useClientPrinterForLabels;
+    data["AllowQuarantineToCancelLoad"] = this.allowQuarantineToCancelLoad;
+    data["QuarantineQueue"] = this.quarantineQueue;
+    data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
+    data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
+    data["AllowSwapAndInvalidateMaterialAtLoadStation"] = this.allowSwapAndInvalidateMaterialAtLoadStation;
+    data["RequireScanAtCloseout"] = this.requireScanAtCloseout;
+    data["RequireWorkorderBeforeAllowCloseoutComplete"] = this.requireWorkorderBeforeAllowCloseoutComplete;
+    data["AddRawMaterial"] = this.addRawMaterial;
+    data["AddInProcessMaterial"] = this.addInProcessMaterial;
+    data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
+    data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
+    return data;
+  }
 }
 
 export interface IFMSInfo {
-    name?: string | undefined;
-    version?: string | undefined;
-    licenseExpires?: Date | undefined;
-    additionalLogServers?: string[] | undefined;
-    openIDConnectAuthority?: string | undefined;
-    localhostOpenIDConnectAuthority?: string | undefined;
-    openIDConnectClientId?: string | undefined;
-    usingLabelPrinterForSerials?: boolean;
-    useClientPrinterForLabels?: boolean | undefined;
-    allowQuarantineToCancelLoad?: boolean | undefined;
-    quarantineQueue?: string | undefined;
-    customStationMonitorDialogUrl?: string | undefined;
-    allowChangeWorkorderAtLoadStation?: boolean | undefined;
-    allowSwapAndInvalidateMaterialAtLoadStation?: boolean | undefined;
-    requireScanAtCloseout?: boolean;
-    requireWorkorderBeforeAllowCloseoutComplete?: boolean;
-    addRawMaterial?: AddRawMaterialType;
-    addInProcessMaterial?: AddInProcessMaterialType;
-    requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
-    allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
+  name?: string | undefined;
+  version?: string | undefined;
+  licenseExpires?: Date | undefined;
+  additionalLogServers?: string[] | undefined;
+  openIDConnectAuthority?: string | undefined;
+  localhostOpenIDConnectAuthority?: string | undefined;
+  openIDConnectClientId?: string | undefined;
+  usingLabelPrinterForSerials?: boolean;
+  useClientPrinterForLabels?: boolean | undefined;
+  allowQuarantineToCancelLoad?: boolean | undefined;
+  quarantineQueue?: string | undefined;
+  customStationMonitorDialogUrl?: string | undefined;
+  allowChangeWorkorderAtLoadStation?: boolean | undefined;
+  allowSwapAndInvalidateMaterialAtLoadStation?: boolean | undefined;
+  requireScanAtCloseout?: boolean;
+  requireWorkorderBeforeAllowCloseoutComplete?: boolean;
+  addRawMaterial?: AddRawMaterialType;
+  addInProcessMaterial?: AddInProcessMaterialType;
+  requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
+  allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
 }
 
 export enum AddRawMaterialType {
-    AddAsUnassigned = "AddAsUnassigned",
-    RequireExistingMaterial = "RequireExistingMaterial",
-    RequireBarcodeScan = "RequireBarcodeScan",
-    AddAndSpecifyJob = "AddAndSpecifyJob",
+  AddAsUnassigned = "AddAsUnassigned",
+  RequireExistingMaterial = "RequireExistingMaterial",
+  RequireBarcodeScan = "RequireBarcodeScan",
+  AddAndSpecifyJob = "AddAndSpecifyJob",
 }
 
 export enum AddInProcessMaterialType {
-    RequireExistingMaterial = "RequireExistingMaterial",
-    AddAndSpecifyJob = "AddAndSpecifyJob",
+  RequireExistingMaterial = "RequireExistingMaterial",
+  AddAndSpecifyJob = "AddAndSpecifyJob",
 }
 
 export class ServerEvent implements IServerEvent {
-    logEntry?: LogEntry | undefined;
-    newJobs?: NewJobs | undefined;
-    newCurrentStatus?: CurrentStatus | undefined;
-    editMaterialInLog?: EditMaterialInLogEvents | undefined;
+  logEntry?: LogEntry | undefined;
+  newJobs?: NewJobs | undefined;
+  newCurrentStatus?: CurrentStatus | undefined;
+  editMaterialInLog?: EditMaterialInLogEvents | undefined;
 
-    constructor(data?: IServerEvent) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IServerEvent) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.logEntry = _data["LogEntry"] ? LogEntry.fromJS(_data["LogEntry"]) : <any>undefined;
-            this.newJobs = _data["NewJobs"] ? NewJobs.fromJS(_data["NewJobs"]) : <any>undefined;
-            this.newCurrentStatus = _data["NewCurrentStatus"] ? CurrentStatus.fromJS(_data["NewCurrentStatus"]) : <any>undefined;
-            this.editMaterialInLog = _data["EditMaterialInLog"] ? EditMaterialInLogEvents.fromJS(_data["EditMaterialInLog"]) : <any>undefined;
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.logEntry = _data["LogEntry"] ? LogEntry.fromJS(_data["LogEntry"]) : <any>undefined;
+      this.newJobs = _data["NewJobs"] ? NewJobs.fromJS(_data["NewJobs"]) : <any>undefined;
+      this.newCurrentStatus = _data["NewCurrentStatus"]
+        ? CurrentStatus.fromJS(_data["NewCurrentStatus"])
+        : <any>undefined;
+      this.editMaterialInLog = _data["EditMaterialInLog"]
+        ? EditMaterialInLogEvents.fromJS(_data["EditMaterialInLog"])
+        : <any>undefined;
     }
+  }
 
-    static fromJS(data: any): ServerEvent {
-        data = typeof data === 'object' ? data : {};
-        let result = new ServerEvent();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ServerEvent {
+    data = typeof data === "object" ? data : {};
+    let result = new ServerEvent();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["LogEntry"] = this.logEntry ? this.logEntry.toJSON() : <any>undefined;
-        data["NewJobs"] = this.newJobs ? this.newJobs.toJSON() : <any>undefined;
-        data["NewCurrentStatus"] = this.newCurrentStatus ? this.newCurrentStatus.toJSON() : <any>undefined;
-        data["EditMaterialInLog"] = this.editMaterialInLog ? this.editMaterialInLog.toJSON() : <any>undefined;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["LogEntry"] = this.logEntry ? this.logEntry.toJSON() : <any>undefined;
+    data["NewJobs"] = this.newJobs ? this.newJobs.toJSON() : <any>undefined;
+    data["NewCurrentStatus"] = this.newCurrentStatus ? this.newCurrentStatus.toJSON() : <any>undefined;
+    data["EditMaterialInLog"] = this.editMaterialInLog ? this.editMaterialInLog.toJSON() : <any>undefined;
+    return data;
+  }
 }
 
 export interface IServerEvent {
-    logEntry?: LogEntry | undefined;
-    newJobs?: NewJobs | undefined;
-    newCurrentStatus?: CurrentStatus | undefined;
-    editMaterialInLog?: EditMaterialInLogEvents | undefined;
+  logEntry?: LogEntry | undefined;
+  newJobs?: NewJobs | undefined;
+  newCurrentStatus?: CurrentStatus | undefined;
+  editMaterialInLog?: EditMaterialInLogEvents | undefined;
 }
 
 export class LogEntry implements ILogEntry {
-    counter!: number;
-    material!: LogMaterial[];
-    type!: LogType;
-    startofcycle!: boolean;
-    endUTC!: Date;
-    loc!: string;
-    locnum!: number;
-    pal!: number;
-    program!: string;
-    result!: string;
-    elapsed!: string;
-    active!: string;
-    details?: { [key: string]: string; } | undefined;
-    tooluse?: ToolUse[] | undefined;
+  counter!: number;
+  material!: LogMaterial[];
+  type!: LogType;
+  startofcycle!: boolean;
+  endUTC!: Date;
+  loc!: string;
+  locnum!: number;
+  pal!: number;
+  program!: string;
+  result!: string;
+  elapsed!: string;
+  active!: string;
+  details?: { [key: string]: string } | undefined;
+  tooluse?: ToolUse[] | undefined;
 
-    constructor(data?: ILogEntry) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.material = [];
-        }
+  constructor(data?: ILogEntry) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.material = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.counter = _data["counter"];
-            if (Array.isArray(_data["material"])) {
-                this.material = [] as any;
-                for (let item of _data["material"])
-                    this.material!.push(LogMaterial.fromJS(item));
-            }
-            this.type = _data["type"];
-            this.startofcycle = _data["startofcycle"];
-            this.endUTC = _data["endUTC"] ? new Date(_data["endUTC"].toString()) : <any>undefined;
-            this.loc = _data["loc"];
-            this.locnum = _data["locnum"];
-            this.pal = _data["pal"];
-            this.program = _data["program"];
-            this.result = _data["result"];
-            this.elapsed = _data["elapsed"];
-            this.active = _data["active"];
-            if (_data["details"]) {
-                this.details = {} as any;
-                for (let key in _data["details"]) {
-                    if (_data["details"].hasOwnProperty(key))
-                        (<any>this.details)![key] = _data["details"][key];
-                }
-            }
-            if (Array.isArray(_data["tooluse"])) {
-                this.tooluse = [] as any;
-                for (let item of _data["tooluse"])
-                    this.tooluse!.push(ToolUse.fromJS(item));
-            }
+  init(_data?: any) {
+    if (_data) {
+      this.counter = _data["counter"];
+      if (Array.isArray(_data["material"])) {
+        this.material = [] as any;
+        for (let item of _data["material"]) this.material!.push(LogMaterial.fromJS(item));
+      }
+      this.type = _data["type"];
+      this.startofcycle = _data["startofcycle"];
+      this.endUTC = _data["endUTC"] ? new Date(_data["endUTC"].toString()) : <any>undefined;
+      this.loc = _data["loc"];
+      this.locnum = _data["locnum"];
+      this.pal = _data["pal"];
+      this.program = _data["program"];
+      this.result = _data["result"];
+      this.elapsed = _data["elapsed"];
+      this.active = _data["active"];
+      if (_data["details"]) {
+        this.details = {} as any;
+        for (let key in _data["details"]) {
+          if (_data["details"].hasOwnProperty(key)) (<any>this.details)![key] = _data["details"][key];
         }
+      }
+      if (Array.isArray(_data["tooluse"])) {
+        this.tooluse = [] as any;
+        for (let item of _data["tooluse"]) this.tooluse!.push(ToolUse.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): LogEntry {
-        data = typeof data === 'object' ? data : {};
-        let result = new LogEntry();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): LogEntry {
+    data = typeof data === "object" ? data : {};
+    let result = new LogEntry();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["counter"] = this.counter;
-        if (Array.isArray(this.material)) {
-            data["material"] = [];
-            for (let item of this.material)
-                data["material"].push(item.toJSON());
-        }
-        data["type"] = this.type;
-        data["startofcycle"] = this.startofcycle;
-        data["endUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
-        data["loc"] = this.loc;
-        data["locnum"] = this.locnum;
-        data["pal"] = this.pal;
-        data["program"] = this.program;
-        data["result"] = this.result;
-        data["elapsed"] = this.elapsed;
-        data["active"] = this.active;
-        if (this.details) {
-            data["details"] = {};
-            for (let key in this.details) {
-                if (this.details.hasOwnProperty(key))
-                    (<any>data["details"])[key] = (<any>this.details)[key];
-            }
-        }
-        if (Array.isArray(this.tooluse)) {
-            data["tooluse"] = [];
-            for (let item of this.tooluse)
-                data["tooluse"].push(item.toJSON());
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["counter"] = this.counter;
+    if (Array.isArray(this.material)) {
+      data["material"] = [];
+      for (let item of this.material) data["material"].push(item.toJSON());
     }
+    data["type"] = this.type;
+    data["startofcycle"] = this.startofcycle;
+    data["endUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
+    data["loc"] = this.loc;
+    data["locnum"] = this.locnum;
+    data["pal"] = this.pal;
+    data["program"] = this.program;
+    data["result"] = this.result;
+    data["elapsed"] = this.elapsed;
+    data["active"] = this.active;
+    if (this.details) {
+      data["details"] = {};
+      for (let key in this.details) {
+        if (this.details.hasOwnProperty(key)) (<any>data["details"])[key] = (<any>this.details)[key];
+      }
+    }
+    if (Array.isArray(this.tooluse)) {
+      data["tooluse"] = [];
+      for (let item of this.tooluse) data["tooluse"].push(item.toJSON());
+    }
+    return data;
+  }
 }
 
 export interface ILogEntry {
-    counter: number;
-    material: LogMaterial[];
-    type: LogType;
-    startofcycle: boolean;
-    endUTC: Date;
-    loc: string;
-    locnum: number;
-    pal: number;
-    program: string;
-    result: string;
-    elapsed: string;
-    active: string;
-    details?: { [key: string]: string; } | undefined;
-    tooluse?: ToolUse[] | undefined;
+  counter: number;
+  material: LogMaterial[];
+  type: LogType;
+  startofcycle: boolean;
+  endUTC: Date;
+  loc: string;
+  locnum: number;
+  pal: number;
+  program: string;
+  result: string;
+  elapsed: string;
+  active: string;
+  details?: { [key: string]: string } | undefined;
+  tooluse?: ToolUse[] | undefined;
 }
 
 export class LogMaterial implements ILogMaterial {
-    id!: number;
-    uniq!: string;
-    part!: string;
-    proc!: number;
-    numproc!: number;
-    face!: string;
-    serial?: string | undefined;
-    workorder?: string | undefined;
+  id!: number;
+  uniq!: string;
+  part!: string;
+  proc!: number;
+  numproc!: number;
+  face!: string;
+  serial?: string | undefined;
+  workorder?: string | undefined;
 
-    constructor(data?: ILogMaterial) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: ILogMaterial) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            this.uniq = _data["uniq"];
-            this.part = _data["part"];
-            this.proc = _data["proc"];
-            this.numproc = _data["numproc"];
-            this.face = _data["face"];
-            this.serial = _data["serial"];
-            this.workorder = _data["workorder"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.id = _data["id"];
+      this.uniq = _data["uniq"];
+      this.part = _data["part"];
+      this.proc = _data["proc"];
+      this.numproc = _data["numproc"];
+      this.face = _data["face"];
+      this.serial = _data["serial"];
+      this.workorder = _data["workorder"];
     }
+  }
 
-    static fromJS(data: any): LogMaterial {
-        data = typeof data === 'object' ? data : {};
-        let result = new LogMaterial();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): LogMaterial {
+    data = typeof data === "object" ? data : {};
+    let result = new LogMaterial();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["uniq"] = this.uniq;
-        data["part"] = this.part;
-        data["proc"] = this.proc;
-        data["numproc"] = this.numproc;
-        data["face"] = this.face;
-        data["serial"] = this.serial;
-        data["workorder"] = this.workorder;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["id"] = this.id;
+    data["uniq"] = this.uniq;
+    data["part"] = this.part;
+    data["proc"] = this.proc;
+    data["numproc"] = this.numproc;
+    data["face"] = this.face;
+    data["serial"] = this.serial;
+    data["workorder"] = this.workorder;
+    return data;
+  }
 }
 
 export interface ILogMaterial {
-    id: number;
-    uniq: string;
-    part: string;
-    proc: number;
-    numproc: number;
-    face: string;
-    serial?: string | undefined;
-    workorder?: string | undefined;
+  id: number;
+  uniq: string;
+  part: string;
+  proc: number;
+  numproc: number;
+  face: string;
+  serial?: string | undefined;
+  workorder?: string | undefined;
 }
 
 export enum LogType {
-    LoadUnloadCycle = "LoadUnloadCycle",
-    MachineCycle = "MachineCycle",
-    PartMark = "PartMark",
-    Inspection = "Inspection",
-    OrderAssignment = "OrderAssignment",
-    GeneralMessage = "GeneralMessage",
-    PalletCycle = "PalletCycle",
-    WorkorderComment = "WorkorderComment",
-    InspectionResult = "InspectionResult",
-    CloseOut = "CloseOut",
-    AddToQueue = "AddToQueue",
-    RemoveFromQueue = "RemoveFromQueue",
-    InspectionForce = "InspectionForce",
-    PalletOnRotaryInbound = "PalletOnRotaryInbound",
-    PalletInStocker = "PalletInStocker",
-    SignalQuarantine = "SignalQuarantine",
-    InvalidateCycle = "InvalidateCycle",
-    SwapMaterialOnPallet = "SwapMaterialOnPallet",
+  LoadUnloadCycle = "LoadUnloadCycle",
+  MachineCycle = "MachineCycle",
+  PartMark = "PartMark",
+  Inspection = "Inspection",
+  OrderAssignment = "OrderAssignment",
+  GeneralMessage = "GeneralMessage",
+  PalletCycle = "PalletCycle",
+  WorkorderComment = "WorkorderComment",
+  InspectionResult = "InspectionResult",
+  CloseOut = "CloseOut",
+  AddToQueue = "AddToQueue",
+  RemoveFromQueue = "RemoveFromQueue",
+  InspectionForce = "InspectionForce",
+  PalletOnRotaryInbound = "PalletOnRotaryInbound",
+  PalletInStocker = "PalletInStocker",
+  SignalQuarantine = "SignalQuarantine",
+  InvalidateCycle = "InvalidateCycle",
+  SwapMaterialOnPallet = "SwapMaterialOnPallet",
 }
 
 export class ToolUse implements IToolUse {
-    tool!: string;
-    pocket!: number;
-    toolChangeOccurred?: boolean | undefined;
-    toolSerialAtStartOfCycle?: string | undefined;
-    toolSerialAtEndOfCycle?: string | undefined;
-    toolUseDuringCycle?: string | undefined;
-    totalToolUseAtEndOfCycle?: string | undefined;
-    configuredToolLife?: string | undefined;
-    toolUseCountDuringCycle?: number | undefined;
-    totalToolUseCountAtEndOfCycle?: number | undefined;
-    configuredToolLifeCount?: number | undefined;
+  tool!: string;
+  pocket!: number;
+  toolChangeOccurred?: boolean | undefined;
+  toolSerialAtStartOfCycle?: string | undefined;
+  toolSerialAtEndOfCycle?: string | undefined;
+  toolUseDuringCycle?: string | undefined;
+  totalToolUseAtEndOfCycle?: string | undefined;
+  configuredToolLife?: string | undefined;
+  toolUseCountDuringCycle?: number | undefined;
+  totalToolUseCountAtEndOfCycle?: number | undefined;
+  configuredToolLifeCount?: number | undefined;
 
-    constructor(data?: IToolUse) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IToolUse) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.tool = _data["Tool"];
-            this.pocket = _data["Pocket"];
-            this.toolChangeOccurred = _data["ToolChangeOccurred"];
-            this.toolSerialAtStartOfCycle = _data["ToolSerialAtStartOfCycle"];
-            this.toolSerialAtEndOfCycle = _data["ToolSerialAtEndOfCycle"];
-            this.toolUseDuringCycle = _data["ToolUseDuringCycle"];
-            this.totalToolUseAtEndOfCycle = _data["TotalToolUseAtEndOfCycle"];
-            this.configuredToolLife = _data["ConfiguredToolLife"];
-            this.toolUseCountDuringCycle = _data["ToolUseCountDuringCycle"];
-            this.totalToolUseCountAtEndOfCycle = _data["TotalToolUseCountAtEndOfCycle"];
-            this.configuredToolLifeCount = _data["ConfiguredToolLifeCount"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.tool = _data["Tool"];
+      this.pocket = _data["Pocket"];
+      this.toolChangeOccurred = _data["ToolChangeOccurred"];
+      this.toolSerialAtStartOfCycle = _data["ToolSerialAtStartOfCycle"];
+      this.toolSerialAtEndOfCycle = _data["ToolSerialAtEndOfCycle"];
+      this.toolUseDuringCycle = _data["ToolUseDuringCycle"];
+      this.totalToolUseAtEndOfCycle = _data["TotalToolUseAtEndOfCycle"];
+      this.configuredToolLife = _data["ConfiguredToolLife"];
+      this.toolUseCountDuringCycle = _data["ToolUseCountDuringCycle"];
+      this.totalToolUseCountAtEndOfCycle = _data["TotalToolUseCountAtEndOfCycle"];
+      this.configuredToolLifeCount = _data["ConfiguredToolLifeCount"];
     }
+  }
 
-    static fromJS(data: any): ToolUse {
-        data = typeof data === 'object' ? data : {};
-        let result = new ToolUse();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ToolUse {
+    data = typeof data === "object" ? data : {};
+    let result = new ToolUse();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Tool"] = this.tool;
-        data["Pocket"] = this.pocket;
-        data["ToolChangeOccurred"] = this.toolChangeOccurred;
-        data["ToolSerialAtStartOfCycle"] = this.toolSerialAtStartOfCycle;
-        data["ToolSerialAtEndOfCycle"] = this.toolSerialAtEndOfCycle;
-        data["ToolUseDuringCycle"] = this.toolUseDuringCycle;
-        data["TotalToolUseAtEndOfCycle"] = this.totalToolUseAtEndOfCycle;
-        data["ConfiguredToolLife"] = this.configuredToolLife;
-        data["ToolUseCountDuringCycle"] = this.toolUseCountDuringCycle;
-        data["TotalToolUseCountAtEndOfCycle"] = this.totalToolUseCountAtEndOfCycle;
-        data["ConfiguredToolLifeCount"] = this.configuredToolLifeCount;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Tool"] = this.tool;
+    data["Pocket"] = this.pocket;
+    data["ToolChangeOccurred"] = this.toolChangeOccurred;
+    data["ToolSerialAtStartOfCycle"] = this.toolSerialAtStartOfCycle;
+    data["ToolSerialAtEndOfCycle"] = this.toolSerialAtEndOfCycle;
+    data["ToolUseDuringCycle"] = this.toolUseDuringCycle;
+    data["TotalToolUseAtEndOfCycle"] = this.totalToolUseAtEndOfCycle;
+    data["ConfiguredToolLife"] = this.configuredToolLife;
+    data["ToolUseCountDuringCycle"] = this.toolUseCountDuringCycle;
+    data["TotalToolUseCountAtEndOfCycle"] = this.totalToolUseCountAtEndOfCycle;
+    data["ConfiguredToolLifeCount"] = this.configuredToolLifeCount;
+    return data;
+  }
 }
 
 export interface IToolUse {
-    tool: string;
-    pocket: number;
-    toolChangeOccurred?: boolean | undefined;
-    toolSerialAtStartOfCycle?: string | undefined;
-    toolSerialAtEndOfCycle?: string | undefined;
-    toolUseDuringCycle?: string | undefined;
-    totalToolUseAtEndOfCycle?: string | undefined;
-    configuredToolLife?: string | undefined;
-    toolUseCountDuringCycle?: number | undefined;
-    totalToolUseCountAtEndOfCycle?: number | undefined;
-    configuredToolLifeCount?: number | undefined;
+  tool: string;
+  pocket: number;
+  toolChangeOccurred?: boolean | undefined;
+  toolSerialAtStartOfCycle?: string | undefined;
+  toolSerialAtEndOfCycle?: string | undefined;
+  toolUseDuringCycle?: string | undefined;
+  totalToolUseAtEndOfCycle?: string | undefined;
+  configuredToolLife?: string | undefined;
+  toolUseCountDuringCycle?: number | undefined;
+  totalToolUseCountAtEndOfCycle?: number | undefined;
+  configuredToolLifeCount?: number | undefined;
 }
 
 export class MaterialProcessActualPath implements IMaterialProcessActualPath {
-    materialID!: number;
-    process!: number;
-    pallet!: number;
-    loadStation!: number;
-    stops!: Stop[];
-    unloadStation!: number;
+  materialID!: number;
+  process!: number;
+  pallet!: number;
+  loadStation!: number;
+  stops!: Stop[];
+  unloadStation!: number;
 
-    constructor(data?: IMaterialProcessActualPath) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.stops = [];
-        }
+  constructor(data?: IMaterialProcessActualPath) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.stops = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.materialID = _data["MaterialID"];
-            this.process = _data["Process"];
-            this.pallet = _data["Pallet"];
-            this.loadStation = _data["LoadStation"];
-            if (Array.isArray(_data["Stops"])) {
-                this.stops = [] as any;
-                for (let item of _data["Stops"])
-                    this.stops!.push(Stop.fromJS(item));
-            }
-            this.unloadStation = _data["UnloadStation"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.materialID = _data["MaterialID"];
+      this.process = _data["Process"];
+      this.pallet = _data["Pallet"];
+      this.loadStation = _data["LoadStation"];
+      if (Array.isArray(_data["Stops"])) {
+        this.stops = [] as any;
+        for (let item of _data["Stops"]) this.stops!.push(Stop.fromJS(item));
+      }
+      this.unloadStation = _data["UnloadStation"];
     }
+  }
 
-    static fromJS(data: any): MaterialProcessActualPath {
-        data = typeof data === 'object' ? data : {};
-        let result = new MaterialProcessActualPath();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): MaterialProcessActualPath {
+    data = typeof data === "object" ? data : {};
+    let result = new MaterialProcessActualPath();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MaterialID"] = this.materialID;
-        data["Process"] = this.process;
-        data["Pallet"] = this.pallet;
-        data["LoadStation"] = this.loadStation;
-        if (Array.isArray(this.stops)) {
-            data["Stops"] = [];
-            for (let item of this.stops)
-                data["Stops"].push(item.toJSON());
-        }
-        data["UnloadStation"] = this.unloadStation;
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["MaterialID"] = this.materialID;
+    data["Process"] = this.process;
+    data["Pallet"] = this.pallet;
+    data["LoadStation"] = this.loadStation;
+    if (Array.isArray(this.stops)) {
+      data["Stops"] = [];
+      for (let item of this.stops) data["Stops"].push(item.toJSON());
     }
+    data["UnloadStation"] = this.unloadStation;
+    return data;
+  }
 }
 
 export interface IMaterialProcessActualPath {
-    materialID: number;
-    process: number;
-    pallet: number;
-    loadStation: number;
-    stops: Stop[];
-    unloadStation: number;
+  materialID: number;
+  process: number;
+  pallet: number;
+  loadStation: number;
+  stops: Stop[];
+  unloadStation: number;
 }
 
 export class Stop implements IStop {
-    stationName!: string;
-    stationNum!: number;
+  stationName!: string;
+  stationNum!: number;
 
-    constructor(data?: IStop) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IStop) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.stationName = _data["StationName"];
-            this.stationNum = _data["StationNum"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.stationName = _data["StationName"];
+      this.stationNum = _data["StationNum"];
     }
+  }
 
-    static fromJS(data: any): Stop {
-        data = typeof data === 'object' ? data : {};
-        let result = new Stop();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): Stop {
+    data = typeof data === "object" ? data : {};
+    let result = new Stop();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["StationName"] = this.stationName;
-        data["StationNum"] = this.stationNum;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["StationName"] = this.stationName;
+    data["StationNum"] = this.stationNum;
+    return data;
+  }
 }
 
 export interface IStop {
-    stationName: string;
-    stationNum: number;
+  stationName: string;
+  stationNum: number;
 }
 
 export class NewJobs implements INewJobs {
-    scheduleId!: string;
-    jobs!: Job[];
-    stationUse?: SimulatedStationUtilization[] | undefined;
-    simDayUsage?: SimulatedDayUsage[] | undefined;
-    simDayUsageWarning?: string | undefined;
-    extraParts?: { [key: string]: number; } | undefined;
-    currentUnfilledWorkorders?: Workorder[] | undefined;
-    programs?: NewProgramContent[] | undefined;
-    debugMessage?: string | undefined;
+  scheduleId!: string;
+  jobs!: Job[];
+  stationUse?: SimulatedStationUtilization[] | undefined;
+  simDayUsage?: SimulatedDayUsage[] | undefined;
+  simDayUsageWarning?: string | undefined;
+  extraParts?: { [key: string]: number } | undefined;
+  currentUnfilledWorkorders?: Workorder[] | undefined;
+  programs?: NewProgramContent[] | undefined;
+  debugMessage?: string | undefined;
 
-    constructor(data?: INewJobs) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.jobs = [];
-        }
+  constructor(data?: INewJobs) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.jobs = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.scheduleId = _data["ScheduleId"];
-            if (Array.isArray(_data["Jobs"])) {
-                this.jobs = [] as any;
-                for (let item of _data["Jobs"])
-                    this.jobs!.push(Job.fromJS(item));
-            }
-            if (Array.isArray(_data["StationUse"])) {
-                this.stationUse = [] as any;
-                for (let item of _data["StationUse"])
-                    this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
-            }
-            if (Array.isArray(_data["SimDayUsage"])) {
-                this.simDayUsage = [] as any;
-                for (let item of _data["SimDayUsage"])
-                    this.simDayUsage!.push(SimulatedDayUsage.fromJS(item));
-            }
-            this.simDayUsageWarning = _data["SimDayUsageWarning"];
-            if (_data["ExtraParts"]) {
-                this.extraParts = {} as any;
-                for (let key in _data["ExtraParts"]) {
-                    if (_data["ExtraParts"].hasOwnProperty(key))
-                        (<any>this.extraParts)![key] = _data["ExtraParts"][key];
-                }
-            }
-            if (Array.isArray(_data["CurrentUnfilledWorkorders"])) {
-                this.currentUnfilledWorkorders = [] as any;
-                for (let item of _data["CurrentUnfilledWorkorders"])
-                    this.currentUnfilledWorkorders!.push(Workorder.fromJS(item));
-            }
-            if (Array.isArray(_data["Programs"])) {
-                this.programs = [] as any;
-                for (let item of _data["Programs"])
-                    this.programs!.push(NewProgramContent.fromJS(item));
-            }
-            this.debugMessage = _data["DebugMessage"];
+  init(_data?: any) {
+    if (_data) {
+      this.scheduleId = _data["ScheduleId"];
+      if (Array.isArray(_data["Jobs"])) {
+        this.jobs = [] as any;
+        for (let item of _data["Jobs"]) this.jobs!.push(Job.fromJS(item));
+      }
+      if (Array.isArray(_data["StationUse"])) {
+        this.stationUse = [] as any;
+        for (let item of _data["StationUse"]) this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
+      }
+      if (Array.isArray(_data["SimDayUsage"])) {
+        this.simDayUsage = [] as any;
+        for (let item of _data["SimDayUsage"]) this.simDayUsage!.push(SimulatedDayUsage.fromJS(item));
+      }
+      this.simDayUsageWarning = _data["SimDayUsageWarning"];
+      if (_data["ExtraParts"]) {
+        this.extraParts = {} as any;
+        for (let key in _data["ExtraParts"]) {
+          if (_data["ExtraParts"].hasOwnProperty(key))
+            (<any>this.extraParts)![key] = _data["ExtraParts"][key];
         }
+      }
+      if (Array.isArray(_data["CurrentUnfilledWorkorders"])) {
+        this.currentUnfilledWorkorders = [] as any;
+        for (let item of _data["CurrentUnfilledWorkorders"])
+          this.currentUnfilledWorkorders!.push(Workorder.fromJS(item));
+      }
+      if (Array.isArray(_data["Programs"])) {
+        this.programs = [] as any;
+        for (let item of _data["Programs"]) this.programs!.push(NewProgramContent.fromJS(item));
+      }
+      this.debugMessage = _data["DebugMessage"];
     }
+  }
 
-    static fromJS(data: any): NewJobs {
-        data = typeof data === 'object' ? data : {};
-        let result = new NewJobs();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): NewJobs {
+    data = typeof data === "object" ? data : {};
+    let result = new NewJobs();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["ScheduleId"] = this.scheduleId;
-        if (Array.isArray(this.jobs)) {
-            data["Jobs"] = [];
-            for (let item of this.jobs)
-                data["Jobs"].push(item.toJSON());
-        }
-        if (Array.isArray(this.stationUse)) {
-            data["StationUse"] = [];
-            for (let item of this.stationUse)
-                data["StationUse"].push(item.toJSON());
-        }
-        if (Array.isArray(this.simDayUsage)) {
-            data["SimDayUsage"] = [];
-            for (let item of this.simDayUsage)
-                data["SimDayUsage"].push(item.toJSON());
-        }
-        data["SimDayUsageWarning"] = this.simDayUsageWarning;
-        if (this.extraParts) {
-            data["ExtraParts"] = {};
-            for (let key in this.extraParts) {
-                if (this.extraParts.hasOwnProperty(key))
-                    (<any>data["ExtraParts"])[key] = (<any>this.extraParts)[key];
-            }
-        }
-        if (Array.isArray(this.currentUnfilledWorkorders)) {
-            data["CurrentUnfilledWorkorders"] = [];
-            for (let item of this.currentUnfilledWorkorders)
-                data["CurrentUnfilledWorkorders"].push(item.toJSON());
-        }
-        if (Array.isArray(this.programs)) {
-            data["Programs"] = [];
-            for (let item of this.programs)
-                data["Programs"].push(item.toJSON());
-        }
-        data["DebugMessage"] = this.debugMessage;
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["ScheduleId"] = this.scheduleId;
+    if (Array.isArray(this.jobs)) {
+      data["Jobs"] = [];
+      for (let item of this.jobs) data["Jobs"].push(item.toJSON());
     }
+    if (Array.isArray(this.stationUse)) {
+      data["StationUse"] = [];
+      for (let item of this.stationUse) data["StationUse"].push(item.toJSON());
+    }
+    if (Array.isArray(this.simDayUsage)) {
+      data["SimDayUsage"] = [];
+      for (let item of this.simDayUsage) data["SimDayUsage"].push(item.toJSON());
+    }
+    data["SimDayUsageWarning"] = this.simDayUsageWarning;
+    if (this.extraParts) {
+      data["ExtraParts"] = {};
+      for (let key in this.extraParts) {
+        if (this.extraParts.hasOwnProperty(key)) (<any>data["ExtraParts"])[key] = (<any>this.extraParts)[key];
+      }
+    }
+    if (Array.isArray(this.currentUnfilledWorkorders)) {
+      data["CurrentUnfilledWorkorders"] = [];
+      for (let item of this.currentUnfilledWorkorders) data["CurrentUnfilledWorkorders"].push(item.toJSON());
+    }
+    if (Array.isArray(this.programs)) {
+      data["Programs"] = [];
+      for (let item of this.programs) data["Programs"].push(item.toJSON());
+    }
+    data["DebugMessage"] = this.debugMessage;
+    return data;
+  }
 }
 
 export interface INewJobs {
-    scheduleId: string;
-    jobs: Job[];
-    stationUse?: SimulatedStationUtilization[] | undefined;
-    simDayUsage?: SimulatedDayUsage[] | undefined;
-    simDayUsageWarning?: string | undefined;
-    extraParts?: { [key: string]: number; } | undefined;
-    currentUnfilledWorkorders?: Workorder[] | undefined;
-    programs?: NewProgramContent[] | undefined;
-    debugMessage?: string | undefined;
+  scheduleId: string;
+  jobs: Job[];
+  stationUse?: SimulatedStationUtilization[] | undefined;
+  simDayUsage?: SimulatedDayUsage[] | undefined;
+  simDayUsageWarning?: string | undefined;
+  extraParts?: { [key: string]: number } | undefined;
+  currentUnfilledWorkorders?: Workorder[] | undefined;
+  programs?: NewProgramContent[] | undefined;
+  debugMessage?: string | undefined;
 }
 
 export class Job implements IJob {
-    unique!: string;
-    routeStartUTC!: Date;
-    routeEndUTC!: Date;
-    archived!: boolean;
-    partName!: string;
-    comment?: string | undefined;
-    allocationAlgorithm?: string | undefined;
-    bookings?: string[] | undefined;
-    manuallyCreated?: boolean;
-    holdEntireJob?: HoldPattern | undefined;
-    cycles?: number;
-    procsAndPaths!: ProcessInfo[];
+  unique!: string;
+  routeStartUTC!: Date;
+  routeEndUTC!: Date;
+  archived!: boolean;
+  partName!: string;
+  comment?: string | undefined;
+  allocationAlgorithm?: string | undefined;
+  bookings?: string[] | undefined;
+  manuallyCreated?: boolean;
+  holdEntireJob?: HoldPattern | undefined;
+  cycles?: number;
+  procsAndPaths!: ProcessInfo[];
 
-    constructor(data?: IJob) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.procsAndPaths = [];
-        }
+  constructor(data?: IJob) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.procsAndPaths = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.unique = _data["Unique"];
-            this.routeStartUTC = _data["RouteStartUTC"] ? new Date(_data["RouteStartUTC"].toString()) : <any>undefined;
-            this.routeEndUTC = _data["RouteEndUTC"] ? new Date(_data["RouteEndUTC"].toString()) : <any>undefined;
-            this.archived = _data["Archived"];
-            this.partName = _data["PartName"];
-            this.comment = _data["Comment"];
-            this.allocationAlgorithm = _data["AllocationAlgorithm"];
-            if (Array.isArray(_data["Bookings"])) {
-                this.bookings = [] as any;
-                for (let item of _data["Bookings"])
-                    this.bookings!.push(item);
-            }
-            this.manuallyCreated = _data["ManuallyCreated"];
-            this.holdEntireJob = _data["HoldEntireJob"] ? HoldPattern.fromJS(_data["HoldEntireJob"]) : <any>undefined;
-            this.cycles = _data["Cycles"];
-            if (Array.isArray(_data["ProcsAndPaths"])) {
-                this.procsAndPaths = [] as any;
-                for (let item of _data["ProcsAndPaths"])
-                    this.procsAndPaths!.push(ProcessInfo.fromJS(item));
-            }
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.unique = _data["Unique"];
+      this.routeStartUTC = _data["RouteStartUTC"]
+        ? new Date(_data["RouteStartUTC"].toString())
+        : <any>undefined;
+      this.routeEndUTC = _data["RouteEndUTC"] ? new Date(_data["RouteEndUTC"].toString()) : <any>undefined;
+      this.archived = _data["Archived"];
+      this.partName = _data["PartName"];
+      this.comment = _data["Comment"];
+      this.allocationAlgorithm = _data["AllocationAlgorithm"];
+      if (Array.isArray(_data["Bookings"])) {
+        this.bookings = [] as any;
+        for (let item of _data["Bookings"]) this.bookings!.push(item);
+      }
+      this.manuallyCreated = _data["ManuallyCreated"];
+      this.holdEntireJob = _data["HoldEntireJob"]
+        ? HoldPattern.fromJS(_data["HoldEntireJob"])
+        : <any>undefined;
+      this.cycles = _data["Cycles"];
+      if (Array.isArray(_data["ProcsAndPaths"])) {
+        this.procsAndPaths = [] as any;
+        for (let item of _data["ProcsAndPaths"]) this.procsAndPaths!.push(ProcessInfo.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): Job {
-        data = typeof data === 'object' ? data : {};
-        let result = new Job();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): Job {
+    data = typeof data === "object" ? data : {};
+    let result = new Job();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Unique"] = this.unique;
-        data["RouteStartUTC"] = this.routeStartUTC ? this.routeStartUTC.toISOString() : <any>undefined;
-        data["RouteEndUTC"] = this.routeEndUTC ? this.routeEndUTC.toISOString() : <any>undefined;
-        data["Archived"] = this.archived;
-        data["PartName"] = this.partName;
-        data["Comment"] = this.comment;
-        data["AllocationAlgorithm"] = this.allocationAlgorithm;
-        if (Array.isArray(this.bookings)) {
-            data["Bookings"] = [];
-            for (let item of this.bookings)
-                data["Bookings"].push(item);
-        }
-        data["ManuallyCreated"] = this.manuallyCreated;
-        data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
-        data["Cycles"] = this.cycles;
-        if (Array.isArray(this.procsAndPaths)) {
-            data["ProcsAndPaths"] = [];
-            for (let item of this.procsAndPaths)
-                data["ProcsAndPaths"].push(item.toJSON());
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Unique"] = this.unique;
+    data["RouteStartUTC"] = this.routeStartUTC ? this.routeStartUTC.toISOString() : <any>undefined;
+    data["RouteEndUTC"] = this.routeEndUTC ? this.routeEndUTC.toISOString() : <any>undefined;
+    data["Archived"] = this.archived;
+    data["PartName"] = this.partName;
+    data["Comment"] = this.comment;
+    data["AllocationAlgorithm"] = this.allocationAlgorithm;
+    if (Array.isArray(this.bookings)) {
+      data["Bookings"] = [];
+      for (let item of this.bookings) data["Bookings"].push(item);
     }
+    data["ManuallyCreated"] = this.manuallyCreated;
+    data["HoldEntireJob"] = this.holdEntireJob ? this.holdEntireJob.toJSON() : <any>undefined;
+    data["Cycles"] = this.cycles;
+    if (Array.isArray(this.procsAndPaths)) {
+      data["ProcsAndPaths"] = [];
+      for (let item of this.procsAndPaths) data["ProcsAndPaths"].push(item.toJSON());
+    }
+    return data;
+  }
 }
 
 export interface IJob {
-    unique: string;
-    routeStartUTC: Date;
-    routeEndUTC: Date;
-    archived: boolean;
-    partName: string;
-    comment?: string | undefined;
-    allocationAlgorithm?: string | undefined;
-    bookings?: string[] | undefined;
-    manuallyCreated?: boolean;
-    holdEntireJob?: HoldPattern | undefined;
-    cycles?: number;
-    procsAndPaths: ProcessInfo[];
+  unique: string;
+  routeStartUTC: Date;
+  routeEndUTC: Date;
+  archived: boolean;
+  partName: string;
+  comment?: string | undefined;
+  allocationAlgorithm?: string | undefined;
+  bookings?: string[] | undefined;
+  manuallyCreated?: boolean;
+  holdEntireJob?: HoldPattern | undefined;
+  cycles?: number;
+  procsAndPaths: ProcessInfo[];
 }
 
 export class HoldPattern implements IHoldPattern {
-    userHold!: boolean;
-    reasonForUserHold!: string;
-    holdUnholdPattern!: string[];
-    holdUnholdPatternStartUTC!: Date;
-    holdUnholdPatternRepeats!: boolean;
+  userHold!: boolean;
+  reasonForUserHold!: string;
+  holdUnholdPattern!: string[];
+  holdUnholdPatternStartUTC!: Date;
+  holdUnholdPatternRepeats!: boolean;
 
-    constructor(data?: IHoldPattern) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.holdUnholdPattern = [];
-        }
+  constructor(data?: IHoldPattern) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.holdUnholdPattern = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.userHold = _data["UserHold"];
-            this.reasonForUserHold = _data["ReasonForUserHold"];
-            if (Array.isArray(_data["HoldUnholdPattern"])) {
-                this.holdUnholdPattern = [] as any;
-                for (let item of _data["HoldUnholdPattern"])
-                    this.holdUnholdPattern!.push(item);
-            }
-            this.holdUnholdPatternStartUTC = _data["HoldUnholdPatternStartUTC"] ? new Date(_data["HoldUnholdPatternStartUTC"].toString()) : <any>undefined;
-            this.holdUnholdPatternRepeats = _data["HoldUnholdPatternRepeats"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.userHold = _data["UserHold"];
+      this.reasonForUserHold = _data["ReasonForUserHold"];
+      if (Array.isArray(_data["HoldUnholdPattern"])) {
+        this.holdUnholdPattern = [] as any;
+        for (let item of _data["HoldUnholdPattern"]) this.holdUnholdPattern!.push(item);
+      }
+      this.holdUnholdPatternStartUTC = _data["HoldUnholdPatternStartUTC"]
+        ? new Date(_data["HoldUnholdPatternStartUTC"].toString())
+        : <any>undefined;
+      this.holdUnholdPatternRepeats = _data["HoldUnholdPatternRepeats"];
     }
+  }
 
-    static fromJS(data: any): HoldPattern {
-        data = typeof data === 'object' ? data : {};
-        let result = new HoldPattern();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): HoldPattern {
+    data = typeof data === "object" ? data : {};
+    let result = new HoldPattern();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["UserHold"] = this.userHold;
-        data["ReasonForUserHold"] = this.reasonForUserHold;
-        if (Array.isArray(this.holdUnholdPattern)) {
-            data["HoldUnholdPattern"] = [];
-            for (let item of this.holdUnholdPattern)
-                data["HoldUnholdPattern"].push(item);
-        }
-        data["HoldUnholdPatternStartUTC"] = this.holdUnholdPatternStartUTC ? this.holdUnholdPatternStartUTC.toISOString() : <any>undefined;
-        data["HoldUnholdPatternRepeats"] = this.holdUnholdPatternRepeats;
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["UserHold"] = this.userHold;
+    data["ReasonForUserHold"] = this.reasonForUserHold;
+    if (Array.isArray(this.holdUnholdPattern)) {
+      data["HoldUnholdPattern"] = [];
+      for (let item of this.holdUnholdPattern) data["HoldUnholdPattern"].push(item);
     }
+    data["HoldUnholdPatternStartUTC"] = this.holdUnholdPatternStartUTC
+      ? this.holdUnholdPatternStartUTC.toISOString()
+      : <any>undefined;
+    data["HoldUnholdPatternRepeats"] = this.holdUnholdPatternRepeats;
+    return data;
+  }
 }
 
 export interface IHoldPattern {
-    userHold: boolean;
-    reasonForUserHold: string;
-    holdUnholdPattern: string[];
-    holdUnholdPatternStartUTC: Date;
-    holdUnholdPatternRepeats: boolean;
+  userHold: boolean;
+  reasonForUserHold: string;
+  holdUnholdPattern: string[];
+  holdUnholdPatternStartUTC: Date;
+  holdUnholdPatternRepeats: boolean;
 }
 
 export class ProcessInfo implements IProcessInfo {
-    paths!: ProcPathInfo[];
+  paths!: ProcPathInfo[];
 
-    constructor(data?: IProcessInfo) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.paths = [];
-        }
+  constructor(data?: IProcessInfo) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.paths = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            if (Array.isArray(_data["paths"])) {
-                this.paths = [] as any;
-                for (let item of _data["paths"])
-                    this.paths!.push(ProcPathInfo.fromJS(item));
-            }
-        }
+  init(_data?: any) {
+    if (_data) {
+      if (Array.isArray(_data["paths"])) {
+        this.paths = [] as any;
+        for (let item of _data["paths"]) this.paths!.push(ProcPathInfo.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): ProcessInfo {
-        data = typeof data === 'object' ? data : {};
-        let result = new ProcessInfo();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ProcessInfo {
+    data = typeof data === "object" ? data : {};
+    let result = new ProcessInfo();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.paths)) {
-            data["paths"] = [];
-            for (let item of this.paths)
-                data["paths"].push(item.toJSON());
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    if (Array.isArray(this.paths)) {
+      data["paths"] = [];
+      for (let item of this.paths) data["paths"].push(item.toJSON());
     }
+    return data;
+  }
 }
 
 export interface IProcessInfo {
-    paths: ProcPathInfo[];
+  paths: ProcPathInfo[];
 }
 
 export class ProcPathInfo implements IProcPathInfo {
-    palletNums?: number[];
-    fixture?: string | undefined;
-    face?: number | undefined;
-    load!: number[];
-    expectedLoadTime!: string;
-    unload!: number[];
-    expectedUnloadTime!: string;
-    stops!: MachiningStop[];
-    simulatedProduction?: SimulatedProduction[] | undefined;
-    simulatedStartingUTC!: Date;
-    simulatedAverageFlowTime!: string;
-    holdMachining?: HoldPattern | undefined;
-    holdLoadUnload?: HoldPattern | undefined;
-    partsPerPallet!: number;
-    inputQueue?: string | undefined;
-    outputQueue?: string | undefined;
-    inspections?: PathInspection[] | undefined;
-    casting?: string | undefined;
+  palletNums?: number[];
+  fixture?: string | undefined;
+  face?: number | undefined;
+  load!: number[];
+  expectedLoadTime!: string;
+  unload!: number[];
+  expectedUnloadTime!: string;
+  stops!: MachiningStop[];
+  simulatedProduction?: SimulatedProduction[] | undefined;
+  simulatedStartingUTC!: Date;
+  simulatedAverageFlowTime!: string;
+  holdMachining?: HoldPattern | undefined;
+  holdLoadUnload?: HoldPattern | undefined;
+  partsPerPallet!: number;
+  inputQueue?: string | undefined;
+  outputQueue?: string | undefined;
+  inspections?: PathInspection[] | undefined;
+  casting?: string | undefined;
 
-    constructor(data?: IProcPathInfo) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.load = [];
-            this.unload = [];
-            this.stops = [];
-        }
+  constructor(data?: IProcPathInfo) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.load = [];
+      this.unload = [];
+      this.stops = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            if (Array.isArray(_data["PalletNums"])) {
-                this.palletNums = [] as any;
-                for (let item of _data["PalletNums"])
-                    this.palletNums!.push(item);
-            }
-            this.fixture = _data["Fixture"];
-            this.face = _data["Face"];
-            if (Array.isArray(_data["Load"])) {
-                this.load = [] as any;
-                for (let item of _data["Load"])
-                    this.load!.push(item);
-            }
-            this.expectedLoadTime = _data["ExpectedLoadTime"];
-            if (Array.isArray(_data["Unload"])) {
-                this.unload = [] as any;
-                for (let item of _data["Unload"])
-                    this.unload!.push(item);
-            }
-            this.expectedUnloadTime = _data["ExpectedUnloadTime"];
-            if (Array.isArray(_data["Stops"])) {
-                this.stops = [] as any;
-                for (let item of _data["Stops"])
-                    this.stops!.push(MachiningStop.fromJS(item));
-            }
-            if (Array.isArray(_data["SimulatedProduction"])) {
-                this.simulatedProduction = [] as any;
-                for (let item of _data["SimulatedProduction"])
-                    this.simulatedProduction!.push(SimulatedProduction.fromJS(item));
-            }
-            this.simulatedStartingUTC = _data["SimulatedStartingUTC"] ? new Date(_data["SimulatedStartingUTC"].toString()) : <any>undefined;
-            this.simulatedAverageFlowTime = _data["SimulatedAverageFlowTime"];
-            this.holdMachining = _data["HoldMachining"] ? HoldPattern.fromJS(_data["HoldMachining"]) : <any>undefined;
-            this.holdLoadUnload = _data["HoldLoadUnload"] ? HoldPattern.fromJS(_data["HoldLoadUnload"]) : <any>undefined;
-            this.partsPerPallet = _data["PartsPerPallet"];
-            this.inputQueue = _data["InputQueue"];
-            this.outputQueue = _data["OutputQueue"];
-            if (Array.isArray(_data["Inspections"])) {
-                this.inspections = [] as any;
-                for (let item of _data["Inspections"])
-                    this.inspections!.push(PathInspection.fromJS(item));
-            }
-            this.casting = _data["Casting"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      if (Array.isArray(_data["PalletNums"])) {
+        this.palletNums = [] as any;
+        for (let item of _data["PalletNums"]) this.palletNums!.push(item);
+      }
+      this.fixture = _data["Fixture"];
+      this.face = _data["Face"];
+      if (Array.isArray(_data["Load"])) {
+        this.load = [] as any;
+        for (let item of _data["Load"]) this.load!.push(item);
+      }
+      this.expectedLoadTime = _data["ExpectedLoadTime"];
+      if (Array.isArray(_data["Unload"])) {
+        this.unload = [] as any;
+        for (let item of _data["Unload"]) this.unload!.push(item);
+      }
+      this.expectedUnloadTime = _data["ExpectedUnloadTime"];
+      if (Array.isArray(_data["Stops"])) {
+        this.stops = [] as any;
+        for (let item of _data["Stops"]) this.stops!.push(MachiningStop.fromJS(item));
+      }
+      if (Array.isArray(_data["SimulatedProduction"])) {
+        this.simulatedProduction = [] as any;
+        for (let item of _data["SimulatedProduction"])
+          this.simulatedProduction!.push(SimulatedProduction.fromJS(item));
+      }
+      this.simulatedStartingUTC = _data["SimulatedStartingUTC"]
+        ? new Date(_data["SimulatedStartingUTC"].toString())
+        : <any>undefined;
+      this.simulatedAverageFlowTime = _data["SimulatedAverageFlowTime"];
+      this.holdMachining = _data["HoldMachining"]
+        ? HoldPattern.fromJS(_data["HoldMachining"])
+        : <any>undefined;
+      this.holdLoadUnload = _data["HoldLoadUnload"]
+        ? HoldPattern.fromJS(_data["HoldLoadUnload"])
+        : <any>undefined;
+      this.partsPerPallet = _data["PartsPerPallet"];
+      this.inputQueue = _data["InputQueue"];
+      this.outputQueue = _data["OutputQueue"];
+      if (Array.isArray(_data["Inspections"])) {
+        this.inspections = [] as any;
+        for (let item of _data["Inspections"]) this.inspections!.push(PathInspection.fromJS(item));
+      }
+      this.casting = _data["Casting"];
     }
+  }
 
-    static fromJS(data: any): ProcPathInfo {
-        data = typeof data === 'object' ? data : {};
-        let result = new ProcPathInfo();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ProcPathInfo {
+    data = typeof data === "object" ? data : {};
+    let result = new ProcPathInfo();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.palletNums)) {
-            data["PalletNums"] = [];
-            for (let item of this.palletNums)
-                data["PalletNums"].push(item);
-        }
-        data["Fixture"] = this.fixture;
-        data["Face"] = this.face;
-        if (Array.isArray(this.load)) {
-            data["Load"] = [];
-            for (let item of this.load)
-                data["Load"].push(item);
-        }
-        data["ExpectedLoadTime"] = this.expectedLoadTime;
-        if (Array.isArray(this.unload)) {
-            data["Unload"] = [];
-            for (let item of this.unload)
-                data["Unload"].push(item);
-        }
-        data["ExpectedUnloadTime"] = this.expectedUnloadTime;
-        if (Array.isArray(this.stops)) {
-            data["Stops"] = [];
-            for (let item of this.stops)
-                data["Stops"].push(item.toJSON());
-        }
-        if (Array.isArray(this.simulatedProduction)) {
-            data["SimulatedProduction"] = [];
-            for (let item of this.simulatedProduction)
-                data["SimulatedProduction"].push(item.toJSON());
-        }
-        data["SimulatedStartingUTC"] = this.simulatedStartingUTC ? this.simulatedStartingUTC.toISOString() : <any>undefined;
-        data["SimulatedAverageFlowTime"] = this.simulatedAverageFlowTime;
-        data["HoldMachining"] = this.holdMachining ? this.holdMachining.toJSON() : <any>undefined;
-        data["HoldLoadUnload"] = this.holdLoadUnload ? this.holdLoadUnload.toJSON() : <any>undefined;
-        data["PartsPerPallet"] = this.partsPerPallet;
-        data["InputQueue"] = this.inputQueue;
-        data["OutputQueue"] = this.outputQueue;
-        if (Array.isArray(this.inspections)) {
-            data["Inspections"] = [];
-            for (let item of this.inspections)
-                data["Inspections"].push(item.toJSON());
-        }
-        data["Casting"] = this.casting;
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    if (Array.isArray(this.palletNums)) {
+      data["PalletNums"] = [];
+      for (let item of this.palletNums) data["PalletNums"].push(item);
     }
+    data["Fixture"] = this.fixture;
+    data["Face"] = this.face;
+    if (Array.isArray(this.load)) {
+      data["Load"] = [];
+      for (let item of this.load) data["Load"].push(item);
+    }
+    data["ExpectedLoadTime"] = this.expectedLoadTime;
+    if (Array.isArray(this.unload)) {
+      data["Unload"] = [];
+      for (let item of this.unload) data["Unload"].push(item);
+    }
+    data["ExpectedUnloadTime"] = this.expectedUnloadTime;
+    if (Array.isArray(this.stops)) {
+      data["Stops"] = [];
+      for (let item of this.stops) data["Stops"].push(item.toJSON());
+    }
+    if (Array.isArray(this.simulatedProduction)) {
+      data["SimulatedProduction"] = [];
+      for (let item of this.simulatedProduction) data["SimulatedProduction"].push(item.toJSON());
+    }
+    data["SimulatedStartingUTC"] = this.simulatedStartingUTC
+      ? this.simulatedStartingUTC.toISOString()
+      : <any>undefined;
+    data["SimulatedAverageFlowTime"] = this.simulatedAverageFlowTime;
+    data["HoldMachining"] = this.holdMachining ? this.holdMachining.toJSON() : <any>undefined;
+    data["HoldLoadUnload"] = this.holdLoadUnload ? this.holdLoadUnload.toJSON() : <any>undefined;
+    data["PartsPerPallet"] = this.partsPerPallet;
+    data["InputQueue"] = this.inputQueue;
+    data["OutputQueue"] = this.outputQueue;
+    if (Array.isArray(this.inspections)) {
+      data["Inspections"] = [];
+      for (let item of this.inspections) data["Inspections"].push(item.toJSON());
+    }
+    data["Casting"] = this.casting;
+    return data;
+  }
 }
 
 export interface IProcPathInfo {
-    palletNums?: number[];
-    fixture?: string | undefined;
-    face?: number | undefined;
-    load: number[];
-    expectedLoadTime: string;
-    unload: number[];
-    expectedUnloadTime: string;
-    stops: MachiningStop[];
-    simulatedProduction?: SimulatedProduction[] | undefined;
-    simulatedStartingUTC: Date;
-    simulatedAverageFlowTime: string;
-    holdMachining?: HoldPattern | undefined;
-    holdLoadUnload?: HoldPattern | undefined;
-    partsPerPallet: number;
-    inputQueue?: string | undefined;
-    outputQueue?: string | undefined;
-    inspections?: PathInspection[] | undefined;
-    casting?: string | undefined;
+  palletNums?: number[];
+  fixture?: string | undefined;
+  face?: number | undefined;
+  load: number[];
+  expectedLoadTime: string;
+  unload: number[];
+  expectedUnloadTime: string;
+  stops: MachiningStop[];
+  simulatedProduction?: SimulatedProduction[] | undefined;
+  simulatedStartingUTC: Date;
+  simulatedAverageFlowTime: string;
+  holdMachining?: HoldPattern | undefined;
+  holdLoadUnload?: HoldPattern | undefined;
+  partsPerPallet: number;
+  inputQueue?: string | undefined;
+  outputQueue?: string | undefined;
+  inspections?: PathInspection[] | undefined;
+  casting?: string | undefined;
 }
 
 export class MachiningStop implements IMachiningStop {
-    stationGroup!: string;
-    stationNums!: number[];
-    expectedCycleTime!: string;
-    program?: string | undefined;
-    programRevision?: number | undefined;
-    tools?: { [key: string]: string; } | undefined;
+  stationGroup!: string;
+  stationNums!: number[];
+  expectedCycleTime!: string;
+  program?: string | undefined;
+  programRevision?: number | undefined;
+  tools?: { [key: string]: string } | undefined;
 
-    constructor(data?: IMachiningStop) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.stationNums = [];
-        }
+  constructor(data?: IMachiningStop) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.stationNums = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.stationGroup = _data["StationGroup"];
-            if (Array.isArray(_data["StationNums"])) {
-                this.stationNums = [] as any;
-                for (let item of _data["StationNums"])
-                    this.stationNums!.push(item);
-            }
-            this.expectedCycleTime = _data["ExpectedCycleTime"];
-            this.program = _data["Program"];
-            this.programRevision = _data["ProgramRevision"];
-            if (_data["Tools"]) {
-                this.tools = {} as any;
-                for (let key in _data["Tools"]) {
-                    if (_data["Tools"].hasOwnProperty(key))
-                        (<any>this.tools)![key] = _data["Tools"][key];
-                }
-            }
+  init(_data?: any) {
+    if (_data) {
+      this.stationGroup = _data["StationGroup"];
+      if (Array.isArray(_data["StationNums"])) {
+        this.stationNums = [] as any;
+        for (let item of _data["StationNums"]) this.stationNums!.push(item);
+      }
+      this.expectedCycleTime = _data["ExpectedCycleTime"];
+      this.program = _data["Program"];
+      this.programRevision = _data["ProgramRevision"];
+      if (_data["Tools"]) {
+        this.tools = {} as any;
+        for (let key in _data["Tools"]) {
+          if (_data["Tools"].hasOwnProperty(key)) (<any>this.tools)![key] = _data["Tools"][key];
         }
+      }
     }
+  }
 
-    static fromJS(data: any): MachiningStop {
-        data = typeof data === 'object' ? data : {};
-        let result = new MachiningStop();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): MachiningStop {
+    data = typeof data === "object" ? data : {};
+    let result = new MachiningStop();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["StationGroup"] = this.stationGroup;
-        if (Array.isArray(this.stationNums)) {
-            data["StationNums"] = [];
-            for (let item of this.stationNums)
-                data["StationNums"].push(item);
-        }
-        data["ExpectedCycleTime"] = this.expectedCycleTime;
-        data["Program"] = this.program;
-        data["ProgramRevision"] = this.programRevision;
-        if (this.tools) {
-            data["Tools"] = {};
-            for (let key in this.tools) {
-                if (this.tools.hasOwnProperty(key))
-                    (<any>data["Tools"])[key] = (<any>this.tools)[key];
-            }
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["StationGroup"] = this.stationGroup;
+    if (Array.isArray(this.stationNums)) {
+      data["StationNums"] = [];
+      for (let item of this.stationNums) data["StationNums"].push(item);
     }
+    data["ExpectedCycleTime"] = this.expectedCycleTime;
+    data["Program"] = this.program;
+    data["ProgramRevision"] = this.programRevision;
+    if (this.tools) {
+      data["Tools"] = {};
+      for (let key in this.tools) {
+        if (this.tools.hasOwnProperty(key)) (<any>data["Tools"])[key] = (<any>this.tools)[key];
+      }
+    }
+    return data;
+  }
 }
 
 export interface IMachiningStop {
-    stationGroup: string;
-    stationNums: number[];
-    expectedCycleTime: string;
-    program?: string | undefined;
-    programRevision?: number | undefined;
-    tools?: { [key: string]: string; } | undefined;
+  stationGroup: string;
+  stationNums: number[];
+  expectedCycleTime: string;
+  program?: string | undefined;
+  programRevision?: number | undefined;
+  tools?: { [key: string]: string } | undefined;
 }
 
 export class SimulatedProduction implements ISimulatedProduction {
-    timeUTC!: Date;
-    quantity!: number;
+  timeUTC!: Date;
+  quantity!: number;
 
-    constructor(data?: ISimulatedProduction) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: ISimulatedProduction) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
-            this.quantity = _data["Quantity"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
+      this.quantity = _data["Quantity"];
     }
+  }
 
-    static fromJS(data: any): SimulatedProduction {
-        data = typeof data === 'object' ? data : {};
-        let result = new SimulatedProduction();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): SimulatedProduction {
+    data = typeof data === "object" ? data : {};
+    let result = new SimulatedProduction();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
-        data["Quantity"] = this.quantity;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
+    data["Quantity"] = this.quantity;
+    return data;
+  }
 }
 
 export interface ISimulatedProduction {
-    timeUTC: Date;
-    quantity: number;
+  timeUTC: Date;
+  quantity: number;
 }
 
 export class PathInspection implements IPathInspection {
-    inspectionType!: string;
-    counter!: string;
-    maxVal!: number;
-    randomFreq!: number;
-    timeInterval!: string;
-    expectedInspectionTime?: string | undefined;
+  inspectionType!: string;
+  counter!: string;
+  maxVal!: number;
+  randomFreq!: number;
+  timeInterval!: string;
+  expectedInspectionTime?: string | undefined;
 
-    constructor(data?: IPathInspection) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IPathInspection) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.inspectionType = _data["InspectionType"];
-            this.counter = _data["Counter"];
-            this.maxVal = _data["MaxVal"];
-            this.randomFreq = _data["RandomFreq"];
-            this.timeInterval = _data["TimeInterval"];
-            this.expectedInspectionTime = _data["ExpectedInspectionTime"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.inspectionType = _data["InspectionType"];
+      this.counter = _data["Counter"];
+      this.maxVal = _data["MaxVal"];
+      this.randomFreq = _data["RandomFreq"];
+      this.timeInterval = _data["TimeInterval"];
+      this.expectedInspectionTime = _data["ExpectedInspectionTime"];
     }
+  }
 
-    static fromJS(data: any): PathInspection {
-        data = typeof data === 'object' ? data : {};
-        let result = new PathInspection();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): PathInspection {
+    data = typeof data === "object" ? data : {};
+    let result = new PathInspection();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["InspectionType"] = this.inspectionType;
-        data["Counter"] = this.counter;
-        data["MaxVal"] = this.maxVal;
-        data["RandomFreq"] = this.randomFreq;
-        data["TimeInterval"] = this.timeInterval;
-        data["ExpectedInspectionTime"] = this.expectedInspectionTime;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["InspectionType"] = this.inspectionType;
+    data["Counter"] = this.counter;
+    data["MaxVal"] = this.maxVal;
+    data["RandomFreq"] = this.randomFreq;
+    data["TimeInterval"] = this.timeInterval;
+    data["ExpectedInspectionTime"] = this.expectedInspectionTime;
+    return data;
+  }
 }
 
 export interface IPathInspection {
-    inspectionType: string;
-    counter: string;
-    maxVal: number;
-    randomFreq: number;
-    timeInterval: string;
-    expectedInspectionTime?: string | undefined;
+  inspectionType: string;
+  counter: string;
+  maxVal: number;
+  randomFreq: number;
+  timeInterval: string;
+  expectedInspectionTime?: string | undefined;
 }
 
 export class SimulatedStationUtilization implements ISimulatedStationUtilization {
-    scheduleId!: string;
-    stationGroup!: string;
-    stationNum!: number;
-    startUTC!: Date;
-    endUTC!: Date;
-    utilizationTime!: string;
-    plannedDownTime!: string;
-    parts?: SimulatedStationPart[] | undefined;
+  scheduleId!: string;
+  stationGroup!: string;
+  stationNum!: number;
+  startUTC!: Date;
+  endUTC!: Date;
+  utilizationTime!: string;
+  plannedDownTime!: string;
+  parts?: SimulatedStationPart[] | undefined;
 
-    constructor(data?: ISimulatedStationUtilization) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: ISimulatedStationUtilization) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.scheduleId = _data["ScheduleId"];
-            this.stationGroup = _data["StationGroup"];
-            this.stationNum = _data["StationNum"];
-            this.startUTC = _data["StartUTC"] ? new Date(_data["StartUTC"].toString()) : <any>undefined;
-            this.endUTC = _data["EndUTC"] ? new Date(_data["EndUTC"].toString()) : <any>undefined;
-            this.utilizationTime = _data["UtilizationTime"];
-            this.plannedDownTime = _data["PlannedDownTime"];
-            if (Array.isArray(_data["Parts"])) {
-                this.parts = [] as any;
-                for (let item of _data["Parts"])
-                    this.parts!.push(SimulatedStationPart.fromJS(item));
-            }
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.scheduleId = _data["ScheduleId"];
+      this.stationGroup = _data["StationGroup"];
+      this.stationNum = _data["StationNum"];
+      this.startUTC = _data["StartUTC"] ? new Date(_data["StartUTC"].toString()) : <any>undefined;
+      this.endUTC = _data["EndUTC"] ? new Date(_data["EndUTC"].toString()) : <any>undefined;
+      this.utilizationTime = _data["UtilizationTime"];
+      this.plannedDownTime = _data["PlannedDownTime"];
+      if (Array.isArray(_data["Parts"])) {
+        this.parts = [] as any;
+        for (let item of _data["Parts"]) this.parts!.push(SimulatedStationPart.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): SimulatedStationUtilization {
-        data = typeof data === 'object' ? data : {};
-        let result = new SimulatedStationUtilization();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): SimulatedStationUtilization {
+    data = typeof data === "object" ? data : {};
+    let result = new SimulatedStationUtilization();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["ScheduleId"] = this.scheduleId;
-        data["StationGroup"] = this.stationGroup;
-        data["StationNum"] = this.stationNum;
-        data["StartUTC"] = this.startUTC ? this.startUTC.toISOString() : <any>undefined;
-        data["EndUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
-        data["UtilizationTime"] = this.utilizationTime;
-        data["PlannedDownTime"] = this.plannedDownTime;
-        if (Array.isArray(this.parts)) {
-            data["Parts"] = [];
-            for (let item of this.parts)
-                data["Parts"].push(item.toJSON());
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["ScheduleId"] = this.scheduleId;
+    data["StationGroup"] = this.stationGroup;
+    data["StationNum"] = this.stationNum;
+    data["StartUTC"] = this.startUTC ? this.startUTC.toISOString() : <any>undefined;
+    data["EndUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
+    data["UtilizationTime"] = this.utilizationTime;
+    data["PlannedDownTime"] = this.plannedDownTime;
+    if (Array.isArray(this.parts)) {
+      data["Parts"] = [];
+      for (let item of this.parts) data["Parts"].push(item.toJSON());
     }
+    return data;
+  }
 }
 
 export interface ISimulatedStationUtilization {
-    scheduleId: string;
-    stationGroup: string;
-    stationNum: number;
-    startUTC: Date;
-    endUTC: Date;
-    utilizationTime: string;
-    plannedDownTime: string;
-    parts?: SimulatedStationPart[] | undefined;
+  scheduleId: string;
+  stationGroup: string;
+  stationNum: number;
+  startUTC: Date;
+  endUTC: Date;
+  utilizationTime: string;
+  plannedDownTime: string;
+  parts?: SimulatedStationPart[] | undefined;
 }
 
 export class SimulatedStationPart implements ISimulatedStationPart {
-    jobUnique!: string;
-    process!: number;
-    path!: number;
+  jobUnique!: string;
+  process!: number;
+  path!: number;
 
-    constructor(data?: ISimulatedStationPart) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: ISimulatedStationPart) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.jobUnique = _data["JobUnique"];
-            this.process = _data["Process"];
-            this.path = _data["Path"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.jobUnique = _data["JobUnique"];
+      this.process = _data["Process"];
+      this.path = _data["Path"];
     }
+  }
 
-    static fromJS(data: any): SimulatedStationPart {
-        data = typeof data === 'object' ? data : {};
-        let result = new SimulatedStationPart();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): SimulatedStationPart {
+    data = typeof data === "object" ? data : {};
+    let result = new SimulatedStationPart();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["JobUnique"] = this.jobUnique;
-        data["Process"] = this.process;
-        data["Path"] = this.path;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["JobUnique"] = this.jobUnique;
+    data["Process"] = this.process;
+    data["Path"] = this.path;
+    return data;
+  }
 }
 
 export interface ISimulatedStationPart {
-    jobUnique: string;
-    process: number;
-    path: number;
+  jobUnique: string;
+  process: number;
+  path: number;
 }
 
 export class SimulatedDayUsage implements ISimulatedDayUsage {
-    day!: Date;
-    machineGroup!: string;
-    usagePct!: number;
+  day!: Date;
+  machineGroup!: string;
+  usagePct!: number;
 
-    constructor(data?: ISimulatedDayUsage) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: ISimulatedDayUsage) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.day = _data["Day"] ? new Date(_data["Day"].toString()) : <any>undefined;
-            this.machineGroup = _data["MachineGroup"];
-            this.usagePct = _data["UsagePct"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.day = _data["Day"] ? new Date(_data["Day"].toString()) : <any>undefined;
+      this.machineGroup = _data["MachineGroup"];
+      this.usagePct = _data["UsagePct"];
     }
+  }
 
-    static fromJS(data: any): SimulatedDayUsage {
-        data = typeof data === 'object' ? data : {};
-        let result = new SimulatedDayUsage();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): SimulatedDayUsage {
+    data = typeof data === "object" ? data : {};
+    let result = new SimulatedDayUsage();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Day"] = this.day ? formatDate(this.day) : <any>undefined;
-        data["MachineGroup"] = this.machineGroup;
-        data["UsagePct"] = this.usagePct;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Day"] = this.day ? formatDate(this.day) : <any>undefined;
+    data["MachineGroup"] = this.machineGroup;
+    data["UsagePct"] = this.usagePct;
+    return data;
+  }
 }
 
 export interface ISimulatedDayUsage {
-    day: Date;
-    machineGroup: string;
-    usagePct: number;
+  day: Date;
+  machineGroup: string;
+  usagePct: number;
 }
 
 export class Workorder implements IWorkorder {
-    workorderId!: string;
-    part!: string;
-    quantity!: number;
-    dueDate!: Date;
-    priority!: number;
-    simulatedStartUTC?: Date | undefined;
-    simulatedFilledUTC?: Date | undefined;
-    programs?: ProgramForJobStep[] | undefined;
+  workorderId!: string;
+  part!: string;
+  quantity!: number;
+  dueDate!: Date;
+  priority!: number;
+  simulatedStartUTC?: Date | undefined;
+  simulatedFilledUTC?: Date | undefined;
+  programs?: ProgramForJobStep[] | undefined;
 
-    constructor(data?: IWorkorder) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IWorkorder) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.workorderId = _data["WorkorderId"];
-            this.part = _data["Part"];
-            this.quantity = _data["Quantity"];
-            this.dueDate = _data["DueDate"] ? new Date(_data["DueDate"].toString()) : <any>undefined;
-            this.priority = _data["Priority"];
-            this.simulatedStartUTC = _data["SimulatedStartUTC"] ? new Date(_data["SimulatedStartUTC"].toString()) : <any>undefined;
-            this.simulatedFilledUTC = _data["SimulatedFilledUTC"] ? new Date(_data["SimulatedFilledUTC"].toString()) : <any>undefined;
-            if (Array.isArray(_data["Programs"])) {
-                this.programs = [] as any;
-                for (let item of _data["Programs"])
-                    this.programs!.push(ProgramForJobStep.fromJS(item));
-            }
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.workorderId = _data["WorkorderId"];
+      this.part = _data["Part"];
+      this.quantity = _data["Quantity"];
+      this.dueDate = _data["DueDate"] ? new Date(_data["DueDate"].toString()) : <any>undefined;
+      this.priority = _data["Priority"];
+      this.simulatedStartUTC = _data["SimulatedStartUTC"]
+        ? new Date(_data["SimulatedStartUTC"].toString())
+        : <any>undefined;
+      this.simulatedFilledUTC = _data["SimulatedFilledUTC"]
+        ? new Date(_data["SimulatedFilledUTC"].toString())
+        : <any>undefined;
+      if (Array.isArray(_data["Programs"])) {
+        this.programs = [] as any;
+        for (let item of _data["Programs"]) this.programs!.push(ProgramForJobStep.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): Workorder {
-        data = typeof data === 'object' ? data : {};
-        let result = new Workorder();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): Workorder {
+    data = typeof data === "object" ? data : {};
+    let result = new Workorder();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["WorkorderId"] = this.workorderId;
-        data["Part"] = this.part;
-        data["Quantity"] = this.quantity;
-        data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
-        data["Priority"] = this.priority;
-        data["SimulatedStartUTC"] = this.simulatedStartUTC ? this.simulatedStartUTC.toISOString() : <any>undefined;
-        data["SimulatedFilledUTC"] = this.simulatedFilledUTC ? this.simulatedFilledUTC.toISOString() : <any>undefined;
-        if (Array.isArray(this.programs)) {
-            data["Programs"] = [];
-            for (let item of this.programs)
-                data["Programs"].push(item.toJSON());
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["WorkorderId"] = this.workorderId;
+    data["Part"] = this.part;
+    data["Quantity"] = this.quantity;
+    data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
+    data["Priority"] = this.priority;
+    data["SimulatedStartUTC"] = this.simulatedStartUTC
+      ? this.simulatedStartUTC.toISOString()
+      : <any>undefined;
+    data["SimulatedFilledUTC"] = this.simulatedFilledUTC
+      ? this.simulatedFilledUTC.toISOString()
+      : <any>undefined;
+    if (Array.isArray(this.programs)) {
+      data["Programs"] = [];
+      for (let item of this.programs) data["Programs"].push(item.toJSON());
     }
+    return data;
+  }
 }
 
 export interface IWorkorder {
-    workorderId: string;
-    part: string;
-    quantity: number;
-    dueDate: Date;
-    priority: number;
-    simulatedStartUTC?: Date | undefined;
-    simulatedFilledUTC?: Date | undefined;
-    programs?: ProgramForJobStep[] | undefined;
+  workorderId: string;
+  part: string;
+  quantity: number;
+  dueDate: Date;
+  priority: number;
+  simulatedStartUTC?: Date | undefined;
+  simulatedFilledUTC?: Date | undefined;
+  programs?: ProgramForJobStep[] | undefined;
 }
 
 export class ProgramForJobStep implements IProgramForJobStep {
-    processNumber!: number;
-    stopIndex?: number | undefined;
-    programName!: string;
-    revision?: number | undefined;
+  processNumber!: number;
+  stopIndex?: number | undefined;
+  programName!: string;
+  revision?: number | undefined;
 
-    constructor(data?: IProgramForJobStep) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IProgramForJobStep) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.processNumber = _data["ProcessNumber"];
-            this.stopIndex = _data["StopIndex"];
-            this.programName = _data["ProgramName"];
-            this.revision = _data["Revision"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.processNumber = _data["ProcessNumber"];
+      this.stopIndex = _data["StopIndex"];
+      this.programName = _data["ProgramName"];
+      this.revision = _data["Revision"];
     }
+  }
 
-    static fromJS(data: any): ProgramForJobStep {
-        data = typeof data === 'object' ? data : {};
-        let result = new ProgramForJobStep();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ProgramForJobStep {
+    data = typeof data === "object" ? data : {};
+    let result = new ProgramForJobStep();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["ProcessNumber"] = this.processNumber;
-        data["StopIndex"] = this.stopIndex;
-        data["ProgramName"] = this.programName;
-        data["Revision"] = this.revision;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["ProcessNumber"] = this.processNumber;
+    data["StopIndex"] = this.stopIndex;
+    data["ProgramName"] = this.programName;
+    data["Revision"] = this.revision;
+    return data;
+  }
 }
 
 export interface IProgramForJobStep {
-    processNumber: number;
-    stopIndex?: number | undefined;
-    programName: string;
-    revision?: number | undefined;
+  processNumber: number;
+  stopIndex?: number | undefined;
+  programName: string;
+  revision?: number | undefined;
 }
 
 export class NewProgramContent implements INewProgramContent {
-    programName!: string;
-    comment?: string | undefined;
-    programContent!: string;
-    revision!: number;
+  programName!: string;
+  comment?: string | undefined;
+  programContent!: string;
+  revision!: number;
 
-    constructor(data?: INewProgramContent) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: INewProgramContent) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.programName = _data["ProgramName"];
-            this.comment = _data["Comment"];
-            this.programContent = _data["ProgramContent"];
-            this.revision = _data["Revision"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.programName = _data["ProgramName"];
+      this.comment = _data["Comment"];
+      this.programContent = _data["ProgramContent"];
+      this.revision = _data["Revision"];
     }
+  }
 
-    static fromJS(data: any): NewProgramContent {
-        data = typeof data === 'object' ? data : {};
-        let result = new NewProgramContent();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): NewProgramContent {
+    data = typeof data === "object" ? data : {};
+    let result = new NewProgramContent();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["ProgramName"] = this.programName;
-        data["Comment"] = this.comment;
-        data["ProgramContent"] = this.programContent;
-        data["Revision"] = this.revision;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["ProgramName"] = this.programName;
+    data["Comment"] = this.comment;
+    data["ProgramContent"] = this.programContent;
+    data["Revision"] = this.revision;
+    return data;
+  }
 }
 
 export interface INewProgramContent {
-    programName: string;
-    comment?: string | undefined;
-    programContent: string;
-    revision: number;
+  programName: string;
+  comment?: string | undefined;
+  programContent: string;
+  revision: number;
 }
 
 export class CurrentStatus implements ICurrentStatus {
-    timeOfCurrentStatusUTC!: Date;
-    jobs!: { [key: string]: ActiveJob; };
-    pallets!: { [key: string]: PalletStatus; };
-    material!: InProcessMaterial[];
-    alarms!: string[];
-    queues!: { [key: string]: QueueInfo; };
-    machineLocations?: MachineLocation[] | undefined;
-    workorders?: ActiveWorkorder[] | undefined;
+  timeOfCurrentStatusUTC!: Date;
+  jobs!: { [key: string]: ActiveJob };
+  pallets!: { [key: string]: PalletStatus };
+  material!: InProcessMaterial[];
+  alarms!: string[];
+  queues!: { [key: string]: QueueInfo };
+  machineLocations?: MachineLocation[] | undefined;
+  workorders?: ActiveWorkorder[] | undefined;
 
-    constructor(data?: ICurrentStatus) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.jobs = {};
-            this.pallets = {};
-            this.material = [];
-            this.alarms = [];
-            this.queues = {};
-        }
+  constructor(data?: ICurrentStatus) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.jobs = {};
+      this.pallets = {};
+      this.material = [];
+      this.alarms = [];
+      this.queues = {};
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.timeOfCurrentStatusUTC = _data["TimeOfCurrentStatusUTC"] ? new Date(_data["TimeOfCurrentStatusUTC"].toString()) : <any>undefined;
-            if (_data["Jobs"]) {
-                this.jobs = {} as any;
-                for (let key in _data["Jobs"]) {
-                    if (_data["Jobs"].hasOwnProperty(key))
-                        (<any>this.jobs)![key] = _data["Jobs"][key] ? ActiveJob.fromJS(_data["Jobs"][key]) : new ActiveJob();
-                }
-            }
-            if (_data["Pallets"]) {
-                this.pallets = {} as any;
-                for (let key in _data["Pallets"]) {
-                    if (_data["Pallets"].hasOwnProperty(key))
-                        (<any>this.pallets)![key] = _data["Pallets"][key] ? PalletStatus.fromJS(_data["Pallets"][key]) : new PalletStatus();
-                }
-            }
-            if (Array.isArray(_data["Material"])) {
-                this.material = [] as any;
-                for (let item of _data["Material"])
-                    this.material!.push(InProcessMaterial.fromJS(item));
-            }
-            if (Array.isArray(_data["Alarms"])) {
-                this.alarms = [] as any;
-                for (let item of _data["Alarms"])
-                    this.alarms!.push(item);
-            }
-            if (_data["Queues"]) {
-                this.queues = {} as any;
-                for (let key in _data["Queues"]) {
-                    if (_data["Queues"].hasOwnProperty(key))
-                        (<any>this.queues)![key] = _data["Queues"][key] ? QueueInfo.fromJS(_data["Queues"][key]) : new QueueInfo();
-                }
-            }
-            if (Array.isArray(_data["MachineLocations"])) {
-                this.machineLocations = [] as any;
-                for (let item of _data["MachineLocations"])
-                    this.machineLocations!.push(MachineLocation.fromJS(item));
-            }
-            if (Array.isArray(_data["Workorders"])) {
-                this.workorders = [] as any;
-                for (let item of _data["Workorders"])
-                    this.workorders!.push(ActiveWorkorder.fromJS(item));
-            }
+  init(_data?: any) {
+    if (_data) {
+      this.timeOfCurrentStatusUTC = _data["TimeOfCurrentStatusUTC"]
+        ? new Date(_data["TimeOfCurrentStatusUTC"].toString())
+        : <any>undefined;
+      if (_data["Jobs"]) {
+        this.jobs = {} as any;
+        for (let key in _data["Jobs"]) {
+          if (_data["Jobs"].hasOwnProperty(key))
+            (<any>this.jobs)![key] = _data["Jobs"][key]
+              ? ActiveJob.fromJS(_data["Jobs"][key])
+              : new ActiveJob();
         }
+      }
+      if (_data["Pallets"]) {
+        this.pallets = {} as any;
+        for (let key in _data["Pallets"]) {
+          if (_data["Pallets"].hasOwnProperty(key))
+            (<any>this.pallets)![key] = _data["Pallets"][key]
+              ? PalletStatus.fromJS(_data["Pallets"][key])
+              : new PalletStatus();
+        }
+      }
+      if (Array.isArray(_data["Material"])) {
+        this.material = [] as any;
+        for (let item of _data["Material"]) this.material!.push(InProcessMaterial.fromJS(item));
+      }
+      if (Array.isArray(_data["Alarms"])) {
+        this.alarms = [] as any;
+        for (let item of _data["Alarms"]) this.alarms!.push(item);
+      }
+      if (_data["Queues"]) {
+        this.queues = {} as any;
+        for (let key in _data["Queues"]) {
+          if (_data["Queues"].hasOwnProperty(key))
+            (<any>this.queues)![key] = _data["Queues"][key]
+              ? QueueInfo.fromJS(_data["Queues"][key])
+              : new QueueInfo();
+        }
+      }
+      if (Array.isArray(_data["MachineLocations"])) {
+        this.machineLocations = [] as any;
+        for (let item of _data["MachineLocations"]) this.machineLocations!.push(MachineLocation.fromJS(item));
+      }
+      if (Array.isArray(_data["Workorders"])) {
+        this.workorders = [] as any;
+        for (let item of _data["Workorders"]) this.workorders!.push(ActiveWorkorder.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): CurrentStatus {
-        data = typeof data === 'object' ? data : {};
-        let result = new CurrentStatus();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): CurrentStatus {
+    data = typeof data === "object" ? data : {};
+    let result = new CurrentStatus();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["TimeOfCurrentStatusUTC"] = this.timeOfCurrentStatusUTC ? this.timeOfCurrentStatusUTC.toISOString() : <any>undefined;
-        if (this.jobs) {
-            data["Jobs"] = {};
-            for (let key in this.jobs) {
-                if (this.jobs.hasOwnProperty(key))
-                    (<any>data["Jobs"])[key] = this.jobs[key] ? this.jobs[key].toJSON() : <any>undefined;
-            }
-        }
-        if (this.pallets) {
-            data["Pallets"] = {};
-            for (let key in this.pallets) {
-                if (this.pallets.hasOwnProperty(key))
-                    (<any>data["Pallets"])[key] = this.pallets[key] ? this.pallets[key].toJSON() : <any>undefined;
-            }
-        }
-        if (Array.isArray(this.material)) {
-            data["Material"] = [];
-            for (let item of this.material)
-                data["Material"].push(item.toJSON());
-        }
-        if (Array.isArray(this.alarms)) {
-            data["Alarms"] = [];
-            for (let item of this.alarms)
-                data["Alarms"].push(item);
-        }
-        if (this.queues) {
-            data["Queues"] = {};
-            for (let key in this.queues) {
-                if (this.queues.hasOwnProperty(key))
-                    (<any>data["Queues"])[key] = this.queues[key] ? this.queues[key].toJSON() : <any>undefined;
-            }
-        }
-        if (Array.isArray(this.machineLocations)) {
-            data["MachineLocations"] = [];
-            for (let item of this.machineLocations)
-                data["MachineLocations"].push(item.toJSON());
-        }
-        if (Array.isArray(this.workorders)) {
-            data["Workorders"] = [];
-            for (let item of this.workorders)
-                data["Workorders"].push(item.toJSON());
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["TimeOfCurrentStatusUTC"] = this.timeOfCurrentStatusUTC
+      ? this.timeOfCurrentStatusUTC.toISOString()
+      : <any>undefined;
+    if (this.jobs) {
+      data["Jobs"] = {};
+      for (let key in this.jobs) {
+        if (this.jobs.hasOwnProperty(key))
+          (<any>data["Jobs"])[key] = this.jobs[key] ? this.jobs[key].toJSON() : <any>undefined;
+      }
     }
+    if (this.pallets) {
+      data["Pallets"] = {};
+      for (let key in this.pallets) {
+        if (this.pallets.hasOwnProperty(key))
+          (<any>data["Pallets"])[key] = this.pallets[key] ? this.pallets[key].toJSON() : <any>undefined;
+      }
+    }
+    if (Array.isArray(this.material)) {
+      data["Material"] = [];
+      for (let item of this.material) data["Material"].push(item.toJSON());
+    }
+    if (Array.isArray(this.alarms)) {
+      data["Alarms"] = [];
+      for (let item of this.alarms) data["Alarms"].push(item);
+    }
+    if (this.queues) {
+      data["Queues"] = {};
+      for (let key in this.queues) {
+        if (this.queues.hasOwnProperty(key))
+          (<any>data["Queues"])[key] = this.queues[key] ? this.queues[key].toJSON() : <any>undefined;
+      }
+    }
+    if (Array.isArray(this.machineLocations)) {
+      data["MachineLocations"] = [];
+      for (let item of this.machineLocations) data["MachineLocations"].push(item.toJSON());
+    }
+    if (Array.isArray(this.workorders)) {
+      data["Workorders"] = [];
+      for (let item of this.workorders) data["Workorders"].push(item.toJSON());
+    }
+    return data;
+  }
 }
 
 export interface ICurrentStatus {
-    timeOfCurrentStatusUTC: Date;
-    jobs: { [key: string]: ActiveJob; };
-    pallets: { [key: string]: PalletStatus; };
-    material: InProcessMaterial[];
-    alarms: string[];
-    queues: { [key: string]: QueueInfo; };
-    machineLocations?: MachineLocation[] | undefined;
-    workorders?: ActiveWorkorder[] | undefined;
+  timeOfCurrentStatusUTC: Date;
+  jobs: { [key: string]: ActiveJob };
+  pallets: { [key: string]: PalletStatus };
+  material: InProcessMaterial[];
+  alarms: string[];
+  queues: { [key: string]: QueueInfo };
+  machineLocations?: MachineLocation[] | undefined;
+  workorders?: ActiveWorkorder[] | undefined;
 }
 
 export class HistoricJob extends Job implements IHistoricJob {
-    scheduleId?: string | undefined;
-    copiedToSystem!: boolean;
-    decrements?: DecrementQuantity[] | undefined;
+  scheduleId?: string | undefined;
+  copiedToSystem!: boolean;
+  decrements?: DecrementQuantity[] | undefined;
 
-    constructor(data?: IHistoricJob) {
-        super(data);
-    }
+  constructor(data?: IHistoricJob) {
+    super(data);
+  }
 
-    init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            this.scheduleId = _data["ScheduleId"];
-            this.copiedToSystem = _data["CopiedToSystem"];
-            if (Array.isArray(_data["Decrements"])) {
-                this.decrements = [] as any;
-                for (let item of _data["Decrements"])
-                    this.decrements!.push(DecrementQuantity.fromJS(item));
-            }
-        }
+  init(_data?: any) {
+    super.init(_data);
+    if (_data) {
+      this.scheduleId = _data["ScheduleId"];
+      this.copiedToSystem = _data["CopiedToSystem"];
+      if (Array.isArray(_data["Decrements"])) {
+        this.decrements = [] as any;
+        for (let item of _data["Decrements"]) this.decrements!.push(DecrementQuantity.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): HistoricJob {
-        data = typeof data === 'object' ? data : {};
-        let result = new HistoricJob();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): HistoricJob {
+    data = typeof data === "object" ? data : {};
+    let result = new HistoricJob();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["ScheduleId"] = this.scheduleId;
-        data["CopiedToSystem"] = this.copiedToSystem;
-        if (Array.isArray(this.decrements)) {
-            data["Decrements"] = [];
-            for (let item of this.decrements)
-                data["Decrements"].push(item.toJSON());
-        }
-        super.toJSON(data);
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["ScheduleId"] = this.scheduleId;
+    data["CopiedToSystem"] = this.copiedToSystem;
+    if (Array.isArray(this.decrements)) {
+      data["Decrements"] = [];
+      for (let item of this.decrements) data["Decrements"].push(item.toJSON());
     }
+    super.toJSON(data);
+    return data;
+  }
 }
 
 export interface IHistoricJob extends IJob {
-    scheduleId?: string | undefined;
-    copiedToSystem: boolean;
-    decrements?: DecrementQuantity[] | undefined;
+  scheduleId?: string | undefined;
+  copiedToSystem: boolean;
+  decrements?: DecrementQuantity[] | undefined;
 }
 
 export class ActiveJob extends HistoricJob implements IActiveJob {
-    completed?: number[][] | undefined;
-    precedence?: number[][] | undefined;
-    assignedWorkorders?: string[] | undefined;
-    remainingToStart?: number | undefined;
+  completed?: number[][] | undefined;
+  precedence?: number[][] | undefined;
+  assignedWorkorders?: string[] | undefined;
+  remainingToStart?: number | undefined;
 
-    constructor(data?: IActiveJob) {
-        super(data);
-    }
+  constructor(data?: IActiveJob) {
+    super(data);
+  }
 
-    init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            if (Array.isArray(_data["Completed"])) {
-                this.completed = [] as any;
-                for (let item of _data["Completed"])
-                    this.completed!.push(item);
-            }
-            if (Array.isArray(_data["Precedence"])) {
-                this.precedence = [] as any;
-                for (let item of _data["Precedence"])
-                    this.precedence!.push(item);
-            }
-            if (Array.isArray(_data["AssignedWorkorders"])) {
-                this.assignedWorkorders = [] as any;
-                for (let item of _data["AssignedWorkorders"])
-                    this.assignedWorkorders!.push(item);
-            }
-            this.remainingToStart = _data["RemainingToStart"];
-        }
+  init(_data?: any) {
+    super.init(_data);
+    if (_data) {
+      if (Array.isArray(_data["Completed"])) {
+        this.completed = [] as any;
+        for (let item of _data["Completed"]) this.completed!.push(item);
+      }
+      if (Array.isArray(_data["Precedence"])) {
+        this.precedence = [] as any;
+        for (let item of _data["Precedence"]) this.precedence!.push(item);
+      }
+      if (Array.isArray(_data["AssignedWorkorders"])) {
+        this.assignedWorkorders = [] as any;
+        for (let item of _data["AssignedWorkorders"]) this.assignedWorkorders!.push(item);
+      }
+      this.remainingToStart = _data["RemainingToStart"];
     }
+  }
 
-    static fromJS(data: any): ActiveJob {
-        data = typeof data === 'object' ? data : {};
-        let result = new ActiveJob();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ActiveJob {
+    data = typeof data === "object" ? data : {};
+    let result = new ActiveJob();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.completed)) {
-            data["Completed"] = [];
-            for (let item of this.completed)
-                data["Completed"].push(item);
-        }
-        if (Array.isArray(this.precedence)) {
-            data["Precedence"] = [];
-            for (let item of this.precedence)
-                data["Precedence"].push(item);
-        }
-        if (Array.isArray(this.assignedWorkorders)) {
-            data["AssignedWorkorders"] = [];
-            for (let item of this.assignedWorkorders)
-                data["AssignedWorkorders"].push(item);
-        }
-        data["RemainingToStart"] = this.remainingToStart;
-        super.toJSON(data);
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    if (Array.isArray(this.completed)) {
+      data["Completed"] = [];
+      for (let item of this.completed) data["Completed"].push(item);
     }
+    if (Array.isArray(this.precedence)) {
+      data["Precedence"] = [];
+      for (let item of this.precedence) data["Precedence"].push(item);
+    }
+    if (Array.isArray(this.assignedWorkorders)) {
+      data["AssignedWorkorders"] = [];
+      for (let item of this.assignedWorkorders) data["AssignedWorkorders"].push(item);
+    }
+    data["RemainingToStart"] = this.remainingToStart;
+    super.toJSON(data);
+    return data;
+  }
 }
 
 export interface IActiveJob extends IHistoricJob {
-    completed?: number[][] | undefined;
-    precedence?: number[][] | undefined;
-    assignedWorkorders?: string[] | undefined;
-    remainingToStart?: number | undefined;
+  completed?: number[][] | undefined;
+  precedence?: number[][] | undefined;
+  assignedWorkorders?: string[] | undefined;
+  remainingToStart?: number | undefined;
 }
 
 export class DecrementQuantity implements IDecrementQuantity {
-    decrementId!: number;
-    timeUTC!: Date;
-    quantity!: number;
+  decrementId!: number;
+  timeUTC!: Date;
+  quantity!: number;
 
-    constructor(data?: IDecrementQuantity) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IDecrementQuantity) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.decrementId = _data["DecrementId"];
-            this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
-            this.quantity = _data["Quantity"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.decrementId = _data["DecrementId"];
+      this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
+      this.quantity = _data["Quantity"];
     }
+  }
 
-    static fromJS(data: any): DecrementQuantity {
-        data = typeof data === 'object' ? data : {};
-        let result = new DecrementQuantity();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): DecrementQuantity {
+    data = typeof data === "object" ? data : {};
+    let result = new DecrementQuantity();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["DecrementId"] = this.decrementId;
-        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
-        data["Quantity"] = this.quantity;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["DecrementId"] = this.decrementId;
+    data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
+    data["Quantity"] = this.quantity;
+    return data;
+  }
 }
 
 export interface IDecrementQuantity {
-    decrementId: number;
-    timeUTC: Date;
-    quantity: number;
+  decrementId: number;
+  timeUTC: Date;
+  quantity: number;
 }
 
 export class PalletStatus implements IPalletStatus {
-    palletNum!: number;
-    fixtureOnPallet!: string;
-    onHold!: boolean;
-    currentPalletLocation!: PalletLocation;
-    newFixture?: string | undefined;
-    numFaces!: number;
-    faceNames?: string[] | undefined;
-    targetLocation?: PalletLocation | undefined;
-    percentMoveCompleted?: number | undefined;
+  palletNum!: number;
+  fixtureOnPallet!: string;
+  onHold!: boolean;
+  currentPalletLocation!: PalletLocation;
+  newFixture?: string | undefined;
+  numFaces!: number;
+  faceNames?: string[] | undefined;
+  targetLocation?: PalletLocation | undefined;
+  percentMoveCompleted?: number | undefined;
 
-    constructor(data?: IPalletStatus) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.currentPalletLocation = new PalletLocation();
-        }
+  constructor(data?: IPalletStatus) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.currentPalletLocation = new PalletLocation();
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.palletNum = _data["PalletNum"];
-            this.fixtureOnPallet = _data["FixtureOnPallet"];
-            this.onHold = _data["OnHold"];
-            this.currentPalletLocation = _data["CurrentPalletLocation"] ? PalletLocation.fromJS(_data["CurrentPalletLocation"]) : new PalletLocation();
-            this.newFixture = _data["NewFixture"];
-            this.numFaces = _data["NumFaces"];
-            if (Array.isArray(_data["FaceNames"])) {
-                this.faceNames = [] as any;
-                for (let item of _data["FaceNames"])
-                    this.faceNames!.push(item);
-            }
-            this.targetLocation = _data["TargetLocation"] ? PalletLocation.fromJS(_data["TargetLocation"]) : <any>undefined;
-            this.percentMoveCompleted = _data["PercentMoveCompleted"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.palletNum = _data["PalletNum"];
+      this.fixtureOnPallet = _data["FixtureOnPallet"];
+      this.onHold = _data["OnHold"];
+      this.currentPalletLocation = _data["CurrentPalletLocation"]
+        ? PalletLocation.fromJS(_data["CurrentPalletLocation"])
+        : new PalletLocation();
+      this.newFixture = _data["NewFixture"];
+      this.numFaces = _data["NumFaces"];
+      if (Array.isArray(_data["FaceNames"])) {
+        this.faceNames = [] as any;
+        for (let item of _data["FaceNames"]) this.faceNames!.push(item);
+      }
+      this.targetLocation = _data["TargetLocation"]
+        ? PalletLocation.fromJS(_data["TargetLocation"])
+        : <any>undefined;
+      this.percentMoveCompleted = _data["PercentMoveCompleted"];
     }
+  }
 
-    static fromJS(data: any): PalletStatus {
-        data = typeof data === 'object' ? data : {};
-        let result = new PalletStatus();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): PalletStatus {
+    data = typeof data === "object" ? data : {};
+    let result = new PalletStatus();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["PalletNum"] = this.palletNum;
-        data["FixtureOnPallet"] = this.fixtureOnPallet;
-        data["OnHold"] = this.onHold;
-        data["CurrentPalletLocation"] = this.currentPalletLocation ? this.currentPalletLocation.toJSON() : <any>undefined;
-        data["NewFixture"] = this.newFixture;
-        data["NumFaces"] = this.numFaces;
-        if (Array.isArray(this.faceNames)) {
-            data["FaceNames"] = [];
-            for (let item of this.faceNames)
-                data["FaceNames"].push(item);
-        }
-        data["TargetLocation"] = this.targetLocation ? this.targetLocation.toJSON() : <any>undefined;
-        data["PercentMoveCompleted"] = this.percentMoveCompleted;
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["PalletNum"] = this.palletNum;
+    data["FixtureOnPallet"] = this.fixtureOnPallet;
+    data["OnHold"] = this.onHold;
+    data["CurrentPalletLocation"] = this.currentPalletLocation
+      ? this.currentPalletLocation.toJSON()
+      : <any>undefined;
+    data["NewFixture"] = this.newFixture;
+    data["NumFaces"] = this.numFaces;
+    if (Array.isArray(this.faceNames)) {
+      data["FaceNames"] = [];
+      for (let item of this.faceNames) data["FaceNames"].push(item);
     }
+    data["TargetLocation"] = this.targetLocation ? this.targetLocation.toJSON() : <any>undefined;
+    data["PercentMoveCompleted"] = this.percentMoveCompleted;
+    return data;
+  }
 }
 
 export interface IPalletStatus {
-    palletNum: number;
-    fixtureOnPallet: string;
-    onHold: boolean;
-    currentPalletLocation: PalletLocation;
-    newFixture?: string | undefined;
-    numFaces: number;
-    faceNames?: string[] | undefined;
-    targetLocation?: PalletLocation | undefined;
-    percentMoveCompleted?: number | undefined;
+  palletNum: number;
+  fixtureOnPallet: string;
+  onHold: boolean;
+  currentPalletLocation: PalletLocation;
+  newFixture?: string | undefined;
+  numFaces: number;
+  faceNames?: string[] | undefined;
+  targetLocation?: PalletLocation | undefined;
+  percentMoveCompleted?: number | undefined;
 }
 
 export class PalletLocation implements IPalletLocation {
-    loc!: PalletLocationEnum;
-    group!: string;
-    num!: number;
+  loc!: PalletLocationEnum;
+  group!: string;
+  num!: number;
 
-    constructor(data?: IPalletLocation) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IPalletLocation) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.loc = _data["loc"];
-            this.group = _data["group"];
-            this.num = _data["num"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.loc = _data["loc"];
+      this.group = _data["group"];
+      this.num = _data["num"];
     }
+  }
 
-    static fromJS(data: any): PalletLocation {
-        data = typeof data === 'object' ? data : {};
-        let result = new PalletLocation();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): PalletLocation {
+    data = typeof data === "object" ? data : {};
+    let result = new PalletLocation();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["loc"] = this.loc;
-        data["group"] = this.group;
-        data["num"] = this.num;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["loc"] = this.loc;
+    data["group"] = this.group;
+    data["num"] = this.num;
+    return data;
+  }
 }
 
 export interface IPalletLocation {
-    loc: PalletLocationEnum;
-    group: string;
-    num: number;
+  loc: PalletLocationEnum;
+  group: string;
+  num: number;
 }
 
 export enum PalletLocationEnum {
-    LoadUnload = "LoadUnload",
-    Machine = "Machine",
-    MachineQueue = "MachineQueue",
-    Buffer = "Buffer",
-    Cart = "Cart",
+  LoadUnload = "LoadUnload",
+  Machine = "Machine",
+  MachineQueue = "MachineQueue",
+  Buffer = "Buffer",
+  Cart = "Cart",
 }
 
 export class InProcessMaterial implements IInProcessMaterial {
-    materialID!: number;
-    jobUnique!: string;
-    partName!: string;
-    process!: number;
-    path!: number;
-    serial?: string | undefined;
-    workorderId?: string | undefined;
-    signaledInspections!: string[];
-    lastCompletedMachiningRouteStopIndex?: number | undefined;
-    location!: InProcessMaterialLocation;
-    action!: InProcessMaterialAction;
+  materialID!: number;
+  jobUnique!: string;
+  partName!: string;
+  process!: number;
+  path!: number;
+  serial?: string | undefined;
+  workorderId?: string | undefined;
+  signaledInspections!: string[];
+  lastCompletedMachiningRouteStopIndex?: number | undefined;
+  location!: InProcessMaterialLocation;
+  action!: InProcessMaterialAction;
 
-    constructor(data?: IInProcessMaterial) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.signaledInspections = [];
-            this.location = new InProcessMaterialLocation();
-            this.action = new InProcessMaterialAction();
-        }
+  constructor(data?: IInProcessMaterial) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.signaledInspections = [];
+      this.location = new InProcessMaterialLocation();
+      this.action = new InProcessMaterialAction();
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.materialID = _data["MaterialID"];
-            this.jobUnique = _data["JobUnique"];
-            this.partName = _data["PartName"];
-            this.process = _data["Process"];
-            this.path = _data["Path"];
-            this.serial = _data["Serial"];
-            this.workorderId = _data["WorkorderId"];
-            if (Array.isArray(_data["SignaledInspections"])) {
-                this.signaledInspections = [] as any;
-                for (let item of _data["SignaledInspections"])
-                    this.signaledInspections!.push(item);
-            }
-            this.lastCompletedMachiningRouteStopIndex = _data["LastCompletedMachiningRouteStopIndex"];
-            this.location = _data["Location"] ? InProcessMaterialLocation.fromJS(_data["Location"]) : new InProcessMaterialLocation();
-            this.action = _data["Action"] ? InProcessMaterialAction.fromJS(_data["Action"]) : new InProcessMaterialAction();
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.materialID = _data["MaterialID"];
+      this.jobUnique = _data["JobUnique"];
+      this.partName = _data["PartName"];
+      this.process = _data["Process"];
+      this.path = _data["Path"];
+      this.serial = _data["Serial"];
+      this.workorderId = _data["WorkorderId"];
+      if (Array.isArray(_data["SignaledInspections"])) {
+        this.signaledInspections = [] as any;
+        for (let item of _data["SignaledInspections"]) this.signaledInspections!.push(item);
+      }
+      this.lastCompletedMachiningRouteStopIndex = _data["LastCompletedMachiningRouteStopIndex"];
+      this.location = _data["Location"]
+        ? InProcessMaterialLocation.fromJS(_data["Location"])
+        : new InProcessMaterialLocation();
+      this.action = _data["Action"]
+        ? InProcessMaterialAction.fromJS(_data["Action"])
+        : new InProcessMaterialAction();
     }
+  }
 
-    static fromJS(data: any): InProcessMaterial {
-        data = typeof data === 'object' ? data : {};
-        let result = new InProcessMaterial();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): InProcessMaterial {
+    data = typeof data === "object" ? data : {};
+    let result = new InProcessMaterial();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MaterialID"] = this.materialID;
-        data["JobUnique"] = this.jobUnique;
-        data["PartName"] = this.partName;
-        data["Process"] = this.process;
-        data["Path"] = this.path;
-        data["Serial"] = this.serial;
-        data["WorkorderId"] = this.workorderId;
-        if (Array.isArray(this.signaledInspections)) {
-            data["SignaledInspections"] = [];
-            for (let item of this.signaledInspections)
-                data["SignaledInspections"].push(item);
-        }
-        data["LastCompletedMachiningRouteStopIndex"] = this.lastCompletedMachiningRouteStopIndex;
-        data["Location"] = this.location ? this.location.toJSON() : <any>undefined;
-        data["Action"] = this.action ? this.action.toJSON() : <any>undefined;
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["MaterialID"] = this.materialID;
+    data["JobUnique"] = this.jobUnique;
+    data["PartName"] = this.partName;
+    data["Process"] = this.process;
+    data["Path"] = this.path;
+    data["Serial"] = this.serial;
+    data["WorkorderId"] = this.workorderId;
+    if (Array.isArray(this.signaledInspections)) {
+      data["SignaledInspections"] = [];
+      for (let item of this.signaledInspections) data["SignaledInspections"].push(item);
     }
+    data["LastCompletedMachiningRouteStopIndex"] = this.lastCompletedMachiningRouteStopIndex;
+    data["Location"] = this.location ? this.location.toJSON() : <any>undefined;
+    data["Action"] = this.action ? this.action.toJSON() : <any>undefined;
+    return data;
+  }
 }
 
 export interface IInProcessMaterial {
-    materialID: number;
-    jobUnique: string;
-    partName: string;
-    process: number;
-    path: number;
-    serial?: string | undefined;
-    workorderId?: string | undefined;
-    signaledInspections: string[];
-    lastCompletedMachiningRouteStopIndex?: number | undefined;
-    location: InProcessMaterialLocation;
-    action: InProcessMaterialAction;
+  materialID: number;
+  jobUnique: string;
+  partName: string;
+  process: number;
+  path: number;
+  serial?: string | undefined;
+  workorderId?: string | undefined;
+  signaledInspections: string[];
+  lastCompletedMachiningRouteStopIndex?: number | undefined;
+  location: InProcessMaterialLocation;
+  action: InProcessMaterialAction;
 }
 
 export class InProcessMaterialLocation implements IInProcessMaterialLocation {
-    type!: LocType;
-    palletNum?: number | undefined;
-    face?: number | undefined;
-    currentQueue?: string | undefined;
-    queuePosition?: number | undefined;
+  type!: LocType;
+  palletNum?: number | undefined;
+  face?: number | undefined;
+  currentQueue?: string | undefined;
+  queuePosition?: number | undefined;
 
-    constructor(data?: IInProcessMaterialLocation) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IInProcessMaterialLocation) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.type = _data["Type"];
-            this.palletNum = _data["PalletNum"];
-            this.face = _data["Face"];
-            this.currentQueue = _data["CurrentQueue"];
-            this.queuePosition = _data["QueuePosition"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.type = _data["Type"];
+      this.palletNum = _data["PalletNum"];
+      this.face = _data["Face"];
+      this.currentQueue = _data["CurrentQueue"];
+      this.queuePosition = _data["QueuePosition"];
     }
+  }
 
-    static fromJS(data: any): InProcessMaterialLocation {
-        data = typeof data === 'object' ? data : {};
-        let result = new InProcessMaterialLocation();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): InProcessMaterialLocation {
+    data = typeof data === "object" ? data : {};
+    let result = new InProcessMaterialLocation();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Type"] = this.type;
-        data["PalletNum"] = this.palletNum;
-        data["Face"] = this.face;
-        data["CurrentQueue"] = this.currentQueue;
-        data["QueuePosition"] = this.queuePosition;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Type"] = this.type;
+    data["PalletNum"] = this.palletNum;
+    data["Face"] = this.face;
+    data["CurrentQueue"] = this.currentQueue;
+    data["QueuePosition"] = this.queuePosition;
+    return data;
+  }
 }
 
 export interface IInProcessMaterialLocation {
-    type: LocType;
-    palletNum?: number | undefined;
-    face?: number | undefined;
-    currentQueue?: string | undefined;
-    queuePosition?: number | undefined;
+  type: LocType;
+  palletNum?: number | undefined;
+  face?: number | undefined;
+  currentQueue?: string | undefined;
+  queuePosition?: number | undefined;
 }
 
 export enum LocType {
-    Free = "Free",
-    OnPallet = "OnPallet",
-    InQueue = "InQueue",
+  Free = "Free",
+  OnPallet = "OnPallet",
+  InQueue = "InQueue",
 }
 
 export class InProcessMaterialAction implements IInProcessMaterialAction {
-    type!: ActionType;
-    loadOntoPalletNum?: number | undefined;
-    loadOntoFace?: number | undefined;
-    processAfterLoad?: number | undefined;
-    pathAfterLoad?: number | undefined;
-    unloadIntoQueue?: string | undefined;
-    elapsedLoadUnloadTime?: string | undefined;
-    program?: string | undefined;
-    elapsedMachiningTime?: string | undefined;
-    expectedRemainingMachiningTime?: string | undefined;
+  type!: ActionType;
+  loadOntoPalletNum?: number | undefined;
+  loadOntoFace?: number | undefined;
+  processAfterLoad?: number | undefined;
+  pathAfterLoad?: number | undefined;
+  unloadIntoQueue?: string | undefined;
+  elapsedLoadUnloadTime?: string | undefined;
+  program?: string | undefined;
+  elapsedMachiningTime?: string | undefined;
+  expectedRemainingMachiningTime?: string | undefined;
 
-    constructor(data?: IInProcessMaterialAction) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IInProcessMaterialAction) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.type = _data["Type"];
-            this.loadOntoPalletNum = _data["LoadOntoPalletNum"];
-            this.loadOntoFace = _data["LoadOntoFace"];
-            this.processAfterLoad = _data["ProcessAfterLoad"];
-            this.pathAfterLoad = _data["PathAfterLoad"];
-            this.unloadIntoQueue = _data["UnloadIntoQueue"];
-            this.elapsedLoadUnloadTime = _data["ElapsedLoadUnloadTime"];
-            this.program = _data["Program"];
-            this.elapsedMachiningTime = _data["ElapsedMachiningTime"];
-            this.expectedRemainingMachiningTime = _data["ExpectedRemainingMachiningTime"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.type = _data["Type"];
+      this.loadOntoPalletNum = _data["LoadOntoPalletNum"];
+      this.loadOntoFace = _data["LoadOntoFace"];
+      this.processAfterLoad = _data["ProcessAfterLoad"];
+      this.pathAfterLoad = _data["PathAfterLoad"];
+      this.unloadIntoQueue = _data["UnloadIntoQueue"];
+      this.elapsedLoadUnloadTime = _data["ElapsedLoadUnloadTime"];
+      this.program = _data["Program"];
+      this.elapsedMachiningTime = _data["ElapsedMachiningTime"];
+      this.expectedRemainingMachiningTime = _data["ExpectedRemainingMachiningTime"];
     }
+  }
 
-    static fromJS(data: any): InProcessMaterialAction {
-        data = typeof data === 'object' ? data : {};
-        let result = new InProcessMaterialAction();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): InProcessMaterialAction {
+    data = typeof data === "object" ? data : {};
+    let result = new InProcessMaterialAction();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Type"] = this.type;
-        data["LoadOntoPalletNum"] = this.loadOntoPalletNum;
-        data["LoadOntoFace"] = this.loadOntoFace;
-        data["ProcessAfterLoad"] = this.processAfterLoad;
-        data["PathAfterLoad"] = this.pathAfterLoad;
-        data["UnloadIntoQueue"] = this.unloadIntoQueue;
-        data["ElapsedLoadUnloadTime"] = this.elapsedLoadUnloadTime;
-        data["Program"] = this.program;
-        data["ElapsedMachiningTime"] = this.elapsedMachiningTime;
-        data["ExpectedRemainingMachiningTime"] = this.expectedRemainingMachiningTime;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Type"] = this.type;
+    data["LoadOntoPalletNum"] = this.loadOntoPalletNum;
+    data["LoadOntoFace"] = this.loadOntoFace;
+    data["ProcessAfterLoad"] = this.processAfterLoad;
+    data["PathAfterLoad"] = this.pathAfterLoad;
+    data["UnloadIntoQueue"] = this.unloadIntoQueue;
+    data["ElapsedLoadUnloadTime"] = this.elapsedLoadUnloadTime;
+    data["Program"] = this.program;
+    data["ElapsedMachiningTime"] = this.elapsedMachiningTime;
+    data["ExpectedRemainingMachiningTime"] = this.expectedRemainingMachiningTime;
+    return data;
+  }
 }
 
 export interface IInProcessMaterialAction {
-    type: ActionType;
-    loadOntoPalletNum?: number | undefined;
-    loadOntoFace?: number | undefined;
-    processAfterLoad?: number | undefined;
-    pathAfterLoad?: number | undefined;
-    unloadIntoQueue?: string | undefined;
-    elapsedLoadUnloadTime?: string | undefined;
-    program?: string | undefined;
-    elapsedMachiningTime?: string | undefined;
-    expectedRemainingMachiningTime?: string | undefined;
+  type: ActionType;
+  loadOntoPalletNum?: number | undefined;
+  loadOntoFace?: number | undefined;
+  processAfterLoad?: number | undefined;
+  pathAfterLoad?: number | undefined;
+  unloadIntoQueue?: string | undefined;
+  elapsedLoadUnloadTime?: string | undefined;
+  program?: string | undefined;
+  elapsedMachiningTime?: string | undefined;
+  expectedRemainingMachiningTime?: string | undefined;
 }
 
 export enum ActionType {
-    Waiting = "Waiting",
-    Loading = "Loading",
-    UnloadToInProcess = "UnloadToInProcess",
-    UnloadToCompletedMaterial = "UnloadToCompletedMaterial",
-    Machining = "Machining",
+  Waiting = "Waiting",
+  Loading = "Loading",
+  UnloadToInProcess = "UnloadToInProcess",
+  UnloadToCompletedMaterial = "UnloadToCompletedMaterial",
+  Machining = "Machining",
 }
 
 export class QueueInfo implements IQueueInfo {
-    maxSizeBeforeStopUnloading?: number | undefined;
-    role?: QueueRole | undefined;
+  maxSizeBeforeStopUnloading?: number | undefined;
+  role?: QueueRole | undefined;
 
-    constructor(data?: IQueueInfo) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IQueueInfo) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.maxSizeBeforeStopUnloading = _data["MaxSizeBeforeStopUnloading"];
-            this.role = _data["Role"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.maxSizeBeforeStopUnloading = _data["MaxSizeBeforeStopUnloading"];
+      this.role = _data["Role"];
     }
+  }
 
-    static fromJS(data: any): QueueInfo {
-        data = typeof data === 'object' ? data : {};
-        let result = new QueueInfo();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): QueueInfo {
+    data = typeof data === "object" ? data : {};
+    let result = new QueueInfo();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MaxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
-        data["Role"] = this.role;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["MaxSizeBeforeStopUnloading"] = this.maxSizeBeforeStopUnloading;
+    data["Role"] = this.role;
+    return data;
+  }
 }
 
 export interface IQueueInfo {
-    maxSizeBeforeStopUnloading?: number | undefined;
-    role?: QueueRole | undefined;
+  maxSizeBeforeStopUnloading?: number | undefined;
+  role?: QueueRole | undefined;
 }
 
 export enum QueueRole {
-    RawMaterial = "RawMaterial",
-    InProcessTransfer = "InProcessTransfer",
-    Quarantine = "Quarantine",
-    Other = "Other",
+  RawMaterial = "RawMaterial",
+  InProcessTransfer = "InProcessTransfer",
+  Quarantine = "Quarantine",
+  Other = "Other",
 }
 
 export class MachineLocation implements IMachineLocation {
-    machineGroup!: string;
-    machineNum!: number;
-    moving!: boolean;
-    possibleLoadStations!: number[];
-    currentLoadStation?: number | undefined;
+  machineGroup!: string;
+  machineNum!: number;
+  moving!: boolean;
+  possibleLoadStations!: number[];
+  currentLoadStation?: number | undefined;
 
-    constructor(data?: IMachineLocation) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.possibleLoadStations = [];
-        }
+  constructor(data?: IMachineLocation) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.possibleLoadStations = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.machineGroup = _data["MachineGroup"];
-            this.machineNum = _data["MachineNum"];
-            this.moving = _data["Moving"];
-            if (Array.isArray(_data["PossibleLoadStations"])) {
-                this.possibleLoadStations = [] as any;
-                for (let item of _data["PossibleLoadStations"])
-                    this.possibleLoadStations!.push(item);
-            }
-            this.currentLoadStation = _data["CurrentLoadStation"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.machineGroup = _data["MachineGroup"];
+      this.machineNum = _data["MachineNum"];
+      this.moving = _data["Moving"];
+      if (Array.isArray(_data["PossibleLoadStations"])) {
+        this.possibleLoadStations = [] as any;
+        for (let item of _data["PossibleLoadStations"]) this.possibleLoadStations!.push(item);
+      }
+      this.currentLoadStation = _data["CurrentLoadStation"];
     }
+  }
 
-    static fromJS(data: any): MachineLocation {
-        data = typeof data === 'object' ? data : {};
-        let result = new MachineLocation();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): MachineLocation {
+    data = typeof data === "object" ? data : {};
+    let result = new MachineLocation();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MachineGroup"] = this.machineGroup;
-        data["MachineNum"] = this.machineNum;
-        data["Moving"] = this.moving;
-        if (Array.isArray(this.possibleLoadStations)) {
-            data["PossibleLoadStations"] = [];
-            for (let item of this.possibleLoadStations)
-                data["PossibleLoadStations"].push(item);
-        }
-        data["CurrentLoadStation"] = this.currentLoadStation;
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["MachineGroup"] = this.machineGroup;
+    data["MachineNum"] = this.machineNum;
+    data["Moving"] = this.moving;
+    if (Array.isArray(this.possibleLoadStations)) {
+      data["PossibleLoadStations"] = [];
+      for (let item of this.possibleLoadStations) data["PossibleLoadStations"].push(item);
     }
+    data["CurrentLoadStation"] = this.currentLoadStation;
+    return data;
+  }
 }
 
 export interface IMachineLocation {
-    machineGroup: string;
-    machineNum: number;
-    moving: boolean;
-    possibleLoadStations: number[];
-    currentLoadStation?: number | undefined;
+  machineGroup: string;
+  machineNum: number;
+  moving: boolean;
+  possibleLoadStations: number[];
+  currentLoadStation?: number | undefined;
 }
 
 export class ActiveWorkorder implements IActiveWorkorder {
-    workorderId!: string;
-    part!: string;
-    plannedQuantity!: number;
-    dueDate!: Date;
-    priority!: number;
-    simulatedStartUTC?: Date | undefined;
-    simulatedFilledUTC?: Date | undefined;
-    completedQuantity!: number;
-    serials!: string[];
-    comments?: WorkorderComment[] | undefined;
-    elapsedStationTime!: { [key: string]: string; };
-    activeStationTime!: { [key: string]: string; };
+  workorderId!: string;
+  part!: string;
+  plannedQuantity!: number;
+  dueDate!: Date;
+  priority!: number;
+  simulatedStartUTC?: Date | undefined;
+  simulatedFilledUTC?: Date | undefined;
+  completedQuantity!: number;
+  serials!: string[];
+  comments?: WorkorderComment[] | undefined;
+  elapsedStationTime!: { [key: string]: string };
+  activeStationTime!: { [key: string]: string };
 
-    constructor(data?: IActiveWorkorder) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.serials = [];
-            this.elapsedStationTime = {};
-            this.activeStationTime = {};
-        }
+  constructor(data?: IActiveWorkorder) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.serials = [];
+      this.elapsedStationTime = {};
+      this.activeStationTime = {};
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.workorderId = _data["WorkorderId"];
-            this.part = _data["Part"];
-            this.plannedQuantity = _data["PlannedQuantity"];
-            this.dueDate = _data["DueDate"] ? new Date(_data["DueDate"].toString()) : <any>undefined;
-            this.priority = _data["Priority"];
-            this.simulatedStartUTC = _data["SimulatedStartUTC"] ? new Date(_data["SimulatedStartUTC"].toString()) : <any>undefined;
-            this.simulatedFilledUTC = _data["SimulatedFilledUTC"] ? new Date(_data["SimulatedFilledUTC"].toString()) : <any>undefined;
-            this.completedQuantity = _data["CompletedQuantity"];
-            if (Array.isArray(_data["Serials"])) {
-                this.serials = [] as any;
-                for (let item of _data["Serials"])
-                    this.serials!.push(item);
-            }
-            if (Array.isArray(_data["Comments"])) {
-                this.comments = [] as any;
-                for (let item of _data["Comments"])
-                    this.comments!.push(WorkorderComment.fromJS(item));
-            }
-            if (_data["ElapsedStationTime"]) {
-                this.elapsedStationTime = {} as any;
-                for (let key in _data["ElapsedStationTime"]) {
-                    if (_data["ElapsedStationTime"].hasOwnProperty(key))
-                        (<any>this.elapsedStationTime)![key] = _data["ElapsedStationTime"][key];
-                }
-            }
-            if (_data["ActiveStationTime"]) {
-                this.activeStationTime = {} as any;
-                for (let key in _data["ActiveStationTime"]) {
-                    if (_data["ActiveStationTime"].hasOwnProperty(key))
-                        (<any>this.activeStationTime)![key] = _data["ActiveStationTime"][key];
-                }
-            }
+  init(_data?: any) {
+    if (_data) {
+      this.workorderId = _data["WorkorderId"];
+      this.part = _data["Part"];
+      this.plannedQuantity = _data["PlannedQuantity"];
+      this.dueDate = _data["DueDate"] ? new Date(_data["DueDate"].toString()) : <any>undefined;
+      this.priority = _data["Priority"];
+      this.simulatedStartUTC = _data["SimulatedStartUTC"]
+        ? new Date(_data["SimulatedStartUTC"].toString())
+        : <any>undefined;
+      this.simulatedFilledUTC = _data["SimulatedFilledUTC"]
+        ? new Date(_data["SimulatedFilledUTC"].toString())
+        : <any>undefined;
+      this.completedQuantity = _data["CompletedQuantity"];
+      if (Array.isArray(_data["Serials"])) {
+        this.serials = [] as any;
+        for (let item of _data["Serials"]) this.serials!.push(item);
+      }
+      if (Array.isArray(_data["Comments"])) {
+        this.comments = [] as any;
+        for (let item of _data["Comments"]) this.comments!.push(WorkorderComment.fromJS(item));
+      }
+      if (_data["ElapsedStationTime"]) {
+        this.elapsedStationTime = {} as any;
+        for (let key in _data["ElapsedStationTime"]) {
+          if (_data["ElapsedStationTime"].hasOwnProperty(key))
+            (<any>this.elapsedStationTime)![key] = _data["ElapsedStationTime"][key];
         }
+      }
+      if (_data["ActiveStationTime"]) {
+        this.activeStationTime = {} as any;
+        for (let key in _data["ActiveStationTime"]) {
+          if (_data["ActiveStationTime"].hasOwnProperty(key))
+            (<any>this.activeStationTime)![key] = _data["ActiveStationTime"][key];
+        }
+      }
     }
+  }
 
-    static fromJS(data: any): ActiveWorkorder {
-        data = typeof data === 'object' ? data : {};
-        let result = new ActiveWorkorder();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ActiveWorkorder {
+    data = typeof data === "object" ? data : {};
+    let result = new ActiveWorkorder();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["WorkorderId"] = this.workorderId;
-        data["Part"] = this.part;
-        data["PlannedQuantity"] = this.plannedQuantity;
-        data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
-        data["Priority"] = this.priority;
-        data["SimulatedStartUTC"] = this.simulatedStartUTC ? this.simulatedStartUTC.toISOString() : <any>undefined;
-        data["SimulatedFilledUTC"] = this.simulatedFilledUTC ? this.simulatedFilledUTC.toISOString() : <any>undefined;
-        data["CompletedQuantity"] = this.completedQuantity;
-        if (Array.isArray(this.serials)) {
-            data["Serials"] = [];
-            for (let item of this.serials)
-                data["Serials"].push(item);
-        }
-        if (Array.isArray(this.comments)) {
-            data["Comments"] = [];
-            for (let item of this.comments)
-                data["Comments"].push(item.toJSON());
-        }
-        if (this.elapsedStationTime) {
-            data["ElapsedStationTime"] = {};
-            for (let key in this.elapsedStationTime) {
-                if (this.elapsedStationTime.hasOwnProperty(key))
-                    (<any>data["ElapsedStationTime"])[key] = (<any>this.elapsedStationTime)[key];
-            }
-        }
-        if (this.activeStationTime) {
-            data["ActiveStationTime"] = {};
-            for (let key in this.activeStationTime) {
-                if (this.activeStationTime.hasOwnProperty(key))
-                    (<any>data["ActiveStationTime"])[key] = (<any>this.activeStationTime)[key];
-            }
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["WorkorderId"] = this.workorderId;
+    data["Part"] = this.part;
+    data["PlannedQuantity"] = this.plannedQuantity;
+    data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
+    data["Priority"] = this.priority;
+    data["SimulatedStartUTC"] = this.simulatedStartUTC
+      ? this.simulatedStartUTC.toISOString()
+      : <any>undefined;
+    data["SimulatedFilledUTC"] = this.simulatedFilledUTC
+      ? this.simulatedFilledUTC.toISOString()
+      : <any>undefined;
+    data["CompletedQuantity"] = this.completedQuantity;
+    if (Array.isArray(this.serials)) {
+      data["Serials"] = [];
+      for (let item of this.serials) data["Serials"].push(item);
     }
+    if (Array.isArray(this.comments)) {
+      data["Comments"] = [];
+      for (let item of this.comments) data["Comments"].push(item.toJSON());
+    }
+    if (this.elapsedStationTime) {
+      data["ElapsedStationTime"] = {};
+      for (let key in this.elapsedStationTime) {
+        if (this.elapsedStationTime.hasOwnProperty(key))
+          (<any>data["ElapsedStationTime"])[key] = (<any>this.elapsedStationTime)[key];
+      }
+    }
+    if (this.activeStationTime) {
+      data["ActiveStationTime"] = {};
+      for (let key in this.activeStationTime) {
+        if (this.activeStationTime.hasOwnProperty(key))
+          (<any>data["ActiveStationTime"])[key] = (<any>this.activeStationTime)[key];
+      }
+    }
+    return data;
+  }
 }
 
 export interface IActiveWorkorder {
-    workorderId: string;
-    part: string;
-    plannedQuantity: number;
-    dueDate: Date;
-    priority: number;
-    simulatedStartUTC?: Date | undefined;
-    simulatedFilledUTC?: Date | undefined;
-    completedQuantity: number;
-    serials: string[];
-    comments?: WorkorderComment[] | undefined;
-    elapsedStationTime: { [key: string]: string; };
-    activeStationTime: { [key: string]: string; };
+  workorderId: string;
+  part: string;
+  plannedQuantity: number;
+  dueDate: Date;
+  priority: number;
+  simulatedStartUTC?: Date | undefined;
+  simulatedFilledUTC?: Date | undefined;
+  completedQuantity: number;
+  serials: string[];
+  comments?: WorkorderComment[] | undefined;
+  elapsedStationTime: { [key: string]: string };
+  activeStationTime: { [key: string]: string };
 }
 
 export class WorkorderComment implements IWorkorderComment {
-    comment!: string;
-    timeUTC!: Date;
+  comment!: string;
+  timeUTC!: Date;
 
-    constructor(data?: IWorkorderComment) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IWorkorderComment) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.comment = _data["Comment"];
-            this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.comment = _data["Comment"];
+      this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
     }
+  }
 
-    static fromJS(data: any): WorkorderComment {
-        data = typeof data === 'object' ? data : {};
-        let result = new WorkorderComment();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): WorkorderComment {
+    data = typeof data === "object" ? data : {};
+    let result = new WorkorderComment();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Comment"] = this.comment;
-        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Comment"] = this.comment;
+    data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
+    return data;
+  }
 }
 
 export interface IWorkorderComment {
-    comment: string;
-    timeUTC: Date;
+  comment: string;
+  timeUTC: Date;
 }
 
 export class EditMaterialInLogEvents implements IEditMaterialInLogEvents {
-    oldMaterialID!: number;
-    newMaterialID!: number;
-    editedEvents!: LogEntry[];
+  oldMaterialID!: number;
+  newMaterialID!: number;
+  editedEvents!: LogEntry[];
 
-    constructor(data?: IEditMaterialInLogEvents) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.editedEvents = [];
-        }
+  constructor(data?: IEditMaterialInLogEvents) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.editedEvents = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.oldMaterialID = _data["OldMaterialID"];
-            this.newMaterialID = _data["NewMaterialID"];
-            if (Array.isArray(_data["EditedEvents"])) {
-                this.editedEvents = [] as any;
-                for (let item of _data["EditedEvents"])
-                    this.editedEvents!.push(LogEntry.fromJS(item));
-            }
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.oldMaterialID = _data["OldMaterialID"];
+      this.newMaterialID = _data["NewMaterialID"];
+      if (Array.isArray(_data["EditedEvents"])) {
+        this.editedEvents = [] as any;
+        for (let item of _data["EditedEvents"]) this.editedEvents!.push(LogEntry.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): EditMaterialInLogEvents {
-        data = typeof data === 'object' ? data : {};
-        let result = new EditMaterialInLogEvents();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): EditMaterialInLogEvents {
+    data = typeof data === "object" ? data : {};
+    let result = new EditMaterialInLogEvents();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["OldMaterialID"] = this.oldMaterialID;
-        data["NewMaterialID"] = this.newMaterialID;
-        if (Array.isArray(this.editedEvents)) {
-            data["EditedEvents"] = [];
-            for (let item of this.editedEvents)
-                data["EditedEvents"].push(item.toJSON());
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["OldMaterialID"] = this.oldMaterialID;
+    data["NewMaterialID"] = this.newMaterialID;
+    if (Array.isArray(this.editedEvents)) {
+      data["EditedEvents"] = [];
+      for (let item of this.editedEvents) data["EditedEvents"].push(item.toJSON());
     }
+    return data;
+  }
 }
 
 export interface IEditMaterialInLogEvents {
-    oldMaterialID: number;
-    newMaterialID: number;
-    editedEvents: LogEntry[];
+  oldMaterialID: number;
+  newMaterialID: number;
+  editedEvents: LogEntry[];
 }
 
 export class ProblemDetails implements IProblemDetails {
-    type?: string | undefined;
-    title?: string | undefined;
-    status?: number | undefined;
-    detail?: string | undefined;
-    instance?: string | undefined;
-    extensions?: { [key: string]: any; };
+  type?: string | undefined;
+  title?: string | undefined;
+  status?: number | undefined;
+  detail?: string | undefined;
+  instance?: string | undefined;
+  extensions?: { [key: string]: any };
 
-    [key: string]: any;
+  [key: string]: any;
 
-    constructor(data?: IProblemDetails) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IProblemDetails) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            for (var property in _data) {
-                if (_data.hasOwnProperty(property))
-                    this[property] = _data[property];
-            }
-            this.type = _data["Type"];
-            this.title = _data["Title"];
-            this.status = _data["Status"];
-            this.detail = _data["Detail"];
-            this.instance = _data["Instance"];
-            if (_data["Extensions"]) {
-                this.extensions = {} as any;
-                for (let key in _data["Extensions"]) {
-                    if (_data["Extensions"].hasOwnProperty(key))
-                        (<any>this.extensions)![key] = _data["Extensions"][key];
-                }
-            }
+  init(_data?: any) {
+    if (_data) {
+      for (var property in _data) {
+        if (_data.hasOwnProperty(property)) this[property] = _data[property];
+      }
+      this.type = _data["Type"];
+      this.title = _data["Title"];
+      this.status = _data["Status"];
+      this.detail = _data["Detail"];
+      this.instance = _data["Instance"];
+      if (_data["Extensions"]) {
+        this.extensions = {} as any;
+        for (let key in _data["Extensions"]) {
+          if (_data["Extensions"].hasOwnProperty(key))
+            (<any>this.extensions)![key] = _data["Extensions"][key];
         }
+      }
     }
+  }
 
-    static fromJS(data: any): ProblemDetails {
-        data = typeof data === 'object' ? data : {};
-        let result = new ProblemDetails();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ProblemDetails {
+    data = typeof data === "object" ? data : {};
+    let result = new ProblemDetails();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        for (var property in this) {
-            if (this.hasOwnProperty(property))
-                data[property] = this[property];
-        }
-        data["Type"] = this.type;
-        data["Title"] = this.title;
-        data["Status"] = this.status;
-        data["Detail"] = this.detail;
-        data["Instance"] = this.instance;
-        if (this.extensions) {
-            data["Extensions"] = {};
-            for (let key in this.extensions) {
-                if (this.extensions.hasOwnProperty(key))
-                    (<any>data["Extensions"])[key] = (<any>this.extensions)[key];
-            }
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    for (var property in this) {
+      if (this.hasOwnProperty(property)) data[property] = this[property];
     }
+    data["Type"] = this.type;
+    data["Title"] = this.title;
+    data["Status"] = this.status;
+    data["Detail"] = this.detail;
+    data["Instance"] = this.instance;
+    if (this.extensions) {
+      data["Extensions"] = {};
+      for (let key in this.extensions) {
+        if (this.extensions.hasOwnProperty(key)) (<any>data["Extensions"])[key] = (<any>this.extensions)[key];
+      }
+    }
+    return data;
+  }
 }
 
 export interface IProblemDetails {
-    type?: string | undefined;
-    title?: string | undefined;
-    status?: number | undefined;
-    detail?: string | undefined;
-    instance?: string | undefined;
-    extensions?: { [key: string]: any; };
+  type?: string | undefined;
+  title?: string | undefined;
+  status?: number | undefined;
+  detail?: string | undefined;
+  instance?: string | undefined;
+  extensions?: { [key: string]: any };
 
-    [key: string]: any;
+  [key: string]: any;
 }
 
 export class ScannedMaterial implements IScannedMaterial {
-    existingMaterial?: MaterialDetails | undefined;
-    casting?: ScannedCasting | undefined;
+  existingMaterial?: MaterialDetails | undefined;
+  casting?: ScannedCasting | undefined;
 
-    constructor(data?: IScannedMaterial) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IScannedMaterial) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.existingMaterial = _data["ExistingMaterial"] ? MaterialDetails.fromJS(_data["ExistingMaterial"]) : <any>undefined;
-            this.casting = _data["Casting"] ? ScannedCasting.fromJS(_data["Casting"]) : <any>undefined;
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.existingMaterial = _data["ExistingMaterial"]
+        ? MaterialDetails.fromJS(_data["ExistingMaterial"])
+        : <any>undefined;
+      this.casting = _data["Casting"] ? ScannedCasting.fromJS(_data["Casting"]) : <any>undefined;
     }
+  }
 
-    static fromJS(data: any): ScannedMaterial {
-        data = typeof data === 'object' ? data : {};
-        let result = new ScannedMaterial();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ScannedMaterial {
+    data = typeof data === "object" ? data : {};
+    let result = new ScannedMaterial();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["ExistingMaterial"] = this.existingMaterial ? this.existingMaterial.toJSON() : <any>undefined;
-        data["Casting"] = this.casting ? this.casting.toJSON() : <any>undefined;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["ExistingMaterial"] = this.existingMaterial ? this.existingMaterial.toJSON() : <any>undefined;
+    data["Casting"] = this.casting ? this.casting.toJSON() : <any>undefined;
+    return data;
+  }
 }
 
 export interface IScannedMaterial {
-    existingMaterial?: MaterialDetails | undefined;
-    casting?: ScannedCasting | undefined;
+  existingMaterial?: MaterialDetails | undefined;
+  casting?: ScannedCasting | undefined;
 }
 
 export class MaterialDetails implements IMaterialDetails {
-    materialID!: number;
-    jobUnique?: string | undefined;
-    partName!: string;
-    numProcesses?: number;
-    workorder?: string | undefined;
-    serial?: string | undefined;
-    paths?: { [key: string]: number; } | undefined;
+  materialID!: number;
+  jobUnique?: string | undefined;
+  partName!: string;
+  numProcesses?: number;
+  workorder?: string | undefined;
+  serial?: string | undefined;
+  paths?: { [key: string]: number } | undefined;
 
-    constructor(data?: IMaterialDetails) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
+  constructor(data?: IMaterialDetails) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
+    }
+  }
+
+  init(_data?: any) {
+    if (_data) {
+      this.materialID = _data["MaterialID"];
+      this.jobUnique = _data["JobUnique"];
+      this.partName = _data["PartName"];
+      this.numProcesses = _data["NumProcesses"];
+      this.workorder = _data["Workorder"];
+      this.serial = _data["Serial"];
+      if (_data["Paths"]) {
+        this.paths = {} as any;
+        for (let key in _data["Paths"]) {
+          if (_data["Paths"].hasOwnProperty(key)) (<any>this.paths)![key] = _data["Paths"][key];
         }
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.materialID = _data["MaterialID"];
-            this.jobUnique = _data["JobUnique"];
-            this.partName = _data["PartName"];
-            this.numProcesses = _data["NumProcesses"];
-            this.workorder = _data["Workorder"];
-            this.serial = _data["Serial"];
-            if (_data["Paths"]) {
-                this.paths = {} as any;
-                for (let key in _data["Paths"]) {
-                    if (_data["Paths"].hasOwnProperty(key))
-                        (<any>this.paths)![key] = _data["Paths"][key];
-                }
-            }
-        }
-    }
+  static fromJS(data: any): MaterialDetails {
+    data = typeof data === "object" ? data : {};
+    let result = new MaterialDetails();
+    result.init(data);
+    return result;
+  }
 
-    static fromJS(data: any): MaterialDetails {
-        data = typeof data === 'object' ? data : {};
-        let result = new MaterialDetails();
-        result.init(data);
-        return result;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["MaterialID"] = this.materialID;
+    data["JobUnique"] = this.jobUnique;
+    data["PartName"] = this.partName;
+    data["NumProcesses"] = this.numProcesses;
+    data["Workorder"] = this.workorder;
+    data["Serial"] = this.serial;
+    if (this.paths) {
+      data["Paths"] = {};
+      for (let key in this.paths) {
+        if (this.paths.hasOwnProperty(key)) (<any>data["Paths"])[key] = (<any>this.paths)[key];
+      }
     }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MaterialID"] = this.materialID;
-        data["JobUnique"] = this.jobUnique;
-        data["PartName"] = this.partName;
-        data["NumProcesses"] = this.numProcesses;
-        data["Workorder"] = this.workorder;
-        data["Serial"] = this.serial;
-        if (this.paths) {
-            data["Paths"] = {};
-            for (let key in this.paths) {
-                if (this.paths.hasOwnProperty(key))
-                    (<any>data["Paths"])[key] = (<any>this.paths)[key];
-            }
-        }
-        return data;
-    }
+    return data;
+  }
 }
 
 export interface IMaterialDetails {
-    materialID: number;
-    jobUnique?: string | undefined;
-    partName: string;
-    numProcesses?: number;
-    workorder?: string | undefined;
-    serial?: string | undefined;
-    paths?: { [key: string]: number; } | undefined;
+  materialID: number;
+  jobUnique?: string | undefined;
+  partName: string;
+  numProcesses?: number;
+  workorder?: string | undefined;
+  serial?: string | undefined;
+  paths?: { [key: string]: number } | undefined;
 }
 
 export class ScannedCasting implements IScannedCasting {
-    possibleCastings?: string[] | undefined;
-    workorder?: string | undefined;
-    serial?: string | undefined;
+  possibleCastings?: string[] | undefined;
+  workorder?: string | undefined;
+  serial?: string | undefined;
 
-    constructor(data?: IScannedCasting) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IScannedCasting) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            if (Array.isArray(_data["PossibleCastings"])) {
-                this.possibleCastings = [] as any;
-                for (let item of _data["PossibleCastings"])
-                    this.possibleCastings!.push(item);
-            }
-            this.workorder = _data["Workorder"];
-            this.serial = _data["Serial"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      if (Array.isArray(_data["PossibleCastings"])) {
+        this.possibleCastings = [] as any;
+        for (let item of _data["PossibleCastings"]) this.possibleCastings!.push(item);
+      }
+      this.workorder = _data["Workorder"];
+      this.serial = _data["Serial"];
     }
+  }
 
-    static fromJS(data: any): ScannedCasting {
-        data = typeof data === 'object' ? data : {};
-        let result = new ScannedCasting();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ScannedCasting {
+    data = typeof data === "object" ? data : {};
+    let result = new ScannedCasting();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.possibleCastings)) {
-            data["PossibleCastings"] = [];
-            for (let item of this.possibleCastings)
-                data["PossibleCastings"].push(item);
-        }
-        data["Workorder"] = this.workorder;
-        data["Serial"] = this.serial;
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    if (Array.isArray(this.possibleCastings)) {
+      data["PossibleCastings"] = [];
+      for (let item of this.possibleCastings) data["PossibleCastings"].push(item);
     }
+    data["Workorder"] = this.workorder;
+    data["Serial"] = this.serial;
+    return data;
+  }
 }
 
 export interface IScannedCasting {
-    possibleCastings?: string[] | undefined;
-    workorder?: string | undefined;
-    serial?: string | undefined;
+  possibleCastings?: string[] | undefined;
+  workorder?: string | undefined;
+  serial?: string | undefined;
 }
 
 export class HistoricData implements IHistoricData {
-    jobs!: { [key: string]: HistoricJob; };
-    stationUse!: SimulatedStationUtilization[];
+  jobs!: { [key: string]: HistoricJob };
+  stationUse!: SimulatedStationUtilization[];
 
-    constructor(data?: IHistoricData) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.jobs = {};
-            this.stationUse = [];
-        }
+  constructor(data?: IHistoricData) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.jobs = {};
+      this.stationUse = [];
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            if (_data["Jobs"]) {
-                this.jobs = {} as any;
-                for (let key in _data["Jobs"]) {
-                    if (_data["Jobs"].hasOwnProperty(key))
-                        (<any>this.jobs)![key] = _data["Jobs"][key] ? HistoricJob.fromJS(_data["Jobs"][key]) : new HistoricJob();
-                }
-            }
-            if (Array.isArray(_data["StationUse"])) {
-                this.stationUse = [] as any;
-                for (let item of _data["StationUse"])
-                    this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
-            }
+  init(_data?: any) {
+    if (_data) {
+      if (_data["Jobs"]) {
+        this.jobs = {} as any;
+        for (let key in _data["Jobs"]) {
+          if (_data["Jobs"].hasOwnProperty(key))
+            (<any>this.jobs)![key] = _data["Jobs"][key]
+              ? HistoricJob.fromJS(_data["Jobs"][key])
+              : new HistoricJob();
         }
+      }
+      if (Array.isArray(_data["StationUse"])) {
+        this.stationUse = [] as any;
+        for (let item of _data["StationUse"]) this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): HistoricData {
-        data = typeof data === 'object' ? data : {};
-        let result = new HistoricData();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): HistoricData {
+    data = typeof data === "object" ? data : {};
+    let result = new HistoricData();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (this.jobs) {
-            data["Jobs"] = {};
-            for (let key in this.jobs) {
-                if (this.jobs.hasOwnProperty(key))
-                    (<any>data["Jobs"])[key] = this.jobs[key] ? this.jobs[key].toJSON() : <any>undefined;
-            }
-        }
-        if (Array.isArray(this.stationUse)) {
-            data["StationUse"] = [];
-            for (let item of this.stationUse)
-                data["StationUse"].push(item.toJSON());
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    if (this.jobs) {
+      data["Jobs"] = {};
+      for (let key in this.jobs) {
+        if (this.jobs.hasOwnProperty(key))
+          (<any>data["Jobs"])[key] = this.jobs[key] ? this.jobs[key].toJSON() : <any>undefined;
+      }
     }
+    if (Array.isArray(this.stationUse)) {
+      data["StationUse"] = [];
+      for (let item of this.stationUse) data["StationUse"].push(item.toJSON());
+    }
+    return data;
+  }
 }
 
 export interface IHistoricData {
-    jobs: { [key: string]: HistoricJob; };
-    stationUse: SimulatedStationUtilization[];
+  jobs: { [key: string]: HistoricJob };
+  stationUse: SimulatedStationUtilization[];
 }
 
 export class RecentHistoricData extends HistoricData implements IRecentHistoricData {
-    mostRecentSimulationId?: string | undefined;
-    mostRecentSimDayUsage?: SimulatedDayUsage[] | undefined;
-    mostRecentSimDayUsageWarning?: string | undefined;
+  mostRecentSimulationId?: string | undefined;
+  mostRecentSimDayUsage?: SimulatedDayUsage[] | undefined;
+  mostRecentSimDayUsageWarning?: string | undefined;
 
-    constructor(data?: IRecentHistoricData) {
-        super(data);
-    }
+  constructor(data?: IRecentHistoricData) {
+    super(data);
+  }
 
-    init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            this.mostRecentSimulationId = _data["MostRecentSimulationId"];
-            if (Array.isArray(_data["MostRecentSimDayUsage"])) {
-                this.mostRecentSimDayUsage = [] as any;
-                for (let item of _data["MostRecentSimDayUsage"])
-                    this.mostRecentSimDayUsage!.push(SimulatedDayUsage.fromJS(item));
-            }
-            this.mostRecentSimDayUsageWarning = _data["MostRecentSimDayUsageWarning"];
-        }
+  init(_data?: any) {
+    super.init(_data);
+    if (_data) {
+      this.mostRecentSimulationId = _data["MostRecentSimulationId"];
+      if (Array.isArray(_data["MostRecentSimDayUsage"])) {
+        this.mostRecentSimDayUsage = [] as any;
+        for (let item of _data["MostRecentSimDayUsage"])
+          this.mostRecentSimDayUsage!.push(SimulatedDayUsage.fromJS(item));
+      }
+      this.mostRecentSimDayUsageWarning = _data["MostRecentSimDayUsageWarning"];
     }
+  }
 
-    static fromJS(data: any): RecentHistoricData {
-        data = typeof data === 'object' ? data : {};
-        let result = new RecentHistoricData();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): RecentHistoricData {
+    data = typeof data === "object" ? data : {};
+    let result = new RecentHistoricData();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MostRecentSimulationId"] = this.mostRecentSimulationId;
-        if (Array.isArray(this.mostRecentSimDayUsage)) {
-            data["MostRecentSimDayUsage"] = [];
-            for (let item of this.mostRecentSimDayUsage)
-                data["MostRecentSimDayUsage"].push(item.toJSON());
-        }
-        data["MostRecentSimDayUsageWarning"] = this.mostRecentSimDayUsageWarning;
-        super.toJSON(data);
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["MostRecentSimulationId"] = this.mostRecentSimulationId;
+    if (Array.isArray(this.mostRecentSimDayUsage)) {
+      data["MostRecentSimDayUsage"] = [];
+      for (let item of this.mostRecentSimDayUsage) data["MostRecentSimDayUsage"].push(item.toJSON());
     }
+    data["MostRecentSimDayUsageWarning"] = this.mostRecentSimDayUsageWarning;
+    super.toJSON(data);
+    return data;
+  }
 }
 
 export interface IRecentHistoricData extends IHistoricData {
-    mostRecentSimulationId?: string | undefined;
-    mostRecentSimDayUsage?: SimulatedDayUsage[] | undefined;
-    mostRecentSimDayUsageWarning?: string | undefined;
+  mostRecentSimulationId?: string | undefined;
+  mostRecentSimDayUsage?: SimulatedDayUsage[] | undefined;
+  mostRecentSimDayUsageWarning?: string | undefined;
 }
 
 export class PlannedSchedule implements IPlannedSchedule {
-    latestScheduleId!: string;
-    jobs!: HistoricJob[];
-    extraParts!: { [key: string]: number; };
-    currentUnfilledWorkorders?: Workorder[] | undefined;
+  latestScheduleId!: string;
+  jobs!: HistoricJob[];
+  extraParts!: { [key: string]: number };
+  currentUnfilledWorkorders?: Workorder[] | undefined;
 
-    constructor(data?: IPlannedSchedule) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-        if (!data) {
-            this.jobs = [];
-            this.extraParts = {};
-        }
+  constructor(data?: IPlannedSchedule) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+    if (!data) {
+      this.jobs = [];
+      this.extraParts = {};
+    }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.latestScheduleId = _data["LatestScheduleId"];
-            if (Array.isArray(_data["Jobs"])) {
-                this.jobs = [] as any;
-                for (let item of _data["Jobs"])
-                    this.jobs!.push(HistoricJob.fromJS(item));
-            }
-            if (_data["ExtraParts"]) {
-                this.extraParts = {} as any;
-                for (let key in _data["ExtraParts"]) {
-                    if (_data["ExtraParts"].hasOwnProperty(key))
-                        (<any>this.extraParts)![key] = _data["ExtraParts"][key];
-                }
-            }
-            if (Array.isArray(_data["CurrentUnfilledWorkorders"])) {
-                this.currentUnfilledWorkorders = [] as any;
-                for (let item of _data["CurrentUnfilledWorkorders"])
-                    this.currentUnfilledWorkorders!.push(Workorder.fromJS(item));
-            }
+  init(_data?: any) {
+    if (_data) {
+      this.latestScheduleId = _data["LatestScheduleId"];
+      if (Array.isArray(_data["Jobs"])) {
+        this.jobs = [] as any;
+        for (let item of _data["Jobs"]) this.jobs!.push(HistoricJob.fromJS(item));
+      }
+      if (_data["ExtraParts"]) {
+        this.extraParts = {} as any;
+        for (let key in _data["ExtraParts"]) {
+          if (_data["ExtraParts"].hasOwnProperty(key))
+            (<any>this.extraParts)![key] = _data["ExtraParts"][key];
         }
+      }
+      if (Array.isArray(_data["CurrentUnfilledWorkorders"])) {
+        this.currentUnfilledWorkorders = [] as any;
+        for (let item of _data["CurrentUnfilledWorkorders"])
+          this.currentUnfilledWorkorders!.push(Workorder.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): PlannedSchedule {
-        data = typeof data === 'object' ? data : {};
-        let result = new PlannedSchedule();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): PlannedSchedule {
+    data = typeof data === "object" ? data : {};
+    let result = new PlannedSchedule();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["LatestScheduleId"] = this.latestScheduleId;
-        if (Array.isArray(this.jobs)) {
-            data["Jobs"] = [];
-            for (let item of this.jobs)
-                data["Jobs"].push(item.toJSON());
-        }
-        if (this.extraParts) {
-            data["ExtraParts"] = {};
-            for (let key in this.extraParts) {
-                if (this.extraParts.hasOwnProperty(key))
-                    (<any>data["ExtraParts"])[key] = (<any>this.extraParts)[key];
-            }
-        }
-        if (Array.isArray(this.currentUnfilledWorkorders)) {
-            data["CurrentUnfilledWorkorders"] = [];
-            for (let item of this.currentUnfilledWorkorders)
-                data["CurrentUnfilledWorkorders"].push(item.toJSON());
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["LatestScheduleId"] = this.latestScheduleId;
+    if (Array.isArray(this.jobs)) {
+      data["Jobs"] = [];
+      for (let item of this.jobs) data["Jobs"].push(item.toJSON());
     }
+    if (this.extraParts) {
+      data["ExtraParts"] = {};
+      for (let key in this.extraParts) {
+        if (this.extraParts.hasOwnProperty(key)) (<any>data["ExtraParts"])[key] = (<any>this.extraParts)[key];
+      }
+    }
+    if (Array.isArray(this.currentUnfilledWorkorders)) {
+      data["CurrentUnfilledWorkorders"] = [];
+      for (let item of this.currentUnfilledWorkorders) data["CurrentUnfilledWorkorders"].push(item.toJSON());
+    }
+    return data;
+  }
 }
 
 export interface IPlannedSchedule {
-    latestScheduleId: string;
-    jobs: HistoricJob[];
-    extraParts: { [key: string]: number; };
-    currentUnfilledWorkorders?: Workorder[] | undefined;
+  latestScheduleId: string;
+  jobs: HistoricJob[];
+  extraParts: { [key: string]: number };
+  currentUnfilledWorkorders?: Workorder[] | undefined;
 }
 
 export class WorkordersAndPrograms implements IWorkordersAndPrograms {
-    workorders!: Workorder[] | undefined;
-    programs?: NewProgramContent[] | undefined;
+  workorders!: Workorder[] | undefined;
+  programs?: NewProgramContent[] | undefined;
 
-    constructor(data?: IWorkordersAndPrograms) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IWorkordersAndPrograms) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            if (Array.isArray(_data["Workorders"])) {
-                this.workorders = [] as any;
-                for (let item of _data["Workorders"])
-                    this.workorders!.push(Workorder.fromJS(item));
-            }
-            if (Array.isArray(_data["Programs"])) {
-                this.programs = [] as any;
-                for (let item of _data["Programs"])
-                    this.programs!.push(NewProgramContent.fromJS(item));
-            }
-        }
+  init(_data?: any) {
+    if (_data) {
+      if (Array.isArray(_data["Workorders"])) {
+        this.workorders = [] as any;
+        for (let item of _data["Workorders"]) this.workorders!.push(Workorder.fromJS(item));
+      }
+      if (Array.isArray(_data["Programs"])) {
+        this.programs = [] as any;
+        for (let item of _data["Programs"]) this.programs!.push(NewProgramContent.fromJS(item));
+      }
     }
+  }
 
-    static fromJS(data: any): WorkordersAndPrograms {
-        data = typeof data === 'object' ? data : {};
-        let result = new WorkordersAndPrograms();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): WorkordersAndPrograms {
+    data = typeof data === "object" ? data : {};
+    let result = new WorkordersAndPrograms();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.workorders)) {
-            data["Workorders"] = [];
-            for (let item of this.workorders)
-                data["Workorders"].push(item.toJSON());
-        }
-        if (Array.isArray(this.programs)) {
-            data["Programs"] = [];
-            for (let item of this.programs)
-                data["Programs"].push(item.toJSON());
-        }
-        return data;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    if (Array.isArray(this.workorders)) {
+      data["Workorders"] = [];
+      for (let item of this.workorders) data["Workorders"].push(item.toJSON());
     }
+    if (Array.isArray(this.programs)) {
+      data["Programs"] = [];
+      for (let item of this.programs) data["Programs"].push(item.toJSON());
+    }
+    return data;
+  }
 }
 
 export interface IWorkordersAndPrograms {
-    workorders: Workorder[] | undefined;
-    programs?: NewProgramContent[] | undefined;
+  workorders: Workorder[] | undefined;
+  programs?: NewProgramContent[] | undefined;
 }
 
 export class QueuePosition implements IQueuePosition {
-    queue!: string | undefined;
-    position!: number;
+  queue!: string | undefined;
+  position!: number;
 
-    constructor(data?: IQueuePosition) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IQueuePosition) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.queue = _data["Queue"];
-            this.position = _data["Position"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.queue = _data["Queue"];
+      this.position = _data["Position"];
     }
+  }
 
-    static fromJS(data: any): QueuePosition {
-        data = typeof data === 'object' ? data : {};
-        let result = new QueuePosition();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): QueuePosition {
+    data = typeof data === "object" ? data : {};
+    let result = new QueuePosition();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Queue"] = this.queue;
-        data["Position"] = this.position;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Queue"] = this.queue;
+    data["Position"] = this.position;
+    return data;
+  }
 }
 
 export interface IQueuePosition {
-    queue: string | undefined;
-    position: number;
+  queue: string | undefined;
+  position: number;
 }
 
 export class MatToPutOnPallet implements IMatToPutOnPallet {
-    pallet!: number;
-    materialIDToSetOnPallet!: number;
+  pallet!: number;
+  materialIDToSetOnPallet!: number;
 
-    constructor(data?: IMatToPutOnPallet) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IMatToPutOnPallet) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.pallet = _data["Pallet"];
-            this.materialIDToSetOnPallet = _data["MaterialIDToSetOnPallet"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.pallet = _data["Pallet"];
+      this.materialIDToSetOnPallet = _data["MaterialIDToSetOnPallet"];
     }
+  }
 
-    static fromJS(data: any): MatToPutOnPallet {
-        data = typeof data === 'object' ? data : {};
-        let result = new MatToPutOnPallet();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): MatToPutOnPallet {
+    data = typeof data === "object" ? data : {};
+    let result = new MatToPutOnPallet();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Pallet"] = this.pallet;
-        data["MaterialIDToSetOnPallet"] = this.materialIDToSetOnPallet;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Pallet"] = this.pallet;
+    data["MaterialIDToSetOnPallet"] = this.materialIDToSetOnPallet;
+    return data;
+  }
 }
 
 export interface IMatToPutOnPallet {
-    pallet: number;
-    materialIDToSetOnPallet: number;
+  pallet: number;
+  materialIDToSetOnPallet: number;
 }
 
 export class JobAndDecrementQuantity implements IJobAndDecrementQuantity {
-    decrementId!: number;
-    jobUnique!: string;
-    timeUTC!: Date;
-    part!: string;
-    quantity!: number;
+  decrementId!: number;
+  jobUnique!: string;
+  timeUTC!: Date;
+  part!: string;
+  quantity!: number;
 
-    constructor(data?: IJobAndDecrementQuantity) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IJobAndDecrementQuantity) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.decrementId = _data["DecrementId"];
-            this.jobUnique = _data["JobUnique"];
-            this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
-            this.part = _data["Part"];
-            this.quantity = _data["Quantity"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.decrementId = _data["DecrementId"];
+      this.jobUnique = _data["JobUnique"];
+      this.timeUTC = _data["TimeUTC"] ? new Date(_data["TimeUTC"].toString()) : <any>undefined;
+      this.part = _data["Part"];
+      this.quantity = _data["Quantity"];
     }
+  }
 
-    static fromJS(data: any): JobAndDecrementQuantity {
-        data = typeof data === 'object' ? data : {};
-        let result = new JobAndDecrementQuantity();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): JobAndDecrementQuantity {
+    data = typeof data === "object" ? data : {};
+    let result = new JobAndDecrementQuantity();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["DecrementId"] = this.decrementId;
-        data["JobUnique"] = this.jobUnique;
-        data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
-        data["Part"] = this.part;
-        data["Quantity"] = this.quantity;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["DecrementId"] = this.decrementId;
+    data["JobUnique"] = this.jobUnique;
+    data["TimeUTC"] = this.timeUTC ? this.timeUTC.toISOString() : <any>undefined;
+    data["Part"] = this.part;
+    data["Quantity"] = this.quantity;
+    return data;
+  }
 }
 
 export interface IJobAndDecrementQuantity {
-    decrementId: number;
-    jobUnique: string;
-    timeUTC: Date;
-    part: string;
-    quantity: number;
+  decrementId: number;
+  jobUnique: string;
+  timeUTC: Date;
+  part: string;
+  quantity: number;
 }
 
 export class NewInspectionCompleted implements INewInspectionCompleted {
-    materialID!: number;
-    process!: number;
-    inspectionLocationNum!: number;
-    inspectionType!: string | undefined;
-    success!: boolean;
-    extraData?: { [key: string]: string; } | undefined;
-    elapsed!: string;
-    active!: string;
+  materialID!: number;
+  process!: number;
+  inspectionLocationNum!: number;
+  inspectionType!: string | undefined;
+  success!: boolean;
+  extraData?: { [key: string]: string } | undefined;
+  elapsed!: string;
+  active!: string;
 
-    constructor(data?: INewInspectionCompleted) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
+  constructor(data?: INewInspectionCompleted) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
+    }
+  }
+
+  init(_data?: any) {
+    if (_data) {
+      this.materialID = _data["MaterialID"];
+      this.process = _data["Process"];
+      this.inspectionLocationNum = _data["InspectionLocationNum"];
+      this.inspectionType = _data["InspectionType"];
+      this.success = _data["Success"];
+      if (_data["ExtraData"]) {
+        this.extraData = {} as any;
+        for (let key in _data["ExtraData"]) {
+          if (_data["ExtraData"].hasOwnProperty(key)) (<any>this.extraData)![key] = _data["ExtraData"][key];
         }
+      }
+      this.elapsed = _data["Elapsed"];
+      this.active = _data["Active"];
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.materialID = _data["MaterialID"];
-            this.process = _data["Process"];
-            this.inspectionLocationNum = _data["InspectionLocationNum"];
-            this.inspectionType = _data["InspectionType"];
-            this.success = _data["Success"];
-            if (_data["ExtraData"]) {
-                this.extraData = {} as any;
-                for (let key in _data["ExtraData"]) {
-                    if (_data["ExtraData"].hasOwnProperty(key))
-                        (<any>this.extraData)![key] = _data["ExtraData"][key];
-                }
-            }
-            this.elapsed = _data["Elapsed"];
-            this.active = _data["Active"];
-        }
-    }
+  static fromJS(data: any): NewInspectionCompleted {
+    data = typeof data === "object" ? data : {};
+    let result = new NewInspectionCompleted();
+    result.init(data);
+    return result;
+  }
 
-    static fromJS(data: any): NewInspectionCompleted {
-        data = typeof data === 'object' ? data : {};
-        let result = new NewInspectionCompleted();
-        result.init(data);
-        return result;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["MaterialID"] = this.materialID;
+    data["Process"] = this.process;
+    data["InspectionLocationNum"] = this.inspectionLocationNum;
+    data["InspectionType"] = this.inspectionType;
+    data["Success"] = this.success;
+    if (this.extraData) {
+      data["ExtraData"] = {};
+      for (let key in this.extraData) {
+        if (this.extraData.hasOwnProperty(key)) (<any>data["ExtraData"])[key] = (<any>this.extraData)[key];
+      }
     }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MaterialID"] = this.materialID;
-        data["Process"] = this.process;
-        data["InspectionLocationNum"] = this.inspectionLocationNum;
-        data["InspectionType"] = this.inspectionType;
-        data["Success"] = this.success;
-        if (this.extraData) {
-            data["ExtraData"] = {};
-            for (let key in this.extraData) {
-                if (this.extraData.hasOwnProperty(key))
-                    (<any>data["ExtraData"])[key] = (<any>this.extraData)[key];
-            }
-        }
-        data["Elapsed"] = this.elapsed;
-        data["Active"] = this.active;
-        return data;
-    }
+    data["Elapsed"] = this.elapsed;
+    data["Active"] = this.active;
+    return data;
+  }
 }
 
 export interface INewInspectionCompleted {
-    materialID: number;
-    process: number;
-    inspectionLocationNum: number;
-    inspectionType: string | undefined;
-    success: boolean;
-    extraData?: { [key: string]: string; } | undefined;
-    elapsed: string;
-    active: string;
+  materialID: number;
+  process: number;
+  inspectionLocationNum: number;
+  inspectionType: string | undefined;
+  success: boolean;
+  extraData?: { [key: string]: string } | undefined;
+  elapsed: string;
+  active: string;
 }
 
 export class NewCloseout implements INewCloseout {
-    materialID!: number;
-    process!: number;
-    locationNum!: number;
-    closeoutType!: string | undefined;
-    extraData?: { [key: string]: string; } | undefined;
-    elapsed!: string;
-    active!: string;
+  materialID!: number;
+  process!: number;
+  locationNum!: number;
+  closeoutType!: string | undefined;
+  extraData?: { [key: string]: string } | undefined;
+  elapsed!: string;
+  active!: string;
 
-    constructor(data?: INewCloseout) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
+  constructor(data?: INewCloseout) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
+    }
+  }
+
+  init(_data?: any) {
+    if (_data) {
+      this.materialID = _data["MaterialID"];
+      this.process = _data["Process"];
+      this.locationNum = _data["LocationNum"];
+      this.closeoutType = _data["CloseoutType"];
+      if (_data["ExtraData"]) {
+        this.extraData = {} as any;
+        for (let key in _data["ExtraData"]) {
+          if (_data["ExtraData"].hasOwnProperty(key)) (<any>this.extraData)![key] = _data["ExtraData"][key];
         }
+      }
+      this.elapsed = _data["Elapsed"];
+      this.active = _data["Active"];
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.materialID = _data["MaterialID"];
-            this.process = _data["Process"];
-            this.locationNum = _data["LocationNum"];
-            this.closeoutType = _data["CloseoutType"];
-            if (_data["ExtraData"]) {
-                this.extraData = {} as any;
-                for (let key in _data["ExtraData"]) {
-                    if (_data["ExtraData"].hasOwnProperty(key))
-                        (<any>this.extraData)![key] = _data["ExtraData"][key];
-                }
-            }
-            this.elapsed = _data["Elapsed"];
-            this.active = _data["Active"];
-        }
-    }
+  static fromJS(data: any): NewCloseout {
+    data = typeof data === "object" ? data : {};
+    let result = new NewCloseout();
+    result.init(data);
+    return result;
+  }
 
-    static fromJS(data: any): NewCloseout {
-        data = typeof data === 'object' ? data : {};
-        let result = new NewCloseout();
-        result.init(data);
-        return result;
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["MaterialID"] = this.materialID;
+    data["Process"] = this.process;
+    data["LocationNum"] = this.locationNum;
+    data["CloseoutType"] = this.closeoutType;
+    if (this.extraData) {
+      data["ExtraData"] = {};
+      for (let key in this.extraData) {
+        if (this.extraData.hasOwnProperty(key)) (<any>data["ExtraData"])[key] = (<any>this.extraData)[key];
+      }
     }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MaterialID"] = this.materialID;
-        data["Process"] = this.process;
-        data["LocationNum"] = this.locationNum;
-        data["CloseoutType"] = this.closeoutType;
-        if (this.extraData) {
-            data["ExtraData"] = {};
-            for (let key in this.extraData) {
-                if (this.extraData.hasOwnProperty(key))
-                    (<any>data["ExtraData"])[key] = (<any>this.extraData)[key];
-            }
-        }
-        data["Elapsed"] = this.elapsed;
-        data["Active"] = this.active;
-        return data;
-    }
+    data["Elapsed"] = this.elapsed;
+    data["Active"] = this.active;
+    return data;
+  }
 }
 
 export interface INewCloseout {
-    materialID: number;
-    process: number;
-    locationNum: number;
-    closeoutType: string | undefined;
-    extraData?: { [key: string]: string; } | undefined;
-    elapsed: string;
-    active: string;
+  materialID: number;
+  process: number;
+  locationNum: number;
+  closeoutType: string | undefined;
+  extraData?: { [key: string]: string } | undefined;
+  elapsed: string;
+  active: string;
 }
 
 export class ToolSnapshot implements IToolSnapshot {
-    pocket!: number;
-    toolName!: string;
-    serial?: string | undefined;
-    currentUse?: string | undefined;
-    totalLifeTime?: string | undefined;
-    currentUseCount?: number | undefined;
-    totalLifeCount?: number | undefined;
+  pocket!: number;
+  toolName!: string;
+  serial?: string | undefined;
+  currentUse?: string | undefined;
+  totalLifeTime?: string | undefined;
+  currentUseCount?: number | undefined;
+  totalLifeCount?: number | undefined;
 
-    constructor(data?: IToolSnapshot) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IToolSnapshot) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.pocket = _data["Pocket"];
-            this.toolName = _data["ToolName"];
-            this.serial = _data["Serial"];
-            this.currentUse = _data["CurrentUse"];
-            this.totalLifeTime = _data["TotalLifeTime"];
-            this.currentUseCount = _data["CurrentUseCount"];
-            this.totalLifeCount = _data["TotalLifeCount"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.pocket = _data["Pocket"];
+      this.toolName = _data["ToolName"];
+      this.serial = _data["Serial"];
+      this.currentUse = _data["CurrentUse"];
+      this.totalLifeTime = _data["TotalLifeTime"];
+      this.currentUseCount = _data["CurrentUseCount"];
+      this.totalLifeCount = _data["TotalLifeCount"];
     }
+  }
 
-    static fromJS(data: any): ToolSnapshot {
-        data = typeof data === 'object' ? data : {};
-        let result = new ToolSnapshot();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ToolSnapshot {
+    data = typeof data === "object" ? data : {};
+    let result = new ToolSnapshot();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["Pocket"] = this.pocket;
-        data["ToolName"] = this.toolName;
-        data["Serial"] = this.serial;
-        data["CurrentUse"] = this.currentUse;
-        data["TotalLifeTime"] = this.totalLifeTime;
-        data["CurrentUseCount"] = this.currentUseCount;
-        data["TotalLifeCount"] = this.totalLifeCount;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["Pocket"] = this.pocket;
+    data["ToolName"] = this.toolName;
+    data["Serial"] = this.serial;
+    data["CurrentUse"] = this.currentUse;
+    data["TotalLifeTime"] = this.totalLifeTime;
+    data["CurrentUseCount"] = this.currentUseCount;
+    data["TotalLifeCount"] = this.totalLifeCount;
+    return data;
+  }
 }
 
 export interface IToolSnapshot {
-    pocket: number;
-    toolName: string;
-    serial?: string | undefined;
-    currentUse?: string | undefined;
-    totalLifeTime?: string | undefined;
-    currentUseCount?: number | undefined;
-    totalLifeCount?: number | undefined;
+  pocket: number;
+  toolName: string;
+  serial?: string | undefined;
+  currentUse?: string | undefined;
+  totalLifeTime?: string | undefined;
+  currentUseCount?: number | undefined;
+  totalLifeCount?: number | undefined;
 }
 
 export class ToolInMachine extends ToolSnapshot implements IToolInMachine {
-    machineGroupName!: string;
-    machineNum!: number;
+  machineGroupName!: string;
+  machineNum!: number;
 
-    constructor(data?: IToolInMachine) {
-        super(data);
-    }
+  constructor(data?: IToolInMachine) {
+    super(data);
+  }
 
-    init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            this.machineGroupName = _data["MachineGroupName"];
-            this.machineNum = _data["MachineNum"];
-        }
+  init(_data?: any) {
+    super.init(_data);
+    if (_data) {
+      this.machineGroupName = _data["MachineGroupName"];
+      this.machineNum = _data["MachineNum"];
     }
+  }
 
-    static fromJS(data: any): ToolInMachine {
-        data = typeof data === 'object' ? data : {};
-        let result = new ToolInMachine();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ToolInMachine {
+    data = typeof data === "object" ? data : {};
+    let result = new ToolInMachine();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["MachineGroupName"] = this.machineGroupName;
-        data["MachineNum"] = this.machineNum;
-        super.toJSON(data);
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["MachineGroupName"] = this.machineGroupName;
+    data["MachineNum"] = this.machineNum;
+    super.toJSON(data);
+    return data;
+  }
 }
 
 export interface IToolInMachine extends IToolSnapshot {
-    machineGroupName: string;
-    machineNum: number;
+  machineGroupName: string;
+  machineNum: number;
 }
 
 export class ProgramInCellController implements IProgramInCellController {
-    cellControllerProgramName!: string;
-    programName!: string;
-    revision?: number | undefined;
-    comment?: string | undefined;
+  cellControllerProgramName!: string;
+  programName!: string;
+  revision?: number | undefined;
+  comment?: string | undefined;
 
-    constructor(data?: IProgramInCellController) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IProgramInCellController) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.cellControllerProgramName = _data["CellControllerProgramName"];
-            this.programName = _data["ProgramName"];
-            this.revision = _data["Revision"];
-            this.comment = _data["Comment"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.cellControllerProgramName = _data["CellControllerProgramName"];
+      this.programName = _data["ProgramName"];
+      this.revision = _data["Revision"];
+      this.comment = _data["Comment"];
     }
+  }
 
-    static fromJS(data: any): ProgramInCellController {
-        data = typeof data === 'object' ? data : {};
-        let result = new ProgramInCellController();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ProgramInCellController {
+    data = typeof data === "object" ? data : {};
+    let result = new ProgramInCellController();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["CellControllerProgramName"] = this.cellControllerProgramName;
-        data["ProgramName"] = this.programName;
-        data["Revision"] = this.revision;
-        data["Comment"] = this.comment;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["CellControllerProgramName"] = this.cellControllerProgramName;
+    data["ProgramName"] = this.programName;
+    data["Revision"] = this.revision;
+    data["Comment"] = this.comment;
+    return data;
+  }
 }
 
 export interface IProgramInCellController {
-    cellControllerProgramName: string;
-    programName: string;
-    revision?: number | undefined;
-    comment?: string | undefined;
+  cellControllerProgramName: string;
+  programName: string;
+  revision?: number | undefined;
+  comment?: string | undefined;
 }
 
 export class ProgramRevision implements IProgramRevision {
-    programName!: string;
-    revision!: number;
-    comment?: string | undefined;
-    cellControllerProgramName?: string | undefined;
+  programName!: string;
+  revision!: number;
+  comment?: string | undefined;
+  cellControllerProgramName?: string | undefined;
 
-    constructor(data?: IProgramRevision) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
+  constructor(data?: IProgramRevision) {
+    if (data) {
+      for (var property in data) {
+        if (data.hasOwnProperty(property)) (<any>this)[property] = (<any>data)[property];
+      }
     }
+  }
 
-    init(_data?: any) {
-        if (_data) {
-            this.programName = _data["ProgramName"];
-            this.revision = _data["Revision"];
-            this.comment = _data["Comment"];
-            this.cellControllerProgramName = _data["CellControllerProgramName"];
-        }
+  init(_data?: any) {
+    if (_data) {
+      this.programName = _data["ProgramName"];
+      this.revision = _data["Revision"];
+      this.comment = _data["Comment"];
+      this.cellControllerProgramName = _data["CellControllerProgramName"];
     }
+  }
 
-    static fromJS(data: any): ProgramRevision {
-        data = typeof data === 'object' ? data : {};
-        let result = new ProgramRevision();
-        result.init(data);
-        return result;
-    }
+  static fromJS(data: any): ProgramRevision {
+    data = typeof data === "object" ? data : {};
+    let result = new ProgramRevision();
+    result.init(data);
+    return result;
+  }
 
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["ProgramName"] = this.programName;
-        data["Revision"] = this.revision;
-        data["Comment"] = this.comment;
-        data["CellControllerProgramName"] = this.cellControllerProgramName;
-        return data;
-    }
+  toJSON(data?: any) {
+    data = typeof data === "object" ? data : {};
+    data["ProgramName"] = this.programName;
+    data["Revision"] = this.revision;
+    data["Comment"] = this.comment;
+    data["CellControllerProgramName"] = this.cellControllerProgramName;
+    return data;
+  }
 }
 
 export interface IProgramRevision {
-    programName: string;
-    revision: number;
-    comment?: string | undefined;
-    cellControllerProgramName?: string | undefined;
+  programName: string;
+  revision: number;
+  comment?: string | undefined;
+  cellControllerProgramName?: string | undefined;
 }
 
 function formatDate(d: Date) {
-    return d.getFullYear() + '-' + 
-        (d.getMonth() < 9 ? ('0' + (d.getMonth()+1)) : (d.getMonth()+1)) + '-' +
-        (d.getDate() < 10 ? ('0' + d.getDate()) : d.getDate());
+  return (
+    d.getFullYear() +
+    "-" +
+    (d.getMonth() < 9 ? "0" + (d.getMonth() + 1) : d.getMonth() + 1) +
+    "-" +
+    (d.getDate() < 10 ? "0" + d.getDate() : d.getDate())
+  );
 }
 
 export interface FileResponse {
-    data: Blob;
-    status: number;
-    fileName?: string;
-    headers?: { [name: string]: any };
+  data: Blob;
+  status: number;
+  fileName?: string;
+  headers?: { [name: string]: any };
 }
 
 export class ApiException extends Error {
-    message: string;
-    status: number;
-    response: string;
-    headers: { [key: string]: any; };
-    result: any;
+  message: string;
+  status: number;
+  response: string;
+  headers: { [key: string]: any };
+  result: any;
 
-    constructor(message: string, status: number, response: string, headers: { [key: string]: any; }, result: any) {
-        super();
+  constructor(
+    message: string,
+    status: number,
+    response: string,
+    headers: { [key: string]: any },
+    result: any,
+  ) {
+    super();
 
-        this.message = message;
-        this.status = status;
-        this.response = response;
-        this.headers = headers;
-        this.result = result;
-    }
+    this.message = message;
+    this.status = status;
+    this.response = response;
+    this.headers = headers;
+    this.result = result;
+  }
 
-    protected isApiException = true;
+  protected isApiException = true;
 
-    static isApiException(obj: any): obj is ApiException {
-        return obj.isApiException === true;
-    }
+  static isApiException(obj: any): obj is ApiException {
+    return obj.isApiException === true;
+  }
 }
 
-function throwException(message: string, status: number, response: string, headers: { [key: string]: any; }, result?: any): any {
-    if (result !== null && result !== undefined)
-        throw result;
-    else
-        throw new ApiException(message, status, response, headers, null);
+function throwException(
+  message: string,
+  status: number,
+  response: string,
+  headers: { [key: string]: any },
+  result?: any,
+): any {
+  if (result !== null && result !== undefined) throw result;
+  else throw new ApiException(message, status, response, headers, null);
 }

@@ -64,7 +64,7 @@ function isMonthType(type: { month: Date } | { thirtyDaysAgo: Date }): type is {
 export function compute_monthly_cost_percentages(
   cycles: Iterable<PartCycleData>,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
-  type: { month: Date } | { thirtyDaysAgo: Date }
+  type: { month: Date } | { thirtyDaysAgo: Date },
 ): CostData {
   const start = isMonthType(type) ? type.month : type.thirtyDaysAgo;
   const end = isMonthType(type) ? addMonths(type.month, 1) : addDays(type.thirtyDaysAgo, 31);
@@ -84,7 +84,7 @@ export function compute_monthly_cost_percentages(
     } else {
       totalStatUseMinutes.set(
         c.stationGroup,
-        c.activeMinutes + (totalStatUseMinutes.get(c.stationGroup) ?? 0)
+        c.activeMinutes + (totalStatUseMinutes.get(c.stationGroup) ?? 0),
       );
       const s = stationCount.get(c.stationGroup);
       if (s) {
@@ -103,7 +103,7 @@ export function compute_monthly_cost_percentages(
     })
     .toRMap(
       ([, details]) => [details.partName, 1],
-      (v1, v2) => v1 + v2
+      (v1, v2) => v1 + v2,
     );
 
   const parts = LazySeq.of(cycles)
@@ -116,7 +116,7 @@ export function compute_monthly_cost_percentages(
         .filter((c) => !c.isLabor)
         .buildOrderedMap<string, number>(
           (c) => c.stationGroup,
-          (old, c) => (old ?? 0) + c.activeMinutes
+          (old, c) => (old ?? 0) + c.activeMinutes,
         )
         .mapValues((minutes, statGroup) => {
           const totalUse = totalStatUseMinutes.get(statGroup) ?? 1;
@@ -145,12 +145,12 @@ export function convert_cost_percent_to_cost_per_piece(
   costs: CostData,
   machineCostPerYear: MachineCostPerYear,
   automationCostPerYear: number | null,
-  totalLaborCostForPeriod: number
+  totalLaborCostForPeriod: number,
 ): CostData {
   const days = isMonthType(costs.type) ? getDaysInMonth(costs.type.month) : 30;
   const automationCostForPeriod = automationCostPerYear ? (automationCostPerYear * days) / 365 : 0;
   const stationCostForPeriod = costs.machineQuantities.mapValues(
-    (cnt, statGroup) => ((machineCostPerYear[statGroup] ?? 0) * cnt * days) / 365
+    (cnt, statGroup) => ((machineCostPerYear[statGroup] ?? 0) * cnt * days) / 365,
   );
 
   return {
@@ -160,7 +160,7 @@ export function convert_cost_percent_to_cost_per_piece(
       part: p.part,
       parts_completed: p.parts_completed,
       machine: p.machine.mapValues((pct, statGroup) =>
-        p.parts_completed > 0 ? (pct * (stationCostForPeriod.get(statGroup) ?? 0)) / p.parts_completed : 0
+        p.parts_completed > 0 ? (pct * (stationCostForPeriod.get(statGroup) ?? 0)) / p.parts_completed : 0,
       ),
       labor: p.parts_completed > 0 ? (p.labor * totalLaborCostForPeriod) / p.parts_completed : 0,
       automation: p.parts_completed > 0 ? (p.automation * automationCostForPeriod) / p.parts_completed : 0,

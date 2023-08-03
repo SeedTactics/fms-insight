@@ -80,7 +80,7 @@ type ProdColumn = Column<ColumnId, ProdRow> & { readonly getForTotal: (row: Prod
 
 function decideShift<T>(
   f: (t: T) => Date,
-  shifts: ReadonlyArray<ShiftStartAndEnd>
+  shifts: ReadonlyArray<ShiftStartAndEnd>,
 ): (t: T) => { readonly val: T; readonly shift: number } | null {
   return (t) => {
     const time = f(t);
@@ -96,7 +96,7 @@ function decideShift<T>(
 
 function binSimProduction(
   prod: Iterable<SimPartCompleted>,
-  shifts: ReadonlyArray<ShiftStartAndEnd>
+  shifts: ReadonlyArray<ShiftStartAndEnd>,
 ): OrderedMap<string, OrderedMap<number, number>> {
   return LazySeq.of(prod)
     .filter((p) => p.finalProcess)
@@ -105,13 +105,13 @@ function binSimProduction(
       (p) => p.val.partName,
       (p) => p.shift,
       (p) => p.val.quantity,
-      (a, b) => a + b
+      (a, b) => a + b,
     );
 }
 
 function binCompleted(
   cycles: StationCyclesByCntr,
-  shifts: ReadonlyArray<ShiftStartAndEnd>
+  shifts: ReadonlyArray<ShiftStartAndEnd>,
 ): OrderedMap<string, OrderedMap<number, number>> {
   return cycles
     .valuesToLazySeq()
@@ -119,14 +119,14 @@ function binCompleted(
       (cycle) =>
         cycle.isLabor &&
         cycle.operation === "UNLOAD" &&
-        LazySeq.of(cycle.material).anyMatch((m) => m.proc === m.numproc)
+        LazySeq.of(cycle.material).anyMatch((m) => m.proc === m.numproc),
     )
     .collect(decideShift((c) => c.x, shifts))
     .toLookupOrderedMap(
       (p) => p.val.part,
       (p) => p.shift,
       (p) => LazySeq.of(p.val.material).sumBy((m) => (m.proc === m.numproc ? 1 : 0)),
-      (a, b) => a + b
+      (a, b) => a + b,
     );
 }
 

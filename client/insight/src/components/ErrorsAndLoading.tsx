@@ -57,8 +57,7 @@ export function DisplayError({ error }: { readonly error?: Error }) {
           <p>{error.response}</p>
         </CardContent>
       </Card>
-    )
-
+    );
   } else {
     return (
       <Card>

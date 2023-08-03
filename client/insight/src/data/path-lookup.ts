@@ -64,7 +64,7 @@ const localLogEntries = atom<Promise<PathLookupLogEntries>>(async (get) => {
     .toLookupMap(
       (e) => e.key,
       (e) => e.entry.cntr,
-      (e) => e.entry
+      (e) => e.entry,
     );
 });
 
@@ -87,7 +87,7 @@ const otherLogEntries = atom<Promise<PathLookupLogEntries>>(async (get) => {
     .toLookupMap(
       (e) => e.key,
       (e) => e.entry.cntr,
-      (e) => e.entry
+      (e) => e.entry,
     );
 });
 
@@ -107,7 +107,7 @@ export const inspectionLogEntries = atom<PathLookupLogEntries>((get) => {
         (inspsByCntr1: InspectionLogsByCntr, inspsByCntr2: InspectionLogsByCntr) =>
           inspsByCntr1.union(inspsByCntr2),
         localData,
-        otherData
+        otherData,
       );
     }
   } else {

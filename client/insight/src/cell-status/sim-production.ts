@@ -47,7 +47,7 @@ export interface SimPartCompleted {
 }
 
 const last30SimProductionRW = atom<ReadonlyArray<SimPartCompleted>>(
-  [] // TODO: switch to persistent list
+  [], // TODO: switch to persistent list
 );
 export const last30SimProduction: Atom<ReadonlyArray<SimPartCompleted>> = last30SimProductionRW;
 

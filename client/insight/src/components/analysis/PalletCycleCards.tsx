@@ -64,7 +64,7 @@ export function PalletCycleChart() {
       : [period.month, addMonths(period.month, 1)];
 
   const palletCycles = useAtomValue(
-    period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles
+    period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles,
   );
   const points = React.useMemo(() => {
     if (selectedPallet) {

@@ -64,7 +64,7 @@ export interface InspectionsForPath {
 export function groupInspectionsByPath(
   entries: Iterable<InspectionLogEntry>,
   dateRange: { start: Date; end: Date } | undefined,
-  sortOn: ToComparable<TriggeredInspectionEntry>
+  sortOn: ToComparable<TriggeredInspectionEntry>,
 ): ReadonlyMap<string, InspectionsForPath> {
   const failed = LazySeq.of(entries)
     .collect((e) => {
@@ -103,7 +103,7 @@ export function groupInspectionsByPath(
         const a = old ?? [];
         a.push(e);
         return a;
-      }
+      },
     )
     .mapValues((mats) => ({
       material: mats.sort(mkCompareByProperties(sortOn, (e) => e.time.getTime())),
@@ -123,7 +123,7 @@ export interface FailedInspectionEntry {
 export function extractFailedInspections(
   entries: Iterable<InspectionLogEntry>,
   start: Date,
-  end: Date
+  end: Date,
 ): ReadonlyArray<FailedInspectionEntry> {
   return LazySeq.of(entries)
     .collect((e) => {
@@ -151,12 +151,12 @@ export function extractFailedInspections(
 // --------------------------------------------------------------------------------
 
 export function extractPath(
-  evts: ReadonlyArray<Readonly<api.ILogEntry>>
+  evts: ReadonlyArray<Readonly<api.ILogEntry>>,
 ): ReadonlyArray<Readonly<api.IMaterialProcessActualPath>> {
   for (const e of evts) {
     if (e.type === api.LogType.Inspection) {
       const pathsJson: ReadonlyArray<object> = JSON.parse(
-        (e.details || {}).ActualPath || "[]"
+        (e.details || {}).ActualPath || "[]",
       ) as ReadonlyArray<object>;
       const paths: Array<Readonly<api.IMaterialProcessActualPath>> = [];
       for (const pathJson of pathsJson) {
@@ -177,7 +177,7 @@ export function extractPath(
 export function buildInspectionTable(
   part: string,
   inspType: string,
-  entries: Iterable<InspectionLogEntry>
+  entries: Iterable<InspectionLogEntry>,
 ): string {
   let table = "<table>\n<thead><tr>";
   table += "<th>Path</th><th>Date</th><th>Part</th><th>Inspection</th>";
@@ -221,7 +221,7 @@ export function buildInspectionTable(
 export function copyInspectionEntriesToClipboard(
   part: string,
   inspType: string,
-  entries: Iterable<InspectionLogEntry>
+  entries: Iterable<InspectionLogEntry>,
 ): void {
   copy(buildInspectionTable(part, inspType, entries));
 }

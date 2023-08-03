@@ -45,7 +45,7 @@ export function AnalysisQualityPage() {
   const period = useAtomValue(selectedAnalysisPeriod);
 
   const inspectionlogs = useAtomValue(
-    period.type === "Last30" ? last30Inspections : specificMonthInspections
+    period.type === "Last30" ? last30Inspections : specificMonthInspections,
   );
   const zoomType =
     period.type === "Last30" ? DataTableActionZoomType.Last30Days : DataTableActionZoomType.ZoomIntoRange;

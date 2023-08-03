@@ -74,7 +74,7 @@ function describePath(path: Readonly<api.IProcPathInfo>): string {
 function extractJobGroups(
   job: Readonly<api.IActiveJob>,
   fmsInfo: Readonly<api.IFMSInfo>,
-  toQueue: string
+  toQueue: string,
 ): SelectableJob | null {
   const machinedProcs: {
     readonly lastProc: number;
@@ -83,7 +83,7 @@ function extractJobGroups(
   }[] = [];
 
   const matchesRawMatQueue = LazySeq.of(job.procsAndPaths?.[0].paths ?? []).anyMatch(
-    (p) => p.inputQueue === toQueue
+    (p) => p.inputQueue === toQueue,
   );
 
   if (matchesRawMatQueue && fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAndSpecifyJob) {
@@ -99,7 +99,7 @@ function extractJobGroups(
     // paths besides the final path
     for (let procIdx = 0; procIdx < job.procsAndPaths.length - 1; procIdx++) {
       const matchingQueue = LazySeq.of(job.procsAndPaths[procIdx + 1].paths).anyMatch(
-        (p) => p.inputQueue === toQueue
+        (p) => p.inputQueue === toQueue,
       );
       machinedProcs.push({
         lastProc: procIdx + 1,
@@ -124,14 +124,14 @@ function extractJobGroups(
 function workorderDetailForCasting(
   currentSt: Readonly<api.ICurrentStatus>,
   workorderId: string,
-  casting: string
+  casting: string,
 ): string | null {
   const partNames = LazySeq.ofObject(currentSt.jobs)
     .filter(([, j]) => j.procsAndPaths[0].paths.some((p) => p.casting === casting))
     .toHashSet(([, j]) => j.partName);
 
   const workorder = currentSt.workorders?.find(
-    (w) => w.workorderId === workorderId && (w.part === casting || partNames.has(w.part))
+    (w) => w.workorderId === workorderId && (w.part === casting || partNames.has(w.part)),
   );
 
   if (!workorder) return null;
@@ -143,7 +143,7 @@ function possibleCastings(
   currentSt: Readonly<api.ICurrentStatus>,
   historicCastingNames: ReadonlySet<string>,
   barcode: Readonly<api.IScannedMaterial> | null,
-  fmsInfo: Readonly<api.IFMSInfo>
+  fmsInfo: Readonly<api.IFMSInfo>,
 ): ReadonlyArray<SelectableCasting> {
   if (barcode?.casting?.possibleCastings && barcode.casting.possibleCastings.length > 0) {
     const workorder = barcode.casting.workorder;
@@ -216,7 +216,7 @@ function isMatAssignedRaw(unique: string, m: Readonly<api.IInProcessMaterial>): 
 function isMatAvailUnassigned(
   queue: string,
   rawMatName: string,
-  m: Readonly<api.IInProcessMaterial>
+  m: Readonly<api.IInProcessMaterial>,
 ): boolean {
   return (
     m.location.type === api.LocType.InQueue &&
@@ -232,13 +232,13 @@ export function extractJobRawMaterial(
   jobs: {
     [key: string]: Readonly<api.IActiveJob>;
   },
-  mats: Iterable<Readonly<api.IInProcessMaterial>>
+  mats: Iterable<Readonly<api.IInProcessMaterial>>,
 ): ReadonlyArray<JobRawMaterialData> {
   return LazySeq.ofObject(jobs)
     .filter(
       ([, j]) =>
         (j.remainingToStart === undefined || j.remainingToStart > 0) &&
-        LazySeq.of(j.procsAndPaths?.[0]?.paths ?? []).anyMatch((p) => p.inputQueue === queue)
+        LazySeq.of(j.procsAndPaths?.[0]?.paths ?? []).anyMatch((p) => p.inputQueue === queue),
     )
     .map(([, j]) => {
       const rawMatName: string =
@@ -286,7 +286,7 @@ export interface QueueData {
 
 function compareByQueuePos(
   m1: Readonly<api.IInProcessMaterial>,
-  m2: Readonly<api.IInProcessMaterial>
+  m2: Readonly<api.IInProcessMaterial>,
 ): number {
   return (m1.location.queuePosition ?? 10000000000) - (m2.location.queuePosition ?? 10000000000);
 }
@@ -294,7 +294,7 @@ function compareByQueuePos(
 export function selectQueueData(
   queuesToCheck: ReadonlyArray<string>,
   curSt: Readonly<api.ICurrentStatus>,
-  rawMatQueues: ReadonlySet<string>
+  rawMatQueues: ReadonlySet<string>,
 ): ReadonlyArray<QueueData> {
   const queues: QueueData[] = [];
 
@@ -371,7 +371,7 @@ export function selectQueueData(
 }
 
 export async function loadRawMaterialEvents(
-  material: ReadonlyArray<Readonly<api.IInProcessMaterial>>
+  material: ReadonlyArray<Readonly<api.IInProcessMaterial>>,
 ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
   const events: Array<Readonly<api.ILogEntry>> = [];
   for (const chunk of LazySeq.of(material).chunk(15)) {

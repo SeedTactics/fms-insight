@@ -59,7 +59,7 @@ export const setNamesFromLast30Jobs = atom(null, (_, set, history: Readonly<IHis
 });
 
 export const setNamesFromLast30Evts = atom(null, (_, set, logs: ReadonlyArray<Readonly<ILogEntry>>) =>
-  onLog(set, logs)
+  onLog(set, logs),
 );
 
 export const setNamesFromCurrentStatus = atom(null, onCurrentStatus);

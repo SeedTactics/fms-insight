@@ -59,7 +59,7 @@ const CompletedParts = React.memo(function CompletedParts() {
   const currentSt = useAtomValue(currentStatus);
 
   const completed = LazySeq.ofObject(currentSt.jobs).sumBy(([, j]) =>
-    LazySeq.of(j.completed ?? []).sumBy((c) => LazySeq.of(c).sumBy((d) => d))
+    LazySeq.of(j.completed ?? []).sumBy((c) => LazySeq.of(c).sumBy((d) => d)),
   );
   const simulated = LazySeq.ofObject(currentSt.jobs)
     .flatMap(([, j]) => j.procsAndPaths)

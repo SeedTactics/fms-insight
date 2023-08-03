@@ -64,14 +64,14 @@ export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
         allCycles.valuesToLazySeq(),
         addDays(today, -4),
         addDays(today, 1),
-        estimatedCycleTimes
+        estimatedCycleTimes,
       );
     } else {
       return outlierMachineCycles(
         allCycles.valuesToLazySeq(),
         addDays(today, -4),
         addDays(today, 1),
-        estimatedCycleTimes
+        estimatedCycleTimes,
       );
     }
   }, [outlierTy, estimatedCycleTimes, allCycles]);

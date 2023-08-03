@@ -76,5 +76,5 @@ export const CustomStationMonitorDialog = React.memo(
         </Dialog>
       </>
     );
-  }
+  },
 );

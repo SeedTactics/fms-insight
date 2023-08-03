@@ -226,7 +226,7 @@ export function NavTabs({ children }: { children?: React.ReactNode }) {
   const full = useMediaQuery(theme.breakpoints.down("md"));
 
   const isOperationReport = operationsReports.some((r) =>
-    "separator" in r ? false : r.route.route === route.route
+    "separator" in r ? false : r.route.route === route.route,
   );
 
   return (

@@ -51,7 +51,7 @@ export const currentMaterialBinOrder = atomWithStorage<ReadonlyArray<MaterialBin
 export function moveMaterialBin(
   curBinOrder: ReadonlyArray<MaterialBinId>,
   oldIdx: number,
-  newIdx: number
+  newIdx: number,
 ): ReadonlyArray<MaterialBinId> {
   const newBinOrder = Array.from(curBinOrder);
   const [removed] = newBinOrder.splice(oldIdx, 1);
@@ -62,7 +62,7 @@ export function moveMaterialBin(
 function addToMap<T>(
   m: Map<T, Array<Readonly<api.IInProcessMaterial>>>,
   k: T,
-  mat: Readonly<api.IInProcessMaterial>
+  mat: Readonly<api.IInProcessMaterial>,
 ) {
   const mats = m.get(k);
   if (mats) {
@@ -104,7 +104,7 @@ export type MaterialBin =
 
 export function selectAllMaterialIntoBins(
   curSt: Readonly<api.ICurrentStatus>,
-  curBinOrder: ReadonlyArray<MaterialBinId>
+  curBinOrder: ReadonlyArray<MaterialBinId>,
 ): ReadonlyArray<MaterialBin> {
   const loadStations = new Map<number, Array<Readonly<api.IInProcessMaterial>>>();
   const pallets = new Map<string, Array<Readonly<api.IInProcessMaterial>>>();
@@ -177,9 +177,9 @@ export function selectAllMaterialIntoBins(
       LazySeq.ofObject(curSt.queues)
         .filter(
           ([, info]) =>
-            info.role === api.QueueRole.RawMaterial || info.role === api.QueueRole.InProcessTransfer
+            info.role === api.QueueRole.RawMaterial || info.role === api.QueueRole.InProcessTransfer,
         )
-        .map(([qname, _]) => qname)
+        .map(([qname, _]) => qname),
     )
     .toRSet((x) => x);
   const quarantineQueues = LazySeq.ofObject(curSt.queues)
@@ -187,7 +187,7 @@ export function selectAllMaterialIntoBins(
     .toRSet(([qname, _]) => qname);
 
   const bins = curBinOrder.filter(
-    (b) => b === LoadStationBinId || b === PalletsBinId || b === ActiveQueuesBinId || quarantineQueues.has(b)
+    (b) => b === LoadStationBinId || b === PalletsBinId || b === ActiveQueuesBinId || quarantineQueues.has(b),
   );
   if (bins.indexOf(ActiveQueuesBinId) < 0) {
     bins.unshift(ActiveQueuesBinId);
@@ -219,7 +219,7 @@ export function selectAllMaterialIntoBins(
             mat.sort((m1, m2) => (m1.location.queuePosition ?? 0) - (m2.location.queuePosition ?? 0));
             return [queueName, mat] as const;
           },
-          (ms1, ms2) => ms1.concat(ms2) // TODO: rework to use toLookup
+          (ms1, ms2) => ms1.concat(ms2), // TODO: rework to use toLookup
         ),
       };
     } else {
@@ -240,7 +240,7 @@ export function moveMaterialInBin(
   bins: ReadonlyArray<MaterialBin>,
   mat: Readonly<api.IInProcessMaterial>,
   queue: string,
-  queuePosition: number
+  queuePosition: number,
 ): ReadonlyArray<MaterialBin> {
   return bins.map((bin) => {
     switch (bin.type) {
@@ -265,7 +265,7 @@ export interface QuarantineBinAndIndex {
 
 export function findMaterialInQuarantineQueues(
   matId: number,
-  bins: ReadonlyArray<MaterialBin>
+  bins: ReadonlyArray<MaterialBin>,
 ): QuarantineBinAndIndex | null {
   for (const bin of bins) {
     switch (bin.type) {
@@ -285,7 +285,7 @@ export function findMaterialInQuarantineQueues(
 
 export function findQueueInQuarantineQueues(
   queue: string,
-  bins: ReadonlyArray<MaterialBin>
+  bins: ReadonlyArray<MaterialBin>,
 ): QuarantineBinAndIndex | null {
   for (const bin of bins) {
     if (bin.type === MaterialBinType.QuarantineQueues && bin.queueName === queue) {

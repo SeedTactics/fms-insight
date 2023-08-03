@@ -47,7 +47,7 @@ export const selectedMonth = atom(
     if (get(loadedMonth) !== m && !get(loadingSpecificMonthRW)) {
       loadMonth(m, set);
     }
-  }
+  },
 );
 
 export type SelectedAnalysisPeriod = { type: "Last30" } | { type: "SpecificMonth"; month: Date };
@@ -80,7 +80,7 @@ function loadMonth(month: Date, set: Setter): void {
   Promise.all([jobsProm, logProm])
     .then(() => set(loadedMonth, month))
     .catch((e: Record<string, string | undefined>) =>
-      set(errorLoadingSpecificMonthRW, e.message ?? e.toString())
+      set(errorLoadingSpecificMonthRW, e.message ?? e.toString()),
     )
     .finally(() => set(loadingSpecificMonthRW, false));
 }

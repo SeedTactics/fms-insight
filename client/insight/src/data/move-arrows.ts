@@ -160,7 +160,7 @@ function groupMatByKind(allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>): N
 
 export function computeArrows(
   container: MoveMaterialElemRect | null | undefined,
-  allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>
+  allNodes: AllMoveMaterialNodes<MoveMaterialElemRect>,
 ): ReadonlyArray<MoveMaterialArrow> {
   if (!container) {
     return [];
@@ -178,7 +178,7 @@ export function computeArrows(
 
   for (const [rect, mat] of LazySeq.of(byKind.material).sortBy(
     ([rect]) => rect.left,
-    ([rect]) => rect.top
+    ([rect]) => rect.top,
   )) {
     switch (mat.action.type) {
       case api.ActionType.UnloadToCompletedMaterial:

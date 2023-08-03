@@ -74,14 +74,14 @@ export function stat_name_and_num(stationGroup: string, stationNumber: number): 
 }
 
 export function splitElapsedLoadTimeAmongCycles(
-  cycles: LazySeq<PartCycleData>
+  cycles: LazySeq<PartCycleData>,
 ): LazySeq<LogEntryWithSplitElapsed<PartCycleData>> {
   return splitElapsedLoadTime(
     cycles,
     (c) => c.stationNumber,
     (c) => c.x,
     (c) => c.y,
-    (c) => c.activeMinutes
+    (c) => c.activeMinutes,
   );
 }
 
@@ -93,7 +93,7 @@ export const specificMonthStationCycles: Atom<StationCyclesByCntr> = specificMon
 
 function convertLogToCycle(
   estimatedCycleTimes: EstimatedCycleTimes,
-  cycle: ILogEntry
+  cycle: ILogEntry,
 ): [number, PartCycleData] | null {
   if (
     cycle.startofcycle ||
@@ -131,7 +131,7 @@ function convertLogToCycle(
 
 function process_swap(
   swap: Readonly<IEditMaterialInLogEvents>,
-  partCycles: StationCyclesByCntr
+  partCycles: StationCyclesByCntr,
 ): StationCyclesByCntr {
   for (const changed of swap.editedEvents) {
     const c = partCycles.get(changed.counter);
@@ -149,8 +149,8 @@ export const setLast30StationCycles = atom(null, (get, set, log: ReadonlyArray<R
     oldCycles.union(
       LazySeq.of(log)
         .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
-        .toHashMap((x) => x)
-    )
+        .toHashMap((x) => x),
+    ),
   );
 });
 
@@ -199,7 +199,7 @@ export const setSpecificMonthStationCycles = atom(
       specificMonthStationCyclesRW,
       LazySeq.of(log)
         .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
-        .toHashMap((x) => x)
+        .toHashMap((x) => x),
     );
-  }
+  },
 );

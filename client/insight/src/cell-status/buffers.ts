@@ -123,8 +123,8 @@ export const setLast30Buffer = atom(null, (_, set, log: ReadonlyArray<Readonly<I
     oldEntries.union(
       LazySeq.of(log)
         .collect(convertEntry)
-        .toHashMap((x) => x)
-    )
+        .toHashMap((x) => x),
+    ),
   );
 });
 
@@ -148,6 +148,6 @@ export const setSpecificMonthBuffer = atom(null, (_, set, log: ReadonlyArray<Rea
     specificMonthBufferEntriesRW,
     LazySeq.of(log)
       .collect(convertEntry)
-      .toHashMap((x) => x)
+      .toHashMap((x) => x),
   );
 });

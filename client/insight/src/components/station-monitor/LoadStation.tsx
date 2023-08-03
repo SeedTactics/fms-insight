@@ -77,7 +77,12 @@ import {
 } from "./InvalidateCycle.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { addHours } from "date-fns";
-import { AddToQueueButton, PromptForQueue } from "./QueuesAddMaterial.js";
+import {
+  AddToQueueButton,
+  AddToQueueMaterialDialogCt,
+  NewMaterialToQueueType,
+  useMaterialInDialogAddType,
+} from "./QueuesAddMaterial.js";
 import { useAtomValue, useSetAtom } from "jotai";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
@@ -94,7 +99,7 @@ type LoadStationData = {
 function selectLoadStationAndQueueProps(
   loadNum: number,
   queues: ReadonlyArray<string>,
-  curSt: Readonly<api.ICurrentStatus>
+  curSt: Readonly<api.ICurrentStatus>,
 ): LoadStationData {
   // search for pallet
   let pal: Readonly<api.IPalletStatus> | undefined;
@@ -137,7 +142,7 @@ function selectLoadStationAndQueueProps(
   }
 
   const queueMat = new Map<string, Array<api.IInProcessMaterial>>(
-    LazySeq.of(queuesToShow).map((q) => [q, []])
+    LazySeq.of(queuesToShow).map((q) => [q, []]),
   );
   const freeLoading: Array<Readonly<api.IInProcessMaterial>> = [];
   let palFaces = OrderedMap.empty<number, Array<api.IInProcessMaterial>>();
@@ -241,7 +246,7 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
               mat.materialID,
               pal.palletNum,
               mat.process,
-              operator
+              operator,
             );
           } else if (
             mat.action.type === api.ActionType.Loading &&
@@ -253,7 +258,7 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
               mat.materialID,
               pal.palletNum,
               mat.action.processAfterLoad ?? mat.process,
-              operator
+              operator,
             );
           } else if (
             mat.location.type === api.LocType.OnPallet &&
@@ -267,7 +272,7 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
               mat.materialID,
               pal.palletNum,
               mat.process,
-              operator
+              operator,
             );
           } else {
             return null;
@@ -461,7 +466,7 @@ function RecentCompletedMaterial() {
         (e) =>
           e.completed_last_proc_machining === true &&
           e.last_unload_time !== undefined &&
-          e.last_unload_time >= cutoff
+          e.last_unload_time >= cutoff,
       )
       .toSortedArray({ desc: (e) => e.last_unload_time?.getTime() ?? 0 });
   }, [matSummary]);
@@ -554,7 +559,7 @@ function InstructionButton({ pallet }: { pallet: number | null }) {
     material.action.type === api.ActionType.Loading
       ? material.action.processAfterLoad ?? material.process
       : material.process,
-    operator
+    operator,
   );
 
   if (demo) {
@@ -596,74 +601,56 @@ function PrintSerialButton() {
 }
 
 function useAllowAddMaterial(queues: ReadonlyArray<string>): boolean {
-  const toShow = useAtomValue(matDetails.materialDialogOpen);
+  const kind = useMaterialInDialogAddType(queues);
   const mat = useAtomValue(matDetails.materialInDialogInfo);
-  const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
-  const curSt = useAtomValue(currentStatus);
-  const evts = useAtomValue(matDetails.materialInDialogEvents);
+  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
+  switch (kind) {
+    case "None":
+    case "MatInQueue":
+      return false;
 
-  if (toShow === null) return false;
-  if (toShow.type !== "Barcode" && toShow.type !== "ManuallyEnteredSerial") return false;
-  if (mat === null) return false;
-
-  const curInQueueOnScreen =
-    inProcMat !== null &&
-    inProcMat.location.type === api.LocType.InQueue &&
-    inProcMat.location.currentQueue &&
-    queues.includes(inProcMat.location.currentQueue);
-  if (curInQueueOnScreen) return false;
-
-  const curOnPallet = inProcMat !== null && inProcMat.location.type === api.LocType.OnPallet;
-  if (curOnPallet) return false;
-
-  // now check that the material has an input queue that is in the list of queues
-  const job = curSt.jobs[mat.jobUnique];
-  if (!job) return false;
-  const lastProc =
-    LazySeq.of(evts)
-      .filter(
-        (e) =>
-          e.details?.["PalletCycleInvalidated"] !== "1" &&
-          (e.type === api.LogType.LoadUnloadCycle ||
-            e.type === api.LogType.MachineCycle ||
-            e.type === api.LogType.AddToQueue)
-      )
-      .flatMap((e) => e.material)
-      .filter((m) => m.id === mat.materialID)
-      .maxBy((m) => m.proc)?.proc ?? 0;
-  const inputQueue = LazySeq.of(job?.procsAndPaths?.[lastProc + 1 - 1]?.paths ?? [])
-    .collect((p) => (p.inputQueue === "" ? null : p.inputQueue))
-    .head();
-  if (!inputQueue || !queues.includes(inputQueue)) return false;
-
-  return true;
+    case "AddToQueue":
+      // add an additional restriction that the material must already exist or
+      // come from a barcode.  It can not be added manually (use the queues page for that).
+      return mat !== null || !!barcode;
+  }
 }
 
 function AddMatButton({
-  toQueue,
   queues,
   onClose,
-  showSelectQueue,
-  setShowSelectQueue,
+  newMaterialTy,
+  enteredOperator,
+  showAddToQueue,
+  toQueue,
+  setShowAddToQueue,
 }: {
-  toQueue: string | null;
   queues: ReadonlyArray<string>;
   onClose: () => void;
-  showSelectQueue: boolean;
-  setShowSelectQueue: (show: boolean) => void;
+  newMaterialTy: NewMaterialToQueueType | null;
+  enteredOperator: string | null;
+  toQueue: string | null;
+  showAddToQueue: boolean;
+  setShowAddToQueue: (show: boolean) => void;
 }) {
   const allow = useAllowAddMaterial(queues);
   if (!allow) return null;
+  if (queues.length === 0) return null;
 
-  if (!showSelectQueue && queues.length >= 1) {
+  if (!showAddToQueue) {
     return (
-      <Button color="primary" onClick={() => setShowSelectQueue(true)}>
+      <Button color="primary" onClick={() => setShowAddToQueue(true)}>
         Add To Queue
       </Button>
     );
   } else {
     return (
-      <AddToQueueButton enteredOperator={null} newMaterialTy={null} toQueue={toQueue} onClose={onClose} />
+      <AddToQueueButton
+        enteredOperator={enteredOperator}
+        newMaterialTy={newMaterialTy}
+        toQueue={toQueue}
+        onClose={onClose}
+      />
     );
   }
 }
@@ -691,8 +678,12 @@ function AssignWorkorderButton() {
 const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProps) {
   const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
   const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
+
+  // add material state
+  const [showAddMaterial, setShowAddMaterial] = React.useState<boolean>(false);
   const [selectedQueue, setSelectedQueue] = React.useState<string | null>(null);
-  const [showSelectQueue, setShowSelectQueue] = React.useState<boolean>(false);
+  const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
+  const [newMaterialTy, setNewMaterialTy] = React.useState<NewMaterialToQueueType | null>(null);
 
   const toQueue = props.queues.length === 1 ? props.queues[0] : selectedQueue;
 
@@ -701,7 +692,7 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
       setSwapSt(null);
       setInvalidateSt(null);
     },
-    [setSwapSt, setInvalidateSt]
+    [setSwapSt, setInvalidateSt],
   );
 
   return (
@@ -715,11 +706,16 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
           {invalidateSt !== null ? (
             <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
           ) : null}
-          {showSelectQueue ? (
-            <PromptForQueue
+          {showAddMaterial ? (
+            <AddToQueueMaterialDialogCt
+              enteredOperator={enteredOperator}
+              setEnteredOperator={setEnteredOperator}
               selectedQueue={selectedQueue}
               setSelectedQueue={setSelectedQueue}
+              newMaterialTy={newMaterialTy}
+              setNewMaterialTy={setNewMaterialTy}
               queueNames={props.queues}
+              toQueue={toQueue}
             />
           ) : undefined}
         </>
@@ -734,8 +730,10 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
             toQueue={toQueue}
             queues={props.queues}
             onClose={onClose}
-            showSelectQueue={showSelectQueue}
-            setShowSelectQueue={setShowSelectQueue}
+            enteredOperator={enteredOperator}
+            newMaterialTy={newMaterialTy}
+            showAddToQueue={showAddMaterial}
+            setShowAddToQueue={setShowAddMaterial}
           />
           <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} />
           <InvalidateCycleDialogButtons st={invalidateSt} setState={setInvalidateSt} onClose={onClose} />
@@ -802,7 +800,7 @@ export function LoadStation(props: LoadStationProps) {
   const currentSt = useAtomValue(currentStatus);
   const data = React.useMemo(
     () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt),
-    [currentSt, props.loadNum, props.queues]
+    [currentSt, props.loadNum, props.queues],
   );
 
   let matColsSeq = LazySeq.of(data.queues)
@@ -828,7 +826,7 @@ export function LoadStation(props: LoadStationProps) {
       ? "(min-width: 720px)"
       : numNonPalCols === 2
       ? "(min-width: 1030px)"
-      : "(min-width: 1320px)"
+      : "(min-width: 1320px)",
   );
 
   const grid = useGridLayout({

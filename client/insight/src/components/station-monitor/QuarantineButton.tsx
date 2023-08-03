@@ -78,9 +78,9 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
     .concat(
       LazySeq.ofObject(curSt.queues)
         .filter(
-          ([, info]) => info.role === QueueRole.RawMaterial || info.role === QueueRole.InProcessTransfer
+          ([, info]) => info.role === QueueRole.RawMaterial || info.role === QueueRole.InProcessTransfer,
         )
-        .map(([qname, _]) => qname)
+        .map(([qname, _]) => qname),
     )
     .toRSet((x) => x);
   const quarantineQueues = LazySeq.ofObject(curSt.queues)

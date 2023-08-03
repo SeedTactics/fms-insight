@@ -53,7 +53,7 @@ const groupedSimDayUsage = atom<UsageMap | null>((get) => {
   if (usage === null) return null;
   return LazySeq.of(usage.usage).toLookupOrderedMap(
     (u) => u.machineGroup,
-    (u) => new Date(u.day.getFullYear(), u.day.getMonth(), u.day.getDate())
+    (u) => new Date(u.day.getFullYear(), u.day.getMonth(), u.day.getDate()),
   );
 });
 

@@ -391,7 +391,7 @@ const SingleSeries = React.memo(function SingleSeries({
         seriesName,
       });
     },
-    [showTooltip, points, seriesName]
+    [showTooltip, points, seriesName],
   );
 
   const springs = useSprings(
@@ -399,7 +399,7 @@ const SingleSeries = React.memo(function SingleSeries({
     points.map((pt) => ({
       from: { x: xScale(pt.x), y: yScale.range()[0] + 15 },
       to: { x: xScale(pt.x), y: yScale(pt.y) },
-    }))
+    })),
   );
 
   return (
@@ -495,7 +495,7 @@ const NoPointerEvents = styled("g", { shouldForwardProp: (prop) => prop.toString
           pointerevents: "none",
         },
       }
-    : undefined
+    : undefined,
 );
 
 interface ChartMouseEventProps {
@@ -504,7 +504,7 @@ interface ChartMouseEventProps {
   readonly setTooltip: ShowTooltipFunc;
   readonly highlightStart: { readonly x: number; readonly y: number; readonly nowMS: number } | null;
   readonly setHighlightStart: (
-    p: { readonly x: number; readonly y: number; readonly nowMS: number } | null
+    p: { readonly x: number; readonly y: number; readonly nowMS: number } | null,
   ) => void;
 }
 
@@ -528,7 +528,7 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
       setHighlightStart({ x: p.x - marginLeft, y: p.y - marginTop, nowMS: Date.now() });
       setTooltip(null);
     },
-    [setHighlightStart, setTooltip]
+    [setHighlightStart, setTooltip],
   );
 
   const pointerMove = React.useCallback(
@@ -537,7 +537,7 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
       if (p === null) return;
       setCurrent({ x: p.x - marginLeft, y: p.y - marginTop });
     },
-    [setCurrent]
+    [setCurrent],
   );
 
   const pointerUp = React.useCallback(
@@ -562,7 +562,7 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
       setHighlightStart(null);
       setCurrent(null);
     },
-    [highlightStart, setHighlightStart, setCurrent]
+    [highlightStart, setHighlightStart, setCurrent],
   );
 
   return (
@@ -708,11 +708,11 @@ function CycleChartSvg(
       readonly containerWidth: number;
       readonly highlightStart: { readonly x: number; readonly y: number; readonly nowMS: number } | null;
       readonly setHighlightStart: (
-        p: { readonly x: number; readonly y: number; readonly nowMS: number } | null
+        p: { readonly x: number; readonly y: number; readonly nowMS: number } | null,
       ) => void;
       readonly showTooltip: ShowTooltipFunc;
       readonly disabledSeries: ReadonlySet<string>;
-    }
+    },
 ) {
   // computed scales and values
   const { width, height, xScale, yScale } = useScales({

@@ -134,7 +134,7 @@ export interface DataTableHeadProps<Id, Row> {
 }
 
 export function DataTableHead<Id extends string | number, Row>(
-  props: DataTableHeadProps<Id, Row>
+  props: DataTableHeadProps<Id, Row>,
 ): JSX.Element {
   const clipboardRows = props.copyToClipboardRows;
   return (
@@ -223,7 +223,7 @@ function SelectDateRange(props: SelectDateRangeProps) {
     : props.zoom.default_date_range[0];
   const end = addDays(
     props.zoom.current_date_zoom ? props.zoom.current_date_zoom.end : props.zoom.default_date_range[1],
-    -1
+    -1,
   );
 
   function onChange(d: ReadonlyArray<Date>) {
@@ -393,7 +393,7 @@ export const DataTableActions = React.memo(function DataTableActions({
       <Typography color="textSecondary" variant="caption">
         {`${count === 0 ? 0 : tpage.page * tpage.rowsPerPage + 1}-${Math.min(
           count,
-          (tpage.page + 1) * tpage.rowsPerPage
+          (tpage.page + 1) * tpage.rowsPerPage,
         )} of ${count}`}
       </Typography>
       <IconButton
@@ -523,7 +523,7 @@ export function useTablePage(): TablePage {
 
   return React.useMemo(
     () => ({ page, setPage, rowsPerPage, setRowsPerPage }),
-    [page, setPage, rowsPerPage, setRowsPerPage]
+    [page, setPage, rowsPerPage, setRowsPerPage],
   );
 }
 
@@ -558,7 +558,7 @@ export function useColSort<Id, Row>(defSortCol: Id, cols: ReadonlyArray<Column<I
 
 export function buildClipboardTableAsString<Id, Row>(
   columns: ReadonlyArray<Column<Id, Row>>,
-  rows: Iterable<Row>
+  rows: Iterable<Row>,
 ) {
   let table = "<table>\n<thead><tr>";
   for (const col of columns) {
@@ -586,7 +586,7 @@ export function buildClipboardTableAsString<Id, Row>(
 
 export function copyTableToClipboard<Id, Row>(
   columns: ReadonlyArray<Column<Id, Row>>,
-  rows: Iterable<Row>
+  rows: Iterable<Row>,
 ): void {
   copy(buildClipboardTableAsString(columns, rows));
 }

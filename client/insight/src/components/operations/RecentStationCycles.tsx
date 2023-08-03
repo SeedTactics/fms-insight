@@ -103,17 +103,17 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
       }
       return ret;
     },
-    [setMatToShow]
+    [setMatToShow],
   );
 
   const [showGraph, setShowGraph] = useAtom(ty === "labor" ? lulShowGraphAtom : machineShowGraphAtom);
   const [chartZoom, setChartZoom] = useAtom(ty === "labor" ? lulChartZoomAtom : machineChartZoomAtom);
   const [selectedPart, setSelectedPart] = useAtom(
-    ty === "labor" ? lulSelectedPartAtom : machineSelectedPartAtom
+    ty === "labor" ? lulSelectedPartAtom : machineSelectedPartAtom,
   );
   const [selectedOperation, setSelectedOperation] = useAtom(machineSelectedOperation);
   const [selectedPallet, setSelectedPallet] = useAtom(
-    ty === "labor" ? lulSelectedPalletAtom : machineSelectedPalletAtom
+    ty === "labor" ? lulSelectedPalletAtom : machineSelectedPalletAtom,
   );
   const [yZoom, setYZoom] = useAtom(ty === "labor" ? lulYZoomAtom : machineYZoomAtom);
 
@@ -191,14 +191,14 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
             value={
               selectedPart
                 ? points.allPartAndProcNames.findIndex(
-                    (o) => selectedPart.part === o.part && selectedPart.proc === o.proc
+                    (o) => selectedPart.part === o.part && selectedPart.proc === o.proc,
                   )
                 : -1
             }
             style={{ marginLeft: "1em" }}
             onChange={(e) => {
               setSelectedPart(
-                e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number]
+                e.target.value === -1 ? undefined : points.allPartAndProcNames[e.target.value as number],
               );
               setSelectedOperation(undefined);
             }}

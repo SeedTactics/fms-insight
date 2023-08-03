@@ -252,7 +252,7 @@ enum SortColumn {
 function sortWorkorders(
   workorders: ReadonlyArray<IActiveWorkorder>,
   sortBy: SortColumn,
-  order: "asc" | "desc"
+  order: "asc" | "desc",
 ): ReadonlyArray<IActiveWorkorder> {
   let sortCol: ToComparableBase<IActiveWorkorder>;
   switch (sortBy) {
@@ -531,7 +531,7 @@ function WorkorderTable({ showSim }: { showSim: boolean }) {
   const currentSt = useAtomValue(currentStatus);
   const sorted = React.useMemo(
     () => sortWorkorders(currentSt.workorders ?? [], sortBy, order),
-    [currentSt.workorders, sortBy, order]
+    [currentSt.workorders, sortBy, order],
   );
   return (
     <Table>
@@ -563,7 +563,7 @@ export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage():
 
   const showSim = React.useMemo(
     () => currentSt.workorders?.some((w) => !!w.simulatedStartUTC || !!w.simulatedFilledUTC) ?? false,
-    [currentSt.workorders]
+    [currentSt.workorders],
   );
 
   return (

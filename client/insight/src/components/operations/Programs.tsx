@@ -447,7 +447,7 @@ function ProgramContentCode() {
 
   const worker = React.useMemo(
     () => new Worker(new URL("./ProgramHighlight.ts", import.meta.url), { type: "module" }),
-    []
+    [],
   );
 
   React.useEffect(() => {
@@ -620,7 +620,7 @@ export function ProgramHistoryDialog(): JSX.Element {
       MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(
         program.programName,
         revisionsPerPage,
-        undefined
+        undefined,
       )
         .then((revs) => {
           setRevisions(revs);
@@ -641,7 +641,7 @@ export function ProgramHistoryDialog(): JSX.Element {
       MachineBackend.getProgramRevisionsInDescendingOrderOfRevision(
         program.programName,
         revisionsPerPage,
-        rev ? rev.revision - 1 : undefined
+        rev ? rev.revision - 1 : undefined,
       )
         .then((revs) => {
           setRevisions((oldRevs) => (oldRevs === null ? revs : oldRevs.concat(revs)));
