@@ -266,12 +266,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    void IJobControl.AddJobs(
-      NewJobs jobs,
-      string expectedPreviousScheduleId,
-      bool waitForCopyToCell,
-      bool archiveCompletedJobs
-    )
+    void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool archiveCompletedJobs)
     {
       using (var jdb = _repo.OpenConnection())
       {

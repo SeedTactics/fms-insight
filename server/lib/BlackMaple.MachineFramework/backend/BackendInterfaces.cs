@@ -52,12 +52,7 @@ namespace BlackMaple.MachineFramework
     List<string> CheckValidRoutes(IEnumerable<Job> newJobs);
 
     ///Adds new jobs into the cell controller
-    void AddJobs(
-      NewJobs jobs,
-      string expectedPreviousScheduleId,
-      bool waitForCopyToCell,
-      bool archiveCompletedJobs
-    );
+    void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool archiveCompletedJobs);
     event NewJobsDelegate OnNewJobs;
 
     void SetJobComment(string jobUnique, string comment);

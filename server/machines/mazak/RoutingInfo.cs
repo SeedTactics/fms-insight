@@ -214,7 +214,6 @@ namespace MazakMachineInterface
     void BlackMaple.MachineFramework.IJobControl.AddJobs(
       NewJobs newJ,
       string expectedPreviousScheduleId,
-      bool waitForCopyToCell,
       bool archiveCompletedJobs
     )
     {

@@ -130,14 +130,12 @@ namespace BlackMaple.MachineFramework.Controllers
     public void Add(
       [FromBody] NewJobs newJobs,
       [FromQuery] string expectedPreviousScheduleId,
-      [FromQuery] bool waitForCopyToCell = true,
       [FromQuery] bool archiveCompletedJobs = true
     )
     {
       _impl.Backend.JobControl.AddJobs(
         jobs: newJobs,
         expectedPreviousScheduleId: expectedPreviousScheduleId,
-        waitForCopyToCell: waitForCopyToCell,
         archiveCompletedJobs: archiveCompletedJobs
       );
     }
