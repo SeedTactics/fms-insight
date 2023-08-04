@@ -676,7 +676,7 @@
     }
   },
   "Material": [],
-  "Alarms": ["Queue contents and Mazak schedule quantity mismatch."],
+  "Alarms": [],
   "Queues": {
     "queueCCC": {},
     "castings": {},

@@ -72,6 +72,7 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     public NiigataStatus Status { get; set; }
     public bool StateUpdated { get; set; }
+    public required TimeSpan TimeUntilNextRefresh { get; init; }
     public List<PalletAndMaterial> Pallets { get; set; }
     public ImmutableList<InProcessMaterialAndJob> QueuedMaterial { get; set; }
     public Dictionary<(string progName, long revision), ProgramRevision> ProgramsInUse { get; set; }
@@ -153,6 +154,7 @@ namespace BlackMaple.FMSInsight.Niigata
       return new CellState()
       {
         Status = status,
+        TimeUntilNextRefresh = TimeSpan.FromMinutes(5),
         StateUpdated = palletStateUpdated,
         Pallets = pals,
         QueuedMaterial = queuedMats,

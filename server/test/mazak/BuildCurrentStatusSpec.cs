@@ -52,8 +52,6 @@ namespace MachineWatchTest
     private FMSSettings _settings;
     private IMachineGroupName _machGroupName;
 
-    private IQueueSyncFault queueSyncFault;
-
     public BuildCurrentStatusSpec()
     {
       _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
@@ -73,9 +71,6 @@ namespace MachineWatchTest
       jsonSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
       jsonSettings.Formatting = Formatting.Indented;
       jsonSettings.ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor;
-
-      queueSyncFault = Substitute.For<IQueueSyncFault>();
-      queueSyncFault.CurrentQueueMismatch.Returns(false);
 
       _machGroupName = Substitute.For<IMachineGroupName>();
       _machGroupName.MachineGroupName.Returns("MC");
@@ -192,11 +187,6 @@ namespace MachineWatchTest
         jsonSettings
       );
 
-      if (scenario == "basic-no-material")
-      {
-        queueSyncFault.CurrentQueueMismatch.Returns(true);
-      }
-
       CurrentStatus status;
       try
       {
@@ -204,7 +194,6 @@ namespace MachineWatchTest
           repository,
           _settings,
           _machGroupName,
-          queueSyncFault,
           MazakDbType.MazakSmooth,
           allData,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
@@ -292,7 +281,6 @@ namespace MachineWatchTest
         _memoryLog,
         _settings,
         _machGroupName,
-        queueSyncFault,
         MazakDbType.MazakSmooth,
         allData,
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
@@ -381,7 +369,6 @@ namespace MachineWatchTest
           repository,
           _settings,
           _machGroupName,
-          queueSyncFault,
           MazakDbType.MazakSmooth,
           allData,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)

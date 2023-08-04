@@ -51,6 +51,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     public long Uniq { get; init; }
     public CurrentStatus CurrentStatus { get; init; }
     public bool StateUpdated { get; init; }
+    public TimeSpan TimeUntilNextRefresh => TimeSpan.FromHours(50);
   }
 
   private readonly RepositoryConfig _repo;
@@ -97,8 +98,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       OnNewCurrentStatus,
       this,
       _checkJobsMock,
-      refreshStateInterval: TimeSpan.FromHours(50),
-      allowQuarantineToCancelLoad
+      allowQuarantineToCancelLoad: allowQuarantineToCancelLoad,
+      addJobsAsCopiedToSystem: true
     );
     _jq.StartThread();
     await newCellSt;

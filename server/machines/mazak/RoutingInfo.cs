@@ -127,11 +127,14 @@ namespace MazakMachineInterface
         eventLogDB,
         fmsSettings,
         _machineGroupName,
-        queueFault,
         readDatabase.MazakType,
         mazakData,
         DateTime.UtcNow
       );
+      if (queueFault.CurrentQueueMismatch)
+      {
+        st = st with { Alarms = st.Alarms.Add("Queue contents and Mazak schedule quantity mismatch.") };
+      }
       if (_mazakCfg != null && _mazakCfg.AdjustCurrentStatus != null)
       {
         st = _mazakCfg.AdjustCurrentStatus(eventLogDB, st);

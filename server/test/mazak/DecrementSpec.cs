@@ -91,9 +91,9 @@ namespace MachineWatchTest
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
       _read
-        .LoadStatusAndTools()
+        .LoadStatus()
         .Returns(
-          new MazakCurrentStatusAndTools()
+          new MazakCurrentStatus()
           {
             Schedules = new[]
             {
@@ -182,9 +182,9 @@ namespace MachineWatchTest
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
       _read
-        .LoadStatusAndTools()
+        .LoadStatus()
         .Returns(
-          new MazakCurrentStatusAndTools()
+          new MazakCurrentStatus()
           {
             Schedules = new[]
             {
@@ -240,9 +240,9 @@ namespace MachineWatchTest
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
       _read
-        .LoadStatusAndTools()
+        .LoadStatus()
         .Returns(
-          new MazakCurrentStatusAndTools()
+          new MazakCurrentStatus()
           {
             Schedules = new[]
             {
@@ -325,9 +325,9 @@ namespace MachineWatchTest
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started.  BUT, one is being loaded at the load station
       _read
-        .LoadStatusAndTools()
+        .LoadStatus()
         .Returns(
-          new MazakCurrentStatusAndTools()
+          new MazakCurrentStatus()
           {
             Schedules = new[]
             {
@@ -433,9 +433,9 @@ namespace MachineWatchTest
       // plan 50, completed 30, 5 in proc and 15 not yet started
       // a previous decrement already reduced the plan quantity to 35
       _read
-        .LoadStatusAndTools()
+        .LoadStatus()
         .Returns(
-          new MazakCurrentStatusAndTools()
+          new MazakCurrentStatus()
           {
             Schedules = new[]
             {
@@ -507,9 +507,9 @@ namespace MachineWatchTest
       // uuuu plan 50, completed 30, 5 in proc and 15 not yet started
       // vvvv not copied so not returned from LoadSchedulesAndLoadActions
       _read
-        .LoadStatusAndTools()
+        .LoadStatus()
         .Returns(
-          new MazakCurrentStatusAndTools()
+          new MazakCurrentStatus()
           {
             Schedules = new[]
             {

@@ -140,6 +140,7 @@ namespace BlackMaple.MachineFramework
   {
     CurrentStatus CurrentStatus { get; }
     bool StateUpdated { get; }
+    TimeSpan TimeUntilNextRefresh { get; }
   }
 
   public interface ISynchronizeCellState<St>

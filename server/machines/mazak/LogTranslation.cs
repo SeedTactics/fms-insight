@@ -57,18 +57,20 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private IMachineGroupName _machGroupName;
     private Action<LogEntry> _onMazakLog;
-    private MazakCurrentStatusAndTools _mazakSchedules;
+    private MazakCurrentStatus _mazakSchedules;
     private Dictionary<string, Job> _jobs;
+    private Func<IEnumerable<ToolPocketRow>> _loadTools;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
 
     public LogTranslation(
       BlackMaple.MachineFramework.IRepository logDB,
-      MazakCurrentStatusAndTools mazakSch,
+      MazakCurrentStatus mazakSch,
       IMachineGroupName machineGroupName,
       BlackMaple.MachineFramework.FMSSettings settings,
       Action<LogEntry> onMazakLogMessage,
-      MazakConfig mazakConfig
+      MazakConfig mazakConfig,
+      Func<IEnumerable<ToolPocketRow>> loadTools
     )
     {
       _log = logDB;
@@ -77,6 +79,7 @@ namespace MazakMachineInterface
       _mazakSchedules = mazakSch;
       _settings = settings;
       _onMazakLog = onMazakLogMessage;
+      _loadTools = loadTools;
       _jobs = new Dictionary<string, Job>();
     }
 
@@ -136,7 +139,7 @@ namespace MazakMachineInterface
           IEnumerable<ToolSnapshot> pockets = null;
           if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
           {
-            pockets = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
+            pockets = ToolsToSnapshot(e.StationNumber, _loadTools());
           }
 
           var machineMats = GetMaterialOnPallet(e, cycle);
@@ -186,7 +189,7 @@ namespace MazakMachineInterface
             elapsed = TimeSpan.Zero;
             toolsAtStart = Enumerable.Empty<ToolSnapshot>();
           }
-          var toolsAtEnd = ToolsToSnapshot(e.StationNumber, _mazakSchedules.Tools);
+          var toolsAtEnd = ToolsToSnapshot(e.StationNumber, _loadTools());
 
           if (elapsed > TimeSpan.FromSeconds(30))
           {

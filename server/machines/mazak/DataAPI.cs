@@ -314,11 +314,6 @@ namespace MazakMachineInterface
     }
   }
 
-  public record MazakCurrentStatusAndTools : MazakCurrentStatus
-  {
-    public IEnumerable<ToolPocketRow> Tools { get; init; }
-  }
-
   public record MazakProgramRow
   {
     public string MainProgram { get; init; }
@@ -340,7 +335,7 @@ namespace MazakMachineInterface
   public interface IReadDataAccess
   {
     MazakDbType MazakType { get; }
-    MazakCurrentStatusAndTools LoadStatusAndTools();
+    MazakCurrentStatus LoadStatus();
     MazakAllData LoadAllData();
     IEnumerable<MazakProgramRow> LoadPrograms();
     IEnumerable<ToolPocketRow> LoadTools();

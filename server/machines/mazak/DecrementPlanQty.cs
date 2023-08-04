@@ -75,7 +75,7 @@ namespace MazakMachineInterface
       //   the code checks if a previous decrement has happended.  The queues code will keep re-trying to sync the material
       //   quantities with the new scheduled quantities.
 
-      var jobs = JobsToDecrement(jobDB, _read.LoadStatusAndTools());
+      var jobs = JobsToDecrement(jobDB, _read.LoadStatus());
       Log.Debug("Found jobs to decrement {@jobs}", jobs);
 
       if (jobs.Count == 0)

@@ -55,7 +55,7 @@ namespace MachineWatchTest
       new List<MazakMachineInterface.LogEntry>();
     private IMachineGroupName machGroupName;
     private FMSSettings settings;
-    protected MazakCurrentStatusAndTools mazakData;
+    protected MazakCurrentStatus mazakData;
     protected List<ToolPocketRow> mazakDataTools;
     private List<MazakScheduleRow> _schedules;
     private List<MazakPalletSubStatusRow> _palletSubStatus;
@@ -81,11 +81,10 @@ namespace MachineWatchTest
       _palletPositions = new List<MazakPalletPositionRow>();
       _mazakPartRows = new List<MazakPartRow>();
       mazakDataTools = new List<ToolPocketRow>();
-      mazakData = new MazakCurrentStatusAndTools()
+      mazakData = new MazakCurrentStatus()
       {
         Schedules = _schedules,
         LoadActions = Enumerable.Empty<LoadAction>(),
-        Tools = mazakDataTools,
         PalletPositions = _palletPositions,
         PalletSubStatuses = _palletSubStatus,
         Parts = _mazakPartRows
@@ -100,7 +99,8 @@ namespace MachineWatchTest
         machGroupName,
         settings,
         e => raisedByEvent.Add(e),
-        mazakConfig: null
+        mazakConfig: null,
+        loadTools: () => mazakDataTools
       );
     }
 
@@ -117,7 +117,8 @@ namespace MachineWatchTest
         machGroupName,
         settings,
         e => raisedByEvent.Add(e),
-        mazakConfig: null
+        mazakConfig: null,
+        loadTools: () => mazakDataTools
       );
     }
 

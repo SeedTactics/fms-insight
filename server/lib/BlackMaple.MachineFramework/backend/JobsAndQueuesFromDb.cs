@@ -49,9 +49,9 @@ namespace BlackMaple.MachineFramework
     private readonly Action<CurrentStatus> _onNewCurrentStatus;
     private readonly ISynchronizeCellState<St> _syncState;
     private readonly ICheckJobsValid _checkJobsValid;
-    private readonly TimeSpan _refreshStateInterval;
 
     public bool AllowQuarantineToCancelLoad { get; }
+    public bool AddJobsAsCopiedToSystem { get; }
 
     public JobsAndQueuesFromDb(
       RepositoryConfig repo,
@@ -59,8 +59,8 @@ namespace BlackMaple.MachineFramework
       Action<CurrentStatus> onNewCurrentStatus,
       ISynchronizeCellState<St> syncSt,
       ICheckJobsValid checkJobs,
-      TimeSpan refreshStateInterval,
-      bool allowQuarantineToCancelLoad
+      bool allowQuarantineToCancelLoad,
+      bool addJobsAsCopiedToSystem
     )
     {
       _repo = repo;
@@ -68,9 +68,9 @@ namespace BlackMaple.MachineFramework
       _onNewCurrentStatus = onNewCurrentStatus;
       _syncState = syncSt;
       _checkJobsValid = checkJobs;
-      _refreshStateInterval = refreshStateInterval;
       _syncState.NewCellState += NewCellState;
       AllowQuarantineToCancelLoad = allowQuarantineToCancelLoad;
+      AddJobsAsCopiedToSystem = addJobsAsCopiedToSystem;
 
       _thread = new Thread(Thread);
       _thread.IsBackground = true;
@@ -114,11 +114,11 @@ namespace BlackMaple.MachineFramework
       {
         try
         {
-          Synchronize(raiseNewCurStatus);
+          var untilRefresh = Synchronize(raiseNewCurStatus);
 
           var ret = WaitHandle.WaitAny(
             new WaitHandle[] { _shutdown, _recheck, _newCellState },
-            _refreshStateInterval,
+            untilRefresh,
             false
           );
           if (ret == 0)
@@ -152,7 +152,9 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void Synchronize(bool raiseNewCurStatus)
+    private int _syncronizeErrorCount = 0;
+
+    private TimeSpan Synchronize(bool raiseNewCurStatus)
     {
       try
       {
@@ -160,11 +162,13 @@ namespace BlackMaple.MachineFramework
         {
           bool actionPerformed = false;
           using var db = _repo.OpenConnection();
+          TimeSpan timeUntilNextRefresh;
           do
           {
             _newCellState.Reset();
             var st = _syncState.CalculateCellState(db);
             raiseNewCurStatus = raiseNewCurStatus || (st?.StateUpdated ?? false);
+            timeUntilNextRefresh = st.TimeUntilNextRefresh;
 
             lock (_curStLock)
             {
@@ -175,11 +179,23 @@ namespace BlackMaple.MachineFramework
             if (actionPerformed)
               raiseNewCurStatus = true;
           } while (actionPerformed);
+
+          _syncronizeErrorCount = 0;
+          return timeUntilNextRefresh;
         }
       }
       catch (Exception ex)
       {
-        Log.Error(ex, "Error synching cell state");
+        _syncronizeErrorCount++;
+        // exponential decay backoff starting at 2 seconds, maximum of 5 minutes
+        var msToWait = Math.Min(5 * 60 * 1000, 2000 * Math.Pow(2, _syncronizeErrorCount - 1));
+        Log.Error(
+          ex,
+          "Error synching cell state on retry {_syncronizeErrorCount}, waiting {msToWait} milliseconds",
+          _syncronizeErrorCount,
+          msToWait
+        );
+        return TimeSpan.FromMilliseconds(msToWait);
       }
       finally
       {
@@ -291,7 +307,7 @@ namespace BlackMaple.MachineFramework
 
         Log.Debug("Adding jobs to database");
 
-        jdb.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
+        jdb.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: AddJobsAsCopiedToSystem);
       }
 
       Log.Debug("Sending new jobs on websocket");
