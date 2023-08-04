@@ -115,31 +115,8 @@ namespace BlackMaple.MachineFramework.Controllers
         throw new BadRequestException("Part must be non-empty");
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.MostRecentUnfilledWorkordersForPart(part);
+        return db.GetActiveWorkorders(partToFilter: part);
       }
-    }
-
-    [DataContract]
-    public record WorkordersAndPrograms
-    {
-      [DataMember(IsRequired = true)]
-      public required IReadOnlyList<Workorder> Workorders { get; init; }
-
-      [DataMember(IsRequired = false, EmitDefaultValue = false)]
-      public IReadOnlyList<NewProgramContent> Programs { get; init; }
-    }
-
-    [HttpPut("unfilled-workorders/by-schid/{scheduleId}")]
-    [ProducesResponseType(typeof(void), 200)]
-    public void ReplaceWorkordersForScheduleId(string scheduleId, [FromBody] WorkordersAndPrograms workorders)
-    {
-      if (string.IsNullOrEmpty(scheduleId))
-        throw new BadRequestException("ScheduleId must be non-empty");
-      _impl.Backend.JobControl.ReplaceWorkordersForSchedule(
-        scheduleId,
-        workorders.Workorders,
-        workorders.Programs
-      );
     }
 
     [HttpGet("status")]
@@ -153,10 +130,16 @@ namespace BlackMaple.MachineFramework.Controllers
     public void Add(
       [FromBody] NewJobs newJobs,
       [FromQuery] string expectedPreviousScheduleId,
-      [FromQuery] bool waitForCopyToCell = true
+      [FromQuery] bool waitForCopyToCell = true,
+      [FromQuery] bool archiveCompletedJobs = true
     )
     {
-      _impl.Backend.JobControl.AddJobs(newJobs, expectedPreviousScheduleId, waitForCopyToCell);
+      _impl.Backend.JobControl.AddJobs(
+        jobs: newJobs,
+        expectedPreviousScheduleId: expectedPreviousScheduleId,
+        waitForCopyToCell: waitForCopyToCell,
+        archiveCompletedJobs: archiveCompletedJobs
+      );
     }
 
     [HttpPost("casting/{castingName}")]

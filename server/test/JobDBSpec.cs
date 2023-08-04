@@ -167,7 +167,6 @@ namespace MachineWatchTest
             LatestScheduleId = schId,
             Jobs = ImmutableList.Create(job1history),
             ExtraParts = job1ExtraParts.ToImmutableDictionary(),
-            CurrentUnfilledWorkorders = job1UnfilledWorks.ToImmutableList()
           }
         );
 
@@ -321,31 +320,6 @@ namespace MachineWatchTest
             LatestScheduleId = schId,
             Jobs = ImmutableList.Create(job1history),
             ExtraParts = job1ExtraParts.ToImmutableDictionary(),
-            CurrentUnfilledWorkorders = job1UnfilledWorks.ToImmutableList()
-          }
-        );
-
-      _jobDB
-        .MostRecentUnfilledWorkordersForPart(job1UnfilledWorks[0].Part)
-        .Should()
-        .BeEquivalentTo(
-          // ignores job2 since manually created
-          new[]
-          {
-            new ActiveWorkorder()
-            {
-              WorkorderId = job1UnfilledWorks[0].WorkorderId,
-              Part = job1UnfilledWorks[0].Part,
-              PlannedQuantity = job1UnfilledWorks[0].Quantity,
-              CompletedQuantity = 0,
-              DueDate = job1UnfilledWorks[0].DueDate,
-              Priority = job1UnfilledWorks[0].Priority,
-              Serials = ImmutableList<string>.Empty,
-              ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              SimulatedFilledUTC = job1UnfilledWorks[0].SimulatedFilledUTC,
-              SimulatedStartUTC = job1UnfilledWorks[0].SimulatedStartUTC,
-            }
           }
         );
 
@@ -1297,11 +1271,8 @@ namespace MachineWatchTest
           }
         );
 
-      _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(initialWorks);
-      _jobDB.MostRecentWorkorders().Should().BeEquivalentTo(initialWorks);
-
       _jobDB
-        .MostRecentUnfilledWorkordersForPart(initialWorks[0].Part)
+        .GetActiveWorkorders(initialWorks[0].Part)
         .Should()
         .BeEquivalentTo(
           new[]
@@ -1472,7 +1443,7 @@ namespace MachineWatchTest
       _jobDB.LoadProgramContent("aaa", 1).Should().Be("aaa program content");
       _jobDB.LoadProgramContent("aaa", 2).Should().BeNull();
 
-      // replaces workorders
+      // adds new workorders and programs
       var newWorkorders = _fixture.Create<List<Workorder>>();
       newWorkorders[0] %= w =>
       {
@@ -1520,43 +1491,24 @@ namespace MachineWatchTest
         );
       };
 
-      // replace an existing
-      newWorkorders.Add(
-        initialWorks[1]
-          % (
-            draft =>
+      _jobDB.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = schId + "ZZZ",
+          Jobs = ImmutableList<Job>.Empty,
+          CurrentUnfilledWorkorders = newWorkorders.ToImmutableList(),
+          Programs = ImmutableList.Create(
+            new NewProgramContent()
             {
-              draft.Quantity = 10;
-              draft.Programs.Clear();
-              draft.Programs.AddRange(
-                new[]
-                {
-                  new ProgramForJobStep()
-                  {
-                    ProcessNumber = 1,
-                    StopIndex = 0,
-                    ProgramName = "ccc",
-                    Revision = 0
-                  }
-                }
-              );
+              ProgramName = "ccc",
+              Revision = 0,
+              Comment = "the ccc comment",
+              ProgramContent = "ccc first program"
             }
           )
-      );
-
-      _jobDB.ReplaceWorkordersForSchedule(
-        schId,
-        newWorkorders,
-        new[]
-        {
-          new NewProgramContent()
-          {
-            ProgramName = "ccc",
-            Revision = 0,
-            Comment = "the ccc comment",
-            ProgramContent = "ccc first program"
-          }
-        }
+        },
+        null,
+        true
       );
 
       // update with allocated revisions
@@ -1576,26 +1528,12 @@ namespace MachineWatchTest
           }
         );
       };
-      newWorkorders[newWorkorders.Count - 1] %= w =>
-      {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
-          {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              StopIndex = 0,
-              ProgramName = "ccc",
-              Revision = 1
-            }
-          }
-        );
-      };
 
-      _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(newWorkorders); // initialWorks have been archived and don't appear
-      _jobDB.MostRecentWorkorders().Should().BeEquivalentTo(newWorkorders);
-
+      _jobDB
+        .GetActiveWorkorders()
+        .Select(w => w.WorkorderId)
+        .Should()
+        .BeEquivalentTo(newWorkorders.Select(w => w.WorkorderId)); // initialWorks have been archived and don't appear
       _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] }); // but still exist when looked up directly
 
       _jobDB
@@ -2349,8 +2287,6 @@ namespace MachineWatchTest
             Decrements = ImmutableList<DecrementQuantity>.Empty
           }
         );
-
-      _jobDB.LoadMostRecentSchedule().CurrentUnfilledWorkorders.Should().BeEquivalentTo(initialWorks);
 
       _jobDB
         .LoadProgram("aaa", 1)

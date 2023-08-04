@@ -84,7 +84,12 @@ namespace Makino
       return new List<string>();
     }
 
-    public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId, bool waitForCopyToCell)
+    public void AddJobs(
+      NewJobs newJ,
+      string expectedPreviousScheduleId,
+      bool waitForCopyToCell,
+      bool archiveCompletedJobs
+    )
     {
       var newJobs = new List<Job>();
       using (var jdb = _openJobDB())

@@ -64,8 +64,7 @@ namespace BlackMaple.MachineFramework
     DateTime MaxLogDate();
     string ForeignIDForCounter(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
-    ImmutableList<ActiveWorkorder> GetActiveWorkordersForSchedule(string scheduleId);
-    ImmutableList<ActiveWorkorder> GetActiveWorkordersForMostRecentSchedule();
+    ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter = null);
     ImmutableList<string> GetWorkordersForUnique(string jobUnique);
 
     // --------------------------------------------------------------------------------
@@ -466,8 +465,6 @@ namespace BlackMaple.MachineFramework
     );
     RecentHistoricData LoadRecentJobHistory(DateTime startUTC, IEnumerable<string> alreadyKnownSchIds = null);
     PlannedSchedule LoadMostRecentSchedule();
-    IReadOnlyList<Workorder> MostRecentWorkorders();
-    ImmutableList<ActiveWorkorder> MostRecentUnfilledWorkordersForPart(string part);
     ImmutableList<Workorder> WorkordersById(string workorderId);
     ImmutableDictionary<string, ImmutableList<Workorder>> WorkordersById(IReadOnlySet<string> workorderId);
 
@@ -489,12 +486,6 @@ namespace BlackMaple.MachineFramework
     void UpdateJobHold(string unique, HoldPattern newHold);
     void UpdateJobLoadUnloadHold(string unique, int proc, int path, HoldPattern newHold);
     void UpdateJobMachiningHold(string unique, int proc, int path, HoldPattern newHold);
-    void ReplaceWorkordersForSchedule(
-      string scheduleId,
-      IEnumerable<Workorder> newWorkorders,
-      IEnumerable<NewProgramContent> programs,
-      DateTime? nowUtc = null
-    );
 
     // --------------------------------------------------------------------------------
     // Decrements

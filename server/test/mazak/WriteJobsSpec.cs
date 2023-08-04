@@ -333,7 +333,7 @@ namespace MachineWatchTest
       );
 
       _writeJobs
-        .Invoking(x => x.AddJobs(_jobDB, newJobsMultiFace, "xxxx"))
+        .Invoking(x => x.AddJobs(_jobDB, newJobsMultiFace, "xxxx", true))
         .Should()
         .Throw<BadRequestException>()
         .WithMessage(
@@ -384,7 +384,7 @@ namespace MachineWatchTest
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
-      _writeJobs.AddJobs(_jobDB, newJobs, null);
+      _writeJobs.AddJobs(_jobDB, newJobs, null, true);
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
@@ -442,7 +442,7 @@ namespace MachineWatchTest
         newJobs.Jobs.First().RouteStartUTC
       );
 
-      _writeJobs.AddJobs(_jobDB, newJobs, null);
+      _writeJobs.AddJobs(_jobDB, newJobs, null, true);
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
@@ -462,7 +462,7 @@ namespace MachineWatchTest
         jsonSettings
       );
       _writeJobs
-        .Invoking(x => x.AddJobs(_jobDB, newJobs, null))
+        .Invoking(x => x.AddJobs(_jobDB, newJobs, null, true))
         .Should()
         .Throw<Exception>()
         .WithMessage("Sample error");
@@ -488,7 +488,7 @@ namespace MachineWatchTest
         jsonSettings
       );
       _writeJobs
-        .Invoking(x => x.AddJobs(_jobDB, newJobs, null))
+        .Invoking(x => x.AddJobs(_jobDB, newJobs, null, true))
         .Should()
         .Throw<Exception>()
         .WithMessage("Sample error");

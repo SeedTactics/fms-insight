@@ -92,7 +92,7 @@ namespace MachineWatchTest
         }
       };
 
-      var (actions, tokeep) = BuildMazakSchedules.RemoveCompletedSchedules(schedules);
+      var (actions, tokeep) = BuildMazakSchedules.RemoveCompletedSchedules(schedules, true);
 
       actions.Schedules
         .Should()

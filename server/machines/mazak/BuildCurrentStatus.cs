@@ -460,7 +460,7 @@ namespace MazakMachineInterface
               : new string[] { }
           )
           .ToImmutableList(),
-        Workorders = jobDB.GetActiveWorkordersForMostRecentSchedule()
+        Workorders = jobDB.GetActiveWorkorders()
       };
     }
 

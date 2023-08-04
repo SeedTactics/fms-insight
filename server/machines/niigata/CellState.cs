@@ -189,7 +189,7 @@ namespace BlackMaple.FMSInsight.Niigata
             )
             .Concat(status.Alarm ? new[] { "ICC has an alarm" } : new string[] { })
             .ToImmutableList(),
-          Workorders = logDB.GetActiveWorkordersForMostRecentSchedule()
+          Workorders = logDB.GetActiveWorkorders()
         }
       };
     }
