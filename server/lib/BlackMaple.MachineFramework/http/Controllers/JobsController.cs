@@ -127,17 +127,9 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPost("add")]
     [ProducesResponseType(typeof(void), 200)]
-    public void Add(
-      [FromBody] NewJobs newJobs,
-      [FromQuery] string expectedPreviousScheduleId,
-      [FromQuery] bool archiveCompletedJobs = true
-    )
+    public void Add([FromBody] NewJobs newJobs, [FromQuery] string expectedPreviousScheduleId)
     {
-      _impl.Backend.JobControl.AddJobs(
-        jobs: newJobs,
-        expectedPreviousScheduleId: expectedPreviousScheduleId,
-        archiveCompletedJobs: archiveCompletedJobs
-      );
+      _impl.Backend.JobControl.AddJobs(jobs: newJobs, expectedPreviousScheduleId: expectedPreviousScheduleId);
     }
 
     [HttpPost("casting/{castingName}")]

@@ -251,7 +251,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool archiveCompletedJobs)
+    void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
       using (var jdb = _repo.OpenConnection())
       {
@@ -262,15 +262,12 @@ namespace BlackMaple.MachineFramework
           throw new BadRequestException(string.Join(Environment.NewLine, errors));
         }
 
-        if (archiveCompletedJobs)
+        var curSt = GetCurrentStatus();
+        foreach (var j in curSt.Jobs.Values)
         {
-          var curSt = GetCurrentStatus();
-          foreach (var j in curSt.Jobs.Values)
+          if (IsJobCompleted(j, curSt))
           {
-            if (IsJobCompleted(j, curSt))
-            {
-              jdb.ArchiveJob(j.UniqueStr);
-            }
+            jdb.ArchiveJob(j.UniqueStr);
           }
         }
 

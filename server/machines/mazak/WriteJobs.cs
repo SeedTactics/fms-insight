@@ -44,12 +44,7 @@ namespace MazakMachineInterface
 
   public interface IWriteJobs
   {
-    void AddJobs(
-      IRepository jobDB,
-      NewJobs newJ,
-      string expectedPreviousScheduleId,
-      bool archiveCompletedJobs
-    );
+    void AddJobs(IRepository jobDB, NewJobs newJ, string expectedPreviousScheduleId);
     void RecopyJobsToMazak(IRepository jobDB, DateTime? nowUtc = null);
     void SyncFromDatabase(MazakAllData mazakData, IRepository jobDB);
   }
@@ -111,12 +106,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public void AddJobs(
-      IRepository jobDB,
-      NewJobs newJ,
-      string expectedPreviousScheduleId,
-      bool archiveCompletedJobs
-    )
+    public void AddJobs(IRepository jobDB, NewJobs newJ, string expectedPreviousScheduleId)
     {
       // check previous schedule id
       if (!string.IsNullOrEmpty(newJ.ScheduleId))
@@ -169,7 +159,7 @@ namespace MazakMachineInterface
 
       //add fixtures, pallets, parts.  If this fails, just throw an exception,
       //they will be deleted during the next download.
-      AddFixturesPalletsParts(mazakData, jobDB, newJ.Jobs, archiveOldJobs: archiveCompletedJobs);
+      AddFixturesPalletsParts(mazakData, jobDB, newJ.Jobs);
 
       //Now that the parts have been added and we are confident that there no problems with the jobs,
       //add them to the database.  Once this occurrs, the timer will pick up and eventually
@@ -220,7 +210,7 @@ namespace MazakMachineInterface
         jobs.Select(j => j.UniqueStr).ToList()
       );
 
-      AddFixturesPalletsParts(mazakData, db, jobs, archiveOldJobs: true);
+      AddFixturesPalletsParts(mazakData, db, jobs);
       AddSchedules(db, jobs);
     }
 
@@ -236,12 +226,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void AddFixturesPalletsParts(
-      MazakAllData mazakData,
-      IRepository jobDB,
-      IEnumerable<Job> jobs,
-      bool archiveOldJobs
-    )
+    private void AddFixturesPalletsParts(MazakAllData mazakData, IRepository jobDB, IEnumerable<Job> jobs)
     {
       //first allocate a UID to use for this download
       int UID = 0;
@@ -273,10 +258,7 @@ namespace MazakMachineInterface
 
       ArchiveOldJobs(jobDB, mazakData);
 
-      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(
-        mazakData,
-        archiveOldJobs: archiveOldJobs
-      );
+      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData);
       if (transSet.Schedules.Any())
         writeDb.Save(transSet, "Update schedules");
 

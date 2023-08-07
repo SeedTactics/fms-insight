@@ -294,7 +294,7 @@ namespace DebugMachineWatchApiServer
       return new List<string>();
     }
 
-    public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool archiveCompletedJobs)
+    public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
       using var LogDB = RepoConfig.OpenConnection();
       LogDB.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
