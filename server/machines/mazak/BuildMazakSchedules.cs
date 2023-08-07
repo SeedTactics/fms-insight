@@ -42,17 +42,14 @@ namespace MazakMachineInterface
   {
     public static Serilog.ILogger Log = Serilog.Log.ForContext<BuildMazakSchedules>();
 
-    public static (MazakWriteData, ISet<string>) RemoveCompletedSchedules(
-      MazakCurrentStatus mazakData,
-      bool archiveOldJobs
-    )
+    public static (MazakWriteData, ISet<string>) RemoveCompletedSchedules(MazakCurrentStatus mazakData)
     {
       //remove all completed production
       var schs = new List<MazakScheduleRow>();
       var savedParts = new HashSet<string>();
       foreach (var schRow in mazakData.Schedules)
       {
-        if (schRow.PlanQuantity == schRow.CompleteQuantity && archiveOldJobs)
+        if (schRow.PlanQuantity == schRow.CompleteQuantity)
         {
           var newSchRow = schRow with { Command = MazakWriteCommand.Delete };
           schs.Add(newSchRow);

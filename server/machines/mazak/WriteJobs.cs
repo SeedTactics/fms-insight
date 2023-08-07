@@ -44,12 +44,7 @@ namespace MazakMachineInterface
 
   public interface IWriteJobs
   {
-    void AddJobs(
-      IRepository jobDB,
-      NewJobs newJ,
-      string expectedPreviousScheduleId,
-      bool archiveCompletedJobs
-    );
+    void AddJobs(IRepository jobDB, NewJobs newJ, string expectedPreviousScheduleId);
     void RecopyJobsToMazak(IRepository jobDB, DateTime? nowUtc = null);
   }
 
@@ -110,12 +105,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public void AddJobs(
-      IRepository jobDB,
-      NewJobs newJ,
-      string expectedPreviousScheduleId,
-      bool archiveCompletedJobs
-    )
+    public void AddJobs(IRepository jobDB, NewJobs newJ, string expectedPreviousScheduleId)
     {
       // check previous schedule id
       if (!string.IsNullOrEmpty(newJ.ScheduleId))
@@ -165,7 +155,7 @@ namespace MazakMachineInterface
 
       //add fixtures, pallets, parts.  If this fails, just throw an exception,
       //they will be deleted during the next download.
-      AddFixturesPalletsParts(jobDB, newJ, archiveOldJobs: archiveCompletedJobs);
+      AddFixturesPalletsParts(jobDB, newJ);
 
       //Now that the parts have been added and we are confident that there no problems with the jobs,
       //add them to the database.  Once this occurrs, the timer will pick up and eventually
@@ -211,7 +201,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void AddFixturesPalletsParts(IRepository jobDB, NewJobs newJ, bool archiveOldJobs)
+    private void AddFixturesPalletsParts(IRepository jobDB, NewJobs newJ)
     {
       var mazakData = readDatabase.LoadAllData();
 
@@ -247,10 +237,7 @@ namespace MazakMachineInterface
 
       ArchiveOldJobs(jobDB, mazakData);
 
-      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(
-        mazakData,
-        archiveOldJobs: archiveOldJobs
-      );
+      var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData);
       if (transSet.Schedules.Any())
         writeDb.Save(transSet, "Update schedules");
 

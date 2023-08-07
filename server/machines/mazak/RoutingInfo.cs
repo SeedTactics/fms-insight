@@ -211,11 +211,7 @@ namespace MazakMachineInterface
       return logMessages;
     }
 
-    void BlackMaple.MachineFramework.IJobControl.AddJobs(
-      NewJobs newJ,
-      string expectedPreviousScheduleId,
-      bool archiveCompletedJobs
-    )
+    void BlackMaple.MachineFramework.IJobControl.AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
@@ -230,7 +226,7 @@ namespace MazakMachineInterface
         }
         using (var jobDB = logDbCfg.OpenConnection())
         {
-          _writeJobs.AddJobs(jobDB, newJ, expectedPreviousScheduleId, archiveCompletedJobs);
+          _writeJobs.AddJobs(jobDB, newJ, expectedPreviousScheduleId);
           logReader.RecheckQueues(wait: false);
           curSt = CurrentStatus(jobDB);
         }

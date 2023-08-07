@@ -434,15 +434,6 @@
               "nullable": true
             },
             "x-position": 2
-          },
-          {
-            "name": "archiveCompletedJobs",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": true
-            },
-            "x-position": 3
           }
         ],
         "requestBody": {

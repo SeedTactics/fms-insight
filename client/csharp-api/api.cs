@@ -1071,14 +1071,14 @@ namespace BlackMaple.FMSInsight.API
         }
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task AddAsync(string expectedPreviousScheduleId, bool? archiveCompletedJobs, NewJobs newJobs)
+        public virtual System.Threading.Tasks.Task AddAsync(string expectedPreviousScheduleId, NewJobs newJobs)
         {
-            return AddAsync(expectedPreviousScheduleId, archiveCompletedJobs, newJobs, System.Threading.CancellationToken.None);
+            return AddAsync(expectedPreviousScheduleId, newJobs, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task AddAsync(string expectedPreviousScheduleId, bool? archiveCompletedJobs, NewJobs newJobs, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task AddAsync(string expectedPreviousScheduleId, NewJobs newJobs, System.Threading.CancellationToken cancellationToken)
         {
             if (newJobs == null)
                 throw new System.ArgumentNullException("newJobs");
@@ -1086,10 +1086,6 @@ namespace BlackMaple.FMSInsight.API
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/v1/jobs/add?");
             urlBuilder_.Append(System.Uri.EscapeDataString("expectedPreviousScheduleId") + "=").Append(System.Uri.EscapeDataString(expectedPreviousScheduleId != null ? ConvertToString(expectedPreviousScheduleId, System.Globalization.CultureInfo.InvariantCulture) : "")).Append("&");
-            if (archiveCompletedJobs != null)
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("archiveCompletedJobs") + "=").Append(System.Uri.EscapeDataString(ConvertToString(archiveCompletedJobs, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
             urlBuilder_.Length--;
 
             var client_ = _httpClient;

@@ -471,16 +471,12 @@ export class JobsClient {
         return Promise.resolve<CurrentStatus>(null as any);
     }
 
-    add(expectedPreviousScheduleId: string | null, archiveCompletedJobs: boolean | undefined, newJobs: NewJobs): Promise<void> {
+    add(expectedPreviousScheduleId: string | null, newJobs: NewJobs): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/add?";
         if (expectedPreviousScheduleId === undefined)
             throw new Error("The parameter 'expectedPreviousScheduleId' must be defined.");
         else if(expectedPreviousScheduleId !== null)
             url_ += "expectedPreviousScheduleId=" + encodeURIComponent("" + expectedPreviousScheduleId) + "&";
-        if (archiveCompletedJobs === null)
-            throw new Error("The parameter 'archiveCompletedJobs' cannot be null.");
-        else if (archiveCompletedJobs !== undefined)
-            url_ += "archiveCompletedJobs=" + encodeURIComponent("" + archiveCompletedJobs) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(newJobs);
