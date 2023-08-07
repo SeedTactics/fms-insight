@@ -212,13 +212,14 @@ namespace BlackMaple.MachineFramework
       lock (_changeLock)
       {
         var st = _syncState.CalculateCellState(jobDB);
-        var jobsDecremented = _syncState.DecrementJobs(jobDB, st);
-        requireStateRefresh = requireStateRefresh || st.StateUpdated || jobsDecremented;
 
         lock (_curStLock)
         {
           _lastCurrentStatus = st.CurrentStatus;
         }
+
+        var jobsDecremented = _syncState.DecrementJobs(jobDB, st);
+        requireStateRefresh = requireStateRefresh || st.StateUpdated || jobsDecremented;
       }
 
       if (requireStateRefresh)
