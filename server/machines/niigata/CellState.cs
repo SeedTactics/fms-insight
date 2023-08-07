@@ -78,11 +78,12 @@ namespace BlackMaple.FMSInsight.Niigata
     public Dictionary<(string progName, long revision), ProgramRevision> ProgramsInUse { get; set; }
     public List<ProgramRevision> OldUnusedPrograms { get; set; }
     public CurrentStatus CurrentStatus { get; init; }
+    public required ImmutableList<NewDecrementQuantity> NewDecrements { get; init; }
   }
 
   public interface IBuildCellState
   {
-    CellState BuildCellState(IRepository jobDB, NiigataStatus status);
+    CellState BuildCellState(IRepository jobDB, NiigataStatus status, bool decrementRequested);
   }
 
   public class CreateCellState : IBuildCellState
@@ -99,7 +100,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _machConnection = machConn;
     }
 
-    public CellState BuildCellState(IRepository logDB, NiigataStatus status)
+    public CellState BuildCellState(IRepository logDB, NiigataStatus status, bool decrementRequested)
     {
       var palletStateUpdated = false;
 
@@ -151,6 +152,40 @@ namespace BlackMaple.FMSInsight.Niigata
         status
       );
 
+      var currentSt = new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = status.TimeOfStatusUTC,
+        Jobs = jobCache.BuildActiveJobs(pals.SelectMany(p => p.Material).Select(m => m.Mat), logDB),
+        Pallets = pals.ToImmutableDictionary(
+          pal => pal.Status.Master.PalletNum,
+          pal =>
+            new MachineFramework.PalletStatus()
+            {
+              PalletNum = pal.Status.Master.PalletNum,
+              FixtureOnPallet = "",
+              OnHold = pal.Status.Master.Skip,
+              CurrentPalletLocation = pal.Status.CurStation.Location,
+              NumFaces = pal.Material.Count > 0 ? pal.Material.Max(m => m.Mat.Location.Face ?? 1) : 0
+            }
+        ),
+        Material = pals.SelectMany(pal => pal.Material)
+          .Concat(queuedMats)
+          .Select(m => m.Mat)
+          .Concat(SetLongTool(pals))
+          .ToImmutableList(),
+        Queues = _settings.Queues.ToImmutableDictionary(),
+        Alarms = pals.Where(pal => pal.Status.Tracking.Alarm)
+          .Select(pal => AlarmCodeToString(pal.Status.Master.PalletNum, pal.Status.Tracking.AlarmCode))
+          .Concat(
+            status.Machines.Values
+              .Where(mc => mc.Alarm)
+              .Select(mc => "Machine " + mc.MachineNumber.ToString() + " has an alarm")
+          )
+          .Concat(status.Alarm ? new[] { "ICC has an alarm" } : new string[] { })
+          .ToImmutableList(),
+        Workorders = logDB.GetActiveWorkorders()
+      };
+
       return new CellState()
       {
         Status = status,
@@ -160,39 +195,10 @@ namespace BlackMaple.FMSInsight.Niigata
         QueuedMaterial = queuedMats,
         ProgramsInUse = progsInUse,
         OldUnusedPrograms = OldUnusedPrograms(logDB, status, progsInUse),
-        CurrentStatus = new CurrentStatus()
-        {
-          TimeOfCurrentStatusUTC = status.TimeOfStatusUTC,
-          Jobs = jobCache.BuildActiveJobs(pals.SelectMany(p => p.Material).Select(m => m.Mat), logDB),
-          Pallets = pals.ToImmutableDictionary(
-            pal => pal.Status.Master.PalletNum,
-            pal =>
-              new MachineFramework.PalletStatus()
-              {
-                PalletNum = pal.Status.Master.PalletNum,
-                FixtureOnPallet = "",
-                OnHold = pal.Status.Master.Skip,
-                CurrentPalletLocation = pal.Status.CurStation.Location,
-                NumFaces = pal.Material.Count > 0 ? pal.Material.Max(m => m.Mat.Location.Face ?? 1) : 0
-              }
-          ),
-          Material = pals.SelectMany(pal => pal.Material)
-            .Concat(queuedMats)
-            .Select(m => m.Mat)
-            .Concat(SetLongTool(pals))
-            .ToImmutableList(),
-          Queues = _settings.Queues.ToImmutableDictionary(),
-          Alarms = pals.Where(pal => pal.Status.Tracking.Alarm)
-            .Select(pal => AlarmCodeToString(pal.Status.Master.PalletNum, pal.Status.Tracking.AlarmCode))
-            .Concat(
-              status.Machines.Values
-                .Where(mc => mc.Alarm)
-                .Select(mc => "Machine " + mc.MachineNumber.ToString() + " has an alarm")
-            )
-            .Concat(status.Alarm ? new[] { "ICC has an alarm" } : new string[] { })
-            .ToImmutableList(),
-          Workorders = logDB.GetActiveWorkorders()
-        }
+        CurrentStatus = currentSt,
+        NewDecrements = decrementRequested
+          ? jobCache.BuildJobsToDecrement(currentSt, logDB)
+          : ImmutableList<NewDecrementQuantity>.Empty
       };
     }
 

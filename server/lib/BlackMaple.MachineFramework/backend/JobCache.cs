@@ -49,6 +49,7 @@ public interface IJobCache
     IEnumerable<InProcessMaterial> allMaterial,
     IRepository db
   );
+  ImmutableList<NewDecrementQuantity> BuildJobsToDecrement(CurrentStatus status, IRepository db);
 }
 
 public record DefaultPathInformation
@@ -263,5 +264,29 @@ public class JobCache : IJobCache
         };
       }
     );
+  }
+
+  public ImmutableList<NewDecrementQuantity> BuildJobsToDecrement(CurrentStatus st, IRepository db)
+  {
+    var decrs = ImmutableList.CreateBuilder<NewDecrementQuantity>();
+    foreach (var j in st.Jobs.Values)
+    {
+      if (j.ManuallyCreated || j.Decrements?.Count > 0)
+        continue;
+
+      int toStart = (int)(j.RemainingToStart ?? 0);
+      if (toStart > 0)
+      {
+        decrs.Add(
+          new NewDecrementQuantity()
+          {
+            JobUnique = j.UniqueStr,
+            Part = j.PartName,
+            Quantity = toStart
+          }
+        );
+      }
+    }
+    return decrs.ToImmutable();
   }
 }

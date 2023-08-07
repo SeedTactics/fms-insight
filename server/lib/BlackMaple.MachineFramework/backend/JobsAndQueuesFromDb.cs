@@ -166,7 +166,7 @@ namespace BlackMaple.MachineFramework
           do
           {
             _newCellState.Reset();
-            var st = _syncState.CalculateCellState(db);
+            var st = _syncState.CalculateCellState(db, decrementRequested: false);
             raiseNewCurStatus = raiseNewCurStatus || (st?.StateUpdated ?? false);
             timeUntilNextRefresh = st.TimeUntilNextRefresh;
 
@@ -211,43 +211,12 @@ namespace BlackMaple.MachineFramework
       bool requireStateRefresh = false;
       lock (_changeLock)
       {
-        var st = _syncState.CalculateCellState(jobDB);
+        var st = _syncState.CalculateCellState(jobDB, decrementRequested: true);
         requireStateRefresh = requireStateRefresh || st.StateUpdated;
 
         lock (_curStLock)
         {
           _lastCurrentStatus = st.CurrentStatus;
-        }
-
-        // Don't perform actions here, wait until after decrement when we will recalculate
-
-        var decrs = new List<NewDecrementQuantity>();
-        foreach (var j in st.CurrentStatus.Jobs.Values)
-        {
-          if (j.ManuallyCreated || j.Decrements?.Count > 0)
-            continue;
-
-          if (_checkJobsValid.ExcludeJobFromDecrement(jobDB, j))
-            continue;
-
-          int toStart = (int)(j.RemainingToStart ?? 0);
-          if (toStart > 0)
-          {
-            decrs.Add(
-              new NewDecrementQuantity()
-              {
-                JobUnique = j.UniqueStr,
-                Part = j.PartName,
-                Quantity = toStart
-              }
-            );
-          }
-        }
-
-        if (decrs.Count > 0)
-        {
-          jobDB.AddNewDecrement(decrs, nowUTC: st?.CurrentStatus?.TimeOfCurrentStatusUTC);
-          requireStateRefresh = true;
         }
       }
 
@@ -551,7 +520,7 @@ namespace BlackMaple.MachineFramework
       {
         lock (_changeLock)
         {
-          var st = _syncState.CalculateCellState(ldb);
+          var st = _syncState.CalculateCellState(ldb, decrementRequested: false);
           if (st == null)
           {
             throw new BadRequestException("Unable to calculate cell state");
@@ -610,7 +579,7 @@ namespace BlackMaple.MachineFramework
       {
         using (var ldb = _repo.OpenConnection())
         {
-          var st = _syncState.CalculateCellState(ldb);
+          var st = _syncState.CalculateCellState(ldb, decrementRequested: false);
           if (st == null)
           {
             throw new BadRequestException("Unable to calculate cell state");
@@ -662,7 +631,7 @@ namespace BlackMaple.MachineFramework
       {
         lock (_changeLock)
         {
-          var st = _syncState.CalculateCellState(ldb);
+          var st = _syncState.CalculateCellState(ldb, decrementRequested: false);
           if (st == null)
           {
             throw new BadRequestException("Unable to calculate cell state");

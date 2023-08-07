@@ -56,15 +56,21 @@ namespace BlackMaple.FMSInsight.Niigata
       remove { _icc.NewCurrentStatus -= value; }
     }
 
-    public CellState CalculateCellState(IRepository db)
+    public CellState CalculateCellState(IRepository db, bool decrementRequested)
     {
       var status = _icc.LoadNiigataStatus();
       Log.Debug("Loaded pallets {@status}", status);
-      return _createLog.BuildCellState(db, status);
+      return _createLog.BuildCellState(db, status, decrementRequested: decrementRequested);
     }
 
     public bool ApplyActions(IRepository db, CellState st)
     {
+      if (st.NewDecrements.Count > 0)
+      {
+        db.AddNewDecrement(st.NewDecrements, nowUTC: st?.CurrentStatus?.TimeOfCurrentStatusUTC);
+        return true;
+      }
+
       var action = _assign.NewPalletChange(st);
       if (action != null)
       {

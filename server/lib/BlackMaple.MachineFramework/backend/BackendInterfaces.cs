@@ -147,14 +147,13 @@ namespace BlackMaple.MachineFramework
     where St : ICellState
   {
     event Action NewCellState;
-    St CalculateCellState(IRepository db);
+    St CalculateCellState(IRepository db, bool decrementRequested);
     bool ApplyActions(IRepository db, St st);
   }
 
   public interface ICheckJobsValid
   {
     IReadOnlyList<string> CheckNewJobs(IRepository db, NewJobs jobs);
-    bool ExcludeJobFromDecrement(IRepository db, Job j);
   }
 
   public delegate void NewCurrentStatus(CurrentStatus status);
