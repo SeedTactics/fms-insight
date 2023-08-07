@@ -197,7 +197,7 @@ namespace BlackMaple.FMSInsight.Niigata
         OldUnusedPrograms = OldUnusedPrograms(logDB, status, progsInUse),
         CurrentStatus = currentSt,
         NewDecrements = decrementRequested
-          ? jobCache.BuildJobsToDecrement(currentSt, logDB)
+          ? currentSt.BuildJobsToDecrement(logDB)
           : ImmutableList<NewDecrementQuantity>.Empty
       };
     }

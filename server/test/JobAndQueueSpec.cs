@@ -88,6 +88,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   private MockCellState _curSt;
   private bool _executeActions;
   public event Action NewCellState;
+  private bool _expectsDecrement = false;
 
   private async Task StartSyncThread(bool allowQuarantineToCancelLoad = false)
   {
@@ -105,8 +106,20 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     await newCellSt;
   }
 
-  MockCellState ISynchronizeCellState<MockCellState>.CalculateCellState(IRepository db)
+  MockCellState ISynchronizeCellState<MockCellState>.CalculateCellState(
+    IRepository db,
+    bool decrementRequested
+  )
   {
+    decrementRequested.Should().Be(_expectsDecrement);
+    if (_expectsDecrement)
+    {
+      var cache = new JobCache(db);
+      db.AddNewDecrement(
+        _curSt.CurrentStatus.BuildJobsToDecrement(db),
+        nowUTC: _curSt.CurrentStatus.TimeOfCurrentStatusUTC
+      );
+    }
     return _curSt;
   }
 
@@ -344,6 +357,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var newStatusTask = CreateTaskToWaitForNewCellState();
 
     IEnumerable<JobAndDecrementQuantity> decrs;
+    _expectsDecrement = true;
     if (byDate)
     {
       decrs = ((IJobControl)_jq).DecrementJobQuantites(DateTime.UtcNow.AddHours(-5));

@@ -45,11 +45,6 @@ public interface IJobCache
   HistoricJob? Lookup(string uniq);
   IEnumerable<HistoricJob> AllJobs { get; }
   IEnumerable<(HistoricJob job, int proc, int path)> JobsSortedByPrecedence { get; }
-  ImmutableDictionary<string, ActiveJob> BuildActiveJobs(
-    IEnumerable<InProcessMaterial> allMaterial,
-    IRepository db
-  );
-  ImmutableList<NewDecrementQuantity> BuildJobsToDecrement(CurrentStatus status, IRepository db);
 }
 
 public record DefaultPathInformation
@@ -175,21 +170,24 @@ public class JobCache : IJobCache
       return job;
     }
   }
+}
 
-  public ImmutableDictionary<string, ActiveJob> BuildActiveJobs(
+public static class JobHelpers
+{
+  public static ImmutableDictionary<string, ActiveJob> BuildActiveJobs(
+    this IJobCache cache,
     IEnumerable<InProcessMaterial> allMaterial,
     IRepository db
   )
   {
-    var precedence = _precedence.Values
+    var precedence = cache.JobsSortedByPrecedence
       .Select((j, idx) => new { j, idx })
       .ToDictionary(x => (uniq: x.j.job.UniqueStr, proc: x.j.proc, path: x.j.path), x => (long)x.idx);
 
-    return _jobs.ToImmutableDictionary(
-      kv => kv.Key,
-      kv =>
+    return cache.AllJobs.ToImmutableDictionary(
+      j => j.UniqueStr,
+      j =>
       {
-        var j = kv.Value;
         var jobLog = db.GetLogForJobUnique(j.UniqueStr);
 
         var loadedCnt = jobLog
@@ -266,10 +264,13 @@ public class JobCache : IJobCache
     );
   }
 
-  public ImmutableList<NewDecrementQuantity> BuildJobsToDecrement(CurrentStatus st, IRepository db)
+  public static ImmutableList<NewDecrementQuantity> BuildJobsToDecrement(
+    this CurrentStatus status,
+    IRepository db
+  )
   {
     var decrs = ImmutableList.CreateBuilder<NewDecrementQuantity>();
-    foreach (var j in st.Jobs.Values)
+    foreach (var j in status.Jobs.Values)
     {
       if (j.ManuallyCreated || j.Decrements?.Count > 0)
         continue;
