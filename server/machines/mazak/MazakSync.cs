@@ -110,7 +110,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     NewCellState?.Invoke();
   }
 
-  public MazakState CalculateCellState(IRepository db, bool decrementRequested)
+  public MazakState CalculateCellState(IRepository db)
   {
     var now = DateTime.UtcNow;
     var mazakData = readDatabase.LoadAllData();
@@ -203,5 +203,10 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
 
 
     return false;
+  }
+
+  public bool DecrementJobs(IRepository db, MazakState st)
+  {
+    throw new NotImplementedException();
   }
 }

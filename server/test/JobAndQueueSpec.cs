@@ -106,20 +106,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     await newCellSt;
   }
 
-  MockCellState ISynchronizeCellState<MockCellState>.CalculateCellState(
-    IRepository db,
-    bool decrementRequested
-  )
+  MockCellState ISynchronizeCellState<MockCellState>.CalculateCellState(IRepository db)
   {
-    decrementRequested.Should().Be(_expectsDecrement);
-    if (_expectsDecrement)
-    {
-      var cache = new JobCache(db);
-      db.AddNewDecrement(
-        _curSt.CurrentStatus.BuildJobsToDecrement(db),
-        nowUTC: _curSt.CurrentStatus.TimeOfCurrentStatusUTC
-      );
-    }
     return _curSt;
   }
 
@@ -148,6 +136,18 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     {
       return false;
     }
+  }
+
+  bool ISynchronizeCellState<MockCellState>.DecrementJobs(
+    BlackMaple.MachineFramework.IRepository db,
+    MachineWatchTest.JobAndQueueSpec.MockCellState st
+  )
+  {
+    _expectsDecrement.Should().BeTrue();
+    var toDecr = _curSt.CurrentStatus.BuildJobsToDecrement(db);
+    toDecr.Should().NotBeEmpty();
+    db.AddNewDecrement(toDecr, nowUTC: _curSt.CurrentStatus.TimeOfCurrentStatusUTC);
+    return true;
   }
 
   private TaskCompletionSource<CurrentStatus> _newCellStateTcs;

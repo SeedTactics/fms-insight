@@ -121,7 +121,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         bool applyAction = false;
         do
         {
-          var st = _sync.CalculateCellState(db, decrementRequested: false);
+          var st = _sync.CalculateCellState(db);
           applyAction = _sync.ApplyActions(db, st);
         } while (applyAction);
       }

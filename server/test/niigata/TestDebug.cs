@@ -149,7 +149,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       using var repo = repoCfg.OpenConnection();
 
       var convert = new CreateCellState(new FMSSettings(), names, null);
-      var cellSt = convert.BuildCellState(repo, niigataSt, decrementRequested: false);
+      var cellSt = convert.BuildCellState(repo, niigataSt);
       return (cellSt, names);
     }
   }

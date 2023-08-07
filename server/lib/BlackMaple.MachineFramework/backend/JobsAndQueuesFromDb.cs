@@ -166,9 +166,9 @@ namespace BlackMaple.MachineFramework
           do
           {
             _newCellState.Reset();
-            var st = _syncState.CalculateCellState(db, decrementRequested: false);
+            var st = _syncState.CalculateCellState(db);
             raiseNewCurStatus = raiseNewCurStatus || (st?.StateUpdated ?? false);
-            timeUntilNextRefresh = st.TimeUntilNextRefresh;
+            timeUntilNextRefresh = st?.TimeUntilNextRefresh ?? TimeSpan.FromSeconds(30);
 
             lock (_curStLock)
             {
@@ -211,8 +211,9 @@ namespace BlackMaple.MachineFramework
       bool requireStateRefresh = false;
       lock (_changeLock)
       {
-        var st = _syncState.CalculateCellState(jobDB, decrementRequested: true);
-        requireStateRefresh = requireStateRefresh || st.StateUpdated;
+        var st = _syncState.CalculateCellState(jobDB);
+        var jobsDecremented = _syncState.DecrementJobs(jobDB, st);
+        requireStateRefresh = requireStateRefresh || st.StateUpdated || jobsDecremented;
 
         lock (_curStLock)
         {
@@ -517,7 +518,7 @@ namespace BlackMaple.MachineFramework
       {
         lock (_changeLock)
         {
-          var st = _syncState.CalculateCellState(ldb, decrementRequested: false);
+          var st = _syncState.CalculateCellState(ldb);
           if (st == null)
           {
             throw new BadRequestException("Unable to calculate cell state");
@@ -576,7 +577,7 @@ namespace BlackMaple.MachineFramework
       {
         using (var ldb = _repo.OpenConnection())
         {
-          var st = _syncState.CalculateCellState(ldb, decrementRequested: false);
+          var st = _syncState.CalculateCellState(ldb);
           if (st == null)
           {
             throw new BadRequestException("Unable to calculate cell state");
@@ -628,7 +629,7 @@ namespace BlackMaple.MachineFramework
       {
         lock (_changeLock)
         {
-          var st = _syncState.CalculateCellState(ldb, decrementRequested: false);
+          var st = _syncState.CalculateCellState(ldb);
           if (st == null)
           {
             throw new BadRequestException("Unable to calculate cell state");

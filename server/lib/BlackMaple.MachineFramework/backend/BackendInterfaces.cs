@@ -147,8 +147,9 @@ namespace BlackMaple.MachineFramework
     where St : ICellState
   {
     event Action NewCellState;
-    St CalculateCellState(IRepository db, bool decrementRequested);
+    St CalculateCellState(IRepository db);
     bool ApplyActions(IRepository db, St st);
+    bool DecrementJobs(IRepository db, St st);
   }
 
   public interface ICheckJobsValid

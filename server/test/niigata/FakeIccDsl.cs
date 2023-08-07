@@ -1597,7 +1597,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_logDB, _status, decrementRequested: false);
+        var cellSt = _createLog.BuildCellState(_logDB, _status);
         cellSt.StateUpdated.Should().BeFalse();
 
         CheckCellStMatchesExpected(cellSt);
@@ -2240,7 +2240,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_logDB, _status, decrementRequested: false);
+        var cellSt = _createLog.BuildCellState(_logDB, _status);
 
         cellSt.StateUpdated.Should().Be(expectedUpdates);
 
@@ -2265,7 +2265,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           };
 
           // reload cell state
-          cellSt = _createLog.BuildCellState(_logDB, _status, decrementRequested: false);
+          cellSt = _createLog.BuildCellState(_logDB, _status);
           cellSt.StateUpdated.Should().Be(expectedUpdates);
         }
 
@@ -2291,7 +2291,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[pal - 1].Tracking.RouteInvalid = true;
 
           // reload
-          cellSt = _createLog.BuildCellState(_logDB, _status, decrementRequested: false);
+          cellSt = _createLog.BuildCellState(_logDB, _status);
           cellSt.StateUpdated.Should().Be(false);
         }
 
@@ -2395,7 +2395,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               );
             }
             // reload cell state
-            cellSt = _createLog.BuildCellState(_logDB, _status, decrementRequested: false);
+            cellSt = _createLog.BuildCellState(_logDB, _status);
             cellSt.StateUpdated.Should().Be(expectedUpdates);
             cellSt.OldUnusedPrograms
               .Should()
@@ -2444,7 +2444,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[expectNoWork.Pallet - 1].Master.NoWork = expectNoWork.NoWork;
 
           // reload cell state
-          cellSt = _createLog.BuildCellState(_logDB, _status, decrementRequested: false);
+          cellSt = _createLog.BuildCellState(_logDB, _status);
           cellSt.StateUpdated.Should().Be(true);
         }
         else
