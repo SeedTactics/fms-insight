@@ -296,7 +296,7 @@ namespace MazakMachineInterface
       {
         using (var jdb = logDbCfg.OpenConnection())
         {
-          _decr.Decrement(jdb);
+          _decr.Decrement(jdb, readDatabase.LoadStatus());
           ret = jdb.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
         }
       }
@@ -321,7 +321,7 @@ namespace MazakMachineInterface
       {
         using (var jdb = logDbCfg.OpenConnection())
         {
-          _decr.Decrement(jdb);
+          _decr.Decrement(jdb, readDatabase.LoadStatus());
           ret = jdb.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
         }
       }

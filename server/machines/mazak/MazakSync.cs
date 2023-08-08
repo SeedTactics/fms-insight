@@ -63,6 +63,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
 
   private readonly IMachineGroupName machineGroupName;
   private readonly IReadDataAccess readDatabase;
+  private readonly IDecrementPlanQty decrementPlanQty;
   private readonly FMSSettings settings;
   private readonly MazakDbType dbType;
   private readonly string logPath;
@@ -80,7 +81,8 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     string logPath,
     MazakConfig mazakConfig,
     MazakQueues queues,
-    IWriteJobs writeJobs
+    IWriteJobs writeJobs,
+    IDecrementPlanQty decrementPlanQty
   )
   {
     this.machineGroupName = machineGroupName;
@@ -91,6 +93,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     this.mazakConfig = mazakConfig;
     this.queues = queues;
     this.writeJobs = writeJobs;
+    this.decrementPlanQty = decrementPlanQty;
 
     logWatcher = new FileSystemWatcher(logPath);
     logWatcher.Filter = "*.csv";
@@ -207,6 +210,6 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
 
   public bool DecrementJobs(IRepository db, MazakState st)
   {
-    throw new NotImplementedException();
+    return decrementPlanQty.Decrement(db, st.AllData);
   }
 }

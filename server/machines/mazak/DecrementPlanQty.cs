@@ -39,23 +39,21 @@ namespace MazakMachineInterface
 {
   public interface IDecrementPlanQty
   {
-    void Decrement(IRepository jobDB, DateTime? now = null);
+    bool Decrement(IRepository jobDB, MazakCurrentStatus status, DateTime? now = null);
   }
 
   public class DecrementPlanQty : IDecrementPlanQty
   {
     private IWriteData _write;
-    private IReadDataAccess _read;
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<DecrementPlanQty>();
 
-    public DecrementPlanQty(IWriteData w, IReadDataAccess r)
+    public DecrementPlanQty(IWriteData w)
     {
       _write = w;
-      _read = r;
     }
 
-    public void Decrement(IRepository jobDB, DateTime? now = null)
+    public bool Decrement(IRepository jobDB, MazakCurrentStatus status, DateTime? now = null)
     {
       // This works in three steps:
       //
@@ -75,14 +73,16 @@ namespace MazakMachineInterface
       //   the code checks if a previous decrement has happended.  The queues code will keep re-trying to sync the material
       //   quantities with the new scheduled quantities.
 
-      var jobs = JobsToDecrement(jobDB, _read.LoadStatus());
+      var jobs = JobsToDecrement(jobDB, status);
       Log.Debug("Found jobs to decrement {@jobs}", jobs);
 
       if (jobs.Count == 0)
-        return;
+        return false;
 
       ReducePlannedQuantity(jobs);
       RecordDecrement(jobDB, jobs, now);
+
+      return true;
     }
 
     private class DecrSchedule

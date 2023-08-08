@@ -221,7 +221,7 @@ namespace MazakMachineInterface
           progDir: ProgramDirectory
         );
       }
-      var decr = new DecrementPlanQty(_writeDB, _readDB);
+      var decr = new DecrementPlanQty(_writeDB);
 
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
         logDataLoader = new LogDataWeb(
