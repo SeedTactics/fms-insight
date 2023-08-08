@@ -226,35 +226,6 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public IReadOnlyList<string> CheckWorkorders(
-      IRepository db,
-      IEnumerable<Workorder> newWorkorders,
-      IEnumerable<NewProgramContent> programs
-    )
-    {
-      var errors = new List<string>();
-      var iccProgs = _icc.LoadPrograms().Values;
-      foreach (var w in newWorkorders ?? Enumerable.Empty<Workorder>())
-      {
-        if (w.Programs != null)
-        {
-          foreach (var prog in w.Programs)
-          {
-            CheckProgram(
-              prog.ProgramName,
-              prog.Revision,
-              programs,
-              db,
-              iccProgs,
-              "Workorder " + w.WorkorderId,
-              errors
-            );
-          }
-        }
-      }
-      return errors;
-    }
-
     public bool ExcludeJobFromDecrement(IRepository db, Job j)
     {
       return false;

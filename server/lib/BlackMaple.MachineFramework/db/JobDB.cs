@@ -579,72 +579,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private ImmutableList<Workorder> LoadUnfilledWorkorders(IDbTransaction trans, string schId)
-    {
-      using (var cmd = _connection.CreateCommand())
-      using (var prgCmd = _connection.CreateCommand())
-      {
-        ((IDbCommand)cmd).Transaction = trans;
-        ((IDbCommand)prgCmd).Transaction = trans;
-
-        var ret =
-          new Dictionary<
-            (string work, string part),
-            (Workorder work, ImmutableList<ProgramForJobStep>.Builder progs)
-          >();
-        cmd.CommandText =
-          "SELECT w.Workorder, w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision, w.SimulatedStartUTC, w.SimulatedFilledUTC "
-          + " FROM unfilled_workorders w "
-          + " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part "
-          + " WHERE w.ScheduleId == $sid AND (Archived IS NULL OR Archived != 1)";
-        cmd.Parameters.Add("sid", SqliteType.Integer).Value = schId;
-        using (IDataReader reader = cmd.ExecuteReader())
-        {
-          while (reader.Read())
-          {
-            var workId = reader.GetString(0);
-            var part = reader.GetString(1);
-            if (!ret.ContainsKey((work: workId, part: part)))
-            {
-              var workorder = new Workorder()
-              {
-                WorkorderId = workId,
-                Part = part,
-                Quantity = reader.GetInt32(2),
-                DueDate = new DateTime(reader.GetInt64(3)),
-                Priority = reader.GetInt32(4),
-                SimulatedStartUTC = reader.IsDBNull(9) ? null : new DateTime(reader.GetInt64(9)),
-                SimulatedFilledUTC = reader.IsDBNull(10) ? null : new DateTime(reader.GetInt64(10))
-              };
-              ret.Add(
-                (work: workId, part: part),
-                (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>())
-              );
-            }
-
-            if (reader.IsDBNull(5))
-              continue;
-
-            // add the program
-            ret[(work: workId, part: part)].progs.Add(
-              new ProgramForJobStep()
-              {
-                ProcessNumber = reader.GetInt32(5),
-                StopIndex = reader.IsDBNull(6) ? (int?)null : (int?)reader.GetInt32(6),
-                ProgramName = reader.IsDBNull(7) ? null : reader.GetString(7),
-                Revision = reader.IsDBNull(8) ? (int?)null : (int?)reader.GetInt32(8)
-              }
-            );
-          }
-        }
-
-        return ret.Values
-          .Select(w => w.progs.Count == 0 ? w.work : w.work with { Programs = w.progs.ToImmutable() })
-          .ToImmutableList();
-      }
-    }
-
-    private string LatestScheduleId(IDbTransaction trans)
+    private string LatestJobScheduleId(IDbTransaction trans)
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -992,26 +927,6 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public IReadOnlyList<Workorder> MostRecentWorkorders()
-    {
-      using (var trans = _connection.BeginTransaction())
-      {
-        var sid = LatestScheduleId(trans);
-        return LoadUnfilledWorkorders(trans, sid);
-      }
-    }
-
-    public ImmutableList<ActiveWorkorder> MostRecentUnfilledWorkordersForPart(string part)
-    {
-      using (var trans = _connection.BeginTransaction())
-      {
-        var sid = LatestScheduleId(trans);
-        if (string.IsNullOrEmpty(sid))
-          return null;
-        return GetActiveWorkordersForSchedule(trans, sid, partToFilter: part);
-      }
-    }
-
     public ImmutableList<Workorder> WorkordersById(string workorderId)
     {
       return WorkordersById(new HashSet<string>(new[] { workorderId }))[workorderId];
@@ -1098,7 +1013,7 @@ namespace BlackMaple.MachineFramework
 
         using (var trans = _connection.BeginTransaction())
         {
-          var latestSchId = LatestScheduleId(trans);
+          var latestSchId = LatestJobScheduleId(trans);
           cmd.Parameters.Add("sid", SqliteType.Text).Value = latestSchId;
           cmd.Transaction = trans;
           return new PlannedSchedule()
@@ -1106,7 +1021,6 @@ namespace BlackMaple.MachineFramework
             LatestScheduleId = latestSchId,
             Jobs = LoadJobsHelper(cmd, trans),
             ExtraParts = LoadExtraParts(trans, latestSchId),
-            CurrentUnfilledWorkorders = LoadUnfilledWorkorders(trans, latestSchId),
           };
         }
       }
@@ -1221,7 +1135,7 @@ namespace BlackMaple.MachineFramework
         {
           if (!string.IsNullOrEmpty(expectedPreviousScheduleId))
           {
-            var last = LatestScheduleId(trans);
+            var last = LatestJobScheduleId(trans);
             if (last != expectedPreviousScheduleId)
             {
               throw new BadRequestException(
@@ -2159,76 +2073,6 @@ namespace BlackMaple.MachineFramework
         {
           trans.Rollback();
           throw;
-        }
-      }
-    }
-
-    public void ReplaceWorkordersForSchedule(
-      string scheduleId,
-      IEnumerable<Workorder> newWorkorders,
-      IEnumerable<NewProgramContent> programs,
-      DateTime? nowUtc = null
-    )
-    {
-      lock (_cfg)
-      {
-        using (var trans = _connection.BeginTransaction())
-        using (var getWorksCmd = _connection.CreateCommand())
-        using (var archiveCmd = _connection.CreateCommand())
-        using (var delProgsCmd = _connection.CreateCommand())
-        {
-          getWorksCmd.Transaction = trans;
-          archiveCmd.Transaction = trans;
-          delProgsCmd.Transaction = trans;
-
-          getWorksCmd.CommandText =
-            "SELECT Workorder, Part FROM unfilled_workorders WHERE ScheduleId = $sid AND (Archived IS NULL OR Archived != 1)";
-          getWorksCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
-
-          archiveCmd.CommandText =
-            "UPDATE unfilled_workorders SET Archived = 1 WHERE ScheduleId = $sid AND Workorder = $work AND Part = $part";
-          archiveCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
-          var archiveWorkorder = archiveCmd.Parameters.Add("work", SqliteType.Text);
-          var archivePart = archiveCmd.Parameters.Add("part", SqliteType.Text);
-
-          delProgsCmd.CommandText =
-            "DELETE FROM workorder_programs WHERE ScheduleId = $sid AND Workorder = $work AND Part = $part";
-          delProgsCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
-          var delWorkorder = delProgsCmd.Parameters.Add("work", SqliteType.Text);
-          var delPart = delProgsCmd.Parameters.Add("part", SqliteType.Text);
-
-          var newWorkorderIds = new HashSet<(string work, string part)>(
-            newWorkorders.Select(w => (work: w.WorkorderId, part: w.Part))
-          );
-
-          using (var reader = getWorksCmd.ExecuteReader())
-          {
-            while (reader.Read())
-            {
-              var work = reader.GetString(0);
-              var part = reader.GetString(1);
-
-              if (newWorkorderIds.Contains((work: work, part: part)))
-              {
-                // will be replaced below, for now clear out programs
-                delWorkorder.Value = work;
-                delPart.Value = part;
-                delProgsCmd.ExecuteNonQuery();
-              }
-              else
-              {
-                // missing from new, archive
-                archiveWorkorder.Value = work;
-                archivePart.Value = part;
-                archiveCmd.ExecuteNonQuery();
-              }
-            }
-          }
-
-          var negProgMap = AddPrograms(trans, programs, nowUtc ?? DateTime.UtcNow);
-          AddUnfilledWorkorders(trans, scheduleId, newWorkorders, negProgMap);
-
-          trans.Commit();
         }
       }
     }

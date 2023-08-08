@@ -1017,10 +1017,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       IEnumerable<MachineFramework.NewProgramContent> programs
     )
     {
-      _logDB.ReplaceWorkordersForSchedule(
-        _logDB.LoadMostRecentSchedule().LatestScheduleId,
-        workorders,
-        programs
+      _logDB.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = DateTime.UtcNow.Ticks.ToString(),
+          Jobs = ImmutableList<Job>.Empty,
+          Programs = programs.ToImmutableList(),
+          CurrentUnfilledWorkorders = workorders.ToImmutableList()
+        },
+        null,
+        addAsCopiedToSystem: true
       );
       return this;
     }

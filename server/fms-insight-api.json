@@ -398,42 +398,6 @@
         }
       }
     },
-    "/api/v1/jobs/unfilled-workorders/by-schid/{scheduleId}": {
-      "put": {
-        "tags": [
-          "jobs"
-        ],
-        "operationId": "jobs_ReplaceWorkordersForScheduleId",
-        "parameters": [
-          {
-            "name": "scheduleId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "workorders",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkordersAndPrograms"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/v1/jobs/status": {
       "get": {
         "tags": [
@@ -470,15 +434,6 @@
               "nullable": true
             },
             "x-position": 2
-          },
-          {
-            "name": "waitForCopyToCell",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": true
-            },
-            "x-position": 3
           }
         ],
         "requestBody": {
@@ -3816,36 +3771,6 @@
             "additionalProperties": {
               "type": "integer",
               "format": "int32"
-            }
-          },
-          "CurrentUnfilledWorkorders": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/Workorder"
-            }
-          }
-        }
-      },
-      "WorkordersAndPrograms": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "Workorders"
-        ],
-        "properties": {
-          "Workorders": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/Workorder"
-            }
-          },
-          "Programs": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/NewProgramContent"
             }
           }
         }

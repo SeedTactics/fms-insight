@@ -294,7 +294,7 @@ namespace DebugMachineWatchApiServer
       return new List<string>();
     }
 
-    public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell)
+    public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
       using var LogDB = RepoConfig.OpenConnection();
       LogDB.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
@@ -925,16 +925,6 @@ namespace DebugMachineWatchApiServer
         oldMatPutInQueue: oldMatPutInQueue,
         operatorName: operatorName
       );
-    }
-
-    public void ReplaceWorkordersForSchedule(
-      string scheduleId,
-      IEnumerable<Workorder> newWorkorders,
-      IEnumerable<NewProgramContent> programs
-    )
-    {
-      using var LogDB = RepoConfig.OpenConnection();
-      LogDB.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
     }
   }
 }

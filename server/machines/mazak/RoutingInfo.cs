@@ -211,11 +211,7 @@ namespace MazakMachineInterface
       return logMessages;
     }
 
-    void BlackMaple.MachineFramework.IJobControl.AddJobs(
-      NewJobs newJ,
-      string expectedPreviousScheduleId,
-      bool waitForCopyToCell
-    )
+    void BlackMaple.MachineFramework.IJobControl.AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
     {
       if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
       {
@@ -280,24 +276,6 @@ namespace MazakMachineInterface
         st = CurrentStatus(jdb);
       }
       _onCurStatusChange(st);
-    }
-
-    public void ReplaceWorkordersForSchedule(
-      string scheduleId,
-      IEnumerable<Workorder> newWorkorders,
-      IEnumerable<NewProgramContent> programs
-    )
-    {
-      if (newWorkorders != null && newWorkorders.Any(w => w.Programs != null && w.Programs.Any()))
-      {
-        throw new BlackMaple.MachineFramework.BadRequestException(
-          "Mazak does not support per-workorder programs"
-        );
-      }
-      using (var jdb = logDbCfg.OpenConnection())
-      {
-        jdb.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
-      }
     }
     #endregion
 

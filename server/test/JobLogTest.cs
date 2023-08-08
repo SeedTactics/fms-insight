@@ -1726,32 +1726,7 @@ namespace MachineWatchTest
         }
       };
 
-      _jobLog.GetActiveWorkordersForSchedule(scheduleId: "cccc").Should().BeEquivalentTo(expectedActiveWorks);
-      _jobLog.GetActiveWorkordersForMostRecentSchedule().Should().BeEquivalentTo(expectedActiveWorks);
-      _jobLog.GetActiveWorkordersForSchedule(scheduleId: "unused").Should().BeEmpty();
-      _jobLog
-        .GetActiveWorkordersForSchedule(scheduleId: "aaaa")
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
-            new ActiveWorkorder()
-            {
-              WorkorderId = "earlierwork",
-              Part = earlierWork.Part,
-              PlannedQuantity = earlierWork.Quantity,
-              DueDate = earlierWork.DueDate,
-              Priority = earlierWork.Priority,
-              CompletedQuantity = 0,
-              Serials = ImmutableList<string>.Empty,
-              Comments = null,
-              ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              SimulatedFilledUTC = earlierWork.SimulatedFilledUTC,
-              SimulatedStartUTC = earlierWork.SimulatedStartUTC,
-            }
-          }
-        );
+      _jobLog.GetActiveWorkorders().Should().BeEquivalentTo(expectedActiveWorks);
 
       //---- test comments
       var finalizedEntry = _jobLog.RecordWorkorderComment(
@@ -1771,7 +1746,7 @@ namespace MachineWatchTest
       var expectedComment1 = new WorkorderComment() { Comment = "work1ccc", TimeUTC = t.AddHours(222) };
 
       _jobLog
-        .GetActiveWorkordersForMostRecentSchedule()
+        .GetActiveWorkorders()
         .Should()
         .BeEquivalentTo(
           new[]
@@ -1793,7 +1768,7 @@ namespace MachineWatchTest
       var expectedComment2 = new WorkorderComment() { Comment = "work1ddd", TimeUTC = t.AddHours(333) };
 
       _jobLog
-        .GetActiveWorkordersForMostRecentSchedule()
+        .GetActiveWorkorders()
         .Should()
         .BeEquivalentTo(
           new[]
@@ -1810,41 +1785,14 @@ namespace MachineWatchTest
           }
         );
 
-      // test it doesn't load archived orders
-      var newWork = _fixture.Create<Workorder>() with
-      {
-        WorkorderId = "newwork"
-      };
-      var adjustedWork2 = work2 with { Quantity = work2.Quantity + 50 };
-      _jobLog.ReplaceWorkordersForSchedule(scheduleId: "cccc", new[] { newWork, adjustedWork2 }, null);
+      // new jobs without any workorders should return the empty list
+      _jobLog.AddJobs(
+        new NewJobs() { ScheduleId = "dddd", Jobs = ImmutableList.Create(_fixture.Create<Job>()), },
+        null,
+        true
+      );
 
-      _jobLog
-        .GetActiveWorkordersForSchedule(scheduleId: "cccc")
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
-            expectedActiveWorks[2] with
-            {
-              PlannedQuantity = work2.Quantity + 50
-            },
-            new ActiveWorkorder()
-            {
-              WorkorderId = "newwork",
-              Part = newWork.Part,
-              PlannedQuantity = newWork.Quantity,
-              DueDate = newWork.DueDate,
-              Priority = newWork.Priority,
-              CompletedQuantity = 0,
-              Serials = ImmutableList<string>.Empty,
-              Comments = null,
-              ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              SimulatedFilledUTC = newWork.SimulatedFilledUTC,
-              SimulatedStartUTC = newWork.SimulatedStartUTC,
-            }
-          }
-        );
+      _jobLog.GetActiveWorkorders().Should().BeEmpty();
     }
 
     [Fact]

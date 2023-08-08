@@ -292,7 +292,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
     _checkJobsMock.CheckNewJobs(Arg.Any<IRepository>(), Arg.Any<NewJobs>()).Returns(new string[] { });
 
-    ((IJobControl)_jq).AddJobs(newJobs, null, false);
+    ((IJobControl)_jq).AddJobs(newJobs, null);
 
     await newStatusTask;
 

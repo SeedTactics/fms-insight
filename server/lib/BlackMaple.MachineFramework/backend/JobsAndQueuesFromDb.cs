@@ -266,7 +266,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell)
+    void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
       using (var jdb = _repo.OpenConnection())
       {
@@ -345,30 +345,6 @@ namespace BlackMaple.MachineFramework
       {
         jdb.SetJobComment(jobUnique, comment);
       }
-      RecalculateCellState();
-    }
-
-    public void ReplaceWorkordersForSchedule(
-      string scheduleId,
-      IEnumerable<Workorder> newWorkorders,
-      IEnumerable<MachineFramework.NewProgramContent> programs
-    )
-    {
-      var cellState = GetCurrentStatus();
-      if (cellState == null)
-        return;
-
-      using (var jdb = _repo.OpenConnection())
-      {
-        var errors = _checkJobsValid.CheckWorkorders(jdb, newWorkorders, programs);
-        if (errors.Count > 0)
-        {
-          throw new BadRequestException(string.Join(Environment.NewLine, errors));
-        }
-
-        jdb.ReplaceWorkordersForSchedule(scheduleId, newWorkorders, programs);
-      }
-
       RecalculateCellState();
     }
     #endregion

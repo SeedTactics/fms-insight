@@ -52,12 +52,7 @@ namespace BlackMaple.MachineFramework
     List<string> CheckValidRoutes(IEnumerable<Job> newJobs);
 
     ///Adds new jobs into the cell controller
-    void AddJobs(NewJobs jobs, string expectedPreviousScheduleId, bool waitForCopyToCell);
-    void ReplaceWorkordersForSchedule(
-      string scheduleId,
-      IEnumerable<Workorder> newWorkorders,
-      IEnumerable<NewProgramContent> programs
-    );
+    void AddJobs(NewJobs jobs, string expectedPreviousScheduleId);
     event NewJobsDelegate OnNewJobs;
 
     void SetJobComment(string jobUnique, string comment);
@@ -158,11 +153,6 @@ namespace BlackMaple.MachineFramework
   public interface ICheckJobsValid
   {
     IReadOnlyList<string> CheckNewJobs(IRepository db, NewJobs jobs);
-    IReadOnlyList<string> CheckWorkorders(
-      IRepository db,
-      IEnumerable<Workorder> newWorkorders,
-      IEnumerable<MachineFramework.NewProgramContent> programs
-    );
     bool ExcludeJobFromDecrement(IRepository db, Job j);
   }
 

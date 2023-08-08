@@ -743,13 +743,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public ImmutableList<ActiveWorkorder> GetActiveWorkordersForSchedule(string scheduleId)
-    {
-      using var trans = _connection.BeginTransaction();
-      return GetActiveWorkordersForSchedule(trans, scheduleId);
-    }
-
-    public ImmutableList<ActiveWorkorder> GetActiveWorkordersForMostRecentSchedule()
+    public ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter = null)
     {
       using var trans = _connection.BeginTransaction();
 
@@ -757,7 +751,7 @@ namespace BlackMaple.MachineFramework
       lastSchIdCmd.CommandText =
         "SELECT MAX(ScheduleId) FROM unfilled_workorders WHERE ScheduleId IS NOT NULL";
       var lastWorkSchId = lastSchIdCmd.ExecuteScalar() as string;
-      var lastJobSchId = LatestScheduleId(trans);
+      var lastJobSchId = LatestJobScheduleId(trans);
       var lastSchId = string.IsNullOrEmpty(lastWorkSchId)
         ? lastJobSchId
         : string.IsNullOrEmpty(lastJobSchId)
@@ -770,18 +764,7 @@ namespace BlackMaple.MachineFramework
       {
         return ImmutableList<ActiveWorkorder>.Empty;
       }
-      else
-      {
-        return GetActiveWorkordersForSchedule(trans, lastSchId);
-      }
-    }
 
-    public ImmutableList<ActiveWorkorder> GetActiveWorkordersForSchedule(
-      SqliteTransaction trans,
-      string scheduleId,
-      string partToFilter = null
-    )
-    {
       // we distinguish between a cell never using workorders at all and return null
       // vs a cell that has no workorders currently active where we return an empty list
 
@@ -884,7 +867,7 @@ namespace BlackMaple.MachineFramework
 
       workCmd.Transaction = trans;
       workCmd.CommandText = workQry;
-      workCmd.Parameters.Add("schid", SqliteType.Text).Value = scheduleId;
+      workCmd.Parameters.Add("schid", SqliteType.Text).Value = lastSchId;
       workCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
       if (!string.IsNullOrEmpty(partToFilter))
       {
