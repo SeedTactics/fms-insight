@@ -177,16 +177,16 @@ public static class JobHelpers
   public static ImmutableDictionary<string, ActiveJob> BuildActiveJobs(
     this IJobCache cache,
     IEnumerable<InProcessMaterial> allMaterial,
-    IRepository db
+    IRepository db,
+    DateTime? archiveCompletedBefore = null
   )
   {
     var precedence = cache.JobsSortedByPrecedence
       .Select((j, idx) => new { j, idx })
       .ToDictionary(x => (uniq: x.j.job.UniqueStr, proc: x.j.proc, path: x.j.path), x => (long)x.idx);
 
-    return cache.AllJobs.ToImmutableDictionary(
-      j => j.UniqueStr,
-      j =>
+    return cache.AllJobs
+      .SelectMany(j =>
       {
         var jobLog = db.GetLogForJobUnique(j.UniqueStr);
 
@@ -216,8 +216,13 @@ public static class JobHelpers
         var unloads = jobLog
           .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
           .ToList();
+        var maxUnloadTime = DateTime.MinValue;
         foreach (var e in unloads)
         {
+          if (e.EndTimeUTC > maxUnloadTime)
+          {
+            maxUnloadTime = e.EndTimeUTC;
+          }
           foreach (var mat in e.Material)
           {
             if (mat.JobUniqueStr == j.UniqueStr)
@@ -235,33 +240,49 @@ public static class JobHelpers
         // take decremented quantity out of the planned cycles
         int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
         var newPlanned = j.Cycles - decrQty;
+        var remainingToStart = decrQty > 0 ? 0 : System.Math.Max(newPlanned - loadedCnt - loadingCnt, 0);
 
-        return j.CloneToDerived<ActiveJob, HistoricJob>() with
+        // archive old completed jobs
+        if (
+          remainingToStart == 0
+          && archiveCompletedBefore.HasValue
+          && maxUnloadTime < archiveCompletedBefore.Value
+          && !allMaterial.Where(m => m.JobUnique == j.UniqueStr).Any()
+        )
         {
-          Archived = false,
-          Completed = completed.Select(c => ImmutableList.Create(c)).ToImmutableList(),
-          RemainingToStart = decrQty > 0 ? 0 : System.Math.Max(newPlanned - loadedCnt - loadingCnt, 0),
-          Cycles = newPlanned,
-          Precedence = j.Processes
-            .Select(
-              (proc, procIdx) =>
-              {
-                return proc.Paths
-                  .Select(
-                    (_, pathIdx) =>
-                      precedence.GetValueOrDefault(
-                        (uniq: j.UniqueStr, proc: procIdx + 1, path: pathIdx + 1),
-                        0
-                      )
-                  )
-                  .ToImmutableList();
-              }
-            )
-            .ToImmutableList(),
-          AssignedWorkorders = db.GetWorkordersForUnique(j.UniqueStr)
+          db.ArchiveJob(j.UniqueStr);
+          return Enumerable.Empty<ActiveJob>();
+        }
+
+        return new[]
+        {
+          j.CloneToDerived<ActiveJob, HistoricJob>() with
+          {
+            Archived = false,
+            Completed = completed.Select(c => ImmutableList.Create(c)).ToImmutableList(),
+            RemainingToStart = remainingToStart,
+            Cycles = newPlanned,
+            Precedence = j.Processes
+              .Select(
+                (proc, procIdx) =>
+                {
+                  return proc.Paths
+                    .Select(
+                      (_, pathIdx) =>
+                        precedence.GetValueOrDefault(
+                          (uniq: j.UniqueStr, proc: procIdx + 1, path: pathIdx + 1),
+                          0
+                        )
+                    )
+                    .ToImmutableList();
+                }
+              )
+              .ToImmutableList(),
+            AssignedWorkorders = db.GetWorkordersForUnique(j.UniqueStr)
+          }
         };
-      }
-    );
+      })
+      .ToImmutableDictionary(j => j.UniqueStr, j => j);
   }
 
   public static ImmutableList<NewDecrementQuantity> BuildJobsToDecrement(

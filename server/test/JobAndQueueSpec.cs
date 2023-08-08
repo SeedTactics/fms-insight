@@ -313,8 +313,9 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     db.LoadUnarchivedJobs()
       .Select(j => j.UniqueStr)
       .Should()
-      .BeEquivalentTo(new[] { toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr });
-    db.LoadJob(completedJob.UniqueStr).Archived.Should().BeTrue();
+      .BeEquivalentTo(
+        new[] { completedJob.UniqueStr, toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr }
+      );
   }
 
   [Theory]

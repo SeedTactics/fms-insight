@@ -1607,6 +1607,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl ExpectJobArchived(string uniq, bool isArchived)
+    {
+      _logDB.LoadJob(uniq).Archived.Should().Be(isArchived);
+      return this;
+    }
+
     public abstract class ExpectedChange { }
 
     private class ExpectedLoadBegin : ExpectedChange

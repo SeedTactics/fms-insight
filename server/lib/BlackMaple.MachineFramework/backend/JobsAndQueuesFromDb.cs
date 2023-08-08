@@ -264,15 +264,6 @@ namespace BlackMaple.MachineFramework
           throw new BadRequestException(string.Join(Environment.NewLine, errors));
         }
 
-        var curSt = GetCurrentStatus();
-        foreach (var j in curSt.Jobs.Values)
-        {
-          if (IsJobCompleted(j, curSt))
-          {
-            jdb.ArchiveJob(j.UniqueStr);
-          }
-        }
-
         Log.Debug("Adding jobs to database");
 
         jdb.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: AddJobsAsCopiedToSystem);
@@ -285,25 +276,6 @@ namespace BlackMaple.MachineFramework
       Log.Debug("Signaling new jobs available for routes");
 
       RecalculateCellState();
-    }
-
-    private bool IsJobCompleted(ActiveJob job, CurrentStatus st)
-    {
-      if (st == null)
-        return false;
-      if (job.RemainingToStart > 0)
-        return false;
-
-      var matInProc = st.Material.Where(m => m.JobUnique == job.UniqueStr).Any();
-
-      if (matInProc)
-      {
-        return false;
-      }
-      else
-      {
-        return true;
-      }
     }
 
     List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(

@@ -163,7 +163,11 @@ namespace BlackMaple.FMSInsight.Niigata
         CurrentStatus = new CurrentStatus()
         {
           TimeOfCurrentStatusUTC = status.TimeOfStatusUTC,
-          Jobs = jobCache.BuildActiveJobs(pals.SelectMany(p => p.Material).Select(m => m.Mat), logDB),
+          Jobs = jobCache.BuildActiveJobs(
+            allMaterial: pals.SelectMany(p => p.Material).Select(m => m.Mat),
+            db: logDB,
+            archiveCompletedBefore: status.TimeOfStatusUTC.AddHours(-12)
+          ),
           Pallets = pals.ToImmutableDictionary(
             pal => pal.Status.Master.PalletNum,
             pal =>
