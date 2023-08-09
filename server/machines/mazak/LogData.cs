@@ -509,7 +509,7 @@ namespace MazakMachineInterface
             maxIoThreads
           );
 
-          var mazakData = _readDB.LoadStatusAndTools();
+          var mazakData = _readDB.LoadStatus();
 
           Log.Debug("Loaded mazak schedules {@data}", mazakData);
 
@@ -518,14 +518,15 @@ namespace MazakMachineInterface
 
           using (var logDb = _logDbCfg.OpenConnection())
           {
-            logs = LoadLog(logDb.MaxForeignID());
+            logs = LoadLog(logDb.MaxForeignID(), _path);
             var trans = new LogTranslation(
               logDb,
               mazakData,
               _machGroupName,
               _settings,
               le => MazakLogEvent?.Invoke(le, logDb),
-              mazakConfig: _mazakConfig
+              mazakConfig: _mazakConfig,
+              loadTools: _readDB.LoadTools
             );
             stoppedBecauseRecentMachineEnd = false;
             foreach (var ev in logs)
@@ -546,7 +547,7 @@ namespace MazakMachineInterface
               }
             }
 
-            DeleteLog(logDb.MaxForeignID());
+            DeleteLog(logDb.MaxForeignID(), _path);
 
             bool palStChanged = false;
             if (!stoppedBecauseRecentMachineEnd)
@@ -604,7 +605,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private FileStream WaitToOpenFile(string file)
+    private static FileStream WaitToOpenFile(string file)
     {
       int cnt = 0;
       while (cnt < 20)
@@ -629,9 +630,9 @@ namespace MazakMachineInterface
       throw new Exception("Unable to open file " + file);
     }
 
-    public List<LogEntry> LoadLog(string lastForeignID)
+    public static List<LogEntry> LoadLog(string lastForeignID, string path)
     {
-      var files = new List<string>(Directory.GetFiles(_path, "*.csv"));
+      var files = new List<string>(Directory.GetFiles(path, "*.csv"));
       files.Sort();
 
       var ret = new List<LogEntry>();
@@ -698,9 +699,9 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    public void DeleteLog(string lastForeignID)
+    public static void DeleteLog(string lastForeignID, string path)
     {
-      var files = new List<string>(Directory.GetFiles(_path, "*.csv"));
+      var files = new List<string>(Directory.GetFiles(path, "*.csv"));
       files.Sort();
 
       foreach (var f in files)

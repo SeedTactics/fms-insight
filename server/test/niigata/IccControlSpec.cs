@@ -1518,7 +1518,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           }
         )
         .MoveToBuffer(pal: 1, buff: 1)
-        .ExpectNoChanges();
+        .ExpectNoChanges()
+        .AdvanceMinutes(11 * 60) // advance 11 hours, should not yet be archived
+        .ExpectNoChanges()
+        .ExpectJobArchived(uniq: "uniq1", isArchived: false)
+        .AdvanceMinutes(60) // after 12 hours from completed, should be archived
+        .ExpectNoChanges()
+        .ExpectJobArchived(uniq: "uniq1", isArchived: true);
     }
 
     [Fact]

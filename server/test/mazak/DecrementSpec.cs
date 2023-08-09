@@ -64,7 +64,6 @@ namespace MachineWatchTest
     }
 
     private WriteMock _write;
-    private IReadDataAccess _read;
 
     public DecrementSpec()
     {
@@ -75,10 +74,7 @@ namespace MachineWatchTest
 
       _write = new WriteMock();
 
-      _read = Substitute.For<IReadDataAccess>();
-      _read.MazakType.Returns(MazakDbType.MazakSmooth);
-
-      _decr = new DecrementPlanQty(_write, _read);
+      _decr = new DecrementPlanQty(_write);
     }
 
     public void Dispose()
@@ -90,35 +86,31 @@ namespace MachineWatchTest
     public void SinglePathSingleProc()
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
-      _read
-        .LoadStatusAndTools()
-        .Returns(
-          new MazakCurrentStatusAndTools()
+      var st = new MazakCurrentStatus()
+      {
+        Schedules = new[]
+        {
+          new MazakScheduleRow()
           {
-            Schedules = new[]
+            Id = 15,
+            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
+            PartName = "pppp:1",
+            PlanQuantity = 50,
+            CompleteQuantity = 30,
+            Processes = new List<MazakScheduleProcessRow>
             {
-              new MazakScheduleRow()
+              new MazakScheduleProcessRow()
               {
-                Id = 15,
-                Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
-                PartName = "pppp:1",
-                PlanQuantity = 50,
-                CompleteQuantity = 30,
-                Processes = new List<MazakScheduleProcessRow>
-                {
-                  new MazakScheduleProcessRow()
-                  {
-                    MazakScheduleRowId = 15,
-                    FixQuantity = 1,
-                    ProcessNumber = 1,
-                    ProcessMaterialQuantity = 15,
-                    ProcessExecuteQuantity = 5
-                  }
-                }
+                MazakScheduleRowId = 15,
+                FixQuantity = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 15,
+                ProcessExecuteQuantity = 5
               }
             }
           }
-        );
+        }
+      };
 
       var j = new Job
       {
@@ -139,7 +131,7 @@ namespace MachineWatchTest
       );
 
       var now = DateTime.UtcNow;
-      _decr.Decrement(_jobDB, now);
+      _decr.Decrement(_jobDB, st, now);
 
       _write.Schedules.Count.Should().Be(1);
       var sch = _write.Schedules[0];
@@ -181,35 +173,31 @@ namespace MachineWatchTest
     public void IgnoresManualSchedule()
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
-      _read
-        .LoadStatusAndTools()
-        .Returns(
-          new MazakCurrentStatusAndTools()
+      var st = new MazakCurrentStatus()
+      {
+        Schedules = new[]
+        {
+          new MazakScheduleRow()
           {
-            Schedules = new[]
+            Id = 15,
+            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, manual: true),
+            PartName = "pppp:1",
+            PlanQuantity = 50,
+            CompleteQuantity = 30,
+            Processes = new List<MazakScheduleProcessRow>
             {
-              new MazakScheduleRow()
+              new MazakScheduleProcessRow()
               {
-                Id = 15,
-                Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, manual: true),
-                PartName = "pppp:1",
-                PlanQuantity = 50,
-                CompleteQuantity = 30,
-                Processes = new List<MazakScheduleProcessRow>
-                {
-                  new MazakScheduleProcessRow()
-                  {
-                    MazakScheduleRowId = 15,
-                    FixQuantity = 1,
-                    ProcessNumber = 1,
-                    ProcessMaterialQuantity = 15,
-                    ProcessExecuteQuantity = 5
-                  }
-                }
+                MazakScheduleRowId = 15,
+                FixQuantity = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 15,
+                ProcessExecuteQuantity = 5
               }
             }
           }
-        );
+        }
+      };
 
       var j = new Job
       {
@@ -229,7 +217,7 @@ namespace MachineWatchTest
         addAsCopiedToSystem: true
       );
 
-      _decr.Decrement(_jobDB);
+      _decr.Decrement(_jobDB, st);
 
       _write.Schedules.Should().BeNull();
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEmpty();
@@ -239,35 +227,31 @@ namespace MachineWatchTest
     public void IgnoresAlreadyExistingDecrement()
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
-      _read
-        .LoadStatusAndTools()
-        .Returns(
-          new MazakCurrentStatusAndTools()
+      var st = new MazakCurrentStatus()
+      {
+        Schedules = new[]
+        {
+          new MazakScheduleRow()
           {
-            Schedules = new[]
+            Id = 15,
+            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, manual: false),
+            PartName = "pppp:1",
+            PlanQuantity = 50,
+            CompleteQuantity = 30,
+            Processes = new List<MazakScheduleProcessRow>
             {
-              new MazakScheduleRow()
+              new MazakScheduleProcessRow()
               {
-                Id = 15,
-                Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, manual: false),
-                PartName = "pppp:1",
-                PlanQuantity = 50,
-                CompleteQuantity = 30,
-                Processes = new List<MazakScheduleProcessRow>
-                {
-                  new MazakScheduleProcessRow()
-                  {
-                    MazakScheduleRowId = 15,
-                    FixQuantity = 1,
-                    ProcessNumber = 1,
-                    ProcessMaterialQuantity = 15,
-                    ProcessExecuteQuantity = 5
-                  }
-                }
+                MazakScheduleRowId = 15,
+                FixQuantity = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 15,
+                ProcessExecuteQuantity = 5
               }
             }
           }
-        );
+        }
+      };
 
       var j = new Job
       {
@@ -301,7 +285,7 @@ namespace MachineWatchTest
         now
       );
 
-      _decr.Decrement(_jobDB);
+      _decr.Decrement(_jobDB, st);
 
       _write.Schedules.Should().BeNull();
       _jobDB
@@ -324,68 +308,64 @@ namespace MachineWatchTest
     public void LoadInProcess()
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started.  BUT, one is being loaded at the load station
-      _read
-        .LoadStatusAndTools()
-        .Returns(
-          new MazakCurrentStatusAndTools()
+      var st = new MazakCurrentStatus()
+      {
+        Schedules = new[]
+        {
+          new MazakScheduleRow()
           {
-            Schedules = new[]
+            Id = 15,
+            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
+            PartName = "pppp:1",
+            PlanQuantity = 50,
+            CompleteQuantity = 30,
+            Processes = new List<MazakScheduleProcessRow>
             {
-              new MazakScheduleRow()
+              new MazakScheduleProcessRow()
               {
-                Id = 15,
-                Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
-                PartName = "pppp:1",
-                PlanQuantity = 50,
-                CompleteQuantity = 30,
-                Processes = new List<MazakScheduleProcessRow>
-                {
-                  new MazakScheduleProcessRow()
-                  {
-                    MazakScheduleRowId = 15,
-                    FixQuantity = 1,
-                    ProcessNumber = 1,
-                    ProcessMaterialQuantity = 15,
-                    ProcessExecuteQuantity = 5
-                  }
-                }
-              }
-            },
-            LoadActions = new[]
-            {
-              new LoadAction()
-              {
-                LoadStation = 1,
-                LoadEvent = true, // load
-                Unique = "uuuu",
-                Part = "pppp",
-                Process = 1,
-                Path = 1,
-                Qty = 1
-              },
-              new LoadAction()
-              {
-                LoadStation = 1,
-                LoadEvent = false, // unload, should be ignored
-                Unique = "uuuu",
-                Part = "pppp",
-                Process = 1,
-                Path = 1,
-                Qty = 1
-              },
-              new LoadAction()
-              {
-                LoadStation = 2,
-                LoadEvent = true, // load of different part
-                Unique = "uuuu2",
-                Part = "pppp",
-                Process = 1,
-                Path = 1,
-                Qty = 1
+                MazakScheduleRowId = 15,
+                FixQuantity = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 15,
+                ProcessExecuteQuantity = 5
               }
             }
           }
-        );
+        },
+        LoadActions = new[]
+        {
+          new LoadAction()
+          {
+            LoadStation = 1,
+            LoadEvent = true, // load
+            Unique = "uuuu",
+            Part = "pppp",
+            Process = 1,
+            Path = 1,
+            Qty = 1
+          },
+          new LoadAction()
+          {
+            LoadStation = 1,
+            LoadEvent = false, // unload, should be ignored
+            Unique = "uuuu",
+            Part = "pppp",
+            Process = 1,
+            Path = 1,
+            Qty = 1
+          },
+          new LoadAction()
+          {
+            LoadStation = 2,
+            LoadEvent = true, // load of different part
+            Unique = "uuuu2",
+            Part = "pppp",
+            Process = 1,
+            Path = 1,
+            Qty = 1
+          }
+        }
+      };
 
       var j = new Job
       {
@@ -406,7 +386,7 @@ namespace MachineWatchTest
       );
 
       var now = DateTime.UtcNow;
-      _decr.Decrement(_jobDB, now);
+      _decr.Decrement(_jobDB, st, now);
 
       _write.Schedules.Count.Should().Be(1);
       _write.Schedules[0].PlanQuantity.Should().Be(36);
@@ -432,35 +412,31 @@ namespace MachineWatchTest
     {
       // plan 50, completed 30, 5 in proc and 15 not yet started
       // a previous decrement already reduced the plan quantity to 35
-      _read
-        .LoadStatusAndTools()
-        .Returns(
-          new MazakCurrentStatusAndTools()
+      var st = new MazakCurrentStatus()
+      {
+        Schedules = new[]
+        {
+          new MazakScheduleRow()
           {
-            Schedules = new[]
+            Id = 15,
+            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
+            PartName = "pppp:1",
+            PlanQuantity = 35,
+            CompleteQuantity = 30,
+            Processes = new List<MazakScheduleProcessRow>
             {
-              new MazakScheduleRow()
+              new MazakScheduleProcessRow()
               {
-                Id = 15,
-                Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
-                PartName = "pppp:1",
-                PlanQuantity = 35,
-                CompleteQuantity = 30,
-                Processes = new List<MazakScheduleProcessRow>
-                {
-                  new MazakScheduleProcessRow()
-                  {
-                    MazakScheduleRowId = 15,
-                    FixQuantity = 1,
-                    ProcessNumber = 1,
-                    ProcessMaterialQuantity = 15,
-                    ProcessExecuteQuantity = 5
-                  }
-                }
+                MazakScheduleRowId = 15,
+                FixQuantity = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 15,
+                ProcessExecuteQuantity = 5
               }
             }
           }
-        );
+        }
+      };
 
       var j = new Job
       {
@@ -481,7 +457,7 @@ namespace MachineWatchTest
       );
 
       var now = DateTime.UtcNow;
-      _decr.Decrement(_jobDB, now);
+      _decr.Decrement(_jobDB, st, now);
 
       _write.Schedules.Should().BeNull();
 
@@ -506,35 +482,31 @@ namespace MachineWatchTest
     {
       // uuuu plan 50, completed 30, 5 in proc and 15 not yet started
       // vvvv not copied so not returned from LoadSchedulesAndLoadActions
-      _read
-        .LoadStatusAndTools()
-        .Returns(
-          new MazakCurrentStatusAndTools()
+      var st = new MazakCurrentStatus()
+      {
+        Schedules = new[]
+        {
+          new MazakScheduleRow()
           {
-            Schedules = new[]
+            Id = 15,
+            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
+            PartName = "pppp:1",
+            PlanQuantity = 50,
+            CompleteQuantity = 30,
+            Processes = new List<MazakScheduleProcessRow>
             {
-              new MazakScheduleRow()
+              new MazakScheduleProcessRow()
               {
-                Id = 15,
-                Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
-                PartName = "pppp:1",
-                PlanQuantity = 50,
-                CompleteQuantity = 30,
-                Processes = new List<MazakScheduleProcessRow>
-                {
-                  new MazakScheduleProcessRow()
-                  {
-                    MazakScheduleRowId = 15,
-                    FixQuantity = 1,
-                    ProcessNumber = 1,
-                    ProcessMaterialQuantity = 15,
-                    ProcessExecuteQuantity = 5
-                  }
-                }
+                MazakScheduleRowId = 15,
+                FixQuantity = 1,
+                ProcessNumber = 1,
+                ProcessMaterialQuantity = 15,
+                ProcessExecuteQuantity = 5
               }
             }
           }
-        );
+        }
+      };
 
       var now = DateTime.UtcNow;
 
@@ -575,7 +547,7 @@ namespace MachineWatchTest
         .Should()
         .BeEquivalentTo(new[] { "vvvv" });
 
-      _decr.Decrement(_jobDB, now);
+      _decr.Decrement(_jobDB, st, now);
 
       _write.Schedules.Count.Should().Be(1);
       var sch = _write.Schedules[0];

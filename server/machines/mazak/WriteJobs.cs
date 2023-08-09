@@ -46,6 +46,7 @@ namespace MazakMachineInterface
   {
     void AddJobs(IRepository jobDB, NewJobs newJ, string expectedPreviousScheduleId);
     void RecopyJobsToMazak(IRepository jobDB, DateTime? nowUtc = null);
+    void SyncFromDatabase(MazakAllData mazakData, IRepository jobDB);
   }
 
   public class WriteJobs : IWriteJobs, IMachineGroupName
@@ -153,9 +154,12 @@ namespace MazakMachineInterface
       // add programs here first so that they exist in the database when looking up most recent revision for use in parts
       jobDB.AddPrograms(newJ.Programs, DateTime.UtcNow);
 
+      var mazakData = readDatabase.LoadAllData();
+      Log.Debug("Writing new jobs {@newJobs}, existing mazak data is {@mazakData}", newJ, mazakData);
+
       //add fixtures, pallets, parts.  If this fails, just throw an exception,
       //they will be deleted during the next download.
-      AddFixturesPalletsParts(jobDB, newJ);
+      AddFixturesPalletsParts(mazakData, jobDB, newJ.Jobs);
 
       //Now that the parts have been added and we are confident that there no problems with the jobs,
       //add them to the database.  Once this occurrs, the timer will pick up and eventually
@@ -189,6 +193,27 @@ namespace MazakMachineInterface
       AddSchedules(jobDB, jobs);
     }
 
+    public void SyncFromDatabase(MazakAllData mazakData, IRepository db)
+    {
+      var now = DateTime.UtcNow;
+      var jobs = db.LoadJobsNotCopiedToSystem(
+        now.AddHours(-JobLookbackHours),
+        now.AddHours(1),
+        includeDecremented: false
+      );
+      if (jobs.Count == 0)
+        return;
+
+      //there are jobs to copy
+      Log.Information(
+        "Resuming copy of job schedules into mazak {uniqs}",
+        jobs.Select(j => j.UniqueStr).ToList()
+      );
+
+      AddFixturesPalletsParts(mazakData, db, jobs);
+      AddSchedules(db, jobs);
+    }
+
     private ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
     {
       if (rev.HasValue)
@@ -201,12 +226,8 @@ namespace MazakMachineInterface
       }
     }
 
-    private void AddFixturesPalletsParts(IRepository jobDB, NewJobs newJ)
+    private void AddFixturesPalletsParts(MazakAllData mazakData, IRepository jobDB, IEnumerable<Job> jobs)
     {
-      var mazakData = readDatabase.LoadAllData();
-
-      Log.Debug("Writing new jobs {@newJobs}, existing mazak data is {@mazakData}", newJ, mazakData);
-
       //first allocate a UID to use for this download
       int UID = 0;
       while (UID < int.MaxValue)
@@ -245,7 +266,7 @@ namespace MazakMachineInterface
 
       var jobErrs = new List<string>();
       var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-        jobs: newJ.Jobs,
+        jobs: jobs,
         downloadUID: UID,
         mazakData: mazakData,
         savedParts: savedParts,

@@ -42,7 +42,8 @@ namespace MazakMachineInterface
 {
   public class OpenDatabaseKitTransactionError : Exception
   {
-    public OpenDatabaseKitTransactionError(string msg) : base(msg) { }
+    public OpenDatabaseKitTransactionError(string msg)
+      : base(msg) { }
   }
 
   public class ErrorModifyingParts : Exception
@@ -158,7 +159,8 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitTransactionDB>();
 
-    public OpenDatabaseKitTransactionDB(string dbConnStr, MazakDbType ty) : base(dbConnStr, ty)
+    public OpenDatabaseKitTransactionDB(string dbConnStr, MazakDbType ty)
+      : base(dbConnStr, ty)
     {
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
@@ -1091,14 +1093,14 @@ namespace MazakMachineInterface
       return schs;
     }
 
-    public MazakCurrentStatusAndTools LoadStatusAndTools()
+    public MazakCurrentStatus LoadStatus()
     {
       return WithReadDBConnection(conn =>
       {
         using (var trans = conn.BeginTransaction())
         {
           var parts = LoadParts(conn, trans, out var fixQty);
-          var ret = new MazakCurrentStatusAndTools()
+          var ret = new MazakCurrentStatus()
           {
             Schedules = LoadSchedules(conn, trans, fixQty),
             LoadActions = _loadOper.CurrentLoadActions(),
@@ -1106,10 +1108,6 @@ namespace MazakMachineInterface
             PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
             Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
             Parts = parts,
-            Tools =
-              MazakType == MazakDbType.MazakSmooth
-                ? conn.Query<ToolPocketRow>(_toolSelect, transaction: trans)
-                : Enumerable.Empty<ToolPocketRow>()
           };
           trans.Commit();
           return ret;

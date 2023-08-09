@@ -77,5 +77,20 @@ namespace BlackMaple.FMSInsight.Niigata
         return false;
       }
     }
+
+    public bool DecrementJobs(IRepository db, CellState st)
+    {
+      var newDecrs = st.CurrentStatus.BuildJobsToDecrement(db);
+
+      if (newDecrs.Count > 0)
+      {
+        db.AddNewDecrement(newDecrs, nowUTC: st?.CurrentStatus?.TimeOfCurrentStatusUTC);
+        return true;
+      }
+      else
+      {
+        return false;
+      }
+    }
   }
 }

@@ -51,6 +51,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     public long Uniq { get; init; }
     public CurrentStatus CurrentStatus { get; init; }
     public bool StateUpdated { get; init; }
+    public TimeSpan TimeUntilNextRefresh => TimeSpan.FromHours(50);
   }
 
   private readonly RepositoryConfig _repo;
@@ -87,6 +88,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   private MockCellState _curSt;
   private bool _executeActions;
   public event Action NewCellState;
+  private bool _expectsDecrement = false;
 
   private async Task StartSyncThread(bool allowQuarantineToCancelLoad = false)
   {
@@ -97,8 +99,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       OnNewCurrentStatus,
       this,
       _checkJobsMock,
-      refreshStateInterval: TimeSpan.FromHours(50),
-      allowQuarantineToCancelLoad
+      allowQuarantineToCancelLoad: allowQuarantineToCancelLoad,
+      addJobsAsCopiedToSystem: true
     );
     _jq.StartThread();
     await newCellSt;
@@ -134,6 +136,18 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     {
       return false;
     }
+  }
+
+  bool ISynchronizeCellState<MockCellState>.DecrementJobs(
+    BlackMaple.MachineFramework.IRepository db,
+    MachineWatchTest.JobAndQueueSpec.MockCellState st
+  )
+  {
+    _expectsDecrement.Should().BeTrue();
+    var toDecr = _curSt.CurrentStatus.BuildJobsToDecrement(db);
+    toDecr.Should().NotBeEmpty();
+    db.AddNewDecrement(toDecr, nowUTC: _curSt.CurrentStatus.TimeOfCurrentStatusUTC);
+    return true;
   }
 
   private TaskCompletionSource<CurrentStatus> _newCellStateTcs;
@@ -299,8 +313,9 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     db.LoadUnarchivedJobs()
       .Select(j => j.UniqueStr)
       .Should()
-      .BeEquivalentTo(new[] { toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr });
-    db.LoadJob(completedJob.UniqueStr).Archived.Should().BeTrue();
+      .BeEquivalentTo(
+        new[] { completedJob.UniqueStr, toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr }
+      );
   }
 
   [Theory]
@@ -343,6 +358,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var newStatusTask = CreateTaskToWaitForNewCellState();
 
     IEnumerable<JobAndDecrementQuantity> decrs;
+    _expectsDecrement = true;
     if (byDate)
     {
       decrs = ((IJobControl)_jq).DecrementJobQuantites(DateTime.UtcNow.AddHours(-5));

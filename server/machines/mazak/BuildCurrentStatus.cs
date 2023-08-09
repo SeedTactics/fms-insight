@@ -74,7 +74,6 @@ namespace MazakMachineInterface
       IRepository jobDB,
       FMSSettings fmsSettings,
       IMachineGroupName machineGroupName,
-      IQueueSyncFault queueSyncFault,
       MazakDbType dbType,
       MazakAllData mazakData,
       DateTime utcNow
@@ -454,11 +453,6 @@ namespace MazakMachineInterface
         Alarms = (mazakData.Alarms ?? Enumerable.Empty<MazakAlarmRow>())
           .Where(a => !string.IsNullOrEmpty(a.AlarmMessage))
           .Select(a => a.AlarmMessage)
-          .Concat(
-            queueSyncFault.CurrentQueueMismatch
-              ? new[] { "Queue contents and Mazak schedule quantity mismatch." }
-              : new string[] { }
-          )
           .ToImmutableList(),
         Workorders = jobDB.GetActiveWorkorders()
       };

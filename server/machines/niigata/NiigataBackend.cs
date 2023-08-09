@@ -173,8 +173,8 @@ namespace BlackMaple.FMSInsight.Niigata
           s => OnNewCurrentStatus?.Invoke(s),
           syncSt,
           checkJobsValid,
-          refreshStateInterval: TimeSpan.FromMinutes(5),
-          allowQuarantineToCancelLoad: false
+          allowQuarantineToCancelLoad: false,
+          addJobsAsCopiedToSystem: true
         );
 
         if (startSyncThread)

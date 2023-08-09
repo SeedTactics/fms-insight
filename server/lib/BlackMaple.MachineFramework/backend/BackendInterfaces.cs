@@ -140,6 +140,7 @@ namespace BlackMaple.MachineFramework
   {
     CurrentStatus CurrentStatus { get; }
     bool StateUpdated { get; }
+    TimeSpan TimeUntilNextRefresh { get; }
   }
 
   public interface ISynchronizeCellState<St>
@@ -148,12 +149,12 @@ namespace BlackMaple.MachineFramework
     event Action NewCellState;
     St CalculateCellState(IRepository db);
     bool ApplyActions(IRepository db, St st);
+    bool DecrementJobs(IRepository db, St st);
   }
 
   public interface ICheckJobsValid
   {
     IReadOnlyList<string> CheckNewJobs(IRepository db, NewJobs jobs);
-    bool ExcludeJobFromDecrement(IRepository db, Job j);
   }
 
   public delegate void NewCurrentStatus(CurrentStatus status);
