@@ -287,7 +287,8 @@ public static class JobHelpers
 
   public static ImmutableList<NewDecrementQuantity> BuildJobsToDecrement(
     this CurrentStatus status,
-    IRepository db
+    IRepository db,
+    Func<ActiveJob, bool>? decrementJobFilter = null
   )
   {
     var decrs = ImmutableList.CreateBuilder<NewDecrementQuantity>();
@@ -295,6 +296,11 @@ public static class JobHelpers
     {
       if (j.ManuallyCreated || j.Decrements?.Count > 0)
         continue;
+
+      if (decrementJobFilter != null && !decrementJobFilter(j))
+      {
+        continue;
+      }
 
       int toStart = (int)(j.RemainingToStart ?? 0);
       if (toStart > 0)

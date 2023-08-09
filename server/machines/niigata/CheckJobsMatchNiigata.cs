@@ -225,10 +225,5 @@ namespace BlackMaple.FMSInsight.Niigata
         }
       }
     }
-
-    public bool ExcludeJobFromDecrement(IRepository db, Job j)
-    {
-      return false;
-    }
   }
 }

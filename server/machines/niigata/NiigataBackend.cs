@@ -59,7 +59,8 @@ namespace BlackMaple.FMSInsight.Niigata
       SerialSettings serialSt,
       bool startSyncThread,
       Func<NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null,
-      Func<NiigataStationNames, INiigataCommunication, ICheckJobsValid> customJobCheck = null
+      Func<NiigataStationNames, INiigataCommunication, ICheckJobsValid> customJobCheck = null,
+      Func<ActiveJob, bool> decrementJobFilter = null
     )
     {
       try
@@ -165,7 +166,7 @@ namespace BlackMaple.FMSInsight.Niigata
           );
         }
 
-        var syncSt = new SyncNiigataPallets(icc, createLog, assign);
+        var syncSt = new SyncNiigataPallets(icc, createLog, assign, decrementJobFilter: decrementJobFilter);
 
         _jobsAndQueues = new JobsAndQueuesFromDb<CellState>(
           RepoConfig,

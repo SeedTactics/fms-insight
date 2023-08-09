@@ -99,7 +99,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         statNames: statNames
       );
 
-      _sync = new SyncNiigataPallets(_sim, createLog, assign);
+      _sync = new SyncNiigataPallets(_sim, createLog, assign, null);
 
       _sim.OnNewProgram += (newprog) =>
         _logDB.SetCellControllerProgramForProgram(

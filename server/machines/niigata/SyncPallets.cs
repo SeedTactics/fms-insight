@@ -30,6 +30,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+#nullable enable
+
 using System;
 using BlackMaple.MachineFramework;
 
@@ -42,12 +45,19 @@ namespace BlackMaple.FMSInsight.Niigata
     private readonly INiigataCommunication _icc;
     private readonly IBuildCellState _createLog;
     private readonly IAssignPallets _assign;
+    private readonly Func<ActiveJob, bool>? _decrementJobFilter;
 
-    public SyncNiigataPallets(INiigataCommunication icc, IBuildCellState createLog, IAssignPallets assign)
+    public SyncNiigataPallets(
+      INiigataCommunication icc,
+      IBuildCellState createLog,
+      IAssignPallets assign,
+      Func<ActiveJob, bool>? decrementJobFilter
+    )
     {
       _icc = icc;
       _createLog = createLog;
       _assign = assign;
+      _decrementJobFilter = decrementJobFilter;
     }
 
     public event Action NewCellState
@@ -80,7 +90,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public bool DecrementJobs(IRepository db, CellState st)
     {
-      var newDecrs = st.CurrentStatus.BuildJobsToDecrement(db);
+      var newDecrs = st.CurrentStatus.BuildJobsToDecrement(db, decrementJobFilter: _decrementJobFilter);
 
       if (newDecrs.Count > 0)
       {
