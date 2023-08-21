@@ -142,6 +142,8 @@ namespace MazakMachineInterface
       return st;
     }
 
+    public void RecalculateCellState() { }
+
     #endregion
 
     #region "Write Routing Info"

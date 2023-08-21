@@ -246,19 +246,25 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("material-details/{materialID}/serial")]
     public LogEntry SetSerial(long materialID, [FromBody] string serial, [FromQuery] int process = 1)
     {
+      LogEntry log;
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.RecordSerialForMaterialID(materialID, process, serial, DateTime.UtcNow);
+        log = db.RecordSerialForMaterialID(materialID, process, serial, DateTime.UtcNow);
       }
+      _impl.Backend.JobControl.RecalculateCellState();
+      return log;
     }
 
     [HttpPost("material-details/{materialID}/workorder")]
     public LogEntry SetWorkorder(long materialID, [FromBody] string workorder, [FromQuery] int process = 1)
     {
+      LogEntry log;
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.RecordWorkorderForMaterialID(materialID, process, workorder);
+        log = db.RecordWorkorderForMaterialID(materialID, process, workorder);
       }
+      _impl.Backend.JobControl.RecalculateCellState();
+      return log;
     }
 
     [HttpPost("material-details/{materialID}/inspections/{inspType}")]
@@ -269,10 +275,13 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] int process = 1
     )
     {
+      LogEntry log;
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.ForceInspection(materialID, process, inspType, inspect);
+        log = db.ForceInspection(materialID, process, inspType, inspect);
       }
+      _impl.Backend.JobControl.RecalculateCellState();
+      return log;
     }
 
     [HttpPost("material-details/{materialID}/notes")]
@@ -283,10 +292,13 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] string operatorName = null
     )
     {
+      LogEntry log;
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.RecordOperatorNotes(materialID, process, notes, operatorName);
+        log = db.RecordOperatorNotes(materialID, process, notes, operatorName);
       }
+      _impl.Backend.JobControl.RecalculateCellState();
+      return log;
     }
 
     [HttpPost("events/inspection-result")]
@@ -294,9 +306,10 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (string.IsNullOrEmpty(insp.InspectionType))
         throw new BadRequestException("Must give inspection type");
+      LogEntry log;
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.RecordInspectionCompleted(
+        log = db.RecordInspectionCompleted(
           insp.MaterialID,
           insp.Process,
           insp.InspectionLocationNum,
@@ -307,14 +320,17 @@ namespace BlackMaple.MachineFramework.Controllers
           insp.Active
         );
       }
+      _impl.Backend.JobControl.RecalculateCellState();
+      return log;
     }
 
     [HttpPost("events/closeout")]
     public LogEntry RecordCloseoutCompleted([FromBody] NewCloseout insp)
     {
+      LogEntry log;
       using (var db = _impl.Backend.RepoConfig.OpenConnection())
       {
-        return db.RecordCloseoutCompleted(
+        log = db.RecordCloseoutCompleted(
           insp.MaterialID,
           insp.Process,
           insp.LocationNum,
@@ -324,6 +340,8 @@ namespace BlackMaple.MachineFramework.Controllers
           insp.Active
         );
       }
+      _impl.Backend.JobControl.RecalculateCellState();
+      return log;
     }
 
     [HttpPost("workorder/{workorder}/comment")]
@@ -333,8 +351,13 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] string operatorName = null
     )
     {
-      using var db = _impl.Backend.RepoConfig.OpenConnection();
-      return db.RecordWorkorderComment(workorder: workorder, comment: comment, operName: operatorName);
+      LogEntry log;
+      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      {
+        log = db.RecordWorkorderComment(workorder: workorder, comment: comment, operName: operatorName);
+      }
+      _impl.Backend.JobControl.RecalculateCellState();
+      return log;
     }
   }
 }

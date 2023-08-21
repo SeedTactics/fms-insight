@@ -84,6 +84,8 @@ namespace Makino
       return new List<string>();
     }
 
+    public void RecalculateCellState() { }
+
     public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
     {
       var newJobs = new List<Job>();

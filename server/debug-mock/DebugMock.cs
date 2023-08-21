@@ -174,7 +174,12 @@ namespace DebugMachineWatchApiServer
     }
   }
 
-  public class MockServerBackend : IFMSBackend, IMachineControl, IJobControl, IQueueControl, IDisposable
+  public sealed class MockServerBackend
+    : IFMSBackend,
+      IMachineControl,
+      IJobControl,
+      IQueueControl,
+      IDisposable
   {
     public RepositoryConfig RepoConfig { get; private set; }
 
@@ -288,6 +293,8 @@ namespace DebugMachineWatchApiServer
 
       return CurrentStatus;
     }
+
+    public void RecalculateCellState() { }
 
     public List<string> CheckValidRoutes(IEnumerable<Job> newJobs)
     {

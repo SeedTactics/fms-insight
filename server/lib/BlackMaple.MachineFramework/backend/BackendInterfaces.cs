@@ -44,6 +44,7 @@ namespace BlackMaple.MachineFramework
   {
     ///loads info
     CurrentStatus GetCurrentStatus();
+    void RecalculateCellState();
 
     //checks to see if the jobs are valid.  Some machine types might not support all the different
     //pallet->part->machine->process combinations.
@@ -143,11 +144,17 @@ namespace BlackMaple.MachineFramework
     TimeSpan TimeUntilNextRefresh { get; }
   }
 
+  public enum RecalculateOrTimeout
+  {
+    Recalculate,
+    Timeout
+  }
+
   public interface ISynchronizeCellState<St>
     where St : ICellState
   {
     event Action NewCellState;
-    St CalculateCellState(IRepository db);
+    St CalculateCellState(IRepository db, RecalculateOrTimeout recalcOrTimeout);
     bool ApplyActions(IRepository db, St st);
     bool DecrementJobs(IRepository db, St st);
   }
