@@ -66,7 +66,7 @@ namespace BlackMaple.FMSInsight.Niigata
       remove { _icc.NewCurrentStatus -= value; }
     }
 
-    public CellState CalculateCellState(IRepository db)
+    public CellState CalculateCellState(IRepository db, RecalculateOrTimeout recalcOrTimeout)
     {
       var status = _icc.LoadNiigataStatus();
       Log.Debug("Loaded pallets {@status}", status);

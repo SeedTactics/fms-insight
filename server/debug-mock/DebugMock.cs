@@ -560,7 +560,7 @@ namespace DebugMachineWatchApiServer
       throw new NotImplementedException();
     }
 
-    protected void OnNewStatus(CurrentStatus s)
+    private void OnNewStatus(CurrentStatus s)
     {
       OnNewCurrentStatus?.Invoke(s);
     }

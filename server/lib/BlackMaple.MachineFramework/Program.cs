@@ -163,7 +163,12 @@ namespace BlackMaple.MachineFramework
 #if SERVICE_AVAIL
         .ConfigureServices(services =>
         {
-          if (useService)
+          if (
+            useService
+            && System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+              System.Runtime.InteropServices.OSPlatform.Windows
+            )
+          )
           {
             services.AddSingleton<
               IHostLifetime,
