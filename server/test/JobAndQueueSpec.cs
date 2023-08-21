@@ -106,7 +106,10 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     await newCellSt;
   }
 
-  MockCellState ISynchronizeCellState<MockCellState>.CalculateCellState(IRepository db)
+  MockCellState ISynchronizeCellState<MockCellState>.CalculateCellState(
+    IRepository db,
+    RecalculateOrTimeout recalcOrTimeout
+  )
   {
     return _curSt;
   }
