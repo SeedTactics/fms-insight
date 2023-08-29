@@ -110,12 +110,11 @@ namespace BlackMaple.MachineFramework
     private void Thread()
     {
       bool raiseNewCurStatus = true; // very first run should raise new pallet state
-      RecalculateOrTimeout recalcOrTimeout = RecalculateOrTimeout.Recalculate;
       while (true)
       {
         try
         {
-          var untilRefresh = Synchronize(raiseNewCurStatus, recalcOrTimeout);
+          var untilRefresh = Synchronize(raiseNewCurStatus);
 
           var ret = WaitHandle.WaitAny(
             new WaitHandle[] { _shutdown, _recheck, _newCellState },
@@ -132,20 +131,17 @@ namespace BlackMaple.MachineFramework
             // recheck and guarantee status changed event even if nothing changed
             Log.Debug("Recalculating cell state due to job changes");
             raiseNewCurStatus = true;
-            recalcOrTimeout = RecalculateOrTimeout.Recalculate;
           }
           else if (ret == 2)
           {
             // reload status due to event from the _syncState class
             Log.Debug("Recalculating cell state due to event");
             raiseNewCurStatus = true;
-            recalcOrTimeout = RecalculateOrTimeout.Recalculate;
             // new current status events may come in batches, so wait briefly so we only recalculate once
             System.Threading.Thread.Sleep(TimeSpan.FromMilliseconds(500));
           }
           else
           {
-            recalcOrTimeout = RecalculateOrTimeout.Timeout;
             raiseNewCurStatus = false;
           }
         }
@@ -158,7 +154,7 @@ namespace BlackMaple.MachineFramework
 
     private int _syncronizeErrorCount = 0;
 
-    private TimeSpan Synchronize(bool raiseNewCurStatus, RecalculateOrTimeout recalcOrTimeout)
+    private TimeSpan Synchronize(bool raiseNewCurStatus)
     {
       try
       {
@@ -170,7 +166,7 @@ namespace BlackMaple.MachineFramework
           do
           {
             _newCellState.Reset();
-            var st = _syncState.CalculateCellState(db, recalcOrTimeout);
+            var st = _syncState.CalculateCellState(db);
             raiseNewCurStatus = raiseNewCurStatus || (st?.StateUpdated ?? false);
             timeUntilNextRefresh = st?.TimeUntilNextRefresh ?? TimeSpan.FromSeconds(30);
 
@@ -215,7 +211,7 @@ namespace BlackMaple.MachineFramework
       bool requireStateRefresh = false;
       lock (_changeLock)
       {
-        var st = _syncState.CalculateCellState(jobDB, RecalculateOrTimeout.Recalculate);
+        var st = _syncState.CalculateCellState(jobDB);
 
         lock (_curStLock)
         {
@@ -495,7 +491,7 @@ namespace BlackMaple.MachineFramework
       {
         lock (_changeLock)
         {
-          var st = _syncState.CalculateCellState(ldb, RecalculateOrTimeout.Recalculate);
+          var st = _syncState.CalculateCellState(ldb);
           if (st == null)
           {
             throw new BadRequestException("Unable to calculate cell state");
@@ -554,7 +550,7 @@ namespace BlackMaple.MachineFramework
       {
         using (var ldb = _repo.OpenConnection())
         {
-          var st = _syncState.CalculateCellState(ldb, RecalculateOrTimeout.Recalculate);
+          var st = _syncState.CalculateCellState(ldb);
           if (st == null)
           {
             throw new BadRequestException("Unable to calculate cell state");
@@ -606,7 +602,7 @@ namespace BlackMaple.MachineFramework
       {
         lock (_changeLock)
         {
-          var st = _syncState.CalculateCellState(ldb, RecalculateOrTimeout.Recalculate);
+          var st = _syncState.CalculateCellState(ldb);
           if (st == null)
           {
             throw new BadRequestException("Unable to calculate cell state");

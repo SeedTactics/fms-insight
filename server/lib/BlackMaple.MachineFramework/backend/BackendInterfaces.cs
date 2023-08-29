@@ -144,17 +144,11 @@ namespace BlackMaple.MachineFramework
     TimeSpan TimeUntilNextRefresh { get; }
   }
 
-  public enum RecalculateOrTimeout
-  {
-    Recalculate,
-    Timeout
-  }
-
   public interface ISynchronizeCellState<St>
     where St : ICellState
   {
     event Action NewCellState;
-    St CalculateCellState(IRepository db, RecalculateOrTimeout recalcOrTimeout);
+    St CalculateCellState(IRepository db);
     bool ApplyActions(IRepository db, St st);
     bool DecrementJobs(IRepository db, St st);
   }

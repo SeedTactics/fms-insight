@@ -113,7 +113,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     NewCellState?.Invoke();
   }
 
-  public MazakState CalculateCellState(IRepository db, RecalculateOrTimeout recalcOrTimeout)
+  public MazakState CalculateCellState(IRepository db)
   {
     var now = DateTime.UtcNow;
     var mazakData = readDatabase.LoadAllData();
