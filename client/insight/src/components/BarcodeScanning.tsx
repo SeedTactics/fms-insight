@@ -88,7 +88,7 @@ export const BarcodeListener = React.memo(function BarcodeListener(): null {
       }
     }
 
-    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", onKeyDown, { capture: true });
 
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [setBarcode]);
