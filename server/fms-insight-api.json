@@ -2891,14 +2891,14 @@
             "type": "integer",
             "format": "int32"
           },
-          "SimulatedStartUTC": {
+          "SimulatedStart": {
             "type": "string",
-            "format": "date-time",
+            "format": "date",
             "nullable": true
           },
-          "SimulatedFilledUTC": {
+          "SimulatedFilled": {
             "type": "string",
-            "format": "date-time",
+            "format": "date",
             "nullable": true
           },
           "Programs": {
@@ -3496,14 +3496,14 @@
             "type": "integer",
             "format": "int32"
           },
-          "SimulatedStartUTC": {
+          "SimulatedStart": {
             "type": "string",
-            "format": "date-time",
+            "format": "date",
             "nullable": true
           },
-          "SimulatedFilledUTC": {
+          "SimulatedFilled": {
             "type": "string",
-            "format": "date-time",
+            "format": "date",
             "nullable": true
           },
           "CompletedQuantity": {

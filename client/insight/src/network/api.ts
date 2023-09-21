@@ -3400,8 +3400,8 @@ export class Workorder implements IWorkorder {
     quantity!: number;
     dueDate!: Date;
     priority!: number;
-    simulatedStartUTC?: Date | undefined;
-    simulatedFilledUTC?: Date | undefined;
+    simulatedStart?: Date | undefined;
+    simulatedFilled?: Date | undefined;
     programs?: ProgramForJobStep[] | undefined;
 
     constructor(data?: IWorkorder) {
@@ -3420,8 +3420,8 @@ export class Workorder implements IWorkorder {
             this.quantity = _data["Quantity"];
             this.dueDate = _data["DueDate"] ? new Date(_data["DueDate"].toString()) : <any>undefined;
             this.priority = _data["Priority"];
-            this.simulatedStartUTC = _data["SimulatedStartUTC"] ? new Date(_data["SimulatedStartUTC"].toString()) : <any>undefined;
-            this.simulatedFilledUTC = _data["SimulatedFilledUTC"] ? new Date(_data["SimulatedFilledUTC"].toString()) : <any>undefined;
+            this.simulatedStart = _data["SimulatedStart"] ? new Date(_data["SimulatedStart"].toString()) : <any>undefined;
+            this.simulatedFilled = _data["SimulatedFilled"] ? new Date(_data["SimulatedFilled"].toString()) : <any>undefined;
             if (Array.isArray(_data["Programs"])) {
                 this.programs = [] as any;
                 for (let item of _data["Programs"])
@@ -3444,8 +3444,8 @@ export class Workorder implements IWorkorder {
         data["Quantity"] = this.quantity;
         data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
         data["Priority"] = this.priority;
-        data["SimulatedStartUTC"] = this.simulatedStartUTC ? this.simulatedStartUTC.toISOString() : <any>undefined;
-        data["SimulatedFilledUTC"] = this.simulatedFilledUTC ? this.simulatedFilledUTC.toISOString() : <any>undefined;
+        data["SimulatedStart"] = this.simulatedStart ? formatDate(this.simulatedStart) : <any>undefined;
+        data["SimulatedFilled"] = this.simulatedFilled ? formatDate(this.simulatedFilled) : <any>undefined;
         if (Array.isArray(this.programs)) {
             data["Programs"] = [];
             for (let item of this.programs)
@@ -3461,8 +3461,8 @@ export interface IWorkorder {
     quantity: number;
     dueDate: Date;
     priority: number;
-    simulatedStartUTC?: Date | undefined;
-    simulatedFilledUTC?: Date | undefined;
+    simulatedStart?: Date | undefined;
+    simulatedFilled?: Date | undefined;
     programs?: ProgramForJobStep[] | undefined;
 }
 
@@ -4337,8 +4337,8 @@ export class ActiveWorkorder implements IActiveWorkorder {
     plannedQuantity!: number;
     dueDate!: Date;
     priority!: number;
-    simulatedStartUTC?: Date | undefined;
-    simulatedFilledUTC?: Date | undefined;
+    simulatedStart?: Date | undefined;
+    simulatedFilled?: Date | undefined;
     completedQuantity!: number;
     serials!: string[];
     comments?: WorkorderComment[] | undefined;
@@ -4366,8 +4366,8 @@ export class ActiveWorkorder implements IActiveWorkorder {
             this.plannedQuantity = _data["PlannedQuantity"];
             this.dueDate = _data["DueDate"] ? new Date(_data["DueDate"].toString()) : <any>undefined;
             this.priority = _data["Priority"];
-            this.simulatedStartUTC = _data["SimulatedStartUTC"] ? new Date(_data["SimulatedStartUTC"].toString()) : <any>undefined;
-            this.simulatedFilledUTC = _data["SimulatedFilledUTC"] ? new Date(_data["SimulatedFilledUTC"].toString()) : <any>undefined;
+            this.simulatedStart = _data["SimulatedStart"] ? new Date(_data["SimulatedStart"].toString()) : <any>undefined;
+            this.simulatedFilled = _data["SimulatedFilled"] ? new Date(_data["SimulatedFilled"].toString()) : <any>undefined;
             this.completedQuantity = _data["CompletedQuantity"];
             if (Array.isArray(_data["Serials"])) {
                 this.serials = [] as any;
@@ -4410,8 +4410,8 @@ export class ActiveWorkorder implements IActiveWorkorder {
         data["PlannedQuantity"] = this.plannedQuantity;
         data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
         data["Priority"] = this.priority;
-        data["SimulatedStartUTC"] = this.simulatedStartUTC ? this.simulatedStartUTC.toISOString() : <any>undefined;
-        data["SimulatedFilledUTC"] = this.simulatedFilledUTC ? this.simulatedFilledUTC.toISOString() : <any>undefined;
+        data["SimulatedStart"] = this.simulatedStart ? formatDate(this.simulatedStart) : <any>undefined;
+        data["SimulatedFilled"] = this.simulatedFilled ? formatDate(this.simulatedFilled) : <any>undefined;
         data["CompletedQuantity"] = this.completedQuantity;
         if (Array.isArray(this.serials)) {
             data["Serials"] = [];
@@ -4447,8 +4447,8 @@ export interface IActiveWorkorder {
     plannedQuantity: number;
     dueDate: Date;
     priority: number;
-    simulatedStartUTC?: Date | undefined;
-    simulatedFilledUTC?: Date | undefined;
+    simulatedStart?: Date | undefined;
+    simulatedFilled?: Date | undefined;
     completedQuantity: number;
     serials: string[];
     comments?: WorkorderComment[] | undefined;
@@ -5450,9 +5450,9 @@ export interface IProgramRevision {
 }
 
 function formatDate(d: Date) {
-    return d.getFullYear() + '-' + 
-        (d.getMonth() < 9 ? ('0' + (d.getMonth()+1)) : (d.getMonth()+1)) + '-' +
-        (d.getDate() < 10 ? ('0' + d.getDate()) : d.getDate());
+    return d.getUTCFullYear() + '-' + 
+        (d.getUTCMonth() < 9 ? ('0' + (d.getUTCMonth()+1)) : (d.getUTCMonth()+1)) + '-' +
+        (d.getUTCDate() < 10 ? ('0' + d.getUTCDate()) : d.getUTCDate());
 }
 
 export interface FileResponse {

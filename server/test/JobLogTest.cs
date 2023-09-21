@@ -80,6 +80,7 @@ namespace MachineWatchTest
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
       _fixture.Customizations.Add(new InjectNullValuesForNullableTypesSpecimenBuilder());
+      _fixture.Customizations.Add(new DateOnlySpecimenBuilder());
     }
 
     public void Dispose()
@@ -1683,8 +1684,8 @@ namespace MachineWatchTest
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             .Add("MC", TimeSpan.FromMinutes(20 + 40 + 4 * 1 / c2Cnt)) //20 + 40 from mat1, 4*1/4 for mat3
             .Add("Load", TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt)), //60/2 from mat1_proc2, and 6*1/4 for mat3
-          SimulatedFilledUTC = work1part1.SimulatedFilledUTC,
-          SimulatedStartUTC = work1part1.SimulatedStartUTC,
+          SimulatedFilled = work1part1.SimulatedFilled,
+          SimulatedStart = work1part1.SimulatedStart,
         },
         new ActiveWorkorder()
         {
@@ -1702,8 +1703,8 @@ namespace MachineWatchTest
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             .Add("MC", TimeSpan.FromMinutes(4 * 1 / c2Cnt))
             .Add("Load", TimeSpan.FromMinutes(6 * 1 / c2Cnt)),
-          SimulatedFilledUTC = work1part2.SimulatedFilledUTC,
-          SimulatedStartUTC = work1part2.SimulatedStartUTC
+          SimulatedFilled = work1part2.SimulatedFilled,
+          SimulatedStart = work1part2.SimulatedStart
         },
         new ActiveWorkorder()
         {
@@ -1721,8 +1722,8 @@ namespace MachineWatchTest
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
             .Add("MC", TimeSpan.FromMinutes(4 * 2 / c2Cnt))
             .Add("Load", TimeSpan.FromMinutes(6 * 2 / c2Cnt)),
-          SimulatedFilledUTC = work2.SimulatedFilledUTC,
-          SimulatedStartUTC = work2.SimulatedStartUTC,
+          SimulatedFilled = work2.SimulatedFilled,
+          SimulatedStart = work2.SimulatedStart,
         }
       };
 

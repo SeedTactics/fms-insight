@@ -969,8 +969,12 @@ namespace BlackMaple.MachineFramework
                   Quantity = reader.GetInt32(1),
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3),
-                  SimulatedStartUTC = reader.IsDBNull(8) ? (DateTime?)null : new DateTime(reader.GetInt64(8)),
-                  SimulatedFilledUTC = reader.IsDBNull(9) ? (DateTime?)null : new DateTime(reader.GetInt64(9))
+                  SimulatedStart = reader.IsDBNull(8)
+                    ? (DateOnly?)null
+                    : DateOnly.FromDayNumber(reader.GetInt32(8)),
+                  SimulatedFilled = reader.IsDBNull(9)
+                    ? (DateOnly?)null
+                    : DateOnly.FromDayNumber(reader.GetInt32(9))
                 };
                 byPart.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
               }
@@ -1785,11 +1789,11 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[3].Value = w.Quantity;
           cmd.Parameters[4].Value = w.DueDate.Ticks;
           cmd.Parameters[5].Value = w.Priority;
-          cmd.Parameters[6].Value = w.SimulatedStartUTC.HasValue
-            ? w.SimulatedStartUTC.Value.Ticks
+          cmd.Parameters[6].Value = w.SimulatedStart.HasValue
+            ? w.SimulatedStart.Value.DayNumber
             : DBNull.Value;
-          cmd.Parameters[7].Value = w.SimulatedFilledUTC.HasValue
-            ? w.SimulatedFilledUTC.Value.Ticks
+          cmd.Parameters[7].Value = w.SimulatedFilled.HasValue
+            ? w.SimulatedFilled.Value.DayNumber
             : DBNull.Value;
           cmd.ExecuteNonQuery();
 

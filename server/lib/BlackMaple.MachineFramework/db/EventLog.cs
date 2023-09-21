@@ -897,8 +897,10 @@ namespace BlackMaple.MachineFramework
         var qty = workReader.GetInt32(2);
         var dueDate = new DateTime(workReader.GetInt64(3));
         var priority = workReader.GetInt32(4);
-        var startUTC = workReader.IsDBNull(5) ? (DateTime?)null : new DateTime(workReader.GetInt64(5));
-        var filledUTC = workReader.IsDBNull(6) ? (DateTime?)null : new DateTime(workReader.GetInt64(6));
+        var start = workReader.IsDBNull(5) ? (DateOnly?)null : DateOnly.FromDayNumber(workReader.GetInt32(5));
+        var filled = workReader.IsDBNull(6)
+          ? (DateOnly?)null
+          : DateOnly.FromDayNumber(workReader.GetInt32(6));
         var completed = workReader.IsDBNull(7) ? 0 : workReader.GetInt32(7);
 
         serialCmd.Parameters[0].Value = workorder;
@@ -956,8 +958,8 @@ namespace BlackMaple.MachineFramework
             PlannedQuantity = qty,
             DueDate = dueDate,
             Priority = priority,
-            SimulatedStartUTC = startUTC,
-            SimulatedFilledUTC = filledUTC,
+            SimulatedStart = start,
+            SimulatedFilled = filled,
             Comments = comments.Count == 0 ? null : comments.ToImmutable(),
             CompletedQuantity = completed,
             Serials = serials.ToImmutable(),

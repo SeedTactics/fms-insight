@@ -70,10 +70,20 @@ function workorderKey(work: Readonly<IActiveWorkorder>): string {
   return `${work.workorderId}-${work.part}`;
 }
 
+function utcDateOnlyToLocal(d: Date): Date;
+function utcDateOnlyToLocal(d: Date | null | undefined): Date | null;
+function utcDateOnlyToLocal(d: Date | null | undefined): Date | null {
+  if (d) {
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  } else {
+    return null;
+  }
+}
+
 function useScales(workorders: ReadonlyArray<Readonly<IActiveWorkorder>>): ChartScales {
   const workKeys = workorders.map(workorderKey);
   const dates = LazySeq.of(workorders)
-    .flatMap((w) => [w.simulatedStartUTC, w.simulatedFilledUTC])
+    .flatMap((w) => [utcDateOnlyToLocal(w.simulatedStart), utcDateOnlyToLocal(w.simulatedFilled)])
     .collect((t) => t);
   const start = dates.minBy((t) => t) ?? new Date();
   const end = dates.maxBy((t) => t) ?? addDays(new Date(), 7);
@@ -108,8 +118,8 @@ const Tooltip = React.memo(function Tooltip() {
         <div>Priority: {tooltip.data.priority}</div>
         <div>Planned Quantity: {tooltip.data.plannedQuantity}</div>
         <div>Completed Quantity: {tooltip.data.completedQuantity}</div>
-        <div>Projected Start: {tooltip.data.simulatedStartUTC?.toLocaleString()}</div>
-        <div>Projected Filled: {tooltip.data.simulatedFilledUTC?.toLocaleString()}</div>
+        <div>Projected Start: {utcDateOnlyToLocal(tooltip.data.simulatedStart)?.toLocaleString()}</div>
+        <div>Projected Filled: {utcDateOnlyToLocal(tooltip.data.simulatedFilled)?.toLocaleString()}</div>
       </Stack>
     </ChartTooltip>
   );
@@ -199,11 +209,14 @@ function Series({
         const key = workorderKey(work);
         return (
           <g key={key} onMouseOver={showTooltip(work)} onMouseLeave={hideTooltip}>
-            {work.simulatedStartUTC && work.simulatedFilledUTC ? (
+            {work.simulatedStart && work.simulatedFilled ? (
               <rect
-                x={xScale(work.simulatedStartUTC)}
+                x={xScale(utcDateOnlyToLocal(work.simulatedStart))}
                 y={(yScale(key) ?? 0) + 20}
-                width={xScale(work.simulatedFilledUTC) - xScale(work.simulatedStartUTC)}
+                width={
+                  xScale(utcDateOnlyToLocal(work.simulatedFilled)) -
+                  xScale(utcDateOnlyToLocal(work.simulatedStart))
+                }
                 height={rowSize - 40}
                 fill={green[600]}
               />
@@ -220,8 +233,8 @@ export function WorkorderGantt() {
   const sortedWorkorders = React.useMemo(
     () =>
       LazySeq.of(currentSt.workorders ?? []).toSortedArray(
-        (w) => w.simulatedFilledUTC ?? null,
-        (w) => w.simulatedStartUTC ?? null,
+        (w) => w.simulatedFilled ?? null,
+        (w) => w.simulatedStart ?? null,
         (w) => w.workorderId,
         (w) => w.part,
       ),

@@ -1288,8 +1288,8 @@ namespace MachineWatchTest
               Serials = ImmutableList<string>.Empty,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              SimulatedStartUTC = initialWorks[0].SimulatedStartUTC,
-              SimulatedFilledUTC = initialWorks[0].SimulatedFilledUTC
+              SimulatedStart = initialWorks[0].SimulatedStart,
+              SimulatedFilled = initialWorks[0].SimulatedFilled
             }
           }
         );

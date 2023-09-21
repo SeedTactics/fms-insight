@@ -4944,11 +4944,13 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("Priority", Required = Newtonsoft.Json.Required.Always)]
         public int Priority { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("SimulatedStartUTC", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.DateTimeOffset? SimulatedStartUTC { get; set; }
+        [Newtonsoft.Json.JsonProperty("SimulatedStart", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
+        public System.DateTimeOffset? SimulatedStart { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("SimulatedFilledUTC", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.DateTimeOffset? SimulatedFilledUTC { get; set; }
+        [Newtonsoft.Json.JsonProperty("SimulatedFilled", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
+        public System.DateTimeOffset? SimulatedFilled { get; set; }
 
         [Newtonsoft.Json.JsonProperty("Programs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<ProgramForJobStep> Programs { get; set; }
@@ -5356,11 +5358,13 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("Priority", Required = Newtonsoft.Json.Required.Always)]
         public int Priority { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("SimulatedStartUTC", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.DateTimeOffset? SimulatedStartUTC { get; set; }
+        [Newtonsoft.Json.JsonProperty("SimulatedStart", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
+        public System.DateTimeOffset? SimulatedStart { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("SimulatedFilledUTC", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.DateTimeOffset? SimulatedFilledUTC { get; set; }
+        [Newtonsoft.Json.JsonProperty("SimulatedFilled", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
+        public System.DateTimeOffset? SimulatedFilled { get; set; }
 
         [Newtonsoft.Json.JsonProperty("CompletedQuantity", Required = Newtonsoft.Json.Required.Always)]
         public int CompletedQuantity { get; set; }

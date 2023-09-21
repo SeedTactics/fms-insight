@@ -175,6 +175,14 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
   );
 });
 
+function utcDateOnlyToString(d: Date | null | undefined): string {
+  if (d) {
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())).toLocaleDateString();
+  } else {
+    return "";
+  }
+}
+
 function WorkorderRow({
   workorder,
   showSim,
@@ -214,8 +222,8 @@ function WorkorderRow({
         <TableCell align="right">{workorder.completedQuantity}</TableCell>
         {showSim ? (
           <>
-            <TableCell align="left">{workorder.simulatedStartUTC?.toLocaleDateString() ?? ""}</TableCell>
-            <TableCell align="left">{workorder.simulatedFilledUTC?.toLocaleDateString() ?? ""}</TableCell>
+            <TableCell align="left">{utcDateOnlyToString(workorder.simulatedStart)}</TableCell>
+            <TableCell align="left">{utcDateOnlyToString(workorder.simulatedFilled)}</TableCell>
           </>
         ) : undefined}
         <TableCell>
@@ -278,10 +286,10 @@ function sortWorkorders(
       sortCol = (j) => j.serials.length;
       break;
     case SortColumn.SimulatedStart:
-      sortCol = (j) => j.simulatedStartUTC ?? null;
+      sortCol = (j) => j.simulatedStart ?? null;
       break;
     case SortColumn.SimulatedFilled:
-      sortCol = (j) => j.simulatedFilledUTC ?? null;
+      sortCol = (j) => j.simulatedFilled ?? null;
       break;
   }
   return LazySeq.of(workorders).toSortedArray(order === "asc" ? { asc: sortCol } : { desc: sortCol });
@@ -313,8 +321,8 @@ function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>, 
     table += `<td>${w.plannedQuantity}</td>`;
     table += `<td>${w.completedQuantity}</td>`;
     if (showSim) {
-      table += `<td>${w.simulatedStartUTC?.toDateString() ?? ""}</td>`;
-      table += `<td>${w.simulatedFilledUTC?.toDateString() ?? ""}</td>`;
+      table += `<td>${utcDateOnlyToString(w.simulatedStart)}</td>`;
+      table += `<td>${utcDateOnlyToString(w.simulatedFilled)}</td>`;
     }
     table += `<td>${w.serials.join(";")}</td>`;
     table += `<td>${LazySeq.ofObject(w.activeStationTime ?? {})
@@ -562,7 +570,7 @@ export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage():
   const display = useAtomValue(tableOrGantt);
 
   const showSim = React.useMemo(
-    () => currentSt.workorders?.some((w) => !!w.simulatedStartUTC || !!w.simulatedFilledUTC) ?? false,
+    () => currentSt.workorders?.some((w) => !!w.simulatedStart || !!w.simulatedFilled) ?? false,
     [currentSt.workorders],
   );
 
