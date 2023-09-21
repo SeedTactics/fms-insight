@@ -53,7 +53,7 @@ const groupedSimDayUsage = atom<UsageMap | null>((get) => {
   if (usage === null) return null;
   return LazySeq.of(usage.usage).toLookupOrderedMap(
     (u) => u.machineGroup,
-    (u) => new Date(u.day.getFullYear(), u.day.getMonth(), u.day.getDate()),
+    (u) => new Date(u.day.getUTCFullYear(), u.day.getUTCMonth(), u.day.getUTCDate()),
   );
 });
 
@@ -66,7 +66,7 @@ const machineGroups = atom<OrderedSet<string>>((get) => {
 const usageMonths = atom<OrderedSet<Date>>((get) => {
   const usage = get(latestSimDayUsage);
   if (usage === null) return OrderedSet.empty();
-  return OrderedSet.build(usage.usage, (u) => new Date(u.day.getFullYear(), u.day.getMonth(), 1));
+  return OrderedSet.build(usage.usage, (u) => new Date(u.day.getUTCFullYear(), u.day.getUTCMonth(), 1));
 });
 
 function ShowMonth({
