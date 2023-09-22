@@ -3353,7 +3353,7 @@ export interface ISimulatedStationPart {
 export class SimulatedDayUsage implements ISimulatedDayUsage {
     day!: Date;
     machineGroup!: string;
-    usagePct!: number;
+    usage!: number;
 
     constructor(data?: ISimulatedDayUsage) {
         if (data) {
@@ -3368,7 +3368,7 @@ export class SimulatedDayUsage implements ISimulatedDayUsage {
         if (_data) {
             this.day = _data["Day"] ? new Date(_data["Day"].toString()) : <any>undefined;
             this.machineGroup = _data["MachineGroup"];
-            this.usagePct = _data["UsagePct"];
+            this.usage = _data["Usage"];
         }
     }
 
@@ -3383,7 +3383,7 @@ export class SimulatedDayUsage implements ISimulatedDayUsage {
         data = typeof data === 'object' ? data : {};
         data["Day"] = this.day ? formatDate(this.day) : <any>undefined;
         data["MachineGroup"] = this.machineGroup;
-        data["UsagePct"] = this.usagePct;
+        data["Usage"] = this.usage;
         return data;
     }
 }
@@ -3391,7 +3391,7 @@ export class SimulatedDayUsage implements ISimulatedDayUsage {
 export interface ISimulatedDayUsage {
     day: Date;
     machineGroup: string;
-    usagePct: number;
+    usage: number;
 }
 
 export class Workorder implements IWorkorder {

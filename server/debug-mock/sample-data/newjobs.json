@@ -86260,49 +86260,49 @@
         "ScheduleId": "offline-2018-01-30",
         "Day": "2018-01-30",
         "MachineGroup": "Group1",
-        "UsagePct": 44
+        "Usage": 44
       },
       {
         "ScheduleId": "offline-2018-01-30",
         "Day": "2018-02-04",
         "MachineGroup": "Group1",
-        "UsagePct": 98
+        "Usage": 98
       },
       {
         "ScheduleId": "offline-2018-01-30",
         "Day": "2018-02-07",
         "MachineGroup": "Group1",
-        "UsagePct": 3
+        "Usage": 3
       },
       {
         "ScheduleId": "offline-2018-01-30",
         "Day": "2018-02-26",
         "MachineGroup": "Group1",
-        "UsagePct": 66
+        "Usage": 66
       },
       {
         "ScheduleId": "offline-2018-01-30",
         "Day": "2018-03-15",
         "MachineGroup": "Group1",
-        "UsagePct": 80
+        "Usage": 80
       },
       {
         "ScheduleId": "offline-2018-01-30",
         "Day": "2018-02-04",
         "MachineGroup": "Group2",
-        "UsagePct": 24
+        "Usage": 24
       },
       {
         "ScheduleId": "offline-2018-01-30",
         "Day": "2018-02-15",
         "MachineGroup": "Group2",
-        "UsagePct": 82
+        "Usage": 82
       },
       {
         "ScheduleId": "offline-2018-01-30",
         "Day": "2018-02-27",
         "MachineGroup": "Group2",
-        "UsagePct": 23.4
+        "Usage": 23.4
       }
     ]
   }

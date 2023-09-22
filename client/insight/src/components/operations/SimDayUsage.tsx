@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import * as React from "react";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
-import { green } from "@mui/material/colors";
+import { green, grey } from "@mui/material/colors";
 import { LazySeq, OrderedMap, OrderedSet } from "@seedtactics/immutable-collections";
 import { atom, useAtomValue } from "jotai";
 import { latestSimDayUsage } from "../../cell-status/sim-day-usage";
@@ -43,6 +43,7 @@ import { Warning as WarningIcon } from "@mui/icons-material";
 
 const color1 = green[50];
 const color2 = green[600];
+const downtimeColor = grey[100];
 const monthBoxSize = "3em";
 const monthWidth = `calc(${monthBoxSize} * 7)`;
 
@@ -67,6 +68,16 @@ const usageMonths = atom<OrderedSet<Date>>((get) => {
   const usage = get(latestSimDayUsage);
   if (usage === null) return OrderedSet.empty();
   return OrderedSet.build(usage.usage, (u) => new Date(u.day.getUTCFullYear(), u.day.getUTCMonth(), 1));
+});
+
+const maxUsageDay = atom<Date | null>((get) => {
+  const usage = get(latestSimDayUsage);
+  if (usage === null) return null;
+  return (
+    LazySeq.of(usage.usage)
+      .map((u) => new Date(u.day.getUTCFullYear(), u.day.getUTCMonth(), u.day.getUTCDate()))
+      .maxBy((d) => d) ?? null
+  );
 });
 
 function ShowMonth({
@@ -126,6 +137,7 @@ function Warning() {
 
 function MonthHeatmap({ group, month }: { group: string; month: Date }) {
   const usage = useAtomValue(groupedSimDayUsage);
+  const maxDay = useAtomValue(maxUsageDay);
 
   const dayColor = React.useMemo(() => {
     const scale = scaleLinear({
@@ -134,11 +146,14 @@ function MonthHeatmap({ group, month }: { group: string; month: Date }) {
     });
 
     return (d: Date): string => {
+      if (maxDay && d > maxDay) {
+        return "white";
+      }
       const u = usage?.get(group)?.get(d);
       if (u) {
-        return scale(u.usagePct / 100);
+        return scale(u.usage / 100);
       } else {
-        return "white";
+        return downtimeColor;
       }
     };
   }, [usage]);
@@ -148,7 +163,13 @@ function MonthHeatmap({ group, month }: { group: string; month: Date }) {
     return (
       <>
         <div>{d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</div>
-        {u ? <div>Usage: {u.usagePct.toFixed(1)}%</div> : <div>Downtime</div>}
+        {maxDay && d > maxDay ? (
+          <div>Not Simulated</div>
+        ) : u ? (
+          <div>Usage: {u.usage.toFixed(1)}%</div>
+        ) : (
+          <div>Downtime</div>
+        )}
       </>
     );
   }

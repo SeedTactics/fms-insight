@@ -732,7 +732,7 @@ namespace BlackMaple.MachineFramework
           {
             Day = DateOnly.FromDayNumber(reader.GetInt32(0)),
             MachineGroup = reader.GetString(1),
-            UsagePct = reader.GetDouble(2)
+            Usage = reader.GetDouble(2)
           }
         );
       }
@@ -1705,7 +1705,7 @@ namespace BlackMaple.MachineFramework
           {
             dayCmd.Parameters[1].Value = day.Day.DayNumber;
             dayCmd.Parameters[2].Value = day.MachineGroup;
-            dayCmd.Parameters[3].Value = day.UsagePct;
+            dayCmd.Parameters[3].Value = day.Usage;
             dayCmd.ExecuteNonQuery();
           }
         }

@@ -2846,7 +2846,7 @@
         "required": [
           "Day",
           "MachineGroup",
-          "UsagePct"
+          "Usage"
         ],
         "properties": {
           "Day": {
@@ -2856,7 +2856,7 @@
           "MachineGroup": {
             "type": "string"
           },
-          "UsagePct": {
+          "Usage": {
             "type": "number",
             "format": "double"
           }

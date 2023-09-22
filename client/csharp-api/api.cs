@@ -4918,8 +4918,8 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string MachineGroup { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("UsagePct", Required = Newtonsoft.Json.Required.Always)]
-        public double UsagePct { get; set; }
+        [Newtonsoft.Json.JsonProperty("Usage", Required = Newtonsoft.Json.Required.Always)]
+        public double Usage { get; set; }
 
     }
 

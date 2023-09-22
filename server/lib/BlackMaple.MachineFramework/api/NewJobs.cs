@@ -95,7 +95,7 @@ namespace BlackMaple.MachineFramework
     public required string MachineGroup { get; init; }
 
     [DataMember(IsRequired = true)]
-    public required double UsagePct { get; init; }
+    public required double Usage { get; init; }
   }
 
   [DataContract, Germinate.Draftable]
