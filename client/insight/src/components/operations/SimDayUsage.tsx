@@ -70,14 +70,27 @@ const usageMonths = atom<OrderedSet<Date>>((get) => {
   return OrderedSet.build(usage.usage, (u) => new Date(u.day.getUTCFullYear(), u.day.getUTCMonth(), 1));
 });
 
-const maxUsageDay = atom<Date | null>((get) => {
+const maxUsage = atom<number>((get) => {
   const usage = get(latestSimDayUsage);
-  if (usage === null) return null;
+  if (usage === null) return 0;
   return (
     LazySeq.of(usage.usage)
-      .map((u) => new Date(u.day.getUTCFullYear(), u.day.getUTCMonth(), u.day.getUTCDate()))
-      .maxBy((d) => d) ?? null
+      .map((u) => Math.ceil(u.usage))
+      .maxBy((u) => u) ?? 1
   );
+});
+
+const minAndMaxUsageDay = atom<[Date | null, Date | null]>((get) => {
+  const usage = get(latestSimDayUsage);
+  if (usage === null) return [null, null];
+  return [
+    LazySeq.of(usage.usage)
+      .map((u) => new Date(u.day.getUTCFullYear(), u.day.getUTCMonth(), u.day.getUTCDate()))
+      .minBy((d) => d) ?? null,
+    LazySeq.of(usage.usage)
+      .map((u) => new Date(u.day.getUTCFullYear(), u.day.getUTCMonth(), u.day.getUTCDate()))
+      .maxBy((d) => d) ?? null,
+  ];
 });
 
 function ShowMonth({
@@ -137,11 +150,12 @@ function Warning() {
 
 function MonthHeatmap({ group, month }: { group: string; month: Date }) {
   const usage = useAtomValue(groupedSimDayUsage);
-  const maxDay = useAtomValue(maxUsageDay);
+  const [minDay, maxDay] = useAtomValue(minAndMaxUsageDay);
+  const maxUse = useAtomValue(maxUsage);
 
   const dayColor = React.useMemo(() => {
     const scale = scaleLinear({
-      domain: [0, 1],
+      domain: [0, maxUse],
       range: [color1, color2],
     });
 
@@ -149,14 +163,17 @@ function MonthHeatmap({ group, month }: { group: string; month: Date }) {
       if (maxDay && d > maxDay) {
         return "white";
       }
+      if (minDay && d < minDay) {
+        return "white";
+      }
       const u = usage?.get(group)?.get(d);
       if (u) {
-        return scale(u.usage / 100);
+        return scale(u.usage);
       } else {
         return downtimeColor;
       }
     };
-  }, [usage]);
+  }, [usage, maxUse, minDay, maxDay]);
 
   function tooltip(d: Date): React.ReactNode {
     const u = usage?.get(group)?.get(d);
@@ -165,8 +182,10 @@ function MonthHeatmap({ group, month }: { group: string; month: Date }) {
         <div>{d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</div>
         {maxDay && d > maxDay ? (
           <div>Not Simulated</div>
+        ) : minDay && d < minDay ? (
+          <div />
         ) : u ? (
-          <div>Usage: {u.usage.toFixed(1)}%</div>
+          <div>Usage: {u.usage.toFixed(2)}</div>
         ) : (
           <div>Downtime</div>
         )}
