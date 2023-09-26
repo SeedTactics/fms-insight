@@ -83,7 +83,11 @@ function utcDateOnlyToLocal(d: Date | null | undefined): Date | null {
 function useScales(workorders: ReadonlyArray<Readonly<IActiveWorkorder>>): ChartScales {
   const workKeys = workorders.map(workorderKey);
   const dates = LazySeq.of(workorders)
-    .flatMap((w) => [utcDateOnlyToLocal(w.simulatedStart), utcDateOnlyToLocal(w.simulatedFilled)])
+    .flatMap((w) =>
+      w.simulatedStart && w.simulatedFilled
+        ? [utcDateOnlyToLocal(w.simulatedStart), addDays(utcDateOnlyToLocal(w.simulatedFilled), 2)]
+        : [],
+    )
     .collect((t) => t);
   const start = dates.minBy((t) => t) ?? new Date();
   const end = dates.maxBy((t) => t) ?? addDays(new Date(), 7);
@@ -214,7 +218,7 @@ function Series({
                 x={xScale(utcDateOnlyToLocal(work.simulatedStart))}
                 y={(yScale(key) ?? 0) + 20}
                 width={
-                  xScale(utcDateOnlyToLocal(work.simulatedFilled)) -
+                  xScale(addDays(utcDateOnlyToLocal(work.simulatedFilled), 1)) -
                   xScale(utcDateOnlyToLocal(work.simulatedStart))
                 }
                 height={rowSize - 40}
