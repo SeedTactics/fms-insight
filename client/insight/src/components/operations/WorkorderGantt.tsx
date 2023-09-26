@@ -83,11 +83,10 @@ function utcDateOnlyToLocal(d: Date | null | undefined): Date | null {
 function useScales(workorders: ReadonlyArray<Readonly<IActiveWorkorder>>): ChartScales {
   const workKeys = workorders.map(workorderKey);
   const dates = LazySeq.of(workorders)
-    .flatMap((w) =>
-      w.simulatedStart && w.simulatedFilled
-        ? [utcDateOnlyToLocal(w.simulatedStart), addDays(utcDateOnlyToLocal(w.simulatedFilled), 2)]
-        : [],
-    )
+    .flatMap((w) => {
+      const filled = utcDateOnlyToLocal(w.simulatedFilled);
+      return [utcDateOnlyToLocal(w.simulatedStart), filled ? addDays(filled, 2) : null];
+    })
     .collect((t) => t);
   const start = dates.minBy((t) => t) ?? new Date();
   const end = dates.maxBy((t) => t) ?? addDays(new Date(), 7);
