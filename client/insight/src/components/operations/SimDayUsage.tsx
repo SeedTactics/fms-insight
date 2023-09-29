@@ -140,10 +140,7 @@ function Warning() {
   return (
     <Stack direction="row" spacing={2} alignItems="center">
       <WarningIcon fontSize="small" />
-      <Typography variant="caption">
-        Projections are estimates and do not take into account any recent changes to workorders.
-        {warning ? ` ${warning}` : ""}
-      </Typography>
+      <Typography variant="caption">{warning ? ` ${warning}` : "Projected dates are estimates"}</Typography>
     </Stack>
   );
 }

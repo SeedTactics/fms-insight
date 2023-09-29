@@ -222,8 +222,8 @@ function WorkorderRow({
         <TableCell align="right">{workorder.completedQuantity}</TableCell>
         {showSim ? (
           <>
-            <TableCell align="left">{utcDateOnlyToString(workorder.simulatedStart)}</TableCell>
-            <TableCell align="left">{utcDateOnlyToString(workorder.simulatedFilled)}</TableCell>
+            <TableCell align="right">{utcDateOnlyToString(workorder.simulatedStart)}</TableCell>
+            <TableCell align="right">{utcDateOnlyToString(workorder.simulatedFilled)}</TableCell>
           </>
         ) : undefined}
         <TableCell>
@@ -373,27 +373,20 @@ function SortColHeader(props: {
 
 const tableOrGantt = atom<"table" | "gantt">("table");
 
-const SimulatedWarning = React.memo(function SimulatedWarning() {
+const SimulatedWarning = React.memo(function SimulatedWarning({ showSim }: { showSim: boolean }) {
   const warning = useAtomValue(latestSimDayUsage)?.warning;
   const [selected, setSelected] = useAtom(tableOrGantt);
 
   return (
     <Stack direction="row" spacing={2} justifyContent="flex-end" alignItems="center">
-      <Tooltip
-        title={
-          <span>
-            Projected dates are estimates.
-            {warning && warning !== "" ? " " + warning : undefined}
-          </span>
-        }
-      >
+      {showSim ? (
         <Stack direction="row" spacing={2} alignItems="center" flexGrow={1}>
           <WarningIcon fontSize="small" />
           <Typography variant="caption">
-            Projected dates do not take into account any recent changes to workorders.
+            {warning ? ` ${warning}` : "Projected dates are estimates"}
           </Typography>
         </Stack>
-      </Tooltip>
+      ) : undefined}
       <FormControl size="small">
         <Select
           variant="outlined"
@@ -448,10 +441,10 @@ const WorkorderHeader = React.memo(function WorkorderHeader(props: {
         </SortColHeader>
         {props.showSim ? (
           <>
-            <SortColHeader align="left" col={SortColumn.SimulatedStart} {...sort}>
+            <SortColHeader align="right" col={SortColumn.SimulatedStart} {...sort}>
               Projected Start
             </SortColHeader>
-            <SortColHeader align="left" col={SortColumn.SimulatedFilled} {...sort}>
+            <SortColHeader align="right" col={SortColumn.SimulatedFilled} {...sort}>
               Projected Filled
             </SortColHeader>
           </>
@@ -576,7 +569,7 @@ export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage():
 
   return (
     <Box component="main" padding="24px">
-      {showSim ? <SimulatedWarning /> : undefined}
+      {showSim ? <SimulatedWarning showSim={showSim} /> : undefined}
       {display === "table" ? <WorkorderTable showSim={showSim} /> : <WorkorderGantt />}
       <WorkorderCommentDialog />
     </Box>
