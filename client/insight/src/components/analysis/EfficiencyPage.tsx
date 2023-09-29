@@ -113,7 +113,7 @@ export function StationOeeHeatmap() {
     } else if (selected === "Occupied") {
       return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(cycles.valuesToLazySeq()), downtime);
     } else {
-      return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(statUse), downtime);
+      return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(statUse, downtime), downtime);
     }
   }, [selected, cycles, statUse]);
 

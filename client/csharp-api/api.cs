@@ -4878,13 +4878,8 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public System.DateTimeOffset EndUTC { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("UtilizationTime", Required = Newtonsoft.Json.Required.Always)]
-        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-        public System.TimeSpan UtilizationTime { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("PlannedDownTime", Required = Newtonsoft.Json.Required.Always)]
-        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
-        public System.TimeSpan PlannedDownTime { get; set; }
+        [Newtonsoft.Json.JsonProperty("PlanDown", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public bool? PlanDown { get; set; }
 
         [Newtonsoft.Json.JsonProperty("Parts", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<SimulatedStationPart> Parts { get; set; }

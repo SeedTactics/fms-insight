@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { startOfDay, addSeconds, addDays, max, min } from "date-fns";
+import { startOfDay, addSeconds, addDays, max, min, differenceInMinutes } from "date-fns";
 import copy from "copy-to-clipboard";
 import { SimStationUse } from "../cell-status/sim-station-use.js";
 import { chunkCyclesWithSimilarEndTime } from "../cell-status/estimated-cycle-times.js";
@@ -135,14 +135,43 @@ export function binOccupiedCyclesByDayAndStat(
 // Planned
 // --------------------------------------------------------------------------------
 
+function mergeSortedIntervals(
+  intervals: Iterable<{ start: Date; end: Date }>,
+): Array<{ start: Date; end: Date }> {
+  const merged: Array<{ start: Date; end: Date }> = [];
+  for (const i of intervals) {
+    if (merged.length === 0) {
+      merged.push(i);
+    } else {
+      const last = merged[merged.length - 1];
+      if (i.start <= last.end) {
+        merged[merged.length - 1] = {
+          start: last.start,
+          end: max([last.end, i.end]),
+        };
+      } else {
+        merged.push(i);
+      }
+    }
+  }
+  return merged;
+}
+
 export function binDowntimeToDayAndStat(simUses: Iterable<SimStationUse>): HashMap<DayAndStation, number> {
   return LazySeq.of(simUses)
-    .filter((simUse) => simUse.plannedDownTime > 0)
-    .flatMap((simUse) =>
-      splitTimeToDays(simUse.start, simUse.end, simUse.plannedDownTime).map((x) => ({
-        ...x,
-        station: simUse.station,
-      })),
+    .filter((simUse) => simUse.plannedDown)
+    .toLookupOrderedMap(
+      (simUse) => simUse.station,
+      (simUse) => simUse.start,
+    )
+    .toAscLazySeq()
+    .flatMap(([station, uses]) =>
+      mergeSortedIntervals(uses.valuesToAscLazySeq()).flatMap((simUse) =>
+        splitTimeToDays(simUse.start, simUse.end, differenceInMinutes(simUse.end, simUse.start)).map((x) => ({
+          ...x,
+          station: station,
+        })),
+      ),
     )
     .toHashMap(
       (s) => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number],
@@ -152,18 +181,28 @@ export function binDowntimeToDayAndStat(simUses: Iterable<SimStationUse>): HashM
 
 export function binSimStationUseByDayAndStat(
   simUses: Iterable<SimStationUse>,
+  downtimes: HashMap<DayAndStation, number>,
 ): HashMap<DayAndStation, number> {
   return LazySeq.of(simUses)
-    .flatMap((simUse) =>
-      splitTimeToDays(simUse.start, simUse.end, simUse.utilizationTime - simUse.plannedDownTime).map((x) => ({
-        ...x,
-        station: simUse.station,
-      })),
+    .filter((simUse) => !simUse.plannedDown)
+    .toLookupOrderedMap(
+      (simUse) => simUse.station,
+      (simUse) => simUse.start,
+    )
+    .toAscLazySeq()
+    .flatMap(([station, uses]) =>
+      mergeSortedIntervals(uses.valuesToAscLazySeq()).flatMap((simUse) =>
+        splitTimeToDays(simUse.start, simUse.end, differenceInMinutes(simUse.end, simUse.start)).map((x) => ({
+          ...x,
+          station: station,
+        })),
+      ),
     )
     .toHashMap(
       (s) => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number],
       (v1, v2) => v1 + v2,
-    );
+    )
+    .adjust(downtimes, (use, down) => (use !== undefined ? Math.max(use - down, 0) : undefined));
 }
 
 // --------------------------------------------------------------------------------
@@ -173,7 +212,9 @@ export function binSimStationUseByDayAndStat(
 export interface OEEBarPoint {
   readonly x: string;
   readonly y: number;
-  readonly planned: number;
+  readonly plannedHours: number;
+  readonly plannedOee: number;
+  readonly actualOee: number;
   readonly station: string;
   readonly day: Date;
 }
@@ -199,7 +240,8 @@ export function buildOeeSeries(
   const filteredStatUse = LazySeq.of(statUse).filter(
     (e) => (ty === "labor") === e.station.startsWith("L/U") && e.end >= start && e.start <= end,
   );
-  const plannedBins = binSimStationUseByDayAndStat(filteredStatUse);
+  const downtimes = binDowntimeToDayAndStat(filteredStatUse);
+  const plannedBins = binSimStationUseByDayAndStat(filteredStatUse, downtimes);
 
   const series: Array<OEEBarSeries> = [];
   const statNames = actualBins
@@ -215,10 +257,13 @@ export function buildOeeSeries(
       const dAndStat = new DayAndStation(d, stat);
       const actual = actualBins.get(dAndStat);
       const planned = plannedBins.get(dAndStat);
+      const down = downtimes.get(dAndStat) ?? 0;
       points.push({
         x: d.toLocaleDateString(),
         y: (actual ?? 0) / 60,
-        planned: (planned ?? 0) / 60,
+        plannedHours: (planned ?? 0) / 60,
+        actualOee: down < 24 * 60 ? (actual ?? 0) / (24 * 60 - down) : 0,
+        plannedOee: down < 24 * 60 ? (planned ?? 0) / (24 * 60 - down) : 0,
         station: stat,
         day: d,
       });
@@ -312,7 +357,7 @@ export function buildOeeTable(series: Iterable<OEEBarSeries>): string {
       table += "<td>" + pt.day.toLocaleDateString() + "</td>";
       table += "<td>" + pt.station + "</td>";
       table += "<td>" + pt.y.toFixed(1) + "</td>";
-      table += "<td>" + pt.planned.toFixed(1) + "</td>";
+      table += "<td>" + pt.plannedHours.toFixed(1) + "</td>";
       table += "</tr>\n";
     }
   }
