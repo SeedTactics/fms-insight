@@ -135,6 +135,21 @@ export function binOccupiedCyclesByDayAndStat(
 // Planned
 // --------------------------------------------------------------------------------
 
+export function binDowntimeToDayAndStat(simUses: Iterable<SimStationUse>): HashMap<DayAndStation, number> {
+  return LazySeq.of(simUses)
+    .filter((simUse) => simUse.plannedDownTime > 0)
+    .flatMap((simUse) =>
+      splitTimeToDays(simUse.start, simUse.end, simUse.plannedDownTime).map((x) => ({
+        ...x,
+        station: simUse.station,
+      })),
+    )
+    .toHashMap(
+      (s) => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number],
+      (v1, v2) => v1 + v2,
+    );
+}
+
 export function binSimStationUseByDayAndStat(
   simUses: Iterable<SimStationUse>,
 ): HashMap<DayAndStation, number> {

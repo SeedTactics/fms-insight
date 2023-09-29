@@ -41,6 +41,7 @@ import {
   binActiveCyclesByDayAndStat,
   DayAndStation,
   binOccupiedCyclesByDayAndStat,
+  binDowntimeToDayAndStat,
 } from "../../data/results.oee.js";
 import {
   binCyclesByDayAndPart,
@@ -73,15 +74,19 @@ import { atom, useAtom, useAtomValue } from "jotai";
 
 type StationOeeHeatmapTypes = "Standard OEE" | "Planned OEE" | "Occupied";
 
-function dayAndStatToHeatmapPoints(pts: HashMap<DayAndStation, number>) {
+function dayAndStatToHeatmapPoints(
+  pts: HashMap<DayAndStation, number>,
+  downtime: HashMap<DayAndStation, number>,
+) {
   return LazySeq.of(pts)
     .map(([dayAndStat, val]) => {
-      const pct = val / (24 * 60);
+      const downMins = downtime.get(dayAndStat) ?? 0;
+      const pct = downMins < 24 * 60 ? Math.max(val / (24 * 60 - downMins), 0) : 0;
       return {
         x: dayAndStat.day,
         y: dayAndStat.station,
         color: Math.min(pct, 1),
-        label: (pct * 100).toFixed(1) + "%",
+        label: downMins < 24 * 60 ? (pct * 100).toFixed(1) + "%" : "Planned Downtime",
       };
     })
     .toSortedArray((p) => p.x.getTime(), { desc: (p) => p.y });
@@ -102,12 +107,13 @@ export function StationOeeHeatmap() {
   const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const statUse = useAtomValue(period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse);
   const points = React.useMemo(() => {
+    const downtime = binDowntimeToDayAndStat(statUse);
     if (selected === "Standard OEE") {
-      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(cycles.valuesToLazySeq()));
+      return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(cycles.valuesToLazySeq()), downtime);
     } else if (selected === "Occupied") {
-      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(cycles.valuesToLazySeq()));
+      return dayAndStatToHeatmapPoints(binOccupiedCyclesByDayAndStat(cycles.valuesToLazySeq()), downtime);
     } else {
-      return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(statUse));
+      return dayAndStatToHeatmapPoints(binSimStationUseByDayAndStat(statUse), downtime);
     }
   }, [selected, cycles, statUse]);
 
