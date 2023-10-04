@@ -2778,9 +2778,7 @@
           "StationGroup",
           "StationNum",
           "StartUTC",
-          "EndUTC",
-          "UtilizationTime",
-          "PlannedDownTime"
+          "EndUTC"
         ],
         "properties": {
           "ScheduleId": {
@@ -2801,13 +2799,9 @@
             "type": "string",
             "format": "date-time"
           },
-          "UtilizationTime": {
-            "type": "string",
-            "format": "duration"
-          },
-          "PlannedDownTime": {
-            "type": "string",
-            "format": "duration"
+          "PlanDown": {
+            "type": "boolean",
+            "nullable": true
           },
           "Parts": {
             "type": "array",

@@ -88,6 +88,9 @@ namespace MachineWatchTest
         null,
         addAsCopiedToSystem: addAsCopied
       );
+      job1StatUse = job1StatUse
+        .Select(s => s.PlanDown == false ? s with { PlanDown = null } : s)
+        .ToImmutableList();
 
       var job1history = job1.CloneToDerived<HistoricJob, Job>() with
       {
@@ -202,6 +205,10 @@ namespace MachineWatchTest
       _jobDB.LoadMostRecentSchedule().LatestScheduleId.Should().Be(schId);
 
       _jobDB.AddJobs(newJobs2, expectedPreviousScheduleId: schId, addAsCopiedToSystem: true);
+
+      job2SimUse = job2SimUse
+        .Select(s => s.PlanDown == false ? s with { PlanDown = null } : s)
+        .ToImmutableList();
 
       _jobDB.DoesJobExist(job2.UniqueStr).Should().BeTrue();
 
@@ -2448,8 +2455,7 @@ namespace MachineWatchTest
             StationNum = rnd.Next(0, 10000),
             StartUTC = start.AddMinutes(-rnd.Next(200, 300)),
             EndUTC = start.AddMinutes(rnd.Next(0, 100)),
-            UtilizationTime = TimeSpan.FromMinutes(rnd.Next(10, 1000)),
-            PlannedDownTime = TimeSpan.FromMinutes(rnd.Next(10, 1000)),
+            PlanDown = rnd.Next(0, 100) < 20 ? (rnd.Next(1, 100) < 50 ? null : false) : true,
             Parts = parts
           }
         );

@@ -3240,8 +3240,7 @@ export class SimulatedStationUtilization implements ISimulatedStationUtilization
     stationNum!: number;
     startUTC!: Date;
     endUTC!: Date;
-    utilizationTime!: string;
-    plannedDownTime!: string;
+    planDown?: boolean | undefined;
     parts?: SimulatedStationPart[] | undefined;
 
     constructor(data?: ISimulatedStationUtilization) {
@@ -3260,8 +3259,7 @@ export class SimulatedStationUtilization implements ISimulatedStationUtilization
             this.stationNum = _data["StationNum"];
             this.startUTC = _data["StartUTC"] ? new Date(_data["StartUTC"].toString()) : <any>undefined;
             this.endUTC = _data["EndUTC"] ? new Date(_data["EndUTC"].toString()) : <any>undefined;
-            this.utilizationTime = _data["UtilizationTime"];
-            this.plannedDownTime = _data["PlannedDownTime"];
+            this.planDown = _data["PlanDown"];
             if (Array.isArray(_data["Parts"])) {
                 this.parts = [] as any;
                 for (let item of _data["Parts"])
@@ -3284,8 +3282,7 @@ export class SimulatedStationUtilization implements ISimulatedStationUtilization
         data["StationNum"] = this.stationNum;
         data["StartUTC"] = this.startUTC ? this.startUTC.toISOString() : <any>undefined;
         data["EndUTC"] = this.endUTC ? this.endUTC.toISOString() : <any>undefined;
-        data["UtilizationTime"] = this.utilizationTime;
-        data["PlannedDownTime"] = this.plannedDownTime;
+        data["PlanDown"] = this.planDown;
         if (Array.isArray(this.parts)) {
             data["Parts"] = [];
             for (let item of this.parts)
@@ -3301,8 +3298,7 @@ export interface ISimulatedStationUtilization {
     stationNum: number;
     startUTC: Date;
     endUTC: Date;
-    utilizationTime: string;
-    plannedDownTime: string;
+    planDown?: boolean | undefined;
     parts?: SimulatedStationPart[] | undefined;
 }
 

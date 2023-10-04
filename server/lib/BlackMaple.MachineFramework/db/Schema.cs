@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 30;
+    private const int Version = 31;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -240,7 +240,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, UtilizationTime INTEGER, PlanDownTime INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
+          "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, PlanDown INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -457,6 +457,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 30)
             Ver29ToVer30(trans, updateJobsTables);
+
+          if (curVersion < 31)
+            Ver30ToVer31(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -915,7 +918,6 @@ namespace BlackMaple.MachineFramework
             "holds",
             "hold_pattern",
             "simulated_production",
-            "sim_station_use",
             "scheduled_bookings",
             "scheduled_parts",
             "job_decrements",
@@ -942,6 +944,11 @@ namespace BlackMaple.MachineFramework
           // unfilled_workorders added new columns
           cmd.CommandText =
             "INSERT INTO main.unfilled_workorders(ScheduleId,Workorder,Part,Quantity,DueDate,Priority,Archived) SELECT ScheduleId,Workorder,Part,Quantity,DueDate,Priority,Archived FROM jobs.unfilled_workorders";
+          cmd.ExecuteNonQuery();
+
+          // sim_station_use removed and added some columns
+          cmd.CommandText =
+            "INSERT INTO main.sim_station_use(SimId,StationGroup,StationNum,StartUTC,EndUTC) SELECT SimId,StationGroup,StationNum,StartUTC,EndUTC FROM jobs.sim_station_use";
           cmd.ExecuteNonQuery();
 
           attachedOldJobDb = true;
@@ -1058,6 +1065,22 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "CREATE TABLE sim_day_usage_warning(SimId TEXT NOT NULL, Warning TEXT, PRIMARY KEY(SimId))";
+        cmd.ExecuteNonQuery();
+      }
+    }
+
+    private static void Ver30ToVer31(IDbTransaction transaction, bool updateJobTables)
+    {
+      using var cmd = transaction.Connection.CreateCommand();
+      cmd.Transaction = transaction;
+
+      if (updateJobTables)
+      {
+        cmd.CommandText = "ALTER TBLE sim_station_use DROP COLUMN UtilizationTime";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText = "ALTER TABLE sim_station_use DROP COLUMN PlanDownTime";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText = "ALTER TABLE sim_station_use ADD PlanDown INTEGER";
         cmd.ExecuteNonQuery();
       }
     }

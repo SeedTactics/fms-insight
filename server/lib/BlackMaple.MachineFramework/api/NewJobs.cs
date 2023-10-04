@@ -70,11 +70,26 @@ namespace BlackMaple.MachineFramework
     [DataMember(IsRequired = true)]
     public required DateTime EndUTC { get; init; }
 
-    [DataMember(IsRequired = true)]
-    public required TimeSpan UtilizationTime { get; init; } //time between StartUTC and EndUTC the station is busy.
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public bool? PlanDown { get; init; }
 
-    [DataMember(IsRequired = true)]
-    public required TimeSpan PlannedDownTime { get; init; } //time between StartUTC and EndUTC the station is planned to be down.
+    [
+      DataMember(IsRequired = false, EmitDefaultValue = true),
+      Obsolete("Entire start to end is utilization unless PlanDown is true")
+    ]
+    public TimeSpan UtilizationTime
+    {
+      get => (PlanDown ?? false) ? TimeSpan.Zero : EndUTC.Subtract(StartUTC);
+    }
+
+    [
+      DataMember(IsRequired = false, EmitDefaultValue = true),
+      Obsolete("Entire start to end is utilization unless PlanDown is true")
+    ]
+    public TimeSpan PlannedDownTime
+    {
+      get => (PlanDown ?? false) ? EndUTC.Subtract(StartUTC) : TimeSpan.Zero;
+    }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedStationPart>? Parts { get; init; }

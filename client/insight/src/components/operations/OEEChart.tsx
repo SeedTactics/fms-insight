@@ -94,7 +94,7 @@ export function OEEChart(props: OEEProps) {
                     data={series.points as OEEBarPoint[]}
                     dataKey="Planned"
                     xAccessor={(p) => p.x}
-                    yAccessor={(p) => p.planned}
+                    yAccessor={(p) => p.plannedHours}
                     colorAccessor={() => plannedOeeColor}
                   />
                 </AnimatedBarGroup>
@@ -104,7 +104,7 @@ export function OEEChart(props: OEEProps) {
                     <div>
                       <div>{tooltipData?.nearestDatum?.datum?.x}</div>
                       <div>Actual Hours: {tooltipData?.nearestDatum?.datum?.y?.toFixed(1)}</div>
-                      <div>Planned Hours: {tooltipData?.nearestDatum?.datum?.planned?.toFixed(1)}</div>
+                      <div>Planned Hours: {tooltipData?.nearestDatum?.datum?.plannedHours?.toFixed(1)}</div>
                     </div>
                   )}
                 />
@@ -163,22 +163,22 @@ const columns: ReadonlyArray<Column<ColumnId, OEEBarPoint>> = [
     id: ColumnId.ActualOEE,
     numeric: true,
     label: "Actual OEE",
-    getDisplay: (c) => ((c.y * 100) / 24).toFixed(0) + "%",
-    getForSort: (c) => c.y,
+    getDisplay: (c) => (c.actualOee * 100).toFixed(0) + "%",
+    getForSort: (c) => c.actualOee,
   },
   {
     id: ColumnId.PlannedHours,
     numeric: true,
     label: "Planned Hours",
-    getDisplay: (c) => c.planned.toFixed(1),
-    getForSort: (c) => c.planned,
+    getDisplay: (c) => c.plannedHours.toFixed(1),
+    getForSort: (c) => c.plannedHours,
   },
   {
     id: ColumnId.PlannedOEE,
     numeric: true,
     label: "Planned OEE",
-    getDisplay: (c) => ((c.planned * 100) / 24).toFixed(0) + "%",
-    getForSort: (c) => c.planned,
+    getDisplay: (c) => (c.plannedOee * 100).toFixed(0) + "%",
+    getForSort: (c) => c.plannedOee,
   },
 ];
 

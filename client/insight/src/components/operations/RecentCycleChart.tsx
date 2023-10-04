@@ -35,7 +35,7 @@ import * as React from "react";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
-import { addHours, addMinutes, differenceInMinutes } from "date-fns";
+import { addHours, differenceInMinutes } from "date-fns";
 import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
 import { Grid } from "@visx/grid";
 import { Group } from "@visx/group";
@@ -63,8 +63,7 @@ type SimCycle = {
   readonly station: string;
   readonly start: Date;
   readonly end: Date;
-  readonly utilizationTime: number;
-  readonly plannedDownTime: number;
+  readonly plannedDown: boolean;
   readonly parts: ReadonlyArray<string>;
 };
 
@@ -73,24 +72,27 @@ function useSimCycles(): ReadonlyArray<SimCycle> {
   const statUse = useAtomValue(last30SimStationUse);
   return React.useMemo(() => {
     const cutoff = addHours(new Date(), -12);
-    return LazySeq.of(statUse)
-      .filter((s) => s.end >= cutoff)
-      .map((s) => ({
-        station: s.station,
-        start: s.start,
-        end: s.end,
-        utilizationTime: s.utilizationTime,
-        plannedDownTime: s.plannedDownTime,
-        parts: LazySeq.of(s.parts ?? [])
-          .collect((p) => {
-            const j = jobs.get(p.uniq);
-            if (!j) return null;
-            return j.partName + "-" + p.proc.toString();
-          })
-          .distinctAndSortBy((p) => p)
-          .toRArray(),
-      }))
-      .toRArray();
+    return (
+      LazySeq.of(statUse)
+        .filter((s) => s.end >= cutoff)
+        // make sure all planned downtimes come last so they are drawn over the top of any cycles
+        .sortBy((s) => (s.plannedDown ? 1 : 0))
+        .map((s) => ({
+          station: s.station,
+          start: s.start,
+          end: s.end,
+          plannedDown: s.plannedDown,
+          parts: LazySeq.of(s.parts ?? [])
+            .collect((p) => {
+              const j = jobs.get(p.uniq);
+              if (!j) return null;
+              return j.partName + "-" + p.proc.toString();
+            })
+            .distinctAndSortBy((p) => p)
+            .toRArray(),
+        }))
+        .toRArray()
+    );
   }, [jobs, statUse]);
 }
 
@@ -390,24 +392,13 @@ function SimSeries({
     <g>
       {sim.map((c, i) => (
         <g key={i} onMouseOver={showTooltip(c)} onMouseLeave={hideTooltip}>
-          {c.utilizationTime > 0 ? (
-            <rect
-              x={xScale(c.start)}
-              y={(yScale(c.station) ?? 0) + plannedOffset}
-              width={xScale(addMinutes(c.start, c.utilizationTime)) - xScale(c.start)}
-              height={actualPlannedScale.bandwidth()}
-              fill={simColor}
-            />
-          ) : undefined}
-          {c.plannedDownTime > 0 ? (
-            <rect
-              x={xScale(c.start)}
-              y={(yScale(c.station) ?? 0) + plannedOffset}
-              width={xScale(addMinutes(c.start, c.plannedDownTime)) - xScale(c.start)}
-              height={actualPlannedScale.bandwidth()}
-              fill={downtimeColor}
-            />
-          ) : undefined}
+          <rect
+            x={xScale(c.start)}
+            y={(yScale(c.station) ?? 0) + plannedOffset}
+            width={xScale(c.end) - xScale(c.start)}
+            height={actualPlannedScale.bandwidth()}
+            fill={c.plannedDown ? downtimeColor : simColor}
+          />
         </g>
       ))}
     </g>
@@ -455,12 +446,7 @@ const Tooltip = React.memo(function Tooltip() {
             ))}
             <div>Predicted Start: {tooltip.data.cycle.start.toLocaleString()}</div>
             <div>Predicted End: {tooltip.data.cycle.end.toLocaleString()}</div>
-            {tooltip.data.cycle.utilizationTime > 0 ? (
-              <div>Utilization Minutes: {tooltip.data.cycle.utilizationTime}</div>
-            ) : undefined}
-            {tooltip.data.cycle.plannedDownTime > 0 ? (
-              <div>Planned Downtime Minutes: {tooltip.data.cycle.plannedDownTime}</div>
-            ) : undefined}
+            {tooltip.data.cycle.plannedDown ? <div>Planned Downtime</div> : undefined}
           </>
         ) : (
           <>

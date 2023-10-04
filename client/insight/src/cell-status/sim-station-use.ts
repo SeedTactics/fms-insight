@@ -30,7 +30,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { durationToMinutes } from "../util/parseISODuration.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { addDays } from "date-fns";
 import type { ServerEventAndTime } from "./loading.js";
@@ -41,8 +40,7 @@ export interface SimStationUse {
   readonly station: string;
   readonly start: Date;
   readonly end: Date;
-  readonly utilizationTime: number;
-  readonly plannedDownTime: number;
+  readonly plannedDown: boolean;
   readonly parts?: ReadonlyArray<{ readonly uniq: string; readonly proc: number; readonly path: number }>;
 }
 
@@ -59,8 +57,7 @@ function procSimUse(apiSimUse: ReadonlyArray<ISimulatedStationUtilization>): Rea
     station: simUse.stationGroup + " #" + simUse.stationNum.toString(),
     start: simUse.startUTC,
     end: simUse.endUTC,
-    utilizationTime: durationToMinutes(simUse.utilizationTime),
-    plannedDownTime: durationToMinutes(simUse.plannedDownTime),
+    plannedDown: simUse.planDown ?? false,
     part: simUse.parts?.map((p) => ({ uniq: p.jobUnique, proc: p.process, path: p.path })),
   }));
 }
