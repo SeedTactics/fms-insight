@@ -170,7 +170,7 @@ function MonthHeatmap({ group, month }: { group: string; month: Date }) {
         return downtimeColor;
       }
     };
-  }, [usage, maxUse, minDay, maxDay]);
+  }, [usage, maxUse, minDay, maxDay, group]);
 
   function tooltip(d: Date): React.ReactNode {
     const u = usage?.get(group)?.get(d);
