@@ -236,8 +236,8 @@ export function WorkorderGantt() {
   const sortedWorkorders = React.useMemo(
     () =>
       LazySeq.of(currentSt.workorders ?? []).toSortedArray(
-        (w) => w.simulatedFilled ?? null,
-        (w) => w.simulatedStart ?? null,
+        (w) => w.simulatedFilled?.getTime() ?? null,
+        (w) => w.simulatedStart?.getTime() ?? null,
         (w) => w.workorderId,
         (w) => w.part,
       ),

@@ -69,7 +69,7 @@ const cols: ReadonlyArray<Column<ScheduleCols, ScheduledJobDisplay>> = [
     label: "Date",
     numeric: false,
     getDisplay: (j) => j.routeStartTime.toLocaleString(),
-    getForSort: (j) => j.routeStartTime,
+    getForSort: (j) => j.routeStartTime.getTime(),
     getForExport: (j) => j.routeStartTime.toISOString(),
   },
   { id: ScheduleCols.Part, label: "Part", numeric: false, getDisplay: (j) => j.partName },

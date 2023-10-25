@@ -305,7 +305,7 @@ const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable(
   if (!curSt.workorders || curSt.workorders.length === 0) return null;
 
   const sorted = LazySeq.of(curSt.workorders).sortBy(
-    (w) => w.dueDate,
+    (w) => w.dueDate.getTime(),
     (w) => w.priority,
   );
 

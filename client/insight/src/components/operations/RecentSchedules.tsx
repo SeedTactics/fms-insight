@@ -189,7 +189,7 @@ function sortJobs(
   let sortCol: ToComparableBase<ScheduledJobDisplay>;
   switch (sortBy) {
     case SortColumn.Date:
-      sortCol = (j) => j.routeStartTime;
+      sortCol = (j) => j.routeStartTime.getTime();
       break;
     case SortColumn.Part:
       sortCol = (j) => j.partName;

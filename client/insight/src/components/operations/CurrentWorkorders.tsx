@@ -274,7 +274,7 @@ function sortWorkorders(
       sortCol = (j) => j.plannedQuantity;
       break;
     case SortColumn.DueDate:
-      sortCol = (j) => j.dueDate;
+      sortCol = (j) => j.dueDate.getTime();
       break;
     case SortColumn.Priority:
       sortCol = (j) => j.priority;
@@ -286,10 +286,10 @@ function sortWorkorders(
       sortCol = (j) => j.serials.length;
       break;
     case SortColumn.SimulatedStart:
-      sortCol = (j) => j.simulatedStart ?? null;
+      sortCol = (j) => j.simulatedStart?.getTime() ?? null;
       break;
     case SortColumn.SimulatedFilled:
-      sortCol = (j) => j.simulatedFilled ?? null;
+      sortCol = (j) => j.simulatedFilled?.getTime() ?? null;
       break;
   }
   return LazySeq.of(workorders).toSortedArray(order === "asc" ? { asc: sortCol } : { desc: sortCol });
