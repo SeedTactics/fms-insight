@@ -34,6 +34,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import * as React from "react";
 import { materialDialogOpen } from "../cell-status/material-details.js";
 import { useSetAtom } from "jotai";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import { CameraAlt } from "@mui/icons-material";
+import { QrScanner } from "@yudiel/react-qr-scanner";
 
 export const BarcodeListener = React.memo(function BarcodeListener(): null {
   const setBarcode = useSetAtom(materialDialogOpen);
@@ -94,4 +106,37 @@ export const BarcodeListener = React.memo(function BarcodeListener(): null {
   }, [setBarcode]);
 
   return null;
+});
+
+export const QRScanButton = React.memo(function QRScanButton() {
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const setBarcode = useSetAtom(materialDialogOpen);
+
+  if (window.location.protocol !== "https:" && window.location.hostname !== "localhost") return null;
+
+  function onScan(result: string): void {
+    setBarcode({ type: "Barcode", barcode: result });
+    setDialogOpen(false);
+  }
+
+  return (
+    <>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+        <DialogTitle>Scan a QR Code</DialogTitle>
+        <DialogContent>
+          <Box minWidth="20em">
+            {dialogOpen ? <QrScanner onDecode={onScan} onError={(err) => console.log(err)} /> : undefined}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+      <Tooltip title="Scan QR Code">
+        <IconButton onClick={() => setDialogOpen(true)} size="large">
+          <CameraAlt />
+        </IconButton>
+      </Tooltip>
+    </>
+  );
 });

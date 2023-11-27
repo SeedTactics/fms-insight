@@ -33,6 +33,7 @@
     "@visx/shape": "^3.3.0",
     "@visx/tooltip": "^3.3.0",
     "@visx/xychart": "^3.3.0",
+    "@yudiel/react-qr-scanner": "^1.2.3",
     "copy-to-clipboard": "^3.3.3",
     "d3-sankey": "^0.12.3",
     "date-fns": "^2.30.0",
