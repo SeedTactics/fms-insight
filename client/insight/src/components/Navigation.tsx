@@ -59,9 +59,10 @@ import { OperatorSelect } from "./ChooseOperator";
 import { LoadingIcon } from "./LoadingIcon";
 import { ManualScanButton } from "./ManualScan";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog";
-import { RouteState, currentRoute, helpUrl } from "./routes";
+import { RouteLocation, RouteState, currentRoute, helpUrl } from "./routes";
 import { fmsInformation, logout } from "../network/server-settings";
 import { useAtom, useAtomValue } from "jotai";
+import { QRScanButton } from "./BarcodeScanning";
 
 export type MenuNavItem =
   | {
@@ -157,6 +158,7 @@ function ToolButtons({
     <>
       <LoadingIcon />
       <CustomStationMonitorDialog />
+      {showSearch ? <QRScanButton /> : undefined}
       {showSearch ? <ManualScanButton /> : undefined}
       <HelpButton />
       {showLogout ? <LogoutButton /> : undefined}
@@ -173,7 +175,9 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
         value={curRoute.route}
         sx={{ width: "16.5em" }}
         onChange={(e) => {
-          const item = menuNavs.find((i) => ("separator" in i ? false : i.route.route === e.target.value));
+          const item = menuNavs.find((i) =>
+            "separator" in i ? false : i.route.route === (e.target.value as RouteLocation),
+          );
           if (!item || "separator" in item) return;
           setCurrentRoute(item.route);
         }}
