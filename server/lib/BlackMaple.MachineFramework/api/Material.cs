@@ -212,6 +212,9 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<string>? PossibleCastings { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
+    public ImmutableList<string>? PossibleJobs { get; init; }
+
+    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Workorder { get; init; }
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]

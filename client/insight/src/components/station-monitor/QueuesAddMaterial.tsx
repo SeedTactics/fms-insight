@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button, ListItemButton, styled } from "@mui/material";
+import { Button, ListItemButton, Typography, styled } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -166,68 +166,112 @@ function SelectJob({
 }) {
   return (
     <List sx={indent ? (theme) => ({ pl: theme.spacing(4) }) : undefined}>
-      {jobs.map((j, idx) => (
-        <React.Fragment key={idx}>
-          <ListItem>
-            <ListItemButton
-              onClick={() => {
-                if (newMaterialTy) setNewMaterialTy(null);
-                setCurCollapse(
-                  curCollapse && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
-                    ? null
-                    : { kind: "Job", unique: j.job.unique },
-                );
-              }}
-            >
-              <ListItemIcon>
-                <ExpandMore
-                  $expandedOpen={
-                    curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
+      {jobs.map((j, idx) =>
+        j.machinedProcs.length === 1 ? (
+          <Tooltip title={j.machinedProcs[0].disabledMsg ?? ""} key={idx}>
+            <div>
+              <ListItem>
+                <ListItemButton
+                  alignItems="flex-start"
+                  disabled={!!j.machinedProcs[0].disabledMsg}
+                  selected={
+                    newMaterialTy?.kind === "JobAndProc" &&
+                    newMaterialTy?.job.unique === j.job.unique &&
+                    newMaterialTy?.last_proc === j.machinedProcs[0].lastProc
                   }
+                  onClick={() =>
+                    setNewMaterialTy({
+                      kind: "JobAndProc",
+                      job: j.job,
+                      last_proc: j.machinedProcs[0].lastProc,
+                    })
+                  }
+                >
+                  <ListItemIcon>
+                    <PartIdenticon part={j.job.partName} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={j.job.partName + " (" + j.job.unique + ")"}
+                    secondary={
+                      <Typography variant="body2">
+                        {j.machinedProcs[0].lastProc === 0
+                          ? "Raw Material"
+                          : "Last machined process " + j.machinedProcs[0].lastProc.toString()}
+                        , {j.job.routeStartUTC.toLocaleDateString()}, {j.machinedProcs[0].details}
+                      </Typography>
+                    }
+                  />
+                </ListItemButton>
+              </ListItem>
+            </div>
+          </Tooltip>
+        ) : (
+          <React.Fragment key={idx}>
+            <ListItem>
+              <ListItemButton
+                onClick={() => {
+                  if (newMaterialTy) setNewMaterialTy(null);
+                  setCurCollapse(
+                    curCollapse && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
+                      ? null
+                      : { kind: "Job", unique: j.job.unique },
+                  );
+                }}
+              >
+                <ListItemIcon>
+                  <ExpandMore
+                    $expandedOpen={
+                      curCollapse !== null &&
+                      curCollapse.kind === "Job" &&
+                      curCollapse.unique === j.job.unique
+                    }
+                  />
+                </ListItemIcon>
+                <ListItemIcon>
+                  <PartIdenticon part={j.job.partName} />
+                </ListItemIcon>
+                <ListItemText
+                  primary={j.job.partName + " (" + j.job.unique + ")"}
+                  secondary={j.job.routeStartUTC.toLocaleDateString()}
                 />
-              </ListItemIcon>
-              <ListItemIcon>
-                <PartIdenticon part={j.job.partName} />
-              </ListItemIcon>
-              <ListItemText
-                primary={j.job.partName + " (" + j.job.unique + ")"}
-                secondary={j.job.routeStartUTC.toLocaleString()}
-              />
-            </ListItemButton>
-          </ListItem>
-          <Collapse
-            in={curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique}
-            timeout="auto"
-          >
-            {j.machinedProcs.map((p, idx) => (
-              <Tooltip title={p.disabledMsg ?? ""} key={idx}>
-                <div>
-                  <ListItem sx={(theme) => ({ pl: theme.spacing(indent ? 8 : 4) })}>
-                    <ListItemButton
-                      disabled={!!p.disabledMsg}
-                      selected={
-                        newMaterialTy?.kind === "JobAndProc" &&
-                        newMaterialTy?.job.unique === j.job.unique &&
-                        newMaterialTy?.last_proc === p.lastProc
-                      }
-                      onClick={() =>
-                        setNewMaterialTy({ kind: "JobAndProc", job: j.job, last_proc: p.lastProc })
-                      }
-                    >
-                      <ListItemText
-                        primary={
-                          p.lastProc === 0 ? "Raw Material" : "Last machined process " + p.lastProc.toString()
+              </ListItemButton>
+            </ListItem>
+            <Collapse
+              in={curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique}
+              timeout="auto"
+            >
+              {j.machinedProcs.map((p, idx) => (
+                <Tooltip title={p.disabledMsg ?? ""} key={idx}>
+                  <div>
+                    <ListItem sx={(theme) => ({ pl: theme.spacing(indent ? 8 : 4) })}>
+                      <ListItemButton
+                        disabled={!!p.disabledMsg}
+                        selected={
+                          newMaterialTy?.kind === "JobAndProc" &&
+                          newMaterialTy?.job.unique === j.job.unique &&
+                          newMaterialTy?.last_proc === p.lastProc
                         }
-                        secondary={p.details}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                </div>
-              </Tooltip>
-            ))}
-          </Collapse>
-        </React.Fragment>
-      ))}
+                        onClick={() =>
+                          setNewMaterialTy({ kind: "JobAndProc", job: j.job, last_proc: p.lastProc })
+                        }
+                      >
+                        <ListItemText
+                          primary={
+                            p.lastProc === 0
+                              ? "Raw Material"
+                              : "Last machined process " + p.lastProc.toString()
+                          }
+                          secondary={p.details}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  </div>
+                </Tooltip>
+              ))}
+            </Collapse>
+          </React.Fragment>
+        ),
+      )}
     </List>
   );
 }

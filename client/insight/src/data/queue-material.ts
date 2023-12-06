@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
+import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 import { LogBackend } from "../network/backend.js";
 import { differenceInSeconds } from "date-fns";
 import { useAtomValue } from "jotai";
@@ -66,8 +66,8 @@ function describePath(path: Readonly<api.IProcPathInfo>): string {
     path.palletNums && path.palletNums.length > 1
       ? "Pallets " + path.palletNums.map((p) => p.toString()).join(",")
       : path.palletNums && path.palletNums.length == 1
-      ? "Pallet " + path.palletNums[0].toString()
-      : "Pallet"
+        ? "Pallet " + path.palletNums[0].toString()
+        : "Pallet"
   }; ${path.stops.map((s) => s.stationGroup + "#" + (s.stationNums ?? []).join(",")).join("->")}`;
 }
 
@@ -172,6 +172,38 @@ function possibleCastings(
   }
 }
 
+function possibleJobs(
+  currentSt: Readonly<api.ICurrentStatus>,
+  fmsInfo: Readonly<api.IFMSInfo>,
+  toQueue: string,
+  barcode: Readonly<api.IScannedMaterial> | null,
+): ReadonlyArray<SelectableJob> {
+  if (barcode?.casting?.possibleJobs && barcode.casting.possibleJobs.length > 0) {
+    const possible = OrderedSet.from(barcode.casting.possibleJobs);
+    return LazySeq.ofObject(currentSt.jobs)
+      .filter(
+        ([, j]) =>
+          possible.has(j.unique) &&
+          LazySeq.of(j.procsAndPaths?.[0].paths ?? []).anyMatch((p) => p.inputQueue === toQueue),
+      )
+      .map(([, j]) => ({
+        job: j,
+        machinedProcs: [
+          {
+            lastProc: 0,
+            details: j.procsAndPaths[0].paths.map(describePath).join(" | "),
+            disabledMsg: null,
+          },
+        ],
+      }))
+      .toSortedArray((j) => j.job.partName);
+  } else {
+    return LazySeq.ofObject(currentSt.jobs)
+      .collect(([, j]) => extractJobGroups(j, fmsInfo, toQueue))
+      .toSortedArray((j) => j.job.partName);
+  }
+}
+
 export function usePossibleNewMaterialTypes(toQueue: string | null): SelectableMaterialType {
   const currentSt = useAtomValue(currentStatus);
   const fmsInfo = useAtomValue(fmsInformation);
@@ -187,9 +219,7 @@ export function usePossibleNewMaterialTypes(toQueue: string | null): SelectableM
         castings: rawMatQueues.has(toQueue)
           ? possibleCastings(currentSt, castingsFromHistoric, barcode, fmsInfo)
           : [],
-        jobs: LazySeq.ofObject(currentSt.jobs)
-          .collect(([, j]) => extractJobGroups(j, fmsInfo, toQueue))
-          .toSortedArray((j) => j.job.partName),
+        jobs: possibleJobs(currentSt, fmsInfo, toQueue, barcode),
       };
     }
   }, [currentSt, fmsInfo, toQueue, castingsFromHistoric, barcode]);

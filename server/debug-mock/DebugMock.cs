@@ -141,7 +141,8 @@ namespace DebugMachineWatchApiServer
                 {
                   Serial = barcode,
                   Workorder = "work1",
-                  PossibleCastings = ImmutableList.Create("part1", "part2")
+                  //PossibleCastings = ImmutableList.Create("part1", "part2"),
+                  PossibleJobs = ImmutableList.Create("aaa-offline-2018-01-01", "bbb-offline-2018-01-01")
                 },
               };
             }
