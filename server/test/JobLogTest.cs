@@ -212,6 +212,8 @@ namespace MachineWatchTest
             }
           }
         );
+      _jobLog.CountMaterialForWorkorder("work1").Should().Be(2);
+      _jobLog.CountMaterialForWorkorder("unused").Should().Be(0);
 
       _jobLog.GetWorkordersForUnique("U1").Should().BeEquivalentTo(new[] { "work1" });
       _jobLog.GetWorkordersForUnique("unused").Should().BeEmpty();
@@ -236,6 +238,8 @@ namespace MachineWatchTest
         );
 
       _jobLog.GetMaterialForJobUnique("unused").Should().BeEmpty();
+      _jobLog.CountMaterialForJobUnique("U1").Should().Be(1);
+      _jobLog.CountMaterialForJobUnique("unused").Should().Be(0);
 
       _jobLog.CreateMaterialID(matID: 555, unique: "55555", part: "part5", numProc: 12);
       _jobLog

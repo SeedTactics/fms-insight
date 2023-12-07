@@ -3127,6 +3127,14 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public long CountMaterialForWorkorder(string workorder)
+    {
+      using var cmd = _connection.CreateCommand();
+      cmd.CommandText = "SELECT COUNT(*) FROM matdetails WHERE Workorder IS NOT NULL AND Workorder = $work";
+      cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
+      return (long)cmd.ExecuteScalar();
+    }
+
     public List<MaterialDetails> GetMaterialForJobUnique(string jobUnique)
     {
       using (var trans = _connection.BeginTransaction())
@@ -3180,6 +3188,14 @@ namespace BlackMaple.MachineFramework
         trans.Commit();
         return ret;
       }
+    }
+
+    public long CountMaterialForJobUnique(string jobUnique)
+    {
+      using var cmd = _connection.CreateCommand();
+      cmd.CommandText = "SELECT COUNT(*) FROM matdetails WHERE UniqueStr = $uniq";
+      cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
+      return (long)cmd.ExecuteScalar();
     }
 
     private void RecordSerialForMaterialID(IDbTransaction trans, long matID, string serial)
