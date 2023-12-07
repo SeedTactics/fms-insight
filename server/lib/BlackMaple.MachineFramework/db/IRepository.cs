@@ -377,7 +377,7 @@ namespace BlackMaple.MachineFramework
     MaterialDetails GetMaterialDetails(long matID);
     IReadOnlyList<MaterialDetails> GetMaterialDetailsForSerial(string serial);
     List<MaterialDetails> GetMaterialForWorkorder(string workorder);
-    long CountMaterialForWorkorder(string workorder);
+    long CountMaterialForWorkorder(string workorder, string part = null);
     List<MaterialDetails> GetMaterialForJobUnique(string jobUnique);
     long CountMaterialForJobUnique(string jobUnique);
 

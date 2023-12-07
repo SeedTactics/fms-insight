@@ -213,6 +213,9 @@ namespace MachineWatchTest
           }
         );
       _jobLog.CountMaterialForWorkorder("work1").Should().Be(2);
+      _jobLog.CountMaterialForWorkorder("work1", "P1").Should().Be(1);
+      _jobLog.CountMaterialForWorkorder("work1", "P2").Should().Be(0);
+      _jobLog.CountMaterialForWorkorder("work1", "P3").Should().Be(1);
       _jobLog.CountMaterialForWorkorder("unused").Should().Be(0);
 
       _jobLog.GetWorkordersForUnique("U1").Should().BeEquivalentTo(new[] { "work1" });

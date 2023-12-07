@@ -3127,12 +3127,24 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public long CountMaterialForWorkorder(string workorder)
+    public long CountMaterialForWorkorder(string workorder, string part)
     {
       using var cmd = _connection.CreateCommand();
-      cmd.CommandText = "SELECT COUNT(*) FROM matdetails WHERE Workorder IS NOT NULL AND Workorder = $work";
-      cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
-      return (long)cmd.ExecuteScalar();
+
+      if (string.IsNullOrEmpty(part))
+      {
+        cmd.CommandText = "SELECT COUNT(*) FROM matdetails WHERE Workorder IS NOT NULL AND Workorder = $work";
+        cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
+        return (long)cmd.ExecuteScalar();
+      }
+      else
+      {
+        cmd.CommandText =
+          "SELECT COUNT(*) FROM matdetails WHERE Workorder IS NOT NULL AND Workorder = $work AND PartName = $part";
+        cmd.Parameters.Add("work", SqliteType.Text).Value = workorder;
+        cmd.Parameters.Add("part", SqliteType.Text).Value = part;
+        return (long)cmd.ExecuteScalar();
+      }
     }
 
     public List<MaterialDetails> GetMaterialForJobUnique(string jobUnique)
