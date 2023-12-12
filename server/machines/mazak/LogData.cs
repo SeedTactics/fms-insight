@@ -101,7 +101,7 @@ namespace MazakMachineInterface
     void Halt();
   }
 
-#if USE_OLEDB
+#if USE_VERE
   public class LogDataVerE : IMazakLogReader, INotifyMazakLogEvent
   {
     private const string DateTimeFormat = "yyyyMMddHHmmss";

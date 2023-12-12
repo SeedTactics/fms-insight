@@ -92,7 +92,6 @@ namespace MazakMachineInterface
 
     private IDbConnection OpenReadonlyOleDb()
     {
-#if USE_OLEDB
       int attempts = 0;
 
       var conn = new OleDbConnection(_connectionStr);
@@ -135,9 +134,6 @@ namespace MazakMachineInterface
 
       conn.Dispose();
       throw new Exception("Mazak database is locked and can not be accessed");
-#else
-      throw new Exception("Mazak Web and VerE are not supported on .NET Core");
-#endif
     }
 
     protected IDbConnection CreateConnection()
@@ -249,12 +245,10 @@ namespace MazakMachineInterface
           }
           throw new Exception("Timeout during download: open database kit is not running or responding");
         }
-#if USE_OLEDB
       }
       catch (OleDbException ex)
       {
         throw new Exception(ex.ToString());
-#endif
       }
       finally { }
     }
