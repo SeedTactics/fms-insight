@@ -646,7 +646,7 @@ namespace MazakMachineInterface
           transaction: trans
         );
       }
-      else
+      else if (data.Programs.Any())
       {
         throw new Exception("Downloading programs only supported on Smooth-PMC");
       }
