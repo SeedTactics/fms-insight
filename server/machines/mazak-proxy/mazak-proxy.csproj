@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>BlackMaple.FMSInsight.Mazak.FrameworkProxy</AssemblyName>
+    <PackageId>BlackMaple.FMSInsight.Mazak.FrameworkProxy</PackageId>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net461</TargetFramework>
+
+    <Title>SeedTactcs FMS Insight Mazak Proxy</Title>
+    <Company>Black Maple Software, LLC</Company>
+    <Product>SeedTactics</Product>
+    <Copyright>Black Maple Software, LLC</Copyright>
+    <Authors>John Lenz</Authors>
+
+    <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
+    <PackageProjectUrl>https://fms-insight.seedtactics.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+  </ItemGroup>
+</Project>
