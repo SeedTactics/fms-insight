@@ -263,6 +263,26 @@ export function MaterialAction({
   return null;
 }
 
+function JobRawMaterial({
+  unique,
+  fsize,
+  proc,
+  path,
+}: {
+  unique: string;
+  proc: number;
+  path: number;
+  fsize?: MatCardFontSize;
+}) {
+  const job = useAtomValue(currentStatus).jobs[unique];
+  const pathData = job.procsAndPaths?.[proc - 1]?.paths?.[path - 1];
+  if (pathData && pathData.casting && pathData.casting !== "") {
+    return <MatCardDetail fsize={fsize}>Raw: {pathData.casting}</MatCardDetail>;
+  } else {
+    return null;
+  }
+}
+
 interface MaterialDragProps {
   readonly dragRootProps?: React.HTMLAttributes<HTMLDivElement>;
   readonly showDragHandle?: boolean;
@@ -283,6 +303,7 @@ export interface MaterialSummaryProps {
   readonly displayJob?: boolean;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
+  readonly showRawMaterial?: boolean;
 }
 
 const MatCard = React.forwardRef(function MatCard(
@@ -385,6 +406,14 @@ const MatCard = React.forwardRef(function MatCard(
             props.mat.workorderId === props.mat.serial ? undefined : (
               <MatCardDetail fsize={props.fsize}>Workorder: {props.mat.workorderId}</MatCardDetail>
             )}
+            {props.mat.jobUnique !== undefined && props.showRawMaterial && props.inProcMat ? (
+              <JobRawMaterial
+                unique={props.mat.jobUnique}
+                fsize={props.fsize}
+                proc={props.inProcMat.process}
+                path={props.inProcMat.path}
+              />
+            ) : undefined}
             {props.inProcMat ? (
               <MaterialAction
                 mat={props.inProcMat}
@@ -430,6 +459,7 @@ export type InProcMaterialProps = {
   readonly displayJob?: boolean;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
+  readonly showRawMaterial?: boolean;
 };
 
 export type ShakeProp = {
@@ -449,6 +479,7 @@ export const InProcMaterial = React.memo(function InProcMaterial(
       displayJob={props.displayJob}
       showDragHandle={props.showHandle}
       hideEmptySerial={props.hideEmptySerial}
+      showRawMaterial={props.showRawMaterial}
       shake={props.shake}
     />
   );

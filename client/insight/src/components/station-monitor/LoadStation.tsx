@@ -388,6 +388,7 @@ function MaterialRegion({
               mat={m}
               displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
               fsize={data.fsize}
+              showRawMaterial={m.process === 1}
             />
           ) : (
             <SortableInProcMaterial
@@ -403,6 +404,7 @@ function MaterialRegion({
                   ? data.fsize
                   : undefined
               }
+              showRawMaterial={m.process === 1}
             />
           )}
         </MoveMaterialArrowNode>
@@ -825,8 +827,8 @@ export function LoadStation(props: LoadStationProps) {
     numNonPalCols <= 1
       ? "(min-width: 720px)"
       : numNonPalCols === 2
-      ? "(min-width: 1030px)"
-      : "(min-width: 1320px)",
+        ? "(min-width: 1030px)"
+        : "(min-width: 1320px)",
   );
 
   const grid = useGridLayout({
