@@ -1076,7 +1076,7 @@ namespace BlackMaple.MachineFramework
 
       if (updateJobTables)
       {
-        cmd.CommandText = "ALTER TBLE sim_station_use DROP COLUMN UtilizationTime";
+        cmd.CommandText = "ALTER TABLE sim_station_use DROP COLUMN UtilizationTime";
         cmd.ExecuteNonQuery();
         cmd.CommandText = "ALTER TABLE sim_station_use DROP COLUMN PlanDownTime";
         cmd.ExecuteNonQuery();
