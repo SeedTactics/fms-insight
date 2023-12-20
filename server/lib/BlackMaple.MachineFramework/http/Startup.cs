@@ -245,6 +245,7 @@ namespace BlackMaple.MachineFramework
         foreach (var w in fmsImpl.Workers)
           w.Dispose();
         fmsImpl.Backend?.Dispose();
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         Serilog.Log.CloseAndFlush();
       });
     }
