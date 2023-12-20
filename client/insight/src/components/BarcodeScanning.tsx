@@ -42,6 +42,7 @@ import {
   DialogContent,
   DialogTitle,
   IconButton,
+  TextField,
   Tooltip,
 } from "@mui/material";
 import { CameraAlt } from "@mui/icons-material";
@@ -111,12 +112,22 @@ export const BarcodeListener = React.memo(function BarcodeListener(): null {
 export const QRScanButton = React.memo(function QRScanButton() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const setBarcode = useSetAtom(materialDialogOpen);
+  const [manual, setManual] = React.useState("");
 
   if (window.location.protocol !== "https:" && window.location.hostname !== "localhost") return null;
 
   function onScan(result: string): void {
     setBarcode({ type: "Barcode", barcode: result });
     setDialogOpen(false);
+    setManual("");
+  }
+
+  function onManual(): void {
+    if (manual !== "") {
+      setBarcode({ type: "Barcode", barcode: manual });
+    }
+    setDialogOpen(false);
+    setManual("");
   }
 
   return (
@@ -127,8 +138,23 @@ export const QRScanButton = React.memo(function QRScanButton() {
           <Box minWidth="20em">
             {dialogOpen ? <QrScanner onDecode={onScan} onError={(err) => console.log(err)} /> : undefined}
           </Box>
+          <Box marginTop="1em">
+            <TextField
+              label="Manual Entry"
+              value={manual}
+              variant="outlined"
+              fullWidth
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onManual();
+                }
+              }}
+              onChange={(e) => setManual(e.target.value)}
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
+          {manual !== "" ? <Button onClick={onManual}>Submit</Button> : undefined}
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
