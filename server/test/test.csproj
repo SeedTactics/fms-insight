@@ -14,6 +14,7 @@
     <ProjectReference Include="../machines/niigata/niigata.csproj" />
     <None Update="log.v17.db" CopyToOutputDirectory="Always" />
     <None Update="job.v16.db" CopyToOutputDirectory="Always" />
+    <None Update="database-ver25.db" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>

@@ -35,18 +35,16 @@ using System;
 using BlackMaple.MachineFramework;
 using Xunit;
 using FluentAssertions;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Germinate;
 
 namespace MachineWatchTest
 {
-  public class EventDBUpgradeSpec : IDisposable
+  public sealed class EventDBUpgradeSpec : IDisposable
   {
     private readonly IRepository _log;
-    private string _tempLogFile;
-    private string _tempJobFile;
+    private readonly string _tempLogFile;
+    private readonly string _tempJobFile;
 
     public EventDBUpgradeSpec()
     {
@@ -334,7 +332,7 @@ namespace MachineWatchTest
         );
     }
 
-    private HistoricJob CreateJob()
+    private static HistoricJob CreateJob()
     {
       var routeStart = DateTime.Parse("2019-10-22 20:24 GMT").ToUniversalTime();
       return new HistoricJob()
@@ -791,5 +789,45 @@ namespace MachineWatchTest
       _jobs.AddJobs(new NewJobs() { Jobs = new List<JobPlan> { job1 } }, null);
     }
     */
+  }
+
+  // version 25 is after the merge of job and log dbs into a single file
+  public sealed class Ver25UpgradeSpec : IDisposable
+  {
+    private readonly string _tempFile;
+    private readonly IRepository _repo;
+
+    public Ver25UpgradeSpec()
+    {
+      _tempFile = System.IO.Path.GetTempFileName();
+      System.IO.File.Copy("database-ver25.db", _tempFile, overwrite: true);
+      _repo = RepositoryConfig
+        .InitializeEventDatabase(
+          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
+          _tempFile,
+          null,
+          null
+        )
+        .OpenConnection();
+    }
+
+    public void Dispose()
+    {
+      _repo.Dispose();
+      Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+      if (!string.IsNullOrEmpty(_tempFile) && System.IO.File.Exists(_tempFile))
+        System.IO.File.Delete(_tempFile);
+    }
+
+    [Fact]
+    public void LoadsVer25()
+    {
+      var evts = _repo.GetLogEntries(
+        new DateTime(2023, 11, 20, 0, 0, 0, DateTimeKind.Utc),
+        new DateTime(2023, 11, 25, 0, 0, 0, DateTimeKind.Utc)
+      );
+
+      evts.Should().HaveCount(1466);
+    }
   }
 }
