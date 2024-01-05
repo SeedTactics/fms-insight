@@ -91,7 +91,7 @@ namespace MachineWatchTest
         }
         else
         {
-          Assert.True(false, "Unexpected prefix " + prefix);
+          Assert.Fail("Unexpected prefix " + prefix);
         }
         if (errorForPrefix == prefix)
         {

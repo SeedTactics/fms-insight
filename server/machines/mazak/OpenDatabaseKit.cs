@@ -94,6 +94,12 @@ namespace MazakMachineInterface
     {
       int attempts = 0;
 
+      // check if windows
+      if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+      {
+        throw new Exception("VerE and Web only only supported on windows");
+      }
+
       var conn = new OleDbConnection(_connectionStr);
       while (attempts < 20)
       {

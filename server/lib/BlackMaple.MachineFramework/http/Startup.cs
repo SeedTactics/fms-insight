@@ -36,6 +36,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
@@ -186,15 +187,13 @@ namespace BlackMaple.MachineFramework
       app.Use(
         async (context, next) =>
         {
-          context.Response.Headers.Add(
-            "Content-Security-Policy",
+          context.Response.Headers.ContentSecurityPolicy =
             "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; "
               +
               // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
-              "script-src 'self';"
-          );
-          context.Response.Headers.Add("Cross-Origin-Embedder-Policy", "require-corp");
-          context.Response.Headers.Add("Cross-Origin-Opener-Policy", "same-origin");
+              "script-src 'self';";
+          context.Response.Headers.Append("Cross-Origin-Embedder-Policy", "require-corp");
+          context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin");
           await next();
         }
       );

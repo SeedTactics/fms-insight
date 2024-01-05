@@ -770,7 +770,7 @@ namespace MachineWatchTest
         );
 
       otherLogs = _jobLog.GetRecentLog(unloadEndActualCycle.First().Counter).ToList();
-      Assert.Equal(0, otherLogs.Count);
+      Assert.Empty(otherLogs);
 
       foreach (var c in logs)
         Assert.True(

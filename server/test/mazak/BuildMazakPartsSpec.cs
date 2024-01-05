@@ -91,7 +91,7 @@ namespace MachineWatchTest
         errors: log
       );
       if (log.Count > 0)
-        Assert.True(false, log[0]);
+        Assert.Fail(log[0]);
 
       CheckNewFixtures(
         pMap,
@@ -191,7 +191,7 @@ namespace MachineWatchTest
         errors: log
       );
       if (log.Count > 0)
-        Assert.True(false, log[0]);
+        Assert.Fail(log[0]);
 
       if (useStartingOffset)
       {
@@ -281,7 +281,7 @@ namespace MachineWatchTest
         errors: log
       );
       if (log.Count > 0)
-        Assert.True(false, log[0]);
+        Assert.Fail(log[0]);
 
       CheckNewFixtures(pMap, new string[] { "F:3:1:1", "F:3:2:2", "F:3:3:2", });
 
@@ -359,7 +359,7 @@ namespace MachineWatchTest
         errors: log
       );
       if (log.Count > 0)
-        Assert.True(false, log[0]);
+        Assert.Fail(log[0]);
 
       CheckNewFixtures(
         pMap,
@@ -441,7 +441,7 @@ namespace MachineWatchTest
         errors: log
       );
       if (log.Count > 0)
-        Assert.True(false, log[0]);
+        Assert.Fail(log[0]);
 
       string part1BaseFix,
         part2BaseFix,
@@ -535,7 +535,7 @@ namespace MachineWatchTest
         errors: log
       );
       if (log.Count > 0)
-        Assert.True(false, log[0]);
+        Assert.Fail(log[0]);
 
       var del = pMap.DeleteOldPalletRows();
       del.Pallets
@@ -661,7 +661,7 @@ namespace MachineWatchTest
         errors: log
       );
       if (log.Count > 0)
-        Assert.True(false, log[0]);
+        Assert.Fail(log[0]);
 
       var getProgramCt = Substitute.For<Func<string, long, string>>();
       getProgramCt("aaa", 3).Returns("aaa 3 ct");
@@ -1055,17 +1055,17 @@ namespace MachineWatchTest
     {
       foreach (var row in dset.Parts)
       {
-        Assert.True(false, "Extra part row: " + row.PartName);
+        Assert.Fail("Extra part row: " + row.PartName);
       }
 
       foreach (var row in dset.Pallets)
       {
-        Assert.True(false, "Extra pallet row: " + row.PalletNumber.ToString() + " " + row.Fixture);
+        Assert.Fail( "Extra pallet row: " + row.PalletNumber.ToString() + " " + row.Fixture);
       }
 
       foreach (var row in dset.Fixtures)
       {
-        Assert.True(false, "Extra fixture row: " + row.FixtureName);
+        Assert.Fail("Extra fixture row: " + row.FixtureName);
       }
     }
     #endregion

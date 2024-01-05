@@ -44,6 +44,7 @@ using Microsoft.AspNetCore.Hosting;
 using Newtonsoft.Json;
 using Germinate;
 using System.Collections.Immutable;
+using NJsonSchema.NewtonsoftJson.Generation;
 
 namespace DebugMachineWatchApiServer
 {
@@ -60,14 +61,14 @@ namespace DebugMachineWatchApiServer
         cfg.Version = "1.14";
         var settings = new Newtonsoft.Json.JsonSerializerSettings();
         BlackMaple.MachineFramework.Startup.NewtonsoftJsonSettings(settings);
-        cfg.SerializerSettings = settings;
+        ((NewtonsoftJsonSchemaGeneratorSettings) cfg.SchemaSettings).SerializerSettings = settings;
         //cfg.DefaultReferenceTypeNullHandling = NJsonSchema.ReferenceTypeNullHandling.NotNull;
         cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
           .Generation
           .ReferenceTypeNullHandling
           .NotNull;
         cfg.RequireParametersWithoutDefault = true;
-        cfg.IgnoreObsoleteProperties = true;
+        cfg.SchemaSettings.IgnoreObsoleteProperties = true;
       });
     }
 

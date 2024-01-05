@@ -573,7 +573,7 @@ namespace MachineWatchTest
           return d.Inspect;
         }
       }
-      Assert.True(false, "Unable to find counter and inspection type");
+      Assert.Fail("Unable to find counter and inspection type");
       return false;
     }
 
@@ -587,7 +587,7 @@ namespace MachineWatchTest
           return;
         }
       }
-      Assert.True(false, "Unable to find counter " + counter);
+      Assert.Fail("Unable to find counter " + counter);
     }
 
     private void CheckLastUTC(string counter, DateTime val)
@@ -603,7 +603,7 @@ namespace MachineWatchTest
           return;
         }
       }
-      Assert.True(false, "Unable to find counter");
+      Assert.Fail("Unable to find counter");
     }
   }
 }
