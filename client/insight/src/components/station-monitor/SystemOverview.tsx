@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -331,6 +331,7 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
   const btnRef = React.useRef<HTMLButtonElement | null>(null);
   const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
   const setMatToShow = useSetAtom(materialDialogOpen);
+  const curSt = useAtomValue(currentStatus);
 
   function enter() {
     if (closeTimeout.current !== null) {
@@ -355,6 +356,13 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
     }
   }
 
+  function faceName(pallet: number | null | undefined, faceNum: number | null | undefined): string | null {
+    if (faceNum === null || faceNum === undefined) return null;
+    const name =
+      pallet != null && pallet != undefined ? curSt.pallets[pallet]?.faceNames?.[faceNum - 1] : null;
+    return name ?? "Face: " + faceNum.toString();
+  }
+
   return (
     <Box sx={{ width: CollapsedIconSize, height: CollapsedIconSize, overflow: "visible" }}>
       <Paper
@@ -375,7 +383,10 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
                         {mats[0].partName}-{mats[0].process}
                       </Typography>
                       <div>
-                        <small>Face: {mats[0].location.face ?? mats[0].action.loadOntoFace ?? ""}</small>
+                        <small>
+                          {faceName(mats[0].location.palletNum, mats[0].location.face) ??
+                            faceName(mats[0].action.loadOntoPalletNum, mats[0].action.loadOntoFace)}
+                        </small>
                       </div>
                       {LazySeq.of(mats).collect((mat) =>
                         mat.serial ? (
@@ -951,8 +962,8 @@ function MachineIcon({ machine }: { machine: MachineStatus }) {
           machine.worktable === null
             ? "white"
             : elapsed != null && elapsed < 0
-            ? theme.palette.error.main
-            : theme.palette.secondary.main
+              ? theme.palette.error.main
+              : theme.palette.secondary.main
         }
       />
       <rect
@@ -999,8 +1010,8 @@ function MachineAtLoadIcon({ status }: { status: MachineAtLoadStatus }) {
           status.machiningMats.length === 0
             ? "white"
             : elapsed != null && elapsed < 0
-            ? theme.palette.error.main
-            : theme.palette.secondary.main
+              ? theme.palette.error.main
+              : theme.palette.secondary.main
         }
       />
       <rect
