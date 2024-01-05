@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -42,12 +42,14 @@ import {
   useSignalForQuarantine,
 } from "../../cell-status/material-details.js";
 import { currentOperator } from "../../data/operators.js";
-import { ActionType, LocType, QueueRole } from "../../network/api.js";
+import { ActionType, LocType, PalletLocationEnum, QueueRole } from "../../network/api.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAtomValue, useSetAtom } from "jotai";
 
+type QuarantineMaterialTypes = "Remove" | "Scrap" | "SignalForScrap" | "CancelLoad";
+
 type QuarantineMaterialData = {
-  readonly type: "Remove" | "Scrap" | "Quarantine" | "Signal";
+  readonly type: QuarantineMaterialTypes;
   readonly quarantine: (reason: string) => void;
   readonly removing: boolean;
   readonly quarantineQueueDestination: string | null;
@@ -86,6 +88,10 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
   const quarantineQueues = LazySeq.ofObject(curSt.queues)
     .filter(([qname, _]) => !activeQueues.has(qname))
     .toRSet(([qname, _]) => qname);
+  const palLoc = LazySeq.ofObject(curSt.pallets).toOrderedMap(([_, pal]) => [
+    pal.palletNum,
+    pal.currentPalletLocation,
+  ]);
 
   // If in a quarantine queue, allow removal from system
   if (
@@ -101,11 +107,22 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
     };
   }
 
-  let type: "Remove" | "Scrap" | "Quarantine" | "Signal" | null = null;
+  let type: QuarantineMaterialTypes | null = null;
 
   switch (inProcMat.location.type) {
     case LocType.OnPallet:
-      if (!fmsInfo.allowQuarantineToCancelLoad) {
+      if (fmsInfo.allowQuarantineToCancelLoad) {
+        // either cancel load or signal based on material action and pallet location
+        const palAtLoad =
+          inProcMat.location.palletNum &&
+          palLoc.get(inProcMat.location.palletNum)?.loc === PalletLocationEnum.LoadUnload;
+        if (inProcMat.action.type === ActionType.Loading || palAtLoad) {
+          type = "CancelLoad";
+        } else {
+          type = "SignalForScrap";
+        }
+      } else {
+        // must signal since it is currently on a pallet, but only if the material is not loading
         if (inProcMat.action.type === ActionType.Loading) {
           return null;
         }
@@ -116,30 +133,21 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
         if (inProcMat.process != job.procsAndPaths.length && (!path || !path.outputQueue)) {
           return null;
         }
+        type = "SignalForScrap";
       }
 
-      type = "Signal";
       break;
 
     case LocType.InQueue:
       if (inProcMat.action.type === ActionType.Loading && !fmsInfo.allowQuarantineToCancelLoad) {
         return null;
-      }
-
-      // Either quarantine or scrap depending on if a quarantine queue is defined
-      if (quarantineQueue) {
-        type = "Quarantine";
       } else {
         type = "Scrap";
       }
       break;
 
     case LocType.Free:
-      if (quarantineQueue) {
-        type = "Quarantine";
-      } else {
-        type = "Scrap";
-      }
+      type = "Scrap";
       break;
   }
 
@@ -177,19 +185,23 @@ export function QuarantineMatButton({
       title = "Remove from system";
       btnTxt = "Remove";
       break;
-    case "Quarantine":
-      title = q.quarantineQueueDestination ? `Move to ${q.quarantineQueueDestination}` : "";
-      btnTxt = "Quarantine";
-      break;
     case "Scrap":
-      title = "Remove as scrap";
-      btnTxt = "Scrap";
+      title = q.quarantineQueueDestination ? `Move to ${q.quarantineQueueDestination}` : "Remove as scrap";
+      btnTxt = q.quarantineQueueDestination ? "Quarantine" : "Scrap";
       break;
-    case "Signal":
+    case "SignalForScrap":
       title = q.quarantineQueueDestination
         ? `After unload, move to ${q.quarantineQueueDestination}`
         : "After unload, remove the part as scrap";
-      btnTxt = "Quarantine";
+      btnTxt = q.quarantineQueueDestination ? "Quarantine" : "Scrap";
+      break;
+
+    case "CancelLoad":
+      title = q.quarantineQueueDestination
+        ? `Cancel load and move to ${q.quarantineQueueDestination}`
+        : "Cancel load";
+      btnTxt = "Cancel Load";
+      break;
   }
 
   function quarantine() {
