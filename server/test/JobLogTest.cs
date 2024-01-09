@@ -33,13 +33,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
-using Xunit;
+using AutoFixture;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
-using AutoFixture;
-using System.Collections.Immutable;
 using Germinate;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -1051,6 +1051,11 @@ namespace MachineWatchTest
       AddToDB(pal1Initial);
 
       CheckLog(pal1Initial, _jobLog.CurrentPalletLog(1), DateTime.UtcNow.AddHours(-10));
+      CheckLog(
+        pal1Initial,
+        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false),
+        DateTime.UtcNow.AddHours(-10)
+      );
       _jobLog.CurrentPalletLog(2).Should().BeEmpty();
 
       _jobLog.CompletePalletCycle(1, pal1InitialTime.AddMinutes(25), "");
@@ -1195,6 +1200,11 @@ namespace MachineWatchTest
 
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog(1), DateTime.UtcNow.AddHours(-10));
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog(2), DateTime.UtcNow.AddHours(-10));
+      CheckLog(
+        pal1Initial.Concat(pal1Cycle).Concat(pal2Cycle).Where(e => !e.Material.IsEmpty),
+        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false),
+        DateTime.UtcNow.AddHours(-10)
+      );
 
       //********  Ignores invalidated and swap events
       var invalidated = new LogEntry(
@@ -1228,6 +1238,11 @@ namespace MachineWatchTest
 
       // neither invalidated nor swap added to pal1Cycle
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog(1), DateTime.UtcNow.AddHours(-10));
+      CheckLog(
+        pal1Initial.Concat(pal1Cycle).Concat(pal2Cycle).Where(e => !e.Material.IsEmpty),
+        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false),
+        DateTime.UtcNow.AddHours(-10)
+      );
 
       _jobLog.CompletePalletCycle(1, pal1CycleTime.AddMinutes(40), "");
 
@@ -1260,6 +1275,12 @@ namespace MachineWatchTest
       );
 
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog(2), DateTime.UtcNow.AddHours(-10));
+
+      CheckLog(
+        pal1Initial.Concat(pal1Cycle).Concat(pal2Cycle).Where(e => !e.Material.IsEmpty),
+        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false),
+        DateTime.UtcNow.AddHours(-10)
+      );
     }
 
     [Fact]
@@ -1681,15 +1702,15 @@ namespace MachineWatchTest
           CompletedQuantity = 2, // mat1 and mat3
           Serials = ImmutableList.Create("serial1", "serial3"),
           Comments = null,
-          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty
-            .Add("MC", TimeSpan.FromMinutes(10 + 30 + 3 * 1 / c2Cnt)) //10 + 30 from mat1, 3*1/4 for mat3
+          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
+            .Empty.Add("MC", TimeSpan.FromMinutes(10 + 30 + 3 * 1 / c2Cnt)) //10 + 30 from mat1, 3*1/4 for mat3
             .Add(
               "Load",
               TimeSpan.FromMinutes(50 / 2 + 5 * 1 / c2Cnt)
             ) //50/2 from mat1_proc2, and 5*1/4 for mat3
           ,
-          ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
-            .Add("MC", TimeSpan.FromMinutes(20 + 40 + 4 * 1 / c2Cnt)) //20 + 40 from mat1, 4*1/4 for mat3
+          ActiveStationTime = ImmutableDictionary<string, TimeSpan>
+            .Empty.Add("MC", TimeSpan.FromMinutes(20 + 40 + 4 * 1 / c2Cnt)) //20 + 40 from mat1, 4*1/4 for mat3
             .Add("Load", TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt)), //60/2 from mat1_proc2, and 6*1/4 for mat3
           SimulatedFilled = work1part1.SimulatedFilled,
           SimulatedStart = work1part1.SimulatedStart,
@@ -1704,11 +1725,11 @@ namespace MachineWatchTest
           CompletedQuantity = 1,
           Serials = ImmutableList.Create("serial4"),
           Comments = null,
-          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty
-            .Add("MC", TimeSpan.FromMinutes(3 * 1 / c2Cnt))
+          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
+            .Empty.Add("MC", TimeSpan.FromMinutes(3 * 1 / c2Cnt))
             .Add("Load", TimeSpan.FromMinutes(5 * 1 / c2Cnt)),
-          ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
-            .Add("MC", TimeSpan.FromMinutes(4 * 1 / c2Cnt))
+          ActiveStationTime = ImmutableDictionary<string, TimeSpan>
+            .Empty.Add("MC", TimeSpan.FromMinutes(4 * 1 / c2Cnt))
             .Add("Load", TimeSpan.FromMinutes(6 * 1 / c2Cnt)),
           SimulatedFilled = work1part2.SimulatedFilled,
           SimulatedStart = work1part2.SimulatedStart
@@ -1723,11 +1744,11 @@ namespace MachineWatchTest
           CompletedQuantity = 2,
           Serials = ImmutableList.Create("serial5", "serial6"),
           Comments = null,
-          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty
-            .Add("MC", TimeSpan.FromMinutes(3 * 2 / c2Cnt))
+          ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
+            .Empty.Add("MC", TimeSpan.FromMinutes(3 * 2 / c2Cnt))
             .Add("Load", TimeSpan.FromMinutes(5 * 2 / c2Cnt)),
-          ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty
-            .Add("MC", TimeSpan.FromMinutes(4 * 2 / c2Cnt))
+          ActiveStationTime = ImmutableDictionary<string, TimeSpan>
+            .Empty.Add("MC", TimeSpan.FromMinutes(4 * 2 / c2Cnt))
             .Add("Load", TimeSpan.FromMinutes(6 * 2 / c2Cnt)),
           SimulatedFilled = work2.SimulatedFilled,
           SimulatedStart = work2.SimulatedStart,
@@ -1746,8 +1767,8 @@ namespace MachineWatchTest
       Assert.Equal(0, finalizedEntry.Pallet);
       Assert.Equal("work1", finalizedEntry.Result);
       Assert.Equal(LogType.WorkorderComment, finalizedEntry.LogType);
-      finalizedEntry.ProgramDetails
-        .Should()
+      finalizedEntry
+        .ProgramDetails.Should()
         .BeEquivalentTo(
           new Dictionary<string, string> { { "Comment", "work1ccc" }, { "Operator", "oper1" } }
         );
@@ -3332,8 +3353,8 @@ namespace MachineWatchTest
         );
       }
 
-      matRet.Logs
-        .Should()
+      matRet
+        .Logs.Should()
         .BeEquivalentTo(
           expectedLogs,
           options => options.Excluding(o => o.Counter).ComparingByMembers<LogEntry>()
@@ -4246,12 +4267,12 @@ namespace MachineWatchTest
         )
         .ToList();
 
-      result.ChangedLogEntries
-        .Should()
+      result
+        .ChangedLogEntries.Should()
         .BeEquivalentTo(newLog, options => options.Excluding(e => e.Counter).ComparingByMembers<LogEntry>());
 
-      result.NewLogEntries
-        .Should()
+      result
+        .NewLogEntries.Should()
         .BeEquivalentTo(
           new[]
           {
@@ -4839,7 +4860,11 @@ namespace MachineWatchTest
       return last;
     }
 
-    public static long CheckLog(IList<LogEntry> logs, IList<LogEntry> otherLogs, System.DateTime start)
+    public static long CheckLog(
+      IEnumerable<LogEntry> logs,
+      IEnumerable<LogEntry> otherLogs,
+      System.DateTime start
+    )
     {
       logs.Where(l => l.EndTimeUTC >= start)
         .Should()

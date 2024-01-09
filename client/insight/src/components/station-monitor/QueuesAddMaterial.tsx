@@ -536,7 +536,7 @@ export function AddToQueueButton({
   const newWorkorder = useAtomValue(matDetails.workorderInMaterialDialog);
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
-  const evts = useAtomValue(matDetails.materialInDialogEvents);
+  const lastProcMat = useAtomValue(matDetails.materialInDialogLargestUsedProcess);
 
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addNewMat, addingNewMat] = matDetails.useAddNewMaterialToQueue();
@@ -544,19 +544,12 @@ export function AddToQueueButton({
 
   let addProcMsg = "";
   if (existingMat !== null) {
-    const lastProc =
-      LazySeq.of(evts)
-        .filter(
-          (e) =>
-            e.details?.["PalletCycleInvalidated"] !== "1" &&
-            (e.type === api.LogType.LoadUnloadCycle ||
-              e.type === api.LogType.MachineCycle ||
-              e.type === api.LogType.AddToQueue),
-        )
-        .flatMap((e) => e.material)
-        .filter((m) => m.id === existingMat.materialID)
-        .maxBy((m) => m.proc)?.proc ?? 0;
-    addProcMsg = " To Run Process " + (lastProc + 1).toString();
+    if (lastProcMat && lastProcMat.process >= lastProcMat.totalNumProcesses) {
+      return null;
+    } else {
+      const lastProc = lastProcMat?.process ?? 0;
+      addProcMsg = " To Run Process " + (lastProc + 1).toString();
+    }
   } else {
     if (newMaterialTy?.kind === "JobAndProc" && newMaterialTy?.last_proc !== undefined) {
       addProcMsg = " To Run Process " + (newMaterialTy.last_proc + 1).toString();

@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Germinate;
 
 namespace BlackMaple.MachineFramework
@@ -50,7 +50,7 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);
-    List<LogEntry> GetLogForMaterial(long materialID);
+    List<LogEntry> GetLogForMaterial(long materialID, bool includeInvalidatedCycles = true);
     List<LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs);
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);

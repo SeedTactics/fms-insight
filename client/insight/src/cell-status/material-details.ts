@@ -50,6 +50,7 @@ import { useCallback, useState } from "react";
 import { currentStatus } from "./current-status.js";
 import { atom, useSetAtom } from "jotai";
 import { loadable } from "jotai/utils";
+import { isLogEntryInvalidated } from "../components/LogEntry.js";
 
 export type MaterialToShow =
   | { readonly type: "InProcMat"; readonly inproc: Readonly<IInProcessMaterial> }
@@ -234,6 +235,33 @@ export const materialInDialogEvents = atom<ReadonlyArray<Readonly<ILogEntry>>>((
     .toRArray();
 });
 
+export type LargestUsedProces = {
+  readonly process: number;
+  readonly totalNumProcesses: number;
+};
+
+export const materialInDialogLargestUsedProcess = atom<Promise<LargestUsedProces | null>>(async (get) => {
+  const info = await get(materialInDialogInfo);
+  if (info === null) return null;
+  const evts = get(materialInDialogEvents);
+  const maxEvt = LazySeq.of(evts)
+    .filter(
+      (e) =>
+        !isLogEntryInvalidated(e) &&
+        (e.type === LogType.LoadUnloadCycle ||
+          e.type === LogType.MachineCycle ||
+          e.type === LogType.AddToQueue),
+    )
+    .flatMap((e) => e.material)
+    .filter((e) => e.id === info.materialID)
+    .maxBy((e) => e.proc);
+  if (maxEvt) {
+    return { process: maxEvt.proc, totalNumProcesses: maxEvt.numproc };
+  } else {
+    return null;
+  }
+});
+
 //--------------------------------------------------------------------------------
 // Inspections
 //--------------------------------------------------------------------------------
@@ -255,8 +283,8 @@ export const materialInDialogInspections = atom<MaterialToShowInspections>((get)
     curMat.type === "MatSummary"
       ? curMat.summary.signaledInspections
       : curMat.type === "InProcMat"
-      ? curMat.inproc.signaledInspections
-      : [],
+        ? curMat.inproc.signaledInspections
+        : [],
   );
   const completedTypes = new Set<string>();
 
@@ -331,6 +359,7 @@ export function useForceInspection(): [(data: ForceInspectionData) => void, bool
       data.mat.partName,
     )
       .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+      .catch(console.log)
       .finally(() => setUpdating(false));
   }, []);
 
@@ -361,7 +390,9 @@ export function useCompleteInspection(): [(data: CompleteInspectionData) => void
       }),
       data.mat.jobUnique,
       data.mat.partName,
-    ).finally(() => setUpdating(false));
+    )
+      .catch(console.log)
+      .finally(() => setUpdating(false));
   }, []);
 
   return [callback, updating];
@@ -388,7 +419,9 @@ export function useCompleteCloseout(): [(d: CompleteCloseoutData) => void, boole
       }),
       d.mat.jobUnique,
       d.mat.partName,
-    ).finally(() => setUpdating(false));
+    )
+      .catch(console.log)
+      .finally(() => setUpdating(false));
   }, []);
 
   return [callback, updating];
@@ -401,6 +434,7 @@ export function useAssignWorkorder(): [(mat: MaterialToShowInfo, workorder: stri
     setUpdating(true);
     LogBackend.setWorkorder(mat.materialID, 1, workorder, mat.jobUnique, mat.partName)
       .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+      .catch(console.log)
       .finally(() => setUpdating(false));
   }, []);
 
@@ -421,6 +455,7 @@ export function useAddNote(): [(data: AddNoteData) => void, boolean] {
     setUpdating(true);
     LogBackend.recordOperatorNotes(data.matId, data.process, data.operator, data.notes)
       .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+      .catch(console.log)
       .finally(() => setUpdating(false));
   }, []);
 
@@ -436,7 +471,9 @@ export function usePrintLabel(): [(data: PrintLabelData) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
   const callback = useCallback((d: PrintLabelData) => {
     setUpdating(true);
-    FmsServerBackend.printLabel(d.materialId, d.proc).finally(() => setUpdating(false));
+    FmsServerBackend.printLabel(d.materialId, d.proc)
+      .catch(console.log)
+      .finally(() => setUpdating(false));
   }, []);
 
   return [callback, updating];
@@ -446,7 +483,9 @@ export function useRemoveFromQueue(): [(matId: number, operator: string | null) 
   const [updating, setUpdating] = useState<boolean>(false);
   const callback = useCallback((matId: number, operator: string | null) => {
     setUpdating(true);
-    JobsBackend.removeMaterialFromAllQueues(matId, operator ?? undefined).finally(() => setUpdating(false));
+    JobsBackend.removeMaterialFromAllQueues(matId, operator ?? undefined)
+      .catch(console.log)
+      .finally(() => setUpdating(false));
   }, []);
 
   return [callback, updating];
@@ -459,9 +498,9 @@ export function useSignalForQuarantine(): [
   const [updating, setUpdating] = useState<boolean>(false);
   const callback = useCallback((matId: number, operator: string | null, reason: string) => {
     setUpdating(true);
-    JobsBackend.signalMaterialForQuarantine(matId, operator, reason === "" ? undefined : reason).finally(() =>
-      setUpdating(false),
-    );
+    JobsBackend.signalMaterialForQuarantine(matId, operator, reason === "" ? undefined : reason)
+      .catch(console.log)
+      .finally(() => setUpdating(false));
   }, []);
 
   return [callback, updating];
@@ -485,7 +524,9 @@ export function useAddExistingMaterialToQueue(): [(d: AddExistingMaterialToQueue
         queue: d.queue,
         position: d.queuePosition,
       }),
-    ).finally(() => setUpdating(false));
+    )
+      .catch(console.log)
+      .finally(() => setUpdating(false));
   }, []);
 
   return [callback, updating];
@@ -523,6 +564,7 @@ export function useAddNewMaterialToQueue(): [(d: AddNewMaterialToQueueData) => v
           d.onError("No material returned");
         }
       }, d.onError)
+      .catch(console.log)
       .finally(() => setUpdating(false));
   }, []);
 
@@ -552,6 +594,7 @@ export function useAddNewCastingToQueue(): [(d: AddNewCastingToQueueData) => voi
       .then((ms) => {
         if (d.onNewMaterial) d.onNewMaterial(ms);
       }, d.onError)
+      .catch(console.log)
       .finally(() => setUpdating(false));
   }, []);
 

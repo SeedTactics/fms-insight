@@ -86,6 +86,8 @@ namespace BlackMaple.MachineFramework
     public AddRawMaterialType AddRawMaterial { get; set; } = AddRawMaterialType.RequireExistingMaterial;
     public AddInProcessMaterialType AddInProcessMaterial { get; set; } =
       AddInProcessMaterialType.RequireExistingMaterial;
-    public bool AllowSwapAndInvalidateMaterialAtLoadStation { get; set; } = false;
+    public bool AllowSwapSerialAtLoadStation { get; set; } = false;
+    public bool AllowInvalidateMaterialAtLoadStation { get; set; } = false;
+    public bool AllowInvalidateMaterialOnQueuesPage { get; set; } = false;
   }
 }

@@ -142,6 +142,10 @@ function logType(entry: api.ILogEntry): string {
   }
 }
 
+export function isLogEntryInvalidated(e: api.ILogEntry): boolean {
+  return e.details?.["PalletCycleInvalidated"] === "1";
+}
+
 function displayMat(mats: ReadonlyArray<api.ILogMaterial>) {
   if (mats.length > 1) {
     if (mats[0].numproc == 1) {
@@ -469,7 +473,7 @@ export const LogEntry = React.memo(function LogEntry(props: LogEntryProps) {
           props.entry.material.findIndex((m) => m.proc === props.highlightProcess) >= 0 &&
           logTypesToHighlight.indexOf(props.entry.type) >= 0
         }
-        $invalidCycle={props.entry.details?.["PalletCycleInvalidated"] === "1"}
+        $invalidCycle={isLogEntryInvalidated(props.entry)}
       >
         <TableCell size="small">
           {props.entry.endUTC.toLocaleDateString(undefined, {

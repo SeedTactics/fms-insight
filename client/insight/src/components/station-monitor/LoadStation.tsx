@@ -68,7 +68,7 @@ import { QuarantineMatButton } from "./QuarantineButton.js";
 import { durationToSeconds } from "../../util/parseISODuration.js";
 import { formatSeconds } from "./SystemOverview.js";
 import {
-  InvalidateCycleDialogButtons,
+  InvalidateCycleDialogButton,
   InvalidateCycleDialogContent,
   InvalidateCycleState,
   SwapMaterialButtons,
@@ -738,7 +738,12 @@ const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProp
             setShowAddToQueue={setShowAddMaterial}
           />
           <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} />
-          <InvalidateCycleDialogButtons st={invalidateSt} setState={setInvalidateSt} onClose={onClose} />
+          <InvalidateCycleDialogButton
+            st={invalidateSt}
+            setState={setInvalidateSt}
+            onClose={onClose}
+            loadStation
+          />
           <AssignWorkorderButton />
         </>
       }

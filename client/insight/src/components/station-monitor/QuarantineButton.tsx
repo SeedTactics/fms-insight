@@ -141,6 +141,8 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
     case LocType.InQueue:
       if (inProcMat.action.type === ActionType.Loading && !fmsInfo.allowQuarantineToCancelLoad) {
         return null;
+      } else if (inProcMat.action.type === ActionType.Loading) {
+        type = "CancelLoad";
       } else {
         type = "Scrap";
       }
