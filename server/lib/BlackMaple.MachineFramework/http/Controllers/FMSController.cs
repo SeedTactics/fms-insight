@@ -32,12 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.IO;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+using System.IO;
 using System.Runtime.Serialization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
@@ -86,7 +86,10 @@ namespace BlackMaple.MachineFramework.Controllers
     public bool? AllowChangeWorkorderAtLoadStation { get; init; }
 
     [DataMember]
-    public bool? AllowSwapAndInvalidateMaterialAtLoadStation { get; init; }
+    public bool? AllowSwapSerialAtLoadStation { get; init; }
+
+    [DataMember]
+    public bool? AllowInvalidateMaterialAtLoadStation { get; init; }
 
     // Closeout Page Options
     [DataMember]
@@ -107,15 +110,18 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
+
+    [DataMember]
+    public bool? AllowInvalidateMaterialOnQueuesPage { get; init; } = false;
   }
 
   [ApiController]
   [Route("api/v1/fms")]
   public class fmsController : ControllerBase
   {
-    private FMSImplementation _impl;
-    private FMSSettings _cfg;
-    private ServerSettings _serverSt;
+    private readonly FMSImplementation _impl;
+    private readonly FMSSettings _cfg;
+    private readonly ServerSettings _serverSt;
 
     public fmsController(FMSSettings fmsSt, ServerSettings serverSt, FMSImplementation impl)
     {
@@ -147,7 +153,9 @@ namespace BlackMaple.MachineFramework.Controllers
         AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineToCancelLoad = _impl.Backend?.QueueControl.AllowQuarantineToCancelLoad,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
-        AllowSwapAndInvalidateMaterialAtLoadStation = _impl.AllowSwapAndInvalidateMaterialAtLoadStation,
+        AllowInvalidateMaterialAtLoadStation = _impl.AllowInvalidateMaterialAtLoadStation,
+        AllowInvalidateMaterialOnQueuesPage = _impl.AllowInvalidateMaterialOnQueuesPage,
+        AllowSwapSerialAtLoadStation = _impl.AllowSwapSerialAtLoadStation,
         LicenseExpires = _impl.LicenseExpires?.Invoke(),
         CustomStationMonitorDialogUrl = _impl.CustomStationMonitorDialogUrl,
       };
@@ -159,7 +167,10 @@ namespace BlackMaple.MachineFramework.Controllers
       {
         if (!Path.GetFileName(f).Contains(part))
           continue;
-        if (!string.IsNullOrEmpty(type) && !Path.GetFileName(f).ToLower().Contains(type.ToLower()))
+        if (
+          !string.IsNullOrEmpty(type)
+          && !Path.GetFileName(f).Contains(type, StringComparison.OrdinalIgnoreCase)
+        )
           continue;
         return Path.GetFileName(f);
       }
@@ -280,19 +291,17 @@ namespace BlackMaple.MachineFramework.Controllers
       }
       else
       {
-        var idxComma = barcode.IndexOf(",");
+        var idxComma = barcode.IndexOf(',');
         var serial = idxComma > 0 ? barcode.Substring(0, idxComma) : barcode;
-        using (var conn = _impl.Backend.RepoConfig.OpenConnection())
+        using var conn = _impl.Backend.RepoConfig.OpenConnection();
+        var mats = conn.GetMaterialDetailsForSerial(serial);
+        if (mats.Count > 0)
         {
-          var mats = conn.GetMaterialDetailsForSerial(serial);
-          if (mats.Count > 0)
-          {
-            return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
-          }
-          else
-          {
-            return new ScannedMaterial() { Casting = new ScannedCasting() { Serial = serial }, };
-          }
+          return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
+        }
+        else
+        {
+          return new ScannedMaterial() { Casting = new ScannedCasting() { Serial = serial }, };
         }
       }
     }

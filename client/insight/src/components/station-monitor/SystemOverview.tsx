@@ -67,7 +67,7 @@ import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { addDays } from "date-fns";
 import { durationToSeconds } from "../../util/parseISODuration.js";
 import {
-  InvalidateCycleDialogButtons,
+  InvalidateCycleDialogButton,
   InvalidateCycleDialogContent,
   InvalidateCycleState,
   SwapMaterialButtons,
@@ -901,7 +901,7 @@ const SystemOverviewMaterialDialog = React.memo(function SystemOverviewMaterialD
             onClose={onClose}
             ignoreOperator={ignoreOperator}
           />
-          <InvalidateCycleDialogButtons
+          <InvalidateCycleDialogButton
             st={invalidateSt}
             setState={setInvalidateSt}
             onClose={onClose}

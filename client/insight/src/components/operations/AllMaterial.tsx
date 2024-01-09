@@ -57,7 +57,7 @@ import {
 } from "../station-monitor/Material.js";
 import { IInProcessMaterial } from "../../network/api.js";
 import {
-  InvalidateCycleDialogButtons,
+  InvalidateCycleDialogButton,
   InvalidateCycleDialogContent,
   InvalidateCycleState,
   SwapMaterialButtons,
@@ -365,7 +365,7 @@ const AllMatDialog = React.memo(function AllMatDialog() {
         <>
           <QuarantineMatButton onClose={onClose} ignoreOperator />
           <SwapMaterialButtons st={swapSt} setState={setSwapSt} onClose={onClose} ignoreOperator />
-          <InvalidateCycleDialogButtons
+          <InvalidateCycleDialogButton
             st={invalidateSt}
             setState={setInvalidateSt}
             onClose={onClose}

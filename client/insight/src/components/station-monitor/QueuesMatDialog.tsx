@@ -61,6 +61,11 @@ import {
 } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { useAtomValue } from "jotai";
+import {
+  InvalidateCycleDialogButton,
+  InvalidateCycleDialogContent,
+  InvalidateCycleState,
+} from "./InvalidateCycle.js";
 
 export function PrintOnClientButton({
   mat,
@@ -132,6 +137,8 @@ function QueuesDialogCt({
   newMaterialTy,
   setNewMaterialTy,
   queueNames,
+  invalidateSt,
+  setInvalidateSt,
 }: {
   toQueue: string | null;
   enteredOperator: string | null;
@@ -141,6 +148,8 @@ function QueuesDialogCt({
   newMaterialTy: NewMaterialToQueueType | null;
   setNewMaterialTy: (job: NewMaterialToQueueType | null) => void;
   queueNames: ReadonlyArray<string>;
+  invalidateSt: InvalidateCycleState | null;
+  setInvalidateSt: (st: InvalidateCycleState | null) => void;
 }) {
   const kind = useMaterialInDialogAddType(queueNames);
 
@@ -150,16 +159,21 @@ function QueuesDialogCt({
       return null;
     case "AddToQueue":
       return (
-        <AddToQueueMaterialDialogCt
-          queueNames={queueNames}
-          toQueue={toQueue}
-          enteredOperator={enteredOperator}
-          setEnteredOperator={setEnteredOperator}
-          selectedQueue={selectedQueue}
-          setSelectedQueue={setSelectedQueue}
-          newMaterialTy={newMaterialTy}
-          setNewMaterialTy={setNewMaterialTy}
-        />
+        <>
+          <AddToQueueMaterialDialogCt
+            queueNames={queueNames}
+            toQueue={toQueue}
+            enteredOperator={enteredOperator}
+            setEnteredOperator={setEnteredOperator}
+            selectedQueue={selectedQueue}
+            setSelectedQueue={setSelectedQueue}
+            newMaterialTy={newMaterialTy}
+            setNewMaterialTy={setNewMaterialTy}
+          />
+          {invalidateSt !== null ? (
+            <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
+          ) : undefined}
+        </>
       );
   }
 }
@@ -170,12 +184,16 @@ function QueueButtons({
   newMaterialTy,
   queueNames,
   onClose,
+  invalidateSt,
+  setInvalidateSt,
 }: {
   toQueue: string | null;
   enteredOperator: string | null;
   newMaterialTy: NewMaterialToQueueType | null;
   queueNames: ReadonlyArray<string>;
   onClose: () => void;
+  invalidateSt: InvalidateCycleState | null;
+  setInvalidateSt: (st: InvalidateCycleState | null) => void;
 }) {
   const kind = useMaterialInDialogAddType(queueNames);
 
@@ -191,12 +209,15 @@ function QueueButtons({
       );
     case "AddToQueue":
       return (
-        <AddToQueueButton
-          newMaterialTy={newMaterialTy}
-          toQueue={toQueue}
-          enteredOperator={enteredOperator}
-          onClose={onClose}
-        />
+        <>
+          <InvalidateCycleDialogButton st={invalidateSt} setState={setInvalidateSt} onClose={onClose} />
+          <AddToQueueButton
+            newMaterialTy={newMaterialTy}
+            toQueue={toQueue}
+            enteredOperator={enteredOperator}
+            onClose={onClose}
+          />
+        </>
       );
   }
 }
@@ -210,6 +231,7 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
   const [selectedQueue, setSelectedQueue] = React.useState<string | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
   const [newMaterialTy, setNewMaterialTy] = React.useState<NewMaterialToQueueType | null>(null);
+  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
 
   let toQueue: string | null = null;
   if (toShow && toShow.type === "AddMatWithEnteredSerial") {
@@ -240,6 +262,8 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
           newMaterialTy={newMaterialTy}
           setNewMaterialTy={setNewMaterialTy}
           queueNames={queueNames}
+          invalidateSt={invalidateSt}
+          setInvalidateSt={setInvalidateSt}
         />
       }
       buttons={
@@ -249,6 +273,8 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
           enteredOperator={enteredOperator}
           queueNames={queueNames}
           onClose={onClose}
+          invalidateSt={invalidateSt}
+          setInvalidateSt={setInvalidateSt}
         />
       }
     />
@@ -393,8 +419,8 @@ export const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props
           {loading && showRemove
             ? "Removing..."
             : showRemove && !isNaN(removeCnt)
-            ? `Remove ${removeCnt} material`
-            : "Remove Material"}
+              ? `Remove ${removeCnt} material`
+              : "Remove Material"}
         </Button>
         <Button color="primary" onClick={close}>
           Close

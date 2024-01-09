@@ -91,27 +91,34 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
   );
 }
 
-export function InvalidateCycleDialogButtons(
-  props: InvalidateCycleProps & { readonly onClose: () => void; readonly ignoreOperator?: boolean },
+export function InvalidateCycleDialogButton(
+  props: InvalidateCycleProps & {
+    readonly onClose: () => void;
+    readonly ignoreOperator?: boolean;
+    readonly loadStation?: boolean;
+  },
 ) {
   const fmsInfo = useAtomValue(fmsInformation);
   const curMat = useAtomValue(inProcessMaterialInDialog);
   const setMatToShow = useSetAtom(materialDialogOpen);
   let operator = useAtomValue(currentOperator);
 
-  if (!fmsInfo.allowSwapAndInvalidateMaterialAtLoadStation) return null;
+  if (props.loadStation && !fmsInfo.allowInvalidateMaterialAtLoadStation) return null;
+  if (!props.loadStation && !fmsInfo.allowInvalidateMaterialOnQueuesPage) return null;
 
   if (props.ignoreOperator) operator = null;
 
-  if (curMat === null || curMat.location.type !== LocType.InQueue) return null;
+  if (curMat === null || curMat.process < 1) return null;
 
   function invalidateCycle() {
     if (curMat && props.st && props.st.process) {
       props.setState({ ...props.st, updating: true });
-      JobsBackend.invalidatePalletCycle(curMat.materialID, null, operator, props.st.process).finally(() => {
-        setMatToShow(null);
-        props.onClose();
-      });
+      JobsBackend.invalidatePalletCycle(curMat.materialID, null, operator, props.st.process)
+        .catch(console.log)
+        .finally(() => {
+          setMatToShow(null);
+          props.onClose();
+        });
     }
   }
 
@@ -245,7 +252,7 @@ export function SwapMaterialButtons(
   const closeMatDialog = useSetAtom(materialDialogOpen);
   let operator = useAtomValue(currentOperator);
 
-  if (!fmsInfo.allowSwapAndInvalidateMaterialAtLoadStation) return null;
+  if (!fmsInfo.allowSwapSerialAtLoadStation) return null;
 
   if (props.ignoreOperator) operator = null;
 
@@ -265,10 +272,12 @@ export function SwapMaterialButtons(
       JobsBackend.swapMaterialOnPallet(curMat.materialID, operator, {
         pallet: curMat.location.palletNum ?? 0,
         materialIDToSetOnPallet: props.st.selectedMatToSwap.materialID,
-      }).finally(() => {
-        closeMatDialog(null);
-        props.onClose();
-      });
+      })
+        .catch(console.log)
+        .finally(() => {
+          closeMatDialog(null);
+          props.onClose();
+        });
     }
   }
 

@@ -544,19 +544,23 @@ export function AddToQueueButton({
 
   let addProcMsg = "";
   if (existingMat !== null) {
-    const lastProc =
-      LazySeq.of(evts)
-        .filter(
-          (e) =>
-            e.details?.["PalletCycleInvalidated"] !== "1" &&
-            (e.type === api.LogType.LoadUnloadCycle ||
-              e.type === api.LogType.MachineCycle ||
-              e.type === api.LogType.AddToQueue),
-        )
-        .flatMap((e) => e.material)
-        .filter((m) => m.id === existingMat.materialID)
-        .maxBy((m) => m.proc)?.proc ?? 0;
-    addProcMsg = " To Run Process " + (lastProc + 1).toString();
+    const lastProcMat = LazySeq.of(evts)
+      .filter(
+        (e) =>
+          e.details?.["PalletCycleInvalidated"] !== "1" &&
+          (e.type === api.LogType.LoadUnloadCycle ||
+            e.type === api.LogType.MachineCycle ||
+            e.type === api.LogType.AddToQueue),
+      )
+      .flatMap((e) => e.material)
+      .filter((m) => m.id === existingMat.materialID)
+      .maxBy((m) => m.proc);
+    if (lastProcMat && lastProcMat.proc >= lastProcMat.numproc) {
+      return null;
+    } else {
+      const lastProc = lastProcMat?.proc ?? 0;
+      addProcMsg = " To Run Process " + (lastProc + 1).toString();
+    }
   } else {
     if (newMaterialTy?.kind === "JobAndProc" && newMaterialTy?.last_proc !== undefined) {
       addProcMsg = " To Run Process " + (newMaterialTy.last_proc + 1).toString();
