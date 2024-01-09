@@ -32,11 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
-using System.Data;
 using System.Collections.Generic;
-using Microsoft.Data.Sqlite;
 using System.Collections.Immutable;
+using System.Data;
+using System.Linq;
+using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
@@ -258,6 +258,15 @@ namespace BlackMaple.MachineFramework
       } // close usings
     }
 
+    private static readonly string ignoreInvalidEventCondition =
+      "   NOT EXISTS ("
+      + "    SELECT 1 FROM program_details d "
+      + "      WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'"
+      + "   ) AND "
+      + "   StationLoc != ("
+      + ((int)LogType.SwapMaterialOnPallet).ToString()
+      + ")";
+
     public IEnumerable<LogEntry> GetLogEntries(System.DateTime startUTC, System.DateTime endUTC)
     {
       using (var trans = _connection.BeginTransaction())
@@ -384,7 +393,7 @@ namespace BlackMaple.MachineFramework
       return "";
     }
 
-    public List<LogEntry> GetLogForMaterial(long materialID)
+    public List<LogEntry> GetLogForMaterial(long materialID, bool includeInvalidatedCycles = true)
     {
       if (materialID < 0)
         return new List<LogEntry>();
@@ -393,8 +402,11 @@ namespace BlackMaple.MachineFramework
       {
         cmd.Transaction = trans;
         cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
-          + " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
+          "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName "
+          + " FROM stations s "
+          + " WHERE s.Counter IN (SELECT m.Counter FROM stations_mat m WHERE m.MaterialID = $mat)"
+          + (includeInvalidatedCycles ? "" : " AND " + ignoreInvalidEventCondition)
+          + " ORDER BY s.Counter ASC";
         cmd.Parameters.Add("mat", SqliteType.Integer).Value = materialID;
 
         using (var reader = cmd.ExecuteReader())
@@ -578,15 +590,6 @@ namespace BlackMaple.MachineFramework
       SqliteTransaction trans
     )
     {
-      string ignoreInvalidCondition =
-        "   NOT EXISTS ("
-        + "    SELECT 1 FROM program_details d "
-        + "      WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'"
-        + "   ) AND "
-        + "   StationLoc != ("
-        + ((int)LogType.SwapMaterialOnPallet).ToString()
-        + ")";
-
       using (var cmd = _connection.CreateCommand())
       {
         cmd.Transaction = trans;
@@ -601,7 +604,7 @@ namespace BlackMaple.MachineFramework
             "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
             + " FROM stations s "
             + " WHERE Pallet = $pal AND "
-            + ignoreInvalidCondition
+            + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
           using (var reader = cmd.ExecuteReader())
           {
@@ -616,7 +619,7 @@ namespace BlackMaple.MachineFramework
             + " WHERE Pallet = $pal AND Counter "
             + (includeLastPalletCycleEvt ? ">=" : ">")
             + " $cntr AND "
-            + ignoreInvalidCondition
+            + ignoreInvalidEventCondition
             + " ORDER BY Counter ASC";
           cmd.Parameters.Add("cntr", SqliteType.Integer).Value = (long)counter;
 
@@ -1026,21 +1029,20 @@ namespace BlackMaple.MachineFramework
         return new LogEntry()
         {
           Counter = newCntr,
-          Material = this.Material
-            .Select(m =>
-            {
-              var details = getDetails(m.MaterialID);
-              return new LogMaterial(
-                matID: m.MaterialID,
-                proc: m.Process,
-                face: m.Face,
-                uniq: details?.JobUnique ?? "",
-                part: details?.PartName ?? "",
-                numProc: details?.NumProcesses ?? 1,
-                serial: details?.Serial ?? "",
-                workorder: details?.Workorder ?? ""
-              );
-            })
+          Material = this.Material.Select(m =>
+          {
+            var details = getDetails(m.MaterialID);
+            return new LogMaterial(
+              matID: m.MaterialID,
+              proc: m.Process,
+              face: m.Face,
+              uniq: details?.JobUnique ?? "",
+              part: details?.PartName ?? "",
+              numProc: details?.NumProcesses ?? 1,
+              serial: details?.Serial ?? "",
+              workorder: details?.Workorder ?? ""
+            );
+          })
             .ToImmutableList(),
           LogType = this.LogType,
           StartOfCycle = this.StartOfCycle,
