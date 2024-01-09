@@ -141,13 +141,8 @@ function useQuarantineMaterial(ignoreOperator: boolean): QuarantineMaterialData 
     case LocType.InQueue:
       if (inProcMat.action.type === ActionType.Loading && !fmsInfo.allowQuarantineToCancelLoad) {
         return null;
-      } else if (inProcMat.process < 1) {
-        return {
-          type: "Remove",
-          quarantine: () => removeFromQueue(inProcMat.materialID, operator),
-          removing: removingFromQueue,
-          quarantineQueueDestination: null,
-        };
+      } else if (inProcMat.action.type === ActionType.Loading) {
+        type = "CancelLoad";
       } else {
         type = "Scrap";
       }
