@@ -246,12 +246,14 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
     setSelectedQueue(null);
     setEnteredOperator(null);
     setNewMaterialTy(null);
+    setInvalidateSt(null);
   }, [setSelectedQueue, setEnteredOperator, setNewMaterialTy]);
 
   return (
     <MaterialDialog
       allowNote
       onClose={onClose}
+      highlightProcess={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <QueuesDialogCt
           toQueue={toQueue}

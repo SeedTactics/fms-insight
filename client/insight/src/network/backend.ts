@@ -201,7 +201,7 @@ export function instructionUrl(
   type: string,
   matId: number,
   pallet: number | null,
-  proc: number | null,
+  proc: number | null | undefined,
   operator: string | null,
 ): string {
   return (
@@ -210,7 +210,7 @@ export function instructionUrl(
     "?type=" +
     encodeURIComponent(type) +
     ("&materialID=" + matId.toString()) +
-    (proc ? "&process=" + proc.toString() : "") +
+    (proc !== null && proc !== undefined ? "&process=" + proc.toString() : "") +
     (operator !== null ? "&operatorName=" + encodeURIComponent(operator) : "") +
     (pallet ? "&pallet=" + encodeURIComponent(pallet) : "")
   );

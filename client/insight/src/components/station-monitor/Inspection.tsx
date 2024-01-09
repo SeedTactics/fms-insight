@@ -44,7 +44,6 @@ import { currentOperator } from "../../data/operators.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { instructionUrl } from "../../network/backend.js";
-import { LogType } from "../../network/api.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -57,7 +56,7 @@ function InspButtons(props: InspButtonsProps) {
   const demo = useIsDemo();
   const operator = useAtomValue(currentOperator);
   const material = useAtomValue(matDetails.materialInDialogInfo);
-  const matEvents = useAtomValue(matDetails.materialInDialogEvents);
+  const maxProc = useAtomValue(matDetails.materialInDialogLargestUsedProcess)?.process;
   const [completeInsp, completeInspUpdating] = matDetails.useCompleteInspection();
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
@@ -78,18 +77,6 @@ function InspButtons(props: InspButtonsProps) {
     setMatToShow(null);
   }
 
-  const maxProc =
-    LazySeq.of(matEvents)
-      .filter(
-        (e) =>
-          e.details?.["PalletCycleInvalidated"] !== "1" &&
-          (e.type === LogType.LoadUnloadCycle ||
-            e.type === LogType.MachineCycle ||
-            e.type === LogType.AddToQueue),
-      )
-      .flatMap((e) => e.material)
-      .filter((e) => e.id === material.materialID)
-      .maxBy((e) => e.proc)?.proc ?? null;
   const url = instructionUrl(
     material.partName,
     props.inspection_type,

@@ -39,20 +39,18 @@ import { Button } from "@mui/material";
 import { MaterialDialog, MatSummary } from "./Material.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "./SelectWorkorder.js";
 import { Tooltip } from "@mui/material";
-import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import {
   materialDialogOpen,
-  materialInDialogEvents,
   materialInDialogInfo,
+  materialInDialogLargestUsedProcess,
   useCompleteCloseout,
 } from "../../cell-status/material-details.js";
 import {
   last30MaterialSummary,
   MaterialSummaryAndCompletedData,
 } from "../../cell-status/material-summary.js";
-import { LogType } from "../../network/api.js";
 import { instructionUrl } from "../../network/backend.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
@@ -114,23 +112,11 @@ function CompleteButton() {
 function InstrButton() {
   const demo = useIsDemo();
   const material = useAtomValue(materialInDialogInfo);
-  const matEvents = useAtomValue(materialInDialogEvents);
   const operator = useAtomValue(currentOperator);
+  const maxProc = useAtomValue(materialInDialogLargestUsedProcess)?.process;
 
   if (material === null || material.partName === "") return null;
 
-  const maxProc =
-    LazySeq.of(matEvents)
-      .filter(
-        (e) =>
-          e.details?.["PalletCycleInvalidated"] !== "1" &&
-          (e.type === LogType.LoadUnloadCycle ||
-            e.type === LogType.MachineCycle ||
-            e.type === LogType.AddToQueue),
-      )
-      .flatMap((e) => e.material)
-      .filter((e) => e.id === material.materialID)
-      .maxBy((e) => e.proc)?.proc ?? null;
   const url = instructionUrl(material.partName, "closeout", material.materialID, null, maxProc, operator);
   if (demo) {
     return <Button color="primary">Instructions</Button>;
