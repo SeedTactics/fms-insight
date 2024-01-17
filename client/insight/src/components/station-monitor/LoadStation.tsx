@@ -388,7 +388,7 @@ function MaterialRegion({
               mat={m}
               displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
               fsize={data.fsize}
-              showRawMaterial={m.process === 1}
+              showRawMaterial
             />
           ) : (
             <SortableInProcMaterial
@@ -404,7 +404,7 @@ function MaterialRegion({
                   ? data.fsize
                   : undefined
               }
-              showRawMaterial={m.process === 1}
+              showRawMaterial
             />
           )}
         </MoveMaterialArrowNode>

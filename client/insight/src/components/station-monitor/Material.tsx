@@ -263,21 +263,15 @@ export function MaterialAction({
   return null;
 }
 
-function JobRawMaterial({
-  unique,
-  fsize,
-  proc,
-  path,
-}: {
-  unique: string;
-  proc: number;
-  path: number;
-  fsize?: MatCardFontSize;
-}) {
-  const job = useAtomValue(currentStatus).jobs[unique];
-  const pathData = job.procsAndPaths?.[proc - 1]?.paths?.[path - 1];
+function JobRawMaterial({ fsize, mat }: { mat: Readonly<api.IInProcessMaterial>; fsize?: MatCardFontSize }) {
+  const job = useAtomValue(currentStatus).jobs[mat.jobUnique];
+  let path = mat.path;
+  if (mat.action.type === api.ActionType.Loading && mat.action.pathAfterLoad) {
+    path = mat.action.pathAfterLoad;
+  }
+  const pathData = job.procsAndPaths?.[0]?.paths?.[path - 1];
   if (pathData && pathData.casting && pathData.casting !== "") {
-    return <MatCardDetail fsize={fsize}>Raw: {pathData.casting}</MatCardDetail>;
+    return <MatCardDetail fsize={fsize}>{pathData.casting}</MatCardDetail>;
   } else {
     return null;
   }
@@ -406,13 +400,11 @@ const MatCard = React.forwardRef(function MatCard(
             props.mat.workorderId === props.mat.serial ? undefined : (
               <MatCardDetail fsize={props.fsize}>Workorder: {props.mat.workorderId}</MatCardDetail>
             )}
-            {props.mat.jobUnique !== undefined && props.showRawMaterial && props.inProcMat ? (
-              <JobRawMaterial
-                unique={props.mat.jobUnique}
-                fsize={props.fsize}
-                proc={props.inProcMat.process}
-                path={props.inProcMat.path}
-              />
+            {props.mat.jobUnique !== undefined &&
+            props.showRawMaterial &&
+            props.inProcMat &&
+            props.inProcMat.process === 0 ? (
+              <JobRawMaterial fsize={props.fsize} mat={props.inProcMat} />
             ) : undefined}
             {props.inProcMat ? (
               <MaterialAction
@@ -538,6 +530,7 @@ export const SortableInProcMaterial = React.memo(function SortableInProcMaterial
       hideEmptySerial={props.hideEmptySerial}
       fsize={props.fsize}
       shake={active ? undefined : props.shake}
+      showRawMaterial={props.showRawMaterial}
     />
   );
 });
