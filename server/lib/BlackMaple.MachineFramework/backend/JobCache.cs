@@ -181,17 +181,17 @@ public static class JobHelpers
     DateTime? archiveCompletedBefore = null
   )
   {
-    var precedence = cache.JobsSortedByPrecedence
-      .Select((j, idx) => new { j, idx })
+    var precedence = cache
+      .JobsSortedByPrecedence.Select((j, idx) => new { j, idx })
       .ToDictionary(x => (uniq: x.j.job.UniqueStr, proc: x.j.proc, path: x.j.path), x => (long)x.idx);
 
-    return cache.AllJobs
-      .SelectMany(j =>
+    return cache
+      .AllJobs.SelectMany(j =>
       {
         var jobLog = db.GetLogForJobUnique(j.UniqueStr);
 
         var loadedCnt = jobLog
-          .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD")
+          .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && !e.StartOfCycle)
           .SelectMany(e => e.Material)
           .Where(m => m.JobUniqueStr == j.UniqueStr)
           .Select(m => m.MaterialID)
@@ -208,13 +208,12 @@ public static class JobHelpers
           .Count();
 
         // completed
-        var completed = j.Processes
-          .Select(
-            proc => new int[proc.Paths.Count] // defaults to fill with zeros
-          )
+        var completed = j.Processes.Select(
+          proc => new int[proc.Paths.Count] // defaults to fill with zeros
+        )
           .ToArray();
         var unloads = jobLog
-          .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD")
+          .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD" && !e.StartOfCycle)
           .ToList();
         var maxUnloadTime = DateTime.MinValue;
         foreach (var e in unloads)
@@ -262,21 +261,16 @@ public static class JobHelpers
             Completed = completed.Select(c => ImmutableList.Create(c)).ToImmutableList(),
             RemainingToStart = remainingToStart,
             Cycles = newPlanned,
-            Precedence = j.Processes
-              .Select(
-                (proc, procIdx) =>
-                {
-                  return proc.Paths
-                    .Select(
-                      (_, pathIdx) =>
-                        precedence.GetValueOrDefault(
-                          (uniq: j.UniqueStr, proc: procIdx + 1, path: pathIdx + 1),
-                          0
-                        )
-                    )
-                    .ToImmutableList();
-                }
-              )
+            Precedence = j.Processes.Select(
+              (proc, procIdx) =>
+              {
+                return proc.Paths.Select(
+                  (_, pathIdx) =>
+                    precedence.GetValueOrDefault((uniq: j.UniqueStr, proc: procIdx + 1, path: pathIdx + 1), 0)
+                )
+                  .ToImmutableList();
+              }
+            )
               .ToImmutableList(),
             AssignedWorkorders = db.GetWorkordersForUnique(j.UniqueStr)
           }
