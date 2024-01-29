@@ -32,14 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using Xunit;
-using NSubstitute;
-using FluentAssertions;
-using BlackMaple.MachineFramework;
-using MazakMachineInterface;
 using System.Collections.Immutable;
+using System.Linq;
+using System.Text.Json;
+using BlackMaple.MachineFramework;
+using FluentAssertions;
+using MazakMachineInterface;
+using NSubstitute;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -579,7 +580,7 @@ namespace MachineWatchTest
       e %= entry =>
       {
         entry.ProgramDetails["InspectionType"] = inspTy;
-        entry.ProgramDetails["ActualPath"] = Newtonsoft.Json.JsonConvert.SerializeObject(path.ToList());
+        entry.ProgramDetails["ActualPath"] = JsonSerializer.Serialize(path.ToList());
       };
       expected.Add(e);
     }

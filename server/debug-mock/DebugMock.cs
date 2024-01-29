@@ -33,18 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Text.Json;
 using BlackMaple.MachineFramework;
+using Germinate;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.Hosting;
-using Newtonsoft.Json;
-using Germinate;
-using System.Collections.Immutable;
-using NJsonSchema.NewtonsoftJson.Generation;
+using NJsonSchema.Generation;
 
 namespace DebugMachineWatchApiServer
 {
@@ -59,10 +59,9 @@ namespace DebugMachineWatchApiServer
         cfg.Title = "SeedTactic FMS Insight";
         cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
         cfg.Version = "1.14";
-        var settings = new Newtonsoft.Json.JsonSerializerSettings();
-        BlackMaple.MachineFramework.Startup.NewtonsoftJsonSettings(settings);
-        ((NewtonsoftJsonSchemaGeneratorSettings) cfg.SchemaSettings).SerializerSettings = settings;
-        //cfg.DefaultReferenceTypeNullHandling = NJsonSchema.ReferenceTypeNullHandling.NotNull;
+        var settings = new JsonSerializerOptions();
+        Startup.JsonSettings(settings);
+        ((SystemTextJsonSchemaGeneratorSettings)cfg.SchemaSettings).SerializerOptions = settings;
         cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
           .Generation
           .ReferenceTypeNullHandling
@@ -200,7 +199,7 @@ namespace DebugMachineWatchApiServer
 
     private List<MockProgram> Programs { get; set; }
 
-    private JsonSerializerSettings _jsonSettings;
+    private JsonSerializerOptions _jsonSettings;
 
     public event NewCurrentStatus OnNewCurrentStatus;
     public event NewJobsDelegate OnNewJobs;
@@ -213,14 +212,8 @@ namespace DebugMachineWatchApiServer
     public MockServerBackend(FMSSettings settings)
     {
       _fmsSettings = settings;
-      _jsonSettings = new JsonSerializerSettings();
-      _jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-      _jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
-      _jsonSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
-      _jsonSettings.ConstructorHandling = Newtonsoft
-        .Json
-        .ConstructorHandling
-        .AllowNonPublicDefaultConstructor;
+      _jsonSettings = new JsonSerializerOptions();
+      Startup.JsonSettings(_jsonSettings);
 
       if (DebugMockProgram.InsightBackupDbFile != null)
       {
@@ -432,8 +425,8 @@ namespace DebugMachineWatchApiServer
       // shift old downward
       CurrentStatus = CurrentStatus with
       {
-        Material = CurrentStatus.Material
-          .Select(m =>
+        Material = CurrentStatus
+          .Material.Select(m =>
           {
             int pos = m.Location.QueuePosition ?? 0;
 
@@ -638,22 +631,11 @@ namespace DebugMachineWatchApiServer
       {
         using (var file = System.IO.File.OpenRead(f))
         {
-          var reader = new System.IO.StreamReader(file);
-          while (reader.Peek() >= 0)
-          {
-            // replace empty pal "" with zero.  The pallet type changed to int and I didn't
-            // want to regenerate all the sample data
-            var evtJson = reader
-              .ReadLine()
-              .Replace("\"pal\":\"\"", "\"pal\":0")
-              .Replace("\"pal\": \"\"", "\"pal\":0");
-            var e = (LogEntry)JsonConvert.DeserializeObject(evtJson, typeof(LogEntry), _jsonSettings);
-            evts.Add(e);
-          }
+          evts.AddRange(JsonSerializer.Deserialize<List<LogEntry>>(file, _jsonSettings));
         }
       }
 
-      var tools = JsonConvert.DeserializeObject<Dictionary<long, List<ToolUse>>>(
+      var tools = JsonSerializer.Deserialize<Dictionary<long, List<ToolUse>>>(
         System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tool-use.json")),
         _jsonSettings
       );
@@ -722,8 +704,7 @@ namespace DebugMachineWatchApiServer
     private void LoadJobs(string sampleDataPath, TimeSpan offset)
     {
       var newJobsJson = System.IO.File.ReadAllText(System.IO.Path.Combine(sampleDataPath, "newjobs.json"));
-      var allNewJobs =
-        (List<NewJobs>)JsonConvert.DeserializeObject(newJobsJson, typeof(List<NewJobs>), _jsonSettings);
+      var allNewJobs = JsonSerializer.Deserialize<List<NewJobs>>(newJobsJson, _jsonSettings);
 
       using var LogDB = RepoConfig.OpenConnection();
       foreach (var newJobs in allNewJobs)
@@ -772,13 +753,12 @@ namespace DebugMachineWatchApiServer
         var name = System.IO.Path.GetFileNameWithoutExtension(f).Replace("status-", "");
 
         var statusJson = System.IO.File.ReadAllText(f);
-        var curSt = (CurrentStatus)
-          JsonConvert.DeserializeObject(statusJson, typeof(CurrentStatus), _jsonSettings);
+        var curSt = JsonSerializer.Deserialize<CurrentStatus>(statusJson, _jsonSettings);
         curSt = curSt with
         {
           TimeOfCurrentStatusUTC = curSt.TimeOfCurrentStatusUTC.Add(offset),
-          Jobs = curSt.Jobs.Values
-            .Select(
+          Jobs = curSt
+            .Jobs.Values.Select(
               j =>
                 OffsetJob(j, offset).CloneToDerived<ActiveJob, Job>() with
                 {
@@ -813,22 +793,22 @@ namespace DebugMachineWatchApiServer
       {
         RouteStartUTC = originalJob.RouteStartUTC.Add(offset),
         RouteEndUTC = originalJob.RouteEndUTC.Add(offset),
-        Processes = originalJob.Processes
-          .Select(
+        Processes = originalJob
+          .Processes.Select(
             p =>
               p with
               {
-                Paths = p.Paths
-                  .Select(
-                    path =>
-                      path with
-                      {
-                        SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
-                        SimulatedProduction = path.SimulatedProduction
-                          .Select(prod => prod with { TimeUTC = prod.TimeUTC.Add(offset) })
-                          .ToImmutableList()
-                      }
-                  )
+                Paths = p.Paths.Select(
+                  path =>
+                    path with
+                    {
+                      SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
+                      SimulatedProduction = path.SimulatedProduction.Select(
+                        prod => prod with { TimeUTC = prod.TimeUTC.Add(offset) }
+                      )
+                        .ToImmutableList()
+                    }
+                )
                   .ToImmutableList()
               }
           )
@@ -840,13 +820,13 @@ namespace DebugMachineWatchApiServer
     public void LoadTools(string sampleDataPath)
     {
       var json = System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "tools.json"));
-      Tools = JsonConvert.DeserializeObject<ImmutableList<ToolInMachine>>(json, _jsonSettings);
+      Tools = JsonSerializer.Deserialize<ImmutableList<ToolInMachine>>(json, _jsonSettings);
     }
 
     public void LoadPrograms(string sampleDataPath)
     {
       var programJson = System.IO.File.ReadAllText(Path.Combine(sampleDataPath, "programs.json"));
-      Programs = JsonConvert.DeserializeObject<List<MockProgram>>(programJson, _jsonSettings);
+      Programs = JsonSerializer.Deserialize<List<MockProgram>>(programJson, _jsonSettings);
     }
 
     public void LoadStatusFromLog(string logPath)
@@ -863,7 +843,9 @@ namespace DebugMachineWatchApiServer
 
       if (lastAddSch != null)
       {
-        Programs = Newtonsoft.Json.Linq.JObject.Parse(lastAddSch)["mazakData"]["MainPrograms"]
+        Programs = System
+          .Text.Json.Nodes.JsonNode.Parse(lastAddSch)["mazakData"]["MainPrograms"]
+          .AsArray()
           .Select(
             prog =>
               new MockProgram()

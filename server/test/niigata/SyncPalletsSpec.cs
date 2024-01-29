@@ -32,14 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using Xunit;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Text.Json;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
-using NSubstitute;
-using System.Collections.Immutable;
-using Germinate;
+using Xunit;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -53,7 +52,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private SyncNiigataPallets _sync;
     private Xunit.Abstractions.ITestOutputHelper _output;
     private bool _debugLogEnabled = false;
-    private Newtonsoft.Json.JsonSerializerSettings jsonSettings;
+    private JsonSerializerOptions jsonSettings;
 
     public SyncPalletsSpec(Xunit.Abstractions.ITestOutputHelper o)
     {
@@ -71,11 +70,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(_serialSt);
       _logDB = _logDBCfg.OpenConnection();
 
-      jsonSettings = new Newtonsoft.Json.JsonSerializerSettings();
-      jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
-      jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-      jsonSettings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
-      jsonSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
+      jsonSettings = new JsonSerializerOptions();
+      Startup.JsonSettings(jsonSettings);
+      jsonSettings.WriteIndented = true;
     }
 
     private void InitSim(
@@ -136,8 +133,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       using (var logMonitor = _logDBCfg.Monitor())
       {
         Synchronize();
-        return logMonitor.OccurredEvents
-          .Where(e => e.EventName == "NewLogEntry")
+        return logMonitor
+          .OccurredEvents.Where(e => e.EventName == "NewLogEntry")
           .Select(e => e.Parameters[0])
           .Cast<LogEntry>();
       }
@@ -276,8 +273,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       using (var logMonitor = _logDBCfg.Monitor())
       {
         Synchronize();
-        var evts = logMonitor.OccurredEvents
-          .Where(e => e.EventName == "NewLogEntry")
+        var evts = logMonitor
+          .OccurredEvents.Where(e => e.EventName == "NewLogEntry")
           .Select(e => e.Parameters[0])
           .Cast<LogEntry>();
         evts.Count(e => e.Result == "New Niigata Route").Should().BePositive();
@@ -292,8 +289,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Synchronize();
         if (expectNewRoute)
         {
-          var evts = logMonitor.OccurredEvents
-            .Where(e => e.EventName == "NewLogEntry")
+          var evts = logMonitor
+            .OccurredEvents.Where(e => e.EventName == "NewLogEntry")
             .Select(e => e.Parameters[0])
             .Cast<LogEntry>();
           evts.Count(e => e.Result == "New Niigata Route").Should().BePositive();
@@ -442,8 +439,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           e.Result.Should().Be("UNLOAD");
         });
       }
-
-      //_output.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(matLogs, jsonSettings));
 
       matLogs.Should().SatisfyRespectively(expected);
     }
@@ -1075,7 +1070,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       );
 
       AddJobs(
-        Newtonsoft.Json.JsonConvert.DeserializeObject<NewJobs>(
+        JsonSerializer.Deserialize<NewJobs>(
           System.IO.File.ReadAllText("../../../sample-newjobs/two-stops.json"),
           jsonSettings
         )
@@ -1137,7 +1132,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         numMachines: 8
       );
 
-      var newJobs = Newtonsoft.Json.JsonConvert.DeserializeObject<NewJobs>(
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
         System.IO.File.ReadAllText("../../../sample-newjobs/two-stops.json"),
         jsonSettings
       );
@@ -1150,8 +1145,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               draftPath with
               {
                 InputQueue = proc == 1 ? "castingQ" : draftPath.InputQueue,
-                Stops = draftPath.Stops
-                  .Select(d => d with { Program = null, ProgramRevision = null })
+                Stops = draftPath
+                  .Stops.Select(d => d with { Program = null, ProgramRevision = null })
                   .ToImmutableList()
               }
           );

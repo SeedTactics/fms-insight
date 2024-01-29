@@ -34,27 +34,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #nullable enable
 
 using System;
-using System.Runtime.Serialization;
 using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework
 {
-  [DataContract]
   public sealed record MachineLocation
   {
-    [DataMember(IsRequired = true)]
     public required string MachineGroup { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int MachineNum { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required bool Moving { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required ImmutableList<int> PossibleLoadStations { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? CurrentLoadStation { get; init; }
   }
 }

@@ -801,7 +801,7 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["5", "6", "7"],
+              "PalletNums": [5, 6, 7],
               "Load": [1, 2],
               "Unload": [1, 2],
               "ExpectedLoadTime": "PT5M",
@@ -1025,7 +1025,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 1,
-        "Face": "2"
+        "Face": 2
       },
       "Action": {
         "Type": "UnloadToCompletedMaterial",
@@ -1043,7 +1043,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 1,
-        "Face": "1"
+        "Face": 1
       },
       "Action": {
         "Type": "Loading",
@@ -1085,7 +1085,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 2,
-        "Face": "2"
+        "Face": 2
       },
       "Action": {
         "Type": "Waiting"
@@ -1102,7 +1102,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 2,
-        "Face": "1"
+        "Face": 1
       },
       "Action": {
         "Type": "Waiting"
@@ -1119,7 +1119,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 4,
-        "Face": "2"
+        "Face": 2
       },
       "Action": {
         "Type": "Machining",
@@ -1139,7 +1139,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 4,
-        "Face": "1"
+        "Face": 1
       },
       "Action": {
         "Type": "Waiting"
@@ -1156,7 +1156,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 5,
-        "Face": "1"
+        "Face": 1
       },
       "Action": {
         "Type": "UnloadToCompletedMaterial",
@@ -1196,7 +1196,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 6,
-        "Face": "1"
+        "Face": 1
       },
       "Action": {
         "Type": "Machining",
@@ -1216,7 +1216,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 7,
-        "Face": "1"
+        "Face": 1
       },
       "Action": {
         "Type": "Waiting"
@@ -1233,7 +1233,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 7,
-        "Face": "1"
+        "Face": 1
       },
       "Action": {
         "Type": "Waiting"
@@ -1250,7 +1250,7 @@
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 8,
-        "Face": "1"
+        "Face": 1
       },
       "Action": {
         "Type": "Machining",

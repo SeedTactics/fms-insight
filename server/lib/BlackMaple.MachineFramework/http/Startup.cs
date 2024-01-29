@@ -33,29 +33,28 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Linq;
-using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json.Converters;
 using Serilog;
 
 namespace BlackMaple.MachineFramework
 {
   public class Startup
   {
-    public static void NewtonsoftJsonSettings(Newtonsoft.Json.JsonSerializerSettings settings)
+    public static void JsonSettings(JsonSerializerOptions settings)
     {
-      settings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.Utc;
-      settings.DateFormatString = "yyyy'-'MM'-'dd'T'HH':'mm':'ss.FFFFFFK";
-      settings.Converters.Add(new StringEnumConverter());
+      settings.Converters.Add(new JsonStringEnumConverter());
       settings.Converters.Add(new TimespanConverter());
-      settings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
-      settings.ConstructorHandling = Newtonsoft.Json.ConstructorHandling.AllowNonPublicDefaultConstructor;
+      settings.AllowTrailingCommas = true;
+      settings.PropertyNamingPolicy = null;
+      settings.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     }
 
     public static void AddServices(
@@ -93,9 +92,9 @@ namespace BlackMaple.MachineFramework
               am.ApplicationParts.Add(p);
           }
         })
-        .AddNewtonsoftJson(options =>
+        .AddJsonOptions(options =>
         {
-          NewtonsoftJsonSettings(options.SerializerSettings);
+          JsonSettings(options.JsonSerializerOptions);
         });
 
       if (serverSt.UseAuthentication)
@@ -189,9 +188,9 @@ namespace BlackMaple.MachineFramework
         {
           context.Response.Headers.ContentSecurityPolicy =
             "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; "
-              +
-              // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
-              "script-src 'self';";
+            +
+            // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
+            "script-src 'self';";
           context.Response.Headers.Append("Cross-Origin-Embedder-Policy", "require-corp");
           context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin");
           await next();

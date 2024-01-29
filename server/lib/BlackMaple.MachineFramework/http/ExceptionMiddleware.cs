@@ -35,19 +35,20 @@ using System;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json;
 using Serilog;
 
 namespace BlackMaple.MachineFramework
 {
   public class BadRequestException : Exception
   {
-    public BadRequestException(string msg) : base(msg) { }
+    public BadRequestException(string msg)
+      : base(msg) { }
   }
 
   public class ConflictRequestException : Exception
   {
-    public ConflictRequestException(string msg) : base(msg) { }
+    public ConflictRequestException(string msg)
+      : base(msg) { }
   }
 
   public class ErrorHandlingMiddleware

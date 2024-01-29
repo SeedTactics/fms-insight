@@ -35,20 +35,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using System.Collections.Immutable;
 using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
   ///Stores what is currently happening to a piece of material.
-  [DataContract, Draftable]
+  [Draftable]
   public record InProcessMaterialAction
   {
     // This should be a sum type, and while C# sum types can work with some helper code it doesn't work
     // well for serialization.
 
-    [DataContract]
     public enum ActionType
     {
       Waiting = 0,
@@ -58,52 +56,37 @@ namespace BlackMaple.MachineFramework
       Machining
     }
 
-    [DataMember(IsRequired = true)]
     public required ActionType Type { get; init; }
 
     // If Type = Loading
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? LoadOntoPalletNum { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? LoadOntoFace { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? ProcessAfterLoad { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? PathAfterLoad { get; init; }
 
     //If Type = UnloadToInProcess
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? UnloadIntoQueue { get; init; }
 
     //If Type = Loading or UnloadToInProcess or UnloadToCompletedMaterial
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public TimeSpan? ElapsedLoadUnloadTime { get; init; }
 
     // If Type = Machining
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Program { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public TimeSpan? ElapsedMachiningTime { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public TimeSpan? ExpectedRemainingMachiningTime { get; init; }
-
-    // for backwards compatibility
-    [DataMember(IsRequired = false, EmitDefaultValue = false), Obsolete]
-    public string? LoadOntoPallet => LoadOntoPalletNum?.ToString();
   }
 
   ///Stores the current location of a piece of material.  If a transfer operation is currently in process
   ///(such as unloading), the location will store the previous location and the action will store the new location.
-  [DataContract, Draftable]
+  [Draftable]
   public record InProcessMaterialLocation
   {
     //Again, this should be a sum type.
-    [DataContract]
     public enum LocType
     {
       Free = 0,
@@ -111,124 +94,88 @@ namespace BlackMaple.MachineFramework
       InQueue,
     }
 
-    [DataMember(IsRequired = true)]
     public required LocType Type { get; init; }
 
     //If Type == OnPallet
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? PalletNum { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? Face { get; init; }
 
     //If Type == InQueue
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? CurrentQueue { get; init; }
 
     //If Type == InQueue or Type == Free
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? QueuePosition { get; init; }
-
-    //For backwards compatibility
-    [DataMember(IsRequired = false, EmitDefaultValue = false), Obsolete]
-    public string? Pallet => PalletNum?.ToString();
   }
 
   //Stores information about a piece of material, where it is, and what is happening to it.
-  [DataContract, Draftable]
+  [Draftable]
   public record InProcessMaterial
   {
     // Information about the material
-    [DataMember(IsRequired = true)]
     public required long MaterialID { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string JobUnique { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string PartName { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Process { get; init; } // When in a queue, the process is the last completed process
 
-    [DataMember(IsRequired = true)]
     public required int Path { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Serial { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? WorkorderId { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required ImmutableList<string> SignaledInspections { get; init; }
 
     // 0-based index into the JobPlan.MachiningStops array for the last completed stop.  Null or negative values
     // indicate no machining stops have yet completed.
-    [DataMember(IsRequired = false)]
     public int? LastCompletedMachiningRouteStopIndex { get; init; }
 
     // Where is the material?
-    [DataMember(IsRequired = true)]
     public required InProcessMaterialLocation Location { get; init; }
 
     // What is currently happening to the material?
-    [DataMember(IsRequired = true)]
     public required InProcessMaterialAction Action { get; init; }
 
     public static InProcessMaterial operator %(InProcessMaterial m, Action<IInProcessMaterialDraft> f) =>
       m.Produce(f);
   }
 
-  [DataContract]
   public record MaterialDetails
   {
-    [DataMember(IsRequired = true)]
     public required long MaterialID { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public string? JobUnique { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string PartName { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public int NumProcesses { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public string? Workorder { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = true)]
     public string? Serial { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableDictionary<int, int>? Paths { get; init; } // key is process, value is path
   }
 
-  [DataContract]
   public record ScannedCasting
   {
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<string>? PossibleCastings { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<string>? PossibleJobs { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Workorder { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? Serial { get; init; }
   }
 
   // This is a Sum Type, only one of the fields will be non-null
-  [DataContract]
   public record ScannedMaterial
   {
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public MaterialDetails? ExistingMaterial { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ScannedCasting? Casting { get; init; }
   }
 }

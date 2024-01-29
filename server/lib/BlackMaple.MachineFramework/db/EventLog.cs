@@ -5036,7 +5036,7 @@ namespace BlackMaple.MachineFramework
       };
 
       log.ProgramDetails["InspectionType"] = inspType;
-      log.ProgramDetails["ActualPath"] = Newtonsoft.Json.JsonConvert.SerializeObject(pathSteps);
+      log.ProgramDetails["ActualPath"] = System.Text.Json.JsonSerializer.Serialize(pathSteps);
 
       return AddLogEntry(trans, log, null, null);
     }

@@ -34,93 +34,68 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #nullable enable
 
 using System;
-using System.Runtime.Serialization;
-using Germinate;
 using System.Collections.Immutable;
+using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
-  [DataContract, Draftable]
+  [Draftable]
   public record Workorder
   {
-    [DataMember(IsRequired = true)]
     public required string WorkorderId { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string Part { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Quantity { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required DateTime DueDate { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Priority { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public DateOnly? SimulatedStart { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public DateOnly? SimulatedFilled { get; init; }
 
     ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<ProgramForJobStep>? Programs { get; init; }
 
     public static Workorder operator %(Workorder w, Action<IWorkorderDraft> f) => w.Produce(f);
   }
 
-  [DataContract]
   public record WorkorderComment
   {
-    [DataMember(IsRequired = true)]
     public required string Comment { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required DateTime TimeUTC { get; init; }
   }
 
-  [DataContract]
   public record ActiveWorkorder
   {
     // original workorder details
 
-    [DataMember(IsRequired = true)]
     public required string WorkorderId { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string Part { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int PlannedQuantity { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required DateTime DueDate { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Priority { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public DateOnly? SimulatedStart { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public DateOnly? SimulatedFilled { get; init; }
 
     // active data
-    [DataMember(IsRequired = true)]
     public required int CompletedQuantity { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required ImmutableList<string> Serials { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<WorkorderComment>? Comments { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; }
   }
 }

@@ -20,12 +20,6 @@
             {
               "PathGroup": 0,
               "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [
-                {
-                  "Fixture": "abfix",
-                  "Face": "1"
-                }
-              ],
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "Unload": [1, 2],
@@ -163,7 +157,8 @@
               ],
               "SimulatedStartingUTC": "2018-07-21T20:16:09.89949Z",
               "SimulatedAverageFlowTime": "PT1H3M58S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PalletNums": [1, 2, 3, 4]
             }
           ]
         },
@@ -172,12 +167,6 @@
             {
               "PathGroup": 0,
               "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [
-                {
-                  "Fixture": "abfix",
-                  "Face": "2"
-                }
-              ],
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "Unload": [1, 2],
@@ -315,7 +304,8 @@
               ],
               "SimulatedStartingUTC": "2018-07-21T21:00:31.89949Z",
               "SimulatedAverageFlowTime": "PT1H7M40.5333333S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PalletNums": [1, 2, 3, 4]
             }
           ]
         }
@@ -341,12 +331,6 @@
             {
               "PathGroup": 0,
               "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [
-                {
-                  "Fixture": "abfix",
-                  "Face": "1"
-                }
-              ],
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "Unload": [1, 2],
@@ -524,7 +508,8 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T02:16:13.89949Z",
               "SimulatedAverageFlowTime": "PT1H7M5.5S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PalletNums": [1, 2, 3, 4]
             }
           ]
         },
@@ -533,12 +518,6 @@
             {
               "PathGroup": 0,
               "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [
-                {
-                  "Fixture": "abfix",
-                  "Face": "2"
-                }
-              ],
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "Unload": [1, 2],
@@ -716,7 +695,8 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T03:03:49.89949Z",
               "SimulatedAverageFlowTime": "PT1H5M23.8S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PalletNums": [1, 2, 3, 4]
             }
           ]
         }
@@ -742,12 +722,6 @@
             {
               "PathGroup": 0,
               "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [
-                {
-                  "Fixture": "cccfix",
-                  "Face": "1"
-                }
-              ],
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "Unload": [1, 2],
@@ -853,7 +827,8 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T10:55:25.89949Z",
               "SimulatedAverageFlowTime": "PT1H31M29.6363636S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PalletNums": [1, 2, 3, 4]
             }
           ]
         },
@@ -862,12 +837,6 @@
             {
               "PathGroup": 0,
               "Pallets": ["1", "2", "3", "4"],
-              "Fixtures": [
-                {
-                  "Fixture": "cccfix",
-                  "Face": "2"
-                }
-              ],
               "Load": [1, 2],
               "ExpectedLoadTime": "PT5M",
               "Unload": [1, 2],
@@ -973,7 +942,8 @@
               ],
               "SimulatedStartingUTC": "2018-07-22T12:13:47.89949Z",
               "SimulatedAverageFlowTime": "PT1H26M7.8181818S",
-              "PartsPerPallet": 1
+              "PartsPerPallet": 1,
+              "PalletNums": [1, 2, 3, 4]
             }
           ]
         }
