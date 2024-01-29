@@ -217,7 +217,7 @@ function filter_old(expire: Date, { matIdsForJob, matsById }: MatSummaryState): 
 
   if (matsToRemove.size > 0) {
     matIdsForJob = matIdsForJob.collectValues((ids) => {
-      const newIds = LazySeq.of(matsToRemove).foldLeft(ids, (i, c) => i.delete(c));
+      const newIds = LazySeq.of(matsToRemove).fold(ids, (i, c) => i.delete(c));
       if (newIds.size > 0) {
         return newIds;
       } else {
