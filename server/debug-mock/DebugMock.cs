@@ -44,6 +44,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Namotion.Reflection;
 using NJsonSchema.Generation;
 
 namespace DebugMachineWatchApiServer
@@ -52,6 +53,39 @@ namespace DebugMachineWatchApiServer
   {
     public static string InsightBackupDbFile = null;
 
+    public class RequiredModifierSchemaProcessor : ISchemaProcessor
+    {
+      public void Process(SchemaProcessorContext ctx)
+      {
+        foreach (var prop in ctx.ContextualType.Properties)
+        {
+          if (prop.PropertyInfo.DeclaringType != ctx.ContextualType.Type)
+          {
+            continue;
+          }
+          if (prop.GetAttribute<System.Runtime.CompilerServices.RequiredMemberAttribute>(false) != null)
+          {
+            string name = prop.Name;
+            var jsonNameAttr = prop.GetAttribute<System.Text.Json.Serialization.JsonPropertyNameAttribute>(
+              false
+            );
+            if (jsonNameAttr != null)
+            {
+              name = jsonNameAttr.Name;
+            }
+            if (ctx.Schema.AllOf.Count > 1)
+            {
+              ctx.Schema.AllOf.ElementAt(1).RequiredProperties.Add(name);
+            }
+            else
+            {
+              ctx.Schema.RequiredProperties.Add(name);
+            }
+          }
+        }
+      }
+    }
+
     private static void AddOpenApiDoc(IServiceCollection services)
     {
       services.AddOpenApiDocument(cfg =>
@@ -59,9 +93,7 @@ namespace DebugMachineWatchApiServer
         cfg.Title = "SeedTactic FMS Insight";
         cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
         cfg.Version = "1.14";
-        var settings = new JsonSerializerOptions();
-        Startup.JsonSettings(settings);
-        ((SystemTextJsonSchemaGeneratorSettings)cfg.SchemaSettings).SerializerOptions = settings;
+        cfg.SchemaSettings.SchemaProcessors.Add(new RequiredModifierSchemaProcessor());
         cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
           .Generation
           .ReferenceTypeNullHandling

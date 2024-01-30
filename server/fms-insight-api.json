@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v14.0.0.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v14.0.2.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -2462,6 +2462,7 @@
           "RouteEndUTC",
           "Archived",
           "PartName",
+          "Cycles",
           "ProcsAndPaths"
         ],
         "properties": {
@@ -2572,6 +2573,7 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "PalletNums",
           "Load",
           "ExpectedLoadTime",
           "Unload",
@@ -3609,10 +3611,6 @@
           "Instance": {
             "type": "string",
             "nullable": true
-          },
-          "Extensions": {
-            "type": "object",
-            "additionalProperties": {}
           }
         }
       },
