@@ -34,64 +34,35 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Immutable;
-using System.Runtime.Serialization;
 using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
-  [DataContract, Draftable]
+  [Draftable]
   public record SimulatedStationPart
   {
-    [DataMember(IsRequired = true)]
     public required string JobUnique { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Process { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Path { get; init; }
   }
 
-  [DataContract, Draftable]
+  [Draftable]
   public record SimulatedStationUtilization
   {
-    [DataMember(IsRequired = true)]
     public required string ScheduleId { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string StationGroup { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int StationNum { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required DateTime StartUTC { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required DateTime EndUTC { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public bool? PlanDown { get; init; }
 
-    [
-      DataMember(IsRequired = false, EmitDefaultValue = true),
-      Obsolete("Entire start to end is utilization unless PlanDown is true")
-    ]
-    public TimeSpan UtilizationTime
-    {
-      get => (PlanDown ?? false) ? TimeSpan.Zero : EndUTC.Subtract(StartUTC);
-    }
-
-    [
-      DataMember(IsRequired = false, EmitDefaultValue = true),
-      Obsolete("Entire start to end is utilization unless PlanDown is true")
-    ]
-    public TimeSpan PlannedDownTime
-    {
-      get => (PlanDown ?? false) ? EndUTC.Subtract(StartUTC) : TimeSpan.Zero;
-    }
-
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedStationPart>? Parts { get; init; }
 
     public static SimulatedStationUtilization operator %(
@@ -100,47 +71,34 @@ namespace BlackMaple.MachineFramework
     ) => s.Produce(f);
   }
 
-  [DataContract]
   public record SimulatedDayUsage
   {
-    [DataMember(IsRequired = true)]
     public required DateOnly Day { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string MachineGroup { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required double Usage { get; init; }
   }
 
-  [DataContract, Germinate.Draftable]
+  [Germinate.Draftable]
   public record NewJobs
   {
-    [DataMember(IsRequired = true)]
     public required string ScheduleId { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required ImmutableList<MachineFramework.Job> Jobs { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedStationUtilization>? StationUse { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedDayUsage>? SimDayUsage { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? SimDayUsageWarning { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableDictionary<string, int>? ExtraParts { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<Workorder>? CurrentUnfilledWorkorders { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<NewProgramContent>? Programs { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public byte[]? DebugMessage { get; init; }
 
     public static NewJobs operator %(NewJobs j, Action<INewJobsDraft> f) => j.Produce(f);

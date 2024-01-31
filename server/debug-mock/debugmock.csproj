@@ -9,6 +9,5 @@
   <ItemGroup>
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
     <PackageReference Include="NSwag.AspNetCore" Version="14.0.*"/>
-    <PackageReference Include="NJsonSchema.NewtonsoftJson" Version="11.0.*"/>
   </ItemGroup>
 </Project>

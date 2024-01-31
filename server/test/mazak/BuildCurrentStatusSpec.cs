@@ -32,15 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.IO;
-using System.Collections.Generic;
-using Xunit;
-using FluentAssertions;
+using System.Text.Json;
 using BlackMaple.MachineFramework;
+using FluentAssertions;
 using MazakMachineInterface;
-using Newtonsoft.Json;
 using NSubstitute;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -48,7 +46,7 @@ namespace MachineWatchTest
   {
     private RepositoryConfig _repoCfg;
     private IRepository _memoryLog;
-    private JsonSerializerSettings jsonSettings;
+    private JsonSerializerOptions jsonSettings;
     private FMSSettings _settings;
     private IMachineGroupName _machGroupName;
 
@@ -65,12 +63,9 @@ namespace MachineWatchTest
       _settings.Queues["queueBBB"] = new QueueInfo();
       _settings.Queues["queueCCC"] = new QueueInfo();
 
-      jsonSettings = new JsonSerializerSettings();
-      jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
-      jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-      jsonSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
-      jsonSettings.Formatting = Formatting.Indented;
-      jsonSettings.ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor;
+      jsonSettings = new JsonSerializerOptions();
+      Startup.JsonSettings(jsonSettings);
+      jsonSettings.WriteIndented = true;
 
       _machGroupName = Substitute.For<IMachineGroupName>();
       _machGroupName.MachineGroupName.Returns("MC");
@@ -168,21 +163,21 @@ namespace MachineWatchTest
       NewJobs newJobs = null;
       if (scenario.Contains("basic"))
       {
-        newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        newJobs = JsonSerializer.Deserialize<NewJobs>(
           File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
           jsonSettings
         );
       }
       else if (scenario.Contains("multiface"))
       {
-        newJobs = JsonConvert.DeserializeObject<NewJobs>(
+        newJobs = JsonSerializer.Deserialize<NewJobs>(
           File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "multi-face.json")),
           jsonSettings
         );
       }
       repository.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
-      var allData = JsonConvert.DeserializeObject<MazakAllData>(
+      var allData = JsonSerializer.Deserialize<MazakAllData>(
         File.ReadAllText(Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".data.json")),
         jsonSettings
       );
@@ -214,7 +209,7 @@ namespace MachineWatchTest
       );
       */
 
-      var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(
+      var expectedStatus = JsonSerializer.Deserialize<CurrentStatus>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json")
         ),
@@ -241,13 +236,13 @@ namespace MachineWatchTest
     [Fact]
     public void PendingLoad()
     {
-      NewJobs newJobs = JsonConvert.DeserializeObject<NewJobs>(
+      NewJobs newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
       _memoryLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
-      var allData = JsonConvert.DeserializeObject<MazakAllData>(
+      var allData = JsonSerializer.Deserialize<MazakAllData>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.data.json")
         ),
@@ -286,7 +281,7 @@ namespace MachineWatchTest
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
       );
 
-      var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(
+      var expectedStatus = JsonSerializer.Deserialize<CurrentStatus>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.status.json")
         ),
@@ -333,13 +328,13 @@ namespace MachineWatchTest
         .OpenConnection();
       close = true;
 
-      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
       repository.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
-      var allData = JsonConvert.DeserializeObject<MazakAllData>(
+      var allData = JsonSerializer.Deserialize<MazakAllData>(
         File.ReadAllText(
           Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-unload-queues.data.json")
         ),
@@ -396,7 +391,7 @@ namespace MachineWatchTest
       );
       */
 
-      var expectedStatus = JsonConvert.DeserializeObject<CurrentStatus>(
+      var expectedStatus = JsonSerializer.Deserialize<CurrentStatus>(
         File.ReadAllText(
           Path.Combine(
             "..",
@@ -427,55 +422,4 @@ namespace MachineWatchTest
         );
     }
   }
-
-  /*
-    public class ManualCurrentStatusFromDebug
-    {
-      [Fact]
-      public void FromDebug()
-      {
-        var path = "/home/wuzzeb/projects/customer-data/parker-data/Dec8_22";
-        var db = RepositoryConfig.InitializeEventDatabase(new SerialSettings(), Path.Combine(path, "FMSInsight", "log.db"));
-        using var conn = db.OpenConnection();
-
-        var data = JsonConvert.DeserializeObject<MazakCurrentStatusAndTools>(
-          File.ReadAllText(Path.Combine(path, "FMSInsight", "mazakdata.json"))
-        );
-
-
-        var queueSyncFault = Substitute.For<IQueueSyncFault>();
-        queueSyncFault.CurrentQueueMismatch.Returns(false);
-
-        var machGroupName = Substitute.For<IMachineGroupName>();
-        machGroupName.MachineGroupName.Returns("MC");
-
-        var all = new MazakAllData()
-        {
-          Schedules = data.Schedules,
-          LoadActions = data.LoadActions,
-          PalletSubStatuses = data.PalletSubStatuses,
-          PalletPositions = data.PalletPositions,
-          Alarms = data.Alarms,
-          Parts = data.Parts,
-          Pallets = Enumerable.Empty<MazakPalletRow>(),
-          MainPrograms = Enumerable.Empty<MazakProgramRow>(),
-          Fixtures = Enumerable.Empty<MazakFixtureRow>()
-        };
-
-        var curSt = BuildCurrentStatus.Build(conn, new FMSSettings(), machGroupName, queueSyncFault, MazakDbType.MazakSmooth, all, new DateTime(2022, 12, 8, 14, 0, 0, DateTimeKind.Utc));
-
-        var jsonsettings = new Newtonsoft.Json.JsonSerializerSettings();
-        Startup.NewtonsoftJsonSettings(jsonsettings);
-        jsonsettings.Formatting = Newtonsoft.Json.Formatting.Indented;
-
-        File.WriteAllText(Path.Combine(path, "status.json"), JsonConvert.SerializeObject(curSt, jsonsettings));
-
-        var apiCurSt = JsonConvert.DeserializeObject<BlackMaple.FMSInsight.API.CurrentStatus>(JsonConvert.SerializeObject(curSt, jsonsettings), jsonsettings);
-
-        var converted = BlackMaple.SAIL.OldRemotingAPI.JobConverter.ToMachineWatchCurrentStatus(apiCurSt);
-
-        File.WriteAllText(Path.Combine(path, "converted.json"), JsonConvert.SerializeObject(converted, jsonsettings));
-      }
-    }
-  */
 }

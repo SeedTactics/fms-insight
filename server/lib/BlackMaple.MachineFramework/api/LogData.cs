@@ -35,37 +35,38 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
-using Germinate;
 using System.Collections.Immutable;
+using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
+using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
-  [DataContract, Draftable]
+  [Draftable]
   public record LogMaterial
   {
-    [DataMember(Name = "id", IsRequired = true)]
+    [JsonPropertyName("id")]
     public required long MaterialID { get; init; }
 
-    [DataMember(Name = "uniq", IsRequired = true)]
+    [JsonPropertyName("uniq")]
     public required string JobUniqueStr { get; init; }
 
-    [DataMember(Name = "part", IsRequired = true)]
+    [JsonPropertyName("part")]
     public required string PartName { get; init; }
 
-    [DataMember(Name = "proc", IsRequired = true)]
+    [JsonPropertyName("proc")]
     public required int Process { get; init; }
 
-    [DataMember(Name = "numproc", IsRequired = true)]
+    [JsonPropertyName("numproc")]
     public required int NumProcesses { get; init; }
 
-    [DataMember(Name = "face", IsRequired = true)]
+    [JsonPropertyName("face")]
     public required string Face { get; init; }
 
-    [DataMember(Name = "serial", IsRequired = false, EmitDefaultValue = false)]
+    [JsonPropertyName("serial")]
     public string? Serial { get; init; }
 
-    [DataMember(Name = "workorder", IsRequired = false, EmitDefaultValue = false)]
+    [JsonPropertyName("workorder")]
     public string? Workorder { get; init; }
 
     public LogMaterial() { }
@@ -95,108 +96,89 @@ namespace BlackMaple.MachineFramework
     public static LogMaterial operator %(LogMaterial m, Action<ILogMaterialDraft> f) => m.Produce(f);
   }
 
-  [DataContract]
   public enum LogType
   {
-    [EnumMember]
     LoadUnloadCycle = 1, //numbers are for backwards compatibility with old type enumeration
 
-    [EnumMember]
     MachineCycle = 2,
 
-    [EnumMember]
     PartMark = 6,
 
-    [EnumMember]
     Inspection = 7,
 
-    [EnumMember]
     OrderAssignment = 10,
 
-    [EnumMember]
     GeneralMessage = 100,
 
-    [EnumMember]
     PalletCycle = 101,
 
-    [EnumMember]
     WorkorderComment = 102,
 
-    [EnumMember]
     InspectionResult = 103,
 
-    [EnumMember]
     CloseOut = 104,
 
-    [EnumMember]
     AddToQueue = 105,
 
-    [EnumMember]
     RemoveFromQueue = 106,
 
-    [EnumMember]
     InspectionForce = 107,
 
-    [EnumMember]
     PalletOnRotaryInbound = 108,
 
-    [EnumMember]
     PalletInStocker = 110,
 
-    [EnumMember]
     SignalQuarantine = 111,
 
-    [EnumMember]
     InvalidateCycle = 112,
 
-    [EnumMember]
     SwapMaterialOnPallet = 113,
     // when adding types, must also update the convertLogType() function in client/backup-viewer/src/background.ts
   }
 
-  [DataContract, Draftable, KnownType(typeof(MaterialProcessActualPath))]
+  [Draftable, KnownType(typeof(MaterialProcessActualPath))]
   public record LogEntry
   {
-    [DataMember(Name = "counter", IsRequired = true)]
+    [JsonPropertyName("counter")]
     public required long Counter { get; init; }
 
-    [DataMember(Name = "material", IsRequired = true)]
+    [JsonPropertyName("material")]
     public required ImmutableList<LogMaterial> Material { get; init; }
 
-    [DataMember(Name = "type", IsRequired = true)]
+    [JsonPropertyName("type")]
     public required LogType LogType { get; init; }
 
-    [DataMember(Name = "startofcycle", IsRequired = true)]
+    [JsonPropertyName("startofcycle")]
     public required bool StartOfCycle { get; init; }
 
-    [DataMember(Name = "endUTC", IsRequired = true)]
+    [JsonPropertyName("endUTC")]
     public required DateTime EndTimeUTC { get; init; }
 
-    [DataMember(Name = "loc", IsRequired = true)]
+    [JsonPropertyName("loc")]
     public required string LocationName { get; init; }
 
-    [DataMember(Name = "locnum", IsRequired = true)]
+    [JsonPropertyName("locnum")]
     public required int LocationNum { get; init; }
 
-    [DataMember(Name = "pal", IsRequired = true)]
+    [JsonPropertyName("pal")]
     public required int Pallet { get; init; }
 
-    [DataMember(Name = "program", IsRequired = true)]
+    [JsonPropertyName("program")]
     public required string Program { get; init; }
 
-    [DataMember(Name = "result", IsRequired = true)]
+    [JsonPropertyName("result")]
     public required string Result { get; init; }
 
-    [DataMember(Name = "elapsed", IsRequired = true)]
+    [JsonPropertyName("elapsed")]
     public required TimeSpan ElapsedTime { get; init; } //time from cycle-start to cycle-stop
 
-    [DataMember(Name = "active", IsRequired = true)]
+    [JsonPropertyName("active")]
     public required TimeSpan ActiveOperationTime { get; init; } //time that the machining or operation is actually active
 
-    [DataMember(Name = "details", IsRequired = false, EmitDefaultValue = false)]
+    [JsonPropertyName("details")]
     public ImmutableDictionary<string, string>? ProgramDetails { get; init; } = null;
 
-    [DataMember(Name = "tooluse", IsRequired = false, EmitDefaultValue = false)]
+    [JsonPropertyName("tooluse")]
     public ImmutableList<ToolUse>? Tools { get; init; } = null;
 
     public LogEntry() { }
@@ -233,49 +215,30 @@ namespace BlackMaple.MachineFramework
       Tools = null;
     }
 
-    public bool ShouldSerializeProgramDetails()
-    {
-      return ProgramDetails != null && ProgramDetails.Count > 0;
-    }
-
-    public bool ShouldSerializeTools()
-    {
-      return Tools != null && Tools.Count > 0;
-    }
-
     public static LogEntry operator %(LogEntry e, Action<ILogEntryDraft> f) => e.Produce(f);
   }
 
   // stored serialized in json format in the details for inspection logs.
-  [DataContract, Draftable]
+  [Draftable]
   public record MaterialProcessActualPath
   {
-    [DataContract]
     public record Stop
     {
-      [DataMember(IsRequired = true)]
       public required string StationName { get; init; }
 
-      [DataMember(IsRequired = true)]
       public required int StationNum { get; init; }
     }
 
-    [DataMember(IsRequired = true)]
     public required long MaterialID { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Process { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Pallet { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int LoadStation { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required ImmutableList<Stop> Stops { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int UnloadStation { get; init; }
 
     public static MaterialProcessActualPath operator %(
@@ -284,16 +247,12 @@ namespace BlackMaple.MachineFramework
     ) => m.Produce(f);
   }
 
-  [DataContract]
   public record EditMaterialInLogEvents
   {
-    [DataMember(IsRequired = true)]
     public required long OldMaterialID { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required long NewMaterialID { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required IEnumerable<LogEntry> EditedEvents { get; init; }
   }
 }

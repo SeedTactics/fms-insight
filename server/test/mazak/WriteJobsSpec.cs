@@ -32,16 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
-using System.IO;
 using System.Collections.Generic;
-using Xunit;
-using FluentAssertions;
+using System.Collections.Immutable;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
 using BlackMaple.MachineFramework;
+using FluentAssertions;
 using MazakMachineInterface;
 using NSubstitute;
-using Newtonsoft.Json;
-using System.Collections.Immutable;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -105,7 +105,7 @@ namespace MachineWatchTest
     private IWriteJobs _writeJobs;
     private WriteMock _writeMock;
     private IReadDataAccess _readMock;
-    private JsonSerializerSettings jsonSettings;
+    private JsonSerializerOptions jsonSettings;
     private FMSSettings _settings;
 
     public WriteJobsSpec()
@@ -267,11 +267,9 @@ namespace MachineWatchTest
         progDir: "theprogdir"
       );
 
-      jsonSettings = new JsonSerializerSettings();
-      jsonSettings.Converters.Add(new BlackMaple.MachineFramework.TimespanConverter());
-      jsonSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-      jsonSettings.DateTimeZoneHandling = DateTimeZoneHandling.Utc;
-      jsonSettings.Formatting = Formatting.Indented;
+      jsonSettings = new JsonSerializerOptions();
+      Startup.JsonSettings(jsonSettings);
+      jsonSettings.WriteIndented = true;
     }
 
     public void Dispose()
@@ -287,7 +285,7 @@ namespace MachineWatchTest
           JsonConvert.SerializeObject(val, jsonSettings)
       );
       */
-      var expected = JsonConvert.DeserializeObject<T>(
+      var expected = JsonSerializer.Deserialize<T>(
         File.ReadAllText(Path.Combine("..", "..", "..", "mazak", "write-snapshots", snapshot)),
         jsonSettings
       );
@@ -321,13 +319,13 @@ namespace MachineWatchTest
     [Fact]
     public void RejectsMismatchedPreviousSchedule()
     {
-      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
       _jobDB.AddJobs(newJobs, null, addAsCopiedToSystem: true);
 
-      var newJobsMultiFace = JsonConvert.DeserializeObject<NewJobs>(
+      var newJobsMultiFace = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "multi-face.json")),
         jsonSettings
       );
@@ -380,7 +378,7 @@ namespace MachineWatchTest
         .Should()
         .BeEquivalentTo(new[] { "uniq1", "uniq2" });
 
-      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
@@ -418,7 +416,7 @@ namespace MachineWatchTest
 
       //ccc is same as aaa
 
-      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "managed-progs.json")),
         jsonSettings
       );
@@ -457,7 +455,7 @@ namespace MachineWatchTest
     {
       _writeMock.errorForPrefix = "Add Parts";
 
-      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );
@@ -483,7 +481,7 @@ namespace MachineWatchTest
     {
       _writeMock.errorForPrefix = "Add Schedules";
 
-      var newJobs = JsonConvert.DeserializeObject<NewJobs>(
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings
       );

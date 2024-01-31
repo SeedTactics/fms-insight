@@ -32,28 +32,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Net.WebSockets;
-using System.Runtime.Serialization;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
-  [DataContract]
   public record ServerEvent
   {
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public LogEntry LogEntry { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public NewJobs NewJobs { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public CurrentStatus NewCurrentStatus { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public EditMaterialInLogEvents EditMaterialInLog { get; init; }
   }
 
@@ -108,15 +103,15 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
-    private WebsocketDict _sockets = new WebsocketDict();
-    private Newtonsoft.Json.JsonSerializerSettings _serSettings;
-    private System.Collections.Concurrent.BlockingCollection<ServerEvent> _messages;
-    private Thread _thread;
+    private readonly WebsocketDict _sockets = new WebsocketDict();
+    private readonly JsonSerializerOptions _serSettings;
+    private readonly System.Collections.Concurrent.BlockingCollection<ServerEvent> _messages;
+    private readonly Thread _thread;
 
     public WebsocketManager(FMSImplementation impl)
     {
-      _serSettings = new Newtonsoft.Json.JsonSerializerSettings();
-      Startup.NewtonsoftJsonSettings(_serSettings);
+      _serSettings = new JsonSerializerOptions();
+      Startup.JsonSettings(_serSettings);
 
       _messages = new System.Collections.Concurrent.BlockingCollection<ServerEvent>(100);
       _thread = new System.Threading.Thread(SendThread);
@@ -157,11 +152,7 @@ namespace BlackMaple.MachineFramework.Controllers
           return;
         }
 
-        var data = Newtonsoft.Json.JsonConvert.SerializeObject(
-          msg,
-          Newtonsoft.Json.Formatting.None,
-          _serSettings
-        );
+        var data = JsonSerializer.Serialize(msg, _serSettings);
         var encoded = System.Text.Encoding.UTF8.GetBytes(data);
         var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
 

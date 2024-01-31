@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using Xunit;
-using Microsoft.Data.Sqlite;
+using System.Collections.Immutable;
+using System.Text.Json;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
-using System.Collections.Immutable;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -553,7 +553,7 @@ namespace MachineWatchTest
         if (entry.LogType == LogType.Inspection && entry.ProgramDetails["InspectionType"] == iType)
         {
           foundEntry = true;
-          var path = Newtonsoft.Json.JsonConvert.DeserializeObject<List<MaterialProcessActualPath>>(
+          var path = JsonSerializer.Deserialize<List<MaterialProcessActualPath>>(
             entry.ProgramDetails["ActualPath"]
           );
           path.Should()

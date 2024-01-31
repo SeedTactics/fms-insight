@@ -34,46 +34,40 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #nullable enable
 
 using System;
-using System.Runtime.Serialization;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
-  [DataContract]
   public enum PalletLocationEnum
   {
-    [EnumMember]
     LoadUnload,
 
-    [EnumMember]
     Machine,
 
-    [EnumMember]
     MachineQueue,
 
-    [EnumMember]
     Buffer,
 
-    [EnumMember]
     Cart
   }
 
-  [DataContract]
   public record PalletLocation
   {
-    [DataMember(Name = "loc", IsRequired = true)]
+    [JsonPropertyName("loc")]
     public required PalletLocationEnum Location { get; init; }
 
-    [DataMember(Name = "group", IsRequired = true)]
+    [JsonPropertyName("group")]
     public required string StationGroup { get; init; }
 
-    [DataMember(Name = "num", IsRequired = true)]
+    [JsonPropertyName("num")]
     public required int Num { get; init; }
 
     public PalletLocation() { }
 
-    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
+    [SetsRequiredMembers]
     public PalletLocation(PalletLocationEnum l, string group, int n)
     {
       Location = l;
@@ -82,42 +76,29 @@ namespace BlackMaple.MachineFramework
     }
   }
 
-  [DataContract, Draftable]
+  [Draftable]
   public record PalletStatus
   {
-    [DataMember(IsRequired = true)]
     public required int PalletNum { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string FixtureOnPallet { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required bool OnHold { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required PalletLocation CurrentPalletLocation { get; init; }
 
     // If the pallet is at a load station and a new fixture should be loaded, this is filled in.
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? NewFixture { get; init; }
 
     // num faces on new fixture, or current fixture if no change
-    [DataMember(IsRequired = true)]
     public required int NumFaces { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<string>? FaceNames { get; init; }
 
     //If CurrentPalletLocation is Cart, the following two fields will be filled in.
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public PalletLocation? TargetLocation { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public decimal? PercentMoveCompleted { get; init; }
-
-    // For backwards compatibility with older network clients
-    [DataMember(IsRequired = false, EmitDefaultValue = true), Obsolete]
-    public string Pallet => PalletNum.ToString();
 
     public static PalletStatus operator %(PalletStatus s, Action<IPalletStatusDraft> f) => s.Produce(f);
   }

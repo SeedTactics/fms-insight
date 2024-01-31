@@ -192,7 +192,7 @@ export const setLast30ToolReplacements = atom(null, (_, set, log: ReadonlyArray<
       .filter(
         (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0,
       )
-      .foldLeft(oldCycles, addReplacementsFromLog),
+      .fold(oldCycles, addReplacementsFromLog),
   );
 });
 
@@ -230,7 +230,7 @@ export const setSpecificMonthToolReplacements = atom(
         .filter(
           (e) => e.type === LogType.MachineCycle && !e.startofcycle && !!e.tooluse && e.tooluse.length > 0,
         )
-        .foldLeft(emptyReplacementsAndUse, addReplacementsFromLog),
+        .fold(emptyReplacementsAndUse, addReplacementsFromLog),
     );
   },
 );

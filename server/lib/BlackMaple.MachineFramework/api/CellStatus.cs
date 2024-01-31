@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #nullable enable
 
 using System;
-using System.Runtime.Serialization;
 using System.Collections.Immutable;
 using Germinate;
 
@@ -48,102 +47,74 @@ namespace BlackMaple.MachineFramework
     Other
   }
 
-  [DataContract]
   public record QueueInfo
   {
     //once an output queue grows to this size, stop unloading parts
     //and keep them in the buffer inside the cell
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public int? MaxSizeBeforeStopUnloading { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public QueueRole? Role { get; init; }
   }
 
-  [DataContract, Draftable]
+  [Draftable]
   public record CurrentStatus
   {
-    [DataMember(IsRequired = true)]
     public required DateTime TimeOfCurrentStatusUTC { get; init; }
 
-    [DataMember(Name = "Jobs", IsRequired = true)]
     public required ImmutableDictionary<string, MachineFramework.ActiveJob> Jobs { get; init; }
 
-    [DataMember(Name = "Pallets", IsRequired = true)]
     public required ImmutableDictionary<int, PalletStatus> Pallets { get; init; }
 
-    [DataMember(Name = "Material", IsRequired = true)]
     public required ImmutableList<InProcessMaterial> Material { get; init; }
 
-    [DataMember(Name = "Alarms", IsRequired = true)]
     public required ImmutableList<string> Alarms { get; init; }
 
-    [DataMember(Name = "Queues", IsRequired = true)]
     public required ImmutableDictionary<string, QueueInfo> Queues { get; init; }
 
     // The following is only filled in if the machines move to the load station
     // instead of the pallets moving to the machine
-    [DataMember(Name = "MachineLocations", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<MachineLocation>? MachineLocations { get; init; }
 
-    [DataMember(Name = "Workorders", IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<ActiveWorkorder>? Workorders { get; init; } = null;
 
     public static CurrentStatus operator %(CurrentStatus s, Action<ICurrentStatusDraft> f) => s.Produce(f);
   }
 
-  [DataContract]
   public record JobAndDecrementQuantity
   {
-    [DataMember(IsRequired = true)]
     public required long DecrementId { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string JobUnique { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required DateTime TimeUTC { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string Part { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Quantity { get; init; }
   }
 
-  [DataContract]
   public record HistoricData
   {
-    [DataMember(IsRequired = true)]
     public required ImmutableDictionary<string, MachineFramework.HistoricJob> Jobs { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required ImmutableList<SimulatedStationUtilization> StationUse { get; init; }
   }
 
-  [DataContract]
   public record RecentHistoricData : HistoricData
   {
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? MostRecentSimulationId { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public ImmutableList<SimulatedDayUsage>? MostRecentSimDayUsage { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string? MostRecentSimDayUsageWarning { get; init; }
   }
 
-  [DataContract]
   public record PlannedSchedule
   {
-    [DataMember(IsRequired = true)]
     public required string LatestScheduleId { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required ImmutableList<MachineFramework.HistoricJob> Jobs { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required ImmutableDictionary<string, int> ExtraParts { get; init; }
   }
 }

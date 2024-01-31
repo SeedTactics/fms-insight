@@ -33,20 +33,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using System.Runtime.Serialization;
 using System.Collections.Immutable;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
-  [DataContract]
   public record QueuePosition
   {
-    [DataMember(IsRequired = true)]
     public required string Queue { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Position { get; init; }
   }
 
@@ -250,13 +245,10 @@ namespace BlackMaple.MachineFramework.Controllers
       );
     }
 
-    [DataContract]
     public record MatToPutOnPallet
     {
-      [DataMember(IsRequired = true)]
       public required int Pallet { get; init; }
 
-      [DataMember(IsRequired = true)]
       public required long MaterialIDToSetOnPallet { get; init; }
     }
 

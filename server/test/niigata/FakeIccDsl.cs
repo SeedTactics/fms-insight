@@ -32,12 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using FluentAssertions;
-using BlackMaple.MachineFramework;
 using System.Collections.Immutable;
-using Germinate;
+using System.Linq;
+using System.Text.Json;
+using BlackMaple.MachineFramework;
+using FluentAssertions;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -1468,8 +1468,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         var current = actualSt.Pallets[palNum - 1];
         current.Status.Should().Be(_status.Pallets[palNum - 1]);
-        current.CurrentOrLoadingFaces
-          .Should()
+        current
+          .CurrentOrLoadingFaces.Should()
           .BeEquivalentTo(
             _expectedFaces[palNum].Select(face =>
             {
@@ -1484,8 +1484,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 FaceIsMissingMaterial = false,
                 Programs =
                   face.progs?.ToImmutableList()
-                  ?? job.Processes[face.proc - 1].Paths[face.path - 1].Stops
-                    .Where(s => _statNames == null || !_statNames.ReclampGroupNames.Contains(s.StationGroup))
+                  ?? job.Processes[face.proc - 1]
+                    .Paths[face.path - 1]
+                    .Stops.Where(
+                      s => _statNames == null || !_statNames.ReclampGroupNames.Contains(s.StationGroup)
+                    )
                     .Select(
                       (stop, stopIdx) =>
                         new ProgramsForProcess()
@@ -1499,12 +1502,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               };
             })
           );
-        current.Material
-          .Select(m => m.Mat)
+        current
+          .Material.Select(m => m.Mat)
           .Should()
           .BeEquivalentTo(
-            _expectedMaterial.Values
-              .Concat(_expectedLoadCastings)
+            _expectedMaterial
+              .Values.Concat(_expectedLoadCastings)
               .Where(m =>
               {
                 if (m.Action.Type == InProcessMaterialAction.ActionType.Loading)
@@ -1527,7 +1530,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             options => options.ComparingByMembers<InProcessMaterial>()
           );
 
-        actualSt.CurrentStatus.Pallets[palNum]
+        actualSt
+          .CurrentStatus.Pallets[palNum]
           .Should()
           .BeEquivalentTo(
             new MachineFramework.PalletStatus()
@@ -1540,8 +1544,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
           );
       }
-      actualSt.QueuedMaterial
-        .Select(m => m.Mat)
+      actualSt
+        .QueuedMaterial.Select(m => m.Mat)
         .Should()
         .BeEquivalentTo(
           _expectedMaterial.Values.Where(
@@ -1551,12 +1555,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ),
           options => options.ComparingByMembers<InProcessMaterial>()
         );
-      actualSt.OldUnusedPrograms
-        .Should()
+      actualSt
+        .OldUnusedPrograms.Should()
         .BeEquivalentTo(_expectedOldPrograms, options => options.Excluding(p => p.Comment));
 
-      actualSt.CurrentStatus.Jobs.Values
-        .Should()
+      actualSt
+        .CurrentStatus.Jobs.Values.Should()
         .BeEquivalentTo(
           _logDB
             .LoadUnarchivedJobs()
@@ -1580,14 +1584,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             )
         );
 
-      actualSt.CurrentStatus.Material
-        .Should()
+      actualSt
+        .CurrentStatus.Material.Should()
         .BeEquivalentTo(_expectedMaterial.Values.Concat(_expectedLoadCastings));
 
       actualSt.CurrentStatus.Queues.Should().BeEquivalentTo(_settings.Queues);
 
-      actualSt.CurrentStatus.Alarms
-        .Should()
+      actualSt
+        .CurrentStatus.Alarms.Should()
         .BeEquivalentTo(
           _expectedPalletAlarms.Values.Concat(_expectedMachineAlarms.Select(m => $"Machine {m} has an alarm"))
         );
@@ -2403,8 +2407,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             // reload cell state
             cellSt = _createLog.BuildCellState(_logDB, _status);
             cellSt.StateUpdated.Should().Be(expectedUpdates);
-            cellSt.OldUnusedPrograms
-              .Should()
+            cellSt
+              .OldUnusedPrograms.Should()
               .BeEquivalentTo(
                 _expectedOldPrograms,
                 options => options.ComparingByMembers<ProgramRevision>().Excluding(p => p.Comment)
@@ -2926,11 +2930,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     Result = insp.Inspect.ToString(),
                     ElapsedTime = TimeSpan.FromMinutes(-1),
                     ActiveOperationTime = TimeSpan.Zero,
-                    ProgramDetails = ImmutableDictionary<string, string>.Empty
-                      .Add("InspectionType", insp.InspType)
+                    ProgramDetails = ImmutableDictionary<string, string>
+                      .Empty.Add("InspectionType", insp.InspType)
                       .Add(
                         "ActualPath",
-                        Newtonsoft.Json.JsonConvert.SerializeObject(
+                        JsonSerializer.Serialize(
                           insp.Path.Select(p => p with { MaterialID = mat.MaterialID })
                         )
                       )
@@ -2994,30 +2998,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         ),
         job.Item2
       );
-    }
-  }
-
-  public static class FluentAssertionJsonExtension
-  {
-    public static FluentAssertions.Equivalency.EquivalencyAssertionOptions<T> CheckJsonEquals<T, R>(
-      this FluentAssertions.Equivalency.EquivalencyAssertionOptions<T> options
-    )
-    {
-      return options
-        .Using<R>(ctx =>
-        {
-          // JobPlan has private properties which normal Should().BeEquivalentTo() doesn't see, so instead
-          // check json serialized versions are equal
-          var eJ = Newtonsoft.Json.Linq.JToken.Parse(
-            Newtonsoft.Json.JsonConvert.SerializeObject(ctx.Expectation)
-          );
-          var aJ = Newtonsoft.Json.Linq.JToken.Parse(
-            Newtonsoft.Json.JsonConvert.SerializeObject(ctx.Subject)
-          );
-
-          FluentAssertions.Json.JsonAssertionExtensions.Should(aJ).BeEquivalentTo(eJ);
-        })
-        .WhenTypeIs<R>();
     }
   }
 }

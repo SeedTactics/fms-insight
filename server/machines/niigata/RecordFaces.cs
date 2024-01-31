@@ -33,48 +33,42 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using BlackMaple.MachineFramework;
+
+#nullable enable
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  [DataContract]
   public record ProgramsForProcess
   {
-    [DataMember(Name = "StopIndex")]
+    [JsonPropertyName("StopIndex")]
     public int MachineStopIndex { get; init; }
 
-    [DataMember]
-    public string ProgramName { get; init; }
+    public string? ProgramName { get; init; }
 
-    [DataMember]
     public long? Revision { get; init; }
   }
 
   /// Recorded as a general message in the log to keep track of what we decided to set on each niigata pallet route
-  [DataContract]
   public record AssignedJobAndPathForFace
   {
-    [DataMember]
     public int Face { get; init; }
 
-    [DataMember]
-    public string Unique { get; init; }
+    public string? Unique { get; init; }
 
-    [DataMember]
     public int Proc { get; init; }
 
-    [DataMember]
     public int Path { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
-    public IEnumerable<ProgramsForProcess> ProgOverride { get; init; }
+    public IEnumerable<ProgramsForProcess>? ProgOverride { get; init; }
   }
 
   public static class RecordFacesForPallet
   {
-    public static IEnumerable<AssignedJobAndPathForFace> Load(string palComment, IRepository logDB)
+    public static IEnumerable<AssignedJobAndPathForFace>? Load(string palComment, IRepository logDB)
     {
       if (palComment == null || !palComment.StartsWith("Insight:"))
       {
@@ -87,13 +81,7 @@ namespace BlackMaple.FMSInsight.Niigata
         return Enumerable.Empty<AssignedJobAndPathForFace>();
       }
 
-      var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(
-        typeof(List<AssignedJobAndPathForFace>)
-      );
-      using (var ms = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(msg)))
-      {
-        return (List<AssignedJobAndPathForFace>)ser.ReadObject(ms);
-      }
+      return JsonSerializer.Deserialize<List<AssignedJobAndPathForFace>>(msg);
     }
 
     public static string Save(
@@ -109,16 +97,7 @@ namespace BlackMaple.FMSInsight.Niigata
         .Replace("/", "_")
         .Replace("+", "-")
         .Substring(0, 22);
-      string json;
-      var ser = new System.Runtime.Serialization.Json.DataContractJsonSerializer(
-        typeof(List<AssignedJobAndPathForFace>)
-      );
-      using (var ms = new System.IO.MemoryStream())
-      {
-        ser.WriteObject(ms, newPaths.ToList());
-        var bytes = ms.ToArray();
-        json = System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
-      }
+      string json = JsonSerializer.Serialize(newPaths.ToList());
 
       logDB.RecordGeneralMessage(
         mat: null,

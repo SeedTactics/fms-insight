@@ -19,16 +19,29 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["1"],
+              "Pallets": [
+                "1"
+              ],
               "Fixture": "fixtureAA1",
-              "Face": "1",
-              "Load": [1, 2],
+              "Face": 1,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "prog-aaa-1",
                   "ProgramRevision": null,
                   "Tools": {},
@@ -86,7 +99,10 @@
               "SimulatedAverageFlowTime": "PT35M32.3636363S",
               "PartsPerPallet": 1,
               "InputQueue": "castings",
-              "OutputQueue": "queueAAA"
+              "OutputQueue": "queueAAA",
+              "PalletNums": [
+                1
+              ]
             }
           ]
         },
@@ -94,16 +110,29 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["1"],
+              "Pallets": [
+                "1"
+              ],
               "Fixture": "fixtureAA2",
-              "Face": "2",
-              "Load": [1, 2],
+              "Face": 2,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "prog-aaa-2",
                   "ProgramRevision": 4,
                   "Tools": {},
@@ -160,7 +189,10 @@
               "SimulatedStartingUTC": "2018-07-18T23:48:38.112578Z",
               "SimulatedAverageFlowTime": "PT1H35M20.9090909S",
               "PartsPerPallet": 1,
-              "InputQueue": "queueAAA"
+              "InputQueue": "queueAAA",
+              "PalletNums": [
+                1
+              ]
             }
           ]
         }
@@ -185,16 +217,29 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["2"],
+              "Pallets": [
+                "2"
+              ],
               "Fixture": "fixtureBB",
-              "Face": "1",
-              "Load": [1, 2],
+              "Face": 1,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "prog-bbb-1",
                   "ProgramRevision": 3,
                   "Tools": {},
@@ -288,7 +333,10 @@
               "SimulatedAverageFlowTime": "PT28M0.8S",
               "PartsPerPallet": 1,
               "InputQueue": "castings",
-              "OutputQueue": "queueBBB"
+              "OutputQueue": "queueBBB",
+              "PalletNums": [
+                2
+              ]
             }
           ]
         },
@@ -296,16 +344,29 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["2"],
+              "Pallets": [
+                "2"
+              ],
               "Fixture": "fixtureBB",
-              "Face": "1",
-              "Load": [1, 2],
+              "Face": 1,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "prog-bbb-2",
                   "ProgramRevision": null,
                   "Tools": {},
@@ -398,7 +459,10 @@
               "SimulatedStartingUTC": "2018-07-18T22:58:52.112578Z",
               "SimulatedAverageFlowTime": "PT54M25.7S",
               "PartsPerPallet": 1,
-              "InputQueue": "queueBBB"
+              "InputQueue": "queueBBB",
+              "PalletNums": [
+                2
+              ]
             }
           ]
         }
@@ -423,16 +487,29 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["5"],
+              "Pallets": [
+                "5"
+              ],
               "Fixture": "fixtureCC5",
-              "Face": "1",
-              "Load": [1, 2],
+              "Face": 1,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "prog-aaa-1",
                   "ProgramRevision": null,
                   "Tools": {},
@@ -521,7 +598,10 @@
               "SimulatedStartingUTC": "2018-07-18T22:39:48.112578Z",
               "SimulatedAverageFlowTime": "PT41M58.0526315S",
               "PartsPerPallet": 2,
-              "OutputQueue": "queueCCC"
+              "OutputQueue": "queueCCC",
+              "PalletNums": [
+                5
+              ]
             }
           ]
         },
@@ -529,16 +609,29 @@
           "paths": [
             {
               "PathGroup": 0,
-              "Pallets": ["6"],
+              "Pallets": [
+                "6"
+              ],
               "Fixture": "fixtureCC6",
-              "Face": "2",
-              "Load": [1, 2],
+              "Face": 2,
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "prog-aaa-2",
                   "ProgramRevision": 4,
                   "Tools": {},
@@ -627,7 +720,10 @@
               "SimulatedStartingUTC": "2018-07-19T00:00:42.112578Z",
               "SimulatedAverageFlowTime": "PT43M54.1578947S",
               "PartsPerPallet": 2,
-              "InputQueue": "queueCCC"
+              "InputQueue": "queueCCC",
+              "PalletNums": [
+                6
+              ]
             }
           ]
         }

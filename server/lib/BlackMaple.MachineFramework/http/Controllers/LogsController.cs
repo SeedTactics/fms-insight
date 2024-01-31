@@ -33,65 +33,43 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Cors;
-using System.Linq;
-using Microsoft.AspNetCore.Http;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
-  [DataContract]
   public record NewInspectionCompleted
   {
-    [DataMember(IsRequired = true)]
     public required long MaterialID { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Process { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int InspectionLocationNum { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string InspectionType { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required bool Success { get; init; }
 
-    [DataMember(IsRequired = false)]
     public Dictionary<string, string> ExtraData { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required TimeSpan Elapsed { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required TimeSpan Active { get; init; }
   }
 
-  [DataContract]
   public record NewCloseout
   {
-    [DataMember(IsRequired = true)]
     public required long MaterialID { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int Process { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required int LocationNum { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required string CloseoutType { get; init; }
 
-    [DataMember(IsRequired = false)]
     public Dictionary<string, string> ExtraData { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required TimeSpan Elapsed { get; init; }
 
-    [DataMember(IsRequired = true)]
     public required TimeSpan Active { get; init; }
   }
 

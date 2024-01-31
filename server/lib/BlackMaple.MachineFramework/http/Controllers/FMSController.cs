@@ -41,77 +41,54 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
-  [DataContract]
   [KnownType(typeof(ServerEvent))]
   public record FMSInfo
   {
-    [DataMember]
     public string Name { get; init; }
 
-    [DataMember]
     public string Version { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public DateTime? LicenseExpires { get; init; }
 
-    [DataMember]
     public IReadOnlyList<string> AdditionalLogServers { get; init; }
 
-    [DataMember]
     public string OpenIDConnectAuthority { get; init; }
 
-    [DataMember]
     public string LocalhostOpenIDConnectAuthority { get; init; }
 
-    [DataMember]
     public string OpenIDConnectClientId { get; init; }
 
-    [DataMember]
     public bool UsingLabelPrinterForSerials { get; init; }
 
-    [DataMember]
     public bool? UseClientPrinterForLabels { get; init; }
 
-    [DataMember]
     public bool? AllowQuarantineToCancelLoad { get; init; }
 
-    [DataMember]
     public string QuarantineQueue { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string CustomStationMonitorDialogUrl { get; init; }
 
     // LoadStation Options
-    [DataMember]
     public bool? AllowChangeWorkorderAtLoadStation { get; init; }
 
-    [DataMember]
     public bool? AllowSwapSerialAtLoadStation { get; init; }
 
-    [DataMember]
     public bool? AllowInvalidateMaterialAtLoadStation { get; init; }
 
     // Closeout Page Options
-    [DataMember]
     public bool RequireScanAtCloseout { get; init; }
 
-    [DataMember]
     public bool RequireWorkorderBeforeAllowCloseoutComplete { get; init; }
 
     // Queues Page Options
-    [DataMember]
     public AddRawMaterialType AddRawMaterial { get; init; }
 
-    [DataMember]
     public AddInProcessMaterialType AddInProcessMaterial { get; init; }
 
-    [DataMember]
     public bool? RequireOperatorNamePromptWhenAddingMaterial { get; init; }
 
-    [DataMember(IsRequired = false, EmitDefaultValue = false)]
     public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
 
-    [DataMember]
     public bool? AllowInvalidateMaterialOnQueuesPage { get; init; } = false;
   }
 
