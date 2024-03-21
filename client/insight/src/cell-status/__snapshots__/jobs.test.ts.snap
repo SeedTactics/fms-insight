@@ -37,6 +37,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H33M42.4444444S",
             "simulatedProduction": [
@@ -138,6 +139,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H44M5.75S",
             "simulatedProduction": [
@@ -235,6 +237,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H18M42.7692307S",
             "simulatedProduction": [
@@ -346,6 +349,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H7M12.7692307S",
             "simulatedProduction": [
@@ -462,6 +466,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H1M38.2222222S",
             "simulatedProduction": [
@@ -564,6 +569,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H57M34.1666666S",
             "simulatedProduction": [
@@ -671,6 +677,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H56M33.5S",
             "simulatedProduction": [
@@ -784,6 +791,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H33M53.8181818S",
             "simulatedProduction": [
@@ -895,6 +903,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H19M20.6666666S",
             "simulatedProduction": [
@@ -996,6 +1005,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H4M56.9090909S",
             "simulatedProduction": [
@@ -1099,6 +1109,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H6M56.5454545S",
             "simulatedProduction": [
@@ -1208,6 +1219,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H13M50.4S",
             "simulatedProduction": [
@@ -1347,6 +1359,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H15M0.2S",
             "simulatedProduction": [
@@ -1491,6 +1504,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H42M38.4615384S",
             "simulatedProduction": [
@@ -1602,6 +1616,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H14M38.7692307S",
             "simulatedProduction": [
@@ -1718,6 +1733,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H16M58S",
             "simulatedProduction": [
@@ -1811,6 +1827,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H20M13.090909S",
             "simulatedProduction": [
@@ -1914,6 +1931,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H23M56.5454545S",
             "simulatedProduction": [
@@ -2023,6 +2041,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H25M32.1538461S",
             "simulatedProduction": [
@@ -2134,6 +2153,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H57M35.2307692S",
             "simulatedProduction": [
@@ -2252,6 +2272,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H57M21.5S",
             "simulatedProduction": [
@@ -2359,6 +2380,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H56M33.5S",
             "simulatedProduction": [
@@ -2472,6 +2494,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H43M27S",
             "simulatedProduction": [
@@ -2573,6 +2596,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H16M33.8181818S",
             "simulatedProduction": [
@@ -2682,6 +2706,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H32M58.6666666S",
             "simulatedProduction": [
@@ -2813,6 +2838,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H28M4.8888888S",
             "simulatedProduction": [
@@ -2949,6 +2975,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H38M24.7777777S",
             "simulatedProduction": [
@@ -3080,6 +3107,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H35M41.7777777S",
             "simulatedProduction": [
@@ -3218,6 +3246,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H14M50S",
             "simulatedProduction": [
@@ -3320,6 +3349,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H32M50.4S",
             "simulatedProduction": [
@@ -3426,6 +3456,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H20M3.4285714S",
             "simulatedProduction": [
@@ -3519,6 +3550,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H12M49.3333333S",
             "simulatedProduction": [
@@ -3620,6 +3652,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H5M44.8S",
             "simulatedProduction": [
@@ -3719,6 +3752,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H46M48.4S",
             "simulatedProduction": [
@@ -3825,6 +3859,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H31M43.8888888S",
             "simulatedProduction": [
@@ -3927,6 +3962,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H28M47.4444444S",
             "simulatedProduction": [
@@ -4027,6 +4063,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H11M11.4S",
             "simulatedProduction": [
@@ -4132,6 +4169,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H26M12S",
             "simulatedProduction": [
@@ -4232,6 +4270,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H32M17.1111111S",
             "simulatedProduction": [
@@ -4334,6 +4373,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H33M2.8888888S",
             "simulatedProduction": [
@@ -4465,6 +4505,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H28M7.1111111S",
             "simulatedProduction": [
@@ -4603,6 +4644,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H21M2.5263157S",
             "simulatedProduction": [
@@ -4738,6 +4780,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H28M4.6315789S",
             "simulatedProduction": [
@@ -4879,6 +4922,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H35M46.8888888S",
             "simulatedProduction": [
@@ -4981,6 +5025,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H51M19.75S",
             "simulatedProduction": [
@@ -5104,6 +5149,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H27M31.25S",
             "simulatedProduction": [
@@ -5232,6 +5278,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H1M1S",
             "simulatedProduction": [
@@ -5339,6 +5386,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H52M49.3333333S",
             "simulatedProduction": [
@@ -5452,6 +5500,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H3M2.2857142S",
             "simulatedProduction": [
@@ -5545,6 +5594,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H41M58.2S",
             "simulatedProduction": [
@@ -5644,6 +5694,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H35M29.4S",
             "simulatedProduction": [
@@ -5750,6 +5801,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H18M3.4S",
             "simulatedProduction": [
@@ -5855,6 +5907,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H19M20.6666666S",
             "simulatedProduction": [
@@ -5956,6 +6009,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H19M3.8S",
             "simulatedProduction": [
@@ -6061,6 +6115,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H11M11.4S",
             "simulatedProduction": [
@@ -6165,6 +6220,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H48M4.4615384S",
             "simulatedProduction": [
@@ -6281,6 +6337,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H3M15.5S",
             "simulatedProduction": [
@@ -6404,6 +6461,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H36M27.5S",
             "simulatedProduction": [
@@ -6532,6 +6590,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H45.3333333S",
             "simulatedProduction": [
@@ -6639,6 +6698,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H52M30.3333333S",
             "simulatedProduction": [
@@ -6753,6 +6813,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H35M46.8888888S",
             "simulatedProduction": [
@@ -6856,6 +6917,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H28M9S",
             "simulatedProduction": [
@@ -6955,6 +7017,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H13M17.2S",
             "simulatedProduction": [
@@ -7059,6 +7122,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H23M23.7894736S",
             "simulatedProduction": [
@@ -7200,6 +7264,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H27M28.3333333S",
             "simulatedProduction": [
@@ -7300,6 +7365,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H30M12S",
             "simulatedProduction": [
@@ -7406,6 +7472,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H18M51.2727272S",
             "simulatedProduction": [
@@ -7509,6 +7576,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H3M29.8181818S",
             "simulatedProduction": [
@@ -7617,6 +7685,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H31M53.2S",
             "simulatedProduction": [
@@ -7703,6 +7772,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H31M39.4444444S",
             "simulatedProduction": [
@@ -25130,6 +25200,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H20M6.2S",
             "simulatedProduction": [
@@ -25233,6 +25304,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H14M23.8823529S",
             "simulatedProduction": [
@@ -25360,6 +25432,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H23M45.8823529S",
             "simulatedProduction": [
@@ -25492,6 +25565,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H39M31.3333333S",
             "simulatedProduction": [
@@ -25592,6 +25666,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H57M34.1428571S",
             "simulatedProduction": [
@@ -25707,6 +25782,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H33M23.2857142S",
             "simulatedProduction": [
@@ -25828,6 +25904,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H56M28.2S",
             "simulatedProduction": [
@@ -25967,6 +26044,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H11M56.5S",
             "simulatedProduction": [
@@ -26112,6 +26190,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H7M19.7777777S",
             "simulatedProduction": [
@@ -26213,6 +26292,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H7M13.9S",
             "simulatedProduction": [
@@ -26352,6 +26432,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H54M45S",
             "simulatedProduction": [
@@ -26496,6 +26577,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H28M15.6S",
             "simulatedProduction": [
@@ -26601,6 +26683,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H31M49.7142857S",
             "simulatedProduction": [
@@ -26695,6 +26778,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H29M23.4S",
             "simulatedProduction": [
@@ -26799,6 +26883,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H53M38.2608695S",
             "simulatedProduction": [
@@ -26955,6 +27040,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H24M10.1818181S",
             "simulatedProduction": [
@@ -27058,6 +27144,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H54M39.2727272S",
             "simulatedProduction": [
@@ -27165,6 +27252,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H23M10.5263157S",
             "simulatedProduction": [
@@ -27300,6 +27388,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H22M4.6315789S",
             "simulatedProduction": [
@@ -27440,6 +27529,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H45M31.875S",
             "simulatedProduction": [
@@ -27563,6 +27653,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H40M32.5S",
             "simulatedProduction": [
@@ -27691,6 +27782,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H57M21.5S",
             "simulatedProduction": [
@@ -27798,6 +27890,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H56M33.5S",
             "simulatedProduction": [
@@ -27911,6 +28004,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H34M59.3333333S",
             "simulatedProduction": [
@@ -28006,6 +28100,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H53M21.3333333S",
             "simulatedProduction": [
@@ -28104,6 +28199,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H4M37.090909S",
             "simulatedProduction": [
@@ -28207,6 +28303,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H14M35.4545454S",
             "simulatedProduction": [
@@ -28314,6 +28411,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H9M16.5714285S",
             "simulatedProduction": [
@@ -28405,6 +28503,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H58M38.6666666S",
             "simulatedProduction": [
@@ -28507,6 +28606,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H51M8S",
             "simulatedProduction": [
@@ -28570,6 +28670,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT52M52S",
             "simulatedProduction": [
@@ -28638,6 +28739,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H18M1.6363636S",
             "simulatedProduction": [
@@ -28741,6 +28843,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H24M22.9090909S",
             "simulatedProduction": [
@@ -28848,6 +28951,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H57M23.5555555S",
             "simulatedProduction": [
@@ -28982,6 +29086,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H54M55.7647058S",
             "simulatedProduction": [
@@ -29113,6 +29218,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H27M32S",
             "simulatedProduction": [
@@ -29196,6 +29302,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H33M59S",
             "simulatedProduction": [
@@ -29283,6 +29390,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H19M4.8888888S",
             "simulatedProduction": [
@@ -29378,6 +29486,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H43M30S",
             "simulatedProduction": [
@@ -29479,6 +29588,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H29M34.6S",
             "simulatedProduction": [
@@ -29583,6 +29693,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H55M36.4S",
             "simulatedProduction": [
@@ -29702,6 +29813,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H49M2.8S",
             "simulatedProduction": [
@@ -29827,6 +29939,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H29M1.4444444S",
             "simulatedProduction": [
@@ -29927,6 +30040,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H33M2.8888888S",
             "simulatedProduction": [
@@ -30058,6 +30172,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H28M49.1111111S",
             "simulatedProduction": [
@@ -30195,6 +30310,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H24M36.8S",
             "simulatedProduction": [
@@ -30280,6 +30396,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H39M33.6S",
             "simulatedProduction": [
@@ -30359,6 +30476,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H17M0.8S",
             "simulatedProduction": [
@@ -30444,6 +30562,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H49M20S",
             "simulatedProduction": [
@@ -30571,6 +30690,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H49M25.1764705S",
             "simulatedProduction": [
@@ -30704,6 +30824,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H26M48S",
             "simulatedProduction": [
@@ -30796,6 +30917,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H9M38S",
             "simulatedProduction": [
@@ -30899,6 +31021,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H56M25.6363636S",
             "simulatedProduction": [
@@ -31007,6 +31130,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H56M30.25S",
             "simulatedProduction": [
@@ -31162,6 +31286,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H55M58S",
             "simulatedProduction": [
@@ -31323,6 +31448,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H14M0.1818181S",
             "simulatedProduction": [
@@ -31432,6 +31558,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H51M16.8888888S",
             "simulatedProduction": [
@@ -31568,6 +31695,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H46M21.4117647S",
             "simulatedProduction": [
@@ -31695,6 +31823,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H46M25.8823529S",
             "simulatedProduction": [
@@ -31825,6 +31954,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H14M22S",
             "simulatedProduction": [
@@ -31924,6 +32054,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H28M31.6S",
             "simulatedProduction": [
@@ -32029,6 +32160,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H43M45S",
             "simulatedProduction": [
@@ -32136,6 +32268,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H45M34.6666666S",
             "simulatedProduction": [
@@ -32249,6 +32382,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H34M49.4S",
             "simulatedProduction": [
@@ -32353,6 +32487,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H17M53S",
             "simulatedProduction": [
@@ -32449,6 +32584,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H47M14.8333333S",
             "simulatedProduction": [
@@ -32556,6 +32692,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H37M10.8333333S",
             "simulatedProduction": [
@@ -32668,6 +32805,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H56M38.9S",
             "simulatedProduction": [
@@ -32811,6 +32949,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H53M17.5S",
             "simulatedProduction": [
@@ -32934,6 +33073,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H48M4S",
             "simulatedProduction": [
@@ -33062,6 +33202,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H43M31.5S",
             "simulatedProduction": [
@@ -33157,6 +33298,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H30.6S",
             "simulatedProduction": [
@@ -33260,6 +33402,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H45M40.6666666S",
             "simulatedProduction": [
@@ -33331,6 +33474,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H45M14.6666666S",
             "simulatedProduction": [
@@ -33408,6 +33552,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H46M18.1666666S",
             "simulatedProduction": [
@@ -33521,6 +33666,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT1H52M43S",
             "simulatedProduction": [
@@ -33589,6 +33735,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H40M19.5S",
             "simulatedProduction": [
@@ -33696,6 +33843,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H52M9.6666666S",
             "simulatedProduction": [
@@ -33808,6 +33956,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H22M10.9090909S",
             "simulatedProduction": [
@@ -33917,6 +34066,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H55M49.8823529S",
             "simulatedProduction": [
@@ -34044,6 +34194,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H24M10.8235294S",
             "simulatedProduction": [
@@ -34176,6 +34327,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H5M26.6666666S",
             "simulatedProduction": [
@@ -34266,6 +34418,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H24M19.6S",
             "simulatedProduction": [
@@ -34405,6 +34558,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H18M17.2S",
             "simulatedProduction": [
@@ -34549,6 +34703,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H37M11.3333333S",
             "simulatedProduction": [
@@ -34638,6 +34793,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H40M25.3333333S",
             "simulatedProduction": [
@@ -34745,6 +34901,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H52M3S",
             "simulatedProduction": [
@@ -34858,6 +35015,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H44M34.6666666S",
             "simulatedProduction": [
@@ -34929,6 +35087,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H12M15.3333333S",
             "simulatedProduction": [
@@ -35006,6 +35165,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H25M26.3636363S",
             "simulatedProduction": [
@@ -35109,6 +35269,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H24M47.4545454S",
             "simulatedProduction": [
@@ -35217,6 +35378,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H2M16.6666666S",
             "simulatedProduction": [
@@ -35365,6 +35527,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H55M46.4761904S",
             "simulatedProduction": [
@@ -35513,6 +35676,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H6M27.2S",
             "simulatedProduction": [
@@ -35612,6 +35776,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H53M33.6S",
             "simulatedProduction": [
@@ -35715,6 +35880,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H3M44.7272727S",
             "simulatedProduction": [
@@ -35818,6 +35984,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H19M51.6363636S",
             "simulatedProduction": [
@@ -35927,6 +36094,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H18M1.6363636S",
             "simulatedProduction": [
@@ -36030,6 +36198,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H15M6.5454545S",
             "simulatedProduction": [
@@ -36138,6 +36307,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H22M43.2S",
             "simulatedProduction": [
@@ -36222,6 +36392,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H12M21.5S",
             "simulatedProduction": [
@@ -36329,6 +36500,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H56M40.6666666S",
             "simulatedProduction": [
@@ -36441,6 +36613,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H36M3.3333333S",
             "simulatedProduction": [
@@ -36541,6 +36714,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H54M31.25S",
             "simulatedProduction": [
@@ -36637,6 +36811,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H13M7.7142857S",
             "simulatedProduction": [
@@ -36729,6 +36904,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H20M38S",
             "simulatedProduction": [
@@ -36872,6 +37048,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H53M50.1333333S",
             "simulatedProduction": [
@@ -36991,6 +37168,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H47M14.1333333S",
             "simulatedProduction": [
@@ -37115,6 +37293,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H29M57.7S",
             "simulatedProduction": [
@@ -37219,6 +37398,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H39M31.3333333S",
             "simulatedProduction": [
@@ -37317,6 +37497,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H25M20.3333333S",
             "simulatedProduction": [
@@ -37400,6 +37581,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H59M46S",
             "simulatedProduction": [
@@ -37488,6 +37670,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H25M12.5454545S",
             "simulatedProduction": [
@@ -37591,6 +37774,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H37M35.6363636S",
             "simulatedProduction": [
@@ -37697,6 +37881,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H33M56S",
             "simulatedProduction": [
@@ -37780,6 +37965,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H25M3.5S",
             "simulatedProduction": [
@@ -37903,6 +38089,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H44M9.75S",
             "simulatedProduction": [
@@ -38031,6 +38218,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H28M58.5454545S",
             "simulatedProduction": [
@@ -38134,6 +38322,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H26M43.2727272S",
             "simulatedProduction": [
@@ -38242,6 +38431,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H30M57.6666666S",
             "simulatedProduction": [
@@ -38342,6 +38532,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H51M6.4444444S",
             "simulatedProduction": [
@@ -38437,6 +38628,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H8M47.1111111S",
             "simulatedProduction": [
@@ -38537,6 +38729,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H19M28.8S",
             "simulatedProduction": [
@@ -38616,6 +38809,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H15M43.6S",
             "simulatedProduction": [
@@ -38699,6 +38893,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H7M18S",
             "simulatedProduction": [
@@ -38809,6 +39004,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H13M4.4S",
             "simulatedProduction": [
@@ -38948,6 +39144,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H22M28.9S",
             "simulatedProduction": [
@@ -39093,6 +39290,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H43M33.8823529S",
             "simulatedProduction": [
@@ -39220,6 +39418,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H45M9.2941176S",
             "simulatedProduction": [
@@ -39353,6 +39552,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H59M31.3333333S",
             "simulatedProduction": [
@@ -39424,6 +39624,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H23M20S",
             "simulatedProduction": [
@@ -39500,6 +39701,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H25M0.4S",
             "simulatedProduction": [
@@ -39585,6 +39787,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H18M53.5S",
             "simulatedProduction": [
@@ -39660,6 +39863,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H21M42.5S",
             "simulatedProduction": [
@@ -39740,6 +39944,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H20M2.6666666S",
             "simulatedProduction": [
@@ -39839,6 +40044,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H16M10.8888888S",
             "simulatedProduction": [
@@ -39939,6 +40145,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H22M19.3333333S",
             "simulatedProduction": [
@@ -40037,6 +40244,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H55M14.9333333S",
             "simulatedProduction": [
@@ -40156,6 +40364,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H48M41.2S",
             "simulatedProduction": [
@@ -40281,6 +40490,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H2M43S",
             "simulatedProduction": [
@@ -40404,6 +40614,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H56M36.375S",
             "simulatedProduction": [
@@ -40531,6 +40742,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H59M58S",
             "simulatedProduction": [
@@ -40654,6 +40866,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H19M4.25S",
             "simulatedProduction": [
@@ -40783,6 +40996,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H38M31.5555555S",
             "simulatedProduction": [
@@ -40881,6 +41095,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H50M5.5S",
             "simulatedProduction": [
@@ -41039,6 +41254,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H36M20.1111111S",
             "simulatedProduction": [
@@ -41138,6 +41354,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H14M31.5S",
             "simulatedProduction": [
@@ -41213,6 +41430,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H20M48.5S",
             "simulatedProduction": [
@@ -41293,6 +41511,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H8M20S",
             "simulatedProduction": [
@@ -41360,6 +41579,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H15M59S",
             "simulatedProduction": [
@@ -41433,6 +41653,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H13M8.6S",
             "simulatedProduction": [
@@ -41577,6 +41798,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H20M55S",
             "simulatedProduction": [
@@ -41681,6 +41903,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H5M29.5S",
             "simulatedProduction": [
@@ -78152,6 +78375,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H20M6.2S",
             "simulatedProduction": [
@@ -78256,6 +78480,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H57M34.1428571S",
             "simulatedProduction": [
@@ -78371,6 +78596,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H33M23.2857142S",
             "simulatedProduction": [
@@ -78492,6 +78718,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H33M42.4444444S",
             "simulatedProduction": [
@@ -78593,6 +78820,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H44M5.75S",
             "simulatedProduction": [
@@ -78690,6 +78918,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H18M42.7692307S",
             "simulatedProduction": [
@@ -78801,6 +79030,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H7M12.7692307S",
             "simulatedProduction": [
@@ -78917,6 +79147,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H1M38.2222222S",
             "simulatedProduction": [
@@ -79018,6 +79249,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H28M15.6S",
             "simulatedProduction": [
@@ -79124,6 +79356,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H57M34.1666666S",
             "simulatedProduction": [
@@ -79231,6 +79464,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H56M33.5S",
             "simulatedProduction": [
@@ -79343,6 +79577,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H31M49.7142857S",
             "simulatedProduction": [
@@ -79437,6 +79672,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H29M23.4S",
             "simulatedProduction": [
@@ -79541,6 +79777,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H57M21.5S",
             "simulatedProduction": [
@@ -79648,6 +79885,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H56M33.5S",
             "simulatedProduction": [
@@ -79761,6 +79999,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H34M59.3333333S",
             "simulatedProduction": [
@@ -79856,6 +80095,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H53M21.3333333S",
             "simulatedProduction": [
@@ -79956,6 +80196,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H18M1.6363636S",
             "simulatedProduction": [
@@ -80059,6 +80300,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H24M22.9090909S",
             "simulatedProduction": [
@@ -80168,6 +80410,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H33M53.8181818S",
             "simulatedProduction": [
@@ -80279,6 +80522,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H19M20.6666666S",
             "simulatedProduction": [
@@ -80380,6 +80624,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H4M56.9090909S",
             "simulatedProduction": [
@@ -80483,6 +80728,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H6M56.5454545S",
             "simulatedProduction": [
@@ -80592,6 +80838,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H29M34.6S",
             "simulatedProduction": [
@@ -80698,6 +80945,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H13M50.4S",
             "simulatedProduction": [
@@ -80837,6 +81085,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H15M0.2S",
             "simulatedProduction": [
@@ -80981,6 +81230,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H42M38.4615384S",
             "simulatedProduction": [
@@ -81092,6 +81342,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H14M38.7692307S",
             "simulatedProduction": [
@@ -81208,6 +81459,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H16M58S",
             "simulatedProduction": [
@@ -81301,6 +81553,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H20M13.090909S",
             "simulatedProduction": [
@@ -81404,6 +81657,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H23M56.5454545S",
             "simulatedProduction": [
@@ -81513,6 +81767,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H25M32.1538461S",
             "simulatedProduction": [
@@ -81624,6 +81879,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H57M35.2307692S",
             "simulatedProduction": [
@@ -81740,6 +81996,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H33M2.8888888S",
             "simulatedProduction": [
@@ -81871,6 +82128,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H28M49.1111111S",
             "simulatedProduction": [
@@ -82009,6 +82267,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H57M21.5S",
             "simulatedProduction": [
@@ -82116,6 +82375,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H56M33.5S",
             "simulatedProduction": [
@@ -82229,6 +82489,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H43M27S",
             "simulatedProduction": [
@@ -82330,6 +82591,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H16M33.8181818S",
             "simulatedProduction": [
@@ -82439,6 +82701,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H32M58.6666666S",
             "simulatedProduction": [
@@ -82570,6 +82833,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H28M4.8888888S",
             "simulatedProduction": [
@@ -82706,6 +82970,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H38M24.7777777S",
             "simulatedProduction": [
@@ -82837,6 +83102,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H35M41.7777777S",
             "simulatedProduction": [
@@ -82975,6 +83241,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H14M50S",
             "simulatedProduction": [
@@ -83077,6 +83344,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H32M50.4S",
             "simulatedProduction": [
@@ -83183,6 +83451,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H20M3.4285714S",
             "simulatedProduction": [
@@ -83276,6 +83545,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H12M49.3333333S",
             "simulatedProduction": [
@@ -83377,6 +83647,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H5M44.8S",
             "simulatedProduction": [
@@ -83476,6 +83747,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H46M48.4S",
             "simulatedProduction": [
@@ -83580,6 +83852,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H47M14.8333333S",
             "simulatedProduction": [
@@ -83687,6 +83960,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H37M10.8333333S",
             "simulatedProduction": [
@@ -83799,6 +84073,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H56M38.9S",
             "simulatedProduction": [
@@ -83945,6 +84220,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H31M43.8888888S",
             "simulatedProduction": [
@@ -84047,6 +84323,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H28M47.4444444S",
             "simulatedProduction": [
@@ -84147,6 +84424,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H43M31.5S",
             "simulatedProduction": [
@@ -84243,6 +84521,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H11M11.4S",
             "simulatedProduction": [
@@ -84347,6 +84626,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H22M10.9090909S",
             "simulatedProduction": [
@@ -84457,6 +84737,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H26M12S",
             "simulatedProduction": [
@@ -84557,6 +84838,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H32M17.1111111S",
             "simulatedProduction": [
@@ -84659,6 +84941,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H33M2.8888888S",
             "simulatedProduction": [
@@ -84790,6 +85073,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H28M7.1111111S",
             "simulatedProduction": [
@@ -84928,6 +85212,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H21M2.5263157S",
             "simulatedProduction": [
@@ -85063,6 +85348,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H28M4.6315789S",
             "simulatedProduction": [
@@ -85204,6 +85490,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H25M26.3636363S",
             "simulatedProduction": [
@@ -85307,6 +85594,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H24M47.4545454S",
             "simulatedProduction": [
@@ -85416,6 +85704,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H35M46.8888888S",
             "simulatedProduction": [
@@ -85517,6 +85806,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H6M27.2S",
             "simulatedProduction": [
@@ -85616,6 +85906,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H53M33.6S",
             "simulatedProduction": [
@@ -85721,6 +86012,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H51M19.75S",
             "simulatedProduction": [
@@ -85844,6 +86136,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H27M31.25S",
             "simulatedProduction": [
@@ -85972,6 +86265,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H1M1S",
             "simulatedProduction": [
@@ -86079,6 +86373,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H52M49.3333333S",
             "simulatedProduction": [
@@ -86192,6 +86487,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H3M2.2857142S",
             "simulatedProduction": [
@@ -86285,6 +86581,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H41M58.2S",
             "simulatedProduction": [
@@ -86384,6 +86681,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H35M29.4S",
             "simulatedProduction": [
@@ -86488,6 +86786,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H36M3.3333333S",
             "simulatedProduction": [
@@ -86589,6 +86888,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H13M7.7142857S",
             "simulatedProduction": [
@@ -86681,6 +86981,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H29M57.7S",
             "simulatedProduction": [
@@ -86787,6 +87088,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H18M3.4S",
             "simulatedProduction": [
@@ -86892,6 +87194,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H19M20.6666666S",
             "simulatedProduction": [
@@ -86992,6 +87295,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H25M12.5454545S",
             "simulatedProduction": [
@@ -87095,6 +87399,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H37M35.6363636S",
             "simulatedProduction": [
@@ -87204,6 +87509,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H19M3.8S",
             "simulatedProduction": [
@@ -87309,6 +87615,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H28M58.5454545S",
             "simulatedProduction": [
@@ -87412,6 +87719,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H26M43.2727272S",
             "simulatedProduction": [
@@ -87520,6 +87828,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H11M11.4S",
             "simulatedProduction": [
@@ -87624,6 +87933,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H30M57.6666666S",
             "simulatedProduction": [
@@ -87724,6 +88034,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H51M6.4444444S",
             "simulatedProduction": [
@@ -87819,6 +88130,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H8M47.1111111S",
             "simulatedProduction": [
@@ -87919,6 +88231,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H48M4.4615384S",
             "simulatedProduction": [
@@ -88035,6 +88348,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H3M15.5S",
             "simulatedProduction": [
@@ -88158,6 +88472,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H36M27.5S",
             "simulatedProduction": [
@@ -88286,6 +88601,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H45.3333333S",
             "simulatedProduction": [
@@ -88393,6 +88709,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H52M30.3333333S",
             "simulatedProduction": [
@@ -88507,6 +88824,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT5H35M46.8888888S",
             "simulatedProduction": [
@@ -88610,6 +88928,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H28M9S",
             "simulatedProduction": [
@@ -88709,6 +89028,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H13M17.2S",
             "simulatedProduction": [
@@ -88814,6 +89134,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H59M31.3333333S",
             "simulatedProduction": [
@@ -88885,6 +89206,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H23M20S",
             "simulatedProduction": [
@@ -88961,6 +89283,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H23M23.7894736S",
             "simulatedProduction": [
@@ -89101,6 +89424,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT2H20M2.6666666S",
             "simulatedProduction": [
@@ -89202,6 +89526,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H27M28.3333333S",
             "simulatedProduction": [
@@ -89302,6 +89627,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H30M12S",
             "simulatedProduction": [
@@ -89407,6 +89733,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H8M20S",
             "simulatedProduction": [
@@ -89474,6 +89801,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT1H15M59S",
             "simulatedProduction": [
@@ -89547,6 +89875,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H18M51.2727272S",
             "simulatedProduction": [
@@ -89650,6 +89979,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H3M29.8181818S",
             "simulatedProduction": [
@@ -89758,6 +90088,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT4H31M53.2S",
             "simulatedProduction": [
@@ -89844,6 +90175,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H31M39.4444444S",
             "simulatedProduction": [
@@ -89944,6 +90276,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 2,
             "simulatedAverageFlowTime": "PT2H20M55S",
             "simulatedProduction": [
@@ -90048,6 +90381,7 @@ Map {
               2,
             ],
             "outputQueue": undefined,
+            "palletNums": [],
             "partsPerPallet": 1,
             "simulatedAverageFlowTime": "PT3H5M29.5S",
             "simulatedProduction": [
