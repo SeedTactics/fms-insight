@@ -387,7 +387,8 @@ namespace DebugMachineWatchApiServer
             QueuePosition = 10 + i
           },
           Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-          SignaledInspections = ImmutableList<string>.Empty
+          SignaledInspections = ImmutableList<string>.Empty,
+          QuarantineAfterUnload = null,
         };
         CurrentStatus %= st => st.Material.Add(m);
         ret.Add(m);
@@ -431,7 +432,8 @@ namespace DebugMachineWatchApiServer
           QueuePosition = position
         },
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-        SignaledInspections = ImmutableList<string>.Empty
+        SignaledInspections = ImmutableList<string>.Empty,
+        QuarantineAfterUnload = null,
       };
       CurrentStatus %= st => st.Material.Add(m);
       OnNewCurrentStatus?.Invoke(CurrentStatus);

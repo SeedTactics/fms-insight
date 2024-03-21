@@ -387,7 +387,7 @@ namespace MachineWatchTest
           "read-snapshots",
           "basic-unload-queues-quarantine.status.json"
         ),
-        JsonConvert.SerializeObject(status, jsonSettings)
+        JsonSerializer.Serialize(status, jsonSettings)
       );
       */
 

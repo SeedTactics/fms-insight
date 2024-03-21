@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Collections.Immutable;
+using System.Linq;
 using BlackMaple.MachineFramework;
 
 namespace Makino
@@ -285,6 +285,7 @@ namespace Makino
           .Select(x => x.InspType)
           .Distinct()
           .ToImmutableList(),
+        QuarantineAfterUnload = null,
         Action = new InProcessMaterialAction()
         {
           Type = InProcessMaterialAction.ActionType.Waiting,
@@ -483,7 +484,8 @@ namespace Makino
           LoadOntoFace = face,
           LoadOntoPalletNum = pal.PalletNum
         },
-        SignaledInspections = ImmutableList<string>.Empty
+        SignaledInspections = ImmutableList<string>.Empty,
+        QuarantineAfterUnload = null,
       };
 
       ms.Add(mat);

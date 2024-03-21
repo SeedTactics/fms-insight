@@ -78,6 +78,7 @@ public static class BuildCellState
               .Select(x => x.InspType)
               .Distinct()
               .ToImmutableList(),
+            QuarantineAfterUnload = null,
             Location = new InProcessMaterialLocation()
             {
               Type = InProcessMaterialLocation.LocType.InQueue,
@@ -167,36 +168,38 @@ public static class BuildCellState
 
     foreach (var face in lastLoaded)
     {
-      var loadedMats = face.LoadEnd.Material
-        .Select(mat =>
+      var loadedMats = face.LoadEnd.Material.Select(mat =>
+      {
+        var details = db.GetMaterialDetails(mat.MaterialID);
+        return new InProcessMaterial()
         {
-          var details = db.GetMaterialDetails(mat.MaterialID);
-          return new InProcessMaterial()
+          MaterialID = mat.MaterialID,
+          JobUnique = mat.JobUniqueStr,
+          PartName = mat.PartName,
+          Process = mat.Process,
+          Path =
+            details.Paths != null && details.Paths.ContainsKey(mat.Process) ? details.Paths[mat.Process] : 1,
+          Serial = details.Serial,
+          WorkorderId = details.Workorder,
+          SignaledInspections = db.LookupInspectionDecisions(mat.MaterialID)
+            .Where(x => x.Inspect)
+            .Select(x => x.InspType)
+            .ToImmutableList(),
+          QuarantineAfterUnload = log.Any(
+            e => e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == m.MaterialID)
+          )
+            ? true
+            : null,
+          LastCompletedMachiningRouteStopIndex = null,
+          Location = new InProcessMaterialLocation()
           {
-            MaterialID = mat.MaterialID,
-            JobUnique = mat.JobUniqueStr,
-            PartName = mat.PartName,
-            Process = mat.Process,
-            Path =
-              details.Paths != null && details.Paths.ContainsKey(mat.Process)
-                ? details.Paths[mat.Process]
-                : 1,
-            Serial = details.Serial,
-            WorkorderId = details.Workorder,
-            SignaledInspections = db.LookupInspectionDecisions(mat.MaterialID)
-              .Where(x => x.Inspect)
-              .Select(x => x.InspType)
-              .ToImmutableList(),
-            LastCompletedMachiningRouteStopIndex = null,
-            Location = new InProcessMaterialLocation()
-            {
-              Type = InProcessMaterialLocation.LocType.OnPallet,
-              PalletNum = pallet,
-              Face = face.Face,
-            },
-            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-          };
-        })
+            Type = InProcessMaterialLocation.LocType.OnPallet,
+            PalletNum = pallet,
+            Face = face.Face,
+          },
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+        };
+      })
         .ToImmutableList();
 
       var firstMat = loadedMats.First();
@@ -211,9 +214,9 @@ public static class BuildCellState
         stops = job.Processes[firstMat.Process - 1].Paths[firstMat.Path - 1].Stops;
         isFinalProcess = firstMat.Process == job.Processes.Count;
         outputQueue = job.Processes[firstMat.Process - 1].Paths[firstMat.Path - 1].OutputQueue;
-        expectedUnloadTimeForOnePieceOfMaterial = job.Processes[firstMat.Process - 1].Paths[
-          firstMat.Path - 1
-        ].ExpectedUnloadTime;
+        expectedUnloadTimeForOnePieceOfMaterial = job.Processes[firstMat.Process - 1]
+          .Paths[firstMat.Path - 1]
+          .ExpectedUnloadTime;
       }
       else
       {
@@ -638,23 +641,22 @@ public static class BuildCellState
                 MachineStart = machineStart
               }
             ),
-            Material = stop.face.Material
-              .Select(
-                oldMat =>
-                  oldMat with
+            Material = stop.face.Material.Select(
+              oldMat =>
+                oldMat with
+                {
+                  Action = new InProcessMaterialAction()
                   {
-                    Action = new InProcessMaterialAction()
-                    {
-                      Type = InProcessMaterialAction.ActionType.Machining,
-                      Program = programRevision.HasValue
-                        ? program + " rev" + programRevision.Value.ToString()
-                        : program,
-                      ElapsedMachiningTime = elapsed,
-                      ExpectedRemainingMachiningTime =
-                        expectedTotalTime == TimeSpan.Zero ? null : expectedTotalTime - elapsed,
-                    },
-                  }
-              )
+                    Type = InProcessMaterialAction.ActionType.Machining,
+                    Program = programRevision.HasValue
+                      ? program + " rev" + programRevision.Value.ToString()
+                      : program,
+                    ElapsedMachiningTime = elapsed,
+                    ExpectedRemainingMachiningTime =
+                      expectedTotalTime == TimeSpan.Zero ? null : expectedTotalTime - elapsed,
+                  },
+                }
+            )
               .ToImmutableList()
           }
         )
@@ -675,8 +677,7 @@ public static class BuildCellState
     DateTime nowUTC
   )
   {
-    var runningStops = pal.Faces.Values
-      .SelectMany(f => f.Stops.Select(s => (face: f, stop: s)))
+    var runningStops = pal.Faces.Values.SelectMany(f => f.Stops.Select(s => (face: f, stop: s)))
       .Where(s => s.stop.MachineStart != null && s.stop.MachineEnd == null)
       .GroupBy(s => s.stop.Program);
 
@@ -730,8 +731,9 @@ public static class BuildCellState
             stop.face with
             {
               Stops = stop.face.Stops.SetItem(stop.stop.StopIdx, stop.stop with { MachineEnd = machineEnd }),
-              Material = stop.face.Material
-                .Select(oldMat => oldMat with { LastCompletedMachiningRouteStopIndex = stop.stop.StopIdx, })
+              Material = stop.face.Material.Select(
+                oldMat => oldMat with { LastCompletedMachiningRouteStopIndex = stop.stop.StopIdx, }
+              )
                 .ToImmutableList()
             }
           )
@@ -798,22 +800,21 @@ public static class BuildCellState
     var outputQueue = OutputQueueForMaterial(face, pal.Log);
     face = face with
     {
-      Material = face.Material
-        .Select(
-          oldMat =>
-            oldMat with
+      Material = face.Material.Select(
+        oldMat =>
+          oldMat with
+          {
+            LastCompletedMachiningRouteStopIndex = face.Stops.Count - 1,
+            Action = new InProcessMaterialAction()
             {
-              LastCompletedMachiningRouteStopIndex = face.Stops.Count - 1,
-              Action = new InProcessMaterialAction()
-              {
-                Type = face.IsFinalProcess
-                  ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-                  : InProcessMaterialAction.ActionType.UnloadToInProcess,
-                UnloadIntoQueue = outputQueue,
-                ElapsedLoadUnloadTime = nowUTC - face.UnloadStart.EndTimeUTC
-              }
+              Type = face.IsFinalProcess
+                ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+                : InProcessMaterialAction.ActionType.UnloadToInProcess,
+              UnloadIntoQueue = outputQueue,
+              ElapsedLoadUnloadTime = nowUTC - face.UnloadStart.EndTimeUTC
             }
-        )
+          }
+      )
         .ToImmutableList()
     };
 
@@ -954,9 +955,9 @@ public static class BuildCellState
           isFinalProcess = process == job.Processes.Count;
           outputQueue = job.Processes[process - 1].Paths[path - 1].OutputQueue;
           expectedLoadTimeForOnePieceOfMaterial = job.Processes[process - 1].Paths[path - 1].ExpectedLoadTime;
-          expectedUnloadTimeForOnePieceOfMaterial = job.Processes[process - 1].Paths[
-            path - 1
-          ].ExpectedUnloadTime;
+          expectedUnloadTimeForOnePieceOfMaterial = job.Processes[process - 1]
+            .Paths[path - 1]
+            .ExpectedUnloadTime;
         }
         else
         {

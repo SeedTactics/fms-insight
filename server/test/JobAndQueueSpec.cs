@@ -32,15 +32,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using Xunit;
-using FluentAssertions;
-using BlackMaple.MachineFramework;
-using NSubstitute;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoFixture;
+using BlackMaple.MachineFramework;
+using FluentAssertions;
+using NSubstitute;
+using Xunit;
 
 namespace MachineWatchTest;
 
@@ -219,16 +219,14 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     return job with
     {
       RouteEndUTC = job.RouteStartUTC.AddHours(1),
-      Processes = job.Processes
-        .Select(
-          (proc, procIdx) =>
-            new ProcessInfo()
-            {
-              Paths = proc.Paths
-                .Select(path => path with { Casting = procIdx == 0 ? path.Casting : null })
-                .ToImmutableList()
-            }
-        )
+      Processes = job.Processes.Select(
+        (proc, procIdx) =>
+          new ProcessInfo()
+          {
+            Paths = proc.Paths.Select(path => path with { Casting = procIdx == 0 ? path.Casting : null })
+              .ToImmutableList()
+          }
+      )
         .ToImmutableList()
     };
   }
@@ -266,8 +264,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       curSt: new CurrentStatus()
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
-        Jobs = ImmutableDictionary<string, ActiveJob>.Empty
-          .Add(completedActive.UniqueStr, completedActive)
+        Jobs = ImmutableDictionary<string, ActiveJob>
+          .Empty.Add(completedActive.UniqueStr, completedActive)
           .Add(toKeepJob.UniqueStr, toKeepActive),
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
@@ -345,8 +343,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       curSt: new CurrentStatus()
       {
         TimeOfCurrentStatusUTC = now,
-        Jobs = ImmutableDictionary<string, ActiveJob>.Empty
-          .Add(j1.UniqueStr, j1Active)
+        Jobs = ImmutableDictionary<string, ActiveJob>
+          .Empty.Add(j1.UniqueStr, j1Active)
           .Add(j2.UniqueStr, j2Active),
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
@@ -1475,6 +1473,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Path = path,
       Serial = serial,
       SignaledInspections = ImmutableList<string>.Empty,
+      QuarantineAfterUnload = null,
       Location = new InProcessMaterialLocation()
       {
         Type = InProcessMaterialLocation.LocType.InQueue,
@@ -1532,6 +1531,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Path = path,
       Serial = serial,
       SignaledInspections = ImmutableList<string>.Empty,
+      QuarantineAfterUnload = null,
       Location = new InProcessMaterialLocation()
       {
         Type = InProcessMaterialLocation.LocType.OnPallet,

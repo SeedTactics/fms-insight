@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using BlackMaple.MachineFramework;
 using System.Collections.Immutable;
+using System.Linq;
+using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
@@ -329,6 +329,13 @@ namespace MazakMachineInterface
                     .Select(x => x.InspType)
                     .Distinct()
                     .ToImmutableList(),
+                  QuarantineAfterUnload = oldCycles.Any(
+                    e =>
+                      e.LogType == LogType.SignalQuarantine
+                      && e.Material.Any(m => m.MaterialID == m.MaterialID)
+                  )
+                    ? true
+                    : null,
                   LastCompletedMachiningRouteStopIndex = oldCycles.Any(
                     c =>
                       c.LogType == LogType.MachineCycle
@@ -392,15 +399,15 @@ namespace MazakMachineInterface
           precedence += 1;
           return j.CloneToDerived<ActiveJob, Job>() with
           {
-            Completed = j.Processes
-              .Select(p => ImmutableList.Create(new int[p.Paths.Count]))
+            Completed = j.Processes.Select(p => ImmutableList.Create(new int[p.Paths.Count]))
               .ToImmutableList(),
             RemainingToStart = j.Cycles,
             Decrements = j.Decrements,
             ScheduleId = j.ScheduleId,
             CopiedToSystem = false,
-            Precedence = j.Processes
-              .Select(p => Enumerable.Range(1, p.Paths.Count).Select(x => precedence).ToImmutableList())
+            Precedence = j.Processes.Select(
+              p => Enumerable.Range(1, p.Paths.Count).Select(x => precedence).ToImmutableList()
+            )
               .ToImmutableList(),
             AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(j.UniqueStr))
           };
@@ -409,8 +416,8 @@ namespace MazakMachineInterface
       return new CurrentStatus()
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
-        Jobs = jobsByUniq.Values
-          .Select(
+        Jobs = jobsByUniq
+          .Values.Select(
             job =>
               new ActiveJob()
               {
@@ -434,8 +441,7 @@ namespace MazakMachineInterface
                   }
                   : null,
                 Cycles = job.Cycles,
-                Processes = job.Processes
-                  .Select(paths => new ProcessInfo() { Paths = paths.ToImmutable() })
+                Processes = job.Processes.Select(paths => new ProcessInfo() { Paths = paths.ToImmutable() })
                   .ToImmutableList(),
                 CopiedToSystem = true,
                 Completed = job.Completed.Select(c => c.ToImmutable()).ToImmutableList(),
@@ -834,6 +840,12 @@ namespace MazakMachineInterface
                 .Where(x => x.Inspect)
                 .Select(x => x.InspType)
                 .ToImmutableList(),
+              QuarantineAfterUnload = oldCycles.Any(
+                e =>
+                  e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == m.MaterialID)
+              )
+                ? true
+                : null,
               Location = new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
@@ -940,6 +952,7 @@ namespace MazakMachineInterface
                     .Select(x => x.InspType)
                     .ToImmutableList()
                   : ImmutableList<string>.Empty,
+              QuarantineAfterUnload = null,
             }
           );
         }

@@ -129,6 +129,8 @@ namespace BlackMaple.MachineFramework
 
     public required ImmutableList<string> SignaledInspections { get; init; }
 
+    public bool? QuarantineAfterUnload { get; init; }
+
     // 0-based index into the JobPlan.MachiningStops array for the last completed stop.  Null or negative values
     // indicate no machining stops have yet completed.
     public int? LastCompletedMachiningRouteStopIndex { get; init; }

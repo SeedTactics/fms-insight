@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
 
 namespace BlackMaple.MachineFramework
@@ -359,7 +359,8 @@ namespace BlackMaple.MachineFramework
               QueuePosition = log.LocationNum
             },
             Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-            SignaledInspections = ImmutableList<string>.Empty
+            SignaledInspections = ImmutableList<string>.Empty,
+            QuarantineAfterUnload = null
           }
         );
       }
@@ -472,7 +473,8 @@ namespace BlackMaple.MachineFramework
           QueuePosition = logEvt.LastOrDefault()?.LocationNum
         },
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-        SignaledInspections = ImmutableList<string>.Empty
+        SignaledInspections = ImmutableList<string>.Empty,
+        QuarantineAfterUnload = null
       };
     }
 

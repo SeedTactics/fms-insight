@@ -32,11 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
-using Xunit;
-using BlackMaple.MachineFramework;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
+using BlackMaple.MachineFramework;
+using Xunit;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -6359,6 +6359,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (!signalDuringUnload)
       {
         _dsl.SignalForQuarantine(AAAproc1, pal: 1, q: "Quarantine");
+        _dsl.UpdateExpectedMaterial(
+          AAAproc1,
+          im =>
+          {
+            im.QuarantineAfterUnload = true;
+          }
+        );
       }
 
       _dsl.EndMachine(mach: 6)
@@ -6435,6 +6442,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             im =>
             {
               im.Action.UnloadIntoQueue = "Quarantine";
+              im.QuarantineAfterUnload = true;
             }
           );
       }
@@ -6446,6 +6454,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           AAAproc1,
           im =>
           {
+            im.QuarantineAfterUnload = null;
             im.SetAction(
               new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting, }
             );

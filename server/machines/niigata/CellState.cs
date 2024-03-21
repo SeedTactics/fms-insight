@@ -104,8 +104,8 @@ namespace BlackMaple.FMSInsight.Niigata
       var palletStateUpdated = false;
 
       var jobCache = new JobCache(logDB);
-      var pals = status.Pallets
-        .Select(p => BuildCurrentPallet(status.Machines, jobCache, p, logDB))
+      var pals = status
+        .Pallets.Select(p => BuildCurrentPallet(status.Machines, jobCache, p, logDB))
         .OrderBy(p =>
         {
           // sort pallets by loadBegin so that the assignment of material from queues to pallets is consistent
@@ -189,8 +189,8 @@ namespace BlackMaple.FMSInsight.Niigata
           Alarms = pals.Where(pal => pal.Status.Tracking.Alarm)
             .Select(pal => AlarmCodeToString(pal.Status.Master.PalletNum, pal.Status.Tracking.AlarmCode))
             .Concat(
-              status.Machines.Values
-                .Where(mc => mc.Alarm)
+              status
+                .Machines.Values.Where(mc => mc.Alarm)
                 .Select(mc => "Machine " + mc.MachineNumber.ToString() + " has an alarm")
             )
             .Concat(status.Alarm ? new[] { "ICC has an alarm" } : new string[] { })
@@ -265,6 +265,11 @@ namespace BlackMaple.FMSInsight.Niigata
             .Where(x => x.Inspect)
             .Select(x => x.InspType)
             .ToImmutableList(),
+          QuarantineAfterUnload = log.Any(
+            e => e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == m.MaterialID)
+          )
+            ? true
+            : null,
           LastCompletedMachiningRouteStopIndex = null,
           Location = new InProcessMaterialLocation()
           {
@@ -288,8 +293,8 @@ namespace BlackMaple.FMSInsight.Niigata
             lastCompletedIccIdx += 1;
           }
           var completedMachineSteps = Math.Min(
-            pallet.Master.Routes
-              .Take(lastCompletedIccIdx)
+            pallet
+              .Master.Routes.Take(lastCompletedIccIdx)
               .Where(r => r is MachiningStep || r is ReclampStep)
               .Count(),
             // Should never be hit, but if the user edits the pallet and forgets to set "Manual" in the comment field,
@@ -384,6 +389,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   Path = actionIsLoading ? 1 : face.Path,
                   Serial = serial,
                   SignaledInspections = ImmutableList<string>.Empty,
+                  QuarantineAfterUnload = null,
                   Location = actionIsLoading
                     ? new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, }
                     : new InProcessMaterialLocation()
@@ -463,6 +469,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   WorkorderId = mat.Workorder,
                   Process = actionIsLoading ? 0 : face.Process,
                   SignaledInspections = ImmutableList<string>.Empty,
+                  QuarantineAfterUnload = null,
                   Path = actionIsLoading
                     ? (mat.Paths != null && mat.Paths.TryGetValue(1, out var path) ? path : 1)
                     : face.Path,
@@ -520,6 +527,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     Serial = mat.Serial,
                     WorkorderId = mat.WorkorderId,
                     SignaledInspections = mat.SignaledInspections,
+                    QuarantineAfterUnload = null,
                     Process = actionIsLoading ? mat.Process : face.Process,
                     Path = actionIsLoading ? mat.Path : face.Path,
                     Location = actionIsLoading
@@ -606,6 +614,7 @@ namespace BlackMaple.FMSInsight.Niigata
                       .Select(x => x.InspType)
                       .Distinct()
                       .ToImmutableList(),
+                    QuarantineAfterUnload = null,
                     Process = actionIsLoading ? face.Process - 1 : face.Process,
                     Path = actionIsLoading
                       ? (
@@ -699,6 +708,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     Process = actionIsLoading ? face.Process - 1 : face.Process,
                     Path = actionIsLoading ? 1 : face.Path,
                     SignaledInspections = ImmutableList<string>.Empty,
+                    QuarantineAfterUnload = null,
                     Location = actionIsLoading
                       ? new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, }
                       : new InProcessMaterialLocation()
@@ -965,8 +975,8 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 LoadStation = loadBegin.LocationNum,
                 Elapsed = nowUtc.Subtract(loadBegin.EndTimeUTC),
-                Faces = pallet.Material
-                  .GroupBy(p => p.Mat.Location.Face ?? 1)
+                Faces = pallet
+                  .Material.GroupBy(p => p.Mat.Location.Face ?? 1)
                   .Select(face =>
                   {
                     var job = face.First().Job;
@@ -1006,8 +1016,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
       foreach (var face in pallet.CurrentOrLoadingFaces)
       {
-        var matOnFace = pallet.Material
-          .Where(
+        var matOnFace = pallet
+          .Material.Where(
             m =>
               m.Mat.JobUnique == face.Job.UniqueStr
               && m.Mat.Process == face.Process
@@ -1656,7 +1666,8 @@ namespace BlackMaple.FMSInsight.Niigata
             foreach (var log in decisions.Where(e => e.Result.ToLower() == "true"))
             {
               if (
-                log.ProgramDetails != null && log.ProgramDetails.TryGetValue("InspectionType", out var iType)
+                log.ProgramDetails != null
+                && log.ProgramDetails.TryGetValue("InspectionType", out var iType)
               )
               {
                 mat.Mat %= m => m.SignaledInspections.Append(iType).ToArray();
@@ -1817,8 +1828,8 @@ namespace BlackMaple.FMSInsight.Niigata
       IJobCache loadJob
     )
     {
-      var allMats = MachineFramework.BuildCellState
-        .AllQueuedMaterial(logDB, loadJob)
+      var allMats = MachineFramework
+        .BuildCellState.AllQueuedMaterial(logDB, loadJob)
         .Where(m => !matsOnPallets.Contains(m.InProc.MaterialID));
 
       var works = logDB.WorkordersById(
@@ -2160,11 +2171,11 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       // the icc program numbers currently used by schedules
       var usedIccProgs = new HashSet<string>(
-        usedProgs.Values
-          .Select(p => p.CellControllerProgramName)
+        usedProgs
+          .Values.Select(p => p.CellControllerProgramName)
           .Concat(
-            status.Pallets
-              .SelectMany(p => p.Master.Routes)
+            status
+              .Pallets.SelectMany(p => p.Master.Routes)
               .SelectMany(
                 r =>
                   r is MachiningStep
@@ -2176,8 +2187,8 @@ namespace BlackMaple.FMSInsight.Niigata
 
       // we want to keep around the latest revision for each program just so that we don't delete it as soon as a schedule
       // completes in anticipation of a new schedule being downloaded.
-      var maxRevForProg = status.Programs
-        .Select(
+      var maxRevForProg = status
+        .Programs.Select(
           p =>
             AssignNewRoutesOnPallets.TryParseProgramComment(p.Value, out string pName, out long rev)
               ? new { pName, rev }
@@ -2254,6 +2265,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 Path = 1,
                 Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, },
                 SignaledInspections = ImmutableList<string>.Empty,
+                QuarantineAfterUnload = null,
                 Action = new InProcessMaterialAction()
                 {
                   Type = InProcessMaterialAction.ActionType.Loading,
@@ -2276,6 +2288,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 Process = 1,
                 Path = 1,
                 SignaledInspections = ImmutableList<string>.Empty,
+                QuarantineAfterUnload = null,
                 Location = new InProcessMaterialLocation()
                 {
                   Type = InProcessMaterialLocation.LocType.OnPallet,
