@@ -133,6 +133,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
                       workorderId: row.workorder,
                       startedProcess1: true,
                       signaledInspections: [],
+                      quarantineAfterUnload: null,
                     },
                   });
                 }

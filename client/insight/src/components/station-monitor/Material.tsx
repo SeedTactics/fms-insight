@@ -263,6 +263,29 @@ export function MaterialAction({
   return null;
 }
 
+function Warning({ mat }: { mat: Readonly<MaterialSummaryAndCompletedData> }) {
+  let tooltip: string | null = null;
+  if (mat.signaledInspections.length > 0) {
+    tooltip = "Inspect: " + mat.signaledInspections.join(", ");
+  }
+  if (mat.quarantineAfterUnload) {
+    if (tooltip === null) {
+      tooltip = "Material will quarantine after unload";
+    } else {
+      tooltip += "; Material will quarantine after unload";
+    }
+  }
+  if (tooltip === null) {
+    return null;
+  } else {
+    return (
+      <Tooltip title={tooltip}>
+        <WarningIcon />
+      </Tooltip>
+    );
+  }
+}
+
 function JobRawMaterial({ fsize, mat }: { mat: Readonly<api.IInProcessMaterial>; fsize?: MatCardFontSize }) {
   const job = useAtomValue(currentStatus).jobs[mat.jobUnique];
   let path = mat.path;
@@ -293,7 +316,7 @@ export interface MaterialSummaryProps {
   readonly fsize?: MatCardFontSize;
   readonly displayActionForSinglePallet?: number;
   readonly focusInspectionType?: string | null;
-  readonly hideInspectionIcon?: boolean;
+  readonly hideWarningIcon?: boolean;
   readonly displayJob?: boolean;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
@@ -306,7 +329,6 @@ const MatCard = React.forwardRef(function MatCard(
 ) {
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
-  const inspections = props.mat.signaledInspections.join(", ");
   const completed = props.mat.completedInspections || {};
 
   let completedMsg: JSX.Element | undefined;
@@ -428,11 +450,9 @@ const MatCard = React.forwardRef(function MatCard(
                 <Avatar style={{ width: "30px", height: "30px" }}>{props.mat.serial.slice(-1)}</Avatar>
               </div>
             ) : undefined}
-            {props.hideInspectionIcon || props.mat.signaledInspections.length === 0 ? undefined : (
+            {props.hideWarningIcon ? undefined : (
               <div>
-                <Tooltip title={inspections}>
-                  <WarningIcon />
-                </Tooltip>
+                <Warning mat={props.mat} />
               </div>
             )}
           </Box>

@@ -183,7 +183,7 @@ export function Inspection({ focusInspectionType, forceSingleColumn }: Inspectio
           <Typography variant="h4">Parts to Inspect</Typography>
           <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
             {recent_inspections.waiting_to_inspect.map((m, idx) => (
-              <MatSummary key={idx} mat={m} focusInspectionType={focusInspectionType} hideInspectionIcon />
+              <MatSummary key={idx} mat={m} focusInspectionType={focusInspectionType} hideWarningIcon />
             ))}
           </Box>
         </Box>
@@ -191,7 +191,7 @@ export function Inspection({ focusInspectionType, forceSingleColumn }: Inspectio
           <Typography variant="h4">Recently Inspected</Typography>
           <Box display="flex" justifyContent="flex-start" flexWrap="wrap">
             {recent_inspections.inspect_completed.map((m, idx) => (
-              <MatSummary key={idx} mat={m} focusInspectionType={focusInspectionType} hideInspectionIcon />
+              <MatSummary key={idx} mat={m} focusInspectionType={focusInspectionType} hideWarningIcon />
             ))}
           </Box>
         </Box>

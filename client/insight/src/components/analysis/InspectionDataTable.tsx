@@ -197,6 +197,7 @@ export default React.memo(function InspDataTable(props: InspectionDataTableProps
                                 serial: row.serial,
                                 workorderId: row.workorder,
                                 signaledInspections: [],
+                                quarantineAfterUnload: null,
                               },
                             })
                     }
