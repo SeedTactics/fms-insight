@@ -64,7 +64,7 @@ import {
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
 import { addWorkorderComment, currentStatus } from "../../cell-status/current-status.js";
-import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
+import { LazySeq, OrderedSet, ToComparableBase } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
 import { IActiveWorkorder } from "../../network/api.js";
 import { durationToMinutes } from "../../util/parseISODuration.js";
@@ -94,6 +94,9 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
     .concat(LazySeq.ofObject(workorder.elapsedStationTime ?? {}))
     .map(([st]) => st)
     .distinctAndSortBy((s) => s);
+
+  const quarantinedSerials = OrderedSet.from(workorder.quarantinedSerials ?? []);
+
   return (
     <Stack direction="row" flexWrap="wrap" justifyContent="space-around" ml="1em" mr="1em">
       <div>
@@ -107,7 +110,10 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
           <TableBody>
             {workorder.serials.map((s) => (
               <TableRow key={s}>
-                <TableCell>{s}</TableCell>
+                <TableCell>
+                  {s}
+                  {quarantinedSerials.has(s) ? " (quarantined)" : ""}
+                </TableCell>
                 <TableCell padding="checkbox">
                   <IconButton
                     onClick={() =>
@@ -219,6 +225,7 @@ function WorkorderRow({
         <TableCell align="right">{workorder.priority}</TableCell>
         <TableCell align="right">{workorder.plannedQuantity}</TableCell>
         <TableCell align="right">{workorder.serials.length}</TableCell>
+        <TableCell align="right">{workorder.quarantinedSerials?.length ?? ""}</TableCell>
         <TableCell align="right">{workorder.completedQuantity}</TableCell>
         {showSim ? (
           <>
@@ -253,6 +260,7 @@ enum SortColumn {
   Priority,
   CompletedQty,
   AssignedQty,
+  QuarantinedQty,
   SimulatedStart,
   SimulatedFilled,
 }
@@ -281,6 +289,9 @@ function sortWorkorders(
       break;
     case SortColumn.CompletedQty:
       sortCol = (j) => j.completedQuantity;
+      break;
+    case SortColumn.QuarantinedQty:
+      sortCol = (j) => j.quarantinedSerials?.length ?? 0;
       break;
     case SortColumn.AssignedQty:
       sortCol = (j) => j.serials.length;
@@ -435,6 +446,9 @@ const WorkorderHeader = React.memo(function WorkorderHeader(props: {
         </SortColHeader>
         <SortColHeader align="right" col={SortColumn.AssignedQty} {...sort}>
           Started Quantity
+        </SortColHeader>
+        <SortColHeader align="right" col={SortColumn.QuarantinedQty} {...sort}>
+          Quarantined
         </SortColHeader>
         <SortColHeader align="right" col={SortColumn.CompletedQty} {...sort}>
           Completed Quantity
