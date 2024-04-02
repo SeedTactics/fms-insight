@@ -684,6 +684,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       proc: lastCompletedProcess,
       path: 1,
       serial: "aaa",
+      workorder: "work11",
       queue: "q1",
       pos: 0
     );
@@ -695,6 +696,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         queue: "q1",
         position: 0,
         serial: "aaa",
+        workorder: "work11",
         operatorName: "theoper"
       )
       .Should()
@@ -710,6 +712,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
           PartName = "p1",
           NumProcesses = 2,
           Serial = "aaa",
+          Workorder = "work11",
           JobUnique = "uuu1",
         },
         options => options.ComparingByMembers<MaterialDetails>()
@@ -731,6 +734,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
             Unique = "uuu1",
             AddTimeUTC = mats[0].AddTimeUTC,
             Serial = "aaa",
+            Workorder = "work11",
             NextProcess = lastCompletedProcess + 1,
             Paths = ImmutableDictionary<int, int>.Empty
           }
@@ -766,6 +770,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
             Unique = "uuu1",
             AddTimeUTC = mats[0].AddTimeUTC,
             Serial = "aaa",
+            Workorder = "work11",
             NextProcess = lastCompletedProcess + 1,
             Paths = ImmutableDictionary<int, int>.Empty
           }
@@ -790,6 +795,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
             Unique = "uuu1",
             AddTimeUTC = mats[0].AddTimeUTC,
             Serial = "aaa",
+            Workorder = "work11",
             NextProcess = lastCompletedProcess + 1,
             Paths = ImmutableDictionary<int, int>.Empty
           }
@@ -803,15 +809,16 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       part: "p1",
       numProc: 2,
       serial: "aaa",
-      workorder: "",
+      workorder: "work11",
       face: ""
     );
     var expectedLog = new[]
     {
       MarkExpectedEntry(logMat, cntr: 1, serial: "aaa"),
+      AssignWorkExpectedEntry(logMat, cntr: 2, workorder: "work11"),
       AddToQueueExpectedEntry(
         logMat,
-        cntr: 2,
+        cntr: 3,
         queue: "q1",
         position: 0,
         operName: "theoper",
@@ -819,7 +826,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       ),
       RemoveFromQueueExpectedEntry(
         logMat,
-        cntr: 3,
+        cntr: 4,
         queue: "q1",
         position: 0,
         elapsedMin: 0,
@@ -827,7 +834,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       ),
       AddToQueueExpectedEntry(
         logMat,
-        cntr: 4,
+        cntr: 5,
         queue: "q1",
         position: 0,
         operName: "theoper",
@@ -1337,6 +1344,28 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     return e;
   }
 
+  private LogEntry AssignWorkExpectedEntry(
+    LogMaterial mat,
+    long cntr,
+    string workorder,
+    DateTime? timeUTC = null
+  )
+  {
+    var e = new LogEntry(
+      cntr: cntr,
+      mat: new[] { mat },
+      pal: 0,
+      ty: LogType.OrderAssignment,
+      locName: "Order",
+      locNum: 1,
+      prog: "",
+      start: false,
+      endTime: timeUTC ?? DateTime.UtcNow,
+      result: workorder
+    );
+    return e;
+  }
+
   private LogEntry LoadStartExpectedEntry(
     LogMaterial mat,
     long cntr,
@@ -1461,7 +1490,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     int path,
     string serial,
     string queue,
-    int pos
+    int pos,
+    string workorder = null
   )
   {
     return new InProcessMaterial()
@@ -1472,6 +1502,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Process = proc,
       Path = path,
       Serial = serial,
+      WorkorderId = workorder,
       SignaledInspections = ImmutableList<string>.Empty,
       QuarantineAfterUnload = null,
       Location = new InProcessMaterialLocation()

@@ -1407,14 +1407,14 @@ namespace BlackMaple.FMSInsight.API
         }
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<InProcessMaterial> AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, string queue, int pos, string operName, string serial)
+        public virtual System.Threading.Tasks.Task<InProcessMaterial> AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, string queue, int pos, string operName, string workorder, string serial)
         {
-            return AddUnprocessedMaterialToQueueAsync(jobUnique, lastCompletedProcess, queue, pos, operName, serial, System.Threading.CancellationToken.None);
+            return AddUnprocessedMaterialToQueueAsync(jobUnique, lastCompletedProcess, queue, pos, operName, workorder, serial, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<InProcessMaterial> AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, string queue, int pos, string operName, string serial, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<InProcessMaterial> AddUnprocessedMaterialToQueueAsync(string jobUnique, int lastCompletedProcess, string queue, int pos, string operName, string workorder, string serial, System.Threading.CancellationToken cancellationToken)
         {
             if (jobUnique == null)
                 throw new System.ArgumentNullException("jobUnique");
@@ -1454,6 +1454,10 @@ namespace BlackMaple.FMSInsight.API
             if (operName != null)
             {
                 urlBuilder_.Append(System.Uri.EscapeDataString("operName")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(operName, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+            }
+            if (workorder != null)
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("workorder")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(workorder, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
             }
             urlBuilder_.Length--;
 

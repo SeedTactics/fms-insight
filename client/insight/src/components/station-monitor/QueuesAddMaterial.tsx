@@ -591,6 +591,7 @@ export function AddToQueueButton({
             jobUnique: newMaterialTy.job.unique,
             lastCompletedProcess: newMaterialTy.last_proc,
             serial: newSerial ?? undefined,
+            workorder: newWorkorder ?? null,
             queue: toQueue ?? "",
             queuePosition: -1,
             operator: enteredOperator ?? operator,

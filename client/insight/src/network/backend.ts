@@ -57,6 +57,7 @@ export interface JobAPI {
     queue: string,
     pos: number,
     operatorName: string | null,
+    workorder: string | null,
     serial: string,
   ): Promise<Readonly<api.IInProcessMaterial> | undefined>;
 

@@ -93,17 +93,16 @@ namespace Makino
       {
         newJ = newJ with
         {
-          Jobs = newJ.Jobs
-            .Select(
-              j =>
-                j.AdjustAllPaths(
-                  path =>
-                    path with
-                    {
-                      Stops = path.Stops.Select(s => s with { StationGroup = "MC" }).ToImmutableList()
-                    }
-                )
-            )
+          Jobs = newJ.Jobs.Select(
+            j =>
+              j.AdjustAllPaths(
+                path =>
+                  path with
+                  {
+                    Stops = path.Stops.Select(s => s with { StationGroup = "MC" }).ToImmutableList()
+                  }
+              )
+          )
             .ToImmutableList(),
         };
         foreach (var j in newJ.Jobs)
@@ -169,6 +168,7 @@ namespace Makino
       string queue,
       int position,
       string serial,
+      string workorder,
       string operatorName = null
     )
     {

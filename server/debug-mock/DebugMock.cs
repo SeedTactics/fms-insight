@@ -403,17 +403,19 @@ namespace DebugMachineWatchApiServer
       string queue,
       int position,
       string serial,
+      string workorder,
       string operatorName = null
     )
     {
       Serilog.Log.Information(
-        "AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {queue} {position} {serial} {oper}",
+        "AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {queue} {position} {serial} {oper} {work}",
         jobUnique,
         lastCompletedProcess,
         queue,
         position,
         serial,
-        operatorName
+        operatorName,
+        workorder
       );
 
       var part = CurrentStatus.Jobs.TryGetValue(jobUnique, out var job) ? job.PartName : "";
@@ -425,6 +427,7 @@ namespace DebugMachineWatchApiServer
         Process = lastCompletedProcess,
         Path = 1,
         Serial = serial,
+        WorkorderId = workorder,
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.InQueue,

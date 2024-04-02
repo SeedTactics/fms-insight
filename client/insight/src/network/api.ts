@@ -606,7 +606,7 @@ export class JobsClient {
         return Promise.resolve<HistoricJob>(null as any);
     }
 
-    addUnprocessedMaterialToQueue(jobUnique: string, lastCompletedProcess: number, queue: string | null, pos: number, operName: string | null | undefined, serial: string): Promise<InProcessMaterial> {
+    addUnprocessedMaterialToQueue(jobUnique: string, lastCompletedProcess: number, queue: string | null, pos: number, operName: string | null | undefined, workorder: string | null | undefined, serial: string): Promise<InProcessMaterial> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -625,6 +625,8 @@ export class JobsClient {
             url_ += "pos=" + encodeURIComponent("" + pos) + "&";
         if (operName !== undefined && operName !== null)
             url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+        if (workorder !== undefined && workorder !== null)
+            url_ += "workorder=" + encodeURIComponent("" + workorder) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(serial);

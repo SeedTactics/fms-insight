@@ -399,6 +399,7 @@ namespace BlackMaple.MachineFramework
       string queue,
       int position,
       string serial,
+      string workorder,
       string operatorName
     )
     {
@@ -408,12 +409,13 @@ namespace BlackMaple.MachineFramework
       }
 
       Log.Debug(
-        "Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
+        "Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial} and workorder {workorder}",
         jobUnique,
         process,
         queue,
         position,
-        serial
+        serial,
+        workorder
       );
 
       HistoricJob job;
@@ -446,6 +448,19 @@ namespace BlackMaple.MachineFramework
             DateTime.UtcNow
           );
         }
+        if (!string.IsNullOrEmpty(workorder))
+        {
+          ldb.RecordWorkorderForMaterialID(
+            new BlackMaple.MachineFramework.EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = process,
+              Face = ""
+            },
+            workorder,
+            DateTime.UtcNow
+          );
+        }
         logEvt = ldb.RecordAddMaterialToQueue(
           matID: matId,
           process: process,
@@ -466,6 +481,7 @@ namespace BlackMaple.MachineFramework
         Process = process,
         Path = 1,
         Serial = serial,
+        WorkorderId = workorder,
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.InQueue,
