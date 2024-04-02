@@ -844,6 +844,10 @@ namespace BlackMaple.MachineFramework
                                 s.Start = 0
                                 AND
                                 s.StationLoc IN ($loadty, $mcty)
+                                AND NOT EXISTS(
+                                  SELECT 1 FROM program_details d
+                                    WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'
+                                )
                         )
                     GROUP BY StationName";
 
