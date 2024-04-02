@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api.js";
-import { LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
+import { HashMap, LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 import { LogBackend } from "../network/backend.js";
 import { differenceInSeconds } from "date-fns";
 import { useAtomValue } from "jotai";
@@ -41,9 +41,10 @@ import { fmsInformation } from "../network/server-settings.js";
 import { castingNames, rawMaterialQueues } from "../cell-status/names.js";
 import { barcodeMaterialDetail } from "../cell-status/material-details.js";
 import { useMemo } from "react";
+import { last30Jobs } from "../cell-status/scheduled-jobs.js";
 
 export type SelectableJob = {
-  readonly job: Readonly<api.IActiveJob>;
+  readonly job: Readonly<api.IJob>;
   readonly machinedProcs: ReadonlyArray<{
     readonly lastProc: number;
     readonly disabledMsg: string | null;
@@ -174,19 +175,23 @@ function possibleCastings(
 
 function possibleJobs(
   currentSt: Readonly<api.ICurrentStatus>,
+  historicJobs: HashMap<string, Readonly<api.IHistoricJob>>,
   fmsInfo: Readonly<api.IFMSInfo>,
   toQueue: string,
   barcode: Readonly<api.IScannedMaterial> | null,
 ): ReadonlyArray<SelectableJob> {
   if (barcode?.casting?.possibleJobs && barcode.casting.possibleJobs.length > 0) {
     const possible = OrderedSet.from(barcode.casting.possibleJobs);
-    return LazySeq.ofObject(currentSt.jobs)
+    return LazySeq.ofObject<Readonly<api.IJob>>(currentSt.jobs)
+      .map(([, j]) => j)
+      .concat(historicJobs.valuesToLazySeq())
       .filter(
-        ([, j]) =>
+        (j) =>
           possible.has(j.unique) &&
           LazySeq.of(j.procsAndPaths?.[0].paths ?? []).anyMatch((p) => p.inputQueue === toQueue),
       )
-      .map(([, j]) => ({
+      .distinctBy((j) => j.unique)
+      .map((j) => ({
         job: j,
         machinedProcs: [
           {
@@ -205,6 +210,7 @@ function possibleJobs(
 }
 
 export function usePossibleNewMaterialTypes(toQueue: string | null): SelectableMaterialType {
+  const historicJobs = useAtomValue(last30Jobs);
   const currentSt = useAtomValue(currentStatus);
   const fmsInfo = useAtomValue(fmsInformation);
   const castingsFromHistoric = useAtomValue(castingNames);
@@ -219,10 +225,10 @@ export function usePossibleNewMaterialTypes(toQueue: string | null): SelectableM
         castings: rawMatQueues.has(toQueue)
           ? possibleCastings(currentSt, castingsFromHistoric, barcode, fmsInfo)
           : [],
-        jobs: possibleJobs(currentSt, fmsInfo, toQueue, barcode),
+        jobs: possibleJobs(currentSt, historicJobs, fmsInfo, toQueue, barcode),
       };
     }
-  }, [currentSt, fmsInfo, toQueue, castingsFromHistoric, barcode]);
+  }, [currentSt, historicJobs, fmsInfo, toQueue, castingsFromHistoric, barcode]);
 }
 
 export interface JobRawMaterialData {

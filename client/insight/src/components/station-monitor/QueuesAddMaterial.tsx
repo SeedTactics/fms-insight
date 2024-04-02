@@ -109,7 +109,7 @@ const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.to
 export type NewMaterialToQueueType =
   | {
       readonly kind: "JobAndProc";
-      readonly job: Readonly<api.IActiveJob>;
+      readonly job: Readonly<api.IJob>;
       readonly last_proc: number;
     }
   | { readonly kind: "RawMat"; readonly rawMatName: string };
