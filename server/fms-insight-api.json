@@ -3540,6 +3540,13 @@
               "$ref": "#/components/schemas/WorkorderComment"
             }
           },
+          "QuarantinedSerials": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
           "ElapsedStationTime": {
             "type": "object",
             "additionalProperties": {

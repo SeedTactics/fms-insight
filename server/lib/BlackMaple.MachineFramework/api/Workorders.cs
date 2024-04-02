@@ -94,6 +94,8 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableList<WorkorderComment>? Comments { get; init; }
 
+    public ImmutableList<string>? QuarantinedSerials { get; init; }
+
     public required ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; }
 
     public required ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; }

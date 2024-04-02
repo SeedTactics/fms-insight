@@ -1212,10 +1212,11 @@ namespace MachineWatchTest
       int offset,
       string queue,
       int startingPos,
+      string reason,
       int elapMin
     )
     {
-      ExpectRemoveFromQueue(new[] { mat }, offset, queue, startingPos, elapMin);
+      ExpectRemoveFromQueue(new[] { mat }, offset, queue, startingPos, reason, elapMin);
     }
 
     protected void ExpectRemoveFromQueue(
@@ -1223,6 +1224,7 @@ namespace MachineWatchTest
       int offset,
       string queue,
       int startingPos,
+      string reason,
       int elapMin
     )
     {
@@ -1247,7 +1249,7 @@ namespace MachineWatchTest
             ty: LogType.RemoveFromQueue,
             locName: queue,
             locNum: startingPos,
-            prog: "",
+            prog: reason ?? "",
             start: false,
             endTime: mat.EventStartTime.AddMinutes(offset).AddSeconds(1),
             result: "",
@@ -2563,7 +2565,14 @@ namespace MachineWatchTest
       LoadStart(proc2, offset: 28, load: 1);
       LoadEnd(proc2, offset: 29, cycleOffset: 30, load: 1, elapMin: 1);
       MovePallet(t, pal: 9, offset: 30, load: 1, elapMin: 0);
-      ExpectRemoveFromQueue(proc1, offset: 30, queue: "thequeue", startingPos: 0, elapMin: 30 - 24);
+      ExpectRemoveFromQueue(
+        proc1,
+        offset: 30,
+        queue: "thequeue",
+        startingPos: 0,
+        reason: "LoadedToPallet",
+        elapMin: 30 - 24
+      );
 
       MachStart(proc2, offset: 30, mach: 6);
       MachStart(proc1snd, offset: 35, mach: 3);
@@ -2789,7 +2798,14 @@ namespace MachineWatchTest
       LoadStart(proc2path1, offset: 40, load: 2);
       LoadEnd(proc2path1, offset: 44, cycleOffset: 45, load: 2, elapMin: 4);
       MovePallet(t, offset: 45, pal: 5, load: 2, elapMin: 0);
-      ExpectRemoveFromQueue(proc1path1, offset: 45, queue: "thequeue", startingPos: 0, elapMin: 45 - 15);
+      ExpectRemoveFromQueue(
+        proc1path1,
+        offset: 45,
+        queue: "thequeue",
+        startingPos: 0,
+        reason: "LoadedToPallet",
+        elapMin: 45 - 15
+      );
 
       jobLog
         .GetMaterialInAllQueues()
@@ -2823,7 +2839,14 @@ namespace MachineWatchTest
       UnloadEnd(proc2path1, offset: 65, load: 1, elapMin: 5);
       LoadEnd(proc2path1snd, offset: 65, cycleOffset: 66, load: 1, elapMin: 5);
       MovePallet(t, offset: 66, pal: 5, load: 1, elapMin: 66 - 45);
-      ExpectRemoveFromQueue(proc1path1snd, offset: 66, queue: "thequeue", startingPos: 3, elapMin: 66 - 33);
+      ExpectRemoveFromQueue(
+        proc1path1snd,
+        offset: 66,
+        queue: "thequeue",
+        startingPos: 3,
+        reason: "LoadedToPallet",
+        elapMin: 66 - 33
+      );
 
       jobLog
         .GetMaterialInAllQueues()
@@ -2851,7 +2874,14 @@ namespace MachineWatchTest
       LoadStart(proc2path2, offset: 70, load: 2);
       LoadEnd(proc2path2, offset: 73, cycleOffset: 74, load: 2, elapMin: 3);
       MovePallet(t, offset: 74, pal: 7, load: 2, elapMin: 0);
-      ExpectRemoveFromQueue(proc1path2, offset: 74, queue: "thequeue", startingPos: 0, elapMin: 74 - 27);
+      ExpectRemoveFromQueue(
+        proc1path2,
+        offset: 74,
+        queue: "thequeue",
+        startingPos: 0,
+        reason: "LoadedToPallet",
+        elapMin: 74 - 27
+      );
 
       jobLog.GetMaterialInAllQueues().Should().BeEmpty();
 
@@ -3061,7 +3091,14 @@ namespace MachineWatchTest
       LoadStart(mat1, offset: 4, load: 1);
       LoadEnd(mat1, offset: 5, cycleOffset: 6, load: 1, elapMin: 5 - 4, expectMark: false);
       MovePallet(t, pal: 8, offset: 6, load: 1, elapMin: 0);
-      ExpectRemoveFromQueue(AdjProcess(mat1, 0), offset: 6, queue: "rawmat", startingPos: 0, elapMin: 6 - 0);
+      ExpectRemoveFromQueue(
+        AdjProcess(mat1, 0),
+        offset: 6,
+        queue: "rawmat",
+        startingPos: 0,
+        reason: "LoadedToPallet",
+        elapMin: 6 - 0
+      );
 
       StockerStart(mat1, offset: 8, stocker: 8, waitForMachine: true);
 
@@ -3086,6 +3123,7 @@ namespace MachineWatchTest
         offset: 30,
         queue: "rawmat",
         startingPos: 0,
+        reason: "LoadedToPallet",
         elapMin: 30 - 2
       );
 

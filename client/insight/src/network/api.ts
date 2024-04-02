@@ -4353,6 +4353,7 @@ export class ActiveWorkorder implements IActiveWorkorder {
     completedQuantity!: number;
     serials!: string[];
     comments?: WorkorderComment[] | undefined;
+    quarantinedSerials?: string[] | undefined;
     elapsedStationTime!: { [key: string]: string; };
     activeStationTime!: { [key: string]: string; };
 
@@ -4389,6 +4390,11 @@ export class ActiveWorkorder implements IActiveWorkorder {
                 this.comments = [] as any;
                 for (let item of _data["Comments"])
                     this.comments!.push(WorkorderComment.fromJS(item));
+            }
+            if (Array.isArray(_data["QuarantinedSerials"])) {
+                this.quarantinedSerials = [] as any;
+                for (let item of _data["QuarantinedSerials"])
+                    this.quarantinedSerials!.push(item);
             }
             if (_data["ElapsedStationTime"]) {
                 this.elapsedStationTime = {} as any;
@@ -4434,6 +4440,11 @@ export class ActiveWorkorder implements IActiveWorkorder {
             for (let item of this.comments)
                 data["Comments"].push(item.toJSON());
         }
+        if (Array.isArray(this.quarantinedSerials)) {
+            data["QuarantinedSerials"] = [];
+            for (let item of this.quarantinedSerials)
+                data["QuarantinedSerials"].push(item);
+        }
         if (this.elapsedStationTime) {
             data["ElapsedStationTime"] = {};
             for (let key in this.elapsedStationTime) {
@@ -4463,6 +4474,7 @@ export interface IActiveWorkorder {
     completedQuantity: number;
     serials: string[];
     comments?: WorkorderComment[] | undefined;
+    quarantinedSerials?: string[] | undefined;
     elapsedStationTime: { [key: string]: string; };
     activeStationTime: { [key: string]: string; };
 }

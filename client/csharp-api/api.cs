@@ -5675,6 +5675,9 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("Comments", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<WorkorderComment> Comments { get; set; }
 
+        [Newtonsoft.Json.JsonProperty("QuarantinedSerials", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<string> QuarantinedSerials { get; set; }
+
         [Newtonsoft.Json.JsonProperty("ElapsedStationTime", Required = Newtonsoft.Json.Required.Always)]
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.IDictionary<string, System.TimeSpan> ElapsedStationTime { get; set; } = new System.Collections.Generic.Dictionary<string, System.TimeSpan>();

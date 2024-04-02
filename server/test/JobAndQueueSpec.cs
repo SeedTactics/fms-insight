@@ -561,6 +561,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
             mat1,
             cntr: 4,
             queue: "q1",
+            reason: "",
             position: 0,
             elapsedMin: 0,
             operName: "theoper"
@@ -829,6 +830,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         cntr: 4,
         queue: "q1",
         position: 0,
+        reason: "",
         elapsedMin: 0,
         operName: "myoper"
       ),
@@ -1288,6 +1290,9 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
               queue: "q1",
               position: 0,
               elapsedMin: 0,
+              reason: data.QuarantineAction == SignalQuarantineTheoryData.QuarantineType.Add
+                ? "MovingInQueue"
+                : "Quarantine",
               operName: "theoper"
             )
           );
@@ -1302,7 +1307,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
             cntr: expectedLog.Count + 1,
             queue: data.QuarantineQueue,
             position: 0,
-            reason: "SetByOperator",
+            reason: "Quarantine",
             operName: "theoper"
           )
         );
@@ -1457,6 +1462,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     string queue,
     int position,
     int elapsedMin,
+    string reason,
     DateTime? timeUTC = null,
     string operName = null
   )
@@ -1468,7 +1474,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       ty: LogType.RemoveFromQueue,
       locName: queue,
       locNum: position,
-      prog: "",
+      prog: reason ?? "",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
       result: "",

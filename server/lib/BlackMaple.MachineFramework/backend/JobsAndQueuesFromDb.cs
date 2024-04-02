@@ -705,7 +705,7 @@ namespace BlackMaple.MachineFramework
                     queue: _settings.QuarantineQueue,
                     position: -1,
                     operatorName: operatorName,
-                    reason: "SetByOperator"
+                    reason: "Quarantine"
                   );
                   requireStateRefresh = true;
                 }
@@ -725,7 +725,11 @@ namespace BlackMaple.MachineFramework
                     notes: reason,
                     operatorName: operatorName
                   );
-                  ldb.BulkRemoveMaterialFromAllQueues(new[] { materialId }, operatorName);
+                  ldb.BulkRemoveMaterialFromAllQueues(
+                    new[] { materialId },
+                    operatorName: operatorName,
+                    reason: "Quarantine"
+                  );
                   requireStateRefresh = true;
                 }
                 break;

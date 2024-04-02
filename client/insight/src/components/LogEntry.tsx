@@ -286,6 +286,13 @@ function display(props: LogEntryProps): JSX.Element {
               <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
             </span>
           );
+        case "Quarantine":
+          return (
+            <span>
+              {displayQueueMat(entry.material)} quarantined into queue{" "}
+              <ColoredSpan $type="queue">{entry.loc}</ColoredSpan>
+            </span>
+          );
         case "SwapMaterial":
           return (
             <span>

@@ -1688,6 +1688,24 @@ namespace MachineWatchTest
       _jobLog.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(mat6), "work2");
       Assert.Equal("work2", _jobLog.GetMaterialDetails(mat5.MaterialID).Workorder);
 
+      // quarantine
+      _jobLog.SignalMaterialForQuarantine(
+        EventLogMaterial.FromLogMat(mat5),
+        pallet: 3,
+        queue: "quarantine",
+        operatorName: "oper",
+        reason: "thereason",
+        t.AddMinutes(10)
+      );
+      _jobLog.RecordAddMaterialToQueue(
+        EventLogMaterial.FromLogMat(mat6),
+        queue: "qqq",
+        position: -1,
+        operatorName: "oper",
+        reason: "Quarantine",
+        timeUTC: t.AddMinutes(11)
+      );
+
       double c2Cnt = 4; //number of material on cycle 2
 
       var expectedActiveWorks = new[]
@@ -1700,7 +1718,7 @@ namespace MachineWatchTest
           DueDate = work1part1.DueDate,
           Priority = work1part1.Priority,
           CompletedQuantity = 2, // mat1 and mat3
-          Serials = ImmutableList.Create("serial1", "serial3"),
+          Serials = ["serial1", "serial3"],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(10 + 30 + 3 * 1 / c2Cnt)) //10 + 30 from mat1, 3*1/4 for mat3
@@ -1742,7 +1760,8 @@ namespace MachineWatchTest
           DueDate = work2.DueDate,
           Priority = work2.Priority,
           CompletedQuantity = 2,
-          Serials = ImmutableList.Create("serial5", "serial6"),
+          Serials = ["serial5", "serial6"],
+          QuarantinedSerials = ["serial5", "serial6"],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(3 * 2 / c2Cnt))
@@ -2367,11 +2386,14 @@ namespace MachineWatchTest
         .RecordRemoveMaterialFromAllQueues(EventLogMaterial.FromLogMat(mat3), "operyy", start.AddMinutes(40))
         .Should()
         .BeEquivalentTo(
-          new[] { RemoveFromQueueExpectedEntry(mat3, 8, "AAAA", 1, 40 - 20, start.AddMinutes(40), "operyy") },
+          new[]
+          {
+            RemoveFromQueueExpectedEntry(mat3, 8, "AAAA", 1, 40 - 20, "", start.AddMinutes(40), "operyy")
+          },
           options => options.ComparingByMembers<LogEntry>()
         );
       expectedLogs.Add(
-        RemoveFromQueueExpectedEntry(mat3, 8, "AAAA", 1, 40 - 20, start.AddMinutes(40), "operyy")
+        RemoveFromQueueExpectedEntry(mat3, 8, "AAAA", 1, 40 - 20, "", start.AddMinutes(40), "operyy")
       );
 
       _jobLog
@@ -2515,12 +2537,14 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           new[]
           {
-            RemoveFromQueueExpectedEntry(mat1, 10, "AAAA", 0, 50, start.AddMinutes(50)),
+            RemoveFromQueueExpectedEntry(mat1, 10, "AAAA", 0, 50, "MovingInQueue", start.AddMinutes(50)),
             AddToQueueExpectedEntry(mat1, 11, "AAAA", 1, start.AddMinutes(50))
           },
           options => options.ComparingByMembers<LogEntry>()
         );
-      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat1, 10, "AAAA", 0, 50, start.AddMinutes(50)));
+      expectedLogs.Add(
+        RemoveFromQueueExpectedEntry(mat1, 10, "AAAA", 0, 50, "MovingInQueue", start.AddMinutes(50))
+      );
       expectedLogs.Add(AddToQueueExpectedEntry(mat1, 11, "AAAA", 1, start.AddMinutes(50)));
 
       _jobLog
@@ -2601,12 +2625,14 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           new[]
           {
-            RemoveFromQueueExpectedEntry(mat3, 12, "AAAA", 2, 55 - 45, start.AddMinutes(55)),
+            RemoveFromQueueExpectedEntry(mat3, 12, "AAAA", 2, 55 - 45, "MovingInQueue", start.AddMinutes(55)),
             AddToQueueExpectedEntry(mat3, 13, "AAAA", 1, start.AddMinutes(55))
           },
           options => options.ComparingByMembers<LogEntry>()
         );
-      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat3, 12, "AAAA", 2, 55 - 45, start.AddMinutes(55)));
+      expectedLogs.Add(
+        RemoveFromQueueExpectedEntry(mat3, 12, "AAAA", 2, 55 - 45, "MovingInQueue", start.AddMinutes(55))
+      );
       expectedLogs.Add(AddToQueueExpectedEntry(mat3, 13, "AAAA", 1, start.AddMinutes(55)));
 
       _jobLog
@@ -2877,10 +2903,12 @@ namespace MachineWatchTest
         .RecordRemoveMaterialFromAllQueues(mat2.MaterialID, 1, null, start.AddMinutes(60))
         .Should()
         .BeEquivalentTo(
-          new[] { RemoveFromQueueExpectedEntry(mat2proc8, 16, "AAAA", 0, 60 - 10, start.AddMinutes(60)) },
+          new[] { RemoveFromQueueExpectedEntry(mat2proc8, 16, "AAAA", 0, 60 - 10, "", start.AddMinutes(60)) },
           options => options.ComparingByMembers<LogEntry>()
         );
-      expectedLogs.Add(RemoveFromQueueExpectedEntry(mat2proc8, 16, "AAAA", 0, 60 - 10, start.AddMinutes(60)));
+      expectedLogs.Add(
+        RemoveFromQueueExpectedEntry(mat2proc8, 16, "AAAA", 0, 60 - 10, "", start.AddMinutes(60))
+      );
 
       _jobLog
         .GetMaterialInAllQueues()
@@ -3081,6 +3109,7 @@ namespace MachineWatchTest
               "AAAA",
               0,
               10,
+              "LoadedToPallet",
               start.AddMinutes(10)
             )
           },
@@ -3467,7 +3496,7 @@ namespace MachineWatchTest
       var removeTime = DateTime.UtcNow.AddHours(-1);
 
       _jobLog
-        .BulkRemoveMaterialFromAllQueues(new long[] { 1, 2 }, null, removeTime)
+        .BulkRemoveMaterialFromAllQueues(new long[] { 1, 2 }, null, reason: "reason11", removeTime)
         .Should()
         .BeEquivalentTo(
           (new long[] { 1, 2 }).Select(
@@ -3491,7 +3520,7 @@ namespace MachineWatchTest
                 ty: LogType.RemoveFromQueue,
                 locName: "queueQQ",
                 locNum: 0,
-                prog: "",
+                prog: "reason11",
                 start: false,
                 endTime: removeTime,
                 result: "",
@@ -4292,6 +4321,7 @@ namespace MachineWatchTest
               queue: "rawmat",
               position: 0,
               elapsedMin: now.Subtract(newMatAddToQueueTime).TotalMinutes,
+              reason: "SwapMaterial",
               timeUTC: now,
               operName: "theoper"
             )
@@ -4325,6 +4355,7 @@ namespace MachineWatchTest
               cntr: 0,
               queue: "rawmat",
               position: 0,
+              reason: "LoadedToPallet",
               timeUTC: initialMatRemoveQueueTime,
               elapsedMin: initialMatRemoveQueueTime.Subtract(initialMatAddToQueueTime).TotalMinutes
             ),
@@ -4371,6 +4402,7 @@ namespace MachineWatchTest
                 position: 0,
                 elapsedMin: now.Subtract(newMatAddToQueueTime).TotalMinutes,
                 timeUTC: now,
+                reason: "SwapMaterial",
                 operName: "theoper"
               )
             }
@@ -4763,6 +4795,7 @@ namespace MachineWatchTest
               position: 0,
               timeUTC: now,
               elapsedMin: 1,
+              reason: "MovingInQueue",
               operName: "theoper"
             ),
             AddToQueueExpectedEntry(
@@ -4808,6 +4841,7 @@ namespace MachineWatchTest
                   cntr: 0,
                   queue: "rawmat",
                   position: 0,
+                  reason: "LoadedToPallet",
                   timeUTC: initialMatRemoveQueueTime,
                   elapsedMin: initialMatRemoveQueueTime.Subtract(initialMatAddToQueueTime).TotalMinutes
                 ),
@@ -4819,6 +4853,7 @@ namespace MachineWatchTest
                   position: 0,
                   timeUTC: now,
                   elapsedMin: 1,
+                  reason: "MovingInQueue",
                   operName: "theoper"
                 ),
                 AddToQueueExpectedEntry(
@@ -4980,6 +5015,7 @@ namespace MachineWatchTest
       string queue,
       int position,
       double elapsedMin,
+      string reason,
       DateTime timeUTC,
       string operName = null
     )
@@ -4991,7 +5027,7 @@ namespace MachineWatchTest
         ty: LogType.RemoveFromQueue,
         locName: queue,
         locNum: position,
-        prog: "",
+        prog: reason ?? "",
         start: false,
         endTime: timeUTC,
         result: "",

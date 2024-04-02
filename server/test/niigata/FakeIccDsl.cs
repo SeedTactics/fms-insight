@@ -1726,6 +1726,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public IEnumerable<LogMaterial> Material { get; set; }
       public string FromQueue { get; set; }
       public int Position { get; set; }
+      public string Reason { get; set; }
       public int ElapsedMins { get; set; }
     }
 
@@ -1733,6 +1734,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       string queue,
       int pos,
       int elapMin,
+      string reason,
       IEnumerable<LogMaterial> mat
     )
     {
@@ -1741,6 +1743,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Material = mat,
         FromQueue = queue,
         Position = pos,
+        Reason = reason,
         ElapsedMins = elapMin
       };
     }
@@ -2656,7 +2659,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       ty: LogType.RemoveFromQueue,
                       locName: removeFromQueueEvt.FromQueue,
                       locNum: removeFromQueueEvt.Position,
-                      prog: "",
+                      prog: removeFromQueueEvt.Reason ?? "",
                       start: false,
                       endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                       result: "",
