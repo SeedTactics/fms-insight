@@ -104,16 +104,15 @@ const WorkorderDetails = React.memo(function WorkorderDetails({
           <TableHead>
             <TableRow>
               <TableCell>Serial</TableCell>
+              <TableCell>Quarantine?</TableCell>
               <TableCell padding="checkbox" />
             </TableRow>
           </TableHead>
           <TableBody>
             {workorder.serials.map((s) => (
               <TableRow key={s}>
-                <TableCell>
-                  {s}
-                  {quarantinedSerials.has(s) ? " (quarantined)" : ""}
-                </TableCell>
+                <TableCell>{s}</TableCell>
+                <TableCell>{quarantinedSerials.has(s) ? "Quarantine" : ""}</TableCell>
                 <TableCell padding="checkbox">
                   <IconButton
                     onClick={() =>
