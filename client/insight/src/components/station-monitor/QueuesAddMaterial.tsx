@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button, ListItemButton, Typography, styled } from "@mui/material";
+import { Button, ListItemButton, Radio, Stack, Typography, styled } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -66,6 +66,7 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { castingNames } from "../../cell-status/names.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 
 export function useMaterialInDialogAddType(
   queueNames: ReadonlyArray<string>,
@@ -742,6 +743,11 @@ function AddAndPrintOnClientButton({
   );
 }
 
+const enterQtyOrMaxJobAtom = atomWithStorage<"ENTER_QTY" | "MAX_JOB">(
+  "bulkAddCastingsQtyOrMaxJob",
+  "ENTER_QTY",
+);
+
 export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCastingWithoutSerialDialog() {
   const [queue, setQueue] = useAtom(bulkAddCastingToQueue);
 
@@ -752,6 +758,7 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
 
   const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);
   const [qty, setQty] = React.useState<number | null>(null);
+  const [enterQtyOrMaxJob, setEnterQtyOrMaxJob] = useAtom(enterQtyOrMaxJobAtom);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
   const [adding, setAdding] = React.useState<boolean>(false);
 
@@ -773,6 +780,17 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
     [currentSt.jobs, historicCastNames],
   );
 
+  const qtyForCasting = React.useMemo(() => {
+    if (selectedCasting === null) {
+      return 0;
+    }
+    return LazySeq.ofObject(currentSt.jobs)
+      .filter(([, j]) => j.procsAndPaths[0].paths.some((p) => p.casting === selectedCasting))
+      .sumBy(([_, j]) => j.remainingToStart ?? 0);
+  }, [currentSt.jobs, selectedCasting]);
+
+  const qtyToAdd = enterQtyOrMaxJob === "MAX_JOB" ? qtyForCasting : qty;
+
   function close() {
     setQueue(null);
     setSelectedCasting(null);
@@ -782,10 +800,10 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
   }
 
   function add() {
-    if (queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
+    if (queue !== null && selectedCasting !== null && qtyToAdd !== null && !isNaN(qtyToAdd)) {
       addNewCasting({
         casting: selectedCasting,
-        quantity: qty,
+        quantity: qtyToAdd,
         queue: queue,
         workorder: null,
         operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
@@ -804,6 +822,7 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
             value={selectedCasting || ""}
             onChange={(e) => setSelectedCasting(e.target.value)}
             select
+            fullWidth
             label="Raw Material"
             SelectProps={{
               renderValue:
@@ -826,20 +845,47 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
                 </ListItemIcon>
                 <ListItemText
                   primary={casting}
-                  secondary={jobCnt === 0 ? "Not used by any current jobs" : `Used by ${jobCnt} current jobs`}
+                  secondary={
+                    jobCnt === 0
+                      ? "Not used by any current jobs"
+                      : `Used by ${jobCnt} current job${jobCnt > 1 ? "s" : ""}`
+                  }
                 />
               </MenuItem>
             ))}
           </TextField>
           <div style={{ marginTop: "3em", marginBottom: "2em" }}>
-            <TextField
-              fullWidth
-              type="number"
-              label="Quantity"
-              inputProps={{ min: "1" }}
-              value={qty === null || isNaN(qty) ? "" : qty}
-              onChange={(e) => setQty(parseInt(e.target.value))}
-            />
+            <Stack direction="row" spacing={2} alignItems="center" mb="0.5em">
+              <Radio
+                disabled={selectedCasting === null || qtyForCasting <= 0}
+                checked={enterQtyOrMaxJob === "MAX_JOB"}
+                onChange={() => setEnterQtyOrMaxJob("MAX_JOB")}
+              />
+              <Typography
+                color={selectedCasting === null || qtyForCasting <= 0 ? "text.disabled" : undefined}
+                ml={1}
+              >
+                {selectedCasting === null || qtyForCasting === 0
+                  ? "Scheduled quantity of all jobs for this casting"
+                  : qtyForCasting.toString() + "     (sum of remaining to start)"}
+              </Typography>
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <Radio
+                disabled={selectedCasting === null}
+                checked={enterQtyOrMaxJob === "ENTER_QTY"}
+                onChange={() => setEnterQtyOrMaxJob("ENTER_QTY")}
+              />
+              <TextField
+                fullWidth
+                type="number"
+                label="Enter Quantity"
+                disabled={selectedCasting === null || enterQtyOrMaxJob !== "ENTER_QTY"}
+                inputProps={{ min: "1" }}
+                value={qty === null || isNaN(qty) ? "" : qty}
+                onChange={(e) => setQty(parseInt(e.target.value))}
+              />
+            </Stack>
           </div>
           {fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? (
             <div style={{ marginBottom: "2em" }}>
@@ -874,14 +920,14 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
               color="primary"
               disabled={
                 selectedCasting === null ||
-                qty === null ||
-                isNaN(qty) ||
+                qtyToAdd === null ||
+                isNaN(qtyToAdd) ||
                 (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
                   (enteredOperator === null || enteredOperator === ""))
               }
               onClick={add}
             >
-              Add to {queue}
+              Add {qtyToAdd !== null && !isNaN(qtyToAdd) ? qtyToAdd.toString() + " " : ""}to {queue}
             </Button>
           )}
           <Button color="primary" disabled={adding && printOnAdd} onClick={close}>
