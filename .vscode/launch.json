@@ -7,7 +7,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug FMS Insight Test File",
+      "name": "Vitest Client Test File",
       "autoAttachChildProcesses": true,
       "program": "${workspaceRoot}/client/insight/node_modules/vitest/vitest.mjs",
       "cwd": "${workspaceFolder}/client/insight",
@@ -32,7 +32,9 @@
       "request": "launch",
       "url": "http://localhost:1234",
       "webRoot": "${workspaceFolder}/client/insight/src",
-      "runtimeExecutable": "/usr/bin/chromium"
+      "runtimeExecutable": "/usr/bin/chromium",
+      "preLaunchTask": "vite:insight",
+      "postDebugTask": "terminate:vite:insight"
     }
   ],
   "inputs": [
