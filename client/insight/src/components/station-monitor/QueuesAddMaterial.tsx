@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button, ListItemButton, Radio, Stack, Typography, styled } from "@mui/material";
+import { Button, ListItemButton, Slider, Stack, Typography, styled } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -66,7 +66,6 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { castingNames } from "../../cell-status/names.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
 
 export function useMaterialInDialogAddType(
   queueNames: ReadonlyArray<string>,
@@ -743,11 +742,6 @@ function AddAndPrintOnClientButton({
   );
 }
 
-const enterQtyOrMaxJobAtom = atomWithStorage<"ENTER_QTY" | "MAX_JOB">(
-  "bulkAddCastingsQtyOrMaxJob",
-  "ENTER_QTY",
-);
-
 export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCastingWithoutSerialDialog() {
   const [queue, setQueue] = useAtom(bulkAddCastingToQueue);
 
@@ -757,8 +751,7 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
   const [addNewCasting] = useAddNewCastingToQueue();
 
   const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);
-  const [qty, setQty] = React.useState<number | null>(null);
-  const [enterQtyOrMaxJob, setEnterQtyOrMaxJob] = useAtom(enterQtyOrMaxJobAtom);
+  const [enteredQty, setQty] = React.useState<number | null>(null);
   const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
   const [adding, setAdding] = React.useState<boolean>(false);
 
@@ -789,8 +782,6 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
       .sumBy(([_, j]) => j.remainingToStart ?? 0);
   }, [currentSt.jobs, selectedCasting]);
 
-  const qtyToAdd = enterQtyOrMaxJob === "MAX_JOB" ? qtyForCasting : qty;
-
   function close() {
     setQueue(null);
     setSelectedCasting(null);
@@ -799,8 +790,10 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
     setQty(null);
   }
 
+  const qtyToAdd = enteredQty !== null && !isNaN(enteredQty) ? enteredQty : qtyForCasting;
+
   function add() {
-    if (queue !== null && selectedCasting !== null && qtyToAdd !== null && !isNaN(qtyToAdd)) {
+    if (queue !== null && selectedCasting !== null && qtyToAdd !== null && !isNaN(qtyToAdd) && qtyToAdd > 0) {
       addNewCasting({
         casting: selectedCasting,
         quantity: qtyToAdd,
@@ -855,34 +848,27 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
             ))}
           </TextField>
           <div style={{ marginTop: "3em", marginBottom: "2em" }}>
-            <Stack direction="row" spacing={2} alignItems="center" mb="0.5em">
-              <Radio
+            <Stack direction="column" alignItems="center" spacing={2}>
+              {qtyForCasting >= 0 ? (
+                <Typography>
+                  There are {qtyForCasting} parts remaining to start on jobs using this casting
+                </Typography>
+              ) : undefined}
+              <Slider
+                value={qtyToAdd === null || isNaN(qtyToAdd) || qtyToAdd <= 0 ? 0 : qtyToAdd}
+                min={1}
+                max={qtyForCasting}
                 disabled={selectedCasting === null || qtyForCasting <= 0}
-                checked={enterQtyOrMaxJob === "MAX_JOB"}
-                onChange={() => setEnterQtyOrMaxJob("MAX_JOB")}
-              />
-              <Typography
-                color={selectedCasting === null || qtyForCasting <= 0 ? "text.disabled" : undefined}
-                ml={1}
-              >
-                {selectedCasting === null || qtyForCasting === 0
-                  ? "Scheduled quantity of all jobs for this casting"
-                  : qtyForCasting.toString() + "     (sum of remaining to start)"}
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={2}>
-              <Radio
-                disabled={selectedCasting === null}
-                checked={enterQtyOrMaxJob === "ENTER_QTY"}
-                onChange={() => setEnterQtyOrMaxJob("ENTER_QTY")}
+                onChange={(_, v) => setQty(v as number)}
+                valueLabelDisplay="auto"
               />
               <TextField
                 fullWidth
                 type="number"
-                label="Enter Quantity"
-                disabled={selectedCasting === null || enterQtyOrMaxJob !== "ENTER_QTY"}
+                label="Quantity"
+                disabled={selectedCasting === null}
                 inputProps={{ min: "1" }}
-                value={qty === null || isNaN(qty) ? "" : qty}
+                value={qtyToAdd === null || isNaN(qtyToAdd) || qtyToAdd <= 0 ? "" : qtyToAdd}
                 onChange={(e) => setQty(parseInt(e.target.value))}
               />
             </Stack>
@@ -905,12 +891,13 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
               queue={queue}
               selectedCasting={selectedCasting}
               operator={fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator}
-              qty={qty}
+              qty={qtyToAdd}
               close={close}
               disabled={
                 selectedCasting === null ||
-                qty === null ||
-                isNaN(qty) ||
+                qtyToAdd === null ||
+                isNaN(qtyToAdd) ||
+                qtyToAdd <= 0 ||
                 (!!fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
                   (enteredOperator === null || enteredOperator === ""))
               }
