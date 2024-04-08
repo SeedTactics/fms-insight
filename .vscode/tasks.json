@@ -23,15 +23,7 @@
         "reveal": "silent",
         "panel": "dedicated"
       },
-      "isBackground": true,
-      "problemMatcher": {
-        "base": "$msCompile",
-        "background": {
-          "activeOnStart": false,
-          "beginsPattern": "Debug Server Started",
-          "endsPattern": "Debug Server Stopping"
-        }
-      }
+      "problemMatcher": "$msCompile"
     },
     {
       "label": "build:debug-mock",
