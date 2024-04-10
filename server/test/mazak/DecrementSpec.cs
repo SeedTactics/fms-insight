@@ -32,14 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using Xunit;
-using FluentAssertions;
-using BlackMaple.MachineFramework;
-using NSubstitute;
-using MazakMachineInterface;
 using System.Collections.Immutable;
+using System.Linq;
+using BlackMaple.MachineFramework;
+using FluentAssertions;
+using MazakMachineInterface;
+using NSubstitute;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -137,8 +137,7 @@ namespace MachineWatchTest
       var sch = _write.Schedules[0];
       sch.Id.Should().Be(15);
       sch.PlanQuantity.Should().Be(35);
-      sch.Processes
-        .Should()
+      sch.Processes.Should()
         .BeEquivalentTo(
           new[]
           {
@@ -553,8 +552,7 @@ namespace MachineWatchTest
       var sch = _write.Schedules[0];
       sch.Id.Should().Be(15);
       sch.PlanQuantity.Should().Be(35);
-      sch.Processes
-        .Should()
+      sch.Processes.Should()
         .BeEquivalentTo(
           new List<MazakScheduleProcessRow>
           {

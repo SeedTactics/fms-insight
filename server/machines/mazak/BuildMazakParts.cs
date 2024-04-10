@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
@@ -530,12 +530,11 @@ namespace MazakMachineInterface
       }
 
       // delete old programs, but only if there is a newer revision for this program
-      var maxRevForProg = OldMazakData.MainPrograms
-        .Select(
-          p =>
-            MazakProcess.TryParseMainProgramComment(p.Comment, out string pName, out long rev)
-              ? new { pName, rev }
-              : null
+      var maxRevForProg = OldMazakData
+        .MainPrograms.Select(p =>
+          MazakProcess.TryParseMainProgramComment(p.Comment, out string pName, out long rev)
+            ? new { pName, rev }
+            : null
         )
         .Where(p => p != null)
         .ToLookup(p => p.pName, p => p.rev)
@@ -1045,8 +1044,8 @@ namespace MazakMachineInterface
 
     private static ISet<string> CalculateUsedPrograms(MazakAllData oldData, IEnumerable<MazakPart> newParts)
     {
-      var progsToComment = oldData.MainPrograms
-        .Where(p => MazakProcess.IsInsightMainProgram(p.Comment))
+      var progsToComment = oldData
+        .MainPrograms.Where(p => MazakProcess.IsInsightMainProgram(p.Comment))
         .ToDictionary(p => p.MainProgram, p => p.Comment);
 
       var used = new HashSet<string>();

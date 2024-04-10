@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using BlackMaple.MachineFramework;
 using System.Collections.Immutable;
+using System.Linq;
+using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
@@ -97,28 +97,24 @@ namespace MazakMachineInterface
     {
       return _readData
         .LoadTools()
-        .Where(
-          t =>
-            t.MachineNumber.HasValue
-            && (t.IsToolDataValid ?? false)
-            && t.PocketNumber.HasValue
-            && !string.IsNullOrEmpty(t.GroupNo)
+        .Where(t =>
+          t.MachineNumber.HasValue
+          && (t.IsToolDataValid ?? false)
+          && t.PocketNumber.HasValue
+          && !string.IsNullOrEmpty(t.GroupNo)
         )
-        .Select(
-          t =>
-            new ToolInMachine()
-            {
-              MachineGroupName = _machGroupName.MachineGroupName,
-              MachineNum = t.MachineNumber.Value,
-              Pocket = t.PocketNumber.Value,
-              ToolName = _mazakCfg?.ExtractToolName == null ? t.GroupNo : _mazakCfg.ExtractToolName(t),
-              Serial = null,
-              CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
-              TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0),
-              CurrentUseCount = null,
-              TotalLifeCount = null
-            }
-        )
+        .Select(t => new ToolInMachine()
+        {
+          MachineGroupName = _machGroupName.MachineGroupName,
+          MachineNum = t.MachineNumber.Value,
+          Pocket = t.PocketNumber.Value,
+          ToolName = _mazakCfg?.ExtractToolName == null ? t.GroupNo : _mazakCfg.ExtractToolName(t),
+          Serial = null,
+          CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
+          TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0),
+          CurrentUseCount = null,
+          TotalLifeCount = null
+        })
         .ToImmutableList();
     }
 

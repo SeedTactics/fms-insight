@@ -689,7 +689,6 @@ namespace BlackMaple.MachineFramework
                 when !string.IsNullOrEmpty(_settings.QuarantineQueue):
               case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Loading)
                 when !string.IsNullOrEmpty(_settings.QuarantineQueue) && AllowQuarantineToCancelLoad:
-
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;
@@ -715,7 +714,6 @@ namespace BlackMaple.MachineFramework
                 when string.IsNullOrEmpty(_settings.QuarantineQueue):
               case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Loading)
                 when string.IsNullOrEmpty(_settings.QuarantineQueue) && AllowQuarantineToCancelLoad:
-
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;

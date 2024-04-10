@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using MWI = BlackMaple.MachineFramework;
+using System.Linq;
 using BlackMaple.MachineFramework;
+using MWI = BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
@@ -790,9 +790,8 @@ namespace MazakMachineInterface
 
       foreach (var mat in mats)
       {
-        var signalQuarantine = cycle.LastOrDefault(
-          e =>
-            e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == mat.Mat.MaterialID)
+        var signalQuarantine = cycle.LastOrDefault(e =>
+          e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == mat.Mat.MaterialID)
         );
 
         if (signalQuarantine != null)
@@ -935,8 +934,8 @@ namespace MazakMachineInterface
 
     private static MWI.LogEntry FindMachineStart(LogEntry e, IList<MWI.LogEntry> oldEvents, int statNum)
     {
-      return oldEvents.LastOrDefault(
-        old => old.LogType == LogType.MachineCycle && old.StartOfCycle && old.LocationNum == statNum
+      return oldEvents.LastOrDefault(old =>
+        old.LogType == LogType.MachineCycle && old.StartOfCycle && old.LocationNum == statNum
       );
     }
 
@@ -1176,12 +1175,11 @@ namespace MazakMachineInterface
       if (tools == null)
         return null;
       return tools
-        .Where(
-          t =>
-            t.MachineNumber == machine
-            && (t.IsToolDataValid ?? false)
-            && t.PocketNumber.HasValue
-            && !string.IsNullOrEmpty(t.GroupNo)
+        .Where(t =>
+          t.MachineNumber == machine
+          && (t.IsToolDataValid ?? false)
+          && t.PocketNumber.HasValue
+          && !string.IsNullOrEmpty(t.GroupNo)
         )
         .Select(t =>
         {

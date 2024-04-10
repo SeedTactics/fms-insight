@@ -32,11 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using BlackMaple.MachineFramework;
-using Xunit;
-using FluentAssertions;
 using System.Collections.Immutable;
 using System.Linq;
+using BlackMaple.MachineFramework;
+using FluentAssertions;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -288,8 +288,11 @@ namespace MachineWatchTest
       {
         UniqueStr = "mynewunique",
         Decrements = ImmutableList<DecrementQuantity>.Empty,
-        Processes = old.Processes.ConvertAll(
-          p => p with { Paths = p.Paths.ConvertAll(path => path with { Inspections = null }) }
+        Processes = old.Processes.ConvertAll(p =>
+          p with
+          {
+            Paths = p.Paths.ConvertAll(path => path with { Inspections = null })
+          }
         ),
       };
 
@@ -392,8 +395,8 @@ namespace MachineWatchTest
                     Stations = ImmutableList.Create(12, 23),
                     Program = "Emily",
                     ExpectedCycleTime = TimeSpan.FromHours(1.2),
-                    Tools = ImmutableDictionary<string, TimeSpan>.Empty
-                      .Add("tool1", TimeSpan.FromMinutes(30))
+                    Tools = ImmutableDictionary<string, TimeSpan>
+                      .Empty.Add("tool1", TimeSpan.FromMinutes(30))
                       .Add("tool2", TimeSpan.FromMinutes(35)),
                   }
                 ),
@@ -453,8 +456,8 @@ namespace MachineWatchTest
                     Stations = ImmutableList.Create(23, 12),
                     Program = "awef",
                     ExpectedCycleTime = TimeSpan.FromHours(2.8),
-                    Tools = ImmutableDictionary<string, TimeSpan>.Empty
-                      .Add("tool1", TimeSpan.FromMinutes(9))
+                    Tools = ImmutableDictionary<string, TimeSpan>
+                      .Empty.Add("tool1", TimeSpan.FromMinutes(9))
                       .Add("tool33", TimeSpan.FromMinutes(42)),
                   }
                 ),
@@ -522,8 +525,8 @@ namespace MachineWatchTest
                     Stations = ImmutableList.Create(64, 323),
                     Program = "Goodbye",
                     ExpectedCycleTime = TimeSpan.FromHours(6.3),
-                    Tools = ImmutableDictionary<string, TimeSpan>.Empty
-                      .Add("tool2", TimeSpan.FromMinutes(12))
+                    Tools = ImmutableDictionary<string, TimeSpan>
+                      .Empty.Add("tool2", TimeSpan.FromMinutes(12))
                       .Add("tool44", TimeSpan.FromMinutes(99)),
                   },
                   new MachiningStop()

@@ -433,19 +433,16 @@ namespace MachineWatchTest
 
       var expectedLog = new BlackMaple.MachineFramework.LogEntry(
         cntr: -1,
-        mat: mats.Select(
-          mat =>
-            new LogMaterial(
-              matID: mat.MaterialID,
-              uniq: mat.Unique,
-              proc: mat.Process,
-              part: mat.JobPartName,
-              numProc: mat.NumProcess,
-              face: mat.Face,
-              serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-              workorder: ""
-            )
-        ),
+        mat: mats.Select(mat => new LogMaterial(
+          matID: mat.MaterialID,
+          uniq: mat.Unique,
+          proc: mat.Process,
+          part: mat.JobPartName,
+          numProc: mat.NumProcess,
+          face: mat.Face,
+          serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+          workorder: ""
+        )),
         pal: mats.First().Pallet,
         ty: LogType.MachineCycle,
         locName: "machinespec",
@@ -510,19 +507,16 @@ namespace MachineWatchTest
 
       var newEntry = new BlackMaple.MachineFramework.LogEntry(
         cntr: -1,
-        mat: mats.Select(
-          mat =>
-            new LogMaterial(
-              matID: mat.MaterialID,
-              uniq: mat.Unique,
-              proc: mat.Process,
-              part: mat.JobPartName,
-              numProc: mat.NumProcess,
-              face: mat.Face,
-              serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-              workorder: ""
-            )
-        ),
+        mat: mats.Select(mat => new LogMaterial(
+          matID: mat.MaterialID,
+          uniq: mat.Unique,
+          proc: mat.Process,
+          part: mat.JobPartName,
+          numProc: mat.NumProcess,
+          face: mat.Face,
+          serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+          workorder: ""
+        )),
         pal: mats.First().Pallet,
         ty: LogType.MachineCycle,
         locName: "machinespec",
@@ -682,19 +676,16 @@ namespace MachineWatchTest
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(
-            mat =>
-              new LogMaterial(
-                matID: mat.MaterialID,
-                uniq: mat.Unique,
-                proc: mat.Process,
-                part: mat.JobPartName,
-                numProc: mat.NumProcess,
-                face: mat.Face,
-                serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-                workorder: ""
-              )
-          ),
+          mat: mats.Select(mat => new LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
           pal: mats.First().Pallet,
           ty: LogType.LoadUnloadCycle,
           locName: "L/U",
@@ -769,19 +760,16 @@ namespace MachineWatchTest
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(
-            mat =>
-              new LogMaterial(
-                matID: mat.MaterialID,
-                uniq: mat.Unique,
-                proc: mat.Process,
-                part: mat.JobPartName,
-                numProc: mat.NumProcess,
-                face: mat.Face,
-                serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-                workorder: ""
-              )
-          ),
+          mat: mats.Select(mat => new LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
           pal: mats.First().Pallet,
           ty: LogType.LoadUnloadCycle,
           locName: "L/U",
@@ -830,19 +818,16 @@ namespace MachineWatchTest
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(
-            mat =>
-              new LogMaterial(
-                matID: mat.MaterialID,
-                uniq: mat.Unique,
-                proc: mat.Process,
-                part: mat.JobPartName,
-                numProc: mat.NumProcess,
-                face: mat.Face,
-                serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-                workorder: ""
-              )
-          ),
+          mat: mats.Select(mat => new LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
           pal: mats.First().Pallet,
           ty: LogType.LoadUnloadCycle,
           locName: "L/U",
@@ -917,19 +902,16 @@ namespace MachineWatchTest
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(
-            mat =>
-              new LogMaterial(
-                matID: mat.MaterialID,
-                uniq: mat.Unique,
-                proc: mat.Process,
-                part: mat.JobPartName,
-                numProc: mat.NumProcess,
-                face: mat.Face,
-                serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-                workorder: ""
-              )
-          ),
+          mat: mats.Select(mat => new LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
           pal: mats.First().Pallet,
           ty: LogType.PalletInStocker,
           locName: "Stocker",
@@ -970,19 +952,16 @@ namespace MachineWatchTest
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(
-            mat =>
-              new LogMaterial(
-                matID: mat.MaterialID,
-                uniq: mat.Unique,
-                proc: mat.Process,
-                part: mat.JobPartName,
-                numProc: mat.NumProcess,
-                face: mat.Face,
-                serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-                workorder: ""
-              )
-          ),
+          mat: mats.Select(mat => new LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
           pal: mats.First().Pallet,
           ty: LogType.PalletInStocker,
           locName: "Stocker",
@@ -1019,19 +998,16 @@ namespace MachineWatchTest
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(
-            mat =>
-              new LogMaterial(
-                matID: mat.MaterialID,
-                uniq: mat.Unique,
-                proc: mat.Process,
-                part: mat.JobPartName,
-                numProc: mat.NumProcess,
-                face: mat.Face,
-                serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-                workorder: ""
-              )
-          ),
+          mat: mats.Select(mat => new LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
           pal: mats.First().Pallet,
           ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
@@ -1065,19 +1041,16 @@ namespace MachineWatchTest
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(
-            mat =>
-              new LogMaterial(
-                matID: mat.MaterialID,
-                uniq: mat.Unique,
-                proc: mat.Process,
-                part: mat.JobPartName,
-                numProc: mat.NumProcess,
-                face: mat.Face,
-                serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-                workorder: ""
-              )
-          ),
+          mat: mats.Select(mat => new LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
           pal: mats.First().Pallet,
           ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
@@ -1113,19 +1086,16 @@ namespace MachineWatchTest
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: mats.Select(
-            mat =>
-              new LogMaterial(
-                matID: mat.MaterialID,
-                uniq: mat.Unique,
-                proc: mat.Process,
-                part: mat.JobPartName,
-                numProc: mat.NumProcess,
-                face: mat.Face,
-                serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
-                workorder: ""
-              )
-          ),
+          mat: mats.Select(mat => new LogMaterial(
+            matID: mat.MaterialID,
+            uniq: mat.Unique,
+            proc: mat.Process,
+            part: mat.JobPartName,
+            numProc: mat.NumProcess,
+            face: mat.Face,
+            serial: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0'),
+            workorder: ""
+          )),
           pal: mats.First().Pallet,
           ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
@@ -1332,17 +1302,16 @@ namespace MachineWatchTest
         {
           expected[i] = JobLogTest.TransformLog(
             matOnPal.MaterialID,
-            logMat =>
-              new LogMaterial(
-                matID: matToAdd.MaterialID,
-                uniq: logMat.JobUniqueStr,
-                proc: logMat.Process,
-                part: logMat.PartName,
-                numProc: logMat.NumProcesses,
-                serial: SerialSettings.ConvertToBase62(matToAdd.MaterialID).PadLeft(10, '0'),
-                workorder: logMat.Workorder,
-                face: logMat.Face
-              )
+            logMat => new LogMaterial(
+              matID: matToAdd.MaterialID,
+              uniq: logMat.JobUniqueStr,
+              proc: logMat.Process,
+              part: logMat.PartName,
+              numProc: logMat.NumProcesses,
+              serial: SerialSettings.ConvertToBase62(matToAdd.MaterialID).PadLeft(10, '0'),
+              workorder: logMat.Workorder,
+              face: logMat.Face
+            )
           )(expected[i]);
         }
       }
@@ -1385,8 +1354,8 @@ namespace MachineWatchTest
             options
               .ComparingByMembers<BlackMaple.MachineFramework.LogEntry>()
               .Excluding(e => e.Counter)
-              .Using<DateTime>(
-                ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(1))
+              .Using<DateTime>(ctx =>
+                ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(1))
               )
               .WhenTypeIs<DateTime>()
         );

@@ -453,8 +453,8 @@ namespace DebugMachineWatchApiServer
         operatorName
       );
 
-      var toMove = CurrentStatus.Material.FirstOrDefault(
-        m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+      var toMove = CurrentStatus.Material.FirstOrDefault(m =>
+        m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue
       );
       if (toMove == null)
         return;
@@ -553,8 +553,8 @@ namespace DebugMachineWatchApiServer
 
       foreach (var materialId in materialIds)
       {
-        var toRemove = CurrentStatus.Material.FirstOrDefault(
-          m => m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue
+        var toRemove = CurrentStatus.Material.FirstOrDefault(m =>
+          m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue
         );
         if (toRemove == null)
           return;
@@ -616,16 +616,13 @@ namespace DebugMachineWatchApiServer
       System.Threading.Thread.Sleep(TimeSpan.FromSeconds(2));
       return Programs
         .Where(p => !string.IsNullOrEmpty(p.CellControllerProgramName))
-        .Select(
-          p =>
-            new ProgramInCellController()
-            {
-              ProgramName = p.ProgramName,
-              Revision = p.Revision,
-              Comment = p.Comment,
-              CellControllerProgramName = p.CellControllerProgramName,
-            }
-        )
+        .Select(p => new ProgramInCellController()
+        {
+          ProgramName = p.ProgramName,
+          Revision = p.Revision,
+          Comment = p.Comment,
+          CellControllerProgramName = p.CellControllerProgramName,
+        })
         .ToImmutableList();
     }
 
@@ -642,16 +639,13 @@ namespace DebugMachineWatchApiServer
       }
       return Enumerable
         .Range(0, count)
-        .Select(
-          i =>
-            new ProgramRevision()
-            {
-              ProgramName = programName,
-              Revision = start - i,
-              Comment = $"programName comment {start - i}",
-              CellControllerProgramName = "cell " + programName
-            }
-        )
+        .Select(i => new ProgramRevision()
+        {
+          ProgramName = programName,
+          Revision = start - i,
+          Comment = $"programName comment {start - i}",
+          CellControllerProgramName = "cell " + programName
+        })
         .ToImmutableList();
     }
 
@@ -795,18 +789,17 @@ namespace DebugMachineWatchApiServer
         {
           TimeOfCurrentStatusUTC = curSt.TimeOfCurrentStatusUTC.Add(offset),
           Jobs = curSt
-            .Jobs.Values.Select(
-              j =>
-                OffsetJob(j, offset).CloneToDerived<ActiveJob, Job>() with
-                {
-                  ScheduleId = j.ScheduleId,
-                  CopiedToSystem = j.CopiedToSystem,
-                  Decrements = j.Decrements,
-                  Completed = j.Completed,
-                  RemainingToStart = j.RemainingToStart,
-                  Precedence = j.Precedence,
-                  AssignedWorkorders = j.AssignedWorkorders,
-                }
+            .Jobs.Values.Select(j =>
+              OffsetJob(j, offset).CloneToDerived<ActiveJob, Job>() with
+              {
+                ScheduleId = j.ScheduleId,
+                CopiedToSystem = j.CopiedToSystem,
+                Decrements = j.Decrements,
+                Completed = j.Completed,
+                RemainingToStart = j.RemainingToStart,
+                Precedence = j.Precedence,
+                AssignedWorkorders = j.AssignedWorkorders,
+              }
             )
             .ToImmutableDictionary(j => j.UniqueStr, j => j)
         };
@@ -831,23 +824,21 @@ namespace DebugMachineWatchApiServer
         RouteStartUTC = originalJob.RouteStartUTC.Add(offset),
         RouteEndUTC = originalJob.RouteEndUTC.Add(offset),
         Processes = originalJob
-          .Processes.Select(
-            p =>
-              p with
-              {
-                Paths = p.Paths.Select(
-                  path =>
-                    path with
-                    {
-                      SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
-                      SimulatedProduction = path.SimulatedProduction.Select(
-                        prod => prod with { TimeUTC = prod.TimeUTC.Add(offset) }
-                      )
-                        .ToImmutableList()
-                    }
+          .Processes.Select(p =>
+            p with
+            {
+              Paths = p
+                .Paths.Select(path =>
+                  path with
+                  {
+                    SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
+                    SimulatedProduction = path
+                      .SimulatedProduction.Select(prod => prod with { TimeUTC = prod.TimeUTC.Add(offset) })
+                      .ToImmutableList()
+                  }
                 )
-                  .ToImmutableList()
-              }
+                .ToImmutableList()
+            }
           )
           .ToImmutableList()
       };
@@ -883,15 +874,12 @@ namespace DebugMachineWatchApiServer
         Programs = System
           .Text.Json.Nodes.JsonNode.Parse(lastAddSch)["mazakData"]["MainPrograms"]
           .AsArray()
-          .Select(
-            prog =>
-              new MockProgram()
-              {
-                ProgramName = (string)prog["MainProgram"],
-                CellControllerProgramName = (string)prog["MainProgram"],
-                Comment = (string)prog["Comment"]
-              }
-          )
+          .Select(prog => new MockProgram()
+          {
+            ProgramName = (string)prog["MainProgram"],
+            CellControllerProgramName = (string)prog["MainProgram"],
+            Comment = (string)prog["Comment"]
+          })
           .ToList();
       }
       else

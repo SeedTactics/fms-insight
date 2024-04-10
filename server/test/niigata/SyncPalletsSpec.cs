@@ -179,8 +179,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Action writeMat = () =>
           output.AppendJoin(
             ',',
-            e.Material.Select(
-              m => m.PartName + "-" + m.Process.ToString() + "[" + m.MaterialID.ToString() + "]"
+            e.Material.Select(m =>
+              m.PartName + "-" + m.Process.ToString() + "[" + m.MaterialID.ToString() + "]"
             )
           );
         switch (e.LogType)
@@ -253,16 +253,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Jobs = jobs,
           ScheduleId = "theschId",
           Programs = progs
-            .Select(
-              p =>
-                new MachineFramework.NewProgramContent()
-                {
-                  ProgramName = p.prog,
-                  Revision = p.rev,
-                  Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
-                  ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
-                }
-            )
+            .Select(p => new MachineFramework.NewProgramContent()
+            {
+              ProgramName = p.prog,
+              Revision = p.rev,
+              Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
+              ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
+            })
             .ToImmutableList()
         }
       );
@@ -312,8 +309,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       (string prog, long rev)[][] progs = null
     )
     {
-      var matLogs = logs.Where(
-          e => e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound
+      var matLogs = logs.Where(e =>
+          e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound
         )
         .ToList();
       matLogs.Should().BeInAscendingOrder(e => e.EndTimeUTC);
@@ -1140,16 +1137,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         for (int jobIdx = 0; jobIdx < j.Jobs.Count; jobIdx++)
         {
-          j.Jobs[jobIdx] = j.Jobs[jobIdx].AdjustAllPaths(
-            (proc, path, draftPath) =>
-              draftPath with
-              {
-                InputQueue = proc == 1 ? "castingQ" : draftPath.InputQueue,
-                Stops = draftPath
-                  .Stops.Select(d => d with { Program = null, ProgramRevision = null })
-                  .ToImmutableList()
-              }
-          );
+          j.Jobs[jobIdx] = j.Jobs[jobIdx]
+            .AdjustAllPaths(
+              (proc, path, draftPath) =>
+                draftPath with
+                {
+                  InputQueue = proc == 1 ? "castingQ" : draftPath.InputQueue,
+                  Stops = draftPath
+                    .Stops.Select(d => d with { Program = null, ProgramRevision = null })
+                    .ToImmutableList()
+                }
+            );
         }
         j.CurrentUnfilledWorkorders.AddRange(
           new[]

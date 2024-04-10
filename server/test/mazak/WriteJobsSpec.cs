@@ -123,133 +123,133 @@ namespace MachineWatchTest
         .LoadAllData()
         .Returns(
           // first time, write jobs calls when creating parts and pallets
-          callInfo =>
-            new MazakAllData()
+          callInfo => new MazakAllData()
+          {
+            Schedules = new[]
             {
-              Schedules = new[]
+              // a completed schedule, should be deleted
+              new MazakScheduleRow()
               {
-                // a completed schedule, should be deleted
-                new MazakScheduleRow()
+                Id = 1,
+                PartName = "part1:1:1",
+                Comment = MazakPart.CreateComment("uniq1", new[] { 1 }, false),
+                PlanQuantity = 15,
+                CompleteQuantity = 15,
+                Priority = 50,
+                Processes =
                 {
-                  Id = 1,
-                  PartName = "part1:1:1",
-                  Comment = MazakPart.CreateComment("uniq1", new[] { 1 }, false),
-                  PlanQuantity = 15,
-                  CompleteQuantity = 15,
-                  Priority = 50,
-                  Processes =
+                  new MazakScheduleProcessRow()
                   {
-                    new MazakScheduleProcessRow()
-                    {
-                      MazakScheduleRowId = 1,
-                      FixedMachineFlag = 1,
-                      ProcessNumber = 1
-                    }
-                  }
-                },
-                // a non-completed schedule, should be untouched
-                new MazakScheduleRow()
-                {
-                  Id = 2,
-                  PartName = "part2:1:1",
-                  Comment = MazakPart.CreateComment("uniq2", new[] { 1 }, false),
-                  PlanQuantity = 15,
-                  CompleteQuantity = 10,
-                  Priority = 50,
-                  Processes =
-                  {
-                    new MazakScheduleProcessRow()
-                    {
-                      MazakScheduleRowId = 1,
-                      FixedMachineFlag = 1,
-                      ProcessNumber = 1,
-                      ProcessMaterialQuantity = 3,
-                      ProcessExecuteQuantity = 2
-                    }
-                  }
-                },
-              },
-              Parts = new[]
-              {
-                // should be deleted, since corresponding schedule is deleted
-                new MazakPartRow()
-                {
-                  PartName = "part1:1:1",
-                  Comment = MazakPart.CreateComment("uniq1", new[] { 1 }, false),
-                  Processes = new[]
-                  {
-                    new MazakPartProcessRow()
-                    {
-                      PartName = "part1:1:1",
-                      ProcessNumber = 1,
-                      FixQuantity = 5,
-                      Fixture = "fixtoremove"
-                    }
-                  }
-                },
-                //should be kept, since schedule is kept
-                new MazakPartRow()
-                {
-                  PartName = "part2:1:1",
-                  Comment = MazakPart.CreateComment("uniq2", new[] { 1 }, false),
-                  Processes = new[]
-                  {
-                    new MazakPartProcessRow()
-                    {
-                      PartName = "part2:1:1",
-                      ProcessNumber = 1,
-                      FixQuantity = 2,
-                      Fixture = "fixtokeep"
-                    }
-                  }
-                },
-              },
-              Fixtures = new[]
-              {
-                new MazakFixtureRow() { FixtureName = "fixtoremove", Comment = "Insight" },
-                new MazakFixtureRow() { FixtureName = "fixtokeep", Comment = "Insight" }
-              },
-              Pallets = new[]
-              {
-                new MazakPalletRow() { PalletNumber = 5, Fixture = "fixtoremove" },
-                new MazakPalletRow() { PalletNumber = 6, Fixture = "fixtokeep" }
-              },
-              PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
-              PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
-              LoadActions = Enumerable.Empty<LoadAction>(),
-              MainPrograms = Enumerable.Concat(
-                (new[] { "1001", "1002", "1003", "1004", "1005" }).Select(
-                  p => new MazakProgramRow() { MainProgram = p, Comment = "" }
-                ),
-                new[]
-                {
-                  new MazakProgramRow()
-                  {
-                    MainProgram = System.IO.Path.Combine("theprogdir", "rev2", "prog-bbb-1.EIA"),
-                    Comment = "Insight:2:prog-bbb-1"
-                  },
-                  new MazakProgramRow()
-                  {
-                    MainProgram = System.IO.Path.Combine("theprogdir", "rev3", "prog-bbb-1.EIA"),
-                    Comment = "Insight:3:prog-bbb-1"
+                    MazakScheduleRowId = 1,
+                    FixedMachineFlag = 1,
+                    ProcessNumber = 1
                   }
                 }
-              )
+              },
+              // a non-completed schedule, should be untouched
+              new MazakScheduleRow()
+              {
+                Id = 2,
+                PartName = "part2:1:1",
+                Comment = MazakPart.CreateComment("uniq2", new[] { 1 }, false),
+                PlanQuantity = 15,
+                CompleteQuantity = 10,
+                Priority = 50,
+                Processes =
+                {
+                  new MazakScheduleProcessRow()
+                  {
+                    MazakScheduleRowId = 1,
+                    FixedMachineFlag = 1,
+                    ProcessNumber = 1,
+                    ProcessMaterialQuantity = 3,
+                    ProcessExecuteQuantity = 2
+                  }
+                }
+              },
             },
-          // second time, write jobs calls LoadAllData when creating schedules
-          callInfo =>
-            new MazakAllData()
+            Parts = new[]
             {
-              Schedules = Enumerable.Empty<MazakScheduleRow>(),
-              Parts = _writeMock.AddParts.Parts,
-              Pallets = _writeMock.AddParts.Pallets,
-              PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
-              PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
-              LoadActions = Enumerable.Empty<LoadAction>(),
-              MainPrograms = (new[] { "1001", "1002", "1003", "1004", "1005" }).Select(
-                p => new MazakProgramRow() { MainProgram = p, Comment = "" }
-              ),
-            }
+              // should be deleted, since corresponding schedule is deleted
+              new MazakPartRow()
+              {
+                PartName = "part1:1:1",
+                Comment = MazakPart.CreateComment("uniq1", new[] { 1 }, false),
+                Processes = new[]
+                {
+                  new MazakPartProcessRow()
+                  {
+                    PartName = "part1:1:1",
+                    ProcessNumber = 1,
+                    FixQuantity = 5,
+                    Fixture = "fixtoremove"
+                  }
+                }
+              },
+              //should be kept, since schedule is kept
+              new MazakPartRow()
+              {
+                PartName = "part2:1:1",
+                Comment = MazakPart.CreateComment("uniq2", new[] { 1 }, false),
+                Processes = new[]
+                {
+                  new MazakPartProcessRow()
+                  {
+                    PartName = "part2:1:1",
+                    ProcessNumber = 1,
+                    FixQuantity = 2,
+                    Fixture = "fixtokeep"
+                  }
+                }
+              },
+            },
+            Fixtures = new[]
+            {
+              new MazakFixtureRow() { FixtureName = "fixtoremove", Comment = "Insight" },
+              new MazakFixtureRow() { FixtureName = "fixtokeep", Comment = "Insight" }
+            },
+            Pallets = new[]
+            {
+              new MazakPalletRow() { PalletNumber = 5, Fixture = "fixtoremove" },
+              new MazakPalletRow() { PalletNumber = 6, Fixture = "fixtokeep" }
+            },
+            PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
+            PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
+            LoadActions = Enumerable.Empty<LoadAction>(),
+            MainPrograms = Enumerable.Concat(
+              (new[] { "1001", "1002", "1003", "1004", "1005" }).Select(p => new MazakProgramRow()
+              {
+                MainProgram = p,
+                Comment = ""
+              }),
+              new[]
+              {
+                new MazakProgramRow()
+                {
+                  MainProgram = System.IO.Path.Combine("theprogdir", "rev2", "prog-bbb-1.EIA"),
+                  Comment = "Insight:2:prog-bbb-1"
+                },
+                new MazakProgramRow()
+                {
+                  MainProgram = System.IO.Path.Combine("theprogdir", "rev3", "prog-bbb-1.EIA"),
+                  Comment = "Insight:3:prog-bbb-1"
+                }
+              }
+            )
+          },
+          // second time, write jobs calls LoadAllData when creating schedules
+          callInfo => new MazakAllData()
+          {
+            Schedules = Enumerable.Empty<MazakScheduleRow>(),
+            Parts = _writeMock.AddParts.Parts,
+            Pallets = _writeMock.AddParts.Pallets,
+            PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
+            PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
+            LoadActions = Enumerable.Empty<LoadAction>(),
+            MainPrograms = (new[] { "1001", "1002", "1003", "1004", "1005" }).Select(
+              p => new MazakProgramRow() { MainProgram = p, Comment = "" }
+            ),
+          }
         );
 
       _settings = new FMSSettings();

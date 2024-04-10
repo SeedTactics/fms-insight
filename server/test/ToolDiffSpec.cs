@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
-using Xunit;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
-using System.Collections.Immutable;
+using Xunit;
 
 namespace MachineWatchTest;
 

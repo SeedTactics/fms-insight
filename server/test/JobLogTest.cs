@@ -761,8 +761,8 @@ namespace MachineWatchTest
       CheckLog(logs, otherLogs, start.AddHours(6.5));
 
       _jobLog
-        .Invoking(
-          j => j.GetRecentLog(unloadStartActualCycle.Counter, new DateTime(2000, 2, 3, 4, 5, 6)).ToList()
+        .Invoking(j =>
+          j.GetRecentLog(unloadStartActualCycle.Counter, new DateTime(2000, 2, 3, 4, 5, 6)).ToList()
         )
         .Should()
         .Throw<ConflictRequestException>(
@@ -3317,33 +3317,30 @@ namespace MachineWatchTest
         expectedLogs.AddRange(
           Enumerable
             .Range(1, 5)
-            .Select(
-              i =>
-                new LogEntry(
-                  cntr: -1,
-                  mat: new[]
-                  {
-                    new LogMaterial(
-                      matID: matOffset + i,
-                      uniq: "",
-                      proc: 0,
-                      part: "castingQ",
-                      numProc: 1,
-                      serial: useSerial ? i.ToString() : "",
-                      workorder: workorder,
-                      face: ""
-                    )
-                  },
-                  pal: 0,
-                  ty: LogType.PartMark,
-                  locName: "Mark",
-                  locNum: 1,
-                  prog: "MARK",
-                  start: false,
-                  endTime: addTime,
-                  result: i.ToString()
+            .Select(i => new LogEntry(
+              cntr: -1,
+              mat: new[]
+              {
+                new LogMaterial(
+                  matID: matOffset + i,
+                  uniq: "",
+                  proc: 0,
+                  part: "castingQ",
+                  numProc: 1,
+                  serial: useSerial ? i.ToString() : "",
+                  workorder: workorder,
+                  face: ""
                 )
-            )
+              },
+              pal: 0,
+              ty: LogType.PartMark,
+              locName: "Mark",
+              locNum: 1,
+              prog: "MARK",
+              start: false,
+              endTime: addTime,
+              result: i.ToString()
+            ))
         );
       }
 
@@ -3352,33 +3349,30 @@ namespace MachineWatchTest
         expectedLogs.AddRange(
           Enumerable
             .Range(1, 5)
-            .Select(
-              i =>
-                new LogEntry(
-                  cntr: -1,
-                  mat: new[]
-                  {
-                    new LogMaterial(
-                      matID: matOffset + i,
-                      uniq: "",
-                      proc: 0,
-                      part: "castingQ",
-                      numProc: 1,
-                      serial: useSerial ? i.ToString() : "",
-                      workorder: workorder,
-                      face: ""
-                    )
-                  },
-                  pal: 0,
-                  ty: LogType.OrderAssignment,
-                  locName: "Order",
-                  locNum: 1,
-                  prog: "",
-                  start: false,
-                  endTime: addTime,
-                  result: workorder
+            .Select(i => new LogEntry(
+              cntr: -1,
+              mat: new[]
+              {
+                new LogMaterial(
+                  matID: matOffset + i,
+                  uniq: "",
+                  proc: 0,
+                  part: "castingQ",
+                  numProc: 1,
+                  serial: useSerial ? i.ToString() : "",
+                  workorder: workorder,
+                  face: ""
                 )
-            )
+              },
+              pal: 0,
+              ty: LogType.OrderAssignment,
+              locName: "Order",
+              locNum: 1,
+              prog: "",
+              start: false,
+              endTime: addTime,
+              result: workorder
+            ))
         );
       }
 
@@ -3433,30 +3427,27 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           Enumerable
             .Range(1, existingMats ? 6 : 5)
-            .Select(
-              i =>
-                new QueuedMaterial()
-                {
-                  MaterialID = i,
-                  Queue = "queueQQ",
-                  Position = i - 1,
-                  Unique = "",
-                  PartNameOrCasting = "castingQ",
-                  NumProcesses = 1,
-                  NextProcess = 1,
-                  Serial = useSerial
-                    ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
+            .Select(i => new QueuedMaterial()
+            {
+              MaterialID = i,
+              Queue = "queueQQ",
+              Position = i - 1,
+              Unique = "",
+              PartNameOrCasting = "castingQ",
+              NumProcesses = 1,
+              NextProcess = 1,
+              Serial = useSerial
+                ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
+                : null,
+              Workorder =
+                existingMats && i == 1
+                  ? null
+                  : useWorkorder
+                    ? workorder
                     : null,
-                  Workorder =
-                    existingMats && i == 1
-                      ? null
-                      : useWorkorder
-                        ? workorder
-                        : null,
-                  Paths = ImmutableDictionary<int, int>.Empty,
-                  AddTimeUTC = addTime
-                }
-            )
+              Paths = ImmutableDictionary<int, int>.Empty,
+              AddTimeUTC = addTime
+            })
         );
 
       _jobLog
@@ -3465,30 +3456,27 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           Enumerable
             .Range(1, existingMats ? 6 : 5)
-            .Select(
-              i =>
-                new QueuedMaterial()
-                {
-                  MaterialID = i,
-                  Queue = "queueQQ",
-                  Position = i - 1,
-                  Unique = "",
-                  PartNameOrCasting = "castingQ",
-                  NumProcesses = 1,
-                  NextProcess = 1,
-                  Serial = useSerial
-                    ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
+            .Select(i => new QueuedMaterial()
+            {
+              MaterialID = i,
+              Queue = "queueQQ",
+              Position = i - 1,
+              Unique = "",
+              PartNameOrCasting = "castingQ",
+              NumProcesses = 1,
+              NextProcess = 1,
+              Serial = useSerial
+                ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
+                : null,
+              Workorder =
+                existingMats && i == 1
+                  ? null
+                  : useWorkorder
+                    ? workorder
                     : null,
-                  Workorder =
-                    existingMats && i == 1
-                      ? null
-                      : useWorkorder
-                        ? workorder
-                        : null,
-                  Paths = ImmutableDictionary<int, int>.Empty,
-                  AddTimeUTC = addTime
-                }
-            )
+              Paths = ImmutableDictionary<int, int>.Empty,
+              AddTimeUTC = addTime
+            })
         );
       _jobLog.GetUnallocatedMaterialInQueue("ohuouh", "castingQ").Should().BeEmpty();
       _jobLog.GetUnallocatedMaterialInQueue("queueQQ", "qouhwef").Should().BeEmpty();
@@ -3499,35 +3487,32 @@ namespace MachineWatchTest
         .BulkRemoveMaterialFromAllQueues(new long[] { 1, 2 }, null, reason: "reason11", removeTime)
         .Should()
         .BeEquivalentTo(
-          (new long[] { 1, 2 }).Select(
-            matId =>
-              new LogEntry(
-                cntr: -1,
-                mat: new[]
-                {
-                  new LogMaterial(
-                    matID: matId,
-                    uniq: "",
-                    proc: 0,
-                    part: "castingQ",
-                    numProc: 1,
-                    serial: useSerial ? (existingMats ? (matId == 2 ? "1" : "") : matId.ToString()) : "",
-                    workorder: existingMats && matId == 1 ? "" : workorder,
-                    face: ""
-                  )
-                },
-                pal: 0,
-                ty: LogType.RemoveFromQueue,
-                locName: "queueQQ",
-                locNum: 0,
-                prog: "reason11",
-                start: false,
-                endTime: removeTime,
-                result: "",
-                elapsed: removeTime.Subtract(addTime),
-                active: TimeSpan.Zero
+          (new long[] { 1, 2 }).Select(matId => new LogEntry(
+            cntr: -1,
+            mat: new[]
+            {
+              new LogMaterial(
+                matID: matId,
+                uniq: "",
+                proc: 0,
+                part: "castingQ",
+                numProc: 1,
+                serial: useSerial ? (existingMats ? (matId == 2 ? "1" : "") : matId.ToString()) : "",
+                workorder: existingMats && matId == 1 ? "" : workorder,
+                face: ""
               )
-          ),
+            },
+            pal: 0,
+            ty: LogType.RemoveFromQueue,
+            locName: "queueQQ",
+            locNum: 0,
+            prog: "reason11",
+            start: false,
+            endTime: removeTime,
+            result: "",
+            elapsed: removeTime.Subtract(addTime),
+            active: TimeSpan.Zero
+          )),
           options => options.Excluding(o => o.Counter).ComparingByMembers<LogEntry>()
         );
 
@@ -3537,30 +3522,27 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           Enumerable
             .Range(3, existingMats ? 4 : 3)
-            .Select(
-              i =>
-                new QueuedMaterial()
-                {
-                  MaterialID = i,
-                  Queue = "queueQQ",
-                  Position = i - 3,
-                  Unique = "",
-                  PartNameOrCasting = "castingQ",
-                  NumProcesses = 1,
-                  NextProcess = 1,
-                  Serial = useSerial
-                    ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
+            .Select(i => new QueuedMaterial()
+            {
+              MaterialID = i,
+              Queue = "queueQQ",
+              Position = i - 3,
+              Unique = "",
+              PartNameOrCasting = "castingQ",
+              NumProcesses = 1,
+              NextProcess = 1,
+              Serial = useSerial
+                ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
+                : null,
+              Workorder =
+                existingMats && i == 1
+                  ? null
+                  : useWorkorder
+                    ? workorder
                     : null,
-                  Workorder =
-                    existingMats && i == 1
-                      ? null
-                      : useWorkorder
-                        ? workorder
-                        : null,
-                  Paths = ImmutableDictionary<int, int>.Empty,
-                  AddTimeUTC = addTime
-                }
-            )
+              Paths = ImmutableDictionary<int, int>.Empty,
+              AddTimeUTC = addTime
+            })
         );
     }
 
@@ -3584,17 +3566,16 @@ namespace MachineWatchTest
 
       //adding again should throw, since they are in the queue
       _jobLog
-        .Invoking(
-          j =>
-            j.BulkAddNewCastingsInQueue(
-              casting: "castingQ",
-              qty: 2,
-              queue: "queueQQ",
-              serials: new[] { "1", "2" },
-              workorder: "work5455",
-              operatorName: "theoper",
-              throwOnExistingSerial: true
-            )
+        .Invoking(j =>
+          j.BulkAddNewCastingsInQueue(
+            casting: "castingQ",
+            qty: 2,
+            queue: "queueQQ",
+            serials: new[] { "1", "2" },
+            workorder: "work5455",
+            operatorName: "theoper",
+            throwOnExistingSerial: true
+          )
         )
         .Should()
         .Throw<Exception>()
@@ -3670,17 +3651,16 @@ namespace MachineWatchTest
 
       //adding again should throw, since 5 has a load event
       _jobLog
-        .Invoking(
-          j =>
-            j.BulkAddNewCastingsInQueue(
-              casting: "castingQ",
-              qty: 1,
-              queue: "queueQQ",
-              serials: new[] { "5" },
-              workorder: null,
-              operatorName: "theoper",
-              throwOnExistingSerial: true
-            )
+        .Invoking(j =>
+          j.BulkAddNewCastingsInQueue(
+            casting: "castingQ",
+            qty: 1,
+            queue: "queueQQ",
+            serials: new[] { "5" },
+            workorder: null,
+            operatorName: "theoper",
+            throwOnExistingSerial: true
+          )
         )
         .Should()
         .Throw<Exception>()
@@ -3688,17 +3668,16 @@ namespace MachineWatchTest
 
       //adding again should throw, since 6 has a machine event
       _jobLog
-        .Invoking(
-          j =>
-            j.BulkAddNewCastingsInQueue(
-              casting: "castingQ",
-              qty: 1,
-              queue: "queueQQ",
-              serials: new[] { "6" },
-              workorder: "work4",
-              operatorName: "theoper",
-              throwOnExistingSerial: true
-            )
+        .Invoking(j =>
+          j.BulkAddNewCastingsInQueue(
+            casting: "castingQ",
+            qty: 1,
+            queue: "queueQQ",
+            serials: new[] { "6" },
+            workorder: "work4",
+            operatorName: "theoper",
+            throwOnExistingSerial: true
+          )
         )
         .Should()
         .Throw<Exception>()
@@ -4281,17 +4260,16 @@ namespace MachineWatchTest
         .Select(
           TransformLog(
             initiallyLoadedMatProc1.MaterialID,
-            mat =>
-              new LogMaterial(
-                matID: newMatProc1.MaterialID,
-                uniq: "uniq1",
-                proc: 1,
-                part: "part1",
-                numProc: 2,
-                serial: "cccc",
-                workorder: "",
-                face: "1"
-              )
+            mat => new LogMaterial(
+              matID: newMatProc1.MaterialID,
+              uniq: "uniq1",
+              proc: 1,
+              part: "part1",
+              numProc: 2,
+              serial: "cccc",
+              workorder: "",
+              face: "1"
+            )
           )
         )
         .ToList();
@@ -4412,13 +4390,12 @@ namespace MachineWatchTest
 
       _jobLog
         .GetLogForMaterial(newMatProc1.MaterialID)
-        .Where(
-          e =>
-            e.LogType != LogType.MachineCycle
-            && e.LogType != LogType.LoadUnloadCycle
-            && e.LogType != LogType.PalletInStocker
-            && e.LogType != LogType.PalletOnRotaryInbound
-            && e.LogType != LogType.SwapMaterialOnPallet
+        .Where(e =>
+          e.LogType != LogType.MachineCycle
+          && e.LogType != LogType.LoadUnloadCycle
+          && e.LogType != LogType.PalletInStocker
+          && e.LogType != LogType.PalletOnRotaryInbound
+          && e.LogType != LogType.SwapMaterialOnPallet
         )
         .SelectMany(e => e.Material)
         .Select(m => m.Process)
@@ -4509,30 +4486,28 @@ namespace MachineWatchTest
       now = now.AddMinutes(5).AddSeconds(1);
 
       _jobLog
-        .Invoking(
-          j =>
-            j.SwapMaterialInCurrentPalletCycle(
-              pallet: 5,
-              oldMatId: 12345,
-              newMatId: 98765,
-              operatorName: null,
-              quarantineQueue: "unusedquarantine"
-            )
+        .Invoking(j =>
+          j.SwapMaterialInCurrentPalletCycle(
+            pallet: 5,
+            oldMatId: 12345,
+            newMatId: 98765,
+            operatorName: null,
+            quarantineQueue: "unusedquarantine"
+          )
         )
         .Should()
         .Throw<ConflictRequestException>()
         .WithMessage("Unable to find material");
 
       _jobLog
-        .Invoking(
-          j =>
-            j.SwapMaterialInCurrentPalletCycle(
-              pallet: 5,
-              oldMatId: firstMatId,
-              newMatId: differentUniqMatId,
-              operatorName: null,
-              quarantineQueue: "unusedquarantine"
-            )
+        .Invoking(j =>
+          j.SwapMaterialInCurrentPalletCycle(
+            pallet: 5,
+            oldMatId: firstMatId,
+            newMatId: differentUniqMatId,
+            operatorName: null,
+            quarantineQueue: "unusedquarantine"
+          )
         )
         .Should()
         .Throw<ConflictRequestException>()
@@ -4542,15 +4517,14 @@ namespace MachineWatchTest
       _jobLog.RecordPathForProcess(existingPathMatId, process: 1, path: 10);
 
       _jobLog
-        .Invoking(
-          j =>
-            j.SwapMaterialInCurrentPalletCycle(
-              pallet: 5,
-              oldMatId: firstMatId,
-              newMatId: differentUniqMatId,
-              operatorName: null,
-              quarantineQueue: "unusedquarantine"
-            )
+        .Invoking(j =>
+          j.SwapMaterialInCurrentPalletCycle(
+            pallet: 5,
+            oldMatId: firstMatId,
+            newMatId: differentUniqMatId,
+            operatorName: null,
+            quarantineQueue: "unusedquarantine"
+          )
         )
         .Should()
         .Throw<ConflictRequestException>()
@@ -4558,15 +4532,14 @@ namespace MachineWatchTest
 
       var otherCastingMatId = _jobLog.AllocateMaterialIDForCasting("othercasting");
       _jobLog
-        .Invoking(
-          j =>
-            j.SwapMaterialInCurrentPalletCycle(
-              pallet: 5,
-              oldMatId: firstMatId,
-              newMatId: otherCastingMatId,
-              operatorName: null,
-              quarantineQueue: "unusedquarantine"
-            )
+        .Invoking(j =>
+          j.SwapMaterialInCurrentPalletCycle(
+            pallet: 5,
+            oldMatId: firstMatId,
+            newMatId: otherCastingMatId,
+            operatorName: null,
+            quarantineQueue: "unusedquarantine"
+          )
         )
         .Should()
         .Throw<ConflictRequestException>()
@@ -5043,62 +5016,58 @@ namespace MachineWatchTest
 
     public static Func<LogMaterial, LogMaterial> SetUniqInMat(string uniq, int? numProc = null)
     {
-      return m =>
-        new LogMaterial(
-          matID: m.MaterialID,
-          uniq: uniq,
-          proc: m.Process,
-          part: m.PartName,
-          numProc: numProc ?? m.NumProcesses,
-          serial: m.Serial,
-          workorder: m.Workorder,
-          face: m.Face
-        );
+      return m => new LogMaterial(
+        matID: m.MaterialID,
+        uniq: uniq,
+        proc: m.Process,
+        part: m.PartName,
+        numProc: numProc ?? m.NumProcesses,
+        serial: m.Serial,
+        workorder: m.Workorder,
+        face: m.Face
+      );
     }
 
     public static Func<LogMaterial, LogMaterial> SetSerialInMat(string serial)
     {
-      return m =>
-        new LogMaterial(
-          matID: m.MaterialID,
-          uniq: m.JobUniqueStr,
-          proc: m.Process,
-          part: m.PartName,
-          numProc: m.NumProcesses,
-          serial: serial,
-          workorder: m.Workorder,
-          face: m.Face
-        );
+      return m => new LogMaterial(
+        matID: m.MaterialID,
+        uniq: m.JobUniqueStr,
+        proc: m.Process,
+        part: m.PartName,
+        numProc: m.NumProcesses,
+        serial: serial,
+        workorder: m.Workorder,
+        face: m.Face
+      );
     }
 
     public static Func<LogMaterial, LogMaterial> SetWorkorderInMat(string work)
     {
-      return m =>
-        new LogMaterial(
-          matID: m.MaterialID,
-          uniq: m.JobUniqueStr,
-          proc: m.Process,
-          part: m.PartName,
-          numProc: m.NumProcesses,
-          serial: m.Serial,
-          workorder: work,
-          face: m.Face
-        );
+      return m => new LogMaterial(
+        matID: m.MaterialID,
+        uniq: m.JobUniqueStr,
+        proc: m.Process,
+        part: m.PartName,
+        numProc: m.NumProcesses,
+        serial: m.Serial,
+        workorder: work,
+        face: m.Face
+      );
     }
 
     public static Func<LogMaterial, LogMaterial> SetProcInMat(int proc)
     {
-      return m =>
-        new LogMaterial(
-          matID: m.MaterialID,
-          uniq: m.JobUniqueStr,
-          proc: proc,
-          part: m.PartName,
-          numProc: m.NumProcesses,
-          serial: m.Serial,
-          workorder: m.Workorder,
-          face: m.Face
-        );
+      return m => new LogMaterial(
+        matID: m.MaterialID,
+        uniq: m.JobUniqueStr,
+        proc: proc,
+        part: m.PartName,
+        numProc: m.NumProcesses,
+        serial: m.Serial,
+        workorder: m.Workorder,
+        face: m.Face
+      );
     }
 
     public static Func<LogEntry, LogEntry> TransformLog(

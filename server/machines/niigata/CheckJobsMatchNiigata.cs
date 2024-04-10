@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
@@ -203,8 +203,8 @@ namespace BlackMaple.FMSInsight.Niigata
           if (int.TryParse(programName, out int progNum))
           {
             if (
-              !programsInCellCtrl.Any(
-                p => p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)
+              !programsInCellCtrl.Any(p =>
+                p.ProgramNum == progNum && !AssignNewRoutesOnPallets.IsInsightProgram(p)
               )
             )
             {

@@ -48,8 +48,8 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       if (
         queues != null
-        && queues.Values.Any(
-          q => q.MaxSizeBeforeStopUnloading.HasValue && q.MaxSizeBeforeStopUnloading.Value > 0
+        && queues.Values.Any(q =>
+          q.MaxSizeBeforeStopUnloading.HasValue && q.MaxSizeBeforeStopUnloading.Value > 0
         )
       )
       {
@@ -68,30 +68,26 @@ namespace BlackMaple.FMSInsight.Niigata
 
       var sizedQueues = new HashSet<string>(
         _queueSizes
-          .Where(
-            q => q.Value.MaxSizeBeforeStopUnloading.HasValue && q.Value.MaxSizeBeforeStopUnloading.Value > 0
+          .Where(q =>
+            q.Value.MaxSizeBeforeStopUnloading.HasValue && q.Value.MaxSizeBeforeStopUnloading.Value > 0
           )
           .Select(q => q.Key)
       );
 
-      var palletsToCheckForHold = cellState.Pallets
-        .Where(
-          pal =>
-            pal.Material.Count > 0
-            && pal.Material.Any(
-              m =>
-                m.Mat.Process >= 1
-                && sizedQueues.Contains(m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].OutputQueue)
-            )
+      var palletsToCheckForHold = cellState
+        .Pallets.Where(pal =>
+          pal.Material.Count > 0
+          && pal.Material.Any(m =>
+            m.Mat.Process >= 1
+            && sizedQueues.Contains(m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].OutputQueue)
+          )
         )
-        .OrderBy(
-          pal =>
-            pal.Material.Min(
-              m =>
-                m.Mat.Process >= 1
-                  ? m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].SimulatedStartingUTC
-                  : DateTime.MaxValue
-            )
+        .OrderBy(pal =>
+          pal.Material.Min(m =>
+            m.Mat.Process >= 1
+              ? m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].SimulatedStartingUTC
+              : DateTime.MaxValue
+          )
         )
         .ToList();
 
@@ -130,11 +126,10 @@ namespace BlackMaple.FMSInsight.Niigata
         switch (pal.Status.CurrentStep)
         {
           case MachiningStep machStep:
-            return pal.Material.All(
-              m =>
-                m.Mat.LastCompletedMachiningRouteStopIndex
-                  == m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].Stops.Count() - 1
-                || m.Mat.Action.Type == InProcessMaterialAction.ActionType.Machining
+            return pal.Material.All(m =>
+              m.Mat.LastCompletedMachiningRouteStopIndex
+                == m.Job.Processes[m.Mat.Process - 1].Paths[m.Mat.Path - 1].Stops.Count() - 1
+              || m.Mat.Action.Type == InProcessMaterialAction.ActionType.Machining
             );
 
           case ReclampStep reclamp:
@@ -250,11 +245,10 @@ namespace BlackMaple.FMSInsight.Niigata
     )
     {
       foreach (
-        var matGroup in pallet.Material.GroupBy(
-          mat =>
-            mat.Mat.Process >= 1
-              ? mat.Job.Processes[mat.Mat.Process - 1].Paths[mat.Mat.Path - 1].OutputQueue
-              : null
+        var matGroup in pallet.Material.GroupBy(mat =>
+          mat.Mat.Process >= 1
+            ? mat.Job.Processes[mat.Mat.Process - 1].Paths[mat.Mat.Path - 1].OutputQueue
+            : null
         )
       )
       {
@@ -283,8 +277,8 @@ namespace BlackMaple.FMSInsight.Niigata
     )
     {
       var availPallets = new HashSet<int>(
-        cellState.Pallets
-          .Where(pal => !pal.Status.HasWork && !pal.ManualControl)
+        cellState
+          .Pallets.Where(pal => !pal.Status.HasWork && !pal.ManualControl)
           .Select(pal => pal.Status.Master.PalletNum)
       );
 

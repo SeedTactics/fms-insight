@@ -31,13 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.IO;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Extensions.Configuration;
 using System.Data.SqlClient;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using Dapper;
+using Microsoft.Extensions.Configuration;
 
 namespace MazakMachineInterface
 {

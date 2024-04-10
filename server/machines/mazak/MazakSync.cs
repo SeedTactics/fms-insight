@@ -160,8 +160,8 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
 
     if (sendToExternal.Count > 0)
     {
-      BlackMaple.MachineFramework.SendMaterialToExternalQueue
-        .Post(sendToExternal)
+      BlackMaple
+        .MachineFramework.SendMaterialToExternalQueue.Post(sendToExternal)
         .Wait(TimeSpan.FromSeconds(30));
     }
 

@@ -107,10 +107,8 @@ public class TimespanConverter : JsonConverter<TimeSpan>
 
     if (hasDecimal)
     {
-      var txt = s[startIdx..idx].Replace(
-        ",",
-        CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator
-      );
+      var txt = s[startIdx..idx]
+        .Replace(",", CultureInfo.InvariantCulture.NumberFormat.NumberDecimalSeparator);
       if (decimal.TryParse(txt, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out n))
       {
         return true;

@@ -632,7 +632,6 @@ namespace MazakMachineInterface
               when !string.IsNullOrEmpty(fmsSettings.QuarantineQueue):
             case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
               when !string.IsNullOrEmpty(fmsSettings.QuarantineQueue):
-
               {
                 var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
                 var proc = (nextProc ?? 1) - 1;
@@ -655,7 +654,6 @@ namespace MazakMachineInterface
 
             case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
               when string.IsNullOrEmpty(fmsSettings.QuarantineQueue):
-
               {
                 var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
                 var proc = (nextProc ?? 1) - 1;

@@ -31,11 +31,11 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Data.OleDb;
+using System.Diagnostics;
+using System.Linq;
 using Dapper;
 
 namespace MazakMachineInterface
@@ -95,7 +95,11 @@ namespace MazakMachineInterface
       int attempts = 0;
 
       // check if windows
-      if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+      if (
+        !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+          System.Runtime.InteropServices.OSPlatform.Windows
+        )
+      )
       {
         throw new Exception("VerE and Web only only supported on windows");
       }
@@ -185,24 +189,21 @@ namespace MazakMachineInterface
     internal static IEnumerable<MazakWriteData> SplitWriteData(MazakWriteData original)
     {
       // Open Database Kit can lockup if too many commands are sent at once
-      return original.Schedules
-        .Cast<object>()
+      return original
+        .Schedules.Cast<object>()
         .Concat(original.Parts)
         .Concat(original.Pallets)
         .Concat(original.Fixtures)
         .Concat(original.Programs)
         .Chunk(EntriesPerTransaction)
-        .Select(
-          chunk =>
-            new MazakWriteData()
-            {
-              Schedules = chunk.OfType<MazakScheduleRow>().ToArray(),
-              Parts = chunk.OfType<MazakPartRow>().ToArray(),
-              Pallets = chunk.OfType<MazakPalletRow>().ToArray(),
-              Fixtures = chunk.OfType<MazakFixtureRow>().ToArray(),
-              Programs = chunk.OfType<NewMazakProgram>().ToArray(),
-            }
-        )
+        .Select(chunk => new MazakWriteData()
+        {
+          Schedules = chunk.OfType<MazakScheduleRow>().ToArray(),
+          Parts = chunk.OfType<MazakPartRow>().ToArray(),
+          Pallets = chunk.OfType<MazakPalletRow>().ToArray(),
+          Fixtures = chunk.OfType<MazakFixtureRow>().ToArray(),
+          Programs = chunk.OfType<NewMazakProgram>().ToArray(),
+        })
         .ToList();
     }
 

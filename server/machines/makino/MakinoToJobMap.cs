@@ -109,26 +109,23 @@ namespace Makino
           Archived = false,
           Processes = Enumerable
             .Range(1, numProc)
-            .Select(
-              procNum =>
-                new ProcessInfo()
+            .Select(procNum => new ProcessInfo()
+            {
+              Paths = ImmutableList.Create(
+                new ProcPathInfo()
                 {
-                  Paths = ImmutableList.Create(
-                    new ProcPathInfo()
-                    {
-                      PalletNums = ImmutableList<int>.Empty,
-                      Load = ImmutableList<int>.Empty,
-                      Unload = ImmutableList<int>.Empty,
-                      Stops = ImmutableList<MachiningStop>.Empty,
-                      PartsPerPallet = 1,
-                      SimulatedStartingUTC = DateTime.MinValue,
-                      SimulatedAverageFlowTime = TimeSpan.Zero,
-                      ExpectedLoadTime = TimeSpan.Zero,
-                      ExpectedUnloadTime = TimeSpan.Zero,
-                    }
-                  )
+                  PalletNums = ImmutableList<int>.Empty,
+                  Load = ImmutableList<int>.Empty,
+                  Unload = ImmutableList<int>.Empty,
+                  Stops = ImmutableList<MachiningStop>.Empty,
+                  PartsPerPallet = 1,
+                  SimulatedStartingUTC = DateTime.MinValue,
+                  SimulatedAverageFlowTime = TimeSpan.Zero,
+                  ExpectedLoadTime = TimeSpan.Zero,
+                  ExpectedUnloadTime = TimeSpan.Zero,
                 }
-            )
+              )
+            })
             .ToImmutableList(),
           Cycles = 0
         }
@@ -210,11 +207,8 @@ namespace Makino
         }
 
         if (stops.Count > 0)
-          _byPartID[proc.Value] = _byPartID[proc.Value].AdjustPath(
-            procNum,
-            1,
-            d => d with { Stops = d.Stops.AddRange(stops.Values) }
-          );
+          _byPartID[proc.Value] = _byPartID[proc.Value]
+            .AdjustPath(procNum, 1, d => d with { Stops = d.Stops.AddRange(stops.Values) });
       }
     }
 
@@ -225,11 +219,8 @@ namespace Makino
       if (pals == null)
         return;
 
-      _byPartID[_procIDToPartID[processID]] = _byPartID[_procIDToPartID[processID]].AdjustPath(
-        procNum,
-        1,
-        p => p with { PalletNums = p.PalletNums.AddRange(pals) }
-      );
+      _byPartID[_procIDToPartID[processID]] = _byPartID[_procIDToPartID[processID]]
+        .AdjustPath(procNum, 1, p => p with { PalletNums = p.PalletNums.AddRange(pals) });
     }
 
     public BlackMaple.MachineFramework.ActiveJob DuplicateForOrder(int orderID, string order, int partID)
@@ -434,20 +425,19 @@ namespace Makino
       if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
       {
         _fixPalIDToMaterial[fixturePalletID] = _fixPalIDToMaterial[fixturePalletID]
-          .Select(
-            mat =>
-              mat
-              % (
-                draft =>
-                  draft.SetAction(
-                    new InProcessMaterialAction()
-                    {
-                      Type = completed
-                        ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-                        : InProcessMaterialAction.ActionType.UnloadToInProcess
-                    }
-                  )
-              )
+          .Select(mat =>
+            mat
+            % (
+              draft =>
+                draft.SetAction(
+                  new InProcessMaterialAction()
+                  {
+                    Type = completed
+                      ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+                      : InProcessMaterialAction.ActionType.UnloadToInProcess
+                  }
+                )
+            )
           )
           .ToList();
       }

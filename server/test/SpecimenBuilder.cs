@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Collections.Immutable;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
-using Germinate;
-using Xunit;
 using AutoFixture;
 using FluentAssertions;
+using Germinate;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -62,13 +62,11 @@ namespace MachineWatchTest
         var addRange = t.GetMethods(
             System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
           )
-          .Where(
-            m =>
-              m.Name == "AddRange"
-              && m.GetParameters().Length == 1
-              && m.GetParameters()[0].ParameterType.FullName.StartsWith(
-                "System.Collections.Generic.IEnumerable"
-              )
+          .Where(m =>
+            m.Name == "AddRange"
+            && m.GetParameters().Length == 1
+            && m.GetParameters()[0]
+              .ParameterType.FullName.StartsWith("System.Collections.Generic.IEnumerable")
           )
           .FirstOrDefault();
 
@@ -90,13 +88,11 @@ namespace MachineWatchTest
         var addRange = t.GetMethods(
             System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
           )
-          .Where(
-            m =>
-              m.Name == "AddRange"
-              && m.GetParameters().Length == 1
-              && m.GetParameters()[0].ParameterType.FullName.StartsWith(
-                "System.Collections.Generic.IEnumerable"
-              )
+          .Where(m =>
+            m.Name == "AddRange"
+            && m.GetParameters().Length == 1
+            && m.GetParameters()[0]
+              .ParameterType.FullName.StartsWith("System.Collections.Generic.IEnumerable")
           )
           .FirstOrDefault();
 

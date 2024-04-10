@@ -31,13 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using System.Collections.Generic;
 using BlackMaple.MachineFramework;
-using Npgsql;
 using Dapper;
-using System.Collections.Immutable;
+using Npgsql;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -826,15 +826,12 @@ namespace BlackMaple.FMSInsight.Niigata
             param: newRoute.NewMaster.Routes.SelectMany(
               (step, idx) =>
                 StepToStations(step)
-                  .Select(
-                    stat =>
-                      new
-                      {
-                        ProposalId,
-                        RouteNo = idx + 1,
-                        StationNo = stat
-                      }
-                  )
+                  .Select(stat => new
+                  {
+                    ProposalId,
+                    RouteNo = idx + 1,
+                    StationNo = stat
+                  })
             )
           );
 

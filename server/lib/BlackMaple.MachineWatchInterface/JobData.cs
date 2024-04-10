@@ -1035,7 +1035,8 @@ namespace BlackMaple.MachineWatchInterface
 #pragma warning restore CS0612
     }
 
-    public JobPlan(string unique, int numProcess) : this(unique, numProcess, null) { }
+    public JobPlan(string unique, int numProcess)
+      : this(unique, numProcess, null) { }
 
     public JobPlan(string unique, int numProcess, int[] numPaths)
     {

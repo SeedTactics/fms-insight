@@ -32,14 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
-using BlackMaple.MachineFramework;
+using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
-using MazakMachineInterface;
-using Xunit;
-using NSubstitute;
+using BlackMaple.MachineFramework;
 using FluentAssertions;
-using System.Collections.Immutable;
+using MazakMachineInterface;
+using NSubstitute;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -538,8 +538,7 @@ namespace MachineWatchTest
         Assert.Fail(log[0]);
 
       var del = pMap.DeleteOldPalletRows();
-      del.Pallets
-        .Should()
+      del.Pallets.Should()
         .BeEquivalentTo(
           new[]
           {
@@ -557,8 +556,7 @@ namespace MachineWatchTest
       del.Schedules.Should().BeEmpty();
 
       del = pMap.DeleteOldPartRows();
-      del.Parts
-        .Should()
+      del.Parts.Should()
         .BeEquivalentTo(
           new[]
           {
@@ -709,8 +707,8 @@ namespace MachineWatchTest
 
       var trans = pMap.CreatePartPalletDatabaseRows();
 
-      trans.Parts
-        .First()
+      trans
+        .Parts.First()
         .Processes.Select(p => (proc: p.ProcessNumber, prog: p.MainProgram))
         .Should()
         .BeEquivalentTo(
@@ -858,37 +856,34 @@ namespace MachineWatchTest
         Archived = false,
         Processes = Enumerable
           .Range(1, numProc)
-          .Select(
-            p =>
-              new ProcessInfo()
+          .Select(p => new ProcessInfo()
+          {
+            Paths = ImmutableList.Create(
+              new ProcPathInfo()
               {
-                Paths = ImmutableList.Create(
-                  new ProcPathInfo()
+                PalletNums = ImmutableList.CreateRange(pals[p - 1]),
+                SimulatedStartingUTC = (p == 1 ? simStart : null) ?? DateTime.MinValue,
+                SimulatedAverageFlowTime = TimeSpan.Zero,
+                Load = ImmutableList.Create(1),
+                Unload = ImmutableList.Create(1),
+                Stops = ImmutableList.Create(
+                  new MachiningStop()
                   {
-                    PalletNums = ImmutableList.CreateRange(pals[p - 1]),
-                    SimulatedStartingUTC = (p == 1 ? simStart : null) ?? DateTime.MinValue,
-                    SimulatedAverageFlowTime = TimeSpan.Zero,
-                    Load = ImmutableList.Create(1),
-                    Unload = ImmutableList.Create(1),
-                    Stops = ImmutableList.Create(
-                      new MachiningStop()
-                      {
-                        StationGroup = "machine",
-                        Stations = ImmutableList.Create(1),
-                        Program = progs?[p - 1].prog ?? "1234",
-                        ProgramRevision = progs?[p - 1].rev,
-                        ExpectedCycleTime = TimeSpan.Zero,
-                      }
-                    ),
-                    Fixture = fixtures?[p - 1].fix,
-                    Face = fixtures?[p - 1].face,
-                    PartsPerPallet = 1,
-                    ExpectedLoadTime = TimeSpan.Zero,
-                    ExpectedUnloadTime = TimeSpan.Zero,
+                    StationGroup = "machine",
+                    Stations = ImmutableList.Create(1),
+                    Program = progs?[p - 1].prog ?? "1234",
+                    ProgramRevision = progs?[p - 1].rev,
+                    ExpectedCycleTime = TimeSpan.Zero,
                   }
-                )
+                ),
+                Fixture = fixtures?[p - 1].fix,
+                Face = fixtures?[p - 1].face,
+                PartsPerPallet = 1,
+                ExpectedLoadTime = TimeSpan.Zero,
+                ExpectedUnloadTime = TimeSpan.Zero,
               }
-          )
+            )
+          })
           .ToImmutableList(),
       };
     }
@@ -900,26 +895,20 @@ namespace MachineWatchTest
     )
     {
       var add = newFix
-        .Select(
-          f =>
-            new MazakFixtureRow()
-            {
-              FixtureName = f,
-              Comment = "Insight",
-              Command = MazakWriteCommand.Add
-            }
-        )
+        .Select(f => new MazakFixtureRow()
+        {
+          FixtureName = f,
+          Comment = "Insight",
+          Command = MazakWriteCommand.Add
+        })
         .ToList();
       var del = (delFix ?? Enumerable.Empty<string>())
-        .Select(
-          f =>
-            new MazakFixtureRow()
-            {
-              FixtureName = f,
-              Comment = "Insight",
-              Command = MazakWriteCommand.Delete
-            }
-        )
+        .Select(f => new MazakFixtureRow()
+        {
+          FixtureName = f,
+          Comment = "Insight",
+          Command = MazakWriteCommand.Delete
+        })
         .ToList();
 
       var actions = map.AddFixtureAndProgramDatabaseRows(
@@ -1060,7 +1049,7 @@ namespace MachineWatchTest
 
       foreach (var row in dset.Pallets)
       {
-        Assert.Fail( "Extra pallet row: " + row.PalletNumber.ToString() + " " + row.Fixture);
+        Assert.Fail("Extra pallet row: " + row.PalletNumber.ToString() + " " + row.Fixture);
       }
 
       foreach (var row in dset.Fixtures)

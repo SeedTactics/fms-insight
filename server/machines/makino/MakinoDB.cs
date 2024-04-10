@@ -735,16 +735,13 @@ namespace Makino
               Comment = reader.IsDBNull(3) ? newJob.Comment : reader.GetString(3),
               Cycles = reader.GetInt32(4),
               Precedence = ImmutableList.Create(ImmutableList.Create<long>(reader.GetInt16(5))),
-              Processes = newJob.Processes
-                .Select(
-                  proc =>
-                    new BlackMaple.MachineFramework.ProcessInfo()
-                    {
-                      Paths = proc.Paths
-                        .Select(path => path with { SimulatedStartingUTC = start })
-                        .ToImmutableList()
-                    }
-                )
+              Processes = newJob
+                .Processes.Select(proc => new BlackMaple.MachineFramework.ProcessInfo()
+                {
+                  Paths = proc
+                    .Paths.Select(path => path with { SimulatedStartingUTC = start })
+                    .ToImmutableList()
+                })
                 .ToImmutableList()
             };
           }

@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using Xunit;
-using FluentAssertions;
-using BlackMaple.MachineFramework;
-using MazakMachineInterface;
 using System.Collections.Immutable;
+using System.Linq;
+using BlackMaple.MachineFramework;
+using FluentAssertions;
+using MazakMachineInterface;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -474,16 +474,16 @@ namespace MachineWatchTest
       // put 2 allocated casting in queue
       var proc1Mat = Enumerable
         .Range(0, 2)
-        .Select(
-          i => AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
         )
         .ToList();
 
       // put 4 in-proc in queue
       var proc2Mat = Enumerable
         .Range(0, 4)
-        .Select(
-          i => AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
         )
         .ToList();
 
@@ -558,16 +558,16 @@ namespace MachineWatchTest
       // put 2 allocated casting in queue
       var proc1Mat = Enumerable
         .Range(0, 2)
-        .Select(
-          i => AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
         )
         .ToList();
 
       // put 4 in-proc in queue
       var proc2Mat = Enumerable
         .Range(0, 4)
-        .Select(
-          i => AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
         )
         .ToList();
 
@@ -1890,14 +1890,14 @@ namespace MachineWatchTest
 
       var proc1path1 = Enumerable
         .Range(0, 4)
-        .Select(
-          i => AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
         )
         .ToList();
       var proc2path1 = Enumerable
         .Range(0, 7)
-        .Select(
-          i => AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
         )
         .ToList();
 
@@ -1922,14 +1922,14 @@ namespace MachineWatchTest
 
       var proc1path2 = Enumerable
         .Range(0, 2)
-        .Select(
-          i => AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 0, path: 1, queue: "castingQ")
         )
         .ToList();
       var proc2path2 = Enumerable
         .Range(0, 9)
-        .Select(
-          i => AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
         )
         .ToList();
 
@@ -2002,8 +2002,8 @@ namespace MachineWatchTest
 
       var proc2path1 = Enumerable
         .Range(0, 3)
-        .Select(
-          i => AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
         )
         .ToList();
 
@@ -2029,8 +2029,8 @@ namespace MachineWatchTest
 
       var proc2path2 = Enumerable
         .Range(0, 6)
-        .Select(
-          i => AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
         )
         .ToList();
 
@@ -2324,8 +2324,8 @@ namespace MachineWatchTest
 
       var proc2path2 = Enumerable
         .Range(0, 3)
-        .Select(
-          i => AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
         )
         .ToList();
 
@@ -2351,8 +2351,8 @@ namespace MachineWatchTest
 
       var proc2path1 = Enumerable
         .Range(0, 6)
-        .Select(
-          i => AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
         )
         .ToList();
 
@@ -2569,8 +2569,8 @@ namespace MachineWatchTest
 
       var proc2path1 = Enumerable
         .Range(0, 3)
-        .Select(
-          i => AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu1", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
         )
         .ToList();
 
@@ -2597,8 +2597,8 @@ namespace MachineWatchTest
 
       var proc2path2 = Enumerable
         .Range(0, 6)
-        .Select(
-          i => AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
+        .Select(i =>
+          AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ")
         )
         .ToList();
 

@@ -354,7 +354,8 @@ namespace BlackMaple.MachineWatchInterface
       set { _workorders = value; }
     }
 
-    public InProcessJob(string unique, int numProc, int[] numPaths = null) : base(unique, numProc, numPaths)
+    public InProcessJob(string unique, int numProc, int[] numPaths = null)
+      : base(unique, numProc, numPaths)
     {
       _completed = new int[base.NumProcesses][];
       for (int proc = 1; proc <= base.NumProcesses; proc++)
@@ -363,7 +364,8 @@ namespace BlackMaple.MachineWatchInterface
       }
     }
 
-    public InProcessJob(JobPlan job) : base(job)
+    public InProcessJob(JobPlan job)
+      : base(job)
     {
       _completed = new int[base.NumProcesses][];
       for (int proc = 1; proc <= base.NumProcesses; proc++)
