@@ -635,7 +635,7 @@ namespace MachineWatchTest
       var log = new List<string>();
       var dset = new MazakTestData();
 
-      CreatePart(dset, "OldJob", "Part1", 1, "fix", System.IO.Path.Combine("theprogdir", "rev7", "ccc.EIA"));
+      CreatePart(dset, "OldJob", "Part:1", 1, "fix", System.IO.Path.Combine("theprogdir", "rev7", "ccc.EIA"));
 
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev7", "ccc.EIA"), "Insight:7:ccc"); // 7 is used by OldJob part
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev8", "ccc.EIA"), "Insight:8:ccc"); // 8 is not used, should be deleted
@@ -719,6 +719,47 @@ namespace MachineWatchTest
             (3, System.IO.Path.Combine("theprogdir", "rev9", "ccc.EIA")),
             (4, System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA")),
           }
+        );
+    }
+
+    [Fact]
+    public void ErrorsOnSharedFixture()
+    {
+      var job1 = CreateBasicStopsWithProg(
+        uniq: "Job1",
+        part: "Part1",
+        numProc: 4,
+        pals:
+        [
+          [4],
+          [10],
+          [10],
+          [3]
+        ]
+      );
+
+      var log = new List<string>();
+      var dset = new MazakTestData();
+
+      CreatePart(dset, "OldJob", "Part1", 1, "fix");
+
+      var pMap = ConvertJobsToMazakParts.JobsToMazak(
+        new Job[] { job1 },
+        3,
+        dset,
+        new HashSet<string>(),
+        MazakDbType.MazakSmooth,
+        useStartingOffsetForDueDate: false,
+        fmsSettings: new FMSSettings(),
+        lookupProgram: (_, _) => null,
+        errors: log
+      );
+      log.Should()
+        .BeEquivalentTo(
+          [
+            "Non-Insight part Part1 in the Mazak cell controller is using an Insight fixture fix:1.  Please edit the part in the cell controller to not use an Insight fixture.",
+            "Part Part1 program 1234 does not exist in the cell controller."
+          ]
         );
     }
 

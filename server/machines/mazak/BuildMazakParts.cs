@@ -739,6 +739,7 @@ namespace MazakMachineInterface
     )
     {
       Validate(jobs, fmsSettings, errors);
+      CheckReusedFixture(mazakData, errors);
       var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, errors, lookupProgram);
       var usedMazakFixGroups = new HashSet<int>(mazakData.Pallets.Select(f => f.FixtureGroup));
       var groups = GroupProcessesIntoFixtures(
@@ -829,6 +830,26 @@ namespace MazakMachineInterface
                     + " Non-final processes must have a configured local queue, not an external queue"
                 );
               }
+            }
+          }
+        }
+      }
+    }
+
+    private static void CheckReusedFixture(MazakAllData mazakData, IList<string> errors)
+    {
+      foreach (var part in mazakData.Parts)
+      {
+        var isInsight = MazakPart.IsSailPart(part.PartName, part.Comment);
+        if (!isInsight)
+        {
+          foreach (var proc in part.Processes)
+          {
+            if (proc.Fixture.Contains(':'))
+            {
+              errors.Add(
+                $"Non-Insight part {part.PartName} in the Mazak cell controller is using an Insight fixture {proc.Fixture}.  Please edit the part in the cell controller to not use an Insight fixture."
+              );
             }
           }
         }
