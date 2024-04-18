@@ -160,8 +160,8 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
 
     if (sendToExternal.Count > 0)
     {
-      BlackMaple.MachineFramework.SendMaterialToExternalQueue
-        .Post(sendToExternal)
+      BlackMaple
+        .MachineFramework.SendMaterialToExternalQueue.Post(sendToExternal)
         .Wait(TimeSpan.FromSeconds(30));
     }
 
@@ -208,8 +208,9 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     return false;
   }
 
-  public bool DecrementJobs(IRepository db, MazakState st)
+  public bool DecrementJobs(IRepository db, CurrentStatus st)
   {
-    return decrementPlanQty.Decrement(db, st.AllData);
+    throw new NotImplementedException();
+    //return decrementPlanQty.Decrement(db, st.AllData);
   }
 }
