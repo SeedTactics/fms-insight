@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using BlackMaple.MachineFramework;
 using System.Collections.Immutable;
+using System.Linq;
+using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
@@ -329,11 +329,15 @@ namespace MazakMachineInterface
                     .Select(x => x.InspType)
                     .Distinct()
                     .ToImmutableList(),
-                  LastCompletedMachiningRouteStopIndex = oldCycles.Any(
-                    c =>
-                      c.LogType == LogType.MachineCycle
-                      && !c.StartOfCycle
-                      && c.Material.Any(m => m.MaterialID == matID && m.Process == palSub.PartProcessNumber)
+                  QuarantineAfterUnload = oldCycles.Any(e =>
+                    e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == m.MaterialID)
+                  )
+                    ? true
+                    : null,
+                  LastCompletedMachiningRouteStopIndex = oldCycles.Any(c =>
+                    c.LogType == LogType.MachineCycle
+                    && !c.StartOfCycle
+                    && c.Material.Any(m => m.MaterialID == matID && m.Process == palSub.PartProcessNumber)
                   )
                     ? (int?)0
                     : null,
@@ -380,27 +384,28 @@ namespace MazakMachineInterface
 
       var notCopied = jobDB
         .LoadJobsNotCopiedToSystem(DateTime.UtcNow.AddHours(-WriteJobs.JobLookbackHours), DateTime.UtcNow)
-        .Where(
-          j =>
-            //Check if the copy to the cell succeeded but the DB has not yet been updated.
-            //The thread which copies jobs will soon notice and update the database
-            //so we can ignore it for now.
-            !jobsByUniq.ContainsKey(j.UniqueStr)
+        .Where(j =>
+          //Check if the copy to the cell succeeded but the DB has not yet been updated.
+          //The thread which copies jobs will soon notice and update the database
+          //so we can ignore it for now.
+          !jobsByUniq.ContainsKey(j.UniqueStr)
         )
         .Select(j =>
         {
           precedence += 1;
           return j.CloneToDerived<ActiveJob, Job>() with
           {
-            Completed = j.Processes
-              .Select(p => ImmutableList.Create(new int[p.Paths.Count]))
+            Completed = j
+              .Processes.Select(p => ImmutableList.Create(new int[p.Paths.Count]))
               .ToImmutableList(),
             RemainingToStart = j.Cycles,
             Decrements = j.Decrements,
             ScheduleId = j.ScheduleId,
             CopiedToSystem = false,
-            Precedence = j.Processes
-              .Select(p => Enumerable.Range(1, p.Paths.Count).Select(x => precedence).ToImmutableList())
+            Precedence = j
+              .Processes.Select(p =>
+                Enumerable.Range(1, p.Paths.Count).Select(x => precedence).ToImmutableList()
+              )
               .ToImmutableList(),
             AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(j.UniqueStr))
           };
@@ -409,42 +414,39 @@ namespace MazakMachineInterface
       return new CurrentStatus()
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
-        Jobs = jobsByUniq.Values
-          .Select(
-            job =>
-              new ActiveJob()
+        Jobs = jobsByUniq
+          .Values.Select(job => new ActiveJob()
+          {
+            UniqueStr = job.UniqueStr,
+            RouteStartUTC = job.DbJob?.RouteStartUTC ?? DateTime.Today,
+            RouteEndUTC = job.DbJob?.RouteEndUTC ?? DateTime.Today.AddDays(1),
+            Archived = false,
+            PartName = job.PartName,
+            Comment = job.DbJob?.Comment,
+            ScheduleId = job.DbJob?.ScheduleId,
+            BookingIds = job.DbJob?.BookingIds,
+            ManuallyCreated = job.DbJob?.ManuallyCreated ?? false,
+            HoldJob = job.UserHold
+              ? new BlackMaple.MachineFramework.HoldPattern()
               {
-                UniqueStr = job.UniqueStr,
-                RouteStartUTC = job.DbJob?.RouteStartUTC ?? DateTime.Today,
-                RouteEndUTC = job.DbJob?.RouteEndUTC ?? DateTime.Today.AddDays(1),
-                Archived = false,
-                PartName = job.PartName,
-                Comment = job.DbJob?.Comment,
-                ScheduleId = job.DbJob?.ScheduleId,
-                BookingIds = job.DbJob?.BookingIds,
-                ManuallyCreated = job.DbJob?.ManuallyCreated ?? false,
-                HoldJob = job.UserHold
-                  ? new BlackMaple.MachineFramework.HoldPattern()
-                  {
-                    UserHold = true,
-                    ReasonForUserHold = "",
-                    HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
-                    HoldUnholdPatternStartUTC = DateTime.MinValue,
-                    HoldUnholdPatternRepeats = false
-                  }
-                  : null,
-                Cycles = job.Cycles,
-                Processes = job.Processes
-                  .Select(paths => new ProcessInfo() { Paths = paths.ToImmutable() })
-                  .ToImmutableList(),
-                CopiedToSystem = true,
-                Completed = job.Completed.Select(c => c.ToImmutable()).ToImmutableList(),
-                RemainingToStart = Math.Max(job.Cycles - job.Started, 0),
-                Decrements = EmptyToNull(jobDB.LoadDecrementsForJob(job.UniqueStr)),
-                AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(job.UniqueStr)),
-                Precedence = job.Precedence.Select(p => p.ToImmutable()).ToImmutableList()
+                UserHold = true,
+                ReasonForUserHold = "",
+                HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
+                HoldUnholdPatternStartUTC = DateTime.MinValue,
+                HoldUnholdPatternRepeats = false
               }
-          )
+              : null,
+            Cycles = job.Cycles,
+            Processes = job
+              .Processes.Select(paths => new ProcessInfo() { Paths = paths.ToImmutable() })
+              .ToImmutableList(),
+            CopiedToSystem = true,
+            Completed = job.Completed.Select(c => c.ToImmutable()).ToImmutableList(),
+            RemainingToStart = Math.Max(job.Cycles - job.Started, 0),
+            Decrements = EmptyToNull(jobDB.LoadDecrementsForJob(job.UniqueStr)),
+            AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(job.UniqueStr)),
+            Precedence = job.Precedence.Select(p => p.ToImmutable()).ToImmutableList()
+          })
           .Concat(notCopied)
           .ToImmutableDictionary(j => j.UniqueStr),
         Pallets = palletsByName.ToImmutable(),
@@ -834,6 +836,11 @@ namespace MazakMachineInterface
                 .Where(x => x.Inspect)
                 .Select(x => x.InspType)
                 .ToImmutableList(),
+              QuarantineAfterUnload = oldCycles.Any(e =>
+                e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == m.MaterialID)
+              )
+                ? true
+                : null,
               Location = new InProcessMaterialLocation()
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
@@ -940,6 +947,7 @@ namespace MazakMachineInterface
                     .Select(x => x.InspType)
                     .ToImmutableList()
                   : ImmutableList<string>.Empty,
+              QuarantineAfterUnload = null,
             }
           );
         }
@@ -966,8 +974,8 @@ namespace MazakMachineInterface
       FMSSettings fmsSettings
     )
     {
-      var signalQuarantine = log.LastOrDefault(
-        e => e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == matId)
+      var signalQuarantine = log.LastOrDefault(e =>
+        e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == matId)
       );
 
       if (signalQuarantine != null)
@@ -1024,8 +1032,8 @@ namespace MazakMachineInterface
           // search on pallet for previous process
           return oldCycles
             .SelectMany(c => c.Material ?? Enumerable.Empty<LogMaterial>())
-            .Where(
-              m => m != null && m.MaterialID >= 0 && m.JobUniqueStr == job.UniqueStr && m.Process == proc - 1
+            .Where(m =>
+              m != null && m.MaterialID >= 0 && m.JobUniqueStr == job.UniqueStr && m.Process == proc - 1
             )
             .Select(m => m.MaterialID)
             .Distinct()

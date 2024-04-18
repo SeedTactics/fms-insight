@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Xml;
 using System.Collections.Generic;
-using BlackMaple.MachineFramework;
 using System.IO;
+using System.Xml;
+using BlackMaple.MachineFramework;
 
 namespace Makino
 {

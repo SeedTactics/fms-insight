@@ -33,12 +33,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using BlackMaple.MachineFramework;
-using Xunit;
-using FluentAssertions;
 using System.Collections.Immutable;
+using System.Linq;
 using AutoFixture;
+using BlackMaple.MachineFramework;
+using FluentAssertions;
+using Xunit;
 
 namespace MachineWatchTest
 {
@@ -126,13 +126,12 @@ namespace MachineWatchTest
         );
 
       _jobDB
-        .Invoking(
-          j =>
-            j.LoadJobHistory(
-              job1.RouteStartUTC.AddHours(-1),
-              job1.RouteStartUTC.AddHours(10),
-              new HashSet<string>(new[] { schId, "asdfouh" })
-            )
+        .Invoking(j =>
+          j.LoadJobHistory(
+            job1.RouteStartUTC.AddHours(-1),
+            job1.RouteStartUTC.AddHours(10),
+            new HashSet<string>(new[] { schId, "asdfouh" })
+          )
         )
         .Should()
         .Throw<ConflictRequestException>("Schedule ID asdfouh does not exist");
@@ -864,8 +863,8 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           new HistoricData()
           {
-            Jobs = ImmutableDictionary<string, HistoricJob>.Empty
-              .Add(
+            Jobs = ImmutableDictionary<string, HistoricJob>
+              .Empty.Add(
                 job1.UniqueStr,
                 job1.CloneToDerived<HistoricJob, Job>() with
                 {
@@ -1364,44 +1363,13 @@ namespace MachineWatchTest
 
       // error on program content mismatch
       _jobDB
-        .Invoking(
-          j =>
-            j.AddJobs(
-              new NewJobs
-              {
-                Jobs = ImmutableList<Job>.Empty,
-                ScheduleId = "unusedSchId",
-                Programs = ImmutableList.Create(
-                  new NewProgramContent()
-                  {
-                    ProgramName = "aaa",
-                    Revision = 0, // auto assign
-                    Comment = "aaa comment rev 2",
-                    ProgramContent = "aaa program content rev 2"
-                  },
-                  new NewProgramContent()
-                  {
-                    ProgramName = "bbb",
-                    Revision = 6, // existing revision
-                    Comment = "bbb comment",
-                    ProgramContent = "awofguhweoguhweg"
-                  }
-                )
-              },
-              null,
-              addAsCopiedToSystem: true
-            )
-        )
-        .Should()
-        .Throw<BadRequestException>()
-        .WithMessage("Program bbb rev6 has already been used and the program contents do not match.");
-
-      _jobDB
-        .Invoking(
-          j =>
-            j.AddPrograms(
-              new List<NewProgramContent>
-              {
+        .Invoking(j =>
+          j.AddJobs(
+            new NewJobs
+            {
+              Jobs = ImmutableList<Job>.Empty,
+              ScheduleId = "unusedSchId",
+              Programs = ImmutableList.Create(
                 new NewProgramContent()
                 {
                   ProgramName = "aaa",
@@ -1415,10 +1383,39 @@ namespace MachineWatchTest
                   Revision = 6, // existing revision
                   Comment = "bbb comment",
                   ProgramContent = "awofguhweoguhweg"
-                },
+                }
+              )
+            },
+            null,
+            addAsCopiedToSystem: true
+          )
+        )
+        .Should()
+        .Throw<BadRequestException>()
+        .WithMessage("Program bbb rev6 has already been used and the program contents do not match.");
+
+      _jobDB
+        .Invoking(j =>
+          j.AddPrograms(
+            new List<NewProgramContent>
+            {
+              new NewProgramContent()
+              {
+                ProgramName = "aaa",
+                Revision = 0, // auto assign
+                Comment = "aaa comment rev 2",
+                ProgramContent = "aaa program content rev 2"
               },
-              DateTime.Parse("2019-09-14T03:52:12Z")
-            )
+              new NewProgramContent()
+              {
+                ProgramName = "bbb",
+                Revision = 6, // existing revision
+                Comment = "bbb comment",
+                ProgramContent = "awofguhweoguhweg"
+              },
+            },
+            DateTime.Parse("2019-09-14T03:52:12Z")
+          )
         )
         .Should()
         .Throw<BadRequestException>()
@@ -2407,8 +2404,8 @@ namespace MachineWatchTest
         );
 
       _jobDB
-        .Invoking(
-          j => j.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(job2), ScheduleId = "sch1" }, null, true)
+        .Invoking(j =>
+          j.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(job2), ScheduleId = "sch1" }, null, true)
         )
         .Should()
         .Throw<BadRequestException>()
@@ -2471,13 +2468,13 @@ namespace MachineWatchTest
       {
         RouteStartUTC = s,
         RouteEndUTC = s.AddHours(1),
-        Processes = job.Processes
-          .Select(
+        Processes = job
+          .Processes.Select(
             (proc, procIdx) =>
               new ProcessInfo()
               {
-                Paths = proc.Paths
-                  .Select(path => path with { Casting = procIdx == 0 ? path.Casting : null })
+                Paths = proc
+                  .Paths.Select(path => path with { Casting = procIdx == 0 ? path.Casting : null })
                   .ToImmutableList()
               }
           )

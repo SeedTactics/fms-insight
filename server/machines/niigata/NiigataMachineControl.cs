@@ -31,10 +31,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using BlackMaple.MachineFramework;
 using System.Collections.Immutable;
+using System.Linq;
+using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
@@ -63,8 +63,8 @@ namespace BlackMaple.FMSInsight.Niigata
       var programs = _icc.LoadPrograms();
       using (var jobDb = _jobDbCfg.OpenConnection())
       {
-        return programs.Values
-          .Select(p =>
+        return programs
+          .Values.Select(p =>
           {
             if (AssignNewRoutesOnPallets.TryParseProgramComment(p, out string progName, out long rev))
             {
@@ -93,12 +93,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public ImmutableList<ToolInMachine> CurrentToolsInMachines()
     {
-      return _statNames.IccMachineToJobMachNames
-        .SelectMany(
-          k =>
-            (_cnc.ToolsForMachine(k.Key) ?? new List<NiigataToolData>()).Select(
-              t => t.ToToolInMachine(k.Value.group, k.Value.num)
-            )
+      return _statNames
+        .IccMachineToJobMachNames.SelectMany(k =>
+          (_cnc.ToolsForMachine(k.Key) ?? new List<NiigataToolData>()).Select(t =>
+            t.ToToolInMachine(k.Value.group, k.Value.num)
+          )
         )
         .ToImmutableList();
     }

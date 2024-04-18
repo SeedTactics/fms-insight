@@ -93,6 +93,7 @@ namespace BlackMaple.MachineFramework
       string queue,
       int position,
       string serial,
+      string workorder,
       string operatorName = null
     );
 

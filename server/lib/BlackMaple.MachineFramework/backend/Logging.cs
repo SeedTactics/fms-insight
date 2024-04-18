@@ -116,8 +116,8 @@ namespace BlackMaple.MachineFramework
         _logLevel.MinimumLevel = Serilog.Events.LogEventLevel.Debug;
       }
 
-      var logConfig = new LoggerConfiguration().MinimumLevel
-        .ControlledBy(_logLevel)
+      var logConfig = new LoggerConfiguration()
+        .MinimumLevel.ControlledBy(_logLevel)
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
         .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
 

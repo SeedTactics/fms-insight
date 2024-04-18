@@ -358,7 +358,8 @@ namespace BlackMaple.MachineFramework
               QueuePosition = log.LocationNum
             },
             Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-            SignaledInspections = ImmutableList<string>.Empty
+            SignaledInspections = ImmutableList<string>.Empty,
+            QuarantineAfterUnload = null
           }
         );
       }
@@ -397,6 +398,7 @@ namespace BlackMaple.MachineFramework
       string queue,
       int position,
       string serial,
+      string workorder,
       string operatorName
     )
     {
@@ -406,12 +408,13 @@ namespace BlackMaple.MachineFramework
       }
 
       Log.Debug(
-        "Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
+        "Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial} and workorder {workorder}",
         jobUnique,
         process,
         queue,
         position,
-        serial
+        serial,
+        workorder
       );
 
       HistoricJob job;
@@ -444,6 +447,19 @@ namespace BlackMaple.MachineFramework
             DateTime.UtcNow
           );
         }
+        if (!string.IsNullOrEmpty(workorder))
+        {
+          ldb.RecordWorkorderForMaterialID(
+            new BlackMaple.MachineFramework.EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = process,
+              Face = ""
+            },
+            workorder,
+            DateTime.UtcNow
+          );
+        }
         logEvt = ldb.RecordAddMaterialToQueue(
           matID: matId,
           process: process,
@@ -464,6 +480,7 @@ namespace BlackMaple.MachineFramework
         Process = process,
         Path = 1,
         Serial = serial,
+        WorkorderId = workorder,
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.InQueue,
@@ -471,7 +488,8 @@ namespace BlackMaple.MachineFramework
           QueuePosition = logEvt.LastOrDefault()?.LocationNum
         },
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-        SignaledInspections = ImmutableList<string>.Empty
+        SignaledInspections = ImmutableList<string>.Empty,
+        QuarantineAfterUnload = null
       };
     }
 
@@ -667,7 +685,6 @@ namespace BlackMaple.MachineFramework
                 when !string.IsNullOrEmpty(_settings.QuarantineQueue):
               case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Loading)
                 when !string.IsNullOrEmpty(_settings.QuarantineQueue) && AllowQuarantineToCancelLoad:
-
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;
@@ -683,7 +700,7 @@ namespace BlackMaple.MachineFramework
                     queue: _settings.QuarantineQueue,
                     position: -1,
                     operatorName: operatorName,
-                    reason: "SetByOperator"
+                    reason: "Quarantine"
                   );
                   requireStateRefresh = true;
                 }
@@ -693,7 +710,6 @@ namespace BlackMaple.MachineFramework
                 when string.IsNullOrEmpty(_settings.QuarantineQueue):
               case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Loading)
                 when string.IsNullOrEmpty(_settings.QuarantineQueue) && AllowQuarantineToCancelLoad:
-
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;
@@ -703,7 +719,11 @@ namespace BlackMaple.MachineFramework
                     notes: reason,
                     operatorName: operatorName
                   );
-                  ldb.BulkRemoveMaterialFromAllQueues(new[] { materialId }, operatorName);
+                  ldb.BulkRemoveMaterialFromAllQueues(
+                    new[] { materialId },
+                    operatorName: operatorName,
+                    reason: "Quarantine"
+                  );
                   requireStateRefresh = true;
                 }
                 break;

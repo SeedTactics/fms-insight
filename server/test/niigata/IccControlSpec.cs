@@ -32,11 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
-using Xunit;
-using BlackMaple.MachineFramework;
-using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
+using BlackMaple.MachineFramework;
+using Xunit;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -643,6 +642,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             FakeIccDsl.RemoveFromQueue(
               "thequeue",
               pos: 1,
+              reason: "LoadedToPallet",
               elapMin: 3,
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat1))
             )
@@ -1793,6 +1793,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             FakeIccDsl.RemoveFromQueue(
               "qqq",
               pos: 0,
+              reason: "LoadedToPallet",
               elapMin: 7,
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2))
             )
@@ -2140,6 +2141,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             FakeIccDsl.RemoveFromQueue(
               queue: "qqq",
               pos: 0,
+              reason: "LoadedToPallet",
               elapMin: 12,
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, BBBproc2))
             )
@@ -2405,6 +2407,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             FakeIccDsl.RemoveFromQueue(
               queue: "qqq",
               pos: 0,
+              reason: "LoadedToPallet",
               elapMin: 22,
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, CCCproc2))
             )
@@ -2677,6 +2680,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               "qqq",
               pos: 0,
               elapMin: 5,
+              reason: "LoadedToPallet",
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2))
             )
           }
@@ -3394,6 +3398,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               "castingQ",
               pos: 1,
               elapMin: 2,
+              reason: "LoadedToPallet",
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat1))
             )
           }
@@ -3647,6 +3652,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               "castingQ",
               pos: 0,
               elapMin: 13,
+              reason: "LoadedToPallet",
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat2))
             )
           }
@@ -3964,6 +3970,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               "qqq",
               pos: 1,
               elapMin: 6,
+              reason: "LoadedToPallet",
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, mat3))
             )
           }
@@ -4505,6 +4512,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               "sizedQ",
               pos: 0,
               elapMin: 5,
+              reason: "LoadedToPallet",
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2))
             )
           }
@@ -5105,6 +5113,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               "sizedQ",
               pos: 0,
               elapMin: 5,
+              reason: "LoadedToPallet",
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2))
             )
           }
@@ -6245,6 +6254,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               queue: "rawmat",
               pos: 0,
               elapMin: 2,
+              reason: "LoadedToPallet",
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, loadedMat1))
             )
           }
@@ -6359,6 +6369,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       if (!signalDuringUnload)
       {
         _dsl.SignalForQuarantine(AAAproc1, pal: 1, q: "Quarantine");
+        _dsl.UpdateExpectedMaterial(
+          AAAproc1,
+          im =>
+          {
+            im.QuarantineAfterUnload = true;
+          }
+        );
       }
 
       _dsl.EndMachine(mach: 6)
@@ -6435,6 +6452,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             im =>
             {
               im.Action.UnloadIntoQueue = "Quarantine";
+              im.QuarantineAfterUnload = true;
             }
           );
       }
@@ -6446,6 +6464,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           AAAproc1,
           im =>
           {
+            im.QuarantineAfterUnload = null;
             im.SetAction(
               new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting, }
             );
@@ -6594,6 +6613,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               "rawmat",
               pos: 0,
               elapMin: 4,
+              reason: "LoadedToPallet",
               mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, lmat1))
             )
           }
@@ -6789,6 +6809,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               "qqq",
               pos: 0,
               elapMin: 7,
+              reason: "LoadedToPallet",
               mat: FakeIccDsl.ClearFaces(new[] { AAAproc1 })
             )
           }

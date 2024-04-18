@@ -144,8 +144,8 @@ function fakeLoad({
         ty === "load"
           ? ActionType.Loading
           : ty === "unload"
-          ? ActionType.UnloadToInProcess
-          : ActionType.UnloadToCompletedMaterial,
+            ? ActionType.UnloadToInProcess
+            : ActionType.UnloadToCompletedMaterial,
       elapsedLoadUnloadTime: `PT${elapsedMin}M`,
       loadOntoPalletNum: ty === "load" ? pal : undefined,
       processAfterLoad: ty === "load" ? proc : undefined,
@@ -254,6 +254,7 @@ it("calculates current cycles", () => {
     uniq3: new ActiveJob({
       unique: "uniq3",
       partName: "part3",
+      cycles: 1,
       routeStartUTC: new Date(),
       routeEndUTC: new Date(),
       archived: false,
@@ -264,6 +265,7 @@ it("calculates current cycles", () => {
     uniq4: new ActiveJob({
       unique: "uniq4",
       partName: "part4",
+      cycles: 4,
       routeStartUTC: new Date(),
       routeEndUTC: new Date(),
       archived: false,

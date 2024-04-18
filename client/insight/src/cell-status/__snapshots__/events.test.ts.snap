@@ -264,6 +264,7 @@ exports[`processes events in a specific month > material summary 1`] = `
       "materialID": 8327686449528832,
       "numProcesses": 4,
       "partName": "part222",
+      "quarantineAfterUnload": false,
       "signaledInspections": [
         "Insp1",
         "Insp1",
@@ -287,6 +288,7 @@ exports[`processes events in a specific month > material summary 1`] = `
       "materialID": 5691322440613888,
       "numProcesses": 2,
       "partName": "part111",
+      "quarantineAfterUnload": false,
       "signaledInspections": [
         "Insp1",
       ],
@@ -309,6 +311,7 @@ exports[`processes events in a specific month > material summary 1`] = `
       "materialID": 7476405772222464,
       "numProcesses": 2,
       "partName": "part222",
+      "quarantineAfterUnload": false,
       "signaledInspections": [
         "Insp1",
       ],
@@ -849,6 +852,7 @@ exports[`processes last 30 events > after filter - material summary 1`] = `
       "materialID": 6981347895672832,
       "numProcesses": 4,
       "partName": "part111",
+      "quarantineAfterUnload": false,
       "signaledInspections": [
         "Insp1",
       ],
@@ -871,6 +875,7 @@ exports[`processes last 30 events > after filter - material summary 1`] = `
       "materialID": 4359947557011456,
       "numProcesses": 2,
       "partName": "part222",
+      "quarantineAfterUnload": false,
       "signaledInspections": [
         "Insp1",
       ],
@@ -893,6 +898,7 @@ exports[`processes last 30 events > after filter - material summary 1`] = `
       "materialID": 6334762285268992,
       "numProcesses": 4,
       "partName": "part111",
+      "quarantineAfterUnload": false,
       "signaledInspections": [
         "Insp1",
       ],
@@ -1499,6 +1505,7 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
       "materialID": 4359947557011456,
       "numProcesses": 2,
       "partName": "part222",
+      "quarantineAfterUnload": false,
       "signaledInspections": [
         "Insp1",
       ],
@@ -1521,6 +1528,7 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
       "materialID": 6334762285268992,
       "numProcesses": 4,
       "partName": "part111",
+      "quarantineAfterUnload": false,
       "signaledInspections": [
         "Insp1",
       ],
@@ -1543,6 +1551,7 @@ exports[`processes last 30 events > initial 27 days ago, two days ago, and today
       "materialID": 6351644323217408,
       "numProcesses": 1,
       "partName": "part222",
+      "quarantineAfterUnload": false,
       "signaledInspections": [
         "Insp1",
         "Insp1",

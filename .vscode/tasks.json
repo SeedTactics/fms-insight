@@ -10,17 +10,8 @@
       "group": "test",
       "type": "shell",
       "presentation": {
-        "reveal": "always"
-      },
-      "problemMatcher": "$msCompile"
-    },
-    {
-      "label": "build:debug-mock",
-      "command": "dotnet build server/debug-mock/debugmock.csproj",
-      "group": "build",
-      "type": "shell",
-      "presentation": {
-        "reveal": "silent"
+        "reveal": "always",
+        "clear": true
       },
       "problemMatcher": "$msCompile"
     },
@@ -32,7 +23,19 @@
         "reveal": "silent",
         "panel": "dedicated"
       },
-      "problemMatcher": []
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "build:debug-mock",
+      "command": "dotnet build server/debug-mock/debugmock.csproj",
+      "group": "build",
+      "type": "shell",
+      "presentation": {
+        "reveal": "silent",
+        "revealProblems": "onProblem",
+        "close": true
+      },
+      "problemMatcher": "$msCompile"
     },
     {
       "label": "build:mazak",
@@ -40,7 +43,9 @@
       "group": "build",
       "type": "shell",
       "presentation": {
-        "reveal": "silent"
+        "reveal": "silent",
+        "revealProblems": "onProblem",
+        "close": true
       },
       "problemMatcher": "$msCompile"
     },
@@ -50,31 +55,14 @@
       "group": "build",
       "type": "shell",
       "presentation": {
-        "reveal": "silent"
+        "reveal": "silent",
+        "revealProblems": "onProblem",
+        "close": true
       },
       "problemMatcher": "$msCompile"
     },
     {
-      "label": "insight:check",
-      "type": "shell",
-      "command": "${workspaceFolder}/client/insight/node_modules/.bin/tsc",
-      "args": [
-        "--watch",
-        "--noEmit",
-        "-p",
-        "${workspaceFolder}/client/insight"
-      ],
-      "isBackground": true,
-      "presentation": {
-        "reveal": "never",
-        "echo": false,
-        "focus": false,
-        "panel": "dedicated"
-      },
-      "problemMatcher": "$tsc-watch"
-    },
-    {
-      "label": "insight:dev",
+      "label": "vite:insight",
       "command": "pnpm start",
       "options": {
         "cwd": "${workspaceFolder}/client/insight",
@@ -87,16 +75,39 @@
         "reveal": "silent",
         "panel": "dedicated"
       },
-      "problemMatcher": []
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [
+          {
+            "regexp": ".",
+            "file": 1,
+            "location": 2,
+            "message": 3
+          }
+        ],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "."
+        }
+      }
     },
     {
-      "label": "insight:test",
-      "command": "pnpm test",
-      "options": {
-        "cwd": "${workspaceFolder}/client/insight"
-      },
+      "label": "terminate:vite:insight",
+      "command": "echo ${input:terminateViteInsight}",
       "type": "shell",
-      "problemMatcher": []
+      "presentation": {
+        "reveal": "silent",
+        "close": true
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "terminateViteInsight",
+      "type": "command",
+      "command": "workbench.action.tasks.terminate",
+      "args": "vite:insight"
     }
   ]
 }

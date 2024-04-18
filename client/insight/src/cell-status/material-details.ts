@@ -539,6 +539,7 @@ export interface AddNewMaterialToQueueData {
   readonly queuePosition: number;
   readonly serial?: string;
   readonly operator: string | null;
+  readonly workorder: string | null;
   readonly onNewMaterial?: (mat: Readonly<IInProcessMaterial>) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   readonly onError?: (reason: any) => void;
@@ -555,6 +556,7 @@ export function useAddNewMaterialToQueue(): [(d: AddNewMaterialToQueueData) => v
       d.queue,
       d.queuePosition,
       d.operator,
+      d.workorder,
       d.serial || "",
     )
       .then((m) => {

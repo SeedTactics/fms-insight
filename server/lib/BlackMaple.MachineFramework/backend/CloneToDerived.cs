@@ -39,7 +39,8 @@ namespace BlackMaple.MachineFramework
 {
   public static class CloneToDerivedExtension
   {
-    public static R CloneToDerived<R, T>(this T val) where R : T
+    public static R CloneToDerived<R, T>(this T val)
+      where R : T
     {
       return CloneHelper<R, T>.CloneToDerived(val);
     }
@@ -55,8 +56,8 @@ namespace BlackMaple.MachineFramework
 
         var bindings = typeof(T)
           .GetProperties()
-          .Where(
-            p => p.GetMethod != null && p.GetMethod.IsPublic && p.SetMethod != null && p.SetMethod.IsPublic
+          .Where(p =>
+            p.GetMethod != null && p.GetMethod.IsPublic && p.SetMethod != null && p.SetMethod.IsPublic
           )
           .Select(prop => Expression.Bind(typeof(R).GetProperty(prop.Name), Expression.Property(val, prop)))
           .ToArray();

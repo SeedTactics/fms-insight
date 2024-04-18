@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 

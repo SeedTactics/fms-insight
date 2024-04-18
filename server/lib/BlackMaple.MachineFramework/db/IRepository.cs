@@ -302,6 +302,7 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> BulkRemoveMaterialFromAllQueues(
       IEnumerable<long> matIds,
       string operatorName = null,
+      string reason = null,
       DateTime? timeUTC = null
     );
     LogEntry RecordGeneralMessage(

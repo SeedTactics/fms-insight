@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using Serilog;
+using System.Linq;
 using BlackMaple.MachineFramework;
+using Serilog;
 
 namespace MazakMachineInterface
 {
@@ -360,8 +360,8 @@ namespace MazakMachineInterface
     private void AssignCastings(IRepository logDb, IEnumerable<ScheduleWithQueues> allSchs)
     {
       var schsToAssign = allSchs
-        .Where(
-          s => !s.LowerPriorityScheduleMatchingCastingSkipped && !string.IsNullOrEmpty(s.Procs[1].InputQueue)
+        .Where(s =>
+          !s.LowerPriorityScheduleMatchingCastingSkipped && !string.IsNullOrEmpty(s.Procs[1].InputQueue)
         )
         .OrderBy(s => s.SchRow.DueDate)
         .ThenBy(s => s.SchRow.Priority);
@@ -550,22 +550,20 @@ namespace MazakMachineInterface
       }
 
       return allSchedules
-        .LastOrDefault(
-          s =>
-            (
-              s.SchRow.DueDate > currentSch.SchRow.DueDate
-              || (
-                s.SchRow.DueDate == currentSch.SchRow.DueDate
-                && s.SchRow.Priority > currentSch.SchRow.Priority
-              )
+        .LastOrDefault(s =>
+          (
+            s.SchRow.DueDate > currentSch.SchRow.DueDate
+            || (
+              s.SchRow.DueDate == currentSch.SchRow.DueDate && s.SchRow.Priority > currentSch.SchRow.Priority
             )
-            && s.Procs.Any(p => p.Value.SchProcRow.ProcessExecuteQuantity > 0)
-            && s.Procs.Any(p =>
-            {
-              var info = s.Job.Processes[p.Key - 1].Paths[p.Value.Path - 1];
-              return usedFixtureFaces.Contains((fixture: info.Fixture, face: info.Face ?? 1))
-                || info.PalletNums.Any(usedPallets.Contains);
-            })
+          )
+          && s.Procs.Any(p => p.Value.SchProcRow.ProcessExecuteQuantity > 0)
+          && s.Procs.Any(p =>
+          {
+            var info = s.Job.Processes[p.Key - 1].Paths[p.Value.Path - 1];
+            return usedFixtureFaces.Contains((fixture: info.Fixture, face: info.Face ?? 1))
+              || info.PalletNums.Any(usedPallets.Contains);
+          })
         )
         ?.SchRow.DueDate;
     }

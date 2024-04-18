@@ -31,8 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
@@ -530,12 +530,11 @@ namespace MazakMachineInterface
       }
 
       // delete old programs, but only if there is a newer revision for this program
-      var maxRevForProg = OldMazakData.MainPrograms
-        .Select(
-          p =>
-            MazakProcess.TryParseMainProgramComment(p.Comment, out string pName, out long rev)
-              ? new { pName, rev }
-              : null
+      var maxRevForProg = OldMazakData
+        .MainPrograms.Select(p =>
+          MazakProcess.TryParseMainProgramComment(p.Comment, out string pName, out long rev)
+            ? new { pName, rev }
+            : null
         )
         .Where(p => p != null)
         .ToLookup(p => p.pName, p => p.rev)
@@ -740,6 +739,7 @@ namespace MazakMachineInterface
     )
     {
       Validate(jobs, fmsSettings, errors);
+      CheckReusedFixture(mazakData, errors);
       var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, errors, lookupProgram);
       var usedMazakFixGroups = new HashSet<int>(mazakData.Pallets.Select(f => f.FixtureGroup));
       var groups = GroupProcessesIntoFixtures(
@@ -830,6 +830,26 @@ namespace MazakMachineInterface
                     + " Non-final processes must have a configured local queue, not an external queue"
                 );
               }
+            }
+          }
+        }
+      }
+    }
+
+    private static void CheckReusedFixture(MazakAllData mazakData, IList<string> errors)
+    {
+      foreach (var part in mazakData.Parts)
+      {
+        var isInsight = MazakPart.IsSailPart(part.PartName, part.Comment);
+        if (!isInsight)
+        {
+          foreach (var proc in part.Processes)
+          {
+            if (proc.Fixture.Contains(':'))
+            {
+              errors.Add(
+                $"Non-Insight part {part.PartName} in the Mazak cell controller is using an Insight fixture {proc.Fixture}.  Please edit the part in the cell controller to not use an Insight fixture."
+              );
             }
           }
         }
@@ -1045,8 +1065,8 @@ namespace MazakMachineInterface
 
     private static ISet<string> CalculateUsedPrograms(MazakAllData oldData, IEnumerable<MazakPart> newParts)
     {
-      var progsToComment = oldData.MainPrograms
-        .Where(p => MazakProcess.IsInsightMainProgram(p.Comment))
+      var progsToComment = oldData
+        .MainPrograms.Where(p => MazakProcess.IsInsightMainProgram(p.Comment))
         .ToDictionary(p => p.MainProgram, p => p.Comment);
 
       var used = new HashSet<string>();

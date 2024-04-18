@@ -1230,6 +1230,7 @@
       "Path": 1,
       "Serial": "MBZGY",
       "SignaledInspections": [],
+      "QuarantineAfterUnload": true,
       "Location": {
         "Type": "OnPallet",
         "PalletNum": 7,

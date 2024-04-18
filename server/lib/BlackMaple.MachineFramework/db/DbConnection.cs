@@ -32,9 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
-using System.Data;
 using System.Collections.Generic;
+using System.Data;
+using System.Linq;
 using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework

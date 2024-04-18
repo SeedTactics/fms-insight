@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.IO;
-using BlackMaple.MachineFramework;
-using System.Threading.Tasks;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
+using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
 {

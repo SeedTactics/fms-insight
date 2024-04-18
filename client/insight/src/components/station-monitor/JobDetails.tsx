@@ -233,6 +233,7 @@ function JobMaterial(props: JobMaterialProps) {
                         serial: mat.serial,
                         workorderId: mat.workorderId,
                         signaledInspections: [],
+                        quarantineAfterUnload: null,
                       },
                     })
                   }

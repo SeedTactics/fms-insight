@@ -509,8 +509,8 @@ namespace MachineWatchTest
               options =>
                 options
                   .ComparingByMembers<Decision>()
-                  .Using<DateTime>(
-                    ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4))
+                  .Using<DateTime>(ctx =>
+                    ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4))
                   )
                   .WhenTypeIs<DateTime>()
             );

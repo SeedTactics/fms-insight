@@ -45,6 +45,7 @@ export interface MaterialSummary {
   readonly serial?: string;
   readonly workorderId?: string;
   readonly signaledInspections: ReadonlyArray<string>;
+  readonly quarantineAfterUnload: boolean | null | undefined;
 }
 
 export interface MaterialSummaryAndCompletedData extends MaterialSummary {
@@ -87,6 +88,7 @@ export function inproc_mat_to_summary(mat: Readonly<IInProcessMaterial>): Materi
     serial: mat.serial,
     workorderId: mat.workorderId,
     signaledInspections: mat.signaledInspections,
+    quarantineAfterUnload: mat.quarantineAfterUnload,
   };
 }
 
@@ -123,6 +125,7 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
         numProcesses: logMat.numproc,
         unloaded_processes: {},
         signaledInspections: [],
+        quarantineAfterUnload: null,
         completedInspections: {},
       };
     }
@@ -176,6 +179,7 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
           mat = {
             ...mat,
             unloaded_processes: { ...mat.unloaded_processes, [logMat.proc]: e.endUTC },
+            quarantineAfterUnload: false,
           };
           if (logMat.proc === logMat.numproc) {
             mat = {
@@ -201,6 +205,9 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
       case LogType.CloseOut:
         mat = { ...mat, closeout_completed: e.endUTC };
         break;
+
+      case LogType.SignalQuarantine:
+        mat = { ...mat, quarantineAfterUnload: true };
     }
 
     mats = mats.set(logMat.id, mat);
@@ -250,6 +257,7 @@ function process_swap(swap: Readonly<IEditMaterialInLogEvents>, st: MatSummarySt
       startedProcess1: true,
       unloaded_processes: {},
       signaledInspections: [],
+      quarantineAfterUnload: null,
       completedInspections: {},
     };
   } else {

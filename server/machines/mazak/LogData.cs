@@ -32,8 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.IO;
+using System.Threading;
 
 namespace MazakMachineInterface
 {
@@ -452,8 +452,8 @@ namespace MazakMachineInterface
         {
           cancelSource?.Cancel();
           cancelSource = new CancellationTokenSource();
-          System.Threading.Tasks.Task
-            .Delay(TimeSpan.FromSeconds(1), cancelSource.Token)
+          System
+            .Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(1), cancelSource.Token)
             .ContinueWith(
               t =>
               {
@@ -567,8 +567,8 @@ namespace MazakMachineInterface
 
           if (sendToExternal.Count > 0)
           {
-            BlackMaple.MachineFramework.SendMaterialToExternalQueue
-              .Post(sendToExternal)
+            BlackMaple
+              .MachineFramework.SendMaterialToExternalQueue.Post(sendToExternal)
               .Wait(TimeSpan.FromSeconds(30));
           }
 

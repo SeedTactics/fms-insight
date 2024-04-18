@@ -33,10 +33,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Data;
-using Microsoft.Data.Sqlite;
 using System.Collections.Immutable;
+using System.Data;
+using System.Linq;
+using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
@@ -466,53 +466,44 @@ namespace BlackMaple.MachineFramework
           Hold = jobHold,
           CyclesOnFirstProc = cyclesOnFirstProc.Values.ToImmutableList(),
           Bookings = bookings.ToImmutable(),
-          Procs = pathDatRows.Values
-            .GroupBy(p => p.Process)
-            .Select(
-              proc =>
-                new ProcessInfo()
+          Procs = pathDatRows
+            .Values.GroupBy(p => p.Process)
+            .Select(proc => new ProcessInfo()
+            {
+              Paths = proc.OrderBy(p => p.Path)
+                .Select(p => new ProcPathInfo()
                 {
-                  Paths = proc.OrderBy(p => p.Path)
-                    .Select(
-                      p =>
-                        new ProcPathInfo()
-                        {
-                          PalletNums = p.Pals.ToImmutable(),
-                          Fixture = p.Fixture,
-                          Face = p.Face,
-                          Load = p.Loads.ToImmutable(),
-                          ExpectedLoadTime = p.LoadTime,
-                          Unload = p.Unloads.ToImmutable(),
-                          ExpectedUnloadTime = p.UnloadTime,
-                          Stops = p.Stops.Values
-                            .Select(
-                              s =>
-                                new MachiningStop()
-                                {
-                                  StationGroup = s.StationGroup,
-                                  Stations = s.Stations.ToImmutable(),
-                                  Program = s.Program,
-                                  ProgramRevision = s.ProgramRevision,
-                                  Tools = s.Tools.Count == 0 ? null : s.Tools.ToImmutable(),
-                                  ExpectedCycleTime = s.ExpectedCycleTime
-                                }
-                            )
-                            .ToImmutableList(),
-                          SimulatedProduction = p.SimProd.ToImmutable(),
-                          SimulatedStartingUTC = p.StartingUTC,
-                          SimulatedAverageFlowTime = p.SimAverageFlowTime,
-                          HoldMachining = p.MachHold?.ToHoldPattern(),
-                          HoldLoadUnload = p.LoadHold?.ToHoldPattern(),
-                          PartsPerPallet = p.PartsPerPallet,
-                          InputQueue = p.InputQueue,
-                          OutputQueue = p.OutputQueue,
-                          Inspections = p.Insps.Count == 0 ? null : p.Insps.ToImmutable(),
-                          Casting = p.Casting
-                        }
-                    )
-                    .ToImmutableList()
-                }
-            )
+                  PalletNums = p.Pals.ToImmutable(),
+                  Fixture = p.Fixture,
+                  Face = p.Face,
+                  Load = p.Loads.ToImmutable(),
+                  ExpectedLoadTime = p.LoadTime,
+                  Unload = p.Unloads.ToImmutable(),
+                  ExpectedUnloadTime = p.UnloadTime,
+                  Stops = p
+                    .Stops.Values.Select(s => new MachiningStop()
+                    {
+                      StationGroup = s.StationGroup,
+                      Stations = s.Stations.ToImmutable(),
+                      Program = s.Program,
+                      ProgramRevision = s.ProgramRevision,
+                      Tools = s.Tools.Count == 0 ? null : s.Tools.ToImmutable(),
+                      ExpectedCycleTime = s.ExpectedCycleTime
+                    })
+                    .ToImmutableList(),
+                  SimulatedProduction = p.SimProd.ToImmutable(),
+                  SimulatedStartingUTC = p.StartingUTC,
+                  SimulatedAverageFlowTime = p.SimAverageFlowTime,
+                  HoldMachining = p.MachHold?.ToHoldPattern(),
+                  HoldLoadUnload = p.LoadHold?.ToHoldPattern(),
+                  PartsPerPallet = p.PartsPerPallet,
+                  InputQueue = p.InputQueue,
+                  OutputQueue = p.OutputQueue,
+                  Inspections = p.Insps.Count == 0 ? null : p.Insps.ToImmutable(),
+                  Casting = p.Casting
+                })
+                .ToImmutableList()
+            })
             .ToImmutableList()
         };
       }
@@ -691,19 +682,16 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      return rows.Select(
-          e =>
-            new SimulatedStationUtilization()
-            {
-              ScheduleId = e.Key.ScheduleId,
-              StationGroup = e.Key.StationGroup,
-              StationNum = e.Key.StationNum,
-              StartUTC = e.Key.StartUTC,
-              EndUTC = e.Key.EndUTC,
-              PlanDown = e.Value.PlanDown ? true : null,
-              Parts = e.Value.Parts.Count == 0 ? null : e.Value.Parts.ToImmutable()
-            }
-        )
+      return rows.Select(e => new SimulatedStationUtilization()
+        {
+          ScheduleId = e.Key.ScheduleId,
+          StationGroup = e.Key.StationGroup,
+          StationNum = e.Key.StationNum,
+          StartUTC = e.Key.StartUTC,
+          EndUTC = e.Key.EndUTC,
+          PlanDown = e.Value.PlanDown ? true : null,
+          Parts = e.Value.Parts.Count == 0 ? null : e.Value.Parts.ToImmutable()
+        })
         .ToImmutableList();
     }
 
@@ -977,22 +965,25 @@ namespace BlackMaple.MachineFramework
                 continue;
 
               // add the program
-              byPart[part].progs.Add(
-                new ProgramForJobStep()
-                {
-                  ProcessNumber = reader.GetInt32(4),
-                  StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
-                  ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                  Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
-                }
-              );
+              byPart[part]
+                .progs.Add(
+                  new ProgramForJobStep()
+                  {
+                    ProcessNumber = reader.GetInt32(4),
+                    StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
+                    ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
+                    Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
+                  }
+                );
             }
           }
 
           byWorkId.Add(
             workorderId,
-            byPart.Values
-              .Select(w => w.progs.Count == 0 ? w.work : w.work with { Programs = w.progs.ToImmutable() })
+            byPart
+              .Values.Select(w =>
+                w.progs.Count == 0 ? w.work : w.work with { Programs = w.progs.ToImmutable() }
+              )
               .ToImmutableList()
           );
         }

@@ -32,13 +32,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using BlackMaple.MachineFramework;
+using FluentAssertions;
 using MazakMachineInterface;
 using Xunit;
-using FluentAssertions;
 
 namespace MachineWatchTest
 {
@@ -94,8 +94,8 @@ namespace MachineWatchTest
 
       var (actions, tokeep) = BuildMazakSchedules.RemoveCompletedSchedules(schedules);
 
-      actions.Schedules
-        .Should()
+      actions
+        .Schedules.Should()
         .BeEquivalentTo(new[] { schedules.Schedules.First() with { Command = MazakWriteCommand.Delete } });
       actions.Parts.Should().BeEmpty();
       actions.Fixtures.Should().BeEmpty();
@@ -390,8 +390,8 @@ namespace MachineWatchTest
       actions.Fixtures.Should().BeEmpty();
       actions.Pallets.Should().BeEmpty();
 
-      actions.Schedules
-        .Should()
+      actions
+        .Schedules.Should()
         .BeEquivalentTo(
           new[]
           {

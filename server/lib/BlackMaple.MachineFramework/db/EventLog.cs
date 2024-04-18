@@ -824,6 +824,26 @@ namespace BlackMaple.MachineFramework
               AND
               matdetails.Serial IS NOT NULL";
 
+      var quarantinedQry =
+        @"
+        SELECT DISTINCT Serial FROM matdetails
+          WHERE
+            matdetails.Workorder = $workid
+            AND
+            matdetails.PartName = $partname
+            AND
+            matdetails.Serial IS NOT NULL
+            AND EXISTS (
+              SELECT 1 FROM stations s, stations_mat m
+                WHERE
+                  s.Counter = m.Counter
+                  AND
+                  m.MaterialID = matdetails.MaterialID
+                  AND
+                  (s.StationLoc = $quarantineTy OR (s.StationLoc IN ($addQueueTy, $removeQueueTy) AND s.Program = 'Quarantine'))
+            )
+        ";
+
       var timeQry =
         @"
                 SELECT StationName, SUM(Elapsed / totcount), SUM(ActiveTime / totcount)
@@ -844,6 +864,10 @@ namespace BlackMaple.MachineFramework
                                 s.Start = 0
                                 AND
                                 s.StationLoc IN ($loadty, $mcty)
+                                AND NOT EXISTS(
+                                  SELECT 1 FROM program_details d
+                                    WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'
+                                )
                         )
                     GROUP BY StationName";
 
@@ -865,6 +889,7 @@ namespace BlackMaple.MachineFramework
 
       using var workCmd = _connection.CreateCommand();
       using var serialCmd = _connection.CreateCommand();
+      using var quarantinedCmd = _connection.CreateCommand();
       using var timeCmd = _connection.CreateCommand();
       using var commentCmd = _connection.CreateCommand();
 
@@ -879,6 +904,12 @@ namespace BlackMaple.MachineFramework
       serialCmd.CommandText = serialQry;
       serialCmd.Parameters.Add("workid", SqliteType.Text);
       serialCmd.Parameters.Add("partname", SqliteType.Text);
+      quarantinedCmd.CommandText = quarantinedQry;
+      quarantinedCmd.Parameters.Add("workid", SqliteType.Text);
+      quarantinedCmd.Parameters.Add("partname", SqliteType.Text);
+      quarantinedCmd.Parameters.Add("quarantineTy", SqliteType.Integer).Value = (int)LogType.SignalQuarantine;
+      quarantinedCmd.Parameters.Add("addQueueTy", SqliteType.Integer).Value = (int)LogType.AddToQueue;
+      quarantinedCmd.Parameters.Add("removeQueueTy", SqliteType.Integer).Value = (int)LogType.RemoveFromQueue;
       timeCmd.CommandText = timeQry;
       timeCmd.Parameters.Add("workid", SqliteType.Text);
       timeCmd.Parameters.Add("partname", SqliteType.Text);
@@ -914,6 +945,17 @@ namespace BlackMaple.MachineFramework
           while (serialReader.Read())
           {
             serials.Add(serialReader.GetString(0));
+          }
+        }
+
+        quarantinedCmd.Parameters[0].Value = workorder;
+        quarantinedCmd.Parameters[1].Value = part;
+        var quarantinedSerials = ImmutableList.CreateBuilder<string>();
+        using (var quarantinedReader = quarantinedCmd.ExecuteReader())
+        {
+          while (quarantinedReader.Read())
+          {
+            quarantinedSerials.Add(quarantinedReader.GetString(0));
           }
         }
 
@@ -966,6 +1008,7 @@ namespace BlackMaple.MachineFramework
             Comments = comments.Count == 0 ? null : comments.ToImmutable(),
             CompletedQuantity = completed,
             Serials = serials.ToImmutable(),
+            QuarantinedSerials = quarantinedSerials.Count == 0 ? null : quarantinedSerials.ToImmutable(),
             ElapsedStationTime = elapsed.ToImmutable(),
             ActiveStationTime = active.ToImmutable()
           }
@@ -1029,20 +1072,21 @@ namespace BlackMaple.MachineFramework
         return new LogEntry()
         {
           Counter = newCntr,
-          Material = this.Material.Select(m =>
-          {
-            var details = getDetails(m.MaterialID);
-            return new LogMaterial(
-              matID: m.MaterialID,
-              proc: m.Process,
-              face: m.Face,
-              uniq: details?.JobUnique ?? "",
-              part: details?.PartName ?? "",
-              numProc: details?.NumProcesses ?? 1,
-              serial: details?.Serial ?? "",
-              workorder: details?.Workorder ?? ""
-            );
-          })
+          Material = this
+            .Material.Select(m =>
+            {
+              var details = getDetails(m.MaterialID);
+              return new LogMaterial(
+                matID: m.MaterialID,
+                proc: m.Process,
+                face: m.Face,
+                uniq: details?.JobUnique ?? "",
+                part: details?.PartName ?? "",
+                numProc: details?.NumProcesses ?? 1,
+                serial: details?.Serial ?? "",
+                workorder: details?.Workorder ?? ""
+              );
+            })
             .ToImmutableList(),
           LogType = this.LogType,
           StartOfCycle = this.StartOfCycle,
@@ -1337,8 +1381,8 @@ namespace BlackMaple.MachineFramework
       string origMessage = null
     )
     {
-      return AddEntryInTransaction(
-        trans => AddLogEntry(trans, NewEventLogEntry.FromLogEntry(log), foreignId, origMessage)
+      return AddEntryInTransaction(trans =>
+        AddLogEntry(trans, NewEventLogEntry.FromLogEntry(log), foreignId, origMessage)
       );
     }
 
@@ -1374,16 +1418,15 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      return AddEntryInTransaction(
-        trans =>
-          RecordLoadEnd(
-            toLoad: toLoad,
-            pallet: pallet,
-            timeUTC: timeUTC,
-            foreignId: foreignId,
-            originalMessage: originalMessage,
-            trans: trans
-          )
+      return AddEntryInTransaction(trans =>
+        RecordLoadEnd(
+          toLoad: toLoad,
+          pallet: pallet,
+          timeUTC: timeUTC,
+          foreignId: foreignId,
+          originalMessage: originalMessage,
+          trans: trans
+        )
       );
     }
 
@@ -1409,20 +1452,25 @@ namespace BlackMaple.MachineFramework
               Process = face.Process - 1,
               Face = ""
             };
-            logs.AddRange(RemoveFromAllQueues(trans, prevProcMat, operatorName: null, timeUTC: timeUTC));
+            logs.AddRange(
+              RemoveFromAllQueues(
+                trans,
+                prevProcMat,
+                operatorName: null,
+                reason: "LoadedToPallet",
+                timeUTC: timeUTC
+              )
+            );
           }
 
           var log = new NewEventLogEntry()
           {
-            Material = face.MaterialIDs.Select(
-              m =>
-                new EventLogMaterial()
-                {
-                  MaterialID = m,
-                  Face = face.FaceNum.ToString(),
-                  Process = face.Process,
-                }
-            ),
+            Material = face.MaterialIDs.Select(m => new EventLogMaterial()
+            {
+              MaterialID = m,
+              Face = face.FaceNum.ToString(),
+              Process = face.Process,
+            }),
             Pallet = pallet,
             LogType = LogType.LoadUnloadCycle,
             LocationName = "L/U",
@@ -1692,25 +1740,24 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      return AddEntryInTransaction(
-        trans =>
-          AddLogEntry(
-            trans,
-            new NewEventLogEntry()
-            {
-              Material = mats,
-              Pallet = pallet,
-              LogType = LogType.PalletOnRotaryInbound,
-              LocationName = statName,
-              LocationNum = statNum,
-              Program = "Arrive",
-              StartOfCycle = true,
-              EndTimeUTC = timeUTC,
-              Result = "Arrive",
-            },
-            foreignId,
-            originalMessage
-          )
+      return AddEntryInTransaction(trans =>
+        AddLogEntry(
+          trans,
+          new NewEventLogEntry()
+          {
+            Material = mats,
+            Pallet = pallet,
+            LogType = LogType.PalletOnRotaryInbound,
+            LocationName = statName,
+            LocationNum = statNum,
+            Program = "Arrive",
+            StartOfCycle = true,
+            EndTimeUTC = timeUTC,
+            Result = "Arrive",
+          },
+          foreignId,
+          originalMessage
+        )
       );
     }
 
@@ -1726,26 +1773,25 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      return AddEntryInTransaction(
-        trans =>
-          AddLogEntry(
-            trans,
-            new NewEventLogEntry()
-            {
-              Material = mats,
-              Pallet = pallet,
-              LogType = LogType.PalletOnRotaryInbound,
-              LocationName = statName,
-              LocationNum = statNum,
-              Program = "Depart",
-              StartOfCycle = false,
-              EndTimeUTC = timeUTC,
-              Result = rotateIntoWorktable ? "RotateIntoWorktable" : "LeaveMachine",
-              ElapsedTime = elapsed,
-            },
-            foreignId,
-            originalMessage
-          )
+      return AddEntryInTransaction(trans =>
+        AddLogEntry(
+          trans,
+          new NewEventLogEntry()
+          {
+            Material = mats,
+            Pallet = pallet,
+            LogType = LogType.PalletOnRotaryInbound,
+            LocationName = statName,
+            LocationNum = statNum,
+            Program = "Depart",
+            StartOfCycle = false,
+            EndTimeUTC = timeUTC,
+            Result = rotateIntoWorktable ? "RotateIntoWorktable" : "LeaveMachine",
+            ElapsedTime = elapsed,
+          },
+          foreignId,
+          originalMessage
+        )
       );
     }
 
@@ -1759,25 +1805,24 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      return AddEntryInTransaction(
-        trans =>
-          AddLogEntry(
-            trans,
-            new NewEventLogEntry()
-            {
-              Material = mats,
-              Pallet = pallet,
-              LogType = LogType.PalletInStocker,
-              LocationName = "Stocker",
-              LocationNum = stockerNum,
-              Program = "Arrive",
-              StartOfCycle = true,
-              EndTimeUTC = timeUTC,
-              Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
-            },
-            foreignId,
-            originalMessage
-          )
+      return AddEntryInTransaction(trans =>
+        AddLogEntry(
+          trans,
+          new NewEventLogEntry()
+          {
+            Material = mats,
+            Pallet = pallet,
+            LogType = LogType.PalletInStocker,
+            LocationName = "Stocker",
+            LocationNum = stockerNum,
+            Program = "Arrive",
+            StartOfCycle = true,
+            EndTimeUTC = timeUTC,
+            Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
+          },
+          foreignId,
+          originalMessage
+        )
       );
     }
 
@@ -1792,26 +1837,25 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null
     )
     {
-      return AddEntryInTransaction(
-        trans =>
-          AddLogEntry(
-            trans,
-            new NewEventLogEntry()
-            {
-              Material = mats,
-              Pallet = pallet,
-              LogType = LogType.PalletInStocker,
-              LocationName = "Stocker",
-              LocationNum = stockerNum,
-              Program = "Depart",
-              StartOfCycle = false,
-              EndTimeUTC = timeUTC,
-              Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
-              ElapsedTime = elapsed,
-            },
-            foreignId,
-            originalMessage
-          )
+      return AddEntryInTransaction(trans =>
+        AddLogEntry(
+          trans,
+          new NewEventLogEntry()
+          {
+            Material = mats,
+            Pallet = pallet,
+            LogType = LogType.PalletInStocker,
+            LocationName = "Stocker",
+            LocationNum = stockerNum,
+            Program = "Depart",
+            StartOfCycle = false,
+            EndTimeUTC = timeUTC,
+            Result = waitForMachine ? "WaitForMachine" : "WaitForUnload",
+            ElapsedTime = elapsed,
+          },
+          foreignId,
+          originalMessage
+        )
       );
     }
 
@@ -2098,17 +2142,16 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null
     )
     {
-      return AddEntryInTransaction(
-        trans =>
-          AddToQueue(
-            trans,
-            mat,
-            queue,
-            position,
-            operatorName: operatorName,
-            timeUTC: timeUTC ?? DateTime.UtcNow,
-            reason: reason
-          )
+      return AddEntryInTransaction(trans =>
+        AddToQueue(
+          trans,
+          mat,
+          queue,
+          position,
+          operatorName: operatorName,
+          timeUTC: timeUTC ?? DateTime.UtcNow,
+          reason: reason
+        )
       );
     }
 
@@ -2122,18 +2165,17 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null
     )
     {
-      return AddEntryInTransaction(
-        trans =>
-          AddToQueue(
-            trans,
-            matID,
-            process,
-            queue,
-            position,
-            operatorName: operatorName,
-            timeUTC: timeUTC ?? DateTime.UtcNow,
-            reason: reason
-          )
+      return AddEntryInTransaction(trans =>
+        AddToQueue(
+          trans,
+          matID,
+          process,
+          queue,
+          position,
+          operatorName: operatorName,
+          timeUTC: timeUTC ?? DateTime.UtcNow,
+          reason: reason
+        )
       );
     }
 
@@ -2143,8 +2185,8 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null
     )
     {
-      return AddEntryInTransaction(
-        trans => RemoveFromAllQueues(trans, mat, operatorName, timeUTC ?? DateTime.UtcNow)
+      return AddEntryInTransaction(trans =>
+        RemoveFromAllQueues(trans, mat, operatorName: operatorName, reason: null, timeUTC ?? DateTime.UtcNow)
       );
     }
 
@@ -2155,14 +2197,22 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null
     )
     {
-      return AddEntryInTransaction(
-        trans => RemoveFromAllQueues(trans, matID, process, operatorName, timeUTC ?? DateTime.UtcNow)
+      return AddEntryInTransaction(trans =>
+        RemoveFromAllQueues(
+          trans,
+          matID,
+          process,
+          operatorName: operatorName,
+          reason: null,
+          timeUTC ?? DateTime.UtcNow
+        )
       );
     }
 
     public IEnumerable<LogEntry> BulkRemoveMaterialFromAllQueues(
       IEnumerable<long> matIds,
       string operatorName = null,
+      string reason = null,
       DateTime? timeUTC = null
     )
     {
@@ -2173,7 +2223,9 @@ namespace BlackMaple.MachineFramework
         {
           var nextProc = NextProcessForQueuedMaterial(trans, matId);
           var proc = (nextProc ?? 1) - 1;
-          evts.AddRange(RemoveFromAllQueues(trans, matId, proc, operatorName, timeUTC ?? DateTime.UtcNow));
+          evts.AddRange(
+            RemoveFromAllQueues(trans, matId, proc, operatorName, reason, timeUTC ?? DateTime.UtcNow)
+          );
         }
         return evts;
       });
@@ -2466,6 +2518,7 @@ namespace BlackMaple.MachineFramework
             matID: newMatId,
             process: oldMatProc - 1,
             operatorName: operatorName,
+            reason: "SwapMaterial",
             time
           );
           newLogEntries.AddRange(removeQueueEvts);
@@ -2641,15 +2694,12 @@ namespace BlackMaple.MachineFramework
 
           var newMsg = new NewEventLogEntry()
           {
-            Material = allMatIds.Select(
-              m =>
-                new EventLogMaterial()
-                {
-                  MaterialID = m,
-                  Process = process,
-                  Face = ""
-                }
-            ),
+            Material = allMatIds.Select(m => new EventLogMaterial()
+            {
+              MaterialID = m,
+              Process = process,
+              Face = ""
+            }),
             Pallet = 0,
             LogType = LogType.InvalidateCycle,
             LocationName = "InvalidateCycle",
@@ -3278,7 +3328,7 @@ namespace BlackMaple.MachineFramework
     {
       var ret = new List<LogEntry>();
 
-      ret.AddRange(RemoveFromAllQueues(trans, mat, operatorName, timeUTC));
+      ret.AddRange(RemoveFromAllQueues(trans, mat, operatorName, reason: "MovingInQueue", timeUTC));
 
       using (var cmd = _connection.CreateCommand())
       {
@@ -3347,6 +3397,7 @@ namespace BlackMaple.MachineFramework
       long matID,
       int process,
       string operatorName,
+      string reason,
       DateTime timeUTC
     )
     {
@@ -3357,13 +3408,14 @@ namespace BlackMaple.MachineFramework
         Face = ""
       };
 
-      return RemoveFromAllQueues(trans, mat, operatorName, timeUTC);
+      return RemoveFromAllQueues(trans, mat, operatorName, reason, timeUTC);
     }
 
     private IReadOnlyList<LogEntry> RemoveFromAllQueues(
       IDbTransaction trans,
       EventLogMaterial mat,
       string operatorName,
+      string reason,
       DateTime timeUTC
     )
     {
@@ -3404,7 +3456,7 @@ namespace BlackMaple.MachineFramework
               LogType = LogType.RemoveFromQueue,
               LocationName = queue,
               LocationNum = pos,
-              Program = "",
+              Program = reason ?? "",
               StartOfCycle = false,
               EndTimeUTC = timeUTC,
               Result = "",
@@ -4268,15 +4320,12 @@ namespace BlackMaple.MachineFramework
                 {
                   loads.Add(
                     (
-                      mats: face.MaterialIDs.Select(
-                        mid =>
-                          new EventLogMaterial()
-                          {
-                            MaterialID = mid,
-                            Process = face.Process,
-                            Face = face.FaceNum.ToString()
-                          }
-                      ),
+                      mats: face.MaterialIDs.Select(mid => new EventLogMaterial()
+                      {
+                        MaterialID = mid,
+                        Process = face.Process,
+                        Face = face.FaceNum.ToString()
+                      }),
                       lul: load.LoadStation,
                       elapsed: load.Elapsed,
                       active: face.ActiveOperationTime,
@@ -4458,6 +4507,7 @@ namespace BlackMaple.MachineFramework
                       trans,
                       prevProcMat,
                       operatorName: null,
+                      reason: "LoadedToPallet",
                       timeUTC: timeUTC.AddSeconds(1)
                     )
                   );
@@ -4891,8 +4941,8 @@ namespace BlackMaple.MachineFramework
       DateTime? mutcNow = null
     )
     {
-      return AddEntryInTransaction(
-        trans => MakeInspectionDecisions(trans, matID, process, inspections, mutcNow)
+      return AddEntryInTransaction(trans =>
+        MakeInspectionDecisions(trans, matID, process, inspections, mutcNow)
       );
     }
 

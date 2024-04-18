@@ -167,7 +167,8 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] string queue,
       [FromQuery] int pos,
       [FromBody] string serial,
-      [FromQuery] string operName = null
+      [FromQuery] string operName = null,
+      [FromQuery] string workorder = null
     )
     {
       if (string.IsNullOrEmpty(jobUnique))
@@ -177,12 +178,13 @@ namespace BlackMaple.MachineFramework.Controllers
       if (lastCompletedProcess < 0)
         lastCompletedProcess = 0;
       return _impl.Backend.QueueControl.AddUnprocessedMaterialToQueue(
-        jobUnique,
-        lastCompletedProcess,
-        queue,
-        pos,
-        serial,
-        operName
+        jobUnique: jobUnique,
+        lastCompletedProcess: lastCompletedProcess,
+        queue: queue,
+        position: pos,
+        serial: serial,
+        workorder: workorder,
+        operatorName: operName
       );
     }
 

@@ -382,6 +382,7 @@ namespace MazakMachineInterface
       string queue,
       int position,
       string serial,
+      string workorder,
       string operatorName
     )
     {
@@ -390,12 +391,13 @@ namespace MazakMachineInterface
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
       }
       Log.Debug(
-        "Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial}",
+        "Adding unprocessed material for job {job} proc {proc} to queue {queue} in position {pos} with serial {serial} and workorder {workorder}",
         jobUnique,
         process,
         queue,
         position,
-        serial
+        serial,
+        workorder
       );
 
       CurrentStatus st;
@@ -421,6 +423,19 @@ namespace MazakMachineInterface
               Face = ""
             },
             serial,
+            DateTime.UtcNow
+          );
+        }
+        if (!string.IsNullOrEmpty(workorder))
+        {
+          logDb.RecordWorkorderForMaterialID(
+            new BlackMaple.MachineFramework.EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = process,
+              Face = ""
+            },
+            workorder,
             DateTime.UtcNow
           );
         }
@@ -617,7 +632,6 @@ namespace MazakMachineInterface
               when !string.IsNullOrEmpty(fmsSettings.QuarantineQueue):
             case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
               when !string.IsNullOrEmpty(fmsSettings.QuarantineQueue):
-
               {
                 var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
                 var proc = (nextProc ?? 1) - 1;
@@ -640,7 +654,6 @@ namespace MazakMachineInterface
 
             case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
               when string.IsNullOrEmpty(fmsSettings.QuarantineQueue):
-
               {
                 var nextProc = logDb.NextProcessForQueuedMaterial(materialId);
                 var proc = (nextProc ?? 1) - 1;

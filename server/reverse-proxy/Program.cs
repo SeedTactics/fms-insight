@@ -1,18 +1,18 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace BlackMaple.FMSInsight.ReverseProxy
 {
@@ -32,8 +32,8 @@ namespace BlackMaple.FMSInsight.ReverseProxy
           }
         )
         .UseWindowsService()
-        .ConfigureWebHostDefaults(
-          webBuilder => webBuilder.UseStartup<Startup>().UseContentRoot(exeDir) // must appear after UseWindowsService or setting is overwritten
+        .ConfigureWebHostDefaults(webBuilder =>
+          webBuilder.UseStartup<Startup>().UseContentRoot(exeDir) // must appear after UseWindowsService or setting is overwritten
         )
         .Build()
         .Run();

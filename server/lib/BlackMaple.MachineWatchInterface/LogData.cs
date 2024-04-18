@@ -34,8 +34,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Runtime.Serialization;
 using System.Linq;
+using System.Runtime.Serialization;
 
 namespace BlackMaple.MachineWatchInterface
 {
@@ -303,7 +303,8 @@ namespace BlackMaple.MachineWatchInterface
       Tools = new Dictionary<string, ToolUse>(copy.Tools);
     }
 
-    public LogEntry(LogEntry copy) : this(copy, copy.Counter) { }
+    public LogEntry(LogEntry copy)
+      : this(copy, copy.Counter) { }
 
     private LogEntry() { } //for json deserialization
 

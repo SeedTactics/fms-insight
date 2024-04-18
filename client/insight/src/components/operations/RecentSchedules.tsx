@@ -53,6 +53,8 @@ import {
   KeyboardArrowUp as KeyboardArrowUpIcon,
   Edit as EditIcon,
   ImportExport,
+  Visibility,
+  VisibilityOff,
 } from "@mui/icons-material";
 import { JobDetails } from "../station-monitor/JobDetails.js";
 import { Collapse } from "@mui/material";
@@ -173,7 +175,6 @@ enum SortColumn {
   Part,
   Material,
   Note,
-  Active,
   Scheduled,
   Removed,
   Completed,
@@ -185,6 +186,7 @@ function sortJobs(
   jobs: ReadonlyArray<ScheduledJobDisplay>,
   sortBy: SortColumn,
   order: "asc" | "desc",
+  showArchived: boolean,
 ): ReadonlyArray<ScheduledJobDisplay> {
   let sortCol: ToComparableBase<ScheduledJobDisplay>;
   switch (sortBy) {
@@ -199,9 +201,6 @@ function sortJobs(
       break;
     case SortColumn.Note:
       sortCol = (j) => j.comment ?? null;
-      break;
-    case SortColumn.Active:
-      sortCol = (j) => j.inProcJob === null;
       break;
     case SortColumn.Scheduled:
       sortCol = (j) => j.scheduledQty;
@@ -219,7 +218,8 @@ function sortJobs(
       sortCol = (j) => j.remainingQty;
       break;
   }
-  return LazySeq.of(jobs).toSortedArray(order === "asc" ? { asc: sortCol } : { desc: sortCol });
+  const toShow = showArchived ? LazySeq.of(jobs) : LazySeq.of(jobs).filter((j) => j.inProcJob !== null);
+  return toShow.toSortedArray(order === "asc" ? { asc: sortCol } : { desc: sortCol });
 }
 
 function SortColHeader(props: {
@@ -260,6 +260,8 @@ const JobsHeader = React.memo(function JobsHeader(props: {
   readonly setOrder: (o: "asc" | "desc") => void;
   readonly sortBy: SortColumn;
   readonly setSortBy: (c: SortColumn) => void;
+  readonly showArchived: boolean;
+  readonly setShowArchived: (f: (b: boolean) => boolean) => void;
 }) {
   const sort = {
     sortBy: props.sortBy,
@@ -284,9 +286,20 @@ const JobsHeader = React.memo(function JobsHeader(props: {
         <SortColHeader align="left" col={SortColumn.Note} {...sort}>
           Note
         </SortColHeader>
-        <SortColHeader align="left" col={SortColumn.Active} {...sort}>
+        <TableCell align="left">
           Active
-        </SortColHeader>
+          <Tooltip title={props.showArchived ? "Hide Archived" : "Show Archived"}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                props.setShowArchived((a) => !a);
+                e.stopPropagation();
+              }}
+            >
+              {props.showArchived ? <Visibility /> : <VisibilityOff />}
+            </IconButton>
+          </Tooltip>
+        </TableCell>
         <SortColHeader align="right" col={SortColumn.Scheduled} {...sort}>
           Scheduled
         </SortColHeader>
@@ -322,6 +335,7 @@ export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.El
   const [curEditNoteJob, setCurEditNoteJob] = React.useState<ScheduledJobDisplay | null>(null);
   const [sortBy, setSortBy] = React.useState<SortColumn>(SortColumn.Date);
   const [order, setOrder] = React.useState<"asc" | "desc">("desc");
+  const [showArchived, setShowArchived] = React.useState<boolean>(true);
 
   const matIds = useAtomValue(last30MaterialSummary);
   const schJobs = useAtomValue(last30Jobs);
@@ -347,7 +361,10 @@ export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.El
     );
   }, [matIds.matsById, schJobs, currentSt]);
 
-  const sorted = React.useMemo(() => sortJobs(jobs, sortBy, order), [jobs, sortBy, order]);
+  const sorted = React.useMemo(
+    () => sortJobs(jobs, sortBy, order, showArchived),
+    [jobs, sortBy, order, showArchived],
+  );
 
   return (
     <>
@@ -359,6 +376,8 @@ export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.El
           setSortBy={setSortBy}
           order={order}
           setOrder={setOrder}
+          showArchived={showArchived}
+          setShowArchived={setShowArchived}
         />
         <TableBody>
           {sorted.map((job, jobIdx) => (
