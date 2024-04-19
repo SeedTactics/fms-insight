@@ -181,8 +181,15 @@ export function binDowntimeToDayAndStat(simUses: Iterable<SimStationUse>): HashM
 
 export function binSimStationUseByDayAndStat(
   simUses: Iterable<SimStationUse>,
-  downtimes: HashMap<DayAndStation, number>,
 ): HashMap<DayAndStation, number> {
+  const downtimes = LazySeq.of(simUses)
+    .filter((simUse) => simUse.plannedDown)
+    .toLookupOrderedMap(
+      (simUse) => simUse.station,
+      (simUse) => simUse.start,
+    )
+    .mapValues((uses) => mergeSortedIntervals(uses.valuesToAscLazySeq()));
+
   return LazySeq.of(simUses)
     .filter((simUse) => !simUse.plannedDown)
     .toLookupOrderedMap(
@@ -190,19 +197,76 @@ export function binSimStationUseByDayAndStat(
       (simUse) => simUse.start,
     )
     .toAscLazySeq()
-    .flatMap(([station, uses]) =>
-      mergeSortedIntervals(uses.valuesToAscLazySeq()).flatMap((simUse) =>
+    .flatMap(([station, uses]) => {
+      const sorted = mergeSortedIntervals(uses.valuesToAscLazySeq());
+      const down = downtimes.get(station) ?? [];
+
+      for (let downIdx = 0, sortedIdx = 0; sortedIdx < sorted.length; ) {
+        if (downIdx < down.length && down[downIdx].end <= sorted[sortedIdx].start) {
+          downIdx++;
+        } else if (downIdx < down.length && down[downIdx].start < sorted[sortedIdx].end) {
+          // Downtime overlaps the interval, need to split
+          // Several cases, depending on the start and end of the intervals
+          const simStart = sorted[sortedIdx].start;
+          const simEnd = sorted[sortedIdx].end;
+          const downStart = down[downIdx].start;
+          const downEnd = down[downIdx].end;
+
+          if (downStart <= simStart && downEnd >= simEnd) {
+            // down: |-----------|
+            // sim:     |-----|
+            // downtime removes the whole chunk
+            sorted.splice(sortedIdx, 1);
+            // don't increment sortedIdx, since we removed it
+            // don't increment downIdx since a future sim might overlap
+          } else if (downStart <= simStart) {
+            // down: |-----------|
+            // sim:     |--------------|
+            sorted[sortedIdx] = {
+              start: downEnd,
+              end: simEnd,
+            };
+            downIdx += 1;
+            // don't increment simIdx, since a future downtime might overlap and so still need to check
+          } else if (downEnd >= simEnd) {
+            // down:    |-----------|
+            // sim:  |----------|
+            sorted[sortedIdx] = {
+              start: simStart,
+              end: downStart,
+            };
+            sortedIdx += 1;
+          } else {
+            // down:    |-----------|
+            // sim:  |---------------------|
+            sorted[sortedIdx] = {
+              start: simStart,
+              end: downStart,
+            };
+            sorted.splice(sortedIdx + 1, 0, { start: downEnd, end: simEnd });
+            downIdx++; // increment downIdx since we used this downtime
+
+            // increment simIdx only by 1 so that we check the remaining end of the sim time
+            // we just split
+            sortedIdx++;
+          }
+        } else {
+          // No downtimes overlapping, don't need to edit
+          sortedIdx++;
+        }
+      }
+
+      return sorted.flatMap((simUse) =>
         splitTimeToDays(simUse.start, simUse.end, differenceInMinutes(simUse.end, simUse.start)).map((x) => ({
           ...x,
           station: station,
         })),
-      ),
-    )
+      );
+    })
     .toHashMap(
-      (s) => [new DayAndStation(s.day, s.station), s.value] as [DayAndStation, number],
+      (s) => [new DayAndStation(s.day, s.station), s.value] as const,
       (v1, v2) => v1 + v2,
-    )
-    .adjust(downtimes, (use, down) => (use !== undefined ? Math.max(use - down, 0) : undefined));
+    );
 }
 
 // --------------------------------------------------------------------------------
@@ -241,7 +305,7 @@ export function buildOeeSeries(
     (e) => (ty === "labor") === e.station.startsWith("L/U") && e.end >= start && e.start <= end,
   );
   const downtimes = binDowntimeToDayAndStat(filteredStatUse);
-  const plannedBins = binSimStationUseByDayAndStat(filteredStatUse, downtimes);
+  const plannedBins = binSimStationUseByDayAndStat(filteredStatUse);
 
   const series: Array<OEEBarSeries> = [];
   const statNames = actualBins
