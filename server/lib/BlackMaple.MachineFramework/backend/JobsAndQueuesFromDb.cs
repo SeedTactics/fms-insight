@@ -211,15 +211,14 @@ namespace BlackMaple.MachineFramework
       bool requireStateRefresh = false;
       lock (_changeLock)
       {
-        var st = _syncState.CalculateCellState(jobDB);
-
+        CurrentStatus st;
         lock (_curStLock)
         {
-          _lastCurrentStatus = st.CurrentStatus;
+          st = _lastCurrentStatus;
         }
 
         var jobsDecremented = _syncState.DecrementJobs(jobDB, st);
-        requireStateRefresh = requireStateRefresh || st.StateUpdated || jobsDecremented;
+        requireStateRefresh = requireStateRefresh || jobsDecremented;
       }
 
       if (requireStateRefresh)
@@ -509,14 +508,13 @@ namespace BlackMaple.MachineFramework
       {
         lock (_changeLock)
         {
-          var st = _syncState.CalculateCellState(ldb);
-          if (st == null)
+          CurrentStatus st;
+          lock (_curStLock)
           {
-            throw new BadRequestException("Unable to calculate cell state");
+            st = _lastCurrentStatus;
           }
-          requireStateRefresh = requireStateRefresh || st.StateUpdated;
 
-          var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
+          var mat = st.Material.FirstOrDefault(m => m.MaterialID == materialId);
           if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
           {
             error = "Material on pallet can not be moved to a queue";
@@ -566,18 +564,17 @@ namespace BlackMaple.MachineFramework
 
       lock (_changeLock)
       {
+        CurrentStatus st;
+        lock (_curStLock)
+        {
+          st = _lastCurrentStatus;
+        }
+
         using (var ldb = _repo.OpenConnection())
         {
-          var st = _syncState.CalculateCellState(ldb);
-          if (st == null)
-          {
-            throw new BadRequestException("Unable to calculate cell state");
-          }
-          requireStateRefresh = requireStateRefresh || st.StateUpdated;
-
           foreach (var matId in materialIds)
           {
-            var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == matId);
+            var mat = st.Material.FirstOrDefault(m => m.MaterialID == matId);
             if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
             {
               error = "Material on pallet can not be removed from queues";
@@ -620,14 +617,13 @@ namespace BlackMaple.MachineFramework
       {
         lock (_changeLock)
         {
-          var st = _syncState.CalculateCellState(ldb);
-          if (st == null)
+          CurrentStatus st;
+          lock (_curStLock)
           {
-            throw new BadRequestException("Unable to calculate cell state");
+            st = _lastCurrentStatus;
           }
-          requireStateRefresh = requireStateRefresh || st.StateUpdated;
 
-          var mat = st.CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
+          var mat = st.Material.FirstOrDefault(m => m.MaterialID == materialId);
 
           if (mat == null)
           {
@@ -647,7 +643,7 @@ namespace BlackMaple.MachineFramework
                   else
                   {
                     // If the material will eventually stay on the pallet, disallow quarantine
-                    var job = st.CurrentStatus.Jobs.GetValueOrDefault(mat.JobUnique);
+                    var job = st.Jobs.GetValueOrDefault(mat.JobUnique);
                     if (job == null)
                     {
                       error = "Job not found";
