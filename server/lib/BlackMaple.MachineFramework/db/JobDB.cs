@@ -820,8 +820,6 @@ namespace BlackMaple.MachineFramework
           MostRecentSimDayUsageWarning = LoadSimDayUsageWarning(simIdForDayUsage, trans)
         };
 
-        trans.Rollback();
-
         return history;
       }
     }
@@ -1035,60 +1033,50 @@ namespace BlackMaple.MachineFramework
 
     public HistoricJob LoadJob(string UniqueStr)
     {
-      using (var cmd = _connection.CreateCommand())
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      HistoricJob job = null;
+
+      cmd.CommandText =
+        "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg FROM jobs WHERE UniqueStr = $uniq";
+      cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
+
+      cmd.Transaction = trans;
+
+      using (var reader = cmd.ExecuteReader())
       {
-        HistoricJob job = null;
-
-        cmd.CommandText =
-          "SELECT Part, NumProcess, Comment, StartUTC, EndUTC, Archived, CopiedToSystem, ScheduleId, Manual, AllocateAlg FROM jobs WHERE UniqueStr = $uniq";
-        cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
-
-        var trans = _connection.BeginTransaction();
-        try
+        if (reader.Read())
         {
-          cmd.Transaction = trans;
+          var details = LoadJobData(UniqueStr, trans);
 
-          using (IDataReader reader = cmd.ExecuteReader())
+          job = new HistoricJob()
           {
-            if (reader.Read())
-            {
-              var details = LoadJobData(UniqueStr, trans);
-
-              job = new HistoricJob()
-              {
-                UniqueStr = UniqueStr,
-                PartName = reader.GetString(0),
-                Comment = reader.IsDBNull(2) ? "" : reader.GetString(2),
-                RouteStartUTC = reader.IsDBNull(3)
-                  ? DateTime.MinValue
-                  : new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
-                RouteEndUTC = reader.IsDBNull(4)
-                  ? DateTime.MaxValue
-                  : new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
-                Archived = reader.GetBoolean(5),
-                CopiedToSystem = reader.IsDBNull(6) ? false : reader.GetBoolean(6),
-                ScheduleId = reader.IsDBNull(7) ? null : reader.GetString(7),
-                ManuallyCreated = !reader.IsDBNull(8) && reader.GetBoolean(8),
-                AllocationAlgorithm = reader.IsDBNull(9) ? null : reader.GetString(9),
-                Cycles = details.CyclesOnFirstProc.Sum(),
-                Processes = details.Procs,
-                BookingIds = details.Bookings,
-                HoldJob = details.Hold?.ToHoldPattern(),
-                Decrements = LoadDecrementsForJob(trans, UniqueStr)
-              };
-            }
-          }
-
-          trans.Commit();
+            UniqueStr = UniqueStr,
+            PartName = reader.GetString(0),
+            Comment = reader.IsDBNull(2) ? "" : reader.GetString(2),
+            RouteStartUTC = reader.IsDBNull(3)
+              ? DateTime.MinValue
+              : new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
+            RouteEndUTC = reader.IsDBNull(4)
+              ? DateTime.MaxValue
+              : new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
+            Archived = reader.GetBoolean(5),
+            CopiedToSystem = reader.IsDBNull(6) ? false : reader.GetBoolean(6),
+            ScheduleId = reader.IsDBNull(7) ? null : reader.GetString(7),
+            ManuallyCreated = !reader.IsDBNull(8) && reader.GetBoolean(8),
+            AllocationAlgorithm = reader.IsDBNull(9) ? null : reader.GetString(9),
+            Cycles = details.CyclesOnFirstProc.Sum(),
+            Processes = details.Procs,
+            BookingIds = details.Bookings,
+            HoldJob = details.Hold?.ToHoldPattern(),
+            Decrements = LoadDecrementsForJob(trans, UniqueStr)
+          };
         }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
-
-        return job;
       }
+
+      trans.Commit();
+
+      return job;
     }
 
     public bool DoesJobExist(string unique)
@@ -1119,78 +1107,63 @@ namespace BlackMaple.MachineFramework
 
       lock (_cfg)
       {
-        var trans = _connection.BeginTransaction();
-        try
+        using var trans = _connection.BeginTransaction();
+        if (!string.IsNullOrEmpty(expectedPreviousScheduleId))
         {
-          if (!string.IsNullOrEmpty(expectedPreviousScheduleId))
+          var last = LatestJobScheduleId(trans);
+          if (last != expectedPreviousScheduleId)
           {
-            var last = LatestJobScheduleId(trans);
-            if (last != expectedPreviousScheduleId)
-            {
-              throw new BadRequestException(
-                string.Format(
-                  "Mismatch in previous schedule: expected '{0}' but got '{1}'",
-                  expectedPreviousScheduleId,
-                  last
-                )
-              );
-            }
-          }
-
-          CheckScheduleIdDoesNotExist(trans, newJobs.ScheduleId);
-
-          // add programs first so that the lookup of latest program revision will use newest programs
-          var startingUtc = DateTime.UtcNow;
-          if (newJobs.Jobs.Any())
-          {
-            startingUtc = newJobs.Jobs[0].RouteStartUTC;
-          }
-
-          var negRevisionMap = AddPrograms(trans, newJobs.Programs, startingUtc);
-
-          foreach (var job in newJobs.Jobs)
-          {
-            AddJob(trans, job, negRevisionMap, addAsCopiedToSystem, newJobs.ScheduleId);
-          }
-
-          AddSimulatedStations(trans, newJobs.StationUse);
-          AddSimDayUsage(newJobs.ScheduleId, newJobs.SimDayUsage, newJobs.SimDayUsageWarning, trans);
-
-          if (newJobs.ExtraParts != null)
-          {
-            AddExtraParts(trans, newJobs.ScheduleId, newJobs.ExtraParts);
-          }
-
-          if (newJobs.CurrentUnfilledWorkorders != null)
-          {
-            AddUnfilledWorkorders(
-              trans,
-              newJobs.ScheduleId,
-              newJobs.CurrentUnfilledWorkorders,
-              negRevisionMap
+            throw new BadRequestException(
+              string.Format(
+                "Mismatch in previous schedule: expected '{0}' but got '{1}'",
+                expectedPreviousScheduleId,
+                last
+              )
             );
           }
-
-          if (newJobs.DebugMessage != null)
-          {
-            using (var cmd = _connection.CreateCommand())
-            {
-              cmd.Transaction = trans;
-              cmd.CommandText =
-                "INSERT OR REPLACE INTO schedule_debug(ScheduleId, DebugMessage) VALUES ($sid,$debug)";
-              cmd.Parameters.Add("sid", SqliteType.Text).Value = newJobs.ScheduleId;
-              cmd.Parameters.Add("debug", SqliteType.Blob).Value = newJobs.DebugMessage;
-              cmd.ExecuteNonQuery();
-            }
-          }
-
-          trans.Commit();
         }
-        catch
+
+        CheckScheduleIdDoesNotExist(trans, newJobs.ScheduleId);
+
+        // add programs first so that the lookup of latest program revision will use newest programs
+        var startingUtc = DateTime.UtcNow;
+        if (newJobs.Jobs.Any())
         {
-          trans.Rollback();
-          throw;
+          startingUtc = newJobs.Jobs[0].RouteStartUTC;
         }
+
+        var negRevisionMap = AddPrograms(trans, newJobs.Programs, startingUtc);
+
+        foreach (var job in newJobs.Jobs)
+        {
+          AddJob(trans, job, negRevisionMap, addAsCopiedToSystem, newJobs.ScheduleId);
+        }
+
+        AddSimulatedStations(trans, newJobs.StationUse);
+        AddSimDayUsage(newJobs.ScheduleId, newJobs.SimDayUsage, newJobs.SimDayUsageWarning, trans);
+
+        if (newJobs.ExtraParts != null)
+        {
+          AddExtraParts(trans, newJobs.ScheduleId, newJobs.ExtraParts);
+        }
+
+        if (newJobs.CurrentUnfilledWorkorders != null)
+        {
+          AddUnfilledWorkorders(trans, newJobs.ScheduleId, newJobs.CurrentUnfilledWorkorders, negRevisionMap);
+        }
+
+        if (newJobs.DebugMessage != null)
+        {
+          using var cmd = _connection.CreateCommand();
+          cmd.Transaction = trans;
+          cmd.CommandText =
+            "INSERT OR REPLACE INTO schedule_debug(ScheduleId, DebugMessage) VALUES ($sid,$debug)";
+          cmd.Parameters.Add("sid", SqliteType.Text).Value = newJobs.ScheduleId;
+          cmd.Parameters.Add("debug", SqliteType.Blob).Value = newJobs.DebugMessage;
+          cmd.ExecuteNonQuery();
+        }
+
+        trans.Commit();
       }
     }
 
@@ -1198,17 +1171,9 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          AddPrograms(trans, programs, startingUtc);
-          trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        using var trans = _connection.BeginTransaction();
+        AddPrograms(trans, programs, startingUtc);
+        trans.Commit();
       }
     }
 
@@ -1880,17 +1845,9 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          SetArchived(trans, new[] { UniqueStr }, archived: true);
-          trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        using var trans = _connection.BeginTransaction();
+        SetArchived(trans, new[] { UniqueStr }, archived: true);
+        trans.Commit();
       }
     }
 
@@ -1902,21 +1859,13 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        var trans = _connection.BeginTransaction();
-        try
+        using var trans = _connection.BeginTransaction();
+        SetArchived(trans, uniqueStrs, archived: true);
+        if (newDecrements != null)
         {
-          SetArchived(trans, uniqueStrs, archived: true);
-          if (newDecrements != null)
-          {
-            AddNewDecrement(trans: trans, counts: newDecrements, removedBookings: null, nowUTC: nowUTC);
-          }
-          trans.Commit();
+          AddNewDecrement(trans: trans, counts: newDecrements, removedBookings: null, nowUTC: nowUTC);
         }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        trans.Commit();
       }
     }
 
@@ -1929,17 +1878,9 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          SetArchived(trans, uniqueStrs, archived: false);
-          trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        using var trans = _connection.BeginTransaction();
+        SetArchived(trans, uniqueStrs, archived: false);
+        trans.Commit();
       }
     }
 
@@ -1963,22 +1904,14 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        var trans = _connection.BeginTransaction();
-        try
+        using (var trans = _connection.BeginTransaction())
+        using (var cmd = _connection.CreateCommand())
         {
-          using (var cmd = _connection.CreateCommand())
-          {
-            cmd.CommandText = "UPDATE jobs SET CopiedToSystem = 1 WHERE UniqueStr = $uniq";
-            cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
-            ((IDbCommand)cmd).Transaction = trans;
-            cmd.ExecuteNonQuery();
-            trans.Commit();
-          }
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
+          cmd.CommandText = "UPDATE jobs SET CopiedToSystem = 1 WHERE UniqueStr = $uniq";
+          cmd.Parameters.Add("uniq", SqliteType.Text).Value = UniqueStr;
+          ((IDbCommand)cmd).Transaction = trans;
+          cmd.ExecuteNonQuery();
+          trans.Commit();
         }
       }
     }
@@ -1989,25 +1922,16 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
+        using (var trans = _connection.BeginTransaction())
         using (var cmd = _connection.CreateCommand())
         {
-          var trans = _connection.BeginTransaction();
+          cmd.Transaction = trans;
 
-          try
-          {
-            cmd.Transaction = trans;
-
-            cmd.CommandText = "UPDATE jobs SET Comment = $comment WHERE UniqueStr = $uniq";
-            cmd.Parameters.Add("comment", SqliteType.Text).Value = comment;
-            cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-            cmd.ExecuteNonQuery();
-            trans.Commit();
-          }
-          catch
-          {
-            trans.Rollback();
-            throw;
-          }
+          cmd.CommandText = "UPDATE jobs SET Comment = $comment WHERE UniqueStr = $uniq";
+          cmd.Parameters.Add("comment", SqliteType.Text).Value = comment;
+          cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+          cmd.ExecuteNonQuery();
+          trans.Commit();
         }
       }
     }
@@ -2031,35 +1955,26 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        var trans = _connection.BeginTransaction();
-
-        try
+        using (var trans = _connection.BeginTransaction())
+        using (var cmd = _connection.CreateCommand())
         {
-          using (var cmd = _connection.CreateCommand())
-          {
-            cmd.Transaction = trans;
+          cmd.Transaction = trans;
 
-            cmd.CommandText =
-              "DELETE FROM holds WHERE UniqueStr = $uniq AND Process = $proc AND Path = $path AND LoadUnload = $load";
-            cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
-            cmd.Parameters.Add("proc", SqliteType.Integer).Value = proc;
-            cmd.Parameters.Add("path", SqliteType.Integer).Value = path;
-            cmd.Parameters.Add("load", SqliteType.Integer).Value = load;
-            cmd.ExecuteNonQuery();
+          cmd.CommandText =
+            "DELETE FROM holds WHERE UniqueStr = $uniq AND Process = $proc AND Path = $path AND LoadUnload = $load";
+          cmd.Parameters.Add("uniq", SqliteType.Text).Value = unique;
+          cmd.Parameters.Add("proc", SqliteType.Integer).Value = proc;
+          cmd.Parameters.Add("path", SqliteType.Integer).Value = path;
+          cmd.Parameters.Add("load", SqliteType.Integer).Value = load;
+          cmd.ExecuteNonQuery();
 
-            cmd.CommandText =
-              "DELETE FROM hold_pattern WHERE UniqueStr = $uniq AND Process = $proc AND Path = $path AND LoadUnload = $load";
-            cmd.ExecuteNonQuery();
+          cmd.CommandText =
+            "DELETE FROM hold_pattern WHERE UniqueStr = $uniq AND Process = $proc AND Path = $path AND LoadUnload = $load";
+          cmd.ExecuteNonQuery();
 
-            InsertHold(unique, proc, path, load, newHold, trans);
+          InsertHold(unique, proc, path, load, newHold, trans);
 
-            trans.Commit();
-          }
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
+          trans.Commit();
         }
       }
     }
@@ -2074,17 +1989,9 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        var trans = _connection.BeginTransaction();
-        try
-        {
-          AddNewDecrement(trans: trans, counts: counts, removedBookings: removedBookings, nowUTC: nowUTC);
-          trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
-        }
+        using var trans = _connection.BeginTransaction();
+        AddNewDecrement(trans: trans, counts: counts, removedBookings: removedBookings, nowUTC: nowUTC);
+        trans.Commit();
       }
     }
 
@@ -2391,77 +2298,61 @@ namespace BlackMaple.MachineFramework
 
     public ProgramRevision ProgramFromCellControllerProgram(string cellCtProgName)
     {
-      var trans = _connection.BeginTransaction();
-      try
+      ProgramRevision prog = null;
+      using (var trans = _connection.BeginTransaction())
+      using (var cmd = _connection.CreateCommand())
       {
-        ProgramRevision prog = null;
-        using (var cmd = _connection.CreateCommand())
+        cmd.Transaction = trans;
+        cmd.CommandText =
+          "SELECT ProgramName, ProgramRevision, RevisionComment FROM program_revisions WHERE CellControllerProgramName = $prog LIMIT 1";
+        cmd.Parameters.Add("prog", SqliteType.Text).Value = cellCtProgName;
+        using (var reader = cmd.ExecuteReader())
         {
-          cmd.Transaction = trans;
-          cmd.CommandText =
-            "SELECT ProgramName, ProgramRevision, RevisionComment FROM program_revisions WHERE CellControllerProgramName = $prog LIMIT 1";
-          cmd.Parameters.Add("prog", SqliteType.Text).Value = cellCtProgName;
-          using (var reader = cmd.ExecuteReader())
+          while (reader.Read())
           {
-            while (reader.Read())
+            prog = new ProgramRevision
             {
-              prog = new ProgramRevision
-              {
-                ProgramName = reader.GetString(0),
-                Revision = reader.GetInt64(1),
-                Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
-                CellControllerProgramName = cellCtProgName
-              };
-              break;
-            }
+              ProgramName = reader.GetString(0),
+              Revision = reader.GetInt64(1),
+              Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
+              CellControllerProgramName = cellCtProgName
+            };
+            break;
           }
         }
         trans.Commit();
-        return prog;
       }
-      catch
-      {
-        trans.Rollback();
-        throw;
-      }
+      return prog;
     }
 
     public ProgramRevision LoadProgram(string program, long revision)
     {
-      var trans = _connection.BeginTransaction();
-      try
+      ProgramRevision prog = null;
+      using (var trans = _connection.BeginTransaction())
+      using (var cmd = _connection.CreateCommand())
       {
-        ProgramRevision prog = null;
-        using (var cmd = _connection.CreateCommand())
+        cmd.Transaction = trans;
+        cmd.CommandText =
+          "SELECT RevisionComment, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
+        cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+        cmd.Parameters.Add("rev", SqliteType.Integer).Value = revision;
+        using (var reader = cmd.ExecuteReader())
         {
-          cmd.Transaction = trans;
-          cmd.CommandText =
-            "SELECT RevisionComment, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
-          cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
-          cmd.Parameters.Add("rev", SqliteType.Integer).Value = revision;
-          using (var reader = cmd.ExecuteReader())
+          while (reader.Read())
           {
-            while (reader.Read())
+            prog = new ProgramRevision
             {
-              prog = new ProgramRevision
-              {
-                ProgramName = program,
-                Revision = revision,
-                Comment = reader.IsDBNull(0) ? null : reader.GetString(0),
-                CellControllerProgramName = reader.IsDBNull(1) ? null : reader.GetString(1)
-              };
-              break;
-            }
+              ProgramName = program,
+              Revision = revision,
+              Comment = reader.IsDBNull(0) ? null : reader.GetString(0),
+              CellControllerProgramName = reader.IsDBNull(1) ? null : reader.GetString(1)
+            };
+            break;
           }
         }
         trans.Commit();
-        return prog;
       }
-      catch
-      {
-        trans.Rollback();
-        throw;
-      }
+      return prog;
     }
 
     public ImmutableList<ProgramRevision> LoadProgramRevisionsInDescendingOrderOfRevision(
@@ -2519,74 +2410,58 @@ namespace BlackMaple.MachineFramework
 
     public ProgramRevision LoadMostRecentProgram(string program)
     {
-      var trans = _connection.BeginTransaction();
-      try
+      using var trans = _connection.BeginTransaction();
+      ProgramRevision prog = null;
+      using (var cmd = _connection.CreateCommand())
       {
-        ProgramRevision prog = null;
-        using (var cmd = _connection.CreateCommand())
+        cmd.Transaction = trans;
+        cmd.CommandText =
+          "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
+        cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+        using (var reader = cmd.ExecuteReader())
         {
-          cmd.Transaction = trans;
-          cmd.CommandText =
-            "SELECT ProgramRevision, RevisionComment, CellControllerProgramName FROM program_revisions WHERE ProgramName = $prog ORDER BY ProgramRevision DESC LIMIT 1";
-          cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
-          using (var reader = cmd.ExecuteReader())
+          while (reader.Read())
           {
-            while (reader.Read())
+            prog = new ProgramRevision
             {
-              prog = new ProgramRevision
-              {
-                ProgramName = program,
-                Revision = reader.GetInt64(0),
-                Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
-                CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
-              };
-              break;
-            }
+              ProgramName = program,
+              Revision = reader.GetInt64(0),
+              Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
+              CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
+            };
+            break;
           }
         }
-        trans.Commit();
-        return prog;
       }
-      catch
-      {
-        trans.Rollback();
-        throw;
-      }
+      trans.Commit();
+      return prog;
     }
 
     public string LoadProgramContent(string program, long revision)
     {
-      var trans = _connection.BeginTransaction();
-      try
+      using var trans = _connection.BeginTransaction();
+      string content = null;
+      using (var cmd = _connection.CreateCommand())
       {
-        string content = null;
-        using (var cmd = _connection.CreateCommand())
+        cmd.Transaction = trans;
+        cmd.CommandText =
+          "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
+        cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
+        cmd.Parameters.Add("rev", SqliteType.Integer).Value = revision;
+        using (var reader = cmd.ExecuteReader())
         {
-          cmd.Transaction = trans;
-          cmd.CommandText =
-            "SELECT ProgramContent FROM program_revisions WHERE ProgramName = $prog AND ProgramRevision = $rev";
-          cmd.Parameters.Add("prog", SqliteType.Text).Value = program;
-          cmd.Parameters.Add("rev", SqliteType.Integer).Value = revision;
-          using (var reader = cmd.ExecuteReader())
+          while (reader.Read())
           {
-            while (reader.Read())
+            if (!reader.IsDBNull(0))
             {
-              if (!reader.IsDBNull(0))
-              {
-                content = reader.GetString(0);
-              }
-              break;
+              content = reader.GetString(0);
             }
+            break;
           }
         }
-        trans.Commit();
-        return content;
       }
-      catch
-      {
-        trans.Rollback();
-        throw;
-      }
+      trans.Commit();
+      return content;
     }
 
     public List<ProgramRevision> LoadProgramsInCellController()
@@ -2623,40 +2498,32 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        var trans = _connection.BeginTransaction();
-        try
+        using (var trans = _connection.BeginTransaction())
+        using (var cmd = _connection.CreateCommand())
+        using (var checkCmd = _connection.CreateCommand())
         {
-          using (var cmd = _connection.CreateCommand())
-          using (var checkCmd = _connection.CreateCommand())
+          if (!string.IsNullOrEmpty(cellCtProgName))
           {
-            if (!string.IsNullOrEmpty(cellCtProgName))
+            checkCmd.Transaction = trans;
+            checkCmd.CommandText =
+              "SELECT COUNT(*) FROM program_revisions WHERE CellControllerProgramName = $cell";
+            checkCmd.Parameters.Add("cell", SqliteType.Text).Value = cellCtProgName;
+            if ((long)checkCmd.ExecuteScalar() > 0)
             {
-              checkCmd.Transaction = trans;
-              checkCmd.CommandText =
-                "SELECT COUNT(*) FROM program_revisions WHERE CellControllerProgramName = $cell";
-              checkCmd.Parameters.Add("cell", SqliteType.Text).Value = cellCtProgName;
-              if ((long)checkCmd.ExecuteScalar() > 0)
-              {
-                throw new Exception("Cell program name " + cellCtProgName + " already in use");
-              }
+              throw new Exception("Cell program name " + cellCtProgName + " already in use");
             }
-
-            cmd.Transaction = trans;
-            cmd.CommandText =
-              "UPDATE program_revisions SET CellControllerProgramName = $cell WHERE ProgramName = $name AND ProgramRevision = $rev";
-            cmd.Parameters.Add("cell", SqliteType.Text).Value = string.IsNullOrEmpty(cellCtProgName)
-              ? DBNull.Value
-              : (object)cellCtProgName;
-            cmd.Parameters.Add("name", SqliteType.Text).Value = program;
-            cmd.Parameters.Add("rev", SqliteType.Text).Value = revision;
-            cmd.ExecuteNonQuery();
           }
+
+          cmd.Transaction = trans;
+          cmd.CommandText =
+            "UPDATE program_revisions SET CellControllerProgramName = $cell WHERE ProgramName = $name AND ProgramRevision = $rev";
+          cmd.Parameters.Add("cell", SqliteType.Text).Value = string.IsNullOrEmpty(cellCtProgName)
+            ? DBNull.Value
+            : (object)cellCtProgName;
+          cmd.Parameters.Add("name", SqliteType.Text).Value = program;
+          cmd.Parameters.Add("rev", SqliteType.Text).Value = revision;
+          cmd.ExecuteNonQuery();
           trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
         }
       }
     }

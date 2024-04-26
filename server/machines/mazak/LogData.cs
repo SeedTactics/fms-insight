@@ -228,122 +228,114 @@ namespace MazakMachineInterface
     {
       return _readDB.WithReadDBConnection(conn =>
       {
-        var trans = conn.BeginTransaction();
-        try
+        using (var trans = conn.BeginTransaction())
+        using (System.Data.OleDb.OleDbCommand cmd = (System.Data.OleDb.OleDbCommand)conn.CreateCommand())
         {
-          using (System.Data.OleDb.OleDbCommand cmd = (System.Data.OleDb.OleDbCommand)conn.CreateCommand())
+          ((System.Data.IDbCommand)cmd).Transaction = trans;
+
+          long epoch = 1;
+          long lastID = 0;
+          DateTime lastDate = DateTime.MinValue;
+          bool useDate = false;
+          string[] s = lastForeignID.Split('-');
+          if (s.Length == 1)
           {
-            ((System.Data.IDbCommand)cmd).Transaction = trans;
-
-            long epoch = 1;
-            long lastID = 0;
-            DateTime lastDate = DateTime.MinValue;
-            bool useDate = false;
-            string[] s = lastForeignID.Split('-');
-            if (s.Length == 1)
-            {
-              epoch = 1;
-              if (!long.TryParse(s[0], out lastID))
-                useDate = true;
-            }
-            else if (s.Length == 2)
-            {
-              if (!long.TryParse(s[0], out epoch))
-                useDate = true;
-              if (!long.TryParse(s[1], out lastID))
-                useDate = true;
-            }
-            else if (s.Length == 3)
-            {
-              if (!long.TryParse(s[0], out epoch))
-                useDate = true;
-              if (!long.TryParse(s[1], out lastID))
-                useDate = true;
-              lastDate = DateTime.ParseExact(s[2], DateTimeFormat, null);
-            }
-            else
-            {
+            epoch = 1;
+            if (!long.TryParse(s[0], out lastID))
               useDate = true;
-            }
-
-            if (useDate)
-            {
-              cmd.CommandText =
-                "SELECT ID, Date, LogMessageCode, ResourceNumber, PartName, ProcessNumber,"
-                + "FixedQuantity, PalletNumber, ProgramNumber, FromPosition, ToPosition "
-                + "FROM Log WHERE Date > ? ORDER BY ID ASC";
-              var param = cmd.CreateParameter();
-              param.OleDbType = System.Data.OleDb.OleDbType.Date;
-              param.Value = DateTime.Now.AddDays(-7);
-              cmd.Parameters.Add(param);
-            }
-            else
-            {
-              CheckIDRollover(trans, conn, ref epoch, ref lastID, lastDate);
-
-              cmd.CommandText =
-                "SELECT ID, Date, LogMessageCode, ResourceNumber, PartName, ProcessNumber,"
-                + "FixedQuantity, PalletNumber, ProgramNumber, FromPosition, ToPosition "
-                + "FROM Log WHERE ID > ? ORDER BY ID ASC";
-              var param = cmd.CreateParameter();
-              param.OleDbType = System.Data.OleDb.OleDbType.Numeric;
-              param.Value = lastID;
-              cmd.Parameters.Add(param);
-            }
-
-            var ret = new List<LogEntry>();
-
-            using (var reader = cmd.ExecuteReader())
-            {
-              while (reader.Read())
-              {
-                if (reader.IsDBNull(0))
-                  continue;
-                if (reader.IsDBNull(1))
-                  continue;
-                if (reader.IsDBNull(2))
-                  continue;
-                if (!Enum.IsDefined(typeof(LogCode), reader.GetInt32(2)))
-                  continue;
-
-                var e = new LogEntry();
-
-                e.ForeignID =
-                  epoch.ToString()
-                  + "-"
-                  + reader.GetInt32(0).ToString()
-                  + "-"
-                  + reader.GetDateTime(1).ToString(DateTimeFormat);
-                e.TimeUTC = new DateTime(reader.GetDateTime(1).Ticks, DateTimeKind.Local);
-                e.TimeUTC = e.TimeUTC.ToUniversalTime();
-                e.Code = (LogCode)reader.GetInt32(2);
-                e.StationNumber = reader.IsDBNull(3) ? -1 : reader.GetInt32(3);
-                e.FullPartName = reader.IsDBNull(4) ? "" : reader.GetString(4);
-                e.Process = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
-                e.FixedQuantity = reader.IsDBNull(6) ? 1 : reader.GetInt32(6);
-                e.Pallet = reader.IsDBNull(7) ? -1 : reader.GetInt32(7);
-                e.Program = reader.IsDBNull(8) ? "" : reader.GetInt32(8).ToString();
-                e.FromPosition = reader.IsDBNull(9) ? "" : reader.GetString(9);
-                e.TargetPosition = reader.IsDBNull(10) ? "" : reader.GetString(10);
-
-                int idx = e.FullPartName.IndexOf(':');
-                if (idx > 0)
-                  e.JobPartName = e.FullPartName.Substring(0, idx);
-                else
-                  e.JobPartName = e.FullPartName;
-
-                ret.Add(e);
-              }
-            }
-            trans.Commit();
-
-            return ret;
           }
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
+          else if (s.Length == 2)
+          {
+            if (!long.TryParse(s[0], out epoch))
+              useDate = true;
+            if (!long.TryParse(s[1], out lastID))
+              useDate = true;
+          }
+          else if (s.Length == 3)
+          {
+            if (!long.TryParse(s[0], out epoch))
+              useDate = true;
+            if (!long.TryParse(s[1], out lastID))
+              useDate = true;
+            lastDate = DateTime.ParseExact(s[2], DateTimeFormat, null);
+          }
+          else
+          {
+            useDate = true;
+          }
+
+          if (useDate)
+          {
+            cmd.CommandText =
+              "SELECT ID, Date, LogMessageCode, ResourceNumber, PartName, ProcessNumber,"
+              + "FixedQuantity, PalletNumber, ProgramNumber, FromPosition, ToPosition "
+              + "FROM Log WHERE Date > ? ORDER BY ID ASC";
+            var param = cmd.CreateParameter();
+            param.OleDbType = System.Data.OleDb.OleDbType.Date;
+            param.Value = DateTime.Now.AddDays(-7);
+            cmd.Parameters.Add(param);
+          }
+          else
+          {
+            CheckIDRollover(trans, conn, ref epoch, ref lastID, lastDate);
+
+            cmd.CommandText =
+              "SELECT ID, Date, LogMessageCode, ResourceNumber, PartName, ProcessNumber,"
+              + "FixedQuantity, PalletNumber, ProgramNumber, FromPosition, ToPosition "
+              + "FROM Log WHERE ID > ? ORDER BY ID ASC";
+            var param = cmd.CreateParameter();
+            param.OleDbType = System.Data.OleDb.OleDbType.Numeric;
+            param.Value = lastID;
+            cmd.Parameters.Add(param);
+          }
+
+          var ret = new List<LogEntry>();
+
+          using (var reader = cmd.ExecuteReader())
+          {
+            while (reader.Read())
+            {
+              if (reader.IsDBNull(0))
+                continue;
+              if (reader.IsDBNull(1))
+                continue;
+              if (reader.IsDBNull(2))
+                continue;
+              if (!Enum.IsDefined(typeof(LogCode), reader.GetInt32(2)))
+                continue;
+
+              var e = new LogEntry();
+
+              e.ForeignID =
+                epoch.ToString()
+                + "-"
+                + reader.GetInt32(0).ToString()
+                + "-"
+                + reader.GetDateTime(1).ToString(DateTimeFormat);
+              e.TimeUTC = new DateTime(reader.GetDateTime(1).Ticks, DateTimeKind.Local);
+              e.TimeUTC = e.TimeUTC.ToUniversalTime();
+              e.Code = (LogCode)reader.GetInt32(2);
+              e.StationNumber = reader.IsDBNull(3) ? -1 : reader.GetInt32(3);
+              e.FullPartName = reader.IsDBNull(4) ? "" : reader.GetString(4);
+              e.Process = reader.IsDBNull(5) ? 1 : reader.GetInt32(5);
+              e.FixedQuantity = reader.IsDBNull(6) ? 1 : reader.GetInt32(6);
+              e.Pallet = reader.IsDBNull(7) ? -1 : reader.GetInt32(7);
+              e.Program = reader.IsDBNull(8) ? "" : reader.GetInt32(8).ToString();
+              e.FromPosition = reader.IsDBNull(9) ? "" : reader.GetString(9);
+              e.TargetPosition = reader.IsDBNull(10) ? "" : reader.GetString(10);
+
+              int idx = e.FullPartName.IndexOf(':');
+              if (idx > 0)
+                e.JobPartName = e.FullPartName.Substring(0, idx);
+              else
+                e.JobPartName = e.FullPartName;
+
+              ret.Add(e);
+            }
+          }
+          trans.Commit();
+
+          return ret;
         }
       });
     }

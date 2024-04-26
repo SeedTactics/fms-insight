@@ -131,9 +131,7 @@ namespace Makino
         if (curVersion == Version)
           return;
 
-        var trans = conn.BeginTransaction();
-
-        try
+        using (var trans = conn.BeginTransaction())
         {
           //add upgrade code here, in seperate functions
           //if (curVersion < 1) Ver0ToVer1(trans);
@@ -144,11 +142,6 @@ namespace Makino
           cmd.ExecuteNonQuery();
 
           trans.Commit();
-        }
-        catch
-        {
-          trans.Rollback();
-          throw;
         }
 
         //only vacuum if we did some updating
@@ -187,21 +180,13 @@ namespace Makino
       lock (_lock)
       {
         using (var conn = _openConnection())
+        using (var trans = conn.BeginTransaction())
         {
-          var trans = conn.BeginTransaction();
-          try
-          {
-            var ret = LoadMatIDs(pallet, fixturenum, loadedUTC, trans);
+          var ret = LoadMatIDs(pallet, fixturenum, loadedUTC, trans);
 
-            trans.Commit();
+          trans.Commit();
 
-            return ret;
-          }
-          catch
-          {
-            trans.Rollback();
-            throw;
-          }
+          return ret;
         }
       }
     }
@@ -218,20 +203,12 @@ namespace Makino
       lock (_lock)
       {
         using (var conn = _openConnection())
+        using (var trans = conn.BeginTransaction())
         {
-          var trans = conn.BeginTransaction();
-          try
-          {
-            var ret = AddMatIDs(pallet, fixturenum, loadedUTC, order, materialIds, startingCounter, trans);
+          var ret = AddMatIDs(pallet, fixturenum, loadedUTC, order, materialIds, startingCounter, trans);
 
-            trans.Commit();
-            return ret;
-          }
-          catch
-          {
-            trans.Rollback();
-            throw;
-          }
+          trans.Commit();
+          return ret;
         }
       }
     }
