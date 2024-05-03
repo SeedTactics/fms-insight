@@ -260,7 +260,7 @@ function SelectDateRange(props: SelectDateRangeProps) {
           <StyledCalendar
             minDate={props.zoom.default_date_range[0]}
             maxDate={props.zoom.default_date_range[1]}
-            calendarType="US"
+            calendarType="gregory"
             selectRange
             showNavigation={false}
             showNeighboringMonth={false}
