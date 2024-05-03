@@ -84,6 +84,7 @@ export interface SinglePageProps {
   readonly materialName: string | null | undefined;
   readonly count: number;
   readonly uniq: string | null;
+  readonly jobCycles?: number | null | undefined;
   readonly note: string | null | undefined;
   readonly operator: string | null | undefined;
   readonly serial1: string | undefined;
@@ -127,7 +128,12 @@ function SinglePage(props: SinglePageProps) {
             <p style={{ fontSize: "x-large" }}>Assigned To</p>
             <div style={{ marginTop: "1em", marginLeft: "2em", display: "flex", alignItems: "center" }}>
               <Barcode text={props.partName} />
-              <h3 style={{ marginLeft: "4em" }}>assigned to {props.uniq}</h3>
+              <h3 style={{ marginLeft: "4em" }}>
+                assigned to {props.uniq}
+                {props.jobCycles && props.jobCycles > 0
+                  ? " (" + props.jobCycles.toString() + " scheduled)"
+                  : ""}
+              </h3>
             </div>
           </>
         )}
@@ -157,6 +163,7 @@ function OneJobPerPage(props: PrintedLabelProps) {
             [
               uniq,
               {
+                cycles: allJobs[uniq]?.cycles ?? 0,
                 length: mats.length,
                 part: mats[0]?.partName ?? "",
                 comment: allJobs[uniq]?.comment,
@@ -194,6 +201,7 @@ function OneJobPerPage(props: PrintedLabelProps) {
               materialName={props.materialName}
               count={a.length}
               uniq={uniq}
+              jobCycles={a.cycles}
               note={a.comment}
               operator={props.operator}
               serial1={a.serial1}

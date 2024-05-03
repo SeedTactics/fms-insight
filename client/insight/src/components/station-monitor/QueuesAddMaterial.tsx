@@ -32,7 +32,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as React from "react";
-import { Button, ListItemButton, Slider, Stack, Typography, styled } from "@mui/material";
+import {
+  Button,
+  ListItemButton,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Typography,
+  styled,
+} from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -57,6 +68,7 @@ import {
   SelectableCasting,
   SelectableJob,
   SelectableMaterialType,
+  extractJobRawMaterial,
   usePossibleNewMaterialTypes,
 } from "../../data/queue-material.js";
 import { currentOperator } from "../../data/operators.js";
@@ -742,6 +754,57 @@ function AddAndPrintOnClientButton({
   );
 }
 
+function JobsForCasting({ queue, casting }: { queue: string; casting: string }) {
+  const currentSt = useAtomValue(currentStatus);
+
+  const jobs = React.useMemo(
+    () =>
+      extractJobRawMaterial(queue, currentSt.jobs, currentSt.material).filter(
+        (j) => j.rawMatName === casting,
+      ),
+    [currentSt.jobs, currentSt.material, casting, queue],
+  );
+
+  if (jobs.length === 0) return null;
+
+  return (
+    <Table size="small">
+      <TableHead>
+        <TableCell>Job</TableCell>
+        <TableCell align="right">Plan</TableCell>
+        <TableCell align="right">Remaining</TableCell>
+        <TableCell align="right">Assigned</TableCell>
+        <TableCell align="right">Required</TableCell>
+        <TableCell align="right">Available</TableCell>
+      </TableHead>
+      <TableBody>
+        {jobs.map((j, idx) => (
+          <TableRow key={idx}>
+            <TableCell>{j.job.unique}</TableCell>
+            <TableCell align="right">{j.job.cycles}</TableCell>
+            <TableCell align="right">{j.remainingToStart}</TableCell>
+            <TableCell align="right">{j.assignedRaw}</TableCell>
+            <TableCell align="right">{Math.max(j.remainingToStart - j.assignedRaw, 0)}</TableCell>
+            <TableCell align="right">{j.availableUnassigned}</TableCell>
+          </TableRow>
+        ))}
+        {jobs.length >= 2 ? (
+          <TableRow>
+            <TableCell>Total</TableCell>
+            <TableCell align="right">{LazySeq.of(jobs).sumBy((j) => j.job.cycles)}</TableCell>
+            <TableCell align="right">{LazySeq.of(jobs).sumBy((j) => j.remainingToStart)}</TableCell>
+            <TableCell align="right">{LazySeq.of(jobs).sumBy((j) => j.assignedRaw)}</TableCell>
+            <TableCell align="right">
+              {LazySeq.of(jobs).sumBy((j) => Math.max(j.remainingToStart - j.assignedRaw, 0))}
+            </TableCell>
+            <TableCell align="right">{LazySeq.of(jobs).sumBy((j) => j.availableUnassigned)}</TableCell>
+          </TableRow>
+        ) : undefined}
+      </TableBody>
+    </Table>
+  );
+}
+
 export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCastingWithoutSerialDialog() {
   const [queue, setQueue] = useAtom(bulkAddCastingToQueue);
 
@@ -773,15 +836,6 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
     [currentSt.jobs, historicCastNames],
   );
 
-  const qtyForCasting = React.useMemo(() => {
-    if (selectedCasting === null) {
-      return 0;
-    }
-    return LazySeq.ofObject(currentSt.jobs)
-      .filter(([, j]) => j.procsAndPaths[0].paths.some((p) => p.casting === selectedCasting))
-      .sumBy(([_, j]) => j.remainingToStart ?? 0);
-  }, [currentSt.jobs, selectedCasting]);
-
   function close() {
     setQueue(null);
     setSelectedCasting(null);
@@ -790,13 +844,17 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
     setQty(null);
   }
 
-  const qtyToAdd = enteredQty !== null && !isNaN(enteredQty) ? enteredQty : qtyForCasting;
-
   function add() {
-    if (queue !== null && selectedCasting !== null && qtyToAdd !== null && !isNaN(qtyToAdd) && qtyToAdd > 0) {
+    if (
+      queue !== null &&
+      selectedCasting !== null &&
+      enteredQty !== null &&
+      !isNaN(enteredQty) &&
+      enteredQty > 0
+    ) {
       addNewCasting({
         casting: selectedCasting,
-        quantity: qtyToAdd,
+        quantity: enteredQty,
         queue: queue,
         workorder: null,
         operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
@@ -810,80 +868,65 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
       <Dialog open={queue !== null} onClose={() => close()}>
         <DialogTitle>Add Raw Material</DialogTitle>
         <DialogContent>
-          <TextField
-            style={{ minWidth: "15em", marginTop: "0.5em" }}
-            value={selectedCasting || ""}
-            onChange={(e) => setSelectedCasting(e.target.value)}
-            select
-            fullWidth
-            label="Raw Material"
-            SelectProps={{
-              renderValue:
-                selectedCasting === null
-                  ? undefined
-                  : () => (
-                      <div style={{ display: "flex", alignItems: "center" }}>
-                        <div style={{ marginRight: "0.5em" }}>
-                          <PartIdenticon part={selectedCasting} />
+          <Stack direction="column" spacing={2} mt="0.5em">
+            <TextField
+              style={{ minWidth: "15em" }}
+              value={selectedCasting || ""}
+              onChange={(e) => setSelectedCasting(e.target.value)}
+              select
+              fullWidth
+              label="Raw Material"
+              SelectProps={{
+                renderValue:
+                  selectedCasting === null
+                    ? undefined
+                    : () => (
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <div style={{ marginRight: "0.5em" }}>
+                            <PartIdenticon part={selectedCasting} size={25} />
+                          </div>
+                          <div>{selectedCasting}</div>
                         </div>
-                        <div>{selectedCasting}</div>
-                      </div>
-                    ),
-            }}
-          >
-            {castings.map(([casting, jobCnt], idx) => (
-              <MenuItem key={idx} value={casting}>
-                <ListItemIcon>
-                  <PartIdenticon part={casting} />
-                </ListItemIcon>
-                <ListItemText
-                  primary={casting}
-                  secondary={
-                    jobCnt === 0
-                      ? "Not used by any current jobs"
-                      : `Used by ${jobCnt} current job${jobCnt > 1 ? "s" : ""}`
-                  }
-                />
-              </MenuItem>
-            ))}
-          </TextField>
-          <div style={{ marginTop: "3em", marginBottom: "2em" }}>
-            <Stack direction="column" alignItems="center" spacing={2}>
-              {qtyForCasting >= 0 ? (
-                <Typography>
-                  There are {qtyForCasting} parts remaining to start on jobs using this casting
-                </Typography>
-              ) : undefined}
-              <Slider
-                value={qtyToAdd === null || isNaN(qtyToAdd) || qtyToAdd <= 0 ? 0 : qtyToAdd}
-                min={1}
-                max={qtyForCasting}
-                disabled={selectedCasting === null || qtyForCasting <= 0}
-                onChange={(_, v) => setQty(v as number)}
-                valueLabelDisplay="auto"
-              />
+                      ),
+              }}
+            >
+              {castings.map(([casting, jobCnt], idx) => (
+                <MenuItem key={idx} value={casting}>
+                  <ListItemIcon>
+                    <PartIdenticon part={casting} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={casting}
+                    secondary={
+                      jobCnt === 0
+                        ? "Not used by any current jobs"
+                        : `Used by ${jobCnt} current job${jobCnt > 1 ? "s" : ""}`
+                    }
+                  />
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              fullWidth
+              type="number"
+              label="Quantity"
+              disabled={selectedCasting === null}
+              inputProps={{ min: "1" }}
+              value={enteredQty === null || isNaN(enteredQty) || enteredQty <= 0 ? "" : enteredQty}
+              onChange={(e) => setQty(parseInt(e.target.value))}
+            />
+            {fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? (
               <TextField
-                fullWidth
-                type="number"
-                label="Quantity"
-                disabled={selectedCasting === null}
-                inputProps={{ min: "1" }}
-                value={qtyToAdd === null || isNaN(qtyToAdd) || qtyToAdd <= 0 ? "" : qtyToAdd}
-                onChange={(e) => setQty(parseInt(e.target.value))}
-              />
-            </Stack>
-          </div>
-          {fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? (
-            <div style={{ marginBottom: "2em" }}>
-              <TextField
-                style={{ marginTop: "1em" }}
                 fullWidth
                 label="Operator"
                 value={enteredOperator || ""}
                 onChange={(e) => setEnteredOperator(e.target.value)}
               />
-            </div>
-          ) : undefined}
+            ) : undefined}
+            {selectedCasting !== null && queue !== null ? (
+              <JobsForCasting queue={queue} casting={selectedCasting} />
+            ) : undefined}
+          </Stack>
         </DialogContent>
         <DialogActions>
           {printOnAdd ? (
@@ -891,13 +934,13 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
               queue={queue}
               selectedCasting={selectedCasting}
               operator={fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator}
-              qty={qtyToAdd}
+              qty={enteredQty}
               close={close}
               disabled={
                 selectedCasting === null ||
-                qtyToAdd === null ||
-                isNaN(qtyToAdd) ||
-                qtyToAdd <= 0 ||
+                enteredQty === null ||
+                isNaN(enteredQty) ||
+                enteredQty <= 0 ||
                 (!!fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
                   (enteredOperator === null || enteredOperator === ""))
               }
@@ -907,14 +950,14 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
               color="primary"
               disabled={
                 selectedCasting === null ||
-                qtyToAdd === null ||
-                isNaN(qtyToAdd) ||
+                enteredQty === null ||
+                isNaN(enteredQty) ||
                 (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
                   (enteredOperator === null || enteredOperator === ""))
               }
               onClick={add}
             >
-              Add {qtyToAdd !== null && !isNaN(qtyToAdd) ? qtyToAdd.toString() + " " : ""}to {queue}
+              Add {enteredQty !== null && !isNaN(enteredQty) ? enteredQty.toString() + " " : ""}to {queue}
             </Button>
           )}
           <Button color="primary" disabled={adding && printOnAdd} onClick={close}>
