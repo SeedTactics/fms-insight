@@ -45,17 +45,15 @@ namespace MachineWatchTest
   public class BuildCurrentStatusSpec : IDisposable
   {
     private RepositoryConfig _repoCfg;
-    private IRepository _memoryLog;
     private JsonSerializerOptions jsonSettings;
     private FMSSettings _settings;
     private IMachineGroupName _machGroupName;
 
     public BuildCurrentStatusSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
       );
-      _memoryLog = _repoCfg.OpenConnection();
 
       _settings = new FMSSettings();
       _settings.Queues["castings"] = new QueueInfo();
@@ -133,7 +131,6 @@ namespace MachineWatchTest
     public void StatusSnapshot(string scenario)
     {
       IRepository repository;
-      bool close = false;
       var existingLogPath = Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
       string _tempLogFile = System.IO.Path.GetTempFileName();
       if (File.Exists(existingLogPath))
@@ -145,11 +142,10 @@ namespace MachineWatchTest
             _tempLogFile
           )
           .OpenConnection();
-        close = true;
       }
       else
       {
-        repository = _memoryLog;
+        repository = _repoCfg.OpenConnection();
       }
 
       /*
@@ -196,8 +192,7 @@ namespace MachineWatchTest
       }
       finally
       {
-        if (close)
-          repository.Dispose();
+        repository.Dispose();
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         File.Delete(_tempLogFile);
       }
@@ -236,6 +231,7 @@ namespace MachineWatchTest
     [Fact]
     public void PendingLoad()
     {
+      using var _memoryLog = _repoCfg.OpenConnection();
       NewJobs newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
         jsonSettings

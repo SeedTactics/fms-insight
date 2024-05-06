@@ -44,17 +44,15 @@ namespace MachineWatchTest
   public class InspectionTest : IDisposable
   {
     private RepositoryConfig _repoCfg;
-    private IRepository _insp;
 
     public InspectionTest()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
       );
-      _insp = _repoCfg.OpenConnection();
     }
 
-    public void Dispose()
+    void IDisposable.Dispose()
     {
       _repoCfg.CloseMemoryConnection();
     }
@@ -62,6 +60,7 @@ namespace MachineWatchTest
     [Fact]
     public void Counts()
     {
+      using var _insp = _repoCfg.OpenConnection();
       List<InspectCount> cnts = new List<InspectCount>();
 
       InspectCount cnt = new InspectCount()
@@ -98,6 +97,7 @@ namespace MachineWatchTest
     [Fact]
     public void Frequencies()
     {
+      using var _insp = _repoCfg.OpenConnection();
       var freqProg = new PathInspection()
       {
         InspectionType = "insp1",
@@ -124,6 +124,7 @@ namespace MachineWatchTest
     [Fact]
     public void Inspections()
     {
+      using var _insp = _repoCfg.OpenConnection();
       var now = DateTime.UtcNow;
       //set the count as zero, otherwise it chooses a random
       InspectCount cnt = new InspectCount()
@@ -182,6 +183,7 @@ namespace MachineWatchTest
     [Fact]
     public void ForcedInspection()
     {
+      using var _insp = _repoCfg.OpenConnection();
       DateTime now = DateTime.UtcNow;
 
       //set up a program
@@ -220,6 +222,7 @@ namespace MachineWatchTest
     [Fact]
     public void NextPiece()
     {
+      using var _insp = _repoCfg.OpenConnection();
       DateTime now = DateTime.UtcNow;
 
       var insps = ImmutableList.Create(
@@ -257,6 +260,7 @@ namespace MachineWatchTest
     [Fact]
     public void TranslateCounter()
     {
+      using var _insp = _repoCfg.OpenConnection();
       var counter =
         "counter1-"
         + PathInspection.LoadFormatFlag(1)
@@ -411,6 +415,7 @@ namespace MachineWatchTest
     [Fact]
     public void WithoutInspectProgram()
     {
+      using var _insp = _repoCfg.OpenConnection();
       DateTime now = DateTime.UtcNow;
       var mat1 = new EventLogMaterial()
       {
@@ -439,6 +444,7 @@ namespace MachineWatchTest
 
     private void AddCycle(LogMaterial[] mat, int pal, LogType loc, int statNum)
     {
+      using var _insp = _repoCfg.OpenConnection();
       string name = loc == LogType.MachineCycle ? "MC" : "Load";
       ((Repository)_insp).AddLogEntryFromUnitTest(
         new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "")
@@ -459,6 +465,7 @@ namespace MachineWatchTest
       bool forced = false
     )
     {
+      using var _insp = _repoCfg.OpenConnection();
       CheckDecision(matID, _insp.LookupInspectionDecisions(matID), iType, counter, inspect, now, forced);
     }
 
@@ -471,6 +478,7 @@ namespace MachineWatchTest
       bool forced = false
     )
     {
+      using var _insp = _repoCfg.OpenConnection();
       var insps = _insp.LookupInspectionDecisions(mats);
       insps.Keys.Should().BeEquivalentTo(mats);
       for (var i = 0; i < mats.Count; i++)
@@ -523,6 +531,7 @@ namespace MachineWatchTest
       Assert.Equal(1, decisionCnt);
       Assert.Equal(forcedCnt, forced ? 1 : 0);
 
+      using var _insp = _repoCfg.OpenConnection();
       var log = _insp.GetLogForMaterial(matID);
       int inspEntries = 0;
       int forceEntries = 0;
@@ -547,6 +556,7 @@ namespace MachineWatchTest
 
     private void ExpectPathToBe(long matID, string iType, IEnumerable<MaterialProcessActualPath> expected)
     {
+      using var _insp = _repoCfg.OpenConnection();
       bool foundEntry = false;
       foreach (var entry in _insp.GetLogForMaterial(matID))
       {
@@ -566,6 +576,7 @@ namespace MachineWatchTest
 
     private bool FindDecision(long matID, string iType, string counter)
     {
+      using var _insp = _repoCfg.OpenConnection();
       foreach (var d in _insp.LookupInspectionDecisions(matID))
       {
         if (d.Counter == counter && d.InspType == iType)
@@ -579,6 +590,7 @@ namespace MachineWatchTest
 
     private void CheckCount(string counter, int val)
     {
+      using var _insp = _repoCfg.OpenConnection();
       foreach (var c in _insp.LoadInspectCounts())
       {
         if (c.Counter == counter)
@@ -592,6 +604,7 @@ namespace MachineWatchTest
 
     private void CheckLastUTC(string counter, DateTime val)
     {
+      using var _insp = _repoCfg.OpenConnection();
       foreach (var c in _insp.LoadInspectCounts())
       {
         if (c.Counter == counter)

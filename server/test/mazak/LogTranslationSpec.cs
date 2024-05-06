@@ -74,7 +74,7 @@ namespace MachineWatchTest
       settings.Queues["thequeue"] = new QueueInfo() { MaxSizeBeforeStopUnloading = -1 };
       settings.ExternalQueues["externalq"] = "testserver";
 
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(serialSt);
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(serialSt);
       jobLog = _repoCfg.OpenConnection();
 
       _schedules = new List<MazakScheduleRow>();
@@ -107,6 +107,7 @@ namespace MachineWatchTest
 
     public void Dispose()
     {
+      jobLog.Dispose();
       _repoCfg.CloseMemoryConnection();
     }
 

@@ -41,7 +41,7 @@ using Microsoft.Data.Sqlite;
 namespace BlackMaple.MachineFramework
 {
   //database backend for the job db
-  internal partial class Repository
+  internal sealed partial class Repository
   {
     #region "Loading Jobs"
     private record PathStopRow

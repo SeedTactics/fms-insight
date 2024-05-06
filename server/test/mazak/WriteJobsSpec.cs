@@ -110,7 +110,7 @@ namespace MachineWatchTest
 
     public WriteJobsSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
       );
       _jobDB = _repoCfg.OpenConnection();
@@ -274,6 +274,7 @@ namespace MachineWatchTest
 
     public void Dispose()
     {
+      _jobDB.Dispose();
       _repoCfg.CloseMemoryConnection();
     }
 

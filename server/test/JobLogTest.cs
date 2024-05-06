@@ -68,22 +68,20 @@ namespace MachineWatchTest
     };
 
     private RepositoryConfig _repoCfg;
-    private IRepository _jobLog;
     private Fixture _fixture;
 
     public JobLogTest()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
       );
-      _jobLog = _repoCfg.OpenConnection();
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
       _fixture.Customizations.Add(new InjectNullValuesForNullableTypesSpecimenBuilder());
       _fixture.Customizations.Add(new DateOnlySpecimenBuilder());
     }
 
-    public void Dispose()
+    void IDisposable.Dispose()
     {
       _repoCfg.CloseMemoryConnection();
     }
@@ -91,6 +89,7 @@ namespace MachineWatchTest
     [Fact]
     public void MaterialIDs()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       long m1 = _jobLog.AllocateMaterialID("U1", "P1", 52);
       long m2 = _jobLog.AllocateMaterialIDAndGenerateSerial(
         "U2",
@@ -291,6 +290,7 @@ namespace MachineWatchTest
     [Fact]
     public void AddLog()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       Assert.Equal(DateTime.MinValue, _jobLog.MaxLogDate());
 
       System.DateTime start = DateTime.UtcNow.AddHours(-10);
@@ -956,6 +956,8 @@ namespace MachineWatchTest
     [Fact]
     public void LookupByPallet()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
+
       _jobLog.CurrentPalletLog(123).Should().BeEmpty();
       _jobLog.CurrentPalletLog(4).Should().BeEmpty();
       Assert.Equal(DateTime.MinValue, _jobLog.LastPalletCycleTime(212));
@@ -1286,6 +1288,7 @@ namespace MachineWatchTest
     [Fact]
     public void ForeignID()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var mat1 = new LogMaterial(
         _jobLog.AllocateMaterialID("unique", "part1", 2),
         "unique",
@@ -1435,6 +1438,7 @@ namespace MachineWatchTest
     [Fact]
     public void OriginalMessage()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var mat1 = new LogMaterial(
         _jobLog.AllocateMaterialID("uniqqqq", "pppart66", 5),
         "uniqqqq",
@@ -1486,6 +1490,7 @@ namespace MachineWatchTest
     [Fact]
     public void WorkorderSummary()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var t = DateTime.UtcNow.AddHours(-1);
 
       var earlierWork = _fixture.Create<Workorder>() with { WorkorderId = "earlierwork" };
@@ -1846,6 +1851,7 @@ namespace MachineWatchTest
     [Fact]
     public void LoadCompletedParts()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var old = DateTime.UtcNow.AddHours(-50);
       var recent = DateTime.UtcNow.AddHours(-1);
 
@@ -2080,6 +2086,7 @@ namespace MachineWatchTest
     [Fact]
     public void Queues()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var start = DateTime.UtcNow.AddHours(-10);
 
       var otherQueueMat = new LogMaterial(100, "uniq100", 100, "part100", 100, "", "", "");
@@ -2981,6 +2988,7 @@ namespace MachineWatchTest
     [Fact]
     public void LoadUnloadIntoQueues()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var start = DateTime.UtcNow.AddHours(-10);
       var expectedLogs = new List<LogEntry>();
 
@@ -3244,6 +3252,7 @@ namespace MachineWatchTest
     [InlineData(false, false, false)]
     public void BulkAddRemoveCastings(bool useSerial, bool existingMats, bool useWorkorder)
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var addTime = DateTime.UtcNow.AddHours(-2);
       var workorder = useWorkorder ? "TheWork" : "";
 
@@ -3549,6 +3558,7 @@ namespace MachineWatchTest
     [Fact]
     public void ReuseMatIDsWhenBulkAdding()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       _jobLog
         .BulkAddNewCastingsInQueue(
           casting: "castingQ",
@@ -3738,6 +3748,7 @@ namespace MachineWatchTest
     [Fact]
     public void AllocateCastingsFromQueues()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var mat1 = new LogMaterial(
         _jobLog.AllocateMaterialIDForCasting("casting1"),
         "",
@@ -3918,6 +3929,7 @@ namespace MachineWatchTest
     [InlineData(false, false, null)]
     public void OverrideMatOnPal(bool firstPalletCycle, bool newMatUnassigned, string rawMatName)
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var now = DateTime.UtcNow.AddHours(-5);
 
       if (!firstPalletCycle)
@@ -4407,6 +4419,7 @@ namespace MachineWatchTest
     [Fact]
     public void ErrorsOnBadOverrideMatOnPal()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var now = DateTime.UtcNow.AddHours(-5);
 
       _jobLog.AddJobs(
@@ -4549,6 +4562,7 @@ namespace MachineWatchTest
     [Fact]
     public void InvalidatesCycle()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var now = DateTime.UtcNow.AddHours(-5);
 
       // ------------------------------------------------------
@@ -4847,12 +4861,14 @@ namespace MachineWatchTest
     #region Helpers
     private LogEntry AddLogEntry(LogEntry l)
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       ((Repository)_jobLog).AddLogEntryFromUnitTest(l);
       return l;
     }
 
     private System.DateTime AddToDB(IList<LogEntry> logs)
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       System.DateTime last = default(System.DateTime);
 
       foreach (var l in logs)
@@ -5092,7 +5108,6 @@ namespace MachineWatchTest
   public class LogOneSerialPerMaterialSpec : IDisposable
   {
     private RepositoryConfig _repoCfg;
-    private IRepository _jobLog;
 
     public LogOneSerialPerMaterialSpec()
     {
@@ -5101,11 +5116,10 @@ namespace MachineWatchTest
         SerialType = SerialType.AssignOneSerialPerMaterial,
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
       };
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(settings);
-      _jobLog = _repoCfg.OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(settings);
     }
 
-    public void Dispose()
+    void IDisposable.Dispose()
     {
       _repoCfg.CloseMemoryConnection();
     }
@@ -5113,6 +5127,7 @@ namespace MachineWatchTest
     [Fact]
     public void AllocateMatIds()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var now = DateTime.UtcNow;
       var matId = _jobLog.AllocateMaterialIDAndGenerateSerial(
         unique: "aaa",
@@ -5306,6 +5321,7 @@ namespace MachineWatchTest
     [Fact]
     public void PendingLoadOneSerialPerMat()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       _jobLog.PendingLoads(1).Should().BeEmpty();
       _jobLog.AllPendingLoads().Should().BeEmpty();
 
@@ -5707,6 +5723,7 @@ namespace MachineWatchTest
     [Fact]
     public void ForeignID()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var t = DateTime.UtcNow.AddHours(-3);
 
       var newMat = _jobLog.AllocateMaterialIDAndGenerateSerial(
@@ -5758,7 +5775,6 @@ namespace MachineWatchTest
   public class LogOneSerialPerCycleSpec : IDisposable
   {
     private RepositoryConfig _repoCfg;
-    private IRepository _jobLog;
 
     public LogOneSerialPerCycleSpec()
     {
@@ -5767,11 +5783,10 @@ namespace MachineWatchTest
         SerialType = SerialType.AssignOneSerialPerCycle,
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
       };
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(settings);
-      _jobLog = _repoCfg.OpenConnection();
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(settings);
     }
 
-    public void Dispose()
+    void IDisposable.Dispose()
     {
       _repoCfg.CloseMemoryConnection();
     }
@@ -5779,6 +5794,7 @@ namespace MachineWatchTest
     [Fact]
     public void PendingLoadOneSerialPerCycle()
     {
+      using var _jobLog = _repoCfg.OpenConnection();
       var mat1 = new LogMaterial(
         _jobLog.AllocateMaterialID("unique", "part1", 1),
         "unique",
@@ -5992,21 +6008,8 @@ namespace MachineWatchTest
     }
   }
 
-  public class LogStartingMaterialIDSpec : IDisposable
+  public class LogStartingMaterialIDSpec
   {
-    private Microsoft.Data.Sqlite.SqliteConnection _connection;
-
-    public LogStartingMaterialIDSpec()
-    {
-      _connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      _connection.Open();
-    }
-
-    public void Dispose()
-    {
-      _connection.Close();
-    }
-
     [Fact]
     public void ConvertSerials()
     {
@@ -6018,17 +6021,14 @@ namespace MachineWatchTest
     [Fact]
     public void MaterialIDs()
     {
-      var logDB = RepositoryConfig
-        .InitializeSingleThreadedMemoryDB(
-          new SerialSettings()
-          {
-            StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
-            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
-          },
-          _connection,
-          createTables: true
-        )
-        .OpenConnection();
+      var repoCfg = RepositoryConfig.InitializeMemoryDB(
+        new SerialSettings()
+        {
+          StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+        }
+      );
+      using var logDB = repoCfg.OpenConnection();
       long m1 = logDB.AllocateMaterialID("U1", "P1", 52);
       long m2 = logDB.AllocateMaterialID("U2", "P2", 66);
       long m3 = logDB.AllocateMaterialID("U3", "P3", 566);
@@ -6048,13 +6048,14 @@ namespace MachineWatchTest
             NumProcesses = 52,
           }
         );
+      repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
     public void ErrorsTooLarge()
     {
       Action act = () =>
-        RepositoryConfig.InitializeSingleThreadedMemoryDB(
+        RepositoryConfig.InitializeMemoryDB(
           new SerialSettings()
           {
             StartingMaterialID = SerialSettings.ConvertFromBase62("A000000000"),
@@ -6067,71 +6068,80 @@ namespace MachineWatchTest
     [Fact]
     public void AdjustsStartingSerial()
     {
-      var logFromCreate = RepositoryConfig
-        .InitializeSingleThreadedMemoryDB(
-          new SerialSettings()
-          {
-            StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
-            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
-          },
-          _connection,
-          createTables: true
-        )
-        .OpenConnection();
+      var repoCfg = RepositoryConfig.InitializeMemoryDB(
+        new SerialSettings()
+        {
+          StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+        }
+      );
+      using var logFromCreate = repoCfg.OpenConnection();
 
       long m1 = logFromCreate.AllocateMaterialID("U1", "P1", 52);
       m1.Should().Be(33_152_428_148);
 
-      var logFromUpgrade = RepositoryConfig
-        .InitializeSingleThreadedMemoryDB(
-          new SerialSettings()
-          {
-            StartingMaterialID = SerialSettings.ConvertFromBase62("B3t24s"),
-            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
-          },
-          _connection,
-          createTables: false
-        )
-        .OpenConnection();
+      repoCfg.CloseMemoryConnection();
+    }
+
+    [Fact]
+    public void AdjustsStartingSerial2()
+    {
+      var repoCfg = RepositoryConfig.InitializeMemoryDB(
+        new SerialSettings()
+        {
+          StartingMaterialID = SerialSettings.ConvertFromBase62("B3t24s"),
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+        }
+      );
+      using var logFromUpgrade = repoCfg.OpenConnection();
 
       long m2 = logFromUpgrade.AllocateMaterialID("U1", "P1", 2);
       long m3 = logFromUpgrade.AllocateMaterialID("U2", "P2", 4);
       m2.Should().Be(33_948_163_268);
       m3.Should().Be(33_948_163_269);
+
+      repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
     public void AvoidsAdjustingSerialBackwards()
     {
-      var logFromCreate = RepositoryConfig
-        .InitializeSingleThreadedMemoryDB(
-          new SerialSettings()
-          {
-            StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
-            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
-          },
-          _connection,
-          createTables: true
-        )
-        .OpenConnection();
+      var guid = new Guid();
+      var repo1 = RepositoryConfig.InitializeMemoryDB(
+        new SerialSettings()
+        {
+          StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+        },
+        guid,
+        createTables: true
+      );
 
-      long m1 = logFromCreate.AllocateMaterialID("U1", "P1", 52);
-      m1.Should().Be(33_152_428_148);
+      using (var db = repo1.OpenConnection())
+      {
+        long m1 = db.AllocateMaterialID("U1", "P1", 52);
+        m1.Should().Be(33_152_428_148);
+      }
 
-      var logFromUpgrade = RepositoryConfig
-        .InitializeSingleThreadedMemoryDB(
-          new SerialSettings()
-          {
-            StartingMaterialID = SerialSettings.ConvertFromBase62("w53122"),
-            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
-          },
-          _connection,
-          createTables: false
-        )
-        .OpenConnection();
+      // repo2 uses the same guid so will be the same database, sharing it with repo1
+      var repo2 = RepositoryConfig.InitializeMemoryDB(
+        new SerialSettings()
+        {
+          StartingMaterialID = SerialSettings.ConvertFromBase62("w53122"),
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+        },
+        guid,
+        createTables: false
+      );
 
-      long m2 = logFromUpgrade.AllocateMaterialID("U1", "P1", 2);
-      m2.Should().Be(33_152_428_149);
+      using (var db = repo2.OpenConnection())
+      {
+        long m2 = db.AllocateMaterialID("U1", "P1", 2);
+        m2.Should().Be(33_152_428_149);
+      }
+
+      repo1.CloseMemoryConnection();
+      repo2.CloseMemoryConnection();
     }
   }
 }

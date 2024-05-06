@@ -45,15 +45,13 @@ namespace MachineWatchTest
   public class JobDBSpec : IDisposable
   {
     private RepositoryConfig _repoCfg;
-    private IRepository _jobDB;
     private Fixture _fixture;
 
     public JobDBSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
       );
-      _jobDB = _repoCfg.OpenConnection();
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
       _fixture.Customizations.Add(new DateOnlySpecimenBuilder());
@@ -67,6 +65,7 @@ namespace MachineWatchTest
     [Fact]
     public void AddsJobs()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { ManuallyCreated = false };
       var job1ExtraParts = _fixture.Create<Dictionary<string, int>>();
@@ -359,6 +358,7 @@ namespace MachineWatchTest
     [Fact]
     public void SimDays()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var now = DateTime.UtcNow;
       var schId1 = "schId" + _fixture.Create<string>();
       var job1 = RandJob() with { RouteStartUTC = now, RouteEndUTC = now.AddHours(1) };
@@ -488,6 +488,7 @@ namespace MachineWatchTest
     [Fact]
     public void SimDaysWithoutJobs()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var now = DateTime.UtcNow;
       var schId1 = "schId" + _fixture.Create<string>();
       var simDays1 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
@@ -545,6 +546,7 @@ namespace MachineWatchTest
     [Fact]
     public void SetsComment()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { ManuallyCreated = false };
 
@@ -572,6 +574,7 @@ namespace MachineWatchTest
     [Fact]
     public void UpdatesHold()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { ManuallyCreated = false };
 
@@ -664,6 +667,7 @@ namespace MachineWatchTest
     [Fact]
     public void MarksAsCopied()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { ManuallyCreated = false };
 
@@ -703,6 +707,7 @@ namespace MachineWatchTest
     [Fact]
     public void ArchivesJobs()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob() with { Archived = false };
 
@@ -731,6 +736,7 @@ namespace MachineWatchTest
     [Fact]
     public void Decrements()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var now = DateTime.UtcNow;
       var job1 = RandJob(now);
       var job2 = RandJob(now);
@@ -993,6 +999,7 @@ namespace MachineWatchTest
     [Fact]
     public void DecrementsDuringArchive()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var job = RandJob() with { Archived = false };
 
       _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(job), ScheduleId = "theschId" }, null, true);
@@ -1049,6 +1056,7 @@ namespace MachineWatchTest
     [Fact]
     public void Programs()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var schId = "SchId" + _fixture.Create<string>();
       var job1 = RandJob()
         .AdjustPath(
@@ -1886,6 +1894,7 @@ namespace MachineWatchTest
     [Fact]
     public void NegativeProgramRevisions()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       // add an existing revision 6 for bbb and 3,4 for ccc
       _jobDB.AddJobs(
         new NewJobs
@@ -2386,6 +2395,7 @@ namespace MachineWatchTest
     [Fact]
     public void ErrorOnDuplicateSchId()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       var job1 = RandJob();
       var job2 = RandJob();
 

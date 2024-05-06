@@ -40,7 +40,7 @@ using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
-  internal partial class Repository
+  internal sealed partial class Repository
   {
     #region Loading
     private IEnumerable<LogEntry> LoadLog(IDataReader reader, IDbTransaction trans)

@@ -62,7 +62,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   public JobAndQueueSpec(Xunit.Abstractions.ITestOutputHelper output)
   {
-    _repo = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+    _repo = RepositoryConfig.InitializeMemoryDB(
       new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
     );
     _fixture = new Fixture();
@@ -219,14 +219,16 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     return job with
     {
       RouteEndUTC = job.RouteStartUTC.AddHours(1),
-      Processes = job.Processes.Select(
-        (proc, procIdx) =>
-          new ProcessInfo()
-          {
-            Paths = proc.Paths.Select(path => path with { Casting = procIdx == 0 ? path.Casting : null })
-              .ToImmutableList()
-          }
-      )
+      Processes = job
+        .Processes.Select(
+          (proc, procIdx) =>
+            new ProcessInfo()
+            {
+              Paths = proc
+                .Paths.Select(path => path with { Casting = procIdx == 0 ? path.Casting : null })
+                .ToImmutableList()
+            }
+        )
         .ToImmutableList()
     };
   }
@@ -514,8 +516,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         },
         options =>
           options
-            .Using<DateTime?>(
-              ctx => ctx.Subject.Value.Should().BeCloseTo(ctx.Expectation.Value, TimeSpan.FromSeconds(4))
+            .Using<DateTime?>(ctx =>
+              ctx.Subject.Value.Should().BeCloseTo(ctx.Expectation.Value, TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<DateTime?>()
       );
@@ -569,12 +571,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         },
         options =>
           options
-            .Using<DateTime>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            .Using<DateTime>(ctx =>
+              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<DateTime>()
-            .Using<TimeSpan>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            .Using<TimeSpan>(ctx =>
+              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<TimeSpan>()
             .ComparingByMembers<LogEntry>()
@@ -596,12 +598,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         },
         options =>
           options
-            .Using<DateTime>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            .Using<DateTime>(ctx =>
+              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<DateTime>()
-            .Using<TimeSpan>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            .Using<TimeSpan>(ctx =>
+              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<TimeSpan>()
             .ComparingByMembers<LogEntry>()
@@ -850,12 +852,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         expectedLog,
         options =>
           options
-            .Using<DateTime>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            .Using<DateTime>(ctx =>
+              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<DateTime>()
-            .Using<TimeSpan>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            .Using<TimeSpan>(ctx =>
+              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<TimeSpan>()
             .ComparingByMembers<LogEntry>()
@@ -896,12 +898,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         expectedLog,
         options =>
           options
-            .Using<DateTime>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            .Using<DateTime>(ctx =>
+              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<DateTime>()
-            .Using<TimeSpan>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            .Using<TimeSpan>(ctx =>
+              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<TimeSpan>()
             .ComparingByMembers<LogEntry>()
@@ -1210,8 +1212,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       );
     }
 
-    _jq.Invoking(
-        j => j.SignalMaterialForQuarantine(materialId: 1, operatorName: "theoper", reason: "a reason")
+    _jq.Invoking(j =>
+        j.SignalMaterialForQuarantine(materialId: 1, operatorName: "theoper", reason: "a reason")
       )
       .Should()
       .Throw<BadRequestException>()
@@ -1320,12 +1322,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         expectedLog,
         options =>
           options
-            .Using<DateTime>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            .Using<DateTime>(ctx =>
+              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<DateTime>()
-            .Using<TimeSpan>(
-              ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
+            .Using<TimeSpan>(ctx =>
+              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
             )
             .WhenTypeIs<TimeSpan>()
             .ComparingByMembers<LogEntry>()

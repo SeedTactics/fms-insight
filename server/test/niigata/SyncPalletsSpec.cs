@@ -47,7 +47,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private SerialSettings _serialSt;
     private FMSSettings _fmsSt;
     private RepositoryConfig _logDBCfg;
-    private IRepository _logDB;
     private IccSimulator _sim;
     private SyncNiigataPallets _sync;
     private Xunit.Abstractions.ITestOutputHelper _output;
@@ -67,8 +66,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _fmsSt.Queues.Add("Transfer", new QueueInfo() { MaxSizeBeforeStopUnloading = -1 });
       _fmsSt.Queues.Add("sizedQ", new QueueInfo() { MaxSizeBeforeStopUnloading = 1 });
 
-      _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(_serialSt);
-      _logDB = _logDBCfg.OpenConnection();
+      _logDBCfg = RepositoryConfig.InitializeMemoryDB(_serialSt);
 
       jsonSettings = new JsonSerializerOptions();
       Startup.JsonSettings(jsonSettings);
@@ -99,11 +97,14 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _sync = new SyncNiigataPallets(_sim, createLog, assign, null);
 
       _sim.OnNewProgram += (newprog) =>
-        _logDB.SetCellControllerProgramForProgram(
+      {
+        using var db = _logDBCfg.OpenConnection();
+        db.SetCellControllerProgramForProgram(
           newprog.ProgramName,
           newprog.ProgramRevision,
           newprog.ProgramNum.ToString()
         );
+      };
     }
 
     public void Dispose()
@@ -280,7 +281,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private void AddJobs(NewJobs jobs, bool expectNewRoute = true)
     {
-      _logDB.AddJobs(jobs, null, addAsCopiedToSystem: true);
+      using (var db = _logDBCfg.OpenConnection())
+      {
+        db.AddJobs(jobs, null, addAsCopiedToSystem: true);
+      }
       using (var logMonitor = _logDBCfg.Monitor())
       {
         Synchronize();
@@ -1286,23 +1290,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       // plan quantity of 9, but add 10 parts
       var addTime = DateTime.UtcNow;
-      for (int i = 0; i < 10; i++)
+      using (var db = _logDBCfg.OpenConnection())
       {
-        var m = _logDB.AllocateMaterialIDForCasting("aaa");
-        _logDB.RecordWorkorderForMaterialID(m, 0, i % 2 == 0 ? "work1" : "work2");
-        _logDB.RecordAddMaterialToQueue(
-          new EventLogMaterial()
-          {
-            MaterialID = m,
-            Process = 0,
-            Face = ""
-          },
-          "castingQ",
-          -1,
-          "theoperator",
-          "testsuite",
-          addTime
-        );
+        for (int i = 0; i < 10; i++)
+        {
+          var m = db.AllocateMaterialIDForCasting("aaa");
+          db.RecordWorkorderForMaterialID(m, 0, i % 2 == 0 ? "work1" : "work2");
+          db.RecordAddMaterialToQueue(
+            new EventLogMaterial()
+            {
+              MaterialID = m,
+              Process = 0,
+              Face = ""
+            },
+            "castingQ",
+            -1,
+            "theoperator",
+            "testsuite",
+            addTime
+          );
+        }
       }
 
       ExpectNewRoute();
@@ -1347,27 +1354,29 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
       }
 
-      _logDB
-        .GetMaterialInAllQueues()
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
-            new QueuedMaterial()
+      using (var db = _logDBCfg.OpenConnection())
+      {
+        db.GetMaterialInAllQueues()
+          .Should()
+          .BeEquivalentTo(
+            new[]
             {
-              MaterialID = 10,
-              Queue = "castingQ",
-              Position = 0,
-              Unique = "",
-              Workorder = "work2",
-              NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty,
-              PartNameOrCasting = "aaa",
-              NumProcesses = 1,
-              AddTimeUTC = addTime
+              new QueuedMaterial()
+              {
+                MaterialID = 10,
+                Queue = "castingQ",
+                Position = 0,
+                Unique = "",
+                Workorder = "work2",
+                NextProcess = 1,
+                Paths = ImmutableDictionary<int, int>.Empty,
+                PartNameOrCasting = "aaa",
+                NumProcesses = 1,
+                AddTimeUTC = addTime
+              }
             }
-          }
-        );
+          );
+      }
     }
   }
 }

@@ -44,7 +44,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
   public class FakeIccDsl : IDisposable
   {
     private RepositoryConfig _logDBCfg;
-    private IRepository _logDB;
     private IAssignPallets _assign;
     private CreateCellState _createLog;
     private NiigataStatus _status;
@@ -84,8 +83,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _settings.Queues.Add("qqq", new MachineFramework.QueueInfo());
       _settings.Queues.Add("Quarantine", new MachineFramework.QueueInfo());
 
-      _logDBCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(_serialSt);
-      _logDB = _logDBCfg.OpenConnection();
+      _logDBCfg = RepositoryConfig.InitializeMemoryDB(_serialSt);
 
       _statNames = new NiigataStationNames()
       {
@@ -492,6 +490,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       int numProc = 1
     )
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       var matId = _logDB.AllocateMaterialIDForCasting(rawMatName);
       if (_serialSt.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
@@ -575,6 +574,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       string workorder = null
     )
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       var matId = _logDB.AllocateMaterialID(unique: uniq, part: part, numProc: numProc);
       if (_serialSt.SerialType == SerialType.AssignOneSerialPerMaterial)
       {
@@ -649,6 +649,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl SetInQueue(LogMaterial mat, string queue, int pos)
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       _logDB.RecordAddMaterialToQueue(
         new EventLogMaterial()
         {
@@ -676,6 +677,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl RemoveFromQueue(IEnumerable<LogMaterial> mats)
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       foreach (var mat in mats)
       {
         _logDB.RecordRemoveMaterialFromAllQueues(
@@ -690,6 +692,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl SignalForQuarantine(IEnumerable<LogMaterial> mats, int pal, string q)
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       foreach (var mat in mats)
       {
         _logDB.SignalMaterialForQuarantine(
@@ -833,6 +836,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       out IEnumerable<LogMaterial> newMat
     )
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       var swap = _logDB.SwapMaterialInCurrentPalletCycle(
         pallet: pal,
         oldMatId: matOnPalId,
@@ -933,6 +937,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       IEnumerable<Workorder> workorders = null
     )
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       if (progs == null)
         progs = Enumerable.Empty<(string prog, long rev)>();
       var newJ = new NewJobs()
@@ -982,6 +987,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl AddJobDecrement(string uniq)
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       _logDB.AddNewDecrement(
         new[]
         {
@@ -998,6 +1004,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ArchiveJob(string uniq)
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       _logDB.ArchiveJob(uniq);
       return this;
     }
@@ -1007,6 +1014,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       IEnumerable<MachineFramework.NewProgramContent> programs
     )
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       _logDB.AddJobs(
         new NewJobs()
         {
@@ -1451,6 +1459,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     #region Steps
     private void CheckCellStMatchesExpected(CellState actualSt)
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       actualSt.Status.Should().Be(_status);
       actualSt.Pallets.Count.Should().Be(_status.Pallets.Count);
       actualSt.CurrentStatus.Pallets.Count.Should().Be(_status.Pallets.Count);
@@ -1588,6 +1597,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ExpectNoChanges()
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       using (var logMonitor = _logDBCfg.Monitor())
       {
         var cellSt = _createLog.BuildCellState(_logDB, _status);
@@ -1602,6 +1612,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public FakeIccDsl ExpectJobArchived(string uniq, bool isArchived)
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       _logDB.LoadJob(uniq).Archived.Should().Be(isArchived);
       return this;
     }
@@ -2235,6 +2246,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       bool expectedUpdates = true
     )
     {
+      using var _logDB = _logDBCfg.OpenConnection();
       using (var logMonitor = _logDBCfg.Monitor())
       {
         var cellSt = _createLog.BuildCellState(_logDB, _status);

@@ -46,7 +46,6 @@ namespace MachineWatchTest
   public class DecrementSpec : IDisposable
   {
     private RepositoryConfig _repoCfg;
-    private IRepository _jobDB;
     private DecrementPlanQty _decr;
 
     private class WriteMock : IWriteData
@@ -67,10 +66,9 @@ namespace MachineWatchTest
 
     public DecrementSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
       );
-      _jobDB = _repoCfg.OpenConnection();
 
       _write = new WriteMock();
 
@@ -85,6 +83,7 @@ namespace MachineWatchTest
     [Fact]
     public void SinglePathSingleProc()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       // plan 50, completed 30, 5 in proc and 15 not yet started
       var st = new MazakCurrentStatus()
       {
@@ -171,6 +170,7 @@ namespace MachineWatchTest
     [Fact]
     public void IgnoresManualSchedule()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       // plan 50, completed 30, 5 in proc and 15 not yet started
       var st = new MazakCurrentStatus()
       {
@@ -225,6 +225,7 @@ namespace MachineWatchTest
     [Fact]
     public void IgnoresAlreadyExistingDecrement()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       // plan 50, completed 30, 5 in proc and 15 not yet started
       var st = new MazakCurrentStatus()
       {
@@ -306,6 +307,7 @@ namespace MachineWatchTest
     [Fact]
     public void LoadInProcess()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       // plan 50, completed 30, 5 in proc and 15 not yet started.  BUT, one is being loaded at the load station
       var st = new MazakCurrentStatus()
       {
@@ -409,6 +411,7 @@ namespace MachineWatchTest
     [Fact]
     public void ContinuePreviousDecrement()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       // plan 50, completed 30, 5 in proc and 15 not yet started
       // a previous decrement already reduced the plan quantity to 35
       var st = new MazakCurrentStatus()
@@ -479,6 +482,7 @@ namespace MachineWatchTest
     [Fact]
     public void IncludesNotCopiedJobs()
     {
+      using var _jobDB = _repoCfg.OpenConnection();
       // uuuu plan 50, completed 30, 5 in proc and 15 not yet started
       // vvvv not copied so not returned from LoadSchedulesAndLoadActions
       var st = new MazakCurrentStatus()

@@ -39,23 +39,21 @@ using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
-  internal partial class Repository : IDisposable, IRepository
+  internal sealed partial class Repository : IDisposable, IRepository
   {
-    private SqliteConnection _connection;
-    private bool _closeConnectionOnDispose;
-    private RepositoryConfig _cfg;
+    private readonly RepositoryConfig _cfg;
     public RepositoryConfig RepoConfig => _cfg;
+    private SqliteConnection _connection;
 
-    internal Repository(RepositoryConfig cfg, SqliteConnection c, bool closeOnDispose)
+    internal Repository(RepositoryConfig cfg, SqliteConnection c)
     {
       _connection = c;
-      _closeConnectionOnDispose = closeOnDispose;
       _cfg = cfg;
     }
 
-    public void Dispose()
+    void IDisposable.Dispose()
     {
-      if (_closeConnectionOnDispose && _connection != null)
+      if (_connection != null)
       {
         _connection.Close();
         _connection.Dispose();
@@ -67,11 +65,12 @@ namespace BlackMaple.MachineFramework
   public class RepositoryConfig
   {
     public event Action<LogEntry, string, IRepository> NewLogEntry;
+    public SerialSettings Settings { get; }
+    private readonly string _connStr;
+    private SqliteConnection _memoryConnection = null;
 
     internal void OnNewLogEntry(LogEntry e, string foreignId, IRepository db) =>
       NewLogEntry?.Invoke(e, foreignId, db);
-
-    public SerialSettings Settings { get; }
 
     public static RepositoryConfig InitializeEventDatabase(
       SerialSettings st,
@@ -87,7 +86,7 @@ namespace BlackMaple.MachineFramework
         {
           conn.Open();
           DatabaseSchema.UpgradeTables(conn, st, oldInspDbFile, oldJobDbFile);
-          return new RepositoryConfig(st, connStr);
+          return new RepositoryConfig(st, connStr, null);
         }
       }
       else
@@ -98,7 +97,7 @@ namespace BlackMaple.MachineFramework
           try
           {
             DatabaseSchema.CreateTables(conn, st);
-            return new RepositoryConfig(st, connStr);
+            return new RepositoryConfig(st, connStr, null);
           }
           catch
           {
@@ -110,62 +109,46 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public static RepositoryConfig InitializeSingleThreadedMemoryDB(SerialSettings st)
-    {
-      var memConn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
-      memConn.Open();
-      DatabaseSchema.CreateTables(memConn, st);
-      return new RepositoryConfig(st, memConn);
-    }
-
-    public static RepositoryConfig InitializeSingleThreadedMemoryDB(
+    public static RepositoryConfig InitializeMemoryDB(
       SerialSettings st,
-      SqliteConnection memConn,
-      bool createTables
+      Guid? guid = null,
+      bool createTables = true
     )
     {
+      var guidStr = (guid ?? Guid.NewGuid()).ToString();
+      var connStr = $"Data Source=file:${guidStr}?mode=memory&cache=shared";
+      // need to keep a memory connection open, since sqlite reclaims the memory once the last
+      // connection closes.  This connection is kept private and new connections using the same guid
+      // are openend for all operations.
+      var conn = new SqliteConnection(connStr);
+      conn.Open();
       if (createTables)
       {
-        DatabaseSchema.CreateTables(memConn, st);
+        DatabaseSchema.CreateTables(conn, st);
       }
-      else
-      {
-        DatabaseSchema.UpgradeTables(memConn, st, null, null);
-      }
-      return new RepositoryConfig(st, memConn);
+      return new RepositoryConfig(st, connStr, conn);
     }
 
     public IRepository OpenConnection()
     {
-      if (_memoryConnection != null)
-      {
-        return new Repository(this, _memoryConnection, closeOnDispose: false);
-      }
-      else
-      {
-        var conn = new SqliteConnection(_connStr);
-        conn.Open();
-        return new Repository(this, conn, closeOnDispose: true);
-      }
+      var conn = new SqliteConnection(_connStr);
+      conn.Open();
+      return new Repository(this, conn);
     }
 
     public void CloseMemoryConnection()
     {
-      _memoryConnection?.Close();
+      if (_memoryConnection != null)
+      {
+        _memoryConnection.Close();
+        _memoryConnection = null;
+      }
     }
 
-    private string _connStr { get; }
-    private SqliteConnection _memoryConnection { get; }
-
-    private RepositoryConfig(SerialSettings st, string connStr)
+    private RepositoryConfig(SerialSettings st, string connStr, SqliteConnection memConn)
     {
       Settings = st;
       _connStr = connStr;
-    }
-
-    private RepositoryConfig(SerialSettings st, SqliteConnection memConn)
-    {
-      Settings = st;
       _memoryConnection = memConn;
     }
   }

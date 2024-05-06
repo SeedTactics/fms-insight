@@ -45,16 +45,14 @@ namespace MachineWatchTest
   public class QueueSpec : IDisposable
   {
     private RepositoryConfig _repoCfg;
-    private IRepository _logDB;
 
     private readonly DateTime _now;
 
     public QueueSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeSingleThreadedMemoryDB(
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
       );
-      _logDB = _repoCfg.OpenConnection();
 
       _now = DateTime.UtcNow.AddHours(1);
     }
@@ -80,6 +78,7 @@ namespace MachineWatchTest
     [InlineData(false)]
     public void Empty(bool waitAll)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var trans = queues.CalculateScheduleChanges(_logDB, new TestMazakData().ToData());
       trans.Should().BeNull();
@@ -137,6 +136,7 @@ namespace MachineWatchTest
 
     private long AddCasting(string casting, string queue)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       // Same as RoutingInfo.AddUnallocatedCastingToQueue
       var mat = _logDB.AllocateMaterialIDForCasting(casting);
       _logDB.RecordAddMaterialToQueue(
@@ -153,6 +153,7 @@ namespace MachineWatchTest
 
     private long AddAssigned(string uniq, string part, int numProc, int lastProc, int path, string queue)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       // Same as RoutingInfo.AddUnprocessedMaterialToQueue
       var mat = _logDB.AllocateMaterialID(uniq, part, numProc);
       _logDB.RecordPathForProcess(mat, Math.Max(1, lastProc), path);
@@ -171,6 +172,7 @@ namespace MachineWatchTest
     [Fact]
     public void AddAssignedMaterialToQueueNoWaitForAll()
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
@@ -242,6 +244,7 @@ namespace MachineWatchTest
     [InlineData("casting")]
     public void AddAssignedToQueueNoWaitForAll(string casting)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
@@ -328,6 +331,7 @@ namespace MachineWatchTest
     [InlineData("casting")]
     public void AddAssignedToQueueWaitForAll(string casting)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: true);
       var read = new TestMazakData();
 
@@ -429,6 +433,7 @@ namespace MachineWatchTest
     [Fact]
     public void RemoveMatFromQueueNoWaitForAll()
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
@@ -513,6 +518,7 @@ namespace MachineWatchTest
     [Fact]
     public void RemoveMatFromQueueWaitForAll()
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: true);
       var read = new TestMazakData();
 
@@ -769,6 +775,7 @@ namespace MachineWatchTest
     [InlineData("mycasting")]
     public void AddCastingsByFixedQuantity(string casting)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
@@ -957,6 +964,7 @@ namespace MachineWatchTest
     [InlineData("mycasting")]
     public void AddCastingsByPlannedQuantity(string casting)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: true);
       var read = new TestMazakData();
 
@@ -1145,6 +1153,7 @@ namespace MachineWatchTest
     [Fact]
     public void AllocateCastingsAndMatQtyChanges()
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
@@ -1352,6 +1361,7 @@ namespace MachineWatchTest
     [InlineData(false)]
     public void IgnoreAllocateWhenNoRemaining(bool waitAll)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
 
@@ -1501,6 +1511,7 @@ namespace MachineWatchTest
     [InlineData(false)]
     public void DecrementJobWithoutQueue(bool waitAll)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
 
@@ -1552,6 +1563,7 @@ namespace MachineWatchTest
     [InlineData(false, "mycasting")]
     public void DecrementJobWithQueue(bool waitAll, string casting)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
 
@@ -1692,6 +1704,7 @@ namespace MachineWatchTest
       bool matchingFixtures = false
     )
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var j1 = new Job()
       {
         UniqueStr = "uuuu1",
@@ -1772,6 +1785,7 @@ namespace MachineWatchTest
     [Fact]
     public void MultiplePathsAddMaterial()
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
@@ -1866,6 +1880,7 @@ namespace MachineWatchTest
     [Fact]
     public void MultiplePathsRemoveMaterial()
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
@@ -1978,6 +1993,7 @@ namespace MachineWatchTest
     [InlineData("mycasting")]
     public void AddCastingsByFixedQuantityMultiPath(string casting)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
@@ -2299,6 +2315,7 @@ namespace MachineWatchTest
     [InlineData("mycasting")]
     public void AddCastingsByFullScheduleMultiPath(string casting)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: true);
       var read = new TestMazakData();
 
@@ -2543,6 +2560,7 @@ namespace MachineWatchTest
     [InlineData("mycasting", false, true)]
     public void AdjustsPriorityWhenAddingCastings(string casting, bool matchPallet, bool matchFixture)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: true);
       var read = new TestMazakData();
 
@@ -2632,6 +2650,7 @@ namespace MachineWatchTest
     [InlineData(false)]
     public void SkipsWhenAtLoad(bool waitAll)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
       var schRow = AddSchedule(
@@ -2752,6 +2771,7 @@ namespace MachineWatchTest
     [InlineData(false)]
     public void SkipsWhenExistsPendingLoad(bool waitAll)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
       var schRow = AddSchedule(
@@ -2888,6 +2908,7 @@ namespace MachineWatchTest
     [InlineData("mycasting")]
     public void AllocateToMultipleSchedulesByPriority(string casting)
     {
+      using var _logDB = _repoCfg.OpenConnection();
       var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
       var schRow1 = AddSchedule(
