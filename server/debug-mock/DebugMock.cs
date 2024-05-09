@@ -511,7 +511,7 @@ namespace DebugMachineWatchApiServer
           {
             MaterialID = materialId,
             Process = 0,
-            Face = ""
+            Face = 0
           },
           queue: queue,
           position: position,
@@ -537,7 +537,7 @@ namespace DebugMachineWatchApiServer
           {
             MaterialID = materialId,
             Process = mat.Process,
-            Face = ""
+            Face = 0
           },
           pallet: mat.Location.PalletNum ?? 0,
           queue: _fmsSettings.QuarantineQueue,
