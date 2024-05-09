@@ -249,16 +249,15 @@ namespace BlackMaple.FMSInsight.Niigata
           .SelectMany(e => e.Material)
       )
       {
-        var details = logDB.GetMaterialDetails(m.MaterialID);
         var inProcMat = new InProcessMaterial()
         {
           MaterialID = m.MaterialID,
           JobUnique = m.JobUniqueStr,
           PartName = m.PartName,
           Process = m.Process,
-          Path = details.Paths.ContainsKey(m.Process) ? details.Paths[m.Process] : 1,
-          Serial = details.Serial,
-          WorkorderId = details.Workorder,
+          Path = m.Path ?? 1,
+          Serial = m.Serial == "" ? null : m.Serial,
+          WorkorderId = m.Workorder == "" ? null : m.Workorder,
           SignaledInspections = logDB
             .LookupInspectionDecisions(m.MaterialID)
             .Where(x => x.Inspect)

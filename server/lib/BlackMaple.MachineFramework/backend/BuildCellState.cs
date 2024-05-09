@@ -170,19 +170,15 @@ public static class BuildCellState
       var loadedMats = face
         .LoadEnd.Material.Select(mat =>
         {
-          var details = db.GetMaterialDetails(mat.MaterialID);
           return new InProcessMaterial()
           {
             MaterialID = mat.MaterialID,
             JobUnique = mat.JobUniqueStr,
             PartName = mat.PartName,
             Process = mat.Process,
-            Path =
-              details.Paths != null && details.Paths.ContainsKey(mat.Process)
-                ? details.Paths[mat.Process]
-                : 1,
-            Serial = details.Serial,
-            WorkorderId = details.Workorder,
+            Path = mat.Path ?? 1,
+            Serial = mat.Serial == "" ? null : mat.Serial,
+            WorkorderId = mat.Workorder == "" ? null : mat.Workorder,
             SignaledInspections = db.LookupInspectionDecisions(mat.MaterialID)
               .Where(x => x.Inspect)
               .Select(x => x.InspType)
