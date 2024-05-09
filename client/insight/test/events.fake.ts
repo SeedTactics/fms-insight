@@ -59,7 +59,7 @@ export function fakeMaterial(part?: string, proc?: number): LogMaterial {
     part: part || "part" + faker.string.alphanumeric(),
     proc: proc || faker.number.int({ max: 4 }),
     numproc: faker.number.int({ max: 4 }),
-    face: "face" + faker.string.alphanumeric(),
+    facenum: faker.number.int({ max: 10 }),
     serial: "serial" + faker.string.alphanumeric(),
     workorder: "work" + faker.string.alphanumeric(),
   });
@@ -109,7 +109,7 @@ export function fakeInspSignal(
   mat?: LogMaterial,
   inspType?: string,
   now?: Date,
-  counter?: number
+  counter?: number,
 ): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
@@ -171,7 +171,7 @@ export function fakeInspComplete(
   inspType?: string,
   now?: Date,
   success?: boolean,
-  counter?: number
+  counter?: number,
 ): ILogEntry {
   mat = mat || fakeMaterial();
   inspType = inspType || "MyInspType";
