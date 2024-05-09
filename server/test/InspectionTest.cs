@@ -301,10 +301,10 @@ namespace MachineWatchTest
       };
       _insp.SetInspectCounts(new[] { cnt, cnt2 });
 
-      var mat1Proc1 = new[] { new LogMaterial(1, "job1", 1, "part1", 2, "", "", "") };
-      var mat1Proc2 = new[] { new LogMaterial(1, "job1", 2, "part1", 2, "", "", "") };
-      var mat2Proc1 = new[] { new LogMaterial(2, "job1", 1, "part1", 2, "", "", "") };
-      var mat2Proc2 = new[] { new LogMaterial(2, "job1", 2, "part1", 2, "", "", "") };
+      var mat1Proc1 = new[] { MkLogMat.Mk(1, "job1", 1, "part1", 2, "", "", "") };
+      var mat1Proc2 = new[] { MkLogMat.Mk(1, "job1", 2, "part1", 2, "", "", "") };
+      var mat2Proc1 = new[] { MkLogMat.Mk(2, "job1", 1, "part1", 2, "", "", "") };
+      var mat2Proc2 = new[] { MkLogMat.Mk(2, "job1", 2, "part1", 2, "", "", "") };
 
       _lastCycleTime = DateTime.UtcNow.AddDays(-1);
 

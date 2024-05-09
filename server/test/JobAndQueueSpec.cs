@@ -524,7 +524,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
     await newStatusTask;
 
-    var mat1 = new LogMaterial(
+    var mat1 = MkLogMat.Mk(
       matID: 1,
       uniq: "",
       proc: 0,
@@ -534,7 +534,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       workorder: "",
       face: ""
     );
-    var mat2 = new LogMaterial(
+    var mat2 = MkLogMat.Mk(
       matID: 2,
       uniq: "",
       proc: 0,
@@ -805,7 +805,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         }
       );
 
-    var logMat = new LogMaterial(
+    var logMat = MkLogMat.Mk(
       matID: 1,
       uniq: "uuu1",
       proc: lastCompletedProcess,
@@ -1159,7 +1159,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     );
 
     db.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
-    var logMat = new LogMaterial(
+    var logMat = MkLogMat.Mk(
       matID: 1,
       uniq: "uuu1",
       proc: data.Process,

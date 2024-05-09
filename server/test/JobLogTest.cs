@@ -52,6 +52,36 @@ namespace MachineWatchTest
     }
   }
 
+  public static class MkLogMat
+  {
+    public static LogMaterial Mk(
+      long matID,
+      string uniq,
+      int proc,
+      string part,
+      int numProc,
+      string serial,
+      string workorder,
+      string face
+    )
+    {
+      // A remnant from before required properties and record intializers
+      // All new code should just directly intialize LogMaterial as a record
+      return new LogMaterial()
+      {
+        MaterialID = matID,
+        JobUniqueStr = uniq,
+        PartName = part,
+        Process = proc,
+        Path = null,
+        NumProcesses = numProc,
+        Face = face,
+        Serial = serial,
+        Workorder = workorder,
+      };
+    }
+  }
+
   public class JobLogTest : JobComparisonHelpers, IDisposable
   {
     public static readonly ProcPathInfo EmptyPath = new ProcPathInfo()
@@ -299,7 +329,7 @@ namespace MachineWatchTest
       var logsForMat1 = new List<LogEntry>();
       var logsForMat2 = new List<LogEntry>();
 
-      LogMaterial mat1 = new LogMaterial(
+      LogMaterial mat1 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("grgaegr", "pp2", 23),
         "grgaegr",
         7,
@@ -309,7 +339,7 @@ namespace MachineWatchTest
         "",
         "22"
       );
-      LogMaterial mat19 = new LogMaterial(
+      LogMaterial mat19 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("unique", "pp1", 53),
         "unique",
         2,
@@ -346,7 +376,7 @@ namespace MachineWatchTest
       logs.Add(loadStartActualCycle);
       logsForMat1.Add(loadStartActualCycle);
 
-      var mat2 = new LogMaterial(
+      var mat2 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("ahre", "gewoiweg", 13),
         "ahre",
         1,
@@ -356,7 +386,7 @@ namespace MachineWatchTest
         "",
         "22"
       );
-      var mat15 = new LogMaterial(
+      var mat15 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("qghr4e", "ppp532", 14),
         "qghr4e",
         1,
@@ -366,7 +396,7 @@ namespace MachineWatchTest
         "",
         "22"
       );
-      var matLoc2Face1 = new LogMaterial(
+      var matLoc2Face1 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("loc2", "face1", 14),
         "loc2",
         3,
@@ -376,7 +406,7 @@ namespace MachineWatchTest
         "",
         "1"
       );
-      var matLoc2Face2 = new LogMaterial(
+      var matLoc2Face2 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("loc2", "face2", 14),
         "loc2",
         4,
@@ -923,7 +953,7 @@ namespace MachineWatchTest
         -1,
         new LogMaterial[]
         {
-          new LogMaterial(
+          MkLogMat.Mk(
             mat1.MaterialID,
             mat1.JobUniqueStr,
             mat1.Process,
@@ -966,7 +996,7 @@ namespace MachineWatchTest
       var pal1Cycle = new List<LogEntry>();
       var pal2Cycle = new List<LogEntry>();
 
-      var mat1 = new LogMaterial(
+      var mat1 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("unique", "part1", 2),
         "unique",
         1,
@@ -976,7 +1006,7 @@ namespace MachineWatchTest
         "",
         "face1"
       );
-      var mat2 = new LogMaterial(
+      var mat2 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("unique2", "part2", 2),
         "unique2",
         2,
@@ -1445,7 +1475,7 @@ namespace MachineWatchTest
     public void OriginalMessage()
     {
       using var _jobLog = _repoCfg.OpenConnection();
-      var mat1 = new LogMaterial(
+      var mat1 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("uniqqqq", "pppart66", 5),
         "uniqqqq",
         1,
@@ -1455,7 +1485,7 @@ namespace MachineWatchTest
         "",
         "facce"
       );
-      var mat2 = new LogMaterial(
+      var mat2 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("uuuuuniq", "part5", 2),
         "uuuuuniq",
         2,
@@ -1528,9 +1558,9 @@ namespace MachineWatchTest
 
       //one material across two processes
       var mat1 = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
-      var mat1_proc1 = new LogMaterial(mat1, "uniq1", 1, "part1", 2, "", "", "");
-      var mat1_proc2 = new LogMaterial(mat1, "uniq1", 2, "part1", 2, "", "", "");
-      var mat2_proc1 = new LogMaterial(
+      var mat1_proc1 = MkLogMat.Mk(mat1, "uniq1", 1, "part1", 2, "", "", "");
+      var mat1_proc2 = MkLogMat.Mk(mat1, "uniq1", 2, "part1", 2, "", "", "");
+      var mat2_proc1 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("uniq1", "part1", 2),
         "uniq1",
         1,
@@ -1592,7 +1622,7 @@ namespace MachineWatchTest
       );
 
       //four materials on the same pallet but different workorders
-      var mat3 = new LogMaterial(
+      var mat3 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("uniq2", "part1", 1),
         "uniq2",
         1,
@@ -1602,7 +1632,7 @@ namespace MachineWatchTest
         "",
         ""
       );
-      var mat4 = new LogMaterial(
+      var mat4 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("uniq2", "part2", 1),
         "uniq2",
         1,
@@ -1612,7 +1642,7 @@ namespace MachineWatchTest
         "",
         ""
       );
-      var mat5 = new LogMaterial(
+      var mat5 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("uniq2", "part3", 1),
         "uniq2",
         1,
@@ -1622,7 +1652,7 @@ namespace MachineWatchTest
         "",
         ""
       );
-      var mat6 = new LogMaterial(
+      var mat6 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("uniq2", "part3", 1),
         "uniq2",
         1,
@@ -1863,13 +1893,13 @@ namespace MachineWatchTest
 
       //material
       var mat1 = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
-      var mat1_proc1 = new LogMaterial(mat1, "uniq1", 1, "part1", 2, "", "", "");
-      var mat1_proc2 = new LogMaterial(mat1, "uniq1", 2, "part1", 2, "", "", "");
+      var mat1_proc1 = MkLogMat.Mk(mat1, "uniq1", 1, "part1", 2, "", "", "");
+      var mat1_proc2 = MkLogMat.Mk(mat1, "uniq1", 2, "part1", 2, "", "", "");
       var mat2 = _jobLog.AllocateMaterialID("uniq1", "part1", 2);
-      var mat2_proc1 = new LogMaterial(mat2, "uniq1", 1, "part1", 2, "", "", "");
-      var mat2_proc2 = new LogMaterial(mat2, "uniq1", 2, "part1", 2, "", "", "");
+      var mat2_proc1 = MkLogMat.Mk(mat2, "uniq1", 1, "part1", 2, "", "", "");
+      var mat2_proc2 = MkLogMat.Mk(mat2, "uniq1", 2, "part1", 2, "", "", "");
 
-      var mat3 = new LogMaterial(
+      var mat3 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("uniq1", "part1", 1),
         "uniq1",
         1,
@@ -1879,7 +1909,7 @@ namespace MachineWatchTest
         "",
         ""
       );
-      var mat4 = new LogMaterial(
+      var mat4 = MkLogMat.Mk(
         _jobLog.AllocateMaterialID("uniq1", "part1", 1),
         "uniq1",
         1,
@@ -2095,7 +2125,7 @@ namespace MachineWatchTest
       using var _jobLog = _repoCfg.OpenConnection();
       var start = DateTime.UtcNow.AddHours(-10);
 
-      var otherQueueMat = new LogMaterial(100, "uniq100", 100, "part100", 100, "", "", "");
+      var otherQueueMat = MkLogMat.Mk(100, "uniq100", 100, "part100", 100, "", "", "");
       _jobLog.CreateMaterialID(100, "uniq100", "part100", 100);
 
       _jobLog.IsMaterialInQueue(100).Should().BeFalse();
@@ -2122,13 +2152,13 @@ namespace MachineWatchTest
 
       var expectedLogs = new List<LogEntry>();
 
-      var mat1 = new LogMaterial(1, "uniq1", 15, "part111", 19, "mat1serial", "", "");
+      var mat1 = MkLogMat.Mk(1, "uniq1", 15, "part111", 19, "mat1serial", "", "");
       _jobLog.CreateMaterialID(1, "uniq1", "part111", 19);
-      var mat2 = new LogMaterial(2, "uniq2", 1, "part2", 22, "mat2serial", "mat2workorder", "");
+      var mat2 = MkLogMat.Mk(2, "uniq2", 1, "part2", 22, "mat2serial", "mat2workorder", "");
       _jobLog.CreateMaterialID(2, "uniq2", "part2", 22);
-      var mat3 = new LogMaterial(3, "uniq3", 3, "part3", 36, "", "", "");
+      var mat3 = MkLogMat.Mk(3, "uniq3", 3, "part3", 36, "", "", "");
       _jobLog.CreateMaterialID(3, "uniq3", "part3", 36);
-      var mat4 = new LogMaterial(4, "uniq4", 4, "part4", 44, "", "", "");
+      var mat4 = MkLogMat.Mk(4, "uniq4", 4, "part4", 44, "", "", "");
       _jobLog.CreateMaterialID(4, "uniq4", "part4", 44);
 
       _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat1), "mat1serial", start);
@@ -2902,7 +2932,7 @@ namespace MachineWatchTest
       _jobLog.NextProcessForQueuedMaterial(mat4.MaterialID).Should().Be(5);
 
       //removing from queue with matid
-      var mat2proc8 = new LogMaterial(
+      var mat2proc8 = MkLogMat.Mk(
         mat2.MaterialID,
         mat2.JobUniqueStr,
         1,
@@ -2998,13 +3028,13 @@ namespace MachineWatchTest
       var start = DateTime.UtcNow.AddHours(-10);
       var expectedLogs = new List<LogEntry>();
 
-      var mat1 = new LogMaterial(1, "uniq1", 15, "part111", 19, "", "", "");
+      var mat1 = MkLogMat.Mk(1, "uniq1", 15, "part111", 19, "", "", "");
       _jobLog.CreateMaterialID(1, "uniq1", "part111", 19);
-      var mat2 = new LogMaterial(2, "uniq2", 1, "part2", 22, "", "", "");
+      var mat2 = MkLogMat.Mk(2, "uniq2", 1, "part2", 22, "", "", "");
       _jobLog.CreateMaterialID(2, "uniq2", "part2", 22);
-      var mat3 = new LogMaterial(3, "uniq3", 3, "part3", 36, "", "", "");
+      var mat3 = MkLogMat.Mk(3, "uniq3", 3, "part3", 36, "", "", "");
       _jobLog.CreateMaterialID(3, "uniq3", "part3", 36);
-      var mat4 = new LogMaterial(4, "uniq4", 4, "part4", 47, "", "", "");
+      var mat4 = MkLogMat.Mk(4, "uniq4", 4, "part4", 47, "", "", "");
       _jobLog.CreateMaterialID(4, "uniq4", "part4", 47);
 
       // add two material into queue 1
@@ -3302,7 +3332,7 @@ namespace MachineWatchTest
             cntr: -1,
             mat: new[]
             {
-              new LogMaterial(
+              MkLogMat.Mk(
                 matID: matOffset + i,
                 uniq: "",
                 proc: 0,
@@ -3336,7 +3366,7 @@ namespace MachineWatchTest
               cntr: -1,
               mat: new[]
               {
-                new LogMaterial(
+                MkLogMat.Mk(
                   matID: matOffset + i,
                   uniq: "",
                   proc: 0,
@@ -3368,7 +3398,7 @@ namespace MachineWatchTest
               cntr: -1,
               mat: new[]
               {
-                new LogMaterial(
+                MkLogMat.Mk(
                   matID: matOffset + i,
                   uniq: "",
                   proc: 0,
@@ -3410,7 +3440,7 @@ namespace MachineWatchTest
                   cntr: -1,
                   mat: new[]
                   {
-                    new LogMaterial(
+                    MkLogMat.Mk(
                       matID: 1,
                       uniq: "",
                       proc: 0,
@@ -3506,7 +3536,7 @@ namespace MachineWatchTest
             cntr: -1,
             mat: new[]
             {
-              new LogMaterial(
+              MkLogMat.Mk(
                 matID: matId,
                 uniq: "",
                 proc: 0,
@@ -3755,7 +3785,7 @@ namespace MachineWatchTest
     public void AllocateCastingsFromQueues()
     {
       using var _jobLog = _repoCfg.OpenConnection();
-      var mat1 = new LogMaterial(
+      var mat1 = MkLogMat.Mk(
         _jobLog.AllocateMaterialIDForCasting("casting1"),
         "",
         0,
@@ -3765,7 +3795,7 @@ namespace MachineWatchTest
         "",
         ""
       );
-      var mat2 = new LogMaterial(
+      var mat2 = MkLogMat.Mk(
         _jobLog.AllocateMaterialIDForCasting("casting1"),
         "",
         0,
@@ -3775,7 +3805,7 @@ namespace MachineWatchTest
         "",
         ""
       );
-      var mat3 = new LogMaterial(
+      var mat3 = MkLogMat.Mk(
         _jobLog.AllocateMaterialIDForCasting("casting3"),
         "",
         0,
@@ -4240,7 +4270,7 @@ namespace MachineWatchTest
       // Check Logs
       // ------------------------------------------------------
 
-      var initiallyLoadedLogMatProc0 = new LogMaterial(
+      var initiallyLoadedLogMatProc0 = MkLogMat.Mk(
         matID: initiallyLoadedMatProc0.MaterialID,
         uniq: newMatUnassigned ? "" : "uniq1",
         part: rawMatName ?? "part1",
@@ -4250,7 +4280,7 @@ namespace MachineWatchTest
         workorder: "",
         face: ""
       );
-      var newLogMatProc0 = new LogMaterial(
+      var newLogMatProc0 = MkLogMat.Mk(
         matID: newMatProc1.MaterialID,
         uniq: "uniq1",
         part: "part1",
@@ -4752,7 +4782,7 @@ namespace MachineWatchTest
       // Check Logs
       // ------------------------------------------------------
 
-      var logMatProc0 = new LogMaterial(
+      var logMatProc0 = MkLogMat.Mk(
         matID: matProc0.MaterialID,
         uniq: "uniq1",
         part: "part1",
@@ -5052,58 +5082,62 @@ namespace MachineWatchTest
 
     public static Func<LogMaterial, LogMaterial> SetUniqInMat(string uniq, int? numProc = null)
     {
-      return m => new LogMaterial(
-        matID: m.MaterialID,
-        uniq: uniq,
-        proc: m.Process,
-        part: m.PartName,
-        numProc: numProc ?? m.NumProcesses,
-        serial: m.Serial,
-        workorder: m.Workorder,
-        face: m.Face
-      );
+      return m =>
+        MkLogMat.Mk(
+          matID: m.MaterialID,
+          uniq: uniq,
+          proc: m.Process,
+          part: m.PartName,
+          numProc: numProc ?? m.NumProcesses,
+          serial: m.Serial,
+          workorder: m.Workorder,
+          face: m.Face
+        );
     }
 
     public static Func<LogMaterial, LogMaterial> SetSerialInMat(string serial)
     {
-      return m => new LogMaterial(
-        matID: m.MaterialID,
-        uniq: m.JobUniqueStr,
-        proc: m.Process,
-        part: m.PartName,
-        numProc: m.NumProcesses,
-        serial: serial,
-        workorder: m.Workorder,
-        face: m.Face
-      );
+      return m =>
+        MkLogMat.Mk(
+          matID: m.MaterialID,
+          uniq: m.JobUniqueStr,
+          proc: m.Process,
+          part: m.PartName,
+          numProc: m.NumProcesses,
+          serial: serial,
+          workorder: m.Workorder,
+          face: m.Face
+        );
     }
 
     public static Func<LogMaterial, LogMaterial> SetWorkorderInMat(string work)
     {
-      return m => new LogMaterial(
-        matID: m.MaterialID,
-        uniq: m.JobUniqueStr,
-        proc: m.Process,
-        part: m.PartName,
-        numProc: m.NumProcesses,
-        serial: m.Serial,
-        workorder: work,
-        face: m.Face
-      );
+      return m =>
+        MkLogMat.Mk(
+          matID: m.MaterialID,
+          uniq: m.JobUniqueStr,
+          proc: m.Process,
+          part: m.PartName,
+          numProc: m.NumProcesses,
+          serial: m.Serial,
+          workorder: work,
+          face: m.Face
+        );
     }
 
     public static Func<LogMaterial, LogMaterial> SetProcInMat(int proc)
     {
-      return m => new LogMaterial(
-        matID: m.MaterialID,
-        uniq: m.JobUniqueStr,
-        proc: proc,
-        part: m.PartName,
-        numProc: m.NumProcesses,
-        serial: m.Serial,
-        workorder: m.Workorder,
-        face: m.Face
-      );
+      return m =>
+        MkLogMat.Mk(
+          matID: m.MaterialID,
+          uniq: m.JobUniqueStr,
+          proc: proc,
+          part: m.PartName,
+          numProc: m.NumProcesses,
+          serial: m.Serial,
+          workorder: m.Workorder,
+          face: m.Face
+        );
     }
 
     public static Func<LogEntry, LogEntry> TransformLog(
@@ -5162,7 +5196,7 @@ namespace MachineWatchTest
         cntr: 1,
         mat: new[]
         {
-          new LogMaterial(
+          MkLogMat.Mk(
             matID: 1,
             uniq: "aaa",
             proc: 0,
@@ -5233,7 +5267,7 @@ namespace MachineWatchTest
               cntr: 2,
               mat: new[]
               {
-                new LogMaterial(
+                MkLogMat.Mk(
                   matID: 2,
                   uniq: "ttt",
                   proc: 0,
@@ -5257,7 +5291,7 @@ namespace MachineWatchTest
               cntr: 3,
               mat: new[]
               {
-                new LogMaterial(
+                MkLogMat.Mk(
                   matID: 2,
                   uniq: "ttt",
                   proc: 0,
@@ -5290,7 +5324,7 @@ namespace MachineWatchTest
               cntr: 2,
               mat: new[]
               {
-                new LogMaterial(
+                MkLogMat.Mk(
                   matID: 2,
                   uniq: "ttt",
                   proc: 0,
@@ -5314,7 +5348,7 @@ namespace MachineWatchTest
               cntr: 3,
               mat: new[]
               {
-                new LogMaterial(
+                MkLogMat.Mk(
                   matID: 2,
                   uniq: "ttt",
                   proc: 0,

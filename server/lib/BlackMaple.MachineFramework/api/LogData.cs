@@ -72,31 +72,6 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("workorder")]
     public string? Workorder { get; init; }
 
-    public LogMaterial() { }
-
-    [System.Diagnostics.CodeAnalysis.SetsRequiredMembers]
-    public LogMaterial(
-      long matID,
-      string uniq,
-      int proc,
-      string part,
-      int numProc,
-      string serial,
-      string workorder,
-      string face
-    )
-    {
-      MaterialID = matID;
-      JobUniqueStr = uniq;
-      PartName = part;
-      Process = proc;
-      Path = null;
-      NumProcesses = numProc;
-      Face = face;
-      Serial = serial;
-      Workorder = workorder;
-    }
-
     public static LogMaterial operator %(LogMaterial m, Action<ILogMaterialDraft> f) => m.Produce(f);
   }
 

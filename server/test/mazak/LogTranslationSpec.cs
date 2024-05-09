@@ -596,7 +596,7 @@ namespace MachineWatchTest
           cntr: -1,
           mat: new[]
           {
-            new LogMaterial(
+            MkLogMat.Mk(
               matID: -1,
               uniq: "",
               proc: mats.First().Process,
