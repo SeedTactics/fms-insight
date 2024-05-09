@@ -57,6 +57,9 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("proc")]
     public required int Process { get; init; }
 
+    [JsonPropertyName("path")]
+    public int? Path { get; init; }
+
     [JsonPropertyName("numproc")]
     public required int NumProcesses { get; init; }
 
@@ -87,6 +90,7 @@ namespace BlackMaple.MachineFramework
       JobUniqueStr = uniq;
       PartName = part;
       Process = proc;
+      Path = null;
       NumProcesses = numProc;
       Face = face;
       Serial = serial;

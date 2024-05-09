@@ -550,16 +550,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           QueuePosition = addLog.First().LocationNum
         }
       };
-      mat = new LogMaterial(
-        matID: matId,
-        uniq: "",
-        proc: 0,
-        part: rawMatName,
-        numProc: numProc,
-        serial: _serialSt.ConvertMaterialIDToSerial(matId),
-        workorder: workorder ?? "",
-        face: ""
-      );
+      mat = new LogMaterial()
+      {
+        MaterialID = matId,
+        JobUniqueStr = "",
+        Process = 0,
+        Path = 1,
+        PartName = rawMatName,
+        NumProcesses = numProc,
+        Serial = _serialSt.ConvertMaterialIDToSerial(matId),
+        Workorder = workorder ?? "",
+        Face = "",
+      };
       return this;
     }
 
@@ -634,16 +636,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           QueuePosition = addLog.First().LocationNum
         }
       };
-      mat = new LogMaterial(
-        matID: matId,
-        uniq: uniq,
-        proc: proc,
-        part: part,
-        numProc: numProc,
-        serial: _serialSt.ConvertMaterialIDToSerial(matId),
-        workorder: workorder ?? "",
-        face: ""
-      );
+      mat = new LogMaterial()
+      {
+        MaterialID = matId,
+        JobUniqueStr = uniq,
+        Process = proc,
+        Path = path,
+        PartName = part,
+        NumProcesses = numProc,
+        Serial = _serialSt.ConvertMaterialIDToSerial(matId),
+        Workorder = workorder ?? "",
+        Face = "",
+      };
       return this;
     }
 
@@ -801,32 +805,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public static IEnumerable<LogMaterial> ClearFaces(IEnumerable<LogMaterial> mats)
     {
-      return mats.Select(m => new LogMaterial(
-          matID: m.MaterialID,
-          uniq: m.JobUniqueStr,
-          proc: m.Process,
-          part: m.PartName,
-          numProc: m.NumProcesses,
-          serial: m.Serial,
-          workorder: m.Workorder,
-          face: ""
-        ))
-        .ToList();
+      return mats.Select(m => m with { Face = "" }).ToList();
     }
 
-    public static IEnumerable<LogMaterial> SetProc(int proc, IEnumerable<LogMaterial> mats)
+    public static IEnumerable<LogMaterial> SetProc(int proc, int? path, IEnumerable<LogMaterial> mats)
     {
-      return mats.Select(m => new LogMaterial(
-          matID: m.MaterialID,
-          uniq: m.JobUniqueStr,
-          proc: proc,
-          part: m.PartName,
-          numProc: m.NumProcesses,
-          serial: m.Serial,
-          workorder: m.Workorder,
-          face: m.Face
-        ))
-        .ToList();
+      return mats.Select(m => m with { Process = proc, Path = path }).ToList();
     }
 
     public FakeIccDsl SwapMaterial(
@@ -890,16 +874,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       newMat = new[]
       {
-        new LogMaterial(
-          matID: matToAddId,
-          uniq: oldMatOnPal.JobUnique,
-          proc: oldMatOnPal.Process,
-          part: oldMatOnPal.PartName,
-          numProc: numProc,
-          serial: oldMatToAdd.Serial,
-          workorder: oldMatToAdd.WorkorderId ?? "",
-          face: oldMatOnPal.Location.Face.ToString()
-        )
+        new LogMaterial()
+        {
+          MaterialID = matToAddId,
+          JobUniqueStr = oldMatOnPal.JobUnique,
+          Process = oldMatOnPal.Process,
+          Path = oldMatOnPal.Path,
+          PartName = oldMatOnPal.PartName,
+          NumProcesses = numProc,
+          Serial = oldMatToAdd.Serial,
+          Workorder = oldMatToAdd.WorkorderId ?? "",
+          Face = oldMatOnPal.Location.Face.ToString()
+        }
       };
 
       return this;
@@ -1685,6 +1671,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public ExpectedChange LoadToFace(
       int pal,
+      int newPath,
       int face,
       string unique,
       int lul,
@@ -1695,16 +1682,16 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       string part = null
     )
     {
-      loadedMats = loadingMats.Select(m => new LogMaterial(
-        matID: m.MaterialID,
-        uniq: unique,
-        proc: m.Process + 1,
-        part: part == null ? m.PartName : part,
-        numProc: m.NumProcesses,
-        serial: m.Serial,
-        workorder: m.Workorder,
-        face: face.ToString()
-      ));
+      loadedMats = loadingMats.Select(m =>
+        m with
+        {
+          JobUniqueStr = unique,
+          Process = m.Process + 1,
+          Path = newPath,
+          PartName = part ?? m.PartName,
+          Face = face.ToString()
+        }
+      );
       return new ExpectedLoadMatsEvt()
       {
         Pallet = pal,
@@ -2514,16 +2501,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               matIds.Count().Should().Be(load.Count);
 
               load.OutMaterial.AddRange(
-                evt.Material.Select(origMat => new LogMaterial(
-                  matID: origMat.MaterialID,
-                  uniq: load.Unique,
-                  proc: 1,
-                  part: origMat.PartName,
-                  numProc: origMat.NumProcesses,
-                  serial: _serialSt.ConvertMaterialIDToSerial(origMat.MaterialID),
-                  workorder: "",
-                  face: load.Face.ToString()
-                ))
+                evt.Material.Select(origMat => new LogMaterial()
+                {
+                  MaterialID = origMat.MaterialID,
+                  JobUniqueStr = load.Unique,
+                  Process = 1,
+                  PartName = origMat.PartName,
+                  NumProcesses = origMat.NumProcesses,
+                  Serial = _serialSt.ConvertMaterialIDToSerial(origMat.MaterialID),
+                  Workorder = "",
+                  Face = load.Face.ToString(),
+                  Path = load.Path
+                })
               );
 
               // now the expected events
@@ -2546,19 +2535,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.AddRange(
                 load.OutMaterial.Select(m => new LogEntry(
                   cntr: -1,
-                  mat: new[]
-                  {
-                    new LogMaterial(
-                      matID: m.MaterialID,
-                      uniq: m.JobUniqueStr,
-                      proc: 0,
-                      part: m.PartName,
-                      numProc: m.NumProcesses,
-                      serial: m.Serial,
-                      workorder: "",
-                      face: ""
-                    )
-                  },
+                  mat: [m with { Process = 0, Path = null, Face = "" }],
                   pal: 0,
                   ty: LogType.PartMark,
                   locName: "Mark",
@@ -2623,19 +2600,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.AddRange(
                 removeFromQueueEvt.Material.Select(m => new LogEntry(
                   cntr: -1,
-                  mat: new[]
-                  {
-                    new LogMaterial(
-                      matID: m.MaterialID,
-                      uniq: m.JobUniqueStr,
-                      proc: m.Process,
-                      part: m.PartName,
-                      numProc: m.NumProcesses,
-                      serial: m.Serial,
-                      workorder: m.Workorder ?? "",
-                      face: m.Face
-                    )
-                  },
+                  mat: [m],
                   pal: 0,
                   ty: LogType.RemoveFromQueue,
                   locName: removeFromQueueEvt.FromQueue,
@@ -2674,19 +2639,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.AddRange(
                 addToQueueEvt.Material.Select(m => new LogEntry(
                   cntr: -1,
-                  mat: new[]
-                  {
-                    new LogMaterial(
-                      matID: m.MaterialID,
-                      uniq: m.JobUniqueStr,
-                      proc: m.Process,
-                      part: m.PartName,
-                      numProc: m.NumProcesses,
-                      serial: m.Serial,
-                      workorder: "",
-                      face: m.Face
-                    )
-                  },
+                  mat: [m],
                   pal: 0,
                   ty: LogType.AddToQueue,
                   locName: addToQueueEvt.ToQueue,
@@ -2882,18 +2835,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   new LogEntry()
                   {
                     Counter = -1,
-                    Material = ImmutableList.Create(
-                      new LogMaterial(
-                        matID: mat.MaterialID,
-                        uniq: mat.JobUniqueStr,
-                        proc: mat.Process,
-                        part: mat.PartName,
-                        numProc: mat.NumProcesses,
-                        serial: mat.Serial,
-                        workorder: mat.Workorder,
-                        face: ""
-                      )
-                    ),
+                    Material = [mat with { Face = "" }],
                     Pallet = 0,
                     LogType = LogType.Inspection,
                     LocationName = "Inspect",

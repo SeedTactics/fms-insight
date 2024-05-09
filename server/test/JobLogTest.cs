@@ -453,7 +453,7 @@ namespace MachineWatchTest
             ),
             new LogEntry(
               -1,
-              new LogMaterial[] { matLoc2Face1 },
+              new LogMaterial[] { matLoc2Face1 with { Path = 33 } },
               1234,
               LogType.LoadUnloadCycle,
               "L/U",
@@ -467,7 +467,7 @@ namespace MachineWatchTest
             ),
             new LogEntry(
               -1,
-              new LogMaterial[] { matLoc2Face2 },
+              new LogMaterial[] { matLoc2Face2 with { Path = 44 } },
               1234,
               LogType.LoadUnloadCycle,
               "L/U",
@@ -1289,26 +1289,30 @@ namespace MachineWatchTest
     public void ForeignID()
     {
       using var _jobLog = _repoCfg.OpenConnection();
-      var mat1 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique", "part1", 2),
-        "unique",
-        1,
-        "part1",
-        2,
-        "",
-        "",
-        "face1"
-      );
-      var mat2 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique2", "part2", 2),
-        "unique2",
-        2,
-        "part2",
-        2,
-        "",
-        "",
-        "face2"
-      );
+      var mat1 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique", "part1", 2),
+        JobUniqueStr = "unique",
+        Process = 1,
+        Path = 1,
+        PartName = "part1",
+        NumProcesses = 2,
+        Serial = "",
+        Workorder = "",
+        Face = "face1"
+      };
+      var mat2 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique2", "part2", 2),
+        JobUniqueStr = "unique2",
+        Process = 2,
+        Path = null,
+        PartName = "part2",
+        NumProcesses = 2,
+        Serial = "",
+        Workorder = "",
+        Face = "face2"
+      };
 
       var log1 = new LogEntry(
         0,
@@ -1376,7 +1380,9 @@ namespace MachineWatchTest
 
       var load1 = _jobLog.StationLogByForeignID("for1");
       load1.Count.Should().Be(1);
-      CheckEqual(log1, load1[0]);
+      load1[0]
+        .Should()
+        .BeEquivalentTo(log1, options => options.Excluding(l => l.Counter).ComparingByMembers<LogEntry>());
 
       CheckEqual(_jobLog.MostRecentLogEntryForForeignID("for1"), load1[0]);
 
@@ -4257,7 +4263,19 @@ namespace MachineWatchTest
 
       var expectedSwapMsg = new LogEntry(
         cntr: 0,
-        mat: new[] { SetProcInMat(1)(initiallyLoadedLogMatProc0), SetProcInMat(1)(newLogMatProc0) },
+        mat: new[]
+        {
+          initiallyLoadedLogMatProc0 with
+          {
+            Process = 1,
+            Path = newMatUnassigned ? null : 5,
+          },
+          newLogMatProc0 with
+          {
+            Process = 1,
+            Path = 5
+          }
+        },
         pal: 5,
         ty: LogType.SwapMaterialOnPallet,
         locName: "SwapMatOnPallet",
@@ -4272,16 +4290,18 @@ namespace MachineWatchTest
         .Select(
           TransformLog(
             initiallyLoadedMatProc1.MaterialID,
-            mat => new LogMaterial(
-              matID: newMatProc1.MaterialID,
-              uniq: "uniq1",
-              proc: 1,
-              part: "part1",
-              numProc: 2,
-              serial: "cccc",
-              workorder: "",
-              face: "1"
-            )
+            mat => new LogMaterial()
+            {
+              MaterialID = newMatProc1.MaterialID,
+              JobUniqueStr = "uniq1",
+              Process = 1,
+              Path = 5,
+              PartName = "part1",
+              NumProcesses = 2,
+              Serial = "cccc",
+              Workorder = "",
+              Face = "1"
+            }
           )
         )
         .ToList();
@@ -4745,7 +4765,7 @@ namespace MachineWatchTest
 
       var expectedInvalidateMsg = new LogEntry(
         cntr: 0,
-        mat: new[] { SetProcInMat(proc: 1)(logMatProc0) },
+        mat: [logMatProc0 with { Process = 1, Path = 5 }],
         pal: 0,
         ty: LogType.InvalidateCycle,
         locName: "InvalidateCycle",
@@ -5325,56 +5345,66 @@ namespace MachineWatchTest
       _jobLog.PendingLoads(1).Should().BeEmpty();
       _jobLog.AllPendingLoads().Should().BeEmpty();
 
-      var mat1 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique", "part1", 1),
-        "unique",
-        1,
-        "part1",
-        1,
-        "0000000001",
-        "",
-        "face1"
-      );
-      var mat2 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique2", "part2", 2),
-        "unique2",
-        1,
-        "part2",
-        2,
-        "0000000002",
-        "",
-        "face1"
-      );
-      var mat3 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique3", "part3", 3),
-        "unique3",
-        3,
-        "part3",
-        3,
-        "0000000003",
-        "",
-        "face3"
-      );
-      var mat4 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique4", "part4", 4),
-        "unique4",
-        3,
-        "part4",
-        4,
-        "themat4serial",
-        "",
-        "face3"
-      );
-      var mat5 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique5", "part5", 5),
-        "unique5",
-        5,
-        "part5",
-        5,
-        "0000000005",
-        "",
-        "555"
-      );
+      var mat1 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique", "part1", 1),
+        JobUniqueStr = "unique",
+        Process = 1,
+        Path = 1,
+        PartName = "part1",
+        NumProcesses = 1,
+        Serial = "0000000001",
+        Workorder = "",
+        Face = "face1"
+      };
+      var mat2 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique2", "part2", 2),
+        JobUniqueStr = "unique2",
+        Process = 1,
+        Path = 1,
+        PartName = "part2",
+        NumProcesses = 2,
+        Serial = "0000000002",
+        Workorder = "",
+        Face = "face1"
+      };
+      var mat3 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique3", "part3", 3),
+        JobUniqueStr = "unique3",
+        Process = 3,
+        Path = 1,
+        PartName = "part3",
+        NumProcesses = 3,
+        Serial = "0000000003",
+        Workorder = "",
+        Face = "face3"
+      };
+      var mat4 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique4", "part4", 4),
+        JobUniqueStr = "unique4",
+        Process = 3,
+        Path = 1,
+        PartName = "part4",
+        NumProcesses = 4,
+        Serial = "themat4serial",
+        Workorder = "",
+        Face = "face3"
+      };
+      var mat5 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique5", "part5", 5),
+        JobUniqueStr = "unique5",
+        Process = 5,
+        Path = 88,
+        PartName = "part5",
+        NumProcesses = 5,
+        Serial = "0000000005",
+        Workorder = "",
+        Face = "555"
+      };
 
       var serial1 = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
       var serial2 = SerialSettings.ConvertToBase62(mat2.MaterialID).PadLeft(10, '0');
@@ -5795,46 +5825,54 @@ namespace MachineWatchTest
     public void PendingLoadOneSerialPerCycle()
     {
       using var _jobLog = _repoCfg.OpenConnection();
-      var mat1 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique", "part1", 1),
-        "unique",
-        1,
-        "part1",
-        1,
-        "0000000001",
-        "",
-        "face1"
-      );
-      var mat2 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique2", "part2", 2),
-        "unique2",
-        1,
-        "part2",
-        2,
-        "0000000001",
-        "",
-        "face1"
-      ); // note mat2 gets same serial as mat1
-      var mat3 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique3", "part3", 3),
-        "unique3",
-        3,
-        "part3",
-        3,
-        "0000000003",
-        "",
-        "face3"
-      );
-      var mat4 = new LogMaterial(
-        _jobLog.AllocateMaterialID("unique4", "part4", 4),
-        "unique4",
-        4,
-        "part4",
-        4,
-        "themat4serial",
-        "",
-        "face4"
-      );
+      var mat1 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique", "part1", 1),
+        JobUniqueStr = "unique",
+        Process = 1,
+        Path = 1,
+        PartName = "part1",
+        NumProcesses = 1,
+        Serial = "0000000001",
+        Workorder = "",
+        Face = "face1"
+      };
+      var mat2 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique2", "part2", 2),
+        JobUniqueStr = "unique2",
+        Process = 1,
+        Path = 1,
+        PartName = "part2",
+        NumProcesses = 2,
+        Serial = "0000000001",
+        Workorder = "",
+        Face = "face1"
+      }; // note mat2 gets same serial as mat1
+      var mat3 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique3", "part3", 3),
+        JobUniqueStr = "unique3",
+        Process = 3,
+        Path = 1,
+        PartName = "part3",
+        NumProcesses = 3,
+        Serial = "0000000003",
+        Workorder = "",
+        Face = "face3"
+      };
+      var mat4 = new LogMaterial()
+      {
+        MaterialID = _jobLog.AllocateMaterialID("unique4", "part4", 4),
+        JobUniqueStr = "unique4",
+        Process = 4,
+        Path = 1,
+        PartName = "part4",
+        NumProcesses = 4,
+        Serial = "themat4serial",
+        Workorder = "",
+        Face = "face4"
+      };
 
       var serial1 = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
       var serial3 = SerialSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
