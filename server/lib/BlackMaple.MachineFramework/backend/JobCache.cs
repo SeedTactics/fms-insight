@@ -188,16 +188,6 @@ public static class JobHelpers
     return cache
       .AllJobs.SelectMany(j =>
       {
-        var jobLog = db.GetLogForJobUnique(j.UniqueStr);
-
-        var loadedCnt = jobLog
-          .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && !e.StartOfCycle)
-          .SelectMany(e => e.Material)
-          .Where(m => m.JobUniqueStr == j.UniqueStr)
-          .Select(m => m.MaterialID)
-          .Distinct()
-          .Count();
-
         var loadingCnt = allMaterial
           .Where(m =>
             m.JobUnique == j.UniqueStr
@@ -206,32 +196,44 @@ public static class JobHelpers
           )
           .Count();
 
-        // completed
+        // loaded and completed
+        var loadedMats = new HashSet<long>();
         var completed = j
           .Processes.Select(proc =>
             new int[proc.Paths.Count] // defaults to fill with zeros
           )
           .ToArray();
-        var unloads = jobLog
-          .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD" && !e.StartOfCycle)
-          .ToList();
         var maxUnloadTime = DateTime.MinValue;
-        foreach (var e in unloads)
+
+        foreach (var e in db.GetLogForJobUnique(j.UniqueStr))
         {
-          if (e.EndTimeUTC > maxUnloadTime)
+          if (e.LogType != LogType.LoadUnloadCycle)
+            continue;
+          if (e.StartOfCycle)
+            continue;
+
+          if (e.Result == "LOAD")
           {
-            maxUnloadTime = e.EndTimeUTC;
-          }
-          foreach (var mat in e.Material)
-          {
-            if (mat.JobUniqueStr == j.UniqueStr)
+            foreach (var mat in e.Material)
             {
-              var details = db.GetMaterialDetails(mat.MaterialID);
-              int matPath =
-                details?.Paths != null && details.Paths.ContainsKey(mat.Process)
-                  ? details.Paths[mat.Process]
-                  : 1;
-              completed[mat.Process - 1][matPath - 1] += 1;
+              if (mat.JobUniqueStr == j.UniqueStr)
+              {
+                loadedMats.Add(mat.MaterialID);
+              }
+            }
+          }
+          else if (e.Result == "UNLOAD")
+          {
+            if (e.EndTimeUTC > maxUnloadTime)
+            {
+              maxUnloadTime = e.EndTimeUTC;
+            }
+            foreach (var mat in e.Material)
+            {
+              if (mat.JobUniqueStr == j.UniqueStr)
+              {
+                completed[mat.Process - 1][(mat.Path ?? 1) - 1] += 1;
+              }
             }
           }
         }
@@ -239,7 +241,7 @@ public static class JobHelpers
         // take decremented quantity out of the planned cycles
         int decrQty = j.Decrements?.Sum(d => d.Quantity) ?? 0;
         var newPlanned = j.Cycles - decrQty;
-        var remainingToStart = decrQty > 0 ? 0 : System.Math.Max(newPlanned - loadedCnt - loadingCnt, 0);
+        var remainingToStart = decrQty > 0 ? 0 : Math.Max(newPlanned - loadedMats.Count - loadingCnt, 0);
 
         // archive old completed jobs
         if (

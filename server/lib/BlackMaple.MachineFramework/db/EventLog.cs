@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -56,11 +56,11 @@ namespace BlackMaple.MachineFramework
           ((IDbCommand)toolCmd).Transaction = trans;
         }
         matCmd.CommandText =
-          "SELECT stations_mat.MaterialID, UniqueStr, Process, PartName, NumProcesses, Face, Serial, Workorder "
-          + " FROM stations_mat "
-          + " LEFT OUTER JOIN matdetails ON stations_mat.MaterialID = matdetails.MaterialID "
-          + " WHERE stations_mat.Counter = $cntr "
-          + " ORDER BY stations_mat.Counter ASC";
+          "SELECT sm.MaterialID, m.UniqueStr, sm.Process, m.PartName, m.NumProcesses, sm.Face, m.Serial, m.Workorder, mp.Path "
+          + " FROM stations_mat sm "
+          + " LEFT OUTER JOIN matdetails m ON sm.MaterialID = m.MaterialID "
+          + " LEFT OUTER JOIN mat_path_details mp ON sm.MaterialID = mp.MaterialID AND sm.Process = mp.Process "
+          + " WHERE sm.Counter = $cntr";
         matCmd.Parameters.Add("cntr", SqliteType.Integer);
 
         detailCmd.CommandText = "SELECT Key, Value FROM program_details WHERE Counter = $cntr";
@@ -169,6 +169,7 @@ namespace BlackMaple.MachineFramework
               string face = "";
               string serial = "";
               string workorder = "";
+              int? path = null;
               if (!matReader.IsDBNull(1))
                 uniq = matReader.GetString(1);
               if (!matReader.IsDBNull(3))
@@ -181,17 +182,21 @@ namespace BlackMaple.MachineFramework
                 serial = matReader.GetString(6);
               if (!matReader.IsDBNull(7))
                 workorder = matReader.GetString(7);
+              if (!matReader.IsDBNull(8))
+                path = matReader.GetInt32(8);
               matLst.Add(
-                new LogMaterial(
-                  matID: matReader.GetInt64(0),
-                  uniq: uniq,
-                  proc: matReader.GetInt32(2),
-                  part: part,
-                  numProc: numProc,
-                  serial: serial,
-                  workorder: workorder,
-                  face: face
-                )
+                new LogMaterial()
+                {
+                  MaterialID = matReader.GetInt64(0),
+                  JobUniqueStr = uniq,
+                  Process = matReader.GetInt32(2),
+                  PartName = part,
+                  NumProcesses = numProc,
+                  Serial = serial,
+                  Workorder = workorder,
+                  Face = face,
+                  Path = path
+                }
               );
             }
           }
@@ -639,19 +644,23 @@ namespace BlackMaple.MachineFramework
 
         using (var reader = cmd.ExecuteReader())
         {
+          var ret = new List<ToolSnapshot>();
           while (reader.Read())
           {
-            yield return new ToolSnapshot()
-            {
-              Pocket = reader.GetInt32(0),
-              ToolName = reader.GetString(1),
-              CurrentUse = reader.IsDBNull(2) ? null : TimeSpan.FromTicks(reader.GetInt64(2)),
-              TotalLifeTime = reader.IsDBNull(3) ? null : TimeSpan.FromTicks(reader.GetInt64(3)),
-              CurrentUseCount = reader.IsDBNull(4) ? null : (int?)reader.GetInt32(4),
-              TotalLifeCount = reader.IsDBNull(5) ? null : (int?)reader.GetInt32(5),
-              Serial = reader.IsDBNull(6) ? null : reader.GetString(6)
-            };
+            ret.Add(
+              new ToolSnapshot()
+              {
+                Pocket = reader.GetInt32(0),
+                ToolName = reader.GetString(1),
+                CurrentUse = reader.IsDBNull(2) ? null : TimeSpan.FromTicks(reader.GetInt64(2)),
+                TotalLifeTime = reader.IsDBNull(3) ? null : TimeSpan.FromTicks(reader.GetInt64(3)),
+                CurrentUseCount = reader.IsDBNull(4) ? null : (int?)reader.GetInt32(4),
+                TotalLifeCount = reader.IsDBNull(5) ? null : (int?)reader.GetInt32(5),
+                Serial = reader.IsDBNull(6) ? null : reader.GetString(6)
+              }
+            );
           }
+          return ret;
         }
       }
     }
@@ -1074,16 +1083,24 @@ namespace BlackMaple.MachineFramework
             .Material.Select(m =>
             {
               var details = getDetails(m.MaterialID);
-              return new LogMaterial(
-                matID: m.MaterialID,
-                proc: m.Process,
-                face: m.Face,
-                uniq: details?.JobUnique ?? "",
-                part: details?.PartName ?? "",
-                numProc: details?.NumProcesses ?? 1,
-                serial: details?.Serial ?? "",
-                workorder: details?.Workorder ?? ""
-              );
+              int? path =
+                details?.Paths == null
+                  ? null
+                  : details.Paths.TryGetValue(m.Process, out var p)
+                    ? p
+                    : null;
+              return new LogMaterial()
+              {
+                MaterialID = m.MaterialID,
+                Process = m.Process,
+                Face = m.Face,
+                JobUniqueStr = details?.JobUnique ?? "",
+                PartName = details?.PartName ?? "",
+                NumProcesses = details?.NumProcesses ?? 1,
+                Serial = details?.Serial ?? "",
+                Workorder = details?.Workorder ?? "",
+                Path = path
+              };
             })
             .ToImmutableList(),
           LogType = this.LogType,
@@ -1469,8 +1486,6 @@ namespace BlackMaple.MachineFramework
             ActiveOperationTime = face.ActiveOperationTime,
           };
 
-          logs.Add(AddLogEntry(trans, log, foreignId, originalMessage));
-
           if (face.Path.HasValue)
           {
             foreach (var mat in face.MaterialIDs)
@@ -1478,6 +1493,8 @@ namespace BlackMaple.MachineFramework
               RecordPathForProcess(mat, face.Process, face.Path.Value, trans);
             }
           }
+
+          logs.Add(AddLogEntry(trans, log, foreignId, originalMessage));
         }
       }
 
@@ -2461,6 +2478,34 @@ namespace BlackMaple.MachineFramework
             }
           }
 
+          //update paths
+          if (oldMatDetails.Paths != null && oldMatDetails.Paths.TryGetValue(oldMatProc, out var oldPath))
+          {
+            using (var newPathCmd = _connection.CreateCommand())
+            {
+              newPathCmd.Transaction = trans;
+              newPathCmd.CommandText =
+                "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, $proc, $path)";
+              newPathCmd.Parameters.Add("mid", SqliteType.Integer).Value = newMatId;
+              newPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
+              newPathCmd.Parameters.Add("path", SqliteType.Integer).Value = oldPath;
+              newPathCmd.ExecuteNonQuery();
+            }
+
+            if (newMatIsUnassigned || oldMatProc >= 2)
+            {
+              using (var delPathCmd = _connection.CreateCommand())
+              {
+                delPathCmd.Transaction = trans;
+                delPathCmd.CommandText =
+                  "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process = $proc";
+                delPathCmd.Parameters.Add("mid", SqliteType.Integer).Value = oldMatId;
+                delPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
+                delPathCmd.ExecuteNonQuery();
+              }
+            }
+          }
+
           // Record a message for the override
           var time = timeUTC ?? DateTime.UtcNow;
 
@@ -2529,34 +2574,6 @@ namespace BlackMaple.MachineFramework
                 reason: "SwapMaterial"
               )
             );
-          }
-
-          //update paths
-          if (oldMatDetails.Paths != null && oldMatDetails.Paths.TryGetValue(oldMatProc, out var oldPath))
-          {
-            using (var newPathCmd = _connection.CreateCommand())
-            {
-              newPathCmd.Transaction = trans;
-              newPathCmd.CommandText =
-                "INSERT OR REPLACE INTO mat_path_details(MaterialID, Process, Path) VALUES ($mid, $proc, $path)";
-              newPathCmd.Parameters.Add("mid", SqliteType.Integer).Value = newMatId;
-              newPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
-              newPathCmd.Parameters.Add("path", SqliteType.Integer).Value = oldPath;
-              newPathCmd.ExecuteNonQuery();
-            }
-
-            if (newMatIsUnassigned || oldMatProc >= 2)
-            {
-              using (var delPathCmd = _connection.CreateCommand())
-              {
-                delPathCmd.Transaction = trans;
-                delPathCmd.CommandText =
-                  "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process = $proc";
-                delPathCmd.Parameters.Add("mid", SqliteType.Integer).Value = oldMatId;
-                delPathCmd.Parameters.Add("proc", SqliteType.Integer).Value = oldMatProc;
-                delPathCmd.ExecuteNonQuery();
-              }
-            }
           }
 
           trans.Commit();
@@ -4246,7 +4263,7 @@ namespace BlackMaple.MachineFramework
                     lul: pending.LoadStation,
                     elapsed: pending.Elapsed,
                     active: pending.ActiveOperationTime,
-                    path: null
+                    path: 1
                   )
                 );
               }
@@ -4421,8 +4438,6 @@ namespace BlackMaple.MachineFramework
                 ActiveOperationTime = load.active,
               };
 
-              newLoadEvts.Add(AddLogEntry(trans, log, foreignID: maxPendingForeignId, origMessage: null));
-
               if (load.path.HasValue)
               {
                 foreach (var mat in load.mats)
@@ -4430,6 +4445,7 @@ namespace BlackMaple.MachineFramework
                   RecordPathForProcess(mat.MaterialID, mat.Process, load.path.Value, trans);
                 }
               }
+              newLoadEvts.Add(AddLogEntry(trans, log, foreignID: maxPendingForeignId, origMessage: null));
             }
           }
 

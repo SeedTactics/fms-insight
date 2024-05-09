@@ -631,6 +631,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 1,
               lul: 3,
+              newPath: 1,
               face: 1,
               unique: "uniq1",
               elapsedMin: 3,
@@ -644,7 +645,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 1,
               reason: "LoadedToPallet",
               elapMin: 3,
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat1))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(proc: 0, path: null, mat1))
             )
           }
         );
@@ -906,6 +907,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 1,
               lul: 4,
+              newPath: 1,
               face: 2,
               unique: "uniq1",
               elapsedMin: 20,
@@ -1081,6 +1083,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 1,
               lul: 4,
+              newPath: 1,
               face: 2,
               unique: "uniq1",
               elapsedMin: 10,
@@ -1268,6 +1271,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 1,
               lul: 3,
+              newPath: 1,
               face: 2,
               unique: "uniq1",
               elapsedMin: 10,
@@ -1435,6 +1439,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 1,
               lul: 3,
+              newPath: 1,
               face: 2,
               unique: "uniq2",
               elapsedMin: 2,
@@ -1783,6 +1788,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 2,
               face: 1,
+              newPath: 1,
               unique: "uniq1",
               lul: 3,
               elapsedMin: 7,
@@ -1795,7 +1801,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 0,
               reason: "LoadedToPallet",
               elapMin: 7,
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, 1, AAAproc2))
             )
           }
         )
@@ -2131,6 +2137,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 2,
               face: 1,
+              newPath: 1,
               unique: "uniq1",
               lul: 3,
               elapsedMin: 12,
@@ -2143,7 +2150,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 0,
               reason: "LoadedToPallet",
               elapMin: 12,
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, BBBproc2))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, 1, BBBproc2))
             )
           }
         )
@@ -2397,6 +2404,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 2,
               face: 1,
+              newPath: 1,
               unique: "uniq1",
               lul: 4,
               elapsedMin: 22,
@@ -2409,7 +2417,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 0,
               reason: "LoadedToPallet",
               elapMin: 22,
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, CCCproc2))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, 1, CCCproc2))
             )
           }
         );
@@ -2669,6 +2677,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 2,
               face: 1,
+              newPath: 1,
               unique: "uniq1",
               lul: 4,
               elapsedMin: 5,
@@ -2681,7 +2690,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 0,
               elapMin: 5,
               reason: "LoadedToPallet",
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, 1, AAAproc2))
             )
           }
         );
@@ -3387,6 +3396,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pal: 1,
               lul: 3,
               face: 1,
+              newPath: 1,
               unique: "uniq1",
               elapsedMin: 2,
               activeMins: 8,
@@ -3399,7 +3409,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 1,
               elapMin: 2,
               reason: "LoadedToPallet",
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat1))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, null, mat1))
             )
           }
         )
@@ -3641,6 +3651,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pal: 2,
               lul: 4,
               face: 1,
+              newPath: 1,
               unique: "uniq1",
               elapsedMin: 5,
               activeMins: 8,
@@ -3653,7 +3664,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 0,
               elapMin: 13,
               reason: "LoadedToPallet",
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, mat2))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, null, mat2))
             )
           }
         )
@@ -3958,6 +3969,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 4,
               lul: 3,
+              newPath: 1,
               face: 1,
               unique: "uniq1",
               elapsedMin: 6,
@@ -3971,7 +3983,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 1,
               elapMin: 6,
               reason: "LoadedToPallet",
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, mat3))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, null, mat3))
             )
           }
         )
@@ -4501,6 +4513,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 4,
               face: 1,
+              newPath: 1,
               unique: "uniq1",
               lul: 3,
               elapsedMin: 5,
@@ -4513,7 +4526,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 0,
               elapMin: 5,
               reason: "LoadedToPallet",
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, 1, AAAproc2))
             )
           }
         )
@@ -5103,6 +5116,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pal: 4,
               face: 1,
               unique: "uniq1",
+              newPath: 1,
               lul: 3,
               elapsedMin: 5,
               activeMins: 11,
@@ -5114,7 +5128,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 0,
               elapMin: 5,
               reason: "LoadedToPallet",
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, AAAproc2))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(1, 1, AAAproc2))
             )
           }
         )
@@ -6243,6 +6257,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 1,
               lul: 3,
+              newPath: 1,
               face: 1,
               unique: "uniq1",
               elapsedMin: 2,
@@ -6255,7 +6270,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 0,
               elapMin: 2,
               reason: "LoadedToPallet",
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, loadedMat1))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, null, loadedMat1))
             )
           }
         )
@@ -6601,6 +6616,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 1,
               lul: 1,
+              newPath: 1,
               face: 1,
               unique: "uniq1",
               elapsedMin: 4,
@@ -6614,7 +6630,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 0,
               elapMin: 4,
               reason: "LoadedToPallet",
-              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, lmat1))
+              mat: FakeIccDsl.ClearFaces(FakeIccDsl.SetProc(0, null, lmat1))
             )
           }
         )
@@ -6798,6 +6814,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             _dsl.LoadToFace(
               pal: 2,
               face: 1,
+              newPath: 1,
               unique: "uniq1",
               lul: 3,
               elapsedMin: 7,
@@ -6810,7 +6827,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               pos: 0,
               elapMin: 7,
               reason: "LoadedToPallet",
-              mat: FakeIccDsl.ClearFaces(new[] { AAAproc1 })
+              mat: FakeIccDsl.ClearFaces([AAAproc1 with { Path = null }])
             )
           }
         )
