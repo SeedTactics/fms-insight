@@ -441,7 +441,7 @@ namespace BlackMaple.MachineFramework
             {
               MaterialID = matId,
               Process = process,
-              Face = ""
+              Face = 0
             },
             serial,
             DateTime.UtcNow
@@ -454,7 +454,7 @@ namespace BlackMaple.MachineFramework
             {
               MaterialID = matId,
               Process = process,
-              Face = ""
+              Face = 0
             },
             workorder,
             DateTime.UtcNow
@@ -667,7 +667,7 @@ namespace BlackMaple.MachineFramework
                     {
                       MaterialID = materialId,
                       Process = mat.Process,
-                      Face = ""
+                      Face = 0
                     },
                     pallet: mat.Location.PalletNum ?? 0,
                     queue: _settings.QuarantineQueue ?? "",

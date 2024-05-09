@@ -1301,7 +1301,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               MaterialID = m,
               Process = 0,
-              Face = ""
+              Face = 0
             },
             "castingQ",
             -1,

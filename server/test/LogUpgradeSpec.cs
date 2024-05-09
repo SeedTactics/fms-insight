@@ -78,11 +78,11 @@ namespace MachineWatchTest
       // existing v17 file has the following data in it
       var now = new DateTime(2018, 7, 12, 5, 6, 7, DateTimeKind.Utc);
 
-      var mat1_1 = MkLogMat.Mk(1, "uuu1", 1, "part1", 2, "serial1", "work1", face: "A");
-      var mat1_2 = MkLogMat.Mk(1, "uuu1", 2, "part1", 2, "serial1", "work1", face: "B");
-      var mat2_1 = MkLogMat.Mk(2, "uuu1", 1, "part1", 2, "serial2", "", face: "C");
-      var mat2_2 = MkLogMat.Mk(2, "uuu1", 1, "part1", 2, "serial2", "", face: "D");
-      var mat3 = MkLogMat.Mk(3, "uuu2", 1, "part2", 1, "", "work3", face: "E");
+      var mat1_1 = MkLogMat.Mk(1, "uuu1", 1, "part1", 2, "serial1", "work1", face: "1");
+      var mat1_2 = MkLogMat.Mk(1, "uuu1", 2, "part1", 2, "serial1", "work1", face: "2");
+      var mat2_1 = MkLogMat.Mk(2, "uuu1", 1, "part1", 2, "serial2", "", face: "3");
+      var mat2_2 = MkLogMat.Mk(2, "uuu1", 1, "part1", 2, "serial2", "", face: "4");
+      var mat3 = MkLogMat.Mk(3, "uuu2", 1, "part2", 1, "", "work3", face: "5");
 
       _log.GetLogEntries(now, now.AddDays(1))
         .ToList()

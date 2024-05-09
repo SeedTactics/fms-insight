@@ -1192,7 +1192,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         {
           MaterialID = 1,
           Process = data.Process,
-          Face = ""
+          Face = 0
         },
         queue: "q1",
         position: 0,

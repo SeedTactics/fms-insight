@@ -273,7 +273,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             PalletNum = pallet.Master.PalletNum,
-            Face = int.Parse(m.Face)
+            Face = m.FaceNum
           },
           Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
         };
@@ -792,7 +792,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               MaterialID = m.Mat.MaterialID,
               Process = m.Mat.Process,
-              Face = ""
+              Face = 0
             },
             queue: _settings.QuarantineQueue,
             position: -1,
@@ -929,7 +929,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = proc,
-            Face = face.Key.ToString()
+            Face = face.Key ?? 0
           }),
           pallet: pallet.Status.Master.PalletNum,
           lulNum: loadBegin.LocationNum,
@@ -1345,7 +1345,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = face.Face.ToString(),
+            Face = face.Face,
           }),
           pallet: pallet.Status.Master.PalletNum,
           statName: pallet.Status.CurStation.Location.StationGroup,
@@ -1478,7 +1478,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           MaterialID = m.Mat.MaterialID,
           Process = m.Mat.Process,
-          Face = face.Face.ToString()
+          Face = face.Face
         }),
         pallet: pallet.Status.Master.PalletNum,
         statName: statName,
@@ -1521,7 +1521,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = face.Face.ToString()
+            Face = face.Face
           }),
           pallet: pallet.Status.Master.PalletNum,
           lulNum: pallet.Status.CurStation.Location.Num,
@@ -1608,7 +1608,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           MaterialID = m.Mat.MaterialID,
           Process = m.Mat.Process,
-          Face = face.Face.ToString()
+          Face = face.Face
         }),
         pallet: pallet.Status.Master.PalletNum,
         lulNum: statNum,
@@ -1687,7 +1687,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = m.Mat.Location.Face.HasValue ? m.Mat.Location.Face.Value.ToString() : "",
+            Face = m.Mat.Location.Face ?? 0
           }),
           pallet: pallet.Status.Master.PalletNum,
           statName: pallet.Status.CurStation.Location.StationGroup,
@@ -1702,7 +1702,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = m.Mat.Location.Face.HasValue ? m.Mat.Location.Face.Value.ToString() : "",
+            Face = m.Mat.Location.Face ?? 0
           }),
           pallet: pallet.Status.Master.PalletNum,
           statName: start.LocationName,
@@ -1760,7 +1760,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = m.Mat.Location.Face.HasValue ? m.Mat.Location.Face.Value.ToString() : "",
+            Face = m.Mat.Location.Face ?? 0
           }),
           pallet: pallet.Status.Master.PalletNum,
           stockerNum: pallet.Status.CurStation.Location.Num,
@@ -1775,7 +1775,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = m.Mat.Location.Face.HasValue ? m.Mat.Location.Face.Value.ToString() : "",
+            Face = m.Mat.Location.Face ?? 0
           }),
           pallet: pallet.Status.Master.PalletNum,
           stockerNum: start.LocationNum,

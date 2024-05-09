@@ -530,7 +530,7 @@ namespace BlackMaple.MachineFramework
   {
     public required long MaterialID { get; init; }
     public required int Process { get; init; }
-    public required string Face { get; init; }
+    public required int Face { get; init; }
 
     public static EventLogMaterial FromLogMat(LogMaterial m)
     {
@@ -538,7 +538,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = m.MaterialID,
         Process = m.Process,
-        Face = m.Face
+        Face = m.FaceNum
       };
     }
   }

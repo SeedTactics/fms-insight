@@ -63,8 +63,11 @@ namespace BlackMaple.MachineFramework
     [JsonPropertyName("numproc")]
     public required int NumProcesses { get; init; }
 
-    [JsonPropertyName("face")]
-    public required string Face { get; init; }
+    [JsonPropertyName("facenum")]
+    public required int FaceNum { get; init; }
+
+    [JsonPropertyName("face"), Obsolete("Face as a string is deprecated, use FaceNum instead")]
+    public string Face => FaceNum.ToString();
 
     [JsonPropertyName("serial")]
     public string? Serial { get; init; }

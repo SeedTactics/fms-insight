@@ -421,13 +421,13 @@ namespace MachineWatchTest
       {
         MaterialID = 1,
         Process = 1,
-        Face = ""
+        Face = 0
       };
       var mat2 = new EventLogMaterial()
       {
         MaterialID = 2,
         Process = 1,
-        Face = ""
+        Face = 0
       };
       _insp.ForceInspection(mat1, "myinspection", true, now);
       _insp.ForceInspection(mat2, "myinspection", false, now);

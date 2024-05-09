@@ -499,7 +499,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             MaterialID = matId,
             Process = 0,
-            Face = ""
+            Face = 0
           },
           _serialSt.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
@@ -512,7 +512,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             MaterialID = matId,
             Process = 0,
-            Face = ""
+            Face = 0
           },
           workorder,
           _status.TimeOfStatusUTC
@@ -523,7 +523,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           MaterialID = matId,
           Process = 0,
-          Face = ""
+          Face = 0
         },
         queue,
         -1,
@@ -560,7 +560,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         NumProcesses = numProc,
         Serial = _serialSt.ConvertMaterialIDToSerial(matId),
         Workorder = workorder ?? "",
-        Face = "",
+        FaceNum = 0
       };
       return this;
     }
@@ -585,7 +585,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             MaterialID = matId,
             Process = proc,
-            Face = ""
+            Face = 0
           },
           _serialSt.ConvertMaterialIDToSerial(matId),
           _status.TimeOfStatusUTC
@@ -598,7 +598,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             MaterialID = matId,
             Process = proc,
-            Face = ""
+            Face = 0
           },
           workorder,
           _status.TimeOfStatusUTC
@@ -609,7 +609,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           MaterialID = matId,
           Process = proc,
-          Face = ""
+          Face = 0
         },
         queue,
         -1,
@@ -646,7 +646,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         NumProcesses = numProc,
         Serial = _serialSt.ConvertMaterialIDToSerial(matId),
         Workorder = workorder ?? "",
-        Face = "",
+        FaceNum = 0
       };
       return this;
     }
@@ -659,7 +659,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           MaterialID = mat.MaterialID,
           Process = mat.Process,
-          Face = ""
+          Face = 0
         },
         queue,
         pos,
@@ -805,7 +805,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public static IEnumerable<LogMaterial> ClearFaces(IEnumerable<LogMaterial> mats)
     {
-      return mats.Select(m => m with { Face = "" }).ToList();
+      return mats.Select(m => m with { FaceNum = 0 }).ToList();
     }
 
     public static IEnumerable<LogMaterial> SetProc(int proc, int? path, IEnumerable<LogMaterial> mats)
@@ -884,7 +884,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           NumProcesses = numProc,
           Serial = oldMatToAdd.Serial,
           Workorder = oldMatToAdd.WorkorderId ?? "",
-          Face = oldMatOnPal.Location.Face.ToString()
+          FaceNum = oldMatOnPal.Location.Face ?? 0
         }
       };
 
@@ -1689,7 +1689,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Process = m.Process + 1,
           Path = newPath,
           PartName = part ?? m.PartName,
-          Face = face.ToString()
+          FaceNum = face
         }
       );
       return new ExpectedLoadMatsEvt()
@@ -2494,7 +2494,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               var evt = evts.First(e =>
                 e.LogType == LogType.LoadUnloadCycle
                 && e.Result == "LOAD"
-                && e.Material.Any(m => m.Face == load.Face.ToString())
+                && e.Material.Any(m => m.FaceNum == load.Face)
               );
               var matIds = evt.Material.Select(m => m.MaterialID);
 
@@ -2510,7 +2510,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   NumProcesses = origMat.NumProcesses,
                   Serial = _serialSt.ConvertMaterialIDToSerial(origMat.MaterialID),
                   Workorder = "",
-                  Face = load.Face.ToString(),
+                  FaceNum = load.Face,
                   Path = load.Path
                 })
               );
@@ -2535,7 +2535,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.AddRange(
                 load.OutMaterial.Select(m => new LogEntry(
                   cntr: -1,
-                  mat: [m with { Process = 0, Path = null, Face = "" }],
+                  mat: [m with { Process = 0, Path = null, FaceNum = 0 }],
                   pal: 0,
                   ty: LogType.PartMark,
                   locName: "Mark",
@@ -2835,7 +2835,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   new LogEntry()
                   {
                     Counter = -1,
-                    Material = [mat with { Face = "" }],
+                    Material = [mat with { FaceNum = 0 }],
                     Pallet = 0,
                     LogType = LogType.Inspection,
                     LocationName = "Inspect",
