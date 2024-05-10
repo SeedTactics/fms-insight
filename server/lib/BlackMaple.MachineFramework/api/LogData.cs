@@ -64,7 +64,7 @@ namespace BlackMaple.MachineFramework
     public required int NumProcesses { get; init; }
 
     [JsonPropertyName("face")]
-    public required string Face { get; init; }
+    public required int Face { get; init; }
 
     [JsonPropertyName("serial")]
     public string? Serial { get; init; }

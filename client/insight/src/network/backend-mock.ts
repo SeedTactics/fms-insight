@@ -359,7 +359,7 @@ export function registerMockBackend(
         part: partName || "",
         proc: process,
         numproc: 1,
-        face: "1",
+        face: 1,
       });
       const evt = {
         counter: 0,
@@ -396,7 +396,7 @@ export function registerMockBackend(
         part: partName || "",
         proc: insp.process,
         numproc: 1,
-        face: "1",
+        face: 1,
       });
       const evt: api.ILogEntry = {
         counter: 0,
@@ -431,7 +431,7 @@ export function registerMockBackend(
         part: partName || "",
         proc: closeout.process,
         numproc: 1,
-        face: "1",
+        face: 1,
       });
       const evt: api.ILogEntry = {
         counter: 0,
@@ -468,7 +468,7 @@ export function registerMockBackend(
         part: partName || "",
         proc: process,
         numproc: 1,
-        face: "1",
+        face: 1,
       });
       const evt: api.ILogEntry = {
         counter: 0,
@@ -498,7 +498,7 @@ export function registerMockBackend(
         part: "",
         proc: process,
         numproc: 1,
-        face: "",
+        face: 0,
       });
       const evt: api.ILogEntry = {
         counter: 0,

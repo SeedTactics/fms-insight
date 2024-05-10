@@ -203,7 +203,6 @@ namespace MachineWatchTest
       public int Process { get; set; }
       public int Path { get; set; }
       public int NumProcess { get; set; }
-      public string Face { get; set; }
 
       // extra data to set data in a single place to keep actual tests shorter.
       public DateTime EventStartTime { get; set; }
@@ -219,7 +218,7 @@ namespace MachineWatchTest
           Process = Process,
           Path = Path,
           NumProcesses = NumProcess,
-          Face = Face,
+          Face = Process,
           Serial = SerialSettings.ConvertToBase62(MaterialID).PadLeft(10, '0'),
           Workorder = ""
         };
@@ -233,7 +232,6 @@ namespace MachineWatchTest
       string part,
       int proc,
       int numProc,
-      string face,
       long matID,
       int partIdx = 1
     )
@@ -247,7 +245,6 @@ namespace MachineWatchTest
         Process = proc,
         Path = 1,
         NumProcess = numProc,
-        Face = face,
         EventStartTime = t,
         Pallet = pal,
       };
@@ -260,7 +257,6 @@ namespace MachineWatchTest
       string part,
       int proc,
       int numProc,
-      string face,
       IEnumerable<long> matIDs,
       int partIdx = 1
     )
@@ -277,7 +273,6 @@ namespace MachineWatchTest
               Process = proc,
               Path = 1,
               NumProcess = numProc,
-              Face = face + "-" + (idx + 1).ToString(),
               EventStartTime = t,
               Pallet = pal,
             }
@@ -296,7 +291,6 @@ namespace MachineWatchTest
         Process = m.Process,
         Path = m.Path,
         NumProcess = numProc ?? m.NumProcess,
-        Face = m.Face,
         EventStartTime = m.EventStartTime,
         Pallet = m.Pallet,
       };
@@ -313,7 +307,6 @@ namespace MachineWatchTest
         Process = proc,
         Path = m.Path,
         NumProcess = m.NumProcess,
-        Face = m.Face,
         EventStartTime = m.EventStartTime,
         Pallet = m.Pallet,
       };
@@ -381,7 +374,7 @@ namespace MachineWatchTest
           {
             MaterialID = material.MaterialID,
             Process = proc,
-            Face = ""
+            Face = 0
           },
           queue: queue,
           position: -1,
@@ -400,7 +393,7 @@ namespace MachineWatchTest
           {
             MaterialID = mat.MaterialID,
             Process = proc,
-            Face = ""
+            Face = 0
           },
           null,
           mat.EventStartTime.AddMinutes(offset)
@@ -548,7 +541,7 @@ namespace MachineWatchTest
     {
       var e = new BlackMaple.MachineFramework.LogEntry(
         cntr: -1,
-        mat: [mat.ToLogMat() with { Face = "" }],
+        mat: [mat.ToLogMat() with { Face = 0 }],
         pal: 0,
         ty: LogType.Inspection,
         locName: "Inspect",
@@ -1053,7 +1046,7 @@ namespace MachineWatchTest
         expected.Add(
           new BlackMaple.MachineFramework.LogEntry(
             cntr: -1,
-            mat: [mat.ToLogMat() with { Face = reason == null ? mat.Face : "" }],
+            mat: [mat.ToLogMat() with { Face = reason == null ? mat.Process : 0 }],
             pal: 0,
             ty: LogType.AddToQueue,
             locName: queue,
@@ -1093,7 +1086,7 @@ namespace MachineWatchTest
         expected.Add(
           new BlackMaple.MachineFramework.LogEntry(
             cntr: -1,
-            mat: [mat.ToLogMat() with { Face = "", Path = mat.Process == 0 ? null : mat.Path }],
+            mat: [mat.ToLogMat() with { Face = 0, Path = mat.Process == 0 ? null : mat.Path }],
             pal: 0,
             ty: LogType.RemoveFromQueue,
             locName: queue,
@@ -1122,7 +1115,7 @@ namespace MachineWatchTest
           {
             MaterialID = mat.MaterialID,
             Process = mat.Process,
-            Face = mat.Face
+            Face = mat.Process
           },
           pallet: mat.Pallet,
           queue: queue,
@@ -1288,16 +1281,7 @@ namespace MachineWatchTest
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        face: "1",
-        numProc: 1,
-        matID: 1
-      );
+      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
@@ -1355,36 +1339,9 @@ namespace MachineWatchTest
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p1 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 1,
-        face: "1",
-        matID: 1
-      );
-      var p2 = BuildMaterial(
-        t,
-        pal: 6,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 1,
-        face: "1",
-        matID: 2
-      );
-      var p3 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 1,
-        face: "1",
-        matID: 3
-      );
+      var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
+      var p2 = BuildMaterial(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 2);
+      var p3 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 3);
 
       LoadStart(p1, offset: 0, load: 1);
       LoadStart(p2, offset: 1, load: 2);
@@ -1452,46 +1409,10 @@ namespace MachineWatchTest
       AddTestPart(unique: "unique", part: "part1", numProc: 2);
       AddTestPart(unique: "unique", part: "part1", numProc: 2);
 
-      var p1d1 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 1
-      );
-      var p1d2 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 2,
-        numProc: 2,
-        face: "2",
-        matID: 1
-      );
-      var p2 = BuildMaterial(
-        t,
-        pal: 6,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 2
-      );
-      var p3d1 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 3
-      );
+      var p1d1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 1);
+      var p1d2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, matID: 1);
+      var p2 = BuildMaterial(t, pal: 6, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 2);
+      var p3d1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 3);
 
       LoadStart(p1d1, offset: 0, load: 1);
       LoadStart(p2, offset: 2, load: 2);
@@ -1552,7 +1473,6 @@ namespace MachineWatchTest
         proc: 1,
         numProc: 2,
         partIdx: 1,
-        face: "1",
         matID: 1
       );
       var proc2path1 = BuildMaterial(
@@ -1563,7 +1483,6 @@ namespace MachineWatchTest
         proc: 2,
         numProc: 2,
         partIdx: 1,
-        face: "2",
         matID: 1
       );
       var proc1path2 = BuildMaterial(
@@ -1574,7 +1493,6 @@ namespace MachineWatchTest
         proc: 1,
         numProc: 2,
         partIdx: 2,
-        face: "1",
         matID: 2
       );
       var proc2path2 = BuildMaterial(
@@ -1585,7 +1503,6 @@ namespace MachineWatchTest
         proc: 2,
         numProc: 2,
         partIdx: 2,
-        face: "2",
         matID: 2
       );
 
@@ -1762,7 +1679,6 @@ namespace MachineWatchTest
         part: "pppp",
         proc: 1,
         numProc: 2,
-        face: "1",
         matIDs: new long[] { 1, 2, 3 }
       );
       var proc2 = BuildMaterial(
@@ -1772,7 +1688,6 @@ namespace MachineWatchTest
         part: "pppp",
         proc: 2,
         numProc: 2,
-        face: "2",
         matIDs: new long[] { 1, 2, 3 }
       );
       var proc1snd = BuildMaterial(
@@ -1782,7 +1697,6 @@ namespace MachineWatchTest
         part: "pppp",
         proc: 1,
         numProc: 2,
-        face: "1",
         matIDs: new long[] { 4, 5, 6 }
       );
       var proc2snd = BuildMaterial(
@@ -1792,7 +1706,6 @@ namespace MachineWatchTest
         part: "pppp",
         proc: 2,
         numProc: 2,
-        face: "2",
         matIDs: new long[] { 4, 5, 6 }
       );
       var proc1thrd = BuildMaterial(
@@ -1802,7 +1715,6 @@ namespace MachineWatchTest
         part: "pppp",
         proc: 1,
         numProc: 2,
-        face: "1",
         matIDs: new long[] { 7, 8, 9 }
       );
 
@@ -1866,16 +1778,7 @@ namespace MachineWatchTest
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p1 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 1,
-        face: "1",
-        matID: 1
-      );
+      var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
 
       LoadStart(p1, offset: 0, load: 1);
       LoadEnd(p1, offset: 2, load: 1, cycleOffset: 2, elapMin: 2);
@@ -1937,26 +1840,8 @@ namespace MachineWatchTest
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p1 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 1,
-        face: "1",
-        matID: 1
-      );
-      var p2 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 1,
-        face: "1",
-        matID: 2
-      );
+      var p1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
+      var p2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 2);
 
       LoadStart(p1, offset: 0, load: 5);
       LoadEnd(p1, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
@@ -1995,26 +1880,8 @@ namespace MachineWatchTest
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var proc1 = BuildMaterial(
-        t,
-        pal: 2,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 1
-      );
-      var proc2 = BuildMaterial(
-        t,
-        pal: 2,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 2,
-        numProc: 2,
-        face: "2",
-        matID: 1
-      );
+      var proc1 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
+      var proc2 = BuildMaterial(t, pal: 2, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, matID: 1);
 
       var j = new Job()
       {
@@ -2222,7 +2089,6 @@ namespace MachineWatchTest
         part: "part1",
         proc: 1,
         partIdx: 1,
-        face: "1",
         numProc: 1,
         matID: 1
       );
@@ -2249,7 +2115,6 @@ namespace MachineWatchTest
         part: "part1",
         proc: 1,
         partIdx: 2,
-        face: "1",
         numProc: 1,
         matID: 2
       );
@@ -2306,16 +2171,7 @@ namespace MachineWatchTest
       var schId = AddTestPart(unique: "unique", part: "part1", numProc: 2);
       AddTestPartPrograms(schId, insightPart: false, new[] { "the-log-prog", "the-log-prog-proc2" });
 
-      var p = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        face: "1",
-        numProc: 2,
-        matID: 1
-      );
+      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 1);
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
@@ -2333,37 +2189,10 @@ namespace MachineWatchTest
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var proc1 = BuildMaterial(
-        t,
-        pal: 8,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 1
-      );
-      var proc1snd = BuildMaterial(
-        t,
-        pal: 8,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 2
-      );
+      var proc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
+      var proc1snd = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 2);
 
-      var proc2 = BuildMaterial(
-        t,
-        pal: 9,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 2,
-        numProc: 2,
-        face: "2",
-        matID: 1
-      );
+      var proc2 = BuildMaterial(t, pal: 9, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, matID: 1);
 
       var j = new Job()
       {
@@ -2440,7 +2269,6 @@ namespace MachineWatchTest
         proc: 1,
         numProc: 2,
         partIdx: 1,
-        face: "1",
         matIDs: new long[] { 1, 2, 3 }
       );
       var proc2path1 = BuildMaterial(
@@ -2451,7 +2279,6 @@ namespace MachineWatchTest
         proc: 2,
         numProc: 2,
         partIdx: 1,
-        face: "2",
         matIDs: new long[] { 1, 2, 3 }
       );
 
@@ -2463,7 +2290,6 @@ namespace MachineWatchTest
         proc: 1,
         numProc: 2,
         partIdx: 2,
-        face: "1",
         matIDs: new long[] { 4, 5, 6 }
       );
       var proc2path2 = BuildMaterial(
@@ -2474,7 +2300,6 @@ namespace MachineWatchTest
         proc: 2,
         numProc: 2,
         partIdx: 2,
-        face: "2",
         matIDs: new long[] { 4, 5, 6 }
       );
 
@@ -2486,7 +2311,6 @@ namespace MachineWatchTest
         proc: 1,
         numProc: 2,
         partIdx: 1,
-        face: "1",
         matIDs: new long[] { 7, 8, 9 }
       );
       var proc2path1snd = BuildMaterial(
@@ -2497,7 +2321,6 @@ namespace MachineWatchTest
         proc: 2,
         numProc: 2,
         partIdx: 1,
-        face: "2",
         matIDs: new long[] { 7, 8, 9 }
       );
 
@@ -2509,7 +2332,6 @@ namespace MachineWatchTest
         proc: 1,
         numProc: 2,
         partIdx: 1,
-        face: "1",
         matIDs: new long[] { 10, 11, 12 }
       );
 
@@ -2766,37 +2588,10 @@ namespace MachineWatchTest
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var proc1 = BuildMaterial(
-        t,
-        pal: 8,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 1
-      );
-      var proc1snd = BuildMaterial(
-        t,
-        pal: 8,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 2
-      );
+      var proc1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
+      var proc1snd = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 2);
 
-      var proc2 = BuildMaterial(
-        t,
-        pal: 9,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 2,
-        numProc: 2,
-        face: "2",
-        matID: 1
-      );
+      var proc2 = BuildMaterial(t, pal: 9, unique: "uuuu", part: "pppp", proc: 2, numProc: 2, matID: 1);
 
       var j = new Job()
       {
@@ -2855,46 +2650,10 @@ namespace MachineWatchTest
       var t = DateTime.UtcNow.AddHours(-5);
       AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
 
-      var mat1 = BuildMaterial(
-        t,
-        pal: 8,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 1
-      );
-      var mat2 = BuildMaterial(
-        t,
-        pal: 8,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 2
-      );
-      var mat3 = BuildMaterial(
-        t,
-        pal: 4,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 3
-      );
-      var mat4 = BuildMaterial(
-        t,
-        pal: 4,
-        unique: "uuuu",
-        part: "pppp",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 4
-      );
+      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
+      var mat2 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 2);
+      var mat3 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 3);
+      var mat4 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 4);
 
       var j = new Job()
       {
@@ -3067,16 +2826,7 @@ namespace MachineWatchTest
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        face: "1",
-        numProc: 1,
-        matID: 1
-      );
+      var p = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
@@ -3259,16 +3009,7 @@ namespace MachineWatchTest
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p = BuildMaterial(
-        t,
-        pal: 7,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        face: "1",
-        numProc: 1,
-        matID: 1
-      );
+      var p = BuildMaterial(t, pal: 7, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
@@ -3333,16 +3074,7 @@ namespace MachineWatchTest
 
       AddTestPart(unique: "unique", part: "part1", numProc: 1);
 
-      var p = BuildMaterial(
-        t,
-        pal: 7,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        face: "1",
-        numProc: 1,
-        matID: 1
-      );
+      var p = BuildMaterial(t, pal: 7, unique: "unique", part: "part1", proc: 1, numProc: 1, matID: 1);
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, cycleOffset: 3, elapMin: 2);
@@ -3389,36 +3121,9 @@ namespace MachineWatchTest
 
       var schId = AddTestPart(unique: "unique", part: "part1", numProc: 2);
 
-      var m1proc1 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 1
-      );
-      var m1proc2 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 2,
-        numProc: 2,
-        face: "2",
-        matID: 1
-      );
-      var m2proc1 = BuildMaterial(
-        t,
-        pal: 3,
-        unique: "unique",
-        part: "part1",
-        proc: 1,
-        numProc: 2,
-        face: "1",
-        matID: 2
-      );
+      var m1proc1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 1);
+      var m1proc2 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 2, numProc: 2, matID: 1);
+      var m2proc1 = BuildMaterial(t, pal: 3, unique: "unique", part: "part1", proc: 1, numProc: 2, matID: 2);
 
       SetPallet(pal: 3, atLoadStation: true);
       LoadStart(m1proc1, offset: 0, load: 1);

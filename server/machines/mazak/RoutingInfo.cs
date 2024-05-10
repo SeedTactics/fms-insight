@@ -420,7 +420,7 @@ namespace MazakMachineInterface
             {
               MaterialID = matId,
               Process = process,
-              Face = ""
+              Face = 0
             },
             serial,
             DateTime.UtcNow
@@ -433,7 +433,7 @@ namespace MazakMachineInterface
             {
               MaterialID = matId,
               Process = process,
-              Face = ""
+              Face = 0
             },
             workorder,
             DateTime.UtcNow
@@ -617,7 +617,7 @@ namespace MazakMachineInterface
                 {
                   MaterialID = materialId,
                   Process = mat.Process,
-                  Face = ""
+                  Face = 0
                 },
                 pallet: mat.Location.PalletNum ?? 0,
                 queue: fmsSettings.QuarantineQueue ?? "",

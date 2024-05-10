@@ -91,7 +91,7 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "CREATE TABLE stations_mat(Counter INTEGER, MaterialID INTEGER, "
-          + "Process INTEGER, Face TEXT, PRIMARY KEY(Counter,MaterialID,Process))";
+          + "Process INTEGER, Face INTEGER, PRIMARY KEY(Counter,MaterialID,Process))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX stations_idx ON stations(TimeUTC)";

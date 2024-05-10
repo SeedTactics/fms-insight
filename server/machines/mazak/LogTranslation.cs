@@ -377,7 +377,7 @@ namespace MazakMachineInterface
         {
           MaterialID = -1,
           Process = e.Process,
-          Face = ""
+          Face = 0
         }
       );
       return ret;
@@ -404,7 +404,7 @@ namespace MazakMachineInterface
 
     private List<LogMaterialAndPath> GetMaterialOnPallet(LogEntry e, IList<MWI.LogEntry> oldEvents)
     {
-      var byFace = ParseMaterialFromPreviousEvents(
+      var byMatId = ParseMaterialFromPreviousEvents(
         jobPartName: e.JobPartName,
         proc: e.Process,
         fixQty: e.FixedQuantity,
@@ -429,23 +429,18 @@ namespace MazakMachineInterface
 
       for (int i = 1; i <= e.FixedQuantity; i += 1)
       {
-        string face;
-        if (e.FixedQuantity == 1)
-          face = e.Process.ToString();
-        else
-          face = e.Process.ToString() + "-" + i.ToString();
-
-        if (byFace.ContainsKey(face))
+        if (byMatId.Count > 0)
         {
           ret.Add(
             new LogMaterialAndPath()
             {
-              Mat = byFace[face],
+              Mat = byMatId.GetValueAtIndex(0),
               PartName = e.JobPartName,
               Unique = unique,
               Path = path
             }
           );
+          byMatId.RemoveAt(0);
         }
         else
         {
@@ -457,7 +452,7 @@ namespace MazakMachineInterface
               {
                 MaterialID = _log.AllocateMaterialID(unique, e.JobPartName, numProc),
                 Process = e.Process,
-                Face = face
+                Face = e.Process
               },
               PartName = e.JobPartName,
               Unique = unique,
@@ -466,11 +461,10 @@ namespace MazakMachineInterface
           );
 
           Log.Warning(
-            "When attempting to find material for event {@event} on unique {unique} path {path}, there was no previous cycles with material on face {face}",
+            "When attempting to find material for event {@event} on unique {unique} path {path}, there was no previous cycles with material on face",
             e,
             unique,
-            path,
-            face
+            path
           );
         }
       }
@@ -483,7 +477,7 @@ namespace MazakMachineInterface
       return ret;
     }
 
-    private SortedList<string, EventLogMaterial> ParseMaterialFromPreviousEvents(
+    private SortedList<long, EventLogMaterial> ParseMaterialFromPreviousEvents(
       string jobPartName,
       int proc,
       int fixQty,
@@ -491,7 +485,7 @@ namespace MazakMachineInterface
       IList<MWI.LogEntry> oldEvents
     )
     {
-      var byFace = new SortedList<string, EventLogMaterial>(); //face -> material
+      var byMatId = new SortedList<long, EventLogMaterial>(); //face -> material
 
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
       {
@@ -515,32 +509,20 @@ namespace MazakMachineInterface
             mat.PartName == jobPartName
             && mat.Process == proc
             && mat.MaterialID >= 0
-            && !byFace.ContainsKey(mat.Face)
+            && !byMatId.ContainsKey(mat.MaterialID)
           )
           {
-            string newFace;
-            if (fixQty == 1)
-              newFace = proc.ToString();
-            else
-            {
-              int idx = mat.Face.IndexOf('-');
-              if (idx >= 0 && idx < mat.Face.Length)
-                newFace = proc.ToString() + mat.Face.Substring(idx);
-              else
-                newFace = proc.ToString();
-            }
-
-            byFace[newFace] = new EventLogMaterial()
+            byMatId[mat.MaterialID] = new EventLogMaterial()
             {
               MaterialID = mat.MaterialID,
               Process = proc,
-              Face = newFace
+              Face = proc
             };
           }
         }
       }
 
-      return byFace;
+      return byMatId;
     }
 
     private string PendingLoadKey(LogEntry e)
@@ -628,15 +610,6 @@ namespace MazakMachineInterface
 
             for (int i = 1; i <= fixQty; i++)
             {
-              string face;
-              if (fixQty == 1)
-              {
-                face = proc.ToString();
-              }
-              else
-              {
-                face = proc.ToString() + "-" + i.ToString();
-              }
               if (i <= qs.Count)
               {
                 var qmat = qs[i - 1];
@@ -645,7 +618,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = qmat.MaterialID,
                     Process = proc,
-                    Face = face
+                    Face = proc
                   }
                 );
               }
@@ -664,7 +637,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
                     Process = proc,
-                    Face = face
+                    Face = proc
                   }
                 );
               }
@@ -687,7 +660,7 @@ namespace MazakMachineInterface
                 {
                   MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
                   Process = proc,
-                  Face = face
+                  Face = proc
                 }
               );
             }
@@ -701,7 +674,7 @@ namespace MazakMachineInterface
               proc - 1,
               proc
             );
-            var byFace = ParseMaterialFromPreviousEvents(
+            var byMatId = ParseMaterialFromPreviousEvents(
               jobPartName: jobPartName,
               proc: proc - 1,
               fixQty: fixQty,
@@ -710,28 +683,16 @@ namespace MazakMachineInterface
             );
             for (int i = 1; i <= fixQty; i += 1)
             {
-              string prevFace;
-              string nextFace;
-              if (fixQty == 1)
+              if (byMatId.Count > 0)
               {
-                prevFace = (proc - 1).ToString();
-                nextFace = proc.ToString();
-              }
-              else
-              {
-                prevFace = (proc - 1).ToString() + "-" + i.ToString();
-                nextFace = proc.ToString() + "-" + i.ToString();
-              }
-
-              if (byFace.ContainsKey(prevFace))
-              {
-                var old = byFace[prevFace];
+                var old = byMatId.GetValueAtIndex(0);
+                byMatId.RemoveAt(0);
                 mats.Add(
                   new EventLogMaterial()
                   {
                     MaterialID = old.MaterialID,
                     Process = proc,
-                    Face = nextFace
+                    Face = proc
                   }
                 );
               }
@@ -743,7 +704,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
                     Process = proc,
-                    Face = nextFace
+                    Face = proc
                   }
                 );
 
@@ -894,7 +855,7 @@ namespace MazakMachineInterface
             {
               MaterialID = extraMat.MaterialID,
               Process = extraMat.Process,
-              Face = ""
+              Face = 0
             },
             queue: _settings.QuarantineQueue,
             position: -1,

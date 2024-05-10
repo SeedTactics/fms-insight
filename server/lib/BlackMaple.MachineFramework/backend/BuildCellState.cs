@@ -162,7 +162,7 @@ public static class BuildCellState
         && e.Material != null
         && e.Material.Any()
       )
-      .GroupBy(e => int.TryParse(e.Material.First().Face, out var faceNum) ? faceNum : 1)
+      .GroupBy(e => e.Material.First().Face)
       .Select(g => new { Face = g.Key, LoadEnd = g.Last() });
 
     foreach (var face in lastLoaded)
@@ -597,7 +597,7 @@ public static class BuildCellState
           {
             MaterialID = m.MaterialID,
             Process = m.Process,
-            Face = stop.face.FaceNum.ToString()
+            Face = stop.face.FaceNum
           })
         ),
         pallet: pal.PalletNum,
@@ -693,7 +693,7 @@ public static class BuildCellState
           {
             MaterialID = m.MaterialID,
             Process = m.Process,
-            Face = stop.face.FaceNum.ToString()
+            Face = stop.face.FaceNum
           })
         ),
         pallet: pal.PalletNum,
@@ -775,7 +775,7 @@ public static class BuildCellState
           {
             MaterialID = m.MaterialID,
             Process = m.Process,
-            Face = faceNum.ToString()
+            Face = faceNum
           }),
           pallet: pal.PalletNum,
           lulNum: lulNum,
@@ -863,7 +863,7 @@ public static class BuildCellState
         {
           MaterialID = m.MaterialID,
           Process = m.Process,
-          Face = faceNum.ToString()
+          Face = faceNum
         }),
         pallet: pal.PalletNum,
         lulNum: lulNum,

@@ -260,7 +260,7 @@ namespace MachineWatchTest
         {
           MaterialID = matId,
           Process = 0,
-          Face = ""
+          Face = 0
         },
         "castings",
         -1,
@@ -344,7 +344,7 @@ namespace MachineWatchTest
         {
           MaterialID = 2426324,
           Process = 1,
-          Face = "1"
+          Face = 1
         },
         pallet: 5,
         queue: "QuarantineQ",

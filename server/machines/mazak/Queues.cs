@@ -285,7 +285,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = m,
                     Process = 0,
-                    Face = ""
+                    Face = 0
                   },
                   queue: schProc.InputQueue,
                   position: -1,
@@ -304,7 +304,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = m.MaterialID,
                     Process = 1,
-                    Face = ""
+                    Face = 0
                   }
                 );
               }
