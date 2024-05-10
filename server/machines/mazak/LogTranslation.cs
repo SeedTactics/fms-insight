@@ -683,19 +683,6 @@ namespace MazakMachineInterface
             );
             for (int i = 1; i <= fixQty; i += 1)
             {
-              string prevFace;
-              string nextFace;
-              if (fixQty == 1)
-              {
-                prevFace = (proc - 1).ToString();
-                nextFace = proc.ToString();
-              }
-              else
-              {
-                prevFace = (proc - 1).ToString() + "-" + i.ToString();
-                nextFace = proc.ToString() + "-" + i.ToString();
-              }
-
               if (byMatId.Count > 0)
               {
                 var old = byMatId.GetValueAtIndex(0);
