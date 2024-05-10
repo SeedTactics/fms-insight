@@ -429,12 +429,6 @@ namespace MazakMachineInterface
 
       for (int i = 1; i <= e.FixedQuantity; i += 1)
       {
-        string face;
-        if (e.FixedQuantity == 1)
-          face = e.Process.ToString();
-        else
-          face = e.Process.ToString() + "-" + i.ToString();
-
         if (byMatId.Count > 0)
         {
           ret.Add(
@@ -467,11 +461,10 @@ namespace MazakMachineInterface
           );
 
           Log.Warning(
-            "When attempting to find material for event {@event} on unique {unique} path {path}, there was no previous cycles with material on face {face}",
+            "When attempting to find material for event {@event} on unique {unique} path {path}, there was no previous cycles with material on face",
             e,
             unique,
-            path,
-            face
+            path
           );
         }
       }
