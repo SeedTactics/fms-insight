@@ -44,7 +44,6 @@ namespace MazakMachineInterface;
 // Currently Missing:
 // * Adjusting Jobs before they are added (NewJobTransform)
 //   Nothing seems to use it anymore, so can be deleted?
-// * Want more control over archiving jobs
 // * Everything else from RoutingInfo matches with JobsAndQueuesFromDb
 
 public record MazakState : ICellState
@@ -211,6 +210,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
 
   public bool DecrementJobs(IRepository db, MazakState st)
   {
+    // TODO: reload AllData to make sure it is up to date?
     return decrementPlanQty.Decrement(db, st.AllData);
   }
 }
