@@ -307,15 +307,13 @@ export function registerMockBackend(
     },
     logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       return data.then(() =>
-        events.then((evts) =>
-          evts.filter((e) => LazySeq.of(e.material).anyMatch((m) => m.id === materialID)),
-        ),
+        events.then((evts) => evts.filter((e) => LazySeq.of(e.material).some((m) => m.id === materialID))),
       );
     },
     logForMaterials(materialIDs: ReadonlyArray<number>): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {
       const matIds = new Set(materialIDs);
       return data.then(() =>
-        events.then((evts) => evts.filter((e) => LazySeq.of(e.material).anyMatch((m) => matIds.has(m.id)))),
+        events.then((evts) => evts.filter((e) => LazySeq.of(e.material).some((m) => matIds.has(m.id)))),
       );
     },
     logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>> {

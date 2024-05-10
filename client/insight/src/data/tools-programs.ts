@@ -306,7 +306,7 @@ export const toolReportHasSerial = atom<boolean>((get) => {
   if (!report) return false;
   return LazySeq.of(report)
     .flatMap((r) => r.machines)
-    .anyMatch((t) => t.serial != null && t.serial !== "");
+    .some((t) => t.serial != null && t.serial !== "");
 });
 
 export const toolReportHasTimeUsage = atom<boolean>((get) => {
@@ -314,7 +314,7 @@ export const toolReportHasTimeUsage = atom<boolean>((get) => {
   if (!report) return false;
   return LazySeq.of(report)
     .flatMap((r) => r.machines)
-    .anyMatch((t) => t.currentUseMinutes != null);
+    .some((t) => t.currentUseMinutes != null);
 });
 
 export const toolReportHasCntUsage = atom<boolean>((get) => {
@@ -322,7 +322,7 @@ export const toolReportHasCntUsage = atom<boolean>((get) => {
   if (!report) return false;
   return LazySeq.of(report)
     .flatMap((r) => r.machines)
-    .anyMatch((t) => t.currentUseCnt != null);
+    .some((t) => t.currentUseCnt != null);
 });
 
 function buildToolReportHTML(

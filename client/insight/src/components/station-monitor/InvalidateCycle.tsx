@@ -182,7 +182,7 @@ function matCanSwap(
         if (
           !LazySeq.of(job.procsAndPaths)
             .flatMap((p) => p.paths)
-            .anyMatch((p) => p.casting === newMat.partName)
+            .some((p) => p.casting === newMat.partName)
         ) {
           return false;
         }

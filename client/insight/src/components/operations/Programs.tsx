@@ -115,11 +115,11 @@ function ProgramRow(props: ProgramRowProps) {
   const toolsHaveTime =
     props.program.toolUse !== null &&
     props.program.toolUse.tools.length > 0 &&
-    LazySeq.of(props.program.toolUse.tools).anyMatch((t) => t.cycleUsageMinutes > 0);
+    LazySeq.of(props.program.toolUse.tools).some((t) => t.cycleUsageMinutes > 0);
   const toolsHaveCnt =
     props.program.toolUse !== null &&
     props.program.toolUse.tools.length > 0 &&
-    LazySeq.of(props.program.toolUse.tools).anyMatch((t) => t.cycleUsageCnt > 0);
+    LazySeq.of(props.program.toolUse.tools).some((t) => t.cycleUsageCnt > 0);
 
   return (
     <>

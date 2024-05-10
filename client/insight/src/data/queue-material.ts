@@ -83,7 +83,7 @@ function extractJobGroups(
     readonly details?: string;
   }[] = [];
 
-  const matchesRawMatQueue = LazySeq.of(job.procsAndPaths?.[0].paths ?? []).anyMatch(
+  const matchesRawMatQueue = LazySeq.of(job.procsAndPaths?.[0].paths ?? []).some(
     (p) => p.inputQueue === toQueue,
   );
 
@@ -99,7 +99,7 @@ function extractJobGroups(
   if (fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.AddAndSpecifyJob) {
     // paths besides the final path
     for (let procIdx = 0; procIdx < job.procsAndPaths.length - 1; procIdx++) {
-      const matchingQueue = LazySeq.of(job.procsAndPaths[procIdx + 1].paths).anyMatch(
+      const matchingQueue = LazySeq.of(job.procsAndPaths[procIdx + 1].paths).some(
         (p) => p.inputQueue === toQueue,
       );
       machinedProcs.push({
@@ -110,7 +110,7 @@ function extractJobGroups(
     }
   }
 
-  const anyGoodPath = LazySeq.of(machinedProcs).anyMatch((p) => p.disabledMsg === null);
+  const anyGoodPath = LazySeq.of(machinedProcs).some((p) => p.disabledMsg === null);
 
   if (anyGoodPath) {
     return {
@@ -188,7 +188,7 @@ function possibleJobs(
       .filter(
         (j) =>
           possible.has(j.unique) &&
-          LazySeq.of(j.procsAndPaths?.[0].paths ?? []).anyMatch((p) => p.inputQueue === toQueue),
+          LazySeq.of(j.procsAndPaths?.[0].paths ?? []).some((p) => p.inputQueue === toQueue),
       )
       .distinctBy((j) => j.unique)
       .map((j) => ({
@@ -274,7 +274,7 @@ export function extractJobRawMaterial(
     .filter(
       ([, j]) =>
         (j.remainingToStart === undefined || j.remainingToStart > 0) &&
-        LazySeq.of(j.procsAndPaths?.[0]?.paths ?? []).anyMatch((p) => p.inputQueue === queue),
+        LazySeq.of(j.procsAndPaths?.[0]?.paths ?? []).some((p) => p.inputQueue === queue),
     )
     .map(([, j]) => {
       const rawMatName: string =

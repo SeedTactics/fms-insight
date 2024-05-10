@@ -119,7 +119,7 @@ function binCompleted(
       (cycle) =>
         cycle.isLabor &&
         cycle.operation === "UNLOAD" &&
-        LazySeq.of(cycle.material).anyMatch((m) => m.proc === m.numproc),
+        LazySeq.of(cycle.material).some((m) => m.proc === m.numproc),
     )
     .collect(decideShift((c) => c.x, shifts))
     .toLookupOrderedMap(

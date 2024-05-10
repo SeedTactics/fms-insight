@@ -213,7 +213,7 @@ function extractRecentInspections(
     if (comp === undefined) {
       return m.signaledInspections.length === 0;
     } else {
-      return LazySeq.of(m.signaledInspections).allMatch((s) => s in comp);
+      return LazySeq.of(m.signaledInspections).every((s) => s in comp);
     }
   }
 

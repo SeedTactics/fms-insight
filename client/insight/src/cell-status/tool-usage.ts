@@ -90,7 +90,7 @@ function process_tools(
         toolName,
         cycleUsageMinutes: useDuring,
         cycleUsageCnt: cntDuring,
-        toolChangedDuringMiddleOfCycle: LazySeq.of(uses).anyMatch((use) => use.toolChangeOccurred ?? false),
+        toolChangedDuringMiddleOfCycle: LazySeq.of(uses).some((use) => use.toolChangeOccurred ?? false),
       };
     })
     .toRArray();

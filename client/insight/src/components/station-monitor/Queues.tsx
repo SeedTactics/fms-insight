@@ -103,7 +103,7 @@ const highlightedComments = [/\bhold\b/, /\bmissing\b/, /\bwait\b/, /\bwaiting\b
 function highlightRow(j: Readonly<api.IActiveJob>): boolean {
   const comment = j.comment;
   if (!comment || comment === "") return false;
-  return LazySeq.of(highlightedComments).anyMatch((r) => r.test(comment));
+  return LazySeq.of(highlightedComments).some((r) => r.test(comment));
 }
 
 export interface RawMaterialJobRowProps {
@@ -585,7 +585,7 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
     return LazySeq.ofObject(currentJobs)
       .flatMap(([, j]) => j.procsAndPaths)
       .flatMap((p) => p.paths)
-      .anyMatch((p) => p.inputQueue === props.label);
+      .some((p) => p.inputQueue === props.label);
   }, [currentJobs]);
 
   if (props.rawMatQueue) {
