@@ -4783,8 +4783,8 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("numproc", Required = Newtonsoft.Json.Required.Always)]
         public int Numproc { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("facenum", Required = Newtonsoft.Json.Required.Always)]
-        public int Facenum { get; set; }
+        [Newtonsoft.Json.JsonProperty("face", Required = Newtonsoft.Json.Required.Always)]
+        public int Face { get; set; }
 
         [Newtonsoft.Json.JsonProperty("serial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Serial { get; set; }

@@ -2319,7 +2319,7 @@ export class LogMaterial implements ILogMaterial {
     proc!: number;
     path?: number | undefined;
     numproc!: number;
-    facenum!: number;
+    face!: number;
     serial?: string | undefined;
     workorder?: string | undefined;
 
@@ -2340,7 +2340,7 @@ export class LogMaterial implements ILogMaterial {
             this.proc = _data["proc"];
             this.path = _data["path"];
             this.numproc = _data["numproc"];
-            this.facenum = _data["facenum"];
+            this.face = _data["face"];
             this.serial = _data["serial"];
             this.workorder = _data["workorder"];
         }
@@ -2361,7 +2361,7 @@ export class LogMaterial implements ILogMaterial {
         data["proc"] = this.proc;
         data["path"] = this.path;
         data["numproc"] = this.numproc;
-        data["facenum"] = this.facenum;
+        data["face"] = this.face;
         data["serial"] = this.serial;
         data["workorder"] = this.workorder;
         return data;
@@ -2375,7 +2375,7 @@ export interface ILogMaterial {
     proc: number;
     path?: number | undefined;
     numproc: number;
-    facenum: number;
+    face: number;
     serial?: string | undefined;
     workorder?: string | undefined;
 }

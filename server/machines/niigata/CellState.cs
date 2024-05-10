@@ -273,7 +273,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             PalletNum = pallet.Master.PalletNum,
-            Face = m.FaceNum
+            Face = m.Face
           },
           Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
         };

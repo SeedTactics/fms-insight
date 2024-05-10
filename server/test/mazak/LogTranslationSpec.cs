@@ -218,7 +218,7 @@ namespace MachineWatchTest
           Process = Process,
           Path = Path,
           NumProcesses = NumProcess,
-          FaceNum = Process,
+          Face = Process,
           Serial = SerialSettings.ConvertToBase62(MaterialID).PadLeft(10, '0'),
           Workorder = ""
         };
@@ -541,7 +541,7 @@ namespace MachineWatchTest
     {
       var e = new BlackMaple.MachineFramework.LogEntry(
         cntr: -1,
-        mat: [mat.ToLogMat() with { FaceNum = 0 }],
+        mat: [mat.ToLogMat() with { Face = 0 }],
         pal: 0,
         ty: LogType.Inspection,
         locName: "Inspect",
@@ -1046,7 +1046,7 @@ namespace MachineWatchTest
         expected.Add(
           new BlackMaple.MachineFramework.LogEntry(
             cntr: -1,
-            mat: [mat.ToLogMat() with { FaceNum = reason == null ? mat.Process : 0 }],
+            mat: [mat.ToLogMat() with { Face = reason == null ? mat.Process : 0 }],
             pal: 0,
             ty: LogType.AddToQueue,
             locName: queue,
@@ -1086,7 +1086,7 @@ namespace MachineWatchTest
         expected.Add(
           new BlackMaple.MachineFramework.LogEntry(
             cntr: -1,
-            mat: [mat.ToLogMat() with { FaceNum = 0, Path = mat.Process == 0 ? null : mat.Path }],
+            mat: [mat.ToLogMat() with { Face = 0, Path = mat.Process == 0 ? null : mat.Path }],
             pal: 0,
             ty: LogType.RemoveFromQueue,
             locName: queue,

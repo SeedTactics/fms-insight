@@ -500,13 +500,13 @@ namespace Makino
       foreach (var row in rows)
       {
         if (Settings.SerialType != SerialType.NoAutomaticSerials)
-          CreateSerial(row.MatID, order, part, process, fixturenum.ToString(), logDb, Settings);
+          CreateSerial(row.MatID, order, part, process, fixturenum, logDb, Settings);
         ret.Add(
           new EventLogMaterial()
           {
             MaterialID = row.MatID,
             Process = process,
-            Face = ""
+            Face = 0
           }
         );
       }
@@ -518,7 +518,7 @@ namespace Makino
       string jobUniqe,
       string partName,
       int process,
-      string face,
+      int face,
       IRepository _log,
       SerialSettings Settings
     )

@@ -75,7 +75,7 @@ namespace MachineWatchTest
         Process = proc,
         Path = null,
         NumProcesses = numProc,
-        FaceNum = face == "" ? 0 : int.Parse(face),
+        Face = face == "" ? 0 : int.Parse(face),
         Serial = serial,
         Workorder = workorder,
       };
@@ -442,7 +442,7 @@ namespace MachineWatchTest
             Faces = ImmutableList.Create(
               new MaterialToLoadOntoFace()
               {
-                FaceNum = matLoc2Face1.FaceNum,
+                FaceNum = matLoc2Face1.Face,
                 Process = matLoc2Face1.Process,
                 Path = 33,
                 MaterialIDs = ImmutableList.Create(matLoc2Face1.MaterialID),
@@ -450,7 +450,7 @@ namespace MachineWatchTest
               },
               new MaterialToLoadOntoFace()
               {
-                FaceNum = matLoc2Face2.FaceNum,
+                FaceNum = matLoc2Face2.Face,
                 Process = matLoc2Face2.Process,
                 Path = 44,
                 MaterialIDs = ImmutableList.Create(matLoc2Face2.MaterialID),
@@ -1329,7 +1329,7 @@ namespace MachineWatchTest
         NumProcesses = 2,
         Serial = "",
         Workorder = "",
-        FaceNum = 23
+        Face = 23
       };
       var mat2 = new LogMaterial()
       {
@@ -1341,7 +1341,7 @@ namespace MachineWatchTest
         NumProcesses = 2,
         Serial = "",
         Workorder = "",
-        FaceNum = 44
+        Face = 44
       };
 
       var log1 = new LogEntry(
@@ -3129,7 +3129,7 @@ namespace MachineWatchTest
           {
             new LogEntry(
               4,
-              new[] { mat1 with { FaceNum = 1234 } },
+              new[] { mat1 with { Face = 1234 } },
               1,
               LogType.LoadUnloadCycle,
               "L/U",
@@ -4324,7 +4324,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               Serial = "cccc",
               Workorder = "",
-              FaceNum = 1
+              Face = 1
             }
           )
         )
@@ -5343,7 +5343,7 @@ namespace MachineWatchTest
         NumProcesses = 1,
         Serial = "0000000001",
         Workorder = "",
-        FaceNum = 24,
+        Face = 24,
       };
       var mat2 = new LogMaterial()
       {
@@ -5355,7 +5355,7 @@ namespace MachineWatchTest
         NumProcesses = 2,
         Serial = "0000000002",
         Workorder = "",
-        FaceNum = 8,
+        Face = 8,
       };
       var mat3 = new LogMaterial()
       {
@@ -5367,7 +5367,7 @@ namespace MachineWatchTest
         NumProcesses = 3,
         Serial = "0000000003",
         Workorder = "",
-        FaceNum = 2,
+        Face = 2,
       };
       var mat4 = new LogMaterial()
       {
@@ -5379,7 +5379,7 @@ namespace MachineWatchTest
         NumProcesses = 4,
         Serial = "themat4serial",
         Workorder = "",
-        FaceNum = 2
+        Face = 2
       };
       var mat5 = new LogMaterial()
       {
@@ -5391,7 +5391,7 @@ namespace MachineWatchTest
         NumProcesses = 5,
         Serial = "0000000005",
         Workorder = "",
-        FaceNum = 555
+        Face = 555
       };
 
       var serial1 = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
@@ -5766,7 +5766,7 @@ namespace MachineWatchTest
             NumProcesses = 4,
             Serial = "0000000001",
             Workorder = "",
-            FaceNum = 0
+            Face = 0
           }
         ),
         Pallet = 0,
@@ -5823,7 +5823,7 @@ namespace MachineWatchTest
         NumProcesses = 1,
         Serial = "0000000001",
         Workorder = "",
-        FaceNum = 34,
+        Face = 34,
       };
       var mat2 = new LogMaterial()
       {
@@ -5835,7 +5835,7 @@ namespace MachineWatchTest
         NumProcesses = 2,
         Serial = "0000000001",
         Workorder = "",
-        FaceNum = 34,
+        Face = 34,
       }; // note mat2 gets same serial as mat1
       var mat3 = new LogMaterial()
       {
@@ -5847,7 +5847,7 @@ namespace MachineWatchTest
         NumProcesses = 3,
         Serial = "0000000003",
         Workorder = "",
-        FaceNum = 23
+        Face = 23
       };
       var mat4 = new LogMaterial()
       {
@@ -5859,7 +5859,7 @@ namespace MachineWatchTest
         NumProcesses = 4,
         Serial = "themat4serial",
         Workorder = "",
-        FaceNum = 7
+        Face = 7
       };
 
       var serial1 = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');

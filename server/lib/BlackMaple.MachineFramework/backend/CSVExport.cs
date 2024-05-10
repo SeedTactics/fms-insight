@@ -102,7 +102,7 @@ namespace BlackMaple.MachineFramework
           PartName = mat.PartName,
           Process = mat.Process,
           NumProcesses = mat.NumProcesses,
-          Face = mat.FaceNum.ToString(),
+          Face = mat.Face.ToString(),
           ProgramDetails = BuildProgramDetails(e),
         });
       }

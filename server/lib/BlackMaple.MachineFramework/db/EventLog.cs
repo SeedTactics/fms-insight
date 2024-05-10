@@ -207,7 +207,7 @@ namespace BlackMaple.MachineFramework
                   NumProcesses = numProc,
                   Serial = serial,
                   Workorder = workorder,
-                  FaceNum = face,
+                  Face = face,
                   Path = path
                 }
               );
@@ -1106,7 +1106,7 @@ namespace BlackMaple.MachineFramework
               {
                 MaterialID = m.MaterialID,
                 Process = m.Process,
-                FaceNum = m.Face,
+                Face = m.Face,
                 JobUniqueStr = details?.JobUnique ?? "",
                 PartName = details?.PartName ?? "",
                 NumProcesses = details?.NumProcesses ?? 1,

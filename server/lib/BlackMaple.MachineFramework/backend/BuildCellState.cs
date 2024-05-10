@@ -162,7 +162,7 @@ public static class BuildCellState
         && e.Material != null
         && e.Material.Any()
       )
-      .GroupBy(e => e.Material.First().FaceNum)
+      .GroupBy(e => e.Material.First().Face)
       .Select(g => new { Face = g.Key, LoadEnd = g.Last() });
 
     foreach (var face in lastLoaded)
