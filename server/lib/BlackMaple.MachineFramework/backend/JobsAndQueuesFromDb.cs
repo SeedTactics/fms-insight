@@ -42,7 +42,7 @@ namespace BlackMaple.MachineFramework
   public class JobsAndQueuesFromDb<St> : IJobControl, IQueueControl, IDisposable
     where St : ICellState
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<JobsAndQueuesFromDb<St>>();
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<JobsAndQueuesFromDb<St>>();
 
     private readonly RepositoryConfig _repo;
     private readonly FMSSettings _settings;
@@ -72,8 +72,7 @@ namespace BlackMaple.MachineFramework
       AllowQuarantineToCancelLoad = allowQuarantineToCancelLoad;
       AddJobsAsCopiedToSystem = addJobsAsCopiedToSystem;
 
-      _thread = new Thread(Thread);
-      _thread.IsBackground = true;
+      _thread = new Thread(Thread) { IsBackground = true };
     }
 
     public void Dispose()
@@ -82,15 +81,19 @@ namespace BlackMaple.MachineFramework
       _shutdown.Set();
     }
 
+    // changeLock prevents decrement and queue changes from occuring at the same time as the thread
+    // is deciding what to put onto a pallet
+    private readonly object _changeLock = new();
+
+    // curStLock protects _lastCurrentStatus field
+    private readonly object _curStLock = new();
+    private St _lastCurrentStatus = default;
+
     #region Thread and Messages
     private readonly System.Threading.Thread _thread;
-    private readonly AutoResetEvent _shutdown = new AutoResetEvent(false);
-    private readonly AutoResetEvent _recheck = new AutoResetEvent(false);
-    private readonly ManualResetEvent _newCellState = new ManualResetEvent(false);
-
-    // lock prevents decrement and queue changes from occuring at the same time as the thread
-    // is deciding what to put onto a pallet
-    private readonly object _changeLock = new object();
+    private readonly AutoResetEvent _shutdown = new(false);
+    private readonly AutoResetEvent _recheck = new(false);
+    private readonly ManualResetEvent _newCellState = new(false);
 
     public void RecalculateCellState()
     {
@@ -172,7 +175,7 @@ namespace BlackMaple.MachineFramework
 
             lock (_curStLock)
             {
-              _lastCurrentStatus = st?.CurrentStatus;
+              _lastCurrentStatus = st;
             }
 
             actionPerformed = _syncState.ApplyActions(db, st);
@@ -211,7 +214,7 @@ namespace BlackMaple.MachineFramework
       bool requireStateRefresh = false;
       lock (_changeLock)
       {
-        CurrentStatus st;
+        St st;
         lock (_curStLock)
         {
           st = _lastCurrentStatus;
@@ -231,25 +234,20 @@ namespace BlackMaple.MachineFramework
     #region Jobs
     public event NewJobsDelegate OnNewJobs;
 
-    private readonly object _curStLock = new object();
-    private CurrentStatus _lastCurrentStatus = null;
-
     public CurrentStatus GetCurrentStatus()
     {
       lock (_curStLock)
       {
-        return _lastCurrentStatus;
+        return _lastCurrentStatus?.CurrentStatus;
       }
     }
 
     List<string> IJobControl.CheckValidRoutes(IEnumerable<Job> newJobs)
     {
-      using (var jdb = _repo.OpenConnection())
-      {
-        return _checkJobsValid
-          .CheckNewJobs(jdb, new NewJobs() { ScheduleId = null, Jobs = newJobs.ToImmutableList() })
-          .ToList();
-      }
+      using var jdb = _repo.OpenConnection();
+      return _checkJobsValid
+        .CheckNewJobs(jdb, new NewJobs() { ScheduleId = null, Jobs = newJobs.ToImmutableList() })
+        .ToList();
     }
 
     void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
@@ -281,20 +279,16 @@ namespace BlackMaple.MachineFramework
       long loadDecrementsStrictlyAfterDecrementId
     )
     {
-      using (var jdb = _repo.OpenConnection())
-      {
-        DecrementPlannedButNotStartedQty(jdb);
-        return jdb.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
-      }
+      using var jdb = _repo.OpenConnection();
+      DecrementPlannedButNotStartedQty(jdb);
+      return jdb.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
     }
 
     List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
     {
-      using (var jdb = _repo.OpenConnection())
-      {
-        DecrementPlannedButNotStartedQty(jdb);
-        return jdb.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
-      }
+      using var jdb = _repo.OpenConnection();
+      DecrementPlannedButNotStartedQty(jdb);
+      return jdb.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
     }
 
     void IJobControl.SetJobComment(string jobUnique, string comment)
@@ -378,18 +372,16 @@ namespace BlackMaple.MachineFramework
       string operatorName
     )
     {
-      using (var ldb = _repo.OpenConnection())
-      {
-        return AddUnallocatedCastingToQueue(
-          logDB: ldb,
-          casting: casting,
-          qty: qty,
-          queue: queue,
-          serial: serial,
-          workorder: workorder,
-          operatorName: operatorName
-        );
-      }
+      using var ldb = _repo.OpenConnection();
+      return AddUnallocatedCastingToQueue(
+        logDB: ldb,
+        casting: casting,
+        qty: qty,
+        queue: queue,
+        serial: serial,
+        workorder: workorder,
+        operatorName: operatorName
+      );
     }
 
     public InProcessMaterial AddUnprocessedMaterialToQueue(
@@ -511,7 +503,7 @@ namespace BlackMaple.MachineFramework
           CurrentStatus st;
           lock (_curStLock)
           {
-            st = _lastCurrentStatus;
+            st = _lastCurrentStatus?.CurrentStatus;
           }
 
           var mat = st.Material.FirstOrDefault(m => m.MaterialID == materialId);
@@ -567,31 +559,29 @@ namespace BlackMaple.MachineFramework
         CurrentStatus st;
         lock (_curStLock)
         {
-          st = _lastCurrentStatus;
+          st = _lastCurrentStatus?.CurrentStatus;
         }
 
-        using (var ldb = _repo.OpenConnection())
+        using var ldb = _repo.OpenConnection();
+        foreach (var matId in materialIds)
         {
-          foreach (var matId in materialIds)
+          var mat = st.Material.FirstOrDefault(m => m.MaterialID == matId);
+          if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
           {
-            var mat = st.Material.FirstOrDefault(m => m.MaterialID == matId);
-            if (mat != null && mat.Location.Type == InProcessMaterialLocation.LocType.OnPallet)
-            {
-              error = "Material on pallet can not be removed from queues";
-              break;
-            }
-            else if (mat != null && mat.Action.Type != InProcessMaterialAction.ActionType.Waiting)
-            {
-              error = "Only waiting material can be removed from queues";
-              break;
-            }
+            error = "Material on pallet can not be removed from queues";
+            break;
           }
+          else if (mat != null && mat.Action.Type != InProcessMaterialAction.ActionType.Waiting)
+          {
+            error = "Only waiting material can be removed from queues";
+            break;
+          }
+        }
 
-          if (error == null)
-          {
-            ldb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
-            requireStateRefresh = true;
-          }
+        if (error == null)
+        {
+          ldb.BulkRemoveMaterialFromAllQueues(materialIds, operatorName);
+          requireStateRefresh = true;
         }
       }
 
@@ -620,7 +610,7 @@ namespace BlackMaple.MachineFramework
           CurrentStatus st;
           lock (_curStLock)
           {
-            st = _lastCurrentStatus;
+            st = _lastCurrentStatus?.CurrentStatus;
           }
 
           var mat = st.Material.FirstOrDefault(m => m.MaterialID == materialId);

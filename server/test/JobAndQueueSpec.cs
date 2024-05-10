@@ -140,11 +140,11 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   bool ISynchronizeCellState<MockCellState>.DecrementJobs(
     BlackMaple.MachineFramework.IRepository db,
-    CurrentStatus st
+    MockCellState st
   )
   {
     _expectsDecrement.Should().BeTrue();
-    var toDecr = _curSt.CurrentStatus.BuildJobsToDecrement(db);
+    var toDecr = _curSt.CurrentStatus.BuildJobsToDecrement();
     toDecr.Should().NotBeEmpty();
     db.AddNewDecrement(toDecr, nowUTC: _curSt.CurrentStatus.TimeOfCurrentStatusUTC);
     return true;

@@ -88,13 +88,13 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    public bool DecrementJobs(IRepository db, CurrentStatus st)
+    public bool DecrementJobs(IRepository db, CellState st)
     {
-      var newDecrs = st.BuildJobsToDecrement(db, decrementJobFilter: _decrementJobFilter);
+      var newDecrs = st.CurrentStatus.BuildJobsToDecrement(decrementJobFilter: _decrementJobFilter);
 
       if (newDecrs.Count > 0)
       {
-        db.AddNewDecrement(newDecrs, nowUTC: st?.TimeOfCurrentStatusUTC);
+        db.AddNewDecrement(newDecrs, nowUTC: st?.CurrentStatus.TimeOfCurrentStatusUTC);
         return true;
       }
       else

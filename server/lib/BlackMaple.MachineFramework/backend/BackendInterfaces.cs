@@ -151,7 +151,7 @@ namespace BlackMaple.MachineFramework
     event Action NewCellState;
     St CalculateCellState(IRepository db);
     bool ApplyActions(IRepository db, St st);
-    bool DecrementJobs(IRepository db, CurrentStatus st);
+    bool DecrementJobs(IRepository db, St st);
   }
 
   public interface ICheckJobsValid

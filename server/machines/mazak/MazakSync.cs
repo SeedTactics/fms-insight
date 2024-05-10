@@ -42,9 +42,10 @@ using BlackMaple.MachineFramework;
 namespace MazakMachineInterface;
 
 // Currently Missing:
-// Adjusting Jobs before they are added: do this in ICheckJobs?
-// want more control over archiving and decrement of jobs
-// everything else from RoutingInfo matches with JobsAndQueuesFromDb
+// * Adjusting Jobs before they are added (NewJobTransform)
+//   Nothing seems to use it anymore, so can be deleted?
+// * Want more control over archiving jobs
+// * Everything else from RoutingInfo matches with JobsAndQueuesFromDb
 
 public record MazakState : ICellState
 {
@@ -208,9 +209,8 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     return false;
   }
 
-  public bool DecrementJobs(IRepository db, CurrentStatus st)
+  public bool DecrementJobs(IRepository db, MazakState st)
   {
-    throw new NotImplementedException();
-    //return decrementPlanQty.Decrement(db, st.AllData);
+    return decrementPlanQty.Decrement(db, st.AllData);
   }
 }

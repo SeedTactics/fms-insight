@@ -288,7 +288,6 @@ public static class JobHelpers
 
   public static ImmutableList<NewDecrementQuantity> BuildJobsToDecrement(
     this CurrentStatus status,
-    IRepository db,
     Func<ActiveJob, bool>? decrementJobFilter = null
   )
   {
