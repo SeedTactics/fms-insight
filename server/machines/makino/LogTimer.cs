@@ -43,7 +43,6 @@ namespace Makino
     private object _lock;
     private Func<IRepository> _openLogDB;
     private MakinoDB _makinoDB;
-    private StatusDB _status;
     private System.Timers.Timer _timer;
 
     public delegate void LogsProcessedDel();
@@ -51,13 +50,12 @@ namespace Makino
 
     public SerialSettings Settings { get; set; }
 
-    public LogTimer(RepositoryConfig logCfg, MakinoDB makinoDB, StatusDB status)
+    public LogTimer(RepositoryConfig logCfg, MakinoDB makinoDB)
     {
       _lock = new object();
       _openLogDB = () => logCfg.OpenConnection();
       Settings = logCfg.Settings;
       _makinoDB = makinoDB;
-      _status = status;
       TimerSignaled(null, null);
       _timer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
       _timer.Elapsed += TimerSignaled;
@@ -223,7 +221,8 @@ namespace Makino
         timeUTC: m.EndDateTimeUTC,
         elapsed: elapsed,
         active: TimeSpan.FromSeconds(m.SpindleTimeSeconds),
-        extraData: extraData
+        extraData: extraData,
+        foreignId: MkForeignID(m.PalletID, m.FixtureNumber, m.OrderName, m.EndDateTimeUTC)
       );
 
       AddInspection(m, matList, logDb);
@@ -245,6 +244,40 @@ namespace Makino
           m.ProcessNum,
           job.Processes[m.ProcessNum - 1].Paths[0].Inspections
         );
+      }
+    }
+
+    private static string MkForeignID(int pallet, int fixture, string order, DateTime loadedUTC)
+    {
+      return order + "-" + pallet.ToString() + "-" + fixture.ToString() + "-" + loadedUTC.ToString("o");
+    }
+
+    private static bool ForeignIDMatchesPallet(int pallet, int fixture, string order, string foreignID)
+    {
+      return foreignID.StartsWith(order + "-" + pallet.ToString() + "-" + fixture.ToString() + "-");
+    }
+
+    public static LogEntry FindLogByForeign(
+      int pallet,
+      int fixture,
+      string order,
+      DateTime time,
+      IRepository logDb
+    )
+    {
+      var mostRecent = logDb.MostRecentLogEntryLessOrEqualToForeignID(
+        MkForeignID(pallet, fixture, order, time)
+      );
+      if (
+        mostRecent == null
+        || !ForeignIDMatchesPallet(pallet, fixture, order, logDb.ForeignIDForCounter(mostRecent.Counter))
+      )
+      {
+        return null;
+      }
+      else
+      {
+        return mostRecent;
       }
     }
 
@@ -304,7 +337,8 @@ namespace Makino
           lulNum: loc.Num,
           timeUTC: w.EndDateTimeUTC,
           elapsed: elapsed,
-          active: elapsed
+          active: elapsed,
+          foreignId: MkForeignID(w.PalletID, w.FixtureNumber, w.UnloadOrderName, w.EndDateTimeUTC)
         );
       }
 
@@ -319,14 +353,12 @@ namespace Makino
       if (numParts > 0)
       {
         //create the material
-        var matList = CreateMaterial(
-          w.PalletID,
-          w.FixtureNumber,
-          w.EndDateTimeUTC.AddSeconds(1),
+        var matList = AllocateMatIds(
+          numParts,
           w.LoadOrderName,
           w.LoadPartName,
           w.LoadProcessNum,
-          numParts,
+          w.EndDateTimeUTC.AddSeconds(1),
           logDb
         );
 
@@ -337,7 +369,8 @@ namespace Makino
             {
               LoadStation = loc.Num,
               Elapsed = elapsed,
-              Faces = System.Collections.Immutable.ImmutableList.Create(
+              Faces =
+              [
                 new MaterialToLoadOntoFace()
                 {
                   MaterialIDs = System.Collections.Immutable.ImmutableList.CreateRange(matList),
@@ -346,11 +379,12 @@ namespace Makino
                   Path = null,
                   ActiveOperationTime = elapsed,
                 }
-              )
+              ]
             }
           },
           pallet: w.PalletID,
-          timeUTC: w.EndDateTimeUTC.AddSeconds(1)
+          timeUTC: w.EndDateTimeUTC.AddSeconds(1),
+          foreignId: MkForeignID(w.PalletID, w.FixtureNumber, w.LoadOrderName, w.EndDateTimeUTC.AddSeconds(1))
         );
       }
     }
@@ -360,38 +394,16 @@ namespace Makino
       string order,
       string part,
       int numProcess,
+      DateTime endUTC,
       IRepository logDb
     )
     {
       var matIds = new List<long>();
       for (int i = 0; i < count; i++)
       {
-        matIds.Add(logDb.AllocateMaterialID(order, part, numProcess));
+        matIds.Add(logDb.AllocateMaterialIDAndGenerateSerial(order, part, numProcess, endUTC, out var _));
       }
       return matIds;
-    }
-
-    private IEnumerable<long> CreateMaterial(
-      int pallet,
-      int fixturenum,
-      DateTime endUTC,
-      string order,
-      string part,
-      int process,
-      int count,
-      IRepository logDb
-    )
-    {
-      return _status
-        .CreateMaterialIDs(
-          pallet,
-          fixturenum,
-          endUTC,
-          order,
-          AllocateMatIds(count, order, part, process, logDb),
-          0
-        )
-        .Select(m => m.MatID);
     }
 
     private IList<EventLogMaterial> FindOrCreateMaterial(
@@ -405,154 +417,61 @@ namespace Makino
       IRepository logDb
     )
     {
-      var rows = _status.FindMaterialIDs(pallet, fixturenum, endUTC);
+      var mostRecent = FindLogByForeign(pallet, fixturenum, order, endUTC, logDb);
 
-      if (rows.Count == 0)
+      if (mostRecent == null)
       {
         Log.Warning(
-          "Unable to find any material ids for pallet "
-            + pallet.ToString()
-            + "-"
-            + fixturenum.ToString()
-            + " for order "
-            + order
-            + " for event at time "
-            + endUTC.ToString()
-        );
-        rows = _status.CreateMaterialIDs(
+          "Unable to find any material ids for pallet {pal} on fixture {fix} for order {ord} at time {time}, got {mostRecent}",
           pallet,
           fixturenum,
-          endUTC,
           order,
-          AllocateMatIds(count, order, part, process, logDb),
-          0
-        );
-      }
-
-      if (rows[0].Order != order)
-      {
-        Log.Warning(
-          "MaterialIDs for pallet "
-            + pallet.ToString()
-            + "-"
-            + fixturenum.ToString()
-            + " for event at time "
-            + endUTC.ToString()
-            + " does not have matching orders: "
-            + "expected "
-            + order
-            + " but found "
-            + rows[0].Order
-        );
-
-        rows = _status.CreateMaterialIDs(
-          pallet,
-          fixturenum,
           endUTC,
-          order,
-          AllocateMatIds(count, order, part, process, logDb),
-          0
+          mostRecent
         );
-      }
-
-      if (rows.Count < count)
-      {
-        Log.Warning(
-          "Pallet "
-            + pallet.ToString()
-            + "-"
-            + fixturenum.ToString()
-            + " at event time "
-            + endUTC.ToString()
-            + " with order "
-            + order
-            + " was expected to have "
-            + count.ToString()
-            + " material ids, but only "
-            + rows.Count
-            + " were loaded"
-        );
-
-        int maxCounter = -1;
-        foreach (var row in rows)
-        {
-          if (row.LocCounter > maxCounter)
-            maxCounter = row.LocCounter;
-        }
-
-        //stupid that IList doesn't have AddRange
-        foreach (
-          var row in _status.CreateMaterialIDs(
-            pallet,
-            fixturenum,
-            rows[0].LoadedUTC,
-            order,
-            AllocateMatIds(count - rows.Count, order, part, process, logDb),
-            maxCounter + 1
-          )
-        )
-        {
-          rows.Add(row);
-        }
-      }
-
-      var ret = new List<EventLogMaterial>();
-      foreach (var row in rows)
-      {
-        if (Settings.SerialType != SerialType.NoAutomaticSerials)
-          CreateSerial(row.MatID, order, part, process, fixturenum, logDb, Settings);
-        ret.Add(
-          new EventLogMaterial()
+        return AllocateMatIds(count, order, part, process, endUTC, logDb)
+          .Select(matId => new EventLogMaterial()
           {
-            MaterialID = row.MatID,
+            MaterialID = matId,
             Process = process,
             Face = 0
-          }
+          })
+          .ToList();
+      }
+
+      var mats = mostRecent
+        .Material.Select(m => new EventLogMaterial()
+        {
+          MaterialID = m.MaterialID,
+          Process = process,
+          Face = 0
+        })
+        .ToList();
+
+      if (mats.Count < count)
+      {
+        Log.Warning(
+          "Pallet {pal} on fixture {fix} for order {ord} at time {time} has {mats} material ids, but expected {count}",
+          pallet,
+          fixturenum,
+          order,
+          endUTC,
+          mats,
+          count
+        );
+
+        mats.AddRange(
+          AllocateMatIds(count - mats.Count, order, part, process, endUTC, logDb)
+            .Select(matId => new EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = process,
+              Face = 0
+            })
         );
       }
-      return ret;
+
+      return mats;
     }
-
-    public static void CreateSerial(
-      long matID,
-      string jobUniqe,
-      string partName,
-      int process,
-      int face,
-      IRepository _log,
-      SerialSettings Settings
-    )
-    {
-      foreach (var stat in _log.GetLogForMaterial(matID))
-      {
-        if (stat.LogType == LogType.PartMark && stat.LocationNum == 1)
-        {
-          foreach (LogMaterial mat in stat.Material)
-          {
-            if (mat.Process == process)
-            {
-              //We have recorded the serial already
-              return;
-            }
-          }
-        }
-      }
-
-      var serial = Settings.ConvertMaterialIDToSerial(matID);
-
-      Log.Debug("Recording serial for matid: {matid} {serial}", matID, serial);
-
-      var logMat = new EventLogMaterial()
-      {
-        MaterialID = matID,
-        Process = process,
-        Face = face
-      };
-      _log.RecordSerialForMaterialID(logMat, serial, DateTime.UtcNow);
-    }
-
-#if DEBUG
-    internal static List<string> errors = new List<string>();
-#endif
   }
 }

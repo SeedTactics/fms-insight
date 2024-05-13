@@ -46,7 +46,6 @@ namespace Makino
 
     // Makino databases
     private MakinoDB _makinoDB;
-    private StatusDB _status;
 
     private Jobs _jobs;
 #pragma warning disable 649
@@ -90,15 +89,13 @@ namespace Makino
           System.IO.Path.Combine(_dataDirectory, "jobs.db")
         );
 
-        _status = new StatusDB(System.IO.Path.Combine(_dataDirectory, "makino.db"));
-
 #if DEBUG
-        _makinoDB = new MakinoDB(RepoConfig, MakinoDB.DBTypeEnum.SqlLocal, "", _status);
+        _makinoDB = new MakinoDB(RepoConfig, MakinoDB.DBTypeEnum.SqlLocal, "");
 #else
-        _makinoDB = new MakinoDB(RepoConfig, MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr, _status);
+        _makinoDB = new MakinoDB(RepoConfig, MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr);
 #endif
 
-        _logTimer = new LogTimer(RepoConfig, _makinoDB, _status);
+        _logTimer = new LogTimer(RepoConfig, _makinoDB);
 
         _jobs = new Jobs(
           _makinoDB,

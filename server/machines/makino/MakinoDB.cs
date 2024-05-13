@@ -189,19 +189,12 @@ namespace Makino
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoDB>();
 
     private IDbConnection _db;
-    private BlackMaple.MachineFramework.RepositoryConfig _logDbCfg;
-    private StatusDB _status;
+    private RepositoryConfig _logDbCfg;
     private string dbo;
 
-    public MakinoDB(
-      BlackMaple.MachineFramework.RepositoryConfig logDb,
-      DBTypeEnum dbType,
-      string dbConnStr,
-      StatusDB status
-    )
+    public MakinoDB(RepositoryConfig logDb, DBTypeEnum dbType, string dbConnStr)
     {
       _logDbCfg = logDb;
-      _status = status;
       switch (dbType)
       {
         case DBTypeEnum.SqlLocal:
@@ -779,44 +772,33 @@ namespace Makino
             palMap.PalletLocInfo(palfixID, out palletNum, out fixtureNum);
 
             //look for material id
-            IList<StatusDB.MatIDRow> matIDs;
-            if (_status == null)
-              matIDs = new List<StatusDB.MatIDRow>();
-            else
-              matIDs = _status.FindMaterialIDs(palletNum, fixtureNum, DateTime.UtcNow.AddSeconds(10));
-
-            //check material ids share the same order
-            if (orderName != "")
+            IEnumerable<long> matIDs;
+            if (orderName == "")
             {
-              foreach (var m in matIDs)
+              matIDs = [];
+            }
+            else
+            {
+              var mostRecentLog = LogTimer.FindLogByForeign(
+                palletNum,
+                fixtureNum,
+                orderName,
+                DateTime.UtcNow.AddSeconds(10),
+                logDb
+              );
+              if (mostRecentLog == null)
               {
-                if (m.Order != orderName)
-                {
-                  Log.Debug(
-                    "Current material on pallet "
-                      + palletNum.ToString()
-                      + " loc "
-                      + fixtureNum.ToString()
-                      + " was expecting orderID "
-                      + orderID.ToString()
-                      + " for order "
-                      + orderName.ToString()
-                      + ", but found order "
-                      + m.Order
-                      + " for part loaded at "
-                      + m.LoadedUTC.ToString()
-                  );
-                  matIDs.Clear();
-                  break;
-                }
+                matIDs = [];
+              }
+              else
+              {
+                matIDs = mostRecentLog.Material.Select(m => m.MaterialID);
               }
             }
 
-            if (matIDs.Count == 0)
+            if (!matIDs.Any())
             {
-              var m = default(StatusDB.MatIDRow);
-              m.MatID = -1;
-              matIDs.Add(m);
+              matIDs = [-1];
             }
 
             foreach (var m in matIDs)
@@ -827,7 +809,7 @@ namespace Makino
                 reader.GetInt32(3),
                 palletNum,
                 fixtureNum,
-                m.MatID
+                m
               );
 
               palMap.AddMaterial(palfixID, inProcMat);
