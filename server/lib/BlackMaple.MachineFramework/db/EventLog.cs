@@ -705,10 +705,10 @@ namespace BlackMaple.MachineFramework
     {
       using (var cmd = _connection.CreateCommand())
       {
-        cmd.CommandText = "SELECT MAX(ForeignID) FROM stations";
+        cmd.CommandText = "SELECT MAX(ForeignID) FROM stations WHERE ForeignID IS NOT NULL";
         var maxStat = cmd.ExecuteScalar();
 
-        cmd.CommandText = "SELECT MAX(ForeignID) FROM pendingloads";
+        cmd.CommandText = "SELECT MAX(ForeignID) FROM pendingloads WHERE ForeignID IS NOT NULL";
         var maxLoad = cmd.ExecuteScalar();
 
         if (maxStat == DBNull.Value && maxLoad == DBNull.Value)

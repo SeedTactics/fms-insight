@@ -100,7 +100,7 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX stations_pal ON stations(Pallet, Result)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE INDEX stations_foreign ON stations(ForeignID)";
+        cmd.CommandText = "CREATE INDEX stations_foreign ON stations(ForeignID) WHERE ForeignID IS NOT NULL";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
