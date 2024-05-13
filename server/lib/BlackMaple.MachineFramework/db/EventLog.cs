@@ -346,24 +346,6 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public List<LogEntry> StationLogByForeignID(string foreignID)
-    {
-      using (var trans = _connection.BeginTransaction())
-      using (var cmd = _connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
-          + " FROM stations WHERE ForeignID = $foreign ORDER BY Counter ASC";
-        cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
-
-        using (var reader = cmd.ExecuteReader())
-        {
-          return LoadLog(reader, trans).ToList();
-        }
-      }
-    }
-
     public LogEntry MostRecentLogEntryForForeignID(string foreignID)
     {
       using (var trans = _connection.BeginTransaction())
@@ -373,6 +355,24 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText =
           "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
           + " FROM stations WHERE ForeignID = $foreign ORDER BY Counter DESC LIMIT 1";
+        cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
+
+        using (var reader = cmd.ExecuteReader())
+        {
+          return LoadLog(reader, trans).FirstOrDefault();
+        }
+      }
+    }
+
+    public LogEntry MostRecentLogEntryLessOrEqualToForeignID(string foreignID)
+    {
+      using (var trans = _connection.BeginTransaction())
+      using (var cmd = _connection.CreateCommand())
+      {
+        cmd.Transaction = trans;
+        cmd.CommandText =
+          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+          + " FROM stations WHERE ForeignID <= $foreign ORDER BY ForeignID DESC, Counter DESC LIMIT 1";
         cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
 
         using (var reader = cmd.ExecuteReader())

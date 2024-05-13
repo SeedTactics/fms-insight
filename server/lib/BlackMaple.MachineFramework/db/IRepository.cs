@@ -54,18 +54,20 @@ namespace BlackMaple.MachineFramework
     List<LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs);
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
-    List<LogEntry> StationLogByForeignID(string foreignID);
-    LogEntry MostRecentLogEntryForForeignID(string foreignID);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);
-    string OriginalMessageByForeignID(string foreignID);
     DateTime LastPalletCycleTime(int pallet);
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
-    string MaxForeignID();
-    DateTime MaxLogDate();
-    string ForeignIDForCounter(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter = null);
     ImmutableList<string> GetWorkordersForUnique(string jobUnique);
+    DateTime MaxLogDate();
+    string MaxForeignID(); // WARNING: uses sqlite default string collate (binary), not lexicographic
+    string ForeignIDForCounter(long counter);
+    string OriginalMessageByForeignID(string foreignID);
+
+    // Most recent refers to event Counter, not time
+    LogEntry MostRecentLogEntryForForeignID(string foreignID);
+    LogEntry MostRecentLogEntryLessOrEqualToForeignID(string foreignID); // WARNING: uses sqlite default string collate (binary), not lexicographic
 
     // --------------------------------------------------------------------------------
     // Adding Events

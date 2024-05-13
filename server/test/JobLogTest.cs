@@ -1319,85 +1319,91 @@ namespace MachineWatchTest
     public void ForeignID()
     {
       using var _jobLog = _repoCfg.OpenConnection();
-      var mat1 = new LogMaterial()
-      {
-        MaterialID = _jobLog.AllocateMaterialID("unique", "part1", 2),
-        JobUniqueStr = "unique",
-        Process = 1,
-        Path = 1,
-        PartName = "part1",
-        NumProcesses = 2,
-        Serial = "",
-        Workorder = "",
-        Face = 23
-      };
-      var mat2 = new LogMaterial()
-      {
-        MaterialID = _jobLog.AllocateMaterialID("unique2", "part2", 2),
-        JobUniqueStr = "unique2",
-        Process = 2,
-        Path = null,
-        PartName = "part2",
-        NumProcesses = 2,
-        Serial = "",
-        Workorder = "",
-        Face = 44
-      };
 
-      var log1 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        1,
-        LogType.GeneralMessage,
-        "ABC",
-        1,
-        "prog1",
-        false,
-        DateTime.UtcNow,
-        "result1",
-        TimeSpan.FromMinutes(10),
-        TimeSpan.FromMinutes(11)
-      );
-      var log2 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        2,
-        LogType.MachineCycle,
-        "MC",
-        1,
-        "prog2",
-        false,
-        DateTime.UtcNow,
-        "result2",
-        TimeSpan.FromMinutes(15),
-        TimeSpan.FromMinutes(16)
-      );
-      var log3 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        3,
-        LogType.LoadUnloadCycle,
-        "Load",
-        1,
-        "prog3",
-        false,
-        DateTime.UtcNow,
-        "result3",
-        TimeSpan.FromMinutes(20),
-        TimeSpan.FromMinutes(21)
+      var mat1ID = _jobLog.AllocateMaterialID("unique", "part1", 2);
+      var mat2ID = _jobLog.AllocateMaterialID("unique2", "part2", 2);
+
+      _jobLog.MaxForeignID().Should().Be("");
+      _jobLog.MostRecentLogEntryForForeignID("for1").Should().BeNull();
+      _jobLog.MostRecentLogEntryLessOrEqualToForeignID("for1").Should().BeNull();
+
+      var log1 = _jobLog.RecordGeneralMessage(
+        mat: new()
+        {
+          MaterialID = mat1ID,
+          Process = 1,
+          Face = 0
+        },
+        program: "general prog",
+        result: "general result",
+        foreignId: "for1"
       );
 
-      Assert.Equal("", _jobLog.MaxForeignID());
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log1, "for1");
-      Assert.Equal("for1", _jobLog.MaxForeignID());
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log2, "for2");
-      Assert.Equal("for2", _jobLog.MaxForeignID());
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log3);
-      Assert.Equal("for2", _jobLog.MaxForeignID());
+      _jobLog.MaxForeignID().Should().Be("for1");
+
+      var log2 = _jobLog.RecordMachineEnd(
+        mats:
+        [
+          new()
+          {
+            MaterialID = mat1ID,
+            Process = 1,
+            Face = 0
+          },
+          new()
+          {
+            MaterialID = mat2ID,
+            Process = 1,
+            Face = 0
+          },
+        ],
+        pallet: 4,
+        statName: "MC",
+        statNum: 42,
+        program: "prog",
+        result: "result",
+        timeUTC: DateTime.UtcNow,
+        elapsed: TimeSpan.FromMinutes(15),
+        active: TimeSpan.FromMinutes(16),
+        foreignId: "for2"
+      );
+
+      _jobLog.MaxForeignID().Should().Be("for2");
+
+      //add one without a foreign id
+
+      var log3 = _jobLog.RecordPalletDepartStocker(
+        mats:
+        [
+          new()
+          {
+            MaterialID = mat2ID,
+            Process = 1,
+            Face = 2
+          }
+        ],
+        pallet: 4,
+        stockerNum: 4,
+        timeUTC: DateTime.UtcNow,
+        waitForMachine: true,
+        elapsed: TimeSpan.FromMinutes(10)
+      );
+
+      _jobLog.MaxForeignID().Should().Be("for2");
+
       _jobLog.AddPendingLoad(4, "k", 1, TimeSpan.Zero, TimeSpan.Zero, "for4");
-      Assert.Equal("for4", _jobLog.MaxForeignID());
+      _jobLog.MaxForeignID().Should().Be("for4");
+
       var mat = new Dictionary<string, IEnumerable<EventLogMaterial>>();
-      mat["k"] = new[] { EventLogMaterial.FromLogMat(mat1) };
+      mat["k"] =
+      [
+        new()
+        {
+          MaterialID = mat1ID,
+          Process = 2,
+          Face = 1
+        }
+      ];
       _jobLog.CompletePalletCycle(
         pal: 4,
         timeUTC: DateTime.UtcNow,
@@ -1406,65 +1412,40 @@ namespace MachineWatchTest
         generateSerials: false,
         additionalLoads: null
       );
-      Assert.Equal("for4", _jobLog.MaxForeignID()); // for4 should be copied
 
-      var load1 = _jobLog.StationLogByForeignID("for1");
-      load1.Count.Should().Be(1);
-      load1[0]
-        .Should()
-        .BeEquivalentTo(log1, options => options.Excluding(l => l.Counter).ComparingByMembers<LogEntry>());
+      _jobLog.MaxForeignID().Should().Be("for4");
 
-      CheckEqual(_jobLog.MostRecentLogEntryForForeignID("for1"), load1[0]);
+      _jobLog.MostRecentLogEntryForForeignID("for1").Should().BeEquivalentTo(log1);
+      _jobLog.MostRecentLogEntryLessOrEqualToForeignID("for1").Should().BeEquivalentTo(log1);
+      _jobLog.MostRecentLogEntryLessOrEqualToForeignID("for11234").Should().BeEquivalentTo(log1);
 
-      var load2 = _jobLog.StationLogByForeignID("for2");
-      load2.Count.Should().Be(1);
-      CheckEqual(log2, load2[0]);
+      _jobLog.MostRecentLogEntryForForeignID("for2").Should().BeEquivalentTo(log2);
 
-      var load3 = _jobLog.StationLogByForeignID("for3");
-      load3.Count.Should().Be(1);
-      Assert.Equal(LogType.PalletCycle, load3[0].LogType);
+      _jobLog.MostRecentLogEntryForForeignID("for3").LogType.Should().Be(LogType.PalletCycle);
 
-      var load4 = _jobLog.StationLogByForeignID("for4");
-      load4.Count.Should().Be(1);
-      Assert.Equal(LogType.LoadUnloadCycle, load4[0].LogType);
+      _jobLog.MostRecentLogEntryForForeignID("for4").LogType.Should().Be(LogType.LoadUnloadCycle);
+      _jobLog.MostRecentLogEntryLessOrEqualToForeignID("for8").LogType.Should().Be(LogType.LoadUnloadCycle);
 
-      _jobLog.StationLogByForeignID("abwgtweg").Should().BeEmpty();
-      _jobLog.MostRecentLogEntryForForeignID("woeufhwioeuf").Should().BeNull();
+      _jobLog.MostRecentLogEntryForForeignID("abwgtweg").Should().BeNull();
 
-      Assert.Equal("for1", _jobLog.ForeignIDForCounter(load1[0].Counter));
-      Assert.Equal("for2", _jobLog.ForeignIDForCounter(load2[0].Counter));
-      Assert.Equal("", _jobLog.ForeignIDForCounter(load2[0].Counter + 30));
+      _jobLog.ForeignIDForCounter(log1.Counter).Should().Be("for1");
+      _jobLog.ForeignIDForCounter(log2.Counter).Should().Be("for2");
+      _jobLog.ForeignIDForCounter(log3.Counter + 100).Should().Be("");
 
       // add another log with same foreign id
-      var t = DateTime.UtcNow.AddHours(-2);
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat1), "ser1", t, foreignID: "for1");
+      var expectedFor1Serial = _jobLog.RecordSerialForMaterialID(
+        new()
+        {
+          MaterialID = mat1ID,
+          Process = 2,
+          Face = 1
+        },
+        "ser1",
+        DateTime.UtcNow.AddHours(-2),
+        foreignID: "for1"
+      );
 
-      var mat1WithSer = mat1 with { Serial = "ser1" };
-
-      var expectedFor1Serial = new LogEntry()
-      {
-        Counter = -1,
-        Material = ImmutableList.Create(mat1WithSer),
-        Pallet = 0,
-        LogType = LogType.PartMark,
-        Program = "MARK",
-        LocationName = "Mark",
-        LocationNum = 1,
-        StartOfCycle = false,
-        EndTimeUTC = t,
-        Result = "ser1",
-        ElapsedTime = TimeSpan.FromMinutes(-1),
-        ActiveOperationTime = TimeSpan.Zero,
-      };
-
-      _jobLog
-        .StationLogByForeignID("for1")
-        .Should()
-        .BeEquivalentTo(
-          new[] { load1[0] with { Material = ImmutableList.Create(mat1WithSer, mat2) }, expectedFor1Serial },
-          options => options.Excluding(e => e.Counter)
-        );
-
+      // added 2 hours in the past, but still most recent since recent is checking counters, not time
       _jobLog
         .MostRecentLogEntryForForeignID("for1")
         .Should()
@@ -1515,9 +1496,10 @@ namespace MachineWatchTest
       ((Repository)_jobLog).AddLogEntryFromUnitTest(log1, "foreign1", "the original message");
       Assert.Equal("foreign1", _jobLog.MaxForeignID());
 
-      var load1 = _jobLog.StationLogByForeignID("foreign1");
-      load1.Count.Should().Be(1);
-      CheckEqual(log1, load1[0]);
+      _jobLog
+        .MostRecentLogEntryForForeignID("foreign1")
+        .Should()
+        .BeEquivalentTo(log1, options => options.Excluding(l => l.Counter).ComparingByMembers<LogEntry>());
 
       Assert.Equal("the original message", _jobLog.OriginalMessageByForeignID("foreign1"));
       Assert.Equal("", _jobLog.OriginalMessageByForeignID("abc"));
@@ -5732,7 +5714,10 @@ namespace MachineWatchTest
         .Paths.Should()
         .BeEquivalentTo(new Dictionary<int, int>() { { mat5.Process, 88 } });
 
-      JobLogTest.CheckEqual(palCycle, _jobLog.StationLogByForeignID("for3")[0]);
+      _jobLog
+        .MostRecentLogEntryForForeignID("for3")
+        .Should()
+        .BeEquivalentTo(palCycle, options => options.Excluding(e => e.Counter));
       _jobLog.MaxForeignID().Should().Be("for3");
 
       _jobLog.PendingLoads(1).Should().BeEmpty();
@@ -6027,7 +6012,10 @@ namespace MachineWatchTest
         t.AddMinutes(-10)
       );
 
-      JobLogTest.CheckEqual(palCycle, _jobLog.StationLogByForeignID("for3")[0]);
+      _jobLog
+        .MostRecentLogEntryForForeignID("for3")
+        .Should()
+        .BeEquivalentTo(palCycle, options => options.Excluding(e => e.Counter));
       _jobLog.MaxForeignID().Should().Be("for3");
 
       _jobLog.PendingLoads(1).Should().BeEmpty();

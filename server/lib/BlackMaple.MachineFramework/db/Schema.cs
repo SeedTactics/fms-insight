@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 31;
+    private const int Version = 32;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -100,7 +100,8 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "CREATE INDEX stations_pal ON stations(Pallet, Result)";
         cmd.ExecuteNonQuery();
 
-        cmd.CommandText = "CREATE INDEX stations_foreign ON stations(ForeignID) WHERE ForeignID IS NOT NULL";
+        cmd.CommandText =
+          "CREATE INDEX stations_foreignid ON stations(ForeignID) WHERE ForeignID IS NOT NULL";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "CREATE INDEX stations_material_idx ON stations_mat(MaterialID)";
@@ -460,6 +461,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 31)
             Ver30ToVer31(trans, updateJobsTables);
+
+          if (curVersion < 32)
+            Ver31ToVer32(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1083,6 +1087,18 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "ALTER TABLE sim_station_use ADD PlanDown INTEGER";
         cmd.ExecuteNonQuery();
       }
+    }
+
+    private static void Ver31ToVer32(IDbTransaction transaction)
+    {
+      using var cmd = transaction.Connection.CreateCommand();
+      cmd.Transaction = transaction;
+
+      cmd.CommandText = "DROP INDEX stations_foreign";
+      cmd.ExecuteNonQuery();
+
+      cmd.CommandText = "CREATE INDEX stations_foreignid ON stations(ForeignID) WHERE ForeignID IS NOT NULL";
+      cmd.ExecuteNonQuery();
     }
 
     #endregion
