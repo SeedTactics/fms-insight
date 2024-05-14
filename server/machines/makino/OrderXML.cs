@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -36,7 +36,7 @@ using System.IO;
 using System.Xml;
 using BlackMaple.MachineFramework;
 
-namespace Makino
+namespace BlackMaple.FMSInsight.Makino
 {
   public class OrderXML
   {

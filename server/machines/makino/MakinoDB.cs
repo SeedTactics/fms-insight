@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -37,7 +37,7 @@ using System.Data;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
-namespace Makino
+namespace BlackMaple.FMSInsight.Makino
 {
   #region Description of DB
   /* Makino static data.

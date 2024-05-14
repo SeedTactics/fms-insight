@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -35,7 +35,7 @@ using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 
-namespace Makino
+namespace BlackMaple.FMSInsight.Makino
 {
   public class MakinoBackend : IFMSBackend, IDisposable
   {
