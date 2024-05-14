@@ -37,67 +37,16 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
 {
-  public class LogTimer
+  public class LogBuilder(MakinoDB makinoDB, IRepository logDb)
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTimer>();
-    private object _lock;
-    private Func<IRepository> _openLogDB;
-    private MakinoDB _makinoDB;
-    private System.Timers.Timer _timer;
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<LogBuilder>();
 
-    public delegate void LogsProcessedDel();
-    public event LogsProcessedDel LogsProcessed;
-
-    public SerialSettings Settings { get; set; }
-
-    public LogTimer(RepositoryConfig logCfg, MakinoDB makinoDB)
+    public bool CheckLogs(DateTime lastDate)
     {
-      _lock = new object();
-      _openLogDB = () => logCfg.OpenConnection();
-      Settings = logCfg.Settings;
-      _makinoDB = makinoDB;
-      TimerSignaled(null, null);
-      _timer = new System.Timers.Timer(TimeSpan.FromMinutes(1).TotalMilliseconds);
-      _timer.Elapsed += TimerSignaled;
-      _timer.Start();
-    }
+      var devices = makinoDB.Devices();
 
-    public void Halt()
-    {
-      _timer.Stop();
-      _timer.Elapsed -= TimerSignaled;
-    }
-
-    private void TimerSignaled(object sender, System.Timers.ElapsedEventArgs e)
-    {
-      try
-      {
-        lock (_lock)
-        {
-          // Load one month
-          using (var logDb = _openLogDB())
-          {
-            var lastDate = logDb.MaxLogDate();
-            if (DateTime.UtcNow.Subtract(lastDate) > TimeSpan.FromDays(30))
-              lastDate = DateTime.UtcNow.AddDays(-30);
-
-            CheckLogs(logDb, lastDate);
-          }
-        }
-      }
-      catch (Exception ex)
-      {
-        Log.Error(ex, "Unhandled error recording log data");
-      }
-    }
-
-    /* This has public instead of private for testing */
-    public void CheckLogs(IRepository logDb, DateTime lastDate)
-    {
-      var devices = _makinoDB.Devices();
-
-      var machine = _makinoDB.QueryMachineResults(lastDate, DateTime.UtcNow.AddMinutes(1));
-      var loads = _makinoDB.QueryLoadUnloadResults(lastDate, DateTime.UtcNow.AddMinutes(1));
+      var machine = makinoDB.QueryMachineResults(lastDate, DateTime.UtcNow.AddMinutes(1));
+      var loads = makinoDB.QueryLoadUnloadResults(lastDate, DateTime.UtcNow.AddMinutes(1));
 
       //need to iterate machines and loads by date
       machine.Sort((x, y) => x.EndDateTimeUTC.CompareTo(y.EndDateTimeUTC));
@@ -117,42 +66,40 @@ namespace BlackMaple.FMSInsight.Makino
           //check which event occured first and process it
           if (mE.Current.EndDateTimeUTC < lE.Current.EndDateTimeUTC)
           {
-            AddMachineToLog(lastDate, devices, mE.Current, logDb);
+            AddMachineToLog(lastDate, devices, mE.Current);
             moreMachines = mE.MoveNext();
           }
           else
           {
-            AddLoadToLog(lastDate, devices, lE.Current, logDb);
+            AddLoadToLog(lastDate, devices, lE.Current);
             moreLoads = lE.MoveNext();
           }
         }
         else if (moreMachines)
         {
-          AddMachineToLog(lastDate, devices, mE.Current, logDb);
+          AddMachineToLog(lastDate, devices, mE.Current);
           moreMachines = mE.MoveNext();
         }
         else
         {
-          AddLoadToLog(lastDate, devices, lE.Current, logDb);
+          AddLoadToLog(lastDate, devices, lE.Current);
           moreLoads = lE.MoveNext();
         }
       }
 
-      if (newLogEntries)
-        LogsProcessed?.Invoke();
+      return newLogEntries;
     }
 
     private void AddMachineToLog(
       DateTime timeToSkip,
       IDictionary<int, PalletLocation> devices,
-      MakinoDB.MachineResults m,
-      IRepository logDb
+      MakinoDB.MachineResults m
     )
     {
       //find the location
       PalletLocation loc;
-      if (devices.ContainsKey(m.DeviceID))
-        loc = devices[m.DeviceID];
+      if (devices.TryGetValue(m.DeviceID, out PalletLocation value))
+        loc = value;
       else
         loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 0);
 
@@ -176,8 +123,7 @@ namespace BlackMaple.FMSInsight.Makino
         m.OrderName,
         m.PartName,
         m.ProcessNum,
-        numParts,
-        logDb
+        numParts
       );
 
       var elapsed = m.EndDateTimeUTC.Subtract(m.StartDateTimeUTC);
@@ -197,15 +143,15 @@ namespace BlackMaple.FMSInsight.Makino
         var matID1 = matList[0].MaterialID;
         Log.Debug(
           "Starting load of common values between the times of {start} and {end} on DeviceID {deviceID}."
-            + "These values will be attached to part {part} with serial {serial}",
+            + "These values will be attached to part {part} with matid {matid}",
           m.StartDateTimeLocal,
           m.EndDateTimeLocal,
           m.DeviceID,
           m.PartName,
-          Settings.ConvertMaterialIDToSerial(matID1)
+          matID1
         );
 
-        foreach (var v in _makinoDB.QueryCommonValues(m))
+        foreach (var v in makinoDB.QueryCommonValues(m))
         {
           Log.Debug("Common value with number {num} and value {val}", +v.Number, v.Value);
           extraData[v.Number.ToString()] = v.Value;
@@ -225,10 +171,10 @@ namespace BlackMaple.FMSInsight.Makino
         foreignId: MkForeignID(m.PalletID, m.FixtureNumber, m.OrderName, m.EndDateTimeUTC)
       );
 
-      AddInspection(m, matList, logDb);
+      AddInspection(m, matList);
     }
 
-    private void AddInspection(MakinoDB.MachineResults m, IList<EventLogMaterial> material, IRepository logDb)
+    private void AddInspection(MakinoDB.MachineResults m, IList<EventLogMaterial> material)
     {
       if (logDb == null)
         return;
@@ -284,14 +230,13 @@ namespace BlackMaple.FMSInsight.Makino
     private void AddLoadToLog(
       DateTime timeToSkip,
       IDictionary<int, PalletLocation> devices,
-      MakinoDB.WorkSetResults w,
-      IRepository logDb
+      MakinoDB.WorkSetResults w
     )
     {
       //find the location
       PalletLocation loc;
-      if (devices.ContainsKey(w.DeviceID))
-        loc = devices[w.DeviceID];
+      if (devices.TryGetValue(w.DeviceID, out PalletLocation value))
+        loc = value;
       else
         loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 1);
 
@@ -320,8 +265,7 @@ namespace BlackMaple.FMSInsight.Makino
           w.UnloadOrderName,
           w.UnloadPartName,
           w.UnloadProcessNum,
-          numParts,
-          logDb
+          numParts
         );
 
         //check if the cycle already exists
@@ -358,8 +302,7 @@ namespace BlackMaple.FMSInsight.Makino
           w.LoadOrderName,
           w.LoadPartName,
           w.LoadProcessNum,
-          w.EndDateTimeUTC.AddSeconds(1),
-          logDb
+          w.EndDateTimeUTC.AddSeconds(1)
         );
 
         logDb.RecordLoadEnd(
@@ -389,14 +332,7 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    private IReadOnlyList<long> AllocateMatIds(
-      int count,
-      string order,
-      string part,
-      int numProcess,
-      DateTime endUTC,
-      IRepository logDb
-    )
+    private List<long> AllocateMatIds(int count, string order, string part, int numProcess, DateTime endUTC)
     {
       var matIds = new List<long>();
       for (int i = 0; i < count; i++)
@@ -406,15 +342,14 @@ namespace BlackMaple.FMSInsight.Makino
       return matIds;
     }
 
-    private IList<EventLogMaterial> FindOrCreateMaterial(
+    private List<EventLogMaterial> FindOrCreateMaterial(
       int pallet,
       int fixturenum,
       DateTime endUTC,
       string order,
       string part,
       int process,
-      int count,
-      IRepository logDb
+      int count
     )
     {
       var mostRecent = FindLogByForeign(pallet, fixturenum, order, endUTC, logDb);
@@ -429,7 +364,7 @@ namespace BlackMaple.FMSInsight.Makino
           endUTC,
           mostRecent
         );
-        return AllocateMatIds(count, order, part, process, endUTC, logDb)
+        return AllocateMatIds(count, order, part, process, endUTC)
           .Select(matId => new EventLogMaterial()
           {
             MaterialID = matId,
@@ -461,7 +396,7 @@ namespace BlackMaple.FMSInsight.Makino
         );
 
         mats.AddRange(
-          AllocateMatIds(count - mats.Count, order, part, process, endUTC, logDb)
+          AllocateMatIds(count - mats.Count, order, part, process, endUTC)
             .Select(matId => new EventLogMaterial()
             {
               MaterialID = matId,

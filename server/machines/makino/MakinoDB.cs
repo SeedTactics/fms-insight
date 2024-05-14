@@ -180,36 +180,26 @@ namespace BlackMaple.FMSInsight.Makino
   public class MakinoDB
   {
     #region Init
-    public enum DBTypeEnum
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoDB>();
+
+    private readonly IDbConnection _db;
+    private readonly string dbo;
+
+    public MakinoDB(string dbConnStr)
     {
-      SqlLocal,
-      SqlConnStr
-    }
-
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoDB>();
-
-    private IDbConnection _db;
-    private RepositoryConfig _logDbCfg;
-    private string dbo;
-
-    public MakinoDB(RepositoryConfig logDb, DBTypeEnum dbType, string dbConnStr)
-    {
-      _logDbCfg = logDb;
-      switch (dbType)
+      if (string.IsNullOrEmpty(dbConnStr))
       {
-        case DBTypeEnum.SqlLocal:
-          _db = new System.Data.SqlClient.SqlConnection(
-            "Data Source = (localdb)\\MSSQLLocalDB; Initial Catalog = Makino;"
-          );
-          _db.Open();
-          dbo = "dbo.";
-          break;
-
-        case DBTypeEnum.SqlConnStr:
-          _db = new System.Data.SqlClient.SqlConnection(dbConnStr);
-          _db.Open();
-          dbo = "dbo.";
-          break;
+        _db = new System.Data.SqlClient.SqlConnection(
+          "Data Source = (localdb)\\MSSQLLocalDB; Initial Catalog = Makino;"
+        );
+        _db.Open();
+        dbo = "dbo.";
+      }
+      else
+      {
+        _db = new System.Data.SqlClient.SqlConnection(dbConnStr);
+        _db.Open();
+        dbo = "dbo.";
       }
     }
 
@@ -287,69 +277,68 @@ namespace BlackMaple.FMSInsight.Makino
 
     public List<MachineResults> QueryMachineResults(DateTime startUTC, DateTime endUTC)
     {
-      using (var cmd = _db.CreateCommand())
+      using var cmd = _db.CreateCommand();
+      cmd.CommandText =
+        "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
+        + "FixtureNumber,FixtureName,FixtureComment,OrderName,PartName,Revision,ProcessNumber,"
+        + "JobNumber,ProcessName,NCProgramFileName,SpindleTime,"
+        + "MaxOperation,QuantityOpe1,QuantityOpe2,QuantityOpe3,QuantityOpe4"
+        + " FROM "
+        + dbo
+        + "MachineResults WHERE FinishDateTime >= @start AND FinishDateTime <= @end";
+      var param = cmd.CreateParameter();
+      param.ParameterName = "@start";
+      param.DbType = DbType.DateTime;
+      param.Value = startUTC.ToLocalTime();
+      cmd.Parameters.Add(param);
+      param = cmd.CreateParameter();
+      param.ParameterName = "@end";
+      param.DbType = DbType.DateTime;
+      param.Value = endUTC.ToLocalTime();
+      cmd.Parameters.Add(param);
+
+      var ret = new List<MachineResults>();
+
+      using (var reader = cmd.ExecuteReader())
       {
-        cmd.CommandText =
-          "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
-          + "FixtureNumber,FixtureName,FixtureComment,OrderName,PartName,Revision,ProcessNumber,"
-          + "JobNumber,ProcessName,NCProgramFileName,SpindleTime,"
-          + "MaxOperation,QuantityOpe1,QuantityOpe2,QuantityOpe3,QuantityOpe4"
-          + " FROM "
-          + dbo
-          + "MachineResults WHERE FinishDateTime >= @start AND FinishDateTime <= @end";
-        var param = cmd.CreateParameter();
-        param.ParameterName = "@start";
-        param.DbType = DbType.DateTime;
-        param.Value = startUTC.ToLocalTime();
-        cmd.Parameters.Add(param);
-        param = cmd.CreateParameter();
-        param.ParameterName = "@end";
-        param.DbType = DbType.DateTime;
-        param.Value = endUTC.ToLocalTime();
-        cmd.Parameters.Add(param);
-
-        var ret = new List<MachineResults>();
-
-        using (var reader = cmd.ExecuteReader())
+        while (reader.Read())
         {
-          while (reader.Read())
+          var m = new MachineResults
           {
-            var m = new MachineResults();
+            StartDateTimeLocal = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local),
+            EndDateTimeLocal = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Local)
+          };
+          m.StartDateTimeUTC = m.StartDateTimeLocal.ToUniversalTime();
+          m.EndDateTimeUTC = m.EndDateTimeLocal.ToUniversalTime();
 
-            m.StartDateTimeLocal = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local);
-            m.EndDateTimeLocal = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Local);
-            m.StartDateTimeUTC = m.StartDateTimeLocal.ToUniversalTime();
-            m.EndDateTimeUTC = m.EndDateTimeLocal.ToUniversalTime();
-
-            m.DeviceID = reader.GetInt32(2);
-            m.PalletID = reader.GetInt32(3);
-            m.FixtureNumber = reader.GetInt32(4);
-            if (!reader.IsDBNull(5))
-              m.FixtureName = reader.GetString(5);
-            m.FixtureComment = reader.GetString(6);
-            m.OrderName = reader.GetString(7);
-            m.PartName = reader.GetString(8);
-            if (!reader.IsDBNull(9))
-              m.Revision = reader.GetString(9);
-            m.ProcessNum = reader.GetInt32(10);
-            m.JobNum = reader.GetInt32(11);
-            if (!reader.IsDBNull(12))
-              m.ProcessName = reader.GetString(12);
-            m.Program = reader.GetString(13);
-            m.SpindleTimeSeconds = reader.GetInt32(14);
-            m.OperQuantities = new List<int>();
-            int numOper = reader.GetInt32(15);
-            for (int i = 0; i < Math.Min(4, numOper); i++)
-            {
-              m.OperQuantities.Add(reader.GetInt32(16 + i));
-            }
-
-            ret.Add(m);
+          m.DeviceID = reader.GetInt32(2);
+          m.PalletID = reader.GetInt32(3);
+          m.FixtureNumber = reader.GetInt32(4);
+          if (!reader.IsDBNull(5))
+            m.FixtureName = reader.GetString(5);
+          m.FixtureComment = reader.GetString(6);
+          m.OrderName = reader.GetString(7);
+          m.PartName = reader.GetString(8);
+          if (!reader.IsDBNull(9))
+            m.Revision = reader.GetString(9);
+          m.ProcessNum = reader.GetInt32(10);
+          m.JobNum = reader.GetInt32(11);
+          if (!reader.IsDBNull(12))
+            m.ProcessName = reader.GetString(12);
+          m.Program = reader.GetString(13);
+          m.SpindleTimeSeconds = reader.GetInt32(14);
+          m.OperQuantities = [];
+          int numOper = reader.GetInt32(15);
+          for (int i = 0; i < Math.Min(4, numOper); i++)
+          {
+            m.OperQuantities.Add(reader.GetInt32(16 + i));
           }
-        }
 
-        return ret;
+          ret.Add(m);
+        }
       }
+
+      return ret;
     }
 
     public class WorkSetResults
@@ -413,98 +402,97 @@ namespace BlackMaple.FMSInsight.Makino
 
     public List<WorkSetResults> QueryLoadUnloadResults(DateTime startUTC, DateTime endUTC)
     {
-      using (var cmd = _db.CreateCommand())
+      using var cmd = _db.CreateCommand();
+      cmd.CommandText =
+        "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
+        + "FixtureNumber,FixtureName,FixtureComment,"
+        + "UnclampOrderName,UnclampPartName,UnclampRevision,UnclampProcessNumber,UnclampJobNumber,UnclampProcessName,"
+        + "ClampOrderName,ClampPartName,ClampRevision,ClampProcessNumber,ClampJobNumber,ClampProcessName,"
+        + "Remachine,"
+        + "ClampQuantityOpe1,ClampQuantityOpe2,ClampQuantityOpe3,ClampQuantityOpe4,"
+        + "UnclampNormalQtyOpe1, UnclampNormalQtyOpe2, UnclampNormalQtyOpe3, UnclampNormalQtyOpe4,"
+        + "UnclampScrapQtyOpe1, UnclampScrapQtyOpe2, UnclampScrapQtyOpe3, UnclampScrapQtyOpe4,"
+        + "UnclampOutProcQtyOpe1, UnclampOutProcQtyOpe2, UnclampOutProcQtyOpe3, UnclampOutProcQtyOpe4"
+        + " FROM "
+        + dbo
+        + "WorkSetResults WHERE FinishDateTime >= @start AND FinishDateTime <= @end";
+      var param = cmd.CreateParameter();
+      param.ParameterName = "@start";
+      param.DbType = DbType.DateTime;
+      param.Value = startUTC.ToLocalTime();
+      cmd.Parameters.Add(param);
+      param = cmd.CreateParameter();
+      param.ParameterName = "@end";
+      param.DbType = DbType.DateTime;
+      param.Value = endUTC.ToLocalTime();
+      cmd.Parameters.Add(param);
+
+      var ret = new List<WorkSetResults>();
+
+      using (var reader = cmd.ExecuteReader())
       {
-        cmd.CommandText =
-          "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
-          + "FixtureNumber,FixtureName,FixtureComment,"
-          + "UnclampOrderName,UnclampPartName,UnclampRevision,UnclampProcessNumber,UnclampJobNumber,UnclampProcessName,"
-          + "ClampOrderName,ClampPartName,ClampRevision,ClampProcessNumber,ClampJobNumber,ClampProcessName,"
-          + "Remachine,"
-          + "ClampQuantityOpe1,ClampQuantityOpe2,ClampQuantityOpe3,ClampQuantityOpe4,"
-          + "UnclampNormalQtyOpe1, UnclampNormalQtyOpe2, UnclampNormalQtyOpe3, UnclampNormalQtyOpe4,"
-          + "UnclampScrapQtyOpe1, UnclampScrapQtyOpe2, UnclampScrapQtyOpe3, UnclampScrapQtyOpe4,"
-          + "UnclampOutProcQtyOpe1, UnclampOutProcQtyOpe2, UnclampOutProcQtyOpe3, UnclampOutProcQtyOpe4"
-          + " FROM "
-          + dbo
-          + "WorkSetResults WHERE FinishDateTime >= @start AND FinishDateTime <= @end";
-        var param = cmd.CreateParameter();
-        param.ParameterName = "@start";
-        param.DbType = DbType.DateTime;
-        param.Value = startUTC.ToLocalTime();
-        cmd.Parameters.Add(param);
-        param = cmd.CreateParameter();
-        param.ParameterName = "@end";
-        param.DbType = DbType.DateTime;
-        param.Value = endUTC.ToLocalTime();
-        cmd.Parameters.Add(param);
-
-        var ret = new List<WorkSetResults>();
-
-        using (var reader = cmd.ExecuteReader())
+        while (reader.Read())
         {
-          while (reader.Read())
+          var m = new WorkSetResults
           {
-            var m = new WorkSetResults();
+            StartDateTimeUTC = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local),
+            EndDateTimeUTC = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Local)
+          };
+          m.StartDateTimeUTC = m.StartDateTimeUTC.ToUniversalTime();
+          m.EndDateTimeUTC = m.EndDateTimeUTC.ToUniversalTime();
 
-            m.StartDateTimeUTC = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local);
-            m.EndDateTimeUTC = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Local);
-            m.StartDateTimeUTC = m.StartDateTimeUTC.ToUniversalTime();
-            m.EndDateTimeUTC = m.EndDateTimeUTC.ToUniversalTime();
-
-            m.DeviceID = reader.GetInt32(2);
-            m.PalletID = reader.GetInt32(3);
-            m.FixtureNumber = reader.GetInt32(4);
-            if (!reader.IsDBNull(5))
-              m.FixtureName = reader.GetString(5);
-            if (!reader.IsDBNull(6))
-              m.FixtureComment = reader.GetString(6);
-            if (!reader.IsDBNull(7))
-            {
-              m.UnloadOrderName = reader.GetString(7);
-              m.UnloadPartName = reader.GetString(8);
-              if (!reader.IsDBNull(9))
-                m.UnloadRevision = reader.GetString(9);
-              m.UnloadProcessNum = reader.GetInt32(10);
-              m.UnloadJobNum = reader.GetInt32(11);
-              if (!reader.IsDBNull(12))
-                m.UnloadProcessName = reader.GetString(12);
-            }
-            if (!reader.IsDBNull(13))
-            {
-              m.LoadOrderName = reader.GetString(13);
-              m.LoadPartName = reader.GetString(14);
-              if (!reader.IsDBNull(15))
-                m.LoadRevision = reader.GetString(15);
-              m.LoadProcessNum = reader.GetInt32(16);
-              m.LoadJobNum = reader.GetInt32(17);
-              if (!reader.IsDBNull(18))
-                m.LoadProcessName = reader.GetString(18);
-            }
-            m.Remachine = Convert.ToBoolean(reader.GetValue(19));
-
-            m.LoadQuantities = new List<int>();
-            m.UnloadNormalQuantities = new List<int>();
-            m.UnloadScrapQuantities = new List<int>();
-            m.UnloadOutProcQuantities = new List<int>();
-            for (int i = 0; i < 4; i++)
-            {
-              if (reader.GetInt32(20 + i) != 0)
-                m.LoadQuantities.Add(reader.GetInt32(20 + i));
-              if (reader.GetInt32(24 + i) != 0)
-                m.UnloadNormalQuantities.Add(reader.GetInt32(24 + i));
-              if (reader.GetInt32(28 + i) != 0)
-                m.UnloadScrapQuantities.Add(reader.GetInt32(28 + i));
-              if (reader.GetInt32(32 + i) != 0)
-                m.UnloadOutProcQuantities.Add(reader.GetInt32(32 + i));
-            }
-
-            ret.Add(m);
+          m.DeviceID = reader.GetInt32(2);
+          m.PalletID = reader.GetInt32(3);
+          m.FixtureNumber = reader.GetInt32(4);
+          if (!reader.IsDBNull(5))
+            m.FixtureName = reader.GetString(5);
+          if (!reader.IsDBNull(6))
+            m.FixtureComment = reader.GetString(6);
+          if (!reader.IsDBNull(7))
+          {
+            m.UnloadOrderName = reader.GetString(7);
+            m.UnloadPartName = reader.GetString(8);
+            if (!reader.IsDBNull(9))
+              m.UnloadRevision = reader.GetString(9);
+            m.UnloadProcessNum = reader.GetInt32(10);
+            m.UnloadJobNum = reader.GetInt32(11);
+            if (!reader.IsDBNull(12))
+              m.UnloadProcessName = reader.GetString(12);
           }
-        }
+          if (!reader.IsDBNull(13))
+          {
+            m.LoadOrderName = reader.GetString(13);
+            m.LoadPartName = reader.GetString(14);
+            if (!reader.IsDBNull(15))
+              m.LoadRevision = reader.GetString(15);
+            m.LoadProcessNum = reader.GetInt32(16);
+            m.LoadJobNum = reader.GetInt32(17);
+            if (!reader.IsDBNull(18))
+              m.LoadProcessName = reader.GetString(18);
+          }
+          m.Remachine = Convert.ToBoolean(reader.GetValue(19));
 
-        return ret;
+          m.LoadQuantities = [];
+          m.UnloadNormalQuantities = [];
+          m.UnloadScrapQuantities = [];
+          m.UnloadOutProcQuantities = [];
+          for (int i = 0; i < 4; i++)
+          {
+            if (reader.GetInt32(20 + i) != 0)
+              m.LoadQuantities.Add(reader.GetInt32(20 + i));
+            if (reader.GetInt32(24 + i) != 0)
+              m.UnloadNormalQuantities.Add(reader.GetInt32(24 + i));
+            if (reader.GetInt32(28 + i) != 0)
+              m.UnloadScrapQuantities.Add(reader.GetInt32(28 + i));
+            if (reader.GetInt32(32 + i) != 0)
+              m.UnloadOutProcQuantities.Add(reader.GetInt32(32 + i));
+          }
+
+          ret.Add(m);
+        }
       }
+
+      return ret;
     }
 
     //A common value from the CommonValue table holds values that were produced by
@@ -528,48 +516,45 @@ namespace BlackMaple.FMSInsight.Makino
 
     public List<CommonValue> QueryCommonValues(MachineResults mach)
     {
-      using (var cmd = _db.CreateCommand())
+      using var cmd = _db.CreateCommand();
+      cmd.CommandText =
+        "SELECT ExecDateTime,Number,Value"
+        + " FROM "
+        + dbo
+        + "CommonValues "
+        + " WHERE ExecDateTime >= @start AND ExecDateTime <= @end AND DeviceID = @dev";
+      var param = cmd.CreateParameter();
+      param.ParameterName = "@start";
+      param.DbType = DbType.DateTime;
+      param.Value = mach.StartDateTimeLocal;
+      cmd.Parameters.Add(param);
+      param = cmd.CreateParameter();
+      param.ParameterName = "@end";
+      param.DbType = DbType.DateTime;
+      param.Value = mach.EndDateTimeLocal;
+      cmd.Parameters.Add(param);
+      param = cmd.CreateParameter();
+      param.ParameterName = "@dev";
+      param.DbType = DbType.Int64;
+      param.Value = mach.DeviceID;
+      cmd.Parameters.Add(param);
+
+      var ret = new List<CommonValue>();
+
+      using (var reader = cmd.ExecuteReader())
       {
-        cmd.CommandText =
-          "SELECT ExecDateTime,Number,Value"
-          + " FROM "
-          + dbo
-          + "CommonValues "
-          + " WHERE ExecDateTime >= @start AND ExecDateTime <= @end AND DeviceID = @dev";
-        var param = cmd.CreateParameter();
-        param.ParameterName = "@start";
-        param.DbType = DbType.DateTime;
-        param.Value = mach.StartDateTimeLocal;
-        cmd.Parameters.Add(param);
-        param = cmd.CreateParameter();
-        param.ParameterName = "@end";
-        param.DbType = DbType.DateTime;
-        param.Value = mach.EndDateTimeLocal;
-        cmd.Parameters.Add(param);
-        param = cmd.CreateParameter();
-        param.ParameterName = "@dev";
-        param.DbType = DbType.Int64;
-        param.Value = mach.DeviceID;
-        cmd.Parameters.Add(param);
-
-        var ret = new List<CommonValue>();
-
-        using (var reader = cmd.ExecuteReader())
+        while (reader.Read())
         {
-          while (reader.Read())
-          {
-            var v = new CommonValue();
-            v.ParentMachineResults = mach;
-            var execLocal = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local);
-            v.ExecDateTimeUTC = execLocal.ToUniversalTime();
-            v.Number = reader.GetInt32(1);
-            v.Value = reader.GetValue(2).ToString();
-            ret.Add(v);
-          }
+          var v = new CommonValue { ParentMachineResults = mach };
+          var execLocal = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local);
+          v.ExecDateTimeUTC = execLocal.ToUniversalTime();
+          v.Number = reader.GetInt32(1);
+          v.Value = reader.GetValue(2).ToString();
+          ret.Add(v);
         }
-
-        return ret;
       }
+
+      return ret;
     }
 
     #endregion
@@ -578,329 +563,321 @@ namespace BlackMaple.FMSInsight.Makino
 
     public IDictionary<int, PalletLocation> Devices()
     {
-      using (var cmd = _db.CreateCommand())
+      using var cmd = _db.CreateCommand();
+      //Makino: Devices
+      var devices = new Dictionary<int, PalletLocation>();
+
+      cmd.CommandText = "SELECT DeviceID, DeviceType, DeviceNumber FROM " + dbo + "Devices";
+
+      using (var reader = cmd.ExecuteReader())
       {
-        //Makino: Devices
-        var devices = new Dictionary<int, PalletLocation>();
-
-        cmd.CommandText = "SELECT DeviceID, DeviceType, DeviceNumber FROM " + dbo + "Devices";
-
-        using (var reader = cmd.ExecuteReader())
+        while (reader.Read())
         {
-          while (reader.Read())
-          {
-            var devID = reader.GetInt32(0);
-            //some versions of makino use short
-            var dType = Convert.ToInt32(reader.GetValue(1));
-            var dNum = Convert.ToInt32(reader.GetValue(2));
+          var devID = reader.GetInt32(0);
+          //some versions of makino use short
+          var dType = Convert.ToInt32(reader.GetValue(1));
+          var dNum = Convert.ToInt32(reader.GetValue(2));
 
-            devices.Add(devID, ParseDevice(dType, dNum));
-          }
+          devices.Add(devID, ParseDevice(dType, dNum));
         }
-
-        return devices;
       }
+
+      return devices;
     }
 
-    public CurrentStatus LoadCurrentInfo()
+    public CurrentStatus LoadCurrentInfo(IRepository logDb)
     {
-      using (var logDb = _logDbCfg.OpenConnection())
-      using (var cmd = _db.CreateCommand())
-      {
-        var map = new MakinoToJobMap(logDb);
-        var palMap = new MakinoToPalletMap();
+      using var cmd = _db.CreateCommand();
+      var map = new MakinoToJobMap(logDb);
+      var palMap = new MakinoToPalletMap();
 
-        Load(
-          "SELECT PartID, ProcessNumber, ProcessID FROM " + dbo + "Processes",
-          reader =>
+      Load(
+        "SELECT PartID, ProcessNumber, ProcessID FROM " + dbo + "Processes",
+        reader =>
+        {
+          map.AddProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
+        }
+      );
+
+      //Makino: Parts   MachineWatch: Jobs
+      Load(
+        "SELECT PartID, PartName, Revision, Comment, Priority FROM " + dbo + "Parts",
+        reader =>
+        {
+          var partID = reader.GetInt32(0);
+
+          var partName = reader.GetString(1);
+          if (!reader.IsDBNull(2))
+            partName += reader.GetString(2);
+
+          map.CreateJob(
+            partName,
+            partID,
+            reader.GetString(1),
+            reader.IsDBNull(3) ? null : reader.GetString(3)
+          );
+        }
+      );
+
+      var devices = Devices();
+
+      Load(
+        "SELECT ProcessID, JobNumber, JobID FROM " + dbo + "Jobs",
+        reader =>
+        {
+          map.AddJobToProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
+        }
+      );
+
+      Load(
+        "SELECT a.JobID, b.Name FROM "
+          + dbo
+          + "MachineJobs a "
+          + "INNER JOIN "
+          + dbo
+          + "NCProgramFiles b "
+          + "ON a.NCProgramFileID = b.NCProgramFileID",
+        reader =>
+        {
+          map.AddProgramToJob(reader.GetInt32(0), reader.GetString(1));
+        }
+      );
+
+      Load(
+        "SELECT JobID, FeasibleDeviceID FROM " + dbo + "JobFeasibleDevices",
+        reader =>
+        {
+          map.AddAllowedStationToJob(reader.GetInt32(0), devices[reader.GetInt32(1)]);
+        }
+      );
+
+      map.CompleteStations();
+
+      Load(
+        "SELECT a.PalletFixtureID, a.FixtureNumber, a.FixtureID, b.PalletNumber, c.CurDeviceType, c.CurDeviceNumber "
+          + "FROM "
+          + dbo
+          + "PalletFixtures a, "
+          + dbo
+          + "Pallets b, "
+          + dbo
+          + "PalletLocation c "
+          + "WHERE a.PalletID = b.PalletID AND a.PalletID = c.PalletID "
+          + " AND a.FixtureID IS NOT NULL",
+        reader =>
+        {
+          var loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 0);
+          if (!reader.IsDBNull(4) && !reader.IsDBNull(5))
+            loc = ParseDevice(reader.GetInt16(4), reader.GetInt16(5));
+
+          palMap.AddPalletInfo(
+            reader.GetInt32(0),
+            reader.GetInt32(1),
+            reader.GetInt32(2),
+            reader.GetInt32(3),
+            loc
+          );
+        }
+      );
+
+      Load(
+        "SELECT ProcessID, FixtureID FROM " + dbo + "FixtureProcesses",
+        reader =>
+        {
+          map.AddFixtureToProcess(
+            reader.GetInt32(0),
+            reader.GetInt32(1),
+            palMap.PalletsForFixture(reader.GetInt32(1))
+          );
+        }
+      );
+
+      Load(
+        "SELECT OrderID, OrderName, PartID, Comment, Quantity, Priority, StartDate "
+          + "FROM "
+          + dbo
+          + "Orders",
+        reader =>
+        {
+          var newJob = map.DuplicateForOrder(reader.GetInt32(0), reader.GetString(1), reader.GetInt32(2));
+
+          DateTime start = DateTime.SpecifyKind(reader.GetDateTime(6), DateTimeKind.Local);
+          start = start.ToUniversalTime();
+
+          newJob = newJob with
           {
-            map.AddProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
+            Comment = reader.IsDBNull(3) ? newJob.Comment : reader.GetString(3),
+            Cycles = reader.GetInt32(4),
+            Precedence =
+            [
+              [reader.GetInt16(5)]
+            ],
+            Processes = newJob
+              .Processes.Select(proc => new BlackMaple.MachineFramework.ProcessInfo()
+              {
+                Paths = proc
+                  .Paths.Select(path => path with { SimulatedStartingUTC = start })
+                  .ToImmutableList()
+              })
+              .ToImmutableList()
+          };
+        }
+      );
+
+      Load(
+        "SELECT OrderID, ProcessID, RemainingQuantity, NormalQuantity, ScrapQuantity "
+          + "FROM "
+          + dbo
+          + "Quantities",
+        reader =>
+        {
+          map.AddQuantityToProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(3));
+        }
+      );
+
+      Load(
+        "SELECT PalletFixtureID, CurProcessID, CurOrderID, CurJobID, WorkStatus "
+          + "FROM "
+          + dbo
+          + "FixtureRun WHERE CurProcessID IS NOT NULL",
+        reader =>
+        {
+          int palfixID = reader.GetInt32(0);
+          int orderID = reader.GetInt32(2);
+          var job = map.JobForOrder(orderID);
+
+          string orderName = "";
+          if (job != null)
+            orderName = job.UniqueStr;
+
+          // Lookup (pallet,location) for this palfixID
+          palMap.PalletLocInfo(palfixID, out int palletNum, out int fixtureNum);
+
+          //look for material id
+          IEnumerable<long> matIDs;
+          if (orderName == "")
+          {
+            matIDs = [];
           }
-        );
-
-        //Makino: Parts   MachineWatch: Jobs
-        Load(
-          "SELECT PartID, PartName, Revision, Comment, Priority FROM " + dbo + "Parts",
-          reader =>
+          else
           {
-            var partID = reader.GetInt32(0);
-
-            var partName = reader.GetString(1);
-            if (!reader.IsDBNull(2))
-              partName += reader.GetString(2);
-
-            map.CreateJob(
-              partName,
-              partID,
-              reader.GetString(1),
-              reader.IsDBNull(3) ? null : reader.GetString(3)
+            var mostRecentLog = LogBuilder.FindLogByForeign(
+              palletNum,
+              fixtureNum,
+              orderName,
+              DateTime.UtcNow.AddSeconds(10),
+              logDb
             );
-          }
-        );
-
-        var devices = Devices();
-
-        Load(
-          "SELECT ProcessID, JobNumber, JobID FROM " + dbo + "Jobs",
-          reader =>
-          {
-            map.AddJobToProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
-          }
-        );
-
-        Load(
-          "SELECT a.JobID, b.Name FROM "
-            + dbo
-            + "MachineJobs a "
-            + "INNER JOIN "
-            + dbo
-            + "NCProgramFiles b "
-            + "ON a.NCProgramFileID = b.NCProgramFileID",
-          reader =>
-          {
-            map.AddProgramToJob(reader.GetInt32(0), reader.GetString(1));
-          }
-        );
-
-        Load(
-          "SELECT JobID, FeasibleDeviceID FROM " + dbo + "JobFeasibleDevices",
-          reader =>
-          {
-            map.AddAllowedStationToJob(reader.GetInt32(0), devices[reader.GetInt32(1)]);
-          }
-        );
-
-        map.CompleteStations();
-
-        Load(
-          "SELECT a.PalletFixtureID, a.FixtureNumber, a.FixtureID, b.PalletNumber, c.CurDeviceType, c.CurDeviceNumber "
-            + "FROM "
-            + dbo
-            + "PalletFixtures a, "
-            + dbo
-            + "Pallets b, "
-            + dbo
-            + "PalletLocation c "
-            + "WHERE a.PalletID = b.PalletID AND a.PalletID = c.PalletID "
-            + " AND a.FixtureID IS NOT NULL",
-          reader =>
-          {
-            var loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 0);
-            if (!reader.IsDBNull(4) && !reader.IsDBNull(5))
-              loc = ParseDevice(reader.GetInt16(4), reader.GetInt16(5));
-
-            palMap.AddPalletInfo(
-              reader.GetInt32(0),
-              reader.GetInt32(1),
-              reader.GetInt32(2),
-              reader.GetInt32(3),
-              loc
-            );
-          }
-        );
-
-        Load(
-          "SELECT ProcessID, FixtureID FROM " + dbo + "FixtureProcesses",
-          reader =>
-          {
-            map.AddFixtureToProcess(
-              reader.GetInt32(0),
-              reader.GetInt32(1),
-              palMap.PalletsForFixture(reader.GetInt32(1))
-            );
-          }
-        );
-
-        Load(
-          "SELECT OrderID, OrderName, PartID, Comment, Quantity, Priority, StartDate "
-            + "FROM "
-            + dbo
-            + "Orders",
-          reader =>
-          {
-            var newJob = map.DuplicateForOrder(reader.GetInt32(0), reader.GetString(1), reader.GetInt32(2));
-
-            DateTime start = DateTime.SpecifyKind(reader.GetDateTime(6), DateTimeKind.Local);
-            start = start.ToUniversalTime();
-
-            newJob = newJob with
-            {
-              Comment = reader.IsDBNull(3) ? newJob.Comment : reader.GetString(3),
-              Cycles = reader.GetInt32(4),
-              Precedence = ImmutableList.Create(ImmutableList.Create<long>(reader.GetInt16(5))),
-              Processes = newJob
-                .Processes.Select(proc => new BlackMaple.MachineFramework.ProcessInfo()
-                {
-                  Paths = proc
-                    .Paths.Select(path => path with { SimulatedStartingUTC = start })
-                    .ToImmutableList()
-                })
-                .ToImmutableList()
-            };
-          }
-        );
-
-        Load(
-          "SELECT OrderID, ProcessID, RemainingQuantity, NormalQuantity, ScrapQuantity "
-            + "FROM "
-            + dbo
-            + "Quantities",
-          reader =>
-          {
-            map.AddQuantityToProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(3));
-          }
-        );
-
-        Load(
-          "SELECT PalletFixtureID, CurProcessID, CurOrderID, CurJobID, WorkStatus "
-            + "FROM "
-            + dbo
-            + "FixtureRun WHERE CurProcessID IS NOT NULL",
-          reader =>
-          {
-            int palfixID = reader.GetInt32(0);
-            int orderID = reader.GetInt32(2);
-            var job = map.JobForOrder(orderID);
-
-            string orderName = "";
-            if (job != null)
-              orderName = job.UniqueStr;
-
-            // Lookup (pallet,location) for this palfixID
-            int palletNum;
-            int fixtureNum;
-            palMap.PalletLocInfo(palfixID, out palletNum, out fixtureNum);
-
-            //look for material id
-            IEnumerable<long> matIDs;
-            if (orderName == "")
+            if (mostRecentLog == null)
             {
               matIDs = [];
             }
             else
             {
-              var mostRecentLog = LogTimer.FindLogByForeign(
-                palletNum,
-                fixtureNum,
-                orderName,
-                DateTime.UtcNow.AddSeconds(10),
-                logDb
-              );
-              if (mostRecentLog == null)
-              {
-                matIDs = [];
-              }
-              else
-              {
-                matIDs = mostRecentLog.Material.Select(m => m.MaterialID);
-              }
-            }
-
-            if (!matIDs.Any())
-            {
-              matIDs = [-1];
-            }
-
-            foreach (var m in matIDs)
-            {
-              var inProcMat = map.CreateMaterial(
-                orderID,
-                reader.GetInt32(1),
-                reader.GetInt32(3),
-                palletNum,
-                fixtureNum,
-                m
-              );
-
-              palMap.AddMaterial(palfixID, inProcMat);
+              matIDs = mostRecentLog.Material.Select(m => m.MaterialID);
             }
           }
-        );
 
-        //There is a MovePalletFixtureID column which presumebly means rotate through process?
-        //Other columns include remachining, cancel, recleaning, offdutyprocess, operation status
-        Load(
-          "SELECT PalletFixtureID, UnclampJobID, UnclampOrderID, ClampJobID, ClampOrderID, ClampQuantity "
-            + "FROM "
-            + dbo
-            + "WorkSetCommand WHERE PalletFixtureID IS NOT NULL",
-          reader =>
+          if (!matIDs.Any())
           {
-            var palfixID = reader.GetInt32(0);
-
-            if (!reader.IsDBNull(1) && !reader.IsDBNull(2))
-            {
-              var unclampJobID = reader.GetInt32(1);
-              var unclampOrder = reader.GetInt32(2);
-
-              var procNum = map.ProcessForJobID(unclampJobID);
-              var job = map.JobForOrder(unclampOrder);
-              if (job != null)
-                palMap.SetMaterialAsUnload(palfixID, job.Processes.Count == procNum);
-            }
-
-            if (!reader.IsDBNull(3) && !reader.IsDBNull(4))
-            {
-              var clampJobID = reader.GetInt32(3);
-              var clampOrder = reader.GetInt32(4);
-
-              var procNum = map.ProcessForJobID(clampJobID);
-              var job = map.JobForOrder(clampOrder);
-              int qty = 1;
-              if (!reader.IsDBNull(5))
-                qty = reader.GetInt32(5);
-
-              if (job != null)
-                palMap.AddMaterialToLoad(palfixID, job.UniqueStr, job.PartName, procNum, qty);
-            }
+            matIDs = [-1];
           }
-        );
 
-        //TODO: inspections (from jobdb), holds
+          foreach (var m in matIDs)
+          {
+            var inProcMat = map.CreateMaterial(
+              orderID,
+              reader.GetInt32(1),
+              reader.GetInt32(3),
+              palletNum,
+              fixtureNum,
+              m
+            );
 
-        return new CurrentStatus()
+            palMap.AddMaterial(palfixID, inProcMat);
+          }
+        }
+      );
+
+      //There is a MovePalletFixtureID column which presumebly means rotate through process?
+      //Other columns include remachining, cancel, recleaning, offdutyprocess, operation status
+      Load(
+        "SELECT PalletFixtureID, UnclampJobID, UnclampOrderID, ClampJobID, ClampOrderID, ClampQuantity "
+          + "FROM "
+          + dbo
+          + "WorkSetCommand WHERE PalletFixtureID IS NOT NULL",
+        reader =>
         {
-          TimeOfCurrentStatusUTC = DateTime.UtcNow,
-          Jobs = map.Jobs.ToImmutableDictionary(j => j.UniqueStr),
-          Pallets = palMap.Pallets.ToImmutableDictionary(),
-          Material = palMap.Material.ToImmutableList(),
-          Alarms = ImmutableList<string>.Empty,
-          Queues = ImmutableDictionary<string, QueueInfo>.Empty
-        };
-      }
+          var palfixID = reader.GetInt32(0);
+
+          if (!reader.IsDBNull(1) && !reader.IsDBNull(2))
+          {
+            var unclampJobID = reader.GetInt32(1);
+            var unclampOrder = reader.GetInt32(2);
+
+            var procNum = map.ProcessForJobID(unclampJobID);
+            var job = map.JobForOrder(unclampOrder);
+            if (job != null)
+              palMap.SetMaterialAsUnload(palfixID, job.Processes.Count == procNum);
+          }
+
+          if (!reader.IsDBNull(3) && !reader.IsDBNull(4))
+          {
+            var clampJobID = reader.GetInt32(3);
+            var clampOrder = reader.GetInt32(4);
+
+            var procNum = map.ProcessForJobID(clampJobID);
+            var job = map.JobForOrder(clampOrder);
+            int qty = 1;
+            if (!reader.IsDBNull(5))
+              qty = reader.GetInt32(5);
+
+            if (job != null)
+              palMap.AddMaterialToLoad(palfixID, job.UniqueStr, job.PartName, procNum, qty);
+          }
+        }
+      );
+
+      //TODO: inspections (from jobdb), holds
+
+      return new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
+        Jobs = map.Jobs.ToImmutableDictionary(j => j.UniqueStr),
+        Pallets = palMap.Pallets.ToImmutableDictionary(),
+        Material = palMap.Material.ToImmutableList(),
+        Alarms = [],
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty
+      };
     }
 
     private void Load(string command, Action<IDataReader> onEachRow)
     {
-      Log.Debug("Loading " + command.Substring(7));
+      Log.Debug(string.Concat("Loading ", command.AsSpan(7)));
 
-      using (var cmd = _db.CreateCommand())
+      using var cmd = _db.CreateCommand();
+      cmd.CommandText = command;
+      using var reader = cmd.ExecuteReader();
+      while (reader.Read())
       {
-        cmd.CommandText = command;
-        using (var reader = cmd.ExecuteReader())
+        var row = "   ";
+        for (int i = 0; i < reader.FieldCount; i++)
         {
-          while (reader.Read())
+          row += reader.GetName(i) + " ";
+          row += reader.GetDataTypeName(i) + ": ";
+          if (reader.IsDBNull(i))
           {
-            var row = "   ";
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-              row += reader.GetName(i) + " ";
-              row += reader.GetDataTypeName(i) + ": ";
-              if (reader.IsDBNull(i))
-              {
-                row += "(null)";
-              }
-              else
-              {
-                row += reader.GetValue(i).ToString();
-              }
-              row += "  ";
-            }
-            Log.Debug(row);
-
-            onEachRow(reader);
+            row += "(null)";
           }
+          else
+          {
+            row += reader.GetValue(i).ToString();
+          }
+          row += "  ";
         }
+        Log.Debug(row);
+
+        onEachRow(reader);
       }
     }
 
@@ -920,10 +897,6 @@ namespace BlackMaple.FMSInsight.Makino
       //dType = 7 is Presetter
       return ret;
     }
-
-#if DEBUG
-    public static List<string> errors = new List<string>();
-#endif
     #endregion
   }
 }

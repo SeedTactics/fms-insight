@@ -37,21 +37,28 @@ using Microsoft.Extensions.Configuration;
 
 namespace BlackMaple.FMSInsight.Makino
 {
-  public class MakinoBackend : IFMSBackend, IDisposable
+  public class MakinoCellState : ICellState
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
+    public required CurrentStatus CurrentStatus { get; init; }
 
-    // Common databases from machine framework
+    public required bool StateUpdated { get; init; }
+
+    public TimeSpan TimeUntilNextRefresh => TimeSpan.FromMinutes(1);
+  }
+
+  public sealed class MakinoBackend : IFMSBackend, IDisposable, ISynchronizeCellState<MakinoCellState>
+  {
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
+
     public RepositoryConfig RepoConfig { get; }
+    public IJobControl JobControl => _jobs;
+    public IQueueControl QueueControl => _jobs;
+    public IMachineControl MachineControl => null;
+    public bool AllowQuarantineToCancelLoad => false;
+    public bool AddJobsAsCopiedToSystem => false;
 
-    // Makino databases
-    private MakinoDB _makinoDB;
-
-    private Jobs _jobs;
-#pragma warning disable 649
-    private LogTimer _logTimer;
-#pragma warning restore 649
-    private string _dataDirectory;
+    private readonly JobsAndQueuesFromDb<MakinoCellState> _jobs;
+    private readonly MakinoDB _makinoDB;
 
     public MakinoBackend(IConfiguration config, FMSSettings st, SerialSettings serialSt)
     {
@@ -80,32 +87,16 @@ namespace BlackMaple.FMSInsight.Makino
           downloadOnlyOrders
         );
 
-        _dataDirectory = st.DataDirectory;
-
         RepoConfig = RepositoryConfig.InitializeEventDatabase(
           serialSt,
-          System.IO.Path.Combine(_dataDirectory, "log.db"),
-          System.IO.Path.Combine(_dataDirectory, "inspections.db"),
-          System.IO.Path.Combine(_dataDirectory, "jobs.db")
+          System.IO.Path.Combine(st.DataDirectory, "log.db"),
+          System.IO.Path.Combine(st.DataDirectory, "inspections.db"),
+          System.IO.Path.Combine(st.DataDirectory, "jobs.db")
         );
 
-#if DEBUG
-        _makinoDB = new MakinoDB(RepoConfig, MakinoDB.DBTypeEnum.SqlLocal, "");
-#else
-        _makinoDB = new MakinoDB(RepoConfig, MakinoDB.DBTypeEnum.SqlConnStr, dbConnStr);
-#endif
+        _makinoDB = new MakinoDB(dbConnStr);
 
-        _logTimer = new LogTimer(RepoConfig, _makinoDB);
-
-        _jobs = new Jobs(
-          _makinoDB,
-          RepoConfig.OpenConnection,
-          adePath,
-          downloadOnlyOrders,
-          onJobCommentChange: OnLogsProcessed
-        );
-
-        _logTimer.LogsProcessed += OnLogsProcessed;
+        _jobs = new JobsAndQueuesFromDb<MakinoCellState>(RepoConfig, st, RaiseNewCurrentStatus, this);
       }
       catch (Exception ex)
       {
@@ -113,55 +104,59 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    private bool _disposed = false;
-
-    public void Dispose()
+    void IDisposable.Dispose()
     {
-      if (_disposed)
-        return;
-      _disposed = true;
-      _logTimer.LogsProcessed -= OnLogsProcessed;
-      if (_logTimer != null)
-        _logTimer.Halt();
-      if (_makinoDB != null)
-        _makinoDB.Close();
+      _makinoDB.Close();
+      _jobs.Dispose();
     }
 
     public event NewCurrentStatus OnNewCurrentStatus;
 
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
 
-    private void OnLogsProcessed()
-    {
-      RaiseNewCurrentStatus(_jobs.GetCurrentStatus());
-    }
+    public event Action NewCellState;
 
-    private string DetectSqlConnectionStr()
+    private static string DetectSqlConnectionStr()
     {
-      var b = new System.Data.SqlClient.SqlConnectionStringBuilder();
-      b.UserID = "sa";
-      b.Password = "M@k1n0Admin";
-      b.InitialCatalog = "Makino";
-      b.DataSource = "(local)";
+      var b = new System.Data.SqlClient.SqlConnectionStringBuilder
+      {
+        UserID = "sa",
+        Password = "M@k1n0Admin",
+        InitialCatalog = "Makino",
+        DataSource = "(local)"
+      };
       return b.ConnectionString;
     }
 
-    public IJobControl JobControl
+    public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
     {
-      get => _jobs;
-    }
-    public IQueueControl QueueControl => _jobs;
-
-    public IMachineControl MachineControl => null;
-
-    public LogTimer LogTimer
-    {
-      get { return _logTimer; }
+      return [];
     }
 
-    public string DataDir
+    public MakinoCellState CalculateCellState(IRepository db)
     {
-      get { return _dataDirectory; }
+      var lastLog = db.MaxLogDate();
+      if (DateTime.UtcNow.Subtract(lastLog) > TimeSpan.FromDays(30))
+      {
+        lastLog = DateTime.UtcNow.AddDays(-30);
+      }
+
+      var newEvts = new LogBuilder(_makinoDB, db).CheckLogs(lastLog);
+
+      var st = _makinoDB.LoadCurrentInfo(db);
+
+      return new MakinoCellState { CurrentStatus = st, StateUpdated = newEvts };
+    }
+
+    public bool ApplyActions(IRepository db, MakinoCellState state)
+    {
+      return false;
+    }
+
+    public bool DecrementJobs(IRepository db, MakinoCellState state)
+    {
+      // do nothing
+      return false;
     }
   }
 }

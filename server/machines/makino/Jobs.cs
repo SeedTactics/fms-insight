@@ -38,7 +38,7 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
 {
-  public class Jobs : IJobControl, IQueueControl
+  public class Jobs
   {
     private MakinoDB _db;
     private Func<IRepository> _openJobDB;
@@ -62,29 +62,6 @@ namespace BlackMaple.FMSInsight.Makino
       _onlyOrders = onlyOrders;
       _onJobCommentChange = onJobCommentChange;
     }
-
-    public CurrentStatus GetCurrentStatus()
-    {
-      if (_db == null)
-        return new CurrentStatus()
-        {
-          TimeOfCurrentStatusUTC = DateTime.UtcNow,
-          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-          Material = ImmutableList<InProcessMaterial>.Empty,
-          Alarms = ImmutableList<string>.Empty,
-          Queues = ImmutableDictionary<string, QueueInfo>.Empty
-        };
-      else
-        return _db.LoadCurrentInfo();
-    }
-
-    public List<string> CheckValidRoutes(IEnumerable<Job> newJobs)
-    {
-      return new List<string>();
-    }
-
-    public void RecalculateCellState() { }
 
     public void AddJobs(NewJobs newJ, string expectedPreviousScheduleId)
     {
@@ -114,98 +91,5 @@ namespace BlackMaple.FMSInsight.Makino
       OrderXML.WriteOrderXML(System.IO.Path.Combine(_xmlPath, "sail.xml"), newJobs, _onlyOrders);
       OnNewJobs?.Invoke(newJ);
     }
-
-    void IJobControl.SetJobComment(string jobUnique, string comment)
-    {
-      using (var jdb = _openJobDB())
-      {
-        jdb.SetJobComment(jobUnique, comment);
-      }
-      _onJobCommentChange();
-    }
-
-    #region Decrement
-    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(
-      long loadDecrementsStrictlyAfterDecrementId
-    )
-    {
-      return new List<JobAndDecrementQuantity>();
-    }
-
-    public List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
-    {
-      return new List<JobAndDecrementQuantity>();
-    }
-
-    public void ReplaceWorkordersForSchedule(
-      string scheduleId,
-      IEnumerable<Workorder> newWorkorders,
-      IEnumerable<NewProgramContent> programs
-    )
-    {
-      // do nothing
-    }
-    #endregion
-
-    #region Queues
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(
-      string casting,
-      int qty,
-      string queue,
-      IList<string> serial,
-      string workorder,
-      string operatorName
-    )
-    {
-      //do nothing
-      return new List<InProcessMaterial>();
-    }
-
-    public InProcessMaterial AddUnprocessedMaterialToQueue(
-      string jobUnique,
-      int process,
-      string queue,
-      int position,
-      string serial,
-      string workorder,
-      string operatorName = null
-    )
-    {
-      //do nothing
-      return null;
-    }
-
-    public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null)
-    {
-      //do nothing
-    }
-
-    public void RemoveMaterialFromAllQueues(IList<long> materialId, string operatorName = null)
-    {
-      //do nothing
-    }
-
-    public bool AllowQuarantineToCancelLoad { get; } = false;
-
-    public void SignalMaterialForQuarantine(long materialId, string operatorName = null, string reason = null)
-    {
-      // do nothing
-    }
-
-    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null)
-    {
-      // do nothing
-    }
-
-    public void InvalidatePalletCycle(
-      long matId,
-      int process,
-      string oldMatPutInQueue = null,
-      string operatorName = null
-    )
-    {
-      // do nothing
-    }
-    #endregion
   }
 }
