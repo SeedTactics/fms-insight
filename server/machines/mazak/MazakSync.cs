@@ -113,6 +113,74 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     NewCellState?.Invoke();
   }
 
+  public bool AllowQuarantineToCancelLoad => false;
+  public bool AddJobsAsCopiedToSystem => false;
+
+  public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
+  {
+    var logMessages = new List<string>();
+    MazakAllData mazakData;
+
+    if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
+    {
+      throw new Exception("Unable to obtain mazak database lock");
+    }
+    try
+    {
+      mazakData = readDatabase.LoadAllData();
+    }
+    finally
+    {
+      OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
+    }
+
+    try
+    {
+      ProgramRevision lookupProg(string prog, long? rev)
+      {
+        if (rev.HasValue)
+        {
+          return db.LoadProgram(prog, rev.Value);
+        }
+        else
+        {
+          return db.LoadMostRecentProgram(prog);
+        }
+      }
+
+      /*
+                //The reason we create the clsPalletPartMapping is to see if it throws any exceptions.  We therefore
+                //need to ignore the warning that palletPartMap is not used.
+      #pragma warning disable 168, 219
+                var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
+                  jobs: jobs,
+                  downloadUID: 1,
+                  mazakData: mazakData,
+                  savedParts: new HashSet<string>(),
+                  MazakType: writeJobs.MazakType,
+                  useStartingOffsetForDueDate: _useStartingOffsetForDueDate,
+                  fmsSettings: settings,
+                  lookupProgram: lookupProg,
+                  errors: logMessages
+                );
+      #pragma warning restore 168, 219
+      */
+    }
+    catch (Exception ex)
+    {
+      if (ex.Message.StartsWith("Invalid pallet->part mapping"))
+      {
+        logMessages.Add(ex.Message);
+      }
+      else
+      {
+        throw;
+      }
+    }
+
+    return logMessages;
+  }
+
   public MazakState CalculateCellState(IRepository db)
   {
     var now = DateTime.UtcNow;
