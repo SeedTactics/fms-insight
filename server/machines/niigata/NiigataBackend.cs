@@ -166,9 +166,7 @@ namespace BlackMaple.FMSInsight.Niigata
           RepoConfig,
           cfg,
           s => OnNewCurrentStatus?.Invoke(s),
-          syncSt,
-          allowQuarantineToCancelLoad: false,
-          addJobsAsCopiedToSystem: true
+          syncSt
         );
 
         if (startSyncThread)

@@ -149,10 +149,14 @@ namespace BlackMaple.MachineFramework
     where St : ICellState
   {
     event Action NewCellState;
+
     IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs);
     St CalculateCellState(IRepository db);
     bool ApplyActions(IRepository db, St st);
     bool DecrementJobs(IRepository db, St st);
+
+    public bool AddJobsAsCopiedToSystem { get; }
+    public bool AllowQuarantineToCancelLoad { get; }
   }
 
   public delegate void NewCurrentStatus(CurrentStatus status);

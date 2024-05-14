@@ -39,7 +39,7 @@ using System.Threading;
 
 namespace BlackMaple.MachineFramework
 {
-  public class JobsAndQueuesFromDb<St> : IJobControl, IQueueControl, IDisposable
+  public sealed class JobsAndQueuesFromDb<St> : IJobControl, IQueueControl, IDisposable
     where St : ICellState
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<JobsAndQueuesFromDb<St>>();
@@ -49,16 +49,13 @@ namespace BlackMaple.MachineFramework
     private readonly Action<CurrentStatus> _onNewCurrentStatus;
     private readonly ISynchronizeCellState<St> _syncState;
 
-    public bool AllowQuarantineToCancelLoad { get; }
-    public bool AddJobsAsCopiedToSystem { get; }
+    public bool AllowQuarantineToCancelLoad => _syncState.AllowQuarantineToCancelLoad;
 
     public JobsAndQueuesFromDb(
       RepositoryConfig repo,
       FMSSettings settings,
       Action<CurrentStatus> onNewCurrentStatus,
-      ISynchronizeCellState<St> syncSt,
-      bool allowQuarantineToCancelLoad,
-      bool addJobsAsCopiedToSystem
+      ISynchronizeCellState<St> syncSt
     )
     {
       _repo = repo;
@@ -66,8 +63,6 @@ namespace BlackMaple.MachineFramework
       _onNewCurrentStatus = onNewCurrentStatus;
       _syncState = syncSt;
       _syncState.NewCellState += NewCellState;
-      AllowQuarantineToCancelLoad = allowQuarantineToCancelLoad;
-      AddJobsAsCopiedToSystem = addJobsAsCopiedToSystem;
 
       _thread = new Thread(Thread) { IsBackground = true };
     }
@@ -260,7 +255,11 @@ namespace BlackMaple.MachineFramework
 
         Log.Debug("Adding jobs to database");
 
-        jdb.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: AddJobsAsCopiedToSystem);
+        jdb.AddJobs(
+          jobs,
+          expectedPreviousScheduleId,
+          addAsCopiedToSystem: _syncState.AddJobsAsCopiedToSystem
+        );
       }
 
       Log.Debug("Sending new jobs on websocket");
@@ -621,7 +620,7 @@ namespace BlackMaple.MachineFramework
             switch (mat.Location.Type, mat.Action.Type)
             {
               case (InProcessMaterialLocation.LocType.OnPallet, _):
-                if (!AllowQuarantineToCancelLoad)
+                if (!_syncState.AllowQuarantineToCancelLoad)
                 {
                   if (mat.Action.Type == InProcessMaterialAction.ActionType.Loading)
                   {
@@ -671,7 +670,8 @@ namespace BlackMaple.MachineFramework
               case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
                 when !string.IsNullOrEmpty(_settings.QuarantineQueue):
               case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Loading)
-                when !string.IsNullOrEmpty(_settings.QuarantineQueue) && AllowQuarantineToCancelLoad:
+                when !string.IsNullOrEmpty(_settings.QuarantineQueue)
+                  && _syncState.AllowQuarantineToCancelLoad:
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;
@@ -696,7 +696,8 @@ namespace BlackMaple.MachineFramework
               case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Waiting)
                 when string.IsNullOrEmpty(_settings.QuarantineQueue):
               case (InProcessMaterialLocation.LocType.InQueue, InProcessMaterialAction.ActionType.Loading)
-                when string.IsNullOrEmpty(_settings.QuarantineQueue) && AllowQuarantineToCancelLoad:
+                when string.IsNullOrEmpty(_settings.QuarantineQueue)
+                  && _syncState.AllowQuarantineToCancelLoad:
                 {
                   var nextProc = ldb.NextProcessForQueuedMaterial(materialId);
                   var proc = (nextProc ?? 1) - 1;

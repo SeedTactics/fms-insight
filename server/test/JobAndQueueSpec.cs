@@ -87,17 +87,13 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   public event Action NewCellState;
   private bool _expectsDecrement = false;
 
-  private async Task StartSyncThread(bool allowQuarantineToCancelLoad = false)
+  public bool AllowQuarantineToCancelLoad { get; private set; } = false;
+  public bool AddJobsAsCopiedToSystem => true;
+
+  private async Task StartSyncThread()
   {
     var newCellSt = CreateTaskToWaitForNewCellState();
-    _jq = new JobsAndQueuesFromDb<MockCellState>(
-      _repo,
-      _settings,
-      OnNewCurrentStatus,
-      this,
-      allowQuarantineToCancelLoad: allowQuarantineToCancelLoad,
-      addJobsAsCopiedToSystem: true
-    );
+    _jq = new JobsAndQueuesFromDb<MockCellState>(_repo, _settings, OnNewCurrentStatus, this);
     _jq.StartThread();
     await newCellSt;
   }
@@ -1129,7 +1125,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   public async Task QuarantinesMatOnPallet(SignalQuarantineTheoryData data)
   {
     _settings.QuarantineQueue = data.QuarantineQueue;
-    await StartSyncThread(allowQuarantineToCancelLoad: data.AllowQuarantineToCancelLoad);
+    AllowQuarantineToCancelLoad = data.AllowQuarantineToCancelLoad;
+    await StartSyncThread();
 
     using var db = _repo.OpenConnection();
 
