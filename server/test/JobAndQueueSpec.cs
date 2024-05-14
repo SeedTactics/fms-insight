@@ -55,7 +55,6 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   }
 
   private readonly RepositoryConfig _repo;
-  private readonly ICheckJobsValid _checkJobsMock;
   private readonly FMSSettings _settings;
   private JobsAndQueuesFromDb<MockCellState> _jq;
   private readonly Fixture _fixture;
@@ -67,8 +66,6 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     );
     _fixture = new Fixture();
     _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
-
-    _checkJobsMock = Substitute.For<ICheckJobsValid>();
 
     _settings = new FMSSettings();
     _settings.Queues.Add("q1", new QueueInfo());
@@ -98,12 +95,16 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       _settings,
       OnNewCurrentStatus,
       this,
-      _checkJobsMock,
       allowQuarantineToCancelLoad: allowQuarantineToCancelLoad,
       addJobsAsCopiedToSystem: true
     );
     _jq.StartThread();
     await newCellSt;
+  }
+
+  public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
+  {
+    return [];
   }
 
   MockCellState ISynchronizeCellState<MockCellState>.CalculateCellState(IRepository db)
@@ -303,8 +304,6 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     };
 
     var newStatusTask = CreateTaskToWaitForNewCellState();
-
-    _checkJobsMock.CheckNewJobs(Arg.Any<IRepository>(), Arg.Any<NewJobs>()).Returns(new string[] { });
 
     ((IJobControl)_jq).AddJobs(newJobs, null);
 

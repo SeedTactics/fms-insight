@@ -48,7 +48,6 @@ namespace BlackMaple.MachineFramework
     private readonly FMSSettings _settings;
     private readonly Action<CurrentStatus> _onNewCurrentStatus;
     private readonly ISynchronizeCellState<St> _syncState;
-    private readonly ICheckJobsValid _checkJobsValid;
 
     public bool AllowQuarantineToCancelLoad { get; }
     public bool AddJobsAsCopiedToSystem { get; }
@@ -58,7 +57,6 @@ namespace BlackMaple.MachineFramework
       FMSSettings settings,
       Action<CurrentStatus> onNewCurrentStatus,
       ISynchronizeCellState<St> syncSt,
-      ICheckJobsValid checkJobs,
       bool allowQuarantineToCancelLoad,
       bool addJobsAsCopiedToSystem
     )
@@ -67,7 +65,6 @@ namespace BlackMaple.MachineFramework
       _settings = settings;
       _onNewCurrentStatus = onNewCurrentStatus;
       _syncState = syncSt;
-      _checkJobsValid = checkJobs;
       _syncState.NewCellState += NewCellState;
       AllowQuarantineToCancelLoad = allowQuarantineToCancelLoad;
       AddJobsAsCopiedToSystem = addJobsAsCopiedToSystem;
@@ -245,7 +242,7 @@ namespace BlackMaple.MachineFramework
     List<string> IJobControl.CheckValidRoutes(IEnumerable<Job> newJobs)
     {
       using var jdb = _repo.OpenConnection();
-      return _checkJobsValid
+      return _syncState
         .CheckNewJobs(jdb, new NewJobs() { ScheduleId = null, Jobs = newJobs.ToImmutableList() })
         .ToList();
     }
@@ -255,7 +252,7 @@ namespace BlackMaple.MachineFramework
       using (var jdb = _repo.OpenConnection())
       {
         Log.Debug("Adding new jobs {@jobs}", jobs);
-        var errors = _checkJobsValid.CheckNewJobs(jdb, jobs);
+        var errors = _syncState.CheckNewJobs(jdb, jobs);
         if (errors.Any())
         {
           throw new BadRequestException(string.Join(Environment.NewLine, errors));

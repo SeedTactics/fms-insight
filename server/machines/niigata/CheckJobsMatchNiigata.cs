@@ -38,30 +38,28 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public sealed class CheckJobsMatchNiigata : ICheckJobsValid
-  {
-    private readonly FMSSettings _settings;
-    private readonly NiigataStationNames _statNames;
-    private readonly bool _requireProgramsInJobs;
-    private readonly INiigataCommunication _icc;
+  public delegate IEnumerable<string> CheckJobsValid(
+    FMSSettings settings,
+    bool requireProgramsInJobs,
+    NiigataStationNames statNames,
+    INiigataCommunication icc,
+    IRepository jobDB,
+    NewJobs jobs
+  );
 
-    public CheckJobsMatchNiigata(
+  public static class CheckJobsMatchNiigata
+  {
+    public static IEnumerable<string> CheckNewJobs(
       FMSSettings settings,
-      NiigataStationNames statNames,
       bool requireProgramsInJobs,
-      INiigataCommunication icc
+      NiigataStationNames statNames,
+      INiigataCommunication icc,
+      IRepository jobDB,
+      NewJobs jobs
     )
     {
-      _settings = settings;
-      _statNames = statNames;
-      _requireProgramsInJobs = requireProgramsInJobs;
-      _icc = icc;
-    }
-
-    public IReadOnlyList<string> CheckNewJobs(IRepository jobDB, NewJobs jobs)
-    {
       var errors = new List<string>();
-      var programs = _icc.LoadPrograms().Values;
+      var programs = icc.LoadPrograms().Values;
       foreach (var j in jobs.Jobs)
       {
         for (var proc = 1; proc <= j.Processes.Count; proc++)
@@ -69,11 +67,11 @@ namespace BlackMaple.FMSInsight.Niigata
           for (var path = 1; path <= j.Processes[proc - 1].Paths.Count; path++)
           {
             var pathData = j.Processes[proc - 1].Paths[path - 1];
-            if (!pathData.Load.Any())
+            if (pathData.Load.IsEmpty)
             {
               errors.Add("Part " + j.PartName + " does not have any assigned load stations");
             }
-            if (!pathData.Unload.Any())
+            if (pathData.Unload.IsEmpty)
             {
               errors.Add("Part " + j.PartName + " does not have any assigned load stations");
             }
@@ -81,12 +79,12 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add("Part " + j.PartName + " does not have an assigned fixture");
             }
-            if (!pathData.PalletNums.Any())
+            if (pathData.PalletNums.IsEmpty)
             {
               errors.Add("Part " + j.PartName + " does not have any pallets");
             }
             if (
-              !string.IsNullOrEmpty(pathData.InputQueue) && !_settings.Queues.ContainsKey(pathData.InputQueue)
+              !string.IsNullOrEmpty(pathData.InputQueue) && !settings.Queues.ContainsKey(pathData.InputQueue)
             )
             {
               errors.Add(
@@ -99,7 +97,7 @@ namespace BlackMaple.FMSInsight.Niigata
             }
             if (
               !string.IsNullOrEmpty(pathData.OutputQueue)
-              && !_settings.Queues.ContainsKey(pathData.OutputQueue)
+              && !settings.Queues.ContainsKey(pathData.OutputQueue)
             )
             {
               errors.Add(
@@ -113,9 +111,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
             foreach (var stop in pathData.Stops)
             {
-              if (_statNames != null && _statNames.ReclampGroupNames.Contains(stop.StationGroup))
+              if (statNames != null && statNames.ReclampGroupNames.Contains(stop.StationGroup))
               {
-                if (!stop.Stations.Any())
+                if (stop.Stations.IsEmpty)
                 {
                   errors.Add(
                     "Part "
@@ -128,7 +126,7 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 if (string.IsNullOrEmpty(stop.Program))
                 {
-                  if (_requireProgramsInJobs)
+                  if (requireProgramsInJobs)
                   {
                     errors.Add("Part " + j.PartName + " has no assigned program");
                   }
@@ -173,14 +171,14 @@ namespace BlackMaple.FMSInsight.Niigata
       return errors;
     }
 
-    private void CheckProgram(
+    private static void CheckProgram(
       string programName,
       long? rev,
       IEnumerable<MachineFramework.NewProgramContent> newPrograms,
       IRepository jobDB,
       IEnumerable<ProgramEntry> programsInCellCtrl,
       string errHdr,
-      IList<string> errors
+      List<string> errors
     )
     {
       if (rev.HasValue && rev.Value > 0)

@@ -40,9 +40,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public class NiigataBackend : IFMSBackend, IDisposable
+  public sealed class NiigataBackend : IFMSBackend, IDisposable
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataBackend>();
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<NiigataBackend>();
 
     private readonly JobsAndQueuesFromDb<CellState> _jobsAndQueues;
 
@@ -59,7 +59,7 @@ namespace BlackMaple.FMSInsight.Niigata
       SerialSettings serialSt,
       bool startSyncThread,
       Func<NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null,
-      Func<NiigataStationNames, INiigataCommunication, ICheckJobsValid> customJobCheck = null,
+      CheckJobsValid customJobCheck = null,
       Func<ActiveJob, bool> decrementJobFilter = null
     )
     {
@@ -93,7 +93,7 @@ namespace BlackMaple.FMSInsight.Niigata
               : reclampNames.Split(',').Select(s => s.Trim())
           ),
           IccMachineToJobMachNames = string.IsNullOrEmpty(machineNames)
-            ? new Dictionary<int, (string group, int num)>()
+            ? []
             : machineNames
               .Split(',')
               .Select(m => m.Trim())
@@ -105,13 +105,13 @@ namespace BlackMaple.FMSInsight.Niigata
                     return null;
                   }
                   var group = new string(machineName.Reverse().SkipWhile(char.IsDigit).Reverse().ToArray());
-                  if (int.TryParse(machineName.Substring(group.Length), out var num))
+                  if (int.TryParse(machineName.AsSpan(group.Length), out var num))
                   {
                     return new
                     {
                       iccMc = idx + 1,
-                      group = group,
-                      num = num
+                      group,
+                      num
                     };
                   }
                   else
@@ -121,7 +121,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 }
               )
               .Where(x => x != null)
-              .ToDictionary(x => x.iccMc, x => (group: x.group, num: x.num))
+              .ToDictionary(x => x.iccMc, x => (x.group, x.num))
         };
         Log.Debug("Using station names {@names}", stationNames);
 
@@ -151,29 +151,22 @@ namespace BlackMaple.FMSInsight.Niigata
           );
         }
 
-        ICheckJobsValid checkJobsValid;
-        if (customJobCheck != null)
-        {
-          checkJobsValid = customJobCheck(stationNames, icc);
-        }
-        else
-        {
-          checkJobsValid = new CheckJobsMatchNiigata(
-            cfg,
-            stationNames,
-            requireProgramsInJobs: config.GetValue<bool>("Require Programs In Jobs", true),
-            icc
-          );
-        }
+        bool requireProgramsInJobs = config.GetValue<bool>("Require Programs In Jobs", true);
+        CheckJobsValid checkJobsValid = customJobCheck ?? CheckJobsMatchNiigata.CheckNewJobs;
 
-        var syncSt = new SyncNiigataPallets(icc, createLog, assign, decrementJobFilter: decrementJobFilter);
+        var syncSt = new SyncNiigataPallets(
+          icc,
+          createLog,
+          assign,
+          checkJobs: (db, jobs) => checkJobsValid(cfg, requireProgramsInJobs, stationNames, icc, db, jobs),
+          decrementJobFilter: decrementJobFilter
+        );
 
         _jobsAndQueues = new JobsAndQueuesFromDb<CellState>(
           RepoConfig,
           cfg,
           s => OnNewCurrentStatus?.Invoke(s),
           syncSt,
-          checkJobsValid,
           allowQuarantineToCancelLoad: false,
           addJobsAsCopiedToSystem: true
         );

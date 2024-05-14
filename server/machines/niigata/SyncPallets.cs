@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #nullable enable
 
 using System;
+using System.Collections.Generic;
 using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
@@ -45,18 +46,21 @@ namespace BlackMaple.FMSInsight.Niigata
     private readonly INiigataCommunication _icc;
     private readonly IBuildCellState _createLog;
     private readonly IAssignPallets _assign;
+    private readonly Func<IRepository, NewJobs, IEnumerable<string>> _checkJobs;
     private readonly Func<ActiveJob, bool>? _decrementJobFilter;
 
     public SyncNiigataPallets(
       INiigataCommunication icc,
       IBuildCellState createLog,
       IAssignPallets assign,
+      Func<IRepository, NewJobs, IEnumerable<string>> checkJobs,
       Func<ActiveJob, bool>? decrementJobFilter
     )
     {
       _icc = icc;
       _createLog = createLog;
       _assign = assign;
+      _checkJobs = checkJobs;
       _decrementJobFilter = decrementJobFilter;
     }
 
@@ -64,6 +68,11 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       add { _icc.NewCurrentStatus += value; }
       remove { _icc.NewCurrentStatus -= value; }
+    }
+
+    public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
+    {
+      return _checkJobs(db, jobs);
     }
 
     public CellState CalculateCellState(IRepository db)
