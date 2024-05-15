@@ -70,6 +70,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
   private readonly MazakConfig mazakConfig;
   private readonly MazakQueues queues;
   private readonly IWriteJobs writeJobs;
+  private readonly bool useStartingOffsetForDueDate;
 
   private readonly FileSystemWatcher logWatcher;
 
@@ -82,7 +83,8 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     MazakConfig mazakConfig,
     MazakQueues queues,
     IWriteJobs writeJobs,
-    IDecrementPlanQty decrementPlanQty
+    IDecrementPlanQty decrementPlanQty,
+    bool useStartingOffsetForDueDate
   )
   {
     this.machineGroupName = machineGroupName;
@@ -94,6 +96,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     this.queues = queues;
     this.writeJobs = writeJobs;
     this.decrementPlanQty = decrementPlanQty;
+    this.useStartingOffsetForDueDate = useStartingOffsetForDueDate;
 
     logWatcher = new FileSystemWatcher(logPath);
     logWatcher.Filter = "*.csv";
@@ -148,23 +151,21 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
         }
       }
 
-      /*
-                //The reason we create the clsPalletPartMapping is to see if it throws any exceptions.  We therefore
-                //need to ignore the warning that palletPartMap is not used.
-      #pragma warning disable 168, 219
-                var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
-                  jobs: jobs,
-                  downloadUID: 1,
-                  mazakData: mazakData,
-                  savedParts: new HashSet<string>(),
-                  MazakType: writeJobs.MazakType,
-                  useStartingOffsetForDueDate: _useStartingOffsetForDueDate,
-                  fmsSettings: settings,
-                  lookupProgram: lookupProg,
-                  errors: logMessages
-                );
-      #pragma warning restore 168, 219
-      */
+      //The reason we create the clsPalletPartMapping is to see if it throws any exceptions.  We therefore
+      //need to ignore the warning that palletPartMap is not used.
+#pragma warning disable 168, 219
+      var mazakJobs = ConvertJobsToMazakParts.JobsToMazak(
+        jobs: jobs.Jobs,
+        downloadUID: 1,
+        mazakData: mazakData,
+        savedParts: new HashSet<string>(),
+        MazakType: dbType,
+        useStartingOffsetForDueDate: useStartingOffsetForDueDate,
+        fmsSettings: settings,
+        lookupProgram: lookupProg,
+        errors: logMessages
+      );
+#pragma warning restore 168, 219
     }
     catch (Exception ex)
     {
