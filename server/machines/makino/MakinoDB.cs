@@ -731,7 +731,13 @@ namespace BlackMaple.FMSInsight.Makino
           + "Quantities",
         reader =>
         {
-          map.AddQuantityToProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(3));
+          map.AddQuantityToProcess(
+            reader.GetInt32(0),
+            reader.GetInt32(1),
+            reader.IsDBNull(2) ? 0 : reader.GetInt32(2),
+            reader.GetInt32(3),
+            reader.IsDBNull(4) ? 0 : reader.GetInt32(4)
+          );
         }
       );
 
@@ -837,8 +843,6 @@ namespace BlackMaple.FMSInsight.Makino
           }
         }
       );
-
-      //TODO: inspections (from jobdb), holds
 
       return new CurrentStatus()
       {

@@ -201,21 +201,42 @@ namespace BlackMaple.FMSInsight.Makino
     public ActiveJob DuplicateForOrder(int orderID, string order, int partID)
     {
       var job = _byPartID[partID];
+      var historic = db.LoadJob(order);
       var newJob = job.CloneToDerived<ActiveJob, Job>() with
       {
         UniqueStr = order,
+        RouteStartUTC = historic?.RouteStartUTC ?? DateTime.Today,
+        RouteEndUTC = historic?.RouteEndUTC ?? DateTime.Today,
+        Comment = historic?.Comment ?? job.Comment,
+        ScheduleId = historic?.ScheduleId ?? null,
+        BookingIds = historic?.BookingIds ?? null,
+        ManuallyCreated = historic?.ManuallyCreated ?? false,
+        CopiedToSystem = historic?.CopiedToSystem ?? true,
+        Decrements = db.LoadDecrementsForJob(order),
+        AssignedWorkorders = db.GetWorkordersForUnique(order),
+
         Completed = job.Processes.Select(_ => ImmutableList.Create(0)).ToImmutableList()
       };
+
+      // Data from historicJob for each path can't really be added because the
+      // makino path may be different (if we only downloaded the orders, not the whole routing)
+      // Thus, don't copy data like queues, expected times, simulated times, etc.
+
       _byOrderID.Add(orderID, newJob);
       return newJob;
     }
 
-    public void AddQuantityToProcess(int orderID, int processID, int completed)
+    public void AddQuantityToProcess(int orderID, int processID, int remaining, int completed, int scrap)
     {
       var job = _byOrderID[orderID];
       var procNum = _procIDToProcNum[processID];
 
-      _byOrderID[orderID] = job with { Completed = job.Completed.SetItem(procNum - 1, [completed]) };
+      _byOrderID[orderID] = job with
+      {
+        Cycles = procNum == 1 ? remaining + completed + scrap : job.Cycles,
+        RemainingToStart = procNum == 1 ? remaining : job.RemainingToStart,
+        Completed = job.Completed.SetItem(procNum - 1, [completed])
+      };
     }
 
     public InProcessMaterial CreateMaterial(
