@@ -38,6 +38,7 @@ using System.Linq;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
+using NSubstitute;
 using Xunit;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
@@ -50,6 +51,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private IccSimulator _sim;
     private SyncNiigataPallets _sync;
     private Xunit.Abstractions.ITestOutputHelper _output;
+    private Func<IRepository, NewJobs, IEnumerable<string>> _checkJobs;
     private bool _debugLogEnabled = false;
     private JsonSerializerOptions jsonSettings;
 
@@ -94,7 +96,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         statNames: statNames
       );
 
-      _sync = new SyncNiigataPallets(_sim, createLog, assign, null);
+      _checkJobs = Substitute.For<Func<IRepository, NewJobs, IEnumerable<string>>>();
+
+      _sync = new SyncNiigataPallets(_sim, createLog, assign, _checkJobs, null);
 
       _sim.OnNewProgram += (newprog) =>
       {
@@ -1377,6 +1381,24 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
           );
       }
+    }
+
+    [Fact]
+    public void CheckJobs()
+    {
+      InitSim(
+        new NiigataStationNames()
+        {
+          ReclampGroupNames = [],
+          IccMachineToJobMachNames = new Dictionary<int, (string group, int num)>()
+        },
+        numPals: 16,
+        numLoads: 4,
+        numMachines: 8
+      );
+      _checkJobs(Arg.Any<IRepository>(), Arg.Any<NewJobs>()).Returns(["err1", "err2"]);
+
+      _sync.CheckNewJobs(null, null).Should().BeEquivalentTo(["err1", "err2"]);
     }
   }
 }
