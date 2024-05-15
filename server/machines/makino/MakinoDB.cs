@@ -195,6 +195,12 @@ namespace BlackMaple.FMSInsight.Makino
         _db.Open();
         dbo = "dbo.";
       }
+      else if (dbConnStr.StartsWith("sqlite:"))
+      {
+        _db = new Microsoft.Data.Sqlite.SqliteConnection(dbConnStr[7..]);
+        _db.Open();
+        dbo = "";
+      }
       else
       {
         _db = new System.Data.SqlClient.SqlConnection(dbConnStr);
@@ -684,11 +690,7 @@ namespace BlackMaple.FMSInsight.Makino
         "SELECT ProcessID, FixtureID FROM " + dbo + "FixtureProcesses",
         reader =>
         {
-          map.AddFixtureToProcess(
-            reader.GetInt32(0),
-            reader.GetInt32(1),
-            palMap.PalletsForFixture(reader.GetInt32(1))
-          );
+          map.AddFixtureToProcess(reader.GetInt32(0), palMap.PalletsForFixture(reader.GetInt32(1)));
         }
       );
 

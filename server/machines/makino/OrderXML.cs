@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Xml;
 using BlackMaple.MachineFramework;
 
@@ -47,19 +48,22 @@ namespace BlackMaple.FMSInsight.Makino
       {
         WriteFile(tempFile, jobs, onlyOrders);
 
-        var accControl = new System.Security.AccessControl.FileSecurity();
-        accControl.AddAccessRule(
-          new System.Security.AccessControl.FileSystemAccessRule(
-            identity: new System.Security.Principal.SecurityIdentifier(
-              System.Security.Principal.WellKnownSidType.WorldSid,
-              null
-            ),
-            fileSystemRights: System.Security.AccessControl.FileSystemRights.FullControl,
-            type: System.Security.AccessControl.AccessControlType.Allow
-          )
-        );
-        var finfo = new FileInfo(tempFile);
-        finfo.SetAccessControl(accControl);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+          var accControl = new System.Security.AccessControl.FileSecurity();
+          accControl.AddAccessRule(
+            new System.Security.AccessControl.FileSystemAccessRule(
+              identity: new System.Security.Principal.SecurityIdentifier(
+                System.Security.Principal.WellKnownSidType.WorldSid,
+                null
+              ),
+              fileSystemRights: System.Security.AccessControl.FileSystemRights.FullControl,
+              type: System.Security.AccessControl.AccessControlType.Allow
+            )
+          );
+          var finfo = new FileInfo(tempFile);
+          finfo.SetAccessControl(accControl);
+        }
 
         if (File.Exists(filename))
           File.Delete(filename);
@@ -79,76 +83,70 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    private struct JobAndProc
+    private record JobAndProc
     {
-      public Job job;
-      public int proc;
-
-      public JobAndProc(Job j, int p)
-      {
-        job = j;
-        proc = p;
-      }
+      public required Job Job { get; init; }
+      public required int Proc { get; init; }
     }
 
     private static void WriteFile(string filename, IEnumerable<Job> jobs, bool onlyOrders)
     {
-      using (var xml = new XmlTextWriter(filename, System.Text.Encoding.UTF8))
+      using var xml = new XmlTextWriter(filename, System.Text.Encoding.UTF8);
+      xml.Formatting = Formatting.Indented;
+      xml.WriteStartDocument();
+      xml.WriteStartElement("MASData");
+
+      if (!onlyOrders)
       {
-        xml.Formatting = Formatting.Indented;
-        xml.WriteStartDocument();
-        xml.WriteStartElement("MASData");
+        xml.WriteStartElement("Parts");
+        foreach (var j in jobs)
+          WritePart(xml, j);
+        xml.WriteEndElement();
 
-        if (!onlyOrders)
+        var allFixtures = new Dictionary<string, List<JobAndProc>>();
+        foreach (var j in jobs)
         {
-          xml.WriteStartElement("Parts");
-          foreach (var j in jobs)
-            WritePart(xml, j);
-          xml.WriteEndElement();
-
-          var allFixtures = new Dictionary<string, List<JobAndProc>>();
-          foreach (var j in jobs)
+          for (var proc = 1; proc <= j.Processes.Count; proc++)
           {
-            for (var proc = 1; proc <= j.Processes.Count; proc++)
+            foreach (var palNum in j.Processes[proc - 1].Paths[0].PalletNums)
             {
-              foreach (var palNum in j.Processes[proc - 1].Paths[0].PalletNums)
+              string fixName;
+              fixName = "P" + palNum.ToString().PadLeft(2, '0');
+              fixName += "-" + j.PartName + "-" + proc.ToString();
+              if (!allFixtures.TryGetValue(fixName, out List<JobAndProc> value))
               {
-                string fixName;
-                fixName = "P" + palNum.ToString().PadLeft(2, '0');
-                fixName += "-" + j.PartName + "-" + proc.ToString();
-                if (!allFixtures.ContainsKey(fixName))
+                var lst = new List<JobAndProc>
                 {
-                  var lst = new List<JobAndProc>();
-                  lst.Add(new JobAndProc(j, proc));
-                  allFixtures.Add(fixName, lst);
-                }
-                else
-                {
-                  allFixtures[fixName].Add(new JobAndProc(j, proc));
-                }
+                  new() { Job = j, Proc = proc }
+                };
+                allFixtures.Add(fixName, lst);
+              }
+              else
+              {
+                value.Add(new JobAndProc() { Job = j, Proc = proc });
               }
             }
           }
-
-          xml.WriteStartElement("CommonFixtures");
-          foreach (var fix in allFixtures)
-            WriteFixture(xml, fix.Key, fix.Value);
-          xml.WriteEndElement();
         }
 
-        xml.WriteStartElement("Orders");
-        foreach (var j in jobs)
-          WriteOrder(xml, j, onlyOrders);
+        xml.WriteStartElement("CommonFixtures");
+        foreach (var fix in allFixtures)
+          WriteFixture(xml, fix.Key, fix.Value);
         xml.WriteEndElement();
-
-        xml.WriteStartElement("OrderQuantities");
-        foreach (var j in jobs)
-          WriteOrderQty(xml, j);
-        xml.WriteEndElement();
-
-        xml.WriteEndElement(); //MASData
-        xml.WriteEndDocument();
       }
+
+      xml.WriteStartElement("Orders");
+      foreach (var j in jobs)
+        WriteOrder(xml, j, onlyOrders);
+      xml.WriteEndElement();
+
+      xml.WriteStartElement("OrderQuantities");
+      foreach (var j in jobs)
+        WriteOrderQty(xml, j);
+      xml.WriteEndElement();
+
+      xml.WriteEndElement(); //MASData
+      xml.WriteEndDocument();
     }
 
     private static void WritePart(XmlTextWriter xml, Job j)
@@ -227,9 +225,9 @@ namespace BlackMaple.FMSInsight.Makino
       {
         xml.WriteStartElement("Process");
         xml.WriteAttributeString("action", "ADD");
-        xml.WriteAttributeString("partName", j.job.UniqueStr);
+        xml.WriteAttributeString("partName", j.Job.UniqueStr);
         xml.WriteAttributeString("revision", "SAIL");
-        xml.WriteAttributeString("processNumber", j.proc.ToString());
+        xml.WriteAttributeString("processNumber", j.Proc.ToString());
         xml.WriteEndElement(); //Process
       }
 
@@ -267,13 +265,6 @@ namespace BlackMaple.FMSInsight.Makino
       xml.WriteElementString("RemainQuantity", qty.ToString());
 
       xml.WriteEndElement(); // OrderQuantity
-    }
-
-    private static T Head<T>(IEnumerable<T> lst)
-    {
-      foreach (var x in lst)
-        return x;
-      return default(T);
     }
 
     private static string Join<T>(string sep, IEnumerable<T> lst)

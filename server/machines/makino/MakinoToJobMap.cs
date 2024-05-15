@@ -38,7 +38,7 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
 {
-  internal class MakinoToJobMap
+  internal class MakinoToJobMap(IRepository logDb)
   {
     /*Maps we have:
      *
@@ -59,21 +59,14 @@ namespace BlackMaple.FMSInsight.Makino
      * fixture id => list of process ids
      *
      */
-    private Dictionary<int, Job> _byPartID = new Dictionary<int, Job>();
-    private Dictionary<int, int> _procIDToProcNum = new Dictionary<int, int>();
-    private Dictionary<int, int> _procIDToPartID = new Dictionary<int, int>();
-    private Dictionary<int, int> _jobIDToNum = new Dictionary<int, int>();
-    private Dictionary<int, int> _jobIDToProcID = new Dictionary<int, int>();
-    private Dictionary<int, string> _programs = new Dictionary<int, string>();
-    private Dictionary<int, MachiningStop> _stops = new Dictionary<int, MachiningStop>();
-    private Dictionary<int, ActiveJob> _byOrderID = new Dictionary<int, ActiveJob>();
-
-    private IRepository _logDb;
-
-    public MakinoToJobMap(IRepository log)
-    {
-      _logDb = log;
-    }
+    private readonly Dictionary<int, Job> _byPartID = [];
+    private readonly Dictionary<int, int> _procIDToProcNum = [];
+    private readonly Dictionary<int, int> _procIDToPartID = [];
+    private readonly Dictionary<int, int> _jobIDToNum = [];
+    private readonly Dictionary<int, int> _jobIDToProcID = [];
+    private readonly Dictionary<int, string> _programs = [];
+    private readonly Dictionary<int, MachiningStop> _stops = [];
+    private readonly Dictionary<int, ActiveJob> _byOrderID = [];
 
     public IEnumerable<ActiveJob> Jobs
     {
@@ -111,20 +104,21 @@ namespace BlackMaple.FMSInsight.Makino
             .Range(1, numProc)
             .Select(procNum => new ProcessInfo()
             {
-              Paths = ImmutableList.Create(
+              Paths =
+              [
                 new ProcPathInfo()
                 {
-                  PalletNums = ImmutableList<int>.Empty,
-                  Load = ImmutableList<int>.Empty,
-                  Unload = ImmutableList<int>.Empty,
-                  Stops = ImmutableList<MachiningStop>.Empty,
+                  PalletNums = [],
+                  Load = [],
+                  Unload = [],
+                  Stops = [],
                   PartsPerPallet = 1,
                   SimulatedStartingUTC = DateTime.MinValue,
                   SimulatedAverageFlowTime = TimeSpan.Zero,
                   ExpectedLoadTime = TimeSpan.Zero,
                   ExpectedUnloadTime = TimeSpan.Zero,
                 }
-              )
+              ]
             })
             .ToImmutableList(),
           Cycles = 0
@@ -170,7 +164,7 @@ namespace BlackMaple.FMSInsight.Makino
       }
       else
       {
-        if (!_stops.ContainsKey(jobID))
+        if (!_stops.TryGetValue(jobID, out MachiningStop value))
         {
           _stops.Add(
             jobID,
@@ -178,14 +172,14 @@ namespace BlackMaple.FMSInsight.Makino
             {
               StationGroup = "MC",
               Program = _programs[jobID],
-              Stations = ImmutableList.Create(loc.Num),
+              Stations = [loc.Num],
               ExpectedCycleTime = TimeSpan.Zero
             }
           );
         }
         else
         {
-          var s = _stops[jobID];
+          var s = value;
           _stops[jobID] = s with { Stations = s.Stations.Add(loc.Num) };
         }
       }
@@ -212,7 +206,7 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    public void AddFixtureToProcess(int processID, int fixtureID, IEnumerable<int> pals)
+    public void AddFixtureToProcess(int processID, IEnumerable<int> pals)
     {
       var procNum = _procIDToProcNum[processID];
 
@@ -240,10 +234,7 @@ namespace BlackMaple.FMSInsight.Makino
       var job = _byOrderID[orderID];
       var procNum = _procIDToProcNum[processID];
 
-      _byOrderID[orderID] = job with
-      {
-        Completed = job.Completed.SetItem(procNum - 1, job.Completed[procNum - 1])
-      };
+      _byOrderID[orderID] = job with { Completed = job.Completed.SetItem(procNum - 1, [completed]) };
     }
 
     public InProcessMaterial CreateMaterial(
@@ -257,10 +248,10 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var job = _byOrderID[orderID];
       var program = "";
-      if (_programs.ContainsKey(jobID))
-        program = _programs[jobID];
+      if (_programs.TryGetValue(jobID, out string value))
+        program = value;
 
-      var matDetails = _logDb.GetMaterialDetails(matID);
+      var matDetails = logDb.GetMaterialDetails(matID);
       return new InProcessMaterial()
       {
         MaterialID = matID,
@@ -270,7 +261,7 @@ namespace BlackMaple.FMSInsight.Makino
         PartName = job.PartName,
         Serial = matDetails?.Serial,
         WorkorderId = matDetails?.Workorder,
-        SignaledInspections = _logDb
+        SignaledInspections = logDb
           .LookupInspectionDecisions(matID)
           .Where(x => x.Inspect)
           .Select(x => x.InspType)
@@ -293,8 +284,8 @@ namespace BlackMaple.FMSInsight.Makino
 
     public BlackMaple.MachineFramework.ActiveJob JobForOrder(int orderID)
     {
-      if (_byOrderID.ContainsKey(orderID))
-        return _byOrderID[orderID];
+      if (_byOrderID.TryGetValue(orderID, out ActiveJob value))
+        return value;
       else
         return null;
     }
@@ -323,13 +314,12 @@ namespace BlackMaple.FMSInsight.Makino
      * pallet => PalletStatus
      */
 
-    private Dictionary<int, int> _fixPalIDToFixNum = new Dictionary<int, int>();
-    private Dictionary<int, int> _fixPalIDToFixID = new Dictionary<int, int>();
-    private Dictionary<int, int> _fixPalIDToPalNum = new Dictionary<int, int>();
-    private Dictionary<int, List<InProcessMaterial>> _fixPalIDToMaterial =
-      new Dictionary<int, List<InProcessMaterial>>();
-    private Dictionary<int, List<int>> _fixIDToPallets = new Dictionary<int, List<int>>();
-    private Dictionary<int, PalletStatus> _pallets = new Dictionary<int, PalletStatus>();
+    private readonly Dictionary<int, int> _fixPalIDToFixNum = [];
+    private readonly Dictionary<int, int> _fixPalIDToFixID = [];
+    private readonly Dictionary<int, int> _fixPalIDToPalNum = [];
+    private readonly Dictionary<int, List<InProcessMaterial>> _fixPalIDToMaterial = [];
+    private readonly Dictionary<int, List<int>> _fixIDToPallets = [];
+    private readonly Dictionary<int, PalletStatus> _pallets = [];
 
     public IDictionary<int, PalletStatus> Pallets
     {
@@ -353,7 +343,7 @@ namespace BlackMaple.FMSInsight.Makino
       _fixPalIDToFixID.Add(fixutrePalletID, fixtureID);
       _fixPalIDToPalNum.Add(fixutrePalletID, palletNum);
       if (!_fixIDToPallets.ContainsKey(fixtureID))
-        _fixIDToPallets.Add(fixtureID, new List<int>());
+        _fixIDToPallets.Add(fixtureID, []);
       _fixIDToPallets[fixtureID].Add(palletNum);
 
       if (_pallets.ContainsKey(palletNum))
@@ -378,10 +368,10 @@ namespace BlackMaple.FMSInsight.Makino
 
     public IEnumerable<int> PalletsForFixture(int fixtureID)
     {
-      if (_fixIDToPallets.ContainsKey(fixtureID))
-        return _fixIDToPallets[fixtureID];
+      if (_fixIDToPallets.TryGetValue(fixtureID, out List<int> value))
+        return value;
       else
-        return new int[] { };
+        return Array.Empty<int>();
     }
 
     public void PalletLocInfo(int fixturePalletID, out int palletNum, out int fixNum)
@@ -393,11 +383,11 @@ namespace BlackMaple.FMSInsight.Makino
     public void AddMaterial(int fixturePalletID, InProcessMaterial mat)
     {
       List<InProcessMaterial> ms;
-      if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
-        ms = _fixPalIDToMaterial[fixturePalletID];
+      if (_fixPalIDToMaterial.TryGetValue(fixturePalletID, out List<InProcessMaterial> value))
+        ms = value;
       else
       {
-        ms = new List<InProcessMaterial>();
+        ms = [];
         _fixPalIDToMaterial.Add(fixturePalletID, ms);
       }
 
@@ -422,9 +412,9 @@ namespace BlackMaple.FMSInsight.Makino
       var pal = _pallets[palletNum];
       var face = _fixPalIDToFixNum[fixturePalletID].ToString();
 
-      if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
+      if (_fixPalIDToMaterial.TryGetValue(fixturePalletID, out List<InProcessMaterial> value))
       {
-        _fixPalIDToMaterial[fixturePalletID] = _fixPalIDToMaterial[fixturePalletID]
+        _fixPalIDToMaterial[fixturePalletID] = value
           .Select(mat =>
             mat
             % (
@@ -450,35 +440,38 @@ namespace BlackMaple.FMSInsight.Makino
       var face = _fixPalIDToFixNum[fixturePalletID];
 
       List<InProcessMaterial> ms;
-      if (_fixPalIDToMaterial.ContainsKey(fixturePalletID))
-        ms = _fixPalIDToMaterial[fixturePalletID];
+      if (_fixPalIDToMaterial.TryGetValue(fixturePalletID, out List<InProcessMaterial> value))
+        ms = value;
       else
       {
-        ms = new List<InProcessMaterial>();
+        ms = [];
         _fixPalIDToMaterial.Add(fixturePalletID, ms);
       }
 
-      var mat = new InProcessMaterial()
+      for (var i = 0; i < qty; i++)
       {
-        MaterialID = -1,
-        JobUnique = unique,
-        PartName = partName,
-        Process = procNum,
-        Path = 1,
-        Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, },
-        Action = new InProcessMaterialAction()
-        {
-          Type = InProcessMaterialAction.ActionType.Loading,
-          ProcessAfterLoad = procNum,
-          PathAfterLoad = 1,
-          LoadOntoFace = face,
-          LoadOntoPalletNum = pal.PalletNum
-        },
-        SignaledInspections = ImmutableList<string>.Empty,
-        QuarantineAfterUnload = null,
-      };
-
-      ms.Add(mat);
+        ms.Add(
+          new InProcessMaterial()
+          {
+            MaterialID = -1,
+            JobUnique = unique,
+            PartName = partName,
+            Process = procNum,
+            Path = 1,
+            Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, },
+            Action = new InProcessMaterialAction()
+            {
+              Type = InProcessMaterialAction.ActionType.Loading,
+              ProcessAfterLoad = procNum,
+              PathAfterLoad = 1,
+              LoadOntoFace = face,
+              LoadOntoPalletNum = pal.PalletNum
+            },
+            SignaledInspections = [],
+            QuarantineAfterUnload = null,
+          }
+        );
+      }
     }
   }
 }
