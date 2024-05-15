@@ -62,7 +62,7 @@ namespace BlackMaple.FMSInsight.Makino
     public bool AddJobsAsCopiedToSystem => false;
 
     private readonly JobsAndQueuesFromDb<MakinoCellState> _jobs;
-    private readonly MakinoDB _makinoDB;
+    private readonly string _makinoDbConnStr;
     private readonly bool _downloadOnlyOrders;
     private readonly string _adePath;
 
@@ -93,17 +93,17 @@ namespace BlackMaple.FMSInsight.Makino
           Log.Error(ex, "Error when deleting old insight xml files");
         }
 
-        string dbConnStr = cfg.GetValue<string>("SQL Server Connection String");
-        if (string.IsNullOrEmpty(dbConnStr))
+        _makinoDbConnStr = cfg.GetValue<string>("SQL Server Connection String");
+        if (string.IsNullOrEmpty(_makinoDbConnStr))
         {
-          dbConnStr = DetectSqlConnectionStr();
+          _makinoDbConnStr = DetectSqlConnectionStr();
         }
 
         _downloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders");
 
         Log.Information(
           "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
-          dbConnStr,
+          _makinoDbConnStr,
           _adePath,
           _downloadOnlyOrders
         );
@@ -115,8 +115,6 @@ namespace BlackMaple.FMSInsight.Makino
           Path.Combine(st.DataDirectory, "jobs.db")
         );
 
-        _makinoDB = new MakinoDB(dbConnStr);
-
         _jobs = new JobsAndQueuesFromDb<MakinoCellState>(RepoConfig, st, RaiseNewCurrentStatus, this);
       }
       catch (Exception ex)
@@ -127,7 +125,6 @@ namespace BlackMaple.FMSInsight.Makino
 
     void IDisposable.Dispose()
     {
-      _makinoDB.Close();
       _jobs.Dispose();
     }
 
@@ -164,9 +161,10 @@ namespace BlackMaple.FMSInsight.Makino
         lastLog = DateTime.UtcNow.AddDays(-30);
       }
 
-      var newEvts = new LogBuilder(_makinoDB, db).CheckLogs(lastLog);
+      using var makinoDB = new MakinoDB(_makinoDbConnStr);
+      var newEvts = new LogBuilder(makinoDB, db).CheckLogs(lastLog);
 
-      var st = _makinoDB.LoadCurrentInfo(db);
+      var st = makinoDB.LoadCurrentInfo(db);
 
       var notCopied = db.LoadJobsNotCopiedToSystem(
         DateTime.UtcNow.AddHours(-10),

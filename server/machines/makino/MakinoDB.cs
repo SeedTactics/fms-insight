@@ -177,7 +177,148 @@ namespace BlackMaple.FMSInsight.Makino
    */
   #endregion
 
-  public class MakinoDB
+  //A common value from the CommonValue table holds values that were produced by
+  //the execution of the part program.  This is commonly hold results.
+  public class CommonValue
+  {
+    public MachineResults ParentMachineResults;
+    public DateTime ExecDateTimeUTC;
+
+    public int Number;
+    public string Value;
+
+    /* Fields Not Loaded
+     *
+     * - PalletNumber
+     * - MainONNumber
+     * - ExecOnNumber
+     * - SequenceNumber
+     */
+  }
+
+  public class MachineResults
+  {
+    public DateTime StartDateTimeLocal;
+    public DateTime EndDateTimeLocal;
+    public DateTime StartDateTimeUTC;
+    public DateTime EndDateTimeUTC;
+
+    public int DeviceID;
+
+    /* PalletID and FixtureNumber uniquely identifiy the location on the pallet */
+    public int PalletID;
+    public int FixtureNumber;
+
+    /* data about the fixture */
+    public string FixtureName;
+    public string FixtureComment;
+
+    public string OrderName;
+
+    /* Part, revision, process, and job uniquely identify what the machine is currently doing */
+    public string PartName;
+    public string Revision;
+    public int ProcessNum;
+    public int JobNum;
+
+    /* Process name is just some data about the process entered by the user,
+       * not used as a key or anything like that */
+    public string ProcessName;
+
+    /* program for this (part,revision,process,job) combo */
+    public string Program;
+
+    /* Some status about the operation */
+    public int SpindleTimeSeconds;
+    public List<int> OperQuantities;
+
+    /* Fields not loaded
+     *
+     * PalletIndex:
+     *   always zero in the test data
+     *
+     * OffestFileName:
+     *   not currently used/needed by machine watch
+     *
+     * AlarmNumber
+     *   can/should we load and use this?
+     *   it is always null in the test data
+     *
+     * FinishStatus
+     *   what is this?
+     *   it is either 'Normal' or 'ToolLife' in the test data
+     */
+  }
+
+  public class WorkSetResults
+  {
+    public DateTime StartDateTimeUTC;
+    public DateTime EndDateTimeUTC;
+
+    public int DeviceID;
+
+    /* PalletID and FixtureNumber uniquely identifiy the location on the pallet */
+    public int PalletID;
+    public int FixtureNumber;
+
+    /* data about the fixture entered by the user */
+    public string FixtureName;
+    public string FixtureComment;
+
+    public string UnloadOrderName;
+    public string LoadOrderName;
+
+    /* Part, revision, process, and job uniquely identify which step we are on */
+    public string UnloadPartName;
+    public string UnloadRevision;
+    public int UnloadProcessNum;
+    public int UnloadJobNum;
+    public string LoadPartName;
+    public string LoadRevision;
+    public int LoadProcessNum;
+    public int LoadJobNum;
+
+    /* Process name is just some data about the process entered by the user,
+       * not used as a key or anything like that */
+    public string UnloadProcessName;
+    public string LoadProcessName;
+
+    public List<int> LoadQuantities;
+    public List<int> UnloadNormalQuantities;
+    public List<int> UnloadScrapQuantities;
+    public List<int> UnloadOutProcQuantities; /* TODO: What is this? */
+
+    /* At the load station, the operator can push a button saying nothing was unloaded.
+     * This still adds an entry to the log but it is marked as a remachine, and no quantities are updated
+     */
+    public bool Remachine;
+
+    /* Fields not loaded
+      * OperationType:
+      *    seems to be 2 for load and unload, 6 for no load or unload, 4 for unload only,
+      *    and 1 for load only, plus 3 shows up sometimes.
+      *
+      * OperationStatus:
+      *    not sure what this is
+      *
+      * ErrorCode:
+      *    always null in my test data
+      *
+      * ResultVersion
+      *    always 1 in the test data
+      */
+  }
+
+  public interface IMakinoDB
+  {
+    IDictionary<int, PalletLocation> Devices();
+    CurrentStatus LoadCurrentInfo(IRepository logDb);
+    List<CommonValue> QueryCommonValues(MachineResults mach);
+    List<WorkSetResults> QueryLoadUnloadResults(DateTime startUTC, DateTime endUTC);
+    List<MachineResults> QueryMachineResults(DateTime startUTC, DateTime endUTC);
+  }
+
+  public sealed class MakinoDB : IMakinoDB, IDisposable
   {
     #region Init
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoDB>();
@@ -209,9 +350,9 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    public void Close()
+    public void Dispose()
     {
-      _db.Close();
+      _db.Dispose();
     }
     #endregion
 
@@ -226,60 +367,6 @@ namespace BlackMaple.FMSInsight.Makino
    * 	 - dbo.OrderResults (row seems to be recorded when the order is completed)
    * 	 - dbo.CommonValues
    */
-
-    public class MachineResults
-    {
-      public DateTime StartDateTimeLocal;
-      public DateTime EndDateTimeLocal;
-      public DateTime StartDateTimeUTC;
-      public DateTime EndDateTimeUTC;
-
-      public int DeviceID;
-
-      /* PalletID and FixtureNumber uniquely identifiy the location on the pallet */
-      public int PalletID;
-      public int FixtureNumber;
-
-      /* data about the fixture */
-      public string FixtureName;
-      public string FixtureComment;
-
-      public string OrderName;
-
-      /* Part, revision, process, and job uniquely identify what the machine is currently doing */
-      public string PartName;
-      public string Revision;
-      public int ProcessNum;
-      public int JobNum;
-
-      /* Process name is just some data about the process entered by the user,
-         * not used as a key or anything like that */
-      public string ProcessName;
-
-      /* program for this (part,revision,process,job) combo */
-      public string Program;
-
-      /* Some status about the operation */
-      public int SpindleTimeSeconds;
-      public List<int> OperQuantities;
-
-      /* Fields not loaded
-       *
-       * PalletIndex:
-       *   always zero in the test data
-       *
-       * OffestFileName:
-       *   not currently used/needed by machine watch
-       *
-       * AlarmNumber
-       *   can/should we load and use this?
-       *   it is always null in the test data
-       *
-       * FinishStatus
-       *   what is this?
-       *   it is either 'Normal' or 'ToolLife' in the test data
-       */
-    }
 
     public List<MachineResults> QueryMachineResults(DateTime startUTC, DateTime endUTC)
     {
@@ -345,65 +432,6 @@ namespace BlackMaple.FMSInsight.Makino
       }
 
       return ret;
-    }
-
-    public class WorkSetResults
-    {
-      public DateTime StartDateTimeUTC;
-      public DateTime EndDateTimeUTC;
-
-      public int DeviceID;
-
-      /* PalletID and FixtureNumber uniquely identifiy the location on the pallet */
-      public int PalletID;
-      public int FixtureNumber;
-
-      /* data about the fixture entered by the user */
-      public string FixtureName;
-      public string FixtureComment;
-
-      public string UnloadOrderName;
-      public string LoadOrderName;
-
-      /* Part, revision, process, and job uniquely identify which step we are on */
-      public string UnloadPartName;
-      public string UnloadRevision;
-      public int UnloadProcessNum;
-      public int UnloadJobNum;
-      public string LoadPartName;
-      public string LoadRevision;
-      public int LoadProcessNum;
-      public int LoadJobNum;
-
-      /* Process name is just some data about the process entered by the user,
-         * not used as a key or anything like that */
-      public string UnloadProcessName;
-      public string LoadProcessName;
-
-      public List<int> LoadQuantities;
-      public List<int> UnloadNormalQuantities;
-      public List<int> UnloadScrapQuantities;
-      public List<int> UnloadOutProcQuantities; /* TODO: What is this? */
-
-      /* At the load station, the operator can push a button saying nothing was unloaded.
-       * This still adds an entry to the log but it is marked as a remachine, and no quantities are updated
-       */
-      public bool Remachine;
-
-      /* Fields not loaded
-        * OperationType:
-        *    seems to be 2 for load and unload, 6 for no load or unload, 4 for unload only,
-        *    and 1 for load only, plus 3 shows up sometimes.
-        *
-        * OperationStatus:
-        *    not sure what this is
-        *
-        * ErrorCode:
-        *    always null in my test data
-        *
-        * ResultVersion
-        *    always 1 in the test data
-        */
     }
 
     public List<WorkSetResults> QueryLoadUnloadResults(DateTime startUTC, DateTime endUTC)
@@ -499,25 +527,6 @@ namespace BlackMaple.FMSInsight.Makino
       }
 
       return ret;
-    }
-
-    //A common value from the CommonValue table holds values that were produced by
-    //the execution of the part program.  This is commonly hold results.
-    public class CommonValue
-    {
-      public MachineResults ParentMachineResults;
-      public DateTime ExecDateTimeUTC;
-
-      public int Number;
-      public string Value;
-
-      /* Fields Not Loaded
-       *
-       * - PalletNumber
-       * - MainONNumber
-       * - ExecOnNumber
-       * - SequenceNumber
-       */
     }
 
     public List<CommonValue> QueryCommonValues(MachineResults mach)

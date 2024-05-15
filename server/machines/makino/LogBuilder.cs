@@ -37,7 +37,7 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
 {
-  public class LogBuilder(MakinoDB makinoDB, IRepository logDb)
+  public class LogBuilder(IMakinoDB makinoDB, IRepository logDb)
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<LogBuilder>();
 
@@ -93,7 +93,7 @@ namespace BlackMaple.FMSInsight.Makino
     private void AddMachineToLog(
       DateTime timeToSkip,
       IDictionary<int, PalletLocation> devices,
-      MakinoDB.MachineResults m
+      MachineResults m
     )
     {
       //find the location
@@ -174,7 +174,7 @@ namespace BlackMaple.FMSInsight.Makino
       AddInspection(m, matList);
     }
 
-    private void AddInspection(MakinoDB.MachineResults m, IList<EventLogMaterial> material)
+    private void AddInspection(MachineResults m, IList<EventLogMaterial> material)
     {
       if (logDb == null)
         return;
@@ -227,11 +227,7 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    private void AddLoadToLog(
-      DateTime timeToSkip,
-      IDictionary<int, PalletLocation> devices,
-      MakinoDB.WorkSetResults w
-    )
+    private void AddLoadToLog(DateTime timeToSkip, IDictionary<int, PalletLocation> devices, WorkSetResults w)
     {
       //find the location
       PalletLocation loc;
