@@ -132,7 +132,9 @@ namespace BlackMaple.FMSInsight.Makino
 
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
 
+#pragma warning disable CS0067
     public event Action NewCellState;
+#pragma warning restore CS0067
 
     private static string DetectSqlConnectionStr()
     {

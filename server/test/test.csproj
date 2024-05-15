@@ -12,6 +12,7 @@
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <ProjectReference Include="../machines/mazak/mazak.csproj" />
     <ProjectReference Include="../machines/niigata/niigata.csproj" />
+    <ProjectReference Include="../machines/makino/makino.csproj" />
     <None Update="log.v17.db" CopyToOutputDirectory="Always" />
     <None Update="job.v16.db" CopyToOutputDirectory="Always" />
     <None Update="database-ver25.db" CopyToOutputDirectory="Always" />
