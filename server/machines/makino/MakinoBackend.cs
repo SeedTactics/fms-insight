@@ -32,6 +32,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 
@@ -40,6 +42,8 @@ namespace BlackMaple.FMSInsight.Makino
   public class MakinoCellState : ICellState
   {
     public required CurrentStatus CurrentStatus { get; init; }
+
+    public required ImmutableList<HistoricJob> JobsNotYetCopied { get; init; }
 
     public required bool StateUpdated { get; init; }
 
@@ -59,6 +63,8 @@ namespace BlackMaple.FMSInsight.Makino
 
     private readonly JobsAndQueuesFromDb<MakinoCellState> _jobs;
     private readonly MakinoDB _makinoDB;
+    private readonly bool _downloadOnlyOrders;
+    private readonly string _adePath;
 
     public MakinoBackend(IConfiguration config, FMSSettings st, SerialSettings serialSt)
     {
@@ -66,10 +72,25 @@ namespace BlackMaple.FMSInsight.Makino
       {
         var cfg = config.GetSection("Makino");
 
-        string adePath = cfg.GetValue<string>("ADE Path");
-        if (string.IsNullOrEmpty(adePath))
+        _adePath = cfg.GetValue<string>("ADE Path");
+        if (string.IsNullOrEmpty(_adePath))
         {
-          adePath = @"c:\Makino\ADE";
+          _adePath = @"c:\Makino\ADE";
+        }
+        try
+        {
+          foreach (var f in Directory.GetFiles(_adePath, "insight*.xml"))
+          {
+            File.Delete(f);
+          }
+        }
+        catch (DirectoryNotFoundException)
+        {
+          Log.Error("ADE Path {path} does not exist", _adePath);
+        }
+        catch (Exception ex)
+        {
+          Log.Error(ex, "Error when deleting old insight xml files");
         }
 
         string dbConnStr = cfg.GetValue<string>("SQL Server Connection String");
@@ -78,20 +99,20 @@ namespace BlackMaple.FMSInsight.Makino
           dbConnStr = DetectSqlConnectionStr();
         }
 
-        bool downloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders");
+        _downloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders");
 
         Log.Information(
           "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
           dbConnStr,
-          adePath,
-          downloadOnlyOrders
+          _adePath,
+          _downloadOnlyOrders
         );
 
         RepoConfig = RepositoryConfig.InitializeEventDatabase(
           serialSt,
-          System.IO.Path.Combine(st.DataDirectory, "log.db"),
-          System.IO.Path.Combine(st.DataDirectory, "inspections.db"),
-          System.IO.Path.Combine(st.DataDirectory, "jobs.db")
+          Path.Combine(st.DataDirectory, "log.db"),
+          Path.Combine(st.DataDirectory, "inspections.db"),
+          Path.Combine(st.DataDirectory, "jobs.db")
         );
 
         _makinoDB = new MakinoDB(dbConnStr);
@@ -133,6 +154,8 @@ namespace BlackMaple.FMSInsight.Makino
       return [];
     }
 
+    private bool _errorDownloadingJobs = false;
+
     public MakinoCellState CalculateCellState(IRepository db)
     {
       var lastLog = db.MaxLogDate();
@@ -145,12 +168,79 @@ namespace BlackMaple.FMSInsight.Makino
 
       var st = _makinoDB.LoadCurrentInfo(db);
 
-      return new MakinoCellState { CurrentStatus = st, StateUpdated = newEvts };
+      var notCopied = db.LoadJobsNotCopiedToSystem(
+        DateTime.UtcNow.AddHours(-10),
+        DateTime.UtcNow.AddMinutes(20),
+        includeDecremented: false
+      );
+
+      return new MakinoCellState
+      {
+        CurrentStatus = _errorDownloadingJobs
+          ? st with
+          {
+            Alarms = st.Alarms.Add(
+              "Unable to copy orders to Makino: check that the Makino software is running"
+            )
+          }
+          : st,
+        JobsNotYetCopied = notCopied,
+        StateUpdated = newEvts
+      };
     }
 
     public bool ApplyActions(IRepository db, MakinoCellState state)
     {
-      return false;
+      List<HistoricJob> jobsToSend = [];
+
+      foreach (var j in state.JobsNotYetCopied)
+      {
+        if (state.CurrentStatus.Jobs.ContainsKey(j.UniqueStr))
+        {
+          // was copied but must have crashed before recording the copy, or
+          // makino processed them after the 10 second timeout
+          db.MarkJobCopiedToSystem(j.UniqueStr);
+        }
+        else
+        {
+          jobsToSend.Add(j);
+        }
+      }
+
+      if (jobsToSend.Count > 0)
+      {
+        var fileName = "insight" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".xml";
+        var fullPath = Path.Combine(_adePath, fileName);
+        try
+        {
+          using var fw = new FileSystemWatcher(_adePath, fileName);
+          fw.EnableRaisingEvents = true;
+          OrderXML.WriteOrderXML(fullPath, jobsToSend, _downloadOnlyOrders);
+          if (fw.WaitForChanged(WatcherChangeTypes.Deleted, TimeSpan.FromSeconds(10)).TimedOut)
+          {
+            Log.Error("Makino did not process new jobs, perhaps the Makino software is not running?");
+            _errorDownloadingJobs = true;
+          }
+          else
+          {
+            _errorDownloadingJobs = false;
+            foreach (var j in jobsToSend)
+            {
+              db.MarkJobCopiedToSystem(j.UniqueStr);
+            }
+          }
+        }
+        finally
+        {
+          File.Delete(fullPath);
+        }
+        return true;
+      }
+      else
+      {
+        _errorDownloadingJobs = false;
+        return false;
+      }
     }
 
     public bool DecrementJobs(IRepository db, MakinoCellState state)

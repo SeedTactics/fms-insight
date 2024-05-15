@@ -457,8 +457,8 @@ namespace BlackMaple.MachineFramework
     HistoricJob LoadJob(string UniqueStr);
     ImmutableList<HistoricJob> LoadJobsBetween(string startingUniqueStr, string endingUniqueStr);
     bool DoesJobExist(string unique);
-    IReadOnlyList<HistoricJob> LoadUnarchivedJobs();
-    IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(
+    ImmutableList<HistoricJob> LoadUnarchivedJobs();
+    ImmutableList<HistoricJob> LoadJobsNotCopiedToSystem(
       DateTime startUTC,
       DateTime endUTC,
       bool includeDecremented = true

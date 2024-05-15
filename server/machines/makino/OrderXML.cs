@@ -65,16 +65,13 @@ namespace BlackMaple.FMSInsight.Makino
           finfo.SetAccessControl(accControl);
         }
 
-        if (File.Exists(filename))
-          File.Delete(filename);
         File.Move(tempFile, filename);
       }
       finally
       {
         try
         {
-          if (File.Exists(tempFile))
-            File.Delete(tempFile);
+          File.Delete(tempFile);
         }
         catch
         {

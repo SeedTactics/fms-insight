@@ -828,7 +828,7 @@ namespace BlackMaple.MachineFramework
     // Public Loading API
     // --------------------------------------------------------------------------------
 
-    public IReadOnlyList<HistoricJob> LoadUnarchivedJobs()
+    public ImmutableList<HistoricJob> LoadUnarchivedJobs()
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -842,7 +842,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public IReadOnlyList<HistoricJob> LoadJobsNotCopiedToSystem(
+    public ImmutableList<HistoricJob> LoadJobsNotCopiedToSystem(
       DateTime startUTC,
       DateTime endUTC,
       bool includeDecremented = true
