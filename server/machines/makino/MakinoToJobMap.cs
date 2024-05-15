@@ -38,35 +38,16 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
 {
-  internal class MakinoToJobMap(IRepository logDb)
+  internal class MakinoToJobMap(IRepository db)
   {
-    /*Maps we have:
-     *
-     * part id => JobPlan
-     *
-     * process id => index/process number
-     *
-     * process id => part id
-     *
-     * jobid => index/job number
-     *
-     * job id => process id
-     *
-     * job id => list of programs
-     *
-     * job id => machining stop
-     *
-     * fixture id => list of process ids
-     *
-     */
-    private readonly Dictionary<int, Job> _byPartID = [];
-    private readonly Dictionary<int, int> _procIDToProcNum = [];
-    private readonly Dictionary<int, int> _procIDToPartID = [];
-    private readonly Dictionary<int, int> _jobIDToNum = [];
-    private readonly Dictionary<int, int> _jobIDToProcID = [];
-    private readonly Dictionary<int, string> _programs = [];
-    private readonly Dictionary<int, MachiningStop> _stops = [];
-    private readonly Dictionary<int, ActiveJob> _byOrderID = [];
+    private readonly Dictionary<int, Job> _byPartID = []; // part id => JobPlan
+    private readonly Dictionary<int, int> _procIDToProcNum = []; // process id => index/process number
+    private readonly Dictionary<int, int> _procIDToPartID = []; // process id => part id
+    private readonly Dictionary<int, int> _jobIDToNum = []; // jobid => index/job number
+    private readonly Dictionary<int, int> _jobIDToProcID = []; // job id => process id
+    private readonly Dictionary<int, string> _programs = []; // job id => list of programs
+    private readonly Dictionary<int, MachiningStop> _stops = []; // job id => machining stop
+    private readonly Dictionary<int, ActiveJob> _byOrderID = []; // order id => job
 
     public IEnumerable<ActiveJob> Jobs
     {
@@ -91,7 +72,7 @@ namespace BlackMaple.FMSInsight.Makino
       }
       _byPartID.Add(
         partID,
-        new BlackMaple.MachineFramework.Job()
+        new Job()
         {
           UniqueStr = unique,
           PartName = partName,
@@ -217,7 +198,7 @@ namespace BlackMaple.FMSInsight.Makino
         .AdjustPath(procNum, 1, p => p with { PalletNums = p.PalletNums.AddRange(pals) });
     }
 
-    public BlackMaple.MachineFramework.ActiveJob DuplicateForOrder(int orderID, string order, int partID)
+    public ActiveJob DuplicateForOrder(int orderID, string order, int partID)
     {
       var job = _byPartID[partID];
       var newJob = job.CloneToDerived<ActiveJob, Job>() with
@@ -251,7 +232,7 @@ namespace BlackMaple.FMSInsight.Makino
       if (_programs.TryGetValue(jobID, out string value))
         program = value;
 
-      var matDetails = logDb.GetMaterialDetails(matID);
+      var matDetails = db.GetMaterialDetails(matID);
       return new InProcessMaterial()
       {
         MaterialID = matID,
@@ -261,8 +242,7 @@ namespace BlackMaple.FMSInsight.Makino
         PartName = job.PartName,
         Serial = matDetails?.Serial,
         WorkorderId = matDetails?.Workorder,
-        SignaledInspections = logDb
-          .LookupInspectionDecisions(matID)
+        SignaledInspections = db.LookupInspectionDecisions(matID)
           .Where(x => x.Inspect)
           .Select(x => x.InspType)
           .Distinct()
@@ -282,7 +262,7 @@ namespace BlackMaple.FMSInsight.Makino
       };
     }
 
-    public BlackMaple.MachineFramework.ActiveJob JobForOrder(int orderID)
+    public ActiveJob JobForOrder(int orderID)
     {
       if (_byOrderID.TryGetValue(orderID, out ActiveJob value))
         return value;
@@ -299,27 +279,12 @@ namespace BlackMaple.FMSInsight.Makino
 
   internal class MakinoToPalletMap
   {
-    /* Maps
-     *
-     * fixturePalletId => index/fixture num on the pallet
-     *
-     * fixturePalletID => fixtureID
-     *
-     * fixturePalletId => PalletNum
-         *
-         * fixturePalletId => list of material
-     *
-     * fixtureID => list of pallets
-     *
-     * pallet => PalletStatus
-     */
-
-    private readonly Dictionary<int, int> _fixPalIDToFixNum = [];
-    private readonly Dictionary<int, int> _fixPalIDToFixID = [];
-    private readonly Dictionary<int, int> _fixPalIDToPalNum = [];
-    private readonly Dictionary<int, List<InProcessMaterial>> _fixPalIDToMaterial = [];
-    private readonly Dictionary<int, List<int>> _fixIDToPallets = [];
-    private readonly Dictionary<int, PalletStatus> _pallets = [];
+    private readonly Dictionary<int, int> _fixPalIDToFixNum = []; // fixture pallet id => fixture num
+    private readonly Dictionary<int, int> _fixPalIDToFixID = []; // fixture pallet id => fixture id
+    private readonly Dictionary<int, int> _fixPalIDToPalNum = []; // fixture pallet id => pallet num
+    private readonly Dictionary<int, List<InProcessMaterial>> _fixPalIDToMaterial = []; // fixture pallet id => list of material
+    private readonly Dictionary<int, List<int>> _fixIDToPallets = []; // fixture id => list of pallets
+    private readonly Dictionary<int, PalletStatus> _pallets = []; // pallet num => pallet status
 
     public IDictionary<int, PalletStatus> Pallets
     {

@@ -593,7 +593,6 @@ namespace BlackMaple.FMSInsight.Makino
 
     public CurrentStatus LoadCurrentInfo(IRepository logDb)
     {
-      using var cmd = _db.CreateCommand();
       var map = new MakinoToJobMap(logDb);
       var palMap = new MakinoToPalletMap();
 
@@ -605,7 +604,6 @@ namespace BlackMaple.FMSInsight.Makino
         }
       );
 
-      //Makino: Parts   MachineWatch: Jobs
       Load(
         "SELECT PartID, PartName, Revision, Comment, Priority FROM " + dbo + "Parts",
         reader =>
