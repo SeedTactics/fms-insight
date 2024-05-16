@@ -365,7 +365,7 @@ namespace BlackMaple.FMSInsight.Makino
           {
             MaterialID = matId,
             Process = process,
-            Face = 0
+            Face = 1
           })
           .ToList();
       }
@@ -375,7 +375,7 @@ namespace BlackMaple.FMSInsight.Makino
         {
           MaterialID = m.MaterialID,
           Process = process,
-          Face = 0
+          Face = 1
         })
         .ToList();
 
@@ -397,7 +397,7 @@ namespace BlackMaple.FMSInsight.Makino
             {
               MaterialID = matId,
               Process = process,
-              Face = 0
+              Face = 1
             })
         );
       }
