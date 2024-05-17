@@ -63,8 +63,10 @@ public sealed class LogBuilderSpec : IDisposable
     _repo = RepositoryConfig.InitializeMemoryDB(serialSettings);
 
     _makinoDB = Substitute.For<IMakinoDB>();
-    _makinoDB.LoadCurrentInfo(null).ThrowsForAnyArgs(new Exception("Should not be called"));
-    _makinoDB.LoadResults(default, default).ThrowsForAnyArgs(new Exception("Query Load not configured"));
+    _makinoDB.LoadCurrentInfo(Arg.Any<IRepository>()).ThrowsForAnyArgs(new Exception("Should not be called"));
+    _makinoDB
+      .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
+      .ThrowsForAnyArgs(new Exception("Load Results not configured"));
 
     _makinoDB
       .Devices()
@@ -420,6 +422,118 @@ public sealed class LogBuilderSpec : IDisposable
     using var db = _repo.OpenConnection();
 
     new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+  }
+
+  [Fact]
+  public void AvoidsDuplicateMachine()
+  {
+    var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
+
+    var now = DateTime.UtcNow;
+    var start = now.AddHours(-2);
+
+    var mach = Mach(
+      start.AddMinutes(15),
+      elapsedMin: 11,
+      device: 3,
+      mat: mat,
+      program: "prog1",
+      spindleTime: 5
+    );
+
+    _makinoDB
+      .LoadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        new MakinoResults()
+        {
+          WorkSetResults =
+          [
+            Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
+          ],
+          MachineResults = [mach]
+        }
+      );
+
+    using var db = _repo.OpenConnection();
+
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+
+    db.MaxLogDate().Should().Be(start.AddMinutes(15 + 11));
+
+    _makinoDB
+      .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
+      .ThrowsForAnyArgs(new Exception("Should not be called"));
+    _makinoDB
+      .LoadResults(start.AddMinutes(15 + 11), Arg.Any<DateTime>())
+      .Returns(new MakinoResults() { WorkSetResults = [], MachineResults = [mach] });
+
+    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(15 + 11)).Should().BeTrue();
+
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+  }
+
+  [Fact]
+  public void AvoidsDuplicateLoad()
+  {
+    var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
+
+    var now = DateTime.UtcNow;
+    var start = now.AddHours(-2);
+
+    var unload = Load(
+      start.AddMinutes(30),
+      elapsedMin: 5,
+      device: 2,
+      loadMat: null,
+      unloadMat: mat,
+      palCycleMin: 25
+    );
+
+    _makinoDB
+      .LoadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        new MakinoResults()
+        {
+          WorkSetResults =
+          [
+            Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
+            unload
+          ],
+          MachineResults =
+          [
+            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", spindleTime: 5)
+          ]
+        }
+      );
+
+    using var db = _repo.OpenConnection();
+
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+
+    db.MaxLogDate().Should().Be(start.AddMinutes(30 + 5));
+
+    _makinoDB
+      .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
+      .ThrowsForAnyArgs(new Exception("Should not be called"));
+    _makinoDB
+      .LoadResults(start.AddMinutes(30 + 5), Arg.Any<DateTime>())
+      .Returns(new MakinoResults() { WorkSetResults = [unload], MachineResults = [] });
+
+    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(30 + 5)).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()

@@ -99,9 +99,22 @@ namespace BlackMaple.FMSInsight.Makino
       //find the location
       PalletLocation loc;
       if (devices.TryGetValue(m.DeviceID, out PalletLocation value))
+      {
         loc = value;
+      }
       else
+      {
         loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 0);
+      }
+
+      //check if the cycle already exists
+      if (
+        timeToSkip == m.EndDateTimeUTC
+        && logDb.CycleExists(m.EndDateTimeUTC, m.PalletID, LogType.MachineCycle, "MC", loc.Num)
+      )
+      {
+        return;
+      }
 
       if (loc.Location != PalletLocationEnum.Machine)
       {
@@ -127,15 +140,6 @@ namespace BlackMaple.FMSInsight.Makino
       );
 
       var elapsed = m.EndDateTimeUTC.Subtract(m.StartDateTimeUTC);
-
-      //check if the cycle already exists
-      if (
-        timeToSkip == m.EndDateTimeUTC
-        && logDb.CycleExists(m.EndDateTimeUTC, m.PalletID, LogType.MachineCycle, "MC", loc.Num)
-      )
-      {
-        return;
-      }
 
       var extraData = new Dictionary<string, string>();
       if (matList.Count > 0)
@@ -237,6 +241,15 @@ namespace BlackMaple.FMSInsight.Makino
       else
         loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 1);
 
+      //check if the cycle already exists
+      if (
+        timeToSkip == w.EndDateTimeUTC
+        && logDb.CycleExists(w.EndDateTimeUTC, w.PalletID, LogType.LoadUnloadCycle, "L/U", loc.Num)
+      )
+      {
+        return;
+      }
+
       if (loc.Location != PalletLocationEnum.LoadUnload)
       {
         Log.Error("Creating machine cycle for device that is not a load: " + loc.Location.ToString());
@@ -263,15 +276,6 @@ namespace BlackMaple.FMSInsight.Makino
           w.UnloadProcessNum,
           numParts
         );
-
-        //check if the cycle already exists
-        if (
-          timeToSkip == w.EndDateTimeUTC
-          && logDb.CycleExists(w.EndDateTimeUTC, w.PalletID, LogType.LoadUnloadCycle, "L/U", loc.Num)
-        )
-        {
-          return;
-        }
 
         TimeSpan active = TimeSpan.Zero;
         Job unloadJob = _jobCache.Lookup(w.UnloadOrderName);
