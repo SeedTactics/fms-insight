@@ -154,6 +154,16 @@ namespace BlackMaple.FMSInsight.Makino
 
       foreach (var j in jobs.Jobs)
       {
+        if (j.Processes.Count != 1)
+        {
+          // current problem is in LogBuilder, material IDs are not looked up between processes
+          // and there is no queue support
+          ret.Add(
+            "FMS Insight does not support multiple processes currently, please make change "
+              + j.PartName
+              + " to have one process."
+          );
+        }
         foreach (var proc in j.Processes)
         {
           if (proc.Paths.Count > 0)
