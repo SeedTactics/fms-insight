@@ -40,6 +40,7 @@ namespace BlackMaple.FMSInsight.Makino
   public class LogBuilder(IMakinoDB makinoDB, IRepository logDb)
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<LogBuilder>();
+    private readonly JobCache _jobCache = new(logDb);
 
     public bool CheckLogs(DateTime lastDate)
     {
@@ -179,7 +180,7 @@ namespace BlackMaple.FMSInsight.Makino
       if (logDb == null)
         return;
 
-      var job = logDb.LoadJob(m.OrderName);
+      var job = _jobCache.Lookup(m.OrderName);
       if (job == null)
         return;
 
@@ -269,7 +270,16 @@ namespace BlackMaple.FMSInsight.Makino
           timeToSkip == w.EndDateTimeUTC
           && logDb.CycleExists(w.EndDateTimeUTC, w.PalletID, LogType.LoadUnloadCycle, "L/U", loc.Num)
         )
+        {
           return;
+        }
+
+        TimeSpan active = TimeSpan.Zero;
+        Job unloadJob = _jobCache.Lookup(w.UnloadOrderName);
+        if (unloadJob != null && w.UnloadProcessNum <= unloadJob.Processes.Count)
+        {
+          active = unloadJob.Processes[w.UnloadProcessNum - 1].Paths[0].ExpectedUnloadTime;
+        }
 
         logDb.RecordUnloadEnd(
           mats: matList,
@@ -277,7 +287,7 @@ namespace BlackMaple.FMSInsight.Makino
           lulNum: loc.Num,
           timeUTC: w.EndDateTimeUTC,
           elapsed: elapsed,
-          active: TimeSpan.Zero,
+          active: active,
           foreignId: MkForeignID(w.PalletID, w.FixtureNumber, w.UnloadOrderName, w.EndDateTimeUTC)
         );
       }
@@ -301,6 +311,13 @@ namespace BlackMaple.FMSInsight.Makino
           w.EndDateTimeUTC.AddSeconds(1)
         );
 
+        TimeSpan active = TimeSpan.Zero;
+        var loadJob = _jobCache.Lookup(w.LoadOrderName);
+        if (loadJob != null && w.LoadProcessNum <= loadJob.Processes.Count)
+        {
+          active = loadJob.Processes[w.LoadProcessNum - 1].Paths[0].ExpectedLoadTime;
+        }
+
         logDb.RecordLoadEnd(
           toLoad: new[]
           {
@@ -316,7 +333,7 @@ namespace BlackMaple.FMSInsight.Makino
                   FaceNum = 1,
                   Process = w.LoadProcessNum,
                   Path = null,
-                  ActiveOperationTime = TimeSpan.Zero,
+                  ActiveOperationTime = active,
                 }
               ]
             }

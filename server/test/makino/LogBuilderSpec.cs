@@ -230,7 +230,9 @@ public sealed class LogBuilderSpec : IDisposable
     int device,
     TestMat? loadMat,
     TestMat? unloadMat,
-    int palCycleMin
+    int palCycleMin,
+    int loadActiveMin = 0,
+    int unloadActiveMin = 0
   )
   {
     var workr = new WorkSetResults()
@@ -306,7 +308,7 @@ public sealed class LogBuilderSpec : IDisposable
           Program = loadMat == mat ? "LOAD" : "UNLOAD",
           Result = loadMat == mat ? "LOAD" : "UNLOAD",
           ElapsedTime = TimeSpan.FromMinutes(elapsedMin),
-          ActiveOperationTime = TimeSpan.Zero
+          ActiveOperationTime = TimeSpan.FromMinutes(loadMat == mat ? loadActiveMin : unloadActiveMin)
         }
       );
     }
@@ -656,7 +658,7 @@ public sealed class LogBuilderSpec : IDisposable
                     Load = [1, 2],
                     Unload = [1, 2],
                     ExpectedLoadTime = TimeSpan.FromMinutes(10),
-                    ExpectedUnloadTime = TimeSpan.FromMinutes(10),
+                    ExpectedUnloadTime = TimeSpan.FromMinutes(11),
                     SimulatedAverageFlowTime = TimeSpan.FromMinutes(10),
                     SimulatedProduction = [],
                     SimulatedStartingUTC = DateTime.UtcNow,
@@ -699,8 +701,24 @@ public sealed class LogBuilderSpec : IDisposable
       .QueryLoadUnloadResults(now.AddDays(-30), Arg.Any<DateTime>())
       .Returns(
         [
-          Load(start, elapsedMin: 10, device: 2, loadMat: mat, unloadMat: null, palCycleMin: 0),
-          Load(start.AddMinutes(30), elapsedMin: 5, device: 2, loadMat: null, unloadMat: mat, palCycleMin: 25)
+          Load(
+            start,
+            elapsedMin: 10,
+            device: 2,
+            loadMat: mat,
+            unloadMat: null,
+            palCycleMin: 0,
+            loadActiveMin: 10
+          ),
+          Load(
+            start.AddMinutes(30),
+            elapsedMin: 5,
+            device: 2,
+            loadMat: null,
+            unloadMat: mat,
+            palCycleMin: 25,
+            unloadActiveMin: 11
+          )
         ]
       );
 
