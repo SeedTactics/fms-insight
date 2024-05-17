@@ -244,7 +244,6 @@ namespace BlackMaple.FMSInsight.Makino
 
       //calculate the elapsed time
       var elapsed = w.EndDateTimeUTC.Subtract(w.StartDateTimeUTC);
-      elapsed = new TimeSpan(elapsed.Ticks / 2);
 
       //count the number of unloaded parts
       int numParts = 0;
@@ -278,7 +277,7 @@ namespace BlackMaple.FMSInsight.Makino
           lulNum: loc.Num,
           timeUTC: w.EndDateTimeUTC,
           elapsed: elapsed,
-          active: elapsed,
+          active: TimeSpan.Zero,
           foreignId: MkForeignID(w.PalletID, w.FixtureNumber, w.UnloadOrderName, w.EndDateTimeUTC)
         );
       }
@@ -317,7 +316,7 @@ namespace BlackMaple.FMSInsight.Makino
                   FaceNum = 1,
                   Process = w.LoadProcessNum,
                   Path = null,
-                  ActiveOperationTime = elapsed,
+                  ActiveOperationTime = TimeSpan.Zero,
                 }
               ]
             }

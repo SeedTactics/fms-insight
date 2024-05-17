@@ -305,8 +305,8 @@ public sealed class LogBuilderSpec : IDisposable
           Pallet = loadMat?.PalletID ?? unloadMat!.PalletID,
           Program = loadMat == mat ? "LOAD" : "UNLOAD",
           Result = loadMat == mat ? "LOAD" : "UNLOAD",
-          ElapsedTime = TimeSpan.FromMinutes(elapsedMin) / 2,
-          ActiveOperationTime = TimeSpan.FromMinutes(elapsedMin) / 2,
+          ElapsedTime = TimeSpan.FromMinutes(elapsedMin),
+          ActiveOperationTime = TimeSpan.Zero
         }
       );
     }
