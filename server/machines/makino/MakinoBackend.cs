@@ -150,7 +150,23 @@ namespace BlackMaple.FMSInsight.Makino
 
     public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
     {
-      return [];
+      var ret = new List<string>();
+
+      foreach (var j in jobs.Jobs)
+      {
+        foreach (var proc in j.Processes)
+        {
+          if (proc.Paths.Count > 0)
+          {
+            ret.Add(
+              "FMS Insight does not support paths with the same color, please make sure each path has a distinct color in "
+                + j.PartName
+            );
+          }
+        }
+      }
+
+      return ret;
     }
 
     private bool _errorDownloadingJobs = false;
