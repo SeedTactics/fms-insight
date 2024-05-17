@@ -741,6 +741,15 @@ namespace BlackMaple.FMSInsight.Makino
       );
 
       Load(
+        "SELECT ProcessID, ClampQuantity FROM " + dbo + "Operations",
+        reader =>
+        {
+          map.AddOperationToProcess(reader.GetInt32(0), reader.GetInt32(1));
+        },
+        trans
+      );
+
+      Load(
         "SELECT OrderID, OrderName, PartID, Comment, Quantity, Priority, StartDate "
           + "FROM "
           + dbo

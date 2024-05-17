@@ -198,6 +198,14 @@ namespace BlackMaple.FMSInsight.Makino
         .AdjustPath(procNum, 1, p => p with { PalletNums = p.PalletNums.AddRange(pals) });
     }
 
+    public void AddOperationToProcess(int processID, int clampQty)
+    {
+      var procNum = _procIDToProcNum[processID];
+
+      _byPartID[_procIDToPartID[processID]] = _byPartID[_procIDToPartID[processID]]
+        .AdjustPath(procNum, 1, p => p with { PartsPerPallet = clampQty });
+    }
+
     public ActiveJob DuplicateForOrder(int orderID, string order, int partID)
     {
       var job = _byPartID[partID];
@@ -214,8 +222,63 @@ namespace BlackMaple.FMSInsight.Makino
         CopiedToSystem = historic?.CopiedToSystem ?? true,
         Decrements = db.LoadDecrementsForJob(order),
         AssignedWorkorders = db.GetWorkordersForUnique(order),
+        Completed = job.Processes.Select(_ => ImmutableList.Create(0)).ToImmutableList(),
 
-        Completed = job.Processes.Select(_ => ImmutableList.Create(0)).ToImmutableList()
+        Processes =
+          historic != null && historic.Processes.Count == job.Processes.Count
+            ? Enumerable
+              .Zip(
+                historic.Processes,
+                job.Processes,
+                (h, j) =>
+                  new ProcessInfo()
+                  {
+                    Paths = j
+                      .Paths.Select(
+                        (jpath, pathIdx) =>
+                        {
+                          if (pathIdx >= h.Paths.Count)
+                          {
+                            return jpath;
+                          }
+                          var hpath = h.Paths[pathIdx];
+                          return jpath with
+                          {
+                            Stops = jpath
+                              .Stops.Select(
+                                (jstop, stopIdx) =>
+                                {
+                                  if (stopIdx >= hpath.Stops.Count)
+                                  {
+                                    return jstop;
+                                  }
+                                  else
+                                  {
+                                    return jstop with
+                                    {
+                                      ExpectedCycleTime = hpath.Stops[stopIdx].ExpectedCycleTime
+                                    };
+                                  }
+                                }
+                              )
+                              .ToImmutableList(),
+                            SimulatedStartingUTC = hpath.SimulatedStartingUTC,
+                            SimulatedProduction = hpath.SimulatedProduction,
+                            SimulatedAverageFlowTime = hpath.SimulatedAverageFlowTime,
+                            ExpectedLoadTime = hpath.ExpectedLoadTime,
+                            ExpectedUnloadTime = hpath.ExpectedUnloadTime,
+                            Inspections = hpath.Inspections,
+                            Casting = hpath.Casting,
+                            InputQueue = hpath.InputQueue,
+                            OutputQueue = hpath.OutputQueue,
+                          };
+                        }
+                      )
+                      .ToImmutableList()
+                  }
+              )
+              .ToImmutableList()
+            : job.Processes
       };
 
       // Data from historicJob for each path can't really be added because the
