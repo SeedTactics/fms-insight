@@ -144,20 +144,8 @@ namespace BlackMaple.FMSInsight.Makino
       var extraData = new Dictionary<string, string>();
       if (matList.Count > 0)
       {
-        var matID1 = matList[0].MaterialID;
-        Log.Debug(
-          "Starting load of common values between the times of {start} and {end} on DeviceID {deviceID}."
-            + "These values will be attached to part {part} with matid {matid}",
-          m.StartDateTimeLocal,
-          m.EndDateTimeLocal,
-          m.DeviceID,
-          m.PartName,
-          matID1
-        );
-
         foreach (var v in m.CommonValues ?? [])
         {
-          Log.Debug("Common value with number {num} and value {val}", +v.Number, v.Value);
           extraData[v.Number.ToString()] = v.Value;
         }
       }
