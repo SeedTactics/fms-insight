@@ -64,29 +64,28 @@ namespace BlackMaple.FMSInsight.Makino
       bool newLogEntries = false;
       while (moreMachines || moreLoads)
       {
-        newLogEntries = true;
         if (moreMachines && moreLoads)
         {
           //check which event occured first and process it
           if (mE.Current.EndDateTimeUTC < lE.Current.Key.EndDateTimeUTC)
           {
-            AddMachineToLog(lastDate, devices, mE.Current);
+            AddMachineToLog(lastDate, devices, mE.Current, ref newLogEntries);
             moreMachines = mE.MoveNext();
           }
           else
           {
-            AddLoadToLog(lastDate, devices, lE.Current);
+            AddLoadToLog(lastDate, devices, lE.Current, ref newLogEntries);
             moreLoads = lE.MoveNext();
           }
         }
         else if (moreMachines)
         {
-          AddMachineToLog(lastDate, devices, mE.Current);
+          AddMachineToLog(lastDate, devices, mE.Current, ref newLogEntries);
           moreMachines = mE.MoveNext();
         }
         else
         {
-          AddLoadToLog(lastDate, devices, lE.Current);
+          AddLoadToLog(lastDate, devices, lE.Current, ref newLogEntries);
           moreLoads = lE.MoveNext();
         }
       }
@@ -97,7 +96,8 @@ namespace BlackMaple.FMSInsight.Makino
     private void AddMachineToLog(
       DateTime timeToSkip,
       IDictionary<int, PalletLocation> devices,
-      MachineResults m
+      MachineResults m,
+      ref bool newLogEntries
     )
     {
       //find the location
@@ -179,6 +179,7 @@ namespace BlackMaple.FMSInsight.Makino
         extraData: extraData,
         foreignId: MkForeignID(m.PalletID, m.FixtureNumber, m.OrderName, m.EndDateTimeUTC)
       );
+      newLogEntries = true;
 
       AddInspection(m, matList, m.EndDateTimeUTC);
     }
@@ -243,7 +244,8 @@ namespace BlackMaple.FMSInsight.Makino
       IGrouping<
         (DateTime StartDateTimeUTC, DateTime EndDateTimeUTC, int DeviceID, int PalletID),
         WorkSetResults
-      > ws
+      > ws,
+      ref bool newLogEntries
     )
     {
       //find the location
@@ -308,6 +310,7 @@ namespace BlackMaple.FMSInsight.Makino
             active: active * matList.Count,
             foreignId: MkForeignID(w.PalletID, w.FixtureNumber, w.UnloadOrderName, w.EndDateTimeUTC)
           );
+          newLogEntries = true;
         }
       }
 
@@ -315,6 +318,7 @@ namespace BlackMaple.FMSInsight.Makino
       if (ws.Any(w => !w.Remachine))
       {
         logDb.CompletePalletCycle(ws.Key.PalletID, ws.Key.EndDateTimeUTC, "");
+        newLogEntries = true;
       }
 
       var faces = ImmutableList.CreateBuilder<MaterialToLoadOntoFace>();
@@ -375,6 +379,7 @@ namespace BlackMaple.FMSInsight.Makino
           pallet: ws.Key.PalletID,
           timeUTC: ws.Key.EndDateTimeUTC.AddSeconds(1)
         );
+        newLogEntries = true;
       }
     }
 

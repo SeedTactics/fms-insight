@@ -569,7 +569,7 @@ public sealed class LogBuilderSpec : IDisposable
       .LoadResults(start.AddMinutes(15 + 11), Arg.Any<DateTime>())
       .Returns(new MakinoResults() { WorkSetResults = [], MachineResults = [mach] });
 
-    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(15 + 11)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(15 + 11)).Should().BeFalse();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -637,7 +637,7 @@ public sealed class LogBuilderSpec : IDisposable
       .LoadResults(start.AddMinutes(30 + 5), Arg.Any<DateTime>())
       .Returns(new MakinoResults() { WorkSetResults = [unload], MachineResults = [] });
 
-    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(30 + 5)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(30 + 5)).Should().BeFalse();
 
     db.GetLogEntries(start, now)
       .Should()
