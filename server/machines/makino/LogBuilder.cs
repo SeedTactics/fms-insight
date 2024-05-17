@@ -312,7 +312,10 @@ namespace BlackMaple.FMSInsight.Makino
       }
 
       //Pallet Cycle
-      logDb.CompletePalletCycle(ws.Key.PalletID, ws.Key.EndDateTimeUTC, "");
+      if (ws.Any(w => !w.Remachine))
+      {
+        logDb.CompletePalletCycle(ws.Key.PalletID, ws.Key.EndDateTimeUTC, "");
+      }
 
       var faces = ImmutableList.CreateBuilder<MaterialToLoadOntoFace>();
 

@@ -302,7 +302,8 @@ public sealed class LogBuilderSpec : IDisposable
     TestMat? unloadMat,
     int palCycleMin,
     int loadActiveMin = 0,
-    int unloadActiveMin = 0
+    int unloadActiveMin = 0,
+    bool remachine = false
   )
   {
     var workr = new WorkSetResults()
@@ -340,8 +341,11 @@ public sealed class LogBuilderSpec : IDisposable
             : [1, unloadMat.Quantity - 1],
       UnloadScrapQuantities = [],
       UnloadOutProcQuantities = [],
-      Remachine = false
+      Remachine = remachine
     };
+
+    if (remachine)
+      return workr;
 
     foreach (var mat in new[] { loadMat, unloadMat })
     {
@@ -1059,6 +1063,64 @@ public sealed class LogBuilderSpec : IDisposable
           ]
         }
       );
+
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+  }
+
+  [Fact]
+  public void SkipsRemachine()
+  {
+    var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
+
+    var now = DateTime.UtcNow;
+    var start = now.AddHours(-2);
+
+    _makinoDB
+      .LoadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        new MakinoResults()
+        {
+          WorkSetResults =
+          [
+            Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
+            Load(
+              start.AddMinutes(30),
+              elapsedMin: 10,
+              device: 1,
+              loadMat: null,
+              unloadMat: mat,
+              palCycleMin: -1,
+              remachine: true
+            ),
+            Load(
+              start.AddMinutes(60),
+              elapsedMin: 5,
+              device: 2,
+              loadMat: null,
+              unloadMat: mat,
+              palCycleMin: 55
+            ),
+          ],
+          MachineResults =
+          [
+            Mach(
+              start.AddMinutes(15),
+              elapsedMin: 11,
+              device: 3,
+              mat: mat,
+              program: "prog1",
+              activeMin: 8,
+              spindleSecs: 8 * 60
+            ),
+          ]
+        }
+      );
+
+    using var db = _repo.OpenConnection();
 
     new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
 
