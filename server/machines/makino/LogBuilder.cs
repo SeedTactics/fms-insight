@@ -161,6 +161,19 @@ namespace BlackMaple.FMSInsight.Makino
           extraData[v.Number.ToString()] = v.Value;
         }
       }
+
+      var job = _jobCache.Lookup(m.OrderName);
+
+      TimeSpan active;
+      if (job != null && m.ProcessNum <= job.Processes.Count)
+      {
+        active = job.Processes[m.ProcessNum - 1].Paths[0].Stops[0].ExpectedCycleTime;
+      }
+      else
+      {
+        active = TimeSpan.FromSeconds(m.SpindleTimeSeconds);
+      }
+
       logDb.RecordMachineEnd(
         mats: matList,
         pallet: m.PalletID,
@@ -170,7 +183,7 @@ namespace BlackMaple.FMSInsight.Makino
         result: "",
         timeUTC: m.EndDateTimeUTC,
         elapsed: elapsed,
-        active: TimeSpan.FromSeconds(m.SpindleTimeSeconds),
+        active: active,
         extraData: extraData,
         foreignId: MkForeignID(m.PalletID, m.FixtureNumber, m.OrderName, m.EndDateTimeUTC)
       );

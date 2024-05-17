@@ -108,19 +108,26 @@ namespace BlackMaple.FMSInsight.Makino
             foreach (var palNum in j.Processes[proc - 1].Paths[0].PalletNums)
             {
               string fixName;
-              fixName = "P" + palNum.ToString().PadLeft(2, '0');
-              fixName += "-" + j.PartName + "-" + proc.ToString();
-              if (!allFixtures.TryGetValue(fixName, out List<JobAndProc> value))
+              if (!string.IsNullOrEmpty(j.Processes[proc - 1].Paths[0].Fixture))
+              {
+                fixName = j.Processes[proc - 1].Paths[0].Fixture;
+              }
+              else
+              {
+                fixName = "P" + palNum.ToString().PadLeft(2, '0');
+                fixName += "-" + j.PartName + "-" + proc.ToString();
+              }
+              if (allFixtures.TryGetValue(fixName, out List<JobAndProc> value))
+              {
+                value.Add(new JobAndProc() { Job = j, Proc = proc });
+              }
+              else
               {
                 var lst = new List<JobAndProc>
                 {
                   new() { Job = j, Proc = proc }
                 };
                 allFixtures.Add(fixName, lst);
-              }
-              else
-              {
-                value.Add(new JobAndProc() { Job = j, Proc = proc });
               }
             }
           }
@@ -170,7 +177,7 @@ namespace BlackMaple.FMSInsight.Makino
         xml.WriteStartElement("Operation");
         xml.WriteAttributeString("number", "1");
         xml.WriteAttributeString("clampQuantity", pathInfo.PartsPerPallet.ToString());
-        xml.WriteAttributeString("unclampMultiplier", pathInfo.PartsPerPallet.ToString());
+        xml.WriteAttributeString("unclampMultiplier", "1");
         xml.WriteEndElement(); //Operation
         xml.WriteEndElement(); //Operations
 

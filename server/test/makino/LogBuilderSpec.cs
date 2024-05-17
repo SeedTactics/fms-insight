@@ -152,13 +152,89 @@ public sealed class LogBuilderSpec : IDisposable
     };
   }
 
+  private static void AddJob(
+    IRepository db,
+    string order,
+    string part,
+    int loadMin,
+    int unloadMin,
+    int mcMin,
+    bool inspect = false
+  )
+  {
+    db.AddJobs(
+      new NewJobs()
+      {
+        ScheduleId = "abc" + Guid.NewGuid().ToString("N"),
+        Jobs =
+        [
+          new Job()
+          {
+            UniqueStr = order,
+            RouteStartUTC = DateTime.UtcNow,
+            RouteEndUTC = DateTime.UtcNow.AddHours(1),
+            Archived = false,
+            PartName = part,
+            Cycles = 10,
+            Processes =
+            [
+              new ProcessInfo()
+              {
+                Paths =
+                [
+                  new ProcPathInfo()
+                  {
+                    PalletNums = [2],
+                    Load = [1, 2],
+                    Unload = [1, 2],
+                    ExpectedLoadTime = TimeSpan.FromMinutes(loadMin),
+                    ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMin),
+                    SimulatedAverageFlowTime = TimeSpan.FromMinutes(10),
+                    SimulatedProduction = [],
+                    SimulatedStartingUTC = DateTime.UtcNow,
+                    PartsPerPallet = 1,
+                    Stops =
+                    [
+                      new MachiningStop()
+                      {
+                        StationGroup = "Mach",
+                        Stations = [3],
+                        ExpectedCycleTime = TimeSpan.FromMinutes(mcMin),
+                      }
+                    ],
+                    Inspections = inspect
+                      ?
+                      [
+                        new PathInspection()
+                        {
+                          InspectionType = "CMM",
+                          Counter = $"CMM,{part},%stat1,1%",
+                          MaxVal = 10,
+                          RandomFreq = 0,
+                          TimeInterval = TimeSpan.Zero
+                        }
+                      ]
+                      : []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      expectedPreviousScheduleId: null,
+      addAsCopiedToSystem: true
+    );
+  }
+
   private MachineResults Mach(
     DateTime start,
     int elapsedMin,
     int device,
     TestMat mat,
     string program,
-    int spindleTime
+    int activeMin,
+    int spindleSecs = 0
   )
   {
     var machr = new MachineResults()
@@ -179,7 +255,7 @@ public sealed class LogBuilderSpec : IDisposable
       JobNum = 1,
       ProcessName = "unused process name",
       Program = program,
-      SpindleTimeSeconds = spindleTime,
+      SpindleTimeSeconds = spindleSecs,
       OperQuantities = mat.Quantity == 1 ? [1] : [1, mat.Quantity - 1]
     };
 
@@ -211,7 +287,7 @@ public sealed class LogBuilderSpec : IDisposable
         Program = program,
         Result = "",
         ElapsedTime = TimeSpan.FromMinutes(elapsedMin),
-        ActiveOperationTime = TimeSpan.FromSeconds(spindleTime),
+        ActiveOperationTime = TimeSpan.FromMinutes(activeMin),
       }
     );
 
@@ -390,7 +466,10 @@ public sealed class LogBuilderSpec : IDisposable
   [Fact]
   public void SingleCycle()
   {
+    using var db = _repo.OpenConnection();
     var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
+
+    AddJob(db, order: mat.OrderName, part: mat.PartName, loadMin: 6, unloadMin: 7, mcMin: 8);
 
     var now = DateTime.UtcNow;
     var start = now.AddHours(-2);
@@ -402,24 +481,31 @@ public sealed class LogBuilderSpec : IDisposable
         {
           WorkSetResults =
           [
-            Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
+            Load(
+              start,
+              elapsedMin: 10,
+              device: 1,
+              loadMat: mat,
+              unloadMat: null,
+              palCycleMin: 0,
+              loadActiveMin: 6
+            ),
             Load(
               start.AddMinutes(30),
               elapsedMin: 5,
               device: 2,
               loadMat: null,
               unloadMat: mat,
-              palCycleMin: 25
+              palCycleMin: 25,
+              unloadActiveMin: 7
             )
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", spindleTime: 5)
+            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", activeMin: 8)
           ]
         }
       );
-
-    using var db = _repo.OpenConnection();
 
     new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
 
@@ -431,6 +517,8 @@ public sealed class LogBuilderSpec : IDisposable
   [Fact]
   public void AvoidsDuplicateMachine()
   {
+    using var db = _repo.OpenConnection();
+
     var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
 
     var now = DateTime.UtcNow;
@@ -442,7 +530,8 @@ public sealed class LogBuilderSpec : IDisposable
       device: 3,
       mat: mat,
       program: "prog1",
-      spindleTime: 5
+      activeMin: 5,
+      spindleSecs: 5 * 60
     );
 
     _makinoDB
@@ -457,8 +546,6 @@ public sealed class LogBuilderSpec : IDisposable
           MachineResults = [mach]
         }
       );
-
-    using var db = _repo.OpenConnection();
 
     new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
 
@@ -485,7 +572,10 @@ public sealed class LogBuilderSpec : IDisposable
   [Fact]
   public void AvoidsDuplicateLoad()
   {
+    using var db = _repo.OpenConnection();
     var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
+
+    AddJob(db, order: mat.OrderName, part: mat.PartName, loadMin: 16, unloadMin: 17, mcMin: 18);
 
     var now = DateTime.UtcNow;
     var start = now.AddHours(-2);
@@ -496,7 +586,8 @@ public sealed class LogBuilderSpec : IDisposable
       device: 2,
       loadMat: null,
       unloadMat: mat,
-      palCycleMin: 25
+      palCycleMin: 25,
+      unloadActiveMin: 17
     );
 
     _makinoDB
@@ -506,17 +597,23 @@ public sealed class LogBuilderSpec : IDisposable
         {
           WorkSetResults =
           [
-            Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
+            Load(
+              start,
+              elapsedMin: 10,
+              device: 1,
+              loadMat: mat,
+              unloadMat: null,
+              palCycleMin: 0,
+              loadActiveMin: 16
+            ),
             unload
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", spindleTime: 5)
+            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", activeMin: 18)
           ]
         }
       );
-
-    using var db = _repo.OpenConnection();
 
     new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
 
@@ -543,8 +640,13 @@ public sealed class LogBuilderSpec : IDisposable
   [Fact]
   public void MultiplePallets()
   {
+    using var db = _repo.OpenConnection();
+
     var mat1 = MkMat(palId: 2, fixNum: 4, matId: 1);
     var mat2 = MkMat(palId: 3, fixNum: 5, matId: 2);
+
+    AddJob(db, order: mat1.OrderName, part: mat1.PartName, loadMin: 6, unloadMin: 7, mcMin: 8);
+    AddJob(db, order: mat2.OrderName, part: mat2.PartName, loadMin: 16, unloadMin: 17, mcMin: 18);
 
     var now = DateTime.UtcNow;
     var start = now.AddHours(-5);
@@ -556,14 +658,23 @@ public sealed class LogBuilderSpec : IDisposable
         {
           WorkSetResults =
           [
-            Load(start, elapsedMin: 10, device: 1, loadMat: mat1, unloadMat: null, palCycleMin: 0),
+            Load(
+              start,
+              elapsedMin: 10,
+              device: 1,
+              loadMat: mat1,
+              unloadMat: null,
+              palCycleMin: 0,
+              loadActiveMin: 6
+            ),
             Load(
               start.AddMinutes(30),
               elapsedMin: 5,
               device: 2,
               loadMat: mat2,
               unloadMat: null,
-              palCycleMin: 0
+              palCycleMin: 0,
+              loadActiveMin: 16
             ),
             Load(
               start.AddMinutes(60),
@@ -571,7 +682,8 @@ public sealed class LogBuilderSpec : IDisposable
               device: 1,
               loadMat: null,
               unloadMat: mat2,
-              palCycleMin: 35
+              palCycleMin: 35,
+              unloadActiveMin: 17
             ),
             Load(
               start.AddMinutes(90),
@@ -579,25 +691,17 @@ public sealed class LogBuilderSpec : IDisposable
               device: 2,
               loadMat: null,
               unloadMat: mat1,
-              palCycleMin: 85
+              palCycleMin: 85,
+              unloadActiveMin: 7
             )
           ],
           MachineResults =
           [
-            Mach(
-              start.AddMinutes(15),
-              elapsedMin: 11,
-              device: 3,
-              mat: mat1,
-              program: "prog1",
-              spindleTime: 5
-            ),
-            Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", spindleTime: 3)
+            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat1, program: "prog1", activeMin: 8),
+            Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", activeMin: 18)
           ]
         }
       );
-
-    using var db = _repo.OpenConnection();
 
     new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
     db.GetLogEntries(start, now)
@@ -606,7 +710,7 @@ public sealed class LogBuilderSpec : IDisposable
   }
 
   [Fact]
-  public void MultiplePartsOnPallet()
+  public void LoadAndUnloadSameTime()
   {
     var mat1 = MkMat(palId: 2, fixNum: 4, matId: 1, qty: 2);
     var mat2 = MkMat(palId: 2, fixNum: 4, matId: 3, qty: 2);
@@ -660,10 +764,27 @@ public sealed class LogBuilderSpec : IDisposable
               device: 3,
               mat: mat1,
               program: "prog1",
-              spindleTime: 5
+              activeMin: 5,
+              spindleSecs: 5 * 60
             ),
-            Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", spindleTime: 3),
-            Mach(start.AddMinutes(75), elapsedMin: 11, device: 3, mat: mat3, program: "prog3", spindleTime: 5)
+            Mach(
+              start.AddMinutes(45),
+              elapsedMin: 6,
+              device: 4,
+              mat: mat2,
+              program: "prog2",
+              activeMin: 3,
+              spindleSecs: 3 * 60
+            ),
+            Mach(
+              start.AddMinutes(75),
+              elapsedMin: 11,
+              device: 3,
+              mat: mat3,
+              program: "prog3",
+              activeMin: 5,
+              spindleSecs: 5 * 60
+            )
           ]
         }
       );
@@ -680,7 +801,11 @@ public sealed class LogBuilderSpec : IDisposable
   [Fact]
   public void RecordsCommonValues()
   {
+    using var db = _repo.OpenConnection();
+
     var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
+
+    AddJob(db, order: mat.OrderName, part: mat.PartName, loadMin: 10, unloadMin: 11, mcMin: 6);
 
     var now = DateTime.UtcNow;
     var start = now.AddHours(-2);
@@ -692,14 +817,23 @@ public sealed class LogBuilderSpec : IDisposable
         {
           WorkSetResults =
           [
-            Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
+            Load(
+              start,
+              elapsedMin: 10,
+              device: 1,
+              loadMat: mat,
+              unloadMat: null,
+              palCycleMin: 0,
+              loadActiveMin: 10
+            ),
             Load(
               start.AddMinutes(30),
               elapsedMin: 5,
               device: 2,
               loadMat: null,
               unloadMat: mat,
-              palCycleMin: 25
+              palCycleMin: 25,
+              unloadActiveMin: 11
             )
           ],
           MachineResults =
@@ -710,7 +844,7 @@ public sealed class LogBuilderSpec : IDisposable
               device: 3,
               mat: mat,
               program: "prog1",
-              spindleTime: 5
+              activeMin: 6
             ) with
             {
               CommonValues =
@@ -742,8 +876,6 @@ public sealed class LogBuilderSpec : IDisposable
         .Add("24", "common value 24")
     };
 
-    using var db = _repo.OpenConnection();
-
     new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
 
     db.GetLogEntries(start, now)
@@ -757,67 +889,7 @@ public sealed class LogBuilderSpec : IDisposable
     using var db = _repo.OpenConnection();
     var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
 
-    db.AddJobs(
-      new NewJobs()
-      {
-        ScheduleId = "abc",
-        Jobs =
-        [
-          new Job()
-          {
-            UniqueStr = mat.OrderName,
-            RouteStartUTC = DateTime.UtcNow,
-            RouteEndUTC = DateTime.UtcNow.AddHours(1),
-            Archived = false,
-            PartName = mat.PartName,
-            Cycles = 10,
-            Processes =
-            [
-              new ProcessInfo()
-              {
-                Paths =
-                [
-                  new ProcPathInfo()
-                  {
-                    PalletNums = [2],
-                    Load = [1, 2],
-                    Unload = [1, 2],
-                    ExpectedLoadTime = TimeSpan.FromMinutes(10),
-                    ExpectedUnloadTime = TimeSpan.FromMinutes(11),
-                    SimulatedAverageFlowTime = TimeSpan.FromMinutes(10),
-                    SimulatedProduction = [],
-                    SimulatedStartingUTC = DateTime.UtcNow,
-                    PartsPerPallet = 1,
-                    Stops =
-                    [
-                      new MachiningStop()
-                      {
-                        StationGroup = "Mach",
-                        Stations = [3],
-                        ExpectedCycleTime = TimeSpan.FromMinutes(5),
-                      }
-                    ],
-                    Inspections =
-                    [
-                      new PathInspection()
-                      {
-                        InspectionType = "CMM",
-                        Counter = $"CMM,{mat.PartName},%stat1,1%",
-                        MaxVal = 10,
-                        RandomFreq = 0,
-                        TimeInterval = TimeSpan.Zero
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      expectedPreviousScheduleId: null,
-      addAsCopiedToSystem: true
-    );
+    AddJob(db, order: mat.OrderName, part: mat.PartName, loadMin: 10, unloadMin: 11, mcMin: 6, inspect: true);
 
     var now = DateTime.UtcNow;
     var start = now.AddHours(-2);
@@ -850,7 +922,7 @@ public sealed class LogBuilderSpec : IDisposable
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 5, device: 3, mat: mat, program: "prog1", spindleTime: 5)
+            Mach(start.AddMinutes(15), elapsedMin: 5, device: 3, mat: mat, program: "prog1", activeMin: 6)
           ]
         }
       );
