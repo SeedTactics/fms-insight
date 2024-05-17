@@ -421,23 +421,26 @@ public sealed class LogBuilderSpec : IDisposable
       }
     }
 
-    _expectedLog.Add(
-      new LogEntry()
-      {
-        Counter = 0,
-        Material = [],
-        LogType = LogType.PalletCycle,
-        StartOfCycle = false,
-        EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin),
-        LocationName = "Pallet Cycle",
-        LocationNum = 1,
-        Pallet = loadMat?.PalletID ?? unloadMat!.PalletID,
-        Program = "",
-        Result = "PalletCycle",
-        ElapsedTime = TimeSpan.FromMinutes(palCycleMin),
-        ActiveOperationTime = TimeSpan.Zero,
-      }
-    );
+    if (palCycleMin >= 0)
+    {
+      _expectedLog.Add(
+        new LogEntry()
+        {
+          Counter = 0,
+          Material = [],
+          LogType = LogType.PalletCycle,
+          StartOfCycle = false,
+          EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin),
+          LocationName = "Pallet Cycle",
+          LocationNum = 1,
+          Pallet = loadMat?.PalletID ?? unloadMat!.PalletID,
+          Program = "",
+          Result = "PalletCycle",
+          ElapsedTime = TimeSpan.FromMinutes(palCycleMin),
+          ActiveOperationTime = TimeSpan.Zero,
+        }
+      );
+    }
 
     return workr;
   }
@@ -988,5 +991,79 @@ public sealed class LogBuilderSpec : IDisposable
           }
         ]
       );
+  }
+
+  [Fact]
+  public void MultipleFaces()
+  {
+    using var db = _repo.OpenConnection();
+    var mat1 = MkMat(palId: 2, fixNum: 4, matId: 1);
+    var mat2 = MkMat(palId: 2, fixNum: 5, matId: 2);
+
+    AddJob(db, order: mat1.OrderName, part: mat1.PartName, loadMin: 10, unloadMin: 11, mcMin: 6);
+    AddJob(db, order: mat2.OrderName, part: mat2.PartName, loadMin: 20, unloadMin: 21, mcMin: 26);
+
+    var now = DateTime.UtcNow;
+    var start = now.AddHours(-2);
+
+    _makinoDB
+      .LoadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        new MakinoResults()
+        {
+          WorkSetResults =
+          [
+            // two loads with equal start and end
+            Load(
+              start,
+              elapsedMin: 10,
+              device: 1,
+              loadMat: mat1,
+              unloadMat: null,
+              palCycleMin: 0,
+              loadActiveMin: 10
+            ),
+            Load(
+              start,
+              elapsedMin: 10,
+              device: 1,
+              loadMat: mat2,
+              unloadMat: null,
+              palCycleMin: -1,
+              loadActiveMin: 20
+            ),
+            // two unloads with equal start and end
+            Load(
+              start.AddMinutes(30),
+              elapsedMin: 5,
+              device: 2,
+              loadMat: null,
+              unloadMat: mat1,
+              palCycleMin: 25,
+              unloadActiveMin: 11
+            ),
+            Load(
+              start.AddMinutes(30),
+              elapsedMin: 5,
+              device: 2,
+              loadMat: null,
+              unloadMat: mat2,
+              palCycleMin: -1,
+              unloadActiveMin: 21
+            )
+          ],
+          MachineResults =
+          [
+            Mach(start.AddMinutes(15), elapsedMin: 2, device: 3, mat: mat1, program: "prog1", activeMin: 6),
+            Mach(start.AddMinutes(18), elapsedMin: 3, device: 3, mat: mat2, program: "prog3", activeMin: 26),
+          ]
+        }
+      );
+
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
   }
 }
