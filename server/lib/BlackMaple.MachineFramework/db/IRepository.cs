@@ -83,9 +83,7 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> RecordLoadEnd(
       IEnumerable<MaterialToLoadOntoPallet> toLoad,
       int pallet,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null
+      DateTime timeUTC
     );
     LogEntry RecordUnloadStart(
       IEnumerable<EventLogMaterial> mats,
@@ -578,6 +576,8 @@ namespace BlackMaple.MachineFramework
     public required int Process { get; init; }
     public required int? Path { get; init; }
     public required TimeSpan ActiveOperationTime { get; init; }
+    public string ForeignID { get; init; } = null;
+    public string OriginalMessage { get; init; } = null;
   }
 
   public record MaterialToLoadOntoPallet

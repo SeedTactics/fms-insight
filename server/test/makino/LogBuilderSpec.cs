@@ -272,7 +272,7 @@ public sealed class LogBuilderSpec : IDisposable
             Serial = SerialSettings.ConvertToBase62(mat.StartingMatID + i, 10),
             Workorder = "",
             NumProcesses = 1,
-            Face = 1,
+            Face = mat.FixtureNum,
             PartName = mat.PartName,
             Process = mat.Process,
             Path = null
@@ -360,7 +360,7 @@ public sealed class LogBuilderSpec : IDisposable
               Serial = SerialSettings.ConvertToBase62(mat.StartingMatID + i, 10),
               Workorder = "",
               NumProcesses = 1,
-              Face = 1,
+              Face = mat.FixtureNum,
               PartName = mat.PartName,
               Process = mat.Process,
               Path = null
@@ -642,8 +642,8 @@ public sealed class LogBuilderSpec : IDisposable
   {
     using var db = _repo.OpenConnection();
 
-    var mat1 = MkMat(palId: 2, fixNum: 4, matId: 1);
-    var mat2 = MkMat(palId: 3, fixNum: 5, matId: 2);
+    var mat1 = MkMat(palId: 2, fixNum: 4, matId: 1, qty: 2);
+    var mat2 = MkMat(palId: 3, fixNum: 5, matId: 3);
 
     AddJob(db, order: mat1.OrderName, part: mat1.PartName, loadMin: 6, unloadMin: 7, mcMin: 8);
     AddJob(db, order: mat2.OrderName, part: mat2.PartName, loadMin: 16, unloadMin: 17, mcMin: 18);
@@ -665,7 +665,7 @@ public sealed class LogBuilderSpec : IDisposable
               loadMat: mat1,
               unloadMat: null,
               palCycleMin: 0,
-              loadActiveMin: 6
+              loadActiveMin: 6 * 2
             ),
             Load(
               start.AddMinutes(30),
@@ -692,7 +692,7 @@ public sealed class LogBuilderSpec : IDisposable
               loadMat: null,
               unloadMat: mat1,
               palCycleMin: 85,
-              unloadActiveMin: 7
+              unloadActiveMin: 7 * 2
             )
           ],
           MachineResults =

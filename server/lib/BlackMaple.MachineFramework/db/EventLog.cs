@@ -1429,20 +1429,11 @@ namespace BlackMaple.MachineFramework
     public IEnumerable<LogEntry> RecordLoadEnd(
       IEnumerable<MaterialToLoadOntoPallet> toLoad,
       int pallet,
-      DateTime timeUTC,
-      string foreignId = null,
-      string originalMessage = null
+      DateTime timeUTC
     )
     {
       return AddEntryInTransaction(trans =>
-        RecordLoadEnd(
-          toLoad: toLoad,
-          pallet: pallet,
-          timeUTC: timeUTC,
-          foreignId: foreignId,
-          originalMessage: originalMessage,
-          trans: trans
-        )
+        RecordLoadEnd(toLoad: toLoad, pallet: pallet, timeUTC: timeUTC, trans: trans)
       );
     }
 
@@ -1450,8 +1441,6 @@ namespace BlackMaple.MachineFramework
       int pallet,
       DateTime timeUTC,
       IEnumerable<MaterialToLoadOntoPallet> toLoad,
-      string foreignId,
-      string originalMessage,
       IDbTransaction trans
     )
     {
@@ -1507,7 +1496,7 @@ namespace BlackMaple.MachineFramework
             }
           }
 
-          logs.Add(AddLogEntry(trans, log, foreignId, originalMessage));
+          logs.Add(AddLogEntry(trans, log, face.ForeignID, face.OriginalMessage));
         }
       }
 

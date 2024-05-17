@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
@@ -48,12 +49,15 @@ namespace BlackMaple.FMSInsight.Makino
 
       var results = makinoDB.LoadResults(lastDate, DateTime.UtcNow.AddMinutes(1));
 
-      //need to iterate machines and loads by date
-      results.MachineResults.Sort((x, y) => x.EndDateTimeUTC.CompareTo(y.EndDateTimeUTC));
-      results.WorkSetResults.Sort((x, y) => x.EndDateTimeUTC.CompareTo(y.EndDateTimeUTC));
+      var machines = results.MachineResults;
+      machines.Sort((x, y) => x.EndDateTimeUTC.CompareTo(y.EndDateTimeUTC));
 
-      var mE = results.MachineResults.GetEnumerator();
-      var lE = results.WorkSetResults.GetEnumerator();
+      var works = results
+        .WorkSetResults.GroupBy(w => (w.StartDateTimeUTC, w.EndDateTimeUTC, w.DeviceID, w.PalletID))
+        .OrderBy(g => g.Key.EndDateTimeUTC);
+
+      var mE = machines.GetEnumerator();
+      var lE = works.GetEnumerator();
       var moreMachines = mE.MoveNext();
       var moreLoads = lE.MoveNext();
 
@@ -64,7 +68,7 @@ namespace BlackMaple.FMSInsight.Makino
         if (moreMachines && moreLoads)
         {
           //check which event occured first and process it
-          if (mE.Current.EndDateTimeUTC < lE.Current.EndDateTimeUTC)
+          if (mE.Current.EndDateTimeUTC < lE.Current.Key.EndDateTimeUTC)
           {
             AddMachineToLog(lastDate, devices, mE.Current);
             moreMachines = mE.MoveNext();
@@ -233,19 +237,26 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    private void AddLoadToLog(DateTime timeToSkip, IDictionary<int, PalletLocation> devices, WorkSetResults w)
+    private void AddLoadToLog(
+      DateTime timeToSkip,
+      IDictionary<int, PalletLocation> devices,
+      IGrouping<
+        (DateTime StartDateTimeUTC, DateTime EndDateTimeUTC, int DeviceID, int PalletID),
+        WorkSetResults
+      > ws
+    )
     {
       //find the location
       PalletLocation loc;
-      if (devices.TryGetValue(w.DeviceID, out PalletLocation value))
+      if (devices.TryGetValue(ws.Key.DeviceID, out PalletLocation value))
         loc = value;
       else
         loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 1);
 
       //check if the cycle already exists
       if (
-        timeToSkip == w.EndDateTimeUTC
-        && logDb.CycleExists(w.EndDateTimeUTC, w.PalletID, LogType.LoadUnloadCycle, "L/U", loc.Num)
+        timeToSkip == ws.Key.EndDateTimeUTC
+        && logDb.CycleExists(ws.Key.EndDateTimeUTC, ws.Key.PalletID, LogType.LoadUnloadCycle, "L/U", loc.Num)
       )
       {
         return;
@@ -257,55 +268,61 @@ namespace BlackMaple.FMSInsight.Makino
       }
 
       //calculate the elapsed time
-      var elapsed = w.EndDateTimeUTC.Subtract(w.StartDateTimeUTC);
+      var elapsed = ws.Key.EndDateTimeUTC.Subtract(ws.Key.StartDateTimeUTC);
 
-      //count the number of unloaded parts
-      int numParts = 0;
-      foreach (var i in w.UnloadNormalQuantities)
-        numParts += i;
-
-      //Only process unload cycles if remachine is false
-      if (numParts > 0 && !w.Remachine)
+      // first unloads
+      foreach (var w in ws)
       {
-        //create the material for unload
-        var matList = FindOrCreateMaterial(
-          w.PalletID,
-          w.FixtureNumber,
-          w.EndDateTimeUTC,
-          w.UnloadOrderName,
-          w.UnloadPartName,
-          w.UnloadProcessNum,
-          numParts
-        );
+        //count the number of unloaded parts
+        int numParts = 0;
+        foreach (var i in w.UnloadNormalQuantities)
+          numParts += i;
 
-        TimeSpan active = TimeSpan.Zero;
-        Job unloadJob = _jobCache.Lookup(w.UnloadOrderName);
-        if (unloadJob != null && w.UnloadProcessNum <= unloadJob.Processes.Count)
+        //Only process unload cycles if remachine is false
+        if (numParts > 0 && !w.Remachine)
         {
-          active = unloadJob.Processes[w.UnloadProcessNum - 1].Paths[0].ExpectedUnloadTime;
-        }
+          //create the material for unload
+          var matList = FindOrCreateMaterial(
+            w.PalletID,
+            w.FixtureNumber,
+            w.EndDateTimeUTC,
+            w.UnloadOrderName,
+            w.UnloadPartName,
+            w.UnloadProcessNum,
+            numParts
+          );
 
-        logDb.RecordUnloadEnd(
-          mats: matList,
-          pallet: w.PalletID,
-          lulNum: loc.Num,
-          timeUTC: w.EndDateTimeUTC,
-          elapsed: elapsed,
-          active: active,
-          foreignId: MkForeignID(w.PalletID, w.FixtureNumber, w.UnloadOrderName, w.EndDateTimeUTC)
-        );
+          TimeSpan active = TimeSpan.Zero;
+          Job unloadJob = _jobCache.Lookup(w.UnloadOrderName);
+          if (unloadJob != null && w.UnloadProcessNum <= unloadJob.Processes.Count)
+          {
+            active = unloadJob.Processes[w.UnloadProcessNum - 1].Paths[0].ExpectedUnloadTime;
+          }
+
+          logDb.RecordUnloadEnd(
+            mats: matList,
+            pallet: w.PalletID,
+            lulNum: loc.Num,
+            timeUTC: w.EndDateTimeUTC,
+            elapsed: elapsed,
+            active: active * matList.Count,
+            foreignId: MkForeignID(w.PalletID, w.FixtureNumber, w.UnloadOrderName, w.EndDateTimeUTC)
+          );
+        }
       }
 
       //Pallet Cycle
-      logDb.CompletePalletCycle(w.PalletID, w.EndDateTimeUTC, "");
+      logDb.CompletePalletCycle(ws.Key.PalletID, ws.Key.EndDateTimeUTC, "");
 
-      //now the load cycle
-      numParts = 0;
-      foreach (var i in w.LoadQuantities)
-        numParts += i;
+      var faces = ImmutableList.CreateBuilder<MaterialToLoadOntoFace>();
 
-      if (numParts > 0)
+      foreach (var w in ws.OrderBy(w => w.FixtureNumber))
       {
+        //now the load cycle
+        int numParts = w.LoadQuantities.Sum();
+        if (numParts == 0 || w.Remachine)
+          continue;
+
         //create the material
         var matList = AllocateMatIds(
           numParts,
@@ -322,6 +339,26 @@ namespace BlackMaple.FMSInsight.Makino
           active = loadJob.Processes[w.LoadProcessNum - 1].Paths[0].ExpectedLoadTime;
         }
 
+        faces.Add(
+          new MaterialToLoadOntoFace()
+          {
+            MaterialIDs = ImmutableList.CreateRange(matList),
+            FaceNum = w.FixtureNumber,
+            Process = w.LoadProcessNum,
+            Path = null,
+            ActiveOperationTime = active * matList.Count,
+            ForeignID = MkForeignID(
+              ws.Key.PalletID,
+              w.FixtureNumber,
+              w.LoadOrderName,
+              w.EndDateTimeUTC.AddSeconds(1)
+            )
+          }
+        );
+      }
+
+      if (faces.Count > 0)
+      {
         logDb.RecordLoadEnd(
           toLoad: new[]
           {
@@ -329,22 +366,11 @@ namespace BlackMaple.FMSInsight.Makino
             {
               LoadStation = loc.Num,
               Elapsed = elapsed,
-              Faces =
-              [
-                new MaterialToLoadOntoFace()
-                {
-                  MaterialIDs = System.Collections.Immutable.ImmutableList.CreateRange(matList),
-                  FaceNum = 1,
-                  Process = w.LoadProcessNum,
-                  Path = null,
-                  ActiveOperationTime = active,
-                }
-              ]
+              Faces = faces.ToImmutable()
             }
           },
-          pallet: w.PalletID,
-          timeUTC: w.EndDateTimeUTC.AddSeconds(1),
-          foreignId: MkForeignID(w.PalletID, w.FixtureNumber, w.LoadOrderName, w.EndDateTimeUTC.AddSeconds(1))
+          pallet: ws.Key.PalletID,
+          timeUTC: ws.Key.EndDateTimeUTC.AddSeconds(1)
         );
       }
     }
@@ -386,7 +412,7 @@ namespace BlackMaple.FMSInsight.Makino
           {
             MaterialID = matId,
             Process = process,
-            Face = 1
+            Face = fixturenum
           })
           .ToList();
       }
@@ -396,7 +422,7 @@ namespace BlackMaple.FMSInsight.Makino
         {
           MaterialID = m.MaterialID,
           Process = process,
-          Face = 1
+          Face = fixturenum
         })
         .ToList();
 
@@ -418,7 +444,7 @@ namespace BlackMaple.FMSInsight.Makino
             {
               MaterialID = matId,
               Process = process,
-              Face = 1
+              Face = fixturenum
             })
         );
       }
