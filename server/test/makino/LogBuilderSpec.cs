@@ -64,15 +64,7 @@ public sealed class LogBuilderSpec : IDisposable
 
     _makinoDB = Substitute.For<IMakinoDB>();
     _makinoDB.LoadCurrentInfo(null).ThrowsForAnyArgs(new Exception("Should not be called"));
-    _makinoDB
-      .QueryLoadUnloadResults(default, default)
-      .ThrowsForAnyArgs(new Exception("Query Load not configured"));
-    _makinoDB
-      .QueryMachineResults(default, default)
-      .ThrowsForAnyArgs(new Exception("Query machine not configured"));
-    _makinoDB
-      .QueryCommonValues(default)
-      .ThrowsForAnyArgs(new Exception("Query common values not configured"));
+    _makinoDB.LoadResults(default, default).ThrowsForAnyArgs(new Exception("Query Load not configured"));
 
     _makinoDB
       .Devices()
@@ -380,21 +372,13 @@ public sealed class LogBuilderSpec : IDisposable
     var lastDate = DateTime.UtcNow.AddDays(-30);
 
     _makinoDB
-      .QueryLoadUnloadResults(
+      .LoadResults(
         lastDate,
         Arg.Is<DateTime>(x =>
           Math.Abs(x.Subtract(DateTime.UtcNow.AddMinutes(1)).Ticks) < TimeSpan.FromSeconds(2).Ticks
         )
       )
-      .Returns([]);
-    _makinoDB
-      .QueryMachineResults(
-        lastDate,
-        Arg.Is<DateTime>(x =>
-          Math.Abs(x.Subtract(DateTime.UtcNow.AddMinutes(1)).Ticks) < TimeSpan.FromSeconds(2).Ticks
-        )
-      )
-      .Returns([]);
+      .Returns(new MakinoResults() { WorkSetResults = [], MachineResults = [], });
 
     new LogBuilder(_makinoDB, db).CheckLogs(lastDate).Should().BeFalse();
 
@@ -410,22 +394,28 @@ public sealed class LogBuilderSpec : IDisposable
     var start = now.AddHours(-2);
 
     _makinoDB
-      .QueryLoadUnloadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .LoadResults(now.AddDays(-30), Arg.Any<DateTime>())
       .Returns(
-        [
-          Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
-          Load(start.AddMinutes(30), elapsedMin: 5, device: 2, loadMat: null, unloadMat: mat, palCycleMin: 25)
-        ]
+        new MakinoResults()
+        {
+          WorkSetResults =
+          [
+            Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
+            Load(
+              start.AddMinutes(30),
+              elapsedMin: 5,
+              device: 2,
+              loadMat: null,
+              unloadMat: mat,
+              palCycleMin: 25
+            )
+          ],
+          MachineResults =
+          [
+            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", spindleTime: 5)
+          ]
+        }
       );
-
-    List<MachineResults> machs =
-    [
-      Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", spindleTime: 5)
-    ];
-
-    _makinoDB.QueryMachineResults(now.AddDays(-30), Arg.Any<DateTime>()).Returns(machs);
-
-    _makinoDB.QueryCommonValues(Arg.Is(machs[0])).Returns([]);
 
     using var db = _repo.OpenConnection();
 
@@ -446,47 +436,52 @@ public sealed class LogBuilderSpec : IDisposable
     var start = now.AddHours(-5);
 
     _makinoDB
-      .QueryLoadUnloadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .LoadResults(now.AddDays(-30), Arg.Any<DateTime>())
       .Returns(
-        [
-          Load(start, elapsedMin: 10, device: 1, loadMat: mat1, unloadMat: null, palCycleMin: 0),
-          Load(
-            start.AddMinutes(30),
-            elapsedMin: 5,
-            device: 2,
-            loadMat: mat2,
-            unloadMat: null,
-            palCycleMin: 0
-          ),
-          Load(
-            start.AddMinutes(60),
-            elapsedMin: 10,
-            device: 1,
-            loadMat: null,
-            unloadMat: mat2,
-            palCycleMin: 35
-          ),
-          Load(
-            start.AddMinutes(90),
-            elapsedMin: 5,
-            device: 2,
-            loadMat: null,
-            unloadMat: mat1,
-            palCycleMin: 85
-          )
-        ]
+        new MakinoResults()
+        {
+          WorkSetResults =
+          [
+            Load(start, elapsedMin: 10, device: 1, loadMat: mat1, unloadMat: null, palCycleMin: 0),
+            Load(
+              start.AddMinutes(30),
+              elapsedMin: 5,
+              device: 2,
+              loadMat: mat2,
+              unloadMat: null,
+              palCycleMin: 0
+            ),
+            Load(
+              start.AddMinutes(60),
+              elapsedMin: 10,
+              device: 1,
+              loadMat: null,
+              unloadMat: mat2,
+              palCycleMin: 35
+            ),
+            Load(
+              start.AddMinutes(90),
+              elapsedMin: 5,
+              device: 2,
+              loadMat: null,
+              unloadMat: mat1,
+              palCycleMin: 85
+            )
+          ],
+          MachineResults =
+          [
+            Mach(
+              start.AddMinutes(15),
+              elapsedMin: 11,
+              device: 3,
+              mat: mat1,
+              program: "prog1",
+              spindleTime: 5
+            ),
+            Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", spindleTime: 3)
+          ]
+        }
       );
-
-    _makinoDB
-      .QueryMachineResults(now.AddDays(-30), Arg.Any<DateTime>())
-      .Returns(
-        [
-          Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat1, program: "prog1", spindleTime: 5),
-          Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", spindleTime: 3)
-        ]
-      );
-
-    _makinoDB.QueryCommonValues(Arg.Any<MachineResults>()).Returns([]);
 
     using var db = _repo.OpenConnection();
 
@@ -507,52 +502,57 @@ public sealed class LogBuilderSpec : IDisposable
     var start = now.AddHours(-5);
 
     _makinoDB
-      .QueryLoadUnloadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .LoadResults(now.AddDays(-30), Arg.Any<DateTime>())
       .Returns(
-        [
-          // load 1
-          Load(start, elapsedMin: 10, device: 1, loadMat: mat1, unloadMat: null, palCycleMin: 0),
-          // unload 1, load 2
-          Load(
-            start.AddMinutes(30),
-            elapsedMin: 5,
-            device: 2,
-            loadMat: mat2,
-            unloadMat: mat1,
-            palCycleMin: 25
-          ),
-          // unload 2, load 3
-          Load(
-            start.AddMinutes(60),
-            elapsedMin: 10,
-            device: 1,
-            loadMat: mat3,
-            unloadMat: mat2,
-            palCycleMin: 35
-          ),
-          // unload 3
-          Load(
-            start.AddMinutes(90),
-            elapsedMin: 5,
-            device: 2,
-            loadMat: null,
-            unloadMat: mat3,
-            palCycleMin: 25
-          ),
-        ]
+        new MakinoResults()
+        {
+          WorkSetResults =
+          [
+            // load 1
+            Load(start, elapsedMin: 10, device: 1, loadMat: mat1, unloadMat: null, palCycleMin: 0),
+            // unload 1, load 2
+            Load(
+              start.AddMinutes(30),
+              elapsedMin: 5,
+              device: 2,
+              loadMat: mat2,
+              unloadMat: mat1,
+              palCycleMin: 25
+            ),
+            // unload 2, load 3
+            Load(
+              start.AddMinutes(60),
+              elapsedMin: 10,
+              device: 1,
+              loadMat: mat3,
+              unloadMat: mat2,
+              palCycleMin: 35
+            ),
+            // unload 3
+            Load(
+              start.AddMinutes(90),
+              elapsedMin: 5,
+              device: 2,
+              loadMat: null,
+              unloadMat: mat3,
+              palCycleMin: 25
+            ),
+          ],
+          MachineResults =
+          [
+            Mach(
+              start.AddMinutes(15),
+              elapsedMin: 11,
+              device: 3,
+              mat: mat1,
+              program: "prog1",
+              spindleTime: 5
+            ),
+            Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", spindleTime: 3),
+            Mach(start.AddMinutes(75), elapsedMin: 11, device: 3, mat: mat3, program: "prog3", spindleTime: 5)
+          ]
+        }
       );
-
-    _makinoDB
-      .QueryMachineResults(now.AddDays(-30), Arg.Any<DateTime>())
-      .Returns(
-        [
-          Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat1, program: "prog1", spindleTime: 5),
-          Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", spindleTime: 3),
-          Mach(start.AddMinutes(75), elapsedMin: 11, device: 3, mat: mat3, program: "prog3", spindleTime: 5)
-        ]
-      );
-
-    _makinoDB.QueryCommonValues(Arg.Any<MachineResults>()).Returns([]);
 
     using var db = _repo.OpenConnection();
 
@@ -572,40 +572,51 @@ public sealed class LogBuilderSpec : IDisposable
     var start = now.AddHours(-2);
 
     _makinoDB
-      .QueryLoadUnloadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .LoadResults(now.AddDays(-30), Arg.Any<DateTime>())
       .Returns(
-        [
-          Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
-          Load(start.AddMinutes(30), elapsedMin: 5, device: 2, loadMat: null, unloadMat: mat, palCycleMin: 25)
-        ]
-      );
-
-    List<MachineResults> machs =
-    [
-      Mach(start.AddMinutes(15), elapsedMin: 5, device: 3, mat: mat, program: "prog1", spindleTime: 5)
-    ];
-
-    _makinoDB.QueryMachineResults(now.AddDays(-30), Arg.Any<DateTime>()).Returns(machs);
-
-    _makinoDB
-      .QueryCommonValues(Arg.Is(machs[0]))
-      .Returns(
-        [
-          new CommonValue()
-          {
-            ParentMachineResults = machs[0],
-            ExecDateTimeUTC = machs[0].StartDateTimeUTC,
-            Number = 23,
-            Value = "common value 23"
-          },
-          new CommonValue()
-          {
-            ParentMachineResults = machs[0],
-            ExecDateTimeUTC = machs[0].StartDateTimeUTC,
-            Number = 24,
-            Value = "common value 24"
-          }
-        ]
+        new MakinoResults()
+        {
+          WorkSetResults =
+          [
+            Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
+            Load(
+              start.AddMinutes(30),
+              elapsedMin: 5,
+              device: 2,
+              loadMat: null,
+              unloadMat: mat,
+              palCycleMin: 25
+            )
+          ],
+          MachineResults =
+          [
+            Mach(
+              start.AddMinutes(15),
+              elapsedMin: 5,
+              device: 3,
+              mat: mat,
+              program: "prog1",
+              spindleTime: 5
+            ) with
+            {
+              CommonValues =
+              [
+                new CommonValue()
+                {
+                  ExecDateTimeUTC = start.AddMinutes(15) + TimeSpan.FromSeconds(5),
+                  Number = 23,
+                  Value = "common value 23"
+                },
+                new CommonValue()
+                {
+                  ExecDateTimeUTC = start.AddMinutes(15) + TimeSpan.FromSeconds(20),
+                  Number = 24,
+                  Value = "common value 24"
+                }
+              ]
+            }
+          ]
+        }
       );
 
     var mcIdx = _expectedLog.FindIndex(x => x.LogType == LogType.MachineCycle);
@@ -698,37 +709,37 @@ public sealed class LogBuilderSpec : IDisposable
     var start = now.AddHours(-2);
 
     _makinoDB
-      .QueryLoadUnloadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .LoadResults(now.AddDays(-30), Arg.Any<DateTime>())
       .Returns(
-        [
-          Load(
-            start,
-            elapsedMin: 10,
-            device: 2,
-            loadMat: mat,
-            unloadMat: null,
-            palCycleMin: 0,
-            loadActiveMin: 10
-          ),
-          Load(
-            start.AddMinutes(30),
-            elapsedMin: 5,
-            device: 2,
-            loadMat: null,
-            unloadMat: mat,
-            palCycleMin: 25,
-            unloadActiveMin: 11
-          )
-        ]
+        new MakinoResults()
+        {
+          WorkSetResults =
+          [
+            Load(
+              start,
+              elapsedMin: 10,
+              device: 2,
+              loadMat: mat,
+              unloadMat: null,
+              palCycleMin: 0,
+              loadActiveMin: 10
+            ),
+            Load(
+              start.AddMinutes(30),
+              elapsedMin: 5,
+              device: 2,
+              loadMat: null,
+              unloadMat: mat,
+              palCycleMin: 25,
+              unloadActiveMin: 11
+            )
+          ],
+          MachineResults =
+          [
+            Mach(start.AddMinutes(15), elapsedMin: 5, device: 3, mat: mat, program: "prog1", spindleTime: 5)
+          ]
+        }
       );
-
-    _makinoDB
-      .QueryMachineResults(now.AddDays(-30), Arg.Any<DateTime>())
-      .Returns(
-        [Mach(start.AddMinutes(15), elapsedMin: 5, device: 3, mat: mat, program: "prog1", spindleTime: 5)]
-      );
-
-    _makinoDB.QueryCommonValues(Arg.Any<MachineResults>()).Returns([]);
 
     _expectedLog.Add(
       new LogEntry()

@@ -46,15 +46,14 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var devices = makinoDB.Devices();
 
-      var machine = makinoDB.QueryMachineResults(lastDate, DateTime.UtcNow.AddMinutes(1));
-      var loads = makinoDB.QueryLoadUnloadResults(lastDate, DateTime.UtcNow.AddMinutes(1));
+      var results = makinoDB.LoadResults(lastDate, DateTime.UtcNow.AddMinutes(1));
 
       //need to iterate machines and loads by date
-      machine.Sort((x, y) => x.EndDateTimeUTC.CompareTo(y.EndDateTimeUTC));
-      loads.Sort((x, y) => x.EndDateTimeUTC.CompareTo(y.EndDateTimeUTC));
+      results.MachineResults.Sort((x, y) => x.EndDateTimeUTC.CompareTo(y.EndDateTimeUTC));
+      results.WorkSetResults.Sort((x, y) => x.EndDateTimeUTC.CompareTo(y.EndDateTimeUTC));
 
-      var mE = machine.GetEnumerator();
-      var lE = loads.GetEnumerator();
+      var mE = results.MachineResults.GetEnumerator();
+      var lE = results.WorkSetResults.GetEnumerator();
       var moreMachines = mE.MoveNext();
       var moreLoads = lE.MoveNext();
 
@@ -152,7 +151,7 @@ namespace BlackMaple.FMSInsight.Makino
           matID1
         );
 
-        foreach (var v in makinoDB.QueryCommonValues(m))
+        foreach (var v in m.CommonValues ?? [])
         {
           Log.Debug("Common value with number {num} and value {val}", +v.Number, v.Value);
           extraData[v.Number.ToString()] = v.Value;

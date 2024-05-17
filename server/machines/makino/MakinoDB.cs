@@ -181,7 +181,6 @@ namespace BlackMaple.FMSInsight.Makino
   //the execution of the part program.  This is commonly hold results.
   public class CommonValue
   {
-    public MachineResults ParentMachineResults;
     public DateTime ExecDateTimeUTC;
 
     public int Number;
@@ -196,41 +195,42 @@ namespace BlackMaple.FMSInsight.Makino
      */
   }
 
-  public class MachineResults
+  public record MachineResults
   {
-    public DateTime StartDateTimeLocal;
-    public DateTime EndDateTimeLocal;
-    public DateTime StartDateTimeUTC;
-    public DateTime EndDateTimeUTC;
+    public DateTime StartDateTimeLocal { get; set; }
+    public DateTime EndDateTimeLocal { get; set; }
+    public DateTime StartDateTimeUTC { get; set; }
+    public DateTime EndDateTimeUTC { get; set; }
 
-    public int DeviceID;
+    public int DeviceID { get; set; }
 
     /* PalletID and FixtureNumber uniquely identifiy the location on the pallet */
-    public int PalletID;
-    public int FixtureNumber;
+    public int PalletID { get; set; }
+    public int FixtureNumber { get; set; }
 
     /* data about the fixture */
-    public string FixtureName;
-    public string FixtureComment;
+    public string FixtureName { get; set; }
+    public string FixtureComment { get; set; }
 
-    public string OrderName;
+    public string OrderName { get; set; }
 
     /* Part, revision, process, and job uniquely identify what the machine is currently doing */
-    public string PartName;
-    public string Revision;
-    public int ProcessNum;
-    public int JobNum;
+    public string PartName { get; set; }
+    public string Revision { get; set; }
+    public int ProcessNum { get; set; }
+    public int JobNum { get; set; }
 
     /* Process name is just some data about the process entered by the user,
        * not used as a key or anything like that */
-    public string ProcessName;
+    public string ProcessName { get; set; }
 
     /* program for this (part,revision,process,job) combo */
-    public string Program;
+    public string Program { get; set; }
 
     /* Some status about the operation */
-    public int SpindleTimeSeconds;
-    public List<int> OperQuantities;
+    public int SpindleTimeSeconds { get; set; }
+    public List<int> OperQuantities { get; set; }
+    public List<CommonValue> CommonValues { get; set; }
 
     /* Fields not loaded
      *
@@ -250,48 +250,48 @@ namespace BlackMaple.FMSInsight.Makino
      */
   }
 
-  public class WorkSetResults
+  public record WorkSetResults
   {
-    public DateTime StartDateTimeUTC;
-    public DateTime EndDateTimeUTC;
+    public DateTime StartDateTimeUTC { get; set; }
+    public DateTime EndDateTimeUTC { get; set; }
 
-    public int DeviceID;
+    public int DeviceID { get; set; }
 
     /* PalletID and FixtureNumber uniquely identifiy the location on the pallet */
-    public int PalletID;
-    public int FixtureNumber;
+    public int PalletID { get; set; }
+    public int FixtureNumber { get; set; }
 
     /* data about the fixture entered by the user */
-    public string FixtureName;
-    public string FixtureComment;
+    public string FixtureName { get; set; }
+    public string FixtureComment { get; set; }
 
-    public string UnloadOrderName;
-    public string LoadOrderName;
+    public string UnloadOrderName { get; set; }
+    public string LoadOrderName { get; set; }
 
     /* Part, revision, process, and job uniquely identify which step we are on */
-    public string UnloadPartName;
-    public string UnloadRevision;
-    public int UnloadProcessNum;
-    public int UnloadJobNum;
-    public string LoadPartName;
-    public string LoadRevision;
-    public int LoadProcessNum;
-    public int LoadJobNum;
+    public string UnloadPartName { get; set; }
+    public string UnloadRevision { get; set; }
+    public int UnloadProcessNum { get; set; }
+    public int UnloadJobNum { get; set; }
+    public string LoadPartName { get; set; }
+    public string LoadRevision { get; set; }
+    public int LoadProcessNum { get; set; }
+    public int LoadJobNum { get; set; }
 
     /* Process name is just some data about the process entered by the user,
        * not used as a key or anything like that */
-    public string UnloadProcessName;
-    public string LoadProcessName;
+    public string UnloadProcessName { get; set; }
+    public string LoadProcessName { get; set; }
 
-    public List<int> LoadQuantities;
-    public List<int> UnloadNormalQuantities;
-    public List<int> UnloadScrapQuantities;
-    public List<int> UnloadOutProcQuantities; /* TODO: What is this? */
+    public List<int> LoadQuantities { get; set; }
+    public List<int> UnloadNormalQuantities { get; set; }
+    public List<int> UnloadScrapQuantities { get; set; }
+    public List<int> UnloadOutProcQuantities { get; set; } /* TODO: What is this? */
 
     /* At the load station, the operator can push a button saying nothing was unloaded.
      * This still adds an entry to the log but it is marked as a remachine, and no quantities are updated
      */
-    public bool Remachine;
+    public bool Remachine { get; set; }
 
     /* Fields not loaded
       * OperationType:
@@ -309,13 +309,17 @@ namespace BlackMaple.FMSInsight.Makino
       */
   }
 
+  public record MakinoResults
+  {
+    public required List<MachineResults> MachineResults { get; init; }
+    public required List<WorkSetResults> WorkSetResults { get; init; }
+  }
+
   public interface IMakinoDB
   {
     IDictionary<int, PalletLocation> Devices();
     CurrentStatus LoadCurrentInfo(IRepository logDb);
-    List<CommonValue> QueryCommonValues(MachineResults mach);
-    List<WorkSetResults> QueryLoadUnloadResults(DateTime startUTC, DateTime endUTC);
-    List<MachineResults> QueryMachineResults(DateTime startUTC, DateTime endUTC);
+    MakinoResults LoadResults(DateTime startUTC, DateTime endUTC);
   }
 
   public sealed class MakinoDB : IMakinoDB, IDisposable
@@ -368,9 +372,20 @@ namespace BlackMaple.FMSInsight.Makino
    * 	 - dbo.CommonValues
    */
 
-    public List<MachineResults> QueryMachineResults(DateTime startUTC, DateTime endUTC)
+    public MakinoResults LoadResults(DateTime startUTC, DateTime endUTC)
+    {
+      using var trans = _db.BeginTransaction();
+      return new MakinoResults
+      {
+        MachineResults = QueryMachineResults(startUTC, endUTC, trans),
+        WorkSetResults = QueryLoadUnloadResults(startUTC, endUTC, trans)
+      };
+    }
+
+    private List<MachineResults> QueryMachineResults(DateTime startUTC, DateTime endUTC, IDbTransaction trans)
     {
       using var cmd = _db.CreateCommand();
+      cmd.Transaction = trans;
       cmd.CommandText =
         "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
         + "FixtureNumber,FixtureName,FixtureComment,OrderName,PartName,Revision,ProcessNumber,"
@@ -431,12 +446,22 @@ namespace BlackMaple.FMSInsight.Makino
         }
       }
 
+      foreach (var m in ret)
+      {
+        m.CommonValues = QueryCommonValues(m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, trans);
+      }
+
       return ret;
     }
 
-    public List<WorkSetResults> QueryLoadUnloadResults(DateTime startUTC, DateTime endUTC)
+    private List<WorkSetResults> QueryLoadUnloadResults(
+      DateTime startUTC,
+      DateTime endUTC,
+      IDbTransaction trans
+    )
     {
       using var cmd = _db.CreateCommand();
+      cmd.Transaction = trans;
       cmd.CommandText =
         "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
         + "FixtureNumber,FixtureName,FixtureComment,"
@@ -529,9 +554,15 @@ namespace BlackMaple.FMSInsight.Makino
       return ret;
     }
 
-    public List<CommonValue> QueryCommonValues(MachineResults mach)
+    private List<CommonValue> QueryCommonValues(
+      DateTime startLocal,
+      DateTime endLocal,
+      int deviceId,
+      IDbTransaction trans
+    )
     {
       using var cmd = _db.CreateCommand();
+      cmd.Transaction = trans;
       cmd.CommandText =
         "SELECT ExecDateTime,Number,Value"
         + " FROM "
@@ -541,17 +572,17 @@ namespace BlackMaple.FMSInsight.Makino
       var param = cmd.CreateParameter();
       param.ParameterName = "@start";
       param.DbType = DbType.DateTime;
-      param.Value = mach.StartDateTimeLocal;
+      param.Value = startLocal;
       cmd.Parameters.Add(param);
       param = cmd.CreateParameter();
       param.ParameterName = "@end";
       param.DbType = DbType.DateTime;
-      param.Value = mach.EndDateTimeLocal;
+      param.Value = endLocal;
       cmd.Parameters.Add(param);
       param = cmd.CreateParameter();
       param.ParameterName = "@dev";
       param.DbType = DbType.Int64;
-      param.Value = mach.DeviceID;
+      param.Value = deviceId;
       cmd.Parameters.Add(param);
 
       var ret = new List<CommonValue>();
@@ -560,7 +591,7 @@ namespace BlackMaple.FMSInsight.Makino
       {
         while (reader.Read())
         {
-          var v = new CommonValue { ParentMachineResults = mach };
+          var v = new CommonValue();
           var execLocal = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local);
           v.ExecDateTimeUTC = execLocal.ToUniversalTime();
           v.Number = reader.GetInt32(1);
@@ -604,13 +635,15 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var map = new MakinoToJobMap(logDb);
       var palMap = new MakinoToPalletMap();
+      using var trans = _db.BeginTransaction();
 
       Load(
         "SELECT PartID, ProcessNumber, ProcessID FROM " + dbo + "Processes",
         reader =>
         {
           map.AddProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
-        }
+        },
+        trans
       );
 
       Load(
@@ -629,7 +662,8 @@ namespace BlackMaple.FMSInsight.Makino
             reader.GetString(1),
             reader.IsDBNull(3) ? null : reader.GetString(3)
           );
-        }
+        },
+        trans
       );
 
       var devices = Devices();
@@ -639,7 +673,8 @@ namespace BlackMaple.FMSInsight.Makino
         reader =>
         {
           map.AddJobToProcess(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2));
-        }
+        },
+        trans
       );
 
       Load(
@@ -653,7 +688,8 @@ namespace BlackMaple.FMSInsight.Makino
         reader =>
         {
           map.AddProgramToJob(reader.GetInt32(0), reader.GetString(1));
-        }
+        },
+        trans
       );
 
       Load(
@@ -661,7 +697,8 @@ namespace BlackMaple.FMSInsight.Makino
         reader =>
         {
           map.AddAllowedStationToJob(reader.GetInt32(0), devices[reader.GetInt32(1)]);
-        }
+        },
+        trans
       );
 
       map.CompleteStations();
@@ -690,7 +727,8 @@ namespace BlackMaple.FMSInsight.Makino
             reader.GetInt32(3),
             loc
           );
-        }
+        },
+        trans
       );
 
       Load(
@@ -698,7 +736,8 @@ namespace BlackMaple.FMSInsight.Makino
         reader =>
         {
           map.AddFixtureToProcess(reader.GetInt32(0), palMap.PalletsForFixture(reader.GetInt32(1)));
-        }
+        },
+        trans
       );
 
       Load(
@@ -730,7 +769,8 @@ namespace BlackMaple.FMSInsight.Makino
               })
               .ToImmutableList()
           };
-        }
+        },
+        trans
       );
 
       Load(
@@ -747,7 +787,8 @@ namespace BlackMaple.FMSInsight.Makino
             reader.GetInt32(3),
             reader.IsDBNull(4) ? 0 : reader.GetInt32(4)
           );
-        }
+        },
+        trans
       );
 
       Load(
@@ -811,7 +852,8 @@ namespace BlackMaple.FMSInsight.Makino
 
             palMap.AddMaterial(palfixID, inProcMat);
           }
-        }
+        },
+        trans
       );
 
       //There is a MovePalletFixtureID column which presumebly means rotate through process?
@@ -850,7 +892,8 @@ namespace BlackMaple.FMSInsight.Makino
             if (job != null)
               palMap.AddMaterialToLoad(palfixID, job.UniqueStr, job.PartName, procNum, qty);
           }
-        }
+        },
+        trans
       );
 
       return new CurrentStatus()
@@ -864,11 +907,12 @@ namespace BlackMaple.FMSInsight.Makino
       };
     }
 
-    private void Load(string command, Action<IDataReader> onEachRow)
+    private void Load(string command, Action<IDataReader> onEachRow, IDbTransaction trans)
     {
       Log.Debug(string.Concat("Loading ", command.AsSpan(7)));
 
       using var cmd = _db.CreateCommand();
+      cmd.Transaction = trans;
       cmd.CommandText = command;
       using var reader = cmd.ExecuteReader();
       while (reader.Read())
