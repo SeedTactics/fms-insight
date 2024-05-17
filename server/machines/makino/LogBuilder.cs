@@ -171,10 +171,10 @@ namespace BlackMaple.FMSInsight.Makino
         foreignId: MkForeignID(m.PalletID, m.FixtureNumber, m.OrderName, m.EndDateTimeUTC)
       );
 
-      AddInspection(m, matList);
+      AddInspection(m, matList, m.EndDateTimeUTC);
     }
 
-    private void AddInspection(MachineResults m, IList<EventLogMaterial> material)
+    private void AddInspection(MachineResults m, IList<EventLogMaterial> material, DateTime time)
     {
       if (logDb == null)
         return;
@@ -188,7 +188,8 @@ namespace BlackMaple.FMSInsight.Makino
         logDb.MakeInspectionDecisions(
           mat.MaterialID,
           m.ProcessNum,
-          job.Processes[m.ProcessNum - 1].Paths[0].Inspections
+          job.Processes[m.ProcessNum - 1].Paths[0].Inspections,
+          time
         );
       }
     }

@@ -141,7 +141,7 @@ public sealed class LogBuilderSpec : IDisposable
     public required long StartingMatID { get; init; }
   }
 
-  private TestMat MkMat(int palId, int fixNum, long matId)
+  private TestMat MkMat(int palId, int fixNum, long matId, int qty = 1)
   {
     return new TestMat()
     {
@@ -149,7 +149,7 @@ public sealed class LogBuilderSpec : IDisposable
       PartName = "part" + _fixture.Create<string>(),
       Revision = "rev" + _fixture.Create<string>(),
       Process = 1,
-      Quantity = 1,
+      Quantity = qty,
       PalletID = palId,
       FixtureNum = fixNum,
       FixtureName = "fix" + _fixture.Create<string>(),
@@ -429,9 +429,349 @@ public sealed class LogBuilderSpec : IDisposable
 
     new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
 
-    var log = db.GetLogEntries(start, now);
-    _expectedLog.Sort((a, b) => a.EndTimeUTC.CompareTo(b.EndTimeUTC));
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+  }
 
-    log.Should().BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+  [Fact]
+  public void MultiplePallets()
+  {
+    var mat1 = MkMat(palId: 2, fixNum: 4, matId: 1);
+    var mat2 = MkMat(palId: 3, fixNum: 5, matId: 2);
+
+    var now = DateTime.UtcNow;
+    var start = now.AddHours(-5);
+
+    _makinoDB
+      .QueryLoadUnloadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        [
+          Load(start, elapsedMin: 10, device: 1, loadMat: mat1, unloadMat: null, palCycleMin: 0),
+          Load(
+            start.AddMinutes(30),
+            elapsedMin: 5,
+            device: 2,
+            loadMat: mat2,
+            unloadMat: null,
+            palCycleMin: 0
+          ),
+          Load(
+            start.AddMinutes(60),
+            elapsedMin: 10,
+            device: 1,
+            loadMat: null,
+            unloadMat: mat2,
+            palCycleMin: 35
+          ),
+          Load(
+            start.AddMinutes(90),
+            elapsedMin: 5,
+            device: 2,
+            loadMat: null,
+            unloadMat: mat1,
+            palCycleMin: 85
+          )
+        ]
+      );
+
+    _makinoDB
+      .QueryMachineResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        [
+          Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat1, program: "prog1", spindleTime: 5),
+          Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", spindleTime: 3)
+        ]
+      );
+
+    _makinoDB.QueryCommonValues(Arg.Any<MachineResults>()).Returns([]);
+
+    using var db = _repo.OpenConnection();
+
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+  }
+
+  [Fact]
+  public void MultiplePartsOnPallet()
+  {
+    var mat1 = MkMat(palId: 2, fixNum: 4, matId: 1, qty: 2);
+    var mat2 = MkMat(palId: 2, fixNum: 4, matId: 3, qty: 2);
+    var mat3 = MkMat(palId: 2, fixNum: 4, matId: 5, qty: 2);
+
+    var now = DateTime.UtcNow;
+    var start = now.AddHours(-5);
+
+    _makinoDB
+      .QueryLoadUnloadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        [
+          // load 1
+          Load(start, elapsedMin: 10, device: 1, loadMat: mat1, unloadMat: null, palCycleMin: 0),
+          // unload 1, load 2
+          Load(
+            start.AddMinutes(30),
+            elapsedMin: 5,
+            device: 2,
+            loadMat: mat2,
+            unloadMat: mat1,
+            palCycleMin: 25
+          ),
+          // unload 2, load 3
+          Load(
+            start.AddMinutes(60),
+            elapsedMin: 10,
+            device: 1,
+            loadMat: mat3,
+            unloadMat: mat2,
+            palCycleMin: 35
+          ),
+          // unload 3
+          Load(
+            start.AddMinutes(90),
+            elapsedMin: 5,
+            device: 2,
+            loadMat: null,
+            unloadMat: mat3,
+            palCycleMin: 25
+          ),
+        ]
+      );
+
+    _makinoDB
+      .QueryMachineResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        [
+          Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat1, program: "prog1", spindleTime: 5),
+          Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", spindleTime: 3),
+          Mach(start.AddMinutes(75), elapsedMin: 11, device: 3, mat: mat3, program: "prog3", spindleTime: 5)
+        ]
+      );
+
+    _makinoDB.QueryCommonValues(Arg.Any<MachineResults>()).Returns([]);
+
+    using var db = _repo.OpenConnection();
+
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+  }
+
+  [Fact]
+  public void RecordsCommonValues()
+  {
+    var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
+
+    var now = DateTime.UtcNow;
+    var start = now.AddHours(-2);
+
+    _makinoDB
+      .QueryLoadUnloadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        [
+          Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
+          Load(start.AddMinutes(30), elapsedMin: 5, device: 2, loadMat: null, unloadMat: mat, palCycleMin: 25)
+        ]
+      );
+
+    List<MachineResults> machs =
+    [
+      Mach(start.AddMinutes(15), elapsedMin: 5, device: 3, mat: mat, program: "prog1", spindleTime: 5)
+    ];
+
+    _makinoDB.QueryMachineResults(now.AddDays(-30), Arg.Any<DateTime>()).Returns(machs);
+
+    _makinoDB
+      .QueryCommonValues(Arg.Is(machs[0]))
+      .Returns(
+        [
+          new CommonValue()
+          {
+            ParentMachineResults = machs[0],
+            ExecDateTimeUTC = machs[0].StartDateTimeUTC,
+            Number = 23,
+            Value = "common value 23"
+          },
+          new CommonValue()
+          {
+            ParentMachineResults = machs[0],
+            ExecDateTimeUTC = machs[0].StartDateTimeUTC,
+            Number = 24,
+            Value = "common value 24"
+          }
+        ]
+      );
+
+    var mcIdx = _expectedLog.FindIndex(x => x.LogType == LogType.MachineCycle);
+
+    _expectedLog[mcIdx] = _expectedLog[mcIdx] with
+    {
+      ProgramDetails = ImmutableDictionary<string, string>
+        .Empty.Add("23", "common value 23")
+        .Add("24", "common value 24")
+    };
+
+    using var db = _repo.OpenConnection();
+
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+  }
+
+  [Fact]
+  public void SignalsInspection()
+  {
+    using var db = _repo.OpenConnection();
+    var mat = MkMat(palId: 2, fixNum: 4, matId: 1);
+
+    db.AddJobs(
+      new NewJobs()
+      {
+        ScheduleId = "abc",
+        Jobs =
+        [
+          new Job()
+          {
+            UniqueStr = mat.OrderName,
+            RouteStartUTC = DateTime.UtcNow,
+            RouteEndUTC = DateTime.UtcNow.AddHours(1),
+            Archived = false,
+            PartName = mat.PartName,
+            Cycles = 10,
+            Processes =
+            [
+              new ProcessInfo()
+              {
+                Paths =
+                [
+                  new ProcPathInfo()
+                  {
+                    PalletNums = [2],
+                    Load = [1, 2],
+                    Unload = [1, 2],
+                    ExpectedLoadTime = TimeSpan.FromMinutes(10),
+                    ExpectedUnloadTime = TimeSpan.FromMinutes(10),
+                    SimulatedAverageFlowTime = TimeSpan.FromMinutes(10),
+                    SimulatedProduction = [],
+                    SimulatedStartingUTC = DateTime.UtcNow,
+                    PartsPerPallet = 1,
+                    Stops =
+                    [
+                      new MachiningStop()
+                      {
+                        StationGroup = "Mach",
+                        Stations = [3],
+                        ExpectedCycleTime = TimeSpan.FromMinutes(5),
+                      }
+                    ],
+                    Inspections =
+                    [
+                      new PathInspection()
+                      {
+                        InspectionType = "CMM",
+                        Counter = $"CMM,{mat.PartName},%stat1,1%",
+                        MaxVal = 10,
+                        RandomFreq = 0,
+                        TimeInterval = TimeSpan.Zero
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      expectedPreviousScheduleId: null,
+      addAsCopiedToSystem: true
+    );
+
+    var now = DateTime.UtcNow;
+    var start = now.AddHours(-2);
+
+    _makinoDB
+      .QueryLoadUnloadResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        [
+          Load(start, elapsedMin: 10, device: 2, loadMat: mat, unloadMat: null, palCycleMin: 0),
+          Load(start.AddMinutes(30), elapsedMin: 5, device: 2, loadMat: null, unloadMat: mat, palCycleMin: 25)
+        ]
+      );
+
+    _makinoDB
+      .QueryMachineResults(now.AddDays(-30), Arg.Any<DateTime>())
+      .Returns(
+        [Mach(start.AddMinutes(15), elapsedMin: 5, device: 3, mat: mat, program: "prog1", spindleTime: 5)]
+      );
+
+    _makinoDB.QueryCommonValues(Arg.Any<MachineResults>()).Returns([]);
+
+    _expectedLog.Add(
+      new LogEntry()
+      {
+        Counter = 0,
+        Material =
+        [
+          new LogMaterial()
+          {
+            MaterialID = mat.StartingMatID,
+            JobUniqueStr = mat.OrderName,
+            Serial = SerialSettings.ConvertToBase62(mat.StartingMatID, 10),
+            Workorder = "",
+            NumProcesses = 1,
+            Face = 0,
+            PartName = mat.PartName,
+            Process = mat.Process,
+            Path = null
+          }
+        ],
+        LogType = LogType.Inspection,
+        StartOfCycle = false,
+        EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(15 + 5),
+        LocationName = "Inspect",
+        LocationNum = 1,
+        Pallet = 0,
+        Program = $"CMM,{mat.PartName},1",
+        Result = "False",
+        ElapsedTime = TimeSpan.FromMinutes(-1),
+        ActiveOperationTime = TimeSpan.Zero,
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.Add(
+            "ActualPath",
+            """
+            [{"MaterialID":1,"Process":1,"Pallet":2,"LoadStation":2,"Stops":[{"StationName":"MC","StationNum":1}],"UnloadStation":-1}]
+            """
+          )
+          .Add("InspectionType", "CMM")
+      }
+    );
+
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+
+    db.GetLogEntries(start, now)
+      .Should()
+      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+
+    db.LookupInspectionDecisions(mat.StartingMatID)
+      .Should()
+      .BeEquivalentTo(
+        [
+          new Decision()
+          {
+            Counter = $"CMM,{mat.PartName},1",
+            CreateUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(15 + 5),
+            Forced = false,
+            InspType = "CMM",
+            Inspect = false,
+            MaterialID = mat.StartingMatID,
+          }
+        ]
+      );
   }
 }
