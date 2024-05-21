@@ -35,55 +35,66 @@ using System.IO;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 
-namespace BlackMaple.FMSInsight.Makino
+namespace BlackMaple.FMSInsight.Makino;
+
+public class MakinoSettings
 {
-  public sealed class MakinoBackend : IFMSBackend, IDisposable
+  private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSettings>();
+  public FMSSettings FMSSettings { get; init; }
+  public string ADEPath { get; init; }
+  public string ConnectionString { get; init; }
+  public bool DownloadOnlyOrders { get; init; }
+
+  public MakinoSettings(IConfiguration config, FMSSettings settings)
   {
-    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
+    var cfg = config.GetSection("Makino");
 
-    public RepositoryConfig RepoConfig { get; }
-    public IJobControl JobControl => _jobs;
-    public IQueueControl QueueControl => _jobs;
-    public IMachineControl MachineControl => null;
-
-    private readonly JobsAndQueuesFromDb<MakinoCellState> _jobs;
-    private readonly MakinoSync _sync;
-
-    public MakinoBackend(IConfiguration config, FMSSettings st, SerialSettings serialSt)
+    ADEPath = cfg.GetValue<string>("ADE Path");
+    if (string.IsNullOrEmpty(ADEPath))
     {
-      try
+      ADEPath = @"c:\Makino\ADE";
+    }
+    try
+    {
+      foreach (var f in Directory.GetFiles(ADEPath, "insight*.xml"))
       {
-        var settings = new MakinoSettings(config, st);
-
-        if (File.Exists(Path.Combine(st.DataDirectory, "log.db")))
-        {
-          File.Move(Path.Combine(st.DataDirectory, "log.db"), Path.Combine(st.DataDirectory, "makino.db"));
-        }
-
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(
-          serialSt,
-          Path.Combine(st.DataDirectory, "makino.db"),
-          Path.Combine(st.DataDirectory, "inspections.db"),
-          Path.Combine(st.DataDirectory, "jobs.db")
-        );
-
-        _sync = new MakinoSync(settings);
-
-        _jobs = new JobsAndQueuesFromDb<MakinoCellState>(RepoConfig, st, RaiseNewCurrentStatus, _sync);
-      }
-      catch (Exception ex)
-      {
-        Log.Error(ex, "Error when initializing makino backend");
+        File.Delete(f);
       }
     }
-
-    void IDisposable.Dispose()
+    catch (DirectoryNotFoundException)
     {
-      _jobs.Dispose();
+      Log.Error("ADE Path {path} does not exist", ADEPath);
+    }
+    catch (Exception ex)
+    {
+      Log.Error(ex, "Error when deleting old insight xml files");
     }
 
-    public event NewCurrentStatus OnNewCurrentStatus;
+    ConnectionString = cfg.GetValue<string>("SQL Server Connection String");
+    if (string.IsNullOrEmpty(ConnectionString))
+    {
+      ConnectionString = DetectSqlConnectionStr();
+    }
 
-    public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
+    DownloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders");
+
+    Log.Information(
+      "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
+      ConnectionString,
+      ADEPath,
+      DownloadOnlyOrders
+    );
+  }
+
+  private static string DetectSqlConnectionStr()
+  {
+    var b = new System.Data.SqlClient.SqlConnectionStringBuilder
+    {
+      UserID = "sa",
+      Password = "M@k1n0Admin",
+      InitialCatalog = "Makino",
+      DataSource = "(local)"
+    };
+    return b.ConnectionString;
   }
 }

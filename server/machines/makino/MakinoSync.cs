@@ -1,0 +1,197 @@
+/* Copyright (c) 2024, John Lenz
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+
+    * Neither the name of John Lenz, Black Maple Software, SeedTactics,
+      nor the names of other contributors may be used to endorse or
+      promote products derived from this software without specific
+      prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.IO;
+using BlackMaple.MachineFramework;
+
+namespace BlackMaple.FMSInsight.Makino
+{
+  public class MakinoCellState : ICellState
+  {
+    public required CurrentStatus CurrentStatus { get; init; }
+
+    public required ImmutableList<HistoricJob> JobsNotYetCopied { get; init; }
+
+    public required bool StateUpdated { get; init; }
+
+    public TimeSpan TimeUntilNextRefresh => TimeSpan.FromMinutes(1);
+  }
+
+  public sealed class MakinoSync : ISynchronizeCellState<MakinoCellState>
+  {
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
+
+    public bool AllowQuarantineToCancelLoad => false;
+    public bool AddJobsAsCopiedToSystem => false;
+
+    private MakinoSettings _settings;
+
+    public MakinoSync(MakinoSettings settings)
+    {
+      _settings = settings;
+    }
+
+#pragma warning disable CS0067
+    public event Action NewCellState;
+#pragma warning restore CS0067
+
+    public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
+    {
+      var ret = new List<string>();
+
+      foreach (var j in jobs.Jobs)
+      {
+        if (j.Processes.Count != 1)
+        {
+          // current problem is in LogBuilder, material IDs are not looked up between processes
+          // and there is no queue support
+          ret.Add(
+            "FMS Insight does not support multiple processes currently, please make change "
+              + j.PartName
+              + " to have one process."
+          );
+        }
+        foreach (var proc in j.Processes)
+        {
+          if (proc.Paths.Count > 0)
+          {
+            ret.Add(
+              "FMS Insight does not support paths with the same color, please make sure each path has a distinct color in "
+                + j.PartName
+            );
+          }
+        }
+      }
+
+      return ret;
+    }
+
+    private bool _errorDownloadingJobs = false;
+
+    public MakinoCellState CalculateCellState(IRepository db)
+    {
+      var lastLog = db.MaxLogDate();
+      if (DateTime.UtcNow.Subtract(lastLog) > TimeSpan.FromDays(30))
+      {
+        lastLog = DateTime.UtcNow.AddDays(-30);
+      }
+
+      using var makinoDB = new MakinoDB(_settings.ConnectionString);
+      var newEvts = new LogBuilder(makinoDB, db).CheckLogs(lastLog);
+
+      var st = makinoDB.LoadCurrentInfo(db);
+
+      var notCopied = db.LoadJobsNotCopiedToSystem(
+        DateTime.UtcNow.AddHours(-10),
+        DateTime.UtcNow.AddMinutes(20),
+        includeDecremented: false
+      );
+
+      return new MakinoCellState
+      {
+        CurrentStatus = _errorDownloadingJobs
+          ? st with
+          {
+            Alarms = st.Alarms.Add(
+              "Unable to copy orders to Makino: check that the Makino software is running"
+            )
+          }
+          : st,
+        JobsNotYetCopied = notCopied,
+        StateUpdated = newEvts
+      };
+    }
+
+    public bool ApplyActions(IRepository db, MakinoCellState state)
+    {
+      List<HistoricJob> jobsToSend = [];
+
+      foreach (var j in state.JobsNotYetCopied)
+      {
+        if (state.CurrentStatus.Jobs.ContainsKey(j.UniqueStr))
+        {
+          // was copied but must have crashed before recording the copy, or
+          // makino processed them after the 10 second timeout
+          db.MarkJobCopiedToSystem(j.UniqueStr);
+        }
+        else
+        {
+          jobsToSend.Add(j);
+        }
+      }
+
+      if (jobsToSend.Count > 0)
+      {
+        var fileName = "insight" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".xml";
+        var fullPath = Path.Combine(_settings.ADEPath, fileName);
+        try
+        {
+          using var fw = new FileSystemWatcher(_settings.ADEPath, fileName);
+          fw.EnableRaisingEvents = true;
+          OrderXML.WriteOrderXML(fullPath, jobsToSend, _settings.DownloadOnlyOrders);
+          if (fw.WaitForChanged(WatcherChangeTypes.Deleted, TimeSpan.FromSeconds(10)).TimedOut)
+          {
+            Log.Error("Makino did not process new jobs, perhaps the Makino software is not running?");
+            _errorDownloadingJobs = true;
+          }
+          else
+          {
+            _errorDownloadingJobs = false;
+            foreach (var j in jobsToSend)
+            {
+              db.MarkJobCopiedToSystem(j.UniqueStr);
+            }
+          }
+        }
+        finally
+        {
+          File.Delete(fullPath);
+        }
+        return true;
+      }
+      else
+      {
+        _errorDownloadingJobs = false;
+        return false;
+      }
+    }
+
+    public bool DecrementJobs(IRepository db, MakinoCellState state)
+    {
+      // do nothing
+      return false;
+    }
+  }
+}
