@@ -315,7 +315,7 @@ namespace BlackMaple.FMSInsight.Makino
     public required List<WorkSetResults> WorkSetResults { get; init; }
   }
 
-  public interface IMakinoDB
+  public interface IMakinoDB : IDisposable
   {
     IDictionary<int, PalletLocation> Devices();
     CurrentStatus LoadCurrentInfo(IRepository logDb);

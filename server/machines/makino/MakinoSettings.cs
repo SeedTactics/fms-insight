@@ -31,6 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
@@ -40,13 +41,18 @@ namespace BlackMaple.FMSInsight.Makino;
 public class MakinoSettings
 {
   private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSettings>();
-  public FMSSettings FMSSettings { get; init; }
-  public string ADEPath { get; init; }
-  public string ConnectionString { get; init; }
-  public bool DownloadOnlyOrders { get; init; }
+  public required FMSSettings FMSSettings { get; init; }
+  public required string ADEPath { get; init; }
+  public required bool DownloadOnlyOrders { get; init; }
+  public required Func<IMakinoDB> OpenConnection { get; init; }
 
+  public MakinoSettings() { }
+
+  [SetsRequiredMembers]
   public MakinoSettings(IConfiguration config, FMSSettings settings)
   {
+    FMSSettings = settings;
+
     var cfg = config.GetSection("Makino");
 
     ADEPath = cfg.GetValue<string>("ADE Path");
@@ -70,17 +76,18 @@ public class MakinoSettings
       Log.Error(ex, "Error when deleting old insight xml files");
     }
 
-    ConnectionString = cfg.GetValue<string>("SQL Server Connection String");
-    if (string.IsNullOrEmpty(ConnectionString))
+    var connStr = cfg.GetValue<string>("SQL Server Connection String");
+    if (string.IsNullOrEmpty(connStr))
     {
-      ConnectionString = DetectSqlConnectionStr();
+      connStr = DetectSqlConnectionStr();
     }
+    OpenConnection = () => new MakinoDB(connStr);
 
     DownloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders");
 
     Log.Information(
       "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
-      ConnectionString,
+      connStr,
       ADEPath,
       DownloadOnlyOrders
     );

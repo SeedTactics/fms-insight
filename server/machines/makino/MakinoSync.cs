@@ -49,23 +49,19 @@ namespace BlackMaple.FMSInsight.Makino
     public TimeSpan TimeUntilNextRefresh => TimeSpan.FromMinutes(1);
   }
 
-  public sealed class MakinoSync : ISynchronizeCellState<MakinoCellState>
+  public sealed class MakinoSync(MakinoSettings settings) : ISynchronizeCellState<MakinoCellState>
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
 
     public bool AllowQuarantineToCancelLoad => false;
     public bool AddJobsAsCopiedToSystem => false;
 
-    private MakinoSettings _settings;
-
-    public MakinoSync(MakinoSettings settings)
+    public event Action NewCellState
     {
-      _settings = settings;
+      // Rely on the timer to refresh the state
+      add { }
+      remove { }
     }
-
-#pragma warning disable CS0067
-    public event Action NewCellState;
-#pragma warning restore CS0067
 
     public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
     {
@@ -108,7 +104,7 @@ namespace BlackMaple.FMSInsight.Makino
         lastLog = DateTime.UtcNow.AddDays(-30);
       }
 
-      using var makinoDB = new MakinoDB(_settings.ConnectionString);
+      using var makinoDB = settings.OpenConnection();
       var newEvts = new LogBuilder(makinoDB, db).CheckLogs(lastLog);
 
       var st = makinoDB.LoadCurrentInfo(db);
@@ -155,12 +151,12 @@ namespace BlackMaple.FMSInsight.Makino
       if (jobsToSend.Count > 0)
       {
         var fileName = "insight" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".xml";
-        var fullPath = Path.Combine(_settings.ADEPath, fileName);
+        var fullPath = Path.Combine(settings.ADEPath, fileName);
         try
         {
-          using var fw = new FileSystemWatcher(_settings.ADEPath, fileName);
+          using var fw = new FileSystemWatcher(settings.ADEPath, fileName);
           fw.EnableRaisingEvents = true;
-          OrderXML.WriteOrderXML(fullPath, jobsToSend, _settings.DownloadOnlyOrders);
+          OrderXML.WriteOrderXML(fullPath, jobsToSend, settings.DownloadOnlyOrders);
           if (fw.WaitForChanged(WatcherChangeTypes.Deleted, TimeSpan.FromSeconds(10)).TimedOut)
           {
             Log.Error("Makino did not process new jobs, perhaps the Makino software is not running?");

@@ -39,7 +39,7 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
 {
-  public class OrderXML
+  public static class OrderXML
   {
     public static void WriteOrderXML(string filename, IEnumerable<Job> jobs, bool onlyOrders)
     {
