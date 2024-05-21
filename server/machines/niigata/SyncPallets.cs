@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -41,29 +41,36 @@ namespace BlackMaple.FMSInsight.Niigata
 {
   public sealed class SyncNiigataPallets : ISynchronizeCellState<CellState>
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<SyncNiigataPallets>();
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<SyncNiigataPallets>();
 
     public bool AllowQuarantineToCancelLoad => false;
     public bool AddJobsAsCopiedToSystem => true;
 
+    private readonly NiigataSettings _settings;
     private readonly INiigataCommunication _icc;
     private readonly IBuildCellState _createLog;
     private readonly IAssignPallets _assign;
-    private readonly Func<IRepository, NewJobs, IEnumerable<string>> _checkJobs;
+    private readonly CheckJobsValid _checkJobs;
     private readonly Func<ActiveJob, bool>? _decrementJobFilter;
 
     public SyncNiigataPallets(
+      NiigataSettings settings,
       INiigataCommunication icc,
       IBuildCellState createLog,
-      IAssignPallets assign,
-      Func<IRepository, NewJobs, IEnumerable<string>> checkJobs,
+      IAssignPallets? assign,
+      CheckJobsValid? checkJobs,
       Func<ActiveJob, bool>? decrementJobFilter
     )
     {
       _icc = icc;
       _createLog = createLog;
-      _assign = assign;
-      _checkJobs = checkJobs;
+      _settings = settings;
+      _assign =
+        assign
+        ?? new MultiPalletAssign(
+          [new AssignNewRoutesOnPallets(settings.StationNames), new SizedQueues(settings.FMSSettings.Queues)]
+        );
+      _checkJobs = checkJobs ?? CheckJobsMatchNiigata.CheckNewJobs;
       _decrementJobFilter = decrementJobFilter;
     }
 
@@ -75,7 +82,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
     {
-      return _checkJobs(db, jobs);
+      return _checkJobs(_settings, _icc, db, jobs);
     }
 
     public CellState CalculateCellState(IRepository db)

@@ -31,8 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 
@@ -65,106 +63,44 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       try
       {
-        Log.Information("Starting niigata backend");
+        var settings = new NiigataSettings(config, cfg);
+        Log.Debug("Starting niigata backend with {@settings}", settings);
+
         RepoConfig = RepositoryConfig.InitializeEventDatabase(
           serialSt,
-          System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db"),
-          oldJobDbFile: System.IO.Path.Combine(cfg.DataDirectory, "niigatajobs.db")
+          System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db")
         );
-
-        var programDir = config.GetValue<string>("Program Directory");
-        if (!System.IO.Directory.Exists(programDir))
-        {
-          Log.Error("Program directory {dir} does not exist", programDir);
-        }
 
         if (serialSt.SerialType == SerialType.AssignOneSerialPerCycle)
         {
           Log.Error("Niigata backend does not support serials assigned per cycle");
         }
 
-        var reclampNames = config.GetValue<string>("Reclamp Group Names");
-        var machineNames = config.GetValue<string>("Machine Names");
-        var stationNames = new NiigataStationNames()
-        {
-          ReclampGroupNames = new HashSet<string>(
-            string.IsNullOrEmpty(reclampNames)
-              ? Enumerable.Empty<string>()
-              : reclampNames.Split(',').Select(s => s.Trim())
-          ),
-          IccMachineToJobMachNames = string.IsNullOrEmpty(machineNames)
-            ? []
-            : machineNames
-              .Split(',')
-              .Select(m => m.Trim())
-              .Select(
-                (machineName, idx) =>
-                {
-                  if (!char.IsDigit(machineName.Last()))
-                  {
-                    return null;
-                  }
-                  var group = new string(machineName.Reverse().SkipWhile(char.IsDigit).Reverse().ToArray());
-                  if (int.TryParse(machineName.AsSpan(group.Length), out var num))
-                  {
-                    return new
-                    {
-                      iccMc = idx + 1,
-                      group,
-                      num
-                    };
-                  }
-                  else
-                  {
-                    return null;
-                  }
-                }
-              )
-              .Where(x => x != null)
-              .ToDictionary(x => x.iccMc, x => (x.group, x.num))
-        };
-        Log.Debug("Using station names {@names}", stationNames);
+        var machConn = new CncMachineConnection(settings.MachineIPs);
+        var icc = new NiigataICC(settings);
+        var createLog = new CreateCellState(settings.FMSSettings, settings.StationNames, machConn);
+        MachineControl = new NiigataMachineControl(RepoConfig, icc, machConn, settings.StationNames);
 
-        var machineIps = config.GetValue<string>("Machine IP Addresses");
-        var machConn = new CncMachineConnection(
-          string.IsNullOrEmpty(machineIps)
-            ? Enumerable.Empty<string>()
-            : machineIps.Split(',').Select(s => s.Trim())
-        );
-
-        var connStr = config.GetValue<string>("Connection String", defaultValue: null);
-
-        var icc = new NiigataICC(programDir, connStr, stationNames);
-        var createLog = new CreateCellState(cfg, stationNames, machConn);
-
-        MachineControl = new NiigataMachineControl(RepoConfig, icc, machConn, stationNames);
-
-        IAssignPallets assign;
+        IAssignPallets assign = null;
         if (customAssignment != null)
         {
-          assign = customAssignment(stationNames, machConn);
-        }
-        else
-        {
-          assign = new MultiPalletAssign(
-            new IAssignPallets[] { new AssignNewRoutesOnPallets(stationNames), new SizedQueues(cfg.Queues) }
-          );
+          assign = customAssignment(settings.StationNames, machConn);
         }
 
-        bool requireProgramsInJobs = config.GetValue<bool>("Require Programs In Jobs", true);
         CheckJobsValid checkJobsValid = customJobCheck ?? CheckJobsMatchNiigata.CheckNewJobs;
 
         var syncSt = new SyncNiigataPallets(
+          settings,
           icc,
           createLog,
-          assign,
-          checkJobs: (db, jobs) => checkJobsValid(cfg, requireProgramsInJobs, stationNames, icc, db, jobs),
+          checkJobs: customJobCheck,
+          assign: assign,
           decrementJobFilter: decrementJobFilter
         );
 
         _jobsAndQueues = new JobsAndQueuesFromDb<CellState>(
           RepoConfig,
-          cfg,
+          settings.FMSSettings,
           s => OnNewCurrentStatus?.Invoke(s),
           syncSt
         );

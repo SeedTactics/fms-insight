@@ -45,12 +45,11 @@ namespace BlackMaple.FMSInsight.Niigata
   // and sending actions happens on a single thread (the syncpallets thread).
   public class NiigataICC : INiigataCommunication
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<NiigataICC>();
-    private NiigataStationNames _statNames;
-    private string _programDir;
-    private string _connStr;
-    private Thread _thread;
-    private Random _rng = new Random();
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<NiigataICC>();
+    private readonly NiigataSettings _settings;
+    private readonly string _connStr;
+    private readonly Thread _thread;
+    private readonly Random _rng = new Random();
     private DateTime _lastActionTime = DateTime.MinValue;
 
     // ICC has a bug when deleting programs, sometimes the program is not fully deleted from the internal ICC software, even
@@ -62,19 +61,18 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public event Action NewCurrentStatus;
 
-    public NiigataICC(string progDir, string connectionStr, NiigataStationNames statNames)
+    public NiigataICC(NiigataSettings settings)
     {
-      _programDir = progDir;
-      _statNames = statNames;
+      _settings = settings;
 
-      if (string.IsNullOrEmpty(connectionStr))
+      if (string.IsNullOrEmpty(settings.SQLConnectionString))
       {
         _connStr = null;
         Log.Error("PostgreSQL Connection String is not configured");
       }
       else
       {
-        _connStr = connectionStr + ";Database=fms_insight_icc_communication";
+        _connStr = settings.SQLConnectionString + ";Database=fms_insight_icc_communication";
 
         using (var conn = new NpgsqlConnection(_connStr))
         {
@@ -342,7 +340,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 {
                   Master = master,
                   Tracking = tracking,
-                  CurStation = new NiigataStationNum(curStat.StationNum ?? 1, _statNames)
+                  CurStation = new NiigataStationNum(curStat.StationNum ?? 1, _settings.StationNames)
                 },
               splitOn: $"{nameof(TrackingInfo.RouteInvalid)},{nameof(CurrentStationNum.StationNum)}",
               transaction: trans
@@ -433,7 +431,9 @@ namespace BlackMaple.FMSInsight.Niigata
             var pal = pallets[step.PalletNum];
             pal.Master.Routes.Add(route);
             pal.Tracking.ExecutedStationNumber.Add(
-              step.ExecutedStationNum > 0 ? new NiigataStationNum(step.ExecutedStationNum, _statNames) : null
+              step.ExecutedStationNum > 0
+                ? new NiigataStationNum(step.ExecutedStationNum, _settings.StationNames)
+                : null
             );
           }
 
@@ -1063,7 +1063,7 @@ namespace BlackMaple.FMSInsight.Niigata
       // write (or overwrite) the file to disk
       var progCt = jobDB.LoadProgramContent(add.ProgramName, add.ProgramRevision);
       var filename = add.ProgramName + "_rev" + add.ProgramRevision.ToString() + ".EIA";
-      System.IO.File.WriteAllText(System.IO.Path.Combine(_programDir, filename), progCt);
+      System.IO.File.WriteAllText(System.IO.Path.Combine(_settings.ProgramDirectory, filename), progCt);
 
       _programRegistered.Reset();
       using (var conn = new NpgsqlConnection(_connStr))

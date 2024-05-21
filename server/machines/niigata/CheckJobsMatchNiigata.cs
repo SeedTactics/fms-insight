@@ -39,9 +39,7 @@ using BlackMaple.MachineFramework;
 namespace BlackMaple.FMSInsight.Niigata
 {
   public delegate IEnumerable<string> CheckJobsValid(
-    FMSSettings settings,
-    bool requireProgramsInJobs,
-    NiigataStationNames statNames,
+    NiigataSettings settings,
     INiigataCommunication icc,
     IRepository jobDB,
     NewJobs jobs
@@ -50,9 +48,7 @@ namespace BlackMaple.FMSInsight.Niigata
   public static class CheckJobsMatchNiigata
   {
     public static IEnumerable<string> CheckNewJobs(
-      FMSSettings settings,
-      bool requireProgramsInJobs,
-      NiigataStationNames statNames,
+      NiigataSettings settings,
       INiigataCommunication icc,
       IRepository jobDB,
       NewJobs jobs
@@ -84,7 +80,8 @@ namespace BlackMaple.FMSInsight.Niigata
               errors.Add("Part " + j.PartName + " does not have any pallets");
             }
             if (
-              !string.IsNullOrEmpty(pathData.InputQueue) && !settings.Queues.ContainsKey(pathData.InputQueue)
+              !string.IsNullOrEmpty(pathData.InputQueue)
+              && !settings.FMSSettings.Queues.ContainsKey(pathData.InputQueue)
             )
             {
               errors.Add(
@@ -97,7 +94,7 @@ namespace BlackMaple.FMSInsight.Niigata
             }
             if (
               !string.IsNullOrEmpty(pathData.OutputQueue)
-              && !settings.Queues.ContainsKey(pathData.OutputQueue)
+              && !settings.FMSSettings.Queues.ContainsKey(pathData.OutputQueue)
             )
             {
               errors.Add(
@@ -111,7 +108,10 @@ namespace BlackMaple.FMSInsight.Niigata
 
             foreach (var stop in pathData.Stops)
             {
-              if (statNames != null && statNames.ReclampGroupNames.Contains(stop.StationGroup))
+              if (
+                settings.StationNames != null
+                && settings.StationNames.ReclampGroupNames.Contains(stop.StationGroup)
+              )
               {
                 if (stop.Stations.IsEmpty)
                 {
@@ -126,7 +126,7 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 if (string.IsNullOrEmpty(stop.Program))
                 {
-                  if (requireProgramsInJobs)
+                  if (settings.RequireProgramsInJobs)
                   {
                     errors.Add("Part " + j.PartName + " has no assigned program");
                   }
