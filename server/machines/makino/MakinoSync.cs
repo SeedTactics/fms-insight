@@ -74,7 +74,7 @@ namespace BlackMaple.FMSInsight.Makino
           // current problem is in LogBuilder, material IDs are not looked up between processes
           // and there is no queue support
           ret.Add(
-            "FMS Insight does not support multiple processes currently, please make change "
+            "FMS Insight does not support multiple processes currently, please change "
               + j.PartName
               + " to have one process."
           );
@@ -94,7 +94,7 @@ namespace BlackMaple.FMSInsight.Makino
       return ret;
     }
 
-    private bool _errorDownloadingJobs = false;
+    public bool ErrorDownloadingJobs { get; private set; } = false;
 
     public MakinoCellState CalculateCellState(IRepository db)
     {
@@ -117,7 +117,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       return new MakinoCellState
       {
-        CurrentStatus = _errorDownloadingJobs
+        CurrentStatus = ErrorDownloadingJobs
           ? st with
           {
             Alarms = st.Alarms.Add(
@@ -160,11 +160,11 @@ namespace BlackMaple.FMSInsight.Makino
           if (fw.WaitForChanged(WatcherChangeTypes.Deleted, TimeSpan.FromSeconds(10)).TimedOut)
           {
             Log.Error("Makino did not process new jobs, perhaps the Makino software is not running?");
-            _errorDownloadingJobs = true;
+            ErrorDownloadingJobs = true;
           }
           else
           {
-            _errorDownloadingJobs = false;
+            ErrorDownloadingJobs = false;
             foreach (var j in jobsToSend)
             {
               db.MarkJobCopiedToSystem(j.UniqueStr);
@@ -179,7 +179,7 @@ namespace BlackMaple.FMSInsight.Makino
       }
       else
       {
-        _errorDownloadingJobs = false;
+        ErrorDownloadingJobs = false;
         return false;
       }
     }

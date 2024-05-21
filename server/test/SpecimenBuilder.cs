@@ -37,8 +37,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using AutoFixture;
 using FluentAssertions;
-using Germinate;
-using Xunit;
 
 namespace MachineWatchTest
 {
@@ -154,6 +152,26 @@ namespace MachineWatchTest
       {
         return new AutoFixture.Kernel.NoSpecimen();
       }
+    }
+  }
+
+  public static class JobSpecimenBuilder
+  {
+    public static BlackMaple.MachineFramework.Job ClearCastingsOnLargerProcs(
+      this BlackMaple.MachineFramework.Job j
+    )
+    {
+      return j with
+      {
+        Processes = j
+          .Processes.Select(p =>
+            p with
+            {
+              Paths = p.Paths.Select(p => p with { Casting = null }).ToImmutableList()
+            }
+          )
+          .ToImmutableList()
+      };
     }
   }
 }
