@@ -102,7 +102,7 @@ namespace BlackMaple.FMSInsight.Makino
     {
       //find the location
       PalletLocation loc;
-      if (devices.TryGetValue(m.DeviceID, out PalletLocation value))
+      if (devices.TryGetValue(m.DeviceID, out var value))
       {
         loc = value;
       }
@@ -127,9 +127,13 @@ namespace BlackMaple.FMSInsight.Makino
 
       //count the number of parts
       int numParts = 0;
-      foreach (var i in m.OperQuantities)
+      foreach (var i in m.OperQuantities ?? [])
         numParts += i;
       if (numParts <= 0)
+        return;
+      if (string.IsNullOrEmpty(m.OrderName))
+        return;
+      if (string.IsNullOrEmpty(m.PartName))
         return;
 
       //create the material
@@ -150,7 +154,7 @@ namespace BlackMaple.FMSInsight.Makino
       {
         foreach (var v in m.CommonValues ?? [])
         {
-          extraData[v.Number.ToString()] = v.Value;
+          extraData[v.Number.ToString()] = v.Value ?? "";
         }
       }
 
@@ -189,6 +193,8 @@ namespace BlackMaple.FMSInsight.Makino
       if (logDb == null)
         return;
 
+      if (string.IsNullOrEmpty(m.OrderName))
+        return;
       var job = _jobCache.Lookup(m.OrderName);
       if (job == null)
         return;
@@ -214,7 +220,7 @@ namespace BlackMaple.FMSInsight.Makino
       return foreignID.StartsWith(order + "-" + pallet.ToString() + "-" + fixture.ToString() + "-");
     }
 
-    public static LogEntry FindLogByForeign(
+    public static LogEntry? FindLogByForeign(
       int pallet,
       int fixture,
       string order,
@@ -250,7 +256,7 @@ namespace BlackMaple.FMSInsight.Makino
     {
       //find the location
       PalletLocation loc;
-      if (devices.TryGetValue(ws.Key.DeviceID, out PalletLocation value))
+      if (devices.TryGetValue(ws.Key.DeviceID, out var value))
         loc = value;
       else
         loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 1);
@@ -277,11 +283,16 @@ namespace BlackMaple.FMSInsight.Makino
       {
         //count the number of unloaded parts
         int numParts = 0;
-        foreach (var i in w.UnloadNormalQuantities)
+        foreach (var i in w.UnloadNormalQuantities ?? [])
           numParts += i;
 
         //Only process unload cycles if remachine is false
-        if (numParts > 0 && !w.Remachine)
+        if (
+          numParts > 0
+          && !w.Remachine
+          && !string.IsNullOrEmpty(w.UnloadOrderName)
+          && !string.IsNullOrEmpty(w.UnloadPartName)
+        )
         {
           //create the material for unload
           var matList = FindOrCreateMaterial(
@@ -295,7 +306,7 @@ namespace BlackMaple.FMSInsight.Makino
           );
 
           TimeSpan active = TimeSpan.Zero;
-          Job unloadJob = _jobCache.Lookup(w.UnloadOrderName);
+          Job? unloadJob = _jobCache.Lookup(w.UnloadOrderName);
           if (unloadJob != null && w.UnloadProcessNum <= unloadJob.Processes.Count)
           {
             active = unloadJob.Processes[w.UnloadProcessNum - 1].Paths[0].ExpectedUnloadTime;
@@ -326,8 +337,12 @@ namespace BlackMaple.FMSInsight.Makino
       foreach (var w in ws.OrderBy(w => w.FixtureNumber))
       {
         //now the load cycle
-        int numParts = w.LoadQuantities.Sum();
+        int numParts = (w.LoadQuantities ?? []).Sum();
         if (numParts == 0 || w.Remachine)
+          continue;
+        if (string.IsNullOrEmpty(w.LoadOrderName))
+          continue;
+        if (string.IsNullOrEmpty(w.LoadPartName))
           continue;
 
         //create the material

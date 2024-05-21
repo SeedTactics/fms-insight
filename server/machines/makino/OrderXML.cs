@@ -110,14 +110,14 @@ namespace BlackMaple.FMSInsight.Makino
               string fixName;
               if (!string.IsNullOrEmpty(j.Processes[proc - 1].Paths[0].Fixture))
               {
-                fixName = j.Processes[proc - 1].Paths[0].Fixture;
+                fixName = j.Processes[proc - 1].Paths[0].Fixture!;
               }
               else
               {
                 fixName = "P" + palNum.ToString().PadLeft(2, '0');
                 fixName += "-" + j.PartName + "-" + proc.ToString();
               }
-              if (allFixtures.TryGetValue(fixName, out List<JobAndProc> value))
+              if (allFixtures.TryGetValue(fixName, out var value))
               {
                 value.Add(new JobAndProc() { Job = j, Proc = proc });
               }
@@ -277,6 +277,8 @@ namespace BlackMaple.FMSInsight.Makino
       bool first = true;
       foreach (var x in lst)
       {
+        if (x == null)
+          continue;
         if (first)
           first = false;
         else

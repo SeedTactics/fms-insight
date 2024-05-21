@@ -60,7 +60,7 @@ namespace BlackMaple.FMSInsight.Makino
       _procIDToPartID.Add(processID, partID);
     }
 
-    public void CreateJob(string unique, int partID, string partName, string comment)
+    public void CreateJob(string unique, int partID, string partName, string? comment)
     {
       int numProc = 1;
       foreach (var p in _procIDToPartID)
@@ -145,7 +145,7 @@ namespace BlackMaple.FMSInsight.Makino
       }
       else
       {
-        if (!_stops.TryGetValue(jobID, out MachiningStop value))
+        if (!_stops.TryGetValue(jobID, out var value))
         {
           _stops.Add(
             jobID,
@@ -298,7 +298,7 @@ namespace BlackMaple.FMSInsight.Makino
       {
         Cycles = procNum == 1 ? remaining + completed + scrap : job.Cycles,
         RemainingToStart = procNum == 1 ? remaining : job.RemainingToStart,
-        Completed = job.Completed.SetItem(procNum - 1, [completed])
+        Completed = job.Completed!.SetItem(procNum - 1, [completed])
       };
     }
 
@@ -313,7 +313,7 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var job = _byOrderID[orderID];
       var program = "";
-      if (_programs.TryGetValue(jobID, out string value))
+      if (_programs.TryGetValue(jobID, out var value))
         program = value;
 
       var matDetails = db.GetMaterialDetails(matID);
@@ -346,9 +346,9 @@ namespace BlackMaple.FMSInsight.Makino
       };
     }
 
-    public ActiveJob JobForOrder(int orderID)
+    public ActiveJob? JobForOrder(int orderID)
     {
-      if (_byOrderID.TryGetValue(orderID, out ActiveJob value))
+      if (_byOrderID.TryGetValue(orderID, out var value))
         return value;
       else
         return null;
@@ -417,7 +417,7 @@ namespace BlackMaple.FMSInsight.Makino
 
     public IEnumerable<int> PalletsForFixture(int fixtureID)
     {
-      if (_fixIDToPallets.TryGetValue(fixtureID, out List<int> value))
+      if (_fixIDToPallets.TryGetValue(fixtureID, out var value))
         return value;
       else
         return Array.Empty<int>();
@@ -432,7 +432,7 @@ namespace BlackMaple.FMSInsight.Makino
     public void AddMaterial(int fixturePalletID, InProcessMaterial mat)
     {
       List<InProcessMaterial> ms;
-      if (_fixPalIDToMaterial.TryGetValue(fixturePalletID, out List<InProcessMaterial> value))
+      if (_fixPalIDToMaterial.TryGetValue(fixturePalletID, out var value))
         ms = value;
       else
       {
@@ -461,7 +461,7 @@ namespace BlackMaple.FMSInsight.Makino
       var pal = _pallets[palletNum];
       var face = _fixPalIDToFixNum[fixturePalletID].ToString();
 
-      if (_fixPalIDToMaterial.TryGetValue(fixturePalletID, out List<InProcessMaterial> value))
+      if (_fixPalIDToMaterial.TryGetValue(fixturePalletID, out var value))
       {
         _fixPalIDToMaterial[fixturePalletID] = value
           .Select(mat =>
@@ -489,7 +489,7 @@ namespace BlackMaple.FMSInsight.Makino
       var face = _fixPalIDToFixNum[fixturePalletID];
 
       List<InProcessMaterial> ms;
-      if (_fixPalIDToMaterial.TryGetValue(fixturePalletID, out List<InProcessMaterial> value))
+      if (_fixPalIDToMaterial.TryGetValue(fixturePalletID, out var value))
         ms = value;
       else
       {

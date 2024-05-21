@@ -184,7 +184,7 @@ namespace BlackMaple.FMSInsight.Makino
     public DateTime ExecDateTimeUTC;
 
     public int Number;
-    public string Value;
+    public string? Value;
 
     /* Fields Not Loaded
      *
@@ -209,28 +209,28 @@ namespace BlackMaple.FMSInsight.Makino
     public int FixtureNumber { get; set; }
 
     /* data about the fixture */
-    public string FixtureName { get; set; }
-    public string FixtureComment { get; set; }
+    public string? FixtureName { get; set; }
+    public string? FixtureComment { get; set; }
 
-    public string OrderName { get; set; }
+    public string? OrderName { get; set; }
 
     /* Part, revision, process, and job uniquely identify what the machine is currently doing */
-    public string PartName { get; set; }
-    public string Revision { get; set; }
+    public string? PartName { get; set; }
+    public string? Revision { get; set; }
     public int ProcessNum { get; set; }
     public int JobNum { get; set; }
 
     /* Process name is just some data about the process entered by the user,
        * not used as a key or anything like that */
-    public string ProcessName { get; set; }
+    public string? ProcessName { get; set; }
 
     /* program for this (part,revision,process,job) combo */
-    public string Program { get; set; }
+    public string? Program { get; set; }
 
     /* Some status about the operation */
     public int SpindleTimeSeconds { get; set; }
-    public List<int> OperQuantities { get; set; }
-    public List<CommonValue> CommonValues { get; set; }
+    public List<int>? OperQuantities { get; set; }
+    public List<CommonValue>? CommonValues { get; set; }
 
     /* Fields not loaded
      *
@@ -262,31 +262,31 @@ namespace BlackMaple.FMSInsight.Makino
     public int FixtureNumber { get; set; }
 
     /* data about the fixture entered by the user */
-    public string FixtureName { get; set; }
-    public string FixtureComment { get; set; }
+    public string? FixtureName { get; set; }
+    public string? FixtureComment { get; set; }
 
-    public string UnloadOrderName { get; set; }
-    public string LoadOrderName { get; set; }
+    public string? UnloadOrderName { get; set; }
+    public string? LoadOrderName { get; set; }
 
     /* Part, revision, process, and job uniquely identify which step we are on */
-    public string UnloadPartName { get; set; }
-    public string UnloadRevision { get; set; }
+    public string? UnloadPartName { get; set; }
+    public string? UnloadRevision { get; set; }
     public int UnloadProcessNum { get; set; }
     public int UnloadJobNum { get; set; }
-    public string LoadPartName { get; set; }
-    public string LoadRevision { get; set; }
+    public string? LoadPartName { get; set; }
+    public string? LoadRevision { get; set; }
     public int LoadProcessNum { get; set; }
     public int LoadJobNum { get; set; }
 
     /* Process name is just some data about the process entered by the user,
        * not used as a key or anything like that */
-    public string UnloadProcessName { get; set; }
-    public string LoadProcessName { get; set; }
+    public string? UnloadProcessName { get; set; }
+    public string? LoadProcessName { get; set; }
 
-    public List<int> LoadQuantities { get; set; }
-    public List<int> UnloadNormalQuantities { get; set; }
-    public List<int> UnloadScrapQuantities { get; set; }
-    public List<int> UnloadOutProcQuantities { get; set; } /* TODO: What is this? */
+    public List<int>? LoadQuantities { get; set; }
+    public List<int>? UnloadNormalQuantities { get; set; }
+    public List<int>? UnloadScrapQuantities { get; set; }
+    public List<int>? UnloadOutProcQuantities { get; set; } /* TODO: What is this? */
 
     /* At the load station, the operator can push a button saying nothing was unloaded.
      * This still adds an entry to the log but it is marked as a remachine, and no quantities are updated

@@ -55,7 +55,7 @@ public class MakinoSettings
 
     var cfg = config.GetSection("Makino");
 
-    ADEPath = cfg.GetValue<string>("ADE Path");
+    ADEPath = cfg.GetValue<string>("ADE Path") ?? "";
     if (string.IsNullOrEmpty(ADEPath))
     {
       ADEPath = @"c:\Makino\ADE";

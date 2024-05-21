@@ -41,13 +41,13 @@ namespace BlackMaple.FMSInsight.Makino
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
 
-    public RepositoryConfig RepoConfig { get; }
-    public IJobControl JobControl => _jobs;
-    public IQueueControl QueueControl => _jobs;
-    public IMachineControl MachineControl => null;
+    public RepositoryConfig? RepoConfig { get; }
+    public IJobControl? JobControl => _jobs;
+    public IQueueControl? QueueControl => _jobs;
+    public IMachineControl? MachineControl => null;
 
-    private readonly JobsAndQueuesFromDb<MakinoCellState> _jobs;
-    private readonly MakinoSync _sync;
+    private readonly JobsAndQueuesFromDb<MakinoCellState>? _jobs;
+    private readonly MakinoSync? _sync;
 
     public MakinoBackend(IConfiguration config, FMSSettings st, SerialSettings serialSt)
     {
@@ -79,10 +79,10 @@ namespace BlackMaple.FMSInsight.Makino
 
     void IDisposable.Dispose()
     {
-      _jobs.Dispose();
+      _jobs?.Dispose();
     }
 
-    public event NewCurrentStatus OnNewCurrentStatus;
+    public event NewCurrentStatus? OnNewCurrentStatus;
 
     public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
   }
