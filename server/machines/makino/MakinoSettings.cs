@@ -44,7 +44,7 @@ public class MakinoSettings
   public required FMSSettings FMSSettings { get; init; }
   public required string ADEPath { get; init; }
   public required bool DownloadOnlyOrders { get; init; }
-  public required Func<IMakinoDB> OpenConnection { get; init; }
+  public required Func<IMakinoDB> OpenMakinoConnection { get; init; }
 
   public MakinoSettings() { }
 
@@ -81,7 +81,7 @@ public class MakinoSettings
     {
       connStr = DetectSqlConnectionStr();
     }
-    OpenConnection = () => new MakinoDB(connStr);
+    OpenMakinoConnection = () => new MakinoDB(connStr);
 
     DownloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders");
 

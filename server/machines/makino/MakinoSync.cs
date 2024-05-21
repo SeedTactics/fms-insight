@@ -104,7 +104,7 @@ namespace BlackMaple.FMSInsight.Makino
         lastLog = DateTime.UtcNow.AddDays(-30);
       }
 
-      using var makinoDB = settings.OpenConnection();
+      using var makinoDB = settings.OpenMakinoConnection();
       var newEvts = new LogBuilder(makinoDB, db).CheckLogs(lastLog);
 
       var st = makinoDB.LoadCurrentInfo(db);
