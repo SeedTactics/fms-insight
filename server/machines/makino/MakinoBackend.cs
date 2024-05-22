@@ -44,7 +44,7 @@ namespace BlackMaple.FMSInsight.Makino
     public RepositoryConfig? RepoConfig { get; }
     public IJobControl? JobControl => _jobs;
     public IQueueControl? QueueControl => _jobs;
-    public IMachineControl? MachineControl => null;
+    public IMachineControl? MachineControl { get; }
 
     private readonly JobsAndQueuesFromDb<MakinoCellState>? _jobs;
     private readonly MakinoSync? _sync;
@@ -66,6 +66,8 @@ namespace BlackMaple.FMSInsight.Makino
           Path.Combine(st.DataDirectory, "inspections.db"),
           Path.Combine(st.DataDirectory, "jobs.db")
         );
+
+        MachineControl = new MakinoMachines(settings.OpenMakinoConnection);
 
         _sync = new MakinoSync(settings);
 

@@ -320,6 +320,9 @@ namespace BlackMaple.FMSInsight.Makino
     IDictionary<int, PalletLocation> Devices();
     CurrentStatus LoadCurrentInfo(IRepository logDb);
     MakinoResults LoadResults(DateTime startUTC, DateTime endUTC);
+    ImmutableList<ProgramInCellController> CurrentProgramsInCellController();
+    ImmutableList<ToolInMachine> AllTools(int? deviceNum = null);
+    ImmutableList<ToolSnapshot> SnapshotForProgram(int NCProgramFileID, int deviceNum);
   }
 
   public sealed class MakinoDB : IMakinoDB, IDisposable
@@ -941,7 +944,7 @@ namespace BlackMaple.FMSInsight.Makino
           }
           row += "  ";
         }
-        Log.Debug(row);
+        Log.Information(row);
 
         onEachRow(reader);
       }
@@ -963,6 +966,173 @@ namespace BlackMaple.FMSInsight.Makino
       //dType = 7 is Presetter
       return ret;
     }
+    #endregion
+
+    #region Programs and Tools
+    public ImmutableList<ProgramInCellController> CurrentProgramsInCellController()
+    {
+      var progs = ImmutableList.CreateBuilder<ProgramInCellController>();
+
+      using var trans = _db.BeginTransaction();
+      using var cmd = _db.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText = "SELECT Name, Comment FROM " + dbo + "NCProgramFiles";
+
+      using var reader = cmd.ExecuteReader();
+
+      while (reader.Read())
+      {
+        var name = reader.GetString(0);
+        progs.Add(
+          new ProgramInCellController()
+          {
+            CellControllerProgramName = name,
+            ProgramName = name,
+            Comment = reader.IsDBNull(1) ? "" : reader.GetString(1)
+          }
+        );
+      }
+
+      return progs.ToImmutable();
+    }
+
+    private static string ToolName(string comment, long ftn, int cutterNo, int totalCutter)
+    {
+      var name = comment;
+      if (totalCutter != 1)
+      {
+        name += " Cutter " + cutterNo;
+      }
+      name += " (" + ftn.ToString() + ")";
+      return name;
+    }
+
+    public ImmutableList<ToolSnapshot> SnapshotForProgram(int NCProgramFileID, int deviceNum)
+    {
+      // I suspect ftd.ToolLifeType determines either time or count, but in the test data it is always
+      // 3 which seems to be time
+      using var trans = _db.BeginTransaction();
+      using var cmd = _db.CreateCommand();
+      cmd.Transaction = trans;
+
+      cmd.CommandText =
+        $"SELECT ftd.FTNComment, ftd.FTN, ftd.TotalCutter, ftcd.CutterNo, ftcd.ToolLife, itd.ITN, itcd.ActualToolLife, tl.CurrentPot "
+        + $" FROM {dbo}MainProgramTool mpt "
+        + $" INNER JOIN {dbo}FunctionalToolData ftd ON mpt.FTN = ftd.FTN"
+        + $" INNER JOIN {dbo}FunctionalToolCutterData ftcd ON ftd.FTNID = ftcd.FTNID"
+        + $" INNER JOIN {dbo}IndividualToolData itd ON ftd.FTNID = itd.FTNID"
+        + $" INNER JOIN {dbo}IndividualToolCutterData itcd ON itd.ITNID = itcd.ITNID AND ftcd.CutterNo = itcd.CutterNo"
+        + $" INNER JOIN {dbo}ToolLocation tl ON itd.ITNID = tl.ITNID"
+        + $" INNER JOIN {dbo}Devices d ON tl.CurrentDeviceID = d.DeviceID"
+        + " WHERE mpt.NCProgramFileID = @id AND d.DeviceType = 1 AND d.DeviceNumber = @dev";
+
+      var param = cmd.CreateParameter();
+      param.ParameterName = "@id";
+      param.DbType = DbType.Int32;
+      param.Value = NCProgramFileID;
+      cmd.Parameters.Add(param);
+
+      param = cmd.CreateParameter();
+      param.ParameterName = "@dev";
+      param.DbType = DbType.Int32;
+      param.Value = deviceNum;
+      cmd.Parameters.Add(param);
+
+      var tools = ImmutableList.CreateBuilder<ToolSnapshot>();
+
+      using var reader = cmd.ExecuteReader();
+
+      while (reader.Read())
+      {
+        if (Enumerable.Range(0, 11).Any(reader.IsDBNull))
+        {
+          continue;
+        }
+
+        tools.Add(
+          new ToolSnapshot()
+          {
+            ToolName = ToolName(
+              comment: reader.GetString(0),
+              ftn: reader.GetInt64(1),
+              totalCutter: reader.GetInt32(2),
+              cutterNo: reader.GetInt32(3)
+            ),
+            Pocket = reader.GetInt32(7),
+            Serial = reader.GetInt64(5).ToString(),
+            CurrentUse = TimeSpan.FromSeconds(reader.GetInt64(6)),
+            TotalLifeTime = TimeSpan.FromSeconds(reader.GetInt64(4)),
+          }
+        );
+      }
+
+      return tools.ToImmutable();
+    }
+
+    public ImmutableList<ToolInMachine> AllTools(int? deviceNum = null)
+    {
+      var sql =
+        $"SELECT ftd.FTNComment, ftd.FTN, ftd.TotalCutter, ftcd.CutterNo, ftcd.ToolLife, itd.ITN, itcd.ActualToolLife, tl.CurrentPot, d.DeviceType, d.DeviceNumber, d.DeviceName "
+        + $" FROM {dbo}FunctionalToolData ftd"
+        + $" INNER JOIN {dbo}FunctionalToolCutterData ftcd ON ftd.FTNID = ftcd.FTNID"
+        + $" INNER JOIN {dbo}IndividualToolData itd ON ftd.FTNID = itd.FTNID"
+        + $" INNER JOIN {dbo}IndividualToolCutterData itcd ON itd.ITNID = itcd.ITNID AND ftcd.CutterNo = itcd.CutterNo"
+        + $" INNER JOIN {dbo}ToolLocation tl ON itd.ITNID = tl.ITNID "
+        + $" INNER JOIN {dbo}Devices d ON tl.CurrentDeviceID = d.DeviceID";
+
+      if (deviceNum.HasValue)
+      {
+        sql += " WHERE d.DeviceType = 1 AND d.DeviceNumber = @dev";
+      }
+
+      using var trans = _db.BeginTransaction();
+      using var cmd = _db.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText = sql;
+
+      if (deviceNum.HasValue)
+      {
+        var param = cmd.CreateParameter();
+        param.ParameterName = "@dev";
+        param.DbType = DbType.Int32;
+        param.Value = deviceNum.Value;
+        cmd.Parameters.Add(param);
+      }
+
+      var tools = ImmutableList.CreateBuilder<ToolInMachine>();
+
+      using var reader = cmd.ExecuteReader();
+
+      while (reader.Read())
+      {
+        if (Enumerable.Range(0, 11).Any(reader.IsDBNull))
+        {
+          continue;
+        }
+        var dev = ParseDevice(reader.GetInt16(8), reader.GetInt16(9));
+
+        tools.Add(
+          new ToolInMachine()
+          {
+            ToolName = ToolName(
+              comment: reader.GetString(0),
+              ftn: reader.GetInt64(1),
+              totalCutter: reader.GetInt32(2),
+              cutterNo: reader.GetInt32(3)
+            ),
+            Pocket = reader.GetInt32(7),
+            Serial = reader.GetInt64(5).ToString(),
+            CurrentUse = TimeSpan.FromSeconds(reader.GetInt64(6)),
+            TotalLifeTime = TimeSpan.FromSeconds(reader.GetInt64(4)),
+            MachineGroupName = dev.StationGroup,
+            MachineNum = dev.Num
+          }
+        );
+      }
+
+      return tools.ToImmutable();
+    }
+
     #endregion
   }
 }
