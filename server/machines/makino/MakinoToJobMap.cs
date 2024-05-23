@@ -122,13 +122,13 @@ namespace BlackMaple.FMSInsight.Makino
     {
       if (loc.Location == PalletLocationEnum.LoadUnload)
       {
-        var jobNum = _jobIDToNum[jobID];
-        var proc = _procIDToProcNum[_jobIDToProcID[jobID]];
-        var job = _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]];
+        var procID = _jobIDToProcID[jobID];
+        var proc = _procIDToProcNum[procID];
+        var job = _byPartID[_procIDToPartID[procID]];
 
-        if (jobNum == 1)
+        if (_jobIDToNum[jobID] == 1)
         {
-          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] = job.AdjustPath(
+          _byPartID[_procIDToPartID[procID]] = job.AdjustPath(
             proc,
             1,
             p => p with { Load = p.Load.Add(loc.Num) }
@@ -136,7 +136,7 @@ namespace BlackMaple.FMSInsight.Makino
         }
         else
         {
-          _byPartID[_procIDToPartID[_jobIDToProcID[jobID]]] = job.AdjustPath(
+          _byPartID[_procIDToPartID[procID]] = job.AdjustPath(
             proc,
             1,
             p => p with { Unload = p.Unload.Add(loc.Num) }
@@ -151,7 +151,7 @@ namespace BlackMaple.FMSInsight.Makino
             jobID,
             new MachiningStop
             {
-              StationGroup = "MC",
+              StationGroup = loc.StationGroup,
               Program = _programs[jobID],
               Stations = [loc.Num],
               ExpectedCycleTime = TimeSpan.Zero
@@ -182,8 +182,10 @@ namespace BlackMaple.FMSInsight.Makino
         }
 
         if (stops.Count > 0)
+        {
           _byPartID[proc.Value] = _byPartID[proc.Value]
-            .AdjustPath(procNum, 1, d => d with { Stops = d.Stops.AddRange(stops.Values) });
+            .AdjustPath(procNum, 1, d => d with { Stops = stops.Values.ToImmutableList() });
+        }
       }
     }
 
@@ -206,7 +208,7 @@ namespace BlackMaple.FMSInsight.Makino
         .AdjustPath(procNum, 1, p => p with { PartsPerPallet = clampQty });
     }
 
-    public ActiveJob DuplicateForOrder(int orderID, string order, int partID)
+    public void DuplicateForOrder(int orderID, string order, int partID, Func<ActiveJob, ActiveJob> extra)
     {
       var job = _byPartID[partID];
       var historic = db.LoadJob(order);
@@ -281,12 +283,7 @@ namespace BlackMaple.FMSInsight.Makino
             : job.Processes
       };
 
-      // Data from historicJob for each path can't really be added because the
-      // makino path may be different (if we only downloaded the orders, not the whole routing)
-      // Thus, don't copy data like queues, expected times, simulated times, etc.
-
-      _byOrderID.Add(orderID, newJob);
-      return newJob;
+      _byOrderID.Add(orderID, extra(newJob));
     }
 
     public void AddQuantityToProcess(int orderID, int processID, int remaining, int completed, int scrap)
@@ -296,27 +293,23 @@ namespace BlackMaple.FMSInsight.Makino
 
       _byOrderID[orderID] = job with
       {
-        Cycles = procNum == 1 ? remaining + completed + scrap : job.Cycles,
         RemainingToStart = procNum == 1 ? remaining : job.RemainingToStart,
-        Completed = job.Completed!.SetItem(procNum - 1, [completed])
+        Completed = job.Completed!.SetItem(procNum - 1, [completed + scrap])
       };
     }
 
     public InProcessMaterial CreateMaterial(
       int orderID,
       int processID,
-      int jobID,
       int palletNum,
-      int face,
-      long matID
+      int fixtureNum,
+      int? lastMachiningJobID,
+      long matID,
+      string? serial,
+      string? workorder
     )
     {
       var job = _byOrderID[orderID];
-      var program = "";
-      if (_programs.TryGetValue(jobID, out var value))
-        program = value;
-
-      var matDetails = db.GetMaterialDetails(matID);
       return new InProcessMaterial()
       {
         MaterialID = matID,
@@ -324,24 +317,25 @@ namespace BlackMaple.FMSInsight.Makino
         Process = _procIDToProcNum[processID],
         Path = 1,
         PartName = job.PartName,
-        Serial = matDetails?.Serial,
-        WorkorderId = matDetails?.Workorder,
+        Serial = serial,
+        WorkorderId = workorder,
         SignaledInspections = db.LookupInspectionDecisions(matID)
           .Where(x => x.Inspect)
           .Select(x => x.InspType)
           .Distinct()
           .ToImmutableList(),
         QuarantineAfterUnload = null,
-        Action = new InProcessMaterialAction()
-        {
-          Type = InProcessMaterialAction.ActionType.Waiting,
-          Program = program
-        },
+        LastCompletedMachiningRouteStopIndex =
+          lastMachiningJobID.HasValue && lastMachiningJobID.Value > 0
+            // job num 1 is load, 2 is machining so subtract 2 to get the index
+            ? _jobIDToNum[lastMachiningJobID.Value] - 2
+            : null,
+        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting, },
         Location = new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.OnPallet,
           PalletNum = palletNum,
-          Face = face
+          Face = fixtureNum
         }
       };
     }
@@ -440,18 +434,6 @@ namespace BlackMaple.FMSInsight.Makino
         _fixPalIDToMaterial.Add(fixturePalletID, ms);
       }
 
-      var palletNum = _fixPalIDToPalNum[fixturePalletID];
-      var pal = _pallets[palletNum];
-
-      if (pal.CurrentPalletLocation.Location == PalletLocationEnum.Machine && mat.Action.Program != "")
-      {
-        mat %= m => m.Action.Type = InProcessMaterialAction.ActionType.Machining;
-      }
-      else
-      {
-        mat %= m => m.Action.Program = "";
-      }
-
       ms.Add(mat);
     }
 
@@ -465,18 +447,15 @@ namespace BlackMaple.FMSInsight.Makino
       {
         _fixPalIDToMaterial[fixturePalletID] = value
           .Select(mat =>
-            mat
-            % (
-              draft =>
-                draft.SetAction(
-                  new InProcessMaterialAction()
-                  {
-                    Type = completed
-                      ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-                      : InProcessMaterialAction.ActionType.UnloadToInProcess
-                  }
-                )
-            )
+            mat with
+            {
+              Action = new InProcessMaterialAction()
+              {
+                Type = completed
+                  ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+                  : InProcessMaterialAction.ActionType.UnloadToInProcess
+              }
+            }
           )
           .ToList();
       }

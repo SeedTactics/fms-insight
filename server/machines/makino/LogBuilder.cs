@@ -210,7 +210,7 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    private static string MkForeignID(int pallet, int fixture, string order, DateTime loadedUTC)
+    public static string MkForeignID(int pallet, int fixture, string order, DateTime loadedUTC)
     {
       return order + "-" + pallet.ToString() + "-" + fixture.ToString() + "-" + loadedUTC.ToString("o");
     }

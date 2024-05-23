@@ -683,20 +683,18 @@ namespace BlackMaple.FMSInsight.Makino
       );
 
       Load(
-        "SELECT PartID, PartName, Revision, Comment, Priority FROM " + dbo + "Parts",
+        "SELECT PartID, PartName, Comment FROM " + dbo + "Parts",
         reader =>
         {
           var partID = reader.GetInt32(0);
 
           var partName = reader.GetString(1);
-          if (!reader.IsDBNull(2))
-            partName += reader.GetString(2);
 
           map.CreateJob(
             partName,
             partID,
             reader.GetString(1),
-            reader.IsDBNull(3) ? null : reader.GetString(3)
+            reader.IsDBNull(2) ? null : reader.GetString(2)
           );
         },
         trans
@@ -786,34 +784,25 @@ namespace BlackMaple.FMSInsight.Makino
       );
 
       Load(
-        "SELECT OrderID, OrderName, PartID, Comment, Quantity, Priority, StartDate "
-          + "FROM "
-          + dbo
-          + "Orders",
+        "SELECT OrderID, OrderName, PartID, Comment, Quantity, Priority FROM " + dbo + "Orders",
         reader =>
         {
-          var newJob = map.DuplicateForOrder(reader.GetInt32(0), reader.GetString(1), reader.GetInt32(2));
-
-          DateTime start = DateTime.SpecifyKind(reader.GetDateTime(6), DateTimeKind.Local);
-          start = start.ToUniversalTime();
-
-          newJob = newJob with
-          {
-            Comment = reader.IsDBNull(3) ? newJob.Comment : reader.GetString(3),
-            Cycles = reader.GetInt32(4),
-            Precedence =
-            [
-              [reader.GetInt16(5)]
-            ],
-            Processes = newJob
-              .Processes.Select(proc => new BlackMaple.MachineFramework.ProcessInfo()
+          var comment = reader.IsDBNull(3) ? "" : reader.GetString(3);
+          map.DuplicateForOrder(
+            reader.GetInt32(0),
+            reader.GetString(1),
+            reader.GetInt32(2),
+            newJob =>
+              newJob with
               {
-                Paths = proc
-                  .Paths.Select(path => path with { SimulatedStartingUTC = start })
-                  .ToImmutableList()
-              })
-              .ToImmutableList()
-          };
+                Comment = string.IsNullOrEmpty(comment) ? newJob.Comment : comment,
+                Cycles = reader.GetInt32(4),
+                Precedence =
+                [
+                  [reader.GetInt16(5)]
+                ],
+              }
+          );
         },
         trans
       );
@@ -837,7 +826,7 @@ namespace BlackMaple.FMSInsight.Makino
       );
 
       Load(
-        "SELECT PalletFixtureID, CurProcessID, CurOrderID, CurJobID, WorkStatus "
+        "SELECT PalletFixtureID, CurProcessID, CurOrderID, LastMachiningJobID "
           + "FROM "
           + dbo
           + "FixtureRun WHERE CurProcessID IS NOT NULL",
@@ -855,10 +844,10 @@ namespace BlackMaple.FMSInsight.Makino
           palMap.PalletLocInfo(palfixID, out int palletNum, out int fixtureNum);
 
           //look for material id
-          IEnumerable<long> matIDs;
+          IEnumerable<(long matId, string? serial, string? workorder)> mats;
           if (orderName == "")
           {
-            matIDs = [];
+            mats = [];
           }
           else
           {
@@ -871,28 +860,30 @@ namespace BlackMaple.FMSInsight.Makino
             );
             if (mostRecentLog == null)
             {
-              matIDs = [];
+              mats = [];
             }
             else
             {
-              matIDs = mostRecentLog.Material.Select(m => m.MaterialID);
+              mats = mostRecentLog.Material.Select(m => (m.MaterialID, m.Serial, m.Workorder));
             }
           }
 
-          if (!matIDs.Any())
+          if (!mats.Any())
           {
-            matIDs = [-1];
+            mats = [(-1, null, null)];
           }
 
-          foreach (var m in matIDs)
+          foreach (var (matId, serial, workorder) in mats)
           {
             var inProcMat = map.CreateMaterial(
-              orderID,
-              reader.GetInt32(1),
-              reader.GetInt32(3),
-              palletNum,
-              fixtureNum,
-              m
+              orderID: orderID,
+              processID: reader.GetInt32(1),
+              palletNum: palletNum,
+              fixtureNum: fixtureNum,
+              lastMachiningJobID: reader.IsDBNull(3) ? null : reader.GetInt32(3),
+              matID: matId,
+              serial: serial,
+              workorder: workorder
             );
 
             palMap.AddMaterial(palfixID, inProcMat);
@@ -1094,7 +1085,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       cmd.CommandText =
         $"SELECT ftd.FTNComment, ftd.FTN, ftd.TotalCutter, ftcd.CutterNo, ftcd.ToolLife, itd.ITN, itcd.ActualToolLife, tl.CurrentPot "
-        + $" FROM {dbo}MainProgramTool mpt "
+        + $" FROM {dbo}MainProgramTools mpt "
         + $" INNER JOIN {dbo}FunctionalToolData ftd ON mpt.FTN = ftd.FTN"
         + $" INNER JOIN {dbo}FunctionalToolCutterData ftcd ON ftd.FTNID = ftcd.FTNID"
         + $" INNER JOIN {dbo}IndividualToolData itd ON ftd.FTNID = itd.FTNID"
@@ -1121,7 +1112,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       while (reader.Read())
       {
-        if (Enumerable.Range(0, 11).Any(reader.IsDBNull))
+        if (Enumerable.Range(0, 8).Any(reader.IsDBNull))
         {
           continue;
         }
@@ -1131,14 +1122,14 @@ namespace BlackMaple.FMSInsight.Makino
           {
             ToolName = ToolName(
               comment: reader.GetString(0),
-              ftn: reader.GetInt64(1),
+              ftn: reader.GetInt32(1),
               totalCutter: reader.GetInt32(2),
               cutterNo: reader.GetInt32(3)
             ),
             Pocket = reader.GetInt32(7),
-            Serial = reader.GetInt64(5).ToString(),
-            CurrentUse = TimeSpan.FromSeconds(reader.GetInt64(6)),
-            TotalLifeTime = TimeSpan.FromSeconds(reader.GetInt64(4)),
+            Serial = reader.GetInt32(5).ToString(),
+            CurrentUse = TimeSpan.FromSeconds(reader.GetInt32(6)),
+            TotalLifeTime = TimeSpan.FromSeconds(reader.GetInt32(4)),
           }
         );
       }
@@ -1193,14 +1184,14 @@ namespace BlackMaple.FMSInsight.Makino
           {
             ToolName = ToolName(
               comment: reader.GetString(0),
-              ftn: reader.GetInt64(1),
+              ftn: reader.GetInt32(1),
               totalCutter: reader.GetInt32(2),
               cutterNo: reader.GetInt32(3)
             ),
             Pocket = reader.GetInt32(7),
-            Serial = reader.GetInt64(5).ToString(),
-            CurrentUse = TimeSpan.FromSeconds(reader.GetInt64(6)),
-            TotalLifeTime = TimeSpan.FromSeconds(reader.GetInt64(4)),
+            Serial = reader.GetInt32(5).ToString(),
+            CurrentUse = TimeSpan.FromSeconds(reader.GetInt32(6)),
+            TotalLifeTime = TimeSpan.FromSeconds(reader.GetInt32(4)),
             MachineGroupName = dev.StationGroup,
             MachineNum = dev.Num
           }
