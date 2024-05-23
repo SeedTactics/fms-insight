@@ -114,7 +114,7 @@ namespace BlackMaple.FMSInsight.Makino
       //check if the cycle already exists
       if (
         timeToSkip == m.EndDateTimeUTC
-        && logDb.CycleExists(m.EndDateTimeUTC, m.PalletID, LogType.MachineCycle, "MC", loc.Num)
+        && logDb.CycleExists(m.EndDateTimeUTC, m.PalletID, LogType.MachineCycle, loc.StationGroup, loc.Num)
       )
       {
         return;
@@ -173,7 +173,7 @@ namespace BlackMaple.FMSInsight.Makino
       logDb.RecordMachineEnd(
         mats: matList,
         pallet: m.PalletID,
-        statName: "MC",
+        statName: loc.StationGroup,
         statNum: loc.Num,
         program: m.Program,
         result: "",
