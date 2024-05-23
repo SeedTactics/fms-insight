@@ -97,7 +97,7 @@ public sealed class LogBuilderSpec : IDisposable
             {
               Location = PalletLocationEnum.Machine,
               Num = 1,
-              StationGroup = "Mach"
+              StationGroup = "MC"
             }
           },
           {
@@ -106,7 +106,7 @@ public sealed class LogBuilderSpec : IDisposable
             {
               Location = PalletLocationEnum.Machine,
               Num = 2,
-              StationGroup = "Mach"
+              StationGroup = "MC"
             }
           },
         }
@@ -197,7 +197,7 @@ public sealed class LogBuilderSpec : IDisposable
                     [
                       new MachiningStop()
                       {
-                        StationGroup = "Mach",
+                        StationGroup = "MC",
                         Stations = [3],
                         ExpectedCycleTime = TimeSpan.FromMinutes(mcMin),
                       }
