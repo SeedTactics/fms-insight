@@ -318,6 +318,7 @@ namespace BlackMaple.FMSInsight.Makino
   public interface IMakinoDB : IDisposable
   {
     IDictionary<int, PalletLocation> Devices();
+    void CheckForQueryNotification();
     CurrentStatus LoadCurrentInfo(IRepository logDb);
     MakinoResults LoadResults(DateTime startUTC, DateTime endUTC);
     ImmutableList<ProgramInCellController> CurrentProgramsInCellController();
@@ -966,6 +967,50 @@ namespace BlackMaple.FMSInsight.Makino
       //dType = 7 is Presetter
       return ret;
     }
+    #endregion
+
+    #region Monitoring
+
+    // At the moment, not sure if Query Notification is enabled
+    public void CheckForQueryNotification()
+    {
+      using (var cmd = _db.CreateCommand())
+      {
+        cmd.CommandText = "SELECT is_broker_enabled FROM sys.databases WHERE name = 'Makino'";
+        var result = cmd.ExecuteScalar();
+        if (result == DBNull.Value)
+        {
+          Log.Debug("Query Notification is not enabled for Makino database");
+        }
+        else
+        {
+          Log.Debug("Query Notification is enabled for Makino database");
+        }
+      }
+
+      // checking permissions now
+      try
+      {
+        System.Data.SqlClient.SqlDependency.Start(_db.ConnectionString);
+        Log.Debug("SqlDependency started");
+      }
+      catch (Exception ex)
+      {
+        Log.Debug(ex, "Error starting SqlDependency");
+      }
+      finally
+      {
+        try
+        {
+          System.Data.SqlClient.SqlDependency.Stop(_db.ConnectionString);
+        }
+        catch (Exception ex)
+        {
+          Log.Debug(ex, "Error stopping SqlDependency");
+        }
+      }
+    }
+
     #endregion
 
     #region Programs and Tools

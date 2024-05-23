@@ -72,6 +72,16 @@ namespace BlackMaple.FMSInsight.Makino
         _sync = new MakinoSync(settings);
 
         _jobs = new JobsAndQueuesFromDb<MakinoCellState>(RepoConfig, st, RaiseNewCurrentStatus, _sync);
+
+        try
+        {
+          using var db = settings.OpenMakinoConnection();
+          db.CheckForQueryNotification();
+        }
+        catch (Exception ex)
+        {
+          Log.Error(ex, "Error when checking query notifaction");
+        }
       }
       catch (Exception ex)
       {
