@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<MASData>
+  <Orders>
+    <Order action="ADD" name="aaa-0P_yYDHvCtK0w05e7">
+      <Comment>aaa</Comment>
+      <PartName>aaa</PartName>
+      <Revision>Insight</Revision>
+      <Quantity>10</Quantity>
+      <Priority>10</Priority>
+      <Status>0</Status>
+    </Order>
+    <Order action="ADD" name="bbb-1P_yYDHvCtK0w05e7">
+      <Comment>bbb</Comment>
+      <PartName>bbb</PartName>
+      <Revision>Insight</Revision>
+      <Quantity>20</Quantity>
+      <Priority>10</Priority>
+      <Status>0</Status>
+    </Order>
+  </Orders>
+  <OrderQuantities>
+    <OrderQuantity orderName="aaa-0P_yYDHvCtK0w05e7">
+      <ProcessNumber>1</ProcessNumber>
+      <RemainQuantity>10</RemainQuantity>
+    </OrderQuantity>
+    <OrderQuantity orderName="bbb-1P_yYDHvCtK0w05e7">
+      <ProcessNumber>1</ProcessNumber>
+      <RemainQuantity>20</RemainQuantity>
+    </OrderQuantity>
+  </OrderQuantities>
+</MASData>

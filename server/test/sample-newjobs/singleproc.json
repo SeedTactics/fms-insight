@@ -1,0 +1,1107 @@
+{
+  "ScheduleId": "P_yYDHvCtK0w05e7",
+  "Jobs": [
+    {
+      "Unique": "aaa-0P_yYDHvCtK0w05e7",
+      "RouteStartUTC": "2024-05-23T15:35:17.1477593Z",
+      "RouteEndUTC": "2024-05-24T15:35:17.1477593Z",
+      "Archived": false,
+      "PartName": "aaa",
+      "AllocationAlgorithm": "Greedy,1.0.0",
+      "Bookings": ["aaa", "bbb"],
+      "ManuallyCreated": false,
+      "Cycles": 10,
+      "ProcsAndPaths": [
+        {
+          "paths": [
+            {
+              "PalletNums": [1, 2],
+              "Load": [1],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [1],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "MC",
+                  "StationNums": [1, 2],
+                  "ExpectedCycleTime": "PT12M",
+                  "Program": "aaaprog"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2024-05-23T16:23:17.1477593Z",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2024-05-23T16:47:17.1477593Z",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2024-05-23T17:13:17.1477593Z",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2024-05-23T17:35:17.1477593Z",
+                  "Quantity": 4
+                },
+                {
+                  "TimeUTC": "2024-05-23T17:55:17.1477593Z",
+                  "Quantity": 5
+                },
+                {
+                  "TimeUTC": "2024-05-23T18:19:17.1477593Z",
+                  "Quantity": 6
+                },
+                {
+                  "TimeUTC": "2024-05-23T18:45:17.1477593Z",
+                  "Quantity": 7
+                },
+                {
+                  "TimeUTC": "2024-05-23T19:07:17.1477593Z",
+                  "Quantity": 8
+                },
+                {
+                  "TimeUTC": "2024-05-23T19:22:17.1477593Z",
+                  "Quantity": 9
+                },
+                {
+                  "TimeUTC": "2024-05-23T19:35:17.1477593Z",
+                  "Quantity": 10
+                }
+              ],
+              "SimulatedStartingUTC": "2024-05-23T15:43:17.1477593Z",
+              "SimulatedAverageFlowTime": "PT51M24S",
+              "PartsPerPallet": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Unique": "bbb-1P_yYDHvCtK0w05e7",
+      "RouteStartUTC": "2024-05-23T15:35:17.1477593Z",
+      "RouteEndUTC": "2024-05-24T15:35:17.1477593Z",
+      "Archived": false,
+      "PartName": "bbb",
+      "AllocationAlgorithm": "Greedy,1.0.0",
+      "Bookings": ["aaa", "bbb"],
+      "ManuallyCreated": false,
+      "Cycles": 20,
+      "ProcsAndPaths": [
+        {
+          "paths": [
+            {
+              "PalletNums": [3, 4],
+              "Load": [2],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [2],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "MC",
+                  "StationNums": [3, 4],
+                  "ExpectedCycleTime": "PT15M",
+                  "Program": "bbbprog"
+                }
+              ],
+              "SimulatedProduction": [
+                {
+                  "TimeUTC": "2024-05-23T16:27:17.1477593Z",
+                  "Quantity": 1
+                },
+                {
+                  "TimeUTC": "2024-05-23T16:51:17.1477593Z",
+                  "Quantity": 2
+                },
+                {
+                  "TimeUTC": "2024-05-23T17:09:17.1477593Z",
+                  "Quantity": 3
+                },
+                {
+                  "TimeUTC": "2024-05-23T17:31:17.1477593Z",
+                  "Quantity": 4
+                },
+                {
+                  "TimeUTC": "2024-05-23T17:59:17.1477593Z",
+                  "Quantity": 5
+                },
+                {
+                  "TimeUTC": "2024-05-23T18:23:17.1477593Z",
+                  "Quantity": 6
+                },
+                {
+                  "TimeUTC": "2024-05-23T18:41:17.1477593Z",
+                  "Quantity": 7
+                },
+                {
+                  "TimeUTC": "2024-05-23T19:03:17.1477593Z",
+                  "Quantity": 8
+                },
+                {
+                  "TimeUTC": "2024-05-23T19:31:17.1477593Z",
+                  "Quantity": 9
+                },
+                {
+                  "TimeUTC": "2024-05-23T19:56:17.1477593Z",
+                  "Quantity": 10
+                },
+                {
+                  "TimeUTC": "2024-05-23T20:16:17.1477593Z",
+                  "Quantity": 11
+                },
+                {
+                  "TimeUTC": "2024-05-23T20:34:17.1477593Z",
+                  "Quantity": 12
+                },
+                {
+                  "TimeUTC": "2024-05-23T20:52:17.1477593Z",
+                  "Quantity": 13
+                },
+                {
+                  "TimeUTC": "2024-05-23T21:10:17.1477593Z",
+                  "Quantity": 14
+                },
+                {
+                  "TimeUTC": "2024-05-23T21:28:17.1477593Z",
+                  "Quantity": 15
+                },
+                {
+                  "TimeUTC": "2024-05-23T21:46:17.1477593Z",
+                  "Quantity": 16
+                },
+                {
+                  "TimeUTC": "2024-05-23T22:04:17.1477593Z",
+                  "Quantity": 17
+                },
+                {
+                  "TimeUTC": "2024-05-23T22:22:17.1477593Z",
+                  "Quantity": 18
+                },
+                {
+                  "TimeUTC": "2024-05-23T22:35:17.1477593Z",
+                  "Quantity": 19
+                },
+                {
+                  "TimeUTC": "2024-05-23T22:51:17.1477593Z",
+                  "Quantity": 20
+                }
+              ],
+              "SimulatedStartingUTC": "2024-05-23T15:39:17.1477593Z",
+              "SimulatedAverageFlowTime": "PT50M33S",
+              "PartsPerPallet": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "StationUse": [
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T15:39:17.1477593Z",
+      "EndUTC": "2024-05-23T15:44:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T15:43:17.1477593Z",
+      "EndUTC": "2024-05-23T15:48:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T15:56:17.1477593Z",
+      "EndUTC": "2024-05-23T16:01:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 3,
+      "StartUTC": "2024-05-23T15:48:47.1477593Z",
+      "EndUTC": "2024-05-23T16:03:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T15:52:47.1477593Z",
+      "EndUTC": "2024-05-23T16:04:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T16:00:17.1477593Z",
+      "EndUTC": "2024-05-23T16:05:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T16:05:47.1477593Z",
+      "EndUTC": "2024-05-23T16:20:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T16:09:47.1477593Z",
+      "EndUTC": "2024-05-23T16:21:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T16:13:17.1477593Z",
+      "EndUTC": "2024-05-23T16:23:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T16:17:17.1477593Z",
+      "EndUTC": "2024-05-23T16:27:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T16:29:47.1477593Z",
+      "EndUTC": "2024-05-23T16:41:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T16:37:17.1477593Z",
+      "EndUTC": "2024-05-23T16:47:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 3,
+      "StartUTC": "2024-05-23T16:33:47.1477593Z",
+      "EndUTC": "2024-05-23T16:48:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T16:41:17.1477593Z",
+      "EndUTC": "2024-05-23T16:51:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T16:51:47.1477593Z",
+      "EndUTC": "2024-05-23T17:03:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T16:59:17.1477593Z",
+      "EndUTC": "2024-05-23T17:09:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T16:55:47.1477593Z",
+      "EndUTC": "2024-05-23T17:10:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T17:03:17.1477593Z",
+      "EndUTC": "2024-05-23T17:13:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 3,
+      "StartUTC": "2024-05-23T17:13:47.1477593Z",
+      "EndUTC": "2024-05-23T17:28:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T17:17:47.1477593Z",
+      "EndUTC": "2024-05-23T17:29:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T17:21:17.1477593Z",
+      "EndUTC": "2024-05-23T17:31:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T17:25:17.1477593Z",
+      "EndUTC": "2024-05-23T17:35:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 3,
+      "StartUTC": "2024-05-23T17:37:47.1477593Z",
+      "EndUTC": "2024-05-23T17:52:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T17:41:47.1477593Z",
+      "EndUTC": "2024-05-23T17:53:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T17:45:17.1477593Z",
+      "EndUTC": "2024-05-23T17:55:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T17:49:17.1477593Z",
+      "EndUTC": "2024-05-23T17:59:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T18:01:47.1477593Z",
+      "EndUTC": "2024-05-23T18:13:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T18:09:17.1477593Z",
+      "EndUTC": "2024-05-23T18:19:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T18:05:47.1477593Z",
+      "EndUTC": "2024-05-23T18:20:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T18:13:17.1477593Z",
+      "EndUTC": "2024-05-23T18:23:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T18:23:47.1477593Z",
+      "EndUTC": "2024-05-23T18:35:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T18:31:17.1477593Z",
+      "EndUTC": "2024-05-23T18:41:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 3,
+      "StartUTC": "2024-05-23T18:27:47.1477593Z",
+      "EndUTC": "2024-05-23T18:42:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T18:35:17.1477593Z",
+      "EndUTC": "2024-05-23T18:45:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T18:45:47.1477593Z",
+      "EndUTC": "2024-05-23T19:00:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T18:49:47.1477593Z",
+      "EndUTC": "2024-05-23T19:01:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T18:53:17.1477593Z",
+      "EndUTC": "2024-05-23T19:03:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T18:57:17.1477593Z",
+      "EndUTC": "2024-05-23T19:07:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T19:17:17.1477593Z",
+      "EndUTC": "2024-05-23T19:22:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T19:09:47.1477593Z",
+      "EndUTC": "2024-05-23T19:24:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T19:13:47.1477593Z",
+      "EndUTC": "2024-05-23T19:25:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T19:21:17.1477593Z",
+      "EndUTC": "2024-05-23T19:31:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-05-23T19:30:17.1477593Z",
+      "EndUTC": "2024-05-23T19:35:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "aaa-0P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T19:38:47.1477593Z",
+      "EndUTC": "2024-05-23T19:53:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T19:46:17.1477593Z",
+      "EndUTC": "2024-05-23T19:56:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T20:06:17.1477593Z",
+      "EndUTC": "2024-05-23T20:16:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T20:02:47.1477593Z",
+      "EndUTC": "2024-05-23T20:17:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T20:24:17.1477593Z",
+      "EndUTC": "2024-05-23T20:34:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 3,
+      "StartUTC": "2024-05-23T20:20:47.1477593Z",
+      "EndUTC": "2024-05-23T20:35:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T20:42:17.1477593Z",
+      "EndUTC": "2024-05-23T20:52:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T20:38:47.1477593Z",
+      "EndUTC": "2024-05-23T20:53:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T21:00:17.1477593Z",
+      "EndUTC": "2024-05-23T21:10:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 3,
+      "StartUTC": "2024-05-23T20:56:47.1477593Z",
+      "EndUTC": "2024-05-23T21:11:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T21:18:17.1477593Z",
+      "EndUTC": "2024-05-23T21:28:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T21:14:47.1477593Z",
+      "EndUTC": "2024-05-23T21:29:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T21:36:17.1477593Z",
+      "EndUTC": "2024-05-23T21:46:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 3,
+      "StartUTC": "2024-05-23T21:32:47.1477593Z",
+      "EndUTC": "2024-05-23T21:47:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T21:54:17.1477593Z",
+      "EndUTC": "2024-05-23T22:04:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T21:50:47.1477593Z",
+      "EndUTC": "2024-05-23T22:05:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T22:12:17.1477593Z",
+      "EndUTC": "2024-05-23T22:22:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 3,
+      "StartUTC": "2024-05-23T22:08:47.1477593Z",
+      "EndUTC": "2024-05-23T22:23:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T22:30:17.1477593Z",
+      "EndUTC": "2024-05-23T22:35:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "MC",
+      "StationNum": 4,
+      "StartUTC": "2024-05-23T22:26:47.1477593Z",
+      "EndUTC": "2024-05-23T22:41:47.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    },
+    {
+      "ScheduleId": "P_yYDHvCtK0w05e7",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-05-23T22:46:17.1477593Z",
+      "EndUTC": "2024-05-23T22:51:17.1477593Z",
+      "Parts": [
+        {
+          "JobUnique": "bbb-1P_yYDHvCtK0w05e7",
+          "Process": 1,
+          "Path": 1
+        }
+      ]
+    }
+  ],
+  "SimDayUsage": [
+    {
+      "Day": "2024-05-23",
+      "MachineGroup": "MC",
+      "Usage": 0.073
+    }
+  ],
+  "ExtraParts": {},
+  "Programs": [],
+  "DebugMessage": "H4sIAAAAAAAAAw=="
+}

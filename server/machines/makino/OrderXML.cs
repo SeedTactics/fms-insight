@@ -158,7 +158,7 @@ namespace BlackMaple.FMSInsight.Makino
       xml.WriteStartElement("Part");
       xml.WriteAttributeString("action", "ADD");
       xml.WriteAttributeString("name", j.UniqueStr);
-      xml.WriteAttributeString("revision", "SAIL");
+      xml.WriteAttributeString("revision", "Insight");
 
       xml.WriteElementString("Comment", j.PartName);
 
@@ -230,7 +230,7 @@ namespace BlackMaple.FMSInsight.Makino
         xml.WriteStartElement("Process");
         xml.WriteAttributeString("action", "ADD");
         xml.WriteAttributeString("partName", j.Job.UniqueStr);
-        xml.WriteAttributeString("revision", "SAIL");
+        xml.WriteAttributeString("revision", "Insight");
         xml.WriteAttributeString("processNumber", j.Proc.ToString());
         xml.WriteEndElement(); //Process
       }
@@ -249,7 +249,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       xml.WriteElementString("Comment", j.PartName);
       xml.WriteElementString("PartName", partName);
-      xml.WriteElementString("Revision", "SAIL");
+      xml.WriteElementString("Revision", "Insight");
       xml.WriteElementString("Quantity", j.Cycles.ToString());
       xml.WriteElementString("Priority", "10");
       xml.WriteElementString("Status", "0");
