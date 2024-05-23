@@ -171,6 +171,38 @@ namespace BlackMaple.FMSInsight.Makino
    *       A bunch of other columns, not sure what they do
    */
 
+  /* Tooling
+     --------------------------------------
+     - dbo.FunctionalToolData stores data about a tool type
+        * FTNID is a unique number
+        * FTN is a user visible name and is what is used inside the machining programs
+        * TotalCutter shows how many cutters are in the tool
+
+     - dbo.FunctionalToolCutterData has data about a cutter inside a single tool (most tools have just one cutter)
+        * FTNCutterID is the unique id
+        * FTNID is the key for the tool
+        * CutterNo (1-indexed number of the cutter inside the functional tool)
+        * ToolLife is the time in seconds the tool is expected to last
+        * ToolLifeType is always 3, suspect that 3 means time while another value would mean usage count
+        * there is more data about the tool
+
+     - dbo.IndividualToolData stores data about a specific tool
+       * FTNID refers back to the specific tool type
+       * ITNID is a unique id for this tool
+       * ITN is a user-visible number for the tool (we use as the serial)
+
+     - dbo.IndividualToolCutterData stores data about a cutter in a specific tool
+       * ITNCutterID for this specific cutter
+       * ITNID to refer to the individual tool data
+       * CutterNo (used to match with the CutterNo in the functional tool)
+       * ActualToolLife
+
+     - dbo.ToolLocation
+       * ITNID to refer to the individual tool
+       * CurrentDeviceID where the tool is located
+       * CurrentPot for the tool pot
+  */
+
   /* Unknown Tables
    * - dbo.ONumbers ????
    * - lots of tooling tables
