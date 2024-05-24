@@ -985,7 +985,17 @@ namespace BlackMaple.FMSInsight.Makino
           Log.Error("Device name is null for {type} and {num}", deviceType, deviceNumber);
           name = "MC";
         }
-        name = new string(name.TakeWhile(char.IsLetter).ToArray());
+        // name is something like MCW001, we want to parse the numbers at the end into deviceNumber and then get the name of the machine without the numbers
+        var lastDigitIdx = name.Length - 1;
+        while (lastDigitIdx >= 0 && char.IsDigit(name[lastDigitIdx]))
+        {
+          lastDigitIdx--;
+        }
+        if (lastDigitIdx != name.Length - 1 && lastDigitIdx != 0)
+        {
+          _ = int.TryParse(name[(lastDigitIdx + 1)..], out deviceNumber);
+          name = name[..(lastDigitIdx + 1)];
+        }
         ret = new PalletLocation(PalletLocationEnum.Machine, name, deviceNumber);
       }
       else if (deviceType == 2)
@@ -1083,7 +1093,7 @@ namespace BlackMaple.FMSInsight.Makino
       return name;
     }
 
-    public ImmutableList<ToolSnapshot> SnapshotForProgram(int NCProgramFileID, int deviceNum)
+    public ImmutableList<ToolSnapshot> SnapshotForProgram(int NCProgramFileID, int deviceId)
     {
       // I suspect ftd.ToolLifeType determines either time or count, but in the test data it is always
       // 3 which seems to be time
@@ -1099,8 +1109,7 @@ namespace BlackMaple.FMSInsight.Makino
         + $" INNER JOIN {dbo}IndividualToolData itd ON ftd.FTNID = itd.FTNID"
         + $" INNER JOIN {dbo}IndividualToolCutterData itcd ON itd.ITNID = itcd.ITNID AND ftcd.CutterNo = itcd.CutterNo"
         + $" INNER JOIN {dbo}ToolLocation tl ON itd.ITNID = tl.ITNID"
-        + $" INNER JOIN {dbo}Devices d ON tl.CurrentDeviceID = d.DeviceID"
-        + " WHERE mpt.NCProgramFileID = @id AND d.DeviceType = 1 AND d.DeviceNumber = @dev";
+        + " WHERE mpt.NCProgramFileID = @id AND tl.CurrentDeviceID = @dev";
 
       var param = cmd.CreateParameter();
       param.ParameterName = "@id";
@@ -1111,7 +1120,7 @@ namespace BlackMaple.FMSInsight.Makino
       param = cmd.CreateParameter();
       param.ParameterName = "@dev";
       param.DbType = DbType.Int32;
-      param.Value = deviceNum;
+      param.Value = deviceId;
       cmd.Parameters.Add(param);
 
       var tools = ImmutableList.CreateBuilder<ToolSnapshot>();
@@ -1145,7 +1154,7 @@ namespace BlackMaple.FMSInsight.Makino
       return tools.ToImmutable();
     }
 
-    public ImmutableList<ToolInMachine> AllTools(int? deviceNum = null)
+    public ImmutableList<ToolInMachine> AllTools(int? deviceId = null)
     {
       var sql =
         $"SELECT ftd.FTNComment, ftd.FTN, ftd.TotalCutter, ftcd.CutterNo, ftcd.ToolLife, itd.ITN, itcd.ActualToolLife, tl.CurrentPot, d.DeviceType, d.DeviceNumber, d.DeviceName "
@@ -1156,9 +1165,9 @@ namespace BlackMaple.FMSInsight.Makino
         + $" INNER JOIN {dbo}ToolLocation tl ON itd.ITNID = tl.ITNID "
         + $" INNER JOIN {dbo}Devices d ON tl.CurrentDeviceID = d.DeviceID";
 
-      if (deviceNum.HasValue)
+      if (deviceId.HasValue)
       {
-        sql += " WHERE d.DeviceType = 1 AND d.DeviceNumber = @dev";
+        sql += " WHERE d.DeviceId = @dev";
       }
 
       using var trans = _db.BeginTransaction();
@@ -1166,12 +1175,12 @@ namespace BlackMaple.FMSInsight.Makino
       cmd.Transaction = trans;
       cmd.CommandText = sql;
 
-      if (deviceNum.HasValue)
+      if (deviceId.HasValue)
       {
         var param = cmd.CreateParameter();
         param.ParameterName = "@dev";
         param.DbType = DbType.Int32;
-        param.Value = deviceNum.Value;
+        param.Value = deviceId.Value;
         cmd.Parameters.Add(param);
       }
 
