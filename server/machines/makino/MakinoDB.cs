@@ -670,6 +670,8 @@ namespace BlackMaple.FMSInsight.Makino
 
     public CurrentStatus LoadCurrentInfo(IRepository logDb)
     {
+      var devices = Devices();
+
       var map = new MakinoToJobMap(logDb);
       var palMap = new MakinoToPalletMap();
       using var trans = _db.BeginTransaction();
@@ -700,8 +702,6 @@ namespace BlackMaple.FMSInsight.Makino
         },
         trans
       );
-
-      var devices = Devices();
 
       Load(
         "SELECT ProcessID, JobNumber, JobID FROM " + dbo + "Jobs",
