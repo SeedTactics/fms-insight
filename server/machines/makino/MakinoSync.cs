@@ -34,6 +34,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
@@ -67,6 +68,16 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var ret = new List<string>();
 
+      string machineName = "MC";
+      using (var makino = settings.OpenMakinoConnection())
+      {
+        var mc = makino.Devices().Values.FirstOrDefault(d => d.Location == PalletLocationEnum.Machine);
+        if (mc != null)
+        {
+          machineName = mc.StationGroup;
+        }
+      }
+
       foreach (var j in jobs.Jobs)
       {
         if (j.Processes.Count != 1)
@@ -79,14 +90,39 @@ namespace BlackMaple.FMSInsight.Makino
               + " to have one process."
           );
         }
-        foreach (var proc in j.Processes)
+        else
         {
-          if (proc.Paths.Count > 0)
+          foreach (var proc in j.Processes)
           {
-            ret.Add(
-              "FMS Insight does not support paths with the same color, please make sure each path has a distinct color in "
-                + j.PartName
-            );
+            if (proc.Paths.Count == 0)
+            {
+              ret.Add(j.PartName + " does not have any paths.");
+            }
+            else if (proc.Paths.Count >= 2)
+            {
+              ret.Add(
+                "FMS Insight does not support paths with the same color, please make sure each path has a distinct color in "
+                  + j.PartName
+              );
+            }
+            else
+            {
+              foreach (var stop in proc.Paths[0].Stops)
+              {
+                if (stop.StationGroup != machineName)
+                {
+                  ret.Add(
+                    "The Makino machine name is "
+                      + machineName
+                      + " but the flexibility plan uses "
+                      + stop.StationGroup
+                      + " in part "
+                      + j.PartName
+                      + ", please update the flexibility plan."
+                  );
+                }
+              }
+            }
           }
         }
       }

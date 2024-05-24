@@ -649,7 +649,7 @@ namespace BlackMaple.FMSInsight.Makino
       //Makino: Devices
       var devices = new Dictionary<int, PalletLocation>();
 
-      cmd.CommandText = "SELECT DeviceID, DeviceType, DeviceNumber FROM " + dbo + "Devices";
+      cmd.CommandText = "SELECT DeviceID, DeviceType, DeviceNumber, DeviceName FROM " + dbo + "Devices";
 
       using (var reader = cmd.ExecuteReader())
       {
@@ -659,8 +659,9 @@ namespace BlackMaple.FMSInsight.Makino
           //some versions of makino use short
           var dType = Convert.ToInt32(reader.GetValue(1));
           var dNum = Convert.ToInt32(reader.GetValue(2));
+          var name = reader.GetString(3);
 
-          devices.Add(devID, ParseDevice(dType, dNum));
+          devices.Add(devID, ParseDevice(dType, dNum, name));
         }
       }
 
@@ -738,21 +739,20 @@ namespace BlackMaple.FMSInsight.Makino
       map.CompleteStations();
 
       Load(
-        "SELECT a.PalletFixtureID, a.FixtureNumber, a.FixtureID, b.PalletNumber, c.CurDeviceType, c.CurDeviceNumber "
-          + "FROM "
-          + dbo
-          + "PalletFixtures a, "
-          + dbo
-          + "Pallets b, "
-          + dbo
-          + "PalletLocation c "
-          + "WHERE a.PalletID = b.PalletID AND a.PalletID = c.PalletID "
+        "SELECT a.PalletFixtureID, a.FixtureNumber, a.FixtureID, b.PalletNumber, c.CurDeviceType, c.CurDeviceNumber, d.DeviceName "
+          + $" FROM {dbo}PalletFixtures a, {dbo}Pallets b, {dbo}PalletLocation c "
+          + $" LEFT OUTER JOIN {dbo}Devices d ON c.CurDeviceType = d.DeviceType AND c.CurDeviceNumber = d.DeviceNumber"
+          + " WHERE a.PalletID = b.PalletID AND a.PalletID = c.PalletID "
           + " AND a.FixtureID IS NOT NULL",
         reader =>
         {
           var loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 0);
           if (!reader.IsDBNull(4) && !reader.IsDBNull(5))
-            loc = ParseDevice(reader.GetInt16(4), reader.GetInt16(5));
+            loc = ParseDevice(
+              reader.GetInt16(4),
+              reader.GetInt16(5),
+              reader.IsDBNull(6) ? null : reader.GetString(6)
+            );
 
           palMap.AddPalletInfo(
             reader.GetInt32(0),
@@ -974,12 +974,20 @@ namespace BlackMaple.FMSInsight.Makino
       }
     }
 
-    private static PalletLocation ParseDevice(int deviceType, int deviceNumber)
+    private static PalletLocation ParseDevice(int deviceType, int deviceNumber, string? name)
     {
       var ret = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 0);
 
       if (deviceType == 1)
-        ret = new PalletLocation(PalletLocationEnum.Machine, "MC", deviceNumber);
+      {
+        if (string.IsNullOrEmpty(name))
+        {
+          Log.Error("Device name is null for {type} and {num}", deviceType, deviceNumber);
+          name = "MC";
+        }
+        name = new string(name.TakeWhile(char.IsLetter).ToArray());
+        ret = new PalletLocation(PalletLocationEnum.Machine, name, deviceNumber);
+      }
       else if (deviceType == 2)
         ret = new PalletLocation(PalletLocationEnum.Cart, "Cart", deviceNumber);
       else if (deviceType == 3)
@@ -1177,7 +1185,7 @@ namespace BlackMaple.FMSInsight.Makino
         {
           continue;
         }
-        var dev = ParseDevice(reader.GetInt16(8), reader.GetInt16(9));
+        var dev = ParseDevice(reader.GetInt16(8), reader.GetInt16(9), reader.GetString(10));
 
         tools.Add(
           new ToolInMachine()

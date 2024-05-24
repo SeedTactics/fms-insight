@@ -234,6 +234,53 @@ public sealed class SyncSpec : IDisposable
   }
 
   [Fact]
+  public void ErrorsOnBadMachineName()
+  {
+    using var db = _repo.OpenConnection();
+
+    var partName = fix.Create<string>();
+
+    sync.CheckNewJobs(
+        db,
+        new NewJobs()
+        {
+          ScheduleId = "schid",
+          Jobs =
+          [
+            new Job()
+            {
+              UniqueStr = fix.Create<string>(),
+              PartName = partName,
+              RouteStartUTC = DateTime.UtcNow,
+              RouteEndUTC = DateTime.UtcNow.AddHours(10),
+              Archived = false,
+              Cycles = fix.Create<int>(),
+              Processes =
+              [
+                new ProcessInfo()
+                {
+                  Paths =
+                  [
+                    fix.Create<ProcPathInfo>() with
+                    {
+                      Stops = [fix.Create<MachiningStop>() with { StationGroup = "bad" }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      )
+      .Should()
+      .BeEquivalentTo(
+        [
+          $"The Makino machine name is Mach but the flexibility plan uses bad in part {partName}, please update the flexibility plan."
+        ]
+      );
+  }
+
+  [Fact]
   public void LoadsStateWithNoNewEvents()
   {
     using var db = _repo.OpenConnection();
