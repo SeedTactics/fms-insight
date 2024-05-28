@@ -31,7 +31,13 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ActionType, ICurrentStatus, IProgramInCellController, IToolInMachine } from "../network/api.js";
+import {
+  ActionType,
+  ICurrentStatus,
+  IHistoricJob,
+  IProgramInCellController,
+  IToolInMachine,
+} from "../network/api.js";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { MachineBackend } from "../network/backend.js";
 import { currentStatus } from "../cell-status/current-status.js";
@@ -47,6 +53,7 @@ import { stat_name_and_num } from "../cell-status/station-cycles.js";
 import { LazySeq, HashMap, hashValues } from "@seedtactics/immutable-collections";
 import { atom, useStore } from "jotai";
 import { useCallback } from "react";
+import { last30Jobs } from "../cell-status/scheduled-jobs.js";
 
 function averageToolUse(
   usage: ToolUsage,
@@ -393,6 +400,7 @@ export interface CellControllerProgram {
   readonly partName: string | null;
   readonly statisticalCycleTime: StatisticalCycleTime | null;
   readonly toolUse: ProgramToolUseInSingleCycle | null;
+  readonly plannedMins: number | null;
 }
 
 export interface ProgramReport {
@@ -405,6 +413,7 @@ export interface ProgramReport {
 export function calcProgramReport(
   usage: ToolUsage,
   cycleTimes: EstimatedCycleTimes,
+  jobs: HashMap<string, Readonly<IHistoricJob>> | null,
   progsInCellCtrl: ReadonlyArray<Readonly<IProgramInCellController>>,
   progsToShow: ReadonlySet<string> | null,
 ): ProgramReport {
@@ -421,6 +430,31 @@ export function calcProgramReport(
     allPrograms = allPrograms.filter((p) => progsToShow.has(p.programName));
   }
 
+  const plannedTimes = jobs
+    ?.valuesToLazySeq()
+    .flatMap((j) =>
+      LazySeq.of(j.procsAndPaths)
+        .flatMap((p) => p.paths)
+        .flatMap((path) =>
+          LazySeq.of(path.stops).collect((stop) => {
+            const mins = durationToMinutes(stop.expectedCycleTime);
+            if (stop.program && mins > 0) {
+              return {
+                program: stop.program,
+                plannedMins: mins / path.partsPerPallet,
+                start: j.routeStartUTC,
+              };
+            } else {
+              return null;
+            }
+          }),
+        ),
+    )
+    .toOrderedMap(
+      (p) => [p.program, p],
+      (v1, v2) => (v1.start > v2.start ? v1 : v2),
+    );
+
   const programs = allPrograms
     .map((prog) => {
       const part = progToPart.get(prog.programName);
@@ -432,6 +466,7 @@ export function calcProgramReport(
         partName: part?.part ?? null,
         statisticalCycleTime: part ? cycleTimes.get(part) ?? null : null,
         toolUse: part ? tools.get(part) ?? null : null,
+        plannedMins: plannedTimes?.get(prog.programName)?.plannedMins ?? null,
       };
     })
     .toRArray();
@@ -487,6 +522,7 @@ export const currentProgramReport = atom<ProgramReport | null>((get) => {
   return calcProgramReport(
     get(last30ToolUse),
     get(last30EstimatedCycleTimes),
+    get(last30Jobs),
     progsInCell.progs,
     progsToShow,
   );

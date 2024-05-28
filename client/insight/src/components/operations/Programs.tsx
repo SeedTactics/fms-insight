@@ -105,6 +105,10 @@ function programFilename(program: string): string {
   }
 }
 
+const numFormat = new Intl.NumberFormat("en-US", {
+  maximumFractionDigits: 2,
+});
+
 function ProgramRow(props: ProgramRowProps) {
   const [open, setOpen] = React.useState<boolean>(false);
   const setProgramToShowContent = useSetAtom(programToShowContent);
@@ -164,6 +168,9 @@ function ProgramRow(props: ProgramRowProps) {
           {props.program.statisticalCycleTime === null
             ? ""
             : props.program.statisticalCycleTime.MAD_belowMinutes.toFixed(2)}
+        </TableCell>
+        <TableCell align="right">
+          {props.program.plannedMins === null ? "" : numFormat.format(props.program.plannedMins)}
         </TableCell>
         <TableCell>
           <Tooltip title="Load Program Content">
@@ -237,7 +244,8 @@ type SortColumn =
   | "PartName"
   | "MedianTime"
   | "DeviationAbove"
-  | "DeviationBelow";
+  | "DeviationBelow"
+  | "Planned";
 
 export function ProgramSummaryTable(): JSX.Element {
   const report = useAtomValue(currentProgramReport);
@@ -323,6 +331,17 @@ export function ProgramSummaryTable(): JSX.Element {
           c = -1;
         } else {
           c = a.statisticalCycleTime.MAD_belowMinutes - b.statisticalCycleTime.MAD_belowMinutes;
+        }
+        break;
+      case "Planned":
+        if (a.plannedMins === null && b.plannedMins === null) {
+          c = 0;
+        } else if (a.plannedMins === null) {
+          c = 1;
+        } else if (b.plannedMins === null) {
+          c = -1;
+        } else {
+          c = a.plannedMins - b.plannedMins;
         }
         break;
     }
@@ -422,6 +441,15 @@ export function ProgramSummaryTable(): JSX.Element {
               onClick={() => toggleSort("DeviationBelow")}
             >
               Deviation Below Median
+            </TableSortLabel>
+          </TableCell>
+          <TableCell sortDirection={sortCol === "Planned" ? sortDir : false} align="right">
+            <TableSortLabel
+              active={sortCol === "Planned"}
+              direction={sortDir}
+              onClick={() => toggleSort("Planned")}
+            >
+              Planned Time (min)
             </TableSortLabel>
           </TableCell>
           <TableCell />
