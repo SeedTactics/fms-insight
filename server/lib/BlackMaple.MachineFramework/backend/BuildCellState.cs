@@ -367,6 +367,7 @@ public static class BuildCellState
       public Func<LoadedFace, ImmutableList<InProcessMaterial>>? AdjustUnloadingMaterial { get; init; } =
         null;
       public ImmutableList<InProcessMaterial>? NewMaterialToLoad { get; init; } = null;
+      public DateTime? MachiningStopTime { get; init; } = null;
     }
 
     public record CompletePalletCycle : LoadedPalletStatus
@@ -413,7 +414,12 @@ public static class BuildCellState
         );
 
       case LoadedPalletStatus.Unloading unloading:
-        pal = SetMachineNotRunning(pal: pal, db: db, machineControl: machineControl, nowUTC: nowUTC);
+        pal = SetMachineNotRunning(
+          pal: pal,
+          db: db,
+          machineControl: machineControl,
+          nowUTC: unloading.MachiningStopTime ?? nowUTC
+        );
         foreach (var face in unloading.UnloadingFaces)
         {
           pal = SetUnloading(
