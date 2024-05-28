@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  is-svg: ^4.2.2
-
 importers:
 
   .:
