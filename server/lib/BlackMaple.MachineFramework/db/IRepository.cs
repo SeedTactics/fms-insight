@@ -315,6 +315,16 @@ namespace BlackMaple.MachineFramework
       string originalMessage = null,
       IDictionary<string, string> extraData = null
     );
+    LogEntry RecordGeneralMessage(
+      IEnumerable<EventLogMaterial> mats,
+      string program,
+      string result,
+      int pallet = 0,
+      DateTime? timeUTC = null,
+      string foreignId = null,
+      string originalMessage = null,
+      IDictionary<string, string> extraData = null
+    );
     LogEntry RecordOperatorNotes(long materialId, int process, string notes, string operatorName);
     LogEntry RecordOperatorNotes(
       long materialId,

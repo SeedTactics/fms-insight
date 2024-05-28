@@ -2282,9 +2282,32 @@ namespace BlackMaple.MachineFramework
       IDictionary<string, string> extraData = null
     )
     {
+      return RecordGeneralMessage(
+        mats: mat != null ? new[] { mat } : [],
+        program: program,
+        result: result,
+        pallet: pallet,
+        timeUTC: timeUTC,
+        foreignId: foreignId,
+        originalMessage: originalMessage,
+        extraData: extraData
+      );
+    }
+
+    public LogEntry RecordGeneralMessage(
+      IEnumerable<EventLogMaterial> mats,
+      string program,
+      string result,
+      int pallet = 0,
+      DateTime? timeUTC = null,
+      string foreignId = null,
+      string originalMessage = null,
+      IDictionary<string, string> extraData = null
+    )
+    {
       var log = new NewEventLogEntry()
       {
-        Material = mat != null ? new[] { mat } : new EventLogMaterial[] { },
+        Material = mats,
         Pallet = pallet,
         LogType = LogType.GeneralMessage,
         LocationName = "Message",
