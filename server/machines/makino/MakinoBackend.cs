@@ -67,7 +67,7 @@ namespace BlackMaple.FMSInsight.Makino
           Path.Combine(st.DataDirectory, "jobs.db")
         );
 
-        MachineControl = new MakinoMachines(settings.OpenMakinoConnection);
+        MachineControl = new MakinoMachines(settings);
 
         _sync = new MakinoSync(settings);
 
