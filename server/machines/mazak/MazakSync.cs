@@ -55,51 +55,53 @@ public record MazakState : ICellState
   public required MazakAllData AllData { get; init; }
 }
 
-public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
+public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
 {
-  public static Serilog.ILogger Log = Serilog.Log.ForContext<MazakSync>();
+  public static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MazakSync>();
   public event Action? NewCellState;
   public event MazakLogEventDel? MazakLogEvent;
 
   private readonly IMachineGroupName machineGroupName;
   private readonly IReadDataAccess readDatabase;
+  private readonly IWriteData writeDatabase;
   private readonly IDecrementPlanQty decrementPlanQty;
   private readonly FMSSettings settings;
   private readonly MazakDbType dbType;
   private readonly string logPath;
   private readonly MazakConfig mazakConfig;
-  private readonly MazakQueues queues;
   private readonly IWriteJobs writeJobs;
   private readonly bool useStartingOffsetForDueDate;
+  private readonly bool waitForAllCastingsInQueue;
 
   private readonly FileSystemWatcher logWatcher;
 
   public MazakSync(
     IMachineGroupName machineGroupName,
     IReadDataAccess readDb,
+    IWriteData writeDb,
     FMSSettings settings,
     MazakDbType dbType,
     string logPath,
     MazakConfig mazakConfig,
-    MazakQueues queues,
     IWriteJobs writeJobs,
     IDecrementPlanQty decrementPlanQty,
-    bool useStartingOffsetForDueDate
+    bool useStartingOffsetForDueDate,
+    bool waitForAllCastingsInQueue
   )
   {
     this.machineGroupName = machineGroupName;
     this.readDatabase = readDb;
+    this.writeDatabase = writeDb;
     this.settings = settings;
     this.dbType = dbType;
     this.logPath = logPath;
     this.mazakConfig = mazakConfig;
-    this.queues = queues;
     this.writeJobs = writeJobs;
     this.decrementPlanQty = decrementPlanQty;
     this.useStartingOffsetForDueDate = useStartingOffsetForDueDate;
+    this.waitForAllCastingsInQueue = waitForAllCastingsInQueue;
 
-    logWatcher = new FileSystemWatcher(logPath);
-    logWatcher.Filter = "*.csv";
+    logWatcher = new FileSystemWatcher(logPath) { Filter = "*.csv" };
     logWatcher.Created += LogFileCreated;
     logWatcher.EnableRaisingEvents = true;
   }
@@ -122,20 +124,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
   public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
   {
     var logMessages = new List<string>();
-    MazakAllData mazakData;
-
-    if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(2), true))
-    {
-      throw new Exception("Unable to obtain mazak database lock");
-    }
-    try
-    {
-      mazakData = readDatabase.LoadAllData();
-    }
-    finally
-    {
-      OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
-    }
+    MazakAllData mazakData = readDatabase.LoadAllData();
 
     try
     {
@@ -187,7 +176,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     var now = DateTime.UtcNow;
     var mazakData = readDatabase.LoadAllData();
 
-    var logs = LogDataWeb.LoadLog(db.MaxForeignID(), logPath);
+    var logs = LogCSVParsing.LoadLog(db.MaxForeignID(), logPath);
 
     var trans = new LogTranslation(
       db,
@@ -219,7 +208,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
       }
     }
 
-    LogDataWeb.DeleteLog(db.MaxForeignID(), logPath);
+    LogCSVParsing.DeleteLog(db.MaxForeignID(), logPath);
 
     bool palStChanged = false;
     if (!stoppedBecauseRecentMachineEnd)
@@ -227,15 +216,36 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
       palStChanged = trans.CheckPalletStatusMatchesLogs();
     }
 
+    bool queuesChanged = false;
+    bool currentQueueMismatch = false;
+    try
+    {
+      var transSet = MazakQueues.CalculateScheduleChanges(
+        db,
+        mazakData,
+        waitForAllCastings: waitForAllCastingsInQueue
+      );
+
+      if (transSet != null && transSet.Schedules.Count > 0)
+      {
+        writeDatabase.Save(transSet, "Setting material from queues");
+        queuesChanged = true;
+      }
+    }
+    catch (Exception ex)
+    {
+      Log.Error(ex, "Error checking queues");
+      currentQueueMismatch = true;
+    }
+
     if (sendToExternal.Count > 0)
     {
-      BlackMaple
-        .MachineFramework.SendMaterialToExternalQueue.Post(sendToExternal)
-        .Wait(TimeSpan.FromSeconds(30));
+      SendMaterialToExternalQueue.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
     }
 
     var st = BuildCurrentStatus.Build(db, settings, machineGroupName, dbType, mazakData, now);
-    if (queues.CurrentQueueMismatch)
+
+    if (currentQueueMismatch)
     {
       st = st with { Alarms = st.Alarms.Add("Queue contents and Mazak schedule quantity mismatch.") };
     }
@@ -246,7 +256,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
 
     return new MazakState()
     {
-      StateUpdated = logs.Count > 0 || palStChanged,
+      StateUpdated = logs.Count > 0 || palStChanged || queuesChanged,
       TimeUntilNextRefresh = stoppedBecauseRecentMachineEnd
         ? TimeSpan.FromSeconds(10)
         : TimeSpan.FromMinutes(2),
@@ -265,14 +275,7 @@ public class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
 
     writeJobs.SyncFromDatabase(st.AllData, db);
 
-    var queuesChanged = queues.CheckQueues(db, st.AllData);
-    if (queuesChanged)
-    {
-      return true;
-    }
-
     // TODO: holds
-
 
     return false;
   }

@@ -53,7 +53,6 @@ namespace MazakMachineInterface
     private IWriteJobs _writeJobs;
     private IMachineGroupName _machineGroupName;
     private IDecrementPlanQty _decr;
-    private readonly IQueueSyncFault queueFault;
     private readonly MazakConfig _mazakCfg;
     private System.Timers.Timer _copySchedulesTimer;
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
@@ -67,7 +66,6 @@ namespace MazakMachineInterface
       IMazakLogReader logR,
       BlackMaple.MachineFramework.RepositoryConfig jLogCfg,
       IWriteJobs wJobs,
-      IQueueSyncFault queueSyncFault,
       IDecrementPlanQty decrement,
       bool useStartingOffsetForDueDate,
       BlackMaple.MachineFramework.FMSSettings settings,
@@ -84,7 +82,6 @@ namespace MazakMachineInterface
       _decr = decrement;
       _mazakCfg = mazakCfg;
       _machineGroupName = machineGroupName;
-      queueFault = queueSyncFault;
       _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
       _onCurStatusChange = onStatusChange;
 
@@ -131,7 +128,7 @@ namespace MazakMachineInterface
         mazakData,
         DateTime.UtcNow
       );
-      if (queueFault.CurrentQueueMismatch)
+      if (logReader.CurrentQueueMismatch)
       {
         st = st with { Alarms = st.Alarms.Add("Queue contents and Mazak schedule quantity mismatch.") };
       }

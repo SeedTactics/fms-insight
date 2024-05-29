@@ -79,8 +79,11 @@ namespace MachineWatchTest
     public void Empty(bool waitAll)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: waitAll);
-      var trans = queues.CalculateScheduleChanges(_logDB, new TestMazakData().ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        new TestMazakData().ToData(),
+        waitForAllCastings: waitAll
+      );
       trans.Should().BeNull();
     }
 
@@ -173,7 +176,6 @@ namespace MachineWatchTest
     public void AddAssignedMaterialToQueueNoWaitForAll()
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
       // plan 50, 40 completed, and 5 in process.  So there are 5 remaining.
@@ -215,7 +217,7 @@ namespace MachineWatchTest
         addAsCopiedToSystem: true
       );
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
       trans.Schedules.Should().BeEmpty();
 
       // put 2 castings in queue, plus a different unique and a different process
@@ -227,7 +229,7 @@ namespace MachineWatchTest
       //put something else at load station
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("yyyy", new[] { 1 }, false), 1, 1);
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Id.Should().Be(10);
@@ -245,7 +247,6 @@ namespace MachineWatchTest
     public void AddAssignedToQueueNoWaitForAll(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
       // plan 50, 40 completed, and 5 machining.  1 in proc on mat 1 and 2 in proc on mat 2
@@ -308,14 +309,14 @@ namespace MachineWatchTest
       AddCasting(casting, "thequeue");
       AddCasting(casting, "thequeue");
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
       trans.Schedules.Should().BeEmpty();
 
       // add 1 more for each proc 1 and 2
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "thequeue");
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Priority.Should().Be(10);
@@ -332,7 +333,6 @@ namespace MachineWatchTest
     public void AddAssignedToQueueWaitForAll(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: true);
       var read = new TestMazakData();
 
       // plan 50, 40 completed, and 5 machining.  1 in proc on mat 1 and 2 in proc on mat 2
@@ -395,7 +395,7 @@ namespace MachineWatchTest
       AddCasting(casting, "thequeue");
       AddCasting(casting, "thequeue");
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
       trans.Schedules.Should().BeEmpty();
 
       // add 1 more for each proc 1 and 2.
@@ -413,7 +413,7 @@ namespace MachineWatchTest
       _logDB.GetMaterialInQueueByUnique("thequeue", "uuuu").Should().Contain(m => m.MaterialID == matIdProc1);
       _logDB.IsMaterialInQueue(matIdProc1).Should().BeTrue();
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Priority.Should().Be(10);
@@ -434,7 +434,6 @@ namespace MachineWatchTest
     public void RemoveMatFromQueueNoWaitForAll()
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
       // plan 50, 30 completed.  proc1 has 5 in process, 2 material.  proc2 has 3 in process, 4 material
@@ -496,14 +495,14 @@ namespace MachineWatchTest
       AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "castingQ");
       AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "transQ");
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
       trans.Schedules.Should().BeEmpty();
 
       // now remove one from process 1 and one from process 2
       _logDB.RecordRemoveMaterialFromAllQueues(proc1Mat[0], 1);
       _logDB.RecordRemoveMaterialFromAllQueues(proc2Mat[0], 2);
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Id.Should().Be(10);
@@ -519,7 +518,6 @@ namespace MachineWatchTest
     public void RemoveMatFromQueueWaitForAll()
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: true);
       var read = new TestMazakData();
 
       // plan 50, 30 completed.  proc1 has 5 in process, 2 material.  proc2 has 3 in process, 4 material
@@ -588,7 +586,7 @@ namespace MachineWatchTest
       );
       var xxxId2 = AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "transQ");
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
       trans.Schedules.Should().BeEmpty();
 
       // now remove one from process 1 and one from process 2
@@ -661,7 +659,7 @@ namespace MachineWatchTest
           }.Concat(expectedTransQ)
         );
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
 
       // adds an extra material with id xxxId2 + 1
       var actual = _logDB.GetMaterialInAllQueues();
@@ -720,7 +718,7 @@ namespace MachineWatchTest
 
       read.Schedules[0].Processes[1] = read.Schedules[0].Processes[1] with { ProcessMaterialQuantity = 3 };
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
       trans.Schedules.Should().BeEmpty();
 
       // no extra material a second time
@@ -776,7 +774,6 @@ namespace MachineWatchTest
     public void AddCastingsByFixedQuantity(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
       // plan 50, 43 completed, and 5 in process.  So there are 2 remaining.
@@ -826,7 +823,7 @@ namespace MachineWatchTest
       // put a different casting
       var mat0 = AddCasting("unused", "thequeue");
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
       trans.Schedules.Should().BeEmpty();
 
       // put 3 unassigned castings in queue
@@ -892,7 +889,7 @@ namespace MachineWatchTest
         );
 
       // should allocate 1 parts to uuuu since that is the fixed quantity
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       _logDB
         .GetMaterialInAllQueues()
@@ -965,7 +962,6 @@ namespace MachineWatchTest
     public void AddCastingsByPlannedQuantity(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: true);
       var read = new TestMazakData();
 
       // plan 50, 43 completed, and 5 in process.  So there are 2 remaining.
@@ -1017,7 +1013,7 @@ namespace MachineWatchTest
       var mat2 = AddCasting(casting, "thequeue");
 
       // should not be enough, need two to fill out planned quantity
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
       trans.Schedules.Should().BeEmpty();
 
       // now add two more
@@ -1082,7 +1078,7 @@ namespace MachineWatchTest
         );
 
       // should allocate 2 parts to uuuu since that is the remaining planned
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
 
       _logDB
         .GetMaterialInAllQueues()
@@ -1154,7 +1150,6 @@ namespace MachineWatchTest
     public void AllocateCastingsAndMatQtyChanges()
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
       // plan 50, 43 completed, and 3 in process, 0 material in mazak, but 2 assigned in queue.
@@ -1198,7 +1193,7 @@ namespace MachineWatchTest
         addAsCopiedToSystem: true
       );
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
       trans.Schedules.Should().BeEmpty();
 
       // put 2 assigned castings and three castings
@@ -1278,7 +1273,7 @@ namespace MachineWatchTest
         );
 
       // should allocate nothing because material is not zero, just update the process material quantity
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       _logDB
         .GetMaterialInAllQueues()
@@ -1362,7 +1357,6 @@ namespace MachineWatchTest
     public void IgnoreAllocateWhenNoRemaining(bool waitAll)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
 
       // plan 50, 45 completed, and 5 in process.  So there are none remaining.
@@ -1456,7 +1450,7 @@ namespace MachineWatchTest
         );
 
       // should allocate no parts and leave schedule unchanged.
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
 
       _logDB
         .GetMaterialInAllQueues()
@@ -1512,7 +1506,6 @@ namespace MachineWatchTest
     public void DecrementJobWithoutQueue(bool waitAll)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
 
       // this scenario comes from a job decrement.  At time of decrement, plan 50, 40 completed, 5 in proc, and 5 material
@@ -1547,7 +1540,7 @@ namespace MachineWatchTest
         addAsCopiedToSystem: true
       );
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Priority.Should().Be(10);
@@ -1564,7 +1557,6 @@ namespace MachineWatchTest
     public void DecrementJobWithQueue(bool waitAll, string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
 
       // this scenario occurs after a decrement.  The decrement sets the planned quantity to equal
@@ -1651,7 +1643,7 @@ namespace MachineWatchTest
         );
 
       // should not touch the schedule but unallocate or remove the two entries
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
 
       trans.Schedules.Should().BeEmpty();
 
@@ -1786,7 +1778,6 @@ namespace MachineWatchTest
     public void MultiplePathsAddMaterial()
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
       // path 1-2
@@ -1833,7 +1824,7 @@ namespace MachineWatchTest
 
       AddAssigned(uniq: "xxxx", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ");
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
       trans.Schedules.Should().BeEmpty();
 
       // add 2 more to uuuu1 proc 1
@@ -1852,7 +1843,7 @@ namespace MachineWatchTest
       for (int i = 0; i < 15; i++)
         AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ");
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       trans.Schedules.Count.Should().Be(2);
       trans.Schedules.Select(s => s.Id).Should().BeEquivalentTo(new[] { 10, 11 });
@@ -1881,7 +1872,6 @@ namespace MachineWatchTest
     public void MultiplePathsRemoveMaterial()
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
       // path 1
@@ -1950,7 +1940,7 @@ namespace MachineWatchTest
 
       CreateMultiPathJobs();
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
       trans.Schedules.Should().BeEmpty();
 
       // now remove some material
@@ -1958,12 +1948,12 @@ namespace MachineWatchTest
       _logDB.RecordRemoveMaterialFromAllQueues(proc2path2[0], 2);
       _logDB.RecordRemoveMaterialFromAllQueues(proc2path2[1], 2);
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       trans.Schedules.Count.Should().Be(2);
       trans.Schedules.Select(s => s.Id).Should().BeEquivalentTo(new[] { 10, 11 });
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       trans.Schedules.Count.Should().Be(2);
       trans.Schedules.Select(s => s.Id).Should().BeEquivalentTo(new[] { 10, 11 });
@@ -1994,7 +1984,6 @@ namespace MachineWatchTest
     public void AddCastingsByFixedQuantityMultiPath(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
 
       // path 1
@@ -2057,7 +2046,7 @@ namespace MachineWatchTest
       // put a different casting
       var mat0 = AddCasting("unused", "castingQ");
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
       trans.Schedules.Should().BeEmpty();
 
       // put 3 unassigned castings in queue
@@ -2124,7 +2113,7 @@ namespace MachineWatchTest
         );
 
       // should allocate 2 (fixqty) parts to path 2 (lowest priority)
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       _logDB
         .GetMaterialInAllQueues()
@@ -2201,7 +2190,7 @@ namespace MachineWatchTest
       var mat4 = AddCasting(casting, "castingQ");
       var mat5 = AddCasting(casting, "castingQ");
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       _logDB
         .GetMaterialInAllQueues()
@@ -2316,7 +2305,6 @@ namespace MachineWatchTest
     public void AddCastingsByFullScheduleMultiPath(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: true);
       var read = new TestMazakData();
 
       // path 1
@@ -2380,7 +2368,7 @@ namespace MachineWatchTest
       // put a different casting
       var mat0 = AddCasting("unused", "castingQ");
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
       trans.Schedules.Should().BeEmpty();
 
       // put 3 unassigned castings in queue which is not enough for path 2 (but is enough for path 1)
@@ -2446,14 +2434,14 @@ namespace MachineWatchTest
           }
         );
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
       trans.Schedules.Should().BeEmpty();
 
       // two more, which gives enough for path 2
       var mat4 = AddCasting(casting, "castingQ");
       var mat5 = AddCasting(casting, "castingQ");
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
 
       _logDB
         .GetMaterialInAllQueues()
@@ -2561,7 +2549,6 @@ namespace MachineWatchTest
     public void AdjustsPriorityWhenAddingCastings(string casting, bool matchPallet, bool matchFixture)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: true);
       var read = new TestMazakData();
 
       // path 1
@@ -2630,7 +2617,7 @@ namespace MachineWatchTest
       var mat4 = AddCasting(casting, "castingQ");
       var mat5 = AddCasting(casting, "castingQ");
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
 
       trans.Schedules.Count.Should().Be(1);
       trans.Schedules[0].Priority.Should().Be(11); // schedule has priority increased from 8 to 11
@@ -2651,7 +2638,6 @@ namespace MachineWatchTest
     public void SkipsWhenAtLoad(bool waitAll)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
       var schRow = AddSchedule(
         read,
@@ -2700,7 +2686,7 @@ namespace MachineWatchTest
       var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", new[] { 1 }, false), 1, 1);
       read.LoadActions.Add(action);
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
       trans.Should().BeNull();
 
       _logDB
@@ -2726,7 +2712,7 @@ namespace MachineWatchTest
 
       read.LoadActions.Clear();
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
 
       if (waitAll)
       {
@@ -2772,7 +2758,6 @@ namespace MachineWatchTest
     public void SkipsWhenExistsPendingLoad(bool waitAll)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: waitAll);
       var read = new TestMazakData();
       var schRow = AddSchedule(
         read,
@@ -2827,7 +2812,7 @@ namespace MachineWatchTest
         foreignID: null
       );
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
       trans.Should().BeNull();
 
       _logDB.CompletePalletCycle(
@@ -2863,7 +2848,7 @@ namespace MachineWatchTest
           }
         );
 
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
 
       if (waitAll)
       {
@@ -2909,7 +2894,6 @@ namespace MachineWatchTest
     public void AllocateToMultipleSchedulesByPriority(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
-      var queues = new MazakQueues(null, waitForAllCastings: false);
       var read = new TestMazakData();
       var schRow1 = AddSchedule(
         read,
@@ -3015,7 +2999,7 @@ namespace MachineWatchTest
           }
         );
 
-      var trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
       trans.Schedules.Should().BeEmpty();
 
       _logDB
@@ -3041,7 +3025,7 @@ namespace MachineWatchTest
 
       // now remove the action
       read.LoadActions.Clear();
-      trans = queues.CalculateScheduleChanges(_logDB, read.ToData());
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
       _logDB
         .GetMaterialInAllQueues()

@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using MWI = BlackMaple.MachineFramework;
@@ -48,6 +49,125 @@ namespace MazakMachineInterface
 
     HandleEventResult HandleEvent(LogEntry e);
     bool CheckPalletStatusMatchesLogs(DateTime? timeUTC = null);
+  }
+
+  public static class LogCSVParsing
+  {
+    private static FileStream WaitToOpenFile(string file)
+    {
+      int cnt = 0;
+      while (cnt < 20)
+      {
+        try
+        {
+          return File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+          // do nothing
+          Serilog.Log.Debug(ex, "Error opening {file}", file);
+        }
+        catch (IOException ex)
+        {
+          // do nothing
+          Serilog.Log.Debug(ex, "Error opening {file}", file);
+        }
+        Serilog.Log.Debug("Could not open file {file}, sleeping for 10 seconds", file);
+        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(10));
+      }
+      throw new Exception("Unable to open file " + file);
+    }
+
+    public static List<LogEntry> LoadLog(string lastForeignID, string path)
+    {
+      var files = new List<string>(Directory.GetFiles(path, "*.csv"));
+      files.Sort();
+
+      var ret = new List<LogEntry>();
+
+      foreach (var f in files)
+      {
+        var filename = Path.GetFileName(f);
+        if (filename.CompareTo(lastForeignID) <= 0)
+          continue;
+
+        using (var fstream = WaitToOpenFile(f))
+        using (var stream = new StreamReader(fstream))
+        {
+          while (stream.Peek() >= 0)
+          {
+            var s = stream.ReadLine().Split(',');
+            if (s.Length < 18)
+              continue;
+
+            int code;
+            if (!int.TryParse(s[6], out code))
+            {
+              Serilog.Log.Debug("Unable to parse code from log message {msg}", s);
+              continue;
+            }
+            if (!Enum.IsDefined(typeof(LogCode), code))
+            {
+              Serilog.Log.Debug("Unused log message {msg}", s);
+              continue;
+            }
+
+            string fullPartName = s[10].Trim();
+            int idx = fullPartName.IndexOf(':');
+
+            var e = new LogEntry()
+            {
+              ForeignID = filename,
+              TimeUTC = new DateTime(
+                int.Parse(s[0]),
+                int.Parse(s[1]),
+                int.Parse(s[2]),
+                int.Parse(s[3]),
+                int.Parse(s[4]),
+                int.Parse(s[5]),
+                DateTimeKind.Local
+              ).ToUniversalTime(),
+              Code = (LogCode)code,
+              Pallet = (int.TryParse(s[13], out var pal)) ? pal : -1,
+              FullPartName = fullPartName,
+              JobPartName = (idx > 0) ? fullPartName.Substring(0, idx) : fullPartName,
+              Process = int.TryParse(s[11], out var proc) ? proc : 0,
+              FixedQuantity = int.TryParse(s[12], out var fixQty) ? fixQty : 0,
+              Program = s[14],
+              StationNumber = int.TryParse(s[8], out var statNum) ? statNum : 0,
+              FromPosition = s[16],
+              TargetPosition = s[17],
+            };
+
+            ret.Add(e);
+          }
+        }
+      }
+
+      return ret;
+    }
+
+    public static void DeleteLog(string lastForeignID, string path)
+    {
+      var files = new List<string>(Directory.GetFiles(path, "*.csv"));
+      files.Sort();
+
+      foreach (var f in files)
+      {
+        var filename = Path.GetFileName(f);
+        if (filename.CompareTo(lastForeignID) > 0)
+          break;
+
+        try
+        {
+          File.Delete(f);
+        }
+        catch (Exception ex)
+        {
+          Serilog.Log.Warning(ex, "Error deleting file: " + f);
+        }
+      }
+    }
   }
 
   public class LogTranslation : ILogTranslation

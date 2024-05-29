@@ -97,6 +97,7 @@ namespace MazakMachineInterface
 
   public interface IMazakLogReader : INotifyMazakLogEvent
   {
+    bool CurrentQueueMismatch { get; }
     void RecheckQueues(bool wait);
     void Halt();
   }
@@ -105,6 +106,7 @@ namespace MazakMachineInterface
   public class LogDataVerE : IMazakLogReader, INotifyMazakLogEvent
   {
     private const string DateTimeFormat = "yyyyMMddHHmmss";
+    public bool CurrentQueueMismatch => false;
 
     private MazakConfig _mazakConfig;
     private BlackMaple.MachineFramework.JobDB.Config _jobDBCfg;
@@ -391,10 +393,11 @@ namespace MazakMachineInterface
     private MazakConfig _mazakConfig;
     private BlackMaple.MachineFramework.RepositoryConfig _logDbCfg;
     private IReadDataAccess _readDB;
+    private IWriteData _writeDB;
     private IMachineGroupName _machGroupName;
     private IHoldManagement _hold;
     private BlackMaple.MachineFramework.FMSSettings _settings;
-    private MazakQueues _queues;
+    private bool _waitForAllCastings;
     private Action<BlackMaple.MachineFramework.IRepository> _currentStatusChanged;
 
     private string _path;
@@ -406,27 +409,31 @@ namespace MazakMachineInterface
     private Thread _thread;
     private FileSystemWatcher _watcher;
 
+    public bool CurrentQueueMismatch { get; private set; }
+
     public LogDataWeb(
       string path,
       BlackMaple.MachineFramework.RepositoryConfig logCfg,
       IMachineGroupName machineGroupName,
       IReadDataAccess readDB,
-      MazakQueues queues,
+      IWriteData writeDB,
       IHoldManagement hold,
       BlackMaple.MachineFramework.FMSSettings settings,
       Action<BlackMaple.MachineFramework.IRepository> currentStatusChanged,
-      MazakConfig mazakConfig
+      MazakConfig mazakConfig,
+      bool waitForAllCastings
     )
     {
       _path = path;
       _logDbCfg = logCfg;
       _readDB = readDB;
-      _queues = queues;
       _hold = hold;
+      _writeDB = writeDB;
       _settings = settings;
       _machGroupName = machineGroupName;
       _mazakConfig = mazakConfig;
       _currentStatusChanged = currentStatusChanged;
+      _waitForAllCastings = waitForAllCastings;
       _shutdown = new AutoResetEvent(false);
       _newLogFile = new AutoResetEvent(false);
       _recheckQueues = new AutoResetEvent(false);
@@ -510,7 +517,7 @@ namespace MazakMachineInterface
 
           using (var logDb = _logDbCfg.OpenConnection())
           {
-            logs = LoadLog(logDb.MaxForeignID(), _path);
+            logs = LogCSVParsing.LoadLog(logDb.MaxForeignID(), _path);
             var trans = new LogTranslation(
               logDb,
               mazakData,
@@ -539,7 +546,7 @@ namespace MazakMachineInterface
               }
             }
 
-            DeleteLog(logDb.MaxForeignID(), _path);
+            LogCSVParsing.DeleteLog(logDb.MaxForeignID(), _path);
 
             bool palStChanged = false;
             if (!stoppedBecauseRecentMachineEnd)
@@ -547,7 +554,40 @@ namespace MazakMachineInterface
               palStChanged = trans.CheckPalletStatusMatchesLogs();
             }
 
-            var queuesChanged = _queues.CheckQueues(logDb, mazakData);
+            bool queuesChanged = false;
+            if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
+            {
+              Log.Debug("Unable to obtain mazak db lock, trying again soon.");
+              CurrentQueueMismatch = true;
+            }
+            else
+            {
+              try
+              {
+                var transSet = MazakQueues.CalculateScheduleChanges(
+                  logDb,
+                  mazakData,
+                  waitForAllCastings: _waitForAllCastings
+                );
+
+                if (transSet != null && transSet.Schedules.Count > 0)
+                {
+                  _writeDB.Save(transSet, "Setting material from queues");
+                  queuesChanged = true;
+                }
+                CurrentQueueMismatch = false;
+              }
+              catch (Exception ex)
+              {
+                CurrentQueueMismatch = true;
+                Log.Error(ex, "Error checking for new material");
+                queuesChanged = true;
+              }
+              finally
+              {
+                OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
+              }
+            }
 
             _hold.CheckForTransition(mazakData, logDb);
 
@@ -594,122 +634,6 @@ namespace MazakMachineInterface
       else
       {
         _recheckQueues.Set();
-      }
-    }
-
-    private static FileStream WaitToOpenFile(string file)
-    {
-      int cnt = 0;
-      while (cnt < 20)
-      {
-        try
-        {
-          return File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-          // do nothing
-          Log.Debug(ex, "Error opening {file}", file);
-        }
-        catch (IOException ex)
-        {
-          // do nothing
-          Log.Debug(ex, "Error opening {file}", file);
-        }
-        Log.Debug("Could not open file {file}, sleeping for 10 seconds", file);
-        Thread.Sleep(TimeSpan.FromSeconds(10));
-      }
-      throw new Exception("Unable to open file " + file);
-    }
-
-    public static List<LogEntry> LoadLog(string lastForeignID, string path)
-    {
-      var files = new List<string>(Directory.GetFiles(path, "*.csv"));
-      files.Sort();
-
-      var ret = new List<LogEntry>();
-
-      foreach (var f in files)
-      {
-        var filename = Path.GetFileName(f);
-        if (filename.CompareTo(lastForeignID) <= 0)
-          continue;
-
-        using (var fstream = WaitToOpenFile(f))
-        using (var stream = new StreamReader(fstream))
-        {
-          while (stream.Peek() >= 0)
-          {
-            var s = stream.ReadLine().Split(',');
-            if (s.Length < 18)
-              continue;
-
-            int code;
-            if (!int.TryParse(s[6], out code))
-            {
-              Log.Debug("Unable to parse code from log message {msg}", s);
-              continue;
-            }
-            if (!Enum.IsDefined(typeof(LogCode), code))
-            {
-              Log.Debug("Unused log message {msg}", s);
-              continue;
-            }
-
-            string fullPartName = s[10].Trim();
-            int idx = fullPartName.IndexOf(':');
-
-            var e = new LogEntry()
-            {
-              ForeignID = filename,
-              TimeUTC = new DateTime(
-                int.Parse(s[0]),
-                int.Parse(s[1]),
-                int.Parse(s[2]),
-                int.Parse(s[3]),
-                int.Parse(s[4]),
-                int.Parse(s[5]),
-                DateTimeKind.Local
-              ).ToUniversalTime(),
-              Code = (LogCode)code,
-              Pallet = (int.TryParse(s[13], out var pal)) ? pal : -1,
-              FullPartName = fullPartName,
-              JobPartName = (idx > 0) ? fullPartName.Substring(0, idx) : fullPartName,
-              Process = int.TryParse(s[11], out var proc) ? proc : 0,
-              FixedQuantity = int.TryParse(s[12], out var fixQty) ? fixQty : 0,
-              Program = s[14],
-              StationNumber = int.TryParse(s[8], out var statNum) ? statNum : 0,
-              FromPosition = s[16],
-              TargetPosition = s[17],
-            };
-
-            ret.Add(e);
-          }
-        }
-      }
-
-      return ret;
-    }
-
-    public static void DeleteLog(string lastForeignID, string path)
-    {
-      var files = new List<string>(Directory.GetFiles(path, "*.csv"));
-      files.Sort();
-
-      foreach (var f in files)
-      {
-        var filename = Path.GetFileName(f);
-        if (filename.CompareTo(lastForeignID) > 0)
-          break;
-
-        try
-        {
-          File.Delete(f);
-        }
-        catch (Exception ex)
-        {
-          Log.Warning(ex, "Error deleting file: " + f);
-        }
       }
     }
   }

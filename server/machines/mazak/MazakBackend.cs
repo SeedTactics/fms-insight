@@ -47,7 +47,6 @@ namespace MazakMachineInterface
     private IReadDataAccess _readDB;
     private OpenDatabaseKitTransactionDB _writeDB;
     private RoutingInfo routing;
-    private MazakQueues queues;
     private ICurrentLoadActions loadOper;
     private IMazakLogReader logDataLoader;
 
@@ -206,8 +205,6 @@ namespace MazakMachineInterface
 
       _readDB = new OpenDatabaseKitReadDB(dbConnStr, MazakType, loadOper);
 
-      queues = new MazakQueues(_writeDB, waitForAllCastings);
-
       var hold = new HoldPattern(_writeDB);
       WriteJobs writeJobs;
       using (var jdb = logDbConfig.OpenConnection())
@@ -229,11 +226,12 @@ namespace MazakMachineInterface
           logDbConfig,
           writeJobs,
           _readDB,
-          queues,
+          _writeDB,
           hold,
           st,
           currentStatusChanged: RaiseCurrentStatusChanged,
-          mazakConfig: mazakCfg
+          mazakConfig: mazakCfg,
+          waitForAllCastings: waitForAllCastings
         );
       else
       {
@@ -262,7 +260,6 @@ namespace MazakMachineInterface
         logR: logDataLoader,
         jLogCfg: logDbConfig,
         wJobs: writeJobs,
-        queueSyncFault: queues,
         decrement: decr,
         useStartingOffsetForDueDate: UseStartingOffsetForDueDate,
         settings: st,

@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -39,67 +39,22 @@ using Serilog;
 
 namespace MazakMachineInterface
 {
-  public interface IQueueSyncFault
+  public class MazakQueues
   {
-    bool CurrentQueueMismatch { get; }
-  }
+    private static readonly ILogger log = Serilog.Log.ForContext<MazakQueues>();
 
-  public class MazakQueues : IQueueSyncFault
-  {
-    private static ILogger log = Serilog.Log.ForContext<MazakQueues>();
-
-    private IWriteData _transDB;
-    private bool _waitForAllCastings;
-
-    public bool CurrentQueueMismatch { get; private set; }
-
-    public MazakQueues(IWriteData trans, bool waitForAllCastings)
-    {
-      _transDB = trans;
-      _waitForAllCastings = waitForAllCastings;
-      CurrentQueueMismatch = false;
-    }
-
-    public bool CheckQueues(IRepository jobDB, MazakCurrentStatus mazakData)
-    {
-      if (!OpenDatabaseKitDB.MazakTransactionLock.WaitOne(TimeSpan.FromMinutes(3), true))
-      {
-        log.Debug("Unable to obtain mazak db lock, trying again soon.");
-        return false;
-      }
-      try
-      {
-        var transSet = CalculateScheduleChanges(jobDB, mazakData);
-
-        bool changed = false;
-        if (transSet != null && transSet.Schedules.Count() > 0)
-        {
-          _transDB.Save(transSet, "Setting material from queues");
-          changed = true;
-        }
-        CurrentQueueMismatch = false;
-        return changed;
-      }
-      catch (Exception ex)
-      {
-        CurrentQueueMismatch = true;
-        log.Error(ex, "Error checking for new material");
-        return true;
-      }
-      finally
-      {
-        OpenDatabaseKitDB.MazakTransactionLock.ReleaseMutex();
-      }
-    }
-
-    public MazakWriteData CalculateScheduleChanges(IRepository jdb, MazakCurrentStatus mazakData)
+    public static MazakWriteData CalculateScheduleChanges(
+      IRepository jdb,
+      MazakCurrentStatus mazakData,
+      bool waitForAllCastings
+    )
     {
       IEnumerable<ScheduleWithQueues> schs;
-      schs = LoadSchedules(jdb, mazakData);
+      schs = LoadSchedules(jdb, mazakData, waitForAllCastings: waitForAllCastings);
       if (!schs.Any())
         return null;
 
-      CalculateTargetMatQty(jdb, schs);
+      CalculateTargetMatQty(jdb, schs, waitForAllCastings: waitForAllCastings);
       return UpdateMazakMaterialCounts(schs);
     }
 
@@ -123,7 +78,11 @@ namespace MazakMachineInterface
       public int? NewPriority { get; set; }
     }
 
-    private IEnumerable<ScheduleWithQueues> LoadSchedules(IRepository jdb, MazakCurrentStatus mazakData)
+    private static IReadOnlyList<ScheduleWithQueues> LoadSchedules(
+      IRepository jdb,
+      MazakCurrentStatus mazakData,
+      bool waitForAllCastings
+    )
     {
       var loadOpers = mazakData.LoadActions;
       var schs = new List<ScheduleWithQueues>();
@@ -179,7 +138,7 @@ namespace MazakMachineInterface
           // when we are waiting for all castings to assign, we can assume that any running schedule
           // has all of its material so no need to prevent assignment.
           LowerPriorityScheduleMatchingCastingSkipped =
-            !_waitForAllCastings && skippedCastings.Contains(casting),
+            !waitForAllCastings && skippedCastings.Contains(casting),
           Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
           NewDueDate = null,
           NewPriority = null
@@ -227,7 +186,11 @@ namespace MazakMachineInterface
       return schs;
     }
 
-    private void CalculateTargetMatQty(IRepository logDb, IEnumerable<ScheduleWithQueues> schs)
+    private static void CalculateTargetMatQty(
+      IRepository logDb,
+      IEnumerable<ScheduleWithQueues> schs,
+      bool waitForAllCastings
+    )
     {
       // go through each job and process, and distribute the queued material among the various paths
       // for the job and process.
@@ -236,17 +199,18 @@ namespace MazakMachineInterface
         var job = schsForJob.First().Job;
         for (int proc = job.Processes.Count; proc >= 1; proc--)
         {
-          CheckAssignedMaterial(job, logDb, schsForJob, proc);
+          CheckAssignedMaterial(job, logDb, schsForJob, proc, waitForAllCastings: waitForAllCastings);
         }
       }
-      AssignCastings(logDb, schs);
+      AssignCastings(logDb, schs, waitForAllCastings: waitForAllCastings);
     }
 
-    private void CheckAssignedMaterial(
+    private static void CheckAssignedMaterial(
       Job jobPlan,
       IRepository logDb,
       IEnumerable<ScheduleWithQueues> schsForJob,
-      int proc
+      int proc,
+      bool waitForAllCastings
     )
     {
       foreach (var sch in schsForJob.Where(s => !string.IsNullOrEmpty(s.Procs[proc].InputQueue)))
@@ -266,7 +230,7 @@ namespace MazakMachineInterface
 
         if (proc == 1)
         {
-          if (_waitForAllCastings)
+          if (waitForAllCastings)
           {
             // update FMS Insight queue to match schedule
             if (numMatInQueue < schProc.SchProcRow.ProcessMaterialQuantity)
@@ -357,7 +321,11 @@ namespace MazakMachineInterface
       }
     }
 
-    private void AssignCastings(IRepository logDb, IEnumerable<ScheduleWithQueues> allSchs)
+    private static void AssignCastings(
+      IRepository logDb,
+      IEnumerable<ScheduleWithQueues> allSchs,
+      bool waitForAllCastings
+    )
     {
       var schsToAssign = allSchs
         .Where(s =>
@@ -380,7 +348,7 @@ namespace MazakMachineInterface
         if (started + curCastings < sch.SchRow.PlanQuantity && curCastings < schProc1.SchProcRow.FixQuantity)
         {
           // find some new castings
-          var toAdd = _waitForAllCastings
+          var toAdd = waitForAllCastings
             ? sch.SchRow.PlanQuantity - started - curCastings
             : schProc1.SchProcRow.FixQuantity - curCastings;
 
@@ -419,7 +387,7 @@ namespace MazakMachineInterface
             }
           }
 
-          if (toAdd > 0 && _waitForAllCastings && !foundEnough)
+          if (toAdd > 0 && waitForAllCastings && !foundEnough)
           {
             // if we tried to add but didn't have enough, dont let schedules with higher priority
             // snatch up these castings.  If the user wants to run it, they can edit priority
@@ -430,7 +398,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private MazakWriteData UpdateMazakMaterialCounts(IEnumerable<ScheduleWithQueues> schs)
+    private static MazakWriteData UpdateMazakMaterialCounts(IEnumerable<ScheduleWithQueues> schs)
     {
       var newSchs = new List<MazakScheduleRow>();
       foreach (var sch in schs)
