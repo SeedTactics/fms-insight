@@ -37,23 +37,16 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public interface IDecrementPlanQty
+  public class DecrementPlanQty
   {
-    bool Decrement(IRepository jobDB, MazakCurrentStatus status, DateTime? now = null);
-  }
-
-  public class DecrementPlanQty : IDecrementPlanQty
-  {
-    private IWriteData _write;
-
     private static Serilog.ILogger Log = Serilog.Log.ForContext<DecrementPlanQty>();
 
-    public DecrementPlanQty(IWriteData w)
-    {
-      _write = w;
-    }
-
-    public bool Decrement(IRepository jobDB, MazakCurrentStatus status, DateTime? now = null)
+    public static bool Decrement(
+      IWriteData write,
+      IRepository jobDB,
+      MazakCurrentStatus status,
+      DateTime? now = null
+    )
     {
       // This works in three steps:
       //
@@ -79,7 +72,7 @@ namespace MazakMachineInterface
       if (jobs.Count == 0)
         return false;
 
-      ReducePlannedQuantity(jobs);
+      ReducePlannedQuantity(write, jobs);
       RecordDecrement(jobDB, jobs, now);
 
       return true;
@@ -93,7 +86,7 @@ namespace MazakMachineInterface
       public int NewPlanQty { get; set; }
     }
 
-    private List<DecrSchedule> JobsToDecrement(IRepository jobDB, MazakCurrentStatus schedules)
+    private static List<DecrSchedule> JobsToDecrement(IRepository jobDB, MazakCurrentStatus schedules)
     {
       var jobs = new List<DecrSchedule>();
 
@@ -157,7 +150,7 @@ namespace MazakMachineInterface
       return jobs;
     }
 
-    private void ReducePlannedQuantity(ICollection<DecrSchedule> jobs)
+    private static void ReducePlannedQuantity(IWriteData writeData, ICollection<DecrSchedule> jobs)
     {
       var schs = new List<MazakScheduleRow>();
       foreach (var job in jobs)
@@ -176,11 +169,11 @@ namespace MazakMachineInterface
       if (schs.Count > 0)
       {
         var write = new MazakWriteData() { Schedules = schs };
-        _write.Save(write, "Decrement preventing new parts starting");
+        writeData.Save(write, "Decrement preventing new parts starting");
       }
     }
 
-    private void RecordDecrement(IRepository jobDB, List<DecrSchedule> decrs, DateTime? now)
+    private static void RecordDecrement(IRepository jobDB, List<DecrSchedule> decrs, DateTime? now)
     {
       var decrsByJob = decrs.GroupBy(d => d.Job.UniqueStr);
 

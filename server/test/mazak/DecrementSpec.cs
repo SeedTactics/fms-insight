@@ -46,7 +46,6 @@ namespace MachineWatchTest
   public class DecrementSpec : IDisposable
   {
     private RepositoryConfig _repoCfg;
-    private DecrementPlanQty _decr;
 
     private class WriteMock : IWriteData
     {
@@ -71,8 +70,6 @@ namespace MachineWatchTest
       );
 
       _write = new WriteMock();
-
-      _decr = new DecrementPlanQty(_write);
     }
 
     public void Dispose()
@@ -130,7 +127,7 @@ namespace MachineWatchTest
       );
 
       var now = DateTime.UtcNow;
-      _decr.Decrement(_jobDB, st, now);
+      DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
       _write.Schedules.Count.Should().Be(1);
       var sch = _write.Schedules[0];
@@ -216,7 +213,7 @@ namespace MachineWatchTest
         addAsCopiedToSystem: true
       );
 
-      _decr.Decrement(_jobDB, st);
+      DecrementPlanQty.Decrement(_write, _jobDB, st);
 
       _write.Schedules.Should().BeNull();
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEmpty();
@@ -285,7 +282,7 @@ namespace MachineWatchTest
         now
       );
 
-      _decr.Decrement(_jobDB, st);
+      DecrementPlanQty.Decrement(_write, _jobDB, st);
 
       _write.Schedules.Should().BeNull();
       _jobDB
@@ -387,7 +384,7 @@ namespace MachineWatchTest
       );
 
       var now = DateTime.UtcNow;
-      _decr.Decrement(_jobDB, st, now);
+      DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
       _write.Schedules.Count.Should().Be(1);
       _write.Schedules[0].PlanQuantity.Should().Be(36);
@@ -459,7 +456,7 @@ namespace MachineWatchTest
       );
 
       var now = DateTime.UtcNow;
-      _decr.Decrement(_jobDB, st, now);
+      DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
       _write.Schedules.Should().BeNull();
 
@@ -550,7 +547,7 @@ namespace MachineWatchTest
         .Should()
         .BeEquivalentTo(new[] { "vvvv" });
 
-      _decr.Decrement(_jobDB, st, now);
+      DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
       _write.Schedules.Count.Should().Be(1);
       var sch = _write.Schedules[0];

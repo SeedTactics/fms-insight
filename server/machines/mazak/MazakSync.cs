@@ -64,7 +64,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
   private readonly IMachineGroupName machineGroupName;
   private readonly IReadDataAccess readDatabase;
   private readonly IWriteData writeDatabase;
-  private readonly IDecrementPlanQty decrementPlanQty;
   private readonly FMSSettings settings;
   private readonly MazakDbType dbType;
   private readonly string logPath;
@@ -84,7 +83,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     string logPath,
     MazakConfig mazakConfig,
     IWriteJobs writeJobs,
-    IDecrementPlanQty decrementPlanQty,
     bool useStartingOffsetForDueDate,
     bool waitForAllCastingsInQueue
   )
@@ -97,7 +95,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
     this.logPath = logPath;
     this.mazakConfig = mazakConfig;
     this.writeJobs = writeJobs;
-    this.decrementPlanQty = decrementPlanQty;
     this.useStartingOffsetForDueDate = useStartingOffsetForDueDate;
     this.waitForAllCastingsInQueue = waitForAllCastingsInQueue;
 
@@ -283,6 +280,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
   public bool DecrementJobs(IRepository db, MazakState st)
   {
     // TODO: reload AllData to make sure it is up to date?
-    return decrementPlanQty.Decrement(db, st.AllData);
+    return DecrementPlanQty.Decrement(writeDatabase, db, st.AllData);
   }
 }

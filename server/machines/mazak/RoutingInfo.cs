@@ -52,7 +52,6 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.RepositoryConfig logDbCfg;
     private IWriteJobs _writeJobs;
     private IMachineGroupName _machineGroupName;
-    private IDecrementPlanQty _decr;
     private readonly MazakConfig _mazakCfg;
     private System.Timers.Timer _copySchedulesTimer;
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
@@ -66,7 +65,6 @@ namespace MazakMachineInterface
       IMazakLogReader logR,
       BlackMaple.MachineFramework.RepositoryConfig jLogCfg,
       IWriteJobs wJobs,
-      IDecrementPlanQty decrement,
       bool useStartingOffsetForDueDate,
       BlackMaple.MachineFramework.FMSSettings settings,
       Action<CurrentStatus> onStatusChange,
@@ -79,7 +77,6 @@ namespace MazakMachineInterface
       logReader = logR;
       logDbCfg = jLogCfg;
       _writeJobs = wJobs;
-      _decr = decrement;
       _mazakCfg = mazakCfg;
       _machineGroupName = machineGroupName;
       _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
@@ -295,7 +292,7 @@ namespace MazakMachineInterface
       {
         using (var jdb = logDbCfg.OpenConnection())
         {
-          _decr.Decrement(jdb, readDatabase.LoadStatus());
+          DecrementPlanQty.Decrement(writeDb, jdb, readDatabase.LoadStatus());
           ret = jdb.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
         }
       }
@@ -320,7 +317,7 @@ namespace MazakMachineInterface
       {
         using (var jdb = logDbCfg.OpenConnection())
         {
-          _decr.Decrement(jdb, readDatabase.LoadStatus());
+          DecrementPlanQty.Decrement(writeDb, jdb, readDatabase.LoadStatus());
           ret = jdb.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
         }
       }

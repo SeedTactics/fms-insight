@@ -44,25 +44,27 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakBackend>();
 
-    private IReadDataAccess _readDB;
-    private OpenDatabaseKitTransactionDB _writeDB;
-    private RoutingInfo routing;
-    private ICurrentLoadActions loadOper;
-    private IMazakLogReader logDataLoader;
+    private readonly IReadDataAccess _readDB;
+    private readonly IWriteData _writeDB;
+    private readonly ICurrentLoadActions loadOper;
 
-    private RepositoryConfig logDbConfig;
+    private readonly RoutingInfo routing;
+    private readonly IMazakLogReader logDataLoader;
+
+    private readonly RepositoryConfig logDbConfig;
 
     //Settings
     public MazakDbType MazakType { get; }
     public string ProgramDirectory { get; }
 
-    public IWriteData WriteDB => _writeDB;
     public IReadDataAccess ReadDB => _readDB;
+    public IWriteData WriteDB => _writeDB;
 
     public RepositoryConfig RepoConfig => logDbConfig;
+    public MazakMachineControl MazakMachineControl { get; }
+
     public IMazakLogReader LogTranslation => logDataLoader;
     public RoutingInfo RoutingInfo => routing;
-    public MazakMachineControl MazakMachineControl { get; }
 
     public event NewCurrentStatus OnNewCurrentStatus;
 
@@ -218,8 +220,6 @@ namespace MazakMachineInterface
           progDir: ProgramDirectory
         );
       }
-      var decr = new DecrementPlanQty(_writeDB);
-
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
         logDataLoader = new LogDataWeb(
           logPath,
@@ -260,7 +260,6 @@ namespace MazakMachineInterface
         logR: logDataLoader,
         jLogCfg: logDbConfig,
         wJobs: writeJobs,
-        decrement: decr,
         useStartingOffsetForDueDate: UseStartingOffsetForDueDate,
         settings: st,
         onStatusChange: s => OnNewCurrentStatus?.Invoke(s),
@@ -329,11 +328,6 @@ namespace MazakMachineInterface
         );
         return MazakDbType.MazakSmooth;
       }
-    }
-
-    public string CustomizeInstructionPath(string part, string type)
-    {
-      throw new NotImplementedException();
     }
   }
 }
