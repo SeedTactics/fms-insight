@@ -211,12 +211,12 @@ namespace BlackMaple.FMSInsight.Makino
 
   //A common value from the CommonValue table holds values that were produced by
   //the execution of the part program.  This is commonly hold results.
-  public class CommonValue
+  public record CommonValue
   {
-    public DateTime ExecDateTimeUTC;
+    public required DateTime ExecDateTimeUTC { get; init; }
 
-    public int Number;
-    public string? Value;
+    public required int Number { get; init; }
+    public required string? Value { get; init; }
 
     /* Fields Not Loaded
      *
@@ -351,7 +351,7 @@ namespace BlackMaple.FMSInsight.Makino
   {
     IDictionary<int, PalletLocation> Devices();
     void CheckForQueryNotification();
-    CurrentStatus LoadCurrentInfo(IRepository logDb);
+    CurrentStatus LoadCurrentInfo(IRepository logDb, DateTime nowUTC);
     MakinoResults LoadResults(DateTime startUTC, DateTime endUTC);
     ImmutableList<ProgramInCellController> CurrentProgramsInCellController();
     ImmutableList<ToolInMachine> AllTools(int? deviceNum = null);
@@ -627,11 +627,13 @@ namespace BlackMaple.FMSInsight.Makino
       {
         while (reader.Read())
         {
-          var v = new CommonValue();
           var execLocal = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local);
-          v.ExecDateTimeUTC = execLocal.ToUniversalTime();
-          v.Number = reader.GetInt32(1);
-          v.Value = reader.GetValue(2).ToString();
+          var v = new CommonValue()
+          {
+            ExecDateTimeUTC = execLocal.ToUniversalTime(),
+            Number = reader.GetInt32(1),
+            Value = reader.GetValue(2).ToString(),
+          };
           ret.Add(v);
         }
       }
@@ -668,7 +670,7 @@ namespace BlackMaple.FMSInsight.Makino
       return devices;
     }
 
-    public CurrentStatus LoadCurrentInfo(IRepository logDb)
+    public CurrentStatus LoadCurrentInfo(IRepository logDb, DateTime nowUTC)
     {
       var devices = Devices();
 
@@ -855,7 +857,7 @@ namespace BlackMaple.FMSInsight.Makino
               palletNum,
               fixtureNum,
               orderName,
-              DateTime.UtcNow.AddSeconds(10),
+              nowUTC.AddSeconds(10),
               logDb
             );
             if (mostRecentLog == null)
@@ -934,7 +936,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       return new CurrentStatus()
       {
-        TimeOfCurrentStatusUTC = DateTime.UtcNow,
+        TimeOfCurrentStatusUTC = nowUTC,
         Jobs = map.Jobs.ToImmutableDictionary(j => j.UniqueStr),
         Pallets = palMap.Pallets.ToImmutableDictionary(),
         Material = palMap.Material.ToImmutableList(),

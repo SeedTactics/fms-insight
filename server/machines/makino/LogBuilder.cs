@@ -43,11 +43,11 @@ namespace BlackMaple.FMSInsight.Makino
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<LogBuilder>();
     private readonly JobCache _jobCache = new(logDb);
 
-    public bool CheckLogs(DateTime lastDate)
+    public bool CheckLogs(DateTime lastDate, DateTime nowUTC)
     {
       var devices = makinoDB.Devices();
 
-      var results = makinoDB.LoadResults(lastDate, DateTime.UtcNow.AddMinutes(1));
+      var results = makinoDB.LoadResults(lastDate, nowUTC.AddMinutes(1));
 
       var machines = results.MachineResults;
       machines.Sort((x, y) => x.EndDateTimeUTC.CompareTo(y.EndDateTimeUTC));

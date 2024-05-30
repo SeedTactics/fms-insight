@@ -290,7 +290,7 @@ public sealed class SyncSpec : IDisposable
       .Returns(new MakinoResults() { MachineResults = [], WorkSetResults = [] });
 
     var cur = fix.Create<CurrentStatus>();
-    _makinoDB.LoadCurrentInfo(Arg.Is(db)).Returns(cur);
+    _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
 
     sync.CalculateCellState(db)
       .Should()
@@ -335,9 +335,9 @@ public sealed class SyncSpec : IDisposable
       );
 
     var cur = fix.Create<CurrentStatus>();
-    _makinoDB.LoadCurrentInfo(Arg.Is(db)).Returns(cur);
+    _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Is(now)).Returns(cur);
 
-    sync.CalculateCellState(db)
+    sync.CalculateCellState(db, now)
       .Should()
       .BeEquivalentTo(
         new MakinoCellState()
@@ -390,7 +390,7 @@ public sealed class SyncSpec : IDisposable
       .Returns(new MakinoResults() { MachineResults = [], WorkSetResults = [] });
 
     var cur = fix.Create<CurrentStatus>();
-    _makinoDB.LoadCurrentInfo(Arg.Is(db)).Returns(cur);
+    _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
 
     sync.CalculateCellState(db)
       .Should()
@@ -575,7 +575,7 @@ public sealed class SyncSpec : IDisposable
       .Returns(new MakinoResults() { MachineResults = [], WorkSetResults = [] });
 
     var cur = fix.Create<CurrentStatus>();
-    _makinoDB.LoadCurrentInfo(Arg.Is(db)).Returns(cur);
+    _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
 
     sync.CalculateCellState(db)
       .Should()

@@ -63,7 +63,9 @@ public sealed class LogBuilderSpec : IDisposable
     _repo = RepositoryConfig.InitializeMemoryDB(serialSettings);
 
     _makinoDB = Substitute.For<IMakinoDB>();
-    _makinoDB.LoadCurrentInfo(Arg.Any<IRepository>()).ThrowsForAnyArgs(new Exception("Should not be called"));
+    _makinoDB
+      .LoadCurrentInfo(Arg.Any<IRepository>(), Arg.Any<DateTime>())
+      .ThrowsForAnyArgs(new Exception("Should not be called"));
     _makinoDB
       .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
       .ThrowsForAnyArgs(new Exception("Load Results not configured"));
@@ -465,7 +467,7 @@ public sealed class LogBuilderSpec : IDisposable
       )
       .Returns(new MakinoResults() { WorkSetResults = [], MachineResults = [], });
 
-    new LogBuilder(_makinoDB, db).CheckLogs(lastDate).Should().BeFalse();
+    new LogBuilder(_makinoDB, db).CheckLogs(lastDate, DateTime.UtcNow).Should().BeFalse();
 
     db.MaxLogDate().Should().Be(DateTime.MinValue);
   }
@@ -514,7 +516,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -554,7 +556,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -569,7 +571,7 @@ public sealed class LogBuilderSpec : IDisposable
       .LoadResults(start.AddMinutes(15 + 11), Arg.Any<DateTime>())
       .Returns(new MakinoResults() { WorkSetResults = [], MachineResults = [mach] });
 
-    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(15 + 11)).Should().BeFalse();
+    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(15 + 11), now).Should().BeFalse();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -622,7 +624,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -637,7 +639,7 @@ public sealed class LogBuilderSpec : IDisposable
       .LoadResults(start.AddMinutes(30 + 5), Arg.Any<DateTime>())
       .Returns(new MakinoResults() { WorkSetResults = [unload], MachineResults = [] });
 
-    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(30 + 5)).Should().BeFalse();
+    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(30 + 5), now).Should().BeFalse();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -710,7 +712,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
     db.GetLogEntries(start, now)
       .Should()
       .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
@@ -798,7 +800,7 @@ public sealed class LogBuilderSpec : IDisposable
 
     using var db = _repo.OpenConnection();
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -883,7 +885,7 @@ public sealed class LogBuilderSpec : IDisposable
         .Add("24", "common value 24")
     };
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -974,7 +976,7 @@ public sealed class LogBuilderSpec : IDisposable
       }
     );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -1064,7 +1066,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -1122,7 +1124,7 @@ public sealed class LogBuilderSpec : IDisposable
 
     using var db = _repo.OpenConnection();
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30)).Should().BeTrue();
+    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()

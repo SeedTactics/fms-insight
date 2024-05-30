@@ -134,20 +134,25 @@ namespace BlackMaple.FMSInsight.Makino
 
     public MakinoCellState CalculateCellState(IRepository db)
     {
+      return CalculateCellState(db, DateTime.UtcNow);
+    }
+
+    public MakinoCellState CalculateCellState(IRepository db, DateTime nowUTC)
+    {
       var lastLog = db.MaxLogDate();
-      if (DateTime.UtcNow.Subtract(lastLog) > TimeSpan.FromDays(30))
+      if (nowUTC.Subtract(lastLog) > TimeSpan.FromDays(30))
       {
-        lastLog = DateTime.UtcNow.AddDays(-30);
+        lastLog = nowUTC.AddDays(-30);
       }
 
       using var makinoDB = settings.OpenMakinoConnection();
-      var newEvts = new LogBuilder(makinoDB, db).CheckLogs(lastLog);
+      var newEvts = new LogBuilder(makinoDB, db).CheckLogs(lastLog, nowUTC);
 
-      var st = makinoDB.LoadCurrentInfo(db);
+      var st = makinoDB.LoadCurrentInfo(db, nowUTC);
 
       var notCopied = db.LoadJobsNotCopiedToSystem(
-        DateTime.UtcNow.AddHours(-10),
-        DateTime.UtcNow.AddMinutes(20),
+        nowUTC.AddHours(-10),
+        nowUTC.AddMinutes(20),
         includeDecremented: false
       );
 
