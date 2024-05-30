@@ -68,15 +68,15 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var ret = new List<string>();
 
-      string machineName = "MC";
+      IEnumerable<PalletLocation> mcs;
       using (var makino = settings.OpenMakinoConnection())
       {
-        var mc = makino.Devices().Values.FirstOrDefault(d => d.Location == PalletLocationEnum.Machine);
-        if (mc != null)
-        {
-          machineName = mc.StationGroup;
-        }
+        mcs = makino.Devices().Values.Where(d => d.Location == PalletLocationEnum.Machine).ToList();
       }
+      string allMachineNames = string.Join(
+        ',',
+        mcs.OrderBy(m => m.StationGroup).ThenBy(m => m.Num).Select(m => m.StationGroup + m.Num.ToString())
+      );
 
       foreach (var j in jobs.Jobs)
       {
@@ -109,17 +109,13 @@ namespace BlackMaple.FMSInsight.Makino
             {
               foreach (var stop in proc.Paths[0].Stops)
               {
-                if (stop.StationGroup != machineName)
+                foreach (var statNum in stop.Stations)
                 {
-                  ret.Add(
-                    "The Makino machine name is "
-                      + machineName
-                      + " but the flexibility plan uses "
-                      + stop.StationGroup
-                      + " in part "
-                      + j.PartName
-                      + ", please update the flexibility plan."
-                  );
+                  if (!mcs.Any(m => stop.StationGroup == m.StationGroup && statNum == m.Num))
+                    ret.Add(
+                      $"The flexibility plan for part {j.PartName} uses machine {stop.StationGroup} number {statNum}, but that machine does not exist in the Makino system."
+                        + $"  The makino system contains machines {allMachineNames}"
+                    );
                 }
               }
             }

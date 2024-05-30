@@ -263,7 +263,19 @@ public sealed class SyncSpec : IDisposable
                   [
                     fix.Create<ProcPathInfo>() with
                     {
-                      Stops = [fix.Create<MachiningStop>() with { StationGroup = "bad" }]
+                      Stops =
+                      [
+                        fix.Create<MachiningStop>() with
+                        {
+                          StationGroup = "bad",
+                          Stations = [1]
+                        },
+                        fix.Create<MachiningStop>() with
+                        {
+                          StationGroup = "Mach",
+                          Stations = [500]
+                        }
+                      ]
                     }
                   ]
                 }
@@ -275,7 +287,8 @@ public sealed class SyncSpec : IDisposable
       .Should()
       .BeEquivalentTo(
         [
-          $"The Makino machine name is Mach but the flexibility plan uses bad in part {partName}, please update the flexibility plan."
+          $"The flexibility plan for part {partName} uses machine bad number 1, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2",
+          $"The flexibility plan for part {partName} uses machine Mach number 500, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2"
         ]
       );
   }
