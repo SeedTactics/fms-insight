@@ -39,7 +39,6 @@ using System.Threading.Tasks;
 using AutoFixture;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
-using NSubstitute;
 using Xunit;
 
 namespace MachineWatchTest;
@@ -204,7 +203,34 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     (_newCellStateTcs as object).Should().BeNull();
     var tcs = new TaskCompletionSource<CurrentStatus>();
     _newCellStateTcs = tcs;
-    return tcs.Task.ContinueWith(s => s.Result.Should().Be(st));
+    return tcs.Task.ContinueWith(s =>
+    {
+      if (st == null)
+      {
+        s.Result.Should()
+          .BeEquivalentTo(
+            new CurrentStatus()
+            {
+              TimeOfCurrentStatusUTC = DateTime.UtcNow,
+              Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+              Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+              Material = [],
+              Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+              Alarms = ["FMS Insight is starting up..."]
+            },
+            options =>
+              options
+                .Using<DateTime>(ctx =>
+                  ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4))
+                )
+                .WhenTypeIs<DateTime>()
+          );
+      }
+      else
+      {
+        s.Result.Should().Be(st);
+      }
+    });
   }
   #endregion
 
