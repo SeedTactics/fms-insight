@@ -412,19 +412,17 @@ function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMateria
         onClose={() => setMenuOpen(false)}
         anchorOrigin={{ vertical: "top", horizontal: "left" }}
       >
-        {LazySeq.of(mats).collect((mat) =>
-          mat.serial ? (
-            <MenuItem
-              key={mat.materialID}
-              onClick={() => {
-                setMenuOpen(false);
-                setMatToShow({ type: "MatDetails", details: mat });
-              }}
-            >
-              {mat.serial}
-            </MenuItem>
-          ) : undefined,
-        )}
+        {LazySeq.of(mats).map((mat, idx) => (
+          <MenuItem
+            key={mat.materialID}
+            onClick={() => {
+              setMenuOpen(false);
+              setMatToShow({ type: "MatDetails", details: mat });
+            }}
+          >
+            {mat.serial && mat.serial !== "" ? mat.serial : (idx + 1).toString()}
+          </MenuItem>
+        ))}
       </Menu>
     </Box>
   );

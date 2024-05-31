@@ -72,6 +72,7 @@ namespace BlackMaple.FMSInsight.Makino
         _sync = new MakinoSync(settings);
 
         _jobs = new JobsAndQueuesFromDb<MakinoCellState>(RepoConfig, st, RaiseNewCurrentStatus, _sync);
+        _jobs.StartThread();
 
         try
         {

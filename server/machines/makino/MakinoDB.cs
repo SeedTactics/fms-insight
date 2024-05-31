@@ -970,7 +970,7 @@ namespace BlackMaple.FMSInsight.Makino
           }
           row += "  ";
         }
-        Log.Information(row);
+        Log.Verbose(row);
 
         onEachRow(reader);
       }
@@ -1021,14 +1021,7 @@ namespace BlackMaple.FMSInsight.Makino
       {
         cmd.CommandText = "SELECT is_broker_enabled FROM sys.databases WHERE name = 'Makino'";
         var result = cmd.ExecuteScalar();
-        if (result == DBNull.Value)
-        {
-          Log.Debug("Query Notification is not enabled for Makino database");
-        }
-        else
-        {
-          Log.Debug("Query Notification is enabled for Makino database");
-        }
+        Log.Debug("Query Notification {@result}", result);
       }
 
       // checking permissions now

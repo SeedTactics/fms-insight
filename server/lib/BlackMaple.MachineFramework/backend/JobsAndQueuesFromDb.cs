@@ -230,7 +230,16 @@ namespace BlackMaple.MachineFramework
     {
       lock (_curStLock)
       {
-        return _lastCurrentStatus?.CurrentStatus;
+        return _lastCurrentStatus?.CurrentStatus
+          ?? new CurrentStatus()
+          {
+            TimeOfCurrentStatusUTC = DateTime.UtcNow,
+            Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+            Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+            Material = [],
+            Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+            Alarms = ["FMS Insight is starting up..."]
+          };
       }
     }
 
