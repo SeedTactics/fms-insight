@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { memo, useMemo } from "react";
 import {
   Box,
   Grid,
@@ -191,7 +191,7 @@ function dataForTable(
     .toSortedArray(sortOn);
 }
 
-export const OEETable = React.memo(function OEETableF(p: OEEProps) {
+export const OEETable = memo(function OEETableF(p: OEEProps) {
   const sort = useColSort(ColumnId.Date, columns);
   return (
     <Table>
@@ -213,7 +213,7 @@ export function StationOEEPage({ ty }: { readonly ty: OEEType }) {
 
   const cycles = useAtomValue(last30StationCycles);
   const statUse = useAtomValue(last30SimStationUse);
-  const points = React.useMemo(
+  const points = useMemo(
     () => buildOeeSeries(start, end, ty, cycles.valuesToLazySeq(), statUse),
     [start, end, ty, cycles, statUse],
   );

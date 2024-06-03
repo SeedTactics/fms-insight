@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { PointerEvent, useState, memo, useMemo } from "react";
 import { Select, MenuItem, Tooltip, IconButton, Box, Typography, FormControl } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 import { sankey, sankeyJustify, sankeyLinkHorizontal, SankeyNode as D3SankeyNode } from "d3-sankey";
@@ -87,9 +87,9 @@ function LinkDisplay({
   readonly strokeWidth: number;
   readonly setTooltip: ShowTooltipFunc;
 }) {
-  const [over, setOver] = React.useState(false);
+  const [over, setOver] = useState(false);
   if (path === null) return null;
-  function pointerOver(e: React.PointerEvent) {
+  function pointerOver(e: PointerEvent) {
     const pt = localPoint(e);
     if (pt === null) return;
     setTooltip({ left: pt.x, top: pt.y, data: link });
@@ -132,7 +132,7 @@ function NodeDisplay({ node }: { readonly node: NodeWithData }) {
   );
 }
 
-const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
+const SankeyDisplay = memo(function InspectionSankeyDiagram({
   data,
   setTooltip,
   parentHeight,
@@ -143,7 +143,7 @@ const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
   readonly parentWidth: number;
   readonly setTooltip: ShowTooltipFunc;
 }) {
-  const { nodes, links } = React.useMemo(() => {
+  const { nodes, links } = useMemo(() => {
     const { nodes, links } = inspectionDataToSankey(data);
     const generator = sankey<SankeyNode, SankeyLink>()
       .nodeWidth(10)
@@ -181,7 +181,7 @@ const SankeyDisplay = React.memo(function InspectionSankeyDiagram({
   );
 });
 
-const LinkTooltip = React.memo(function LinkTooltip({ tooltip }: { readonly tooltip: TooltipData | null }) {
+const LinkTooltip = memo(function LinkTooltip({ tooltip }: { readonly tooltip: TooltipData | null }) {
   if (tooltip === null) return null;
   return (
     <ChartTooltip left={tooltip.left} top={tooltip.top}>
@@ -190,12 +190,12 @@ const LinkTooltip = React.memo(function LinkTooltip({ tooltip }: { readonly tool
   );
 });
 
-const InspectionDiagram = React.memo(function InspectionDiagram({
+const InspectionDiagram = memo(function InspectionDiagram({
   data,
 }: {
   readonly data: Iterable<InspectionLogEntry>;
 }) {
-  const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   return (
     <div style={{ position: "relative" }}>
       <Box

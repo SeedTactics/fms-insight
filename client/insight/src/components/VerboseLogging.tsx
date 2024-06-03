@@ -32,11 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { Button } from "@mui/material";
-import * as React from "react";
+import { useState } from "react";
 import { FmsServerBackend } from "../network/backend.js";
 
 export function VerboseLoggingPage() {
-  const [enabled, setEnabled] = React.useState(false);
+  const [enabled, setEnabled] = useState(false);
 
   function enable() {
     setEnabled(true);

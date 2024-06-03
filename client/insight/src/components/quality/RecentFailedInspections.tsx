@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useMemo } from "react";
 import { Box, Typography } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
@@ -147,7 +147,7 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
 
 export function RecentFailedInspectionsTable() {
   const inspections = useAtomValue(last30Inspections);
-  const failed = React.useMemo(() => {
+  const failed = useMemo(() => {
     const today = startOfToday();
     const allEvts = LazySeq.of(inspections).flatMap(([_, evts]) => evts.valuesToLazySeq());
     return extractFailedInspections(allEvts, addDays(today, -4), addDays(today, 1));

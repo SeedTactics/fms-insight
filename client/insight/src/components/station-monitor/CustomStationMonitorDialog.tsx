@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { memo, useState } from "react";
 import { Dialog } from "@mui/material";
 import { DialogActions } from "@mui/material";
 import { DialogContent } from "@mui/material";
@@ -43,10 +43,10 @@ import { DialogTitle } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { useAtomValue } from "jotai";
 
-export const CustomStationMonitorDialog = React.memo(
+export const CustomStationMonitorDialog = memo(
   function CustomStationMonitorDialog(): JSX.Element | null {
     const url = useAtomValue(fmsInformation)?.customStationMonitorDialogUrl;
-    const [open, setOpen] = React.useState(false);
+    const [open, setOpen] = useState(false);
 
     if (!url) {
       return null;

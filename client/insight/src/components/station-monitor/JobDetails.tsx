@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { Fragment } from "react";
 import * as api from "../../network/api.js";
 import { IconButton } from "@mui/material";
 import { Table } from "@mui/material";
@@ -101,9 +101,9 @@ function JobDisplay(props: JobDisplayProps) {
           </>
         ) : undefined}
         {props.job.procsAndPaths.map((proc, procIdx) => (
-          <React.Fragment key={procIdx}>
+          <Fragment key={procIdx}>
             {proc.paths.map((path, pathIdx) => (
-              <React.Fragment key={pathIdx}>
+              <Fragment key={pathIdx}>
                 <dt>
                   Process {procIdx + 1}
                   {proc.paths.length > 1 ? ", Path " + (pathIdx + 1).toString() : undefined}
@@ -125,13 +125,13 @@ function JobDisplay(props: JobDisplayProps) {
                     {durationToMinutes(path.expectedLoadTime).toFixed(1)} mins
                   </div>
                   {path.stops.map((stop, stopIdx) => (
-                    <React.Fragment key={stopIdx}>
+                    <Fragment key={stopIdx}>
                       <div>
                         {stop.stationGroup}: {(stop.stationNums ?? []).join(",")} | Program: {stop.program}
                         {stop.programRevision ? " rev" + stop.programRevision.toString() : undefined} |{" "}
                         {durationToMinutes(stop.expectedCycleTime).toFixed(1)} mins
                       </div>
-                    </React.Fragment>
+                    </Fragment>
                   ))}
                   <div>
                     Unload Stations: {path.unload.join(",")} |{" "}
@@ -142,9 +142,9 @@ function JobDisplay(props: JobDisplayProps) {
                     <div>Inspections: {path.inspections.map((i) => i.inspectionType).join(",")}</div>
                   ) : undefined}
                 </dd>
-              </React.Fragment>
+              </Fragment>
             ))}
-          </React.Fragment>
+          </Fragment>
         ))}
       </dl>
     </div>

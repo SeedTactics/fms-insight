@@ -14,6 +14,9 @@ rules:
     - "error"
     - ignoreStatic: true
 
+  "react/jsx-uses-react": "off"
+  "react/react-in-jsx-scope": "off"
+
 parser: "@typescript-eslint/parser"
 plugins:
   - "@typescript-eslint"

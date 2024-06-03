@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { useState, useRef, memo } from "react";
 import {
   Paper,
   ButtonBase,
@@ -326,10 +326,10 @@ function useCellOverview(): CellOverview {
 }
 
 function MaterialIcon({ mats }: { mats: ReadonlyArray<Readonly<IInProcessMaterial>> }) {
-  const [open, setOpen] = React.useState<boolean>(false);
-  const closeTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const btnRef = React.useRef<HTMLButtonElement | null>(null);
-  const [menuOpen, setMenuOpen] = React.useState<boolean>(false);
+  const [open, setOpen] = useState<boolean>(false);
+  const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const setMatToShow = useSetAtom(materialDialogOpen);
   const curSt = useAtomValue(currentStatus);
 
@@ -824,7 +824,7 @@ function StockerPallet({ maxNumFaces, pallet }: { maxNumFaces: number; pallet: P
   );
 }
 
-export const SystemOverview = React.memo(function SystemOverview({ overview }: { overview: CellOverview }) {
+export const SystemOverview = memo(function SystemOverview({ overview }: { overview: CellOverview }) {
   return (
     <div>
       {overview.machines.toAscLazySeq().map(([group, machines]) => (
@@ -863,13 +863,13 @@ export const SystemOverview = React.memo(function SystemOverview({ overview }: {
   );
 });
 
-const SystemOverviewMaterialDialog = React.memo(function SystemOverviewMaterialDialog({
+const SystemOverviewMaterialDialog = memo(function SystemOverviewMaterialDialog({
   ignoreOperator,
 }: {
   ignoreOperator?: boolean;
 }) {
-  const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
-  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
+  const [swapSt, setSwapSt] = useState<SwapMaterialState>(null);
+  const [invalidateSt, setInvalidateSt] = useState<InvalidateCycleState | null>(null);
 
   function onClose() {
     setSwapSt(null);
@@ -1023,7 +1023,7 @@ function MachineAtLoadIcon({ status }: { status: MachineAtLoadStatus }) {
   );
 }
 
-const StatusIcons = React.memo(function StatusIcons({ overview }: { overview: CellOverview }) {
+const StatusIcons = memo(function StatusIcons({ overview }: { overview: CellOverview }) {
   const numMachines = overview.machines.toAscLazySeq().sumBy(([, machines]) => machines.length);
   return (
     <Box
@@ -1071,12 +1071,12 @@ const StatusIcons = React.memo(function StatusIcons({ overview }: { overview: Ce
   );
 });
 
-export const SystemOverviewDialogButton = React.memo(function SystemOverviewDialogButton({
+export const SystemOverviewDialogButton = memo(function SystemOverviewDialogButton({
   full,
 }: {
   full: boolean;
 }) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
   const overview = useCellOverview();
 
   return (

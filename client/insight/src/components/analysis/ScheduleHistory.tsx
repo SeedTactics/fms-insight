@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useState, useMemo } from "react";
 import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
@@ -96,7 +96,7 @@ const cols: ReadonlyArray<Column<ScheduleCols, ScheduledJobDisplay>> = [
 ];
 
 function JobRow({ job }: { readonly job: ScheduledJobDisplay }) {
-  const [open, setOpen] = React.useState<boolean>(false);
+  const [open, setOpen] = useState<boolean>(false);
   return (
     <>
       <JobTableRow>
@@ -144,11 +144,11 @@ export function ScheduleTable() {
   );
   const schJobs = useAtomValue(period.type === "Last30" ? last30Jobs : specificMonthJobs);
 
-  const jobs = React.useMemo(
+  const jobs = useMemo(
     () => buildScheduledJobs(zoom.zoomRange, matIds.matsById, schJobs, null),
     [zoom, matIds.matsById, schJobs],
   );
-  const page = React.useMemo(
+  const page = useMemo(
     () =>
       LazySeq.of(jobs)
         .sortBy(sort.sortOn)

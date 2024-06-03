@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Box, Fab, FormControl, styled } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
@@ -110,7 +110,7 @@ const numFormat = new Intl.NumberFormat("en-US", {
 });
 
 function ProgramRow(props: ProgramRowProps) {
-  const [open, setOpen] = React.useState<boolean>(false);
+  const [open, setOpen] = useState<boolean>(false);
   const setProgramToShowContent = useSetAtom(programToShowContent);
   const setProgramToShowHistory = useSetAtom(programToShowHistory);
 
@@ -249,8 +249,8 @@ type SortColumn =
 
 export function ProgramSummaryTable(): JSX.Element {
   const report = useAtomValue(currentProgramReport);
-  const [sortCol, setSortCol] = React.useState<SortColumn>("ProgramName");
-  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+  const [sortCol, setSortCol] = useState<SortColumn>("ProgramName");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   if (report === null) {
     return <div />;
@@ -471,14 +471,14 @@ export function ProgramSummaryTable(): JSX.Element {
 
 function ProgramContentCode() {
   const ct = useAtomValue(programContent);
-  const [highlighted, setHighlighted] = React.useState<string | null>(null);
+  const [highlighted, setHighlighted] = useState<string | null>(null);
 
-  const worker = React.useMemo(
+  const worker = useMemo(
     () => new Worker(new URL("./ProgramHighlight.ts", import.meta.url), { type: "module" }),
     [],
   );
 
-  React.useEffect(() => {
+  useEffect(() => {
     let set = (h: string) => setHighlighted(h);
     worker.onmessage = (e) => set(e.data as string);
     return () => {
@@ -489,7 +489,7 @@ function ProgramContentCode() {
     };
   }, [worker]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (ct && ct !== "") {
       worker.postMessage(ct);
     }
@@ -629,13 +629,13 @@ export function ProgramHistoryDialog(): JSX.Element {
   const [programForContent, setProgramForContent] = useAtom(programToShowContent);
 
   // TODO: switch to persistent list
-  const [revisions, setRevisions] = React.useState<ReadonlyArray<Readonly<IProgramRevision>> | null>(null);
-  const [lastLoadedPage, setLastLoadedPage] = React.useState<LastPage>({ page: 0, hasMore: false });
-  const [page, setPage] = React.useState<number>(0);
-  const [loading, setLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string | Error | null>(null);
+  const [revisions, setRevisions] = useState<ReadonlyArray<Readonly<IProgramRevision>> | null>(null);
+  const [lastLoadedPage, setLastLoadedPage] = useState<LastPage>({ page: 0, hasMore: false });
+  const [page, setPage] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | Error | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (program === null) {
       setRevisions(null);
       setPage(0);
@@ -757,7 +757,7 @@ export function ProgramHistoryDialog(): JSX.Element {
 
 function ProgNavHeader() {
   const [reloadTime, refreshPrograms] = useAtom(programReportRefreshTime);
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
   const demo = useIsDemo();
   const [filter, setFilter] = useAtom(programFilter);
 

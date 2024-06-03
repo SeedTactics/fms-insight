@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { ButtonBase, Stack, TextField, Tooltip } from "@mui/material";
-import * as React from "react";
+import { useMemo } from "react";
 import { Clear as ClearIcon } from "@mui/icons-material";
 import { addDays, addMinutes } from "date-fns";
 import { atom, useAtom, useAtomValue } from "jotai";
@@ -60,7 +60,7 @@ export type ShiftStartAndEnd = {
 
 export function useShifts(day: Date): ReadonlyArray<ShiftStartAndEnd> {
   const shifts = useAtomValue(shiftStartAtom);
-  return React.useMemo(() => {
+  return useMemo(() => {
     const starts: Array<number> = [];
     for (let i = 1; i <= 3; i++) {
       const cur = shifts.get(i);

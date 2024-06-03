@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { memo, useState } from "react";
 import { Input } from "@mui/material";
 import { InputAdornment } from "@mui/material";
 import { IconButton } from "@mui/material";
@@ -57,9 +57,9 @@ const months: ReadonlyArray<ReadonlyArray<Date>> = LazySeq.ofRange(0, 12, 1)
   .chunk(3)
   .toRArray();
 
-export default React.memo(function MonthSelect(props: MonthSelectProps) {
-  const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [tempDialogCurMonth, setTempDialogCurMonth] = React.useState<Date | undefined>(undefined);
+export default memo(function MonthSelect(props: MonthSelectProps) {
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [tempDialogCurMonth, setTempDialogCurMonth] = useState<Date | undefined>(undefined);
   return (
     <>
       <Input

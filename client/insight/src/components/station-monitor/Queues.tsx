@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { useState, useMemo, memo, useCallback } from "react";
 import { Table, Box, styled } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
@@ -113,7 +113,7 @@ export interface RawMaterialJobRowProps {
 
 function RawMaterialJobRow(props: RawMaterialJobRowProps) {
   const allowEditQty = (useAtomValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null) != null;
-  const [open, setOpen] = React.useState<boolean>(false);
+  const [open, setOpen] = useState<boolean>(false);
 
   const j = props.job;
   const highlRow = highlightRow(j.job);
@@ -220,7 +220,7 @@ interface RawMaterialJobTableProps {
 
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const currentSt = useAtomValue(currentStatus);
-  const jobs = React.useMemo(
+  const jobs = useMemo(
     () => extractJobRawMaterial(props.queue, currentSt.jobs, currentSt.material),
     [props.queue, currentSt],
   );
@@ -252,7 +252,7 @@ function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   );
 }
 
-const RawMaterialWorkorderRow = React.memo(function RawMaterialWorkorderRow({
+const RawMaterialWorkorderRow = memo(function RawMaterialWorkorderRow({
   workorder,
   inProc,
 }: {
@@ -299,7 +299,7 @@ const RawMaterialWorkorderRow = React.memo(function RawMaterialWorkorderRow({
   );
 });
 
-const RawMaterialWorkorderTable = React.memo(function RawMaterialWorkorderTable() {
+const RawMaterialWorkorderTable = memo(function RawMaterialWorkorderTable() {
   const curSt = useAtomValue(currentStatus);
   if (!curSt.workorders || curSt.workorders.length === 0) return null;
 
@@ -354,8 +354,8 @@ interface EditNoteDialogProps {
   readonly closeDialog: () => void;
 }
 
-export const EditNoteDialog = React.memo(function EditNoteDialog(props: EditNoteDialogProps) {
-  const [note, setNote] = React.useState<string | null>(null);
+export const EditNoteDialog = memo(function EditNoteDialog(props: EditNoteDialogProps) {
+  const [note, setNote] = useState<string | null>(null);
   const setComment = useSetAtom(setJobComment);
 
   function close() {
@@ -415,9 +415,9 @@ interface EditJobPlanQtyProps {
   readonly closeDialog: () => void;
 }
 
-const EditJobPlanQtyDialog = React.memo(function EditJobPlanQtyProps(props: EditJobPlanQtyProps) {
-  const [running, setRunning] = React.useState(false);
-  const [newQty, setNewQty] = React.useState<number | null>(null);
+const EditJobPlanQtyDialog = memo(function EditJobPlanQtyProps(props: EditJobPlanQtyProps) {
+  const [running, setRunning] = useState(false);
+  const [newQty, setNewQty] = useState<number | null>(null);
   const allowEditQtyUrl = useAtomValue(fmsInformation).allowEditJobPlanQuantityFromQueuesPage ?? null;
 
   function close() {
@@ -503,7 +503,7 @@ const workorderCommentDialogAtom = atom<Readonly<api.IActiveWorkorder> | null>(n
 
 function WorkorderCommentDialog() {
   const [workorder, setWorkorder] = useAtom(workorderCommentDialogAtom);
-  const [comment, setComment] = React.useState<string | null>(null);
+  const [comment, setComment] = useState<string | null>(null);
   const addComment = useSetAtom(addWorkorderComment);
 
   function close() {
@@ -574,13 +574,13 @@ interface AddMaterialButtonsProps {
   readonly rawMatQueue: boolean;
 }
 
-const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
+const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
   const currentJobs = useAtomValue(currentStatus).jobs;
   const fmsInfo = useAtomValue(fmsInformation);
   const setBulkAddCastings = useSetAtom(bulkAddCastingToQueue);
   const setAddBySerial = useSetAtom(enterSerialForNewMaterialDialog);
 
-  const jobExistsWithInputQueue = React.useMemo(() => {
+  const jobExistsWithInputQueue = useMemo(() => {
     return LazySeq.ofObject(currentJobs)
       .flatMap(([, j]) => j.procsAndPaths)
       .flatMap((p) => p.paths)
@@ -639,20 +639,20 @@ export const Queues = (props: QueueProps) => {
   const operator = useAtomValue(currentOperator);
   const currentSt = useAtomValue(currentStatus);
   const rawMatQueues = useAtomValue(rawMaterialQueues);
-  const data = React.useMemo(
+  const data = useMemo(
     () => selectQueueData(props.queues, currentSt, rawMatQueues),
     [currentSt, props.queues, rawMatQueues],
   );
   const hasJobs = !LazySeq.ofObject(currentSt.jobs).isEmpty();
 
-  const [changeNoteForJob, setChangeNoteForJob] = React.useState<Readonly<api.IActiveJob> | null>(null);
-  const closeChangeNoteDialog = React.useCallback(() => setChangeNoteForJob(null), []);
-  const [editQtyForJob, setEditQtyForJob] = React.useState<JobRawMaterialData | null>(null);
-  const closeEditJobQtyDialog = React.useCallback(() => setEditQtyForJob(null), []);
-  const [multiMaterialDialog, setMultiMaterialDialog] = React.useState<ReadonlyArray<
+  const [changeNoteForJob, setChangeNoteForJob] = useState<Readonly<api.IActiveJob> | null>(null);
+  const closeChangeNoteDialog = useCallback(() => setChangeNoteForJob(null), []);
+  const [editQtyForJob, setEditQtyForJob] = useState<JobRawMaterialData | null>(null);
+  const closeEditJobQtyDialog = useCallback(() => setEditQtyForJob(null), []);
+  const [multiMaterialDialog, setMultiMaterialDialog] = useState<ReadonlyArray<
     Readonly<api.IInProcessMaterial>
   > | null>(null);
-  const closeMultiMatDialog = React.useCallback(() => setMultiMaterialDialog(null), []);
+  const closeMultiMatDialog = useCallback(() => setMultiMaterialDialog(null), []);
 
   return (
     <Box

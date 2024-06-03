@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { useRef, memo, useState, useCallback, useEffect, useMemo } from "react";
 import {
   Button,
   Dialog,
@@ -76,7 +76,7 @@ export function PrintOnClientButton({
   materialName?: string | null;
   operator?: string | null;
 }) {
-  const printRef = React.useRef(null);
+  const printRef = useRef(null);
   const print = useReactToPrint({
     content: () => printRef.current,
     copyStyles: false,
@@ -222,16 +222,16 @@ function QueueButtons({
   }
 }
 
-export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
+export const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
   queueNames,
 }: {
   queueNames: ReadonlyArray<string>;
 }) {
   const toShow = useAtomValue(matDetails.materialDialogOpen);
-  const [selectedQueue, setSelectedQueue] = React.useState<string | null>(null);
-  const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
-  const [newMaterialTy, setNewMaterialTy] = React.useState<NewMaterialToQueueType | null>(null);
-  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
+  const [selectedQueue, setSelectedQueue] = useState<string | null>(null);
+  const [enteredOperator, setEnteredOperator] = useState<string | null>(null);
+  const [newMaterialTy, setNewMaterialTy] = useState<NewMaterialToQueueType | null>(null);
+  const [invalidateSt, setInvalidateSt] = useState<InvalidateCycleState | null>(null);
 
   let toQueue: string | null = null;
   if (toShow && toShow.type === "AddMatWithEnteredSerial") {
@@ -242,7 +242,7 @@ export const QueuedMaterialDialog = React.memo(function QueuedMaterialDialog({
     toQueue = selectedQueue;
   }
 
-  const onClose = React.useCallback(() => {
+  const onClose = useCallback(() => {
     setSelectedQueue(null);
     setEnteredOperator(null);
     setNewMaterialTy(null);
@@ -289,18 +289,18 @@ export interface MultiMaterialDialogProps {
   readonly operator: string | null;
 }
 
-export const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
+export const MultiMaterialDialog = memo(function MultiMaterialDialog(props: MultiMaterialDialogProps) {
   const fmsInfo = useAtomValue(fmsInformation);
   const jobs = useAtomValue(currentStatus).jobs;
   const [printLabel, printingLabel] = matDetails.usePrintLabel();
 
-  const [loading, setLoading] = React.useState(false);
-  const [events, setEvents] = React.useState<ReadonlyArray<Readonly<api.ILogEntry>>>([]);
-  const [showRemove, setShowRemove] = React.useState(false);
-  const [removeCnt, setRemoveCnt] = React.useState<number>(NaN);
-  const [lastOperator, setLastOperator] = React.useState<string | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
+  const [events, setEvents] = useState<ReadonlyArray<Readonly<api.ILogEntry>>>([]);
+  const [showRemove, setShowRemove] = useState(false);
+  const [removeCnt, setRemoveCnt] = useState<number>(NaN);
+  const [lastOperator, setLastOperator] = useState<string | undefined>(undefined);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (props.material === null) return;
     let isSubscribed = true;
     setLoading(true);
@@ -324,7 +324,7 @@ export const MultiMaterialDialog = React.memo(function MultiMaterialDialog(props
     };
   }, [props.material]);
 
-  const rawMatName = React.useMemo(() => {
+  const rawMatName = useMemo(() => {
     if (!props.material || props.material.length === 0) return undefined;
     const uniq = props.material[0].jobUnique;
     if (!uniq || uniq === "" || !jobs[uniq]) return undefined;

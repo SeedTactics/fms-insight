@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { useState, memo, useRef, useEffect, useMemo, Fragment } from "react";
 import {
   Button,
   ListItemButton,
@@ -218,7 +218,7 @@ function SelectJob({
             </div>
           </Tooltip>
         ) : (
-          <React.Fragment key={idx}>
+          <Fragment key={idx}>
             <ListItem>
               <ListItemButton
                 onClick={() => {
@@ -281,7 +281,7 @@ function SelectJob({
                 </Tooltip>
               ))}
             </Collapse>
-          </React.Fragment>
+          </Fragment>
         ),
       )}
     </List>
@@ -373,7 +373,7 @@ function PromptForMaterialType({
 }) {
   const serial = useAtomValue(matDetails.serialInMaterialDialog);
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
-  const [curCollapse, setCurCollapse] = React.useState<CurrentCollapseOpen | null>(null);
+  const [curCollapse, setCurCollapse] = useState<CurrentCollapseOpen | null>(null);
   const materialTypes = usePossibleNewMaterialTypes(toQueue);
 
   if (existingMat) return null;
@@ -637,10 +637,10 @@ export function AddToQueueButton({
 
 export const enterSerialForNewMaterialDialog = atom<string | null>(null);
 
-export const AddBySerialDialog = React.memo(function AddBySerialDialog() {
+export const AddBySerialDialog = memo(function AddBySerialDialog() {
   const [queue, setQueue] = useAtom(enterSerialForNewMaterialDialog);
   const setMatToDisplay = useSetAtom(matDetails.materialDialogOpen);
-  const [serial, setSerial] = React.useState<string | undefined>(undefined);
+  const [serial, setSerial] = useState<string | undefined>(undefined);
 
   function lookup() {
     if (serial && serial !== "" && queue !== null) {
@@ -700,17 +700,17 @@ function AddAndPrintOnClientButton({
   qty: number | null;
   disabled: boolean;
 }) {
-  const printRef = React.useRef(null);
-  const [adding, setAdding] = React.useState<boolean>(false);
+  const printRef = useRef(null);
+  const [adding, setAdding] = useState<boolean>(false);
   const print = useReactToPrint({
     content: () => printRef.current,
     onAfterPrint: close,
     copyStyles: false,
   });
-  const [materialToPrint, setMaterialToPrint] = React.useState<ReadonlyArray<api.IInProcessMaterial>>([]);
+  const [materialToPrint, setMaterialToPrint] = useState<ReadonlyArray<api.IInProcessMaterial>>([]);
   const [addNewCasting] = useAddNewCastingToQueue();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (materialToPrint.length === 0) return;
     print();
   }, [materialToPrint, print]);
@@ -757,7 +757,7 @@ function AddAndPrintOnClientButton({
 function JobsForCasting({ queue, casting }: { queue: string; casting: string }) {
   const currentSt = useAtomValue(currentStatus);
 
-  const jobs = React.useMemo(
+  const jobs = useMemo(
     () =>
       extractJobRawMaterial(queue, currentSt.jobs, currentSt.material).filter(
         (j) => j.rawMatName === casting,
@@ -805,7 +805,7 @@ function JobsForCasting({ queue, casting }: { queue: string; casting: string }) 
   );
 }
 
-export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCastingWithoutSerialDialog() {
+export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWithoutSerialDialog() {
   const [queue, setQueue] = useAtom(bulkAddCastingToQueue);
 
   const operator = useAtomValue(currentOperator);
@@ -813,15 +813,15 @@ export const BulkAddCastingWithoutSerialDialog = React.memo(function BulkAddCast
   const printOnAdd = fmsInfo.usingLabelPrinterForSerials && fmsInfo.useClientPrinterForLabels;
   const [addNewCasting] = useAddNewCastingToQueue();
 
-  const [selectedCasting, setSelectedCasting] = React.useState<string | null>(null);
-  const [enteredQty, setQty] = React.useState<number | null>(null);
-  const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
-  const [adding, setAdding] = React.useState<boolean>(false);
+  const [selectedCasting, setSelectedCasting] = useState<string | null>(null);
+  const [enteredQty, setQty] = useState<number | null>(null);
+  const [enteredOperator, setEnteredOperator] = useState<string | null>(null);
+  const [adding, setAdding] = useState<boolean>(false);
 
   const currentSt = useAtomValue(currentStatus);
   const historicCastNames = useAtomValue(castingNames);
 
-  const castings = React.useMemo(
+  const castings = useMemo(
     () =>
       LazySeq.ofObject(currentSt.jobs)
         .flatMap(([, j]) => j.procsAndPaths[0].paths)

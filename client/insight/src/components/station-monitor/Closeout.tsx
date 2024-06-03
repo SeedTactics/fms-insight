@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { memo, useMemo } from "react";
 import { addHours } from "date-fns";
 import { Box, Typography } from "@mui/material";
 import { Button } from "@mui/material";
@@ -141,7 +141,7 @@ function AssignWorkorderButton() {
   );
 }
 
-const CloseoutMaterialDialog = React.memo(function CloseoutDialog() {
+const CloseoutMaterialDialog = memo(function CloseoutDialog() {
   return (
     <MaterialDialog
       allowNote
@@ -170,7 +170,7 @@ export function Closeout({ forceSingleColumn }: { forceSingleColumn?: boolean })
   const matSummary = useAtomValue(last30MaterialSummary);
   const nearestMinute = useAtomValue(currentNearestMinutes);
 
-  const material = React.useMemo(() => {
+  const material = useMemo(() => {
     const cutoff = addHours(nearestMinute, -48);
     const closedCutoff = addHours(nearestMinute, -2);
     const uncompleted: Array<MaterialSummaryAndCompletedData> = [];

@@ -30,17 +30,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { memo, useMemo } from "react";
 import { addDays, startOfToday } from "date-fns";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
 import { last30Inspections } from "../../cell-status/inspections.js";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
 
-export const QualityPaths = React.memo(function SelectedInspections() {
+export const QualityPaths = memo(function SelectedInspections() {
   useSetTitle("Paths");
   const inspections = useAtomValue(last30Inspections);
-  const filtered = React.useMemo(() => {
+  const filtered = useMemo(() => {
     const today = startOfToday();
     const start = addDays(today, -6);
     const end = addDays(today, 1);

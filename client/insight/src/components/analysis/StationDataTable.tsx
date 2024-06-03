@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { memo, useState } from "react";
 import { Table } from "@mui/material";
 
 import { format_cycle_inspection } from "../../data/results.cycles.js";
@@ -259,12 +259,12 @@ interface DetailMenuData {
   readonly material: ReadonlyArray<Readonly<api.ILogMaterial>>;
 }
 
-export default React.memo(function StationDataTable(props: StationDataTableProps) {
+export default memo(function StationDataTable(props: StationDataTableProps) {
   const columns = buildColumns(props.matsById);
   const sort = useColSort(ColumnId.Date, columns);
   const tpage = useTablePage();
   const zoom = useZoom(props);
-  const [detailMenu, setDetailMenu] = React.useState<DetailMenuData | null>(null);
+  const [detailMenu, setDetailMenu] = useState<DetailMenuData | null>(null);
   const setMatToShow = useSetAtom(materialDialogOpen);
 
   const allData = extractData(props.points, columns, props.current_date_zoom, sort.orderBy, sort.order);

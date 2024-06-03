@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useMemo } from "react";
 import { Box, Typography } from "@mui/material";
 import { addDays, startOfToday } from "date-fns";
 import { Tooltip } from "@mui/material";
@@ -57,7 +57,7 @@ export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
   const today = startOfToday();
   const estimatedCycleTimes = useAtomValue(last30EstimatedCycleTimes);
   const allCycles = useAtomValue(last30StationCycles);
-  const points = React.useMemo(() => {
+  const points = useMemo(() => {
     const today = startOfToday();
     if (outlierTy === "labor") {
       return outlierLoadCycles(

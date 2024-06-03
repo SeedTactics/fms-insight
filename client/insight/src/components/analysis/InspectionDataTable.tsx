@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useState, memo } from "react";
 import { Table } from "@mui/material";
 import { Accordion } from "@mui/material";
 import { AccordionDetails } from "@mui/material";
@@ -102,7 +102,7 @@ function useZoom(
   extendDateRange: ((numDays: number) => void) | undefined,
   default_date_range: Date[],
 ): TableZoom {
-  const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);
+  const [curZoom, setCurZoom] = useState<{ start: Date; end: Date } | undefined>(undefined);
 
   let zoom: DataTableActionZoom | undefined;
   if (zoomType && zoomType === DataTableActionZoomType.Last30Days) {
@@ -144,12 +144,12 @@ export interface InspectionDataTableProps {
   readonly hideOpenDetailColumn?: boolean;
 }
 
-export default React.memo(function InspDataTable(props: InspectionDataTableProps) {
+export default memo(function InspDataTable(props: InspectionDataTableProps) {
   const setMatToShow = useSetAtom(materialDialogOpen);
   const sort = useColSort(ColumnId.Date, columns);
-  const [pages, setPages] = React.useState<HashMap<string, number>>(HashMap.empty());
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
-  const [curPath, setCurPathOpen] = React.useState<string | undefined>(undefined);
+  const [pages, setPages] = useState<HashMap<string, number>>(HashMap.empty());
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [curPath, setCurPathOpen] = useState<string | undefined>(undefined);
   const tzoom = useZoom(props.zoomType, props.extendDateRange, props.default_date_range);
 
   const groups = groupInspectionsByPath(props.points, tzoom.zoomRange, sort.sortOn);

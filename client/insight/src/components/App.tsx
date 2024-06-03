@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { ReactNode, ComponentType, memo } from "react";
 import { useMediaQuery, useTheme } from "@mui/material";
 import { Tabs } from "@mui/material";
 import { Tab } from "@mui/material";
@@ -220,7 +220,7 @@ const analysisReports: ReadonlyArray<MenuNavItem> = [
   },
 ];
 
-export function NavTabs({ children }: { children?: React.ReactNode }) {
+export function NavTabs({ children }: { children?: ReactNode }) {
   const [route, setRoute] = useAtom(routes.currentRoute);
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
@@ -303,13 +303,13 @@ function SalesTabs() {
 
 export interface AppProps {
   readonly renderCustomPage?: (custom: ReadonlyArray<string>) => {
-    readonly nav: React.ComponentType | undefined;
+    readonly nav: ComponentType | undefined;
     readonly page: JSX.Element;
   };
   readonly chooseModes?: (i: serverSettings.FMSInfoAndUser) => ReadonlyArray<ChooseModeItem> | null;
 }
 
-const App = React.memo(function App(props: AppProps) {
+const App = memo(function App(props: AppProps) {
   routes.useWatchHistory();
   const fmsInfo = useAtomValue(serverSettings.fmsInformation);
   const [route, setRoute] = useAtom(routes.currentRoute);
@@ -317,8 +317,8 @@ const App = React.memo(function App(props: AppProps) {
   const showLogout = fmsInfo.user !== null && fmsInfo.user !== undefined;
 
   let page: JSX.Element;
-  let nav1: React.ComponentType | undefined = undefined;
-  let nav2: React.ComponentType | undefined = undefined;
+  let nav1: ComponentType | undefined = undefined;
+  let nav2: ComponentType | undefined = undefined;
   let menuNavItems: ReadonlyArray<MenuNavItem> | undefined = undefined;
   let showAlarms = true;
   let showSearch = true;

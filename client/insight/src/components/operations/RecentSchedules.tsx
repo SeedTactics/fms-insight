@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { ReactNode, useState, memo, useMemo } from "react";
 import { Box, styled, TableSortLabel } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { Tooltip } from "@mui/material";
@@ -88,7 +88,7 @@ interface JobsRowProps {
 }
 
 function JobsRow(props: JobsRowProps) {
-  const [open, setOpen] = React.useState<boolean>(false);
+  const [open, setOpen] = useState<boolean>(false);
 
   let colCnt = 10;
   if (props.showMaterial) colCnt += 1;
@@ -229,7 +229,7 @@ function SortColHeader(props: {
   readonly setOrder: (o: "asc" | "desc") => void;
   readonly sortBy: SortColumn;
   readonly setSortBy: (c: SortColumn) => void;
-  readonly children: React.ReactNode;
+  readonly children: ReactNode;
 }) {
   return (
     <Tooltip title="Sort" enterDelay={300}>
@@ -253,7 +253,7 @@ function SortColHeader(props: {
   );
 }
 
-const JobsHeader = React.memo(function JobsHeader(props: {
+const JobsHeader = memo(function JobsHeader(props: {
   readonly jobs: ReadonlyArray<ScheduledJobDisplay>;
   readonly showMaterial: boolean;
   readonly order: "asc" | "desc";
@@ -331,17 +331,17 @@ const JobsHeader = React.memo(function JobsHeader(props: {
   );
 });
 
-export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.Element {
-  const [curEditNoteJob, setCurEditNoteJob] = React.useState<ScheduledJobDisplay | null>(null);
-  const [sortBy, setSortBy] = React.useState<SortColumn>(SortColumn.Date);
-  const [order, setOrder] = React.useState<"asc" | "desc">("desc");
-  const [showArchived, setShowArchived] = React.useState<boolean>(true);
+export const RecentSchedulesCard = memo(function RecentSchedules(): JSX.Element {
+  const [curEditNoteJob, setCurEditNoteJob] = useState<ScheduledJobDisplay | null>(null);
+  const [sortBy, setSortBy] = useState<SortColumn>(SortColumn.Date);
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
+  const [showArchived, setShowArchived] = useState<boolean>(true);
 
   const matIds = useAtomValue(last30MaterialSummary);
   const schJobs = useAtomValue(last30Jobs);
   const currentSt = useAtomValue(currentStatus);
 
-  const showMaterial = React.useMemo(() => {
+  const showMaterial = useMemo(() => {
     for (const [, newJob] of schJobs) {
       for (const p of newJob.procsAndPaths[0]?.paths ?? []) {
         if (p.casting !== null && p.casting !== undefined && p.casting !== "") {
@@ -352,7 +352,7 @@ export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.El
     return false;
   }, [schJobs]);
 
-  const jobs = React.useMemo(() => {
+  const jobs = useMemo(() => {
     return buildScheduledJobs(
       { start: addDays(startOfToday(), -6), end: addDays(startOfToday(), 1) },
       matIds.matsById,
@@ -361,7 +361,7 @@ export const RecentSchedulesCard = React.memo(function RecentSchedules(): JSX.El
     );
   }, [matIds.matsById, schJobs, currentSt]);
 
-  const sorted = React.useMemo(
+  const sorted = useMemo(
     () => sortJobs(jobs, sortBy, order, showArchived),
     [jobs, sortBy, order, showArchived],
   );

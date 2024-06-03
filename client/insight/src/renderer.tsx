@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { CssBaseline } from "@mui/material";
@@ -62,11 +62,11 @@ export function render(
   root.render(
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <React.StrictMode>
+      <StrictMode>
         <Provider store={store}>
           <App {...appProps} />
         </Provider>
-      </React.StrictMode>
+      </StrictMode>
     </ThemeProvider>,
   );
 }

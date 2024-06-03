@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useState } from "react";
 import {
   CircularProgress,
   Stack,
@@ -61,9 +61,9 @@ import { loadable } from "jotai/utils";
 function SerialLookup() {
   const demo = useIsDemo();
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
-  const [serial, setSerial] = React.useState(demo ? "00000000i9" : "");
-  const [loading, setLoading] = React.useState<boolean>(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [serial, setSerial] = useState(demo ? "00000000i9" : "");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   function lookup() {
     if (serial && serial !== "") {
@@ -248,7 +248,7 @@ function PathLookupStep(props: PathLookupProps) {
 }
 
 export function PartLookupStepper() {
-  const [origStep, setStep] = React.useState(0);
+  const [origStep, setStep] = useState(0);
   const matToShow = useAtomValue(matDetails.materialDialogOpen);
 
   let step = origStep;

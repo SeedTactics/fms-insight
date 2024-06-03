@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { memo, useMemo } from "react";
 import { addDays } from "date-fns";
 import { Box, Typography } from "@mui/material";
 import { Button } from "@mui/material";
@@ -141,7 +141,7 @@ function DialogActionInspButtons({ focusInspectionType }: InspDialogProps) {
   return <InspButtons inspection_type={singleInspectionType} />;
 }
 
-const InspMaterialDialog = React.memo(function InspMaterialDialog(props: InspDialogProps) {
+const InspMaterialDialog = memo(function InspMaterialDialog(props: InspDialogProps) {
   return (
     <MaterialDialog
       allowNote
@@ -163,7 +163,7 @@ interface InspectionProps {
 
 export function Inspection({ focusInspectionType, forceSingleColumn }: InspectionProps): JSX.Element {
   const matSummary = useAtomValue(last30MaterialSummary);
-  const recent_inspections = React.useMemo(
+  const recent_inspections = useMemo(
     () => extractRecentInspections(matSummary.matsById, focusInspectionType),
     [matSummary, focusInspectionType],
   );

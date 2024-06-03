@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useState, useMemo, memo } from "react";
 import { Box, Stack } from "@mui/material";
 import { Table } from "@mui/material";
 import { TableBody } from "@mui/material";
@@ -90,7 +90,7 @@ const computedCosts = atom((get) => {
 });
 
 function AutomationCostInput() {
-  const [cost, setCost] = React.useState<number | null>(null);
+  const [cost, setCost] = useState<number | null>(null);
   const [automationCost, saveAutomationCostPerYear] = useAtom(automationCostPerYear);
 
   return (
@@ -117,7 +117,7 @@ function AutomationCostInput() {
 function LaborCost() {
   const period = useAtomValue(selectedAnalysisPeriod);
   const month = period.type === "Last30" ? null : period.month;
-  const [cost, setCost] = React.useState<number | null>(null);
+  const [cost, setCost] = useState<number | null>(null);
   const [laborCost, saveCost] = useAtom(month === null ? last30LaborCost : perMonthLaborCost(month));
 
   return (
@@ -149,7 +149,7 @@ interface StationCostInputProps {
 }
 
 function SingleStationCostInput(props: StationCostInputProps & { readonly machineGroup: string }) {
-  const [cost, setCost] = React.useState<number | null>(null);
+  const [cost, setCost] = useState<number | null>(null);
   const [machineCost, saveCost] = useAtom(machineCostPerYear);
   return (
     <TextField
@@ -208,7 +208,7 @@ export function CostBreakdownPage() {
 
   const thirtyDaysAgo = addDays(startOfToday(), -30);
 
-  const costs = React.useMemo(() => {
+  const costs = useMemo(() => {
     return compute_monthly_cost_percentages(
       cycles.valuesToLazySeq(),
       matIds.matsById,
@@ -364,7 +364,7 @@ function CostOutputCard() {
   );
 }
 
-export const CostPerPiecePage = React.memo(function CostPerPiecePage() {
+export const CostPerPiecePage = memo(function CostPerPiecePage() {
   useSetTitle("Cost Per Piece");
 
   return (

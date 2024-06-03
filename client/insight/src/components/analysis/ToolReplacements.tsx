@@ -42,7 +42,7 @@ import {
   Typography,
 } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
-import * as React from "react";
+import { createContext, memo, useContext, useState, useMemo } from "react";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import {
   last30ToolReplacements,
@@ -184,18 +184,18 @@ const decimalFormat = Intl.NumberFormat(undefined, {
   maximumFractionDigits: 1,
 });
 
-const CurZoomContext = React.createContext<{ readonly start: Date; readonly end: Date }>({
+const CurZoomContext = createContext<{ readonly start: Date; readonly end: Date }>({
   start: new Date(),
   end: new Date(),
 });
 
-const ReplacementGraph = React.memo(function ReplacementGraph({
+const ReplacementGraph = memo(function ReplacementGraph({
   row,
 }: {
   readonly row: ToolReplacementSummary;
 }) {
-  const zoom = React.useContext(CurZoomContext);
-  const [tooltip, setTooltip] = React.useState<{
+  const zoom = useContext(CurZoomContext);
+  const [tooltip, setTooltip] = useState<{
     readonly left: number;
     readonly r: ToolReplacementAndStationDate;
   } | null>(null);
@@ -321,7 +321,7 @@ const summaryColumns: ReadonlyArray<Column<SummaryColumnId, ToolReplacementSumma
   },
 ];
 
-const SummaryTable = React.memo(function ReplacementTable(props: ReplacementTableProps) {
+const SummaryTable = memo(function ReplacementTable(props: ReplacementTableProps) {
   const period = useAtomValue(selectedAnalysisPeriod);
   const tpage = useTablePage();
   const zoom = useTableZoomForPeriod(period);
@@ -330,7 +330,7 @@ const SummaryTable = React.memo(function ReplacementTable(props: ReplacementTabl
   const allReplacements = useAtomValue(
     period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements,
   );
-  const allSorted = React.useMemo(
+  const allSorted = useMemo(
     () => tool_summary(zoom, allReplacements, props.station, sort.sortOn),
     [zoom, allReplacements, props.station, sort],
   );
@@ -466,7 +466,7 @@ const allReplacementsColumns: ReadonlyArray<Column<AllReplacementColumnId, ToolR
   },
 ];
 
-const AllReplacementTable = React.memo(function ReplacementTable(props: ReplacementTableProps) {
+const AllReplacementTable = memo(function ReplacementTable(props: ReplacementTableProps) {
   const period = useAtomValue(selectedAnalysisPeriod);
   const tpage = useTablePage();
   const zoom = useTableZoomForPeriod(period);
@@ -475,7 +475,7 @@ const AllReplacementTable = React.memo(function ReplacementTable(props: Replacem
   const allReplacements = useAtomValue(
     period.type === "Last30" ? last30ToolReplacements : specificMonthToolReplacements,
   );
-  const allSorted = React.useMemo(
+  const allSorted = useMemo(
     () =>
       tool_replacements_with_station_and_date(zoom, allReplacements, props.station).toSortedArray(
         sort.sortOn,
@@ -510,7 +510,7 @@ function copyToClipboard(replacements: ToolReplacementsByStation, displayType: "
   }
 }
 
-const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
+const ChooseMachine = memo(function ChooseMachineSelect(props: {
   readonly station: StationGroupAndNum | null;
   readonly setSelectedStation: (station: StationGroupAndNum | null) => void;
   readonly displayType: "summary" | "details";
@@ -567,7 +567,7 @@ const ChooseMachine = React.memo(function ChooseMachineSelect(props: {
 const selectedMachineAtom = atom<StationGroupAndNum | null>(null);
 const selectedType = atom<"summary" | "details">("summary");
 
-export const ToolReplacementPage = React.memo(function ToolReplacementCard() {
+export const ToolReplacementPage = memo(function ToolReplacementCard() {
   useSetTitle("Tool Replacements");
   const [selectedMachine, setSelectedMachine] = useAtom(selectedMachineAtom);
   const [type, setType] = useAtom(selectedType);

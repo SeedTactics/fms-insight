@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { ComponentType, ChangeEvent, memo, useState, useMemo } from "react";
 import { addDays, startOfToday, addMonths } from "date-fns";
 import { curveCatmullRom } from "@visx/curve";
 import { XYChart, AnimatedAxis, AnimatedLineSeries, Grid } from "@visx/xychart";
@@ -49,7 +49,7 @@ type BufferChartProps = {
   readonly movingAverageDistanceInHours: number;
 };
 
-const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
+const BufferChart = memo(function BufferChart(props: BufferChartProps) {
   const period = useAtomValue(selectedAnalysisPeriod);
   const defaultDateRange =
     period.type === "Last30"
@@ -58,9 +58,9 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
   const entries = useAtomValue(period.type === "Last30" ? last30BufferEntries : specificMonthBufferEntries);
   const rawMatQueues = useAtomValue(rawMaterialQueues);
 
-  const [disabledBuffers, setDisabledBuffers] = React.useState(HashSet.empty<string>());
+  const [disabledBuffers, setDisabledBuffers] = useState(HashSet.empty<string>());
 
-  const series = React.useMemo(
+  const series = useMemo(
     () =>
       buildBufferChart(
         defaultDateRange[0],
@@ -133,12 +133,12 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
 
 // https://github.com/mui-org/material-ui/issues/20191
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SliderAny: React.ComponentType<any> = Slider;
+const SliderAny: ComponentType<any> = Slider;
 
 export function BufferOccupancyChart() {
   useSetTitle("Buffer Occupancy");
 
-  const [movingAverageHours, setMovingAverage] = React.useState(12);
+  const [movingAverageHours, setMovingAverage] = useState(12);
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
       <Box
@@ -162,7 +162,7 @@ export function BufferOccupancyChart() {
           steps={0.2}
           valueLabelDisplay="off"
           value={movingAverageHours}
-          onChange={(e: React.ChangeEvent<unknown>, v: number) => setMovingAverage(v)}
+          onChange={(e: ChangeEvent<unknown>, v: number) => setMovingAverage(v)}
         />
       </Box>
 

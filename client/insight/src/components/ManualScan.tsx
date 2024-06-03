@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { memo, useState } from "react";
 import { Dialog } from "@mui/material";
 import { Button } from "@mui/material";
 import { DialogActions } from "@mui/material";
@@ -44,9 +44,9 @@ import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { useSetAtom } from "jotai";
 
-export const ManualScanButton = React.memo(function ManualScan() {
-  const [serial, setSerial] = React.useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
+export const ManualScanButton = memo(function ManualScan() {
+  const [serial, setSerial] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const setMatToShowDialog = useSetAtom(materialDialogOpen);
 
   function close() {

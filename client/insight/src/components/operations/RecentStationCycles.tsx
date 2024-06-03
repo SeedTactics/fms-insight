@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useCallback, useMemo } from "react";
 import { Box, FormControl, Typography } from "@mui/material";
 import { addDays, startOfToday } from "date-fns";
 import { Tooltip } from "@mui/material";
@@ -80,7 +80,7 @@ const machineYZoomAtom = atom<YZoomRange | null>(null);
 export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
   useSetTitle(ty === "labor" ? "L/U Cycles" : "Machine Cycles");
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
-  const extraStationCycleTooltip = React.useCallback(
+  const extraStationCycleTooltip = useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as LoadCycleData;
       const ret = [];
@@ -122,7 +122,7 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
 
   const cycles = useAtomValue(last30StationCycles);
   const matSummary = useAtomValue(last30MaterialSummary);
-  const points = React.useMemo(() => {
+  const points = useMemo(() => {
     const today = startOfToday();
     if (selectedOperation) {
       return filterStationCycles(cycles.valuesToLazySeq(), {
@@ -146,7 +146,7 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
     }
   }, [cycles, ty, selectedPart, selectedPallet, selectedOperation, showGraph]);
   const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
-  const plannedMinutes = React.useMemo(() => {
+  const plannedMinutes = useMemo(() => {
     if (curOperation) {
       return plannedOperationMinutes(points, false);
     } else {

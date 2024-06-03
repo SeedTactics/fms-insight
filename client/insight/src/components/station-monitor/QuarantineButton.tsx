@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { useState } from "react";
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Tooltip } from "@mui/material";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
@@ -172,8 +172,8 @@ export function QuarantineMatButton({
   onClose?: () => void;
   ignoreOperator?: boolean;
 }) {
-  const [open, setOpen] = React.useState(false);
-  const [reason, setReason] = React.useState("");
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
   const q = useQuarantineMaterial(!!ignoreOperator);
   const setMatToShow = useSetAtom(materialDialogOpen);
 

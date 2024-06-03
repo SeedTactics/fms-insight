@@ -31,7 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import {
+  MutableRefObject,
+  PointerEvent,
+  useMemo,
+  useCallback,
+  memo,
+  useState,
+  useRef,
+  useEffect,
+} from "react";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { RecentCycle, recentCycles } from "../../data/results.cycles.js";
@@ -70,7 +79,7 @@ type SimCycle = {
 function useSimCycles(): ReadonlyArray<SimCycle> {
   const jobs = useAtomValue(last30Jobs);
   const statUse = useAtomValue(last30SimStationUse);
-  return React.useMemo(() => {
+  return useMemo(() => {
     const cutoff = addHours(new Date(), -12);
     return (
       LazySeq.of(statUse)
@@ -199,12 +208,12 @@ function RecentSeries({
   hideTooltipRef,
 }: ChartScales & {
   cycles: ReadonlyArray<RecentCycle>;
-  hideTooltipRef: React.MutableRefObject<NodeJS.Timeout | null>;
+  hideTooltipRef: MutableRefObject<NodeJS.Timeout | null>;
 }): JSX.Element {
   const actualOffset = actualPlannedScale("actual") ?? 0;
   const setTooltip = useSetAtom(tooltipData);
 
-  function showTooltip(c: RecentCycle): (e: React.PointerEvent<SVGGElement>) => void {
+  function showTooltip(c: RecentCycle): (e: PointerEvent<SVGGElement>) => void {
     return (e) => {
       const pt = localPoint(e);
       if (!pt) return;
@@ -219,7 +228,7 @@ function RecentSeries({
       });
     };
   }
-  const hideTooltip = React.useCallback(() => {
+  const hideTooltip = useCallback(() => {
     hideTooltipRef.current = setTimeout(() => {
       setTooltip(null);
     }, 300);
@@ -280,12 +289,12 @@ function CurrentSeries({
 }: ChartScales & {
   now: Date;
   cycles: ReadonlyArray<CurrentCycle>;
-  hideTooltipRef: React.MutableRefObject<NodeJS.Timeout | null>;
+  hideTooltipRef: MutableRefObject<NodeJS.Timeout | null>;
 }): JSX.Element {
   const actualOffset = actualPlannedScale("actual") ?? 0;
   const setTooltip = useSetAtom(tooltipData);
 
-  function showTooltip(c: CurrentCycle): (e: React.PointerEvent<SVGGElement>) => void {
+  function showTooltip(c: CurrentCycle): (e: PointerEvent<SVGGElement>) => void {
     return (e) => {
       const pt = localPoint(e);
       if (!pt) return;
@@ -300,7 +309,7 @@ function CurrentSeries({
       });
     };
   }
-  const hideTooltip = React.useCallback(() => {
+  const hideTooltip = useCallback(() => {
     hideTooltipRef.current = setTimeout(() => {
       setTooltip(null);
     }, 300);
@@ -361,13 +370,13 @@ function SimSeries({
   hideTooltipRef,
 }: ChartScales & {
   sim: ReadonlyArray<SimCycle>;
-  hideTooltipRef: React.MutableRefObject<NodeJS.Timeout | null>;
+  hideTooltipRef: MutableRefObject<NodeJS.Timeout | null>;
 }): JSX.Element {
   const plannedOffset = actualPlannedScale("planned") ?? 0;
 
   const setTooltip = useSetAtom(tooltipData);
 
-  function showTooltip(c: SimCycle): (e: React.PointerEvent<SVGGElement>) => void {
+  function showTooltip(c: SimCycle): (e: PointerEvent<SVGGElement>) => void {
     return (e) => {
       const pt = localPoint(e);
       if (!pt) return;
@@ -382,7 +391,7 @@ function SimSeries({
       });
     };
   }
-  const hideTooltip = React.useCallback(() => {
+  const hideTooltip = useCallback(() => {
     hideTooltipRef.current = setTimeout(() => {
       setTooltip(null);
     }, 300);
@@ -405,7 +414,7 @@ function SimSeries({
   );
 }
 
-const Tooltip = React.memo(function Tooltip() {
+const Tooltip = memo(function Tooltip() {
   const tooltip = useAtomValue(tooltipData);
 
   if (tooltip === null) return null;
@@ -515,7 +524,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   const sim = useSimCycles();
   const currentSt = useAtomValue(currentStatus);
 
-  const cycles = React.useMemo(() => {
+  const cycles = useMemo(() => {
     const cutoff = addHours(new Date(), -12);
     return recentCycles(
       last30Cycles.valuesToLazySeq().filter((e) => e.x >= cutoff),
@@ -523,15 +532,15 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
     );
   }, [last30Cycles, estimated]);
 
-  const current = React.useMemo(() => {
+  const current = useMemo(() => {
     return currentCycles(currentSt, estimated);
   }, [currentSt, estimated]);
 
   // ensure a re-render at least every 5 minutes, but reset the timer if the data changes
   const now = new Date();
-  const [, forceRerender] = React.useState<number>(0);
-  const refreshRef = React.useRef<NodeJS.Timeout | null>(null);
-  React.useEffect(() => {
+  const [, forceRerender] = useState<number>(0);
+  const refreshRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
     if (refreshRef.current !== null) clearTimeout(refreshRef.current);
     refreshRef.current = setTimeout(
       () => {
@@ -542,7 +551,7 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
   });
 
   const { xScale, yScale, actualPlannedScale } = useScales(cycles, current, now, width, height);
-  const hideTooltipRef = React.useRef<NodeJS.Timeout | null>(null);
+  const hideTooltipRef = useRef<NodeJS.Timeout | null>(null);
 
   if (height <= 0 || width <= 0) return null;
 

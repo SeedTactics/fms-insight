@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { memo, useState } from "react";
 import {
   Button,
   CircularProgress,
@@ -47,14 +47,14 @@ import { errorLoadingLast30, websocketReconnecting } from "../network/websocket.
 import { errorLoadingSpecificMonthData, loadingSpecificMonthData } from "../network/load-specific-month.js";
 import { useAtomValue } from "jotai";
 
-export const LoadingIcon = React.memo(function LoadingIcon() {
+export const LoadingIcon = memo(function LoadingIcon() {
   const websocketLoading = useAtomValue(websocketReconnecting);
   const specificMonthLoading = useAtomValue(loadingSpecificMonthData);
 
   const last30Error = useAtomValue(errorLoadingLast30);
   const specificMonthError = useAtomValue(errorLoadingSpecificMonthData);
 
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
     <>
