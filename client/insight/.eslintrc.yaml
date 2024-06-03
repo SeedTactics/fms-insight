@@ -1,9 +1,7 @@
 extends:
   - "eslint:recommended"
-  - "plugin:@typescript-eslint/eslint-recommended"
-  - "plugin:@typescript-eslint/recommended"
-  - "plugin:@typescript-eslint/recommended-requiring-type-checking"
-  - "plugin:react/recommended"
+  - "plugin:@typescript-eslint/recommended-type-checked"
+  - "plugin:react-hooks/recommended"
   - "prettier"
 rules:
   "@typescript-eslint/explicit-function-return-type": off
@@ -18,14 +16,11 @@ rules:
 parser: "@typescript-eslint/parser"
 plugins:
   - "@typescript-eslint"
-  - react-hooks
+  - react-refresh
 parserOptions:
-  ecmaVersion: 2018
-  project:
-    - ./tsconfig.json
+  ecmaVersion: latest
   sourceType: "module"
-  ecmaFeatures:
-    jsx: true
+  project: ./tsconfig.json
 
 root: true
 settings:

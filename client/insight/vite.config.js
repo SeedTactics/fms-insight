@@ -2,10 +2,16 @@
 /// <reference types="vite/client" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import jotaiDebugLabel from "jotai/babel/plugin-debug-label";
+import jotaiReactRefresh from "jotai/babel/plugin-react-refresh";
 
 export default defineConfig({
   root: "src",
-  plugins: [react()],
+  plugins: [
+    react({
+      babel: { plugins: [jotaiDebugLabel, jotaiReactRefresh] },
+    }),
+  ],
   base: "/",
   server: {
     port: 1234,
