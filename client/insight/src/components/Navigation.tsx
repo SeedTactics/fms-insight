@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { ReactNode, ComponentType } from "react";
+import { ReactNode, ComponentType, useTransition } from "react";
 import { Notifications, HelpOutline, ExitToApp } from "@mui/icons-material";
 import {
   Typography,
@@ -169,18 +169,21 @@ function ToolButtons({
 
 function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
   const [curRoute, setCurrentRoute] = useAtom(currentRoute);
+  const [isPending, startTransition] = useTransition();
   return (
     <FormControl size="small">
       <Select
         value={curRoute.route}
         sx={{ width: "16.5em" }}
-        onChange={(e) => {
-          const item = menuNavs.find((i) =>
-            "separator" in i ? false : i.route.route === (e.target.value as RouteLocation),
-          );
-          if (!item || "separator" in item) return;
-          setCurrentRoute(item.route);
-        }}
+        onChange={(e) =>
+          startTransition(() => {
+            const item = menuNavs.find((i) =>
+              "separator" in i ? false : i.route.route === (e.target.value as RouteLocation),
+            );
+            if (!item || "separator" in item) return;
+            setCurrentRoute(item.route);
+          })
+        }
         renderValue={() => {
           const item = menuNavs.find((i) => ("separator" in i ? false : i.route.route === curRoute.route));
           if (!item || "separator" in item) return null;
@@ -189,6 +192,7 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
               {item.icon}
               <Typography variant="h6" style={{ marginLeft: "1em" }}>
                 {item.name}
+                {isPending ? "..." : ""}
               </Typography>
             </Box>
           );
@@ -279,6 +283,7 @@ export function Header({
 
 export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem> }) {
   const [curRoute, setCurrentRoute] = useAtom(currentRoute);
+  const [isPending, startTransition] = useTransition();
 
   if (!menuItems || menuItems.length === 0) {
     return null;
@@ -303,10 +308,13 @@ export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem>
             <ListItem key={item.name}>
               <ListItemButton
                 selected={curRoute.route === item.route.route}
-                onClick={() => setCurrentRoute(item.route)}
+                onClick={() => startTransition(() => setCurrentRoute(item.route))}
               >
                 <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.name} />
+                <ListItemText
+                  primary={item.name}
+                  sx={isPending ? (theme) => ({ color: theme.palette.grey[700] }) : undefined}
+                />
               </ListItemButton>
             </ListItem>
           ),

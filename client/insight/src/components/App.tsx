@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { ReactNode, ComponentType, memo } from "react";
+import { ReactNode, ComponentType, memo, useTransition } from "react";
 import { useMediaQuery, useTheme } from "@mui/material";
 import { Tabs } from "@mui/material";
 import { Tab } from "@mui/material";
@@ -224,6 +224,7 @@ export function NavTabs({ children }: { children?: ReactNode }) {
   const [route, setRoute] = useAtom(routes.currentRoute);
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
+  const [, startTransition] = useTransition();
 
   const isOperationReport = operationsReports.some((r) =>
     "separator" in r ? false : r.route.route === route.route,
@@ -233,13 +234,15 @@ export function NavTabs({ children }: { children?: ReactNode }) {
     <Tabs
       variant={full && (!Array.isArray(children) || children.length < 5) ? "fullWidth" : "scrollable"}
       value={isOperationReport ? OperationsReportsTab : route.route}
-      onChange={(e, v) => {
-        if (v === OperationsReportsTab) {
-          setRoute({ route: routes.RouteLocation.Operations_MachineCycles });
-        } else {
-          setRoute({ route: v as routes.RouteLocation } as routes.RouteState);
-        }
-      }}
+      onChange={(e, v) =>
+        startTransition(() => {
+          if (v === OperationsReportsTab) {
+            setRoute({ route: routes.RouteLocation.Operations_MachineCycles });
+          } else {
+            setRoute({ route: v as routes.RouteLocation } as routes.RouteState);
+          }
+        })
+      }
       textColor="inherit"
       scrollButtons
       allowScrollButtonsMobile
