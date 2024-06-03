@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { PointerEvent, useMemo, memo, useRef, useCallback, useState } from "react";
 import { addDays } from "date-fns";
 import { Select, MenuItem, Tooltip, IconButton, Stack, Box, Typography, FormControl } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
@@ -94,7 +94,7 @@ function useScales({
 
   const xMax = width - marginLeft - marginRight;
 
-  const xScale = React.useMemo(() => {
+  const xScale = useMemo(() => {
     const xValues: Array<Date> = [];
     if (dateRange[1] < dateRange[0]) {
       // should never happen, just do something in case
@@ -115,7 +115,7 @@ function useScales({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange[0], dateRange[1], xMax]);
 
-  const { yScale, height, colorScale } = React.useMemo(() => {
+  const { yScale, height, colorScale } = useMemo(() => {
     const yValues = new Set<string>();
     for (const pt of points) {
       yValues.add(pt.y);
@@ -150,7 +150,7 @@ function useScales({
   return { height, width, xScale, yScale, colorScale };
 }
 
-const HeatAxis = React.memo(function HeatAxis({ xScale, yScale }: HeatChartScales) {
+const HeatAxis = memo(function HeatAxis({ xScale, yScale }: HeatChartScales) {
   return (
     <>
       <Axis
@@ -190,7 +190,7 @@ interface TooltipData {
 
 type ShowTooltipFunc = (a: TooltipData | null) => void;
 
-const HeatSeries = React.memo(function HeatSeries({
+const HeatSeries = memo(function HeatSeries({
   points,
   xScale,
   yScale,
@@ -200,9 +200,9 @@ const HeatSeries = React.memo(function HeatSeries({
   readonly points: ReadonlyArray<HeatChartPoint>;
   readonly setTooltip: ShowTooltipFunc;
 } & HeatChartScales) {
-  const hideRef = React.useRef<number | null>(null);
-  const pointerEnter = React.useCallback(
-    (e: React.PointerEvent<SVGRectElement>) => {
+  const hideRef = useRef<number | null>(null);
+  const pointerEnter = useCallback(
+    (e: PointerEvent<SVGRectElement>) => {
       const pt = localPoint(e);
       if (pt === null) return;
       if (hideRef.current !== null) {
@@ -217,7 +217,7 @@ const HeatSeries = React.memo(function HeatSeries({
     [points, setTooltip],
   );
 
-  const pointerLeave = React.useCallback(() => {
+  const pointerLeave = useCallback(() => {
     if (hideRef.current === null) {
       hideRef.current = window.setTimeout(() => {
         hideRef.current = null;
@@ -248,7 +248,7 @@ const HeatSeries = React.memo(function HeatSeries({
   );
 });
 
-const HeatTooltip = React.memo(function HeatTooltip({
+const HeatTooltip = memo(function HeatTooltip({
   yType,
   seriesLabel,
   tooltip,
@@ -273,8 +273,8 @@ const HeatTooltip = React.memo(function HeatTooltip({
   );
 });
 
-const HeatChart = React.memo(function HeatChart(props: HeatChartProps & { readonly parentWidth: number }) {
-  const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
+const HeatChart = memo(function HeatChart(props: HeatChartProps & { readonly parentWidth: number }) {
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
 
   const { width, height, xScale, yScale, colorScale } = useScales({
     yType: props.y_title,
@@ -283,7 +283,7 @@ const HeatChart = React.memo(function HeatChart(props: HeatChartProps & { readon
     containerWidth: props.parentWidth,
   });
 
-  const pointerLeave = React.useCallback(() => {
+  const pointerLeave = useCallback(() => {
     setTooltip(null);
   }, [setTooltip]);
 

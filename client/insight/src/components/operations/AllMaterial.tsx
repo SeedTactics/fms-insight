@@ -31,7 +31,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import {
+  ReactNode,
+  HTMLAttributes,
+  RefCallback,
+  ForwardedRef,
+  forwardRef,
+  memo,
+  PureComponent,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   selectAllMaterialIntoBins,
   MaterialBinType,
@@ -87,20 +98,20 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 type ColWithTitleProps = {
   readonly label: string;
   readonly binId: MaterialBinId;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 };
 
 type ColWithTitleSortableProps = {
-  readonly dragRootProps?: React.HTMLAttributes<HTMLDivElement>;
-  readonly dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
-  readonly setDragHandleRef?: React.RefCallback<HTMLDivElement>;
+  readonly dragRootProps?: HTMLAttributes<HTMLDivElement>;
+  readonly dragHandleProps?: HTMLAttributes<HTMLDivElement>;
+  readonly setDragHandleRef?: RefCallback<HTMLDivElement>;
   readonly isDragOverlay?: boolean;
   readonly isActiveDrag?: boolean;
 };
 
-const ColumnWithTitle = React.forwardRef(function MaterialBin(
+const ColumnWithTitle = forwardRef(function MaterialBin(
   props: ColWithTitleProps & ColWithTitleSortableProps,
-  ref: React.ForwardedRef<HTMLDivElement>,
+  ref: ForwardedRef<HTMLDivElement>,
 ) {
   return (
     <Box
@@ -192,7 +203,7 @@ interface QuarantineQueueProps {
   readonly isDragOverlay?: boolean;
 }
 
-const QuarantineQueue = React.memo(function QuarantineQueue(props: QuarantineQueueProps) {
+const QuarantineQueue = memo(function QuarantineQueue(props: QuarantineQueueProps) {
   if (props.isDragOverlay) {
     return (
       <ColumnWithTitle binId={props.binId} label={props.queue} isDragOverlay>
@@ -257,7 +268,7 @@ function compareQueue(q1: string, q2: string) {
   return q1.localeCompare(q2);
 }
 
-class SystemMaterial<T extends string | number> extends React.PureComponent<SystemMaterialProps<T>> {
+class SystemMaterial<T extends string | number> extends PureComponent<SystemMaterialProps<T>> {
   override render() {
     const Col = this.props.isDragOverlay ? ColumnWithTitle : SortableColumnWithTitle;
     return (
@@ -339,9 +350,9 @@ function MaterialBinColumn({
   }
 }
 
-const AllMatDialog = React.memo(function AllMatDialog() {
-  const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
-  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
+const AllMatDialog = memo(function AllMatDialog() {
+  const [swapSt, setSwapSt] = useState<SwapMaterialState>(null);
+  const [invalidateSt, setInvalidateSt] = useState<InvalidateCycleState | null>(null);
 
   function onClose() {
     setSwapSt(null);
@@ -378,7 +389,7 @@ const AllMatDialog = React.memo(function AllMatDialog() {
 });
 
 function useCollisionDetection(allBins: ReadonlyArray<MaterialBin>): CollisionDetection {
-  return React.useCallback(
+  return useCallback(
     (args) => {
       if (typeof args.active.id === "string") {
         // columns only collide with other columns
@@ -438,9 +449,9 @@ export function AllMaterial(props: AllMaterialProps) {
   const [matBinOrder, setMatBinOrder] = useAtom(currentMaterialBinOrder);
   const [addExistingMatToQueue] = matDetails.useAddExistingMaterialToQueue();
   const reorderQueuedMat = useSetAtom(currentSt.reorderQueuedMatInCurrentStatus);
-  const [activeDrag, setActiveDrag] = React.useState<CurActiveDrag | null>(null);
+  const [activeDrag, setActiveDrag] = useState<CurActiveDrag | null>(null);
 
-  const allBins = React.useMemo(() => {
+  const allBins = useMemo(() => {
     const allBins = selectAllMaterialIntoBins(st, matBinOrder);
     if (activeDrag && activeDrag.type === "material" && activeDrag.curOverBinId !== null) {
       return moveMaterialInBin(allBins, activeDrag.mat, activeDrag.curOverBinId, activeDrag.initialIdx);

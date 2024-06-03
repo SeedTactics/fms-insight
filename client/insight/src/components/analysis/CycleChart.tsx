@@ -30,7 +30,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import {
+  SetStateAction,
+  MouseEvent,
+  PointerEvent,
+  useMemo,
+  memo,
+  useState,
+  useCallback,
+} from "react";
 import {
   Dialog,
   DialogContent,
@@ -81,7 +89,7 @@ export interface ScaleZoomProps {
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
   readonly yZoom: YZoomRange | null;
-  readonly setYZoom: (a: React.SetStateAction<YZoomRange | null>) => void;
+  readonly setYZoom: (a: SetStateAction<YZoomRange | null>) => void;
 }
 
 export type CycleChartProps = DataToPlotProps &
@@ -100,7 +108,7 @@ interface DataToPlot {
 }
 
 function useDataToPlot({ points, stats, partCntPerPoint }: DataToPlotProps): DataToPlot {
-  const series = React.useMemo(() => {
+  const series = useMemo(() => {
     return (
       LazySeq.of(points)
         // need to sort first so the color indices are correct
@@ -113,7 +121,7 @@ function useDataToPlot({ points, stats, partCntPerPoint }: DataToPlotProps): Dat
     );
   }, [points]);
 
-  const median = React.useMemo(() => {
+  const median = useMemo(() => {
     if (stats) {
       const low = (partCntPerPoint ?? 1) * (stats.medianMinutesForSingleMat - stats.MAD_belowMinutes);
       const high = (partCntPerPoint ?? 1) * (stats.medianMinutesForSingleMat + stats.MAD_aboveMinutes);
@@ -161,7 +169,7 @@ function useScales({
   const xMax = width - marginLeft - marginRight;
   const yMax = height - marginTop - marginBottom;
 
-  const xScale = React.useMemo(() => {
+  const xScale = useMemo(() => {
     if (current_date_zoom) {
       return scaleTime({
         domain: [current_date_zoom.start, current_date_zoom.end],
@@ -175,7 +183,7 @@ function useScales({
     }
   }, [current_date_zoom, default_date_range, xMax]);
 
-  const maxYVal = React.useMemo(() => {
+  const maxYVal = useMemo(() => {
     if (points.size === 0) return 60;
     const m =
       LazySeq.of(points)
@@ -185,7 +193,7 @@ function useScales({
     return Math.ceil(m / 5) * 5;
   }, [points]);
 
-  const yScale = React.useMemo(() => {
+  const yScale = useMemo(() => {
     if (yZoom) {
       return scaleLinear({
         domain: [yZoom.y_low, yZoom.y_high],
@@ -202,7 +210,7 @@ function useScales({
   return { height, width, xScale, yScale };
 }
 
-const AxisAndGrid = React.memo(function AxisAndGrid({ xScale, yScale }: CycleChartScales) {
+const AxisAndGrid = memo(function AxisAndGrid({ xScale, yScale }: CycleChartScales) {
   return (
     <>
       <Axis
@@ -247,13 +255,13 @@ export interface YZoomRange {
   readonly y_high: number;
 }
 
-const SetYZoomButton = React.memo(function SetYZoomButton(props: {
+const SetYZoomButton = memo(function SetYZoomButton(props: {
   readonly yZoom: YZoomRange | null;
   readonly setZoom: (f: (zoom: YZoomRange | null) => YZoomRange | null) => void;
 }) {
-  const [low, setLow] = React.useState<number>();
-  const [high, setHigh] = React.useState<number>();
-  const [open, setOpen] = React.useState<boolean>(false);
+  const [low, setLow] = useState<number>();
+  const [high, setHigh] = useState<number>();
+  const [open, setOpen] = useState<boolean>(false);
 
   function close() {
     setOpen(false);
@@ -303,7 +311,7 @@ const SetYZoomButton = React.memo(function SetYZoomButton(props: {
   );
 });
 
-const StatsSeries = React.memo(function StatsSeries({
+const StatsSeries = memo(function StatsSeries({
   median,
   plannedMinutes,
   xScale,
@@ -365,7 +373,7 @@ interface TooltipData {
 
 type ShowTooltipFunc = (a: TooltipData | null) => void;
 
-const SingleSeries = React.memo(function SingleSeries({
+const SingleSeries = memo(function SingleSeries({
   seriesName,
   points,
   color,
@@ -378,8 +386,8 @@ const SingleSeries = React.memo(function SingleSeries({
   readonly color: string;
   readonly showTooltip: ShowTooltipFunc;
 }) {
-  const show = React.useCallback(
-    (e: React.MouseEvent) => {
+  const show = useCallback(
+    (e: MouseEvent) => {
       const p = localPoint(e);
       if (p === null) return;
       const idxS = (e.target as SVGCircleElement).dataset.idx;
@@ -420,7 +428,7 @@ const SingleSeries = React.memo(function SingleSeries({
   );
 });
 
-const AllPointsSeries = React.memo(function AllPointsSeries({
+const AllPointsSeries = memo(function AllPointsSeries({
   series,
   xScale,
   yScale,
@@ -454,7 +462,7 @@ const AllPointsSeries = React.memo(function AllPointsSeries({
   );
 });
 
-const Legend = React.memo(function Legend({
+const Legend = memo(function Legend({
   series,
   disabledSeries,
   adjustDisabled,
@@ -508,7 +516,7 @@ interface ChartMouseEventProps {
   ) => void;
 }
 
-const ChartMouseEvents = React.memo(function ChartMouseEvents({
+const ChartMouseEvents = memo(function ChartMouseEvents({
   setYZoom,
   setXZoom,
   setTooltip,
@@ -518,10 +526,10 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
   setHighlightStart,
 }: CycleChartScales & ChartMouseEventProps) {
   // mouse click and drag zooms
-  const [curHighlight, setCurrent] = React.useState<{ x: number; y: number } | null>(null);
+  const [curHighlight, setCurrent] = useState<{ x: number; y: number } | null>(null);
 
-  const pointerDown = React.useCallback(
-    (e: React.PointerEvent) => {
+  const pointerDown = useCallback(
+    (e: PointerEvent) => {
       const p = localPoint(e);
       if (p === null) return;
       setCurrent(null);
@@ -531,8 +539,8 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
     [setHighlightStart, setTooltip],
   );
 
-  const pointerMove = React.useCallback(
-    (e: React.PointerEvent) => {
+  const pointerMove = useCallback(
+    (e: PointerEvent) => {
       const p = localPoint(e);
       if (p === null) return;
       setCurrent({ x: p.x - marginLeft, y: p.y - marginTop });
@@ -540,8 +548,8 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
     [setCurrent],
   );
 
-  const pointerUp = React.useCallback(
-    (e: React.PointerEvent) => {
+  const pointerUp = useCallback(
+    (e: PointerEvent) => {
       if (highlightStart === null) return;
       if (Date.now() - highlightStart.nowMS > 500) {
         const p = localPoint(e);
@@ -592,7 +600,7 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
   );
 });
 
-const ChartZoomButtons = React.memo(function ChartZoomButtons({
+const ChartZoomButtons = memo(function ChartZoomButtons({
   set_date_zoom_range,
   current_date_zoom,
   yZoom,
@@ -600,7 +608,7 @@ const ChartZoomButtons = React.memo(function ChartZoomButtons({
   median,
 }: {
   readonly yZoom: YZoomRange | null;
-  readonly setYZoom: (a: React.SetStateAction<YZoomRange | null>) => void;
+  readonly setYZoom: (a: SetStateAction<YZoomRange | null>) => void;
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: ((p: { zoom?: { start: Date; end: Date } }) => void) | undefined;
   readonly median: { readonly low: number; readonly high: number } | null;
@@ -647,7 +655,7 @@ const ChartZoomButtons = React.memo(function ChartZoomButtons({
   );
 });
 
-const CycleChartTooltip = React.memo(function CycleChartTooltip({
+const CycleChartTooltip = memo(function CycleChartTooltip({
   tooltip,
   extraTooltip,
   seriesLabel,
@@ -759,12 +767,12 @@ function CycleChartSvg(
   );
 }
 
-export const CycleChart = React.memo(function CycleChart(props: CycleChartProps) {
+export const CycleChart = memo(function CycleChart(props: CycleChartProps) {
   // the state of the chart
-  const [tooltip, setTooltip] = React.useState<TooltipData | null>(null);
-  const [disabledSeries, setDisabled] = React.useState(HashSet.empty<string>());
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const [disabledSeries, setDisabled] = useState(HashSet.empty<string>());
 
-  const [highlightStart, setHighlightStart] = React.useState<{
+  const [highlightStart, setHighlightStart] = useState<{
     readonly x: number;
     readonly y: number;
     readonly nowMS: number;
@@ -776,7 +784,7 @@ export const CycleChart = React.memo(function CycleChart(props: CycleChartProps)
     partCntPerPoint: props.partCntPerPoint,
   });
 
-  const pointerLeave = React.useCallback(() => {
+  const pointerLeave = useCallback(() => {
     setTooltip(null);
     setHighlightStart(null);
   }, [setTooltip, setHighlightStart]);

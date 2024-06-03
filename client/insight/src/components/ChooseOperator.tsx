@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { memo, useState } from "react";
 import { Select, SelectChangeEvent } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -52,13 +52,13 @@ import { useAtom, useAtomValue } from "jotai";
 
 const NewOper = "__FMS_INSIGHT_NEW_OPERATOR__";
 
-export const OperatorSelect = React.memo(function OperatorSelectF() {
+export const OperatorSelect = memo(function OperatorSelectF() {
   const fmsInfo = useAtomValue(fmsInformation);
   const [operator, setOperator] = useAtom(currentOperator);
   const [allOpers, setAllOpers] = useAtom(allOperators);
 
-  const [newOperOpen, setNewOperOpen] = React.useState(false);
-  const [newOperName, setNewOperName] = React.useState("");
+  const [newOperOpen, setNewOperOpen] = useState(false);
+  const [newOperName, setNewOperName] = useState("");
 
   function changeOper(evt: SelectChangeEvent<string>) {
     if (evt.target.value === NewOper) {

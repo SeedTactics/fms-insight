@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { memo } from "react";
 import { Radio, Stack } from "@mui/material";
 import { FormControlLabel } from "@mui/material";
 
@@ -43,7 +43,7 @@ import {
 } from "../../network/load-specific-month.js";
 import { useAtom, useAtomValue } from "jotai";
 
-export const AnalysisSelectToolbar = React.memo(function AnalysisSelectToolbar() {
+export const AnalysisSelectToolbar = memo(function AnalysisSelectToolbar() {
   const period = useAtomValue(selectedAnalysisPeriod);
   const [selMonth, analyzeMonth] = useAtom(selectedMonth);
   const setMonthWithoutLoading = useSetSpecificMonthWithoutLoading();

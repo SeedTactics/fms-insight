@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { ReactNode, Suspense } from "react";
 import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
 import { CardContent } from "@mui/material";
@@ -67,10 +67,10 @@ export function DisplayError({ error }: { readonly error?: Error }) {
   }
 }
 
-export function DisplayLoadingAndError(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+export function DisplayLoadingAndError(props: { children: ReactNode; fallback?: ReactNode }) {
   return (
     <ErrorBoundary FallbackComponent={DisplayError}>
-      <React.Suspense fallback={props.fallback ?? <Loading />}>{props.children}</React.Suspense>
+      <Suspense fallback={props.fallback ?? <Loading />}>{props.children}</Suspense>
     </ErrorBoundary>
   );
 }

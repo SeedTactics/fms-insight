@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { memo, useEffect, useState } from "react";
 import { materialDialogOpen } from "../cell-status/material-details.js";
 import { useSetAtom } from "jotai";
 import {
@@ -48,9 +48,9 @@ import {
 import { CameraAlt } from "@mui/icons-material";
 import { QrScanner } from "@yudiel/react-qr-scanner";
 
-export const BarcodeListener = React.memo(function BarcodeListener(): null {
+export const BarcodeListener = memo(function BarcodeListener(): null {
   const setBarcode = useSetAtom(materialDialogOpen);
-  React.useEffect(() => {
+  useEffect(() => {
     let timeout: number | undefined;
     let scanActive = false;
     let scannedTxt = "";
@@ -109,10 +109,10 @@ export const BarcodeListener = React.memo(function BarcodeListener(): null {
   return null;
 });
 
-export const QRScanButton = React.memo(function QRScanButton() {
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+export const QRScanButton = memo(function QRScanButton() {
+  const [dialogOpen, setDialogOpen] = useState(false);
   const setBarcode = useSetAtom(materialDialogOpen);
-  const [manual, setManual] = React.useState("");
+  const [manual, setManual] = useState("");
 
   if (window.location.protocol !== "https:" && window.location.hostname !== "localhost") return null;
 

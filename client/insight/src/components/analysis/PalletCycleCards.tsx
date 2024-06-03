@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useMemo } from "react";
 import { addMonths, addDays, startOfToday } from "date-fns";
 import { Box, FormControl, Typography } from "@mui/material";
 import { Select } from "@mui/material";
@@ -66,7 +66,7 @@ export function PalletCycleChart() {
   const palletCycles = useAtomValue(
     period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles,
   );
-  const points = React.useMemo(() => {
+  const points = useMemo(() => {
     if (selectedPallet) {
       const palData = palletCycles.get(selectedPallet);
       if (palData !== undefined) {

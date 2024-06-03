@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { Button } from "@mui/material";
 import { MenuItem } from "@mui/material";
 import { TextField } from "@mui/material";
-import * as React from "react";
 import { ActionType, IActiveJob, IInProcessMaterial, LocType } from "../../network/api.js";
 import { JobsBackend } from "../../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";

@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { useState, memo } from "react";
 import { Button, ListItemButton } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
@@ -71,7 +71,7 @@ function WorkorderIcon({ work }: { work: IActiveWorkorder }) {
 }
 
 function ManualWorkorderEntry() {
-  const [workorder, setWorkorder] = React.useState<string | null>(null);
+  const [workorder, setWorkorder] = useState<string | null>(null);
   const mat = useAtomValue(matDetails.materialInDialogInfo);
   const [assignWorkorder] = matDetails.useAssignWorkorder();
   const setWorkDialogOpen = useSetAtom(selectWorkorderDialogOpen);
@@ -120,7 +120,7 @@ function WorkorderList() {
   );
 }
 
-export const SelectWorkorderDialog = React.memo(function SelectWorkorderDialog() {
+export const SelectWorkorderDialog = memo(function SelectWorkorderDialog() {
   const [workDialogOpen, setWorkDialogOpen] = useAtom(selectWorkorderDialogOpen);
 
   let body: JSX.Element | undefined;

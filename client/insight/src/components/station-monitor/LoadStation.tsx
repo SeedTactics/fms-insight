@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { useMemo, memo, useState, useCallback } from "react";
 import { Box, useMediaQuery, Button, Typography } from "@mui/material";
 import { LazySeq, mkCompareByProperties, OrderedMap } from "@seedtactics/immutable-collections";
 
@@ -225,7 +225,7 @@ function selectLoadStationAndQueueProps(
 function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
   const isDemo = useIsDemo();
   const operator = useAtomValue(currentOperator);
-  const urls = React.useMemo(() => {
+  const urls = useMemo(() => {
     const pal = loadData.pallet;
     if (pal) {
       return LazySeq.of(loadData.face.values())
@@ -460,7 +460,7 @@ function MaterialColumn({
 
 function RecentCompletedMaterial() {
   const matSummary = useAtomValue(last30MaterialSummary);
-  const recentCompleted = React.useMemo(() => {
+  const recentCompleted = useMemo(() => {
     const cutoff = addHours(new Date(), -5);
     return matSummary.matsById
       .valuesToLazySeq()
@@ -482,7 +482,7 @@ function RecentCompletedMaterial() {
   );
 }
 
-const CompletedCol = React.memo(function CompletedCol({
+const CompletedCol = memo(function CompletedCol({
   fillViewPort,
   showMaterial,
 }: {
@@ -677,19 +677,19 @@ function AssignWorkorderButton() {
   );
 }
 
-const LoadMatDialog = React.memo(function LoadMatDialog(props: LoadMatDialogProps) {
-  const [swapSt, setSwapSt] = React.useState<SwapMaterialState>(null);
-  const [invalidateSt, setInvalidateSt] = React.useState<InvalidateCycleState | null>(null);
+const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
+  const [swapSt, setSwapSt] = useState<SwapMaterialState>(null);
+  const [invalidateSt, setInvalidateSt] = useState<InvalidateCycleState | null>(null);
 
   // add material state
-  const [showAddMaterial, setShowAddMaterial] = React.useState<boolean>(false);
-  const [selectedQueue, setSelectedQueue] = React.useState<string | null>(null);
-  const [enteredOperator, setEnteredOperator] = React.useState<string | null>(null);
-  const [newMaterialTy, setNewMaterialTy] = React.useState<NewMaterialToQueueType | null>(null);
+  const [showAddMaterial, setShowAddMaterial] = useState<boolean>(false);
+  const [selectedQueue, setSelectedQueue] = useState<string | null>(null);
+  const [enteredOperator, setEnteredOperator] = useState<string | null>(null);
+  const [newMaterialTy, setNewMaterialTy] = useState<NewMaterialToQueueType | null>(null);
 
   const toQueue = props.queues.length === 1 ? props.queues[0] : selectedQueue;
 
-  const onClose = React.useCallback(
+  const onClose = useCallback(
     function onClose() {
       setSwapSt(null);
       setInvalidateSt(null);
@@ -805,7 +805,7 @@ function useGridLayout({
 
 export function LoadStation(props: LoadStationProps) {
   const currentSt = useAtomValue(currentStatus);
-  const data = React.useMemo(
+  const data = useMemo(
     () => selectLoadStationAndQueueProps(props.loadNum, props.queues, currentSt),
     [currentSt, props.loadNum, props.queues],
   );

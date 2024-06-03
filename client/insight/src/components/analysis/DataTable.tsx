@@ -30,7 +30,15 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import {
+  ComponentType,
+  SetStateAction,
+  MouseEvent,
+  useState,
+  memo,
+  PureComponent,
+  useMemo,
+} from "react";
 import { Dialog, DialogActions, DialogContent, DialogTitle, styled, TableBody } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
@@ -70,7 +78,7 @@ export interface Column<Id, Row> {
   readonly getDisplay: (c: Row) => string;
   readonly getForSort?: ToComparableBase<Row>;
   readonly getForExport?: (c: Row) => string;
-  readonly Cell?: React.ComponentType<{ readonly row: Row }>;
+  readonly Cell?: ComponentType<{ readonly row: Row }>;
   readonly expanded?: boolean;
   readonly ignoreDuringExport?: boolean;
 }
@@ -86,7 +94,7 @@ export type TablePage = {
   readonly page: number;
   readonly rowsPerPage: number;
   readonly setPage: (p: number) => void;
-  readonly setRowsPerPage: (r: React.SetStateAction<number>) => void;
+  readonly setRowsPerPage: (r: SetStateAction<number>) => void;
 };
 
 export enum DataTableActionZoomType {
@@ -217,7 +225,7 @@ interface SelectDateRangeProps {
 }
 
 function SelectDateRange(props: SelectDateRangeProps) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
   const start = props.zoom.current_date_zoom
     ? props.zoom.current_date_zoom.start
     : props.zoom.default_date_range[0];
@@ -282,7 +290,7 @@ export interface DataTableActionsProps {
   readonly zoom?: DataTableActionZoom;
 }
 
-export const DataTableActions = React.memo(function DataTableActions({
+export const DataTableActions = memo(function DataTableActions({
   zoom,
   tpage,
   count,
@@ -441,12 +449,12 @@ export const DataTableActions = React.memo(function DataTableActions({
 export interface DataTableBodyProps<Id, Row> {
   readonly pageData: Iterable<Row>;
   readonly columns: ReadonlyArray<Column<Id, Row>>;
-  readonly onClickDetails?: (event: React.MouseEvent, r: Row) => void;
+  readonly onClickDetails?: (event: MouseEvent, r: Row) => void;
   readonly rowsPerPage?: number;
   readonly emptyMessage?: string;
 }
 
-export class DataTableBody<Id extends string | number, Row> extends React.PureComponent<
+export class DataTableBody<Id extends string | number, Row> extends PureComponent<
   DataTableBodyProps<Id, Row>
 > {
   override render(): JSX.Element {
@@ -488,9 +496,9 @@ export class DataTableBody<Id extends string | number, Row> extends React.PureCo
 }
 
 export function useTableZoomForPeriod(period: SelectedAnalysisPeriod): TableZoom {
-  const [curZoom, setCurZoom] = React.useState<{ start: Date; end: Date } | undefined>(undefined);
+  const [curZoom, setCurZoom] = useState<{ start: Date; end: Date } | undefined>(undefined);
 
-  return React.useMemo(() => {
+  return useMemo(() => {
     let zoom: DataTableActionZoom;
     if (period.type === "Last30") {
       zoom = {
@@ -518,20 +526,20 @@ export function useTableZoomForPeriod(period: SelectedAnalysisPeriod): TableZoom
 }
 
 export function useTablePage(): TablePage {
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  return React.useMemo(
+  return useMemo(
     () => ({ page, setPage, rowsPerPage, setRowsPerPage }),
     [page, setPage, rowsPerPage, setRowsPerPage],
   );
 }
 
 export function useColSort<Id, Row>(defSortCol: Id, cols: ReadonlyArray<Column<Id, Row>>): ColSort<Id, Row> {
-  const [orderBy, setOrderBy] = React.useState(defSortCol);
-  const [order, setOrder] = React.useState<"asc" | "desc">("asc");
+  const [orderBy, setOrderBy] = useState(defSortCol);
+  const [order, setOrder] = useState<"asc" | "desc">("asc");
 
-  return React.useMemo(() => {
+  return useMemo(() => {
     function handleRequestSort(property: Id) {
       if (orderBy === property) {
         setOrder(order === "asc" ? "desc" : "asc");

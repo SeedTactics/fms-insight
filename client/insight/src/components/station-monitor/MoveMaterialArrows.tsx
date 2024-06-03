@@ -31,7 +31,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import {
+  RefObject,
+  ReactNode,
+  memo,
+  useState,
+  useEffect,
+  createContext,
+  useRef,
+  useMemo,
+  useContext,
+} from "react";
 import {
   MoveMaterialArrow,
   computeArrows,
@@ -71,18 +81,18 @@ function arrowToPath(arr: MoveMaterialArrow): string {
   return `M${arr.fromX},${arr.fromY} Q ${cx} ${cy} ${arr.toX} ${arr.toY}`;
 }
 
-const MoveMaterialArrows = React.memo(function MoveMaterialArrows({
+const MoveMaterialArrows = memo(function MoveMaterialArrows({
   container,
   arrowsWithRefs,
 }: {
-  container: React.RefObject<HTMLElement>;
-  arrowsWithRefs: AllMoveMaterialNodes<React.RefObject<HTMLDivElement>>;
+  container: RefObject<HTMLElement>;
+  arrowsWithRefs: AllMoveMaterialNodes<RefObject<HTMLDivElement>>;
 }) {
-  const [, setDims] = React.useState({
+  const [, setDims] = useState({
     height: window.innerHeight,
     width: window.innerWidth,
   });
-  React.useEffect(() => {
+  useEffect(() => {
     function handleResize() {
       setDims({ height: window.innerHeight, width: window.innerWidth });
     }
@@ -115,29 +125,29 @@ interface MoveMaterialArrowContext {
   readonly registerNode: (
     id: MoveMaterialIdentifier,
     kind: MoveMaterialNodeKind | null,
-    ref: React.RefObject<HTMLDivElement> | null,
+    ref: RefObject<HTMLDivElement> | null,
   ) => void;
 }
-const MoveMaterialArrowCtx = React.createContext<MoveMaterialArrowContext | undefined>(undefined);
+const MoveMaterialArrowCtx = createContext<MoveMaterialArrowContext | undefined>(undefined);
 
-export const MoveMaterialArrowContainer = React.memo(function MoveMaterialArrowContainer({
+export const MoveMaterialArrowContainer = memo(function MoveMaterialArrowContainer({
   children,
   hideArrows,
 }: {
-  children?: React.ReactNode;
+  children?: ReactNode;
   hideArrows?: boolean;
 }) {
-  const container = React.useRef<HTMLDivElement>(null);
-  const [nodes, setNodes] = React.useState<AllMoveMaterialNodes<React.RefObject<HTMLDivElement>>>(
+  const container = useRef<HTMLDivElement>(null);
+  const [nodes, setNodes] = useState<AllMoveMaterialNodes<React.RefObject<HTMLDivElement>>>(
     HashMap.empty(),
   );
 
-  const ctx: MoveMaterialArrowContext = React.useMemo(() => {
+  const ctx: MoveMaterialArrowContext = useMemo(() => {
     return {
       registerNode(
         id: MoveMaterialIdentifier,
         kind: MoveMaterialNodeKind | null,
-        ref: React.RefObject<HTMLDivElement> | null,
+        ref: RefObject<HTMLDivElement> | null,
       ) {
         if (kind && ref) {
           setNodes((ns) => ns.set(id, { ...kind, elem: ref }));
@@ -182,13 +192,13 @@ export const MoveMaterialArrowContainer = React.memo(function MoveMaterialArrowC
   );
 });
 
-export function useMoveMaterialArrowRef(kind: MoveMaterialNodeKind): React.RefObject<HTMLDivElement> {
-  const ctx = React.useContext(MoveMaterialArrowCtx);
+export function useMoveMaterialArrowRef(kind: MoveMaterialNodeKind): RefObject<HTMLDivElement> {
+  const ctx = useContext(MoveMaterialArrowCtx);
   if (!ctx) {
     throw new Error("useMoveMaterialArrowRef must be used within a MoveMaterialArrowContainer");
   }
-  const ref = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
     const id = uniqueIdForNodeKind(kind);
     ctx.registerNode(id, kind, ref);
     return () => {

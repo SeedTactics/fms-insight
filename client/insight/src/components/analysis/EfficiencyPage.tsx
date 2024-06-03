@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useMemo } from "react";
 import { addMonths, addDays, startOfToday } from "date-fns";
 
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
@@ -106,7 +106,7 @@ export function StationOeeHeatmap() {
 
   const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
   const statUse = useAtomValue(period.type === "Last30" ? last30SimStationUse : specificMonthSimStationUse);
-  const points = React.useMemo(() => {
+  const points = useMemo(() => {
     const downtime = binDowntimeToDayAndStat(statUse);
     if (selected === "Standard OEE") {
       return dayAndStatToHeatmapPoints(binActiveCyclesByDayAndStat(cycles.valuesToLazySeq()), downtime);
@@ -194,7 +194,7 @@ export function CompletedCountHeatmap() {
   const matSummary = useAtomValue(
     period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary,
   );
-  const points = React.useMemo(() => {
+  const points = useMemo(() => {
     if (selected === "Completed") {
       const today = startOfToday();
       const start = period.type === "Last30" ? addDays(today, -30) : period.month;

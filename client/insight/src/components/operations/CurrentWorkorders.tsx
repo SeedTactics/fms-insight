@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { ReactNode, memo, useState, useMemo } from "react";
 import {
   Box,
   Button,
@@ -82,7 +82,7 @@ const WorkorderTableRow = styled(TableRow)({
 
 const numFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
-const WorkorderDetails = React.memo(function WorkorderDetails({
+const WorkorderDetails = memo(function WorkorderDetails({
   workorder,
 }: {
   readonly workorder: IActiveWorkorder;
@@ -195,7 +195,7 @@ function WorkorderRow({
   readonly workorder: IActiveWorkorder;
   readonly showSim: boolean;
 }) {
-  const [open, setOpen] = React.useState<boolean>(false);
+  const [open, setOpen] = useState<boolean>(false);
 
   const colCnt = showSim ? 10 : 8;
 
@@ -357,7 +357,7 @@ function SortColHeader(props: {
   readonly setOrder: (o: "asc" | "desc") => void;
   readonly sortBy: SortColumn;
   readonly setSortBy: (c: SortColumn) => void;
-  readonly children: React.ReactNode;
+  readonly children: ReactNode;
 }) {
   return (
     <TableCell align={props.align} sortDirection={props.sortBy === props.col ? props.order : false}>
@@ -383,7 +383,7 @@ function SortColHeader(props: {
 
 const tableOrGantt = atom<"table" | "gantt">("table");
 
-const SimulatedWarning = React.memo(function SimulatedWarning({ showSim }: { showSim: boolean }) {
+const SimulatedWarning = memo(function SimulatedWarning({ showSim }: { showSim: boolean }) {
   const warning = useAtomValue(latestSimDayUsage)?.warning;
   const [selected, setSelected] = useAtom(tableOrGantt);
 
@@ -411,7 +411,7 @@ const SimulatedWarning = React.memo(function SimulatedWarning({ showSim }: { sho
   );
 });
 
-const WorkorderHeader = React.memo(function WorkorderHeader(props: {
+const WorkorderHeader = memo(function WorkorderHeader(props: {
   readonly workorders: ReadonlyArray<IActiveWorkorder>;
   readonly showSim: boolean;
   readonly order: "asc" | "desc";
@@ -482,7 +482,7 @@ const workorderCommentDialogAtom = atom<Readonly<IActiveWorkorder> | null>(null)
 
 function WorkorderCommentDialog() {
   const [workorder, setWorkorder] = useAtom(workorderCommentDialogAtom);
-  const [comment, setComment] = React.useState<string | null>(null);
+  const [comment, setComment] = useState<string | null>(null);
   const addComment = useSetAtom(addWorkorderComment);
 
   function close() {
@@ -540,10 +540,10 @@ function WorkorderCommentDialog() {
 }
 
 function WorkorderTable({ showSim }: { showSim: boolean }) {
-  const [sortBy, setSortBy] = React.useState<SortColumn>(SortColumn.WorkorderId);
-  const [order, setOrder] = React.useState<"asc" | "desc">("asc");
+  const [sortBy, setSortBy] = useState<SortColumn>(SortColumn.WorkorderId);
+  const [order, setOrder] = useState<"asc" | "desc">("asc");
   const currentSt = useAtomValue(currentStatus);
-  const sorted = React.useMemo(
+  const sorted = useMemo(
     () => sortWorkorders(currentSt.workorders ?? [], sortBy, order),
     [currentSt.workorders, sortBy, order],
   );
@@ -570,12 +570,12 @@ function WorkorderTable({ showSim }: { showSim: boolean }) {
   );
 }
 
-export const CurrentWorkordersPage = React.memo(function RecentWorkordersPage(): JSX.Element {
+export const CurrentWorkordersPage = memo(function RecentWorkordersPage(): JSX.Element {
   useSetTitle("Workorders");
   const currentSt = useAtomValue(currentStatus);
   const display = useAtomValue(tableOrGantt);
 
-  const showSim = React.useMemo(
+  const showSim = useMemo(
     () => currentSt.workorders?.some((w) => !!w.simulatedStart || !!w.simulatedFilled) ?? false,
     [currentSt.workorders],
   );

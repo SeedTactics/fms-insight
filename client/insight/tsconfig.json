@@ -7,7 +7,7 @@
     "noEmit": true,
 
     "allowJs": false,
-    "jsx": "react",
+    "jsx": "react-jsx",
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,

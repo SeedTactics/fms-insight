@@ -31,7 +31,18 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import {
+  AnimationEvent,
+  HTMLAttributes,
+  RefCallback,
+  ForwardedRef,
+  ComponentType,
+  PureComponent,
+  forwardRef,
+  memo,
+  useState,
+  Suspense,
+} from "react";
 import * as jdenticon from "jdenticon";
 import {
   Typography,
@@ -69,7 +80,7 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { loadable } from "jotai/utils";
 
-export class PartIdenticon extends React.PureComponent<{
+export class PartIdenticon extends PureComponent<{
   part: string;
   size?: number;
 }> {
@@ -96,7 +107,7 @@ const shakeHorizAnimation = `${shakeHorizKeyframes} 1s ease-in-out infinite`;
 // global sync of all shake animations
 // the start time can drift due to the pause on hover, so to keep it in sync always
 // round the start time down to be a multiple of the duration (1s)
-function shakeAnimationIteration(event: React.AnimationEvent<HTMLDivElement>) {
+function shakeAnimationIteration(event: AnimationEvent<HTMLDivElement>) {
   const anim = event.currentTarget
     .getAnimations()
     .find((a) => (a as CSSAnimation).animationName === shakeHorizKeyframes.name);
@@ -299,10 +310,10 @@ function JobRawMaterial({ fsize, mat }: { mat: Readonly<api.IInProcessMaterial>;
 }
 
 interface MaterialDragProps {
-  readonly dragRootProps?: React.HTMLAttributes<HTMLDivElement>;
+  readonly dragRootProps?: HTMLAttributes<HTMLDivElement>;
   readonly showDragHandle?: boolean;
-  readonly dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
-  readonly setDragHandleRef?: React.RefCallback<HTMLDivElement>;
+  readonly dragHandleProps?: HTMLAttributes<HTMLDivElement>;
+  readonly setDragHandleRef?: RefCallback<HTMLDivElement>;
   readonly isDragOverlay?: boolean;
   readonly isActiveDrag?: boolean;
   readonly shake?: boolean;
@@ -321,9 +332,9 @@ export interface MaterialSummaryProps {
   readonly showRawMaterial?: boolean;
 }
 
-const MatCard = React.forwardRef(function MatCard(
+const MatCard = forwardRef(function MatCard(
   props: MaterialSummaryProps & MaterialDragProps,
-  ref: React.ForwardedRef<HTMLDivElement>,
+  ref: ForwardedRef<HTMLDivElement>,
 ) {
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
 
@@ -460,7 +471,7 @@ const MatCard = React.forwardRef(function MatCard(
   );
 });
 
-export const MatSummary: React.ComponentType<MaterialSummaryProps> = React.memo(MatCard);
+export const MatSummary: ComponentType<MaterialSummaryProps> = memo(MatCard);
 
 export type InProcMaterialProps = {
   readonly mat: Readonly<api.IInProcessMaterial>;
@@ -476,7 +487,7 @@ export type ShakeProp = {
   readonly shake?: boolean;
 };
 
-export const InProcMaterial = React.memo(function InProcMaterial(
+export const InProcMaterial = memo(function InProcMaterial(
   props: InProcMaterialProps & ShakeProp & { readonly showHandle?: boolean },
 ) {
   return (
@@ -499,7 +510,7 @@ export type SortableMatData = {
   readonly mat: Readonly<api.IInProcessMaterial>;
 };
 
-export const SortableInProcMaterial = React.memo(function SortableInProcMaterial(
+export const SortableInProcMaterial = memo(function SortableInProcMaterial(
   props: InProcMaterialProps & ShakeProp,
 ) {
   const d: SortableMatData = { mat: props.mat };
@@ -577,7 +588,7 @@ export interface MultiMaterialProps {
   onOpen: () => void;
 }
 
-export const MultiMaterial = React.memo(function MultiMaterial(props: MultiMaterialProps) {
+export const MultiMaterial = memo(function MultiMaterial(props: MultiMaterialProps) {
   return (
     <Paper elevation={4} sx={{ display: "flex", minWidth: "10em", padding: "8px", margin: "8px" }}>
       <Badge badgeContent={props.material.length < 2 ? 0 : props.material.length} color="secondary">
@@ -606,7 +617,7 @@ export const MultiMaterial = React.memo(function MultiMaterial(props: MultiMater
   );
 });
 
-export const MaterialDetailTitle = React.memo(function MaterialDetailTitle({
+export const MaterialDetailTitle = memo(function MaterialDetailTitle({
   partName,
   serial,
   subtitle,
@@ -684,7 +695,7 @@ function MaterialEvents({ highlightProcess }: { highlightProcess?: number }) {
   return <LogEntries entries={events} copyToClipboard highlightProcess={highlightProcess} />;
 }
 
-export const MaterialDetailContent = React.memo(function MaterialDetailContent({
+export const MaterialDetailContent = memo(function MaterialDetailContent({
   highlightProcess,
 }: {
   highlightProcess?: number;
@@ -743,7 +754,7 @@ interface NotesDialogBodyProps {
 }
 
 function NotesDialogBody(props: NotesDialogBodyProps) {
-  const [curNote, setCurNote] = React.useState<string>("");
+  const [curNote, setCurNote] = useState<string>("");
   const operator = useAtomValue(currentOperator);
   const [addNote] = matDetails.useAddNote();
   const mat = useAtomValue(matDetails.materialInDialogInfo);
@@ -833,8 +844,8 @@ export interface MaterialDialogProps {
   highlightProcess?: number;
 }
 
-export const MaterialDialog = React.memo(function MaterialDialog(props: MaterialDialogProps) {
-  const [notesOpen, setNotesOpen] = React.useState<boolean>(false);
+export const MaterialDialog = memo(function MaterialDialog(props: MaterialDialogProps) {
+  const [notesOpen, setNotesOpen] = useState<boolean>(false);
   const [dialogOpen, setOpen] = useAtom(matDetails.materialDialogOpen);
 
   function close() {
@@ -861,10 +872,10 @@ export const MaterialDialog = React.memo(function MaterialDialog(props: Material
         <DialogActions>
           {dialogOpen && (props.buttons || props.allowNote) ? (
             <ErrorBoundary fallback={<div />}>
-              <React.Suspense fallback={<div />}>
+              <Suspense fallback={<div />}>
                 {dialogOpen && props.allowNote ? <AddNoteButton setNotesOpen={setNotesOpen} /> : undefined}
                 {props.buttons}
-              </React.Suspense>
+              </Suspense>
             </ErrorBoundary>
           ) : null}
           <Button onClick={close} color="secondary">

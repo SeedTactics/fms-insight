@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { PointerEvent, memo, useRef, useCallback, useMemo } from "react";
 import { IActiveWorkorder } from "../../network/api";
 import { PickD3Scale, scaleBand, scaleTime } from "@visx/scale";
 import { atom, useAtomValue, useSetAtom } from "jotai";
@@ -107,7 +107,7 @@ function useScales(workorders: ReadonlyArray<Readonly<IActiveWorkorder>>): Chart
   return { xScale, yScale };
 }
 
-const Tooltip = React.memo(function Tooltip() {
+const Tooltip = memo(function Tooltip() {
   const tooltip = useAtomValue(tooltipData);
 
   if (tooltip === null) return null;
@@ -183,9 +183,9 @@ function Series({
   yScale,
 }: { workorders: ReadonlyArray<Readonly<IActiveWorkorder>> } & ChartScales) {
   const setTooltip = useSetAtom(tooltipData);
-  const hideTooltipRef = React.useRef<NodeJS.Timeout | null>(null);
+  const hideTooltipRef = useRef<NodeJS.Timeout | null>(null);
 
-  function showTooltip(w: Readonly<IActiveWorkorder>): (e: React.PointerEvent<SVGGElement>) => void {
+  function showTooltip(w: Readonly<IActiveWorkorder>): (e: PointerEvent<SVGGElement>) => void {
     return (e) => {
       const pt = localPoint(e);
       if (!pt) return;
@@ -200,7 +200,7 @@ function Series({
       });
     };
   }
-  const hideTooltip = React.useCallback(() => {
+  const hideTooltip = useCallback(() => {
     hideTooltipRef.current = setTimeout(() => {
       setTooltip(null);
     }, 300);
@@ -233,7 +233,7 @@ function Series({
 
 export function WorkorderGantt() {
   const currentSt = useAtomValue(currentStatus);
-  const sortedWorkorders = React.useMemo(
+  const sortedWorkorders = useMemo(
     () =>
       LazySeq.of(currentSt.workorders ?? []).toSortedArray(
         (w) => w.simulatedFilled?.getTime() ?? null,

@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { ReactNode, memo, useState } from "react";
 import {
   closestCenter,
   DndContext,
@@ -59,11 +59,11 @@ export interface SortableRegionProps {
   readonly direction: "vertical" | "rect";
   readonly queueName: string;
   readonly renderDragOverlay: (mat: Readonly<IInProcessMaterial>) => JSX.Element;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
-export const SortableRegion = React.memo(function SortableRegion(props: SortableRegionProps) {
-  const [activeMat, setActiveMat] = React.useState<Readonly<IInProcessMaterial> | undefined>(undefined);
+export const SortableRegion = memo(function SortableRegion(props: SortableRegionProps) {
+  const [activeMat, setActiveMat] = useState<Readonly<IInProcessMaterial> | undefined>(undefined);
   const [addExistingMatToQueue] = useAddExistingMaterialToQueue();
   const reorderQueuedMat = useSetAtom(reorderQueuedMatInCurrentStatus);
   const operator = useAtomValue(currentOperator);

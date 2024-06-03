@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { useRef, useCallback, useEffect, useMemo, Fragment } from "react";
 import JsBarcode from "jsbarcode";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
@@ -42,8 +42,8 @@ interface BarcodeProps {
 }
 
 function Barcode(props: BarcodeProps) {
-  const ref = React.useRef<SVGSVGElement | null>(null);
-  const setRef = React.useCallback(
+  const ref = useRef<SVGSVGElement | null>(null);
+  const setRef = useCallback(
     (node: SVGSVGElement) => {
       if (node) {
         JsBarcode(node, props.text, {
@@ -54,7 +54,7 @@ function Barcode(props: BarcodeProps) {
     },
     [props.text],
   );
-  React.useEffect(() => {
+  useEffect(() => {
     if (ref.current) {
       JsBarcode(ref.current, props.text, {
         format: "CODE128",
@@ -153,7 +153,7 @@ function SinglePage(props: SinglePageProps) {
 function OneJobPerPage(props: PrintedLabelProps) {
   const allJobs = useAtomValue(currentStatus).jobs;
 
-  const assignments = React.useMemo(
+  const assignments = useMemo(
     () =>
       LazySeq.of(props.material || [])
         .filter((m) => m.jobUnique !== null && m.jobUnique !== undefined && m.jobUnique !== "")
@@ -195,7 +195,7 @@ function OneJobPerPage(props: PrintedLabelProps) {
     return (
       <div>
         {assignments.map(([uniq, a], idx) => (
-          <React.Fragment key={idx}>
+          <Fragment key={idx}>
             <SinglePage
               partName={a.part}
               materialName={props.materialName}
@@ -208,7 +208,7 @@ function OneJobPerPage(props: PrintedLabelProps) {
               serial2={a.serial2}
             />
             {idx < assignments.length - 1 ? <div style={{ pageBreakAfter: "always" }} /> : undefined}
-          </React.Fragment>
+          </Fragment>
         ))}
       </div>
     );
@@ -216,7 +216,7 @@ function OneJobPerPage(props: PrintedLabelProps) {
 }
 
 function CombinedToOnePage(props: PrintedLabelProps) {
-  const assignments = React.useMemo(
+  const assignments = useMemo(
     () =>
       LazySeq.of(props.material || [])
         .filter((m) => m.jobUnique !== null && m.jobUnique !== undefined && m.jobUnique !== "")
@@ -228,7 +228,7 @@ function CombinedToOnePage(props: PrintedLabelProps) {
 
   const allJobs = useAtomValue(currentStatus).jobs;
 
-  const notes = React.useMemo(
+  const notes = useMemo(
     () =>
       LazySeq.of(props.material || [])
         .collect((m) => (m.jobUnique ? allJobs[m.jobUnique]?.comment : undefined))

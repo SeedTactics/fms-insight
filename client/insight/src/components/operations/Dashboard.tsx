@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { memo } from "react";
 import { Box, LinearProgress, Typography } from "@mui/material";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
@@ -55,7 +55,7 @@ function countExpectedAtNow(): (p: Readonly<IProcPathInfo>) => number {
   };
 }
 
-const CompletedParts = React.memo(function CompletedParts() {
+const CompletedParts = memo(function CompletedParts() {
   const currentSt = useAtomValue(currentStatus);
 
   const completed = LazySeq.ofObject(currentSt.jobs).sumBy(([, j]) =>

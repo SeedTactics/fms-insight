@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useState, Fragment } from "react";
 import { Fab, styled, Box, FormControl } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import TimeAgo from "react-timeago";
@@ -150,7 +150,7 @@ function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> })
       </TableHead>
       <TableBody>
         {byMachine.toAscLazySeq().map(([mach, tools]) => (
-          <React.Fragment key={mach}>
+          <Fragment key={mach}>
             {tools.valuesToAscLazySeq().map((m, idx) => (
               <TableRow key={idx}>
                 <TableCell>{m.machineName}</TableCell>
@@ -203,7 +203,7 @@ function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> })
                 ) : undefined}
               </ToolDetailSummaryRow>
             ) : undefined}
-          </React.Fragment>
+          </Fragment>
         ))}
         <TableRow>
           <TableCell colSpan={showSerial ? 4 : 3} />
@@ -227,7 +227,7 @@ function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> })
 }
 
 function ToolRow(props: ToolRowProps) {
-  const [open, setOpen] = React.useState<boolean>(false);
+  const [open, setOpen] = useState<boolean>(false);
   const showTime = useAtomValue(toolReportHasTimeUsage);
   const showCnts = useAtomValue(toolReportHasCntUsage);
 
@@ -380,8 +380,8 @@ const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
 export function ToolSummaryTable(): JSX.Element {
   const machineFilter = useAtomValue(toolReportMachineFilter);
   const tools = useAtomValue(currentToolReport);
-  const [sortCol, setSortCol] = React.useState<SortColumn>("ToolName");
-  const [sortDir, setSortDir] = React.useState<"asc" | "desc">("asc");
+  const [sortCol, setSortCol] = useState<SortColumn>("ToolName");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const showTime = useAtomValue(toolReportHasTimeUsage);
   const showCnts = useAtomValue(toolReportHasCntUsage);
 
@@ -572,7 +572,7 @@ export function ToolSummaryTable(): JSX.Element {
 function ToolNavHeader() {
   const [machineFilter, setMachineFilter] = useAtom(toolReportMachineFilter);
   const [reloadTime, refreshReport] = useAtom(toolReportRefreshTime);
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = useState(false);
   const machineNames = useAtomValue(machinesWithTools);
   const copyToolReportToClipboard = useCopyToolReportToClipboard();
   const demo = useIsDemo();

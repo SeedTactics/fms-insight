@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { useCallback, useMemo } from "react";
 import { addMonths, addDays, startOfToday } from "date-fns";
 import { Box, FormControl, Typography } from "@mui/material";
 import { Select } from "@mui/material";
@@ -89,7 +89,7 @@ const machineYZoom = atom<YZoomRange | null>(null);
 export function PartMachineCycleChart() {
   useSetTitle("Machine Cycles");
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
-  const extraStationCycleTooltip = React.useCallback(
+  const extraStationCycleTooltip = useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as PartCycleData;
       const ret = [];
@@ -129,7 +129,7 @@ export function PartMachineCycleChart() {
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
   const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const points = React.useMemo(() => {
+  const points = useMemo(() => {
     if (selectedPart) {
       if (selectedOperation) {
         return filterStationCycles(cycles.valuesToLazySeq(), {
@@ -155,7 +155,7 @@ export function PartMachineCycleChart() {
     }
   }, [selectedPart, selectedPallet, selectedMachine, selectedOperation, cycles]);
   const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
-  const plannedMinutes = React.useMemo(() => {
+  const plannedMinutes = useMemo(() => {
     if (curOperation) {
       return plannedOperationMinutes(points, false);
     } else {
@@ -360,7 +360,7 @@ const loadYZoom = atom<YZoomRange | null>(null);
 export function PartLoadStationCycleChart() {
   useSetTitle("L/U Cycles");
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
-  const extraLoadCycleTooltip = React.useCallback(
+  const extraLoadCycleTooltip = useCallback(
     function extraLoadCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
       const partC = point as LoadCycleData;
       const ret = [];
@@ -387,7 +387,7 @@ export function PartLoadStationCycleChart() {
   const [selectedPallet, setSelectedPallet] = useAtom(loadSelectedPallet);
   const [zoomDateRange, setZoomRange] = useAtom(loadZoomDateRange);
   const [yZoom, setYZoom] = useAtom(loadYZoom);
-  const curOperation = React.useMemo(
+  const curOperation = useMemo(
     () =>
       selectedPart && selectedOperation === "LoadOp"
         ? new PartAndStationOperation(selectedPart.part, "L/U", "LOAD" + "-" + selectedPart.proc.toString())
@@ -412,7 +412,7 @@ export function PartLoadStationCycleChart() {
   const estimatedCycleTimes = useAtomValue(
     period.type === "Last30" ? last30EstimatedCycleTimes : specificMonthEstimatedCycleTimes,
   );
-  const points = React.useMemo(() => {
+  const points = useMemo(() => {
     if (selectedPart || selectedPallet || selectedLoadStation !== FilterAnyLoadKey) {
       if (curOperation) {
         return estimateLulOperations(cycles.valuesToLazySeq(), {
@@ -437,7 +437,7 @@ export function PartLoadStationCycleChart() {
       return emptyStationCycles(cycles.valuesToLazySeq());
     }
   }, [selectedPart, selectedPallet, curOperation, selectedLoadStation, cycles, showGraph]);
-  const plannedMinutes = React.useMemo(() => {
+  const plannedMinutes = useMemo(() => {
     if (selectedOperation === "LoadOp" || selectedOperation === "UnloadOp") {
       return plannedOperationMinutes(points, true);
     } else {

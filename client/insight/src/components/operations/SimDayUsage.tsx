@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { ReactNode, useMemo } from "react";
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
 import { green, grey } from "@mui/material/colors";
 import { LazySeq, OrderedMap, OrderedSet } from "@seedtactics/immutable-collections";
@@ -100,7 +100,7 @@ function ShowMonth({
 }: {
   date: Date;
   dayColor: (d: Date) => string;
-  tooltip: (d: Date) => React.ReactNode;
+  tooltip: (d: Date) => ReactNode;
 }) {
   const dayStart = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   const numDaysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -150,7 +150,7 @@ function MonthHeatmap({ group, month }: { group: string; month: Date }) {
   const [minDay, maxDay] = useAtomValue(minAndMaxUsageDay);
   const maxUse = useAtomValue(maxUsage);
 
-  const dayColor = React.useMemo(() => {
+  const dayColor = useMemo(() => {
     const scale = scaleLinear({
       domain: [0, maxUse],
       range: [color1, color2],
@@ -172,7 +172,7 @@ function MonthHeatmap({ group, month }: { group: string; month: Date }) {
     };
   }, [usage, maxUse, minDay, maxDay, group]);
 
-  function tooltip(d: Date): React.ReactNode {
+  function tooltip(d: Date): ReactNode {
     const u = usage?.get(group)?.get(d);
     return (
       <>

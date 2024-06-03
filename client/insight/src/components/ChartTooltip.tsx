@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { ReactNode } from "react";
 import { styled } from "@mui/material/styles";
 import { grey } from "@mui/material/colors";
 import { TooltipWithBounds } from "@visx/tooltip";
@@ -53,7 +53,7 @@ export function ChartTooltip({
 }: {
   left: number;
   top: number;
-  children: React.ReactNode;
+  children: ReactNode;
   zIndex?: number;
 }) {
   return (

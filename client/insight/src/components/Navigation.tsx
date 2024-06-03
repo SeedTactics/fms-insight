@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import * as React from "react";
+import { ReactNode, ComponentType } from "react";
 import { Notifications, HelpOutline, ExitToApp } from "@mui/icons-material";
 import {
   Typography,
@@ -67,7 +67,7 @@ import { QRScanButton } from "./BarcodeScanning";
 export type MenuNavItem =
   | {
       readonly name: string;
-      readonly icon: React.ReactNode;
+      readonly icon: ReactNode;
       readonly route: RouteState;
     }
   | { readonly separator: string };
@@ -222,8 +222,8 @@ export function Header({
   showLogout: boolean;
   showSearch: boolean;
   showOperator: boolean;
-  Nav1: React.ComponentType | undefined;
-  Nav2: React.ComponentType | undefined;
+  Nav1: ComponentType | undefined;
+  Nav2: ComponentType | undefined;
   menuNavs?: ReadonlyArray<MenuNavItem>;
 }) {
   return (

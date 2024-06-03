@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import * as React from "react";
+import { memo, useState } from "react";
 import * as api from "../network/api.js";
 import { styled, Table } from "@mui/material";
 import { TableBody } from "@mui/material";
@@ -469,7 +469,7 @@ const LogEntryTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.to
   ...($invalidCycle && { textDecoration: "line-through" }),
 }));
 
-export const LogEntry = React.memo(function LogEntry(props: LogEntryProps) {
+export const LogEntry = memo(function LogEntry(props: LogEntryProps) {
   const details = detailsForEntry(props.entry);
 
   return (
@@ -565,8 +565,8 @@ export interface LogEntriesProps {
   highlightProcess?: number;
 }
 
-export const LogEntries = React.memo(function LogEntriesF(props: LogEntriesProps) {
-  const [curDetail, setDetail] = React.useState<number | null>(null);
+export const LogEntries = memo(function LogEntriesF(props: LogEntriesProps) {
+  const [curDetail, setDetail] = useState<number | null>(null);
   return (
     <Table>
       <TableHead>

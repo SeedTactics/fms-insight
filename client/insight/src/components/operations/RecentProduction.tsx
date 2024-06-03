@@ -43,7 +43,7 @@ import {
   Typography,
 } from "@mui/material";
 import { addDays, startOfToday } from "date-fns";
-import * as React from "react";
+import { useMemo, memo, useState } from "react";
 import {
   Column,
   copyTableToClipboard,
@@ -134,7 +134,7 @@ function useRows(day: Date): ReadonlyArray<ProdRow> {
   const cycles = useAtomValue(last30StationCycles);
   const sim = useAtomValue(last30SimProduction);
   const shifts = useShifts(day);
-  return React.useMemo(() => {
+  return useMemo(() => {
     const planned = binSimProduction(sim, shifts);
     const completed = binCompleted(cycles, shifts);
 
@@ -172,7 +172,7 @@ function PartCell({ row }: { row: ProdRow }) {
 function useColumns(day: Date): ReadonlyArray<ProdColumn> {
   const numShifts = useShifts(day).length;
 
-  return React.useMemo(() => {
+  return useMemo(() => {
     const cols: Array<ProdColumn> = [
       {
         id: ColumnId.Part,
@@ -260,7 +260,7 @@ function FooterRow({
   );
 }
 
-const RecentProductionTable = React.memo(function RecentSchedules({
+const RecentProductionTable = memo(function RecentSchedules({
   columns,
   rows,
 }: {
@@ -362,7 +362,7 @@ const RecentProductionToolbar = function RecentProductionToolbar({
 
 export function RecentProductionPage(): JSX.Element {
   useSetTitle("Recent Completed Parts");
-  const [day, setDay] = React.useState<Date>(startOfToday);
+  const [day, setDay] = useState<Date>(startOfToday);
   const columns = useColumns(day);
   const rows = useRows(day);
   return (
