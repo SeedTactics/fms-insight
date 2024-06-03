@@ -282,7 +282,7 @@ function MultiInstructionButton({ loadData }: { loadData: LoadStationData }) {
     } else {
       return [];
     }
-  }, [loadData]);
+  }, [loadData, operator]);
 
   if (urls.length === 0 || isDemo) {
     return <div />;

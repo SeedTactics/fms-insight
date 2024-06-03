@@ -194,6 +194,7 @@ export function useMoveMaterialArrowRef(kind: MoveMaterialNodeKind): React.RefOb
     return () => {
       ctx.registerNode(id, null, null);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx, ...memoPropsForNodeKind(kind)]);
   return ref;
 }

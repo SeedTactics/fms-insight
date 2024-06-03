@@ -112,6 +112,7 @@ function useScales({
       align: 0,
       padding: 0.05,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange[0], dateRange[1], xMax]);
 
   const { yScale, height, colorScale } = React.useMemo(() => {
@@ -144,7 +145,7 @@ function useScales({
     }
 
     return { yScale, height, colorScale };
-  }, [points]);
+  }, [points, yType]);
 
   return { height, width, xScale, yScale, colorScale };
 }

@@ -203,7 +203,7 @@ export function CompletedCountHeatmap() {
     } else {
       return partsPlannedPoints(productionCounts);
     }
-  }, [selected, cycles, matSummary, productionCounts]);
+  }, [selected, cycles, matSummary, productionCounts, period]);
   return (
     <SelectableHeatChart
       label="Part Production Per Day"

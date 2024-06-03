@@ -62,7 +62,7 @@ function loadInitial(set: Setter): void {
   const logProm = LogBackend.get(thirtyDaysAgo, now).then((log) => set(onLoadLast30Log, log));
 
   Promise.all([curStProm, jobsProm, logProm])
-    .catch((e: Record<string, string | undefined>) => set(errorLoadingLast30RW, e.message ?? e.toString()))
+    .catch((e: Record<string, string | undefined>) => set(errorLoadingLast30RW, e.message ?? "Error"))
     .finally(() => set(websocketReconnectingAtom, false));
 }
 
@@ -75,7 +75,7 @@ function loadMissed(lastCntr: number, schIds: HashSet<string> | undefined, set: 
   const logProm = LogBackend.recent(lastCntr, undefined).then((log) => set(onLoadLast30Log, log));
 
   Promise.all([curStProm, jobsProm, logProm])
-    .catch((e: Record<string, string | undefined>) => set(errorLoadingLast30RW, e.message ?? e.toString()))
+    .catch((e: Record<string, string | undefined>) => set(errorLoadingLast30RW, e.message ?? "Error"))
     .finally(() => set(websocketReconnectingAtom, false));
 }
 
@@ -198,7 +198,7 @@ export function WebsocketConnection(): null {
         websocketRef.current = null;
       }
     };
-  }, [fmsInfoLoadable]);
+  }, [fmsInfoLoadable, onMessage, onOpen, onReconnecting]);
 
   return null;
 }

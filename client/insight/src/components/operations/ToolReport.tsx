@@ -579,7 +579,9 @@ function ToolNavHeader() {
 
   function refresh() {
     setLoading(true);
-    refreshReport(new Date()).finally(() => setLoading(false));
+    refreshReport(new Date())
+      .catch(console.log)
+      .finally(() => setLoading(false));
   }
 
   if (demo) {

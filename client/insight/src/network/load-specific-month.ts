@@ -79,9 +79,7 @@ function loadMonth(month: Date, set: Setter): void {
 
   Promise.all([jobsProm, logProm])
     .then(() => set(loadedMonth, month))
-    .catch((e: Record<string, string | undefined>) =>
-      set(errorLoadingSpecificMonthRW, e.message ?? e.toString()),
-    )
+    .catch((e: Record<string, string | undefined>) => set(errorLoadingSpecificMonthRW, e.message ?? "Error"))
     .finally(() => set(loadingSpecificMonthRW, false));
 }
 

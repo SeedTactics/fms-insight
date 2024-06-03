@@ -69,7 +69,8 @@ const BufferChart = React.memo(function BufferChart(props: BufferChartProps) {
         rawMatQueues,
         entries.valuesToLazySeq(),
       ),
-    [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours, rawMatQueues],
   );
 
   const emptySeries = series.findIndex((s) => !disabledBuffers.has(s.label)) < 0;

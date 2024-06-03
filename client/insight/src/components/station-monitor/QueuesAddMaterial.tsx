@@ -713,7 +713,7 @@ function AddAndPrintOnClientButton({
   React.useEffect(() => {
     if (materialToPrint.length === 0) return;
     print();
-  }, [materialToPrint]);
+  }, [materialToPrint, print]);
 
   function addAndPrint() {
     if (queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {

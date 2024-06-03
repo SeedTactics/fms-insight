@@ -223,7 +223,7 @@ function RecentSeries({
     hideTooltipRef.current = setTimeout(() => {
       setTooltip(null);
     }, 300);
-  }, []);
+  }, [hideTooltipRef, setTooltip]);
 
   return (
     <g>
@@ -304,7 +304,7 @@ function CurrentSeries({
     hideTooltipRef.current = setTimeout(() => {
       setTooltip(null);
     }, 300);
-  }, []);
+  }, [hideTooltipRef, setTooltip]);
 
   return (
     <g>
@@ -386,7 +386,7 @@ function SimSeries({
     hideTooltipRef.current = setTimeout(() => {
       setTooltip(null);
     }, 300);
-  }, []);
+  }, [hideTooltipRef, setTooltip]);
 
   return (
     <g>

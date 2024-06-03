@@ -562,7 +562,7 @@ const ChartMouseEvents = React.memo(function ChartMouseEvents({
       setHighlightStart(null);
       setCurrent(null);
     },
-    [highlightStart, setHighlightStart, setCurrent],
+    [highlightStart, setHighlightStart, setCurrent, setXZoom, setYZoom, xScale, yScale],
   );
 
   return (

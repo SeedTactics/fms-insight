@@ -31,7 +31,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/* eslint-disable react/prop-types */
 import * as React from "react";
 import { Table, Box, styled } from "@mui/material";
 import { TableHead } from "@mui/material";
@@ -586,7 +585,7 @@ const AddMaterialButtons = React.memo(function AddMaterialButtons(props: AddMate
       .flatMap(([, j]) => j.procsAndPaths)
       .flatMap((p) => p.paths)
       .some((p) => p.inputQueue === props.label);
-  }, [currentJobs]);
+  }, [currentJobs, props.label]);
 
   if (props.rawMatQueue) {
     if (fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireBarcodeScan) {

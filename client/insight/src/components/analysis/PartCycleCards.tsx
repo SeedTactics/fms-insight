@@ -387,12 +387,19 @@ export function PartLoadStationCycleChart() {
   const [selectedPallet, setSelectedPallet] = useAtom(loadSelectedPallet);
   const [zoomDateRange, setZoomRange] = useAtom(loadZoomDateRange);
   const [yZoom, setYZoom] = useAtom(loadYZoom);
-  const curOperation =
-    selectedPart && selectedOperation === "LoadOp"
-      ? new PartAndStationOperation(selectedPart.part, "L/U", "LOAD" + "-" + selectedPart.proc.toString())
-      : selectedPart && selectedOperation === "UnloadOp"
-      ? new PartAndStationOperation(selectedPart.part, "L/U", "UNLOAD" + "-" + selectedPart.proc.toString())
-      : null;
+  const curOperation = React.useMemo(
+    () =>
+      selectedPart && selectedOperation === "LoadOp"
+        ? new PartAndStationOperation(selectedPart.part, "L/U", "LOAD" + "-" + selectedPart.proc.toString())
+        : selectedPart && selectedOperation === "UnloadOp"
+          ? new PartAndStationOperation(
+              selectedPart.part,
+              "L/U",
+              "UNLOAD" + "-" + selectedPart.proc.toString(),
+            )
+          : null,
+    [selectedPart, selectedOperation],
+  );
 
   const defaultDateRange =
     period.type === "Last30"
@@ -429,7 +436,7 @@ export function PartLoadStationCycleChart() {
     } else {
       return emptyStationCycles(cycles.valuesToLazySeq());
     }
-  }, [selectedPart, selectedPallet, selectedOperation, selectedLoadStation, cycles, showGraph]);
+  }, [selectedPart, selectedPallet, curOperation, selectedLoadStation, cycles, showGraph]);
   const plannedMinutes = React.useMemo(() => {
     if (selectedOperation === "LoadOp" || selectedOperation === "UnloadOp") {
       return plannedOperationMinutes(points, true);

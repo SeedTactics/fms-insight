@@ -204,7 +204,7 @@ function Series({
     hideTooltipRef.current = setTimeout(() => {
       setTooltip(null);
     }, 300);
-  }, []);
+  }, [hideTooltipRef, setTooltip]);
 
   return (
     <g>

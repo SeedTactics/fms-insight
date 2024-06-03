@@ -50,7 +50,7 @@ import { fmsInformation } from "../network/server-settings.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { useAtom, useAtomValue } from "jotai";
 
-const NewOper = "__FMS_INSIGHT_NEW_OPERATOR__" as const;
+const NewOper = "__FMS_INSIGHT_NEW_OPERATOR__";
 
 export const OperatorSelect = React.memo(function OperatorSelectF() {
   const fmsInfo = useAtomValue(fmsInformation);

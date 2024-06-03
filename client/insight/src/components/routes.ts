@@ -269,7 +269,7 @@ export function useWatchHistory(): void {
     addEventListener("popstate", updateRoute);
 
     return () => removeEventListener("popstate", updateRoute);
-  }, [isDemo]);
+  }, [isDemo, setCurRoute]);
 }
 
 export function useIsDemo(): boolean {

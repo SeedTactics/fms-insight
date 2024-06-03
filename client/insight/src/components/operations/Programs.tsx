@@ -483,7 +483,6 @@ function ProgramContentCode() {
     worker.onmessage = (e) => set(e.data as string);
     return () => {
       // cleanup
-      // eslint-disable-next-line react/display-name
       set = () => null;
       worker.terminate();
       setHighlighted(null);
@@ -494,7 +493,7 @@ function ProgramContentCode() {
     if (ct && ct !== "") {
       worker.postMessage(ct);
     }
-  }, [ct]);
+  }, [ct, worker]);
 
   return (
     <pre>
@@ -764,7 +763,9 @@ function ProgNavHeader() {
 
   function refresh() {
     setLoading(true);
-    refreshPrograms(new Date()).finally(() => setLoading(false));
+    refreshPrograms(new Date())
+      .catch(console.log)
+      .finally(() => setLoading(false));
   }
 
   if (demo) {

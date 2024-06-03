@@ -348,20 +348,23 @@ export interface ForceInspectionData {
 export function useForceInspection(): [(data: ForceInspectionData) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
   const setExtraLogEvts = useSetAtom(extraLogEventsFromUpdates);
-  const callback = useCallback((data: ForceInspectionData) => {
-    setUpdating(true);
-    LogBackend.setInspectionDecision(
-      data.mat.materialID,
-      data.inspType,
-      1,
-      data.inspect,
-      data.mat.jobUnique,
-      data.mat.partName,
-    )
-      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
-      .catch(console.log)
-      .finally(() => setUpdating(false));
-  }, []);
+  const callback = useCallback(
+    (data: ForceInspectionData) => {
+      setUpdating(true);
+      LogBackend.setInspectionDecision(
+        data.mat.materialID,
+        data.inspType,
+        1,
+        data.inspect,
+        data.mat.jobUnique,
+        data.mat.partName,
+      )
+        .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+        .catch(console.log)
+        .finally(() => setUpdating(false));
+    },
+    [setExtraLogEvts],
+  );
 
   return [callback, updating];
 }
@@ -430,13 +433,16 @@ export function useCompleteCloseout(): [(d: CompleteCloseoutData) => void, boole
 export function useAssignWorkorder(): [(mat: MaterialToShowInfo, workorder: string) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
   const setExtraLogEvts = useSetAtom(extraLogEventsFromUpdates);
-  const callback = useCallback((mat: MaterialToShowInfo, workorder: string) => {
-    setUpdating(true);
-    LogBackend.setWorkorder(mat.materialID, 1, workorder, mat.jobUnique, mat.partName)
-      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
-      .catch(console.log)
-      .finally(() => setUpdating(false));
-  }, []);
+  const callback = useCallback(
+    (mat: MaterialToShowInfo, workorder: string) => {
+      setUpdating(true);
+      LogBackend.setWorkorder(mat.materialID, 1, workorder, mat.jobUnique, mat.partName)
+        .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+        .catch(console.log)
+        .finally(() => setUpdating(false));
+    },
+    [setExtraLogEvts],
+  );
 
   return [callback, updating];
 }
@@ -451,13 +457,16 @@ export interface AddNoteData {
 export function useAddNote(): [(data: AddNoteData) => void, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
   const setExtraLogEvts = useSetAtom(extraLogEventsFromUpdates);
-  const callback = useCallback((data: AddNoteData) => {
-    setUpdating(true);
-    LogBackend.recordOperatorNotes(data.matId, data.process, data.operator, data.notes)
-      .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
-      .catch(console.log)
-      .finally(() => setUpdating(false));
-  }, []);
+  const callback = useCallback(
+    (data: AddNoteData) => {
+      setUpdating(true);
+      LogBackend.recordOperatorNotes(data.matId, data.process, data.operator, data.notes)
+        .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
+        .catch(console.log)
+        .finally(() => setUpdating(false));
+    },
+    [setExtraLogEvts],
+  );
 
   return [callback, updating];
 }

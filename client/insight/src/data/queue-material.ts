@@ -228,7 +228,7 @@ export function usePossibleNewMaterialTypes(toQueue: string | null): SelectableM
         jobs: possibleJobs(currentSt, historicJobs, fmsInfo, toQueue, barcode),
       };
     }
-  }, [currentSt, historicJobs, fmsInfo, toQueue, castingsFromHistoric, barcode]);
+  }, [currentSt, historicJobs, fmsInfo, toQueue, castingsFromHistoric, barcode, rawMatQueues]);
 }
 
 export interface JobRawMaterialData {

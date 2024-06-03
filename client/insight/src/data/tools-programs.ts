@@ -389,7 +389,7 @@ export function useCopyToolReportToClipboard(): () => void {
         showCnts: store.get(toolReportHasCntUsage),
       }),
     );
-  }, []);
+  }, [store]);
 }
 
 export interface CellControllerProgram {
