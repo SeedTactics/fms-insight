@@ -47,6 +47,29 @@ using Serilog.Events;
 
 namespace BlackMaple.MachineFramework
 {
+  // Change to DI container
+  // - Switch LoadConfig to just return IConfiguration
+  // - Change CreateHostBuilder to AddFMSInsightWebHost and take a this IHostBuilder (and remove fmsImpl)
+  // - Switch Startup to use startup filters https://learn.microsoft.com/en-us/aspnet/core/fundamentals/startup?view=aspnetcore-8.0
+  // - Remove Backend, Workers, and ExtraApplicationParts from FMSImplementation, make FMSImplementation
+  //   into a record and expect that the application will register it in the DI container
+  // - Remove the Run method.
+  // - Instead, implementations will look like
+  //     var cfg = LoadConfig();
+  //     var serverSt = ServerSettings.Load(cfg);
+  //     InsightLogging.EnableSerilog(serverSt: serverSt, enableEventLog: useService);
+  //     var fmsSt = FMSSettings.Load(cfg);
+  //     var mazakSt = MazakSettings.Load(cfg);
+  //
+  //     var host = new HostBuilder()
+  //        .UseContentRoot(ServerSettings.ContentRootDirectory)
+  //        .ConfigureServices(s => s.AddSingleton<FMSSettings>(fmsSt))
+  //        .ConfigureServices(s => s.AddSingleton<FMSImplementation>(new ...))
+  //        .AddRepository(...)  <--- new function, registers RepoConfig
+  //        .AddMazakBackend(...) <-- new function per machine type, registering services
+  //        .AddFMSInsightWebHost(cfg, serverSt, fmsSt, extraAppParts)
+  //        .Build()
+
   public class Program
   {
     private static (IConfiguration, ServerSettings) LoadConfig()

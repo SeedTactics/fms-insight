@@ -50,7 +50,6 @@ namespace MazakMachineInterface
     public bool WaitForAllCastings { get; init; } = false;
 
     public Func<IRepository, CurrentStatus, CurrentStatus>? AdjustCurrentStatus { get; init; }
-    public Func<NewJobs, NewJobs>? NewJobTransform { get; init; }
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
 
     public static MazakConfig Load(IConfiguration configuration)
