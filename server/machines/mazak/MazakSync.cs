@@ -158,6 +158,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     return logMessages;
   }
 
+  private string? JobCopyError = null;
+
   public MazakState CalculateCellState(IRepository db)
   {
     var now = DateTime.UtcNow;
@@ -236,6 +238,10 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     {
       st = st with { Alarms = st.Alarms.Add("Queue contents and Mazak schedule quantity mismatch.") };
     }
+    if (JobCopyError != null)
+    {
+      st = st with { Alarms = st.Alarms.Add(JobCopyError) };
+    }
     if (mazakConfig != null && mazakConfig.AdjustCurrentStatus != null)
     {
       st = mazakConfig.AdjustCurrentStatus(db, st);
@@ -260,14 +266,22 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       return false;
     }
 
-    // TODO: check matches calling writeJobs.AddJobs and writeJobs.RecopyJobsToMazak
-    // TODO: add alarm if there is an error
-    // TODO: return true if jobs were copied
-    writeJobs.SyncFromDatabase(st.AllData, db);
+    bool jobsCopied;
+    try
+    {
+      jobsCopied = writeJobs.SyncFromDatabase(st.AllData, db);
+      JobCopyError = null;
+    }
+    catch (Exception ex)
+    {
+      Log.Error(ex, "Error copying jobs to Mazak");
+      JobCopyError = "Error copying jobs into Mazak: " + ex.Message;
+      jobsCopied = true;
+    }
 
     // TODO: holds
 
-    return false;
+    return jobsCopied;
   }
 
   public bool DecrementJobs(IRepository db, MazakState st)

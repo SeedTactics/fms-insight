@@ -46,7 +46,7 @@ namespace MazakMachineInterface
   {
     void AddJobs(IRepository jobDB, NewJobs newJ, string expectedPreviousScheduleId);
     void RecopyJobsToMazak(IRepository jobDB, DateTime? nowUtc = null);
-    void SyncFromDatabase(MazakAllData mazakData, IRepository jobDB);
+    bool SyncFromDatabase(MazakAllData mazakData, IRepository jobDB);
   }
 
   public class WriteJobs : IWriteJobs, IMachineGroupName
@@ -197,7 +197,7 @@ namespace MazakMachineInterface
       AddSchedules(jobDB, jobs);
     }
 
-    public void SyncFromDatabase(MazakAllData mazakData, IRepository db)
+    public bool SyncFromDatabase(MazakAllData mazakData, IRepository db)
     {
       var now = DateTime.UtcNow;
       var jobs = db.LoadJobsNotCopiedToSystem(
@@ -206,7 +206,7 @@ namespace MazakMachineInterface
         includeDecremented: false
       );
       if (jobs.Count == 0)
-        return;
+        return false;
 
       //there are jobs to copy
       Log.Information(
@@ -216,6 +216,8 @@ namespace MazakMachineInterface
 
       AddFixturesPalletsParts(mazakData, db, jobs);
       AddSchedules(db, jobs);
+
+      return true;
     }
 
     private ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
@@ -282,7 +284,7 @@ namespace MazakMachineInterface
       );
       if (jobErrs.Any())
       {
-        throw new BlackMaple.MachineFramework.BadRequestException(string.Join(Environment.NewLine, jobErrs));
+        throw new BadRequestException(string.Join(Environment.NewLine, jobErrs));
       }
 
       //delete parts
