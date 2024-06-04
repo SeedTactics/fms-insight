@@ -39,18 +39,6 @@ using MWI = BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public interface ILogTranslation
-  {
-    public record HandleEventResult
-    {
-      public IEnumerable<BlackMaple.MachineFramework.MaterialToSendToExternalQueue> MatsToSendToExternal { get; init; }
-      public bool StoppedBecauseRecentMachineEnd { get; init; }
-    }
-
-    HandleEventResult HandleEvent(LogEntry e);
-    bool CheckPalletStatusMatchesLogs(DateTime? timeUTC = null);
-  }
-
   public static class LogCSVParsing
   {
     private static FileStream WaitToOpenFile(string file)
@@ -170,58 +158,45 @@ namespace MazakMachineInterface
     }
   }
 
-  public class LogTranslation : ILogTranslation
+  public class LogTranslation(
+    IRepository repo,
+    MazakCurrentStatus mazakSchedules,
+    IMachineGroupName machGroupName,
+    FMSSettings fmsSettings,
+    Action<LogEntry> onMazakLog,
+    MazakConfig mazakConfig,
+    Func<IEnumerable<ToolPocketRow>> loadTools
+  )
   {
-    private MazakConfig _mazakConfig;
-    private BlackMaple.MachineFramework.IRepository _log;
-    private BlackMaple.MachineFramework.FMSSettings _settings;
-    private IMachineGroupName _machGroupName;
-    private Action<LogEntry> _onMazakLog;
-    private MazakCurrentStatus _mazakSchedules;
-    private Dictionary<string, Job> _jobs;
-    private Func<IEnumerable<ToolPocketRow>> _loadTools;
-
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
-
-    public LogTranslation(
-      BlackMaple.MachineFramework.IRepository logDB,
-      MazakCurrentStatus mazakSch,
-      IMachineGroupName machineGroupName,
-      BlackMaple.MachineFramework.FMSSettings settings,
-      Action<LogEntry> onMazakLogMessage,
-      MazakConfig mazakConfig,
-      Func<IEnumerable<ToolPocketRow>> loadTools
-    )
+    public record HandleEventResult
     {
-      _log = logDB;
-      _machGroupName = machineGroupName;
-      _mazakConfig = mazakConfig;
-      _mazakSchedules = mazakSch;
-      _settings = settings;
-      _onMazakLog = onMazakLogMessage;
-      _loadTools = loadTools;
-      _jobs = new Dictionary<string, Job>();
+      public IEnumerable<MaterialToSendToExternalQueue> MatsToSendToExternal { get; init; }
+      public bool StoppedBecauseRecentMachineEnd { get; init; }
     }
+
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
+
+    private readonly Dictionary<string, Job> _jobs = [];
 
     private Job GetJob(string unique)
     {
-      if (_jobs.ContainsKey(unique))
-        return _jobs[unique];
+      if (_jobs.TryGetValue(unique, out Job value))
+        return value;
       else
       {
-        var j = _log.LoadJob(unique);
+        var j = repo.LoadJob(unique);
         _jobs.Add(unique, j);
         return j;
       }
     }
 
     #region Events
-    public ILogTranslation.HandleEventResult HandleEvent(LogEntry e)
+    public HandleEventResult HandleEvent(LogEntry e)
     {
       var cycle = new List<MWI.LogEntry>();
       IEnumerable<BlackMaple.MachineFramework.MaterialToSendToExternalQueue> sendToExternal = null;
       if (e.Pallet >= 1)
-        cycle = _log.CurrentPalletLog(e.Pallet);
+        cycle = repo.CurrentPalletLog(e.Pallet);
 
       Log.Debug("Handling mazak event {@event}", e);
 
@@ -229,7 +204,7 @@ namespace MazakMachineInterface
       {
         case LogCode.LoadBegin:
 
-          _log.RecordLoadStart(
+          repo.RecordLoadStart(
             mats: CreateMaterialWithoutIDs(e),
             pallet: e.Pallet,
             lulNum: e.StationNumber,
@@ -241,7 +216,7 @@ namespace MazakMachineInterface
 
         case LogCode.LoadEnd:
 
-          _log.AddPendingLoad(
+          repo.AddPendingLoad(
             e.Pallet,
             PendingLoadKey(e),
             e.StationNumber,
@@ -259,15 +234,15 @@ namespace MazakMachineInterface
           IEnumerable<ToolSnapshot> pockets = null;
           if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
           {
-            pockets = ToolsToSnapshot(e.StationNumber, _loadTools());
+            pockets = ToolsToSnapshot(e.StationNumber, loadTools());
           }
 
           var machineMats = GetMaterialOnPallet(e, cycle);
           LookupProgram(machineMats, e, out var progName, out var progRev);
-          _log.RecordMachineStart(
+          repo.RecordMachineStart(
             mats: machineMats.Select(m => m.Mat),
             pallet: e.Pallet,
-            statName: _machGroupName.MachineGroupName,
+            statName: machGroupName.MachineGroupName,
             statNum: e.StationNumber,
             program: progName,
             timeUTC: e.TimeUTC,
@@ -288,7 +263,7 @@ namespace MazakMachineInterface
           var timeSinceEnd = DateTime.UtcNow.Subtract(e.TimeUTC);
           if (TimeSpan.FromSeconds(-15) <= timeSinceEnd && timeSinceEnd <= TimeSpan.FromSeconds(15))
           {
-            return new ILogTranslation.HandleEventResult()
+            return new HandleEventResult()
             {
               MatsToSendToExternal = Enumerable.Empty<MaterialToSendToExternalQueue>(),
               StoppedBecauseRecentMachineEnd = true
@@ -301,7 +276,7 @@ namespace MazakMachineInterface
           if (machStart != null)
           {
             elapsed = e.TimeUTC.Subtract(machStart.EndTimeUTC);
-            toolsAtStart = _log.ToolPocketSnapshotForCycle(machStart.Counter);
+            toolsAtStart = repo.ToolPocketSnapshotForCycle(machStart.Counter);
           }
           else
           {
@@ -309,16 +284,16 @@ namespace MazakMachineInterface
             elapsed = TimeSpan.Zero;
             toolsAtStart = Enumerable.Empty<ToolSnapshot>();
           }
-          var toolsAtEnd = ToolsToSnapshot(e.StationNumber, _loadTools());
+          var toolsAtEnd = ToolsToSnapshot(e.StationNumber, loadTools());
 
           if (elapsed > TimeSpan.FromSeconds(30))
           {
             var machineMats = GetMaterialOnPallet(e, cycle);
             LookupProgram(machineMats, e, out var progName, out var progRev);
-            var s = _log.RecordMachineEnd(
+            var s = repo.RecordMachineEnd(
               mats: machineMats.Select(m => m.Mat),
               pallet: e.Pallet,
-              statName: _machGroupName.MachineGroupName,
+              statName: machGroupName.MachineGroupName,
               statNum: e.StationNumber,
               program: progName,
               timeUTC: e.TimeUTC,
@@ -349,7 +324,7 @@ namespace MazakMachineInterface
 
         case LogCode.UnloadBegin:
 
-          _log.RecordUnloadStart(
+          repo.RecordUnloadStart(
             mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
             pallet: e.Pallet,
             lulNum: e.StationNumber,
@@ -368,7 +343,7 @@ namespace MazakMachineInterface
           var queues = FindUnloadQueues(mats, cycle);
           sendToExternal = FindSendToExternalQueue(mats);
 
-          _log.RecordUnloadEnd(
+          repo.RecordUnloadEnd(
             mats: mats.Select(m => m.Mat),
             pallet: e.Pallet,
             lulNum: e.StationNumber,
@@ -382,10 +357,10 @@ namespace MazakMachineInterface
           break;
 
         case LogCode.StartRotatePalletIntoMachine:
-          _log.RecordPalletDepartRotaryInbound(
+          repo.RecordPalletDepartRotaryInbound(
             mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
             pallet: e.Pallet,
-            statName: _machGroupName.MachineGroupName,
+            statName: machGroupName.MachineGroupName,
             statNum: e.StationNumber,
             timeUTC: e.TimeUTC,
             rotateIntoWorktable: true,
@@ -411,10 +386,10 @@ namespace MazakMachineInterface
               LastEventWasRotaryDropoff(cycle) && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum)
             )
             {
-              _log.RecordPalletDepartRotaryInbound(
+              repo.RecordPalletDepartRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet,
-                statName: _machGroupName.MachineGroupName,
+                statName: machGroupName.MachineGroupName,
                 statNum: mcNum,
                 rotateIntoWorktable: false,
                 timeUTC: e.TimeUTC,
@@ -427,7 +402,7 @@ namespace MazakMachineInterface
           {
             if (int.TryParse(e.FromPosition.Substring(1), out var stockerNum))
             {
-              _log.RecordPalletDepartStocker(
+              repo.RecordPalletDepartStocker(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet,
                 stockerNum: stockerNum,
@@ -451,10 +426,10 @@ namespace MazakMachineInterface
           {
             if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
             {
-              _log.RecordPalletArriveRotaryInbound(
+              repo.RecordPalletArriveRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet,
-                statName: _machGroupName.MachineGroupName,
+                statName: machGroupName.MachineGroupName,
                 statNum: mcNum,
                 timeUTC: e.TimeUTC,
                 foreignId: e.ForeignID
@@ -465,7 +440,7 @@ namespace MazakMachineInterface
           {
             if (int.TryParse(e.TargetPosition.Substring(1), out var stockerNum))
             {
-              _log.RecordPalletArriveStocker(
+              repo.RecordPalletArriveStocker(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet,
                 stockerNum: stockerNum,
@@ -478,9 +453,9 @@ namespace MazakMachineInterface
           break;
       }
 
-      _onMazakLog(e);
+      onMazakLog(e);
 
-      return new ILogTranslation.HandleEventResult()
+      return new HandleEventResult()
       {
         MatsToSendToExternal = sendToExternal ?? Enumerable.Empty<MaterialToSendToExternalQueue>(),
         StoppedBecauseRecentMachineEnd = false
@@ -508,7 +483,7 @@ namespace MazakMachineInterface
       return oldEvents
         .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD")
         .SelectMany(e => e.Material)
-        .Where(m => !_log.IsMaterialInQueue(m.MaterialID))
+        .Where(m => !repo.IsMaterialInQueue(m.MaterialID))
         .GroupBy(m => m.MaterialID)
         .Select(ms => ms.First())
         .ToList();
@@ -531,7 +506,7 @@ namespace MazakMachineInterface
         isUnloadEnd: e.Code == LogCode.UnloadEnd,
         oldEvents: oldEvents
       );
-      _mazakSchedules.FindSchedule(
+      mazakSchedules.FindSchedule(
         e.FullPartName,
         e.Process,
         out string unique,
@@ -570,7 +545,7 @@ namespace MazakMachineInterface
             {
               Mat = new EventLogMaterial()
               {
-                MaterialID = _log.AllocateMaterialID(unique, e.JobPartName, numProc),
+                MaterialID = repo.AllocateMaterialID(unique, e.JobPartName, numProc),
                 Process = e.Process,
                 Face = e.Process
               },
@@ -591,7 +566,7 @@ namespace MazakMachineInterface
 
       foreach (var m in ret)
       {
-        _log.RecordPathForProcess(m.Mat.MaterialID, m.Mat.Process, m.Path);
+        repo.RecordPathForProcess(m.Mat.MaterialID, m.Mat.Process, m.Path);
       }
 
       return ret;
@@ -618,7 +593,7 @@ namespace MazakMachineInterface
 
         // material can be queued if it is removed by the operator from the pallet, which is
         // detected in CheckPalletStatusMatchesLogs() below
-        if (oldEvents[i].Material.Any(m => _log.IsMaterialInQueue(m.MaterialID)))
+        if (oldEvents[i].Material.Any(m => repo.IsMaterialInQueue(m.MaterialID)))
         {
           continue;
         }
@@ -658,7 +633,7 @@ namespace MazakMachineInterface
       List<MWI.LogEntry> cycle
     )
     {
-      var pending = _log.PendingLoads(pallet);
+      var pending = repo.PendingLoads(pallet);
 
       if (pending.Count == 0)
       {
@@ -669,7 +644,7 @@ namespace MazakMachineInterface
             if (e.LogType == LogType.LoadUnloadCycle && e.StartOfCycle == false && e.Result == "UNLOAD")
               hasCompletedUnload = true;
           if (hasCompletedUnload)
-            _log.CompletePalletCycle(pallet, t, foreignID);
+            repo.CompletePalletCycle(pallet, t, foreignID);
           else
             Log.Debug(
               "Skipping pallet cycle at time {time} because we detected a pallet cycle without unload",
@@ -701,7 +676,7 @@ namespace MazakMachineInterface
           if (!int.TryParse(s[2], out fixQty))
             fixQty = 1;
 
-          _mazakSchedules.FindSchedule(fullPartName, proc, out string unique, out int path, out int numProc);
+          mazakSchedules.FindSchedule(fullPartName, proc, out string unique, out int path, out int numProc);
 
           Log.Debug("Found job {unique} with path {path} and {numProc}", unique, path, numProc);
 
@@ -722,10 +697,10 @@ namespace MazakMachineInterface
 
             var qs = MazakQueues.QueuedMaterialForLoading(
               job.UniqueStr,
-              _log.GetMaterialInQueueByUnique(info.InputQueue, job.UniqueStr),
+              repo.GetMaterialInQueueByUnique(info.InputQueue, job.UniqueStr),
               proc,
               path,
-              _log
+              repo
             );
 
             for (int i = 1; i <= fixQty; i++)
@@ -755,7 +730,7 @@ namespace MazakMachineInterface
                 mats.Add(
                   new EventLogMaterial()
                   {
-                    MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
+                    MaterialID = repo.AllocateMaterialID(unique, jobPartName, numProc),
                     Process = proc,
                     Face = proc
                   }
@@ -778,7 +753,7 @@ namespace MazakMachineInterface
               mats.Add(
                 new EventLogMaterial()
                 {
-                  MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
+                  MaterialID = repo.AllocateMaterialID(unique, jobPartName, numProc),
                   Process = proc,
                   Face = proc
                 }
@@ -822,7 +797,7 @@ namespace MazakMachineInterface
                 mats.Add(
                   new EventLogMaterial()
                   {
-                    MaterialID = _log.AllocateMaterialID(unique, jobPartName, numProc),
+                    MaterialID = repo.AllocateMaterialID(unique, jobPartName, numProc),
                     Process = proc,
                     Face = proc
                   }
@@ -843,11 +818,11 @@ namespace MazakMachineInterface
         catch (Exception ex)
         {
           Log.Error(ex, "Error processing pending load {@pending}", p);
-          _log.CancelPendingLoads(p.ForeignID);
+          repo.CancelPendingLoads(p.ForeignID);
         }
       }
 
-      _log.CompletePalletCycle(
+      repo.CompletePalletCycle(
         pal: pallet,
         timeUTC: t,
         foreignID: foreignID,
@@ -859,7 +834,7 @@ namespace MazakMachineInterface
       if (palletCycle)
         return cycle;
       else
-        return _log.CurrentPalletLog(pallet);
+        return repo.CurrentPalletLog(pallet);
     }
 
     private Dictionary<long, string> FindUnloadQueues(
@@ -877,7 +852,7 @@ namespace MazakMachineInterface
 
         if (signalQuarantine != null)
         {
-          ret[mat.Mat.MaterialID] = signalQuarantine.LocationName ?? _settings.QuarantineQueue;
+          ret[mat.Mat.MaterialID] = signalQuarantine.LocationName ?? fmsSettings.QuarantineQueue;
         }
         else
         {
@@ -886,7 +861,7 @@ namespace MazakMachineInterface
           if (job != null)
           {
             var q = job.Processes[mat.Mat.Process - 1].Paths[mat.Path - 1].OutputQueue;
-            if (!string.IsNullOrEmpty(q) && _settings.Queues.ContainsKey(q))
+            if (!string.IsNullOrEmpty(q) && fmsSettings.Queues.ContainsKey(q))
             {
               ret[mat.Mat.MaterialID] = q;
             }
@@ -909,15 +884,15 @@ namespace MazakMachineInterface
         if (job != null)
         {
           var q = job.Processes[mat.Mat.Process - 1].Paths[mat.Path - 1].OutputQueue;
-          if (!string.IsNullOrEmpty(q) && _settings.ExternalQueues.ContainsKey(q))
+          if (!string.IsNullOrEmpty(q) && fmsSettings.ExternalQueues.ContainsKey(q))
           {
             ret.Add(
               new BlackMaple.MachineFramework.MaterialToSendToExternalQueue()
               {
-                Server = _settings.ExternalQueues[q],
+                Server = fmsSettings.ExternalQueues[q],
                 PartName = mat.PartName,
                 Queue = q,
-                Serial = _log.GetMaterialDetails(mat.Mat.MaterialID)?.Serial
+                Serial = repo.GetMaterialDetails(mat.Mat.MaterialID)?.Serial
               }
             );
           }
@@ -931,21 +906,21 @@ namespace MazakMachineInterface
     #region Compare Status With Events
     public bool CheckPalletStatusMatchesLogs(DateTime? timeUTC = null)
     {
-      if (string.IsNullOrEmpty(_settings.QuarantineQueue))
+      if (string.IsNullOrEmpty(fmsSettings.QuarantineQueue))
         return false;
 
       bool matMovedToQueue = false;
-      foreach (var pal in _mazakSchedules.PalletPositions.Where(p => !p.PalletPosition.StartsWith("LS")))
+      foreach (var pal in mazakSchedules.PalletPositions.Where(p => !p.PalletPosition.StartsWith("LS")))
       {
-        var oldEvts = _log.CurrentPalletLog(pal.PalletNumber);
+        var oldEvts = repo.CurrentPalletLog(pal.PalletNumber);
 
         // start with everything on the pallet
         List<LogMaterial> matsOnPal = GetAllMaterialOnPallet(oldEvts);
 
-        foreach (var st in _mazakSchedules.PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber))
+        foreach (var st in mazakSchedules.PalletSubStatuses.Where(s => s.PalletNumber == pal.PalletNumber))
         {
           // remove material from matsOnPal that matches this PalletSubStatus
-          var sch = _mazakSchedules.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
+          var sch = mazakSchedules.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
           if (sch == null)
             continue;
           MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
@@ -970,14 +945,14 @@ namespace MazakMachineInterface
         // anything left in matsOnPal disappeared from PalletSubStatuses so should be quarantined
         foreach (var extraMat in matsOnPal)
         {
-          _log.RecordAddMaterialToQueue(
+          repo.RecordAddMaterialToQueue(
             mat: new EventLogMaterial()
             {
               MaterialID = extraMat.MaterialID,
               Process = extraMat.Process,
               Face = 0
             },
-            queue: _settings.QuarantineQueue,
+            queue: fmsSettings.QuarantineQueue,
             position: -1,
             operatorName: null,
             reason: "MaterialMissingOnPallet",
@@ -1079,7 +1054,7 @@ namespace MazakMachineInterface
 
     private TimeSpan CalculateActiveLoadTime(LogEntry e)
     {
-      _mazakSchedules.FindSchedule(
+      mazakSchedules.FindSchedule(
         e.FullPartName,
         e.Process,
         out string unique,
@@ -1158,7 +1133,7 @@ namespace MazakMachineInterface
       // try and find path
       int path = 1;
 
-      var part = _mazakSchedules.Parts?.FirstOrDefault(p => p.PartName == e.FullPartName);
+      var part = mazakSchedules.Parts?.FirstOrDefault(p => p.PartName == e.FullPartName);
       if (part != null && MazakPart.IsSailPart(part.PartName, part.Comment))
       {
         MazakPart.ParseComment(part.Comment, out string uniq, out var procToPath, out bool manual);
@@ -1184,7 +1159,7 @@ namespace MazakMachineInterface
       progName = null;
       rev = null;
 
-      var part = _mazakSchedules.Parts?.FirstOrDefault(p => p.PartName == entry.FullPartName);
+      var part = mazakSchedules.Parts?.FirstOrDefault(p => p.PartName == entry.FullPartName);
       if (part == null)
         return false;
 
@@ -1228,7 +1203,7 @@ namespace MazakMachineInterface
         var insps = job.Processes[mat.Mat.Process - 1].Paths[mat.Path - 1].Inspections;
         if (insps != null && insps.Count > 0)
         {
-          _log.MakeInspectionDecisions(mat.Mat.MaterialID, mat.Mat.Process, insps);
+          repo.MakeInspectionDecisions(mat.Mat.MaterialID, mat.Mat.Process, insps);
           Log.Debug(
             "Making inspection decision for "
               + string.Join(",", insps.Select(x => x.InspectionType))
@@ -1265,9 +1240,9 @@ namespace MazakMachineInterface
         .Select(t =>
         {
           var toolName = t.GroupNo;
-          if (_mazakConfig != null && _mazakConfig.ExtractToolName != null)
+          if (mazakConfig != null && mazakConfig.ExtractToolName != null)
           {
-            toolName = _mazakConfig.ExtractToolName(t);
+            toolName = mazakConfig.ExtractToolName(t);
           }
           return new ToolSnapshot()
           {

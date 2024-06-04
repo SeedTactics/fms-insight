@@ -43,11 +43,11 @@ namespace MazakMachineInterface
 {
   public class LoadOperationsFromFile : ICurrentLoadActions
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperationsFromFile>();
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperationsFromFile>();
 
-    private string mazakPath;
+    private readonly string mazakPath;
 
-    private Action<int, IEnumerable<LoadAction>> _onLoadActions;
+    private readonly Action<int, IEnumerable<LoadAction>> _onLoadActions;
 
     public LoadOperationsFromFile(
       MazakConfig cfg,
@@ -62,6 +62,8 @@ namespace MazakMachineInterface
         Log.Warning("No mazak Load CSV Path configured, will not read load instructions from file");
         return;
       }
+
+      mazakPath = cfg.LoadCSVPath;
 
       if (enableWatcher)
       {

@@ -350,7 +350,6 @@ namespace MazakMachineInterface
     private BlackMaple.MachineFramework.FMSSettings _settings;
     private Action<BlackMaple.MachineFramework.IRepository> _currentStatusChanged;
 
-    private string _path;
     private AutoResetEvent _shutdown;
     private AutoResetEvent _newLogFile;
     private AutoResetEvent _recheckQueues;
@@ -389,7 +388,7 @@ namespace MazakMachineInterface
         _thread = new Thread(new ThreadStart(ThreadFunc));
         _thread.IsBackground = true;
         _thread.Start();
-        _watcher = new FileSystemWatcher(_path);
+        _watcher = new FileSystemWatcher(mazakConfig.LogCSVPath);
         _watcher.Filter = "*.csv";
 
         CancellationTokenSource cancelSource = null;
@@ -412,7 +411,7 @@ namespace MazakMachineInterface
         };
 
         _watcher.EnableRaisingEvents = true;
-        Log.Debug("Watching {path} for new CSV files", _path);
+        Log.Debug("Watching {path} for new CSV files", mazakConfig.LogCSVPath);
       }
     }
 
@@ -463,7 +462,7 @@ namespace MazakMachineInterface
 
           using (var logDb = _logDbCfg.OpenConnection())
           {
-            logs = LogCSVParsing.LoadLog(logDb.MaxForeignID(), _path);
+            logs = LogCSVParsing.LoadLog(logDb.MaxForeignID(), _mazakConfig.LogCSVPath);
             var trans = new LogTranslation(
               logDb,
               mazakData,
@@ -492,7 +491,7 @@ namespace MazakMachineInterface
               }
             }
 
-            LogCSVParsing.DeleteLog(logDb.MaxForeignID(), _path);
+            LogCSVParsing.DeleteLog(logDb.MaxForeignID(), _mazakConfig.LogCSVPath);
 
             bool palStChanged = false;
             if (!stoppedBecauseRecentMachineEnd)
