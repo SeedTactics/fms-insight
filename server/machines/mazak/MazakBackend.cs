@@ -52,9 +52,6 @@ namespace MazakMachineInterface
     private readonly RepositoryConfig logDbConfig;
 
     //Settings
-    public MazakDbType MazakType { get; }
-    public string ProgramDirectory { get; }
-
     public IReadDataAccess ReadDB => _readDB;
     public IWriteData WriteDB => _writeDB;
 
@@ -100,16 +97,16 @@ namespace MazakMachineInterface
         oldJobDbName
       );
 
-      _writeDB = new OpenDatabaseKitTransactionDB(mazakCfg.SQLConnectionString, MazakType);
+      _writeDB = new OpenDatabaseKitTransactionDB(mazakCfg.SQLConnectionString, mazakCfg.DBType);
 
-      if (MazakType == MazakDbType.MazakVersionE)
+      if (mazakCfg.DBType == MazakDbType.MazakVersionE)
         loadOper = new LoadOperationsFromFile(mazakCfg, enableWatcher: true, onLoadActions: OnLoadActions);
-      else if (MazakType == MazakDbType.MazakWeb)
+      else if (mazakCfg.DBType == MazakDbType.MazakWeb)
         loadOper = new LoadOperationsFromFile(mazakCfg, enableWatcher: false, onLoadActions: (l, a) => { }); // web instead watches the log csv files
       else
         loadOper = new LoadOperationsFromDB(mazakCfg.SQLConnectionString); // smooth db doesn't use the load operations file
 
-      _readDB = new OpenDatabaseKitReadDB(mazakCfg.SQLConnectionString, MazakType, loadOper);
+      _readDB = new OpenDatabaseKitReadDB(mazakCfg.SQLConnectionString, mazakCfg.DBType, loadOper);
 
       var hold = new HoldPattern(_writeDB);
       WriteJobs writeJobs;
@@ -121,10 +118,10 @@ namespace MazakMachineInterface
           jDB: jdb,
           settings: st,
           useStartingOffsetForDueDate: mazakCfg.UseStartingOffsetForDueDate,
-          progDir: ProgramDirectory
+          progDir: mazakCfg.ProgramDirectory
         );
       }
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
+      if (mazakCfg.DBType == MazakDbType.MazakWeb || mazakCfg.DBType == MazakDbType.MazakSmooth)
         logDataLoader = new LogDataWeb(
           logDbConfig,
           writeJobs,
