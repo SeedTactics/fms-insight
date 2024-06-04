@@ -62,13 +62,14 @@ namespace MazakMachineInterface
 
     public const int JobLookbackHours = 2 * 24;
 
+    // TODO: move into MazakSync
     private string _machineGroupName = null;
     public string MachineGroupName => _machineGroupName ?? "MC";
 
     public WriteJobs(
       IWriteData d,
       IReadDataAccess readDb,
-      BlackMaple.MachineFramework.IRepository jDB,
+      RepositoryConfig repoCfg,
       FMSSettings settings,
       bool useStartingOffsetForDueDate,
       string progDir
@@ -81,7 +82,10 @@ namespace MazakMachineInterface
       ProgramDirectory = progDir;
 
       PlannedSchedule sch;
-      sch = jDB.LoadMostRecentSchedule();
+      using (var repo = repoCfg.OpenConnection())
+      {
+        sch = repo.LoadMostRecentSchedule();
+      }
       if (sch.Jobs != null)
       {
         foreach (var j in sch.Jobs)
