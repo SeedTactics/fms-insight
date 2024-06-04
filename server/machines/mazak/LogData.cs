@@ -397,7 +397,6 @@ namespace MazakMachineInterface
     private IMachineGroupName _machGroupName;
     private IHoldManagement _hold;
     private BlackMaple.MachineFramework.FMSSettings _settings;
-    private bool _waitForAllCastings;
     private Action<BlackMaple.MachineFramework.IRepository> _currentStatusChanged;
 
     private string _path;
@@ -412,7 +411,6 @@ namespace MazakMachineInterface
     public bool CurrentQueueMismatch { get; private set; }
 
     public LogDataWeb(
-      string path,
       BlackMaple.MachineFramework.RepositoryConfig logCfg,
       IMachineGroupName machineGroupName,
       IReadDataAccess readDB,
@@ -420,11 +418,9 @@ namespace MazakMachineInterface
       IHoldManagement hold,
       BlackMaple.MachineFramework.FMSSettings settings,
       Action<BlackMaple.MachineFramework.IRepository> currentStatusChanged,
-      MazakConfig mazakConfig,
-      bool waitForAllCastings
+      MazakConfig mazakConfig
     )
     {
-      _path = path;
       _logDbCfg = logCfg;
       _readDB = readDB;
       _hold = hold;
@@ -433,12 +429,11 @@ namespace MazakMachineInterface
       _machGroupName = machineGroupName;
       _mazakConfig = mazakConfig;
       _currentStatusChanged = currentStatusChanged;
-      _waitForAllCastings = waitForAllCastings;
       _shutdown = new AutoResetEvent(false);
       _newLogFile = new AutoResetEvent(false);
       _recheckQueues = new AutoResetEvent(false);
       _recheckQueuesComplete = new ManualResetEvent(false);
-      if (System.IO.Directory.Exists(path))
+      if (System.IO.Directory.Exists(_mazakConfig.LogCSVPath))
       {
         _thread = new Thread(new ThreadStart(ThreadFunc));
         _thread.IsBackground = true;
@@ -567,7 +562,7 @@ namespace MazakMachineInterface
                 var transSet = MazakQueues.CalculateScheduleChanges(
                   logDb,
                   mazakData,
-                  waitForAllCastings: _waitForAllCastings
+                  waitForAllCastings: _mazakConfig.WaitForAllCastings
                 );
 
                 if (transSet != null && transSet.Schedules.Count > 0)

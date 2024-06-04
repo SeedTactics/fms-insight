@@ -50,30 +50,17 @@ namespace MazakMachineInterface
     private Action<int, IEnumerable<LoadAction>> _onLoadActions;
 
     public LoadOperationsFromFile(
-      IConfigurationSection cfg,
+      MazakConfig cfg,
       bool enableWatcher,
       Action<int, IEnumerable<LoadAction>> onLoadActions
     )
     {
       _onLoadActions = onLoadActions;
-      mazakPath = cfg.GetValue<string>("Load CSV Path");
-      if (string.IsNullOrEmpty(mazakPath))
-      {
-        mazakPath = "c:\\mazak\\FMS\\LDS\\";
-      }
 
-      if (!Directory.Exists(mazakPath))
+      if (string.IsNullOrEmpty(cfg.LoadCSVPath) || !Directory.Exists(cfg.LoadCSVPath))
       {
-        mazakPath = "c:\\mazak\\LDS\\";
-
-        if (!Directory.Exists(mazakPath))
-        {
-          Log.Error(
-            "Unable to determine the path to the mazak load CSV files.  Please add/update a setting"
-              + " called 'Load CSV Path' in config file"
-          );
-          return;
-        }
+        Log.Warning("No mazak Load CSV Path configured, will not read load instructions from file");
+        return;
       }
 
       if (enableWatcher)

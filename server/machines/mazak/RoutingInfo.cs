@@ -56,7 +56,6 @@ namespace MazakMachineInterface
     private System.Timers.Timer _copySchedulesTimer;
     private readonly BlackMaple.MachineFramework.FMSSettings fmsSettings;
     private readonly Action<CurrentStatus> _onCurStatusChange;
-    public readonly bool _useStartingOffsetForDueDate;
 
     public RoutingInfo(
       IWriteData d,
@@ -65,7 +64,6 @@ namespace MazakMachineInterface
       IMazakLogReader logR,
       BlackMaple.MachineFramework.RepositoryConfig jLogCfg,
       IWriteJobs wJobs,
-      bool useStartingOffsetForDueDate,
       BlackMaple.MachineFramework.FMSSettings settings,
       Action<CurrentStatus> onStatusChange,
       MazakConfig mazakCfg
@@ -79,7 +77,6 @@ namespace MazakMachineInterface
       _writeJobs = wJobs;
       _mazakCfg = mazakCfg;
       _machineGroupName = machineGroupName;
-      _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
       _onCurStatusChange = onStatusChange;
 
       _copySchedulesTimer = new System.Timers.Timer(TimeSpan.FromMinutes(4.5).TotalMilliseconds);
@@ -187,7 +184,7 @@ namespace MazakMachineInterface
             mazakData: mazakData,
             savedParts: new HashSet<string>(),
             MazakType: writeDb.MazakType,
-            useStartingOffsetForDueDate: _useStartingOffsetForDueDate,
+            useStartingOffsetForDueDate: _mazakCfg.UseStartingOffsetForDueDate,
             fmsSettings: fmsSettings,
             lookupProgram: lookupProg,
             errors: logMessages

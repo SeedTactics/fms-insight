@@ -42,8 +42,6 @@ namespace MazakMachineInterface
 {
   public class MazakBackend : IFMSBackend, IDisposable
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<MazakBackend>();
-
     private readonly IReadDataAccess _readDB;
     private readonly IWriteData _writeDB;
     private readonly ICurrentLoadActions loadOper;
@@ -89,101 +87,7 @@ namespace MazakMachineInterface
       MazakConfig mazakCfg = null
     )
     {
-      var cfg = configuration.GetSection("Mazak");
-      string localDbPath = cfg.GetValue<string>("Database Path");
-      MazakType = DetectMazakType(cfg, localDbPath);
-
-      // database settings
-      string sqlConnectString = cfg.GetValue<string>("SQL ConnectionString");
-      string dbConnStr;
-      if (MazakType == MazakDbType.MazakSmooth)
-      {
-        if (!string.IsNullOrEmpty(sqlConnectString))
-        {
-          dbConnStr = sqlConnectString;
-        }
-        else if (!string.IsNullOrEmpty(localDbPath))
-        {
-          // old installers put sql server computer name in localDbPath
-          dbConnStr = "Server=" + localDbPath + "\\pmcsqlserver;" + "User ID=mazakpmc;Password=Fms-978";
-        }
-        else
-        {
-          var b = new System.Data.SqlClient.SqlConnectionStringBuilder();
-          b.UserID = "mazakpmc";
-          b.Password = "Fms-978";
-          b.DataSource = "(local)";
-          dbConnStr = b.ConnectionString;
-        }
-      }
-      else
-      {
-        dbConnStr = localDbPath;
-        if (string.IsNullOrEmpty(dbConnStr))
-        {
-          dbConnStr = "c:\\Mazak\\NFMS\\DB";
-        }
-      }
-
-      // log csv
-      string logPath = cfg.GetValue<string>("Log CSV Path");
-      if (logPath == null || logPath == "")
-        logPath = "c:\\Mazak\\FMS\\Log";
-
-      if (MazakType != MazakDbType.MazakVersionE && !System.IO.Directory.Exists(logPath))
-      {
-        Log.Error(
-          "Log CSV Directory {path} does not exist.  Set the directory in the config.ini file.",
-          logPath
-        );
-      }
-      else if (MazakType != MazakDbType.MazakVersionE)
-      {
-        Log.Information("Loading log CSV files from {logcsv}", logPath);
-      }
-
-      // general config
-      string useStarting = cfg.GetValue<string>("Use Starting Offset For Due Date");
-      string useStarting2 = cfg.GetValue<string>("Use Starting Offset");
-      bool UseStartingOffsetForDueDate = true;
-      if (string.IsNullOrEmpty(useStarting))
-      {
-        if (string.IsNullOrEmpty(useStarting2))
-        {
-          UseStartingOffsetForDueDate = true;
-        }
-        else
-        {
-          UseStartingOffsetForDueDate = Convert.ToBoolean(useStarting2);
-        }
-      }
-      else
-      {
-        UseStartingOffsetForDueDate = Convert.ToBoolean(useStarting);
-      }
-
-      ProgramDirectory = cfg.GetValue<string>("Program Directory");
-      if (string.IsNullOrEmpty(ProgramDirectory))
-      {
-        ProgramDirectory = "C:\\NCProgs";
-      }
-
-      // serial settings
-      string serialPerMaterial = cfg.GetValue<string>("Assign Serial Per Material");
-      if (!string.IsNullOrEmpty(serialPerMaterial))
-      {
-        bool result;
-        if (bool.TryParse(serialPerMaterial, out result))
-        {
-          if (!result)
-            serialSt.SerialType = SerialType.AssignOneSerialPerCycle;
-        }
-      }
-
-      // queue settings
-      bool waitForAllCastings = cfg.GetValue<bool>("Wait For All Castings", false);
-
-      Log.Debug("Configured UseStartingOffsetForDueDate = {useStarting}", UseStartingOffsetForDueDate);
+      mazakCfg ??= MazakConfig.Load(configuration);
 
       var oldJobDbName = System.IO.Path.Combine(st.DataDirectory, "jobinspection.db");
       if (!System.IO.File.Exists(oldJobDbName))
@@ -196,16 +100,16 @@ namespace MazakMachineInterface
         oldJobDbName
       );
 
-      _writeDB = new OpenDatabaseKitTransactionDB(dbConnStr, MazakType);
+      _writeDB = new OpenDatabaseKitTransactionDB(mazakCfg.SQLConnectionString, MazakType);
 
       if (MazakType == MazakDbType.MazakVersionE)
-        loadOper = new LoadOperationsFromFile(cfg, enableWatcher: true, onLoadActions: OnLoadActions);
+        loadOper = new LoadOperationsFromFile(mazakCfg, enableWatcher: true, onLoadActions: OnLoadActions);
       else if (MazakType == MazakDbType.MazakWeb)
-        loadOper = new LoadOperationsFromFile(cfg, enableWatcher: false, onLoadActions: (l, a) => { }); // web instead watches the log csv files
+        loadOper = new LoadOperationsFromFile(mazakCfg, enableWatcher: false, onLoadActions: (l, a) => { }); // web instead watches the log csv files
       else
-        loadOper = new LoadOperationsFromDB(dbConnStr); // smooth db doesn't use the load operations file
+        loadOper = new LoadOperationsFromDB(mazakCfg.SQLConnectionString); // smooth db doesn't use the load operations file
 
-      _readDB = new OpenDatabaseKitReadDB(dbConnStr, MazakType, loadOper);
+      _readDB = new OpenDatabaseKitReadDB(mazakCfg.SQLConnectionString, MazakType, loadOper);
 
       var hold = new HoldPattern(_writeDB);
       WriteJobs writeJobs;
@@ -216,13 +120,12 @@ namespace MazakMachineInterface
           readDb: _readDB,
           jDB: jdb,
           settings: st,
-          useStartingOffsetForDueDate: UseStartingOffsetForDueDate,
+          useStartingOffsetForDueDate: mazakCfg.UseStartingOffsetForDueDate,
           progDir: ProgramDirectory
         );
       }
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakSmooth)
         logDataLoader = new LogDataWeb(
-          logPath,
           logDbConfig,
           writeJobs,
           _readDB,
@@ -230,8 +133,7 @@ namespace MazakMachineInterface
           hold,
           st,
           currentStatusChanged: RaiseCurrentStatusChanged,
-          mazakConfig: mazakCfg,
-          waitForAllCastings: waitForAllCastings
+          mazakConfig: mazakCfg
         );
       else
       {
@@ -260,7 +162,6 @@ namespace MazakMachineInterface
         logR: logDataLoader,
         jLogCfg: logDbConfig,
         wJobs: writeJobs,
-        useStartingOffsetForDueDate: UseStartingOffsetForDueDate,
         settings: st,
         onStatusChange: s => OnNewCurrentStatus?.Invoke(s),
         mazakCfg: mazakCfg
@@ -289,45 +190,5 @@ namespace MazakMachineInterface
     public IQueueControl QueueControl => routing;
 
     public IMachineControl MachineControl => MazakMachineControl;
-
-    private MazakDbType DetectMazakType(IConfigurationSection cfg, string localDbPath)
-    {
-      var verE = cfg.GetValue<bool>("VersionE");
-      var webver = cfg.GetValue<bool>("Web Version");
-      var smoothVer = cfg.GetValue<bool>("Smooth Version");
-
-      if (verE)
-        return MazakDbType.MazakVersionE;
-      else if (webver)
-        return MazakDbType.MazakWeb;
-      else if (smoothVer)
-        return MazakDbType.MazakSmooth;
-
-      string testPath;
-      if (string.IsNullOrEmpty(localDbPath))
-      {
-        testPath = "C:\\Mazak\\NFMS\\DB\\FCREADDAT01.mdb";
-      }
-      else
-      {
-        testPath = System.IO.Path.Combine(localDbPath, "FCREADDAT01.mdb");
-      }
-
-      if (System.IO.File.Exists(testPath))
-      {
-        //TODO: open database to check column existance for web vs E.
-        Log.Information(
-          "Assuming Mazak WEB version.  If this is incorrect it can be changed in the settings."
-        );
-        return MazakDbType.MazakWeb;
-      }
-      else
-      {
-        Log.Information(
-          "Assuming Mazak Smooth version.  If this is incorrect it can be changed in the settings."
-        );
-        return MazakDbType.MazakSmooth;
-      }
-    }
   }
 }
