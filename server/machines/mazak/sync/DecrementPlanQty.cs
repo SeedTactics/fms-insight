@@ -37,9 +37,9 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class DecrementPlanQty
+  public static class DecrementPlanQty
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<DecrementPlanQty>();
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<DecrSchedule>();
 
     public static bool Decrement(
       IWriteData write,

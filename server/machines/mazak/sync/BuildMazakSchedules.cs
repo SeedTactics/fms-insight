@@ -38,9 +38,9 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class BuildMazakSchedules
+  public static class BuildMazakSchedules
   {
-    public static Serilog.ILogger Log = Serilog.Log.ForContext<BuildMazakSchedules>();
+    public static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MazakWriteData>();
 
     public static (MazakWriteData, ISet<string>) RemoveCompletedSchedules(MazakCurrentStatus mazakData)
     {
@@ -193,7 +193,6 @@ namespace MazakMachineInterface
       {
         if (part.Processes[0].Paths[0].SimulatedStartingUTC != DateTime.MinValue)
         {
-          var start = part.Processes[0].Paths[0].SimulatedStartingUTC;
           newSchRow = newSchRow with
           {
             DueDate = routeStartDate,
@@ -308,11 +307,12 @@ namespace MazakMachineInterface
     {
       for (int i = 1; i <= 9999; i++)
       {
-        if (!usedScheduleIds.Contains(i))
+        if (usedScheduleIds.Contains(i))
         {
-          usedScheduleIds.Add(i);
-          return i;
+          continue;
         }
+        usedScheduleIds.Add(i);
+        return i;
       }
       throw new Exception("All Schedule Ids are currently being used");
     }

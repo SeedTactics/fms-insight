@@ -37,167 +37,20 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public interface IMachineGroupName
+  public static class WriteJobs
   {
-    string MachineGroupName { get; }
-  }
-
-  public interface IWriteJobs
-  {
-    void AddJobs(IRepository jobDB, NewJobs newJ, string expectedPreviousScheduleId);
-    void RecopyJobsToMazak(IRepository jobDB, DateTime? nowUtc = null);
-    bool SyncFromDatabase(MazakAllData mazakData, IRepository jobDB);
-  }
-
-  public class WriteJobs : IWriteJobs, IMachineGroupName
-  {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<WriteJobs>();
-
-    private IWriteData writeDb;
-    private IReadDataAccess readDatabase;
-    private FMSSettings fmsSettings;
-
-    private bool _useStartingOffsetForDueDate;
-    private string ProgramDirectory;
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<NewJobs>();
 
     public const int JobLookbackHours = 2 * 24;
 
-    // TODO: move into MazakSync
-    private string _machineGroupName = null;
-    public string MachineGroupName => _machineGroupName ?? "MC";
-
-    public WriteJobs(
-      IWriteData d,
+    public static bool SyncFromDatabase(
+      MazakAllData mazakData,
+      IRepository db,
+      IWriteData writeDb,
       IReadDataAccess readDb,
-      RepositoryConfig repoCfg,
-      FMSSettings settings,
-      bool useStartingOffsetForDueDate,
-      string progDir
+      FMSSettings fmsSt,
+      MazakConfig mazakCfg
     )
-    {
-      writeDb = d;
-      readDatabase = readDb;
-      _useStartingOffsetForDueDate = useStartingOffsetForDueDate;
-      fmsSettings = settings;
-      ProgramDirectory = progDir;
-
-      PlannedSchedule sch;
-      using (var repo = repoCfg.OpenConnection())
-      {
-        sch = repo.LoadMostRecentSchedule();
-      }
-      if (sch.Jobs != null)
-      {
-        foreach (var j in sch.Jobs)
-        {
-          foreach (var proc in j.Processes)
-          {
-            foreach (var path in proc.Paths)
-            {
-              foreach (var stop in path.Stops)
-              {
-                if (!string.IsNullOrEmpty(stop.StationGroup))
-                {
-                  _machineGroupName = stop.StationGroup;
-                  goto foundGroup;
-                }
-              }
-            }
-          }
-        }
-        foundGroup:
-        ;
-      }
-    }
-
-    public void AddJobs(IRepository jobDB, NewJobs newJ, string expectedPreviousScheduleId)
-    {
-      // check previous schedule id
-      if (!string.IsNullOrEmpty(newJ.ScheduleId))
-      {
-        var recentDbSchedule = jobDB.LoadMostRecentSchedule();
-        if (
-          !string.IsNullOrEmpty(expectedPreviousScheduleId)
-          && expectedPreviousScheduleId != recentDbSchedule.LatestScheduleId
-        )
-        {
-          throw new BlackMaple.MachineFramework.BadRequestException(
-            "Expected previous schedule ID does not match current schedule ID.  Another user may have already created a schedule."
-          );
-        }
-      }
-
-      // check workorder programs
-      if (
-        newJ.CurrentUnfilledWorkorders != null
-        && newJ.CurrentUnfilledWorkorders.Any(w => w.Programs != null && w.Programs.Any())
-      )
-      {
-        throw new BlackMaple.MachineFramework.BadRequestException(
-          "Mazak does not support per-workorder programs"
-        );
-      }
-
-      //check for an old schedule that has not yet been copied
-      var oldJobs = jobDB.LoadJobsNotCopiedToSystem(
-        DateTime.UtcNow.AddDays(-1),
-        DateTime.UtcNow.AddHours(1),
-        includeDecremented: false
-      );
-      if (oldJobs.Count > 0)
-      {
-        //there are jobs to copy
-        Log.Information(
-          "Resuming copy of job schedules into mazak {uniqs}",
-          oldJobs.Select(j => j.UniqueStr).ToList()
-        );
-
-        AddSchedules(jobDB, oldJobs);
-      }
-
-      // add programs here first so that they exist in the database when looking up most recent revision for use in parts
-      jobDB.AddPrograms(newJ.Programs, DateTime.UtcNow);
-
-      var mazakData = readDatabase.LoadAllData();
-      Log.Debug("Writing new jobs {@newJobs}, existing mazak data is {@mazakData}", newJ, mazakData);
-
-      //add fixtures, pallets, parts.  If this fails, just throw an exception,
-      //they will be deleted during the next download.
-      AddFixturesPalletsParts(mazakData, jobDB, newJ.Jobs);
-
-      //Now that the parts have been added and we are confident that there no problems with the jobs,
-      //add them to the database.  Once this occurrs, the timer will pick up and eventually
-      //copy them to the system
-      AddJobsToDB(jobDB, newJ);
-
-      System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
-
-      AddSchedules(jobDB, newJ.Jobs);
-    }
-
-    public void RecopyJobsToMazak(IRepository jobDB, DateTime? nowUtc = null)
-    {
-      var now = nowUtc ?? DateTime.UtcNow;
-      var jobs = jobDB.LoadJobsNotCopiedToSystem(
-        now.AddHours(-JobLookbackHours),
-        now.AddHours(1),
-        includeDecremented: false
-      );
-      if (jobs.Count == 0)
-        return;
-
-      //there are jobs to copy
-      Log.Information(
-        "Resuming copy of job schedules into mazak {uniqs}",
-        jobs.Select(j => j.UniqueStr).ToList()
-      );
-
-      List<string> logMessages = new List<string>();
-
-      AddSchedules(jobDB, jobs);
-    }
-
-    public bool SyncFromDatabase(MazakAllData mazakData, IRepository db)
     {
       var now = DateTime.UtcNow;
       var jobs = db.LoadJobsNotCopiedToSystem(
@@ -214,13 +67,13 @@ namespace MazakMachineInterface
         jobs.Select(j => j.UniqueStr).ToList()
       );
 
-      AddFixturesPalletsParts(mazakData, db, jobs);
-      AddSchedules(db, jobs);
+      AddFixturesPalletsParts(mazakData, db, jobs, writeDb, fmsSt, mazakCfg, readDb);
+      AddSchedules(db, jobs, readDb, writeDb, mazakCfg);
 
       return true;
     }
 
-    private ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
+    private static ProgramRevision LookupProgram(IRepository jobDB, string program, long? rev)
     {
       if (rev.HasValue)
       {
@@ -232,7 +85,15 @@ namespace MazakMachineInterface
       }
     }
 
-    private void AddFixturesPalletsParts(MazakAllData mazakData, IRepository jobDB, IEnumerable<Job> jobs)
+    private static void AddFixturesPalletsParts(
+      MazakAllData mazakData,
+      IRepository jobDB,
+      IEnumerable<Job> jobs,
+      IWriteData writeDb,
+      FMSSettings fmsSt,
+      MazakConfig mazakCfg,
+      IReadDataAccess readDb
+    )
     {
       //first allocate a UID to use for this download
       int UID = 0;
@@ -277,12 +138,12 @@ namespace MazakMachineInterface
         mazakData: mazakData,
         savedParts: savedParts,
         MazakType: writeDb.MazakType,
-        useStartingOffsetForDueDate: _useStartingOffsetForDueDate,
-        fmsSettings: fmsSettings,
+        useStartingOffsetForDueDate: mazakCfg.UseStartingOffsetForDueDate,
+        fmsSettings: fmsSt,
         lookupProgram: (prog, rev) => LookupProgram(jobDB, prog, rev),
         errors: jobErrs
       );
-      if (jobErrs.Any())
+      if (jobErrs.Count != 0)
       {
         throw new BadRequestException(string.Join(Environment.NewLine, jobErrs));
       }
@@ -299,7 +160,7 @@ namespace MazakMachineInterface
         {
           foreach (var partName in e.PartNames)
           {
-            if (readDatabase.CheckPartExists(partName))
+            if (readDb.CheckPartExists(partName))
             {
               throw new Exception("Mazak returned an error when attempting to delete part " + partName);
             }
@@ -315,7 +176,10 @@ namespace MazakMachineInterface
       transSet = mazakJobs.DeleteFixtureAndProgramDatabaseRows();
       writeDb.Save(transSet, "Delete Fixtures");
 
-      transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(jobDB.LoadProgramContent, ProgramDirectory);
+      transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(
+        jobDB.LoadProgramContent,
+        mazakCfg.ProgramDirectory
+      );
       writeDb.Save(transSet, "Add Fixtures");
 
       //now save the pallets and parts
@@ -323,12 +187,18 @@ namespace MazakMachineInterface
       writeDb.Save(transSet, "Add Parts");
     }
 
-    private void AddSchedules(IRepository jobDB, IReadOnlyList<Job> jobs)
+    private static void AddSchedules(
+      IRepository jobDB,
+      IReadOnlyList<Job> jobs,
+      IReadDataAccess readDb,
+      IWriteData writeDb,
+      MazakConfig mazakCfg
+    )
     {
-      var mazakData = readDatabase.LoadAllData();
+      var mazakData = readDb.LoadAllData();
       Log.Debug("Adding new schedules for {@jobs}, mazak data is {@mazakData}", jobs, mazakData);
 
-      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, _useStartingOffsetForDueDate);
+      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, mazakCfg.UseStartingOffsetForDueDate);
       if (transSet.Schedules.Any())
       {
         writeDb.Save(transSet, "Add Schedules");
@@ -339,33 +209,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void AddJobsToDB(IRepository jobDB, NewJobs newJ)
-    {
-      jobDB.AddJobs(newJ, null, addAsCopiedToSystem: false);
-
-      //update the station group name
-      foreach (var j in newJ.Jobs)
-      {
-        foreach (var proc in j.Processes)
-        {
-          foreach (var path in proc.Paths)
-          {
-            foreach (var stop in path.Stops)
-            {
-              if (!string.IsNullOrEmpty(stop.StationGroup))
-              {
-                _machineGroupName = stop.StationGroup;
-                goto foundGroup;
-              }
-            }
-          }
-        }
-      }
-      foundGroup:
-      ;
-    }
-
-    private void ArchiveOldJobs(IRepository jobDB, MazakCurrentStatus schedules)
+    private static void ArchiveOldJobs(IRepository jobDB, MazakCurrentStatus schedules)
     {
       var current = new HashSet<string>();
       var completed = new Dictionary<(string uniq, int proc1path), int>();

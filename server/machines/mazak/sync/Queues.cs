@@ -39,9 +39,9 @@ using Serilog;
 
 namespace MazakMachineInterface
 {
-  public class MazakQueues
+  public static class MazakQueues
   {
-    private static readonly ILogger log = Serilog.Log.ForContext<MazakQueues>();
+    private static readonly ILogger log = Serilog.Log.ForContext<ScheduleWithQueues>();
 
     public static MazakWriteData CalculateScheduleChanges(
       IRepository jdb,

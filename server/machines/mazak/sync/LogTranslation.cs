@@ -161,7 +161,7 @@ namespace MazakMachineInterface
   public class LogTranslation(
     IRepository repo,
     MazakCurrentStatus mazakSchedules,
-    IMachineGroupName machGroupName,
+    string machGroupName,
     FMSSettings fmsSettings,
     Action<LogEntry> onMazakLog,
     MazakConfig mazakConfig,
@@ -242,7 +242,7 @@ namespace MazakMachineInterface
           repo.RecordMachineStart(
             mats: machineMats.Select(m => m.Mat),
             pallet: e.Pallet,
-            statName: machGroupName.MachineGroupName,
+            statName: machGroupName,
             statNum: e.StationNumber,
             program: progName,
             timeUTC: e.TimeUTC,
@@ -293,7 +293,7 @@ namespace MazakMachineInterface
             var s = repo.RecordMachineEnd(
               mats: machineMats.Select(m => m.Mat),
               pallet: e.Pallet,
-              statName: machGroupName.MachineGroupName,
+              statName: machGroupName,
               statNum: e.StationNumber,
               program: progName,
               timeUTC: e.TimeUTC,
@@ -360,7 +360,7 @@ namespace MazakMachineInterface
           repo.RecordPalletDepartRotaryInbound(
             mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
             pallet: e.Pallet,
-            statName: machGroupName.MachineGroupName,
+            statName: machGroupName,
             statNum: e.StationNumber,
             timeUTC: e.TimeUTC,
             rotateIntoWorktable: true,
@@ -389,7 +389,7 @@ namespace MazakMachineInterface
               repo.RecordPalletDepartRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet,
-                statName: machGroupName.MachineGroupName,
+                statName: machGroupName,
                 statNum: mcNum,
                 rotateIntoWorktable: false,
                 timeUTC: e.TimeUTC,
@@ -429,7 +429,7 @@ namespace MazakMachineInterface
               repo.RecordPalletArriveRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet,
-                statName: machGroupName.MachineGroupName,
+                statName: machGroupName,
                 statNum: mcNum,
                 timeUTC: e.TimeUTC,
                 foreignId: e.ForeignID

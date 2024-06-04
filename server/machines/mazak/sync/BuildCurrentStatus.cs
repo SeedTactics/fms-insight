@@ -39,9 +39,9 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class BuildCurrentStatus
+  public static class BuildCurrentStatus
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<BuildCurrentStatus>();
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<CurrentStatus>();
 
     private record CurrentJob
     {
@@ -70,15 +70,42 @@ namespace MazakMachineInterface
       }
     }
 
+    public static string FindMachineGroupName(IRepository db)
+    {
+      PlannedSchedule sch;
+      sch = db.LoadMostRecentSchedule();
+      if (sch.Jobs != null)
+      {
+        foreach (var j in sch.Jobs)
+        {
+          foreach (var proc in j.Processes)
+          {
+            foreach (var path in proc.Paths)
+            {
+              foreach (var stop in path.Stops)
+              {
+                if (!string.IsNullOrEmpty(stop.StationGroup))
+                {
+                  return stop.StationGroup;
+                }
+              }
+            }
+          }
+        }
+      }
+      return "MC";
+    }
+
     public static CurrentStatus Build(
       IRepository jobDB,
       FMSSettings fmsSettings,
-      IMachineGroupName machineGroupName,
       MazakDbType dbType,
       MazakAllData mazakData,
       DateTime utcNow
     )
     {
+      var machineGroupName = FindMachineGroupName(jobDB);
+
       //Load process and path numbers
       CalculateMaxProcAndPath(
         mazakData,
@@ -518,7 +545,7 @@ namespace MazakMachineInterface
       MazakAllData mazakData,
       MazakPartRow partRow,
       CurrentJob job,
-      IMachineGroupName machineGroupName,
+      string machineGroupName,
       MazakPart.IProcToPath procToPath,
       MazakDbType mazakTy,
       long precedence
@@ -563,7 +590,7 @@ namespace MazakMachineInterface
 
         var routeStop = new MachiningStop()
         {
-          StationGroup = machineGroupName.MachineGroupName,
+          StationGroup = machineGroupName,
           Stations = machines.ToImmutable(),
           Program = partProcRow.MainProgram,
           ProgramRevision = null,
@@ -1108,7 +1135,7 @@ namespace MazakMachineInterface
     }
 
     private static PalletLocation FindPalletLocation(
-      IMachineGroupName machName,
+      string machName,
       MazakAllData mazakData,
       MazakDbType dbType,
       int palletNum
@@ -1132,7 +1159,7 @@ namespace MazakMachineInterface
       return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 0);
     }
 
-    private static PalletLocation ParseStatNameVerE(IMachineGroupName machName, string pos)
+    private static PalletLocation ParseStatNameVerE(string machName, string pos)
     {
       if (pos.StartsWith("LS"))
       {
@@ -1150,7 +1177,7 @@ namespace MazakMachineInterface
         return new PalletLocation()
         {
           Location = pos[2] == '3' ? PalletLocationEnum.Machine : PalletLocationEnum.MachineQueue,
-          StationGroup = machName.MachineGroupName,
+          StationGroup = machName,
           Num = Convert.ToInt32(pos[1].ToString()),
         };
       }
@@ -1186,7 +1213,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static PalletLocation ParseStatNameWeb(IMachineGroupName machName, string pos)
+    private static PalletLocation ParseStatNameWeb(string machName, string pos)
     {
       if (pos.StartsWith("LS"))
       {
@@ -1204,7 +1231,7 @@ namespace MazakMachineInterface
         return new PalletLocation()
         {
           Location = pos[3] == '3' ? PalletLocationEnum.Machine : PalletLocationEnum.MachineQueue,
-          StationGroup = machName.MachineGroupName,
+          StationGroup = machName,
           Num = Convert.ToInt32(pos[2].ToString()),
         };
       }

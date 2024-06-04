@@ -97,23 +97,7 @@ namespace MazakMachineInterface
 
       _readDB = new OpenDatabaseKitReadDB(mazakCfg.SQLConnectionString, mazakCfg.DBType, loadOper);
 
-      var writeJobs = new WriteJobs(
-        d: _writeDB,
-        readDb: _readDB,
-        repoCfg: RepoConfig,
-        settings: st,
-        useStartingOffsetForDueDate: mazakCfg.UseStartingOffsetForDueDate,
-        progDir: mazakCfg.ProgramDirectory
-      );
-
-      var syncSt = new MazakSync(
-        machineGroupName: writeJobs,
-        readDb: _readDB,
-        writeDb: _writeDB,
-        settings: st,
-        mazakConfig: mazakCfg,
-        writeJobs: writeJobs
-      );
+      var syncSt = new MazakSync(readDb: _readDB, writeDb: _writeDB, settings: st, mazakConfig: mazakCfg);
 
       _jobsAndQueues = new JobsAndQueuesFromDb<MazakState>(
         RepoConfig,
@@ -122,7 +106,7 @@ namespace MazakMachineInterface
         syncSt
       );
 
-      MazakMachineControl = new MazakMachineControl(RepoConfig, _readDB, writeJobs, mazakCfg);
+      MazakMachineControl = new MazakMachineControl(RepoConfig, _readDB, mazakCfg);
 
       _jobsAndQueues.StartThread();
     }

@@ -63,30 +63,19 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   public event Action? NewCellState;
   public event MazakLogEventDel? MazakLogEvent;
 
-  private readonly IMachineGroupName machineGroupName;
   private readonly IReadDataAccess readDatabase;
   private readonly IWriteData writeDatabase;
   private readonly FMSSettings settings;
   private readonly MazakConfig mazakConfig;
-  private readonly IWriteJobs writeJobs;
 
   private readonly FileSystemWatcher logWatcher;
 
-  public MazakSync(
-    IMachineGroupName machineGroupName,
-    IReadDataAccess readDb,
-    IWriteData writeDb,
-    FMSSettings settings,
-    MazakConfig mazakConfig,
-    IWriteJobs writeJobs
-  )
+  public MazakSync(IReadDataAccess readDb, IWriteData writeDb, FMSSettings settings, MazakConfig mazakConfig)
   {
-    this.machineGroupName = machineGroupName;
     this.readDatabase = readDb;
     this.writeDatabase = writeDb;
     this.settings = settings;
     this.mazakConfig = mazakConfig;
-    this.writeJobs = writeJobs;
 
     logWatcher = new FileSystemWatcher(mazakConfig.LogCSVPath) { Filter = "*.csv" };
     logWatcher.Created += LogFileCreated;
@@ -170,7 +159,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     var trans = new LogTranslation(
       db,
       mazakData,
-      machineGroupName,
+      BuildCurrentStatus.FindMachineGroupName(db),
       settings,
       le => MazakLogEvent?.Invoke(le, db),
       mazakConfig: mazakConfig,
@@ -232,7 +221,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       SendMaterialToExternalQueue.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
     }
 
-    var st = BuildCurrentStatus.Build(db, settings, machineGroupName, mazakConfig.DBType, mazakData, now);
+    var st = BuildCurrentStatus.Build(db, settings, mazakConfig.DBType, mazakData, now);
 
     if (currentQueueMismatch)
     {
@@ -269,7 +258,14 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     bool jobsCopied;
     try
     {
-      jobsCopied = writeJobs.SyncFromDatabase(st.AllData, db);
+      jobsCopied = WriteJobs.SyncFromDatabase(
+        st.AllData,
+        db,
+        writeDatabase,
+        readDatabase,
+        settings,
+        mazakConfig
+      );
       JobCopyError = null;
     }
     catch (Exception ex)
