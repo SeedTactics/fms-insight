@@ -326,6 +326,55 @@ namespace MazakMachineInterface
     public IEnumerable<MazakFixtureRow> Fixtures { get; init; }
   }
 
+  public enum LogCode
+  {
+    // Codes are in section 9-8-8 "Log Message Screen" of the Mazak operations Manual
+    MachineCycleStart = 441,
+    MachineCycleEnd = 442,
+
+    LoadBegin = 501,
+    LoadEnd = 502,
+
+    UnloadBegin = 511,
+    UnloadEnd = 512,
+
+    PalletMoving = 301,
+    PalletMoveComplete = 302,
+
+    // 431 and 432 are used when rotating something into machine, no matter if a
+    // different pallet is rotating out or not.
+    StartRotatePalletIntoMachine = 431, // event has pallet moving into machine
+
+    //EndRotatePalletIntoMachine = 432, // event has pallet moving out of machine if it exists, otherwise pallet = 0
+
+    // 433 and 434 are only used if nothing is being sent in.
+    StartRotatePalletOutOfMachine = 433, // event has pallet moving out of machine
+    //EndRotatePalletOutOfMachine = 434, // event also has pallet moving out of machine
+
+    //StartOffsetProgram = 435,
+    //EndOffsetProgram = 436
+  }
+
+  public record LogEntry
+  {
+    public DateTime TimeUTC { get; init; }
+    public LogCode Code { get; init; }
+    public string ForeignID { get; init; }
+
+    //Only sometimes filled in depending on the log code
+    public int Pallet { get; init; }
+    public string FullPartName { get; init; } //Full part name in the mazak system
+    public string JobPartName { get; init; } //Part name with : stripped off
+    public int Process { get; init; }
+    public int FixedQuantity { get; init; }
+    public string Program { get; init; }
+    public int StationNumber { get; init; }
+
+    //Only filled in for pallet movement
+    public string TargetPosition { get; init; }
+    public string FromPosition { get; init; }
+  }
+
   public interface ICurrentLoadActions : IDisposable
   {
     IEnumerable<LoadAction> CurrentLoadActions();
