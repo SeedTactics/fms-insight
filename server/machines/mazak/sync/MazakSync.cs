@@ -153,13 +153,14 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   {
     var now = DateTime.UtcNow;
     var mazakData = readDatabase.LoadAllData();
+    var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
 
     var logs = LogCSVParsing.LoadLog(db.MaxForeignID(), mazakConfig.LogCSVPath);
 
     var trans = new LogTranslation(
       db,
       mazakData,
-      BuildCurrentStatus.FindMachineGroupName(db),
+      machGroupName: machineGroupName,
       settings,
       le => MazakLogEvent?.Invoke(le, db),
       mazakConfig: mazakConfig,
@@ -221,7 +222,14 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       SendMaterialToExternalQueue.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
     }
 
-    var st = BuildCurrentStatus.Build(db, settings, mazakConfig.DBType, mazakData, now);
+    var st = BuildCurrentStatus.Build(
+      db,
+      settings,
+      mazakConfig.DBType,
+      mazakData,
+      machineGroupName: machineGroupName,
+      now
+    );
 
     if (currentQueueMismatch)
     {

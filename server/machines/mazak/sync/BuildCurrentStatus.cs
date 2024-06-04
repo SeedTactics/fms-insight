@@ -101,11 +101,10 @@ namespace MazakMachineInterface
       FMSSettings fmsSettings,
       MazakDbType dbType,
       MazakAllData mazakData,
+      string machineGroupName,
       DateTime utcNow
     )
     {
-      var machineGroupName = FindMachineGroupName(jobDB);
-
       //Load process and path numbers
       CalculateMaxProcAndPath(
         mazakData,
