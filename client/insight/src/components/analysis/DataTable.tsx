@@ -30,15 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import {
-  ComponentType,
-  SetStateAction,
-  MouseEvent,
-  useState,
-  memo,
-  PureComponent,
-  useMemo,
-} from "react";
+import { ComponentType, SetStateAction, MouseEvent, useState, memo, PureComponent, useMemo } from "react";
 import { Dialog, DialogActions, DialogContent, DialogTitle, styled, TableBody } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
