@@ -54,7 +54,6 @@ namespace MachineWatchTest
     protected List<MazakMachineInterface.LogEntry> raisedByEvent = new List<MazakMachineInterface.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> expectedMazakLogEntries =
       new List<MazakMachineInterface.LogEntry>();
-    private IMachineGroupName machGroupName;
     private FMSSettings settings;
     protected MazakCurrentStatus mazakData;
     protected List<ToolPocketRow> mazakDataTools;
@@ -91,13 +90,10 @@ namespace MachineWatchTest
         Parts = _mazakPartRows
       };
 
-      machGroupName = Substitute.For<IMachineGroupName>();
-      machGroupName.MachineGroupName.Returns("machinespec");
-
       log = new LogTranslation(
         jobLog,
         mazakData,
-        machGroupName,
+        machGroupName: "machinespec",
         settings,
         e => raisedByEvent.Add(e),
         mazakConfig: null,
@@ -116,7 +112,7 @@ namespace MachineWatchTest
       log = new LogTranslation(
         jobLog,
         mazakData,
-        machGroupName,
+        machGroupName: "machinespec",
         settings,
         e => raisedByEvent.Add(e),
         mazakConfig: null,

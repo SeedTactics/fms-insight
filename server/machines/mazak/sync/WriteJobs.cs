@@ -49,10 +49,10 @@ namespace MazakMachineInterface
       IWriteData writeDb,
       IReadDataAccess readDb,
       FMSSettings fmsSt,
-      MazakConfig mazakCfg
+      MazakConfig mazakCfg,
+      DateTime now
     )
     {
-      var now = DateTime.UtcNow;
       var jobs = db.LoadJobsNotCopiedToSystem(
         now.AddHours(-JobLookbackHours),
         now.AddHours(1),
@@ -62,13 +62,16 @@ namespace MazakMachineInterface
         return false;
 
       //there are jobs to copy
-      Log.Information(
-        "Resuming copy of job schedules into mazak {uniqs}",
-        jobs.Select(j => j.UniqueStr).ToList()
-      );
+      Log.Information("Sending jobs into mazak {uniqs}", jobs.Select(j => j.UniqueStr).ToList());
+
+      ArchiveOldJobs(db, mazakData, jobs);
 
       AddFixturesPalletsParts(mazakData, db, jobs, writeDb, fmsSt, mazakCfg, readDb);
-      AddSchedules(db, jobs, readDb, writeDb, mazakCfg);
+
+      // Reload data after syncing fixtures, pallets, and parts
+      mazakData = readDb.LoadAllData();
+
+      AddSchedules(mazakData, db, jobs, writeDb, mazakCfg);
 
       return true;
     }
@@ -122,8 +125,6 @@ namespace MazakMachineInterface
         throw new Exception("Unable to find unused UID");
       }
       Log.Debug("Creating new schedule with UID {uid}", UID);
-
-      ArchiveOldJobs(jobDB, mazakData);
 
       var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData);
       if (transSet.Schedules.Any())
@@ -188,14 +189,13 @@ namespace MazakMachineInterface
     }
 
     private static void AddSchedules(
+      MazakAllData mazakData,
       IRepository jobDB,
       IReadOnlyList<Job> jobs,
-      IReadDataAccess readDb,
       IWriteData writeDb,
       MazakConfig mazakCfg
     )
     {
-      var mazakData = readDb.LoadAllData();
       Log.Debug("Adding new schedules for {@jobs}, mazak data is {@mazakData}", jobs, mazakData);
 
       var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, mazakCfg.UseStartingOffsetForDueDate);
@@ -209,9 +209,13 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void ArchiveOldJobs(IRepository jobDB, MazakCurrentStatus schedules)
+    private static void ArchiveOldJobs(
+      IRepository jobDB,
+      MazakCurrentStatus schedules,
+      IEnumerable<Job> toKeep
+    )
     {
-      var current = new HashSet<string>();
+      var current = new HashSet<string>(toKeep.Select(j => j.UniqueStr));
       var completed = new Dictionary<(string uniq, int proc1path), int>();
       foreach (var sch in schedules.Schedules)
       {

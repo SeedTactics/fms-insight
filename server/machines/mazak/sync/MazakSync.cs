@@ -272,7 +272,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         writeDatabase,
         readDatabase,
         settings,
-        mazakConfig
+        mazakConfig,
+        st.CurrentStatus.TimeOfCurrentStatusUTC
       );
       JobCopyError = null;
     }

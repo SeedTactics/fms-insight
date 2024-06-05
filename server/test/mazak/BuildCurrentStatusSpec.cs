@@ -47,7 +47,6 @@ namespace MachineWatchTest
     private RepositoryConfig _repoCfg;
     private JsonSerializerOptions jsonSettings;
     private FMSSettings _settings;
-    private IMachineGroupName _machGroupName;
 
     public BuildCurrentStatusSpec()
     {
@@ -64,9 +63,6 @@ namespace MachineWatchTest
       jsonSettings = new JsonSerializerOptions();
       Startup.JsonSettings(jsonSettings);
       jsonSettings.WriteIndented = true;
-
-      _machGroupName = Substitute.For<IMachineGroupName>();
-      _machGroupName.MachineGroupName.Returns("MC");
     }
 
     public void Dispose()
@@ -184,9 +180,9 @@ namespace MachineWatchTest
         status = BuildCurrentStatus.Build(
           repository,
           _settings,
-          _machGroupName,
           MazakDbType.MazakSmooth,
           allData,
+          machineGroupName: "MC",
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
         );
       }
@@ -271,9 +267,9 @@ namespace MachineWatchTest
       var status = BuildCurrentStatus.Build(
         _memoryLog,
         _settings,
-        _machGroupName,
         MazakDbType.MazakSmooth,
         allData,
+        machineGroupName: "MC",
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
       );
 
@@ -359,9 +355,9 @@ namespace MachineWatchTest
         status = BuildCurrentStatus.Build(
           repository,
           _settings,
-          _machGroupName,
           MazakDbType.MazakSmooth,
           allData,
+          machineGroupName: "MC",
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
         );
       }
