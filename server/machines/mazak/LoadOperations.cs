@@ -37,7 +37,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Dapper;
-using Microsoft.Extensions.Configuration;
 
 namespace MazakMachineInterface
 {

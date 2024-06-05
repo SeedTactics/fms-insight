@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 
@@ -54,24 +55,71 @@ namespace MazakMachineInterface
     )
     {
       var jobs = db.LoadJobsNotCopiedToSystem(
-        now.AddHours(-JobLookbackHours),
-        now.AddHours(1),
-        includeDecremented: false
-      );
-      if (jobs.Count == 0)
+          now.AddHours(-JobLookbackHours),
+          now.AddHours(1),
+          includeDecremented: false
+        )
+        .GroupBy(j => j.ScheduleId)
+        // Only do one schedule at a time
+        .MinBy(g => g.Key, StringComparer.Ordinal);
+
+      if (jobs == null)
+      {
         return false;
+      }
 
       //there are jobs to copy
-      Log.Information("Sending jobs into mazak {uniqs}", jobs.Select(j => j.UniqueStr).ToList());
+      Log.Debug("Sending jobs into mazak {uniqs}", jobs.Select(j => j.UniqueStr).ToList());
 
-      ArchiveOldJobs(db, mazakData, jobs);
+      // check if a previous download was interrupted during the middle of schedule downloads
+      var alreadyDownloadedSchs = mazakData
+        .Schedules.Select(s =>
+        {
+          if (MazakPart.IsSailPart(s.PartName, s.Comment))
+          {
+            MazakPart.ParseComment(s.Comment, out var uniq, out var _, out var _);
+            return uniq;
+          }
+          else
+          {
+            return null;
+          }
+        })
+        .Where(u => u != null)
+        .ToHashSet();
 
-      AddFixturesPalletsParts(mazakData, db, jobs, writeDb, fmsSt, mazakCfg, readDb);
+      bool existsPrev = false;
+      foreach (var j in jobs)
+      {
+        if (alreadyDownloadedSchs.Contains(j.UniqueStr))
+        {
+          existsPrev = true;
+          db.MarkJobCopiedToSystem(j.UniqueStr);
+        }
+      }
 
-      // Reload data after syncing fixtures, pallets, and parts
-      mazakData = readDb.LoadAllData();
+      // if there are schedules that were already downloaded, resume the download
+      if (existsPrev)
+      {
+        AddSchedules(
+          mazakData,
+          db,
+          jobs.Where(j => !alreadyDownloadedSchs.Contains(j.UniqueStr)).ToImmutableList(),
+          writeDb,
+          mazakCfg
+        );
+      }
+      else
+      {
+        ArchiveOldJobs(db, mazakData, jobs);
 
-      AddSchedules(mazakData, db, jobs, writeDb, mazakCfg);
+        AddFixturesPalletsParts(mazakData, db, jobs, writeDb, fmsSt, mazakCfg, readDb);
+
+        // Reload data after syncing fixtures, pallets, and parts
+        mazakData = readDb.LoadAllData();
+
+        AddSchedules(mazakData, db, jobs.ToImmutableList(), writeDb, mazakCfg);
+      }
 
       return true;
     }
