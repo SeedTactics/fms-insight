@@ -189,11 +189,7 @@ const CurZoomContext = createContext<{ readonly start: Date; readonly end: Date 
   end: new Date(),
 });
 
-const ReplacementGraph = memo(function ReplacementGraph({
-  row,
-}: {
-  readonly row: ToolReplacementSummary;
-}) {
+const ReplacementGraph = memo(function ReplacementGraph({ row }: { readonly row: ToolReplacementSummary }) {
   const zoom = useContext(CurZoomContext);
   const [tooltip, setTooltip] = useState<{
     readonly left: number;

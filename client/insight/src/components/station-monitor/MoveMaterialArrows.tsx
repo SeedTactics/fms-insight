@@ -138,9 +138,7 @@ export const MoveMaterialArrowContainer = memo(function MoveMaterialArrowContain
   hideArrows?: boolean;
 }) {
   const container = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes] = useState<AllMoveMaterialNodes<React.RefObject<HTMLDivElement>>>(
-    HashMap.empty(),
-  );
+  const [nodes, setNodes] = useState<AllMoveMaterialNodes<React.RefObject<HTMLDivElement>>>(HashMap.empty());
 
   const ctx: MoveMaterialArrowContext = useMemo(() => {
     return {

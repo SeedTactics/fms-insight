@@ -43,38 +43,36 @@ import { DialogTitle } from "@mui/material";
 import { Settings as SettingsIcon } from "@mui/icons-material";
 import { useAtomValue } from "jotai";
 
-export const CustomStationMonitorDialog = memo(
-  function CustomStationMonitorDialog(): JSX.Element | null {
-    const url = useAtomValue(fmsInformation)?.customStationMonitorDialogUrl;
-    const [open, setOpen] = useState(false);
+export const CustomStationMonitorDialog = memo(function CustomStationMonitorDialog(): JSX.Element | null {
+  const url = useAtomValue(fmsInformation)?.customStationMonitorDialogUrl;
+  const [open, setOpen] = useState(false);
 
-    if (!url) {
-      return null;
-    }
+  if (!url) {
+    return null;
+  }
 
-    const parts = url.split("/");
-    let title = parts[parts.length - 1];
-    title = title[0].toUpperCase() + title.substr(1);
+  const parts = url.split("/");
+  let title = parts[parts.length - 1];
+  title = title[0].toUpperCase() + title.substr(1);
 
-    return (
-      <>
-        <Tooltip title={title}>
-          <IconButton onClick={() => setOpen(true)} size="large">
-            <SettingsIcon />
-          </IconButton>
-        </Tooltip>
-        <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md">
-          <DialogTitle>{title}</DialogTitle>
-          <DialogContent>
-            <iframe width="100%" src={url} style={{ border: 0, height: "calc(100vh - 250px)" }} />
-          </DialogContent>
-          <DialogActions>
-            <Button color="primary" onClick={() => setOpen(false)}>
-              Close
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </>
-    );
-  },
-);
+  return (
+    <>
+      <Tooltip title={title}>
+        <IconButton onClick={() => setOpen(true)} size="large">
+          <SettingsIcon />
+        </IconButton>
+      </Tooltip>
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md">
+        <DialogTitle>{title}</DialogTitle>
+        <DialogContent>
+          <iframe width="100%" src={url} style={{ border: 0, height: "calc(100vh - 250px)" }} />
+        </DialogContent>
+        <DialogActions>
+          <Button color="primary" onClick={() => setOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+});
