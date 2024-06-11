@@ -72,28 +72,7 @@ namespace MazakMachineInterface
 
     public static string FindMachineGroupName(IRepository db)
     {
-      PlannedSchedule sch;
-      sch = db.LoadMostRecentSchedule();
-      if (sch.Jobs != null)
-      {
-        foreach (var j in sch.Jobs)
-        {
-          foreach (var proc in j.Processes)
-          {
-            foreach (var path in proc.Paths)
-            {
-              foreach (var stop in path.Stops)
-              {
-                if (!string.IsNullOrEmpty(stop.StationGroup))
-                {
-                  return stop.StationGroup;
-                }
-              }
-            }
-          }
-        }
-      }
-      return "MC";
+      return db.StationGroupsOnMostRecentSchedule().FirstOrDefault(s => !string.IsNullOrEmpty(s)) ?? "MC";
     }
 
     public static CurrentStatus Build(

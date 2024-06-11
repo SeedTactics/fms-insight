@@ -478,6 +478,7 @@ namespace BlackMaple.MachineFramework
     );
     RecentHistoricData LoadRecentJobHistory(DateTime startUTC, IEnumerable<string> alreadyKnownSchIds = null);
     PlannedSchedule LoadMostRecentSchedule();
+    IEnumerable<string> StationGroupsOnMostRecentSchedule();
     ImmutableList<Workorder> WorkordersById(string workorderId);
     ImmutableDictionary<string, ImmutableList<Workorder>> WorkordersById(IReadOnlySet<string> workorderId);
 

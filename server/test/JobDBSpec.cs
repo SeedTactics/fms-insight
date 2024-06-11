@@ -171,6 +171,19 @@ namespace MachineWatchTest
           }
         );
 
+      _jobDB
+        .StationGroupsOnMostRecentSchedule()
+        .ToList()
+        .Should()
+        .BeEquivalentTo(
+          job1history
+            .Processes.SelectMany(p => p.Paths)
+            .SelectMany(p => p.Stops)
+            .Select(s => s.StationGroup)
+            .Distinct()
+            .ToList()
+        );
+
       // Add second job
       var schId2 = "ZZ" + schId;
       var job2 = RandJob(job1.RouteStartUTC.AddHours(4)) with

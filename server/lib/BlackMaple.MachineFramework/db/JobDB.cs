@@ -1013,6 +1013,27 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public IEnumerable<string> StationGroupsOnMostRecentSchedule()
+    {
+      using var trans = _connection.BeginTransaction();
+
+      var latestSchId = LatestJobScheduleId(trans);
+
+      using var cmd = _connection.CreateCommand();
+      cmd.CommandText =
+        "SELECT DISTINCT s.StatGroup FROM stops s JOIN jobs j "
+        + "ON s.UniqueStr = j.UniqueStr WHERE j.ScheduleId = $sid";
+      cmd.Transaction = trans;
+      cmd.Parameters.Add("sid", SqliteType.Text).Value = latestSchId;
+
+      using var reader = cmd.ExecuteReader();
+
+      while (reader.Read())
+      {
+        yield return reader.GetString(0);
+      }
+    }
+
     public ImmutableList<HistoricJob> LoadJobsBetween(string startingUniqueStr, string endingUniqueStr)
     {
       using (var cmd = _connection.CreateCommand())
