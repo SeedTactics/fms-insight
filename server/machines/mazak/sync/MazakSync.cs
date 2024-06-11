@@ -147,8 +147,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     return logMessages;
   }
 
-  private string? JobCopyError = null;
-
   public MazakState CalculateCellState(IRepository db)
   {
     var now = DateTime.UtcNow;
@@ -195,28 +193,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       palStChanged = trans.CheckPalletStatusMatchesLogs();
     }
 
-    bool queuesChanged = false;
-    bool currentQueueMismatch = false;
-    try
-    {
-      var transSet = MazakQueues.CalculateScheduleChanges(
-        db,
-        mazakData,
-        waitForAllCastings: mazakConfig.WaitForAllCastings
-      );
-
-      if (transSet != null && transSet.Schedules.Count > 0)
-      {
-        writeDatabase.Save(transSet, "Setting material from queues");
-        queuesChanged = true;
-      }
-    }
-    catch (Exception ex)
-    {
-      Log.Error(ex, "Error checking queues");
-      currentQueueMismatch = true;
-    }
-
     if (sendToExternal.Count > 0)
     {
       SendMaterialToExternalQueue.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
@@ -231,14 +207,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       now
     );
 
-    if (currentQueueMismatch)
-    {
-      st = st with { Alarms = st.Alarms.Add("Queue contents and Mazak schedule quantity mismatch.") };
-    }
-    if (JobCopyError != null)
-    {
-      st = st with { Alarms = st.Alarms.Add(JobCopyError) };
-    }
     if (mazakConfig != null && mazakConfig.AdjustCurrentStatus != null)
     {
       st = mazakConfig.AdjustCurrentStatus(db, st);
@@ -246,9 +214,9 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
     return new MazakState()
     {
-      StateUpdated = logs.Count > 0 || palStChanged || queuesChanged,
+      StateUpdated = logs.Count > 0 || palStChanged,
       TimeUntilNextRefresh = stoppedBecauseRecentMachineEnd
-        ? TimeSpan.FromSeconds(10)
+        ? TimeSpan.FromSeconds(15)
         : TimeSpan.FromMinutes(2),
       StoppedBecauseRecentMachineEnd = stoppedBecauseRecentMachineEnd,
       CurrentStatus = st,
@@ -263,30 +231,37 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       return false;
     }
 
-    bool jobsCopied;
-    try
+    // jobs
+    bool jobsCopied = WriteJobs.SyncFromDatabase(
+      st.AllData,
+      db,
+      writeDatabase,
+      readDatabase,
+      settings,
+      mazakConfig,
+      st.CurrentStatus.TimeOfCurrentStatusUTC
+    );
+
+    // queues
+    bool queuesChanged = false;
+    if (!jobsCopied)
     {
-      jobsCopied = WriteJobs.SyncFromDatabase(
-        st.AllData,
+      var transSet = MazakQueues.CalculateScheduleChanges(
         db,
-        writeDatabase,
-        readDatabase,
-        settings,
-        mazakConfig,
-        st.CurrentStatus.TimeOfCurrentStatusUTC
+        st.AllData,
+        waitForAllCastings: mazakConfig.WaitForAllCastings
       );
-      JobCopyError = null;
-    }
-    catch (Exception ex)
-    {
-      Log.Error(ex, "Error copying jobs to Mazak");
-      JobCopyError = "Error copying jobs into Mazak: " + ex.Message;
-      jobsCopied = true;
+
+      if (transSet != null && transSet.Schedules.Count > 0)
+      {
+        writeDatabase.Save(transSet, "Setting material from queues");
+        queuesChanged = true;
+      }
     }
 
     // TODO: holds
 
-    return jobsCopied;
+    return jobsCopied || queuesChanged;
   }
 
   public bool DecrementJobs(IRepository db, MazakState st)

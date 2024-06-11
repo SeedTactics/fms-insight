@@ -1257,7 +1257,7 @@ namespace MazakMachineInterface
           }
           if (mazakFixtureName.Length > 20)
           {
-            throw new BlackMaple.MachineFramework.BadRequestException(
+            throw new BadRequestException(
               "Fixture " + mazakFixtureName + " is too long to fit in the Mazak databases"
             );
           }

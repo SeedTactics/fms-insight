@@ -58,8 +58,8 @@ namespace MazakMachineInterface
           // do nothing
           Serilog.Log.Debug(ex, "Error opening {file}", file);
         }
-        Serilog.Log.Debug("Could not open file {file}, sleeping for 10 seconds", file);
-        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(10));
+        Serilog.Log.Debug("Could not open file {file}, sleeping for 2 seconds", file);
+        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(2));
       }
       throw new Exception("Unable to open file " + file);
     }
