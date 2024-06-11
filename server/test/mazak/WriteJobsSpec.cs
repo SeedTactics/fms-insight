@@ -102,7 +102,7 @@ namespace MachineWatchTest
 
     private readonly RepositoryConfig _repoCfg;
     private readonly IRepository _jobDB;
-    private readonly WriteMock _writeMock;
+    private WriteMock _writeMock;
     private readonly IReadDataAccess _readMock;
     private readonly JsonSerializerOptions jsonSettings;
     private readonly FMSSettings _settings;
@@ -131,7 +131,7 @@ namespace MachineWatchTest
           {
             Id = 1,
             PartName = "part1:1:1",
-            Comment = MazakPart.CreateComment("uniq1", new[] { 1 }, false),
+            Comment = MazakPart.CreateComment("uniq1", [1], false),
             PlanQuantity = 15,
             CompleteQuantity = 15,
             Priority = 50,
@@ -150,7 +150,7 @@ namespace MachineWatchTest
           {
             Id = 2,
             PartName = "part2:1:1",
-            Comment = MazakPart.CreateComment("uniq2", new[] { 1 }, false),
+            Comment = MazakPart.CreateComment("uniq2", [1], false),
             PlanQuantity = 15,
             CompleteQuantity = 10,
             Priority = 50,
@@ -173,7 +173,7 @@ namespace MachineWatchTest
           new MazakPartRow()
           {
             PartName = "part1:1:1",
-            Comment = MazakPart.CreateComment("uniq1", new[] { 1 }, false),
+            Comment = MazakPart.CreateComment("uniq1", [1], false),
             Processes = new[]
             {
               new MazakPartProcessRow()
@@ -189,7 +189,7 @@ namespace MachineWatchTest
           new MazakPartRow()
           {
             PartName = "part2:1:1",
-            Comment = MazakPart.CreateComment("uniq2", new[] { 1 }, false),
+            Comment = MazakPart.CreateComment("uniq2", [1], false),
             Processes = new[]
             {
               new MazakPartProcessRow()
@@ -216,11 +216,9 @@ namespace MachineWatchTest
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
         LoadActions = Enumerable.Empty<LoadAction>(),
         MainPrograms = Enumerable.Concat(
-          (new[] { "1001", "1002", "1003", "1004", "1005" }).Select(p => new MazakProgramRow()
-          {
-            MainProgram = p,
-            Comment = ""
-          }),
+          ImmutableList
+            .Create("1001", "1002", "1003", "1004", "1005")
+            .Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
           new[]
           {
             new MazakProgramRow()
@@ -250,9 +248,9 @@ namespace MachineWatchTest
               PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
               PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
               LoadActions = Enumerable.Empty<LoadAction>(),
-              MainPrograms = (new[] { "1001", "1002", "1003", "1004", "1005" }).Select(
-                p => new MazakProgramRow() { MainProgram = p, Comment = "" }
-              ),
+              MainPrograms = ImmutableList
+                .Create("1001", "1002", "1003", "1004", "1005")
+                .Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
             }
         );
 
@@ -468,6 +466,46 @@ namespace MachineWatchTest
     }
 
     [Fact]
+    public void OnlyDownloadsOneScheduleAtATime()
+    {
+      var newJ1 = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      _jobDB.AddJobs(newJ1, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
+
+      var newJ2 = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "singleproc.json")),
+        jsonSettings
+      ) with
+      {
+        ScheduleId = "zzzzzzzzzzzzz"
+      };
+      _jobDB.AddJobs(newJ2, expectedPreviousScheduleId: newJ1.ScheduleId, addAsCopiedToSystem: false);
+
+      WriteJobs
+        .SyncFromDatabase(
+          _initialAllData,
+          _jobDB,
+          _writeMock,
+          _readMock,
+          _settings,
+          _mazakCfg,
+          fixtureQueueTime
+        )
+        .Should()
+        .BeTrue();
+
+      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
+      _writeMock.DeletePallets.Pallets.Should().BeEmpty();
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
+      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+    }
+
+    [Fact]
     public void ErrorDuringPartsPallets()
     {
       _writeMock.errorForPrefix = "Add Parts";
@@ -595,6 +633,76 @@ namespace MachineWatchTest
     }
 
     [Fact]
+    public void ResumesADownloadInterruptedDuringSchedules()
+    {
+      _writeMock.errorForPrefix = "Add Schedules";
+
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
+
+      FluentActions
+        .Invoking(
+          () =>
+            WriteJobs.SyncFromDatabase(
+              _initialAllData,
+              _jobDB,
+              _writeMock,
+              _readMock,
+              _settings,
+              _mazakCfg,
+              fixtureQueueTime
+            )
+        )
+        .Should()
+        .Throw<Exception>()
+        .WithMessage("Sample error");
+
+      // Now with the parts and only the aaa schedule
+      var allParts = _writeMock.AddParts.Parts.ToList();
+      var aaaSch = _writeMock.AddSchedules.Schedules.Where(s => s.PartName.StartsWith("aaa")).ToList();
+      var bbbAndCCCSch = _writeMock.AddSchedules.Schedules.Where(s => !s.PartName.StartsWith("aaa")).ToList();
+      _writeMock = new WriteMock();
+
+      WriteJobs.SyncFromDatabase(
+        new MazakAllData()
+        {
+          Schedules = aaaSch,
+          Parts = allParts,
+          Pallets = [],
+          Fixtures = [],
+        },
+        _jobDB,
+        _writeMock,
+        _readMock,
+        _settings,
+        _mazakCfg,
+        fixtureQueueTime
+      );
+
+      _writeMock.AddFixtures.Should().BeNull();
+      _writeMock.AddParts.Should().BeNull();
+      _writeMock.DelFixtures.Should().BeNull();
+      _writeMock.DeleteParts.Should().BeNull();
+      _writeMock.DeletePallets.Should().BeNull();
+      _writeMock.UpdateSchedules.Should().BeNull();
+      // adds only bbb and ccc
+      _writeMock
+        .AddSchedules.Schedules.Should()
+        .BeEquivalentTo(bbbAndCCCSch.Select(s => s with { Priority = s.Priority + 1 }));
+
+      _jobDB
+        .LoadJobsNotCopiedToSystem(
+          newJobs.Jobs.First().RouteStartUTC,
+          newJobs.Jobs.First().RouteStartUTC.AddMinutes(1)
+        )
+        .Should()
+        .BeEmpty();
+    }
+
+    [Fact]
     public void SplitsWrites()
     {
       //Arrange
@@ -658,11 +766,11 @@ namespace MachineWatchTest
       foreach (var chunk in chunks)
       {
         (
-          chunk.Schedules.Count()
-          + chunk.Parts.Count()
-          + chunk.Pallets.Count()
-          + chunk.Fixtures.Count()
-          + chunk.Programs.Count()
+          chunk.Schedules.Count
+          + chunk.Parts.Count
+          + chunk.Pallets.Count
+          + chunk.Fixtures.Count
+          + chunk.Programs.Count
         )
           .Should()
           .BeLessOrEqualTo(20);
