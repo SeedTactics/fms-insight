@@ -35,6 +35,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
@@ -191,10 +192,18 @@ namespace BlackMaple.FMSInsight.Makino
         var fullPath = Path.Combine(settings.ADEPath, fileName);
         try
         {
+          var tcs = new TaskCompletionSource<bool>();
           using var fw = new FileSystemWatcher(settings.ADEPath, fileName);
+          fw.Deleted += (s, e) =>
+          {
+            if (e.Name == fileName)
+            {
+              tcs.SetResult(true);
+            }
+          };
           fw.EnableRaisingEvents = true;
           OrderXML.WriteOrderXML(fullPath, jobsToSend, settings.DownloadOnlyOrders);
-          if (fw.WaitForChanged(WatcherChangeTypes.Deleted, TimeSpan.FromSeconds(10)).TimedOut)
+          if (Task.WaitAny([tcs.Task, Task.Delay(TimeSpan.FromSeconds(10))]) == 1)
           {
             Log.Error("Makino did not process new jobs, perhaps the Makino software is not running?");
             ErrorDownloadingJobs = true;
