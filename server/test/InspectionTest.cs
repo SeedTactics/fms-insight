@@ -47,9 +47,7 @@ namespace MachineWatchTest
 
     public InspectionTest()
     {
-      _repoCfg = RepositoryConfig.InitializeMemoryDB(
-        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-      );
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(null);
     }
 
     void IDisposable.Dispose()

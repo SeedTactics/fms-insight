@@ -49,9 +49,7 @@ namespace MachineWatchTest
 
     public JobDBSpec()
     {
-      _repoCfg = RepositoryConfig.InitializeMemoryDB(
-        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-      );
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(null);
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
       _fixture.Customizations.Add(new DateOnlySpecimenBuilder());

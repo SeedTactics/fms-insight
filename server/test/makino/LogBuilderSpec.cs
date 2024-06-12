@@ -57,7 +57,6 @@ public sealed class LogBuilderSpec : IDisposable
   {
     var serialSettings = new SerialSettings()
     {
-      SerialType = SerialType.AssignOneSerialPerMaterial,
       ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
     };
     _repo = RepositoryConfig.InitializeMemoryDB(serialSettings);

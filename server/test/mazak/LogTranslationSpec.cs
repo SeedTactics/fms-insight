@@ -66,7 +66,6 @@ namespace MachineWatchTest
     {
       var serialSt = new SerialSettings()
       {
-        SerialType = SerialType.AssignOneSerialPerMaterial,
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10),
       };
       settings = new FMSSettings() { QuarantineQueue = "quarantineQ" };

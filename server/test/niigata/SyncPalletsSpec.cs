@@ -61,7 +61,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _serialSt = new SerialSettings()
       {
-        SerialType = SerialType.AssignOneSerialPerMaterial,
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
       };
       _fmsSt = new FMSSettings();

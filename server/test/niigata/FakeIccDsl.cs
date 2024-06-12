@@ -75,7 +75,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       _serialSt = new SerialSettings()
       {
-        SerialType = SerialType.AssignOneSerialPerMaterial,
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
       };
       _settings = new FMSSettings() { QuarantineQueue = "Quarantine" };
@@ -492,7 +491,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       using var _logDB = _logDBCfg.OpenConnection();
       var matId = _logDB.AllocateMaterialIDForCasting(rawMatName);
-      if (_serialSt.SerialType == SerialType.AssignOneSerialPerMaterial)
+      if (_serialSt != null)
       {
         _logDB.RecordSerialForMaterialID(
           new EventLogMaterial()
@@ -578,7 +577,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       using var _logDB = _logDBCfg.OpenConnection();
       var matId = _logDB.AllocateMaterialID(unique: uniq, part: part, numProc: numProc);
-      if (_serialSt.SerialType == SerialType.AssignOneSerialPerMaterial)
+      if (_serialSt != null)
       {
         _logDB.RecordSerialForMaterialID(
           new EventLogMaterial()

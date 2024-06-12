@@ -216,7 +216,7 @@ namespace BlackMaple.MachineFramework
       FMSSettings fmsSt;
       try
       {
-        fmsSt = new FMSSettings(cfg);
+        fmsSt = FMSSettings.Load(cfg);
         if (outputConfigToLog)
         {
           Log.Information(

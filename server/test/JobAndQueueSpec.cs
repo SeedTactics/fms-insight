@@ -54,19 +54,17 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   }
 
   private readonly RepositoryConfig _repo;
-  private readonly FMSSettings _settings;
+  private FMSSettings _settings;
   private JobsAndQueuesFromDb<MockCellState> _jq;
   private readonly Fixture _fixture;
 
   public JobAndQueueSpec(Xunit.Abstractions.ITestOutputHelper output)
   {
-    _repo = RepositoryConfig.InitializeMemoryDB(
-      new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-    );
+    _repo = RepositoryConfig.InitializeMemoryDB(null);
     _fixture = new Fixture();
     _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
 
-    _settings = new FMSSettings();
+    _settings = new FMSSettings() { };
     _settings.Queues.Add("q1", new QueueInfo());
     _settings.Queues.Add("q2", new QueueInfo());
   }
@@ -1150,7 +1148,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   [MemberData(nameof(SignalTheoryData))]
   public async Task QuarantinesMatOnPallet(SignalQuarantineTheoryData data)
   {
-    _settings.QuarantineQueue = data.QuarantineQueue;
+    _settings = _settings with { QuarantineQueue = data.QuarantineQueue };
     AllowQuarantineToCancelLoad = data.AllowQuarantineToCancelLoad;
     await StartSyncThread();
 

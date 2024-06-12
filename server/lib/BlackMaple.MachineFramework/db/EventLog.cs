@@ -2836,7 +2836,7 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        if (_cfg.Settings.SerialType != SerialType.AssignOneSerialPerMaterial)
+        if (_cfg.SerialSettings == null)
         {
           serialLogEntry = null;
           return AllocateMaterialID(unique, part, numProc);
@@ -2847,7 +2847,7 @@ namespace BlackMaple.MachineFramework
           serialLogEntry = AddEntryInTransaction(trans =>
           {
             matId = AllocateMaterialID(trans, unique, part, numProc);
-            var serial = _cfg.Settings.ConvertMaterialIDToSerial(matId);
+            var serial = _cfg.SerialSettings.ConvertMaterialIDToSerial(matId);
             return RecordSerialForMaterialID(
               trans,
               new EventLogMaterial()
@@ -4300,68 +4300,7 @@ namespace BlackMaple.MachineFramework
           {
             foreach (var newFace in loads)
             {
-              if (_cfg.Settings.SerialType == SerialType.AssignOneSerialPerCycle)
-              {
-                // find a material id to use to create the serial
-                long matID = -1;
-                foreach (var m in newFace.mats.Select(m => m.MaterialID))
-                {
-                  if (m >= 0)
-                  {
-                    matID = m;
-                    break;
-                  }
-                }
-                if (matID >= 0)
-                {
-                  using (var checkConn = _connection.CreateCommand())
-                  {
-                    checkConn.Transaction = trans;
-                    checkConn.CommandText = "SELECT Serial FROM matdetails WHERE MaterialID = $mid LIMIT 1";
-                    checkConn.Parameters.Add("mid", SqliteType.Integer).Value = matID;
-                    var existingSerial = checkConn.ExecuteScalar();
-                    if (
-                      existingSerial != null
-                      && existingSerial != DBNull.Value
-                      && !string.IsNullOrEmpty(existingSerial.ToString())
-                    )
-                    {
-                      //already has an assigned serial, skip assignment
-                      matID = -1;
-                    }
-                  }
-                }
-                if (matID >= 0)
-                {
-                  var serial = _cfg.Settings.ConvertMaterialIDToSerial(matID);
-                  // add the serial
-                  foreach (var m in newFace.mats)
-                  {
-                    if (m.MaterialID >= 0)
-                      RecordSerialForMaterialID(trans, m.MaterialID, serial);
-                  }
-                  newLoadEvts.Add(
-                    AddLogEntry(
-                      trans,
-                      new NewEventLogEntry()
-                      {
-                        Material = newFace.mats,
-                        Pallet = 0,
-                        LogType = LogType.PartMark,
-                        LocationName = "Mark",
-                        LocationNum = 1,
-                        Program = "MARK",
-                        StartOfCycle = false,
-                        EndTimeUTC = timeUTC.AddSeconds(2),
-                        Result = serial,
-                      },
-                      null,
-                      null
-                    )
-                  );
-                }
-              }
-              else if (_cfg.Settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+              if (_cfg.SerialSettings != null)
               {
                 using (var checkConn = _connection.CreateCommand())
                 {
@@ -4382,7 +4321,7 @@ namespace BlackMaple.MachineFramework
                       continue;
                     }
 
-                    var serial = _cfg.Settings.ConvertMaterialIDToSerial(m.MaterialID);
+                    var serial = _cfg.SerialSettings.ConvertMaterialIDToSerial(m.MaterialID);
                     if (m.MaterialID < 0)
                       continue;
                     RecordSerialForMaterialID(trans, m.MaterialID, serial);

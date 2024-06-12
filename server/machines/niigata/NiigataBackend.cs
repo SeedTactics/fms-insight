@@ -71,11 +71,6 @@ namespace BlackMaple.FMSInsight.Niigata
           System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db")
         );
 
-        if (serialSt.SerialType == SerialType.AssignOneSerialPerCycle)
-        {
-          Log.Error("Niigata backend does not support serials assigned per cycle");
-        }
-
         var machConn = new CncMachineConnection(settings.MachineIPs);
         var icc = new NiigataICC(settings);
         var createLog = new CreateCellState(settings.FMSSettings, settings.StationNames, machConn);
