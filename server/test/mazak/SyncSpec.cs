@@ -64,7 +64,7 @@ public sealed class MazakSyncSpec : IDisposable
     _tempDir = Path.Combine(Path.GetTempPath(), "MazakSyncSpec" + Path.GetRandomFileName());
     System.IO.Directory.CreateDirectory(_tempDir);
 
-    _fmsSt = new FMSSettings();
+    _fmsSt = new FMSSettings() { QuarantineQueue = "quarantine" };
     _fmsSt.Queues.Add("castings", new QueueInfo());
     _fmsSt.Queues.Add("queueAAA", new QueueInfo());
     _fmsSt.Queues.Add("queueBBB", new QueueInfo());
@@ -99,10 +99,7 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync.NewCellState += () => complete.SetResult(true);
 
-    File.WriteAllLines(
-      Path.Combine(_tempDir, "alog.csv"),
-      new string[] { "2024,6,11,4,5,6,501,2,part,job,1,,2,," }
-    );
+    File.WriteAllLines(Path.Combine(_tempDir, "alog.csv"), ["2024,6,11,4,5,6,501,2,part,job,1,,2,,"]);
 
     if (await Task.WhenAny(complete.Task, Task.Delay(5000)) != complete.Task)
     {
@@ -237,12 +234,9 @@ public sealed class MazakSyncSpec : IDisposable
 
     File.WriteAllLines(
       Path.Combine(_tempDir, "111loadstart.csv"),
-      new string[] { "2024,6,11,4,5,6,501,,12,,1,6,4,prog,,,," }
+      ["2024,6,11,4,5,6,501,,12,,1,6,4,prog,,,,"]
     );
-    File.WriteAllLines(
-      Path.Combine(_tempDir, "222loadend.csv"),
-      new string[] { "2024,6,11,4,5,9,502,,12,,1,6,4,prog,,,," }
-    );
+    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,1,6,4,prog,,,,"]);
 
     var allData = new MazakAllData()
     {
@@ -250,6 +244,7 @@ public sealed class MazakSyncSpec : IDisposable
       Fixtures = [],
       Pallets = [],
       Parts = [],
+      PalletPositions = [],
       Schedules = [],
       LoadActions = []
     };
@@ -297,15 +292,15 @@ public sealed class MazakSyncSpec : IDisposable
 
     File.WriteAllLines(
       Path.Combine(_tempDir, "111loadstart.csv"),
-      new string[] { now.AddMinutes(-1).ToString(dateFmt) + ",501,,12,,1,6,4,prog,,,," }
+      [now.AddMinutes(-1).ToString(dateFmt) + ",501,,12,,1,6,4,prog,,,,"]
     );
     File.WriteAllLines(
       Path.Combine(_tempDir, "222machineend.csv"),
-      new string[] { now.ToString(dateFmt) + ",442,,3,,1,6,2,prog,,,," }
+      [now.ToString(dateFmt) + ",442,,3,,1,6,2,prog,,,,"]
     );
     File.WriteAllLines(
       Path.Combine(_tempDir, "333loadend.csv"),
-      new string[] { now.AddSeconds(10).ToString(dateFmt) + ",501,,12,,1,6,4,prog,,,," }
+      [now.AddSeconds(10).ToString(dateFmt) + ",501,,12,,1,6,4,prog,,,,"]
     );
 
     _read
@@ -336,8 +331,94 @@ public sealed class MazakSyncSpec : IDisposable
       );
   }
 
-  [Fact(Skip = "TODO")]
-  public void ChecksPalletsMoved() { }
+  [Fact]
+  public void QuarantinesMaterial()
+  {
+    using var db = repo.OpenConnection();
+
+    var now = DateTime.UtcNow;
+
+    var mat = db.AllocateMaterialID("uuuu", "pppp", 1);
+    db.RecordLoadEnd(
+      [
+        new()
+        {
+          LoadStation = 2,
+          Faces =
+          [
+            new MaterialToLoadOntoFace()
+            {
+              MaterialIDs = [mat],
+              FaceNum = 1,
+              Process = 1,
+              Path = 1,
+              ActiveOperationTime = TimeSpan.FromMinutes(1),
+            }
+          ]
+        }
+      ],
+      pallet: 4,
+      timeUTC: now
+    );
+
+    var allData = new MazakAllData()
+    {
+      MainPrograms = [],
+      Fixtures = [],
+      Pallets = [],
+      Parts = [],
+      PalletPositions = [new MazakPalletPositionRow() { PalletNumber = 4, PalletPosition = "S4" }],
+      PalletSubStatuses = [],
+      Schedules = [],
+      LoadActions = []
+    };
+    _read.LoadAllData().Returns(allData);
+
+    _sync
+      .CalculateCellState(db)
+      .Should()
+      .BeEquivalentTo(
+        new MazakState()
+        {
+          CurrentStatus = new CurrentStatus()
+          {
+            TimeOfCurrentStatusUTC = DateTime.UtcNow,
+            Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+            Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+            Material =
+            [
+              new InProcessMaterial()
+              {
+                MaterialID = mat,
+                JobUnique = "uuuu",
+                PartName = "pppp",
+                Path = 1,
+                Process = 1,
+                Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+                SignaledInspections = [],
+                Location = new InProcessMaterialLocation()
+                {
+                  Type = InProcessMaterialLocation.LocType.InQueue,
+                  CurrentQueue = "quarantine",
+                  QueuePosition = 0,
+                }
+              }
+            ],
+            Alarms = [],
+            Workorders = [],
+            Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value)
+          },
+          AllData = allData,
+          StoppedBecauseRecentMachineEnd = false,
+          StateUpdated = true,
+          TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
+        },
+        options =>
+          options
+            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(2)))
+            .When(info => info.Path.EndsWith("TimeOfCurrentStatusUTC"))
+      );
+  }
 
   [Fact]
   public void DownloadsNewJobs()
@@ -491,22 +572,13 @@ public sealed class MazakSyncSpec : IDisposable
       RouteStartUTC = DateTime.MinValue,
       RouteEndUTC = DateTime.MinValue,
       Archived = false,
-      Processes = ImmutableList.Create(
-        new ProcessInfo()
-        {
-          Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
-        },
-        new ProcessInfo()
-        {
-          Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
-        }
-      )
+      Processes =
+      [
+        new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { InputQueue = "thequeue" }] },
+        new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { InputQueue = "thequeue" }] },
+      ]
     };
-    db.AddJobs(
-      new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch11", },
-      null,
-      addAsCopiedToSystem: true
-    );
+    db.AddJobs(new NewJobs() { Jobs = [j], ScheduleId = "sch11", }, null, addAsCopiedToSystem: true);
 
     // put 2 castings in queue, plus a different unique and a different process
     db.RecordAddMaterialToQueue(
