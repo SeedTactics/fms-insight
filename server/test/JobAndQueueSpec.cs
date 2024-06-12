@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -43,7 +43,7 @@ using Xunit;
 
 namespace MachineWatchTest;
 
-public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellState>, IDisposable
+public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellState>, IDisposable
 {
   public record MockCellState : ICellState
   {
@@ -58,7 +58,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   private JobsAndQueuesFromDb<MockCellState> _jq;
   private readonly Fixture _fixture;
 
-  public JobAndQueueSpec(Xunit.Abstractions.ITestOutputHelper output)
+  public JobAndQueueSpec()
   {
     _repo = RepositoryConfig.InitializeMemoryDB(null);
     _fixture = new Fixture();
@@ -80,7 +80,9 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   #region Sync Cell State
   private MockCellState _curSt;
+  private string _calculateStateError = null;
   private bool _executeActions;
+  private string _executeActionError = null;
   public event Action NewCellState;
   private bool _expectsDecrement = false;
 
@@ -102,7 +104,14 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   MockCellState ISynchronizeCellState<MockCellState>.CalculateCellState(IRepository db)
   {
-    return _curSt;
+    if (_calculateStateError != null)
+    {
+      throw new Exception(_calculateStateError);
+    }
+    else
+    {
+      return _curSt;
+    }
   }
 
   bool ISynchronizeCellState<MockCellState>.ApplyActions(IRepository db, MockCellState st)
@@ -119,12 +128,16 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
           TimeOfCurrentStatusUTC = DateTime.UtcNow,
           Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
           Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-          Material = ImmutableList<InProcessMaterial>.Empty,
-          Alarms = ImmutableList<string>.Empty,
+          Material = [],
+          Alarms = [],
           Queues = ImmutableDictionary<string, QueueInfo>.Empty
         }
       };
       return true;
+    }
+    else if (_executeActionError != null)
+    {
+      throw new Exception(_executeActionError);
     }
     else
     {
@@ -132,10 +145,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     }
   }
 
-  bool ISynchronizeCellState<MockCellState>.DecrementJobs(
-    BlackMaple.MachineFramework.IRepository db,
-    MockCellState st
-  )
+  bool ISynchronizeCellState<MockCellState>.DecrementJobs(IRepository db, MockCellState st)
   {
     _expectsDecrement.Should().BeTrue();
     var toDecr = _curSt.CurrentStatus.BuildJobsToDecrement();
@@ -156,17 +166,15 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
   private async Task SetCurrentState(bool stateUpdated, bool executeAction, CurrentStatus curSt = null)
   {
-    curSt =
-      curSt
-      ?? new CurrentStatus()
-      {
-        TimeOfCurrentStatusUTC = DateTime.UtcNow,
-        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-        Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-        Material = ImmutableList<InProcessMaterial>.Empty,
-        Alarms = ImmutableList<string>.Empty,
-        Queues = ImmutableDictionary<string, QueueInfo>.Empty
-      };
+    curSt ??= new CurrentStatus()
+    {
+      TimeOfCurrentStatusUTC = DateTime.UtcNow,
+      Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+      Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+      Material = [],
+      Alarms = [],
+      Queues = ImmutableDictionary<string, QueueInfo>.Empty
+    };
     _curSt = new MockCellState()
     {
       Uniq = 0,
@@ -232,6 +240,118 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
   }
   #endregion
 
+  [Fact]
+  public async void HandlesErrorDuringCalculateState()
+  {
+    await StartSyncThread();
+
+    var curSt = new CurrentStatus()
+    {
+      TimeOfCurrentStatusUTC = DateTime.UtcNow,
+      Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+      Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+      Material = [],
+      Alarms = ["An alarm"],
+      Queues = ImmutableDictionary<string, QueueInfo>.Empty
+    };
+
+    await SetCurrentState(stateUpdated: true, executeAction: false, curSt: curSt);
+
+    _calculateStateError = "An error occurred";
+
+    var tcs = new TaskCompletionSource<CurrentStatus>();
+    (_newCellStateTcs as object).Should().BeNull();
+    _newCellStateTcs = tcs;
+    NewCellState?.Invoke();
+    (await tcs.Task)
+      .Should()
+      .BeEquivalentTo(
+        curSt with
+        {
+          Alarms =
+          [
+            "An alarm",
+            "Error communicating with machines: An error occurred. Will try again in a few minutes."
+          ]
+        },
+        options =>
+          options
+            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4)))
+            .WhenTypeIs<DateTime>()
+      );
+
+    // the error handling waits 2 seconds and tries again, so wait 2.1 seconds.
+    // This checks that since the error is the same the OnNewCurrentStatus is not raised,
+    // since it would get an error since OnNewCurrentStatus checks for task completion to be null
+    await Task.Delay(TimeSpan.FromSeconds(2.1));
+
+    // clear the error, and then wait for the new current status again
+    // CreateTaskToWaitForNewCellState checks that the current status matches with curSt without the extra alarm
+    var newStatusTask = CreateTaskToWaitForNewCellState();
+    _calculateStateError = null;
+    await newStatusTask;
+  }
+
+  [Fact]
+  public async Task ErrorsDuringActions()
+  {
+    await StartSyncThread();
+
+    await SetCurrentState(stateUpdated: true, executeAction: false);
+
+    var curSt = new CurrentStatus()
+    {
+      TimeOfCurrentStatusUTC = DateTime.UtcNow,
+      Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+      Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+      Material = [],
+      Alarms = ["An alarm"],
+      Queues = ImmutableDictionary<string, QueueInfo>.Empty
+    };
+
+    _curSt = new MockCellState()
+    {
+      Uniq = 0,
+      CurrentStatus = curSt,
+      StateUpdated = false
+    };
+    _executeActionError = "An error occurred";
+
+    // A single NewCellState should load the new _curSt with An alarm and
+    // then after that get the error during the action
+    var tcs = new TaskCompletionSource<CurrentStatus>();
+    (_newCellStateTcs as object).Should().BeNull();
+    _newCellStateTcs = tcs;
+    NewCellState?.Invoke();
+    (await tcs.Task)
+      .Should()
+      .BeEquivalentTo(
+        curSt with
+        {
+          Alarms =
+          [
+            "An alarm",
+            "Error communicating with machines: An error occurred. Will try again in a few minutes."
+          ]
+        },
+        options =>
+          options
+            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4)))
+            .WhenTypeIs<DateTime>()
+      );
+
+    // the error handling waits 2 seconds and tries again, so wait 2.1 seconds.
+    // This checks that since the error is the same the OnNewCurrentStatus is not raised,
+    // since it would get an error since OnNewCurrentStatus checks for task completion to be null
+    await Task.Delay(TimeSpan.FromSeconds(2.1));
+
+    // clear the error, and then wait for the new current status again
+    // CreateTaskToWaitForNewCellState checks that the current status matches with curSt without the extra alarm
+    var newStatusTask = CreateTaskToWaitForNewCellState();
+    _executeActionError = null;
+    await newStatusTask;
+  }
+
   #region Jobs
 
   private Job RandJob()
@@ -276,7 +396,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var toKeepActive = toKeepJob.CloneToDerived<ActiveJob, Job>() with { Cycles = 10, RemainingToStart = 5 };
 
     db.AddJobs(
-      new NewJobs() { ScheduleId = "old", Jobs = ImmutableList.Create<Job>(completedJob, toKeepJob) },
+      new NewJobs() { ScheduleId = "old", Jobs = [completedJob, toKeepJob] },
       null,
       addAsCopiedToSystem: true
     );
@@ -291,8 +411,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
           .Empty.Add(completedActive.UniqueStr, completedActive)
           .Add(toKeepJob.UniqueStr, toKeepActive),
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-        Material = ImmutableList<InProcessMaterial>.Empty,
-        Alarms = ImmutableList<string>.Empty,
+        Material = [],
+        Alarms = [],
         Queues = ImmutableDictionary<string, QueueInfo>.Empty
       }
     );
@@ -306,8 +426,9 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var newJobs = new NewJobs()
     {
       ScheduleId = "abcd",
-      Jobs = ImmutableList.Create<Job>(newJob1, newJob2),
-      Programs = ImmutableList.Create(
+      Jobs = [newJob1, newJob2],
+      Programs =
+      [
         new NewProgramContent()
         {
           ProgramName = "prog1",
@@ -319,8 +440,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
           ProgramName = "prog2",
           ProgramContent = "content2",
           Revision = 0
-        }
-      )
+        },
+      ]
     };
 
     var newStatusTask = CreateTaskToWaitForNewCellState();
@@ -332,9 +453,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     db.LoadUnarchivedJobs()
       .Select(j => j.UniqueStr)
       .Should()
-      .BeEquivalentTo(
-        new[] { completedJob.UniqueStr, toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr }
-      );
+      .BeEquivalentTo([completedJob.UniqueStr, toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr]);
   }
 
   [Theory]
@@ -352,11 +471,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     var j2 = RandJob() with { UniqueStr = "u2", Cycles = 22, };
     var j2Active = j2.CloneToDerived<ActiveJob, Job>() with { RemainingToStart = 0 };
 
-    db.AddJobs(
-      new NewJobs() { ScheduleId = "old", Jobs = ImmutableList.Create<Job>(j1, j2) },
-      null,
-      addAsCopiedToSystem: true
-    );
+    db.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = [j1, j2] }, null, addAsCopiedToSystem: true);
 
     await SetCurrentState(
       stateUpdated: false,
@@ -368,8 +483,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
           .Empty.Add(j1.UniqueStr, j1Active)
           .Add(j2.UniqueStr, j2Active),
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-        Material = ImmutableList<InProcessMaterial>.Empty,
-        Alarms = ImmutableList<string>.Empty,
+        Material = [],
+        Alarms = [],
         Queues = ImmutableDictionary<string, QueueInfo>.Empty
       }
     );
@@ -441,7 +556,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         casting: "c1",
         qty: 2,
         queue: "q1",
-        serial: new[] { "aaa" },
+        serial: ["aaa"],
         workorder: null,
         operatorName: "theoper"
       )
@@ -639,29 +754,29 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       pos: 1
     );
     await SetCurrentMaterial(
-      ImmutableList.Create(
+      [
         expectedMat2 with
         {
           Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet, }
         }
-      )
+      ]
     );
 
-    _jq.Invoking(j => j.RemoveMaterialFromAllQueues(new[] { 2L }, "theoper"))
+    _jq.Invoking(j => j.RemoveMaterialFromAllQueues([2L], "theoper"))
       .Should()
       .Throw<BadRequestException>()
       .WithMessage("Material on pallet can not be removed from queues");
 
     await SetCurrentMaterial(
-      ImmutableList.Create(
+      [
         expectedMat2 with
         {
           Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading }
         }
-      )
+      ]
     );
 
-    _jq.Invoking(j => j.RemoveMaterialFromAllQueues(new[] { 2L }, "theoper"))
+    _jq.Invoking(j => j.RemoveMaterialFromAllQueues([2L], "theoper"))
       .Should()
       .Throw<BadRequestException>()
       .WithMessage("Only waiting material can be removed from queues");
@@ -682,19 +797,16 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       UniqueStr = "uuu1",
       PartName = "p1",
       Cycles = 0,
-      Processes = ImmutableList.Create(
-        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) },
-        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
-      ),
+      Processes =
+      [
+        new ProcessInfo() { Paths = [JobLogTest.EmptyPath] },
+        new ProcessInfo() { Paths = [JobLogTest.EmptyPath] },
+      ],
       RouteStartUTC = DateTime.MinValue,
       RouteEndUTC = DateTime.MinValue,
       Archived = false,
     };
-    db.AddJobs(
-      new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job) },
-      null,
-      addAsCopiedToSystem: true
-    );
+    db.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = [job] }, null, addAsCopiedToSystem: true);
 
     await SetCurrentState(stateUpdated: false, executeAction: false);
 
@@ -763,7 +875,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         }
       );
 
-    await SetCurrentMaterial(ImmutableList.Create(expectedMat1));
+    await SetCurrentMaterial([expectedMat1]);
 
     newStatusTask = CreateTaskToWaitForNewCellState();
 
@@ -884,12 +996,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
     // should error if it is loading or on a pallet
     await SetCurrentMaterial(
-      ImmutableList.Create(
+      [
         expectedMat1 with
         {
           Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet }
         }
-      )
+      ]
     );
 
     _jq.Invoking(j => j.SetMaterialInQueue(materialId: 1, "q1", 3, "oper"))
@@ -898,12 +1010,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       .WithMessage("Material on pallet can not be moved to a queue");
 
     await SetCurrentMaterial(
-      ImmutableList.Create(
+      [
         expectedMat1 with
         {
           Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading, }
         }
-      )
+      ]
     );
 
     _jq.Invoking(j => j.SetMaterialInQueue(materialId: 1, "q2", 3, "oper"))
@@ -961,7 +1073,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         casting: "c1",
         qty: 2,
         queue: "q1",
-        serial: new[] { "aaa" },
+        serial: ["aaa"],
         workorder: null,
         operatorName: "theoper"
       )
@@ -969,16 +1081,16 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       .BeEquivalentTo(new[] { expectedMat1, expectedMat2 });
 
     await SetCurrentMaterial(
-      ImmutableList.Create(
+      [
         expectedMat1 with
         {
           Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading, }
         },
-        expectedMat2
-      )
+        expectedMat2,
+      ]
     );
 
-    db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal(new[] { 1L, 2L });
+    db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal([1L, 2L]);
 
     var newStatusTask = CreateTaskToWaitForNewCellState();
 
@@ -986,7 +1098,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
 
     await newStatusTask;
 
-    db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal(new[] { 2L, 1L });
+    db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal([2L, 1L]);
 
     _jq.Invoking(j => j.SetMaterialInQueue(materialId: 1, "q2", -1, "oper"))
       .Should()
@@ -1013,7 +1125,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     public bool AllowQuarantineToCancelLoad { get; init; } = false;
   }
 
-  public static IEnumerable<object[]> SignalTheoryData = new[]
+  public static readonly IEnumerable<object[]> SignalTheoryData = new[]
   {
     new SignalQuarantineTheoryData
     {
@@ -1158,13 +1270,11 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     {
       UniqueStr = "uuu1",
       PartName = "p1",
-      Processes = ImmutableList.Create(
-        new ProcessInfo()
-        {
-          Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = data.JobTransferQeuue })
-        },
-        new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
-      ),
+      Processes =
+      [
+        new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { OutputQueue = data.JobTransferQeuue }] },
+        new ProcessInfo() { Paths = [JobLogTest.EmptyPath] },
+      ],
       RouteStartUTC = DateTime.MinValue,
       RouteEndUTC = DateTime.MinValue,
       Archived = false,
@@ -1172,11 +1282,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       CopiedToSystem = true
     };
 
-    db.AddJobs(
-      new NewJobs() { ScheduleId = "abcd", Jobs = ImmutableList.Create<Job>(job) },
-      null,
-      addAsCopiedToSystem: true
-    );
+    db.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = [job] }, null, addAsCopiedToSystem: true);
 
     db.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
     var logMat = MkLogMat.Mk(
@@ -1198,8 +1304,8 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
         Jobs = ImmutableDictionary<string, ActiveJob>.Empty.Add(job.UniqueStr, job),
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-        Material = ImmutableList<InProcessMaterial>.Empty,
-        Alarms = ImmutableList<string>.Empty,
+        Material = [],
+        Alarms = [],
         Queues = ImmutableDictionary<string, QueueInfo>.Empty
       }
     );
@@ -1251,7 +1357,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     );
 
     await SetCurrentMaterial(
-      ImmutableList.Create(
+      [
         queuedMat with
         {
           Action = new InProcessMaterialAction() { Type = data.ActionType },
@@ -1261,7 +1367,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
             PalletNum = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? 4 : null
           }
         }
-      )
+      ]
     );
 
     if (data.Error != null)
@@ -1354,7 +1460,12 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       );
   }
 
-  private LogEntry MarkExpectedEntry(LogMaterial mat, long cntr, string serial, DateTime? timeUTC = null)
+  private static LogEntry MarkExpectedEntry(
+    LogMaterial mat,
+    long cntr,
+    string serial,
+    DateTime? timeUTC = null
+  )
   {
     var e = new LogEntry(
       cntr: cntr,
@@ -1371,7 +1482,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     return e;
   }
 
-  private LogEntry AssignWorkExpectedEntry(
+  private static LogEntry AssignWorkExpectedEntry(
     LogMaterial mat,
     long cntr,
     string workorder,
@@ -1393,7 +1504,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     return e;
   }
 
-  private LogEntry LoadStartExpectedEntry(
+  private static LogEntry LoadStartExpectedEntry(
     LogMaterial mat,
     long cntr,
     int pal,
@@ -1416,7 +1527,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     return e;
   }
 
-  private LogEntry AddToQueueExpectedEntry(
+  private static LogEntry AddToQueueExpectedEntry(
     LogMaterial mat,
     long cntr,
     string queue,
@@ -1445,7 +1556,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     return e;
   }
 
-  private LogEntry SignalQuarantineExpectedEntry(
+  private static LogEntry SignalQuarantineExpectedEntry(
     LogMaterial mat,
     long cntr,
     int pal,
@@ -1478,7 +1589,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     return e;
   }
 
-  private LogEntry RemoveFromQueueExpectedEntry(
+  private static LogEntry RemoveFromQueueExpectedEntry(
     LogMaterial mat,
     long cntr,
     string queue,
@@ -1510,7 +1621,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     return e;
   }
 
-  private InProcessMaterial QueuedMat(
+  private static InProcessMaterial QueuedMat(
     long matId,
     Job job,
     string part,
@@ -1531,7 +1642,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Path = path,
       Serial = serial,
       WorkorderId = workorder,
-      SignaledInspections = ImmutableList<string>.Empty,
+      SignaledInspections = [],
       QuarantineAfterUnload = null,
       Location = new InProcessMaterialLocation()
       {
@@ -1543,7 +1654,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     };
   }
 
-  private LogEntry OperatorNoteExpectedEntry(
+  private static LogEntry OperatorNoteExpectedEntry(
     LogMaterial mat,
     long cntr,
     string note,
@@ -1571,7 +1682,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
     return e;
   }
 
-  private InProcessMaterial MatOnPal(
+  private static InProcessMaterial MatOnPal(
     long matId,
     string uniq,
     string part,
@@ -1589,7 +1700,7 @@ public class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellSta
       Process = proc,
       Path = path,
       Serial = serial,
-      SignaledInspections = ImmutableList<string>.Empty,
+      SignaledInspections = [],
       QuarantineAfterUnload = null,
       Location = new InProcessMaterialLocation()
       {

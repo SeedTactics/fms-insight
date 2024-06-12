@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -77,9 +77,10 @@ namespace BlackMaple.MachineFramework
     // is deciding what to put onto a pallet
     private readonly object _changeLock = new();
 
-    // curStLock protects _lastCurrentStatus field
+    // curStLock protects _lastCurrentStatus and _syncError field
     private readonly object _curStLock = new();
     private St _lastCurrentStatus = default;
+    private string _syncError = null;
 
     #region Thread and Messages
     private readonly System.Threading.Thread _thread;
@@ -111,11 +112,7 @@ namespace BlackMaple.MachineFramework
         {
           var untilRefresh = Synchronize(raiseNewCurStatus);
 
-          var ret = WaitHandle.WaitAny(
-            new WaitHandle[] { _shutdown, _recheck, _newCellState },
-            untilRefresh,
-            false
-          );
+          var ret = WaitHandle.WaitAny([_shutdown, _recheck, _newCellState], untilRefresh, false);
           if (ret == 0)
           {
             Log.Debug("Thread shutdown");
@@ -168,6 +165,11 @@ namespace BlackMaple.MachineFramework
             lock (_curStLock)
             {
               _lastCurrentStatus = st;
+              if (_syncError != null)
+              {
+                _syncError = null;
+                raiseNewCurStatus = true;
+              }
             }
 
             actionPerformed = _syncState.ApplyActions(db, st);
@@ -181,6 +183,15 @@ namespace BlackMaple.MachineFramework
       }
       catch (Exception ex)
       {
+        lock (_curStLock)
+        {
+          if (_syncError != ex.Message)
+          {
+            _syncError = ex.Message;
+            raiseNewCurStatus = true;
+          }
+        }
+
         _syncronizeErrorCount++;
         // exponential decay backoff starting at 2 seconds, maximum of 5 minutes
         var msToWait = Math.Min(5 * 60 * 1000, 2000 * Math.Pow(2, _syncronizeErrorCount - 1));
@@ -230,8 +241,9 @@ namespace BlackMaple.MachineFramework
     {
       lock (_curStLock)
       {
-        return _lastCurrentStatus?.CurrentStatus
-          ?? new CurrentStatus()
+        if (_lastCurrentStatus == null)
+        {
+          return new CurrentStatus()
           {
             TimeOfCurrentStatusUTC = DateTime.UtcNow,
             Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
@@ -240,6 +252,20 @@ namespace BlackMaple.MachineFramework
             Queues = ImmutableDictionary<string, QueueInfo>.Empty,
             Alarms = ["FMS Insight is starting up..."]
           };
+        }
+        else if (_syncError != null)
+        {
+          return _lastCurrentStatus.CurrentStatus with
+          {
+            Alarms = _lastCurrentStatus.CurrentStatus.Alarms.Add(
+              $"Error communicating with machines: {_syncError}. Will try again in a few minutes."
+            )
+          };
+        }
+        else
+        {
+          return _lastCurrentStatus.CurrentStatus;
+        }
       }
     }
 
@@ -357,7 +383,7 @@ namespace BlackMaple.MachineFramework
               QueuePosition = log.LocationNum
             },
             Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-            SignaledInspections = ImmutableList<string>.Empty,
+            SignaledInspections = [],
             QuarantineAfterUnload = null
           }
         );
@@ -485,7 +511,7 @@ namespace BlackMaple.MachineFramework
           QueuePosition = logEvt.LastOrDefault()?.LocationNum
         },
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-        SignaledInspections = ImmutableList<string>.Empty,
+        SignaledInspections = [],
         QuarantineAfterUnload = null
       };
     }
