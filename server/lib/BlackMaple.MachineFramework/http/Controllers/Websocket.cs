@@ -108,7 +108,7 @@ namespace BlackMaple.MachineFramework.Controllers
     private readonly System.Collections.Concurrent.BlockingCollection<ServerEvent> _messages;
     private readonly Thread _thread;
 
-    public WebsocketManager(FMSImplementation impl)
+    public WebsocketManager(RepositoryConfig repo, IJobAndQueueControl jobAndQueue)
     {
       _serSettings = new JsonSerializerOptions();
       Startup.JsonSettings(_serSettings);
@@ -118,15 +118,11 @@ namespace BlackMaple.MachineFramework.Controllers
       _thread.IsBackground = true;
       _thread.Start();
 
-      if (impl.Backend != null)
-      {
-        impl.Backend.RepoConfig.NewLogEntry += (e, foreignId, db) => Send(new ServerEvent() { LogEntry = e });
-        impl.Backend.JobControl.OnNewJobs += (jobs) =>
-          Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
-        impl.Backend.OnNewCurrentStatus += (status) => Send(new ServerEvent() { NewCurrentStatus = status });
-        impl.Backend.JobControl.OnEditMaterialInLog += (o) =>
-          Send(new ServerEvent() { EditMaterialInLog = o });
-      }
+      repo.NewLogEntry += (e, foreignId, db) => Send(new ServerEvent() { LogEntry = e });
+      jobAndQueue.OnNewJobs += (jobs) =>
+        Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
+      jobAndQueue.OnNewCurrentStatus += (status) => Send(new ServerEvent() { NewCurrentStatus = status });
+      jobAndQueue.OnEditMaterialInLog += (o) => Send(new ServerEvent() { EditMaterialInLog = o });
     }
 
     private void Send(ServerEvent val)

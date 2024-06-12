@@ -55,13 +55,6 @@ namespace MazakMachineInterface
     public IJobAndQueueControl JobControl => _jobsAndQueues;
     public IMachineControl MachineControl => MazakMachineControl;
 
-    public event NewCurrentStatus OnNewCurrentStatus;
-
-    public void RaiseCurrentStatusChanged(CurrentStatus s)
-    {
-      OnNewCurrentStatus?.Invoke(s);
-    }
-
     public MazakBackend(
       IConfiguration configuration,
       FMSSettings st,
@@ -98,12 +91,7 @@ namespace MazakMachineInterface
 
       var syncSt = new MazakSync(readDb: _readDB, writeDb: _writeDB, settings: st, mazakConfig: mazakCfg);
 
-      _jobsAndQueues = new JobsAndQueuesFromDb<MazakState>(
-        RepoConfig,
-        st,
-        s => OnNewCurrentStatus?.Invoke(s),
-        syncSt
-      );
+      _jobsAndQueues = new JobsAndQueuesFromDb<MazakState>(RepoConfig, st, syncSt);
 
       MazakMachineControl = new MazakMachineControl(RepoConfig, _readDB, mazakCfg);
 

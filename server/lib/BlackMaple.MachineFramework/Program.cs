@@ -114,6 +114,9 @@ namespace BlackMaple.MachineFramework
               s.AddSingleton<FMSImplementation>(fmsImpl);
               s.AddSingleton<FMSSettings>(fmsSt);
               s.AddSingleton<ServerSettings>(serverSt);
+              s.AddSingleton<RepositoryConfig>(fmsImpl.Backend.RepoConfig);
+              s.AddSingleton<IJobAndQueueControl>(fmsImpl.Backend.JobControl);
+              s.AddSingleton<IMachineControl>(fmsImpl.Backend.MachineControl);
               Startup.AddServices(s, fmsImpl, fmsSt, serverSt);
             })
             .UseConfiguration(cfg)

@@ -48,8 +48,6 @@ namespace BlackMaple.FMSInsight.Niigata
     public IMachineControl MachineControl { get; }
     public RepositoryConfig RepoConfig { get; }
 
-    public event NewCurrentStatus OnNewCurrentStatus;
-
     public NiigataBackend(
       IConfigurationSection config,
       FMSSettings cfg,
@@ -92,12 +90,7 @@ namespace BlackMaple.FMSInsight.Niigata
           decrementJobFilter: decrementJobFilter
         );
 
-        _jobsAndQueues = new JobsAndQueuesFromDb<CellState>(
-          RepoConfig,
-          settings.FMSSettings,
-          s => OnNewCurrentStatus?.Invoke(s),
-          syncSt
-        );
+        _jobsAndQueues = new JobsAndQueuesFromDb<CellState>(RepoConfig, settings.FMSSettings, syncSt);
 
         if (startSyncThread)
         {

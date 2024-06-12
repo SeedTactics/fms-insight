@@ -39,6 +39,7 @@ using System.Threading;
 
 namespace BlackMaple.MachineFramework
 {
+  public delegate void NewCurrentStatus(CurrentStatus status);
   public delegate void NewJobsDelegate(NewJobs j);
   public delegate void EditMaterialInLogDelegate(EditMaterialInLogEvents o);
 
@@ -47,6 +48,7 @@ namespace BlackMaple.MachineFramework
     ///loads info
     CurrentStatus GetCurrentStatus();
     void RecalculateCellState();
+    event NewCurrentStatus OnNewCurrentStatus;
 
     //checks to see if the jobs are valid.  Some machine types might not support all the different
     //pallet->part->machine->process combinations.
@@ -131,21 +133,15 @@ namespace BlackMaple.MachineFramework
 
     private readonly RepositoryConfig _repo;
     private readonly FMSSettings _settings;
-    private readonly Action<CurrentStatus> _onNewCurrentStatus;
     private readonly ISynchronizeCellState<St> _syncState;
 
+    public event NewCurrentStatus OnNewCurrentStatus;
     public bool AllowQuarantineToCancelLoad => _syncState.AllowQuarantineToCancelLoad;
 
-    public JobsAndQueuesFromDb(
-      RepositoryConfig repo,
-      FMSSettings settings,
-      Action<CurrentStatus> onNewCurrentStatus,
-      ISynchronizeCellState<St> syncSt
-    )
+    public JobsAndQueuesFromDb(RepositoryConfig repo, FMSSettings settings, ISynchronizeCellState<St> syncSt)
     {
       _repo = repo;
       _settings = settings;
-      _onNewCurrentStatus = onNewCurrentStatus;
       _syncState = syncSt;
       _syncState.NewCellState += NewCellState;
 
@@ -292,7 +288,7 @@ namespace BlackMaple.MachineFramework
       {
         if (raiseNewCurStatus)
         {
-          _onNewCurrentStatus(GetCurrentStatus());
+          OnNewCurrentStatus?.Invoke(GetCurrentStatus());
         }
       }
     }

@@ -70,7 +70,7 @@ namespace BlackMaple.FMSInsight.Makino
 
         _sync = new MakinoSync(settings);
 
-        _jobs = new JobsAndQueuesFromDb<MakinoCellState>(RepoConfig, st, RaiseNewCurrentStatus, _sync);
+        _jobs = new JobsAndQueuesFromDb<MakinoCellState>(RepoConfig, st, _sync);
         _jobs.StartThread();
 
         try
@@ -93,9 +93,5 @@ namespace BlackMaple.FMSInsight.Makino
     {
       _jobs?.Dispose();
     }
-
-    public event NewCurrentStatus? OnNewCurrentStatus;
-
-    public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
   }
 }

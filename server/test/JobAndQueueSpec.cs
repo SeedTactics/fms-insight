@@ -92,7 +92,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
   private async Task StartSyncThread()
   {
     var newCellSt = CreateTaskToWaitForNewCellState();
-    _jq = new JobsAndQueuesFromDb<MockCellState>(_repo, _settings, OnNewCurrentStatus, this);
+    _jq = new JobsAndQueuesFromDb<MockCellState>(_repo, _settings, this);
+    _jq.OnNewCurrentStatus += OnNewCurrentStatus;
     _jq.StartThread();
     await newCellSt;
   }
