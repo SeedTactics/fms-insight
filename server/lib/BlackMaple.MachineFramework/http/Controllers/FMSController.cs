@@ -128,7 +128,7 @@ namespace BlackMaple.MachineFramework.Controllers
         AddRawMaterial = _cfg.AddRawMaterial,
         AddInProcessMaterial = _cfg.AddInProcessMaterial,
         AllowEditJobPlanQuantityFromQueuesPage = _cfg.AllowEditJobPlanQuantityFromQueuesPage,
-        AllowQuarantineToCancelLoad = _impl.Backend?.QueueControl.AllowQuarantineToCancelLoad,
+        AllowQuarantineToCancelLoad = _impl.Backend?.JobControl.AllowQuarantineToCancelLoad,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
         AllowInvalidateMaterialAtLoadStation = _cfg.AllowInvalidateMaterialAtLoadStation,
         AllowInvalidateMaterialOnQueuesPage = _cfg.AllowInvalidateMaterialOnQueuesPage,

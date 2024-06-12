@@ -42,8 +42,7 @@ namespace BlackMaple.FMSInsight.Makino
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
 
     public RepositoryConfig? RepoConfig { get; }
-    public IJobControl? JobControl => _jobs;
-    public IQueueControl? QueueControl => _jobs;
+    public IJobAndQueueControl? JobControl => _jobs;
     public IMachineControl? MachineControl { get; }
 
     private readonly JobsAndQueuesFromDb<MakinoCellState>? _jobs;

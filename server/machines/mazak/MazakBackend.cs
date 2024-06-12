@@ -52,8 +52,7 @@ namespace MazakMachineInterface
 
     public IReadDataAccess ReadDB => _readDB;
     public IWriteData WriteDB => _writeDB;
-    public IJobControl JobControl => _jobsAndQueues;
-    public IQueueControl QueueControl => _jobsAndQueues;
+    public IJobAndQueueControl JobControl => _jobsAndQueues;
     public IMachineControl MachineControl => MazakMachineControl;
 
     public event NewCurrentStatus OnNewCurrentStatus;

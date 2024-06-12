@@ -36,6 +36,17 @@ using System.Collections.Generic;
 
 namespace BlackMaple.MachineFramework
 {
+  public delegate void NewCurrentStatus(CurrentStatus status);
+
+  public interface IFMSBackend : IDisposable
+  {
+    IJobAndQueueControl JobControl { get; }
+    IMachineControl MachineControl { get; }
+    RepositoryConfig RepoConfig { get; }
+
+    event NewCurrentStatus OnNewCurrentStatus;
+  }
+
   public interface IBackgroundWorker : IDisposable { }
 
   public delegate string CustomizeInstructionPath(

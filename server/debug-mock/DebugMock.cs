@@ -109,14 +109,19 @@ namespace DebugMachineWatchApiServer
 
       var serverSettings = ServerSettings.Load(cfg);
 
-      var fmsSettings = new FMSSettings(cfg);
-      fmsSettings.InstructionFilePath = System.IO.Path.Combine(
-        System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-        "../../../sample-instructions/"
-      );
-      fmsSettings.QuarantineQueue = "Initial Quarantine";
-      fmsSettings.RequireScanAtCloseout = true;
-      fmsSettings.AllowChangeWorkorderAtLoadStation = true;
+      var fmsSettings = FMSSettings.Load(cfg) with
+      {
+        InstructionFilePath = System.IO.Path.Combine(
+          System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+          "../../../sample-instructions/"
+        ),
+        QuarantineQueue = "Initial Quarantine",
+        RequireScanAtCloseout = true,
+        AllowChangeWorkorderAtLoadStation = true,
+        UsingLabelPrinterForSerials = true,
+        AddRawMaterial = AddRawMaterialType.RequireBarcodeScan,
+        AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial
+      };
 
       BlackMaple.MachineFramework.InsightLogging.EnableSerilog(
         serverSt: serverSettings,
@@ -129,7 +134,6 @@ namespace DebugMachineWatchApiServer
         Backend = backend,
         Name = "mock",
         Version = "1.2.3.4",
-        UsingLabelPrinterForSerials = true,
         PrintLabel = (matId, process, httpReferer) =>
         {
           int loadStation = -10;
@@ -180,8 +184,6 @@ namespace DebugMachineWatchApiServer
             }
           }
         },
-        AddRawMaterial = AddRawMaterialType.RequireBarcodeScan,
-        AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial
       };
 
       var hostB = BlackMaple.MachineFramework.Program.CreateHostBuilder(
@@ -207,12 +209,7 @@ namespace DebugMachineWatchApiServer
     }
   }
 
-  public sealed class MockServerBackend
-    : IFMSBackend,
-      IMachineControl,
-      IJobControl,
-      IQueueControl,
-      IDisposable
+  public sealed class MockServerBackend : IFMSBackend, IMachineControl, IJobAndQueueControl, IDisposable
   {
     public RepositoryConfig RepoConfig { get; private set; }
 
@@ -290,11 +287,10 @@ namespace DebugMachineWatchApiServer
       }
     }
 
-    public IJobControl JobControl
+    public IJobAndQueueControl JobControl
     {
       get => this;
     }
-    public IQueueControl QueueControl => this;
 
     public IMachineControl MachineControl => this;
 

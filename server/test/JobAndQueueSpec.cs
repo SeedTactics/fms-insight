@@ -446,7 +446,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     var newStatusTask = CreateTaskToWaitForNewCellState();
 
-    ((IJobControl)_jq).AddJobs(newJobs, null);
+    ((IJobAndQueueControl)_jq).AddJobs(newJobs, null);
 
     await newStatusTask;
 
@@ -495,11 +495,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     _expectsDecrement = true;
     if (byDate)
     {
-      decrs = ((IJobControl)_jq).DecrementJobQuantites(DateTime.UtcNow.AddHours(-5));
+      decrs = ((IJobAndQueueControl)_jq).DecrementJobQuantites(DateTime.UtcNow.AddHours(-5));
     }
     else
     {
-      decrs = ((IJobControl)_jq).DecrementJobQuantites(-1);
+      decrs = ((IJobAndQueueControl)_jq).DecrementJobQuantites(-1);
     }
 
     decrs

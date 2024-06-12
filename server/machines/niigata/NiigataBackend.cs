@@ -44,8 +44,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private readonly JobsAndQueuesFromDb<CellState> _jobsAndQueues;
 
-    public IJobControl JobControl => _jobsAndQueues;
-    public IQueueControl QueueControl => _jobsAndQueues;
+    public IJobAndQueueControl JobControl => _jobsAndQueues;
     public IMachineControl MachineControl { get; }
     public RepositoryConfig RepoConfig { get; }
 
