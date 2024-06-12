@@ -39,245 +39,279 @@ using Microsoft.Extensions.Configuration;
 
 #nullable enable
 
-namespace BlackMaple.MachineFramework
+namespace BlackMaple.MachineFramework;
+
+public record ServerSettings
 {
-  public record ServerSettings
-  {
 #if SERVICE_AVAIL
 
-    public static string ConfigDirectory { get; } =
-      Path.Combine(
-        System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData),
-        "SeedTactics",
-        "FMSInsight"
-      );
+  public static string ConfigDirectory { get; } =
+    Path.Combine(
+      System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData),
+      "SeedTactics",
+      "FMSInsight"
+    );
 
-    public static string ContentRootDirectory { get; } =
-      Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName);
+  public static string ContentRootDirectory { get; } = Path.GetDirectoryName(Environment.ProcessPath)!;
 #else
 
-    public static string ConfigDirectory { get; } = Directory.GetCurrentDirectory();
+  public static string ConfigDirectory { get; } = Directory.GetCurrentDirectory();
 
-    public static string ContentRootDirectory { get; } = Directory.GetCurrentDirectory();
+  public static string ContentRootDirectory { get; } = Directory.GetCurrentDirectory();
 #endif
 
-    public bool EnableDebugLog { get; init; } = false;
-    public int Port { get; init; } = 5000;
-    public string? TLSCertFile { get; init; } = null;
-    public string? OpenIDConnectAuthority { get; init; } = null;
-    public string? OpenIDConnectClientId { get; init; } = null;
-    public string? AuthAuthority { get; init; } = null;
-    public string? AuthTokenAudiences { get; init; } = null;
+  public bool EnableDebugLog { get; init; } = false;
+  public int Port { get; init; } = 5000;
+  public string? TLSCertFile { get; init; } = null;
+  public string? OpenIDConnectAuthority { get; init; } = null;
+  public string? OpenIDConnectClientId { get; init; } = null;
+  public string? AuthAuthority { get; init; } = null;
+  public string? AuthTokenAudiences { get; init; } = null;
 
-    public bool UseAuthentication =>
-      !string.IsNullOrEmpty(OpenIDConnectClientId)
-      && !string.IsNullOrEmpty(OpenIDConnectAuthority)
-      && !string.IsNullOrEmpty(AuthAuthority)
-      && !string.IsNullOrEmpty(AuthTokenAudiences);
+  public bool UseAuthentication =>
+    !string.IsNullOrEmpty(OpenIDConnectClientId)
+    && !string.IsNullOrEmpty(OpenIDConnectAuthority)
+    && !string.IsNullOrEmpty(AuthAuthority)
+    && !string.IsNullOrEmpty(AuthTokenAudiences);
 
-    public static ServerSettings Load(IConfiguration config)
+  public static ServerSettings Load(IConfiguration config)
+  {
+    return config.GetSection("SERVER").Get<ServerSettings>() ?? new ServerSettings();
+  }
+}
+
+public record SerialSettings
+{
+  public long StartingMaterialID { get; init; } = 0; // if the current material id in the database is below this value, it will be set to this value
+  public required Func<long, string> ConvertMaterialIDToSerial { get; init; }
+
+  public SerialSettings SerialsUsingBase62(IConfiguration? config = null, int? length = null)
+  {
+    var fmsSection = config?.GetSection("FMS");
+    var len = fmsSection?.GetValue<int?>("SerialLength", null) ?? length ?? 10;
+    var startingSerial = fmsSection?.GetValue<string?>("StartingSerial", null);
+    var startingMatId = string.IsNullOrEmpty(startingSerial) ? 0 : ConvertFromBase62(startingSerial);
+
+    return new SerialSettings()
     {
-      return config.GetSection("SERVER").Get<ServerSettings>() ?? new ServerSettings();
-    }
+      StartingMaterialID = startingMatId,
+      ConvertMaterialIDToSerial = (long matId) => ConvertToBase62(matId, len)
+    };
   }
 
-  public record SerialSettings
+  private static readonly string Base62Chars =
+    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  public static string ConvertToBase62(long num, int? len = null)
   {
-    public long StartingMaterialID { get; init; } = 0; // if the current material id in the database is below this value, it will be set to this value
-    public required Func<long, string> ConvertMaterialIDToSerial { get; init; }
+    string res = "";
+    long cur = num;
 
-    public SerialSettings SerialsUsingBase62(IConfiguration? config = null, int? length = null)
+    while (cur > 0)
     {
-      var fmsSection = config?.GetSection("FMS");
-      var len = fmsSection?.GetValue<int?>("SerialLength", null) ?? length ?? 10;
-      var startingSerial = fmsSection?.GetValue<string?>("StartingSerial", null);
-      var startingMatId = string.IsNullOrEmpty(startingSerial) ? 0 : ConvertFromBase62(startingSerial);
+      long quotient = cur / 62;
+      int remainder = (int)(cur % 62);
 
-      return new SerialSettings()
-      {
-        StartingMaterialID = startingMatId,
-        ConvertMaterialIDToSerial = (long matId) => ConvertToBase62(matId, len)
-      };
+      res = Base62Chars[remainder] + res;
+      cur = quotient;
     }
 
-    private static readonly string Base62Chars =
-      "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    public static string ConvertToBase62(long num, int? len = null)
+    if (len.HasValue)
     {
-      string res = "";
-      long cur = num;
-
-      while (cur > 0)
-      {
-        long quotient = cur / 62;
-        int remainder = (int)(cur % 62);
-
-        res = Base62Chars[remainder] + res;
-        cur = quotient;
-      }
-
-      if (len.HasValue)
-      {
-        res = res.PadLeft(len.Value, '0');
-      }
-
-      return res;
+      res = res.PadLeft(len.Value, '0');
     }
 
-    public static long ConvertFromBase62(string msg)
-    {
-      if (string.IsNullOrEmpty(msg))
-        return -1;
-      long res = 0;
-      int len = msg.Length;
-      long multiplier = 1;
-
-      for (int i = 0; i < len; i++)
-      {
-        char c = msg[len - i - 1];
-        int idx = Base62Chars.IndexOf(c);
-        if (idx < 0)
-          throw new Exception("Serial " + msg + " has an invalid character " + c);
-        res += idx * multiplier;
-        multiplier *= 62;
-      }
-      return res;
-    }
+    return res;
   }
 
-  public record FMSSettings
+  public static long ConvertFromBase62(string msg)
   {
-    public string DataDirectory { get; init; } = DefaultDataDirectory();
-    public string? InstructionFilePath { get; init; }
+    if (string.IsNullOrEmpty(msg))
+      return -1;
+    long res = 0;
+    int len = msg.Length;
+    long multiplier = 1;
 
-    public bool RequireScanAtCloseout { get; init; }
-    public bool RequireWorkorderBeforeAllowCloseoutComplete { get; init; }
-    public bool RequireOperatorNamePromptWhenAddingMaterial { get; init; }
-    public bool AllowChangeWorkorderAtLoadStation { get; init; }
-
-    public string? QuarantineQueue { get; init; } = null;
-
-    public Dictionary<string, QueueInfo> Queues { get; } = [];
-
-    // key is queue name, value is IP address or DNS name of fms insight server with the queue
-    public Dictionary<string, string> ExternalQueues { get; } = [];
-
-    public IReadOnlyList<string> AdditionalLogServers { get; init; } = [];
-
-    public FMSSettings() { }
-
-    public static FMSSettings Load(IConfiguration config)
+    for (int i = 0; i < len; i++)
     {
-      var fmsSection = config.GetSection("FMS");
+      char c = msg[len - i - 1];
+      int idx = Base62Chars.IndexOf(c);
+      if (idx < 0)
+        throw new Exception("Serial " + msg + " has an invalid character " + c);
+      res += idx * multiplier;
+      multiplier *= 62;
+    }
+    return res;
+  }
+}
 
-      var dd = fmsSection.GetValue<string?>("DataDirectory", null);
-      if (string.IsNullOrEmpty(dd))
-      {
-        dd = DefaultDataDirectory();
-      }
+public enum AddRawMaterialType
+{
+  AddAsUnassigned,
+  RequireExistingMaterial,
+  RequireBarcodeScan,
+  AddAndSpecifyJob
+}
 
-      var st = new FMSSettings()
-      {
-        DataDirectory = dd,
-        InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath"),
+public enum AddInProcessMaterialType
+{
+  RequireExistingMaterial,
+  AddAndSpecifyJob
+}
 
-        RequireScanAtCloseout = fmsSection.GetValue<bool>("RequireScanAtCloseout", false),
-        RequireWorkorderBeforeAllowCloseoutComplete = fmsSection.GetValue<bool>(
-          "RequireWorkorderBeforeAllowCloseoutComplete",
-          false
-        ),
-        RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>(
-          "RequireOperatorNamePromptWhenAddingMaterial",
-          false
-        ),
-        AllowChangeWorkorderAtLoadStation = fmsSection.GetValue<bool>(
-          "AllowChangeWorkorderAtLoadStation",
-          false
-        ),
+public record FMSSettings
+{
+  public string DataDirectory { get; init; } = DefaultDataDirectory();
+  public string? InstructionFilePath { get; init; }
 
-        QuarantineQueue = fmsSection.GetValue<string?>("QuarantineQueue", null),
+  public bool RequireScanAtCloseout { get; init; }
+  public bool RequireWorkorderBeforeAllowCloseoutComplete { get; init; }
+  public bool RequireOperatorNamePromptWhenAddingMaterial { get; init; }
+  public bool AllowChangeWorkorderAtLoadStation { get; init; }
+  public string? AllowEditJobPlanQuantityFromQueuesPage { get; init; } = null;
+  public bool? AllowSwapSerialAtLoadStation { get; init; }
+  public bool? AllowInvalidateMaterialAtLoadStation { get; init; }
+  public bool? AllowInvalidateMaterialOnQueuesPage { get; init; }
 
-        AdditionalLogServers = (fmsSection.GetValue("AdditionalServersForLogs", "") ?? "")
-          .Split(',')
-          .Where(x => !string.IsNullOrWhiteSpace(x))
-          .Select(x =>
-          {
-            var uri = new UriBuilder(x);
-            if (uri.Scheme == "")
-              uri.Scheme = "http";
-            if (uri.Port == 80 && x.IndexOf(':') < 0)
-              uri.Port = 5000;
-            var uriS = uri.Uri.ToString();
-            // remove trailing slash
-            return uriS[..^1];
-          })
-          .ToList(),
-      };
+  public string? CustomStationMonitorDialogUrl { get; init; } = null;
+  public AddRawMaterialType AddRawMaterial { get; init; } = AddRawMaterialType.RequireExistingMaterial;
+  public AddInProcessMaterialType AddInProcessMaterial { get; init; } =
+    AddInProcessMaterialType.RequireExistingMaterial;
 
-      foreach (var q in config.GetSection("QUEUE").AsEnumerable())
-      {
-        var key = q.Key[(q.Key.IndexOf(':') + 1)..];
-        if (q.Key.Contains(':') && !string.IsNullOrEmpty(key) && int.TryParse(q.Value, out int count))
-        {
-          st.Queues[key] = new QueueInfo() { MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null };
-        }
-      }
+  public string? QuarantineQueue { get; init; } = null;
 
-      foreach (var q in config.GetSection("EXTERNAL_QUEUE").AsEnumerable())
-      {
-        var key = q.Key[(q.Key.IndexOf(':') + 1)..];
-        if (q.Key.Contains(':') && !string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(q.Value))
-        {
-          st.ExternalQueues[key] = q.Value;
-        }
-      }
+  public Dictionary<string, QueueInfo> Queues { get; } = [];
 
-      if (
-        !string.IsNullOrEmpty(st.QuarantineQueue)
-        && !st.Queues.ContainsKey(st.QuarantineQueue)
-        && !st.ExternalQueues.ContainsKey(st.QuarantineQueue)
-      )
-      {
-        Serilog.Log.Error(
-          "QuarantineQueue {queue} is not configured as a queue or external queue",
-          st.QuarantineQueue
-        );
-      }
+  // key is queue name, value is IP address or DNS name of fms insight server with the queue
+  public Dictionary<string, string> ExternalQueues { get; } = [];
 
-      return st;
+  public IReadOnlyList<string> AdditionalLogServers { get; init; } = [];
+
+  public FMSSettings() { }
+
+  public static FMSSettings Load(IConfiguration config)
+  {
+    var fmsSection = config.GetSection("FMS");
+
+    var dd = fmsSection.GetValue<string?>("DataDirectory", null);
+    if (string.IsNullOrEmpty(dd))
+    {
+      dd = DefaultDataDirectory();
     }
 
-    private static string DefaultDataDirectory()
+    var st = new FMSSettings()
     {
-      // FMSInsight directory
-      var dataDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-        "SeedTactics",
-        "FMSInsight"
+      DataDirectory = dd,
+      InstructionFilePath = fmsSection.GetValue<string>("InstructionFilePath"),
+
+      RequireScanAtCloseout = fmsSection.GetValue<bool>("RequireScanAtCloseout", false),
+      RequireWorkorderBeforeAllowCloseoutComplete = fmsSection.GetValue<bool>(
+        "RequireWorkorderBeforeAllowCloseoutComplete",
+        false
+      ),
+      RequireOperatorNamePromptWhenAddingMaterial = fmsSection.GetValue<bool>(
+        "RequireOperatorNamePromptWhenAddingMaterial",
+        false
+      ),
+      AllowChangeWorkorderAtLoadStation = fmsSection.GetValue<bool>(
+        "AllowChangeWorkorderAtLoadStation",
+        false
+      ),
+      AllowEditJobPlanQuantityFromQueuesPage = fmsSection.GetValue<string?>(
+        "AllowEditJobPlanQuantityFromQueuesPage",
+        null
+      ),
+      AllowSwapSerialAtLoadStation = fmsSection.GetValue<bool>("AllowSwapSerialAtLoadStation", false),
+      AllowInvalidateMaterialAtLoadStation = fmsSection.GetValue<bool>(
+        "AllowInvalidateMaterialAtLoadStation",
+        false
+      ),
+      AllowInvalidateMaterialOnQueuesPage = fmsSection.GetValue<bool>(
+        "AllowInvalidateMaterialOnQueuesPage",
+        false
+      ),
+
+      QuarantineQueue = fmsSection.GetValue<string?>("QuarantineQueue", null),
+
+      AdditionalLogServers = (fmsSection.GetValue("AdditionalServersForLogs", "") ?? "")
+        .Split(',')
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Select(x =>
+        {
+          var uri = new UriBuilder(x);
+          if (uri.Scheme == "")
+            uri.Scheme = "http";
+          if (uri.Port == 80 && x.IndexOf(':') < 0)
+            uri.Port = 5000;
+          var uriS = uri.Uri.ToString();
+          // remove trailing slash
+          return uriS[..^1];
+        })
+        .ToList(),
+    };
+
+    foreach (var q in config.GetSection("QUEUE").AsEnumerable())
+    {
+      var key = q.Key[(q.Key.IndexOf(':') + 1)..];
+      if (q.Key.Contains(':') && !string.IsNullOrEmpty(key) && int.TryParse(q.Value, out int count))
+      {
+        st.Queues[key] = new QueueInfo() { MaxSizeBeforeStopUnloading = count > 0 ? (int?)count : null };
+      }
+    }
+
+    foreach (var q in config.GetSection("EXTERNAL_QUEUE").AsEnumerable())
+    {
+      var key = q.Key[(q.Key.IndexOf(':') + 1)..];
+      if (q.Key.Contains(':') && !string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(q.Value))
+      {
+        st.ExternalQueues[key] = q.Value;
+      }
+    }
+
+    if (
+      !string.IsNullOrEmpty(st.QuarantineQueue)
+      && !st.Queues.ContainsKey(st.QuarantineQueue)
+      && !st.ExternalQueues.ContainsKey(st.QuarantineQueue)
+    )
+    {
+      Serilog.Log.Error(
+        "QuarantineQueue {queue} is not configured as a queue or external queue",
+        st.QuarantineQueue
       );
-      if (!Directory.Exists(dataDir))
+    }
+
+    return st;
+  }
+
+  private static string DefaultDataDirectory()
+  {
+    // FMSInsight directory
+    var dataDir = Path.Combine(
+      Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+      "SeedTactics",
+      "FMSInsight"
+    );
+    if (!Directory.Exists(dataDir))
+    {
+      try
       {
-        try
+        Directory.CreateDirectory(dataDir);
+      }
+      catch (UnauthorizedAccessException)
+      {
+        // don't have permissions in CommonApplicationData, fall back to LocalApplicationData
+        dataDir = Path.Combine(
+          Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+          "SeedTactics",
+          "FMSInsight"
+        );
+        if (!Directory.Exists(dataDir))
         {
           Directory.CreateDirectory(dataDir);
         }
-        catch (UnauthorizedAccessException)
-        {
-          // don't have permissions in CommonApplicationData, fall back to LocalApplicationData
-          dataDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SeedTactics",
-            "FMSInsight"
-          );
-          if (!Directory.Exists(dataDir))
-          {
-            Directory.CreateDirectory(dataDir);
-          }
-        }
       }
-
-      return dataDir;
     }
+
+    return dataDir;
   }
 }

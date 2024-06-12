@@ -62,9 +62,8 @@ namespace BlackMaple.MachineFramework
   //     var mazakSt = MazakSettings.Load(cfg);
   //
   //     var host = new HostBuilder()
-  //        .UseContentRoot(ServerSettings.ContentRootDirectory)
-  //        .ConfigureServices(s => s.AddSingleton<FMSSettings>(fmsSt))
-  //        .ConfigureServices(s => s.AddSingleton<FMSImplementation>(new ...))
+  //        .UseContentRoot(Path.GetDirectoryName(Environment.ProcessPath)) // remove ContentRoot from ServerSettings
+  //        .ConfigureServices(s => s.AddSingleton<FMSSettings>(fmsSt).AddSingleton<MazakSettings>(mazakSt))
   //        .AddRepository(...)  <--- new function, registers RepoConfig
   //        .AddMazakBackend(...) <-- new function per machine type, registering services
   //        .AddFMSInsightWebHost(cfg, serverSt, fmsSt, extraAppParts)
@@ -205,7 +204,7 @@ namespace BlackMaple.MachineFramework
 
     public static void Run(
       bool useService,
-      Func<IConfiguration, FMSSettings, FMSImplementation> initalize,
+      Func<IConfiguration, FMSImplementation> initalize,
       bool outputConfigToLog = true
     )
     {
@@ -213,29 +212,32 @@ namespace BlackMaple.MachineFramework
       InsightLogging.EnableSerilog(serverSt: serverSt, enableEventLog: useService);
 
       FMSImplementation fmsImpl;
-      FMSSettings fmsSt;
       try
       {
-        fmsSt = FMSSettings.Load(cfg);
         if (outputConfigToLog)
         {
           Log.Information(
-            "Starting FMS Insight with settings {@ServerSettings} and {@FMSSettings}. "
+            "Starting FMS Insight with settings {@ServerSettings}. "
               + " Using ContentRoot {ContentRoot} and Config {ConfigDir}.",
             serverSt,
-            fmsSt,
             ServerSettings.ContentRootDirectory,
             ServerSettings.ConfigDirectory
           );
         }
-        fmsImpl = initalize(cfg, fmsSt);
+
+        fmsImpl = initalize(cfg);
+
+        if (outputConfigToLog)
+        {
+          Log.Information("Loaded FMS Configuration {@config}", fmsImpl.Settings);
+        }
       }
       catch (Exception ex)
       {
         Serilog.Log.Error(ex, "Error initializing FMS Insight");
         return;
       }
-      var host = CreateHostBuilder(cfg, serverSt, fmsSt, fmsImpl, useService).Build();
+      var host = CreateHostBuilder(cfg, serverSt, fmsImpl.Settings, fmsImpl, useService).Build();
       host.Run();
     }
   }

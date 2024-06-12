@@ -50,25 +50,12 @@ namespace BlackMaple.MachineFramework
 
   public delegate ScannedMaterial ParseBarcode(string barcode, System.Uri httpReferer);
 
-  public enum AddRawMaterialType
-  {
-    AddAsUnassigned,
-    RequireExistingMaterial,
-    RequireBarcodeScan,
-    AddAndSpecifyJob
-  }
-
-  public enum AddInProcessMaterialType
-  {
-    RequireExistingMaterial,
-    AddAndSpecifyJob
-  }
-
   public class FMSImplementation
   {
     public string Name { get; set; }
     public string Version { get; set; }
     public Func<DateTime> LicenseExpires { get; set; } = null;
+    public FMSSettings Settings { get; set; }
 
     public IFMSBackend Backend { get; set; }
     public IList<IBackgroundWorker> Workers { get; set; } = new List<IBackgroundWorker>();
@@ -80,14 +67,5 @@ namespace BlackMaple.MachineFramework
     public bool UsingLabelPrinterForSerials { get; set; } = false;
     public PrintLabelForMaterial PrintLabel { get; set; } = null;
     public ParseBarcode ParseBarcode { get; set; } = null;
-
-    public string AllowEditJobPlanQuantityFromQueuesPage { get; set; } = null;
-    public string CustomStationMonitorDialogUrl { get; set; } = null;
-    public AddRawMaterialType AddRawMaterial { get; set; } = AddRawMaterialType.RequireExistingMaterial;
-    public AddInProcessMaterialType AddInProcessMaterial { get; set; } =
-      AddInProcessMaterialType.RequireExistingMaterial;
-    public bool AllowSwapSerialAtLoadStation { get; set; } = false;
-    public bool AllowInvalidateMaterialAtLoadStation { get; set; } = false;
-    public bool AllowInvalidateMaterialOnQueuesPage { get; set; } = false;
   }
 }

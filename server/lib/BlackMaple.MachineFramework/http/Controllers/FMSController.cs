@@ -125,16 +125,16 @@ namespace BlackMaple.MachineFramework.Controllers
         UseClientPrinterForLabels = _impl.PrintLabel == null,
         QuarantineQueue = _cfg.QuarantineQueue,
         RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,
-        AddRawMaterial = _impl.AddRawMaterial,
-        AddInProcessMaterial = _impl.AddInProcessMaterial,
-        AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
+        AddRawMaterial = _cfg.AddRawMaterial,
+        AddInProcessMaterial = _cfg.AddInProcessMaterial,
+        AllowEditJobPlanQuantityFromQueuesPage = _cfg.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineToCancelLoad = _impl.Backend?.QueueControl.AllowQuarantineToCancelLoad,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
-        AllowInvalidateMaterialAtLoadStation = _impl.AllowInvalidateMaterialAtLoadStation,
-        AllowInvalidateMaterialOnQueuesPage = _impl.AllowInvalidateMaterialOnQueuesPage,
-        AllowSwapSerialAtLoadStation = _impl.AllowSwapSerialAtLoadStation,
+        AllowInvalidateMaterialAtLoadStation = _cfg.AllowInvalidateMaterialAtLoadStation,
+        AllowInvalidateMaterialOnQueuesPage = _cfg.AllowInvalidateMaterialOnQueuesPage,
+        AllowSwapSerialAtLoadStation = _cfg.AllowSwapSerialAtLoadStation,
         LicenseExpires = _impl.LicenseExpires?.Invoke(),
-        CustomStationMonitorDialogUrl = _impl.CustomStationMonitorDialogUrl,
+        CustomStationMonitorDialogUrl = _cfg.CustomStationMonitorDialogUrl,
       };
     }
 
