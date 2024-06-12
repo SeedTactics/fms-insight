@@ -169,9 +169,10 @@ public record FMSSettings
   public bool RequireOperatorNamePromptWhenAddingMaterial { get; init; }
   public bool AllowChangeWorkorderAtLoadStation { get; init; }
   public string? AllowEditJobPlanQuantityFromQueuesPage { get; init; } = null;
-  public bool? AllowSwapSerialAtLoadStation { get; init; }
-  public bool? AllowInvalidateMaterialAtLoadStation { get; init; }
-  public bool? AllowInvalidateMaterialOnQueuesPage { get; init; }
+  public bool AllowSwapSerialAtLoadStation { get; init; }
+  public bool AllowInvalidateMaterialAtLoadStation { get; init; }
+  public bool AllowInvalidateMaterialOnQueuesPage { get; init; }
+  public bool UsingLabelPrinterForSerials { get; init; }
 
   public string? CustomStationMonitorDialogUrl { get; init; } = null;
   public AddRawMaterialType AddRawMaterial { get; init; } = AddRawMaterialType.RequireExistingMaterial;

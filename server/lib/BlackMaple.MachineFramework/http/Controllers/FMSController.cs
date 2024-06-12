@@ -121,7 +121,7 @@ namespace BlackMaple.MachineFramework.Controllers
         OpenIDConnectAuthority = _serverSt.OpenIDConnectAuthority,
         OpenIDConnectClientId = _serverSt.OpenIDConnectClientId,
         LocalhostOpenIDConnectAuthority = _serverSt.AuthAuthority,
-        UsingLabelPrinterForSerials = _impl.UsingLabelPrinterForSerials,
+        UsingLabelPrinterForSerials = _cfg.UsingLabelPrinterForSerials,
         UseClientPrinterForLabels = _impl.PrintLabel == null,
         QuarantineQueue = _cfg.QuarantineQueue,
         RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,

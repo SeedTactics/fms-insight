@@ -64,7 +64,6 @@ namespace BlackMaple.MachineFramework
 
     public CustomizeInstructionPath InstructionPath { get; set; } = null;
 
-    public bool UsingLabelPrinterForSerials { get; set; } = false;
     public PrintLabelForMaterial PrintLabel { get; set; } = null;
     public ParseBarcode ParseBarcode { get; set; } = null;
   }
