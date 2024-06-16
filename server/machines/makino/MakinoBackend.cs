@@ -34,9 +34,26 @@ using System;
 using System.IO;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace BlackMaple.FMSInsight.Makino
 {
+  public static class MakinoServices
+  {
+    public static void AddMakinoBackend(this IServiceCollection s, MakinoSettings makinoSt)
+    {
+      s.AddSingleton(makinoSt);
+      s.AddSingleton<IMachineControl, MakinoMachines>();
+      s.AddSingleton<ISynchronizeCellState<MakinoCellState>, MakinoSync>();
+    }
+
+    public static void AddMakinoBackend(this IHostBuilder h, MakinoSettings makinoSt)
+    {
+      h.ConfigureServices((_, s) => s.AddMakinoBackend(makinoSt));
+    }
+  }
+
   public sealed class MakinoBackend : IFMSBackend, IDisposable
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
