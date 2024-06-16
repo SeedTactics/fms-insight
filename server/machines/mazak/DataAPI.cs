@@ -375,7 +375,7 @@ namespace MazakMachineInterface
     public string FromPosition { get; init; }
   }
 
-  public interface ICurrentLoadActions : IDisposable
+  public interface ICurrentLoadActions
   {
     IEnumerable<LoadAction> CurrentLoadActions();
   }

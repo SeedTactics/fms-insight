@@ -35,11 +35,41 @@ using System.Collections.Generic;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
 
 namespace MazakMachineInterface
 {
+  public static class MazakServices
+  {
+    public static void AddMazakBackend(this IServiceCollection s, MazakConfig mazakCfg)
+    {
+      if (mazakCfg.DBType == MazakDbType.MazakVersionE)
+      {
+        throw new Exception("This version of FMS Insight does not support Mazak Version E");
+      }
+
+      s.AddSingleton(mazakCfg);
+      s.AddSingleton<IWriteData, OpenDatabaseKitTransactionDB>();
+
+      if (mazakCfg.DBType == MazakDbType.MazakWeb)
+        s.AddSingleton<ICurrentLoadActions, LoadOperationsFromFile>();
+      else
+        s.AddSingleton<ICurrentLoadActions, LoadOperationsFromDB>();
+
+      s.AddSingleton<IReadDataAccess, OpenDatabaseKitReadDB>();
+      s.AddSingleton<ISynchronizeCellState<MazakState>, MazakSync>();
+      s.AddSingleton<IMachineControl, MazakMachineControl>();
+    }
+
+    public static void AddMazakBackend(this IHostBuilder h, MazakConfig mazakCfg)
+    {
+      h.ConfigureServices((_, s) => s.AddMazakBackend(mazakCfg));
+    }
+  }
+
   public sealed class MazakBackend : IFMSBackend, IDisposable
   {
     private readonly JobsAndQueuesFromDb<MazakState> _jobsAndQueues;
@@ -80,14 +110,14 @@ namespace MazakMachineInterface
         oldJobDbName
       );
 
-      _writeDB = new OpenDatabaseKitTransactionDB(mazakCfg.SQLConnectionString, mazakCfg.DBType);
+      _writeDB = new OpenDatabaseKitTransactionDB(mazakCfg);
 
       if (mazakCfg.DBType == MazakDbType.MazakWeb)
-        loadOper = new LoadOperationsFromFile(mazakCfg, enableWatcher: false, onLoadActions: (l, a) => { }); // web instead watches the log csv files
+        loadOper = new LoadOperationsFromFile(mazakCfg); // web instead watches the log csv files
       else
-        loadOper = new LoadOperationsFromDB(mazakCfg.SQLConnectionString); // smooth db doesn't use the load operations file
+        loadOper = new LoadOperationsFromDB(mazakCfg); // smooth db doesn't use the load operations file
 
-      _readDB = new OpenDatabaseKitReadDB(mazakCfg.SQLConnectionString, mazakCfg.DBType, loadOper);
+      _readDB = new OpenDatabaseKitReadDB(mazakCfg, loadOper);
 
       var syncSt = new MazakSync(readDb: _readDB, writeDb: _writeDB, settings: st, mazakConfig: mazakCfg);
 
@@ -101,7 +131,6 @@ namespace MazakMachineInterface
     public void Dispose()
     {
       _jobsAndQueues?.Dispose();
-      loadOper?.Dispose();
     }
   }
 }
