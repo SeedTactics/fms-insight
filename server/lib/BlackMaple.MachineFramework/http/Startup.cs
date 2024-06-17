@@ -36,7 +36,6 @@ using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using BlackMaple.MachineFramework.Controllers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -79,21 +78,17 @@ public static class FMSInsightWebHost
         s.AddSingleton<ServerSettings>(serverSt);
         s.AddSingleton<FMSSettings>(fmsSt);
 
-        var jobStType = s.Select(service =>
-            service.ServiceType.IsGenericType
-            && service.ServiceType.GetGenericTypeDefinition() == typeof(ISynchronizeCellState<>)
-              ? service.ServiceType.GenericTypeArguments[0]
-              : null
-          )
-          .FirstOrDefault(x => x != null);
+        var jobStType =
+          s.Select(service =>
+              service.ServiceType.IsGenericType
+              && service.ServiceType.GetGenericTypeDefinition() == typeof(ISynchronizeCellState<>)
+                ? service.ServiceType.GenericTypeArguments[0]
+                : null
+            )
+            .FirstOrDefault(x => x != null)
+          ?? throw new Exception("Backend must implement ISynchronizeCellState");
 
-        if (jobStType != null)
-        {
-          s.AddSingleton(
-            typeof(IJobAndQueueControl),
-            typeof(JobsAndQueuesFromDb<>).MakeGenericType(jobStType)
-          );
-        }
+        s.AddSingleton(typeof(IJobAndQueueControl), typeof(JobsAndQueuesFromDb<>).MakeGenericType(jobStType));
 
         s.AddSingleton<Controllers.WebsocketManager>();
 
@@ -117,7 +112,9 @@ public static class FMSInsightWebHost
           .ConfigureApplicationPartManager(am =>
           {
             am.ApplicationParts.Add(
-              new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(typeof(jobsController).Assembly)
+              new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(
+                typeof(Controllers.jobsController).Assembly
+              )
             );
             if (extraParts != null)
             {

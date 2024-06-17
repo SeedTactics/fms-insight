@@ -146,6 +146,7 @@ namespace BlackMaple.MachineFramework
       _syncState.NewCellState += NewCellState;
 
       _thread = new Thread(Thread) { IsBackground = true };
+      _thread.Start();
     }
 
     public void Dispose()
@@ -177,11 +178,6 @@ namespace BlackMaple.MachineFramework
     private void NewCellState()
     {
       _newCellState.Set();
-    }
-
-    public void StartThread()
-    {
-      _thread.Start();
     }
 
     private void Thread()

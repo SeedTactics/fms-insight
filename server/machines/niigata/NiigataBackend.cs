@@ -52,7 +52,6 @@ namespace BlackMaple.FMSInsight.Niigata
       IConfigurationSection config,
       FMSSettings cfg,
       SerialSettings serialSt,
-      bool startSyncThread,
       Func<NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null,
       CheckJobsValid customJobCheck = null,
       Func<ActiveJob, bool> decrementJobFilter = null
@@ -91,21 +90,11 @@ namespace BlackMaple.FMSInsight.Niigata
         );
 
         _jobsAndQueues = new JobsAndQueuesFromDb<CellState>(RepoConfig, settings.FMSSettings, syncSt);
-
-        if (startSyncThread)
-        {
-          StartSyncThread();
-        }
       }
       catch (Exception ex)
       {
         Log.Error(ex, "Unhandled exception when initializing niigata backend");
       }
-    }
-
-    public void StartSyncThread()
-    {
-      _jobsAndQueues.StartThread();
     }
 
     public void Dispose()
