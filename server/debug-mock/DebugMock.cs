@@ -86,21 +86,24 @@ namespace DebugMachineWatchApiServer
       }
     }
 
-    private static void AddOpenApiDoc(IServiceCollection services)
+    private static IHostBuilder AddOpenApiDoc(this IHostBuilder host)
     {
-      services.AddOpenApiDocument(cfg =>
-      {
-        cfg.Title = "SeedTactic FMS Insight";
-        cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
-        cfg.Version = "1.14";
-        cfg.SchemaSettings.SchemaProcessors.Add(new RequiredModifierSchemaProcessor());
-        cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
-          .Generation
-          .ReferenceTypeNullHandling
-          .NotNull;
-        cfg.RequireParametersWithoutDefault = true;
-        cfg.SchemaSettings.IgnoreObsoleteProperties = true;
-      });
+      return host.ConfigureServices(
+        (_, s) =>
+          s.AddOpenApiDocument(cfg =>
+          {
+            cfg.Title = "SeedTactic FMS Insight";
+            cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
+            cfg.Version = "1.14";
+            cfg.SchemaSettings.SchemaProcessors.Add(new RequiredModifierSchemaProcessor());
+            cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
+              .Generation
+              .ReferenceTypeNullHandling
+              .NotNull;
+            cfg.RequireParametersWithoutDefault = true;
+            cfg.SchemaSettings.IgnoreObsoleteProperties = true;
+          })
+      );
     }
 
     public static void Main()
@@ -127,7 +130,6 @@ namespace DebugMachineWatchApiServer
 
       var hostB = new HostBuilder()
         .UseContentRoot(Path.GetDirectoryName(Environment.ProcessPath))
-        //.AddRepository(...)
         .ConfigureServices(s =>
         {
           s.AddSingleton<MockServerBackend>();
@@ -137,9 +139,38 @@ namespace DebugMachineWatchApiServer
           s.AddSingleton<IParseBarcode>(sp => sp.GetRequiredService<MockServerBackend>());
         })
         .AddFMSInsightWebHost(cfg, serverSettings, fmsSettings)
-        .ConfigureServices((_, services) => AddOpenApiDoc(services));
+        .AddOpenApiDoc();
 
-      hostB.Build().Run();
+      string tempDbFile = null;
+      if (InsightBackupDbFile != null)
+      {
+        hostB.AddRepository(
+          InsightBackupDbFile,
+          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+        );
+      }
+      else
+      {
+        tempDbFile = Path.Combine(Path.GetTempPath(), "debug-mock-" + Path.GetRandomFileName() + ".sqlite");
+        hostB.AddRepository(
+          tempDbFile,
+          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+        );
+      }
+
+      var host = hostB.Build();
+
+      host.Services.GetService<IHostApplicationLifetime>()
+        .ApplicationStopped.Register(() =>
+        {
+          if (tempDbFile != null)
+          {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            File.Delete(tempDbFile);
+          }
+        });
+
+      host.Run();
     }
   }
 

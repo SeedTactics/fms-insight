@@ -33,6 +33,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 #nullable enable
 
@@ -61,7 +63,7 @@ namespace BlackMaple.MachineFramework
     }
   }
 
-  public class RepositoryConfig
+  public sealed class RepositoryConfig : IDisposable
   {
     public event Action<LogEntry, string, IRepository>? NewLogEntry;
     public SerialSettings? SerialSettings { get; }
@@ -131,7 +133,7 @@ namespace BlackMaple.MachineFramework
       return new Repository(this, conn);
     }
 
-    public void CloseMemoryConnection()
+    public void Dispose()
     {
       if (_memoryConnection != null)
       {
@@ -145,6 +147,40 @@ namespace BlackMaple.MachineFramework
       SerialSettings = st;
       _connStr = connStr;
       _memoryConnection = memConn;
+    }
+  }
+
+  public static class RepositoryService
+  {
+    public static IHostBuilder AddRepository(
+      this IHostBuilder host,
+      string filename,
+      SerialSettings serial,
+      string? oldInspDbFile = null,
+      string? oldJobDbFile = null
+    )
+    {
+      return host.ConfigureServices(
+        (_, s) =>
+          s.AddSingleton<RepositoryConfig>(
+            (_) => RepositoryConfig.InitializeEventDatabase(serial, filename, oldInspDbFile, oldJobDbFile)
+          )
+      );
+    }
+
+    public static IHostBuilder AddMemoryRepository(
+      this IHostBuilder host,
+      SerialSettings serial,
+      Guid? guid = null,
+      bool createTables = true
+    )
+    {
+      return host.ConfigureServices(
+        (_, s) =>
+          s.AddSingleton<RepositoryConfig>(
+            (_) => RepositoryConfig.InitializeMemoryDB(serial, guid, createTables)
+          )
+      );
     }
   }
 }
