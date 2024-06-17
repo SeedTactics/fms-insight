@@ -46,9 +46,10 @@ namespace BlackMaple.FMSInsight.Niigata
     public bool AllowQuarantineToCancelLoad => false;
     public bool AddJobsAsCopiedToSystem => true;
 
+    private readonly FMSSettings _fmsSt;
     private readonly NiigataSettings _settings;
     private readonly INiigataCommunication _icc;
-    private readonly CreateCellState _createLog;
+    private readonly ICncMachineConnection _mcc;
     private readonly IAssignPallets _assign;
 
     public SyncNiigataPallets(
@@ -60,8 +61,9 @@ namespace BlackMaple.FMSInsight.Niigata
     )
     {
       _icc = icc;
-      _createLog = new CreateCellState(fmsSt, settings.StationNames, mcc);
       _settings = settings;
+      _fmsSt = fmsSt;
+      _mcc = mcc;
       _assign =
         assign
         ?? new MultiPalletAssign(
@@ -84,7 +86,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       var status = _icc.LoadNiigataStatus();
       Log.Debug("Loaded pallets {@status}", status);
-      return _createLog.BuildCellState(db, status);
+      return CreateCellState.BuildCellState(_fmsSt, _settings.StationNames, _mcc, db, status);
     }
 
     public bool ApplyActions(IRepository db, CellState st)

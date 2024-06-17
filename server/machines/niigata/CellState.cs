@@ -82,19 +82,30 @@ namespace BlackMaple.FMSInsight.Niigata
 
   public class CreateCellState
   {
-    private FMSSettings _settings;
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();
-    private NiigataStationNames _stationNames;
-    private ICncMachineConnection _machConnection;
+    private readonly FMSSettings _settings;
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();
+    private readonly NiigataStationNames _stationNames;
+    private readonly ICncMachineConnection _machConnection;
 
-    public CreateCellState(FMSSettings s, NiigataStationNames n, ICncMachineConnection machConn)
+    public static CellState BuildCellState(
+      FMSSettings s,
+      NiigataStationNames n,
+      ICncMachineConnection machConn,
+      IRepository logDB,
+      NiigataStatus status
+    )
+    {
+      return new CreateCellState(s, n, machConn).Build(logDB, status);
+    }
+
+    private CreateCellState(FMSSettings s, NiigataStationNames n, ICncMachineConnection machConn)
     {
       _settings = s;
       _stationNames = n;
       _machConnection = machConn;
     }
 
-    public CellState BuildCellState(IRepository logDB, NiigataStatus status)
+    private CellState Build(IRepository logDB, NiigataStatus status)
     {
       var palletStateUpdated = false;
 

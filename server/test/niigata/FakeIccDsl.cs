@@ -45,6 +45,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
   {
     private RepositoryConfig _logDBCfg;
     private IAssignPallets _assign;
+    private ICncMachineConnection _machConn;
     private CreateCellState _createLog;
     private NiigataStatus _status;
     private FMSSettings _settings;
@@ -92,7 +93,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           .ToDictionary(mc => mc, mc => (group: "TestMC", num: 100 + mc))
       };
 
-      var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
+      _machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
       _assign = new MultiPalletAssign(
         new IAssignPallets[]
@@ -109,8 +110,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           )
         }
       );
-      _createLog = new CreateCellState(_settings, _statNames, machConn);
-
       _status = new NiigataStatus();
       _status.TimeOfStatusUTC = DateTime.UtcNow.AddDays(-1);
       _status.Programs = new Dictionary<int, ProgramEntry>();
@@ -1585,7 +1584,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       using var _logDB = _logDBCfg.OpenConnection();
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_logDB, _status);
+        var cellSt = CreateCellState.BuildCellState(_settings, _statNames, _machConn, _logDB, _status);
         cellSt.StateUpdated.Should().BeFalse();
 
         CheckCellStMatchesExpected(cellSt);
@@ -2235,7 +2234,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       using var _logDB = _logDBCfg.OpenConnection();
       using (var logMonitor = _logDBCfg.Monitor())
       {
-        var cellSt = _createLog.BuildCellState(_logDB, _status);
+        var cellSt = CreateCellState.BuildCellState(_settings, _statNames, _machConn, _logDB, _status);
 
         cellSt.StateUpdated.Should().Be(expectedUpdates);
 
@@ -2260,7 +2259,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           };
 
           // reload cell state
-          cellSt = _createLog.BuildCellState(_logDB, _status);
+          cellSt = CreateCellState.BuildCellState(_settings, _statNames, _machConn, _logDB, _status);
           cellSt.StateUpdated.Should().Be(expectedUpdates);
         }
 
@@ -2286,7 +2285,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[pal - 1].Tracking.RouteInvalid = true;
 
           // reload
-          cellSt = _createLog.BuildCellState(_logDB, _status);
+          cellSt = CreateCellState.BuildCellState(_settings, _statNames, _machConn, _logDB, _status);
           cellSt.StateUpdated.Should().Be(false);
         }
 
@@ -2387,7 +2386,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               );
             }
             // reload cell state
-            cellSt = _createLog.BuildCellState(_logDB, _status);
+            cellSt = CreateCellState.BuildCellState(_settings, _statNames, _machConn, _logDB, _status);
             cellSt.StateUpdated.Should().Be(expectedUpdates);
             cellSt
               .OldUnusedPrograms.Should()
@@ -2436,7 +2435,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           _status.Pallets[expectNoWork.Pallet - 1].Master.NoWork = expectNoWork.NoWork;
 
           // reload cell state
-          cellSt = _createLog.BuildCellState(_logDB, _status);
+          cellSt = CreateCellState.BuildCellState(_settings, _statNames, _machConn, _logDB, _status);
           cellSt.StateUpdated.Should().Be(true);
         }
         else
