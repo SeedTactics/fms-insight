@@ -52,7 +52,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public EditMaterialInLogEvents EditMaterialInLog { get; init; }
   }
 
-  public class WebsocketManager
+  public sealed class WebsocketManager : IAsyncDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<WebsocketManager>();
 
@@ -201,8 +201,14 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
-    public async Task CloseAll()
+    private bool _disposed = false;
+
+    public async ValueTask DisposeAsync()
     {
+      if (_disposed)
+        return;
+      _disposed = true;
+
       var tasks = new List<Task>();
       var sockets = _sockets.Clear();
 

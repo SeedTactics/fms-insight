@@ -59,14 +59,13 @@ namespace BlackMaple.MachineFramework
 
     public static void AddServices(
       IServiceCollection services,
-      FMSImplementation fmsImpl,
       FMSSettings fmsSt,
-      ServerSettings serverSt
+      ServerSettings serverSt,
+      System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> extraParts =
+        null
     )
     {
-      services.AddSingleton<Controllers.WebsocketManager>(
-        new Controllers.WebsocketManager(fmsImpl.Backend.RepoConfig, fmsImpl.Backend.JobControl)
-      );
+      services.AddSingleton<Controllers.WebsocketManager>();
 
       services.AddResponseCompression();
 
@@ -88,9 +87,9 @@ namespace BlackMaple.MachineFramework
         })
         .ConfigureApplicationPartManager(am =>
         {
-          if (fmsImpl.ExtraApplicationParts != null)
+          if (extraParts != null)
           {
-            foreach (var p in fmsImpl.ExtraApplicationParts)
+            foreach (var p in extraParts)
               am.ApplicationParts.Add(p);
           }
         })
@@ -237,14 +236,8 @@ namespace BlackMaple.MachineFramework
         endpoints.MapFallbackToFile("/index.html");
       });
 
-      lifetime.ApplicationStopping.Register(async () =>
+      lifetime.ApplicationStopped.Register(() =>
       {
-        if (fmsImpl == null)
-          return;
-        await wsManager.CloseAll();
-        foreach (var w in fmsImpl.Workers)
-          w.Dispose();
-        fmsImpl.Backend?.Dispose();
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         Serilog.Log.CloseAndFlush();
       });

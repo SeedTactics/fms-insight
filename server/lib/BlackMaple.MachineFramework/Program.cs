@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -48,7 +49,6 @@ using Serilog.Events;
 namespace BlackMaple.MachineFramework
 {
   // Change to DI container
-  // - Switch LoadConfig to just return IConfiguration
   // - Change CreateHostBuilder to AddFMSInsightWebHost and take a this IHostBuilder (and remove fmsImpl)
   // - Switch Startup to use startup filters https://learn.microsoft.com/en-us/aspnet/core/fundamentals/startup?view=aspnetcore-8.0
   // - Remove Backend, Workers, and ExtraApplicationParts from FMSImplementation, make FMSImplementation
@@ -69,9 +69,9 @@ namespace BlackMaple.MachineFramework
   //        .AddFMSInsightWebHost(cfg, serverSt, fmsSt, extraAppParts)
   //        .Build()
 
-  public class Program
+  public static class Program
   {
-    private static (IConfiguration, ServerSettings) LoadConfig()
+    public static IConfiguration LoadConfig()
     {
       var configFile = Path.Combine(ServerSettings.ConfigDirectory, "config.ini");
       if (!File.Exists(configFile))
@@ -85,40 +85,45 @@ namespace BlackMaple.MachineFramework
         }
       }
 
-      var cfg = new ConfigurationBuilder()
+      return new ConfigurationBuilder()
         .AddIniFile(configFile, optional: true)
         .AddEnvironmentVariables()
         .Build();
-
-      var s = ServerSettings.Load(cfg);
-
-      return (cfg, s);
     }
 
-    public static IHostBuilder CreateHostBuilder(
+    public static void AddFMSInsightWebHost(
+      this IHostBuilder host,
       IConfiguration cfg,
       ServerSettings serverSt,
       FMSSettings fmsSt,
-      FMSImplementation fmsImpl,
-      bool useService
+      System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> extraParts =
+        null
     )
     {
-      return new HostBuilder()
-        .UseContentRoot(ServerSettings.ContentRootDirectory)
-        .UseSerilog()
+      host.UseSerilog()
+        .ConfigureServices(s =>
+        {
+          s.AddSingleton<FMSSettings>(fmsSt);
+
+          var jobStType =
+            s.Select(service =>
+                service.ServiceType.IsGenericType
+                && service.ServiceType.GetGenericTypeDefinition() == typeof(ISynchronizeCellState<>)
+                  ? service.ServiceType.GenericTypeArguments[0]
+                  : null
+              )
+              .FirstOrDefault(x => x != null)
+            ?? throw new Exception("Must register instance of ISyncronizeCellState");
+
+          s.AddSingleton(
+            typeof(IJobAndQueueControl),
+            typeof(JobsAndQueuesFromDb<>).MakeGenericType(jobStType)
+          );
+          Startup.AddServices(s, fmsSt, serverSt, extraParts);
+        })
         .ConfigureWebHost(webBuilder =>
         {
           webBuilder
-            .ConfigureServices(s =>
-            {
-              s.AddSingleton<FMSImplementation>(fmsImpl);
-              s.AddSingleton<FMSSettings>(fmsSt);
-              s.AddSingleton<ServerSettings>(serverSt);
-              s.AddSingleton<RepositoryConfig>(fmsImpl.Backend.RepoConfig);
-              s.AddSingleton<IJobAndQueueControl>(fmsImpl.Backend.JobControl);
-              s.AddSingleton<IMachineControl>(fmsImpl.Backend.MachineControl);
-              Startup.AddServices(s, fmsImpl, fmsSt, serverSt);
-            })
             .UseConfiguration(cfg)
             .SuppressStatusMessages(suppressStatusMessages: true)
             .ConfigureServices(s =>
@@ -181,67 +186,30 @@ namespace BlackMaple.MachineFramework
                 );
               }
 
-              Serilog.Log.Debug("Kestrel Limits {@kestrel}", options.Limits);
+              Log.Debug("Kestrel Limits {@kestrel}", options.Limits);
             })
             .UseStartup<Startup>();
-        })
-#if SERVICE_AVAIL
-        .ConfigureServices(services =>
-        {
-          if (
-            useService
-            && System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
-              System.Runtime.InteropServices.OSPlatform.Windows
-            )
-          )
-          {
-            services.AddSingleton<
-              IHostLifetime,
-              Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceLifetime
-            >();
-          }
-        })
-#endif
-      ;
+        });
     }
 
-    public static void Run(
-      bool useService,
-      Func<IConfiguration, FMSImplementation> initalize,
-      bool outputConfigToLog = true
-    )
+    public static void AddWindowsService(this IHostBuilder host)
     {
-      var (cfg, serverSt) = LoadConfig();
-      InsightLogging.EnableSerilog(serverSt: serverSt, enableEventLog: useService);
-
-      FMSImplementation fmsImpl;
-      try
+#if SERVICE_AVAIL
+      host.ConfigureServices(services =>
       {
-        if (outputConfigToLog)
+        if (
+          System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+            System.Runtime.InteropServices.OSPlatform.Windows
+          )
+        )
         {
-          Log.Information(
-            "Starting FMS Insight with settings {@ServerSettings}. "
-              + " Using ContentRoot {ContentRoot} and Config {ConfigDir}.",
-            serverSt,
-            ServerSettings.ContentRootDirectory,
-            ServerSettings.ConfigDirectory
-          );
+          services.AddSingleton<
+            IHostLifetime,
+            Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceLifetime
+          >();
         }
-
-        fmsImpl = initalize(cfg);
-
-        if (outputConfigToLog)
-        {
-          Log.Information("Loaded FMS Configuration {@config}", fmsImpl.Settings);
-        }
-      }
-      catch (Exception ex)
-      {
-        Serilog.Log.Error(ex, "Error initializing FMS Insight");
-        return;
-      }
-      var host = CreateHostBuilder(cfg, serverSt, fmsImpl.Settings, fmsImpl, useService).Build();
-      host.Run();
+      });
+#endif
     }
   }
 }
