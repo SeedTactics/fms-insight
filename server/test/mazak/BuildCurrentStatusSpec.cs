@@ -61,13 +61,13 @@ namespace MachineWatchTest
       _settings.Queues["queueCCC"] = new QueueInfo();
 
       jsonSettings = new JsonSerializerOptions();
-      Startup.JsonSettings(jsonSettings);
+      FMSInsightWebHost.JsonSettings(jsonSettings);
       jsonSettings.WriteIndented = true;
     }
 
     public void Dispose()
     {
-      _repoCfg.CloseMemoryConnection();
+      _repoCfg.Dispose();
     }
 
     /*

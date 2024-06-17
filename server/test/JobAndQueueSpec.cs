@@ -71,7 +71,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
   void IDisposable.Dispose()
   {
-    _repo?.CloseMemoryConnection();
+    _repo?.Dispose();
     if (_jq != null)
     {
       _jq?.Dispose();

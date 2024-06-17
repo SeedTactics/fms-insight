@@ -111,7 +111,7 @@ namespace MachineWatchTest
 
     void IDisposable.Dispose()
     {
-      _repoCfg.CloseMemoryConnection();
+      _repoCfg.Dispose();
     }
 
     [Fact]
@@ -5108,7 +5108,7 @@ namespace MachineWatchTest
 
     void IDisposable.Dispose()
     {
-      _repoCfg.CloseMemoryConnection();
+      _repoCfg.Dispose();
     }
 
     [Fact]
@@ -5785,7 +5785,7 @@ namespace MachineWatchTest
     [Fact]
     public void MaterialIDs()
     {
-      var repoCfg = RepositoryConfig.InitializeMemoryDB(
+      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
@@ -5812,7 +5812,6 @@ namespace MachineWatchTest
             NumProcesses = 52,
           }
         );
-      repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
@@ -5832,7 +5831,7 @@ namespace MachineWatchTest
     [Fact]
     public void AdjustsStartingSerial()
     {
-      var repoCfg = RepositoryConfig.InitializeMemoryDB(
+      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
@@ -5843,14 +5842,12 @@ namespace MachineWatchTest
 
       long m1 = logFromCreate.AllocateMaterialID("U1", "P1", 52);
       m1.Should().Be(33_152_428_148);
-
-      repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
     public void AdjustsStartingSerial2()
     {
-      var repoCfg = RepositoryConfig.InitializeMemoryDB(
+      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("B3t24s"),
@@ -5863,15 +5860,13 @@ namespace MachineWatchTest
       long m3 = logFromUpgrade.AllocateMaterialID("U2", "P2", 4);
       m2.Should().Be(33_948_163_268);
       m3.Should().Be(33_948_163_269);
-
-      repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
     public void AvoidsAdjustingSerialBackwards()
     {
       var guid = new Guid();
-      var repo1 = RepositoryConfig.InitializeMemoryDB(
+      using var repo1 = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
@@ -5888,7 +5883,7 @@ namespace MachineWatchTest
       }
 
       // repo2 uses the same guid so will be the same database, sharing it with repo1
-      var repo2 = RepositoryConfig.InitializeMemoryDB(
+      using var repo2 = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("w53122"),
@@ -5903,9 +5898,6 @@ namespace MachineWatchTest
         long m2 = db.AllocateMaterialID("U1", "P1", 2);
         m2.Should().Be(33_152_428_149);
       }
-
-      repo1.CloseMemoryConnection();
-      repo2.CloseMemoryConnection();
     }
   }
 }

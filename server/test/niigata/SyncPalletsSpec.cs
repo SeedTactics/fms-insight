@@ -70,7 +70,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDBCfg = RepositoryConfig.InitializeMemoryDB(_serialSt);
 
       jsonSettings = new JsonSerializerOptions();
-      Startup.JsonSettings(jsonSettings);
+      FMSInsightWebHost.JsonSettings(jsonSettings);
       jsonSettings.WriteIndented = true;
     }
 
@@ -122,7 +122,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public void Dispose()
     {
-      _logDBCfg.CloseMemoryConnection();
+      _logDBCfg.Dispose();
     }
 
     private void Synchronize()

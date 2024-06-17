@@ -270,14 +270,14 @@ namespace MachineWatchTest
       };
 
       jsonSettings = new JsonSerializerOptions();
-      Startup.JsonSettings(jsonSettings);
+      FMSInsightWebHost.JsonSettings(jsonSettings);
       jsonSettings.WriteIndented = true;
     }
 
     public void Dispose()
     {
       _jobDB.Dispose();
-      _repoCfg.CloseMemoryConnection();
+      _repoCfg.Dispose();
     }
 
     private void ShouldMatchSnapshot<T>(T val, string snapshot)

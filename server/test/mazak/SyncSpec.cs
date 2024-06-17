@@ -89,7 +89,7 @@ public sealed class MazakSyncSpec : IDisposable
   {
     _sync.Dispose();
     Directory.Delete(_tempDir, true);
-    repo.CloseMemoryConnection();
+    repo.Dispose();
   }
 
   [Fact]
@@ -111,7 +111,7 @@ public sealed class MazakSyncSpec : IDisposable
   public void CheckJobsSuccess()
   {
     var jsonSettings = new JsonSerializerOptions();
-    Startup.JsonSettings(jsonSettings);
+    FMSInsightWebHost.JsonSettings(jsonSettings);
     _read
       .LoadAllData()
       .Returns(
@@ -145,7 +145,7 @@ public sealed class MazakSyncSpec : IDisposable
   public void CheckFailMissingProgram()
   {
     var jsonSettings = new JsonSerializerOptions();
-    Startup.JsonSettings(jsonSettings);
+    FMSInsightWebHost.JsonSettings(jsonSettings);
     _read
       .LoadAllData()
       .Returns(
@@ -189,7 +189,7 @@ public sealed class MazakSyncSpec : IDisposable
     _fmsSt.Queues.Remove("queueAAA");
 
     var jsonSettings = new JsonSerializerOptions();
-    Startup.JsonSettings(jsonSettings);
+    FMSInsightWebHost.JsonSettings(jsonSettings);
     _read
       .LoadAllData()
       .Returns(
@@ -424,7 +424,7 @@ public sealed class MazakSyncSpec : IDisposable
   public void DownloadsNewJobs()
   {
     var jsonSettings = new JsonSerializerOptions();
-    Startup.JsonSettings(jsonSettings);
+    FMSInsightWebHost.JsonSettings(jsonSettings);
 
     using var db = repo.OpenConnection();
     var newJobs = JsonSerializer.Deserialize<NewJobs>(

@@ -52,7 +52,7 @@ namespace MachineWatchTest
 
     void IDisposable.Dispose()
     {
-      _repoCfg.CloseMemoryConnection();
+      _repoCfg.Dispose();
     }
 
     [Fact]

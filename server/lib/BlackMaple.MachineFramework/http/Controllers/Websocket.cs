@@ -111,7 +111,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public WebsocketManager(RepositoryConfig repo, IJobAndQueueControl jobAndQueue)
     {
       _serSettings = new JsonSerializerOptions();
-      Startup.JsonSettings(_serSettings);
+      FMSInsightWebHost.JsonSettings(_serSettings);
 
       _messages = new System.Collections.Concurrent.BlockingCollection<ServerEvent>(100);
       _thread = new System.Threading.Thread(SendThread);

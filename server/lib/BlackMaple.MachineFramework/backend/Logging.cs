@@ -40,7 +40,7 @@ namespace BlackMaple.MachineFramework
 {
   public static class InsightLogging
   {
-    internal class CompressSerilogDebugLog : Serilog.Sinks.File.FileLifecycleHooks
+    public class CompressSerilogDebugLog : Serilog.Sinks.File.FileLifecycleHooks
     {
       public override void OnFileDeleting(string origTxtFile)
       {

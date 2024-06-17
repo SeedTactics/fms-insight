@@ -154,7 +154,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public void Dispose()
     {
-      _logDBCfg.CloseMemoryConnection();
+      _logDBCfg.Dispose();
     }
 
     #region Niigata Status

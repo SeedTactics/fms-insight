@@ -116,7 +116,7 @@ public sealed class LogBuilderSpec : IDisposable
 
   void IDisposable.Dispose()
   {
-    _repo.CloseMemoryConnection();
+    _repo.Dispose();
   }
 
   private record TestMat

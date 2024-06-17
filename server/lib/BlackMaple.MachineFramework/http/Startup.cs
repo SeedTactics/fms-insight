@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2020, John Lenz
+﻿/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Linq;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
@@ -40,206 +41,308 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
-namespace BlackMaple.MachineFramework
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.DebugMock")]
+
+namespace BlackMaple.MachineFramework;
+
+public static class FMSInsightWebHost
 {
-  public class Startup
+  public static void JsonSettings(JsonSerializerOptions settings)
   {
-    public static void JsonSettings(JsonSerializerOptions settings)
-    {
-      settings.Converters.Add(new JsonStringEnumConverter());
-      settings.Converters.Add(new TimespanConverter());
-      settings.AllowTrailingCommas = true;
-      settings.PropertyNamingPolicy = null;
-      settings.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-    }
+    settings.Converters.Add(new JsonStringEnumConverter());
+    settings.Converters.Add(new TimespanConverter());
+    settings.AllowTrailingCommas = true;
+    settings.PropertyNamingPolicy = null;
+    settings.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+  }
 
-    public static void AddServices(
-      IServiceCollection services,
-      FMSSettings fmsSt,
-      ServerSettings serverSt,
-      System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> extraParts =
-        null
-    )
-    {
-      services.AddSingleton<Controllers.WebsocketManager>();
-
-      services.AddResponseCompression();
-
-      services.AddCors(options =>
+  public static IHostBuilder AddFMSInsightWebHost(
+    this IHostBuilder host,
+    IConfiguration cfg,
+    ServerSettings serverSt,
+    FMSSettings fmsSt,
+    System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> extraParts =
+      null
+  )
+  {
+    return host.UseSerilog()
+      .ConfigureServices(s =>
       {
-        options.AddDefaultPolicy(builder =>
-        {
-          builder
-            .WithOrigins(fmsSt.AdditionalLogServers.ToArray())
-            .WithMethods("GET")
-            .WithHeaders("content-type", "authorization");
-        });
-      });
+        s.AddSingleton<ServerSettings>(serverSt);
+        s.AddSingleton<FMSSettings>(fmsSt);
 
-      services
-        .AddControllers(options =>
-        {
-          options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
-        })
-        .ConfigureApplicationPartManager(am =>
-        {
-          if (extraParts != null)
-          {
-            foreach (var p in extraParts)
-              am.ApplicationParts.Add(p);
-          }
-        })
-        .AddJsonOptions(options =>
-        {
-          JsonSettings(options.JsonSerializerOptions);
-        });
+        var jobStType =
+          s.Select(service =>
+              service.ServiceType.IsGenericType
+              && service.ServiceType.GetGenericTypeDefinition() == typeof(ISynchronizeCellState<>)
+                ? service.ServiceType.GenericTypeArguments[0]
+                : null
+            )
+            .FirstOrDefault(x => x != null)
+          ?? throw new Exception("Must register instance of ISyncronizeCellState");
 
-      if (serverSt.UseAuthentication)
-      {
-        services
-          .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-          .AddJwtBearer(options =>
+        s.AddSingleton(typeof(IJobAndQueueControl), typeof(JobsAndQueuesFromDb<>).MakeGenericType(jobStType));
+
+        s.AddSingleton<Controllers.WebsocketManager>();
+
+        s.AddTransient<IStartupFilter, Startup>();
+
+        s.AddResponseCompression();
+
+        s.AddCors(options =>
+        {
+          options.AddDefaultPolicy(builder =>
           {
-            options.Authority = serverSt.AuthAuthority;
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
-            {
-              ValidateIssuer = true,
-              ValidAudiences = serverSt.AuthTokenAudiences.Split(';')
-            };
-#if DEBUG
-            options.RequireHttpsMetadata = false;
-#endif
-            options.Events = new JwtBearerEvents
-            {
-              OnMessageReceived = context =>
-              {
-                var token = context.Request.Query["token"];
-                if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
-                {
-                  context.Token = token;
-                }
-                return System.Threading.Tasks.Task.CompletedTask;
-              }
-            };
+            builder
+              .WithOrigins([.. fmsSt.AdditionalLogServers])
+              .WithMethods("GET")
+              .WithHeaders("content-type", "authorization");
           });
-      }
-    }
+        });
 
-    public void Configure(
-      IApplicationBuilder app,
-      IHostApplicationLifetime lifetime,
-      IWebHostEnvironment env,
-      ServerSettings serverSt,
-      FMSSettings fmsSt,
-      Controllers.WebsocketManager wsManager
-    )
-    {
-      app.UseResponseCompression();
-
-      app.UseStaticFiles();
-      if (!string.IsNullOrEmpty(fmsSt.InstructionFilePath))
-      {
-        if (System.IO.Directory.Exists(fmsSt.InstructionFilePath))
-        {
-          app.UseStaticFiles(
-            new StaticFileOptions()
+        s.AddControllers(options =>
+          {
+            options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
+          })
+          .ConfigureApplicationPartManager(am =>
+          {
+            if (extraParts != null)
             {
-              FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-                fmsSt.InstructionFilePath
-              ),
-              RequestPath = "/instructions"
+              foreach (var p in extraParts)
+                am.ApplicationParts.Add(p);
+            }
+          })
+          .AddJsonOptions(options =>
+          {
+            JsonSettings(options.JsonSerializerOptions);
+          });
+
+        if (serverSt.UseAuthentication)
+        {
+          s.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+              options.Authority = serverSt.AuthAuthority;
+              options.TokenValidationParameters =
+                new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+                {
+                  ValidateIssuer = true,
+                  ValidAudiences = serverSt.AuthTokenAudiences.Split(';')
+                };
+#if DEBUG
+              options.RequireHttpsMetadata = false;
+#endif
+              options.Events = new JwtBearerEvents
+              {
+                OnMessageReceived = context =>
+                {
+                  var token = context.Request.Query["token"];
+                  if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
+                  {
+                    context.Token = token;
+                  }
+                  return System.Threading.Tasks.Task.CompletedTask;
+                }
+              };
+            });
+        }
+      })
+      .ConfigureWebHost(webBuilder =>
+      {
+        webBuilder
+          .UseConfiguration(cfg)
+          .SuppressStatusMessages(suppressStatusMessages: true)
+          .AddKestral(cfg, serverSt);
+      });
+  }
+
+  private class Startup : IStartupFilter
+  {
+    public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
+    {
+      return app =>
+      {
+        app.UseResponseCompression();
+
+        app.UseStaticFiles();
+
+        var fmsSt = app.ApplicationServices.GetRequiredService<FMSSettings>();
+        if (!string.IsNullOrEmpty(fmsSt.InstructionFilePath))
+        {
+          if (System.IO.Directory.Exists(fmsSt.InstructionFilePath))
+          {
+            app.UseStaticFiles(
+              new StaticFileOptions()
+              {
+                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+                  fmsSt.InstructionFilePath
+                ),
+                RequestPath = "/instructions"
+              }
+            );
+          }
+          else
+          {
+            Log.Error(
+              "Instruction directory {path} does not exist or is not a directory",
+              fmsSt.InstructionFilePath
+            );
+          }
+        }
+
+        app.UseMiddleware(typeof(ErrorHandlingMiddleware));
+
+        app.UseRouting();
+
+        app.UseCors();
+
+        var serverSt = app.ApplicationServices.GetRequiredService<ServerSettings>();
+        if (serverSt.UseAuthentication)
+        {
+          app.UseAuthentication();
+          app.UseAuthorization();
+        }
+
+        if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
+        {
+          var env = app.ApplicationServices.GetRequiredService<IWebHostEnvironment>();
+          if (!env.IsDevelopment())
+            app.UseHsts();
+          app.UseHttpsRedirection();
+        }
+
+        app.Use(
+          async (context, next) =>
+          {
+            context.Response.Headers.ContentSecurityPolicy =
+              "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; "
+              +
+              // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
+              "script-src 'self';";
+            context.Response.Headers.Append("Cross-Origin-Embedder-Policy", "require-corp");
+            context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin");
+            await next();
+          }
+        );
+
+        var wsManager = app.ApplicationServices.GetRequiredService<Controllers.WebsocketManager>();
+        app.UseWebSockets();
+
+        app.UseEndpoints(endpoints =>
+        {
+          var ctrlBuilder = endpoints.MapControllers();
+          if (serverSt.UseAuthentication)
+          {
+            ctrlBuilder.RequireAuthorization();
+          }
+
+          endpoints.Map(
+            "/api/v1/events",
+            async context =>
+            {
+              if (context.WebSockets.IsWebSocketRequest)
+              {
+                if (serverSt.UseAuthentication)
+                {
+                  var res = await context.AuthenticateAsync();
+                  if (!res.Succeeded)
+                  {
+                    context.Response.StatusCode = 401;
+                    return;
+                  }
+                }
+                var ws = await context.WebSockets.AcceptWebSocketAsync();
+                await wsManager.HandleWebsocket(ws);
+              }
+              else
+              {
+                context.Response.StatusCode = 400;
+              }
+            }
+          );
+
+          endpoints.MapFallbackToFile("/index.html");
+        });
+
+        app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>()
+          .ApplicationStopped.Register(() =>
+          {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            Serilog.Log.CloseAndFlush();
+          });
+
+        next(app);
+      };
+    }
+  }
+
+  private static IWebHostBuilder AddKestral(
+    this IWebHostBuilder webHost,
+    IConfiguration cfg,
+    ServerSettings serverSt
+  )
+  {
+    return webHost
+      .ConfigureServices(s =>
+      {
+        s.Configure<KestrelServerOptions>(cfg.GetSection("Kestrel"));
+      })
+      .UseKestrel(options =>
+      {
+        var address = IPAddress.IPv6Any;
+        if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
+        {
+          options.Listen(
+            address,
+            serverSt.Port,
+            listenOptions =>
+            {
+              listenOptions.UseHttps(serverSt.TLSCertFile);
             }
           );
         }
         else
         {
-          Log.Error(
-            "Instruction directory {path} does not exist or is not a directory",
-            fmsSt.InstructionFilePath
+          options.Listen(address, serverSt.Port);
+        }
+
+        // support for MinDataRate
+        // https://github.com/dotnet/aspnetcore/issues/4765
+        var minReqRate = cfg.GetSection("Kestrel").GetSection("Limits").GetSection("MinRequestBodyDataRate");
+        if (minReqRate.Value == "")
+        {
+          options.Limits.MinRequestBodyDataRate = null;
+        }
+        if (minReqRate.GetSection("BytesPerSecond").Exists() && minReqRate.GetSection("GracePeriod").Exists())
+        {
+          options.Limits.MinRequestBodyDataRate = new MinDataRate(
+            minReqRate.GetValue<double>("BytesPerSecond"),
+            minReqRate.GetValue<TimeSpan>("GracePeriod")
           );
         }
-      }
-
-      app.UseMiddleware(typeof(ErrorHandlingMiddleware));
-
-      app.UseRouting();
-
-      app.UseCors();
-
-      if (serverSt.UseAuthentication)
-      {
-        app.UseAuthentication();
-        app.UseAuthorization();
-      }
-
-      if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
-      {
-        if (!env.IsDevelopment())
-          app.UseHsts();
-        app.UseHttpsRedirection();
-      }
-
-      app.Use(
-        async (context, next) =>
+        var minRespRate = cfg.GetSection("Kestrel").GetSection("Limits").GetSection("MinResponseDataRate");
+        if (minRespRate.Value == "")
         {
-          context.Response.Headers.ContentSecurityPolicy =
-            "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; "
-            +
-            // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
-            "script-src 'self';";
-          context.Response.Headers.Append("Cross-Origin-Embedder-Policy", "require-corp");
-          context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin");
-          await next();
+          options.Limits.MinResponseDataRate = null;
         }
-      );
-
-      app.UseWebSockets();
-
-      app.UseEndpoints(endpoints =>
-      {
-        var ctrlBuilder = endpoints.MapControllers();
-        if (serverSt.UseAuthentication)
+        if (
+          minRespRate.GetSection("BytesPerSecond").Exists() && minRespRate.GetSection("GracePeriod").Exists()
+        )
         {
-          ctrlBuilder.RequireAuthorization();
+          options.Limits.MinResponseDataRate = new MinDataRate(
+            minRespRate.GetValue<double>("BytesPerSecond"),
+            minRespRate.GetValue<TimeSpan>("GracePeriod")
+          );
         }
 
-        endpoints.Map(
-          "/api/v1/events",
-          async context =>
-          {
-            if (context.WebSockets.IsWebSocketRequest)
-            {
-              if (serverSt.UseAuthentication)
-              {
-                var res = await context.AuthenticateAsync();
-                if (!res.Succeeded)
-                {
-                  context.Response.StatusCode = 401;
-                  return;
-                }
-              }
-              var ws = await context.WebSockets.AcceptWebSocketAsync();
-              await wsManager.HandleWebsocket(ws);
-            }
-            else
-            {
-              context.Response.StatusCode = 400;
-            }
-          }
-        );
-
-        endpoints.MapFallbackToFile("/index.html");
+        Log.Debug("Kestrel Limits {@kestrel}", options.Limits);
       });
-
-      lifetime.ApplicationStopped.Register(() =>
-      {
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-        Serilog.Log.CloseAndFlush();
-      });
-    }
   }
 }

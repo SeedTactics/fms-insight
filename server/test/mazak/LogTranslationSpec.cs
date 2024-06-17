@@ -103,7 +103,7 @@ namespace MachineWatchTest
     public void Dispose()
     {
       jobLog.Dispose();
-      _repoCfg.CloseMemoryConnection();
+      _repoCfg.Dispose();
     }
 
     protected void ResetLogTranslation()
