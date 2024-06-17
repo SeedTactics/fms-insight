@@ -86,26 +86,6 @@ namespace DebugMachineWatchApiServer
       }
     }
 
-    private static IHostBuilder AddOpenApiDoc(this IHostBuilder host)
-    {
-      return host.ConfigureServices(
-        (_, s) =>
-          s.AddOpenApiDocument(cfg =>
-          {
-            cfg.Title = "SeedTactic FMS Insight";
-            cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
-            cfg.Version = "1.14";
-            cfg.SchemaSettings.SchemaProcessors.Add(new RequiredModifierSchemaProcessor());
-            cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
-              .Generation
-              .ReferenceTypeNullHandling
-              .NotNull;
-            cfg.RequireParametersWithoutDefault = true;
-            cfg.SchemaSettings.IgnoreObsoleteProperties = true;
-          })
-      );
-    }
-
     public static void Main()
     {
       var cfg = new ConfigurationBuilder().AddEnvironmentVariables().Build();
@@ -128,6 +108,8 @@ namespace DebugMachineWatchApiServer
         AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial
       };
 
+      string tempDbFile = null;
+
       var hostB = new HostBuilder()
         .UseContentRoot(Path.GetDirectoryName(Environment.ProcessPath))
         .ConfigureServices(s =>
@@ -137,26 +119,41 @@ namespace DebugMachineWatchApiServer
           s.AddSingleton<IJobAndQueueControl>(sp => sp.GetRequiredService<MockServerBackend>());
           s.AddSingleton<IPrintLabelForMaterial>(sp => sp.GetRequiredService<MockServerBackend>());
           s.AddSingleton<IParseBarcode>(sp => sp.GetRequiredService<MockServerBackend>());
-        })
-        .AddFMSInsightWebHost(cfg, serverSettings, fmsSettings)
-        .AddOpenApiDoc();
 
-      string tempDbFile = null;
-      if (InsightBackupDbFile != null)
-      {
-        hostB.AddRepository(
-          InsightBackupDbFile,
-          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-        );
-      }
-      else
-      {
-        tempDbFile = Path.Combine(Path.GetTempPath(), "debug-mock-" + Path.GetRandomFileName() + ".sqlite");
-        hostB.AddRepository(
-          tempDbFile,
-          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-        );
-      }
+          s.AddOpenApiDocument(cfg =>
+          {
+            cfg.Title = "SeedTactic FMS Insight";
+            cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
+            cfg.Version = "1.14";
+            cfg.SchemaSettings.SchemaProcessors.Add(new RequiredModifierSchemaProcessor());
+            cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
+              .Generation
+              .ReferenceTypeNullHandling
+              .NotNull;
+            cfg.RequireParametersWithoutDefault = true;
+            cfg.SchemaSettings.IgnoreObsoleteProperties = true;
+          });
+
+          if (InsightBackupDbFile != null)
+          {
+            s.AddRepository(
+              InsightBackupDbFile,
+              new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+            );
+          }
+          else
+          {
+            tempDbFile = Path.Combine(
+              Path.GetTempPath(),
+              "debug-mock-" + Path.GetRandomFileName() + ".sqlite"
+            );
+            s.AddRepository(
+              tempDbFile,
+              new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+            );
+          }
+        })
+        .AddFMSInsightWebHost(cfg, serverSettings, fmsSettings);
 
       var host = hostB.Build();
 

@@ -34,7 +34,6 @@ using System;
 using System.IO;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace BlackMaple.FMSInsight.Makino
 {
@@ -46,11 +45,6 @@ namespace BlackMaple.FMSInsight.Makino
       s.AddSingleton<IMachineControl, MakinoMachines>();
       s.AddSingleton<ISynchronizeCellState<MakinoCellState>, MakinoSync>();
       return s;
-    }
-
-    public static IHostBuilder AddMakinoBackend(this IHostBuilder h, MakinoSettings makinoSt)
-    {
-      return h.ConfigureServices((_, s) => s.AddMakinoBackend(makinoSt));
     }
   }
 }

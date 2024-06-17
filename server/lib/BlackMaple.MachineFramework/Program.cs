@@ -71,26 +71,6 @@ namespace BlackMaple.MachineFramework
 
   public static class Program
   {
-    public static IConfiguration LoadConfig()
-    {
-      var configFile = Path.Combine(ServerSettings.ConfigDirectory, "config.ini");
-      if (!File.Exists(configFile))
-      {
-        var defaultConfigFile = Path.Combine(ServerSettings.ContentRootDirectory, "default-config.ini");
-        if (File.Exists(defaultConfigFile))
-        {
-          if (!Directory.Exists(ServerSettings.ConfigDirectory))
-            Directory.CreateDirectory(ServerSettings.ConfigDirectory);
-          System.IO.File.Copy(defaultConfigFile, configFile, overwrite: false);
-        }
-      }
-
-      return new ConfigurationBuilder()
-        .AddIniFile(configFile, optional: true)
-        .AddEnvironmentVariables()
-        .Build();
-    }
-
     public static IHostBuilder AddFMSInsightWebHost(
       this IHostBuilder host,
       IConfiguration cfg,
@@ -191,26 +171,6 @@ namespace BlackMaple.MachineFramework
             })
             .UseStartup<Startup>();
         });
-    }
-
-    public static void AddWindowsService(this IHostBuilder host)
-    {
-#if SERVICE_AVAIL
-      host.ConfigureServices(services =>
-      {
-        if (
-          System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
-            System.Runtime.InteropServices.OSPlatform.Windows
-          )
-        )
-        {
-          services.AddSingleton<
-            IHostLifetime,
-            Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceLifetime
-          >();
-        }
-      });
-#endif
     }
   }
 }

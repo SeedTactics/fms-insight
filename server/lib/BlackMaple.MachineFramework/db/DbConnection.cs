@@ -152,34 +152,28 @@ namespace BlackMaple.MachineFramework
 
   public static class RepositoryService
   {
-    public static IHostBuilder AddRepository(
-      this IHostBuilder host,
+    public static IServiceCollection AddRepository(
+      this IServiceCollection s,
       string filename,
       SerialSettings serial,
       string? oldInspDbFile = null,
       string? oldJobDbFile = null
     )
     {
-      return host.ConfigureServices(
-        (_, s) =>
-          s.AddSingleton<RepositoryConfig>(
-            (_) => RepositoryConfig.InitializeEventDatabase(serial, filename, oldInspDbFile, oldJobDbFile)
-          )
+      return s.AddSingleton<RepositoryConfig>(
+        (_) => RepositoryConfig.InitializeEventDatabase(serial, filename, oldInspDbFile, oldJobDbFile)
       );
     }
 
-    public static IHostBuilder AddMemoryRepository(
-      this IHostBuilder host,
+    public static IServiceCollection AddMemoryRepository(
+      this IServiceCollection s,
       SerialSettings serial,
       Guid? guid = null,
       bool createTables = true
     )
     {
-      return host.ConfigureServices(
-        (_, s) =>
-          s.AddSingleton<RepositoryConfig>(
-            (_) => RepositoryConfig.InitializeMemoryDB(serial, guid, createTables)
-          )
+      return s.AddSingleton<RepositoryConfig>(
+        (_) => RepositoryConfig.InitializeMemoryDB(serial, guid, createTables)
       );
     }
   }

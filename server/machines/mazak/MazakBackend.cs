@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -31,12 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using BlackMaple.MachineFramework;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
 
@@ -64,11 +61,6 @@ namespace MazakMachineInterface
       s.AddSingleton<IMachineControl, MazakMachineControl>();
 
       return s;
-    }
-
-    public static IHostBuilder AddMazakBackend(this IHostBuilder h, MazakConfig mazakCfg)
-    {
-      return h.ConfigureServices((_, s) => s.AddMazakBackend(mazakCfg));
     }
   }
 }

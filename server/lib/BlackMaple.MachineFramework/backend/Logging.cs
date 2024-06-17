@@ -121,7 +121,6 @@ namespace BlackMaple.MachineFramework
         .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
         .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information);
 
-#if SERVICE_AVAIL
       if (
         enableEventLog
         && System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
@@ -135,13 +134,17 @@ namespace BlackMaple.MachineFramework
           restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information
         );
       }
-#endif
 
       if (serverSt.EnableDebugLog)
       {
         logConfig = logConfig.WriteTo.File(
           new Serilog.Formatting.Compact.CompactJsonFormatter(),
-          System.IO.Path.Combine(ServerSettings.ConfigDirectory, "fmsinsight-debug.txt"),
+          Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "SeedTactics",
+            "FMSInsight",
+            "fmsinsight-debug.txt"
+          ),
           rollingInterval: RollingInterval.Day,
           hooks: new InsightLogging.CompressSerilogDebugLog(),
           restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Verbose,

@@ -41,25 +41,40 @@ using Microsoft.Extensions.Configuration;
 
 namespace BlackMaple.MachineFramework;
 
-public record ServerSettings
+public static class Configuration
 {
-#if SERVICE_AVAIL
-
-  public static string ConfigDirectory { get; } =
-    Path.Combine(
-      System.Environment.GetFolderPath(System.Environment.SpecialFolder.CommonApplicationData),
+  public static IConfiguration LoadFromIni(string? configFile = null)
+  {
+    configFile ??= Path.Combine(
+      Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
       "SeedTactics",
-      "FMSInsight"
+      "FMSInsight",
+      "config.ini"
     );
 
-  public static string ContentRootDirectory { get; } = Path.GetDirectoryName(Environment.ProcessPath)!;
-#else
+    if (!File.Exists(configFile))
+    {
+      var defaultConfigFile = Path.Combine(
+        Path.GetDirectoryName(Environment.ProcessPath)!,
+        "default-config.ini"
+      );
+      if (File.Exists(defaultConfigFile))
+      {
+        if (!Directory.Exists(Path.GetDirectoryName(configFile)))
+          Directory.CreateDirectory(Path.GetDirectoryName(configFile)!);
+        File.Copy(defaultConfigFile, configFile, overwrite: false);
+      }
+    }
 
-  public static string ConfigDirectory { get; } = Directory.GetCurrentDirectory();
+    return new ConfigurationBuilder()
+      .AddIniFile(configFile, optional: true)
+      .AddEnvironmentVariables()
+      .Build();
+  }
+}
 
-  public static string ContentRootDirectory { get; } = Directory.GetCurrentDirectory();
-#endif
-
+public record ServerSettings
+{
   public bool EnableDebugLog { get; init; } = false;
   public int Port { get; init; } = 5000;
   public string? TLSCertFile { get; init; } = null;
