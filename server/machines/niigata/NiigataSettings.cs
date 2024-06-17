@@ -53,6 +53,7 @@ public record NiigataSettings
   public required ImmutableList<string> MachineIPs { get; init; }
   public required string SQLConnectionString { get; init; }
   public required bool RequireProgramsInJobs { get; init; }
+  public Func<ActiveJob, bool>? DecrementJobFilter { get; init; } = null;
 
   public NiigataSettings() { }
 

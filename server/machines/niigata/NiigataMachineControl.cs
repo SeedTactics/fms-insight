@@ -49,13 +49,13 @@ namespace BlackMaple.FMSInsight.Niigata
       RepositoryConfig jobDbCfg,
       INiigataCommunication icc,
       ICncMachineConnection cnc,
-      NiigataStationNames statNames
+      NiigataSettings settings
     )
     {
       _jobDbCfg = jobDbCfg;
       _icc = icc;
       _cnc = cnc;
-      _statNames = statNames;
+      _statNames = settings.StationNames;
     }
 
     public ImmutableList<ProgramInCellController> CurrentProgramsInCellController()

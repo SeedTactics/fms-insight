@@ -80,12 +80,7 @@ namespace BlackMaple.FMSInsight.Niigata
     public CurrentStatus CurrentStatus { get; init; }
   }
 
-  public interface IBuildCellState
-  {
-    CellState BuildCellState(IRepository jobDB, NiigataStatus status);
-  }
-
-  public class CreateCellState : IBuildCellState
+  public class CreateCellState
   {
     private FMSSettings _settings;
     private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();

@@ -32,74 +32,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using BlackMaple.MachineFramework;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public sealed class NiigataBackend : IDisposable
+  public static class NiigataServices
   {
-    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<NiigataBackend>();
-
-    private readonly JobsAndQueuesFromDb<CellState> _jobsAndQueues;
-
-    public IJobAndQueueControl JobControl => _jobsAndQueues;
-    public IMachineControl MachineControl { get; }
-    public RepositoryConfig RepoConfig { get; }
-
-    public NiigataBackend(
-      IConfigurationSection config,
-      FMSSettings cfg,
-      SerialSettings serialSt,
-      Func<NiigataStationNames, ICncMachineConnection, IAssignPallets> customAssignment = null,
-      CheckJobsValid customJobCheck = null,
-      Func<ActiveJob, bool> decrementJobFilter = null
-    )
+    public static IServiceCollection AddNiigataBackend(this IServiceCollection s, NiigataSettings settings)
     {
-      try
-      {
-        var settings = new NiigataSettings(config, cfg);
-        Log.Debug("Starting niigata backend with {@settings}", settings);
-
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(
-          serialSt,
-          System.IO.Path.Combine(cfg.DataDirectory, "niigatalog.db")
-        );
-
-        var machConn = new CncMachineConnection(settings.MachineIPs);
-        var icc = new NiigataICC(settings);
-        var createLog = new CreateCellState(settings.FMSSettings, settings.StationNames, machConn);
-        MachineControl = new NiigataMachineControl(RepoConfig, icc, machConn, settings.StationNames);
-
-        IAssignPallets assign = null;
-        if (customAssignment != null)
-        {
-          assign = customAssignment(settings.StationNames, machConn);
-        }
-
-        CheckJobsValid checkJobsValid = customJobCheck ?? CheckJobsMatchNiigata.CheckNewJobs;
-
-        var syncSt = new SyncNiigataPallets(
-          settings,
-          icc,
-          createLog,
-          checkJobs: customJobCheck,
-          assign: assign,
-          decrementJobFilter: decrementJobFilter
-        );
-
-        _jobsAndQueues = new JobsAndQueuesFromDb<CellState>(RepoConfig, settings.FMSSettings, syncSt);
-      }
-      catch (Exception ex)
-      {
-        Log.Error(ex, "Unhandled exception when initializing niigata backend");
-      }
-    }
-
-    public void Dispose()
-    {
-      _jobsAndQueues?.Dispose();
+      s.AddSingleton(settings);
+      s.AddSingleton<ICncMachineConnection, CncMachineConnection>();
+      s.AddSingleton<INiigataCommunication, NiigataICC>();
+      s.AddSingleton<IMachineControl, NiigataMachineControl>();
+      s.AddSingleton<ISynchronizeCellState<CellState>, SyncNiigataPallets>();
+      return s;
     }
   }
 }

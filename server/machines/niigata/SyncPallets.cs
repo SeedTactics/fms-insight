@@ -48,30 +48,25 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private readonly NiigataSettings _settings;
     private readonly INiigataCommunication _icc;
-    private readonly IBuildCellState _createLog;
+    private readonly CreateCellState _createLog;
     private readonly IAssignPallets _assign;
-    private readonly CheckJobsValid _checkJobs;
-    private readonly Func<ActiveJob, bool>? _decrementJobFilter;
 
     public SyncNiigataPallets(
+      FMSSettings fmsSt,
       NiigataSettings settings,
       INiigataCommunication icc,
-      IBuildCellState createLog,
-      IAssignPallets? assign,
-      CheckJobsValid? checkJobs,
-      Func<ActiveJob, bool>? decrementJobFilter
+      ICncMachineConnection mcc,
+      IAssignPallets? assign = null
     )
     {
       _icc = icc;
-      _createLog = createLog;
+      _createLog = new CreateCellState(fmsSt, settings.StationNames, mcc);
       _settings = settings;
       _assign =
         assign
         ?? new MultiPalletAssign(
           [new AssignNewRoutesOnPallets(settings.StationNames), new SizedQueues(settings.FMSSettings.Queues)]
         );
-      _checkJobs = checkJobs ?? CheckJobsMatchNiigata.CheckNewJobs;
-      _decrementJobFilter = decrementJobFilter;
     }
 
     public event Action NewCellState
@@ -82,7 +77,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
     {
-      return _checkJobs(_settings, _icc, db, jobs);
+      return CheckJobsMatchNiigata.CheckNewJobs(_settings, _icc, db, jobs);
     }
 
     public CellState CalculateCellState(IRepository db)
@@ -109,7 +104,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public bool DecrementJobs(IRepository db, CellState st)
     {
-      var newDecrs = st.CurrentStatus.BuildJobsToDecrement(decrementJobFilter: _decrementJobFilter);
+      var newDecrs = st.CurrentStatus.BuildJobsToDecrement(decrementJobFilter: _settings.DecrementJobFilter);
 
       if (newDecrs.Count > 0)
       {

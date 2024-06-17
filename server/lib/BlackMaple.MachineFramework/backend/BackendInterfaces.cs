@@ -71,6 +71,11 @@ namespace BlackMaple.MachineFramework
     public bool AllowQuarantineToCancelLoad { get; }
   }
 
+  public interface IAdditionalCheckJobs
+  {
+    IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs);
+  }
+
   public interface IPrintLabelForMaterial
   {
     public void PrintLabel(long materialId, int process, Uri httpReferer);

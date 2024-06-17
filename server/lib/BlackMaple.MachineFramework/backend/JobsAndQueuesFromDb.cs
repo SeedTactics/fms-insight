@@ -134,15 +134,22 @@ namespace BlackMaple.MachineFramework
     private readonly RepositoryConfig _repo;
     private readonly FMSSettings _settings;
     private readonly ISynchronizeCellState<St> _syncState;
+    private readonly IEnumerable<IAdditionalCheckJobs> _additionalCheckJobs;
 
     public event NewCurrentStatus OnNewCurrentStatus;
     public bool AllowQuarantineToCancelLoad => _syncState.AllowQuarantineToCancelLoad;
 
-    public JobsAndQueuesFromDb(RepositoryConfig repo, FMSSettings settings, ISynchronizeCellState<St> syncSt)
+    public JobsAndQueuesFromDb(
+      RepositoryConfig repo,
+      FMSSettings settings,
+      ISynchronizeCellState<St> syncSt,
+      IEnumerable<IAdditionalCheckJobs> additionalCheckJobs = null
+    )
     {
       _repo = repo;
       _settings = settings;
       _syncState = syncSt;
+      _additionalCheckJobs = additionalCheckJobs ?? Enumerable.Empty<IAdditionalCheckJobs>();
       _syncState.NewCellState += NewCellState;
 
       _thread = new Thread(Thread) { IsBackground = true };
@@ -349,8 +356,10 @@ namespace BlackMaple.MachineFramework
     List<string> IJobAndQueueControl.CheckValidRoutes(IEnumerable<Job> newJobs)
     {
       using var jdb = _repo.OpenConnection();
+      var newJ = new NewJobs() { ScheduleId = null, Jobs = newJobs.ToImmutableList() };
       return _syncState
-        .CheckNewJobs(jdb, new NewJobs() { ScheduleId = null, Jobs = newJobs.ToImmutableList() })
+        .CheckNewJobs(jdb, newJ)
+        .Concat(_additionalCheckJobs.SelectMany(c => c.CheckNewJobs(jdb, newJ)))
         .ToList();
     }
 
@@ -359,7 +368,9 @@ namespace BlackMaple.MachineFramework
       using (var jdb = _repo.OpenConnection())
       {
         Log.Debug("Adding new jobs {@jobs}", jobs);
-        var errors = _syncState.CheckNewJobs(jdb, jobs);
+        var errors = _syncState
+          .CheckNewJobs(jdb, jobs)
+          .Concat(_additionalCheckJobs.SelectMany(c => c.CheckNewJobs(jdb, jobs)));
         if (errors.Any())
         {
           throw new BadRequestException(string.Join(Environment.NewLine, errors));

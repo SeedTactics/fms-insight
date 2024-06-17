@@ -50,9 +50,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
     private List<IPEndPoint> _machines;
 
-    public CncMachineConnection(IEnumerable<string> machines)
+    public CncMachineConnection(NiigataSettings settings)
     {
-      _machines = machines.Select(CreateIPEndPoint).ToList();
+      _machines = settings.MachineIPs.Select(CreateIPEndPoint).ToList();
     }
 
     public T WithConnection<T>(int machine, Func<ushort, T> f)

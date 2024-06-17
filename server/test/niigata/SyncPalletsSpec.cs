@@ -51,7 +51,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private IccSimulator _sim;
     private SyncNiigataPallets _sync;
     private Xunit.Abstractions.ITestOutputHelper _output;
-    private CheckJobsValid _checkJobs;
     private bool _debugLogEnabled = false;
     private JsonSerializerOptions jsonSettings;
 
@@ -86,7 +85,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var assign = new MultiPalletAssign(
         new IAssignPallets[] { new AssignNewRoutesOnPallets(statNames), new SizedQueues(_fmsSt.Queues) }
       );
-      var createLog = new CreateCellState(_fmsSt, statNames, machConn);
 
       _sim = new IccSimulator(
         numPals: numPals,
@@ -94,8 +92,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         numLoads: numLoads,
         statNames: statNames
       );
-
-      _checkJobs = Substitute.For<CheckJobsValid>();
 
       var settings = new NiigataSettings()
       {
@@ -107,7 +103,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         MachineIPs = []
       };
 
-      _sync = new SyncNiigataPallets(settings, _sim, createLog, assign, _checkJobs, null);
+      _sync = new SyncNiigataPallets(_fmsSt, settings, _sim, machConn, assign);
 
       _sim.OnNewProgram += (newprog) =>
       {
@@ -1390,30 +1386,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
           );
       }
-    }
-
-    [Fact]
-    public void CheckJobs()
-    {
-      InitSim(
-        new NiigataStationNames()
-        {
-          ReclampGroupNames = [],
-          IccMachineToJobMachNames = new Dictionary<int, (string group, int num)>()
-        },
-        numPals: 16,
-        numLoads: 4,
-        numMachines: 8
-      );
-      _checkJobs(
-          Arg.Any<NiigataSettings>(),
-          Arg.Any<INiigataCommunication>(),
-          Arg.Any<IRepository>(),
-          Arg.Any<NewJobs>()
-        )
-        .Returns(["err1", "err2"]);
-
-      _sync.CheckNewJobs(null, null).Should().BeEquivalentTo(["err1", "err2"]);
     }
   }
 }

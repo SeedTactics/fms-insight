@@ -38,13 +38,6 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public delegate IEnumerable<string> CheckJobsValid(
-    NiigataSettings settings,
-    INiigataCommunication icc,
-    IRepository jobDB,
-    NewJobs jobs
-  );
-
   public static class CheckJobsMatchNiigata
   {
     public static IEnumerable<string> CheckNewJobs(
