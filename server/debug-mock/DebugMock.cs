@@ -207,7 +207,7 @@ namespace DebugMachineWatchApiServer
     {
       _fmsSettings = settings;
       _jsonSettings = new JsonSerializerOptions();
-      Startup.JsonSettings(_jsonSettings);
+      FMSInsightWebHost.JsonSettings(_jsonSettings);
 
       RepoConfig = repo;
 

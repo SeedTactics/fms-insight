@@ -36,6 +36,7 @@ using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using BlackMaple.MachineFramework.Controllers;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -78,21 +79,23 @@ public static class FMSInsightWebHost
         s.AddSingleton<ServerSettings>(serverSt);
         s.AddSingleton<FMSSettings>(fmsSt);
 
-        var jobStType =
-          s.Select(service =>
-              service.ServiceType.IsGenericType
-              && service.ServiceType.GetGenericTypeDefinition() == typeof(ISynchronizeCellState<>)
-                ? service.ServiceType.GenericTypeArguments[0]
-                : null
-            )
-            .FirstOrDefault(x => x != null)
-          ?? throw new Exception("Must register instance of ISyncronizeCellState");
+        var jobStType = s.Select(service =>
+            service.ServiceType.IsGenericType
+            && service.ServiceType.GetGenericTypeDefinition() == typeof(ISynchronizeCellState<>)
+              ? service.ServiceType.GenericTypeArguments[0]
+              : null
+          )
+          .FirstOrDefault(x => x != null);
 
-        s.AddSingleton(typeof(IJobAndQueueControl), typeof(JobsAndQueuesFromDb<>).MakeGenericType(jobStType));
+        if (jobStType != null)
+        {
+          s.AddSingleton(
+            typeof(IJobAndQueueControl),
+            typeof(JobsAndQueuesFromDb<>).MakeGenericType(jobStType)
+          );
+        }
 
         s.AddSingleton<Controllers.WebsocketManager>();
-
-        s.AddTransient<IStartupFilter, Startup>();
 
         s.AddResponseCompression();
 
@@ -113,6 +116,9 @@ public static class FMSInsightWebHost
           })
           .ConfigureApplicationPartManager(am =>
           {
+            am.ApplicationParts.Add(
+              new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(typeof(jobsController).Assembly)
+            );
             if (extraParts != null)
             {
               foreach (var p in extraParts)
@@ -159,127 +165,125 @@ public static class FMSInsightWebHost
         webBuilder
           .UseConfiguration(cfg)
           .SuppressStatusMessages(suppressStatusMessages: true)
-          .AddKestral(cfg, serverSt);
+          .AddKestral(cfg, serverSt)
+          .UseStartup<Startup>();
       });
   }
 
-  private class Startup : IStartupFilter
+  public class Startup
   {
-    public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
+    public void Configure(
+      IApplicationBuilder app,
+      FMSSettings fmsSt,
+      ServerSettings serverSt,
+      IWebHostEnvironment env,
+      Controllers.WebsocketManager wsManager,
+      IHostApplicationLifetime lifetime
+    )
     {
-      return app =>
+      app.UseResponseCompression();
+
+      app.UseStaticFiles();
+
+      if (!string.IsNullOrEmpty(fmsSt.InstructionFilePath))
       {
-        app.UseResponseCompression();
-
-        app.UseStaticFiles();
-
-        var fmsSt = app.ApplicationServices.GetRequiredService<FMSSettings>();
-        if (!string.IsNullOrEmpty(fmsSt.InstructionFilePath))
+        if (System.IO.Directory.Exists(fmsSt.InstructionFilePath))
         {
-          if (System.IO.Directory.Exists(fmsSt.InstructionFilePath))
-          {
-            app.UseStaticFiles(
-              new StaticFileOptions()
-              {
-                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-                  fmsSt.InstructionFilePath
-                ),
-                RequestPath = "/instructions"
-              }
-            );
-          }
-          else
-          {
-            Log.Error(
-              "Instruction directory {path} does not exist or is not a directory",
-              fmsSt.InstructionFilePath
-            );
-          }
+          app.UseStaticFiles(
+            new StaticFileOptions()
+            {
+              FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+                fmsSt.InstructionFilePath
+              ),
+              RequestPath = "/instructions"
+            }
+          );
         }
+        else
+        {
+          Log.Error(
+            "Instruction directory {path} does not exist or is not a directory",
+            fmsSt.InstructionFilePath
+          );
+        }
+      }
 
-        app.UseMiddleware(typeof(ErrorHandlingMiddleware));
+      app.UseMiddleware(typeof(ErrorHandlingMiddleware));
 
-        app.UseRouting();
+      app.UseRouting();
 
-        app.UseCors();
+      app.UseCors();
 
-        var serverSt = app.ApplicationServices.GetRequiredService<ServerSettings>();
+      if (serverSt.UseAuthentication)
+      {
+        app.UseAuthentication();
+        app.UseAuthorization();
+      }
+
+      if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
+      {
+        if (!env.IsDevelopment())
+          app.UseHsts();
+        app.UseHttpsRedirection();
+      }
+
+      app.Use(
+        async (context, next) =>
+        {
+          context.Response.Headers.ContentSecurityPolicy =
+            "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; "
+            +
+            // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
+            "script-src 'self';";
+          context.Response.Headers.Append("Cross-Origin-Embedder-Policy", "require-corp");
+          context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin");
+          await next();
+        }
+      );
+
+      app.UseWebSockets();
+
+      app.UseEndpoints(endpoints =>
+      {
+        var ctrlBuilder = endpoints.MapControllers();
         if (serverSt.UseAuthentication)
         {
-          app.UseAuthentication();
-          app.UseAuthorization();
+          ctrlBuilder.RequireAuthorization();
         }
 
-        if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
-        {
-          var env = app.ApplicationServices.GetRequiredService<IWebHostEnvironment>();
-          if (!env.IsDevelopment())
-            app.UseHsts();
-          app.UseHttpsRedirection();
-        }
-
-        app.Use(
-          async (context, next) =>
+        endpoints.Map(
+          "/api/v1/events",
+          async context =>
           {
-            context.Response.Headers.ContentSecurityPolicy =
-              "default-src 'self'; style-src 'self' 'unsafe-inline'; connect-src *; base-uri 'self'; form-action 'self'; font-src 'self' data:; manifest-src 'self' data:; "
-              +
-              // https://github.com/vitejs/vite/tree/main/packages/plugin-legacy#content-security-policy
-              "script-src 'self';";
-            context.Response.Headers.Append("Cross-Origin-Embedder-Policy", "require-corp");
-            context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin");
-            await next();
+            if (context.WebSockets.IsWebSocketRequest)
+            {
+              if (serverSt.UseAuthentication)
+              {
+                var res = await context.AuthenticateAsync();
+                if (!res.Succeeded)
+                {
+                  context.Response.StatusCode = 401;
+                  return;
+                }
+              }
+              var ws = await context.WebSockets.AcceptWebSocketAsync();
+              await wsManager.HandleWebsocket(ws);
+            }
+            else
+            {
+              context.Response.StatusCode = 400;
+            }
           }
         );
 
-        var wsManager = app.ApplicationServices.GetRequiredService<Controllers.WebsocketManager>();
-        app.UseWebSockets();
+        endpoints.MapFallbackToFile("/index.html");
+      });
 
-        app.UseEndpoints(endpoints =>
-        {
-          var ctrlBuilder = endpoints.MapControllers();
-          if (serverSt.UseAuthentication)
-          {
-            ctrlBuilder.RequireAuthorization();
-          }
-
-          endpoints.Map(
-            "/api/v1/events",
-            async context =>
-            {
-              if (context.WebSockets.IsWebSocketRequest)
-              {
-                if (serverSt.UseAuthentication)
-                {
-                  var res = await context.AuthenticateAsync();
-                  if (!res.Succeeded)
-                  {
-                    context.Response.StatusCode = 401;
-                    return;
-                  }
-                }
-                var ws = await context.WebSockets.AcceptWebSocketAsync();
-                await wsManager.HandleWebsocket(ws);
-              }
-              else
-              {
-                context.Response.StatusCode = 400;
-              }
-            }
-          );
-
-          endpoints.MapFallbackToFile("/index.html");
-        });
-
-        app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>()
-          .ApplicationStopped.Register(() =>
-          {
-            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-            Serilog.Log.CloseAndFlush();
-          });
-
-        next(app);
-      };
+      lifetime.ApplicationStopped.Register(() =>
+      {
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+        Serilog.Log.CloseAndFlush();
+      });
     }
   }
 
