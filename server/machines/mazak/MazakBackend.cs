@@ -44,7 +44,7 @@ namespace MazakMachineInterface
 {
   public static class MazakServices
   {
-    public static void AddMazakBackend(this IServiceCollection s, MazakConfig mazakCfg)
+    public static IServiceCollection AddMazakBackend(this IServiceCollection s, MazakConfig mazakCfg)
     {
       if (mazakCfg.DBType == MazakDbType.MazakVersionE)
       {
@@ -62,75 +62,13 @@ namespace MazakMachineInterface
       s.AddSingleton<IReadDataAccess, OpenDatabaseKitReadDB>();
       s.AddSingleton<ISynchronizeCellState<MazakState>, MazakSync>();
       s.AddSingleton<IMachineControl, MazakMachineControl>();
+
+      return s;
     }
 
-    public static void AddMazakBackend(this IHostBuilder h, MazakConfig mazakCfg)
+    public static IHostBuilder AddMazakBackend(this IHostBuilder h, MazakConfig mazakCfg)
     {
-      h.ConfigureServices((_, s) => s.AddMazakBackend(mazakCfg));
-    }
-  }
-
-  public sealed class MazakBackend : IFMSBackend, IDisposable
-  {
-    private readonly JobsAndQueuesFromDb<MazakState> _jobsAndQueues;
-    private readonly IReadDataAccess _readDB;
-    private readonly IWriteData _writeDB;
-    private readonly ICurrentLoadActions loadOper;
-
-    public RepositoryConfig RepoConfig { get; }
-    public MazakMachineControl MazakMachineControl { get; }
-
-    public IReadDataAccess ReadDB => _readDB;
-    public IWriteData WriteDB => _writeDB;
-    public IJobAndQueueControl JobControl => _jobsAndQueues;
-    public IMachineControl MachineControl => MazakMachineControl;
-
-    public MazakBackend(
-      IConfiguration configuration,
-      FMSSettings st,
-      SerialSettings serialSt,
-      MazakConfig mazakCfg = null
-    )
-    {
-      mazakCfg ??= MazakConfig.Load(configuration);
-
-      if (mazakCfg.DBType == MazakDbType.MazakVersionE)
-      {
-        throw new Exception("This version of FMS Insight does not support Mazak Version E");
-      }
-
-      var oldJobDbName = System.IO.Path.Combine(st.DataDirectory, "jobinspection.db");
-      if (!System.IO.File.Exists(oldJobDbName))
-        oldJobDbName = System.IO.Path.Combine(st.DataDirectory, "mazakjobs.db");
-
-      RepoConfig = RepositoryConfig.InitializeEventDatabase(
-        serialSt,
-        System.IO.Path.Combine(st.DataDirectory, "log.db"),
-        System.IO.Path.Combine(st.DataDirectory, "insp.db"),
-        oldJobDbName
-      );
-
-      _writeDB = new OpenDatabaseKitTransactionDB(mazakCfg);
-
-      if (mazakCfg.DBType == MazakDbType.MazakWeb)
-        loadOper = new LoadOperationsFromFile(mazakCfg); // web instead watches the log csv files
-      else
-        loadOper = new LoadOperationsFromDB(mazakCfg); // smooth db doesn't use the load operations file
-
-      _readDB = new OpenDatabaseKitReadDB(mazakCfg, loadOper);
-
-      var syncSt = new MazakSync(readDb: _readDB, writeDb: _writeDB, settings: st, mazakConfig: mazakCfg);
-
-      _jobsAndQueues = new JobsAndQueuesFromDb<MazakState>(RepoConfig, st, syncSt);
-
-      MazakMachineControl = new MazakMachineControl(RepoConfig, _readDB, mazakCfg);
-
-      _jobsAndQueues.StartThread();
-    }
-
-    public void Dispose()
-    {
-      _jobsAndQueues?.Dispose();
+      return h.ConfigureServices((_, s) => s.AddMazakBackend(mazakCfg));
     }
   }
 }

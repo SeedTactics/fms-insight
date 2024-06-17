@@ -133,7 +133,6 @@ namespace BlackMaple.MachineFramework
       IApplicationBuilder app,
       IHostApplicationLifetime lifetime,
       IWebHostEnvironment env,
-      FMSImplementation fmsImpl,
       ServerSettings serverSt,
       FMSSettings fmsSt,
       Controllers.WebsocketManager wsManager

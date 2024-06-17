@@ -53,7 +53,7 @@ namespace BlackMaple.FMSInsight.Makino
 
   public sealed class MakinoSync(MakinoSettings settings) : ISynchronizeCellState<MakinoCellState>
   {
-    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSync>();
 
     public bool AllowQuarantineToCancelLoad => false;
     public bool AddJobsAsCopiedToSystem => false;

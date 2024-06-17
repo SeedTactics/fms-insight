@@ -46,12 +46,8 @@ namespace MazakMachineInterface
 
     private readonly string mazakPath;
 
-    private readonly Action<int, IEnumerable<LoadAction>> _onLoadActions;
-
     public LoadOperationsFromFile(MazakConfig cfg)
     {
-      _onLoadActions = null;
-
       if (string.IsNullOrEmpty(cfg.LoadCSVPath) || !Directory.Exists(cfg.LoadCSVPath))
       {
         Log.Warning("No mazak Load CSV Path configured, will not read load instructions from file");

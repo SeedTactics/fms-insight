@@ -49,6 +49,7 @@ using Serilog.Events;
 namespace BlackMaple.MachineFramework
 {
   // Change to DI container
+  // - Move name to assembly title attribute
   // - Change CreateHostBuilder to AddFMSInsightWebHost and take a this IHostBuilder (and remove fmsImpl)
   // - Switch Startup to use startup filters https://learn.microsoft.com/en-us/aspnet/core/fundamentals/startup?view=aspnetcore-8.0
   // - Remove Backend, Workers, and ExtraApplicationParts from FMSImplementation, make FMSImplementation
@@ -63,7 +64,6 @@ namespace BlackMaple.MachineFramework
   //
   //     var host = new HostBuilder()
   //        .UseContentRoot(Path.GetDirectoryName(Environment.ProcessPath)) // remove ContentRoot from ServerSettings
-  //        .ConfigureServices(s => s.AddSingleton<FMSSettings>(fmsSt).AddSingleton<MazakSettings>(mazakSt))
   //        .AddRepository(...)  <--- new function, registers RepoConfig
   //        .AddMazakBackend(...) <-- new function per machine type, registering services
   //        .AddFMSInsightWebHost(cfg, serverSt, fmsSt, extraAppParts)
@@ -91,7 +91,7 @@ namespace BlackMaple.MachineFramework
         .Build();
     }
 
-    public static void AddFMSInsightWebHost(
+    public static IHostBuilder AddFMSInsightWebHost(
       this IHostBuilder host,
       IConfiguration cfg,
       ServerSettings serverSt,
@@ -100,9 +100,10 @@ namespace BlackMaple.MachineFramework
         null
     )
     {
-      host.UseSerilog()
+      return host.UseSerilog()
         .ConfigureServices(s =>
         {
+          s.AddSingleton<ServerSettings>(serverSt);
           s.AddSingleton<FMSSettings>(fmsSt);
 
           var jobStType =

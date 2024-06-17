@@ -70,4 +70,31 @@ namespace BlackMaple.MachineFramework
     public bool AddJobsAsCopiedToSystem { get; }
     public bool AllowQuarantineToCancelLoad { get; }
   }
+
+  public interface IPrintLabelForMaterial
+  {
+    public void PrintLabel(long materialId, int process, Uri httpReferer);
+  }
+
+  public interface ICalculateInstructionPath
+  {
+    public string InstructionPath(
+      string part,
+      int? process,
+      string type,
+      long? materialID,
+      string operatorName,
+      int pallet
+    );
+  }
+
+  public interface IParseBarcode
+  {
+    public ScannedMaterial ParseBarcode(string barcode, Uri httpReferer);
+  }
+
+  public interface ICheckLicense
+  {
+    public DateTime? LicenseExpires();
+  }
 }

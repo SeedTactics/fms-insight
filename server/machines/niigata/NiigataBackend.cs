@@ -38,7 +38,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public sealed class NiigataBackend : IFMSBackend, IDisposable
+  public sealed class NiigataBackend : IDisposable
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<NiigataBackend>();
 

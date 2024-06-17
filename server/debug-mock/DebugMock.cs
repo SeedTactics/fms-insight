@@ -51,7 +51,7 @@ namespace DebugMachineWatchApiServer
 {
   public static class DebugMockProgram
   {
-    public static string InsightBackupDbFile = null;
+    public static readonly string InsightBackupDbFile = null;
 
     public class RequiredModifierSchemaProcessor : ISchemaProcessor
     {
@@ -109,10 +109,12 @@ namespace DebugMachineWatchApiServer
 
       var serverSettings = ServerSettings.Load(cfg);
 
+      InsightLogging.EnableSerilog(serverSt: serverSettings, enableEventLog: false);
+
       var fmsSettings = FMSSettings.Load(cfg) with
       {
-        InstructionFilePath = System.IO.Path.Combine(
-          System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+        InstructionFilePath = Path.Combine(
+          Path.GetDirectoryName(Assembly.GetEntryAssembly().Location),
           "../../../sample-instructions/"
         ),
         QuarantineQueue = "Initial Quarantine",
@@ -123,100 +125,35 @@ namespace DebugMachineWatchApiServer
         AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial
       };
 
-      BlackMaple.MachineFramework.InsightLogging.EnableSerilog(
-        serverSt: serverSettings,
-        enableEventLog: false
-      );
-
-      var backend = new MockServerBackend(fmsSettings);
-      var fmsImpl = new FMSImplementation()
-      {
-        Backend = backend,
-        Name = "mock",
-        Version = "1.2.3.4",
-        PrintLabel = (matId, process, httpReferer) =>
+      var hostB = new HostBuilder()
+        .UseContentRoot(Path.GetDirectoryName(Environment.ProcessPath))
+        //.AddRepository(...)
+        .ConfigureServices(s =>
         {
-          int loadStation = -10;
-          if (
-            httpReferer.Segments.Length == 4
-            && httpReferer.Segments[0] == "/"
-            && httpReferer.Segments[1] == "station/"
-            && httpReferer.Segments[2] == "loadunload/"
-            && int.TryParse(httpReferer.Segments[3], out var lul)
-          )
-          {
-            loadStation = lul;
-          }
-          Serilog.Log.Information(
-            "Print label for {matId} {process} {referer} and {load}",
-            matId,
-            process,
-            httpReferer,
-            loadStation
-          );
-        },
-        ParseBarcode = (barcode, referer) =>
-        {
-          Serilog.Log.Information("Parsing barcode {barcode} {referer}", barcode, referer);
-          System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
-          var commaIdx = barcode.IndexOf(',');
-          if (commaIdx >= 0)
-            barcode = barcode.Substring(0, commaIdx);
-          using (var conn = backend.RepoConfig.OpenConnection())
-          {
-            var mats = conn.GetMaterialDetailsForSerial(barcode);
-            if (mats.Count > 0)
-            {
-              return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
-            }
-            else
-            {
-              return new ScannedMaterial()
-              {
-                Casting = new ScannedCasting()
-                {
-                  Serial = barcode,
-                  Workorder = "work1",
-                  //PossibleCastings = ImmutableList.Create("part1", "part2"),
-                  PossibleJobs = ImmutableList.Create("aaa-offline-2018-01-01", "bbb-offline-2018-01-01")
-                },
-              };
-            }
-          }
-        },
-      };
-
-      var hostB = BlackMaple.MachineFramework.Program.CreateHostBuilder(
-        cfg,
-        serverSettings,
-        fmsSettings,
-        fmsImpl,
-        useService: false
-      );
-
-      var webroot = Environment.GetEnvironmentVariable("BMS_WEBROOT");
-      if (!string.IsNullOrEmpty(webroot))
-      {
-        hostB.ConfigureWebHostDefaults(webBuilder =>
-        {
-          webBuilder.UseWebRoot(webroot);
-        });
-      }
-
-      hostB.ConfigureServices((_, services) => AddOpenApiDoc(services));
+          s.AddSingleton<MockServerBackend>();
+          s.AddSingleton<IMachineControl>(sp => sp.GetRequiredService<MockServerBackend>());
+          s.AddSingleton<IJobAndQueueControl>(sp => sp.GetRequiredService<MockServerBackend>());
+          s.AddSingleton<IPrintLabelForMaterial>(sp => sp.GetRequiredService<MockServerBackend>());
+          s.AddSingleton<IParseBarcode>(sp => sp.GetRequiredService<MockServerBackend>());
+        })
+        .AddFMSInsightWebHost(cfg, serverSettings, fmsSettings)
+        .ConfigureServices((_, services) => AddOpenApiDoc(services));
 
       hostB.Build().Run();
     }
   }
 
-  public sealed class MockServerBackend : IFMSBackend, IMachineControl, IJobAndQueueControl, IDisposable
+  public sealed class MockServerBackend
+    : IMachineControl,
+      IJobAndQueueControl,
+      IPrintLabelForMaterial,
+      IParseBarcode
   {
     public RepositoryConfig RepoConfig { get; private set; }
 
     private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
     private ImmutableList<ToolInMachine> Tools { get; set; }
-    private string _tempDbFile;
 
     private class MockProgram
     {
@@ -238,29 +175,20 @@ namespace DebugMachineWatchApiServer
 
     private readonly FMSSettings _fmsSettings;
 
-    public MockServerBackend(FMSSettings settings)
+    public MockServerBackend(FMSSettings settings, RepositoryConfig repo)
     {
       _fmsSettings = settings;
       _jsonSettings = new JsonSerializerOptions();
       Startup.JsonSettings(_jsonSettings);
 
+      RepoConfig = repo;
+
       if (DebugMockProgram.InsightBackupDbFile != null)
       {
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(
-          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
-          DebugMockProgram.InsightBackupDbFile
-        );
         LoadStatusFromLog(System.IO.Path.GetDirectoryName(DebugMockProgram.InsightBackupDbFile));
       }
       else
       {
-        _tempDbFile = System.IO.Path.GetTempFileName();
-        System.IO.File.Delete(_tempDbFile);
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(
-          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
-          _tempDbFile
-        );
-
         // sample data starts at Jan 1, 2018.  Need to offset to current month
         var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var offset = DateTime.UtcNow.AddDays(-28).Subtract(jan1_18);
@@ -278,23 +206,59 @@ namespace DebugMachineWatchApiServer
       }
     }
 
-    public void Dispose()
+    private long _curStatusLoadCount = 0;
+
+    public void PrintLabel(long matId, int process, Uri httpReferer)
     {
-      Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-      if (_tempDbFile != null)
+      int loadStation = -10;
+      if (
+        httpReferer.Segments.Length == 4
+        && httpReferer.Segments[0] == "/"
+        && httpReferer.Segments[1] == "station/"
+        && httpReferer.Segments[2] == "loadunload/"
+        && int.TryParse(httpReferer.Segments[3], out var lul)
+      )
       {
-        System.IO.File.Delete(_tempDbFile);
+        loadStation = lul;
+      }
+      Serilog.Log.Information(
+        "Print label for {matId} {process} {referer} and {load}",
+        matId,
+        process,
+        httpReferer,
+        loadStation
+      );
+    }
+
+    public ScannedMaterial ParseBarcode(string barcode, Uri referer)
+    {
+      Serilog.Log.Information("Parsing barcode {barcode} {referer}", barcode, referer);
+      System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
+      var commaIdx = barcode.IndexOf(',');
+      if (commaIdx >= 0)
+        barcode = barcode.Substring(0, commaIdx);
+      using (var conn = RepoConfig.OpenConnection())
+      {
+        var mats = conn.GetMaterialDetailsForSerial(barcode);
+        if (mats.Count > 0)
+        {
+          return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
+        }
+        else
+        {
+          return new ScannedMaterial()
+          {
+            Casting = new ScannedCasting()
+            {
+              Serial = barcode,
+              Workorder = "work1",
+              //PossibleCastings = ImmutableList.Create("part1", "part2"),
+              PossibleJobs = ImmutableList.Create("aaa-offline-2018-01-01", "bbb-offline-2018-01-01")
+            },
+          };
+        }
       }
     }
-
-    public IJobAndQueueControl JobControl
-    {
-      get => this;
-    }
-
-    public IMachineControl MachineControl => this;
-
-    private long _curStatusLoadCount = 0;
 
     public CurrentStatus GetCurrentStatus()
     {

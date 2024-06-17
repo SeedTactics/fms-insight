@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.IO;
 using BlackMaple.MachineFramework;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -41,74 +40,17 @@ namespace BlackMaple.FMSInsight.Makino
 {
   public static class MakinoServices
   {
-    public static void AddMakinoBackend(this IServiceCollection s, MakinoSettings makinoSt)
+    public static IServiceCollection AddMakinoBackend(this IServiceCollection s, MakinoSettings makinoSt)
     {
       s.AddSingleton(makinoSt);
       s.AddSingleton<IMachineControl, MakinoMachines>();
       s.AddSingleton<ISynchronizeCellState<MakinoCellState>, MakinoSync>();
+      return s;
     }
 
-    public static void AddMakinoBackend(this IHostBuilder h, MakinoSettings makinoSt)
+    public static IHostBuilder AddMakinoBackend(this IHostBuilder h, MakinoSettings makinoSt)
     {
-      h.ConfigureServices((_, s) => s.AddMakinoBackend(makinoSt));
-    }
-  }
-
-  public sealed class MakinoBackend : IFMSBackend, IDisposable
-  {
-    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
-
-    public RepositoryConfig? RepoConfig { get; }
-    public IJobAndQueueControl? JobControl => _jobs;
-    public IMachineControl? MachineControl { get; }
-
-    private readonly JobsAndQueuesFromDb<MakinoCellState>? _jobs;
-    private readonly MakinoSync? _sync;
-
-    public MakinoBackend(IConfiguration config, FMSSettings st, SerialSettings serialSt)
-    {
-      try
-      {
-        var settings = new MakinoSettings(config, st);
-
-        if (File.Exists(Path.Combine(st.DataDirectory, "log.db")))
-        {
-          File.Move(Path.Combine(st.DataDirectory, "log.db"), Path.Combine(st.DataDirectory, "makino.db"));
-        }
-
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(
-          serialSt,
-          Path.Combine(st.DataDirectory, "makino.db"),
-          Path.Combine(st.DataDirectory, "inspections.db"),
-          Path.Combine(st.DataDirectory, "jobs.db")
-        );
-
-        MachineControl = new MakinoMachines(settings);
-
-        _sync = new MakinoSync(settings);
-
-        _jobs = new JobsAndQueuesFromDb<MakinoCellState>(RepoConfig, st, _sync);
-        _jobs.StartThread();
-
-        try
-        {
-          using var db = settings.OpenMakinoConnection();
-          db.CheckForQueryNotification();
-        }
-        catch (Exception ex)
-        {
-          Log.Error(ex, "Error when checking query notifaction");
-        }
-      }
-      catch (Exception ex)
-      {
-        Log.Error(ex, "Error when initializing makino backend");
-      }
-    }
-
-    void IDisposable.Dispose()
-    {
-      _jobs?.Dispose();
+      return h.ConfigureServices((_, s) => s.AddMakinoBackend(makinoSt));
     }
   }
 }
