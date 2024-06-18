@@ -100,7 +100,7 @@ public record SerialSettings
   public long StartingMaterialID { get; init; } = 0; // if the current material id in the database is below this value, it will be set to this value
   public required Func<long, string> ConvertMaterialIDToSerial { get; init; }
 
-  public SerialSettings SerialsUsingBase62(IConfiguration? config = null, int? length = null)
+  public static SerialSettings SerialsUsingBase62(IConfiguration? config = null, int? length = null)
   {
     var fmsSection = config?.GetSection("FMS");
     var len = fmsSection?.GetValue<int?>("SerialLength", null) ?? length ?? 10;
