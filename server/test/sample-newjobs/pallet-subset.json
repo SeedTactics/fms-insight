@@ -1,0 +1,3516 @@
+{
+  "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+  "Jobs": [
+    {
+      "Unique": "aaa-0Pc6PyIjHQ2Bz0Ew2",
+      "RouteStartUTC": "2024-06-18T14:30:13.6940893Z",
+      "RouteEndUTC": "2024-06-19T14:30:13.6940893Z",
+      "Archived": false,
+      "PartName": "aaa",
+      "AllocationAlgorithm": "Greedy,1.0.0",
+      "Bookings": ["aaa", "bbb"],
+      "ManuallyCreated": false,
+      "Cycles": 50,
+      "ProcsAndPaths": [
+        {
+          "paths": [
+            {
+              "PalletNums": [1, 2, 3, 4],
+              "Load": [1, 2],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [1, 2],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "Machine",
+                  "StationNums": [1, 2, 3, 4],
+                  "ExpectedCycleTime": "PT12M12S",
+                  "Program": "1001"
+                }
+              ],
+              "SimulatedProduction": [
+                { "TimeUTC": "2024-06-18T15:19:33.6940893Z", "Quantity": 1 },
+                { "TimeUTC": "2024-06-18T15:20:29.6940893Z", "Quantity": 2 },
+                { "TimeUTC": "2024-06-18T16:10:45.6940893Z", "Quantity": 3 },
+                { "TimeUTC": "2024-06-18T16:11:41.6940893Z", "Quantity": 4 },
+                { "TimeUTC": "2024-06-18T16:57:15.6940893Z", "Quantity": 5 },
+                { "TimeUTC": "2024-06-18T16:58:11.6940893Z", "Quantity": 6 },
+                { "TimeUTC": "2024-06-18T17:43:45.6940893Z", "Quantity": 7 },
+                { "TimeUTC": "2024-06-18T17:44:41.6940893Z", "Quantity": 8 },
+                { "TimeUTC": "2024-06-18T18:30:15.6940893Z", "Quantity": 9 },
+                { "TimeUTC": "2024-06-18T18:31:11.6940893Z", "Quantity": 10 },
+                { "TimeUTC": "2024-06-18T19:16:45.6940893Z", "Quantity": 11 },
+                { "TimeUTC": "2024-06-18T19:17:41.6940893Z", "Quantity": 12 },
+                { "TimeUTC": "2024-06-18T20:03:15.6940893Z", "Quantity": 13 },
+                { "TimeUTC": "2024-06-18T20:04:11.6940893Z", "Quantity": 14 },
+                { "TimeUTC": "2024-06-18T20:49:45.6940893Z", "Quantity": 15 },
+                { "TimeUTC": "2024-06-18T20:50:41.6940893Z", "Quantity": 16 },
+                { "TimeUTC": "2024-06-18T21:36:15.6940893Z", "Quantity": 17 },
+                { "TimeUTC": "2024-06-18T21:37:11.6940893Z", "Quantity": 18 },
+                { "TimeUTC": "2024-06-18T22:22:45.6940893Z", "Quantity": 19 },
+                { "TimeUTC": "2024-06-18T22:23:41.6940893Z", "Quantity": 20 },
+                { "TimeUTC": "2024-06-18T23:09:15.6940893Z", "Quantity": 21 },
+                { "TimeUTC": "2024-06-18T23:10:11.6940893Z", "Quantity": 22 },
+                { "TimeUTC": "2024-06-18T23:55:45.6940893Z", "Quantity": 23 },
+                { "TimeUTC": "2024-06-18T23:56:41.6940893Z", "Quantity": 24 },
+                { "TimeUTC": "2024-06-19T00:42:15.6940893Z", "Quantity": 25 },
+                { "TimeUTC": "2024-06-19T00:43:11.6940893Z", "Quantity": 26 },
+                { "TimeUTC": "2024-06-19T01:28:45.6940893Z", "Quantity": 27 },
+                { "TimeUTC": "2024-06-19T01:29:41.6940893Z", "Quantity": 28 },
+                { "TimeUTC": "2024-06-19T02:15:15.6940893Z", "Quantity": 29 },
+                { "TimeUTC": "2024-06-19T02:16:11.6940893Z", "Quantity": 30 },
+                { "TimeUTC": "2024-06-19T03:01:45.6940893Z", "Quantity": 31 },
+                { "TimeUTC": "2024-06-19T03:02:41.6940893Z", "Quantity": 32 },
+                { "TimeUTC": "2024-06-19T03:48:15.6940893Z", "Quantity": 33 },
+                { "TimeUTC": "2024-06-19T03:49:11.6940893Z", "Quantity": 34 },
+                { "TimeUTC": "2024-06-19T04:34:45.6940893Z", "Quantity": 35 },
+                { "TimeUTC": "2024-06-19T04:35:41.6940893Z", "Quantity": 36 },
+                { "TimeUTC": "2024-06-19T05:21:15.6940893Z", "Quantity": 37 },
+                { "TimeUTC": "2024-06-19T05:22:11.6940893Z", "Quantity": 38 },
+                { "TimeUTC": "2024-06-19T06:07:45.6940893Z", "Quantity": 39 },
+                { "TimeUTC": "2024-06-19T06:08:41.6940893Z", "Quantity": 40 },
+                { "TimeUTC": "2024-06-19T06:54:15.6940893Z", "Quantity": 41 },
+                { "TimeUTC": "2024-06-19T06:55:11.6940893Z", "Quantity": 42 },
+                { "TimeUTC": "2024-06-19T07:40:45.6940893Z", "Quantity": 43 },
+                { "TimeUTC": "2024-06-19T07:41:41.6940893Z", "Quantity": 44 },
+                { "TimeUTC": "2024-06-19T08:27:15.6940893Z", "Quantity": 45 },
+                { "TimeUTC": "2024-06-19T08:28:11.6940893Z", "Quantity": 46 },
+                { "TimeUTC": "2024-06-19T09:13:45.6940893Z", "Quantity": 47 },
+                { "TimeUTC": "2024-06-19T09:14:41.6940893Z", "Quantity": 48 },
+                { "TimeUTC": "2024-06-19T09:52:27.6940893Z", "Quantity": 49 },
+                { "TimeUTC": "2024-06-19T09:53:23.6940893Z", "Quantity": 50 }
+              ],
+              "SimulatedStartingUTC": "2024-06-18T14:34:57.6940893Z",
+              "SimulatedAverageFlowTime": "PT1H5M8.4S",
+              "PartsPerPallet": 1
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "PalletNums": [1, 2, 3, 4],
+              "Load": [1, 2],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [1, 2],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "Machine",
+                  "StationNums": [1, 2, 3, 4],
+                  "ExpectedCycleTime": "PT9M18S",
+                  "Program": "1002"
+                }
+              ],
+              "SimulatedProduction": [
+                { "TimeUTC": "2024-06-18T16:10:45.6940893Z", "Quantity": 1 },
+                { "TimeUTC": "2024-06-18T16:11:41.6940893Z", "Quantity": 2 },
+                { "TimeUTC": "2024-06-18T16:57:15.6940893Z", "Quantity": 3 },
+                { "TimeUTC": "2024-06-18T16:58:11.6940893Z", "Quantity": 4 },
+                { "TimeUTC": "2024-06-18T17:43:45.6940893Z", "Quantity": 5 },
+                { "TimeUTC": "2024-06-18T17:44:41.6940893Z", "Quantity": 6 },
+                { "TimeUTC": "2024-06-18T18:30:15.6940893Z", "Quantity": 7 },
+                { "TimeUTC": "2024-06-18T18:31:11.6940893Z", "Quantity": 8 },
+                { "TimeUTC": "2024-06-18T19:16:45.6940893Z", "Quantity": 9 },
+                { "TimeUTC": "2024-06-18T19:17:41.6940893Z", "Quantity": 10 },
+                { "TimeUTC": "2024-06-18T20:03:15.6940893Z", "Quantity": 11 },
+                { "TimeUTC": "2024-06-18T20:04:11.6940893Z", "Quantity": 12 },
+                { "TimeUTC": "2024-06-18T20:49:45.6940893Z", "Quantity": 13 },
+                { "TimeUTC": "2024-06-18T20:50:41.6940893Z", "Quantity": 14 },
+                { "TimeUTC": "2024-06-18T21:36:15.6940893Z", "Quantity": 15 },
+                { "TimeUTC": "2024-06-18T21:37:11.6940893Z", "Quantity": 16 },
+                { "TimeUTC": "2024-06-18T22:22:45.6940893Z", "Quantity": 17 },
+                { "TimeUTC": "2024-06-18T22:23:41.6940893Z", "Quantity": 18 },
+                { "TimeUTC": "2024-06-18T23:09:15.6940893Z", "Quantity": 19 },
+                { "TimeUTC": "2024-06-18T23:10:11.6940893Z", "Quantity": 20 },
+                { "TimeUTC": "2024-06-18T23:55:45.6940893Z", "Quantity": 21 },
+                { "TimeUTC": "2024-06-18T23:56:41.6940893Z", "Quantity": 22 },
+                { "TimeUTC": "2024-06-19T00:42:15.6940893Z", "Quantity": 23 },
+                { "TimeUTC": "2024-06-19T00:43:11.6940893Z", "Quantity": 24 },
+                { "TimeUTC": "2024-06-19T01:28:45.6940893Z", "Quantity": 25 },
+                { "TimeUTC": "2024-06-19T01:29:41.6940893Z", "Quantity": 26 },
+                { "TimeUTC": "2024-06-19T02:15:15.6940893Z", "Quantity": 27 },
+                { "TimeUTC": "2024-06-19T02:16:11.6940893Z", "Quantity": 28 },
+                { "TimeUTC": "2024-06-19T03:01:45.6940893Z", "Quantity": 29 },
+                { "TimeUTC": "2024-06-19T03:02:41.6940893Z", "Quantity": 30 },
+                { "TimeUTC": "2024-06-19T03:48:15.6940893Z", "Quantity": 31 },
+                { "TimeUTC": "2024-06-19T03:49:11.6940893Z", "Quantity": 32 },
+                { "TimeUTC": "2024-06-19T04:34:45.6940893Z", "Quantity": 33 },
+                { "TimeUTC": "2024-06-19T04:35:41.6940893Z", "Quantity": 34 },
+                { "TimeUTC": "2024-06-19T05:21:15.6940893Z", "Quantity": 35 },
+                { "TimeUTC": "2024-06-19T05:22:11.6940893Z", "Quantity": 36 },
+                { "TimeUTC": "2024-06-19T06:07:45.6940893Z", "Quantity": 37 },
+                { "TimeUTC": "2024-06-19T06:08:41.6940893Z", "Quantity": 38 },
+                { "TimeUTC": "2024-06-19T06:54:15.6940893Z", "Quantity": 39 },
+                { "TimeUTC": "2024-06-19T06:55:11.6940893Z", "Quantity": 40 },
+                { "TimeUTC": "2024-06-19T07:40:45.6940893Z", "Quantity": 41 },
+                { "TimeUTC": "2024-06-19T07:41:41.6940893Z", "Quantity": 42 },
+                { "TimeUTC": "2024-06-19T08:27:15.6940893Z", "Quantity": 43 },
+                { "TimeUTC": "2024-06-19T08:28:11.6940893Z", "Quantity": 44 },
+                { "TimeUTC": "2024-06-19T09:13:45.6940893Z", "Quantity": 45 },
+                { "TimeUTC": "2024-06-19T09:14:41.6940893Z", "Quantity": 46 },
+                { "TimeUTC": "2024-06-19T09:52:27.6940893Z", "Quantity": 47 },
+                { "TimeUTC": "2024-06-19T09:53:23.6940893Z", "Quantity": 48 },
+                { "TimeUTC": "2024-06-19T10:08:57.6940893Z", "Quantity": 49 },
+                { "TimeUTC": "2024-06-19T10:09:53.6940893Z", "Quantity": 50 }
+              ],
+              "SimulatedStartingUTC": "2024-06-18T15:04:33.6940893Z",
+              "SimulatedAverageFlowTime": "PT1H4M46.56S",
+              "PartsPerPallet": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Unique": "bbb-1Pc6PyIjHQ2Bz0Ew2",
+      "RouteStartUTC": "2024-06-18T14:30:13.6940893Z",
+      "RouteEndUTC": "2024-06-19T14:30:13.6940893Z",
+      "Archived": false,
+      "PartName": "bbb",
+      "AllocationAlgorithm": "Greedy,1.0.0",
+      "Bookings": ["aaa", "bbb"],
+      "ManuallyCreated": false,
+      "Cycles": 50,
+      "ProcsAndPaths": [
+        {
+          "paths": [
+            {
+              "PalletNums": [1, 2],
+              "Load": [1, 2],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [1, 2],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "Machine",
+                  "StationNums": [1, 2, 3, 4],
+                  "ExpectedCycleTime": "PT4M",
+                  "Program": "1003"
+                }
+              ],
+              "SimulatedProduction": [
+                { "TimeUTC": "2024-06-18T15:01:45.6940893Z", "Quantity": 1 },
+                { "TimeUTC": "2024-06-18T15:02:41.6940893Z", "Quantity": 2 },
+                { "TimeUTC": "2024-06-18T15:47:57.6940893Z", "Quantity": 3 },
+                { "TimeUTC": "2024-06-18T15:48:53.6940893Z", "Quantity": 4 },
+                { "TimeUTC": "2024-06-18T16:34:09.6940893Z", "Quantity": 5 },
+                { "TimeUTC": "2024-06-18T16:35:05.6940893Z", "Quantity": 6 },
+                { "TimeUTC": "2024-06-18T17:20:39.6940893Z", "Quantity": 7 },
+                { "TimeUTC": "2024-06-18T17:21:35.6940893Z", "Quantity": 8 },
+                { "TimeUTC": "2024-06-18T18:07:09.6940893Z", "Quantity": 9 },
+                { "TimeUTC": "2024-06-18T18:08:05.6940893Z", "Quantity": 10 },
+                { "TimeUTC": "2024-06-18T18:53:39.6940893Z", "Quantity": 11 },
+                { "TimeUTC": "2024-06-18T18:54:35.6940893Z", "Quantity": 12 },
+                { "TimeUTC": "2024-06-18T19:40:09.6940893Z", "Quantity": 13 },
+                { "TimeUTC": "2024-06-18T19:41:05.6940893Z", "Quantity": 14 },
+                { "TimeUTC": "2024-06-18T20:26:39.6940893Z", "Quantity": 15 },
+                { "TimeUTC": "2024-06-18T20:27:35.6940893Z", "Quantity": 16 },
+                { "TimeUTC": "2024-06-18T21:13:09.6940893Z", "Quantity": 17 },
+                { "TimeUTC": "2024-06-18T21:14:05.6940893Z", "Quantity": 18 },
+                { "TimeUTC": "2024-06-18T21:59:39.6940893Z", "Quantity": 19 },
+                { "TimeUTC": "2024-06-18T22:00:35.6940893Z", "Quantity": 20 },
+                { "TimeUTC": "2024-06-18T22:46:09.6940893Z", "Quantity": 21 },
+                { "TimeUTC": "2024-06-18T22:47:05.6940893Z", "Quantity": 22 },
+                { "TimeUTC": "2024-06-18T23:32:39.6940893Z", "Quantity": 23 },
+                { "TimeUTC": "2024-06-18T23:33:35.6940893Z", "Quantity": 24 },
+                { "TimeUTC": "2024-06-19T00:19:09.6940893Z", "Quantity": 25 },
+                { "TimeUTC": "2024-06-19T00:20:05.6940893Z", "Quantity": 26 },
+                { "TimeUTC": "2024-06-19T01:05:39.6940893Z", "Quantity": 27 },
+                { "TimeUTC": "2024-06-19T01:06:35.6940893Z", "Quantity": 28 },
+                { "TimeUTC": "2024-06-19T01:52:09.6940893Z", "Quantity": 29 },
+                { "TimeUTC": "2024-06-19T01:53:05.6940893Z", "Quantity": 30 },
+                { "TimeUTC": "2024-06-19T02:38:39.6940893Z", "Quantity": 31 },
+                { "TimeUTC": "2024-06-19T02:39:35.6940893Z", "Quantity": 32 },
+                { "TimeUTC": "2024-06-19T03:25:09.6940893Z", "Quantity": 33 },
+                { "TimeUTC": "2024-06-19T03:26:05.6940893Z", "Quantity": 34 },
+                { "TimeUTC": "2024-06-19T04:11:39.6940893Z", "Quantity": 35 },
+                { "TimeUTC": "2024-06-19T04:12:35.6940893Z", "Quantity": 36 },
+                { "TimeUTC": "2024-06-19T04:58:09.6940893Z", "Quantity": 37 },
+                { "TimeUTC": "2024-06-19T04:59:05.6940893Z", "Quantity": 38 },
+                { "TimeUTC": "2024-06-19T05:44:39.6940893Z", "Quantity": 39 },
+                { "TimeUTC": "2024-06-19T05:45:35.6940893Z", "Quantity": 40 },
+                { "TimeUTC": "2024-06-19T06:31:09.6940893Z", "Quantity": 41 },
+                { "TimeUTC": "2024-06-19T06:32:05.6940893Z", "Quantity": 42 },
+                { "TimeUTC": "2024-06-19T07:17:39.6940893Z", "Quantity": 43 },
+                { "TimeUTC": "2024-06-19T07:18:35.6940893Z", "Quantity": 44 },
+                { "TimeUTC": "2024-06-19T08:04:09.6940893Z", "Quantity": 45 },
+                { "TimeUTC": "2024-06-19T08:05:05.6940893Z", "Quantity": 46 },
+                { "TimeUTC": "2024-06-19T08:50:39.6940893Z", "Quantity": 47 },
+                { "TimeUTC": "2024-06-19T08:51:35.6940893Z", "Quantity": 48 },
+                { "TimeUTC": "2024-06-19T09:32:09.6940893Z", "Quantity": 49 },
+                { "TimeUTC": "2024-06-19T09:33:05.6940893Z", "Quantity": 50 }
+              ],
+              "SimulatedStartingUTC": "2024-06-18T14:34:57.6940893Z",
+              "SimulatedAverageFlowTime": "PT1H4M38.4S",
+              "PartsPerPallet": 1
+            }
+          ]
+        },
+        {
+          "paths": [
+            {
+              "PalletNums": [1, 2],
+              "Load": [1, 2],
+              "ExpectedLoadTime": "PT5M",
+              "Unload": [1, 2],
+              "ExpectedUnloadTime": "PT5M",
+              "Stops": [
+                {
+                  "StationGroup": "Machine",
+                  "StationNums": [1, 2, 3, 4],
+                  "ExpectedCycleTime": "PT20M",
+                  "Program": "1004"
+                }
+              ],
+              "SimulatedProduction": [
+                { "TimeUTC": "2024-06-18T15:47:57.6940893Z", "Quantity": 1 },
+                { "TimeUTC": "2024-06-18T15:48:53.6940893Z", "Quantity": 2 },
+                { "TimeUTC": "2024-06-18T16:34:09.6940893Z", "Quantity": 3 },
+                { "TimeUTC": "2024-06-18T16:35:05.6940893Z", "Quantity": 4 },
+                { "TimeUTC": "2024-06-18T17:20:39.6940893Z", "Quantity": 5 },
+                { "TimeUTC": "2024-06-18T17:21:35.6940893Z", "Quantity": 6 },
+                { "TimeUTC": "2024-06-18T18:07:09.6940893Z", "Quantity": 7 },
+                { "TimeUTC": "2024-06-18T18:08:05.6940893Z", "Quantity": 8 },
+                { "TimeUTC": "2024-06-18T18:53:39.6940893Z", "Quantity": 9 },
+                { "TimeUTC": "2024-06-18T18:54:35.6940893Z", "Quantity": 10 },
+                { "TimeUTC": "2024-06-18T19:40:09.6940893Z", "Quantity": 11 },
+                { "TimeUTC": "2024-06-18T19:41:05.6940893Z", "Quantity": 12 },
+                { "TimeUTC": "2024-06-18T20:26:39.6940893Z", "Quantity": 13 },
+                { "TimeUTC": "2024-06-18T20:27:35.6940893Z", "Quantity": 14 },
+                { "TimeUTC": "2024-06-18T21:13:09.6940893Z", "Quantity": 15 },
+                { "TimeUTC": "2024-06-18T21:14:05.6940893Z", "Quantity": 16 },
+                { "TimeUTC": "2024-06-18T21:59:39.6940893Z", "Quantity": 17 },
+                { "TimeUTC": "2024-06-18T22:00:35.6940893Z", "Quantity": 18 },
+                { "TimeUTC": "2024-06-18T22:46:09.6940893Z", "Quantity": 19 },
+                { "TimeUTC": "2024-06-18T22:47:05.6940893Z", "Quantity": 20 },
+                { "TimeUTC": "2024-06-18T23:32:39.6940893Z", "Quantity": 21 },
+                { "TimeUTC": "2024-06-18T23:33:35.6940893Z", "Quantity": 22 },
+                { "TimeUTC": "2024-06-19T00:19:09.6940893Z", "Quantity": 23 },
+                { "TimeUTC": "2024-06-19T00:20:05.6940893Z", "Quantity": 24 },
+                { "TimeUTC": "2024-06-19T01:05:39.6940893Z", "Quantity": 25 },
+                { "TimeUTC": "2024-06-19T01:06:35.6940893Z", "Quantity": 26 },
+                { "TimeUTC": "2024-06-19T01:52:09.6940893Z", "Quantity": 27 },
+                { "TimeUTC": "2024-06-19T01:53:05.6940893Z", "Quantity": 28 },
+                { "TimeUTC": "2024-06-19T02:38:39.6940893Z", "Quantity": 29 },
+                { "TimeUTC": "2024-06-19T02:39:35.6940893Z", "Quantity": 30 },
+                { "TimeUTC": "2024-06-19T03:25:09.6940893Z", "Quantity": 31 },
+                { "TimeUTC": "2024-06-19T03:26:05.6940893Z", "Quantity": 32 },
+                { "TimeUTC": "2024-06-19T04:11:39.6940893Z", "Quantity": 33 },
+                { "TimeUTC": "2024-06-19T04:12:35.6940893Z", "Quantity": 34 },
+                { "TimeUTC": "2024-06-19T04:58:09.6940893Z", "Quantity": 35 },
+                { "TimeUTC": "2024-06-19T04:59:05.6940893Z", "Quantity": 36 },
+                { "TimeUTC": "2024-06-19T05:44:39.6940893Z", "Quantity": 37 },
+                { "TimeUTC": "2024-06-19T05:45:35.6940893Z", "Quantity": 38 },
+                { "TimeUTC": "2024-06-19T06:31:09.6940893Z", "Quantity": 39 },
+                { "TimeUTC": "2024-06-19T06:32:05.6940893Z", "Quantity": 40 },
+                { "TimeUTC": "2024-06-19T07:17:39.6940893Z", "Quantity": 41 },
+                { "TimeUTC": "2024-06-19T07:18:35.6940893Z", "Quantity": 42 },
+                { "TimeUTC": "2024-06-19T08:04:09.6940893Z", "Quantity": 43 },
+                { "TimeUTC": "2024-06-19T08:05:05.6940893Z", "Quantity": 44 },
+                { "TimeUTC": "2024-06-19T08:50:39.6940893Z", "Quantity": 45 },
+                { "TimeUTC": "2024-06-19T08:51:35.6940893Z", "Quantity": 46 },
+                { "TimeUTC": "2024-06-19T09:32:09.6940893Z", "Quantity": 47 },
+                { "TimeUTC": "2024-06-19T09:33:05.6940893Z", "Quantity": 48 },
+                { "TimeUTC": "2024-06-19T10:00:15.6940893Z", "Quantity": 49 },
+                { "TimeUTC": "2024-06-19T10:01:11.6940893Z", "Quantity": 50 }
+              ],
+              "SimulatedStartingUTC": "2024-06-18T14:46:45.6940893Z",
+              "SimulatedAverageFlowTime": "PT1H5M8.4S",
+              "PartsPerPallet": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "StationUse": [
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T14:31:09.6940893Z",
+      "EndUTC": "2024-06-18T14:36:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T14:32:05.6940893Z",
+      "EndUTC": "2024-06-18T14:37:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T14:37:15.6940893Z",
+      "EndUTC": "2024-06-18T14:41:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T14:38:11.6940893Z",
+      "EndUTC": "2024-06-18T14:42:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T14:38:57.6940893Z",
+      "EndUTC": "2024-06-18T14:43:57.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T14:39:53.6940893Z",
+      "EndUTC": "2024-06-18T14:44:53.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T14:45:03.6940893Z",
+      "EndUTC": "2024-06-18T14:57:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T14:45:59.6940893Z",
+      "EndUTC": "2024-06-18T14:58:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T14:46:45.6940893Z",
+      "EndUTC": "2024-06-18T15:01:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T14:47:41.6940893Z",
+      "EndUTC": "2024-06-18T15:02:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T15:04:33.6940893Z",
+      "EndUTC": "2024-06-18T15:19:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T15:05:29.6940893Z",
+      "EndUTC": "2024-06-18T15:20:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T15:02:51.6940893Z",
+      "EndUTC": "2024-06-18T15:22:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T15:03:47.6940893Z",
+      "EndUTC": "2024-06-18T15:23:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T15:22:51.6940893Z",
+      "EndUTC": "2024-06-18T15:26:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T15:23:47.6940893Z",
+      "EndUTC": "2024-06-18T15:27:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T15:20:39.6940893Z",
+      "EndUTC": "2024-06-18T15:29:57.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T15:21:35.6940893Z",
+      "EndUTC": "2024-06-18T15:30:53.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T15:29:57.6940893Z",
+      "EndUTC": "2024-06-18T15:42:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T15:30:53.6940893Z",
+      "EndUTC": "2024-06-18T15:43:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T15:27:57.6940893Z",
+      "EndUTC": "2024-06-18T15:47:57.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T15:28:53.6940893Z",
+      "EndUTC": "2024-06-18T15:48:53.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T15:49:03.6940893Z",
+      "EndUTC": "2024-06-18T16:09:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T15:49:59.6940893Z",
+      "EndUTC": "2024-06-18T16:09:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T15:50:45.6940893Z",
+      "EndUTC": "2024-06-18T16:10:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T15:51:41.6940893Z",
+      "EndUTC": "2024-06-18T16:11:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T16:09:03.6940893Z",
+      "EndUTC": "2024-06-18T16:13:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T16:09:59.6940893Z",
+      "EndUTC": "2024-06-18T16:13:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T16:11:51.6940893Z",
+      "EndUTC": "2024-06-18T16:21:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T16:12:47.6940893Z",
+      "EndUTC": "2024-06-18T16:22:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T16:21:09.6940893Z",
+      "EndUTC": "2024-06-18T16:33:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T16:14:09.6940893Z",
+      "EndUTC": "2024-06-18T16:34:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T16:22:05.6940893Z",
+      "EndUTC": "2024-06-18T16:34:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T16:15:05.6940893Z",
+      "EndUTC": "2024-06-18T16:35:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T16:35:33.6940893Z",
+      "EndUTC": "2024-06-18T16:55:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T16:36:29.6940893Z",
+      "EndUTC": "2024-06-18T16:56:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T16:37:15.6940893Z",
+      "EndUTC": "2024-06-18T16:57:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T16:38:11.6940893Z",
+      "EndUTC": "2024-06-18T16:58:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T16:55:33.6940893Z",
+      "EndUTC": "2024-06-18T16:59:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T16:56:29.6940893Z",
+      "EndUTC": "2024-06-18T17:00:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T16:58:21.6940893Z",
+      "EndUTC": "2024-06-18T17:07:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T16:59:17.6940893Z",
+      "EndUTC": "2024-06-18T17:08:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T17:07:39.6940893Z",
+      "EndUTC": "2024-06-18T17:19:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T17:00:39.6940893Z",
+      "EndUTC": "2024-06-18T17:20:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T17:08:35.6940893Z",
+      "EndUTC": "2024-06-18T17:20:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T17:01:35.6940893Z",
+      "EndUTC": "2024-06-18T17:21:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T17:22:03.6940893Z",
+      "EndUTC": "2024-06-18T17:42:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T17:22:59.6940893Z",
+      "EndUTC": "2024-06-18T17:42:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T17:23:45.6940893Z",
+      "EndUTC": "2024-06-18T17:43:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T17:24:41.6940893Z",
+      "EndUTC": "2024-06-18T17:44:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T17:42:03.6940893Z",
+      "EndUTC": "2024-06-18T17:46:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T17:42:59.6940893Z",
+      "EndUTC": "2024-06-18T17:46:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T17:44:51.6940893Z",
+      "EndUTC": "2024-06-18T17:54:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T17:45:47.6940893Z",
+      "EndUTC": "2024-06-18T17:55:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T17:54:09.6940893Z",
+      "EndUTC": "2024-06-18T18:06:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T17:47:09.6940893Z",
+      "EndUTC": "2024-06-18T18:07:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T17:55:05.6940893Z",
+      "EndUTC": "2024-06-18T18:07:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T17:48:05.6940893Z",
+      "EndUTC": "2024-06-18T18:08:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T18:08:33.6940893Z",
+      "EndUTC": "2024-06-18T18:28:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T18:09:29.6940893Z",
+      "EndUTC": "2024-06-18T18:29:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T18:10:15.6940893Z",
+      "EndUTC": "2024-06-18T18:30:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T18:11:11.6940893Z",
+      "EndUTC": "2024-06-18T18:31:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T18:28:33.6940893Z",
+      "EndUTC": "2024-06-18T18:32:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T18:29:29.6940893Z",
+      "EndUTC": "2024-06-18T18:33:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T18:31:21.6940893Z",
+      "EndUTC": "2024-06-18T18:40:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T18:32:17.6940893Z",
+      "EndUTC": "2024-06-18T18:41:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T18:40:39.6940893Z",
+      "EndUTC": "2024-06-18T18:52:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T18:33:39.6940893Z",
+      "EndUTC": "2024-06-18T18:53:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T18:41:35.6940893Z",
+      "EndUTC": "2024-06-18T18:53:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T18:34:35.6940893Z",
+      "EndUTC": "2024-06-18T18:54:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T18:55:03.6940893Z",
+      "EndUTC": "2024-06-18T19:15:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T18:55:59.6940893Z",
+      "EndUTC": "2024-06-18T19:15:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T18:56:45.6940893Z",
+      "EndUTC": "2024-06-18T19:16:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T18:57:41.6940893Z",
+      "EndUTC": "2024-06-18T19:17:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T19:15:03.6940893Z",
+      "EndUTC": "2024-06-18T19:19:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T19:15:59.6940893Z",
+      "EndUTC": "2024-06-18T19:19:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T19:17:51.6940893Z",
+      "EndUTC": "2024-06-18T19:27:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T19:18:47.6940893Z",
+      "EndUTC": "2024-06-18T19:28:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T19:27:09.6940893Z",
+      "EndUTC": "2024-06-18T19:39:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T19:20:09.6940893Z",
+      "EndUTC": "2024-06-18T19:40:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T19:28:05.6940893Z",
+      "EndUTC": "2024-06-18T19:40:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T19:21:05.6940893Z",
+      "EndUTC": "2024-06-18T19:41:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T19:41:33.6940893Z",
+      "EndUTC": "2024-06-18T20:01:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T19:42:29.6940893Z",
+      "EndUTC": "2024-06-18T20:02:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T19:43:15.6940893Z",
+      "EndUTC": "2024-06-18T20:03:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T19:44:11.6940893Z",
+      "EndUTC": "2024-06-18T20:04:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T20:01:33.6940893Z",
+      "EndUTC": "2024-06-18T20:05:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T20:02:29.6940893Z",
+      "EndUTC": "2024-06-18T20:06:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T20:04:21.6940893Z",
+      "EndUTC": "2024-06-18T20:13:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T20:05:17.6940893Z",
+      "EndUTC": "2024-06-18T20:14:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T20:13:39.6940893Z",
+      "EndUTC": "2024-06-18T20:25:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T20:06:39.6940893Z",
+      "EndUTC": "2024-06-18T20:26:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T20:14:35.6940893Z",
+      "EndUTC": "2024-06-18T20:26:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T20:07:35.6940893Z",
+      "EndUTC": "2024-06-18T20:27:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T20:28:03.6940893Z",
+      "EndUTC": "2024-06-18T20:48:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T20:28:59.6940893Z",
+      "EndUTC": "2024-06-18T20:48:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T20:29:45.6940893Z",
+      "EndUTC": "2024-06-18T20:49:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T20:30:41.6940893Z",
+      "EndUTC": "2024-06-18T20:50:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T20:48:03.6940893Z",
+      "EndUTC": "2024-06-18T20:52:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T20:48:59.6940893Z",
+      "EndUTC": "2024-06-18T20:52:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T20:50:51.6940893Z",
+      "EndUTC": "2024-06-18T21:00:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T20:51:47.6940893Z",
+      "EndUTC": "2024-06-18T21:01:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T21:00:09.6940893Z",
+      "EndUTC": "2024-06-18T21:12:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T20:53:09.6940893Z",
+      "EndUTC": "2024-06-18T21:13:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T21:01:05.6940893Z",
+      "EndUTC": "2024-06-18T21:13:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T20:54:05.6940893Z",
+      "EndUTC": "2024-06-18T21:14:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T21:14:33.6940893Z",
+      "EndUTC": "2024-06-18T21:34:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T21:15:29.6940893Z",
+      "EndUTC": "2024-06-18T21:35:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T21:16:15.6940893Z",
+      "EndUTC": "2024-06-18T21:36:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T21:17:11.6940893Z",
+      "EndUTC": "2024-06-18T21:37:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T21:34:33.6940893Z",
+      "EndUTC": "2024-06-18T21:38:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T21:35:29.6940893Z",
+      "EndUTC": "2024-06-18T21:39:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T21:37:21.6940893Z",
+      "EndUTC": "2024-06-18T21:46:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T21:38:17.6940893Z",
+      "EndUTC": "2024-06-18T21:47:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T21:46:39.6940893Z",
+      "EndUTC": "2024-06-18T21:58:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T21:39:39.6940893Z",
+      "EndUTC": "2024-06-18T21:59:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T21:47:35.6940893Z",
+      "EndUTC": "2024-06-18T21:59:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T21:40:35.6940893Z",
+      "EndUTC": "2024-06-18T22:00:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T22:01:03.6940893Z",
+      "EndUTC": "2024-06-18T22:21:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T22:01:59.6940893Z",
+      "EndUTC": "2024-06-18T22:21:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T22:02:45.6940893Z",
+      "EndUTC": "2024-06-18T22:22:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T22:03:41.6940893Z",
+      "EndUTC": "2024-06-18T22:23:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T22:21:03.6940893Z",
+      "EndUTC": "2024-06-18T22:25:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T22:21:59.6940893Z",
+      "EndUTC": "2024-06-18T22:25:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T22:23:51.6940893Z",
+      "EndUTC": "2024-06-18T22:33:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T22:24:47.6940893Z",
+      "EndUTC": "2024-06-18T22:34:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T22:33:09.6940893Z",
+      "EndUTC": "2024-06-18T22:45:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T22:26:09.6940893Z",
+      "EndUTC": "2024-06-18T22:46:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T22:34:05.6940893Z",
+      "EndUTC": "2024-06-18T22:46:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T22:27:05.6940893Z",
+      "EndUTC": "2024-06-18T22:47:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T22:47:33.6940893Z",
+      "EndUTC": "2024-06-18T23:07:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T22:48:29.6940893Z",
+      "EndUTC": "2024-06-18T23:08:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T22:49:15.6940893Z",
+      "EndUTC": "2024-06-18T23:09:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T22:50:11.6940893Z",
+      "EndUTC": "2024-06-18T23:10:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T23:07:33.6940893Z",
+      "EndUTC": "2024-06-18T23:11:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T23:08:29.6940893Z",
+      "EndUTC": "2024-06-18T23:12:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T23:10:21.6940893Z",
+      "EndUTC": "2024-06-18T23:19:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T23:11:17.6940893Z",
+      "EndUTC": "2024-06-18T23:20:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T23:19:39.6940893Z",
+      "EndUTC": "2024-06-18T23:31:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T23:12:39.6940893Z",
+      "EndUTC": "2024-06-18T23:32:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T23:20:35.6940893Z",
+      "EndUTC": "2024-06-18T23:32:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T23:13:35.6940893Z",
+      "EndUTC": "2024-06-18T23:33:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T23:34:03.6940893Z",
+      "EndUTC": "2024-06-18T23:54:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T23:34:59.6940893Z",
+      "EndUTC": "2024-06-18T23:54:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T23:35:45.6940893Z",
+      "EndUTC": "2024-06-18T23:55:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T23:36:41.6940893Z",
+      "EndUTC": "2024-06-18T23:56:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T23:54:03.6940893Z",
+      "EndUTC": "2024-06-18T23:58:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-18T23:54:59.6940893Z",
+      "EndUTC": "2024-06-18T23:58:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-18T23:56:51.6940893Z",
+      "EndUTC": "2024-06-19T00:06:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-18T23:57:47.6940893Z",
+      "EndUTC": "2024-06-19T00:07:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T00:06:09.6940893Z",
+      "EndUTC": "2024-06-19T00:18:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-18T23:59:09.6940893Z",
+      "EndUTC": "2024-06-19T00:19:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T00:07:05.6940893Z",
+      "EndUTC": "2024-06-19T00:19:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T00:00:05.6940893Z",
+      "EndUTC": "2024-06-19T00:20:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T00:20:33.6940893Z",
+      "EndUTC": "2024-06-19T00:40:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T00:21:29.6940893Z",
+      "EndUTC": "2024-06-19T00:41:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T00:22:15.6940893Z",
+      "EndUTC": "2024-06-19T00:42:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T00:23:11.6940893Z",
+      "EndUTC": "2024-06-19T00:43:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T00:40:33.6940893Z",
+      "EndUTC": "2024-06-19T00:44:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T00:41:29.6940893Z",
+      "EndUTC": "2024-06-19T00:45:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T00:43:21.6940893Z",
+      "EndUTC": "2024-06-19T00:52:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T00:44:17.6940893Z",
+      "EndUTC": "2024-06-19T00:53:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T00:52:39.6940893Z",
+      "EndUTC": "2024-06-19T01:04:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T00:45:39.6940893Z",
+      "EndUTC": "2024-06-19T01:05:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T00:53:35.6940893Z",
+      "EndUTC": "2024-06-19T01:05:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T00:46:35.6940893Z",
+      "EndUTC": "2024-06-19T01:06:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T01:07:03.6940893Z",
+      "EndUTC": "2024-06-19T01:27:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T01:07:59.6940893Z",
+      "EndUTC": "2024-06-19T01:27:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T01:08:45.6940893Z",
+      "EndUTC": "2024-06-19T01:28:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T01:09:41.6940893Z",
+      "EndUTC": "2024-06-19T01:29:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T01:27:03.6940893Z",
+      "EndUTC": "2024-06-19T01:31:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T01:27:59.6940893Z",
+      "EndUTC": "2024-06-19T01:31:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T01:29:51.6940893Z",
+      "EndUTC": "2024-06-19T01:39:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T01:30:47.6940893Z",
+      "EndUTC": "2024-06-19T01:40:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T01:39:09.6940893Z",
+      "EndUTC": "2024-06-19T01:51:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T01:32:09.6940893Z",
+      "EndUTC": "2024-06-19T01:52:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T01:40:05.6940893Z",
+      "EndUTC": "2024-06-19T01:52:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T01:33:05.6940893Z",
+      "EndUTC": "2024-06-19T01:53:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T01:53:33.6940893Z",
+      "EndUTC": "2024-06-19T02:13:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T01:54:29.6940893Z",
+      "EndUTC": "2024-06-19T02:14:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T01:55:15.6940893Z",
+      "EndUTC": "2024-06-19T02:15:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T01:56:11.6940893Z",
+      "EndUTC": "2024-06-19T02:16:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T02:13:33.6940893Z",
+      "EndUTC": "2024-06-19T02:17:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T02:14:29.6940893Z",
+      "EndUTC": "2024-06-19T02:18:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T02:16:21.6940893Z",
+      "EndUTC": "2024-06-19T02:25:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T02:17:17.6940893Z",
+      "EndUTC": "2024-06-19T02:26:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T02:25:39.6940893Z",
+      "EndUTC": "2024-06-19T02:37:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T02:18:39.6940893Z",
+      "EndUTC": "2024-06-19T02:38:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T02:26:35.6940893Z",
+      "EndUTC": "2024-06-19T02:38:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T02:19:35.6940893Z",
+      "EndUTC": "2024-06-19T02:39:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T02:40:03.6940893Z",
+      "EndUTC": "2024-06-19T03:00:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T02:40:59.6940893Z",
+      "EndUTC": "2024-06-19T03:00:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T02:41:45.6940893Z",
+      "EndUTC": "2024-06-19T03:01:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T02:42:41.6940893Z",
+      "EndUTC": "2024-06-19T03:02:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T03:00:03.6940893Z",
+      "EndUTC": "2024-06-19T03:04:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T03:00:59.6940893Z",
+      "EndUTC": "2024-06-19T03:04:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T03:02:51.6940893Z",
+      "EndUTC": "2024-06-19T03:12:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T03:03:47.6940893Z",
+      "EndUTC": "2024-06-19T03:13:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T03:12:09.6940893Z",
+      "EndUTC": "2024-06-19T03:24:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T03:05:09.6940893Z",
+      "EndUTC": "2024-06-19T03:25:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T03:13:05.6940893Z",
+      "EndUTC": "2024-06-19T03:25:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T03:06:05.6940893Z",
+      "EndUTC": "2024-06-19T03:26:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T03:26:33.6940893Z",
+      "EndUTC": "2024-06-19T03:46:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T03:27:29.6940893Z",
+      "EndUTC": "2024-06-19T03:47:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T03:28:15.6940893Z",
+      "EndUTC": "2024-06-19T03:48:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T03:29:11.6940893Z",
+      "EndUTC": "2024-06-19T03:49:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T03:46:33.6940893Z",
+      "EndUTC": "2024-06-19T03:50:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T03:47:29.6940893Z",
+      "EndUTC": "2024-06-19T03:51:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T03:49:21.6940893Z",
+      "EndUTC": "2024-06-19T03:58:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T03:50:17.6940893Z",
+      "EndUTC": "2024-06-19T03:59:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T03:58:39.6940893Z",
+      "EndUTC": "2024-06-19T04:10:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T03:51:39.6940893Z",
+      "EndUTC": "2024-06-19T04:11:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T03:59:35.6940893Z",
+      "EndUTC": "2024-06-19T04:11:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T03:52:35.6940893Z",
+      "EndUTC": "2024-06-19T04:12:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T04:13:03.6940893Z",
+      "EndUTC": "2024-06-19T04:33:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T04:13:59.6940893Z",
+      "EndUTC": "2024-06-19T04:33:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T04:14:45.6940893Z",
+      "EndUTC": "2024-06-19T04:34:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T04:15:41.6940893Z",
+      "EndUTC": "2024-06-19T04:35:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T04:33:03.6940893Z",
+      "EndUTC": "2024-06-19T04:37:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T04:33:59.6940893Z",
+      "EndUTC": "2024-06-19T04:37:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T04:35:51.6940893Z",
+      "EndUTC": "2024-06-19T04:45:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T04:36:47.6940893Z",
+      "EndUTC": "2024-06-19T04:46:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T04:45:09.6940893Z",
+      "EndUTC": "2024-06-19T04:57:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T04:38:09.6940893Z",
+      "EndUTC": "2024-06-19T04:58:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T04:46:05.6940893Z",
+      "EndUTC": "2024-06-19T04:58:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T04:39:05.6940893Z",
+      "EndUTC": "2024-06-19T04:59:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T04:59:33.6940893Z",
+      "EndUTC": "2024-06-19T05:19:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T05:00:29.6940893Z",
+      "EndUTC": "2024-06-19T05:20:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T05:01:15.6940893Z",
+      "EndUTC": "2024-06-19T05:21:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T05:02:11.6940893Z",
+      "EndUTC": "2024-06-19T05:22:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T05:19:33.6940893Z",
+      "EndUTC": "2024-06-19T05:23:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T05:20:29.6940893Z",
+      "EndUTC": "2024-06-19T05:24:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T05:22:21.6940893Z",
+      "EndUTC": "2024-06-19T05:31:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T05:23:17.6940893Z",
+      "EndUTC": "2024-06-19T05:32:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T05:31:39.6940893Z",
+      "EndUTC": "2024-06-19T05:43:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T05:24:39.6940893Z",
+      "EndUTC": "2024-06-19T05:44:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T05:32:35.6940893Z",
+      "EndUTC": "2024-06-19T05:44:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T05:25:35.6940893Z",
+      "EndUTC": "2024-06-19T05:45:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T05:46:03.6940893Z",
+      "EndUTC": "2024-06-19T06:06:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T05:46:59.6940893Z",
+      "EndUTC": "2024-06-19T06:06:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T05:47:45.6940893Z",
+      "EndUTC": "2024-06-19T06:07:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T05:48:41.6940893Z",
+      "EndUTC": "2024-06-19T06:08:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T06:06:03.6940893Z",
+      "EndUTC": "2024-06-19T06:10:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T06:06:59.6940893Z",
+      "EndUTC": "2024-06-19T06:10:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T06:08:51.6940893Z",
+      "EndUTC": "2024-06-19T06:18:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T06:09:47.6940893Z",
+      "EndUTC": "2024-06-19T06:19:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T06:18:09.6940893Z",
+      "EndUTC": "2024-06-19T06:30:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T06:11:09.6940893Z",
+      "EndUTC": "2024-06-19T06:31:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T06:19:05.6940893Z",
+      "EndUTC": "2024-06-19T06:31:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T06:12:05.6940893Z",
+      "EndUTC": "2024-06-19T06:32:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T06:32:33.6940893Z",
+      "EndUTC": "2024-06-19T06:52:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T06:33:29.6940893Z",
+      "EndUTC": "2024-06-19T06:53:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T06:34:15.6940893Z",
+      "EndUTC": "2024-06-19T06:54:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T06:35:11.6940893Z",
+      "EndUTC": "2024-06-19T06:55:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T06:52:33.6940893Z",
+      "EndUTC": "2024-06-19T06:56:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T06:53:29.6940893Z",
+      "EndUTC": "2024-06-19T06:57:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T06:55:21.6940893Z",
+      "EndUTC": "2024-06-19T07:04:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T06:56:17.6940893Z",
+      "EndUTC": "2024-06-19T07:05:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T07:04:39.6940893Z",
+      "EndUTC": "2024-06-19T07:16:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T06:57:39.6940893Z",
+      "EndUTC": "2024-06-19T07:17:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T07:05:35.6940893Z",
+      "EndUTC": "2024-06-19T07:17:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T06:58:35.6940893Z",
+      "EndUTC": "2024-06-19T07:18:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T07:19:03.6940893Z",
+      "EndUTC": "2024-06-19T07:39:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T07:19:59.6940893Z",
+      "EndUTC": "2024-06-19T07:39:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T07:20:45.6940893Z",
+      "EndUTC": "2024-06-19T07:40:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T07:21:41.6940893Z",
+      "EndUTC": "2024-06-19T07:41:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T07:39:03.6940893Z",
+      "EndUTC": "2024-06-19T07:43:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T07:39:59.6940893Z",
+      "EndUTC": "2024-06-19T07:43:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T07:41:51.6940893Z",
+      "EndUTC": "2024-06-19T07:51:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T07:42:47.6940893Z",
+      "EndUTC": "2024-06-19T07:52:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T07:51:09.6940893Z",
+      "EndUTC": "2024-06-19T08:03:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T07:44:09.6940893Z",
+      "EndUTC": "2024-06-19T08:04:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T07:52:05.6940893Z",
+      "EndUTC": "2024-06-19T08:04:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T07:45:05.6940893Z",
+      "EndUTC": "2024-06-19T08:05:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T08:05:33.6940893Z",
+      "EndUTC": "2024-06-19T08:25:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T08:06:29.6940893Z",
+      "EndUTC": "2024-06-19T08:26:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T08:07:15.6940893Z",
+      "EndUTC": "2024-06-19T08:27:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T08:08:11.6940893Z",
+      "EndUTC": "2024-06-19T08:28:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T08:25:33.6940893Z",
+      "EndUTC": "2024-06-19T08:29:33.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T08:26:29.6940893Z",
+      "EndUTC": "2024-06-19T08:30:29.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T08:28:21.6940893Z",
+      "EndUTC": "2024-06-19T08:37:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T08:29:17.6940893Z",
+      "EndUTC": "2024-06-19T08:38:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T08:37:39.6940893Z",
+      "EndUTC": "2024-06-19T08:49:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T08:30:39.6940893Z",
+      "EndUTC": "2024-06-19T08:50:39.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T08:38:35.6940893Z",
+      "EndUTC": "2024-06-19T08:50:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T08:31:35.6940893Z",
+      "EndUTC": "2024-06-19T08:51:35.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T08:52:03.6940893Z",
+      "EndUTC": "2024-06-19T09:12:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T08:52:59.6940893Z",
+      "EndUTC": "2024-06-19T09:12:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T08:53:45.6940893Z",
+      "EndUTC": "2024-06-19T09:13:45.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T08:54:41.6940893Z",
+      "EndUTC": "2024-06-19T09:14:41.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T09:12:03.6940893Z",
+      "EndUTC": "2024-06-19T09:16:03.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T09:12:59.6940893Z",
+      "EndUTC": "2024-06-19T09:16:59.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T09:14:51.6940893Z",
+      "EndUTC": "2024-06-19T09:24:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T09:15:47.6940893Z",
+      "EndUTC": "2024-06-19T09:25:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T09:17:09.6940893Z",
+      "EndUTC": "2024-06-19T09:32:09.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T09:18:05.6940893Z",
+      "EndUTC": "2024-06-19T09:33:05.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T09:24:09.6940893Z",
+      "EndUTC": "2024-06-19T09:36:21.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T09:25:05.6940893Z",
+      "EndUTC": "2024-06-19T09:37:17.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T09:37:27.6940893Z",
+      "EndUTC": "2024-06-19T09:52:27.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 4,
+      "StartUTC": "2024-06-19T09:33:15.6940893Z",
+      "EndUTC": "2024-06-19T09:53:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T09:38:23.6940893Z",
+      "EndUTC": "2024-06-19T09:53:23.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 },
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 1, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 3,
+      "StartUTC": "2024-06-19T09:34:11.6940893Z",
+      "EndUTC": "2024-06-19T09:54:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T09:55:15.6940893Z",
+      "EndUTC": "2024-06-19T10:00:15.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T09:56:11.6940893Z",
+      "EndUTC": "2024-06-19T10:01:11.6940893Z",
+      "Parts": [
+        { "JobUnique": "bbb-1Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T09:53:33.6940893Z",
+      "EndUTC": "2024-06-19T10:02:51.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "Machine",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T09:54:29.6940893Z",
+      "EndUTC": "2024-06-19T10:03:47.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 2,
+      "StartUTC": "2024-06-19T10:03:57.6940893Z",
+      "EndUTC": "2024-06-19T10:08:57.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    },
+    {
+      "ScheduleId": "Pc6PyIjHQ2Bz0Ew2",
+      "StationGroup": "L/U",
+      "StationNum": 1,
+      "StartUTC": "2024-06-19T10:04:53.6940893Z",
+      "EndUTC": "2024-06-19T10:09:53.6940893Z",
+      "Parts": [
+        { "JobUnique": "aaa-0Pc6PyIjHQ2Bz0Ew2", "Process": 2, "Path": 1 }
+      ]
+    }
+  ],
+  "SimDayUsage": [
+    { "Day": "2024-06-18", "MachineGroup": "Machine", "Usage": 0.29 },
+    { "Day": "2024-06-19", "MachineGroup": "Machine", "Usage": 0.105 }
+  ],
+  "ExtraParts": {},
+  "Programs": [],
+  "DebugMessage": ""
+}

@@ -193,7 +193,6 @@ namespace MazakMachineInterface
       {
         if (part.Processes[0].Paths[0].SimulatedStartingUTC != DateTime.MinValue)
         {
-          var start = part.Processes[0].Paths[0].SimulatedStartingUTC;
           newSchRow = newSchRow with
           {
             DueDate = routeStartDate,
@@ -270,7 +269,10 @@ namespace MazakMachineInterface
         var otherStart = otherJob.Processes[0].Paths[0].SimulatedStartingUTC;
         if (otherStart == DateTime.MinValue)
           continue;
-        if (otherStart >= startT)
+        if (
+          otherStart > startT
+          || (otherStart == startT && otherJob.UniqueStr.CompareTo(jobToCheck.UniqueStr) > 0)
+        )
           continue;
 
         //the job starts earlier than the jobToCheck, but need to see if it conflicts.

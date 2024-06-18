@@ -282,8 +282,8 @@ namespace MachineWatchTest
     {
       /*
       File.WriteAllText(
-          Path.Combine("..", "..", "..", "mazak", "write-snapshots", snapshot),
-          JsonConvert.SerializeObject(val, jsonSettings)
+        Path.Combine("..", "..", "..", "mazak", "write-snapshots", snapshot),
+        JsonSerializer.Serialize(val, jsonSettings)
       );
       */
       var expected = JsonSerializer.Deserialize<T>(
@@ -602,6 +602,31 @@ namespace MachineWatchTest
           .Should()
           .BeLessOrEqualTo(20);
       }
+    }
+
+    [Fact]
+    public void CorrectPriorityForPalletSubsets()
+    {
+      // If the starting times are equal but there is a pallet subset, the priorty
+      // should be split
+
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "pallet-subset.json")),
+        jsonSettings
+      );
+      _writeJobs.AddJobs(_jobDB, newJobs, null);
+
+      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "pallet-subset-updatesch.json");
+      ShouldMatchSnapshot(_writeMock.DeleteParts, "pallet-subset-delparts.json");
+      _writeMock.DeletePallets.Pallets.Should().BeEmpty();
+      ShouldMatchSnapshot(_writeMock.AddFixtures, "pallet-subset-add-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.DelFixtures, "pallet-subset-del-fixtures.json");
+      ShouldMatchSnapshot(_writeMock.AddParts, "pallet-subset-parts.json");
+      ShouldMatchSnapshot(_writeMock.AddSchedules, "pallet-subset-schedules.json");
+
+      // The schedule snapshot should have checked this, but do it here too since it was the
+      // bug which triggered this test case
+      _writeMock.AddSchedules.Schedules.DistinctBy(p => p.Priority).Should().HaveCount(2);
     }
   }
 }
