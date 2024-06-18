@@ -143,7 +143,8 @@ namespace BlackMaple.MachineFramework
       RepositoryConfig repo,
       FMSSettings settings,
       ISynchronizeCellState<St> syncSt,
-      IEnumerable<IAdditionalCheckJobs> additionalCheckJobs = null
+      IEnumerable<IAdditionalCheckJobs> additionalCheckJobs = null,
+      bool startThread = true
     )
     {
       _repo = repo;
@@ -153,6 +154,14 @@ namespace BlackMaple.MachineFramework
       _syncState.NewCellState += NewCellState;
 
       _thread = new Thread(Thread) { IsBackground = true };
+      if (startThread)
+      {
+        _thread.Start();
+      }
+    }
+
+    public void StartThread()
+    {
       _thread.Start();
     }
 

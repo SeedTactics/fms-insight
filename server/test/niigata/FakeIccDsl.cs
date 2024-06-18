@@ -46,7 +46,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private RepositoryConfig _logDBCfg;
     private IAssignPallets _assign;
     private ICncMachineConnection _machConn;
-    private CreateCellState _createLog;
     private NiigataStatus _status;
     private FMSSettings _settings;
     private SerialSettings _serialSt;
