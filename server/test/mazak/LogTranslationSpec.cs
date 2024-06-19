@@ -135,7 +135,7 @@ namespace MachineWatchTest
       {
         Id = 50 + _schedules.Count(),
         PartName = part + ":4:" + (cnt + 1).ToString(),
-        Comment = MazakPart.CreateComment(unique, Enumerable.Repeat(1, numProc), false),
+        Comment = unique + "-Insight",
       };
       for (int i = 0; i < numProc; i++)
       {

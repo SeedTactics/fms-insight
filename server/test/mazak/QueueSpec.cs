@@ -102,7 +102,7 @@ namespace MachineWatchTest
     {
       var row = new MazakScheduleRow()
       {
-        Comment = MazakPart.CreateComment(unique, Enumerable.Repeat(1, numProc), false),
+        Comment = unique + "-Insight",
         CompleteQuantity = complete,
         DueDate = dueDate ?? DateTime.Today,
         FixForMachine = 1,
@@ -227,7 +227,7 @@ namespace MachineWatchTest
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "thequeue");
 
       //put something else at load station
-      var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("yyyy", new[] { 1 }, false), 1, 1);
+      var action = new LoadAction(true, 1, "pppp", "yyyy-Insight", 1, 1);
 
       trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
@@ -2683,7 +2683,7 @@ namespace MachineWatchTest
       );
 
       //put something else at load station
-      var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuuu", new[] { 1 }, false), 1, 1);
+      var action = new LoadAction(true, 1, "pppp", "uuuu-Insight", 1, 1);
       read.LoadActions.Add(action);
 
       var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
@@ -2973,7 +2973,7 @@ namespace MachineWatchTest
       );
 
       //put something at the load station for uuu2
-      var action = new LoadAction(true, 1, "pppp", MazakPart.CreateComment("uuu2", new[] { 1 }, false), 1, 1);
+      var action = new LoadAction(true, 1, "pppp", "uuu2-Insight", 1, 1);
       read.LoadActions.Add(action);
 
       var mat1 = AddCasting(casting, "thequeue");

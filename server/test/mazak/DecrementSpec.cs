@@ -89,7 +89,7 @@ namespace MachineWatchTest
           new MazakScheduleRow()
           {
             Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
+            Comment = "uuuu-Path1-1", // old previous versions of Insight added path information into the comment, use here to test backwards compatbility
             PartName = "pppp:1",
             PlanQuantity = 50,
             CompleteQuantity = 30,
@@ -176,7 +176,7 @@ namespace MachineWatchTest
           new MazakScheduleRow()
           {
             Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, manual: true),
+            Comment = "uuuu-Insight",
             PartName = "pppp:1",
             PlanQuantity = 50,
             CompleteQuantity = 30,
@@ -200,6 +200,7 @@ namespace MachineWatchTest
         UniqueStr = "uuuu",
         PartName = "pppp",
         Cycles = 50,
+        ManuallyCreated = true,
         Processes = ImmutableList.Create(
           new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
         ),
@@ -231,7 +232,7 @@ namespace MachineWatchTest
           new MazakScheduleRow()
           {
             Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, manual: false),
+            Comment = "uuuu-Insight",
             PartName = "pppp:1",
             PlanQuantity = 50,
             CompleteQuantity = 30,
@@ -313,7 +314,7 @@ namespace MachineWatchTest
           new MazakScheduleRow()
           {
             Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
+            Comment = "uuuu-Insight",
             PartName = "pppp:1",
             PlanQuantity = 50,
             CompleteQuantity = 30,
@@ -418,7 +419,7 @@ namespace MachineWatchTest
           new MazakScheduleRow()
           {
             Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
+            Comment = "uuuu-Insight",
             PartName = "pppp:1",
             PlanQuantity = 35,
             CompleteQuantity = 30,
@@ -489,7 +490,7 @@ namespace MachineWatchTest
           new MazakScheduleRow()
           {
             Id = 15,
-            Comment = MazakPart.CreateComment("uuuu", new[] { 1 }, false),
+            Comment = "uuuu-Insight",
             PartName = "pppp:1",
             PlanQuantity = 50,
             CompleteQuantity = 30,

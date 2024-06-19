@@ -242,7 +242,7 @@ namespace MazakMachineInterface
             trans.Commit();
           }
 
-          foreach (int waitSecs in new[] { 5, 5, 10, 10, 15, 15, 30, 30 })
+          foreach (int waitSecs in new[] { 5, 5, 10, 10, 15, 15, 30 })
           {
             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
             if (CheckTransactionErrors(conn, prefix))

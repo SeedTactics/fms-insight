@@ -97,15 +97,15 @@ namespace MazakMachineInterface
           continue;
         if (string.IsNullOrEmpty(sch.Comment))
           continue;
-        MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
-        if (manual)
-          continue;
+        var unique = MazakPart.ParseComment(sch.Comment);
 
         //load the job
         if (string.IsNullOrEmpty(unique))
           continue;
         var job = jobDB.LoadJob(unique);
         if (job == null)
+          continue;
+        if (job.ManuallyCreated)
           continue;
 
         // if already decremented, ignore
@@ -119,12 +119,7 @@ namespace MazakMachineInterface
         {
           foreach (var action in loadOpers)
           {
-            if (
-              action.Unique == job.UniqueStr
-              && action.Process == 1
-              && action.LoadEvent
-              && action.Path == procToPath.PathForProc(action.Process)
-            )
+            if (action.Unique == job.UniqueStr && action.Process == 1 && action.LoadEvent)
             {
               loadingQty += action.Qty;
               Log.Debug(
@@ -141,7 +136,7 @@ namespace MazakMachineInterface
           {
             Schedule = sch,
             Job = job,
-            Proc1Path = procToPath.PathForProc(proc: 1),
+            Proc1Path = 1,
             NewPlanQty = CountCompletedOrMachiningStarted(sch) + loadingQty
           }
         );

@@ -70,22 +70,13 @@ namespace MazakMachineInterface
 
     public string PartName { get; }
 
-    public string Comment
-    {
-      get { return CreateComment(Job.UniqueStr, Processes.Select(p => p.Path), Job.ManuallyCreated); }
-    }
-
-    public static string CreateComment(string unique, IEnumerable<int> paths, bool manual)
-    {
-      if (manual)
-        return unique + "-Path" + string.Join("-", paths) + "-1";
-      else
-        return unique + "-Path" + string.Join("-", paths) + "-0";
-    }
+    public string Comment => Job.UniqueStr + "-Insight";
 
     public static bool IsSailPart(string partName, string comment)
     {
-      if (partName == null || comment == null || !comment.Contains("-Path"))
+      if (partName == null || comment == null)
+        return false;
+      if (!(comment.Contains("-Path") || comment.EndsWith("-Insight")))
         return false;
 
       //sail parts are those with a colon and a positive integer after the colon
@@ -124,71 +115,23 @@ namespace MazakMachineInterface
       }
     }
 
-    public interface IProcToPath
+    public static string ParseComment(string comment)
     {
-      int PathForProc(int proc);
-    }
-
-    private class ProcToPath : IProcToPath
-    {
-      private string unique;
-      private IReadOnlyList<int> paths;
-
-      public ProcToPath(string u, IReadOnlyList<int> p)
+      if (comment.EndsWith("-Insight"))
       {
-        unique = u;
-        paths = p;
+        return comment[..^8];
       }
 
-      public int PathForProc(int proc)
-      {
-        if (proc >= 1 && proc <= paths.Count)
-          return paths[proc - 1];
-        else
-        {
-          Log.Debug("Unable to find path for {uniq} proc {proc}", unique, proc);
-          return 1;
-        }
-      }
-    }
-
-    public static void ParseComment(
-      string comment,
-      out string unique,
-      out IProcToPath procToPath,
-      out bool manual
-    )
-    {
+      // Old FMS Insights had a -Path, strip it off for backwards compatibility
       int idx = comment.LastIndexOf("-Path");
-      int lastDash = comment.LastIndexOf("-");
 
-      if (lastDash < 0 || idx == lastDash || lastDash == comment.Length - 1)
+      if (idx < 0)
       {
-        //this is an old schedule without the entry
-        manual = false;
+        return comment;
       }
       else
       {
-        if (comment[lastDash + 1] == '1')
-          manual = true;
-        else
-          manual = false;
-        comment = comment.Substring(0, lastDash);
-      }
-
-      if (idx >= 0)
-      {
-        unique = comment.Substring(0, idx);
-        string[] pathsStr = comment.Substring(idx + 5).Split('-');
-        procToPath = new ProcToPath(
-          unique,
-          pathsStr.Select(p => int.TryParse(p, out int pNum) ? pNum : 1).ToList()
-        );
-      }
-      else
-      {
-        unique = comment;
-        procToPath = new ProcToPath(unique, new[] { 1 });
+        return comment[..idx];
       }
     }
   }

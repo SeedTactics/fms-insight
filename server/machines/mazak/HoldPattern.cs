@@ -94,11 +94,7 @@ namespace MazakMachineInterface
 
       public string UniqueStr
       {
-        get
-        {
-          MazakPart.ParseComment(_schRow.Comment, out string unique, out var paths, out var manual);
-          return unique;
-        }
+        get { return MazakPart.ParseComment(_schRow.Comment); }
       }
 
       public HoldMode Hold
@@ -137,12 +133,12 @@ namespace MazakMachineInterface
 
         if (MazakPart.IsSailPart(_schRow.PartName, _schRow.Comment))
         {
-          MazakPart.ParseComment(_schRow.Comment, out string unique, out var paths, out var manual);
+          var unique = MazakPart.ParseComment(_schRow.Comment);
           var job = jdb.LoadJob(unique);
           if (job != null)
           {
             HoldEntireJob = job.HoldJob;
-            HoldMachining = job.Processes[0].Paths[paths.PathForProc(proc: 1) - 1].HoldMachining;
+            HoldMachining = job.Processes[0].Paths[0].HoldMachining;
           }
         }
       }

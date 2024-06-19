@@ -803,7 +803,7 @@ namespace MazakMachineInterface
           var sch = mazakSchedules.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
           if (sch == null)
             continue;
-          MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
+          var unique = MazakPart.ParseComment(sch.Comment);
           if (string.IsNullOrEmpty(unique))
             continue;
 
@@ -1010,20 +1010,7 @@ namespace MazakMachineInterface
       if (job == null)
         return false;
 
-      // try and find path
-      int path = 1;
-
-      var part = mazakSchedules.Parts?.FirstOrDefault(p => p.PartName == e.FullPartName);
-      if (part != null && MazakPart.IsSailPart(part.PartName, part.Comment))
-      {
-        MazakPart.ParseComment(part.Comment, out string uniq, out var procToPath, out bool manual);
-        if (uniq == firstMat.Unique)
-        {
-          path = procToPath.PathForProc(firstMat.Mat.Process);
-        }
-      }
-
-      var stop = job.Processes[firstMat.Mat.Process - 1].Paths[path - 1].Stops.FirstOrDefault();
+      var stop = job.Processes[firstMat.Mat.Process - 1].Paths[0].Stops.FirstOrDefault();
       if (stop != null && !string.IsNullOrEmpty(stop.Program))
       {
         progName = stop.Program;

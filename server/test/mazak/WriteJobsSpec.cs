@@ -131,7 +131,7 @@ namespace MachineWatchTest
           {
             Id = 1,
             PartName = "part1:1:1",
-            Comment = MazakPart.CreateComment("uniq1", [1], false),
+            Comment = "uniq1-Insight",
             PlanQuantity = 15,
             CompleteQuantity = 15,
             Priority = 50,
@@ -150,7 +150,7 @@ namespace MachineWatchTest
           {
             Id = 2,
             PartName = "part2:1:1",
-            Comment = MazakPart.CreateComment("uniq2", [1], false),
+            Comment = "uniq2-Insight",
             PlanQuantity = 15,
             CompleteQuantity = 10,
             Priority = 50,
@@ -173,7 +173,7 @@ namespace MachineWatchTest
           new MazakPartRow()
           {
             PartName = "part1:1:1",
-            Comment = MazakPart.CreateComment("uniq1", [1], false),
+            Comment = "uniq1-Insight",
             Processes = new[]
             {
               new MazakPartProcessRow()
@@ -189,7 +189,7 @@ namespace MachineWatchTest
           new MazakPartRow()
           {
             PartName = "part2:1:1",
-            Comment = MazakPart.CreateComment("uniq2", [1], false),
+            Comment = "uniq2-Insight",
             Processes = new[]
             {
               new MazakPartProcessRow()

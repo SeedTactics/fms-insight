@@ -85,19 +85,12 @@ namespace MazakMachineInterface
     )
     {
       //Load process and path numbers
-      CalculateMaxProcAndPath(
-        mazakData,
-        jobDB,
-        out var uniqueToMaxPath,
-        out var uniqueToMaxProcess,
-        out var partNameToNumProc
-      );
+      CalculateMaxProcAndPath(mazakData, jobDB, out var uniqueToMaxProcess, out var partNameToNumProc);
 
       var currentLoads = new List<LoadAction>(mazakData.LoadActions);
 
       var jobUniqBySchID = new Dictionary<long, string>();
       var jobsByUniq = new Dictionary<string, CurrentJob>();
-      var pathBySchID = new Dictionary<long, MazakPart.IProcToPath>();
 
       long precedence = 0;
       foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
@@ -125,16 +118,13 @@ namespace MazakMachineInterface
         if (loc >= 0)
           partName = partName.Substring(0, loc);
         string jobUnique = "";
-        MazakPart.IProcToPath procToPath = null;
-        bool manual = false;
         if (!string.IsNullOrEmpty(partRow.Comment))
-          MazakPart.ParseComment(partRow.Comment, out jobUnique, out procToPath, out manual);
+          jobUnique = MazakPart.ParseComment(partRow.Comment);
 
         if (!uniqueToMaxProcess.ContainsKey(jobUnique))
           continue;
 
         int numProc = uniqueToMaxProcess[jobUnique];
-        int maxProc1Path = uniqueToMaxPath[jobUnique];
 
         //Create or lookup the job
         CurrentJob job;
@@ -151,7 +141,7 @@ namespace MazakMachineInterface
               .Select(_ =>
               {
                 var b = ImmutableList.CreateBuilder<ProcPathInfo>();
-                b.AddRange(Enumerable.Range(1, maxProc1Path).Select<int, ProcPathInfo>(_ => null));
+                b.Add(null);
                 return b;
               })
               .ToList(),
@@ -160,7 +150,7 @@ namespace MazakMachineInterface
               .Select(_ =>
               {
                 var b = ImmutableList.CreateBuilder<int>();
-                b.AddRange(Enumerable.Range(1, maxProc1Path).Select(_ => 0));
+                b.Add(0);
                 return b;
               })
               .ToList(),
@@ -169,7 +159,7 @@ namespace MazakMachineInterface
               .Select(_ =>
               {
                 var b = ImmutableList.CreateBuilder<long>();
-                b.AddRange(Enumerable.Range(1, maxProc1Path).Select(_ => 0L));
+                b.Add(0);
                 return b;
               })
               .ToList(),
@@ -177,18 +167,17 @@ namespace MazakMachineInterface
           jobsByUniq.Add(jobUnique, job);
         }
         jobUniqBySchID.Add(schRow.Id, jobUnique);
-        pathBySchID.Add(schRow.Id, procToPath);
 
         //Job Basics
         job.Cycles += schRow.PlanQuantity;
-        AddCompletedToJob(schRow, job, procToPath);
+        AddCompletedToJob(schRow, job);
         AddMachiningOrCompletedToStarted(schRow, job);
         if (((HoldPattern.HoldMode)schRow.HoldMode) == HoldPattern.HoldMode.FullHold)
           job.UserHold = true;
         else
           job.UserHold = false;
 
-        AddRoutingToJob(mazakData, partRow, job, machineGroupName, procToPath, dbType, precedence);
+        AddRoutingToJob(mazakData, partRow, job, machineGroupName, dbType, precedence);
       }
 
       //Now add pallets
@@ -230,7 +219,6 @@ namespace MazakMachineInterface
             palletsByName[palName] %= p => p.NumFaces = Math.Max(p.NumFaces, palSub.PartProcessNumber);
 
             var job = jobsByUniq[jobUniqBySchID[palSub.ScheduleID]];
-            var procToPath = pathBySchID[palSub.ScheduleID];
 
             var matIDs = new Queue<long>(
               FindMatIDsFromOldCycles(
@@ -238,7 +226,7 @@ namespace MazakMachineInterface
                 pending.Count > 0,
                 job,
                 palSub.PartProcessNumber,
-                procToPath.PathForProc(palSub.PartProcessNumber),
+                path: 1,
                 jobDB
               )
             );
@@ -246,7 +234,6 @@ namespace MazakMachineInterface
             for (int i = 1; i <= palSub.FixQuantity; i++)
             {
               int face = palSub.PartProcessNumber;
-              int path = procToPath.PathForProc(palSub.PartProcessNumber);
               long matID = -1;
               if (matIDs.Count > 0)
                 matID = matIDs.Dequeue();
@@ -276,7 +263,7 @@ namespace MazakMachineInterface
                   LoadOntoFace = palSub.PartProcessNumber + 1,
                   LoadOntoPalletNum = palName,
                   ProcessAfterLoad = palSub.PartProcessNumber + 1,
-                  PathAfterLoad = procToPath.PathForProc(palSub.PartProcessNumber + 1),
+                  PathAfterLoad = 1,
                   ElapsedLoadUnloadTime = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null
                 };
               }
@@ -293,7 +280,7 @@ namespace MazakMachineInterface
                     matID,
                     job,
                     palSub.PartProcessNumber,
-                    procToPath.PathForProc(palSub.PartProcessNumber),
+                    path: 1,
                     oldCycles,
                     fmsSettings
                   ),
@@ -306,7 +293,7 @@ namespace MazakMachineInterface
                 var start = FindMachineStartFromOldCycles(oldCycles, matID);
                 if (start != null)
                 {
-                  var machStop = job.Processes[palSub.PartProcessNumber - 1][path - 1].Stops.FirstOrDefault();
+                  var machStop = job.Processes[palSub.PartProcessNumber - 1][0].Stops.FirstOrDefault();
                   var elapsedTime = utcNow.Subtract(start.EndTimeUTC);
                   action = new InProcessMaterialAction()
                   {
@@ -325,7 +312,7 @@ namespace MazakMachineInterface
                   JobUnique = job.UniqueStr,
                   PartName = job.PartName,
                   Process = palSub.PartProcessNumber,
-                  Path = procToPath.PathForProc(palSub.PartProcessNumber),
+                  Path = 1,
                   Serial = matDetails?.Serial,
                   WorkorderId = matDetails?.Workorder,
                   SignaledInspections = jobDB
@@ -468,12 +455,10 @@ namespace MazakMachineInterface
     private static void CalculateMaxProcAndPath(
       MazakAllData mazakData,
       IRepository jobDB,
-      out Dictionary<string, int> uniqueToMaxProc1Path,
       out Dictionary<string, int> uniqueToMaxProcess,
       out Dictionary<string, int> partNameToNumProc
     )
     {
-      uniqueToMaxProc1Path = new Dictionary<string, int>();
       uniqueToMaxProcess = new Dictionary<string, int>();
       partNameToNumProc = new Dictionary<string, int>();
       foreach (var partRow in mazakData.Parts)
@@ -484,25 +469,12 @@ namespace MazakMachineInterface
         if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment) && !string.IsNullOrEmpty(partRow.Comment))
         {
           string jobUnique = "";
-          bool manual = false;
           int numProc = partRow.Processes.Count;
 
-          MazakPart.ParseComment(partRow.Comment, out jobUnique, out var paths, out manual);
+          jobUnique = MazakPart.ParseComment(partRow.Comment);
 
           if (jobDB.LoadJob(jobUnique) == null)
             continue;
-
-          if (uniqueToMaxProc1Path.ContainsKey(jobUnique))
-          {
-            uniqueToMaxProc1Path[jobUnique] = Math.Max(
-              uniqueToMaxProc1Path[jobUnique],
-              paths.PathForProc(proc: 1)
-            );
-          }
-          else
-          {
-            uniqueToMaxProc1Path.Add(jobUnique, paths.PathForProc(proc: 1));
-          }
 
           if (uniqueToMaxProcess.ContainsKey(jobUnique))
           {
@@ -524,7 +496,6 @@ namespace MazakMachineInterface
       MazakPartRow partRow,
       CurrentJob job,
       string machineGroupName,
-      MazakPart.IProcToPath procToPath,
       MazakDbType mazakTy,
       long precedence
     )
@@ -532,10 +503,9 @@ namespace MazakMachineInterface
       //Add routing and pallets
       foreach (var partProcRow in partRow.Processes)
       {
-        var path = procToPath.PathForProc(partProcRow.ProcessNumber);
-        var dbPath = job.DbProcPath(partProcRow.ProcessNumber, path);
+        var dbPath = job.DbProcPath(partProcRow.ProcessNumber, 1);
 
-        job.Precedence[partProcRow.ProcessNumber - 1][path - 1] = precedence;
+        job.Precedence[partProcRow.ProcessNumber - 1][0] = precedence;
 
         //Routing
         string fixStr = partProcRow.FixLDS;
@@ -585,7 +555,7 @@ namespace MazakMachineInterface
           }
         }
 
-        job.Processes[partProcRow.ProcessNumber - 1][path - 1] = new ProcPathInfo()
+        job.Processes[partProcRow.ProcessNumber - 1][0] = new ProcPathInfo()
         {
           PalletNums = pals.ToImmutable(),
           Fixture = dbPath?.Fixture,
@@ -607,14 +577,9 @@ namespace MazakMachineInterface
       }
     }
 
-    private static void AddCompletedToJob(
-      MazakScheduleRow schRow,
-      CurrentJob job,
-      MazakPart.IProcToPath procToPath
-    )
+    private static void AddCompletedToJob(MazakScheduleRow schRow, CurrentJob job)
     {
-      job.Completed[job.Processes.Count - 1][procToPath.PathForProc(job.Processes.Count) - 1] =
-        schRow.CompleteQuantity;
+      job.Completed[job.Processes.Count - 1][0] = schRow.CompleteQuantity;
 
       //in-proc and material for each process
       var counts = new Dictionary<int, int>(); //key is process, value is in-proc + mat
@@ -629,7 +594,7 @@ namespace MazakMachineInterface
       for (int proc = 1; proc < job.Processes.Count; proc++)
       {
         var cnt = counts.Where(x => x.Key > proc).Select(x => x.Value).Sum();
-        job.Completed[proc - 1][procToPath.PathForProc(proc) - 1] = cnt + schRow.CompleteQuantity;
+        job.Completed[proc - 1][0] = cnt + schRow.CompleteQuantity;
       }
     }
 

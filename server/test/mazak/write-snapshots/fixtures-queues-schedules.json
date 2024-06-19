@@ -2,7 +2,7 @@
   "Schedules": [
     {
       "Id": 2,
-      "Comment": "bbb-schId1234-Path1-1-0",
+      "Comment": "bbb-schId1234-Insight",
       "PartName": "bbb:0:2",
       "PlanQuantity": 20,
       "CompleteQuantity": 0,
@@ -63,7 +63,7 @@
     },
     {
       "Id": 1,
-      "Comment": "aaa-schId1234-Path1-1-0",
+      "Comment": "aaa-schId1234-Insight",
       "PartName": "aaa:0:1",
       "PlanQuantity": 11,
       "CompleteQuantity": 0,
@@ -124,7 +124,7 @@
     },
     {
       "Id": 3,
-      "Comment": "ccc-schId1234-Path1-1-0",
+      "Comment": "ccc-schId1234-Insight",
       "PartName": "ccc:0:3",
       "PlanQuantity": 38,
       "CompleteQuantity": 0,

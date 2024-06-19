@@ -2,7 +2,7 @@
   "Schedules": [
     {
       "Id": 1,
-      "Comment": "uniq1-Path1-0",
+      "Comment": "uniq1-Insight",
       "PartName": "part1:1:1",
       "PlanQuantity": 15,
       "CompleteQuantity": 15,

@@ -527,7 +527,7 @@ public sealed class MazakSyncSpec : IDisposable
         [
           new MazakScheduleRow()
           {
-            Comment = MazakPart.CreateComment("uuuu", Enumerable.Repeat(1, 2), false),
+            Comment = "uuuu-Insight",
             DueDate = DateTime.Today,
             FixForMachine = 1,
             HoldMode = 0,

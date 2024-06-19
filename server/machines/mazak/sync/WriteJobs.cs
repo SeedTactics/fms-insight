@@ -77,8 +77,7 @@ namespace MazakMachineInterface
         {
           if (MazakPart.IsSailPart(s.PartName, s.Comment))
           {
-            MazakPart.ParseComment(s.Comment, out var uniq, out var _, out var _);
-            return uniq;
+            return MazakPart.ParseComment(s.Comment);
           }
           else
           {
@@ -250,9 +249,10 @@ namespace MazakMachineInterface
       if (transSet.Schedules.Any())
       {
         writeDb.Save(transSet, "Add Schedules");
-        foreach (var j in jobs)
+        foreach (var s in transSet.Schedules)
         {
-          jobDB.MarkJobCopiedToSystem(j.UniqueStr);
+          var uniq = MazakPart.ParseComment(s.Comment);
+          jobDB.MarkJobCopiedToSystem(uniq);
         }
       }
     }
@@ -264,20 +264,20 @@ namespace MazakMachineInterface
     )
     {
       var current = new HashSet<string>(toKeep.Select(j => j.UniqueStr));
-      var completed = new Dictionary<(string uniq, int proc1path), int>();
+      var completed = new Dictionary<string, int>();
       foreach (var sch in schedules.Schedules)
       {
         if (string.IsNullOrEmpty(sch.Comment))
           continue;
         if (!MazakPart.IsSailPart(sch.PartName, sch.Comment))
           continue;
-        MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
+        var unique = MazakPart.ParseComment(sch.Comment);
         if (jobDB.LoadJob(unique) == null)
           continue;
 
         if (sch.PlanQuantity == sch.CompleteQuantity)
         {
-          completed[(uniq: unique, proc1path: procToPath.PathForProc(1))] = sch.PlanQuantity;
+          completed[unique] = sch.PlanQuantity;
         }
         else
         {
@@ -294,12 +294,9 @@ namespace MazakMachineInterface
         .Select(j =>
         {
           int qty = 0;
-          for (int path = 1; path <= j.Processes[0].Paths.Count; path++)
+          if (completed.TryGetValue(j.UniqueStr, out var compCnt))
           {
-            if (completed.TryGetValue((uniq: j.UniqueStr, proc1path: path), out var compCnt))
-            {
-              qty += compCnt;
-            }
+            qty += compCnt;
           }
 
           if (j.Cycles > qty)

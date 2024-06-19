@@ -103,17 +103,17 @@ namespace MachineWatchTest
 
       CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:1:1");
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:1:2");
-      CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
+      CheckPart(trans, "Part1:3:1", "Job1-Insight");
 
       CheckPartProcessFromJob(trans, "Part2:3:2", 1, "F:3:1:1");
       CheckPartProcessFromJob(trans, "Part2:3:2", 2, "F:3:1:2");
-      CheckPart(trans, "Part2:3:2", "Job2-Path1-1-0");
+      CheckPart(trans, "Part2:3:2", "Job2-Insight");
 
       CheckPartProcessFromJob(trans, "Part3:3:3", 1, "F:3:2:1");
-      CheckPart(trans, "Part3:3:3", "Job3-Path1-0");
+      CheckPart(trans, "Part3:3:3", "Job3-Insight");
 
       CheckPartProcess(trans, "Part4:3:4", 1, "F:3:2:1");
-      CheckPart(trans, "Part4:3:4", "Job4-Path1-0");
+      CheckPart(trans, "Part4:3:4", "Job4-Insight");
 
       CheckPalletGroup(trans, 1, "F:3:1", 2, new int[] { 4, 5 });
       CheckPalletGroup(trans, 2, "F:3:2", 1, new int[] { 20, 21 });
@@ -219,14 +219,14 @@ namespace MachineWatchTest
 
       CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:2:1");
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:2:2");
-      CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
+      CheckPart(trans, "Part1:3:1", "Job1-Insight");
 
       CheckPartProcessFromJob(trans, "Part2:3:2", 1, "F:3:2:1");
       CheckPartProcessFromJob(trans, "Part2:3:2", 2, "F:3:2:2");
-      CheckPart(trans, "Part2:3:2", "Job2-Path1-1-0");
+      CheckPart(trans, "Part2:3:2", "Job2-Insight");
 
       CheckPartProcessFromJob(trans, "Part3:3:3", 1, pal30fix);
-      CheckPart(trans, "Part3:3:3", "Job3-Path1-0");
+      CheckPart(trans, "Part3:3:3", "Job3-Insight");
 
       CheckPalletGroup(trans, 2, "F:3:2", 2, new int[] { 10, 11, 12 });
       if (useStartingOffset)
@@ -289,15 +289,15 @@ namespace MachineWatchTest
 
       CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:1:1");
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:2:2");
-      CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
+      CheckPart(trans, "Part1:3:1", "Job1-Insight");
 
       CheckPartProcessFromJob(trans, "Part2:3:2", 1, "F:3:1:1");
       CheckPartProcessFromJob(trans, "Part2:3:2", 2, "F:3:2:2");
-      CheckPart(trans, "Part2:3:2", "Job2-Path1-1-0");
+      CheckPart(trans, "Part2:3:2", "Job2-Insight");
 
       CheckPartProcessFromJob(trans, "Part3:3:3", 1, "F:3:1:1");
       CheckPartProcessFromJob(trans, "Part3:3:3", 2, "F:3:3:2");
-      CheckPart(trans, "Part3:3:3", "Job3-Path1-1-0");
+      CheckPart(trans, "Part3:3:3", "Job3-Insight");
 
       CheckSingleProcPalletGroup(trans, 1, "F:3:1:1", new int[] { 4, 5 });
       CheckSingleProcPalletGroup(trans, 2, "F:3:2:2", new int[] { 40, 50 });
@@ -371,17 +371,17 @@ namespace MachineWatchTest
 
       CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:1:fixAA:1");
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:1:fixAA:2");
-      CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
+      CheckPart(trans, "Part1:3:1", "Job1-Insight");
 
       CheckPartProcessFromJob(trans, "Part2:3:2", 1, "F:3:1:fixAA:1");
       CheckPartProcessFromJob(trans, "Part2:3:2", 2, "F:3:1:fixAA:2");
-      CheckPart(trans, "Part2:3:2", "Job2-Path1-1-0");
+      CheckPart(trans, "Part2:3:2", "Job2-Insight");
 
       CheckPartProcessFromJob(trans, "Part3:3:3", 1, "F:3:2:fix3:1");
-      CheckPart(trans, "Part3:3:3", "Job3-Path1-0");
+      CheckPart(trans, "Part3:3:3", "Job3-Insight");
 
       CheckPartProcessFromJob(trans, "Part3:3:4", 1, "F:3:3:fix4:1");
-      CheckPart(trans, "Part3:3:4", "Job4-Path1-0");
+      CheckPart(trans, "Part3:3:4", "Job4-Insight");
 
       CheckPalletGroup(trans, 1, new[] { "F:3:1:fixAA:1", "F:3:1:fixAA:2" }, new int[] { 4, 5 });
       CheckPalletGroup(trans, 2, new[] { "F:3:2:fix3:1" }, new int[] { 20, 21 });
@@ -475,15 +475,15 @@ namespace MachineWatchTest
 
       CheckPartProcessFromJob(trans, "Part1:3:1", 1, part1BaseFix + ":1");
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, part1BaseFix + ":2");
-      CheckPart(trans, "Part1:3:1", "Job1-Path1-1-0");
+      CheckPart(trans, "Part1:3:1", "Job1-Insight");
 
       CheckPartProcessFromJob(trans, "Part2:3:2", 1, part2BaseFix + ":1");
       CheckPartProcessFromJob(trans, "Part2:3:2", 2, part2BaseFix + ":2");
-      CheckPart(trans, "Part2:3:2", "Job2-Path1-1-0");
+      CheckPart(trans, "Part2:3:2", "Job2-Insight");
 
       CheckPartProcessFromJob(trans, "Part3:3:3", 1, part3BaseFix + ":1");
       CheckPartProcessFromJob(trans, "Part3:3:3", 2, part3BaseFix + ":2");
-      CheckPart(trans, "Part3:3:3", "Job3-Path1-1-0");
+      CheckPart(trans, "Part3:3:3", "Job3-Insight");
 
       CheckPalletGroup(trans, 1, new[] { "F:3:1:1", "F:3:1:2" }, new int[] { 4, 5 });
 
@@ -835,7 +835,7 @@ namespace MachineWatchTest
       string program = null
     )
     {
-      var pRow = new MazakPartRow() { Comment = "comment -Path", PartName = name };
+      var pRow = new MazakPartRow() { Comment = "comment -Insight", PartName = name };
       dset.TestParts.Add(pRow);
 
       for (int proc = 1; proc <= numProc; proc++)

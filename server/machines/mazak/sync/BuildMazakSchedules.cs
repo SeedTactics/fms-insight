@@ -105,8 +105,8 @@ namespace MazakMachineInterface
         {
           if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
           {
-            MazakPart.ParseComment(partRow.Comment, out string u, out var ps, out bool m);
-            if (u == part.UniqueStr && ps.PathForProc(proc: 1) == 1)
+            var u = MazakPart.ParseComment(partRow.Comment);
+            if (u == part.UniqueStr)
             {
               downloadUid = MazakPart.ParseUID(partRow.PartName);
               mazakPartName = partRow.PartName;
