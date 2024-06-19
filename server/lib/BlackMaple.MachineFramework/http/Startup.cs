@@ -174,6 +174,7 @@ public static class FMSInsightWebHost
       FMSSettings fmsSt,
       ServerSettings serverSt,
       IWebHostEnvironment env,
+      // Injecting websocket manager here ensures that JobsAndQueuesFromDb starts and thus logging starts
       Controllers.WebsocketManager wsManager,
       IHostApplicationLifetime lifetime
     )

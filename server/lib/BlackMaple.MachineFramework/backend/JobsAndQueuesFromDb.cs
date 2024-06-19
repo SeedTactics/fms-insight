@@ -169,6 +169,7 @@ namespace BlackMaple.MachineFramework
     {
       _syncState.NewCellState -= NewCellState;
       _shutdown.Set();
+      _thread.Join(TimeSpan.FromSeconds(5));
     }
 
     // changeLock prevents decrement and queue changes from occuring at the same time as the thread

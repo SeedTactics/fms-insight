@@ -108,6 +108,7 @@ namespace BlackMaple.MachineFramework.Controllers
     private readonly System.Collections.Concurrent.BlockingCollection<ServerEvent> _messages;
     private readonly Thread _thread;
 
+    // Injecting IJobAndQueueControl here ensures that logging starts as soon as FMS Insight starts
     public WebsocketManager(RepositoryConfig repo, IJobAndQueueControl jobAndQueue)
     {
       _serSettings = new JsonSerializerOptions();

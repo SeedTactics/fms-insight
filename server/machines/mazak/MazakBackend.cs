@@ -57,7 +57,9 @@ namespace MazakMachineInterface
         s.AddSingleton<ICurrentLoadActions, LoadOperationsFromDB>();
 
       s.AddSingleton<IReadDataAccess, OpenDatabaseKitReadDB>();
-      s.AddSingleton<ISynchronizeCellState<MazakState>, MazakSync>();
+      s.AddSingleton<MazakSync>();
+      s.AddSingleton<ISynchronizeCellState<MazakState>>(sp => sp.GetRequiredService<MazakSync>());
+      s.AddSingleton<INotifyMazakLogEvent>(sp => sp.GetRequiredService<MazakSync>());
       s.AddSingleton<IMachineControl, MazakMachineControl>();
 
       return s;
