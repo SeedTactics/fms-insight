@@ -70,7 +70,6 @@ public sealed class SyncSpec : IDisposable
     sync = new MakinoSync(
       new MakinoSettings()
       {
-        FMSSettings = new() { },
         ADEPath = _tempDir,
         DownloadOnlyOrders = true,
         OpenMakinoConnection = () => _makinoDB

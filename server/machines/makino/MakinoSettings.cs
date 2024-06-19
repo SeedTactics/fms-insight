@@ -31,45 +31,38 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 
 namespace BlackMaple.FMSInsight.Makino;
 
-public class MakinoSettings
+public record MakinoSettings
 {
-  private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSettings>();
-  public required FMSSettings FMSSettings { get; init; }
   public required string ADEPath { get; init; }
   public required bool DownloadOnlyOrders { get; init; }
   public required Func<IMakinoDB> OpenMakinoConnection { get; init; }
 
-  public MakinoSettings() { }
+  private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSettings>();
 
-  [SetsRequiredMembers]
-  public MakinoSettings(IConfiguration config, FMSSettings settings)
+  public static MakinoSettings Load(IConfiguration config)
   {
-    FMSSettings = settings;
-
     var cfg = config.GetSection("Makino");
 
-    ADEPath = cfg.GetValue<string>("ADE Path") ?? "";
-    if (string.IsNullOrEmpty(ADEPath))
+    var adePath = cfg.GetValue<string>("ADE Path") ?? "";
+    if (string.IsNullOrEmpty(adePath))
     {
-      ADEPath = @"c:\Makino\ADE";
+      adePath = @"c:\Makino\ADE";
     }
     try
     {
-      foreach (var f in Directory.GetFiles(ADEPath, "insight*.xml"))
+      foreach (var f in Directory.GetFiles(adePath, "insight*.xml"))
       {
         File.Delete(f);
       }
     }
     catch (DirectoryNotFoundException)
     {
-      Log.Error("ADE Path {path} does not exist", ADEPath);
+      Log.Error("ADE Path {path} does not exist", adePath);
     }
     catch (Exception ex)
     {
@@ -81,16 +74,17 @@ public class MakinoSettings
     {
       connStr = DetectSqlConnectionStr();
     }
-    OpenMakinoConnection = () => new MakinoDB(connStr);
 
-    DownloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders");
+    var settings = new MakinoSettings()
+    {
+      ADEPath = adePath,
+      DownloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders"),
+      OpenMakinoConnection = () => new MakinoDB(connStr)
+    };
 
-    Log.Information(
-      "Starting makino backend. Connection Str: {connStr}, ADE Path: {path}, DownloadOnlyOrders: {downOnlyOrders}",
-      connStr,
-      ADEPath,
-      DownloadOnlyOrders
-    );
+    Log.Information("Starting makino backend with {@settings}", settings);
+
+    return settings;
   }
 
   private static string DetectSqlConnectionStr()

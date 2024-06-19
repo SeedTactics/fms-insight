@@ -67,7 +67,7 @@ namespace BlackMaple.FMSInsight.Niigata
       _assign =
         assign
         ?? new MultiPalletAssign(
-          [new AssignNewRoutesOnPallets(settings.StationNames), new SizedQueues(settings.FMSSettings.Queues)]
+          [new AssignNewRoutesOnPallets(settings.StationNames), new SizedQueues(fmsSt.Queues)]
         );
     }
 
@@ -79,7 +79,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
     {
-      return CheckJobsMatchNiigata.CheckNewJobs(_settings, _icc, db, jobs);
+      return CheckJobsMatchNiigata.CheckNewJobs(_settings, _fmsSt, _icc, db, jobs);
     }
 
     public CellState CalculateCellState(IRepository db)

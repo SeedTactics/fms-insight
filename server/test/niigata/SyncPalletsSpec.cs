@@ -95,7 +95,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var settings = new NiigataSettings()
       {
-        FMSSettings = _fmsSt,
         ProgramDirectory = "",
         SQLConnectionString = "",
         RequireProgramsInJobs = false,
