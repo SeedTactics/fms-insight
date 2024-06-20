@@ -107,7 +107,7 @@ namespace BlackMaple.MachineFramework
     }
 
     public static RepositoryConfig InitializeMemoryDB(
-      SerialSettings st,
+      SerialSettings? st,
       Guid? guid = null,
       bool createTables = true
     )
