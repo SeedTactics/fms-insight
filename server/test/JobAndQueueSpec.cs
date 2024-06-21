@@ -91,11 +91,27 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
   private async Task StartSyncThread()
   {
-    var newCellSt = CreateTaskToWaitForNewCellState();
+    var newCellSt = CreateTaskToWaitForNewStatus();
     _jq = new JobsAndQueuesFromDb<MockCellState>(_repo, _settings, this, startThread: false);
     _jq.OnNewCurrentStatus += OnNewCurrentStatus;
     _jq.StartThread();
-    await newCellSt;
+    (await newCellSt)
+      .Should()
+      .BeEquivalentTo(
+        new CurrentStatus()
+        {
+          TimeOfCurrentStatusUTC = DateTime.UtcNow,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+          Material = [],
+          Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+          Alarms = ["FMS Insight is starting up..."]
+        },
+        options =>
+          options
+            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4)))
+            .WhenTypeIs<DateTime>()
+      );
   }
 
   public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
@@ -165,6 +181,17 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     tcs.SetResult(st);
   }
 
+  private Task<CurrentStatus> CreateTaskToWaitForNewStatus()
+  {
+    (_newCellStateTcs as object).Should().BeNull();
+    var tcs = new TaskCompletionSource<CurrentStatus>();
+    _newCellStateTcs = tcs;
+    return tcs.Task;
+  }
+  #endregion
+
+  #region Expected Status
+
   private async Task SetCurrentState(bool stateUpdated, bool executeAction, CurrentStatus curSt = null)
   {
     curSt ??= new CurrentStatus()
@@ -185,11 +212,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     _executeActions = executeAction;
 
     // wait for NewCurrentStatus after raising NewCellState event
-    var tcs = new TaskCompletionSource<CurrentStatus>();
-    (_newCellStateTcs as object).Should().BeNull();
-    _newCellStateTcs = tcs;
+    var task = CreateTaskToWaitForNewStatus();
     NewCellState?.Invoke();
-    (await tcs.Task).Should().Be(curSt);
+    (await task).Should().Be(curSt);
   }
 
   private async Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
@@ -204,44 +229,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     );
   }
 
-  private Task CreateTaskToWaitForNewCellState()
-  {
-    var st = _curSt?.CurrentStatus;
-    (_newCellStateTcs as object).Should().BeNull();
-    var tcs = new TaskCompletionSource<CurrentStatus>();
-    _newCellStateTcs = tcs;
-    return tcs.Task.ContinueWith(s =>
-    {
-      if (st == null)
-      {
-        s.Result.Should()
-          .BeEquivalentTo(
-            new CurrentStatus()
-            {
-              TimeOfCurrentStatusUTC = DateTime.UtcNow,
-              Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-              Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-              Material = [],
-              Queues = ImmutableDictionary<string, QueueInfo>.Empty,
-              Alarms = ["FMS Insight is starting up..."]
-            },
-            options =>
-              options
-                .Using<DateTime>(ctx =>
-                  ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4))
-                )
-                .WhenTypeIs<DateTime>()
-          );
-      }
-      else
-      {
-        s.Result.Should().Be(st);
-      }
-    });
-  }
   #endregion
 
-  [Fact]
+  [Fact(Timeout = 15000)]
   public async void HandlesErrorDuringCalculateState()
   {
     await StartSyncThread();
@@ -260,11 +250,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     _calculateStateError = "An error occurred";
 
-    var tcs = new TaskCompletionSource<CurrentStatus>();
-    (_newCellStateTcs as object).Should().BeNull();
-    _newCellStateTcs = tcs;
+    var task = CreateTaskToWaitForNewStatus();
     NewCellState?.Invoke();
-    (await tcs.Task)
+    (await task)
       .Should()
       .BeEquivalentTo(
         curSt with
@@ -281,19 +269,18 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             .WhenTypeIs<DateTime>()
       );
 
-    // the error handling waits 2 seconds and tries again, so wait 2.1 seconds.
+    // the error handling waits 2 seconds and tries again, so wait 3 seconds.
     // This checks that since the error is the same the OnNewCurrentStatus is not raised,
     // since it would get an error since OnNewCurrentStatus checks for task completion to be null
-    await Task.Delay(TimeSpan.FromSeconds(2.1));
+    await Task.Delay(TimeSpan.FromSeconds(3));
 
-    // clear the error, and then wait for the new current status again
-    // CreateTaskToWaitForNewCellState checks that the current status matches with curSt without the extra alarm
-    var newStatusTask = CreateTaskToWaitForNewCellState();
+    // clear the error, and then wait for a new current status since the error changed
+    var newStatusTask = CreateTaskToWaitForNewStatus();
     _calculateStateError = null;
-    await newStatusTask;
+    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
   }
 
-  [Fact]
+  [Fact(Timeout = 15000)]
   public async Task ErrorsDuringActions()
   {
     await StartSyncThread();
@@ -320,11 +307,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     // A single NewCellState should load the new _curSt with An alarm and
     // then after that get the error during the action
-    var tcs = new TaskCompletionSource<CurrentStatus>();
-    (_newCellStateTcs as object).Should().BeNull();
-    _newCellStateTcs = tcs;
+    var task = CreateTaskToWaitForNewStatus();
     NewCellState?.Invoke();
-    (await tcs.Task)
+    (await task)
       .Should()
       .BeEquivalentTo(
         curSt with
@@ -341,16 +326,15 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             .WhenTypeIs<DateTime>()
       );
 
-    // the error handling waits 2 seconds and tries again, so wait 2.1 seconds.
+    // the error handling waits 2 seconds and tries again, so wait 3 seconds.
     // This checks that since the error is the same the OnNewCurrentStatus is not raised,
     // since it would get an error since OnNewCurrentStatus checks for task completion to be null
-    await Task.Delay(TimeSpan.FromSeconds(2.1));
+    await Task.Delay(TimeSpan.FromSeconds(3));
 
     // clear the error, and then wait for the new current status again
-    // CreateTaskToWaitForNewCellState checks that the current status matches with curSt without the extra alarm
-    var newStatusTask = CreateTaskToWaitForNewCellState();
+    var newStatusTask = CreateTaskToWaitForNewStatus();
     _executeActionError = null;
-    await newStatusTask;
+    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
   }
 
   #region Jobs
@@ -375,7 +359,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     };
   }
 
-  [Fact]
+  [Fact(Timeout = 10000)]
   public async Task AddsBasicJobs()
   {
     using var db = _repo.OpenConnection();
@@ -445,11 +429,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       ]
     };
 
-    var newStatusTask = CreateTaskToWaitForNewCellState();
+    var newStatusTask = CreateTaskToWaitForNewStatus();
 
     ((IJobAndQueueControl)_jq).AddJobs(newJobs, null);
 
-    await newStatusTask;
+    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
 
     db.LoadUnarchivedJobs()
       .Select(j => j.UniqueStr)
@@ -457,7 +441,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       .BeEquivalentTo([completedJob.UniqueStr, toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr]);
   }
 
-  [Theory]
+  [Theory(Timeout = 10000)]
   [InlineData(true)]
   [InlineData(false)]
   public async Task Decrement(bool byDate)
@@ -490,7 +474,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       }
     );
 
-    var newStatusTask = CreateTaskToWaitForNewCellState();
+    var newStatusTask = CreateTaskToWaitForNewStatus();
 
     IEnumerable<JobAndDecrementQuantity> decrs;
     _expectsDecrement = true;
@@ -519,7 +503,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         }
       );
 
-    await newStatusTask;
+    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
 
     db.LoadDecrementsForJob("u1")
       .Should()
@@ -543,14 +527,14 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
 
   #region Queues
-  [Fact]
+  [Fact(Timeout = 10000)]
   public async Task UnallocatedQueues()
   {
     using var db = _repo.OpenConnection();
     await StartSyncThread();
 
     await SetCurrentState(stateUpdated: false, executeAction: false);
-    var newStatusTask = CreateTaskToWaitForNewCellState();
+    var newStatusTask = CreateTaskToWaitForNewStatus();
 
     //add a casting
     _jq.AddUnallocatedCastingToQueue(
@@ -626,9 +610,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         }
       );
 
-    await newStatusTask;
+    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
 
-    newStatusTask = CreateTaskToWaitForNewCellState();
+    newStatusTask = CreateTaskToWaitForNewStatus();
 
     _jq.RemoveMaterialFromAllQueues(new List<long> { 1 }, "theoper");
     mats = db.GetMaterialInAllQueues().ToList();
@@ -657,7 +641,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             .WhenTypeIs<DateTime?>()
       );
 
-    await newStatusTask;
+    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
 
     var mat1 = MkLogMat.Mk(
       matID: 1,
@@ -785,7 +769,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     db.GetMaterialInAllQueues().Should().Contain(m => m.MaterialID == 2);
   }
 
-  [Theory]
+  [Theory(Timeout = 10000)]
   [InlineData(0)]
   [InlineData(1)]
   public async Task UnprocessedMaterial(int lastCompletedProcess)
@@ -824,7 +808,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       pos: 0
     );
 
-    var newStatusTask = CreateTaskToWaitForNewCellState();
+    var newStatusTask = CreateTaskToWaitForNewStatus();
     _jq.AddUnprocessedMaterialToQueue(
         "uuu1",
         process: lastCompletedProcess,
@@ -836,7 +820,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       )
       .Should()
       .BeEquivalentTo(expectedMat1);
-    await newStatusTask;
+    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
 
     db.GetMaterialDetails(1)
       .Should()
@@ -878,15 +862,15 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     await SetCurrentMaterial([expectedMat1]);
 
-    newStatusTask = CreateTaskToWaitForNewCellState();
+    newStatusTask = CreateTaskToWaitForNewStatus();
 
     //remove it
     _jq.RemoveMaterialFromAllQueues(new List<long> { 1 }, "myoper");
     db.GetMaterialInAllQueues().Should().BeEmpty();
 
-    await newStatusTask;
+    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
 
-    newStatusTask = CreateTaskToWaitForNewCellState();
+    newStatusTask = CreateTaskToWaitForNewStatus();
 
     //add it back in
     _jq.SetMaterialInQueue(1, "q1", 0, "theoper");
@@ -912,7 +896,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         }
       );
 
-    await newStatusTask;
+    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
 
     mats = db.GetMaterialInAllQueues().ToList();
     mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(4));
@@ -1042,7 +1026,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       );
   }
 
-  [Fact]
+  [Fact(Timeout = 10000)]
   public async Task AllowsSwapOfLoadingMaterial()
   {
     await StartSyncThread();
@@ -1093,11 +1077,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal([1L, 2L]);
 
-    var newStatusTask = CreateTaskToWaitForNewCellState();
+    var newStatusTask = CreateTaskToWaitForNewStatus();
 
     _jq.SetMaterialInQueue(materialId: 1, "q1", 1, "oper");
 
-    await newStatusTask;
+    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
 
     db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal([2L, 1L]);
 
@@ -1257,7 +1241,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     },
   }.Select(d => new object[] { d });
 
-  [Theory]
+  [Theory(Timeout = 10000)]
   [MemberData(nameof(SignalTheoryData))]
   public async Task QuarantinesMatOnPallet(SignalQuarantineTheoryData data)
   {
@@ -1380,11 +1364,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     }
     else
     {
-      var newStatusTask = CreateTaskToWaitForNewCellState();
+      var newStatusTask = CreateTaskToWaitForNewStatus();
 
       _jq.SignalMaterialForQuarantine(1, "theoper", reason: "signaling reason");
 
-      await newStatusTask;
+      (await newStatusTask).Should().Be(_curSt.CurrentStatus);
 
       if (data.QuarantineAction == SignalQuarantineTheoryData.QuarantineType.Signal)
       {
