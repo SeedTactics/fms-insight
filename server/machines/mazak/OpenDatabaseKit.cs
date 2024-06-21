@@ -104,7 +104,7 @@ namespace MazakMachineInterface
         throw new Exception("VerE and Web only only supported on windows");
       }
 
-      var conn = new OleDbConnection(_connectionStr);
+      using var conn = new OleDbConnection(_connectionStr);
       while (attempts < 20)
       {
         try
@@ -119,7 +119,6 @@ namespace MazakMachineInterface
             if (!(ex.Message.ToLower().IndexOf("try again") >= 0))
             {
               //if this is not a locking exception, throw it
-              conn.Dispose();
               throw new DataException(ex.ToString());
             }
           }
@@ -131,7 +130,6 @@ namespace MazakMachineInterface
             if (!(ex.Message.ToLower().IndexOf("try again") >= 0))
             {
               //if this is not a locking exception, throw it
-              conn.Dispose();
               throw;
             }
           }
@@ -142,7 +140,6 @@ namespace MazakMachineInterface
         attempts += 1;
       }
 
-      conn.Dispose();
       throw new Exception("Mazak database is locked and can not be accessed");
     }
 
