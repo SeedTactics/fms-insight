@@ -450,7 +450,13 @@ namespace MachineWatchTest
       );
       if (progRev.HasValue)
       {
-        expectedLog %= e => e.ProgramDetails["ProgramRevision"] = progRev.Value.ToString();
+        expectedLog = expectedLog with
+        {
+          ProgramDetails = ImmutableDictionary<string, string>.Empty.Add(
+            "ProgramRevision",
+            progRev.Value.ToString()
+          )
+        };
       }
       expected.Add(expectedLog);
     }
@@ -521,7 +527,13 @@ namespace MachineWatchTest
       }
       if (progRev.HasValue)
       {
-        newEntry %= e => e.ProgramDetails["ProgramRevision"] = progRev.Value.ToString();
+        newEntry = newEntry with
+        {
+          ProgramDetails = ImmutableDictionary<string, string>.Empty.Add(
+            "ProgramRevision",
+            progRev.Value.ToString()
+          )
+        };
       }
       expected.Add(newEntry);
     }
@@ -546,10 +558,11 @@ namespace MachineWatchTest
         endTime: DateTime.UtcNow,
         result: result.ToString()
       );
-      e %= entry =>
+      e = e with
       {
-        entry.ProgramDetails["InspectionType"] = inspTy;
-        entry.ProgramDetails["ActualPath"] = JsonSerializer.Serialize(path.ToList());
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.Add("InspectionType", inspTy)
+          .Add("ActualPath", JsonSerializer.Serialize(path.ToList()))
       };
       expected.Add(e);
     }

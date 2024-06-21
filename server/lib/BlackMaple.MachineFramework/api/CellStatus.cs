@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Immutable;
-using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
@@ -56,7 +55,6 @@ namespace BlackMaple.MachineFramework
     public QueueRole? Role { get; init; }
   }
 
-  [Draftable]
   public record CurrentStatus
   {
     public required DateTime TimeOfCurrentStatusUTC { get; init; }
@@ -76,8 +74,6 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<MachineLocation>? MachineLocations { get; init; }
 
     public ImmutableList<ActiveWorkorder>? Workorders { get; init; } = null;
-
-    public static CurrentStatus operator %(CurrentStatus s, Action<ICurrentStatusDraft> f) => s.Produce(f);
   }
 
   public record JobAndDecrementQuantity

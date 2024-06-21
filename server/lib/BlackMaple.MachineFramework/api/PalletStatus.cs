@@ -37,7 +37,6 @@ using System;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
-using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
@@ -76,7 +75,6 @@ namespace BlackMaple.MachineFramework
     }
   }
 
-  [Draftable]
   public record PalletStatus
   {
     public required int PalletNum { get; init; }
@@ -99,7 +97,5 @@ namespace BlackMaple.MachineFramework
     public PalletLocation? TargetLocation { get; init; }
 
     public decimal? PercentMoveCompleted { get; init; }
-
-    public static PalletStatus operator %(PalletStatus s, Action<IPalletStatusDraft> f) => s.Produce(f);
   }
 }

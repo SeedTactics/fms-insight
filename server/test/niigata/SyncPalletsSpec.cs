@@ -1145,12 +1145,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         System.IO.File.ReadAllText("../../../sample-newjobs/two-stops.json"),
         jsonSettings
       );
-      newJobs %= j =>
+      newJobs = newJobs with
       {
-        for (int jobIdx = 0; jobIdx < j.Jobs.Count; jobIdx++)
-        {
-          j.Jobs[jobIdx] = j.Jobs[jobIdx]
-            .AdjustAllPaths(
+        Jobs = newJobs
+          .Jobs.Select(j =>
+            j.AdjustAllPaths(
               (proc, path, draftPath) =>
                 draftPath with
                 {
@@ -1159,9 +1158,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     .Stops.Select(d => d with { Program = null, ProgramRevision = null })
                     .ToImmutableList()
                 }
-            );
-        }
-        j.CurrentUnfilledWorkorders.AddRange(
+            )
+          )
+          .ToImmutableList(),
+        CurrentUnfilledWorkorders = newJobs.CurrentUnfilledWorkorders.AddRange(
           new[]
           {
             new Workorder()
@@ -1251,8 +1251,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               )
             }
           }
-        );
-        j.Programs.AddRange(
+        ),
+        Programs = newJobs.Programs.AddRange(
           new[]
           {
             new MachineFramework.NewProgramContent()
@@ -1291,7 +1291,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               ProgramContent = "zz 4 RO rev-1"
             },
           }
-        );
+        )
       };
 
       AddJobs(newJobs, expectNewRoute: false); // no route yet because no material

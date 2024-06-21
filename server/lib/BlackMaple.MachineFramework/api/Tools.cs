@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Runtime.Serialization;
-using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
@@ -66,7 +65,6 @@ namespace BlackMaple.MachineFramework
     public required int MachineNum { get; init; }
   }
 
-  [Draftable]
   public record ToolUse
   {
     public required string Tool { get; init; }
@@ -93,7 +91,5 @@ namespace BlackMaple.MachineFramework
     public int? TotalToolUseCountAtEndOfCycle { get; init; }
 
     public int? ConfiguredToolLifeCount { get; init; }
-
-    public static ToolUse operator %(ToolUse t, Action<IToolUseDraft> f) => t.Produce(f);
   }
 }

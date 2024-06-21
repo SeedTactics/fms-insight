@@ -36,12 +36,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
   ///Stores what is currently happening to a piece of material.
-  [Draftable]
   public record InProcessMaterialAction
   {
     // This should be a sum type, and while C# sum types can work with some helper code it doesn't work
@@ -83,7 +81,6 @@ namespace BlackMaple.MachineFramework
 
   ///Stores the current location of a piece of material.  If a transfer operation is currently in process
   ///(such as unloading), the location will store the previous location and the action will store the new location.
-  [Draftable]
   public record InProcessMaterialLocation
   {
     //Again, this should be a sum type.
@@ -109,7 +106,6 @@ namespace BlackMaple.MachineFramework
   }
 
   //Stores information about a piece of material, where it is, and what is happening to it.
-  [Draftable]
   public record InProcessMaterial
   {
     // Information about the material
@@ -140,9 +136,6 @@ namespace BlackMaple.MachineFramework
 
     // What is currently happening to the material?
     public required InProcessMaterialAction Action { get; init; }
-
-    public static InProcessMaterial operator %(InProcessMaterial m, Action<IInProcessMaterialDraft> f) =>
-      m.Produce(f);
   }
 
   public record MaterialDetails

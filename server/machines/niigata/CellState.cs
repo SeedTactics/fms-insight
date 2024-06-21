@@ -308,7 +308,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
           if (completedMachineSteps > 0)
           {
-            inProcMat %= m => m.LastCompletedMachiningRouteStopIndex = completedMachineSteps - 1;
+            inProcMat = inProcMat with { LastCompletedMachiningRouteStopIndex = completedMachineSteps - 1 };
           }
         }
 
@@ -880,7 +880,7 @@ namespace BlackMaple.FMSInsight.Niigata
         );
         foreach (var mat in pallet.Material)
         {
-          mat.Mat %= m => m.Action.ElapsedLoadUnloadTime = elapsedLoadTime;
+          mat.Mat = mat.Mat with { Action = mat.Mat.Action with { ElapsedLoadUnloadTime = elapsedLoadTime } };
           loadingIds.Add(mat.Mat.MaterialID);
         }
       }
@@ -888,18 +888,18 @@ namespace BlackMaple.FMSInsight.Niigata
       // now material to unload
       foreach (var mat in unusedMatsOnPal.Values.Where(m => !loadingIds.Contains(m.Mat.MaterialID)))
       {
-        mat.Mat %= m =>
-          m.SetAction(
-            new InProcessMaterialAction()
-            {
-              Type =
-                mat.Mat.Process == mat.Job.Processes.Count
-                  ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-                  : InProcessMaterialAction.ActionType.UnloadToInProcess,
-              UnloadIntoQueue = OutputQueueForMaterial(mat, pallet.Log, defaultToScrap: true),
-              ElapsedLoadUnloadTime = elapsedLoadTime
-            }
-          );
+        mat.Mat = mat.Mat with
+        {
+          Action = new InProcessMaterialAction()
+          {
+            Type =
+              mat.Mat.Process == mat.Job.Processes.Count
+                ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+                : InProcessMaterialAction.ActionType.UnloadToInProcess,
+            UnloadIntoQueue = OutputQueueForMaterial(mat, pallet.Log, defaultToScrap: true),
+            ElapsedLoadUnloadTime = elapsedLoadTime
+          }
+        };
         pallet.Material.Add(mat);
       }
     }
@@ -1653,7 +1653,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 && log.ProgramDetails.TryGetValue("InspectionType", out var iType)
               )
               {
-                mat.Mat %= m => m.SignaledInspections.Append(iType).ToArray();
+                mat.Mat = mat.Mat with { SignaledInspections = [.. mat.Mat.SignaledInspections, iType] };
               }
             }
             palletStateUpdated = true;

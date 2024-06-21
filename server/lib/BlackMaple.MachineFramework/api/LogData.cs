@@ -38,11 +38,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
-using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
-  [Draftable]
   public record LogMaterial
   {
     [JsonPropertyName("id")]
@@ -71,8 +69,6 @@ namespace BlackMaple.MachineFramework
 
     [JsonPropertyName("workorder")]
     public string? Workorder { get; init; }
-
-    public static LogMaterial operator %(LogMaterial m, Action<ILogMaterialDraft> f) => m.Produce(f);
   }
 
   public enum LogType
@@ -115,7 +111,6 @@ namespace BlackMaple.MachineFramework
     // when adding types, must also update the convertLogType() function in client/backup-viewer/src/background.ts
   }
 
-  [Draftable, KnownType(typeof(MaterialProcessActualPath))]
   public record LogEntry
   {
     [JsonPropertyName("counter")]
@@ -193,12 +188,9 @@ namespace BlackMaple.MachineFramework
       ProgramDetails = null;
       Tools = null;
     }
-
-    public static LogEntry operator %(LogEntry e, Action<ILogEntryDraft> f) => e.Produce(f);
   }
 
   // stored serialized in json format in the details for inspection logs.
-  [Draftable]
   public record MaterialProcessActualPath
   {
     public record Stop
@@ -219,11 +211,6 @@ namespace BlackMaple.MachineFramework
     public required ImmutableList<Stop> Stops { get; init; }
 
     public required int UnloadStation { get; init; }
-
-    public static MaterialProcessActualPath operator %(
-      MaterialProcessActualPath m,
-      Action<IMaterialProcessActualPathDraft> f
-    ) => m.Produce(f);
   }
 
   public record EditMaterialInLogEvents

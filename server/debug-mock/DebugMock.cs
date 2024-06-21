@@ -39,7 +39,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
-using Germinate;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -206,8 +205,6 @@ namespace DebugMachineWatchApiServer
 
     private JsonSerializerOptions _jsonSettings;
 
-    public event NewCurrentStatus OnNewCurrentStatus;
-    public event NewJobsDelegate OnNewJobs;
     public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public bool AllowQuarantineToCancelLoad { get; } = true;
@@ -468,17 +465,11 @@ namespace DebugMachineWatchApiServer
             // ignore inspection complete
             continue;
           }
-          var e2 = e.Produce(draft =>
+          var e2 = e with { EndTimeUTC = e.EndTimeUTC.Add(offset) };
+          if (tools.TryGetValue(e.Counter, out var usage))
           {
-            draft.EndTimeUTC = draft.EndTimeUTC.Add(offset);
-            if (tools.TryGetValue(e.Counter, out var usage))
-            {
-              foreach (var u in usage)
-              {
-                draft.Tools.Add(u);
-              }
-            }
-          });
+            e2 = e2 with { Tools = e2.Tools.AddRange(usage) };
+          }
           ((Repository)LogDB).AddLogEntryFromUnitTest(e2);
         }
       }
@@ -492,37 +483,25 @@ namespace DebugMachineWatchApiServer
       using var LogDB = RepoConfig.OpenConnection();
       foreach (var newJobs in allNewJobs)
       {
-        var newJobsOffset = newJobs.Produce(newJobsDraft =>
+        var newJobsOffset = newJobs with
         {
-          for (int i = 0; i < newJobs.Jobs.Count; i++)
-          {
-            newJobsDraft.Jobs[i] = OffsetJob(newJobsDraft.Jobs[i], offset);
-          }
-
-          for (int i = 0; i < newJobs.StationUse.Count; i++)
-          {
-            newJobsDraft.StationUse[i] %= draft =>
-            {
-              draft.StartUTC = draft.StartUTC.Add(offset);
-              draft.EndUTC = draft.EndUTC.Add(offset);
-            };
-          }
-          for (int i = 0; i < newJobs.CurrentUnfilledWorkorders.Count; i++)
-          {
-            newJobsDraft.CurrentUnfilledWorkorders[i] %= w => w.DueDate = w.DueDate.Add(offset);
-          }
-          if (newJobs.SimDayUsage != null)
-          {
-            for (int i = 0; i < newJobs.SimDayUsage.Count; i++)
-            {
-              var old = newJobsDraft.SimDayUsage[i];
-              newJobsDraft.SimDayUsage[i] = old with
+          Jobs = newJobs.Jobs.Select(j => OffsetJob(j, offset)).ToImmutableList(),
+          StationUse = newJobs
+            .StationUse?.Select(su =>
+              su with
               {
-                Day = old.Day.AddDays((int)Math.Round(offset.TotalDays))
-              };
-            }
-          }
-        });
+                StartUTC = su.StartUTC.Add(offset),
+                EndUTC = su.EndUTC.Add(offset),
+              }
+            )
+            .ToImmutableList(),
+          CurrentUnfilledWorkorders = newJobs
+            .CurrentUnfilledWorkorders?.Select(w => w with { DueDate = w.DueDate.Add(offset) })
+            .ToImmutableList(),
+          SimDayUsage = newJobs
+            .SimDayUsage?.Select(su => su with { Day = su.Day.AddDays((int)Math.Round(offset.TotalDays)) })
+            .ToImmutableList(),
+        };
 
         LogDB.AddJobs(newJobsOffset, null, addAsCopiedToSystem: true);
       }

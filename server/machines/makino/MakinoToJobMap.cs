@@ -389,9 +389,9 @@ namespace BlackMaple.FMSInsight.Makino
         _fixIDToPallets.Add(fixtureID, []);
       _fixIDToPallets[fixtureID].Add(palletNum);
 
-      if (_pallets.ContainsKey(palletNum))
+      if (_pallets.TryGetValue(palletNum, out PalletStatus? value) && value != null)
       {
-        _pallets[palletNum] %= p => p.NumFaces = Math.Max(p.NumFaces, fixtureNum);
+        _pallets[palletNum] = value with { NumFaces = Math.Max(value.NumFaces, fixtureNum) };
         return;
       }
 

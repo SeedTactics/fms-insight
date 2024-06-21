@@ -1536,7 +1536,13 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     );
     if (!string.IsNullOrEmpty(operName))
     {
-      e %= en => en.ProgramDetails.Add("operator", operName);
+      e = e with
+      {
+        ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
+          "operator",
+          operName
+        )
+      };
     }
     return e;
   }
@@ -1565,11 +1571,20 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     );
     if (!string.IsNullOrEmpty(operName))
     {
-      e %= en => en.ProgramDetails.Add("operator", operName);
+      e = e with
+      {
+        ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
+          "operator",
+          operName
+        )
+      };
     }
     if (!string.IsNullOrEmpty(reason))
     {
-      e = e with { ProgramDetails = e.ProgramDetails.Add("note", reason) };
+      e = e with
+      {
+        ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add("note", reason)
+      };
     }
     return e;
   }
@@ -1601,7 +1616,13 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     );
     if (!string.IsNullOrEmpty(operName))
     {
-      e %= en => en.ProgramDetails.Add("operator", operName);
+      e = e with
+      {
+        ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
+          "operator",
+          operName
+        )
+      };
     }
     return e;
   }
@@ -1662,7 +1683,13 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     e = e with { ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("note", note) };
     if (!string.IsNullOrEmpty(operName))
     {
-      e %= en => en.ProgramDetails.Add("operator", operName);
+      e = e with
+      {
+        ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
+          "operator",
+          operName
+        )
+      };
     }
     return e;
   }

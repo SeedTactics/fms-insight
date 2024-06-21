@@ -38,7 +38,6 @@ using System.Linq;
 using AutoFixture;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
-using Germinate;
 using Xunit;
 
 namespace MachineWatchTest
@@ -890,8 +889,10 @@ namespace MachineWatchTest
         TimeSpan.FromMinutes(100),
         TimeSpan.FromMinutes(5)
       );
-      expectedInspLog %= e => e.ProgramDetails.Add("a", "aaa");
-      expectedInspLog %= e => e.ProgramDetails.Add("b", "bbb");
+      expectedInspLog = expectedInspLog with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("a", "aaa").Add("b", "bbb")
+      };
       logsForMat1.Add(expectedInspLog);
 
       var washLog = _jobLog.RecordCloseoutCompleted(
@@ -916,8 +917,10 @@ namespace MachineWatchTest
         TimeSpan.FromMinutes(44),
         TimeSpan.FromMinutes(9)
       );
-      expectedWashLog %= e => e.ProgramDetails.Add("z", "zzz");
-      expectedWashLog %= e => e.ProgramDetails.Add("y", "yyy");
+      expectedWashLog = expectedWashLog with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("z", "zzz").Add("y", "yyy")
+      };
       logsForMat1.Add(expectedWashLog);
 
       var generalLog = _jobLog.RecordGeneralMessage(
@@ -938,7 +941,10 @@ namespace MachineWatchTest
         generalLog.EndTimeUTC,
         "The result msg"
       );
-      expectedGeneralLog %= e => e.ProgramDetails["extra1"] = "value1";
+      expectedGeneralLog = expectedGeneralLog with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.SetItem("extra1", "value1")
+      };
       logsForMat1.Add(expectedGeneralLog);
 
       var notesLog = _jobLog.RecordOperatorNotes(
@@ -971,10 +977,11 @@ namespace MachineWatchTest
         notesLog.EndTimeUTC,
         "Operator Notes"
       );
-      expectedNotesLog %= e =>
+      expectedNotesLog = expectedNotesLog with
       {
-        e.ProgramDetails["note"] = "The notes content";
-        e.ProgramDetails["operator"] = "Opername";
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.SetItem("note", "The notes content")
+          .SetItem("operator", "Opername")
       };
       logsForMat1.Add(expectedNotesLog);
 
@@ -1249,7 +1256,10 @@ namespace MachineWatchTest
         endTime: pal1CycleTime.AddMinutes(31),
         result: "prog22"
       );
-      invalidated %= e => e.ProgramDetails["PalletCycleInvalidated"] = "1";
+      invalidated = invalidated with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("PalletCycleInvalidated", "1")
+      };
       ((Repository)_jobLog).AddLogEntryFromUnitTest(invalidated);
 
       var swap = new LogEntry(
@@ -3326,7 +3336,13 @@ namespace MachineWatchTest
             endTime: addTime,
             result: ""
           );
-          l %= d => d.ProgramDetails["operator"] = "operName";
+          l = l with
+          {
+            ProgramDetails = (l.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
+              "operator",
+              "operName"
+            )
+          };
           return l;
         })
         .ToList();
@@ -4779,17 +4795,24 @@ namespace MachineWatchTest
         endTime: now,
         result: "Invalidate all events on cycle for pallet 5"
       );
-      expectedInvalidateMsg %= e =>
+      expectedInvalidateMsg = expectedInvalidateMsg with
       {
-        e.ProgramDetails["EditedCounters"] = string.Join(",", origMatLog.Select(e => e.Counter));
-        e.ProgramDetails["operator"] = "theoper";
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.Add("EditedCounters", string.Join(",", origMatLog.Select(e => e.Counter)))
+          .Add("operator", "theoper")
       };
 
       var newMatLog = origMatLog
         .Select(RemoveActiveTime())
         .Select(evt =>
         {
-          return evt.Produce(e => e.ProgramDetails["PalletCycleInvalidated"] = "1");
+          return evt with
+          {
+            ProgramDetails = (evt.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
+              "PalletCycleInvalidated",
+              "1"
+            )
+          };
         })
         .ToList();
 
@@ -4984,7 +5007,7 @@ namespace MachineWatchTest
       );
       if (!string.IsNullOrEmpty(operName))
       {
-        e %= en => en.ProgramDetails.Add("operator", operName);
+        e = e with { ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", operName) };
       }
       return e;
     }
@@ -5013,11 +5036,12 @@ namespace MachineWatchTest
       );
       if (!string.IsNullOrEmpty(operName))
       {
-        e %= en => en.ProgramDetails.Add("operator", operName);
-      }
-      if (!string.IsNullOrEmpty(operName))
-      {
-        e = e with { ProgramDetails = e.ProgramDetails.Add("note", reason) };
+        e = e with
+        {
+          ProgramDetails = ImmutableDictionary<string, string>
+            .Empty.Add("operator", operName)
+            .Add("note", reason)
+        };
       }
       return e;
     }
@@ -5049,7 +5073,7 @@ namespace MachineWatchTest
       );
       if (!string.IsNullOrEmpty(operName))
       {
-        e %= en => en.ProgramDetails.Add("operator", operName);
+        e = e with { ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", operName) };
       }
       return e;
     }

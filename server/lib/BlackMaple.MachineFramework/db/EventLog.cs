@@ -2456,24 +2456,21 @@ namespace BlackMaple.MachineFramework
               updateMatsCmd.ExecuteNonQuery();
 
               changedLogEntries.Add(
-                evt
-                  % (
-                    (evtDraft) =>
-                    {
-                      for (int i = 0; i < evtDraft.Material.Count; i++)
-                      {
-                        if (evtDraft.Material[i].MaterialID == oldMatId)
+                evt with
+                {
+                  Material = evt
+                    .Material.Select(m =>
+                      m.MaterialID == oldMatId
+                        ? m with
                         {
-                          evtDraft.Material[i] %= draftMat =>
-                          {
-                            draftMat.MaterialID = newMatId;
-                            draftMat.Serial = newMatDetails.Serial ?? "";
-                            draftMat.Workorder = newMatDetails.Workorder ?? "";
-                          };
+                          MaterialID = newMatId,
+                          Serial = newMatDetails.Serial ?? "",
+                          Workorder = newMatDetails.Workorder ?? ""
                         }
-                      }
-                    }
-                  )
+                        : m
+                    )
+                    .ToImmutableList()
+                }
               );
             }
           }
@@ -4550,11 +4547,11 @@ namespace BlackMaple.MachineFramework
     private Dictionary<int, MaterialProcessActualPath> LookupActualPath(IDbTransaction trans, long matID)
     {
       var byProc = new Dictionary<int, MaterialProcessActualPath>();
-      void adjustPath(int proc, Action<IMaterialProcessActualPathDraft> f)
+      void adjustPath(int proc, Func<MaterialProcessActualPath, MaterialProcessActualPath> f)
       {
-        if (byProc.ContainsKey(proc))
+        if (byProc.TryGetValue(proc, out var value))
         {
-          byProc[proc] %= f;
+          byProc[proc] = f(value);
         }
         else
         {
@@ -4567,7 +4564,7 @@ namespace BlackMaple.MachineFramework
             UnloadStation = -1,
             Stops = ImmutableList<MaterialProcessActualPath.Stop>.Empty
           };
-          byProc.Add(proc, m % f);
+          byProc.Add(proc, f(m));
         }
       }
 
@@ -4611,23 +4608,28 @@ namespace BlackMaple.MachineFramework
               mat =>
               {
                 if (pal > 0)
-                  mat.Pallet = pal;
+                  mat = mat with { Pallet = pal };
 
                 switch (logTy)
                 {
                   case LogType.LoadUnloadCycle:
                     if (mat.LoadStation == -1)
-                      mat.LoadStation = statNum;
+                      mat = mat with { LoadStation = statNum };
                     else
-                      mat.UnloadStation = statNum;
+                      mat = mat with { UnloadStation = statNum };
                     break;
 
                   case LogType.MachineCycle:
-                    mat.Stops.Add(
-                      new MaterialProcessActualPath.Stop() { StationName = statName, StationNum = statNum }
-                    );
+                    mat = mat with
+                    {
+                      Stops = mat.Stops.Add(
+                        new MaterialProcessActualPath.Stop() { StationName = statName, StationNum = statNum }
+                      )
+                    };
                     break;
                 }
+
+                return mat;
               }
             );
           }

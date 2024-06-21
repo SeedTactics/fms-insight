@@ -216,7 +216,10 @@ namespace MazakMachineInterface
             if (!jobUniqBySchID.ContainsKey(palSub.ScheduleID))
               continue;
 
-            palletsByName[palName] %= p => p.NumFaces = Math.Max(p.NumFaces, palSub.PartProcessNumber);
+            palletsByName[palName] = palletsByName[palName] with
+            {
+              NumFaces = Math.Max(palletsByName[palName].NumFaces, palSub.PartProcessNumber)
+            };
 
             var job = jobsByUniq[jobUniqBySchID[palSub.ScheduleID]];
 

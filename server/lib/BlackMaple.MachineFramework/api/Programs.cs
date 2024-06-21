@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #nullable enable
 
 using System;
-using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
@@ -84,7 +83,6 @@ namespace BlackMaple.MachineFramework
     public required long Revision { get; init; }
   }
 
-  [Draftable]
   public record ProgramForJobStep
   {
     /// <summary>Identifies the process on the part that this program is for.</summary>
@@ -100,8 +98,5 @@ namespace BlackMaple.MachineFramework
     ///<summary>The program revision to run.  Can be negative during download, is treated identically to how the revision
     ///in JobMachiningStop works.</summary>
     public long? Revision { get; init; }
-
-    public static ProgramForJobStep operator %(ProgramForJobStep w, Action<IProgramForJobStepDraft> f) =>
-      w.Produce(f);
   }
 }

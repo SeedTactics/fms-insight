@@ -34,11 +34,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Immutable;
-using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
-  [Draftable]
   public record SimulatedStationPart
   {
     public required string JobUnique { get; init; }
@@ -48,7 +46,6 @@ namespace BlackMaple.MachineFramework
     public required int Path { get; init; }
   }
 
-  [Draftable]
   public record SimulatedStationUtilization
   {
     public required string ScheduleId { get; init; }
@@ -64,11 +61,6 @@ namespace BlackMaple.MachineFramework
     public bool? PlanDown { get; init; }
 
     public ImmutableList<SimulatedStationPart>? Parts { get; init; }
-
-    public static SimulatedStationUtilization operator %(
-      SimulatedStationUtilization s,
-      Action<ISimulatedStationUtilizationDraft> f
-    ) => s.Produce(f);
   }
 
   public record SimulatedDayUsage
@@ -80,7 +72,6 @@ namespace BlackMaple.MachineFramework
     public required double Usage { get; init; }
   }
 
-  [Germinate.Draftable]
   public record NewJobs
   {
     public required string ScheduleId { get; init; }
@@ -100,7 +91,5 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<NewProgramContent>? Programs { get; init; }
 
     public byte[]? DebugMessage { get; init; }
-
-    public static NewJobs operator %(NewJobs j, Action<INewJobsDraft> f) => j.Produce(f);
   }
 }

@@ -1144,50 +1144,44 @@ namespace MachineWatchTest
         );
 
       var initialWorks = _fixture.Create<List<Workorder>>();
-      initialWorks[0] %= w =>
+      initialWorks[0] = initialWorks[0] with
       {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
+        Programs =
+        [
+          new ProgramForJobStep()
           {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              ProgramName = "aaa",
-              Revision = null
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 0,
-              ProgramName = "aaa",
-              Revision = 1
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 1,
-              ProgramName = "bbb",
-              Revision = null
-            }
+            ProcessNumber = 1,
+            ProgramName = "aaa",
+            Revision = null
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 0,
+            ProgramName = "aaa",
+            Revision = 1
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 1,
+            ProgramName = "bbb",
+            Revision = null
           }
-        );
+        ]
       };
-      initialWorks[1] %= w =>
+      initialWorks[1] = initialWorks[1] with
       {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
+        Programs =
+        [
+          new ProgramForJobStep()
           {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              StopIndex = 0,
-              ProgramName = "bbb",
-              Revision = 6
-            }
+            ProcessNumber = 1,
+            StopIndex = 0,
+            ProgramName = "bbb",
+            Revision = 6
           }
-        );
+        ]
       };
 
       _jobDB.AddJobs(
@@ -1254,34 +1248,31 @@ namespace MachineWatchTest
               )
             }
         );
-      initialWorks[0] %= w =>
+      initialWorks[0] = initialWorks[0] with
       {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
+        Programs =
+        [
+          new ProgramForJobStep()
           {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              ProgramName = "aaa",
-              Revision = 1
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 0,
-              ProgramName = "aaa",
-              Revision = 1
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 1,
-              ProgramName = "bbb",
-              Revision = 6
-            }
+            ProcessNumber = 1,
+            ProgramName = "aaa",
+            Revision = 1
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 0,
+            ProgramName = "aaa",
+            Revision = 1
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 1,
+            ProgramName = "bbb",
+            Revision = 6
           }
-        );
+        ]
       };
 
       _jobDB
@@ -1468,50 +1459,44 @@ namespace MachineWatchTest
 
       // adds new workorders and programs
       var newWorkorders = _fixture.Create<List<Workorder>>();
-      newWorkorders[0] %= w =>
+      newWorkorders[0] = newWorkorders[0] with
       {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
+        Programs =
+        [
+          new ProgramForJobStep()
           {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              ProgramName = "aaa",
-              Revision = 1
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 0,
-              ProgramName = "aaa",
-              Revision = 2
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 1,
-              ProgramName = "bbb",
-              Revision = 6
-            }
+            ProcessNumber = 1,
+            ProgramName = "aaa",
+            Revision = 1
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 0,
+            ProgramName = "aaa",
+            Revision = 2
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 1,
+            ProgramName = "bbb",
+            Revision = 6
           }
-        );
+        ]
       };
-      newWorkorders[1] %= w =>
+      newWorkorders[1] = newWorkorders[1] with
       {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
+        Programs =
+        [
+          new ProgramForJobStep()
           {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              StopIndex = 0,
-              ProgramName = "ccc",
-              Revision = 0
-            }
+            ProcessNumber = 1,
+            StopIndex = 0,
+            ProgramName = "ccc",
+            Revision = 0
           }
-        );
+        ]
       };
 
       _jobDB.AddJobs(
@@ -1535,21 +1520,18 @@ namespace MachineWatchTest
       );
 
       // update with allocated revisions
-      newWorkorders[1] %= w =>
+      newWorkorders[1] = newWorkorders[1] with
       {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
+        Programs =
+        [
+          new ProgramForJobStep()
           {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              StopIndex = 0,
-              ProgramName = "ccc",
-              Revision = 1
-            }
+            ProcessNumber = 1,
+            StopIndex = 0,
+            ProgramName = "ccc",
+            Revision = 1
           }
-        );
+        ]
       };
 
       _jobDB
@@ -2034,64 +2016,58 @@ namespace MachineWatchTest
         );
 
       var initialWorks = _fixture.Create<List<Workorder>>();
-      initialWorks[0] %= w =>
+      initialWorks[0] = initialWorks[0] with
       {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
+        Programs =
+        [
+          new ProgramForJobStep()
           {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              ProgramName = "aaa",
-              Revision = -1
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 0,
-              ProgramName = "aaa",
-              Revision = -2
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 1,
-              ProgramName = "bbb",
-              Revision = -1
-            }
+            ProcessNumber = 1,
+            ProgramName = "aaa",
+            Revision = -1
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 0,
+            ProgramName = "aaa",
+            Revision = -2
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 1,
+            ProgramName = "bbb",
+            Revision = -1
           }
-        );
+        ]
       };
-      initialWorks[1] %= w =>
+      initialWorks[1] = initialWorks[1] with
       {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
+        Programs =
+        [
+          new ProgramForJobStep()
           {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              StopIndex = 0,
-              ProgramName = "bbb",
-              Revision = -2
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 1,
-              ProgramName = "ccc",
-              Revision = -1
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 2,
-              ProgramName = "ccc",
-              Revision = -2
-            }
+            ProcessNumber = 1,
+            StopIndex = 0,
+            ProgramName = "bbb",
+            Revision = -2
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 1,
+            ProgramName = "ccc",
+            Revision = -1
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 2,
+            ProgramName = "ccc",
+            Revision = -2
           }
-        );
+        ]
       };
 
       _jobDB.AddJobs(
@@ -2240,64 +2216,58 @@ namespace MachineWatchTest
             }
         );
 
-      initialWorks[0] %= w =>
+      initialWorks[0] = initialWorks[0] with
       {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
+        Programs =
+        [
+          new ProgramForJobStep()
           {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              ProgramName = "aaa",
-              Revision = 1
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 0,
-              ProgramName = "aaa",
-              Revision = 2
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 1,
-              ProgramName = "bbb",
-              Revision = 6
-            }
+            ProcessNumber = 1,
+            ProgramName = "aaa",
+            Revision = 1
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 0,
+            ProgramName = "aaa",
+            Revision = 2
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 1,
+            ProgramName = "bbb",
+            Revision = 6
           }
-        );
+        ]
       };
-      initialWorks[1] %= w =>
+      initialWorks[1] = initialWorks[1] with
       {
-        w.Programs.Clear();
-        w.Programs.AddRange(
-          new[]
+        Programs =
+        [
+          new ProgramForJobStep()
           {
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 1,
-              StopIndex = 0,
-              ProgramName = "bbb",
-              Revision = 7
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 1,
-              ProgramName = "ccc",
-              Revision = 3
-            },
-            new ProgramForJobStep()
-            {
-              ProcessNumber = 2,
-              StopIndex = 2,
-              ProgramName = "ccc",
-              Revision = 5
-            }
+            ProcessNumber = 1,
+            StopIndex = 0,
+            ProgramName = "bbb",
+            Revision = 7
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 1,
+            ProgramName = "ccc",
+            Revision = 3
+          },
+          new ProgramForJobStep()
+          {
+            ProcessNumber = 2,
+            StopIndex = 2,
+            ProgramName = "ccc",
+            Revision = 5
           }
-        );
+        ]
       };
 
       _jobDB
