@@ -232,7 +232,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
   #endregion
 
   [Fact(Timeout = 15000)]
-  public async void HandlesErrorDuringCalculateState()
+  public async Task HandlesErrorDuringCalculateState()
   {
     await StartSyncThread();
 

@@ -36,8 +36,6 @@
   <ItemGroup>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6"/>
-    <PackageReference Include="System.IO.FileSystem.AccessControl" Version="5.0.0"/>
-
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
   </ItemGroup>
 </Project>
