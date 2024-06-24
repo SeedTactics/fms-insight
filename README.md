@@ -2,7 +2,7 @@
 
 [Project Website](https://fms-insight.seedtactics.com)
 
-[![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.FMSInsight.API.svg)](https://www.nuget.org/packages/BlackMaple.FMSInsight.API/) [![OpenAPI](https://img.shields.io/swagger/valid/2.0/https/raw.githubusercontent.com/SeedTactics/fms-insight/main/server/fms-insight-api.json.svg)](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmain%2Fserver%2Ffms-insight-api.json)
+[![OpenAPI](https://img.shields.io/swagger/valid/2.0/https/raw.githubusercontent.com/SeedTactics/fms-insight/main/server/fms-insight-api.json.svg)](http://petstore.swagger.io/?url=https%3A%2F%2Fraw.githubusercontent.com%2FSeedTactics%2Ffms-insight%2Fmain%2Fserver%2Ffms-insight-api.json)
 [![NuGet Stats](https://img.shields.io/nuget/v/BlackMaple.MachineFramework.svg)](https://www.nuget.org/packages/BlackMaple.MachineFramework/)
 
 FMS Insight is a program which runs on an flexible machining system (FMS)
@@ -40,72 +40,120 @@ so FMS Insight does not provide a standard build. Instead, FMS Insight is design
 which you import into your own C# executable project.
 
 To create a plugin, start a new executable C# project and
-reference the [BlackMaple.MachineFramework](https://www.nuget.org/packages/BlackMaple.MachineFramework/) nuget package
-and then one of [BlackMaple.FMSInsight.Mazak](https://www.nuget.org/packages/BlackMaple.FMSInsight.Mazak/),
+reference the [BlackMaple.MachineFramework](https://www.nuget.org/packages/BlackMaple.MachineFramework/) nuget package.
+You then need an implementation of `ISyncronizeCellState` and `IMachineControl` interfaces. These can either be
+manually implemented for your specific machines or you can use one of the provided implementations for Mazak, Makino,
+or Niigata: one of [BlackMaple.FMSInsight.Mazak](https://www.nuget.org/packages/BlackMaple.FMSInsight.Mazak/),
 [BlackMaple.FMSInsight.Makino](https://www.nuget.org/packages/BlackMaple.FMSInsight.Makino/), or
 [BlackMaple.FMSInsight.Niigata](https://www.nuget.org/packages/BlackMaple.FMSInsight.Niigata/).
 
-```
-# dotnet new console
-# dotnet add package BlackMaple.MachineFramework
-# dotnet add package BlackMaple.FMSInsight.Mazak
-```
+The following is the minimial code to run FMS Insight with the Mazak backend:
 
-Next, edit `Program.cs` to contain:
-
-```
-using System;
-
-namespace MyCompanyName.Insight
+```csharp
+public static void Main()
 {
-  public static class InsightMain
-  {
-    public static void Main()
+  var cfg = Configuration.LoadFromIni();
+  var serverSettings = ServerSettings.Load(cfg);
+  InsightLogging.EnableSerilog(serverSettings, enableEventLog: true);
+  var fmsSettings = FMSSettings.Load(cfg);
+  var serialSt = SerialSettings.SerialsUsingBase62(cfg);
+
+  new HostBuilder()
+    .UseContentRoot(Path.GetDirectoryName(Environment.ProcessPath)!)
+    .ConfigureServices(s =>
     {
-      BlackMaple.MachineFramework.Program.Run(true, (cfg, st) =>
-      {
-        var Mazak = new MazakMachineInterface.MazakBackend(cfg, st);
-        return new BlackMaple.MachineFramework.FMSImplementation()
-        {
-          Name = "MyCompanyNameInsight",
-          Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(),
-          Backend = Mazak,
-        };
-      });
-    }
-  }
+      s.AddRepository(Path.Combine(fmsSettings.DataDirectory, "insight.db"), serialSt);
+      s.AddMazakBackend(MazakConfig.Load(cfg));
+    })
+    .AddFMSInsightWebHost(cfg, serverSettings, fmsSettings)
+    .UseWindowsService()
+    .Build()
+    .Run();
 }
 ```
-
-The above code is enough to run FMS Insight without any customization. To add customized behavior,
-the `FMSImplementation` data structure contains properties and settings that can be overridden (see the definition in
-[BackendInterfaces.cs](server/lib/BlackMaple.MachineFramework/backend/BackendInterfaces.cs)). Also, the `MazakBackend`
-class contains events that can be registered to respond to various events. For example, to implement customized part
-marking, a class can be implemented which attaches to the events in the `IMazakLogReader` interface. When a Mazak
-Rotary Table Swap event occurs, the code can output a EIA program to perform the mark and also record the generated
-serial in the FMS Insight Log.
 
 ## Server
 
 The server is written in C# and uses ASP.NET Core to expose a HTTP-based JSON
 and REST-like API. The server uses a local SQLite database to store the
-log and job data which for historical reasons use a custom ORM instead of
-Entity Framework or Dapper (the code has been developed for over 10 years).
+log and job data.
 The [server/lib/BlackMaple.MachineFramework](server/lib/BlackMaple.MachineFramework)
 directory contains the common server code, which includes data definitions,
 database code, and ASP.NET Core controllers.
+The BlackMaple.MachineFramework library proivdes a `AddFMSInsightWebHost` extension
+method on a host builder, which adds a kestral webhost and configures all the controllers.
 
-For each machine manufacturer (currently Mazak, Makino, and Niigata),
-there is a per-manufacturer project. The code lives in [server/machines](server/machines/).
+Because the library is designed for FMS Insight to be installed by end-users, we do the
+configuration at the very beginning outside the HostBuilder. This allows more flexibility
+and makes it easier for the end-user (typically a non-technical manager on the shop floor)
+to configure. The example above shows loading using a helper method which reads an ini file,
+but you can configure however you wish. The main thing is to create an instance of
+`ServerSettings`, `FMSSettings`, and optionally `SerialSettings`.
 
-The server focuses on providing an immutable log of events and planned jobs.
-This provides a great base to drive decisions and analysis of the cell. The design
-is based on the [Event Sourcing
-Pattern](https://martinfowler.com/eaaDev/EventSourcing.html). All changes to
-the cell are captured as a stream of events, and analysis and monitoring of
-the cell proceeds by analyzing the log. FMS Insight tries to minimize the
-stateful data and operations that it supports, instead focusing as much as
-possible to provide a stable immutable API for cell controllers.
+The library uses Serilog for logging, and provides a helper method `InsightLogging.EnableSerilog`
+to configure logging to files and the event log. You can also configure Serilog however you wish.
+FMS Insight has extensive Debug logging and some Verbose logging, so
+you should configure Serilog to log those levels on some kind of configuration flag (since
+they produce a lot of data).
+
+The server stores data in a SQLite database and wraps that in a `RepositoryConfig` class.
+(This code is some of the oldest code, 20+years, and uses a custom SQL commands rather than
+an ORM like entity framework or dapper.) FMS Insight requires that a RepositoryConfig be
+registered as a singleton service, which is done by the `AddRepository` extension method.
+It takes the path to the database and an optional serial settings object to automatically
+assign serials (can be null if serials are not automatically assigned).
+
+Finally, the server requires `IMachineControl` and `ISyncronizeCellState` singleton
+services to be registered (see the next section).
+
+## Backend
+
+The FMS Insight server requires two interfaces, `IMachineControl` and `ISyncronizeCellState`,
+to be registered as singletons. There are two main methods that facilitate almost all the
+communication between the server and the cell controller, `ISyncronizeCellState.CalculateCellState`
+and `ISyncronizeCellState.ApplyActions`. The server starts a thread and calls these methods whenever
+the `ISyncronizeCellState.NewCellState` event is raised or a timeout is reached. FMS Insight handles
+all the thread safety and error handling, and guarantees that the server calls these methods on
+a single thread. The server turns any exceptions into alarms, so no error handling inside
+these is needed.
+
+The server is designed around an event-sourcing type pattern, where the server maintains a log of
+all events and a log of planned jobs, and recalculates the current cell state by looking at the log
+and querying the current machines or PLCs. We try as much as possible to store no state about the
+system. Instead, `CalculateCellState` builds a new representation of the state of the cell from
+scratch.
+
+If the cell controller provides some type of event such as a file creation event or a database
+notification, these can be configured to raise to the `NewCellState` event and then use a recheck
+timeout of 1-2 minutes. Otherwise, on some other machines, we implement a 10-second timeout and ignore
+the event, essentially polling the machines.
+
+When the event is raised or the timeout occurs, the server calls `CalculateCellState` to build a new
+cell state and then immedietly calls `ApplyActions` to apply any changes to the cell state. The
+implementation should build a new cell state from the log and querying the machines, perhaps also
+recording any log messages. There are some helper static methods in the static class `BuildCellState`
+which can assist with this. You can also if you wish include in the cell state a list of
+potential changes that need to be made, e.g. jobs that are missing or need to be updated, etc.
+`ApplyActions` then takes the cell state and applies any changes to the cell, such as starting/stopping
+machines, changing pallets, and so on. The distinction of how much work is divided
+between `CalculateCellState` and `ApplyActions` is mostly left to the specific backend, FMS Insight
+doesn't care; it calls them both back-to-back. The main distinction is around error handling: if
+`CaluclateCellState` has an exception, the stale cell state from previously is still showed to the user,
+while if `CalculateCellState` is successful but `ApplyActions` gets an error the cell state is still updated.
+
+There are some other methods in `ISyncronizeCellState` and `IMachineControl` which are used to handle
+specific situations, but in fact all other methods can do nothing and just return, and still have
+a functional FMS Insight server.
+
+## Customizing
+
+FMS Insight provides several interfaces in `BackendInterfaces.cs` which can be implemented to
+customize various aspects of the server. If instances of these interfaces are registered
+as services in the dependency injection container, they will be used by the server. Otherwise,
+default implementations will be used. Another key way of adding additional logic is the
+`RepositoryConfig.NewLogEntry` event. You can create a ASP.NET Core hosted service (implement
+the IHostedService interface) and inject the `RepositoryConfig`. You can then subscribe to
+the `NewLogEntry` event and then run your custom logic whenever a new log entry is added.
 
 ## HTML Client
 
