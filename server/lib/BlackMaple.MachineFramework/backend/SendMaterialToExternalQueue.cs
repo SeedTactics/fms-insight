@@ -85,7 +85,7 @@ namespace BlackMaple.MachineFramework
             var resp = await client.PostAsync(
               "/api/v1/jobs/casting/" + WebUtility.UrlEncode(mat.PartName) + q,
               new StringContent(
-                System.Text.Json.JsonSerializer.Serialize([mat.Serial]),
+                System.Text.Json.JsonSerializer.Serialize(new string[] { mat.Serial }),
                 System.Text.Encoding.UTF8,
                 "application/json"
               )
