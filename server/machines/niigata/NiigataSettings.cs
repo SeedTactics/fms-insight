@@ -101,7 +101,6 @@ public record NiigataSettings
           .Where(x => x != null)
           .ToDictionary(x => x!.iccMc, x => (x!.group, x.num))
     };
-    Log.Debug("Using station names {@names}", StationNames);
 
     return new NiigataSettings()
     {

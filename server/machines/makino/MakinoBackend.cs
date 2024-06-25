@@ -41,6 +41,7 @@ namespace BlackMaple.FMSInsight.Makino
   {
     public static IServiceCollection AddMakinoBackend(this IServiceCollection s, MakinoSettings makinoSt)
     {
+      Serilog.Log.Information("Using Makino Backend with config {@config}", makinoSt);
       s.AddSingleton(makinoSt);
       s.AddSingleton<IMachineControl, MakinoMachines>();
       s.AddSingleton<ISynchronizeCellState<MakinoCellState>, MakinoSync>();

@@ -75,6 +75,11 @@ public static class FMSInsightWebHost
     return host.UseSerilog()
       .ConfigureServices(s =>
       {
+        Log.Information(
+          "Starting FMS Insight Web Host with server config {@server} and FMS config {@fms}",
+          serverSt,
+          fmsSt
+        );
         s.AddSingleton<ServerSettings>(serverSt);
         s.AddSingleton<FMSSettings>(fmsSt);
 

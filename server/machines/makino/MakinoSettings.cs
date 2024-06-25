@@ -75,16 +75,12 @@ public record MakinoSettings
       connStr = DetectSqlConnectionStr();
     }
 
-    var settings = new MakinoSettings()
+    return new MakinoSettings()
     {
       ADEPath = adePath,
       DownloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders"),
       OpenMakinoConnection = () => new MakinoDB(connStr)
     };
-
-    Log.Information("Starting makino backend with {@settings}", settings);
-
-    return settings;
   }
 
   private static string DetectSqlConnectionStr()

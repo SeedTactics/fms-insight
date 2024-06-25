@@ -100,13 +100,9 @@ namespace MazakMachineInterface
           logPath
         );
       }
-      else if (dbtype != MazakDbType.MazakVersionE)
-      {
-        Serilog.Log.Information("Loading log CSV files from {logcsv}", logPath);
-      }
 
       string? loadPath = null;
-      if (dbtype == MazakDbType.MazakVersionE || dbtype == MazakDbType.MazakSmooth)
+      if (dbtype == MazakDbType.MazakVersionE || dbtype == MazakDbType.MazakWeb)
       {
         loadPath = cfg.GetValue<string>("Load CSV Path");
         if (string.IsNullOrEmpty(loadPath))
