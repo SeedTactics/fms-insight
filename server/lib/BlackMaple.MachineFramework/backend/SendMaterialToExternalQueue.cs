@@ -78,14 +78,14 @@ namespace BlackMaple.MachineFramework
 
           foreach (var mat in mats)
           {
-            var q = "?queue=" + WebUtility.UrlEncode(mat.Queue) + "&pos=-1";
+            var q = "?queue=" + WebUtility.UrlEncode(mat.Queue);
 
             Log.Debug("Sending {@mat} to external queue at {server}", mat, builder.Uri);
 
             var resp = await client.PostAsync(
-              "/api/v1/jobs/part/" + WebUtility.UrlEncode(mat.PartName) + "/casting" + q,
+              "/api/v1/jobs/casting/" + WebUtility.UrlEncode(mat.PartName) + q,
               new StringContent(
-                System.Text.Json.JsonSerializer.Serialize(mat.Serial),
+                System.Text.Json.JsonSerializer.Serialize([mat.Serial]),
                 System.Text.Encoding.UTF8,
                 "application/json"
               )
