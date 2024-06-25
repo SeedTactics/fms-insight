@@ -78,7 +78,12 @@ namespace MazakMachineInterface
       if (e.Pallet >= 1)
         cycle = repo.CurrentPalletLog(e.Pallet);
 
-      Log.Debug("Handling mazak event {@event}", e);
+      Log.Debug(
+        "Handling mazak event {@event} with pallets {@palletPos} with {@contents}",
+        e,
+        mazakSchedules.PalletPositions,
+        mazakSchedules.PalletSubStatuses
+      );
 
       switch (e.Code)
       {

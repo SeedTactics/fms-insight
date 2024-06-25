@@ -69,7 +69,11 @@ namespace MazakMachineInterface
       }
 
       //there are jobs to copy
-      Log.Debug("Sending jobs into mazak {uniqs}", jobs.Select(j => j.UniqueStr).ToList());
+      Log.Debug(
+        "Sending jobs into mazak {@uniqs} with {@data}",
+        jobs.Select(j => j.UniqueStr).ToList(),
+        mazakData
+      );
 
       // check if a previous download was interrupted during the middle of schedule downloads
       var alreadyDownloadedSchs = mazakData

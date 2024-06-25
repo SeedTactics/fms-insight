@@ -177,8 +177,6 @@ namespace MazakMachineInterface
         IDictionary<int, MazakSchedule> mazakSch;
         mazakSch = LoadMazakSchedules(jobDB, schedules.Schedules);
 
-        Log.Debug("Checking for hold transitions at {time} ", nowUTC);
-
         var nextTimeUTC = DateTime.MaxValue;
 
         foreach (var pair in mazakSch)
@@ -205,15 +203,6 @@ namespace MazakMachineInterface
 
           HoldMode currentHoldMode = CalculateHoldMode(allHold, machHold);
 
-          Log.Debug(
-            "Checking schedule {sch}, mode {mode}, target {targetMode}, next {allNext}, mach {machNext}",
-            pair.Key,
-            pair.Value.Hold,
-            currentHoldMode,
-            allNext,
-            machNext
-          );
-
           if (currentHoldMode != pair.Value.Hold)
           {
             pair.Value.ChangeHoldMode(currentHoldMode);
@@ -224,8 +213,6 @@ namespace MazakMachineInterface
           if (machNext < nextTimeUTC)
             nextTimeUTC = machNext;
         }
-
-        Log.Debug("Next hold transition {next}", nextTimeUTC);
 
         if (nextTimeUTC == DateTime.MaxValue)
           return TimeSpan.MaxValue;

@@ -186,6 +186,7 @@ namespace BlackMaple.MachineFramework
     private readonly AutoResetEvent _shutdown = new(false);
     private readonly AutoResetEvent _recheck = new(false);
     private readonly ManualResetEvent _newCellState = new(false);
+    private DateTime _timeOfLastStatusDump = DateTime.MinValue;
 
     public void RecalculateCellState()
     {
@@ -264,6 +265,17 @@ namespace BlackMaple.MachineFramework
                 _syncError = null;
                 raiseNewCurStatus = true;
               }
+            }
+
+            if (raiseNewCurStatus && Log.IsEnabled(Serilog.Events.LogEventLevel.Verbose))
+            {
+              Log.Verbose("New current status: {@state}", st);
+              _timeOfLastStatusDump = DateTime.UtcNow;
+            }
+            else if (DateTime.UtcNow - _timeOfLastStatusDump > TimeSpan.FromMinutes(10))
+            {
+              Log.Debug("Periodic cell state: {@state}", st);
+              _timeOfLastStatusDump = DateTime.UtcNow;
             }
 
             actionPerformed = _syncState.ApplyActions(db, st);
@@ -386,8 +398,6 @@ namespace BlackMaple.MachineFramework
           throw new BadRequestException(string.Join(Environment.NewLine, errors));
         }
 
-        Log.Debug("Adding jobs to database");
-
         jdb.AddJobs(
           jobs,
           expectedPreviousScheduleId,
@@ -395,11 +405,7 @@ namespace BlackMaple.MachineFramework
         );
       }
 
-      Log.Debug("Sending new jobs on websocket");
-
       OnNewJobs?.Invoke(jobs);
-
-      Log.Debug("Signaling new jobs available for routes");
 
       RecalculateCellState();
     }
