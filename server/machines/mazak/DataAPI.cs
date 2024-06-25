@@ -413,7 +413,6 @@ namespace MazakMachineInterface
 
   public interface IWriteData
   {
-    MazakDbType MazakType { get; }
     void Save(MazakWriteData data, string prefix);
   }
 }

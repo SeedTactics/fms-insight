@@ -185,8 +185,7 @@ namespace MazakMachineInterface
         downloadUID: UID,
         mazakData: mazakData,
         savedParts: savedParts,
-        MazakType: writeDb.MazakType,
-        useStartingOffsetForDueDate: mazakCfg.UseStartingOffsetForDueDate,
+        mazakCfg: mazakCfg,
         fmsSettings: fmsSt,
         lookupProgram: (prog, rev) => LookupProgram(jobDB, prog, rev),
         errors: jobErrs
@@ -231,7 +230,7 @@ namespace MazakMachineInterface
       writeDb.Save(transSet, "Add Fixtures");
 
       //now save the pallets and parts
-      transSet = mazakJobs.CreatePartPalletDatabaseRows();
+      transSet = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
       writeDb.Save(transSet, "Add Parts");
     }
 

@@ -49,8 +49,20 @@ namespace MazakMachineInterface
     public bool UseStartingOffsetForDueDate { get; init; } = true;
     public bool WaitForAllCastings { get; init; } = false;
 
+    // When a robot is configured in the Mazak software, it can jump ahead when searching
+    // for the next part to load, which can cause parts to run out of sequence (because
+    // the fixture group is used first to determine what to do next, then schedule due date,
+    // then priority).  Setting all groups to zero is dangerous because it could place everything
+    // simulatiously on the pallet, but at least the current version of Mazak won't place things
+    // simulatiously on the pallet if the schedules have different due dates and priorities.
+    // This hack of setting everything to zero is the only workaround on the current mazak version,
+    // although that could change on any future versions.  Thus this must be manually configured
+    // in a plugin after testing with the specific Mazak cell controller version in use.
+    public bool OverrideFixtureGroupToZero { get; init; } = false;
+
     public Func<IRepository, CurrentStatus, CurrentStatus>? AdjustCurrentStatus { get; init; }
     public Func<ToolPocketRow, string>? ExtractToolName { get; init; }
+    public ConvertJobsToMazakParts.ProcessFromJobDelegate? ProcessFromJob { get; init; }
 
     public static MazakConfig Load(IConfiguration configuration)
     {

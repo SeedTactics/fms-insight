@@ -390,18 +390,11 @@ namespace MazakMachineInterface
     public HashSet<int> Pallets = new HashSet<int>();
     public string MazakFixtureName { get; set; }
 
-    // When a robot is configured in the Mazak software, it can jump ahead when searching
-    // for the next part to load, which can cause parts to run out of sequence (because
-    // the fixture group is used first to determine what to do next, then schedule due date,
-    // then priority).  Setting all groups to zero is dangerous because it could place everything
-    // simulatiously on the pallet, but at least the current version of Mazak won't place things
-    // simulatiously on the pallet if the schedules have different due dates and priorities.
-    // This hack of setting everything to zero is the only workaround on the current mazak version,
-    // although that could change on any future versions.  Thus this must be manually configured
-    // in a plugin after testing with the specific Mazak cell controller version in use.
-    public static bool OverrideFixtureGroupToZero { get; set; } = false;
-
-    public IEnumerable<MazakPalletRow> CreateDatabasePalletRows(MazakAllData oldData, int downloadUID)
+    public IEnumerable<MazakPalletRow> CreateDatabasePalletRows(
+      MazakAllData oldData,
+      MazakConfig cfg,
+      int downloadUID
+    )
     {
       var ret = new List<MazakPalletRow>();
       foreach (var palNum in Pallets.OrderBy(p => p))
@@ -425,9 +418,9 @@ namespace MazakMachineInterface
           PalletNumber = palNum,
           Fixture = MazakFixtureName,
           RecordID = 0,
-          FixtureGroupV2 = OverrideFixtureGroupToZero ? 0 : FixtureGroup,
+          FixtureGroupV2 = cfg.OverrideFixtureGroupToZero ? 0 : FixtureGroup,
           //combos with an angle in the range 0-999, and we don't want to conflict with that
-          AngleV1 = OverrideFixtureGroupToZero ? 0 : (FixtureGroup * 1000),
+          AngleV1 = cfg.OverrideFixtureGroupToZero ? 0 : (FixtureGroup * 1000),
         };
 
         ret.Add(newRow);
@@ -582,7 +575,7 @@ namespace MazakMachineInterface
       return new MazakWriteData() { Fixtures = fixRows, Programs = newProgs.Values.ToArray() };
     }
 
-    public MazakWriteData CreatePartPalletDatabaseRows()
+    public MazakWriteData CreatePartPalletDatabaseRows(MazakConfig cfg)
     {
       var partRows = new List<MazakPartRow>();
       var palRows = new List<MazakPalletRow>();
@@ -599,7 +592,7 @@ namespace MazakMachineInterface
           p.CreateDatabaseRow(byName[p.Part.PartName], g.MazakFixtureName, MazakType);
         }
 
-        foreach (var p in g.CreateDatabasePalletRows(OldMazakData, DownloadUID))
+        foreach (var p in g.CreateDatabasePalletRows(OldMazakData, cfg, DownloadUID))
           palRows.Add(p);
       }
 
@@ -666,16 +659,13 @@ namespace MazakMachineInterface
       int pth,
       ProgramRevision prog
     );
-    public static ProcessFromJobDelegate ProcessFromJob = (parent, process, pth, prog) =>
-      new MazakProcessFromJob(parent, process, pth, prog);
 
     public static MazakJobs JobsToMazak(
       IEnumerable<Job> jobs,
       int downloadUID,
       MazakAllData mazakData,
       ISet<string> savedParts,
-      MazakDbType MazakType,
-      bool useStartingOffsetForDueDate,
+      MazakConfig mazakCfg,
       BlackMaple.MachineFramework.FMSSettings fmsSettings,
       Func<string, long?, ProgramRevision> lookupProgram,
       IList<string> errors
@@ -683,12 +673,12 @@ namespace MazakMachineInterface
     {
       Validate(jobs, fmsSettings, errors);
       CheckReusedFixture(mazakData, errors);
-      var allParts = BuildMazakParts(jobs, downloadUID, mazakData, MazakType, errors, lookupProgram);
+      var allParts = BuildMazakParts(jobs, downloadUID, mazakData, mazakCfg, errors, lookupProgram);
       var usedMazakFixGroups = new HashSet<int>(mazakData.Pallets.Select(f => f.FixtureGroup));
       var groups = GroupProcessesIntoFixtures(
         allParts,
         usedMazakFixGroups,
-        useStartingOffsetForDueDate,
+        mazakCfg.UseStartingOffsetForDueDate,
         errors
       );
 
@@ -697,7 +687,7 @@ namespace MazakMachineInterface
         downloadUID,
         mazakData,
         savedParts,
-        useStartingOffsetForDueDate,
+        mazakCfg.UseStartingOffsetForDueDate,
         errors
       );
       var usedProgs = CalculateUsedPrograms(mazakData, allParts);
@@ -705,7 +695,7 @@ namespace MazakMachineInterface
       return new MazakJobs()
       {
         OldMazakData = mazakData,
-        MazakType = MazakType,
+        MazakType = mazakCfg.DBType,
         DownloadUID = downloadUID,
         SavedParts = savedParts,
         AllParts = allParts,
@@ -805,7 +795,7 @@ namespace MazakMachineInterface
       IEnumerable<Job> jobs,
       int downloadID,
       MazakAllData mazakData,
-      MazakDbType mazakTy,
+      MazakConfig mazakCfg,
       IList<string> log,
       Func<string, long?, ProgramRevision> lookupProgram
     )
@@ -830,7 +820,7 @@ namespace MazakMachineInterface
           partIdx += 1;
 
           string error;
-          BuildProcFromJobWithOneProc(job, mazakPart, mazakTy, mazakData, lookupProgram, out error);
+          BuildProcFromJobWithOneProc(job, mazakPart, mazakCfg, mazakData, lookupProgram, out error);
           if (error == null || error == "")
             ret.Add(mazakPart);
           else
@@ -854,7 +844,7 @@ namespace MazakMachineInterface
           //label the part by the path number on process 1.
           var mazakPart = new MazakPart(job, downloadID, partIdx);
           partIdx += 1;
-          BuildProcFromJob(job, mazakPart, out string error, mazakTy, mazakData, lookupProgram);
+          BuildProcFromJob(job, mazakPart, out string error, mazakCfg, mazakData, lookupProgram);
 
           if (error == null || error == "")
             ret.Add(mazakPart);
@@ -876,7 +866,7 @@ namespace MazakMachineInterface
       Job job,
       MazakPart mazak,
       out string ErrorDuringCreate,
-      MazakDbType mazakTy,
+      MazakConfig mazakCfg,
       MazakAllData mazakData,
       Func<string, long?, ProgramRevision> lookupProgram
     )
@@ -905,7 +895,7 @@ namespace MazakMachineInterface
             ErrorDuringCreate = "Part " + job.PartName + " has no programs.";
             return;
           }
-          if (mazakTy == MazakDbType.MazakVersionE)
+          if (mazakCfg.DBType == MazakDbType.MazakVersionE)
           {
             int progNum;
             if (!int.TryParse(stop.Program, out progNum))
@@ -958,14 +948,21 @@ namespace MazakMachineInterface
           return;
         }
 
-        mazak.Processes.Add(ProcessFromJob(mazak, proc, 1, prog));
+        if (mazakCfg.ProcessFromJob != null)
+        {
+          mazak.Processes.Add(mazakCfg.ProcessFromJob(mazak, proc, 1, prog));
+        }
+        else
+        {
+          mazak.Processes.Add(new MazakProcessFromJob(mazak, proc, 1, prog));
+        }
       }
     }
 
     private static void BuildProcFromJobWithOneProc(
       Job job,
       MazakPart mazak,
-      MazakDbType mazakTy,
+      MazakConfig mazakCfg,
       MazakAllData mazakData,
       Func<string, long?, ProgramRevision> lookupProgram,
       out string ErrorDuringCreate
@@ -975,7 +972,7 @@ namespace MazakMachineInterface
 
       // first try building from the job
       string FromJobError;
-      BuildProcFromJob(job, mazak, out FromJobError, mazakTy, mazakData, lookupProgram); // proc will always equal 1.
+      BuildProcFromJob(job, mazak, out FromJobError, mazakCfg, mazakData, lookupProgram); // proc will always equal 1.
 
       if (FromJobError == null || FromJobError == "")
         return; //Success

@@ -45,6 +45,15 @@ namespace MachineWatchTest
 {
   public class BuildMazakPartsSpec
   {
+    private readonly MazakConfig defaultMazakCfg =
+      new()
+      {
+        SQLConnectionString = "unused",
+        LogCSVPath = "unused path",
+        ProgramDirectory = "unused prog dir",
+        DBType = MazakDbType.MazakVersionE,
+      };
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
@@ -84,8 +93,10 @@ namespace MachineWatchTest
         3,
         dset,
         new HashSet<string>(),
-        MazakDbType.MazakVersionE,
-        useStartingOffsetForDueDate: useStartingOffset,
+        defaultMazakCfg with
+        {
+          UseStartingOffsetForDueDate = useStartingOffset
+        },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -99,7 +110,7 @@ namespace MachineWatchTest
         new[] { "unusedfixture", "Test" }
       );
 
-      var trans = pMap.CreatePartPalletDatabaseRows();
+      var trans = pMap.CreatePartPalletDatabaseRows(defaultMazakCfg);
 
       CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:1:1");
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:1:2");
@@ -184,8 +195,10 @@ namespace MachineWatchTest
         3,
         dset,
         savedParts,
-        MazakDbType.MazakVersionE,
-        useStartingOffsetForDueDate: useStartingOffset,
+        defaultMazakCfg with
+        {
+          UseStartingOffsetForDueDate = useStartingOffset
+        },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -215,7 +228,7 @@ namespace MachineWatchTest
         );
       }
 
-      var trans = pMap.CreatePartPalletDatabaseRows();
+      var trans = pMap.CreatePartPalletDatabaseRows(defaultMazakCfg);
 
       CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:2:1");
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:2:2");
@@ -274,8 +287,10 @@ namespace MachineWatchTest
         3,
         dset,
         new HashSet<string>(),
-        MazakDbType.MazakVersionE,
-        useStartingOffsetForDueDate: useStartingOffset,
+        defaultMazakCfg with
+        {
+          UseStartingOffsetForDueDate = useStartingOffset
+        },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -285,7 +300,7 @@ namespace MachineWatchTest
 
       CheckNewFixtures(pMap, new string[] { "F:3:1:1", "F:3:2:2", "F:3:3:2", });
 
-      var trans = pMap.CreatePartPalletDatabaseRows();
+      var trans = pMap.CreatePartPalletDatabaseRows(defaultMazakCfg);
 
       CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:1:1");
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:2:2");
@@ -352,8 +367,10 @@ namespace MachineWatchTest
         3,
         dset,
         new HashSet<string>(),
-        MazakDbType.MazakVersionE,
-        useStartingOffsetForDueDate: true,
+        defaultMazakCfg with
+        {
+          UseStartingOffsetForDueDate = true
+        },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -367,7 +384,7 @@ namespace MachineWatchTest
         new[] { "Test" }
       );
 
-      var trans = pMap.CreatePartPalletDatabaseRows();
+      var trans = pMap.CreatePartPalletDatabaseRows(defaultMazakCfg);
 
       CheckPartProcessFromJob(trans, "Part1:3:1", 1, "F:3:1:fixAA:1");
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, "F:3:1:fixAA:2");
@@ -434,8 +451,10 @@ namespace MachineWatchTest
         3,
         dset,
         new HashSet<string>(),
-        MazakDbType.MazakVersionE,
-        useStartingOffsetForDueDate: useStartingOffset,
+        defaultMazakCfg with
+        {
+          UseStartingOffsetForDueDate = useStartingOffset
+        },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -471,7 +490,7 @@ namespace MachineWatchTest
         part1BaseFix = "F:3:1";
       }
 
-      var trans = pMap.CreatePartPalletDatabaseRows();
+      var trans = pMap.CreatePartPalletDatabaseRows(defaultMazakCfg);
 
       CheckPartProcessFromJob(trans, "Part1:3:1", 1, part1BaseFix + ":1");
       CheckPartProcessFromJob(trans, "Part1:3:1", 2, part1BaseFix + ":2");
@@ -528,8 +547,10 @@ namespace MachineWatchTest
         3,
         dset,
         new HashSet<string>() { "part2:1:1" },
-        MazakDbType.MazakVersionE,
-        useStartingOffsetForDueDate: false,
+        defaultMazakCfg with
+        {
+          UseStartingOffsetForDueDate = false
+        },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
@@ -593,8 +614,10 @@ namespace MachineWatchTest
         3,
         dset,
         new HashSet<string>(),
-        MazakDbType.MazakVersionE,
-        useStartingOffsetForDueDate: false,
+        defaultMazakCfg with
+        {
+          UseStartingOffsetForDueDate = false
+        },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) =>
         {
@@ -652,8 +675,11 @@ namespace MachineWatchTest
         3,
         dset,
         new HashSet<string>(),
-        MazakDbType.MazakSmooth,
-        useStartingOffsetForDueDate: false,
+        defaultMazakCfg with
+        {
+          DBType = MazakDbType.MazakSmooth,
+          UseStartingOffsetForDueDate = false
+        },
         fmsSettings: new FMSSettings(),
         lookupProgram: lookupProgram,
         errors: log
@@ -705,7 +731,7 @@ namespace MachineWatchTest
           }
         );
 
-      var trans = pMap.CreatePartPalletDatabaseRows();
+      var trans = pMap.CreatePartPalletDatabaseRows(defaultMazakCfg);
 
       trans
         .Parts.First()
@@ -748,8 +774,11 @@ namespace MachineWatchTest
         3,
         dset,
         new HashSet<string>(),
-        MazakDbType.MazakSmooth,
-        useStartingOffsetForDueDate: false,
+        defaultMazakCfg with
+        {
+          DBType = MazakDbType.MazakSmooth,
+          UseStartingOffsetForDueDate = false
+        },
         fmsSettings: new FMSSettings(),
         lookupProgram: (_, _) => null,
         errors: log
@@ -789,8 +818,11 @@ namespace MachineWatchTest
         3,
         dset,
         new HashSet<string>(),
-        MazakDbType.MazakSmooth,
-        useStartingOffsetForDueDate: false,
+        defaultMazakCfg with
+        {
+          DBType = MazakDbType.MazakSmooth,
+          UseStartingOffsetForDueDate = false
+        },
         fmsSettings: new FMSSettings(),
         lookupProgram: lookupProgram,
         errors: log

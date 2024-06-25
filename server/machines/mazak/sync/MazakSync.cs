@@ -82,8 +82,13 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     logWatcher.EnableRaisingEvents = true;
   }
 
+  private bool _disposed = false;
+
   public void Dispose()
   {
+    if (_disposed)
+      return;
+    _disposed = true;
     logWatcher.EnableRaisingEvents = false;
     logWatcher.Created -= LogFileCreated;
     logWatcher.Dispose();
@@ -124,8 +129,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         downloadUID: 1,
         mazakData: mazakData,
         savedParts: new HashSet<string>(),
-        MazakType: mazakConfig.DBType,
-        useStartingOffsetForDueDate: mazakConfig.UseStartingOffsetForDueDate,
+        mazakCfg: mazakConfig,
         fmsSettings: settings,
         lookupProgram: lookupProg,
         errors: logMessages
