@@ -53,16 +53,17 @@ public record NiigataSettings
   public required bool RequireProgramsInJobs { get; init; }
   public Func<ActiveJob, bool>? DecrementJobFilter { get; init; } = null;
 
-  public static NiigataSettings Load(IConfiguration config)
+  public static NiigataSettings Load(IConfiguration cfg)
   {
-    var ProgramDirectory = config.GetValue<string>("Program Directory") ?? "";
+    var section = cfg.GetSection("Niigata");
+    var ProgramDirectory = section.GetValue<string>("Program Directory") ?? "";
     if (!System.IO.Directory.Exists(ProgramDirectory))
     {
       Log.Error("Program directory {dir} does not exist", ProgramDirectory);
     }
 
-    var reclampNames = config.GetValue<string>("Reclamp Group Names");
-    var machineNames = config.GetValue<string>("Machine Names");
+    var reclampNames = section.GetValue<string>("Reclamp Group Names");
+    var machineNames = section.GetValue<string>("Machine Names");
     var StationNames = new NiigataStationNames()
     {
       ReclampGroupNames = new HashSet<string>(
@@ -107,12 +108,12 @@ public record NiigataSettings
       ProgramDirectory = ProgramDirectory,
       StationNames = StationNames,
       MachineIPs =
-        config.GetValue<string>("Machine IP Addresses")?.Split(',').Select(s => s.Trim()).ToImmutableList()
+        section.GetValue<string>("Machine IP Addresses")?.Split(',').Select(s => s.Trim()).ToImmutableList()
         ?? ImmutableList<string>.Empty,
 
-      SQLConnectionString = config.GetValue<string>("Connection String") ?? "",
+      SQLConnectionString = section.GetValue<string>("Connection String") ?? "",
 
-      RequireProgramsInJobs = config.GetValue<bool>("Require Programs In Jobs", true),
+      RequireProgramsInJobs = section.GetValue<bool>("Require Programs In Jobs", true),
     };
   }
 }
