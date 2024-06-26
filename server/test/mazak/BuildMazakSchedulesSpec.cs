@@ -55,7 +55,7 @@ namespace MachineWatchTest
           {
             Id = 1,
             PartName = "part1:1:1",
-            Comment = MazakPart.CreateComment("uniq1", new[] { 1 }, false),
+            Comment = "uniq1-Insight",
             PlanQuantity = 15,
             CompleteQuantity = 15,
             Priority = 50,
@@ -73,7 +73,7 @@ namespace MachineWatchTest
           {
             Id = 2,
             PartName = "part2:1:1",
-            Comment = MazakPart.CreateComment("uniq2", new[] { 1 }, false),
+            Comment = "uniq2-Insight",
             PlanQuantity = 15,
             CompleteQuantity = 10,
             Priority = 50,
@@ -342,31 +342,11 @@ namespace MachineWatchTest
       {
         Parts = new[]
         {
-          new MazakPartRow()
-          {
-            PartName = "part1:6:1",
-            Comment = MazakPart.CreateComment("uniq1", new[] { 1, 1 }, false)
-          },
-          new MazakPartRow()
-          {
-            PartName = "part1:6:2",
-            Comment = MazakPart.CreateComment("uniq2", new[] { 1, 1 }, false)
-          },
-          new MazakPartRow()
-          {
-            PartName = "part2:6:1",
-            Comment = MazakPart.CreateComment("uniq3", new[] { 1, 1 }, false)
-          },
-          new MazakPartRow()
-          {
-            PartName = "part2:6:2",
-            Comment = MazakPart.CreateComment("uniq4", new[] { 1, 1 }, false)
-          },
-          new MazakPartRow()
-          {
-            PartName = "part3:6:1",
-            Comment = MazakPart.CreateComment("uniq5", new[] { 1, 1 }, false)
-          }
+          new MazakPartRow() { PartName = "part1:6:1", Comment = "uniq1-Insight", },
+          new MazakPartRow() { PartName = "part1:6:2", Comment = "uniq2-Insight", },
+          new MazakPartRow() { PartName = "part2:6:1", Comment = "uniq3-Path1-1", }, // old versions of Insight included -Path, check for backwards compatibility
+          new MazakPartRow() { PartName = "part2:6:2", Comment = "uniq4-Insight", },
+          new MazakPartRow() { PartName = "part3:6:1", Comment = "uniq5-Insight", }
         },
         Schedules = new[]
         {
@@ -374,7 +354,7 @@ namespace MachineWatchTest
           {
             Id = 1,
             PartName = "part3:6:1",
-            Comment = MazakPart.CreateComment("uniq5", new[] { 1, 1 }, false),
+            Comment = "uniq5-Insight",
             DueDate = new DateTime(2020, 04, 14, 0, 0, 0, DateTimeKind.Local),
             Priority = 17
           }
@@ -400,7 +380,7 @@ namespace MachineWatchTest
               Command = MazakWriteCommand.Add,
               Id = 2,
               PartName = "part1:6:1",
-              Comment = MazakPart.CreateComment("uniq1", new[] { 1, 1 }, false),
+              Comment = "uniq1-Insight",
               PlanQuantity = 51,
               Priority = 18 + 1, // max existing is 17 so start at 18, plus one earlier conflict
               DueDate = new DateTime(2020, 4, 14, 0, 0, 0, DateTimeKind.Local),
@@ -425,7 +405,7 @@ namespace MachineWatchTest
               Command = MazakWriteCommand.Add,
               Id = 3,
               PartName = "part1:6:2",
-              Comment = MazakPart.CreateComment("uniq2", new[] { 1, 1 }, false),
+              Comment = "uniq2-Insight",
               PlanQuantity = 41,
               Priority = 18, // max existing is 17 so start at 18
               DueDate = new DateTime(2020, 4, 14, 0, 0, 0, DateTimeKind.Local),
@@ -450,7 +430,7 @@ namespace MachineWatchTest
               Command = MazakWriteCommand.Add,
               Id = 4,
               PartName = "part2:6:1",
-              Comment = MazakPart.CreateComment("uniq3", new[] { 1, 1 }, false),
+              Comment = "uniq3-Path1-1",
               PlanQuantity = 12,
               Priority = 18 + 2, // conflicts with 2 earlier
               DueDate = new DateTime(2020, 4, 14, 0, 0, 0, DateTimeKind.Local),
@@ -475,7 +455,7 @@ namespace MachineWatchTest
               Command = MazakWriteCommand.Add,
               Id = 5,
               PartName = "part2:6:2",
-              Comment = MazakPart.CreateComment("uniq4", new[] { 1, 1 }, false),
+              Comment = "uniq4-Insight",
               PlanQuantity = 42,
               Priority = 18,
               DueDate = new DateTime(2020, 4, 14, 0, 0, 0, DateTimeKind.Local),

@@ -273,9 +273,8 @@ namespace MazakMachineInterface
       }
       else
       {
-        MazakPart.ParseComment(comment, out string uniq, out var procToPath, out bool manual);
-        Unique = uniq;
-        Path = procToPath.PathForProc(proc);
+        Unique = MazakPart.ParseComment(comment);
+        Path = 1;
       }
     }
 
@@ -301,12 +300,11 @@ namespace MazakMachineInterface
       {
         if (schRow.PartName == mazakPartName && !string.IsNullOrEmpty(schRow.Comment))
         {
-          bool manual;
-          MazakPart.ParseComment(schRow.Comment, out unique, out var procToPath, out manual);
+          unique = MazakPart.ParseComment(schRow.Comment);
           numProc = schRow.Processes.Count;
           if (numProc < proc)
             numProc = proc;
-          path = procToPath.PathForProc(proc);
+          path = 1;
           return;
         }
       }
@@ -375,7 +373,7 @@ namespace MazakMachineInterface
     public string FromPosition { get; init; }
   }
 
-  public interface ICurrentLoadActions : IDisposable
+  public interface ICurrentLoadActions
   {
     IEnumerable<LoadAction> CurrentLoadActions();
   }
@@ -415,7 +413,6 @@ namespace MazakMachineInterface
 
   public interface IWriteData
   {
-    MazakDbType MazakType { get; }
     void Save(MazakWriteData data, string prefix);
   }
 }

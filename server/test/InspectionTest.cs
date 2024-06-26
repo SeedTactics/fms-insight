@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
@@ -47,14 +48,12 @@ namespace MachineWatchTest
 
     public InspectionTest()
     {
-      _repoCfg = RepositoryConfig.InitializeMemoryDB(
-        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-      );
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(null);
     }
 
     void IDisposable.Dispose()
     {
-      _repoCfg.CloseMemoryConnection();
+      _repoCfg.Dispose();
     }
 
     [Fact]
@@ -445,14 +444,68 @@ namespace MachineWatchTest
     private void AddCycle(LogMaterial[] mat, int pal, LogType loc, int statNum)
     {
       using var _insp = _repoCfg.OpenConnection();
-      string name = loc == LogType.MachineCycle ? "MC" : "Load";
-      ((Repository)_insp).AddLogEntryFromUnitTest(
-        new LogEntry(-1, mat, pal, loc, name, statNum, "", true, _lastCycleTime, "")
-      );
+      if (loc == LogType.LoadUnloadCycle)
+      {
+        _insp.RecordLoadStart(
+          mats: mat.Select(EventLogMaterial.FromLogMat),
+          pallet: pal,
+          lulNum: statNum,
+          timeUTC: _lastCycleTime
+        );
+      }
+      else
+      {
+        _insp.RecordMachineStart(
+          mats: mat.Select(EventLogMaterial.FromLogMat),
+          pallet: pal,
+          statName: "MC",
+          statNum: statNum,
+          timeUTC: _lastCycleTime,
+          program: ""
+        );
+      }
+
       _lastCycleTime = _lastCycleTime.AddMinutes(15);
-      ((Repository)_insp).AddLogEntryFromUnitTest(
-        new LogEntry(-1, mat, pal, loc, name, statNum, "", false, _lastCycleTime, "")
-      );
+
+      if (loc == LogType.LoadUnloadCycle)
+      {
+        _insp.RecordLoadEnd(
+          toLoad:
+          [
+            new MaterialToLoadOntoPallet()
+            {
+              LoadStation = statNum,
+              Faces =
+              [
+                new MaterialToLoadOntoFace()
+                {
+                  MaterialIDs = mat.Select(m => m.MaterialID).ToImmutableList(),
+                  FaceNum = 1,
+                  Process = mat[0].Process,
+                  Path = mat[0].Path,
+                  ActiveOperationTime = TimeSpan.FromMinutes(4)
+                }
+              ]
+            }
+          ],
+          pallet: pal,
+          timeUTC: _lastCycleTime
+        );
+      }
+      else
+      {
+        _insp.RecordMachineEnd(
+          mats: mat.Select(EventLogMaterial.FromLogMat),
+          pallet: pal,
+          statName: "MC",
+          statNum: statNum,
+          timeUTC: _lastCycleTime,
+          program: "",
+          result: "",
+          elapsed: TimeSpan.FromMinutes(10),
+          active: TimeSpan.FromMinutes(9)
+        );
+      }
       _lastCycleTime = _lastCycleTime.AddMinutes(15);
     }
 

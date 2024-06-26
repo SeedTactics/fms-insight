@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -32,136 +32,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using MWI = BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public static class LogCSVParsing
-  {
-    private static FileStream WaitToOpenFile(string file)
-    {
-      int cnt = 0;
-      while (cnt < 20)
-      {
-        try
-        {
-          return File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-          // do nothing
-          Serilog.Log.Debug(ex, "Error opening {file}", file);
-        }
-        catch (IOException ex)
-        {
-          // do nothing
-          Serilog.Log.Debug(ex, "Error opening {file}", file);
-        }
-        Serilog.Log.Debug("Could not open file {file}, sleeping for 10 seconds", file);
-        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(10));
-      }
-      throw new Exception("Unable to open file " + file);
-    }
-
-    public static List<LogEntry> LoadLog(string lastForeignID, string path)
-    {
-      var files = new List<string>(Directory.GetFiles(path, "*.csv"));
-      files.Sort();
-
-      var ret = new List<LogEntry>();
-
-      foreach (var f in files)
-      {
-        var filename = Path.GetFileName(f);
-        if (filename.CompareTo(lastForeignID) <= 0)
-          continue;
-
-        using (var fstream = WaitToOpenFile(f))
-        using (var stream = new StreamReader(fstream))
-        {
-          while (stream.Peek() >= 0)
-          {
-            var s = stream.ReadLine().Split(',');
-            if (s.Length < 18)
-              continue;
-
-            int code;
-            if (!int.TryParse(s[6], out code))
-            {
-              Serilog.Log.Debug("Unable to parse code from log message {msg}", s);
-              continue;
-            }
-            if (!Enum.IsDefined(typeof(LogCode), code))
-            {
-              Serilog.Log.Debug("Unused log message {msg}", s);
-              continue;
-            }
-
-            string fullPartName = s[10].Trim();
-            int idx = fullPartName.IndexOf(':');
-
-            var e = new LogEntry()
-            {
-              ForeignID = filename,
-              TimeUTC = new DateTime(
-                int.Parse(s[0]),
-                int.Parse(s[1]),
-                int.Parse(s[2]),
-                int.Parse(s[3]),
-                int.Parse(s[4]),
-                int.Parse(s[5]),
-                DateTimeKind.Local
-              ).ToUniversalTime(),
-              Code = (LogCode)code,
-              Pallet = (int.TryParse(s[13], out var pal)) ? pal : -1,
-              FullPartName = fullPartName,
-              JobPartName = (idx > 0) ? fullPartName.Substring(0, idx) : fullPartName,
-              Process = int.TryParse(s[11], out var proc) ? proc : 0,
-              FixedQuantity = int.TryParse(s[12], out var fixQty) ? fixQty : 0,
-              Program = s[14],
-              StationNumber = int.TryParse(s[8], out var statNum) ? statNum : 0,
-              FromPosition = s[16],
-              TargetPosition = s[17],
-            };
-
-            ret.Add(e);
-          }
-        }
-      }
-
-      return ret;
-    }
-
-    public static void DeleteLog(string lastForeignID, string path)
-    {
-      var files = new List<string>(Directory.GetFiles(path, "*.csv"));
-      files.Sort();
-
-      foreach (var f in files)
-      {
-        var filename = Path.GetFileName(f);
-        if (filename.CompareTo(lastForeignID) > 0)
-          break;
-
-        try
-        {
-          File.Delete(f);
-        }
-        catch (Exception ex)
-        {
-          Serilog.Log.Warning(ex, "Error deleting file: " + f);
-        }
-      }
-    }
-  }
-
   public class LogTranslation(
     IRepository repo,
     MazakCurrentStatus mazakSchedules,
-    IMachineGroupName machGroupName,
+    string machGroupName,
     FMSSettings fmsSettings,
     Action<LogEntry> onMazakLog,
     MazakConfig mazakConfig,
@@ -198,7 +78,12 @@ namespace MazakMachineInterface
       if (e.Pallet >= 1)
         cycle = repo.CurrentPalletLog(e.Pallet);
 
-      Log.Debug("Handling mazak event {@event}", e);
+      Log.Debug(
+        "Handling mazak event {@event} with pallets {@palletPos} with {@contents}",
+        e,
+        mazakSchedules.PalletPositions,
+        mazakSchedules.PalletSubStatuses
+      );
 
       switch (e.Code)
       {
@@ -242,7 +127,7 @@ namespace MazakMachineInterface
           repo.RecordMachineStart(
             mats: machineMats.Select(m => m.Mat),
             pallet: e.Pallet,
-            statName: machGroupName.MachineGroupName,
+            statName: machGroupName,
             statNum: e.StationNumber,
             program: progName,
             timeUTC: e.TimeUTC,
@@ -293,7 +178,7 @@ namespace MazakMachineInterface
             var s = repo.RecordMachineEnd(
               mats: machineMats.Select(m => m.Mat),
               pallet: e.Pallet,
-              statName: machGroupName.MachineGroupName,
+              statName: machGroupName,
               statNum: e.StationNumber,
               program: progName,
               timeUTC: e.TimeUTC,
@@ -360,7 +245,7 @@ namespace MazakMachineInterface
           repo.RecordPalletDepartRotaryInbound(
             mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
             pallet: e.Pallet,
-            statName: machGroupName.MachineGroupName,
+            statName: machGroupName,
             statNum: e.StationNumber,
             timeUTC: e.TimeUTC,
             rotateIntoWorktable: true,
@@ -389,7 +274,7 @@ namespace MazakMachineInterface
               repo.RecordPalletDepartRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet,
-                statName: machGroupName.MachineGroupName,
+                statName: machGroupName,
                 statNum: mcNum,
                 rotateIntoWorktable: false,
                 timeUTC: e.TimeUTC,
@@ -429,7 +314,7 @@ namespace MazakMachineInterface
               repo.RecordPalletArriveRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet,
-                statName: machGroupName.MachineGroupName,
+                statName: machGroupName,
                 statNum: mcNum,
                 timeUTC: e.TimeUTC,
                 foreignId: e.ForeignID
@@ -923,7 +808,7 @@ namespace MazakMachineInterface
           var sch = mazakSchedules.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
           if (sch == null)
             continue;
-          MazakPart.ParseComment(sch.Comment, out string unique, out var procToPath, out bool manual);
+          var unique = MazakPart.ParseComment(sch.Comment);
           if (string.IsNullOrEmpty(unique))
             continue;
 
@@ -1130,20 +1015,7 @@ namespace MazakMachineInterface
       if (job == null)
         return false;
 
-      // try and find path
-      int path = 1;
-
-      var part = mazakSchedules.Parts?.FirstOrDefault(p => p.PartName == e.FullPartName);
-      if (part != null && MazakPart.IsSailPart(part.PartName, part.Comment))
-      {
-        MazakPart.ParseComment(part.Comment, out string uniq, out var procToPath, out bool manual);
-        if (uniq == firstMat.Unique)
-        {
-          path = procToPath.PathForProc(firstMat.Mat.Process);
-        }
-      }
-
-      var stop = job.Processes[firstMat.Mat.Process - 1].Paths[path - 1].Stops.FirstOrDefault();
+      var stop = job.Processes[firstMat.Mat.Process - 1].Paths[0].Stops.FirstOrDefault();
       if (stop != null && !string.IsNullOrEmpty(stop.Program))
       {
         progName = stop.Program;

@@ -94,11 +94,7 @@ namespace MazakMachineInterface
 
       public string UniqueStr
       {
-        get
-        {
-          MazakPart.ParseComment(_schRow.Comment, out string unique, out var paths, out var manual);
-          return unique;
-        }
+        get { return MazakPart.ParseComment(_schRow.Comment); }
       }
 
       public HoldMode Hold
@@ -137,12 +133,12 @@ namespace MazakMachineInterface
 
         if (MazakPart.IsSailPart(_schRow.PartName, _schRow.Comment))
         {
-          MazakPart.ParseComment(_schRow.Comment, out string unique, out var paths, out var manual);
+          var unique = MazakPart.ParseComment(_schRow.Comment);
           var job = jdb.LoadJob(unique);
           if (job != null)
           {
             HoldEntireJob = job.HoldJob;
-            HoldMachining = job.Processes[0].Paths[paths.PathForProc(proc: 1) - 1].HoldMachining;
+            HoldMachining = job.Processes[0].Paths[0].HoldMachining;
           }
         }
       }
@@ -181,8 +177,6 @@ namespace MazakMachineInterface
         IDictionary<int, MazakSchedule> mazakSch;
         mazakSch = LoadMazakSchedules(jobDB, schedules.Schedules);
 
-        Log.Debug("Checking for hold transitions at {time} ", nowUTC);
-
         var nextTimeUTC = DateTime.MaxValue;
 
         foreach (var pair in mazakSch)
@@ -209,15 +203,6 @@ namespace MazakMachineInterface
 
           HoldMode currentHoldMode = CalculateHoldMode(allHold, machHold);
 
-          Log.Debug(
-            "Checking schedule {sch}, mode {mode}, target {targetMode}, next {allNext}, mach {machNext}",
-            pair.Key,
-            pair.Value.Hold,
-            currentHoldMode,
-            allNext,
-            machNext
-          );
-
           if (currentHoldMode != pair.Value.Hold)
           {
             pair.Value.ChangeHoldMode(currentHoldMode);
@@ -228,8 +213,6 @@ namespace MazakMachineInterface
           if (machNext < nextTimeUTC)
             nextTimeUTC = machNext;
         }
-
-        Log.Debug("Next hold transition {next}", nextTimeUTC);
 
         if (nextTimeUTC == DateTime.MaxValue)
           return TimeSpan.MaxValue;

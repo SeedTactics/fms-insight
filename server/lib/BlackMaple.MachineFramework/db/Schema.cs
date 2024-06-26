@@ -166,7 +166,7 @@ namespace BlackMaple.MachineFramework
           + "PRIMARY KEY(Counter, PocketNumber, Tool))";
         cmd.ExecuteNonQuery();
 
-        if (settings.StartingMaterialID > 0)
+        if (settings != null && settings.StartingMaterialID > 0)
         {
           if (settings.StartingMaterialID > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
             throw new Exception("Starting Serial is too large");
@@ -510,7 +510,7 @@ namespace BlackMaple.MachineFramework
       SerialSettings settings
     )
     {
-      if (settings.StartingMaterialID == 0)
+      if (settings == null || settings.StartingMaterialID == 0)
         return;
       if (settings.StartingMaterialID > 9007199254740991) // 2^53 - 1, the max size in a javascript 64-bit precision double
         throw new Exception("Starting Serial is too large");

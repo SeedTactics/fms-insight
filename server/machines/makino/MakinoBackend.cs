@@ -33,70 +33,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.IO;
 using BlackMaple.MachineFramework;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BlackMaple.FMSInsight.Makino
 {
-  public sealed class MakinoBackend : IFMSBackend, IDisposable
+  public static class MakinoServices
   {
-    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoBackend>();
-
-    public RepositoryConfig? RepoConfig { get; }
-    public IJobControl? JobControl => _jobs;
-    public IQueueControl? QueueControl => _jobs;
-    public IMachineControl? MachineControl { get; }
-
-    private readonly JobsAndQueuesFromDb<MakinoCellState>? _jobs;
-    private readonly MakinoSync? _sync;
-
-    public MakinoBackend(IConfiguration config, FMSSettings st, SerialSettings serialSt)
+    public static IServiceCollection AddMakinoBackend(this IServiceCollection s, MakinoSettings makinoSt)
     {
-      try
-      {
-        var settings = new MakinoSettings(config, st);
-
-        if (File.Exists(Path.Combine(st.DataDirectory, "log.db")))
-        {
-          File.Move(Path.Combine(st.DataDirectory, "log.db"), Path.Combine(st.DataDirectory, "makino.db"));
-        }
-
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(
-          serialSt,
-          Path.Combine(st.DataDirectory, "makino.db"),
-          Path.Combine(st.DataDirectory, "inspections.db"),
-          Path.Combine(st.DataDirectory, "jobs.db")
-        );
-
-        MachineControl = new MakinoMachines(settings);
-
-        _sync = new MakinoSync(settings);
-
-        _jobs = new JobsAndQueuesFromDb<MakinoCellState>(RepoConfig, st, RaiseNewCurrentStatus, _sync);
-        _jobs.StartThread();
-
-        try
-        {
-          using var db = settings.OpenMakinoConnection();
-          db.CheckForQueryNotification();
-        }
-        catch (Exception ex)
-        {
-          Log.Error(ex, "Error when checking query notifaction");
-        }
-      }
-      catch (Exception ex)
-      {
-        Log.Error(ex, "Error when initializing makino backend");
-      }
+      Serilog.Log.Information("Using Makino Backend with config {@config}", makinoSt);
+      s.AddSingleton(makinoSt);
+      s.AddSingleton<IMachineControl, MakinoMachines>();
+      s.AddSingleton<ISynchronizeCellState<MakinoCellState>, MakinoSync>();
+      return s;
     }
-
-    void IDisposable.Dispose()
-    {
-      _jobs?.Dispose();
-    }
-
-    public event NewCurrentStatus? OnNewCurrentStatus;
-
-    public void RaiseNewCurrentStatus(CurrentStatus s) => OnNewCurrentStatus?.Invoke(s);
   }
 }

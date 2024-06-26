@@ -80,26 +80,32 @@ namespace BlackMaple.FMSInsight.Niigata
     public CurrentStatus CurrentStatus { get; init; }
   }
 
-  public interface IBuildCellState
+  public class CreateCellState
   {
-    CellState BuildCellState(IRepository jobDB, NiigataStatus status);
-  }
+    private readonly FMSSettings _settings;
+    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();
+    private readonly NiigataStationNames _stationNames;
+    private readonly ICncMachineConnection _machConnection;
 
-  public class CreateCellState : IBuildCellState
-  {
-    private FMSSettings _settings;
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();
-    private NiigataStationNames _stationNames;
-    private ICncMachineConnection _machConnection;
+    public static CellState BuildCellState(
+      FMSSettings s,
+      NiigataStationNames n,
+      ICncMachineConnection machConn,
+      IRepository logDB,
+      NiigataStatus status
+    )
+    {
+      return new CreateCellState(s, n, machConn).Build(logDB, status);
+    }
 
-    public CreateCellState(FMSSettings s, NiigataStationNames n, ICncMachineConnection machConn)
+    private CreateCellState(FMSSettings s, NiigataStationNames n, ICncMachineConnection machConn)
     {
       _settings = s;
       _stationNames = n;
       _machConnection = machConn;
     }
 
-    public CellState BuildCellState(IRepository logDB, NiigataStatus status)
+    private CellState Build(IRepository logDB, NiigataStatus status)
     {
       var palletStateUpdated = false;
 
@@ -302,7 +308,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
           if (completedMachineSteps > 0)
           {
-            inProcMat %= m => m.LastCompletedMachiningRouteStopIndex = completedMachineSteps - 1;
+            inProcMat = inProcMat with { LastCompletedMachiningRouteStopIndex = completedMachineSteps - 1 };
           }
         }
 
@@ -874,7 +880,7 @@ namespace BlackMaple.FMSInsight.Niigata
         );
         foreach (var mat in pallet.Material)
         {
-          mat.Mat %= m => m.Action.ElapsedLoadUnloadTime = elapsedLoadTime;
+          mat.Mat = mat.Mat with { Action = mat.Mat.Action with { ElapsedLoadUnloadTime = elapsedLoadTime } };
           loadingIds.Add(mat.Mat.MaterialID);
         }
       }
@@ -882,18 +888,18 @@ namespace BlackMaple.FMSInsight.Niigata
       // now material to unload
       foreach (var mat in unusedMatsOnPal.Values.Where(m => !loadingIds.Contains(m.Mat.MaterialID)))
       {
-        mat.Mat %= m =>
-          m.SetAction(
-            new InProcessMaterialAction()
-            {
-              Type =
-                mat.Mat.Process == mat.Job.Processes.Count
-                  ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-                  : InProcessMaterialAction.ActionType.UnloadToInProcess,
-              UnloadIntoQueue = OutputQueueForMaterial(mat, pallet.Log, defaultToScrap: true),
-              ElapsedLoadUnloadTime = elapsedLoadTime
-            }
-          );
+        mat.Mat = mat.Mat with
+        {
+          Action = new InProcessMaterialAction()
+          {
+            Type =
+              mat.Mat.Process == mat.Job.Processes.Count
+                ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
+                : InProcessMaterialAction.ActionType.UnloadToInProcess,
+            UnloadIntoQueue = OutputQueueForMaterial(mat, pallet.Log, defaultToScrap: true),
+            ElapsedLoadUnloadTime = elapsedLoadTime
+          }
+        };
         pallet.Material.Add(mat);
       }
     }
@@ -1647,7 +1653,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 && log.ProgramDetails.TryGetValue("InspectionType", out var iType)
               )
               {
-                mat.Mat %= m => m.SignaledInspections.Append(iType).ToArray();
+                mat.Mat = mat.Mat with { SignaledInspections = [.. mat.Mat.SignaledInspections, iType] };
               }
             }
             palletStateUpdated = true;

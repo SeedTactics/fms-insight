@@ -38,38 +38,31 @@ namespace BlackMaple.MachineFramework.Controllers
 {
   [ApiController]
   [Route("api/v1/machines")]
-  public class machinesController : ControllerBase
+  public class machinesController(IMachineControl mach) : ControllerBase
   {
-    private IMachineControl _machControl;
-
-    public machinesController(FMSImplementation impl)
-    {
-      _machControl = impl.Backend?.MachineControl;
-    }
-
     [HttpGet("tools")]
     public ImmutableList<ToolInMachine> GetToolsInMachines()
     {
-      if (_machControl == null)
+      if (mach == null)
       {
-        return ImmutableList<ToolInMachine>.Empty;
+        return [];
       }
       else
       {
-        return _machControl.CurrentToolsInMachines();
+        return mach.CurrentToolsInMachines();
       }
     }
 
     [HttpGet("programs-in-cell-controller")]
     public ImmutableList<ProgramInCellController> GetProgramsInCellController()
     {
-      if (_machControl == null)
+      if (mach == null)
       {
-        return ImmutableList<ProgramInCellController>.Empty;
+        return [];
       }
       else
       {
-        return _machControl.CurrentProgramsInCellController();
+        return mach.CurrentProgramsInCellController();
       }
     }
 
@@ -80,39 +73,39 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] long? revisionToStart = null
     )
     {
-      if (_machControl == null)
+      if (mach == null)
       {
-        return ImmutableList<ProgramRevision>.Empty;
+        return [];
       }
       else
       {
-        return _machControl.ProgramRevisionsInDecendingOrderOfRevision(programName, count, revisionToStart);
+        return mach.ProgramRevisionsInDecendingOrderOfRevision(programName, count, revisionToStart);
       }
     }
 
     [HttpGet("program/{programName}/revision/{revision}/content")]
     public string GetProgramRevisionContent(string programName, long revision)
     {
-      if (_machControl == null)
+      if (mach == null)
       {
         return "";
       }
       else
       {
-        return _machControl.GetProgramContent(programName, revision);
+        return mach.GetProgramContent(programName, revision);
       }
     }
 
     [HttpGet("program/{programName}/latest-revision/content")]
     public string GetLatestProgramRevisionContent(string programName)
     {
-      if (_machControl == null)
+      if (mach == null)
       {
         return "";
       }
       else
       {
-        return _machControl.GetProgramContent(programName, null);
+        return mach.GetProgramContent(programName, null);
       }
     }
   }

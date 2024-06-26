@@ -301,6 +301,9 @@ function JobRawMaterial({ fsize, mat }: { mat: Readonly<api.IInProcessMaterial>;
   if (mat.action.type === api.ActionType.Loading && mat.action.pathAfterLoad) {
     path = mat.action.pathAfterLoad;
   }
+  if (!job) {
+    return null;
+  }
   const pathData = job.procsAndPaths?.[0]?.paths?.[path - 1];
   if (pathData && pathData.casting && pathData.casting !== "") {
     return <MatCardDetail fsize={fsize}>{pathData.casting}</MatCardDetail>;

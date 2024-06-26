@@ -38,17 +38,11 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Niigata
 {
-  public delegate IEnumerable<string> CheckJobsValid(
-    NiigataSettings settings,
-    INiigataCommunication icc,
-    IRepository jobDB,
-    NewJobs jobs
-  );
-
   public static class CheckJobsMatchNiigata
   {
     public static IEnumerable<string> CheckNewJobs(
       NiigataSettings settings,
+      FMSSettings fmsSt,
       INiigataCommunication icc,
       IRepository jobDB,
       NewJobs jobs
@@ -79,10 +73,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               errors.Add("Part " + j.PartName + " does not have any pallets");
             }
-            if (
-              !string.IsNullOrEmpty(pathData.InputQueue)
-              && !settings.FMSSettings.Queues.ContainsKey(pathData.InputQueue)
-            )
+            if (!string.IsNullOrEmpty(pathData.InputQueue) && !fmsSt.Queues.ContainsKey(pathData.InputQueue))
             {
               errors.Add(
                 " Part "
@@ -93,8 +84,7 @@ namespace BlackMaple.FMSInsight.Niigata
               );
             }
             if (
-              !string.IsNullOrEmpty(pathData.OutputQueue)
-              && !settings.FMSSettings.Queues.ContainsKey(pathData.OutputQueue)
+              !string.IsNullOrEmpty(pathData.OutputQueue) && !fmsSt.Queues.ContainsKey(pathData.OutputQueue)
             )
             {
               errors.Add(

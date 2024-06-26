@@ -35,11 +35,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Immutable;
-using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
-  [Draftable]
   public record Workorder
   {
     public required string WorkorderId { get; init; }
@@ -58,8 +56,6 @@ namespace BlackMaple.MachineFramework
 
     ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
     public ImmutableList<ProgramForJobStep>? Programs { get; init; }
-
-    public static Workorder operator %(Workorder w, Action<IWorkorderDraft> f) => w.Produce(f);
   }
 
   public record WorkorderComment

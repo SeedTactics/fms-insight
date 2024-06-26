@@ -75,24 +75,15 @@ namespace BlackMaple.MachineFramework.Controllers
 
   [ApiController]
   [Route("api/v1/[controller]")]
-  public class logController : ControllerBase
+  public class logController(RepositoryConfig repo, IJobAndQueueControl jobAndQueue) : ControllerBase
   {
-    private FMSImplementation _impl;
-
-    public logController(FMSImplementation impl)
-    {
-      _impl = impl;
-    }
-
     [HttpGet("events/all")]
     public IEnumerable<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using var db = repo.OpenConnection();
+      foreach (var l in db.GetLogEntries(startUTC, endUTC))
       {
-        foreach (var l in db.GetLogEntries(startUTC, endUTC))
-        {
-          yield return l;
-        }
+        yield return l;
       }
     }
 
@@ -101,7 +92,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public IActionResult GetEventCSV([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
       IEnumerable<LogEntry> entries;
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using (var db = repo.OpenConnection())
       {
         entries = db.GetLogEntries(startUTC, endUTC);
       }
@@ -126,12 +117,10 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpGet("events/all-completed-parts")]
     public IEnumerable<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using var db = repo.OpenConnection();
+      foreach (var l in db.GetCompletedPartLogs(startUTC, endUTC))
       {
-        foreach (var l in db.GetCompletedPartLogs(startUTC, endUTC))
-        {
-          yield return l;
-        }
+        yield return l;
       }
     }
 
@@ -141,95 +130,79 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] DateTime? expectedEndUTCofLastSeen = null
     )
     {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using var db = repo.OpenConnection();
+      foreach (var l in db.GetRecentLog(lastSeenCounter, expectedEndUTCofLastSeen))
       {
-        foreach (var l in db.GetRecentLog(lastSeenCounter, expectedEndUTCofLastSeen))
-        {
-          yield return l;
-        }
+        yield return l;
       }
     }
 
     [HttpGet("events/for-material/{materialID}")]
     public List<LogEntry> LogForMaterial(long materialID)
     {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
-      {
-        return db.GetLogForMaterial(materialID);
-      }
+      using var db = repo.OpenConnection();
+      return db.GetLogForMaterial(materialID);
     }
 
     [HttpGet("events/for-material")]
     public List<LogEntry> LogForMaterials([FromQuery] List<long> id)
     {
       if (id == null || id.Count == 0)
-        return new List<LogEntry>();
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
-      {
-        return db.GetLogForMaterial(id);
-      }
+        return [];
+      using var db = repo.OpenConnection();
+      return db.GetLogForMaterial(id);
     }
 
     [HttpGet("events/for-serial/{serial}")]
     public IEnumerable<LogEntry> LogForSerial(string serial)
     {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using var db = repo.OpenConnection();
+      foreach (var l in db.GetLogForSerial(serial))
       {
-        foreach (var l in db.GetLogForSerial(serial))
-        {
-          yield return l;
-        }
+        yield return l;
       }
     }
 
     [HttpGet("events/for-workorder/{workorder}")]
     public IEnumerable<LogEntry> LogForWorkorder(string workorder)
     {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using var db = repo.OpenConnection();
+      foreach (var l in db.GetLogForWorkorder(workorder))
       {
-        foreach (var l in db.GetLogForWorkorder(workorder))
-        {
-          yield return l;
-        }
+        yield return l;
       }
     }
 
     [HttpGet("material-details/{materialID}")]
     public MaterialDetails MaterialDetails(long materialID)
     {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
-      {
-        return db.GetMaterialDetails(materialID);
-      }
+      using var db = repo.OpenConnection();
+      return db.GetMaterialDetails(materialID);
     }
 
     [HttpGet("material-for-job/{jobUnique}")]
     public List<MaterialDetails> MaterialDetailsForJob(string jobUnique)
     {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
-      {
-        return db.GetMaterialForJobUnique(jobUnique);
-      }
+      using var db = repo.OpenConnection();
+      return db.GetMaterialForJobUnique(jobUnique);
     }
 
     [HttpGet("material-for-serial/{serial}")]
     public IEnumerable<MaterialDetails> MaterialForSerial(string serial)
     {
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
-      {
-        return db.GetMaterialDetailsForSerial(serial);
-      }
+      using var db = repo.OpenConnection();
+      return db.GetMaterialDetailsForSerial(serial);
     }
 
     [HttpPost("material-details/{materialID}/serial")]
     public LogEntry SetSerial(long materialID, [FromBody] string serial, [FromQuery] int process = 1)
     {
       LogEntry log;
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using (var db = repo.OpenConnection())
       {
         log = db.RecordSerialForMaterialID(materialID, process, serial, DateTime.UtcNow);
       }
-      _impl.Backend.JobControl.RecalculateCellState();
+      jobAndQueue.RecalculateCellState();
       return log;
     }
 
@@ -237,11 +210,11 @@ namespace BlackMaple.MachineFramework.Controllers
     public LogEntry SetWorkorder(long materialID, [FromBody] string workorder, [FromQuery] int process = 1)
     {
       LogEntry log;
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using (var db = repo.OpenConnection())
       {
         log = db.RecordWorkorderForMaterialID(materialID, process, workorder);
       }
-      _impl.Backend.JobControl.RecalculateCellState();
+      jobAndQueue.RecalculateCellState();
       return log;
     }
 
@@ -254,11 +227,11 @@ namespace BlackMaple.MachineFramework.Controllers
     )
     {
       LogEntry log;
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using (var db = repo.OpenConnection())
       {
         log = db.ForceInspection(materialID, process, inspType, inspect);
       }
-      _impl.Backend.JobControl.RecalculateCellState();
+      jobAndQueue.RecalculateCellState();
       return log;
     }
 
@@ -271,11 +244,11 @@ namespace BlackMaple.MachineFramework.Controllers
     )
     {
       LogEntry log;
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using (var db = repo.OpenConnection())
       {
         log = db.RecordOperatorNotes(materialID, process, notes, operatorName);
       }
-      _impl.Backend.JobControl.RecalculateCellState();
+      jobAndQueue.RecalculateCellState();
       return log;
     }
 
@@ -285,7 +258,7 @@ namespace BlackMaple.MachineFramework.Controllers
       if (string.IsNullOrEmpty(insp.InspectionType))
         throw new BadRequestException("Must give inspection type");
       LogEntry log;
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using (var db = repo.OpenConnection())
       {
         log = db.RecordInspectionCompleted(
           insp.MaterialID,
@@ -293,12 +266,12 @@ namespace BlackMaple.MachineFramework.Controllers
           insp.InspectionLocationNum,
           insp.InspectionType,
           insp.Success,
-          insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
+          insp.ExtraData ?? [],
           insp.Elapsed,
           insp.Active
         );
       }
-      _impl.Backend.JobControl.RecalculateCellState();
+      jobAndQueue.RecalculateCellState();
       return log;
     }
 
@@ -306,19 +279,19 @@ namespace BlackMaple.MachineFramework.Controllers
     public LogEntry RecordCloseoutCompleted([FromBody] NewCloseout insp)
     {
       LogEntry log;
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using (var db = repo.OpenConnection())
       {
         log = db.RecordCloseoutCompleted(
           insp.MaterialID,
           insp.Process,
           insp.LocationNum,
           insp.CloseoutType,
-          insp.ExtraData == null ? new Dictionary<string, string>() : insp.ExtraData,
+          insp.ExtraData ?? [],
           insp.Elapsed,
           insp.Active
         );
       }
-      _impl.Backend.JobControl.RecalculateCellState();
+      jobAndQueue.RecalculateCellState();
       return log;
     }
 
@@ -330,11 +303,11 @@ namespace BlackMaple.MachineFramework.Controllers
     )
     {
       LogEntry log;
-      using (var db = _impl.Backend.RepoConfig.OpenConnection())
+      using (var db = repo.OpenConnection())
       {
         log = db.RecordWorkorderComment(workorder: workorder, comment: comment, operName: operatorName);
       }
-      _impl.Backend.JobControl.RecalculateCellState();
+      jobAndQueue.RecalculateCellState();
       return log;
     }
   }

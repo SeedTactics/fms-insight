@@ -3,7 +3,7 @@
   "Parts": [
     {
       "PartName": "aaa:0:1",
-      "Comment": "aaa-schId1234-Path1-1-0",
+      "Comment": "aaa-schId1234-Insight",
       "Price": 0.0,
       "TotalProcess": 2,
       "MaterialName": "",
@@ -62,7 +62,7 @@
     },
     {
       "PartName": "bbb:0:2",
-      "Comment": "bbb-schId1234-Path1-1-0",
+      "Comment": "bbb-schId1234-Insight",
       "Price": 0.0,
       "TotalProcess": 2,
       "MaterialName": "",
@@ -121,7 +121,7 @@
     },
     {
       "PartName": "ccc:0:3",
-      "Comment": "ccc-schId1234-Path1-1-0",
+      "Comment": "ccc-schId1234-Insight",
       "Price": 0.0,
       "TotalProcess": 2,
       "MaterialName": "",

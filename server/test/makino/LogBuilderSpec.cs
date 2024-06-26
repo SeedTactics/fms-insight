@@ -57,7 +57,6 @@ public sealed class LogBuilderSpec : IDisposable
   {
     var serialSettings = new SerialSettings()
     {
-      SerialType = SerialType.AssignOneSerialPerMaterial,
       ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
     };
     _repo = RepositoryConfig.InitializeMemoryDB(serialSettings);
@@ -117,7 +116,7 @@ public sealed class LogBuilderSpec : IDisposable
 
   void IDisposable.Dispose()
   {
-    _repo.CloseMemoryConnection();
+    _repo.Dispose();
   }
 
   private record TestMat

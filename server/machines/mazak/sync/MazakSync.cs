@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -41,11 +41,6 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface;
 
-// Currently Missing:
-// * Adjusting Jobs before they are added (NewJobTransform)
-//   Nothing seems to use it anymore, so can be deleted?
-// * Everything else from RoutingInfo matches with JobsAndQueuesFromDb
-
 public record MazakState : ICellState
 {
   public required bool StateUpdated { get; init; }
@@ -55,56 +50,45 @@ public record MazakState : ICellState
   public required MazakAllData AllData { get; init; }
 }
 
-public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
+public delegate void MazakLogEventDel(LogEntry e, IRepository jobDB);
+
+public interface INotifyMazakLogEvent
+{
+  event MazakLogEventDel? MazakLogEvent;
+}
+
+public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakLogEvent, IDisposable
 {
   public static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MazakSync>();
   public event Action? NewCellState;
   public event MazakLogEventDel? MazakLogEvent;
 
-  private readonly IMachineGroupName machineGroupName;
   private readonly IReadDataAccess readDatabase;
   private readonly IWriteData writeDatabase;
   private readonly FMSSettings settings;
-  private readonly MazakDbType dbType;
-  private readonly string logPath;
   private readonly MazakConfig mazakConfig;
-  private readonly IWriteJobs writeJobs;
-  private readonly bool useStartingOffsetForDueDate;
-  private readonly bool waitForAllCastingsInQueue;
 
   private readonly FileSystemWatcher logWatcher;
 
-  public MazakSync(
-    IMachineGroupName machineGroupName,
-    IReadDataAccess readDb,
-    IWriteData writeDb,
-    FMSSettings settings,
-    MazakDbType dbType,
-    string logPath,
-    MazakConfig mazakConfig,
-    IWriteJobs writeJobs,
-    bool useStartingOffsetForDueDate,
-    bool waitForAllCastingsInQueue
-  )
+  public MazakSync(IReadDataAccess readDb, IWriteData writeDb, FMSSettings settings, MazakConfig mazakConfig)
   {
-    this.machineGroupName = machineGroupName;
     this.readDatabase = readDb;
     this.writeDatabase = writeDb;
     this.settings = settings;
-    this.dbType = dbType;
-    this.logPath = logPath;
     this.mazakConfig = mazakConfig;
-    this.writeJobs = writeJobs;
-    this.useStartingOffsetForDueDate = useStartingOffsetForDueDate;
-    this.waitForAllCastingsInQueue = waitForAllCastingsInQueue;
 
-    logWatcher = new FileSystemWatcher(logPath) { Filter = "*.csv" };
+    logWatcher = new FileSystemWatcher(mazakConfig.LogCSVPath) { Filter = "*.csv" };
     logWatcher.Created += LogFileCreated;
     logWatcher.EnableRaisingEvents = true;
   }
 
+  private bool _disposed = false;
+
   public void Dispose()
   {
+    if (_disposed)
+      return;
+    _disposed = true;
     logWatcher.EnableRaisingEvents = false;
     logWatcher.Created -= LogFileCreated;
     logWatcher.Dispose();
@@ -145,8 +129,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
         downloadUID: 1,
         mazakData: mazakData,
         savedParts: new HashSet<string>(),
-        MazakType: dbType,
-        useStartingOffsetForDueDate: useStartingOffsetForDueDate,
+        mazakCfg: mazakConfig,
         fmsSettings: settings,
         lookupProgram: lookupProg,
         errors: logMessages
@@ -172,19 +155,20 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
   {
     var now = DateTime.UtcNow;
     var mazakData = readDatabase.LoadAllData();
+    var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
 
-    var logs = LogCSVParsing.LoadLog(db.MaxForeignID(), logPath);
+    var logs = LogCSVParsing.LoadLog(db.MaxForeignID(), mazakConfig.LogCSVPath);
 
     var trans = new LogTranslation(
       db,
       mazakData,
-      machineGroupName,
+      machGroupName: machineGroupName,
       settings,
       le => MazakLogEvent?.Invoke(le, db),
       mazakConfig: mazakConfig,
       loadTools: readDatabase.LoadTools
     );
-    var sendToExternal = new List<BlackMaple.MachineFramework.MaterialToSendToExternalQueue>();
+    var sendToExternal = new List<MaterialToSendToExternalQueue>();
 
     var stoppedBecauseRecentMachineEnd = false;
     foreach (var ev in logs)
@@ -192,12 +176,12 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
       try
       {
         var result = trans.HandleEvent(ev);
+        sendToExternal.AddRange(result.MatsToSendToExternal);
         if (result.StoppedBecauseRecentMachineEnd)
         {
           stoppedBecauseRecentMachineEnd = true;
           break;
         }
-        sendToExternal.AddRange(result.MatsToSendToExternal);
       }
       catch (Exception ex)
       {
@@ -205,7 +189,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
       }
     }
 
-    LogCSVParsing.DeleteLog(db.MaxForeignID(), logPath);
+    LogCSVParsing.DeleteLog(db.MaxForeignID(), mazakConfig.LogCSVPath);
 
     bool palStChanged = false;
     if (!stoppedBecauseRecentMachineEnd)
@@ -213,39 +197,20 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
       palStChanged = trans.CheckPalletStatusMatchesLogs();
     }
 
-    bool queuesChanged = false;
-    bool currentQueueMismatch = false;
-    try
-    {
-      var transSet = MazakQueues.CalculateScheduleChanges(
-        db,
-        mazakData,
-        waitForAllCastings: waitForAllCastingsInQueue
-      );
-
-      if (transSet != null && transSet.Schedules.Count > 0)
-      {
-        writeDatabase.Save(transSet, "Setting material from queues");
-        queuesChanged = true;
-      }
-    }
-    catch (Exception ex)
-    {
-      Log.Error(ex, "Error checking queues");
-      currentQueueMismatch = true;
-    }
-
     if (sendToExternal.Count > 0)
     {
       SendMaterialToExternalQueue.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
     }
 
-    var st = BuildCurrentStatus.Build(db, settings, machineGroupName, dbType, mazakData, now);
+    var st = BuildCurrentStatus.Build(
+      db,
+      settings,
+      mazakConfig.DBType,
+      mazakData,
+      machineGroupName: machineGroupName,
+      now
+    );
 
-    if (currentQueueMismatch)
-    {
-      st = st with { Alarms = st.Alarms.Add("Queue contents and Mazak schedule quantity mismatch.") };
-    }
     if (mazakConfig != null && mazakConfig.AdjustCurrentStatus != null)
     {
       st = mazakConfig.AdjustCurrentStatus(db, st);
@@ -253,9 +218,9 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
 
     return new MazakState()
     {
-      StateUpdated = logs.Count > 0 || palStChanged || queuesChanged,
+      StateUpdated = logs.Count > 0 || palStChanged,
       TimeUntilNextRefresh = stoppedBecauseRecentMachineEnd
-        ? TimeSpan.FromSeconds(10)
+        ? TimeSpan.FromSeconds(15)
         : TimeSpan.FromMinutes(2),
       StoppedBecauseRecentMachineEnd = stoppedBecauseRecentMachineEnd,
       CurrentStatus = st,
@@ -270,11 +235,37 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, IDisposable
       return false;
     }
 
-    writeJobs.SyncFromDatabase(st.AllData, db);
+    // jobs
+    bool jobsCopied = WriteJobs.SyncFromDatabase(
+      st.AllData,
+      db,
+      writeDatabase,
+      readDatabase,
+      settings,
+      mazakConfig,
+      st.CurrentStatus.TimeOfCurrentStatusUTC
+    );
+
+    // queues
+    bool queuesChanged = false;
+    if (!jobsCopied)
+    {
+      var transSet = MazakQueues.CalculateScheduleChanges(
+        db,
+        st.AllData,
+        waitForAllCastings: mazakConfig.WaitForAllCastings
+      );
+
+      if (transSet != null && transSet.Schedules.Count > 0)
+      {
+        writeDatabase.Save(transSet, "Setting material from queues");
+        queuesChanged = true;
+      }
+    }
 
     // TODO: holds
 
-    return false;
+    return jobsCopied || queuesChanged;
   }
 
   public bool DecrementJobs(IRepository db, MazakState st)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -31,161 +31,39 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using BlackMaple.MachineFramework;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
 
 namespace MazakMachineInterface
 {
-  public class MazakBackend : IFMSBackend, IDisposable
+  public static class MazakServices
   {
-    private readonly IReadDataAccess _readDB;
-    private readonly IWriteData _writeDB;
-    private readonly ICurrentLoadActions loadOper;
-
-    private readonly RoutingInfo routing;
-    private readonly IMazakLogReader logDataLoader;
-
-    private readonly RepositoryConfig logDbConfig;
-
-    //Settings
-    public IReadDataAccess ReadDB => _readDB;
-    public IWriteData WriteDB => _writeDB;
-
-    public RepositoryConfig RepoConfig => logDbConfig;
-    public MazakMachineControl MazakMachineControl { get; }
-
-    public IMazakLogReader LogTranslation => logDataLoader;
-    public RoutingInfo RoutingInfo => routing;
-
-    public event NewCurrentStatus OnNewCurrentStatus;
-
-    public void RaiseCurrentStatusChanged(BlackMaple.MachineFramework.IRepository jobDb)
+    public static IServiceCollection AddMazakBackend(this IServiceCollection s, MazakConfig mazakCfg)
     {
-      if (routing == null)
-        return;
-      OnNewCurrentStatus?.Invoke(routing.CurrentStatus(jobDb));
-    }
-
-    private void OnLoadActions(int lds, IEnumerable<LoadAction> actions)
-    {
-      // this opens log and db connections to the database again :(
-      // Only used for Mazak Version E
-      OnNewCurrentStatus?.Invoke(((IJobControl)routing).GetCurrentStatus());
-    }
-
-    public MazakBackend(
-      IConfiguration configuration,
-      FMSSettings st,
-      SerialSettings serialSt,
-      MazakConfig mazakCfg = null
-    )
-    {
-      mazakCfg ??= MazakConfig.Load(configuration);
-
-      var oldJobDbName = System.IO.Path.Combine(st.DataDirectory, "jobinspection.db");
-      if (!System.IO.File.Exists(oldJobDbName))
-        oldJobDbName = System.IO.Path.Combine(st.DataDirectory, "mazakjobs.db");
-
-      logDbConfig = RepositoryConfig.InitializeEventDatabase(
-        serialSt,
-        System.IO.Path.Combine(st.DataDirectory, "log.db"),
-        System.IO.Path.Combine(st.DataDirectory, "insp.db"),
-        oldJobDbName
-      );
-
-      _writeDB = new OpenDatabaseKitTransactionDB(mazakCfg.SQLConnectionString, mazakCfg.DBType);
-
+      Serilog.Log.Information("Using Mazak Backend with config {@config}", mazakCfg);
       if (mazakCfg.DBType == MazakDbType.MazakVersionE)
-        loadOper = new LoadOperationsFromFile(mazakCfg, enableWatcher: true, onLoadActions: OnLoadActions);
-      else if (mazakCfg.DBType == MazakDbType.MazakWeb)
-        loadOper = new LoadOperationsFromFile(mazakCfg, enableWatcher: false, onLoadActions: (l, a) => { }); // web instead watches the log csv files
-      else
-        loadOper = new LoadOperationsFromDB(mazakCfg.SQLConnectionString); // smooth db doesn't use the load operations file
-
-      _readDB = new OpenDatabaseKitReadDB(mazakCfg.SQLConnectionString, mazakCfg.DBType, loadOper);
-
-      var hold = new HoldPattern(_writeDB);
-      WriteJobs writeJobs;
-      using (var jdb = logDbConfig.OpenConnection())
       {
-        writeJobs = new WriteJobs(
-          d: _writeDB,
-          readDb: _readDB,
-          jDB: jdb,
-          settings: st,
-          useStartingOffsetForDueDate: mazakCfg.UseStartingOffsetForDueDate,
-          progDir: mazakCfg.ProgramDirectory
-        );
-      }
-      if (mazakCfg.DBType == MazakDbType.MazakWeb || mazakCfg.DBType == MazakDbType.MazakSmooth)
-        logDataLoader = new LogDataWeb(
-          logDbConfig,
-          writeJobs,
-          _readDB,
-          _writeDB,
-          hold,
-          st,
-          currentStatusChanged: RaiseCurrentStatusChanged,
-          mazakConfig: mazakCfg
-        );
-      else
-      {
-#if USE_VERE
-        logDataLoader = new LogDataVerE(
-          logDbConfig,
-          jobDBConfig,
-          sendToExternal,
-          writeJobs,
-          _readDB,
-          queues,
-          hold,
-          st,
-          currentStatusChanged: RaiseCurrentStatusChanged,
-          mazakConfig: mazakCfg
-        );
-#else
-        throw new Exception("Mazak VerE is not supported on .NET core");
-#endif
+        throw new Exception("This version of FMS Insight does not support Mazak Version E");
       }
 
-      routing = new RoutingInfo(
-        d: _writeDB,
-        machineGroupName: writeJobs,
-        readDb: _readDB,
-        logR: logDataLoader,
-        jLogCfg: logDbConfig,
-        wJobs: writeJobs,
-        settings: st,
-        onStatusChange: s => OnNewCurrentStatus?.Invoke(s),
-        mazakCfg: mazakCfg
-      );
+      s.AddSingleton(mazakCfg);
+      s.AddSingleton<IWriteData, OpenDatabaseKitTransactionDB>();
 
-      MazakMachineControl = new MazakMachineControl(logDbConfig, _readDB, writeJobs, mazakCfg);
+      if (mazakCfg.DBType == MazakDbType.MazakWeb)
+        s.AddSingleton<ICurrentLoadActions, LoadOperationsFromFile>();
+      else
+        s.AddSingleton<ICurrentLoadActions, LoadOperationsFromDB>();
+
+      s.AddSingleton<IReadDataAccess, OpenDatabaseKitReadDB>();
+      s.AddSingleton<MazakSync>();
+      s.AddSingleton<ISynchronizeCellState<MazakState>>(sp => sp.GetRequiredService<MazakSync>());
+      s.AddSingleton<INotifyMazakLogEvent>(sp => sp.GetRequiredService<MazakSync>());
+      s.AddSingleton<IMachineControl, MazakMachineControl>();
+
+      return s;
     }
-
-    private bool _disposed = false;
-
-    public void Dispose()
-    {
-      if (_disposed)
-        return;
-      _disposed = true;
-      routing.Halt();
-      logDataLoader.Halt();
-      if (loadOper != null)
-        loadOper.Dispose();
-    }
-
-    public IJobControl JobControl
-    {
-      get => routing;
-    }
-    public IQueueControl QueueControl => routing;
-
-    public IMachineControl MachineControl => MazakMachineControl;
   }
 }

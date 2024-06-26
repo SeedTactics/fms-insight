@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
@@ -47,29 +46,25 @@ public record NiigataSettings
 {
   private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<NiigataSettings>();
 
-  public required FMSSettings FMSSettings { get; init; }
   public required string ProgramDirectory { get; init; }
   public required NiigataStationNames StationNames { get; init; }
   public required ImmutableList<string> MachineIPs { get; init; }
   public required string SQLConnectionString { get; init; }
   public required bool RequireProgramsInJobs { get; init; }
+  public Func<ActiveJob, bool>? DecrementJobFilter { get; init; } = null;
 
-  public NiigataSettings() { }
-
-  [SetsRequiredMembers]
-  public NiigataSettings(IConfiguration config, FMSSettings fmsSt)
+  public static NiigataSettings Load(IConfiguration cfg)
   {
-    FMSSettings = fmsSt;
-
-    ProgramDirectory = config.GetValue<string>("Program Directory") ?? "";
+    var section = cfg.GetSection("Niigata");
+    var ProgramDirectory = section.GetValue<string>("Program Directory") ?? "";
     if (!System.IO.Directory.Exists(ProgramDirectory))
     {
       Log.Error("Program directory {dir} does not exist", ProgramDirectory);
     }
 
-    var reclampNames = config.GetValue<string>("Reclamp Group Names");
-    var machineNames = config.GetValue<string>("Machine Names");
-    StationNames = new NiigataStationNames()
+    var reclampNames = section.GetValue<string>("Reclamp Group Names");
+    var machineNames = section.GetValue<string>("Machine Names");
+    var StationNames = new NiigataStationNames()
     {
       ReclampGroupNames = new HashSet<string>(
         string.IsNullOrEmpty(reclampNames)
@@ -107,14 +102,18 @@ public record NiigataSettings
           .Where(x => x != null)
           .ToDictionary(x => x!.iccMc, x => (x!.group, x.num))
     };
-    Log.Debug("Using station names {@names}", StationNames);
 
-    MachineIPs =
-      config.GetValue<string>("Machine IP Addresses")?.Split(',').Select(s => s.Trim()).ToImmutableList()
-      ?? ImmutableList<string>.Empty;
+    return new NiigataSettings()
+    {
+      ProgramDirectory = ProgramDirectory,
+      StationNames = StationNames,
+      MachineIPs =
+        section.GetValue<string>("Machine IP Addresses")?.Split(',').Select(s => s.Trim()).ToImmutableList()
+        ?? ImmutableList<string>.Empty,
 
-    SQLConnectionString = config.GetValue<string>("Connection String") ?? "";
+      SQLConnectionString = section.GetValue<string>("Connection String") ?? "",
 
-    RequireProgramsInJobs = config.GetValue<bool>("Require Programs In Jobs", true);
+      RequireProgramsInJobs = section.GetValue<bool>("Require Programs In Jobs", true),
+    };
   }
 }

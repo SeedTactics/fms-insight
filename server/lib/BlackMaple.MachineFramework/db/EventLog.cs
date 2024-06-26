@@ -2456,24 +2456,21 @@ namespace BlackMaple.MachineFramework
               updateMatsCmd.ExecuteNonQuery();
 
               changedLogEntries.Add(
-                evt
-                  % (
-                    (evtDraft) =>
-                    {
-                      for (int i = 0; i < evtDraft.Material.Count; i++)
-                      {
-                        if (evtDraft.Material[i].MaterialID == oldMatId)
+                evt with
+                {
+                  Material = evt
+                    .Material.Select(m =>
+                      m.MaterialID == oldMatId
+                        ? m with
                         {
-                          evtDraft.Material[i] %= draftMat =>
-                          {
-                            draftMat.MaterialID = newMatId;
-                            draftMat.Serial = newMatDetails.Serial ?? "";
-                            draftMat.Workorder = newMatDetails.Workorder ?? "";
-                          };
+                          MaterialID = newMatId,
+                          Serial = newMatDetails.Serial ?? "",
+                          Workorder = newMatDetails.Workorder ?? ""
                         }
-                      }
-                    }
-                  )
+                        : m
+                    )
+                    .ToImmutableList()
+                }
               );
             }
           }
@@ -2836,7 +2833,7 @@ namespace BlackMaple.MachineFramework
     {
       lock (_cfg)
       {
-        if (_cfg.Settings.SerialType != SerialType.AssignOneSerialPerMaterial)
+        if (_cfg.SerialSettings == null)
         {
           serialLogEntry = null;
           return AllocateMaterialID(unique, part, numProc);
@@ -2847,7 +2844,7 @@ namespace BlackMaple.MachineFramework
           serialLogEntry = AddEntryInTransaction(trans =>
           {
             matId = AllocateMaterialID(trans, unique, part, numProc);
-            var serial = _cfg.Settings.ConvertMaterialIDToSerial(matId);
+            var serial = _cfg.SerialSettings.ConvertMaterialIDToSerial(matId);
             return RecordSerialForMaterialID(
               trans,
               new EventLogMaterial()
@@ -4300,68 +4297,7 @@ namespace BlackMaple.MachineFramework
           {
             foreach (var newFace in loads)
             {
-              if (_cfg.Settings.SerialType == SerialType.AssignOneSerialPerCycle)
-              {
-                // find a material id to use to create the serial
-                long matID = -1;
-                foreach (var m in newFace.mats.Select(m => m.MaterialID))
-                {
-                  if (m >= 0)
-                  {
-                    matID = m;
-                    break;
-                  }
-                }
-                if (matID >= 0)
-                {
-                  using (var checkConn = _connection.CreateCommand())
-                  {
-                    checkConn.Transaction = trans;
-                    checkConn.CommandText = "SELECT Serial FROM matdetails WHERE MaterialID = $mid LIMIT 1";
-                    checkConn.Parameters.Add("mid", SqliteType.Integer).Value = matID;
-                    var existingSerial = checkConn.ExecuteScalar();
-                    if (
-                      existingSerial != null
-                      && existingSerial != DBNull.Value
-                      && !string.IsNullOrEmpty(existingSerial.ToString())
-                    )
-                    {
-                      //already has an assigned serial, skip assignment
-                      matID = -1;
-                    }
-                  }
-                }
-                if (matID >= 0)
-                {
-                  var serial = _cfg.Settings.ConvertMaterialIDToSerial(matID);
-                  // add the serial
-                  foreach (var m in newFace.mats)
-                  {
-                    if (m.MaterialID >= 0)
-                      RecordSerialForMaterialID(trans, m.MaterialID, serial);
-                  }
-                  newLoadEvts.Add(
-                    AddLogEntry(
-                      trans,
-                      new NewEventLogEntry()
-                      {
-                        Material = newFace.mats,
-                        Pallet = 0,
-                        LogType = LogType.PartMark,
-                        LocationName = "Mark",
-                        LocationNum = 1,
-                        Program = "MARK",
-                        StartOfCycle = false,
-                        EndTimeUTC = timeUTC.AddSeconds(2),
-                        Result = serial,
-                      },
-                      null,
-                      null
-                    )
-                  );
-                }
-              }
-              else if (_cfg.Settings.SerialType == SerialType.AssignOneSerialPerMaterial)
+              if (_cfg.SerialSettings != null)
               {
                 using (var checkConn = _connection.CreateCommand())
                 {
@@ -4382,7 +4318,7 @@ namespace BlackMaple.MachineFramework
                       continue;
                     }
 
-                    var serial = _cfg.Settings.ConvertMaterialIDToSerial(m.MaterialID);
+                    var serial = _cfg.SerialSettings.ConvertMaterialIDToSerial(m.MaterialID);
                     if (m.MaterialID < 0)
                       continue;
                     RecordSerialForMaterialID(trans, m.MaterialID, serial);
@@ -4611,11 +4547,11 @@ namespace BlackMaple.MachineFramework
     private Dictionary<int, MaterialProcessActualPath> LookupActualPath(IDbTransaction trans, long matID)
     {
       var byProc = new Dictionary<int, MaterialProcessActualPath>();
-      void adjustPath(int proc, Action<IMaterialProcessActualPathDraft> f)
+      void adjustPath(int proc, Func<MaterialProcessActualPath, MaterialProcessActualPath> f)
       {
-        if (byProc.ContainsKey(proc))
+        if (byProc.TryGetValue(proc, out var value))
         {
-          byProc[proc] %= f;
+          byProc[proc] = f(value);
         }
         else
         {
@@ -4628,7 +4564,7 @@ namespace BlackMaple.MachineFramework
             UnloadStation = -1,
             Stops = ImmutableList<MaterialProcessActualPath.Stop>.Empty
           };
-          byProc.Add(proc, m % f);
+          byProc.Add(proc, f(m));
         }
       }
 
@@ -4672,23 +4608,28 @@ namespace BlackMaple.MachineFramework
               mat =>
               {
                 if (pal > 0)
-                  mat.Pallet = pal;
+                  mat = mat with { Pallet = pal };
 
                 switch (logTy)
                 {
                   case LogType.LoadUnloadCycle:
                     if (mat.LoadStation == -1)
-                      mat.LoadStation = statNum;
+                      mat = mat with { LoadStation = statNum };
                     else
-                      mat.UnloadStation = statNum;
+                      mat = mat with { UnloadStation = statNum };
                     break;
 
                   case LogType.MachineCycle:
-                    mat.Stops.Add(
-                      new MaterialProcessActualPath.Stop() { StationName = statName, StationNum = statNum }
-                    );
+                    mat = mat with
+                    {
+                      Stops = mat.Stops.Add(
+                        new MaterialProcessActualPath.Stop() { StationName = statName, StationNum = statNum }
+                      )
+                    };
                     break;
                 }
+
+                return mat;
               }
             );
           }

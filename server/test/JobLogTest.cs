@@ -38,7 +38,8 @@ using System.Linq;
 using AutoFixture;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
-using Germinate;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.VisualStudio.TestPlatform.TestHost;
 using Xunit;
 
 namespace MachineWatchTest
@@ -102,9 +103,7 @@ namespace MachineWatchTest
 
     public JobLogTest()
     {
-      _repoCfg = RepositoryConfig.InitializeMemoryDB(
-        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-      );
+      _repoCfg = RepositoryConfig.InitializeMemoryDB(null);
       _fixture = new Fixture();
       _fixture.Customizations.Add(new ImmutableSpecimenBuilder());
       _fixture.Customizations.Add(new InjectNullValuesForNullableTypesSpecimenBuilder());
@@ -113,7 +112,7 @@ namespace MachineWatchTest
 
     void IDisposable.Dispose()
     {
-      _repoCfg.CloseMemoryConnection();
+      _repoCfg.Dispose();
     }
 
     [Fact]
@@ -892,8 +891,10 @@ namespace MachineWatchTest
         TimeSpan.FromMinutes(100),
         TimeSpan.FromMinutes(5)
       );
-      expectedInspLog %= e => e.ProgramDetails.Add("a", "aaa");
-      expectedInspLog %= e => e.ProgramDetails.Add("b", "bbb");
+      expectedInspLog = expectedInspLog with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("a", "aaa").Add("b", "bbb")
+      };
       logsForMat1.Add(expectedInspLog);
 
       var washLog = _jobLog.RecordCloseoutCompleted(
@@ -918,8 +919,10 @@ namespace MachineWatchTest
         TimeSpan.FromMinutes(44),
         TimeSpan.FromMinutes(9)
       );
-      expectedWashLog %= e => e.ProgramDetails.Add("z", "zzz");
-      expectedWashLog %= e => e.ProgramDetails.Add("y", "yyy");
+      expectedWashLog = expectedWashLog with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("z", "zzz").Add("y", "yyy")
+      };
       logsForMat1.Add(expectedWashLog);
 
       var generalLog = _jobLog.RecordGeneralMessage(
@@ -940,7 +943,10 @@ namespace MachineWatchTest
         generalLog.EndTimeUTC,
         "The result msg"
       );
-      expectedGeneralLog %= e => e.ProgramDetails["extra1"] = "value1";
+      expectedGeneralLog = expectedGeneralLog with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.SetItem("extra1", "value1")
+      };
       logsForMat1.Add(expectedGeneralLog);
 
       var notesLog = _jobLog.RecordOperatorNotes(
@@ -973,10 +979,11 @@ namespace MachineWatchTest
         notesLog.EndTimeUTC,
         "Operator Notes"
       );
-      expectedNotesLog %= e =>
+      expectedNotesLog = expectedNotesLog with
       {
-        e.ProgramDetails["note"] = "The notes content";
-        e.ProgramDetails["operator"] = "Opername";
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.SetItem("note", "The notes content")
+          .SetItem("operator", "Opername")
       };
       logsForMat1.Add(expectedNotesLog);
 
@@ -1214,21 +1221,18 @@ namespace MachineWatchTest
 
       //********  Complete the pal1 machining
       pal1Cycle.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          4,
-          "prog1",
-          false, //start of event
-          pal1CycleTime.AddMinutes(30),
-          "result"
+        _jobLog.RecordMachineEnd(
+          new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+          pallet: 1,
+          statName: "MC",
+          statNum: 4,
+          program: "prog1",
+          result: "result",
+          timeUTC: pal1CycleTime.AddMinutes(30),
+          elapsed: TimeSpan.FromMinutes(30),
+          active: TimeSpan.Zero
         )
-      ); //end of route
-
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(pal1Cycle[pal1Cycle.Count - 1]);
+      );
 
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog(1), DateTime.UtcNow.AddHours(-10));
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog(2), DateTime.UtcNow.AddHours(-10));
@@ -1239,20 +1243,15 @@ namespace MachineWatchTest
       );
 
       //********  Ignores invalidated and swap events
-      var invalidated = new LogEntry(
-        cntr: 0,
-        mat: new[] { mat1, mat2 },
-        pal: 1,
-        ty: LogType.MachineCycle,
-        locName: "OtherMC",
-        locNum: 100,
-        prog: "prog22",
-        start: true,
-        endTime: pal1CycleTime.AddMinutes(31),
-        result: "prog22"
+      var invalidated = _jobLog.RecordMachineStart(
+        new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+        pallet: 1,
+        statName: "OtherMC",
+        statNum: 100,
+        program: "prog22",
+        timeUTC: pal1CycleTime.AddMinutes(31),
+        extraData: new Dictionary<string, string> { { "PalletCycleInvalidated", "1" } }
       );
-      invalidated %= e => e.ProgramDetails["PalletCycleInvalidated"] = "1";
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(invalidated);
 
       var swap = new LogEntry(
         cntr: 0,
@@ -1477,23 +1476,17 @@ namespace MachineWatchTest
         "2"
       );
 
-      var log1 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        16,
-        LogType.GeneralMessage,
-        "Hello",
-        5,
-        "program125",
-        false,
-        DateTime.UtcNow,
-        "result66",
-        TimeSpan.FromMinutes(166),
-        TimeSpan.FromMinutes(74)
+      Assert.Equal("", _jobLog.MaxForeignID());
+
+      var log1 = _jobLog.RecordGeneralMessage(
+        mats: [EventLogMaterial.FromLogMat(mat1), EventLogMaterial.FromLogMat(mat2)],
+        pallet: 16,
+        program: "program125",
+        result: "result66",
+        foreignId: "foreign1",
+        originalMessage: "the original message"
       );
 
-      Assert.Equal("", _jobLog.MaxForeignID());
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log1, "foreign1", "the original message");
       Assert.Equal("foreign1", _jobLog.MaxForeignID());
 
       _jobLog
@@ -1554,53 +1547,36 @@ namespace MachineWatchTest
       );
 
       //not adding all events, but at least one non-endofroute and one endofroute
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1_proc1 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "prog1",
-          false,
-          t.AddMinutes(5),
-          "",
-          TimeSpan.FromMinutes(10),
-          TimeSpan.FromMinutes(20)
-        )
+      _jobLog.RecordMachineEnd(
+        mats: [EventLogMaterial.FromLogMat(mat1_proc1)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "prog1",
+        result: "",
+        timeUTC: t.AddMinutes(5),
+        elapsed: TimeSpan.FromMinutes(10),
+        active: TimeSpan.FromMinutes(20)
       );
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1_proc2 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "prog2",
-          false,
-          t.AddMinutes(6),
-          "",
-          TimeSpan.FromMinutes(30),
-          TimeSpan.FromMinutes(40)
-        )
+      _jobLog.RecordMachineEnd(
+        mats: [EventLogMaterial.FromLogMat(mat1_proc2)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "prog2",
+        timeUTC: t.AddMinutes(6),
+        result: "",
+        elapsed: TimeSpan.FromMinutes(30),
+        active: TimeSpan.FromMinutes(40)
       );
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1_proc2, mat2_proc1 }, //mat2_proc1 should be ignored since it isn't final process
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          5,
-          "UNLOAD",
-          false,
-          t.AddMinutes(7),
-          "UNLOAD",
-          TimeSpan.FromMinutes(50),
-          TimeSpan.FromMinutes(60)
-        )
+      _jobLog.RecordUnloadEnd(
+        //mat2_proc1 should be ignored since it isn't final process
+        mats: [EventLogMaterial.FromLogMat(mat1_proc2), EventLogMaterial.FromLogMat(mat2_proc1)],
+        pallet: 1,
+        lulNum: 5,
+        timeUTC: t.AddMinutes(7),
+        elapsed: TimeSpan.FromMinutes(50),
+        active: TimeSpan.FromMinutes(60)
       );
 
       //four materials on the same pallet but different workorders
@@ -1645,37 +1621,24 @@ namespace MachineWatchTest
         ""
       );
 
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat3, mat4, mat5, mat6 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "progdouble",
-          false,
-          t.AddMinutes(15),
-          "",
-          TimeSpan.FromMinutes(3),
-          TimeSpan.FromMinutes(4)
-        )
+      _jobLog.RecordMachineEnd(
+        mats: new[] { mat3, mat4, mat5, mat6 }.Select(EventLogMaterial.FromLogMat),
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "progdouble",
+        timeUTC: t.AddMinutes(15),
+        result: "",
+        elapsed: TimeSpan.FromMinutes(3),
+        active: TimeSpan.FromMinutes(4)
       );
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat3, mat4, mat5, mat6 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          5,
-          "UNLOAD",
-          false,
-          t.AddMinutes(17),
-          "UNLOAD",
-          TimeSpan.FromMinutes(5),
-          TimeSpan.FromMinutes(6)
-        )
+      _jobLog.RecordUnloadEnd(
+        mats: new[] { mat3, mat4, mat5, mat6 }.Select(EventLogMaterial.FromLogMat),
+        pallet: 1,
+        lulNum: 5,
+        timeUTC: t.AddMinutes(17),
+        elapsed: TimeSpan.FromMinutes(5),
+        active: TimeSpan.FromMinutes(6)
       );
 
       //now record serial and workorder
@@ -1746,13 +1709,13 @@ namespace MachineWatchTest
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(10 + 30 + 3 * 1 / c2Cnt)) //10 + 30 from mat1, 3*1/4 for mat3
             .Add(
-              "Load",
+              "L/U",
               TimeSpan.FromMinutes(50 / 2 + 5 * 1 / c2Cnt)
             ) //50/2 from mat1_proc2, and 5*1/4 for mat3
           ,
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(20 + 40 + 4 * 1 / c2Cnt)) //20 + 40 from mat1, 4*1/4 for mat3
-            .Add("Load", TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt)), //60/2 from mat1_proc2, and 6*1/4 for mat3
+            .Add("L/U", TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt)), //60/2 from mat1_proc2, and 6*1/4 for mat3
           SimulatedFilled = work1part1.SimulatedFilled,
           SimulatedStart = work1part1.SimulatedStart,
         },
@@ -1768,10 +1731,10 @@ namespace MachineWatchTest
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(3 * 1 / c2Cnt))
-            .Add("Load", TimeSpan.FromMinutes(5 * 1 / c2Cnt)),
+            .Add("L/U", TimeSpan.FromMinutes(5 * 1 / c2Cnt)),
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(4 * 1 / c2Cnt))
-            .Add("Load", TimeSpan.FromMinutes(6 * 1 / c2Cnt)),
+            .Add("L/U", TimeSpan.FromMinutes(6 * 1 / c2Cnt)),
           SimulatedFilled = work1part2.SimulatedFilled,
           SimulatedStart = work1part2.SimulatedStart
         },
@@ -1788,10 +1751,10 @@ namespace MachineWatchTest
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(3 * 2 / c2Cnt))
-            .Add("Load", TimeSpan.FromMinutes(5 * 2 / c2Cnt)),
+            .Add("L/U", TimeSpan.FromMinutes(5 * 2 / c2Cnt)),
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(4 * 2 / c2Cnt))
-            .Add("Load", TimeSpan.FromMinutes(6 * 2 / c2Cnt)),
+            .Add("L/U", TimeSpan.FromMinutes(6 * 2 / c2Cnt)),
           SimulatedFilled = work2.SimulatedFilled,
           SimulatedStart = work2.SimulatedStart,
         }
@@ -3328,7 +3291,13 @@ namespace MachineWatchTest
             endTime: addTime,
             result: ""
           );
-          l %= d => d.ProgramDetails["operator"] = "operName";
+          l = l with
+          {
+            ProgramDetails = (l.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
+              "operator",
+              "operName"
+            )
+          };
           return l;
         })
         .ToList();
@@ -4781,17 +4750,24 @@ namespace MachineWatchTest
         endTime: now,
         result: "Invalidate all events on cycle for pallet 5"
       );
-      expectedInvalidateMsg %= e =>
+      expectedInvalidateMsg = expectedInvalidateMsg with
       {
-        e.ProgramDetails["EditedCounters"] = string.Join(",", origMatLog.Select(e => e.Counter));
-        e.ProgramDetails["operator"] = "theoper";
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.Add("EditedCounters", string.Join(",", origMatLog.Select(e => e.Counter)))
+          .Add("operator", "theoper")
       };
 
       var newMatLog = origMatLog
         .Select(RemoveActiveTime())
         .Select(evt =>
         {
-          return evt.Produce(e => e.ProgramDetails["PalletCycleInvalidated"] = "1");
+          return evt with
+          {
+            ProgramDetails = (evt.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
+              "PalletCycleInvalidated",
+              "1"
+            )
+          };
         })
         .ToList();
 
@@ -4986,7 +4962,7 @@ namespace MachineWatchTest
       );
       if (!string.IsNullOrEmpty(operName))
       {
-        e %= en => en.ProgramDetails.Add("operator", operName);
+        e = e with { ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", operName) };
       }
       return e;
     }
@@ -5015,11 +4991,12 @@ namespace MachineWatchTest
       );
       if (!string.IsNullOrEmpty(operName))
       {
-        e %= en => en.ProgramDetails.Add("operator", operName);
-      }
-      if (!string.IsNullOrEmpty(operName))
-      {
-        e = e with { ProgramDetails = e.ProgramDetails.Add("note", reason) };
+        e = e with
+        {
+          ProgramDetails = ImmutableDictionary<string, string>
+            .Empty.Add("operator", operName)
+            .Add("note", reason)
+        };
       }
       return e;
     }
@@ -5051,7 +5028,7 @@ namespace MachineWatchTest
       );
       if (!string.IsNullOrEmpty(operName))
       {
-        e %= en => en.ProgramDetails.Add("operator", operName);
+        e = e with { ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", operName) };
       }
       return e;
     }
@@ -5103,7 +5080,6 @@ namespace MachineWatchTest
     {
       var settings = new SerialSettings()
       {
-        SerialType = SerialType.AssignOneSerialPerMaterial,
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
       };
       _repoCfg = RepositoryConfig.InitializeMemoryDB(settings);
@@ -5111,7 +5087,7 @@ namespace MachineWatchTest
 
     void IDisposable.Dispose()
     {
-      _repoCfg.CloseMemoryConnection();
+      _repoCfg.Dispose();
     }
 
     [Fact]
@@ -5398,37 +5374,30 @@ namespace MachineWatchTest
         "themat4serial"
       );
 
-      var log1 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        1,
-        LogType.GeneralMessage,
-        "ABC",
-        1,
-        "prog1",
-        false,
-        t,
-        "result1",
-        TimeSpan.FromMinutes(10),
-        TimeSpan.FromMinutes(12)
-      );
-      var log2 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        2,
-        LogType.MachineCycle,
-        "MC",
-        1,
-        "prog2",
-        false,
-        t.AddMinutes(20),
-        "result2",
-        TimeSpan.FromMinutes(15),
-        TimeSpan.FromMinutes(17)
-      );
-
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log1);
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log2);
+      var log1 = _jobLog.RecordGeneralMessage(
+        [EventLogMaterial.FromLogMat(mat1), EventLogMaterial.FromLogMat(mat2)],
+        pallet: 1,
+        program: "prog1",
+        result: "prog1",
+        timeUTC: t
+      ) with
+      {
+        Material = [mat1, mat2]
+      };
+      var log2 = _jobLog.RecordMachineEnd(
+        [EventLogMaterial.FromLogMat(mat1), EventLogMaterial.FromLogMat(mat2)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 1,
+        program: "prog2",
+        result: "result2",
+        timeUTC: t.AddMinutes(20),
+        elapsed: TimeSpan.FromMinutes(15),
+        active: TimeSpan.FromMinutes(17)
+      ) with
+      {
+        Material = [mat1, mat2]
+      };
 
       _jobLog.AddPendingLoad(1, "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
       _jobLog.AddPendingLoad(1, "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
@@ -5704,8 +5673,8 @@ namespace MachineWatchTest
       );
 
       JobLogTest.CheckLog(
-        new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, ser1, ser2, ser3, ser5, nLoad5 },
         _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)).ToList(),
+        new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, ser1, ser2, ser3, ser5, nLoad5 },
         t.AddMinutes(-10)
       );
 
@@ -5775,253 +5744,6 @@ namespace MachineWatchTest
     }
   }
 
-  public class LogOneSerialPerCycleSpec : IDisposable
-  {
-    private RepositoryConfig _repoCfg;
-
-    public LogOneSerialPerCycleSpec()
-    {
-      var settings = new SerialSettings()
-      {
-        SerialType = SerialType.AssignOneSerialPerCycle,
-        ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
-      };
-      _repoCfg = RepositoryConfig.InitializeMemoryDB(settings);
-    }
-
-    void IDisposable.Dispose()
-    {
-      _repoCfg.CloseMemoryConnection();
-    }
-
-    [Fact]
-    public void PendingLoadOneSerialPerCycle()
-    {
-      using var _jobLog = _repoCfg.OpenConnection();
-      var mat1 = new LogMaterial()
-      {
-        MaterialID = _jobLog.AllocateMaterialID("unique", "part1", 1),
-        JobUniqueStr = "unique",
-        Process = 1,
-        Path = 1,
-        PartName = "part1",
-        NumProcesses = 1,
-        Serial = "0000000001",
-        Workorder = "",
-        Face = 34,
-      };
-      var mat2 = new LogMaterial()
-      {
-        MaterialID = _jobLog.AllocateMaterialID("unique2", "part2", 2),
-        JobUniqueStr = "unique2",
-        Process = 1,
-        Path = 1,
-        PartName = "part2",
-        NumProcesses = 2,
-        Serial = "0000000001",
-        Workorder = "",
-        Face = 34,
-      }; // note mat2 gets same serial as mat1
-      var mat3 = new LogMaterial()
-      {
-        MaterialID = _jobLog.AllocateMaterialID("unique3", "part3", 3),
-        JobUniqueStr = "unique3",
-        Process = 3,
-        Path = 1,
-        PartName = "part3",
-        NumProcesses = 3,
-        Serial = "0000000003",
-        Workorder = "",
-        Face = 23
-      };
-      var mat4 = new LogMaterial()
-      {
-        MaterialID = _jobLog.AllocateMaterialID("unique4", "part4", 4),
-        JobUniqueStr = "unique4",
-        Process = 4,
-        Path = 1,
-        PartName = "part4",
-        NumProcesses = 4,
-        Serial = "themat4serial",
-        Workorder = "",
-        Face = 7
-      };
-
-      var serial1 = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
-      var serial3 = SerialSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0');
-
-      var t = DateTime.UtcNow.AddHours(-1);
-
-      //mat4 already has a serial
-      _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat4), "themat4serial", t.AddMinutes(1));
-      var ser4 = new LogEntry(
-        0,
-        new LogMaterial[] { mat4 },
-        0,
-        LogType.PartMark,
-        "Mark",
-        1,
-        "MARK",
-        false,
-        t.AddMinutes(1),
-        "themat4serial"
-      );
-
-      var log1 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        1,
-        LogType.GeneralMessage,
-        "ABC",
-        1,
-        "prog1",
-        false,
-        t,
-        "result1",
-        TimeSpan.FromMinutes(10),
-        TimeSpan.FromMinutes(11)
-      );
-      var log2 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        2,
-        LogType.MachineCycle,
-        "MC",
-        1,
-        "prog2",
-        false,
-        t.AddMinutes(20),
-        "result2",
-        TimeSpan.FromMinutes(15),
-        TimeSpan.FromMinutes(22)
-      );
-
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log1);
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log2);
-
-      _jobLog.AddPendingLoad(1, "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
-      _jobLog.AddPendingLoad(1, "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
-      _jobLog.AddPendingLoad(1, "key3", 6, TimeSpan.FromMinutes(55), TimeSpan.FromMinutes(61), "for2.5");
-
-      var mat = new Dictionary<string, IEnumerable<EventLogMaterial>>();
-
-      var palCycle = new LogEntry(
-        0,
-        new LogMaterial[] { },
-        1,
-        LogType.PalletCycle,
-        "Pallet Cycle",
-        1,
-        "",
-        false,
-        t.AddMinutes(45),
-        "PalletCycle",
-        TimeSpan.Zero,
-        TimeSpan.Zero
-      );
-
-      mat["key1"] = new LogMaterial[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat);
-
-      var nLoad1 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        1,
-        LogType.LoadUnloadCycle,
-        "L/U",
-        5,
-        "LOAD",
-        false,
-        t.AddMinutes(45).AddSeconds(1),
-        "LOAD",
-        TimeSpan.FromMinutes(32),
-        TimeSpan.FromMinutes(38)
-      );
-
-      var ser1 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        0,
-        LogType.PartMark,
-        "Mark",
-        1,
-        "MARK",
-        false,
-        t.AddMinutes(45).AddSeconds(2),
-        serial1
-      );
-
-      mat["key2"] = new LogMaterial[] { mat3 }.Select(EventLogMaterial.FromLogMat);
-
-      var nLoad2 = new LogEntry(
-        0,
-        new LogMaterial[] { mat3 },
-        1,
-        LogType.LoadUnloadCycle,
-        "L/U",
-        7,
-        "LOAD",
-        false,
-        t.AddMinutes(45).AddSeconds(1),
-        "LOAD",
-        TimeSpan.FromMinutes(44),
-        TimeSpan.FromMinutes(49)
-      );
-
-      var ser3 = new LogEntry(
-        0,
-        new LogMaterial[] { mat3 },
-        0,
-        LogType.PartMark,
-        "Mark",
-        1,
-        "MARK",
-        false,
-        t.AddMinutes(45).AddSeconds(2),
-        serial3
-      );
-
-      mat["key3"] = new LogMaterial[] { mat4 }.Select(EventLogMaterial.FromLogMat);
-
-      var nLoad3 = new LogEntry(
-        0,
-        new LogMaterial[] { mat4 },
-        1,
-        LogType.LoadUnloadCycle,
-        "L/U",
-        6,
-        "LOAD",
-        false,
-        t.AddMinutes(45).AddSeconds(1),
-        "LOAD",
-        TimeSpan.FromMinutes(55),
-        TimeSpan.FromMinutes(61)
-      );
-
-      _jobLog.CompletePalletCycle(
-        pal: 1,
-        timeUTC: t.AddMinutes(45),
-        foreignID: "for3",
-        matFromPendingLoads: mat,
-        additionalLoads: null,
-        generateSerials: true
-      );
-
-      JobLogTest.CheckLog(
-        new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, nLoad3, ser1, ser3 },
-        _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)).ToList(),
-        t.AddMinutes(-10)
-      );
-
-      _jobLog
-        .MostRecentLogEntryForForeignID("for3")
-        .Should()
-        .BeEquivalentTo(palCycle, options => options.Excluding(e => e.Counter));
-      _jobLog.MaxForeignID().Should().Be("for3");
-
-      _jobLog.PendingLoads(1).Should().BeEmpty();
-    }
-  }
-
   public class LogStartingMaterialIDSpec
   {
     [Fact]
@@ -6035,7 +5757,7 @@ namespace MachineWatchTest
     [Fact]
     public void MaterialIDs()
     {
-      var repoCfg = RepositoryConfig.InitializeMemoryDB(
+      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
@@ -6062,7 +5784,6 @@ namespace MachineWatchTest
             NumProcesses = 52,
           }
         );
-      repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
@@ -6082,7 +5803,7 @@ namespace MachineWatchTest
     [Fact]
     public void AdjustsStartingSerial()
     {
-      var repoCfg = RepositoryConfig.InitializeMemoryDB(
+      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
@@ -6093,14 +5814,12 @@ namespace MachineWatchTest
 
       long m1 = logFromCreate.AllocateMaterialID("U1", "P1", 52);
       m1.Should().Be(33_152_428_148);
-
-      repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
     public void AdjustsStartingSerial2()
     {
-      var repoCfg = RepositoryConfig.InitializeMemoryDB(
+      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("B3t24s"),
@@ -6113,15 +5832,13 @@ namespace MachineWatchTest
       long m3 = logFromUpgrade.AllocateMaterialID("U2", "P2", 4);
       m2.Should().Be(33_948_163_268);
       m3.Should().Be(33_948_163_269);
-
-      repoCfg.CloseMemoryConnection();
     }
 
     [Fact]
     public void AvoidsAdjustingSerialBackwards()
     {
       var guid = new Guid();
-      var repo1 = RepositoryConfig.InitializeMemoryDB(
+      using var repo1 = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
@@ -6138,7 +5855,7 @@ namespace MachineWatchTest
       }
 
       // repo2 uses the same guid so will be the same database, sharing it with repo1
-      var repo2 = RepositoryConfig.InitializeMemoryDB(
+      using var repo2 = RepositoryConfig.InitializeMemoryDB(
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("w53122"),
@@ -6153,9 +5870,6 @@ namespace MachineWatchTest
         long m2 = db.AllocateMaterialID("U1", "P1", 2);
         m2.Should().Be(33_152_428_149);
       }
-
-      repo1.CloseMemoryConnection();
-      repo2.CloseMemoryConnection();
     }
   }
 }

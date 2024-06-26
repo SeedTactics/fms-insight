@@ -35,7 +35,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using Germinate;
 
 namespace BlackMaple.MachineFramework
 {
@@ -478,6 +477,7 @@ namespace BlackMaple.MachineFramework
     );
     RecentHistoricData LoadRecentJobHistory(DateTime startUTC, IEnumerable<string> alreadyKnownSchIds = null);
     PlannedSchedule LoadMostRecentSchedule();
+    IEnumerable<string> StationGroupsOnMostRecentSchedule();
     ImmutableList<Workorder> WorkordersById(string workorderId);
     ImmutableDictionary<string, ImmutableList<Workorder>> WorkordersById(IReadOnlySet<string> workorderId);
 
@@ -535,7 +535,6 @@ namespace BlackMaple.MachineFramework
     public required DateTime LastUTC { get; init; }
   }
 
-  [Draftable]
   public record EventLogMaterial
   {
     public required long MaterialID { get; init; }
@@ -612,7 +611,6 @@ namespace BlackMaple.MachineFramework
     public int? NextProcess { get; init; }
   }
 
-  [Draftable]
   public record NewDecrementQuantity
   {
     public required string JobUnique { get; init; }

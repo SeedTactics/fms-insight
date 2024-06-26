@@ -1,4 +1,4 @@
-﻿/* Copyright (c) 2020, John Lenz
+﻿/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Linq;
+using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication;
@@ -40,107 +41,157 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 
-namespace BlackMaple.MachineFramework
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.DebugMock")]
+
+namespace BlackMaple.MachineFramework;
+
+public static class FMSInsightWebHost
 {
+  public static void JsonSettings(JsonSerializerOptions settings)
+  {
+    settings.Converters.Add(new JsonStringEnumConverter());
+    settings.Converters.Add(new TimespanConverter());
+    settings.AllowTrailingCommas = true;
+    settings.PropertyNamingPolicy = null;
+    settings.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+  }
+
+  public static IHostBuilder AddFMSInsightWebHost(
+    this IHostBuilder host,
+    IConfiguration cfg,
+    ServerSettings serverSt,
+    FMSSettings fmsSt,
+    System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> extraParts =
+      null,
+    bool hideStartupMessages = false
+  )
+  {
+    return host.UseSerilog()
+      .ConfigureServices(s =>
+      {
+        if (!hideStartupMessages)
+        {
+          Log.Information(
+            "Starting FMS Insight Web Host with server config {@server} and FMS config {@fms}",
+            serverSt,
+            fmsSt
+          );
+        }
+        s.AddSingleton<ServerSettings>(serverSt);
+        s.AddSingleton<FMSSettings>(fmsSt);
+
+        var jobStType =
+          s.Select(service =>
+              service.ServiceType.IsGenericType
+              && service.ServiceType.GetGenericTypeDefinition() == typeof(ISynchronizeCellState<>)
+                ? service.ServiceType.GenericTypeArguments[0]
+                : null
+            )
+            .FirstOrDefault(x => x != null)
+          ?? throw new Exception("Backend must implement ISynchronizeCellState");
+
+        s.AddSingleton(typeof(IJobAndQueueControl), typeof(JobsAndQueuesFromDb<>).MakeGenericType(jobStType));
+
+        s.AddSingleton<Controllers.WebsocketManager>();
+
+        s.AddResponseCompression();
+
+        s.AddCors(options =>
+        {
+          options.AddDefaultPolicy(builder =>
+          {
+            builder
+              .WithOrigins([.. fmsSt.AdditionalLogServers])
+              .WithMethods("GET")
+              .WithHeaders("content-type", "authorization");
+          });
+        });
+
+        s.AddControllers(options =>
+          {
+            options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
+          })
+          .ConfigureApplicationPartManager(am =>
+          {
+            am.ApplicationParts.Add(
+              new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(
+                typeof(Controllers.jobsController).Assembly
+              )
+            );
+            if (extraParts != null)
+            {
+              foreach (var p in extraParts)
+                am.ApplicationParts.Add(p);
+            }
+          })
+          .AddJsonOptions(options =>
+          {
+            JsonSettings(options.JsonSerializerOptions);
+          });
+
+        if (serverSt.UseAuthentication)
+        {
+          s.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+              options.Authority = serverSt.AuthAuthority;
+              options.TokenValidationParameters =
+                new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
+                {
+                  ValidateIssuer = true,
+                  ValidAudiences = serverSt.AuthTokenAudiences.Split(';')
+                };
+#if DEBUG
+              options.RequireHttpsMetadata = false;
+#endif
+              options.Events = new JwtBearerEvents
+              {
+                OnMessageReceived = context =>
+                {
+                  var token = context.Request.Query["token"];
+                  if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
+                  {
+                    context.Token = token;
+                  }
+                  return System.Threading.Tasks.Task.CompletedTask;
+                }
+              };
+            });
+        }
+      })
+      .ConfigureWebHost(webBuilder =>
+      {
+        webBuilder
+          .UseConfiguration(cfg)
+          .SuppressStatusMessages(suppressStatusMessages: true)
+          .AddKestral(cfg, serverSt)
+          .UseStartup<Startup>();
+      });
+  }
+
   public class Startup
   {
-    public static void JsonSettings(JsonSerializerOptions settings)
-    {
-      settings.Converters.Add(new JsonStringEnumConverter());
-      settings.Converters.Add(new TimespanConverter());
-      settings.AllowTrailingCommas = true;
-      settings.PropertyNamingPolicy = null;
-      settings.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-    }
-
-    public static void AddServices(
-      IServiceCollection services,
-      FMSImplementation fmsImpl,
-      FMSSettings fmsSt,
-      ServerSettings serverSt
-    )
-    {
-      services.AddSingleton<Controllers.WebsocketManager>(new Controllers.WebsocketManager(fmsImpl));
-
-      services.AddResponseCompression();
-
-      services.AddCors(options =>
-      {
-        options.AddDefaultPolicy(builder =>
-        {
-          builder
-            .WithOrigins(fmsSt.AdditionalLogServers.ToArray())
-            .WithMethods("GET")
-            .WithHeaders("content-type", "authorization");
-        });
-      });
-
-      services
-        .AddControllers(options =>
-        {
-          options.ModelBinderProviders.Insert(0, new DateTimeBinderProvider());
-        })
-        .ConfigureApplicationPartManager(am =>
-        {
-          if (fmsImpl.ExtraApplicationParts != null)
-          {
-            foreach (var p in fmsImpl.ExtraApplicationParts)
-              am.ApplicationParts.Add(p);
-          }
-        })
-        .AddJsonOptions(options =>
-        {
-          JsonSettings(options.JsonSerializerOptions);
-        });
-
-      if (serverSt.UseAuthentication)
-      {
-        services
-          .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-          .AddJwtBearer(options =>
-          {
-            options.Authority = serverSt.AuthAuthority;
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
-            {
-              ValidateIssuer = true,
-              ValidAudiences = serverSt.AuthTokenAudiences.Split(';')
-            };
-#if DEBUG
-            options.RequireHttpsMetadata = false;
-#endif
-            options.Events = new JwtBearerEvents
-            {
-              OnMessageReceived = context =>
-              {
-                var token = context.Request.Query["token"];
-                if (context.Request.Path == "/api/v1/events" && !string.IsNullOrEmpty(token))
-                {
-                  context.Token = token;
-                }
-                return System.Threading.Tasks.Task.CompletedTask;
-              }
-            };
-          });
-      }
-    }
-
     public void Configure(
       IApplicationBuilder app,
-      IHostApplicationLifetime lifetime,
-      IWebHostEnvironment env,
-      FMSImplementation fmsImpl,
-      ServerSettings serverSt,
       FMSSettings fmsSt,
-      Controllers.WebsocketManager wsManager
+      ServerSettings serverSt,
+      IWebHostEnvironment env,
+      // Injecting websocket manager here ensures that JobsAndQueuesFromDb starts and thus logging starts
+      Controllers.WebsocketManager wsManager,
+      IHostApplicationLifetime lifetime
     )
     {
       app.UseResponseCompression();
 
       app.UseStaticFiles();
+
       if (!string.IsNullOrEmpty(fmsSt.InstructionFilePath))
       {
         if (System.IO.Directory.Exists(fmsSt.InstructionFilePath))
@@ -235,17 +286,74 @@ namespace BlackMaple.MachineFramework
         endpoints.MapFallbackToFile("/index.html");
       });
 
-      lifetime.ApplicationStopping.Register(async () =>
+      lifetime.ApplicationStopped.Register(() =>
       {
-        if (fmsImpl == null)
-          return;
-        await wsManager.CloseAll();
-        foreach (var w in fmsImpl.Workers)
-          w.Dispose();
-        fmsImpl.Backend?.Dispose();
         Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
         Serilog.Log.CloseAndFlush();
       });
     }
+  }
+
+  private static IWebHostBuilder AddKestral(
+    this IWebHostBuilder webHost,
+    IConfiguration cfg,
+    ServerSettings serverSt
+  )
+  {
+    return webHost
+      .ConfigureServices(s =>
+      {
+        s.Configure<KestrelServerOptions>(cfg.GetSection("Kestrel"));
+      })
+      .UseKestrel(options =>
+      {
+        var address = IPAddress.IPv6Any;
+        if (!string.IsNullOrEmpty(serverSt.TLSCertFile))
+        {
+          options.Listen(
+            address,
+            serverSt.Port,
+            listenOptions =>
+            {
+              listenOptions.UseHttps(serverSt.TLSCertFile);
+            }
+          );
+        }
+        else
+        {
+          options.Listen(address, serverSt.Port);
+        }
+
+        // support for MinDataRate
+        // https://github.com/dotnet/aspnetcore/issues/4765
+        var minReqRate = cfg.GetSection("Kestrel").GetSection("Limits").GetSection("MinRequestBodyDataRate");
+        if (minReqRate.Value == "")
+        {
+          options.Limits.MinRequestBodyDataRate = null;
+        }
+        if (minReqRate.GetSection("BytesPerSecond").Exists() && minReqRate.GetSection("GracePeriod").Exists())
+        {
+          options.Limits.MinRequestBodyDataRate = new MinDataRate(
+            minReqRate.GetValue<double>("BytesPerSecond"),
+            minReqRate.GetValue<TimeSpan>("GracePeriod")
+          );
+        }
+        var minRespRate = cfg.GetSection("Kestrel").GetSection("Limits").GetSection("MinResponseDataRate");
+        if (minRespRate.Value == "")
+        {
+          options.Limits.MinResponseDataRate = null;
+        }
+        if (
+          minRespRate.GetSection("BytesPerSecond").Exists() && minRespRate.GetSection("GracePeriod").Exists()
+        )
+        {
+          options.Limits.MinResponseDataRate = new MinDataRate(
+            minRespRate.GetValue<double>("BytesPerSecond"),
+            minRespRate.GetValue<TimeSpan>("GracePeriod")
+          );
+        }
+
+        Log.Debug("Kestrel Limits {@kestrel}", options.Limits);
+      });
   }
 }

@@ -54,7 +54,7 @@ public sealed class OrderXMLSpec : IDisposable
   {
     _tempFile = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
     jsonSettings = new JsonSerializerOptions();
-    Startup.JsonSettings(jsonSettings);
+    FMSInsightWebHost.JsonSettings(jsonSettings);
     jsonSettings.WriteIndented = true;
   }
 

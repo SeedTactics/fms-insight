@@ -53,12 +53,7 @@ namespace MachineWatchTest
       _tempJobFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("job.v16.db", _tempJobFile, overwrite: true);
       _log = RepositoryConfig
-        .InitializeEventDatabase(
-          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
-          _tempLogFile,
-          null,
-          _tempJobFile
-        )
+        .InitializeEventDatabase(null, _tempLogFile, null, _tempJobFile)
         .OpenConnection();
     }
 
@@ -804,14 +799,7 @@ namespace MachineWatchTest
     {
       _tempFile = System.IO.Path.GetTempFileName();
       System.IO.File.Copy("database-ver25.db", _tempFile, overwrite: true);
-      _repo = RepositoryConfig
-        .InitializeEventDatabase(
-          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
-          _tempFile,
-          null,
-          null
-        )
-        .OpenConnection();
+      _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile, null, null).OpenConnection();
     }
 
     public void Dispose()

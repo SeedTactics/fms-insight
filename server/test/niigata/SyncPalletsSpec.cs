@@ -51,7 +51,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private IccSimulator _sim;
     private SyncNiigataPallets _sync;
     private Xunit.Abstractions.ITestOutputHelper _output;
-    private CheckJobsValid _checkJobs;
     private bool _debugLogEnabled = false;
     private JsonSerializerOptions jsonSettings;
 
@@ -61,7 +60,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _serialSt = new SerialSettings()
       {
-        SerialType = SerialType.AssignOneSerialPerMaterial,
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
       };
       _fmsSt = new FMSSettings();
@@ -71,7 +69,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _logDBCfg = RepositoryConfig.InitializeMemoryDB(_serialSt);
 
       jsonSettings = new JsonSerializerOptions();
-      Startup.JsonSettings(jsonSettings);
+      FMSInsightWebHost.JsonSettings(jsonSettings);
       jsonSettings.WriteIndented = true;
     }
 
@@ -87,7 +85,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var assign = new MultiPalletAssign(
         new IAssignPallets[] { new AssignNewRoutesOnPallets(statNames), new SizedQueues(_fmsSt.Queues) }
       );
-      var createLog = new CreateCellState(_fmsSt, statNames, machConn);
 
       _sim = new IccSimulator(
         numPals: numPals,
@@ -96,11 +93,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         statNames: statNames
       );
 
-      _checkJobs = Substitute.For<CheckJobsValid>();
-
       var settings = new NiigataSettings()
       {
-        FMSSettings = _fmsSt,
         ProgramDirectory = "",
         SQLConnectionString = "",
         RequireProgramsInJobs = false,
@@ -108,7 +102,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         MachineIPs = []
       };
 
-      _sync = new SyncNiigataPallets(settings, _sim, createLog, assign, _checkJobs, null);
+      _sync = new SyncNiigataPallets(_fmsSt, settings, _sim, machConn, assign);
 
       _sim.OnNewProgram += (newprog) =>
       {
@@ -123,7 +117,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     public void Dispose()
     {
-      _logDBCfg.CloseMemoryConnection();
+      _logDBCfg.Dispose();
     }
 
     private void Synchronize()
@@ -1151,12 +1145,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         System.IO.File.ReadAllText("../../../sample-newjobs/two-stops.json"),
         jsonSettings
       );
-      newJobs %= j =>
+      newJobs = newJobs with
       {
-        for (int jobIdx = 0; jobIdx < j.Jobs.Count; jobIdx++)
-        {
-          j.Jobs[jobIdx] = j.Jobs[jobIdx]
-            .AdjustAllPaths(
+        Jobs = newJobs
+          .Jobs.Select(j =>
+            j.AdjustAllPaths(
               (proc, path, draftPath) =>
                 draftPath with
                 {
@@ -1165,9 +1158,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     .Stops.Select(d => d with { Program = null, ProgramRevision = null })
                     .ToImmutableList()
                 }
-            );
-        }
-        j.CurrentUnfilledWorkorders.AddRange(
+            )
+          )
+          .ToImmutableList(),
+        CurrentUnfilledWorkorders = newJobs.CurrentUnfilledWorkorders.AddRange(
           new[]
           {
             new Workorder()
@@ -1257,8 +1251,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               )
             }
           }
-        );
-        j.Programs.AddRange(
+        ),
+        Programs = newJobs.Programs.AddRange(
           new[]
           {
             new MachineFramework.NewProgramContent()
@@ -1297,7 +1291,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               ProgramContent = "zz 4 RO rev-1"
             },
           }
-        );
+        )
       };
 
       AddJobs(newJobs, expectNewRoute: false); // no route yet because no material
@@ -1391,30 +1385,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             }
           );
       }
-    }
-
-    [Fact]
-    public void CheckJobs()
-    {
-      InitSim(
-        new NiigataStationNames()
-        {
-          ReclampGroupNames = [],
-          IccMachineToJobMachNames = new Dictionary<int, (string group, int num)>()
-        },
-        numPals: 16,
-        numLoads: 4,
-        numMachines: 8
-      );
-      _checkJobs(
-          Arg.Any<NiigataSettings>(),
-          Arg.Any<INiigataCommunication>(),
-          Arg.Any<IRepository>(),
-          Arg.Any<NewJobs>()
-        )
-        .Returns(["err1", "err2"]);
-
-      _sync.CheckNewJobs(null, null).Should().BeEquivalentTo(["err1", "err2"]);
     }
   }
 }

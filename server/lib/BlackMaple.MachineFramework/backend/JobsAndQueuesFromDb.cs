@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -39,53 +39,154 @@ using System.Threading;
 
 namespace BlackMaple.MachineFramework
 {
-  public sealed class JobsAndQueuesFromDb<St> : IJobControl, IQueueControl, IDisposable
+  public delegate void NewCurrentStatus(CurrentStatus status);
+  public delegate void NewJobsDelegate(NewJobs j);
+  public delegate void EditMaterialInLogDelegate(EditMaterialInLogEvents o);
+
+  public interface IJobAndQueueControl
+  {
+    ///loads info
+    CurrentStatus GetCurrentStatus();
+    void RecalculateCellState();
+    event NewCurrentStatus OnNewCurrentStatus;
+
+    //checks to see if the jobs are valid.  Some machine types might not support all the different
+    //pallet->part->machine->process combinations.
+    //Return value is a list of strings, detailing the problems.
+    //An empty list or nothing signals the jobs are valid.
+    List<string> CheckValidRoutes(IEnumerable<Job> newJobs);
+
+    ///Adds new jobs into the cell controller
+    void AddJobs(NewJobs jobs, string expectedPreviousScheduleId);
+    event NewJobsDelegate OnNewJobs;
+
+    void SetJobComment(string jobUnique, string comment);
+
+    //Remove all planned parts from all jobs in the system.
+    //
+    //The function does 2 things:
+    // - Check for planned but not yet machined quantities and if found remove them
+    //   and store locally in the machine watch database with a new DecrementId.
+    // - Load all decremented quantities (including the potentially new quantities)
+    //   strictly after the given decrement ID.
+    //Thus this function can be called multiple times to receive the same data.
+    List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId);
+    List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC);
+
+    /// Add new castings.  The casting has not yet been assigned to a specific job,
+    /// and will be assigned to the job with remaining demand and earliest priority.
+    /// The serial is optional and is passed only if the material has already been marked with a serial.
+    List<InProcessMaterial> AddUnallocatedCastingToQueue(
+      string casting,
+      int qty,
+      string queue,
+      IList<string> serial,
+      string workorder,
+      string operatorName
+    );
+
+    /// Add a new unprocessed piece of material for the given job into the given queue.  The serial is optional
+    /// and is passed only if the material has already been marked with a serial.
+    /// Use -1 or 0 for lastCompletedProcess if the material is a casting.
+    InProcessMaterial AddUnprocessedMaterialToQueue(
+      string jobUnique,
+      int lastCompletedProcess,
+      string queue,
+      int position,
+      string serial,
+      string workorder,
+      string operatorName = null
+    );
+
+    /// Add material into a queue or just into free material if the queue name is the empty string.
+    /// The material will be inserted into the given position, bumping any later material to a
+    /// larger position.  If the material is currently in another queue or a different position,
+    /// it will be removed and placed in the given position.
+    void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null);
+
+    // If true, material that is currently being loaded onto a pallet can be canceled by calling
+    // SignalMaterialForQuarantine.  Otherwise, SignalMaterialForQuarantine will give an error
+    // for currently loading material.
+    bool AllowQuarantineToCancelLoad { get; }
+
+    /// Mark the material for quarantine.  If the material is already in a queue, it is directly moved.
+    /// If the material is still on a pallet, it will be moved after unload completes.
+    void SignalMaterialForQuarantine(long materialId, string operatorName = null, string reason = null);
+
+    void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null);
+
+    void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null);
+    event EditMaterialInLogDelegate OnEditMaterialInLog;
+
+    void InvalidatePalletCycle(
+      long matId,
+      int process,
+      string oldMatPutInQueue = null,
+      string operatorName = null
+    );
+  }
+
+  public sealed class JobsAndQueuesFromDb<St> : IJobAndQueueControl, IDisposable
     where St : ICellState
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<JobsAndQueuesFromDb<St>>();
 
     private readonly RepositoryConfig _repo;
     private readonly FMSSettings _settings;
-    private readonly Action<CurrentStatus> _onNewCurrentStatus;
     private readonly ISynchronizeCellState<St> _syncState;
+    private readonly IEnumerable<IAdditionalCheckJobs> _additionalCheckJobs;
 
+    public event NewCurrentStatus OnNewCurrentStatus;
     public bool AllowQuarantineToCancelLoad => _syncState.AllowQuarantineToCancelLoad;
 
     public JobsAndQueuesFromDb(
       RepositoryConfig repo,
       FMSSettings settings,
-      Action<CurrentStatus> onNewCurrentStatus,
-      ISynchronizeCellState<St> syncSt
+      ISynchronizeCellState<St> syncSt,
+      IEnumerable<IAdditionalCheckJobs> additionalCheckJobs = null,
+      bool startThread = true
     )
     {
       _repo = repo;
       _settings = settings;
-      _onNewCurrentStatus = onNewCurrentStatus;
       _syncState = syncSt;
+      _additionalCheckJobs = additionalCheckJobs ?? Enumerable.Empty<IAdditionalCheckJobs>();
       _syncState.NewCellState += NewCellState;
 
       _thread = new Thread(Thread) { IsBackground = true };
+      if (startThread)
+      {
+        _thread.Start();
+      }
+    }
+
+    public void StartThread()
+    {
+      _thread.Start();
     }
 
     public void Dispose()
     {
       _syncState.NewCellState -= NewCellState;
       _shutdown.Set();
+      _thread.Join(TimeSpan.FromSeconds(5));
     }
 
     // changeLock prevents decrement and queue changes from occuring at the same time as the thread
     // is deciding what to put onto a pallet
     private readonly object _changeLock = new();
 
-    // curStLock protects _lastCurrentStatus field
+    // curStLock protects _lastCurrentStatus and _syncError field
     private readonly object _curStLock = new();
     private St _lastCurrentStatus = default;
+    private string _syncError = null;
 
     #region Thread and Messages
     private readonly System.Threading.Thread _thread;
     private readonly AutoResetEvent _shutdown = new(false);
     private readonly AutoResetEvent _recheck = new(false);
     private readonly ManualResetEvent _newCellState = new(false);
+    private DateTime _timeOfLastStatusDump = DateTime.MinValue;
 
     public void RecalculateCellState()
     {
@@ -97,11 +198,6 @@ namespace BlackMaple.MachineFramework
       _newCellState.Set();
     }
 
-    public void StartThread()
-    {
-      _thread.Start();
-    }
-
     private void Thread()
     {
       bool raiseNewCurStatus = true; // very first run should raise new pallet state
@@ -111,11 +207,7 @@ namespace BlackMaple.MachineFramework
         {
           var untilRefresh = Synchronize(raiseNewCurStatus);
 
-          var ret = WaitHandle.WaitAny(
-            new WaitHandle[] { _shutdown, _recheck, _newCellState },
-            untilRefresh,
-            false
-          );
+          var ret = WaitHandle.WaitAny([_shutdown, _recheck, _newCellState], untilRefresh, false);
           if (ret == 0)
           {
             Log.Debug("Thread shutdown");
@@ -170,17 +262,43 @@ namespace BlackMaple.MachineFramework
               _lastCurrentStatus = st;
             }
 
+            if (raiseNewCurStatus && Log.IsEnabled(Serilog.Events.LogEventLevel.Verbose))
+            {
+              Log.Verbose("New current status: {@state}", st);
+              _timeOfLastStatusDump = DateTime.UtcNow;
+            }
+            else if (DateTime.UtcNow - _timeOfLastStatusDump > TimeSpan.FromMinutes(10))
+            {
+              Log.Debug("Periodic cell state: {@state}", st);
+              _timeOfLastStatusDump = DateTime.UtcNow;
+            }
+
             actionPerformed = _syncState.ApplyActions(db, st);
             if (actionPerformed)
               raiseNewCurStatus = true;
           } while (actionPerformed);
 
           _syncronizeErrorCount = 0;
+          if (_syncError != null)
+          {
+            _syncError = null;
+            raiseNewCurStatus = true;
+          }
+
           return timeUntilNextRefresh;
         }
       }
       catch (Exception ex)
       {
+        lock (_curStLock)
+        {
+          if (_syncError != ex.Message)
+          {
+            _syncError = ex.Message;
+            raiseNewCurStatus = true;
+          }
+        }
+
         _syncronizeErrorCount++;
         // exponential decay backoff starting at 2 seconds, maximum of 5 minutes
         var msToWait = Math.Min(5 * 60 * 1000, 2000 * Math.Pow(2, _syncronizeErrorCount - 1));
@@ -196,7 +314,7 @@ namespace BlackMaple.MachineFramework
       {
         if (raiseNewCurStatus)
         {
-          _onNewCurrentStatus(GetCurrentStatus());
+          OnNewCurrentStatus?.Invoke(GetCurrentStatus());
         }
       }
     }
@@ -230,8 +348,9 @@ namespace BlackMaple.MachineFramework
     {
       lock (_curStLock)
       {
-        return _lastCurrentStatus?.CurrentStatus
-          ?? new CurrentStatus()
+        if (_lastCurrentStatus == null)
+        {
+          return new CurrentStatus()
           {
             TimeOfCurrentStatusUTC = DateTime.UtcNow,
             Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
@@ -240,29 +359,45 @@ namespace BlackMaple.MachineFramework
             Queues = ImmutableDictionary<string, QueueInfo>.Empty,
             Alarms = ["FMS Insight is starting up..."]
           };
+        }
+        else if (_syncError != null)
+        {
+          return _lastCurrentStatus.CurrentStatus with
+          {
+            Alarms = _lastCurrentStatus.CurrentStatus.Alarms.Add(
+              $"Error communicating with machines: {_syncError}. Will try again in a few minutes."
+            )
+          };
+        }
+        else
+        {
+          return _lastCurrentStatus.CurrentStatus;
+        }
       }
     }
 
-    List<string> IJobControl.CheckValidRoutes(IEnumerable<Job> newJobs)
+    List<string> IJobAndQueueControl.CheckValidRoutes(IEnumerable<Job> newJobs)
     {
       using var jdb = _repo.OpenConnection();
+      var newJ = new NewJobs() { ScheduleId = null, Jobs = newJobs.ToImmutableList() };
       return _syncState
-        .CheckNewJobs(jdb, new NewJobs() { ScheduleId = null, Jobs = newJobs.ToImmutableList() })
+        .CheckNewJobs(jdb, newJ)
+        .Concat(_additionalCheckJobs.SelectMany(c => c.CheckNewJobs(jdb, newJ)))
         .ToList();
     }
 
-    void IJobControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
+    void IJobAndQueueControl.AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
     {
       using (var jdb = _repo.OpenConnection())
       {
         Log.Debug("Adding new jobs {@jobs}", jobs);
-        var errors = _syncState.CheckNewJobs(jdb, jobs);
+        var errors = _syncState
+          .CheckNewJobs(jdb, jobs)
+          .Concat(_additionalCheckJobs.SelectMany(c => c.CheckNewJobs(jdb, jobs)));
         if (errors.Any())
         {
           throw new BadRequestException(string.Join(Environment.NewLine, errors));
         }
-
-        Log.Debug("Adding jobs to database");
 
         jdb.AddJobs(
           jobs,
@@ -271,16 +406,12 @@ namespace BlackMaple.MachineFramework
         );
       }
 
-      Log.Debug("Sending new jobs on websocket");
-
       OnNewJobs?.Invoke(jobs);
-
-      Log.Debug("Signaling new jobs available for routes");
 
       RecalculateCellState();
     }
 
-    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(
+    List<JobAndDecrementQuantity> IJobAndQueueControl.DecrementJobQuantites(
       long loadDecrementsStrictlyAfterDecrementId
     )
     {
@@ -289,14 +420,16 @@ namespace BlackMaple.MachineFramework
       return jdb.LoadDecrementQuantitiesAfter(loadDecrementsStrictlyAfterDecrementId);
     }
 
-    List<JobAndDecrementQuantity> IJobControl.DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
+    List<JobAndDecrementQuantity> IJobAndQueueControl.DecrementJobQuantites(
+      DateTime loadDecrementsAfterTimeUTC
+    )
     {
       using var jdb = _repo.OpenConnection();
       DecrementPlannedButNotStartedQty(jdb);
       return jdb.LoadDecrementQuantitiesAfter(loadDecrementsAfterTimeUTC);
     }
 
-    void IJobControl.SetJobComment(string jobUnique, string comment)
+    void IJobAndQueueControl.SetJobComment(string jobUnique, string comment)
     {
       using (var jdb = _repo.OpenConnection())
       {
@@ -357,7 +490,7 @@ namespace BlackMaple.MachineFramework
               QueuePosition = log.LocationNum
             },
             Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-            SignaledInspections = ImmutableList<string>.Empty,
+            SignaledInspections = [],
             QuarantineAfterUnload = null
           }
         );
@@ -485,7 +618,7 @@ namespace BlackMaple.MachineFramework
           QueuePosition = logEvt.LastOrDefault()?.LocationNum
         },
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-        SignaledInspections = ImmutableList<string>.Empty,
+        SignaledInspections = [],
         QuarantineAfterUnload = null
       };
     }

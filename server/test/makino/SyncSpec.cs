@@ -70,7 +70,6 @@ public sealed class SyncSpec : IDisposable
     sync = new MakinoSync(
       new MakinoSettings()
       {
-        FMSSettings = new() { },
         ADEPath = _tempDir,
         DownloadOnlyOrders = true,
         OpenMakinoConnection = () => _makinoDB
@@ -125,7 +124,7 @@ public sealed class SyncSpec : IDisposable
   void IDisposable.Dispose()
   {
     Directory.Delete(_tempDir, true);
-    _repo.CloseMemoryConnection();
+    _repo.Dispose();
   }
 
   private Task<(bool, string)> ApplyActionsAndWatchForFile(IRepository db, MakinoCellState state)

@@ -104,7 +104,7 @@ namespace MazakMachineInterface
         throw new Exception("VerE and Web only only supported on windows");
       }
 
-      var conn = new OleDbConnection(_connectionStr);
+      using var conn = new OleDbConnection(_connectionStr);
       while (attempts < 20)
       {
         try
@@ -119,7 +119,6 @@ namespace MazakMachineInterface
             if (!(ex.Message.ToLower().IndexOf("try again") >= 0))
             {
               //if this is not a locking exception, throw it
-              conn.Dispose();
               throw new DataException(ex.ToString());
             }
           }
@@ -131,7 +130,6 @@ namespace MazakMachineInterface
             if (!(ex.Message.ToLower().IndexOf("try again") >= 0))
             {
               //if this is not a locking exception, throw it
-              conn.Dispose();
               throw;
             }
           }
@@ -142,7 +140,6 @@ namespace MazakMachineInterface
         attempts += 1;
       }
 
-      conn.Dispose();
       throw new Exception("Mazak database is locked and can not be accessed");
     }
 
@@ -165,8 +162,8 @@ namespace MazakMachineInterface
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitTransactionDB>();
 
-    public OpenDatabaseKitTransactionDB(string dbConnStr, MazakDbType ty)
-      : base(dbConnStr, ty)
+    public OpenDatabaseKitTransactionDB(MazakConfig cfg)
+      : base(cfg.SQLConnectionString, cfg.DBType)
     {
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
@@ -174,13 +171,13 @@ namespace MazakMachineInterface
           "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";"
           + "User ID=Admin;"
           + "Data Source="
-          + System.IO.Path.Combine(dbConnStr, "FCNETUSER1.mdb")
+          + System.IO.Path.Combine(cfg.SQLConnectionString, "FCNETUSER1.mdb")
           + ";"
           + "Mode=Share Deny None;";
       }
       else
       {
-        _connectionStr = dbConnStr + ";Database=FCNETUSER01";
+        _connectionStr = cfg.SQLConnectionString + ";Database=FCNETUSER01";
       }
     }
 
@@ -242,7 +239,7 @@ namespace MazakMachineInterface
             trans.Commit();
           }
 
-          foreach (int waitSecs in new[] { 5, 5, 10, 10, 15, 15, 30, 30 })
+          foreach (int waitSecs in new[] { 5, 5, 10, 10, 15, 15, 30 })
           {
             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
             if (CheckTransactionErrors(conn, prefix))
@@ -814,8 +811,8 @@ namespace MazakMachineInterface
 
     private ICurrentLoadActions _loadOper;
 
-    public OpenDatabaseKitReadDB(string dbConnStr, MazakDbType ty, ICurrentLoadActions loadOper)
-      : base(dbConnStr, ty)
+    public OpenDatabaseKitReadDB(MazakConfig mazakCfg, ICurrentLoadActions loadOper)
+      : base(mazakCfg.SQLConnectionString, mazakCfg.DBType)
     {
       _loadOper = loadOper;
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
@@ -823,13 +820,13 @@ namespace MazakMachineInterface
         _connectionStr =
           "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";User ID=Admin;"
           + "Data Source="
-          + System.IO.Path.Combine(dbConnStr, "FCREADDAT01.mdb")
+          + System.IO.Path.Combine(mazakCfg.SQLConnectionString, "FCREADDAT01.mdb")
           + ";"
           + "Mode=Share Deny Write;";
       }
       else
       {
-        _connectionStr = dbConnStr + ";Database=FCREADDAT01";
+        _connectionStr = mazakCfg.SQLConnectionString + ";Database=FCREADDAT01";
       }
 
       _fixtureSelect = "SELECT FixtureName, Comment FROM Fixture";

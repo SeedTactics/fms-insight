@@ -38,30 +38,13 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class MazakMachineControl : IMachineControl
+  public class MazakMachineControl(RepositoryConfig jobDbCfg, IReadDataAccess readData, MazakConfig mazakCfg)
+    : IMachineControl
   {
-    private RepositoryConfig _jobDbCfg;
-    private IReadDataAccess _readData;
-    private IMachineGroupName _machGroupName;
-    private MazakConfig _mazakCfg;
-
-    public MazakMachineControl(
-      RepositoryConfig jobDbCfg,
-      IReadDataAccess readData,
-      IMachineGroupName machineGroupName,
-      MazakConfig mazakCfg
-    )
-    {
-      _jobDbCfg = jobDbCfg;
-      _readData = readData;
-      _machGroupName = machineGroupName;
-      _mazakCfg = mazakCfg;
-    }
-
     public ImmutableList<ProgramInCellController> CurrentProgramsInCellController()
     {
-      var programs = _readData.LoadPrograms();
-      using (var jobDb = _jobDbCfg.OpenConnection())
+      var programs = readData.LoadPrograms();
+      using (var jobDb = jobDbCfg.OpenConnection())
       {
         return programs
           .Select(p =>
@@ -95,7 +78,13 @@ namespace MazakMachineInterface
 
     public ImmutableList<ToolInMachine> CurrentToolsInMachines()
     {
-      return _readData
+      string machineGroupName;
+      using (var db = jobDbCfg.OpenConnection())
+      {
+        machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
+      }
+
+      return readData
         .LoadTools()
         .Where(t =>
           t.MachineNumber.HasValue
@@ -105,10 +94,10 @@ namespace MazakMachineInterface
         )
         .Select(t => new ToolInMachine()
         {
-          MachineGroupName = _machGroupName.MachineGroupName,
+          MachineGroupName = machineGroupName,
           MachineNum = t.MachineNumber.Value,
           Pocket = t.PocketNumber.Value,
-          ToolName = _mazakCfg?.ExtractToolName == null ? t.GroupNo : _mazakCfg.ExtractToolName(t),
+          ToolName = mazakCfg?.ExtractToolName == null ? t.GroupNo : mazakCfg.ExtractToolName(t),
           Serial = null,
           CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
           TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0),
@@ -127,7 +116,7 @@ namespace MazakMachineInterface
 
     public string GetProgramContent(string programName, long? revision)
     {
-      using (var jobDb = _jobDbCfg.OpenConnection())
+      using (var jobDb = jobDbCfg.OpenConnection())
       {
         if (!revision.HasValue)
         {
@@ -139,7 +128,7 @@ namespace MazakMachineInterface
         }
       }
 
-      if (_readData.CheckProgramExists(programName) && System.IO.File.Exists(programName))
+      if (readData.CheckProgramExists(programName) && System.IO.File.Exists(programName))
       {
         return System.IO.File.ReadAllText(programName);
       }
@@ -153,7 +142,7 @@ namespace MazakMachineInterface
       long? revisionToStart
     )
     {
-      using (var jobDb = _jobDbCfg.OpenConnection())
+      using (var jobDb = jobDbCfg.OpenConnection())
       {
         return jobDb.LoadProgramRevisionsInDescendingOrderOfRevision(programName, count, revisionToStart);
       }

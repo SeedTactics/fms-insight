@@ -37,7 +37,6 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Dapper;
-using Microsoft.Extensions.Configuration;
 
 namespace MazakMachineInterface
 {
@@ -47,16 +46,8 @@ namespace MazakMachineInterface
 
     private readonly string mazakPath;
 
-    private readonly Action<int, IEnumerable<LoadAction>> _onLoadActions;
-
-    public LoadOperationsFromFile(
-      MazakConfig cfg,
-      bool enableWatcher,
-      Action<int, IEnumerable<LoadAction>> onLoadActions
-    )
+    public LoadOperationsFromFile(MazakConfig cfg)
     {
-      _onLoadActions = onLoadActions;
-
       if (string.IsNullOrEmpty(cfg.LoadCSVPath) || !Directory.Exists(cfg.LoadCSVPath))
       {
         Log.Warning("No mazak Load CSV Path configured, will not read load instructions from file");
@@ -64,83 +55,6 @@ namespace MazakMachineInterface
       }
 
       mazakPath = cfg.LoadCSVPath;
-
-      if (enableWatcher)
-      {
-        _watcher = new FileSystemWatcher(mazakPath, "*.csv");
-        //_watcher.Created += watcher_Changed;
-        _watcher.Changed += watcher_Changed;
-        _watcher.EnableRaisingEvents = true;
-      }
-    }
-
-    public void Dispose()
-    {
-      if (_watcher == null)
-        return;
-      _watcher.EnableRaisingEvents = false;
-      //_watcher.Created -= watcher_Changed;
-      _watcher.Changed -= watcher_Changed;
-      _watcher = null;
-    }
-
-    private FileSystemWatcher _watcher;
-    private object _lock = new object();
-    private IDictionary<int, DateTime> lastWriteTime = new Dictionary<int, DateTime>();
-
-    private void watcher_Changed(object sender, FileSystemEventArgs e)
-    {
-      try
-      {
-        string file = e.FullPath;
-
-        Match m = Regex.Match(Path.GetFileName(file).ToLower(), "lds([0-9]*)_operation.*csv");
-
-        if (!m.Success || m.Groups.Count < 2)
-          return;
-
-        int lds = int.Parse(m.Groups[1].Value);
-        List<LoadAction> a = null;
-
-        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(1));
-
-        lock (_lock)
-        {
-          //it might no longer exist if the event fires multiple times for this file
-          if (File.Exists(file))
-          {
-            var last = System.IO.File.GetLastWriteTime(file);
-
-            if (lastWriteTime.ContainsKey(lds) && lastWriteTime[lds] == last)
-            {
-              Log.Debug(
-                "Skipping load "
-                  + lds.ToString()
-                  + " file "
-                  + Path.GetFileName(file)
-                  + " because the file"
-                  + " has not been modified."
-              );
-            }
-            else
-            {
-              a = ReadFile(lds, file);
-
-              lastWriteTime[lds] = last;
-            }
-          }
-        }
-
-        if (a == null || a.Count == 0)
-          return;
-
-        if (a != null)
-          _onLoadActions(lds, a);
-      }
-      catch (Exception ex)
-      {
-        Log.Error(ex, "Unhandled error when reading mazak instructions");
-      }
     }
 
     public IEnumerable<LoadAction> CurrentLoadActions()
@@ -150,18 +64,15 @@ namespace MazakMachineInterface
 
       var ret = new List<LoadAction>();
 
-      lock (_lock)
+      foreach (var f in Directory.GetFiles(mazakPath, "*.csv"))
       {
-        foreach (var f in Directory.GetFiles(mazakPath, "*.csv"))
-        {
-          Match m = Regex.Match(Path.GetFileName(f).ToLower(), "lds([0-9]*)_operation.*csv");
-          if (!m.Success || m.Groups.Count < 2)
-            continue;
-          int lds = int.Parse(m.Groups[1].Value);
+        Match m = Regex.Match(Path.GetFileName(f).ToLower(), "lds([0-9]*)_operation.*csv");
+        if (!m.Success || m.Groups.Count < 2)
+          continue;
+        int lds = int.Parse(m.Groups[1].Value);
 
-          if (File.Exists(f))
-            ret.AddRange(ReadFile(lds, f));
-        }
+        if (File.Exists(f))
+          ret.AddRange(ReadFile(lds, f));
       }
 
       return ret;
@@ -213,12 +124,10 @@ namespace MazakMachineInterface
 
     private string _connStr;
 
-    public LoadOperationsFromDB(string connectionStr)
+    public LoadOperationsFromDB(MazakConfig cfg)
     {
-      _connStr = connectionStr + ";Database=PMC_Basic";
+      _connStr = cfg.SQLConnectionString + ";Database=PMC_Basic";
     }
-
-    void IDisposable.Dispose() { }
 
     public IEnumerable<LoadAction> CurrentLoadActions()
     {

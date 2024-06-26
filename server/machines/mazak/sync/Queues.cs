@@ -39,9 +39,9 @@ using Serilog;
 
 namespace MazakMachineInterface
 {
-  public class MazakQueues
+  public static class MazakQueues
   {
-    private static readonly ILogger log = Serilog.Log.ForContext<MazakQueues>();
+    private static readonly ILogger log = Serilog.Log.ForContext<ScheduleWithQueues>();
 
     public static MazakWriteData CalculateScheduleChanges(
       IRepository jdb,
@@ -93,13 +93,13 @@ namespace MazakMachineInterface
         if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
           continue;
 
-        MazakPart.ParseComment(schRow.Comment, out string unique, out var procToPath, out bool manual);
+        var unique = MazakPart.ParseComment(schRow.Comment);
 
         var job = jdb.LoadJob(unique);
         if (job == null)
           continue;
 
-        var casting = job.Processes[0].Paths[procToPath.PathForProc(1) - 1].Casting;
+        var casting = job.Processes[0].Paths[0].Casting;
         if (string.IsNullOrEmpty(casting))
         {
           casting = job.PartName;
@@ -109,7 +109,7 @@ namespace MazakMachineInterface
         bool foundJobAtLoad = false;
         foreach (var action in loadOpers)
         {
-          if (action.Unique == job.UniqueStr && action.Path == procToPath.PathForProc(action.Process))
+          if (action.Unique == job.UniqueStr)
           {
             foundJobAtLoad = true;
             skippedCastings.Add(casting);
@@ -166,14 +166,13 @@ namespace MazakMachineInterface
             missingProc = true;
             break;
           }
-          var path = procToPath.PathForProc(proc);
           sch.Procs.Add(
             proc,
             new ScheduleWithQueuesProcess()
             {
               SchProcRow = schProcRow,
-              Path = path,
-              InputQueue = job.Processes[proc - 1].Paths[path - 1].InputQueue,
+              Path = 1,
+              InputQueue = job.Processes[proc - 1].Paths[0].InputQueue,
               Casting = proc == 1 ? casting : null,
             }
           );

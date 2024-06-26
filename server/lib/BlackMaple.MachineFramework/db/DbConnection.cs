@@ -32,10 +32,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
+
+#nullable enable
 
 namespace BlackMaple.MachineFramework
 {
@@ -43,7 +43,7 @@ namespace BlackMaple.MachineFramework
   {
     private readonly RepositoryConfig _cfg;
     public RepositoryConfig RepoConfig => _cfg;
-    private SqliteConnection _connection;
+    private SqliteConnection? _connection;
 
     internal Repository(RepositoryConfig cfg, SqliteConnection c)
     {
@@ -62,55 +62,51 @@ namespace BlackMaple.MachineFramework
     }
   }
 
-  public class RepositoryConfig
+  public sealed class RepositoryConfig : IDisposable
   {
-    public event Action<LogEntry, string, IRepository> NewLogEntry;
-    public SerialSettings Settings { get; }
+    public event Action<LogEntry, string, IRepository>? NewLogEntry;
+    public SerialSettings? SerialSettings { get; }
     private readonly string _connStr;
-    private SqliteConnection _memoryConnection = null;
+    private SqliteConnection? _memoryConnection = null;
 
     internal void OnNewLogEntry(LogEntry e, string foreignId, IRepository db) =>
       NewLogEntry?.Invoke(e, foreignId, db);
 
     public static RepositoryConfig InitializeEventDatabase(
-      SerialSettings st,
+      SerialSettings? st,
       string filename,
-      string oldInspDbFile = null,
-      string oldJobDbFile = null
+      string? oldInspDbFile = null,
+      string? oldJobDbFile = null
     )
     {
       var connStr = "Data Source=" + filename;
       if (System.IO.File.Exists(filename))
       {
-        using (var conn = new SqliteConnection(connStr))
-        {
-          conn.Open();
-          DatabaseSchema.UpgradeTables(conn, st, oldInspDbFile, oldJobDbFile);
-          return new RepositoryConfig(st, connStr, null);
-        }
+        using var conn = new SqliteConnection(connStr);
+        conn.Open();
+        DatabaseSchema.UpgradeTables(conn, st, oldInspDbFile, oldJobDbFile);
+        return new RepositoryConfig(st, connStr, null);
       }
       else
       {
-        using (var conn = new SqliteConnection(connStr))
+        using var conn = new SqliteConnection(connStr);
+        conn.Open();
+        try
         {
-          conn.Open();
-          try
-          {
-            DatabaseSchema.CreateTables(conn, st);
-            return new RepositoryConfig(st, connStr, null);
-          }
-          catch
-          {
-            conn.Close();
-            System.IO.File.Delete(filename);
-            throw;
-          }
+          DatabaseSchema.CreateTables(conn, st);
+          return new RepositoryConfig(st, connStr, null);
+        }
+        catch
+        {
+          conn.Close();
+          System.IO.File.Delete(filename);
+          throw;
         }
       }
     }
 
     public static RepositoryConfig InitializeMemoryDB(
-      SerialSettings st,
+      SerialSettings? st,
       Guid? guid = null,
       bool createTables = true
     )
@@ -136,7 +132,7 @@ namespace BlackMaple.MachineFramework
       return new Repository(this, conn);
     }
 
-    public void CloseMemoryConnection()
+    public void Dispose()
     {
       if (_memoryConnection != null)
       {
@@ -145,11 +141,39 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private RepositoryConfig(SerialSettings st, string connStr, SqliteConnection memConn)
+    private RepositoryConfig(SerialSettings? st, string connStr, SqliteConnection? memConn)
     {
-      Settings = st;
+      SerialSettings = st;
       _connStr = connStr;
       _memoryConnection = memConn;
+    }
+  }
+
+  public static class RepositoryService
+  {
+    public static IServiceCollection AddRepository(
+      this IServiceCollection s,
+      string filename,
+      SerialSettings serial,
+      string? oldInspDbFile = null,
+      string? oldJobDbFile = null
+    )
+    {
+      return s.AddSingleton<RepositoryConfig>(
+        (_) => RepositoryConfig.InitializeEventDatabase(serial, filename, oldInspDbFile, oldJobDbFile)
+      );
+    }
+
+    public static IServiceCollection AddMemoryRepository(
+      this IServiceCollection s,
+      SerialSettings serial,
+      Guid? guid = null,
+      bool createTables = true
+    )
+    {
+      return s.AddSingleton<RepositoryConfig>(
+        (_) => RepositoryConfig.InitializeMemoryDB(serial, guid, createTables)
+      );
     }
   }
 }

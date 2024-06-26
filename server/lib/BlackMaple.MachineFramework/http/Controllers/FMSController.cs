@@ -1,4 +1,4 @@
-/* Copyright (c) 2018, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -96,15 +96,45 @@ namespace BlackMaple.MachineFramework.Controllers
   [Route("api/v1/fms")]
   public class fmsController : ControllerBase
   {
-    private readonly FMSImplementation _impl;
     private readonly FMSSettings _cfg;
     private readonly ServerSettings _serverSt;
+    private readonly RepositoryConfig _repo;
+    private readonly IPrintLabelForMaterial _printLabel;
+    private readonly IJobAndQueueControl _jobsAndQueues;
+    private readonly ICalculateInstructionPath _instrPath;
+    private readonly IParseBarcode _parseBarcode;
+    private readonly ICheckLicense _checkLicense;
 
-    public fmsController(FMSSettings fmsSt, ServerSettings serverSt, FMSImplementation impl)
+    private readonly string _name;
+    private readonly string _version;
+
+    public fmsController(
+      FMSSettings fmsSt,
+      ServerSettings serverSt,
+      IJobAndQueueControl jobsAndQueues,
+      RepositoryConfig repo,
+      IPrintLabelForMaterial printLabel = null,
+      ICalculateInstructionPath instrPath = null,
+      IParseBarcode parseBarcode = null,
+      ICheckLicense license = null
+    )
     {
       _cfg = fmsSt;
       _serverSt = serverSt;
-      _impl = impl;
+      _printLabel = printLabel;
+      _jobsAndQueues = jobsAndQueues;
+      _repo = repo;
+      _instrPath = instrPath;
+      _parseBarcode = parseBarcode;
+      _checkLicense = license;
+
+      var startA = System.Reflection.Assembly.GetEntryAssembly();
+      _name =
+        (
+          (System.Reflection.AssemblyTitleAttribute)
+            Attribute.GetCustomAttribute(startA, typeof(System.Reflection.AssemblyTitleAttribute), false)
+        )?.Title ?? startA.GetName().Name;
+      _version = startA.GetName().Version?.ToString();
     }
 
     [HttpGet("fms-information")]
@@ -113,28 +143,28 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       return new FMSInfo()
       {
-        Name = _impl.Name,
-        Version = _impl.Version,
+        Name = _name,
+        Version = _version,
         RequireScanAtCloseout = _cfg.RequireScanAtCloseout,
         RequireWorkorderBeforeAllowCloseoutComplete = _cfg.RequireWorkorderBeforeAllowCloseoutComplete,
         AdditionalLogServers = _cfg.AdditionalLogServers,
         OpenIDConnectAuthority = _serverSt.OpenIDConnectAuthority,
         OpenIDConnectClientId = _serverSt.OpenIDConnectClientId,
         LocalhostOpenIDConnectAuthority = _serverSt.AuthAuthority,
-        UsingLabelPrinterForSerials = _impl.UsingLabelPrinterForSerials,
-        UseClientPrinterForLabels = _impl.PrintLabel == null,
+        UsingLabelPrinterForSerials = _cfg.UsingLabelPrinterForSerials,
+        UseClientPrinterForLabels = _printLabel == null,
         QuarantineQueue = _cfg.QuarantineQueue,
         RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,
-        AddRawMaterial = _impl.AddRawMaterial,
-        AddInProcessMaterial = _impl.AddInProcessMaterial,
-        AllowEditJobPlanQuantityFromQueuesPage = _impl.AllowEditJobPlanQuantityFromQueuesPage,
-        AllowQuarantineToCancelLoad = _impl.Backend?.QueueControl.AllowQuarantineToCancelLoad,
+        AddRawMaterial = _cfg.AddRawMaterial,
+        AddInProcessMaterial = _cfg.AddInProcessMaterial,
+        AllowEditJobPlanQuantityFromQueuesPage = _cfg.AllowEditJobPlanQuantityFromQueuesPage,
+        AllowQuarantineToCancelLoad = _jobsAndQueues.AllowQuarantineToCancelLoad,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
-        AllowInvalidateMaterialAtLoadStation = _impl.AllowInvalidateMaterialAtLoadStation,
-        AllowInvalidateMaterialOnQueuesPage = _impl.AllowInvalidateMaterialOnQueuesPage,
-        AllowSwapSerialAtLoadStation = _impl.AllowSwapSerialAtLoadStation,
-        LicenseExpires = _impl.LicenseExpires?.Invoke(),
-        CustomStationMonitorDialogUrl = _impl.CustomStationMonitorDialogUrl,
+        AllowInvalidateMaterialAtLoadStation = _cfg.AllowInvalidateMaterialAtLoadStation,
+        AllowInvalidateMaterialOnQueuesPage = _cfg.AllowInvalidateMaterialOnQueuesPage,
+        AllowSwapSerialAtLoadStation = _cfg.AllowSwapSerialAtLoadStation,
+        LicenseExpires = _checkLicense?.LicenseExpires(),
+        CustomStationMonitorDialogUrl = _cfg.CustomStationMonitorDialogUrl,
       };
     }
 
@@ -168,9 +198,9 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       try
       {
-        if (_impl != null && _impl.InstructionPath != null)
+        if (_instrPath != null)
         {
-          var path = _impl.InstructionPath(part, process, type, materialID, operatorName, pallet);
+          var path = _instrPath.InstructionPath(part, process, type, materialID, operatorName, pallet);
           if (string.IsNullOrEmpty(path))
           {
             return NotFound(
@@ -243,9 +273,9 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(400)]
     public IActionResult PrintLabel(long materialId, [FromQuery] int process = 1)
     {
-      if (_impl != null && _impl.PrintLabel != null)
+      if (_printLabel != null)
       {
-        _impl.PrintLabel(materialId, process, Request.GetTypedHeaders().Referer);
+        _printLabel.PrintLabel(materialId, process, Request.GetTypedHeaders().Referer);
         return Ok();
       }
       else
@@ -257,20 +287,15 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("parse-barcode")]
     public ScannedMaterial ParseBarcode([FromQuery] string barcode)
     {
-      if (_impl == null || _impl.Backend == null)
+      if (_parseBarcode != null)
       {
-        return null;
-      }
-
-      if (_impl.ParseBarcode != null)
-      {
-        return _impl.ParseBarcode(barcode: barcode, httpReferer: Request.GetTypedHeaders().Referer);
+        return _parseBarcode.ParseBarcode(barcode: barcode, httpReferer: Request.GetTypedHeaders().Referer);
       }
       else
       {
         var idxComma = barcode.IndexOf(',');
-        var serial = idxComma > 0 ? barcode.Substring(0, idxComma) : barcode;
-        using var conn = _impl.Backend.RepoConfig.OpenConnection();
+        var serial = idxComma > 0 ? barcode[..idxComma] : barcode;
+        using var conn = _repo.OpenConnection();
         var mats = conn.GetMaterialDetailsForSerial(serial);
         if (mats.Count > 0)
         {

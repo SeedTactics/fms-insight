@@ -38,9 +38,9 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class BuildMazakSchedules
+  public static class BuildMazakSchedules
   {
-    public static Serilog.ILogger Log = Serilog.Log.ForContext<BuildMazakSchedules>();
+    public static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MazakWriteData>();
 
     public static (MazakWriteData, ISet<string>) RemoveCompletedSchedules(MazakCurrentStatus mazakData)
     {
@@ -105,8 +105,8 @@ namespace MazakMachineInterface
         {
           if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
           {
-            MazakPart.ParseComment(partRow.Comment, out string u, out var ps, out bool m);
-            if (u == part.UniqueStr && ps.PathForProc(proc: 1) == 1)
+            var u = MazakPart.ParseComment(partRow.Comment);
+            if (u == part.UniqueStr)
             {
               downloadUid = MazakPart.ParseUID(partRow.PartName);
               mazakPartName = partRow.PartName;
@@ -193,7 +193,6 @@ namespace MazakMachineInterface
       {
         if (part.Processes[0].Paths[0].SimulatedStartingUTC != DateTime.MinValue)
         {
-          var start = part.Processes[0].Paths[0].SimulatedStartingUTC;
           newSchRow = newSchRow with
           {
             DueDate = routeStartDate,
@@ -270,7 +269,10 @@ namespace MazakMachineInterface
         var otherStart = otherJob.Processes[0].Paths[0].SimulatedStartingUTC;
         if (otherStart == DateTime.MinValue)
           continue;
-        if (otherStart >= startT)
+        if (
+          otherStart > startT
+          || (otherStart == startT && otherJob.UniqueStr.CompareTo(jobToCheck.UniqueStr) > 0)
+        )
           continue;
 
         //the job starts earlier than the jobToCheck, but need to see if it conflicts.
@@ -308,11 +310,12 @@ namespace MazakMachineInterface
     {
       for (int i = 1; i <= 9999; i++)
       {
-        if (!usedScheduleIds.Contains(i))
+        if (usedScheduleIds.Contains(i))
         {
-          usedScheduleIds.Add(i);
-          return i;
+          continue;
         }
+        usedScheduleIds.Add(i);
+        return i;
       }
       throw new Exception("All Schedule Ids are currently being used");
     }

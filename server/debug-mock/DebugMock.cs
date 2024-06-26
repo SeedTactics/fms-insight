@@ -39,7 +39,6 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
-using Germinate;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,7 +50,7 @@ namespace DebugMachineWatchApiServer
 {
   public static class DebugMockProgram
   {
-    public static string InsightBackupDbFile = null;
+    public static readonly string InsightBackupDbFile = null;
 
     public class RequiredModifierSchemaProcessor : ISchemaProcessor
     {
@@ -86,140 +85,113 @@ namespace DebugMachineWatchApiServer
       }
     }
 
-    private static void AddOpenApiDoc(IServiceCollection services)
-    {
-      services.AddOpenApiDocument(cfg =>
-      {
-        cfg.Title = "SeedTactic FMS Insight";
-        cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
-        cfg.Version = "1.14";
-        cfg.SchemaSettings.SchemaProcessors.Add(new RequiredModifierSchemaProcessor());
-        cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
-          .Generation
-          .ReferenceTypeNullHandling
-          .NotNull;
-        cfg.RequireParametersWithoutDefault = true;
-        cfg.SchemaSettings.IgnoreObsoleteProperties = true;
-      });
-    }
-
     public static void Main()
     {
       var cfg = new ConfigurationBuilder().AddEnvironmentVariables().Build();
 
       var serverSettings = ServerSettings.Load(cfg);
 
-      var fmsSettings = new FMSSettings(cfg);
-      fmsSettings.InstructionFilePath = System.IO.Path.Combine(
-        System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
-        "../../../sample-instructions/"
-      );
-      fmsSettings.QuarantineQueue = "Initial Quarantine";
-      fmsSettings.RequireScanAtCloseout = true;
-      fmsSettings.AllowChangeWorkorderAtLoadStation = true;
+      InsightLogging.EnableSerilog(serverSt: serverSettings, enableEventLog: false);
 
-      BlackMaple.MachineFramework.InsightLogging.EnableSerilog(
-        serverSt: serverSettings,
-        enableEventLog: false
-      );
-
-      var backend = new MockServerBackend(fmsSettings);
-      var fmsImpl = new FMSImplementation()
+      var fmsSettings = FMSSettings.Load(cfg) with
       {
-        Backend = backend,
-        Name = "mock",
-        Version = "1.2.3.4",
+        InstructionFilePath = Path.Combine(
+          Path.GetDirectoryName(Assembly.GetEntryAssembly().Location),
+          "../../../sample-instructions/"
+        ),
+        QuarantineQueue = "Initial Quarantine",
+        RequireScanAtCloseout = true,
+        AllowChangeWorkorderAtLoadStation = true,
         UsingLabelPrinterForSerials = true,
-        PrintLabel = (matId, process, httpReferer) =>
-        {
-          int loadStation = -10;
-          if (
-            httpReferer.Segments.Length == 4
-            && httpReferer.Segments[0] == "/"
-            && httpReferer.Segments[1] == "station/"
-            && httpReferer.Segments[2] == "loadunload/"
-            && int.TryParse(httpReferer.Segments[3], out var lul)
-          )
-          {
-            loadStation = lul;
-          }
-          Serilog.Log.Information(
-            "Print label for {matId} {process} {referer} and {load}",
-            matId,
-            process,
-            httpReferer,
-            loadStation
-          );
-        },
-        ParseBarcode = (barcode, referer) =>
-        {
-          Serilog.Log.Information("Parsing barcode {barcode} {referer}", barcode, referer);
-          System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
-          var commaIdx = barcode.IndexOf(',');
-          if (commaIdx >= 0)
-            barcode = barcode.Substring(0, commaIdx);
-          using (var conn = backend.RepoConfig.OpenConnection())
-          {
-            var mats = conn.GetMaterialDetailsForSerial(barcode);
-            if (mats.Count > 0)
-            {
-              return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
-            }
-            else
-            {
-              return new ScannedMaterial()
-              {
-                Casting = new ScannedCasting()
-                {
-                  Serial = barcode,
-                  Workorder = "work1",
-                  //PossibleCastings = ImmutableList.Create("part1", "part2"),
-                  PossibleJobs = ImmutableList.Create("aaa-offline-2018-01-01", "bbb-offline-2018-01-01")
-                },
-              };
-            }
-          }
-        },
         AddRawMaterial = AddRawMaterialType.RequireBarcodeScan,
         AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial
       };
 
-      var hostB = BlackMaple.MachineFramework.Program.CreateHostBuilder(
-        cfg,
-        serverSettings,
-        fmsSettings,
-        fmsImpl,
-        useService: false
-      );
+      string tempDbFile = null;
 
-      var webroot = Environment.GetEnvironmentVariable("BMS_WEBROOT");
-      if (!string.IsNullOrEmpty(webroot))
-      {
-        hostB.ConfigureWebHostDefaults(webBuilder =>
+      var hostB = new HostBuilder()
+        .UseContentRoot(Path.GetDirectoryName(Environment.ProcessPath))
+        .ConfigureServices(s =>
         {
-          webBuilder.UseWebRoot(webroot);
+          s.AddSingleton<MockServerBackend>();
+          s.AddSingleton<IMachineControl>(sp => sp.GetRequiredService<MockServerBackend>());
+          s.AddSingleton<ISynchronizeCellState<DebugCellState>>(sp =>
+            sp.GetRequiredService<MockServerBackend>()
+          );
+          s.AddSingleton<IPrintLabelForMaterial>(sp => sp.GetRequiredService<MockServerBackend>());
+          s.AddSingleton<IParseBarcode>(sp => sp.GetRequiredService<MockServerBackend>());
+
+          s.AddOpenApiDocument(cfg =>
+          {
+            cfg.Title = "SeedTactic FMS Insight";
+            cfg.Description = "API for access to FMS Insight for flexible manufacturing system control";
+            cfg.Version = "1.14";
+            cfg.SchemaSettings.SchemaProcessors.Add(new RequiredModifierSchemaProcessor());
+            cfg.DefaultResponseReferenceTypeNullHandling = NJsonSchema
+              .Generation
+              .ReferenceTypeNullHandling
+              .NotNull;
+            cfg.RequireParametersWithoutDefault = true;
+            cfg.SchemaSettings.IgnoreObsoleteProperties = true;
+          });
+
+          if (InsightBackupDbFile != null)
+          {
+            s.AddRepository(
+              InsightBackupDbFile,
+              new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+            );
+          }
+          else
+          {
+            tempDbFile = Path.Combine(
+              Path.GetTempPath(),
+              "debug-mock-" + Path.GetRandomFileName() + ".sqlite"
+            );
+            s.AddRepository(
+              tempDbFile,
+              new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
+            );
+          }
+        })
+        .AddFMSInsightWebHost(cfg, serverSettings, fmsSettings);
+
+      var host = hostB.Build();
+
+      host.Services.GetService<IHostApplicationLifetime>()
+        .ApplicationStopped.Register(() =>
+        {
+          if (tempDbFile != null)
+          {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            File.Delete(tempDbFile);
+          }
         });
-      }
 
-      hostB.ConfigureServices((_, services) => AddOpenApiDoc(services));
-
-      hostB.Build().Run();
+      host.Run();
     }
   }
 
+  public record DebugCellState : ICellState
+  {
+    public required CurrentStatus CurrentStatus { get; init; }
+
+    public required bool StateUpdated { get; init; }
+
+    public required TimeSpan TimeUntilNextRefresh { get; init; }
+  }
+
   public sealed class MockServerBackend
-    : IFMSBackend,
-      IMachineControl,
-      IJobControl,
-      IQueueControl,
-      IDisposable
+    : IMachineControl,
+      ISynchronizeCellState<DebugCellState>,
+      IPrintLabelForMaterial,
+      IParseBarcode
   {
     public RepositoryConfig RepoConfig { get; private set; }
 
     private Dictionary<string, CurrentStatus> Statuses { get; } = new Dictionary<string, CurrentStatus>();
     private CurrentStatus CurrentStatus { get; set; }
     private ImmutableList<ToolInMachine> Tools { get; set; }
-    private string _tempDbFile;
 
     private class MockProgram
     {
@@ -233,37 +205,27 @@ namespace DebugMachineWatchApiServer
 
     private JsonSerializerOptions _jsonSettings;
 
-    public event NewCurrentStatus OnNewCurrentStatus;
-    public event NewJobsDelegate OnNewJobs;
     public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
     public bool AllowQuarantineToCancelLoad { get; } = true;
+    public bool AddJobsAsCopiedToSystem { get; } = true;
 
     private readonly FMSSettings _fmsSettings;
 
-    public MockServerBackend(FMSSettings settings)
+    public MockServerBackend(FMSSettings settings, RepositoryConfig repo)
     {
       _fmsSettings = settings;
       _jsonSettings = new JsonSerializerOptions();
-      Startup.JsonSettings(_jsonSettings);
+      FMSInsightWebHost.JsonSettings(_jsonSettings);
+
+      RepoConfig = repo;
 
       if (DebugMockProgram.InsightBackupDbFile != null)
       {
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(
-          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
-          DebugMockProgram.InsightBackupDbFile
-        );
         LoadStatusFromLog(System.IO.Path.GetDirectoryName(DebugMockProgram.InsightBackupDbFile));
       }
       else
       {
-        _tempDbFile = System.IO.Path.GetTempFileName();
-        System.IO.File.Delete(_tempDbFile);
-        RepoConfig = RepositoryConfig.InitializeEventDatabase(
-          new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() },
-          _tempDbFile
-        );
-
         // sample data starts at Jan 1, 2018.  Need to offset to current month
         var jan1_18 = new DateTime(2018, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var offset = DateTime.UtcNow.AddDays(-28).Subtract(jan1_18);
@@ -281,30 +243,78 @@ namespace DebugMachineWatchApiServer
       }
     }
 
-    public void Dispose()
+    private long _curStatusLoadCount = 0;
+
+    public void PrintLabel(long matId, int process, Uri httpReferer)
     {
-      Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-      if (_tempDbFile != null)
+      int loadStation = -10;
+      if (
+        httpReferer.Segments.Length == 4
+        && httpReferer.Segments[0] == "/"
+        && httpReferer.Segments[1] == "station/"
+        && httpReferer.Segments[2] == "loadunload/"
+        && int.TryParse(httpReferer.Segments[3], out var lul)
+      )
       {
-        System.IO.File.Delete(_tempDbFile);
+        loadStation = lul;
+      }
+      Serilog.Log.Information(
+        "Print label for {matId} {process} {referer} and {load}",
+        matId,
+        process,
+        httpReferer,
+        loadStation
+      );
+    }
+
+    public ScannedMaterial ParseBarcode(string barcode, Uri referer)
+    {
+      Serilog.Log.Information("Parsing barcode {barcode} {referer}", barcode, referer);
+      System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
+      var commaIdx = barcode.IndexOf(',');
+      if (commaIdx >= 0)
+        barcode = barcode.Substring(0, commaIdx);
+      using (var conn = RepoConfig.OpenConnection())
+      {
+        var mats = conn.GetMaterialDetailsForSerial(barcode);
+        if (mats.Count > 0)
+        {
+          return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
+        }
+        else
+        {
+          return new ScannedMaterial()
+          {
+            Casting = new ScannedCasting()
+            {
+              Serial = barcode,
+              Workorder = "work1",
+              //PossibleCastings = ImmutableList.Create("part1", "part2"),
+              PossibleJobs = ImmutableList.Create("aaa-offline-2018-01-01", "bbb-offline-2018-01-01")
+            },
+          };
+        }
       }
     }
 
-    public IJobControl JobControl
+    public event Action NewCellState
     {
-      get => this;
+      add { }
+      remove { }
     }
-    public IQueueControl QueueControl => this;
 
-    public IMachineControl MachineControl => this;
-
-    private long _curStatusLoadCount = 0;
-
-    public CurrentStatus GetCurrentStatus()
+    public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
     {
+      return Enumerable.Empty<string>();
+    }
+
+    public DebugCellState CalculateCellState(IRepository db)
+    {
+      bool changed = false;
       _curStatusLoadCount += 1;
       if (_curStatusLoadCount % 5 == 0)
       {
+        changed = true;
         if (CurrentStatus.Alarms.Count > 0)
         {
           CurrentStatus = CurrentStatus with { Alarms = ImmutableList<string>.Empty };
@@ -318,283 +328,22 @@ namespace DebugMachineWatchApiServer
         }
       }
 
-      return CurrentStatus;
-    }
-
-    public void RecalculateCellState() { }
-
-    public List<string> CheckValidRoutes(IEnumerable<Job> newJobs)
-    {
-      return new List<string>();
-    }
-
-    public void AddJobs(NewJobs jobs, string expectedPreviousScheduleId)
-    {
-      using var LogDB = RepoConfig.OpenConnection();
-      LogDB.AddJobs(jobs, expectedPreviousScheduleId, addAsCopiedToSystem: true);
-      OnNewJobs?.Invoke(jobs);
-    }
-
-    public void SetJobComment(string jobUnique, string comment)
-    {
-      using var LogDB = RepoConfig.OpenConnection();
-      Serilog.Log.Information("Setting comment for {job} to {comment}", jobUnique, comment);
-      LogDB.SetJobComment(jobUnique, comment);
-      CurrentStatus = CurrentStatus.Produce(draft =>
+      return new DebugCellState()
       {
-        if (draft.Jobs.ContainsKey(jobUnique))
-        {
-          draft.Jobs[jobUnique] = draft.Jobs[jobUnique] with { Comment = comment };
-        }
-      });
-      OnNewCurrentStatus?.Invoke(CurrentStatus);
-    }
-
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(
-      string casting,
-      int qty,
-      string queue,
-      IList<string> serials,
-      string workorder,
-      string operatorName
-    )
-    {
-      Serilog.Log.Information(
-        "AddUnallocatedCastingToQueue: {casting} x{qty} {queue} {@serials} {workorder} {oper}",
-        casting,
-        qty,
-        queue,
-        serials,
-        workorder,
-        operatorName
-      );
-      var ret = new List<InProcessMaterial>();
-      for (int i = 0; i < qty; i++)
-      {
-        var m = new InProcessMaterial()
-        {
-          MaterialID = -500,
-          JobUnique = null,
-          PartName = casting,
-          Process = 0,
-          Path = 1,
-          Serial = i < serials.Count ? serials[i] : null,
-          WorkorderId = workorder,
-          Location = new InProcessMaterialLocation()
-          {
-            Type = InProcessMaterialLocation.LocType.InQueue,
-            CurrentQueue = queue,
-            QueuePosition = 10 + i
-          },
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-          SignaledInspections = ImmutableList<string>.Empty,
-          QuarantineAfterUnload = null,
-        };
-        CurrentStatus %= st => st.Material.Add(m);
-        ret.Add(m);
-      }
-      OnNewCurrentStatus?.Invoke(CurrentStatus);
-      return ret;
-    }
-
-    public InProcessMaterial AddUnprocessedMaterialToQueue(
-      string jobUnique,
-      int lastCompletedProcess,
-      string queue,
-      int position,
-      string serial,
-      string workorder,
-      string operatorName = null
-    )
-    {
-      Serilog.Log.Information(
-        "AddUnprocessedMaterialToQueue: {unique} {lastCompProcess} {queue} {position} {serial} {oper} {work}",
-        jobUnique,
-        lastCompletedProcess,
-        queue,
-        position,
-        serial,
-        operatorName,
-        workorder
-      );
-
-      var part = CurrentStatus.Jobs.TryGetValue(jobUnique, out var job) ? job.PartName : "";
-      var m = new InProcessMaterial()
-      {
-        MaterialID = -500,
-        JobUnique = jobUnique,
-        PartName = part,
-        Process = lastCompletedProcess,
-        Path = 1,
-        Serial = serial,
-        WorkorderId = workorder,
-        Location = new InProcessMaterialLocation()
-        {
-          Type = InProcessMaterialLocation.LocType.InQueue,
-          CurrentQueue = queue,
-          QueuePosition = position
-        },
-        Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-        SignaledInspections = ImmutableList<string>.Empty,
-        QuarantineAfterUnload = null,
+        CurrentStatus = CurrentStatus,
+        TimeUntilNextRefresh = TimeSpan.FromMinutes(1),
+        StateUpdated = changed
       };
-      CurrentStatus %= st => st.Material.Add(m);
-      OnNewCurrentStatus?.Invoke(CurrentStatus);
-      return m;
     }
 
-    public void SetMaterialInQueue(long materialId, string queue, int position, string operatorName = null)
+    public bool ApplyActions(IRepository db, DebugCellState st)
     {
-      Serilog.Log.Information(
-        "SetMaterialInQueue {matId} {queue} {position} {oper}",
-        materialId,
-        queue,
-        position,
-        operatorName
-      );
-
-      var toMove = CurrentStatus.Material.FirstOrDefault(m =>
-        m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-      );
-      if (toMove == null)
-        return;
-
-      // shift old downward
-      CurrentStatus = CurrentStatus with
-      {
-        Material = CurrentStatus
-          .Material.Select(m =>
-          {
-            int pos = m.Location.QueuePosition ?? 0;
-
-            if (
-              m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-              && m.Location.CurrentQueue == toMove.Location.CurrentQueue
-              && pos > toMove.Location.QueuePosition
-            )
-            {
-              pos -= 1;
-            }
-            if (
-              m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-              && m.Location.CurrentQueue == queue
-              && pos >= position
-            )
-            {
-              pos += 1;
-            }
-
-            if (m.MaterialID == toMove.MaterialID)
-            {
-              return m with
-              {
-                Location = new()
-                {
-                  Type = InProcessMaterialLocation.LocType.InQueue,
-                  CurrentQueue = queue,
-                  QueuePosition = position
-                }
-              };
-            }
-            else
-            {
-              return m with { Location = m.Location with { QueuePosition = pos } };
-            }
-          })
-          .ToImmutableList()
-      };
-
-      using (var LogDB = RepoConfig.OpenConnection())
-      {
-        LogDB.RecordAddMaterialToQueue(
-          mat: new EventLogMaterial()
-          {
-            MaterialID = materialId,
-            Process = 0,
-            Face = 0
-          },
-          queue: queue,
-          position: position,
-          operatorName: operatorName,
-          reason: "SetByOperator"
-        );
-      }
-
-      OnNewStatus(CurrentStatus);
+      return false;
     }
 
-    public void SignalMaterialForQuarantine(long materialId, string operatorName = null, string reason = null)
+    public bool DecrementJobs(IRepository db, DebugCellState st)
     {
-      Serilog.Log.Information("SignalMatForQuarantine {matId} {oper}", materialId, operatorName);
-      var mat = CurrentStatus.Material.FirstOrDefault(m => m.MaterialID == materialId);
-      if (mat == null)
-        throw new BadRequestException("Material does not exist");
-
-      using (var LogDB = RepoConfig.OpenConnection())
-      {
-        LogDB.SignalMaterialForQuarantine(
-          new EventLogMaterial()
-          {
-            MaterialID = materialId,
-            Process = mat.Process,
-            Face = 0
-          },
-          pallet: mat.Location.PalletNum ?? 0,
-          queue: _fmsSettings.QuarantineQueue,
-          operatorName: operatorName,
-          reason: reason
-        );
-      }
-    }
-
-    public void RemoveMaterialFromAllQueues(IList<long> materialIds, string operatorName = null)
-    {
-      Serilog.Log.Information("RemoveMaterialFromAllQueues {@matId} {oper}", materialIds, operatorName);
-
-      foreach (var materialId in materialIds)
-      {
-        var toRemove = CurrentStatus.Material.FirstOrDefault(m =>
-          m.MaterialID == materialId && m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-        );
-        if (toRemove == null)
-          return;
-
-        // shift downward
-        CurrentStatus %= st =>
-        {
-          for (int i = 0; i < st.Material.Count; i++)
-          {
-            var m = st.Material[i];
-            if (
-              m.Location.Type == InProcessMaterialLocation.LocType.InQueue
-              && m.Location.CurrentQueue == toRemove.Location.CurrentQueue
-              && m.Location.QueuePosition < toRemove.Location.QueuePosition
-            )
-            {
-              st.Material[i] = m %= mat => mat.Location.QueuePosition -= 1;
-            }
-          }
-
-          st.Material.Remove(toRemove);
-        };
-      }
-
-      OnNewStatus(CurrentStatus);
-    }
-
-    public List<JobAndDecrementQuantity> DecrementJobQuantites(long loadDecrementsStrictlyAfterDecrementId)
-    {
-      throw new NotImplementedException();
-    }
-
-    public List<JobAndDecrementQuantity> DecrementJobQuantites(DateTime loadDecrementsAfterTimeUTC)
-    {
-      throw new NotImplementedException();
-    }
-
-    private void OnNewStatus(CurrentStatus s)
-    {
-      OnNewCurrentStatus?.Invoke(s);
+      return false;
     }
 
     public ImmutableList<ToolInMachine> CurrentToolsInMachines()
@@ -716,17 +465,11 @@ namespace DebugMachineWatchApiServer
             // ignore inspection complete
             continue;
           }
-          var e2 = e.Produce(draft =>
+          var e2 = e with { EndTimeUTC = e.EndTimeUTC.Add(offset) };
+          if (tools.TryGetValue(e.Counter, out var usage))
           {
-            draft.EndTimeUTC = draft.EndTimeUTC.Add(offset);
-            if (tools.TryGetValue(e.Counter, out var usage))
-            {
-              foreach (var u in usage)
-              {
-                draft.Tools.Add(u);
-              }
-            }
-          });
+            e2 = e2 with { Tools = e2.Tools.AddRange(usage) };
+          }
           ((Repository)LogDB).AddLogEntryFromUnitTest(e2);
         }
       }
@@ -740,37 +483,25 @@ namespace DebugMachineWatchApiServer
       using var LogDB = RepoConfig.OpenConnection();
       foreach (var newJobs in allNewJobs)
       {
-        var newJobsOffset = newJobs.Produce(newJobsDraft =>
+        var newJobsOffset = newJobs with
         {
-          for (int i = 0; i < newJobs.Jobs.Count; i++)
-          {
-            newJobsDraft.Jobs[i] = OffsetJob(newJobsDraft.Jobs[i], offset);
-          }
-
-          for (int i = 0; i < newJobs.StationUse.Count; i++)
-          {
-            newJobsDraft.StationUse[i] %= draft =>
-            {
-              draft.StartUTC = draft.StartUTC.Add(offset);
-              draft.EndUTC = draft.EndUTC.Add(offset);
-            };
-          }
-          for (int i = 0; i < newJobs.CurrentUnfilledWorkorders.Count; i++)
-          {
-            newJobsDraft.CurrentUnfilledWorkorders[i] %= w => w.DueDate = w.DueDate.Add(offset);
-          }
-          if (newJobs.SimDayUsage != null)
-          {
-            for (int i = 0; i < newJobs.SimDayUsage.Count; i++)
-            {
-              var old = newJobsDraft.SimDayUsage[i];
-              newJobsDraft.SimDayUsage[i] = old with
+          Jobs = newJobs.Jobs.Select(j => OffsetJob(j, offset)).ToImmutableList(),
+          StationUse = newJobs
+            .StationUse?.Select(su =>
+              su with
               {
-                Day = old.Day.AddDays((int)Math.Round(offset.TotalDays))
-              };
-            }
-          }
-        });
+                StartUTC = su.StartUTC.Add(offset),
+                EndUTC = su.EndUTC.Add(offset),
+              }
+            )
+            .ToImmutableList(),
+          CurrentUnfilledWorkorders = newJobs
+            .CurrentUnfilledWorkorders?.Select(w => w with { DueDate = w.DueDate.Add(offset) })
+            .ToImmutableList(),
+          SimDayUsage = newJobs
+            .SimDayUsage?.Select(su => su with { Day = su.Day.AddDays((int)Math.Round(offset.TotalDays)) })
+            .ToImmutableList(),
+        };
 
         LogDB.AddJobs(newJobsOffset, null, addAsCopiedToSystem: true);
       }

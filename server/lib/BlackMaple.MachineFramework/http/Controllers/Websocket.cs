@@ -52,7 +52,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public EditMaterialInLogEvents EditMaterialInLog { get; init; }
   }
 
-  public class WebsocketManager
+  public sealed class WebsocketManager : IAsyncDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<WebsocketManager>();
 
@@ -108,25 +108,22 @@ namespace BlackMaple.MachineFramework.Controllers
     private readonly System.Collections.Concurrent.BlockingCollection<ServerEvent> _messages;
     private readonly Thread _thread;
 
-    public WebsocketManager(FMSImplementation impl)
+    // Injecting IJobAndQueueControl here ensures that logging starts as soon as FMS Insight starts
+    public WebsocketManager(RepositoryConfig repo, IJobAndQueueControl jobAndQueue)
     {
       _serSettings = new JsonSerializerOptions();
-      Startup.JsonSettings(_serSettings);
+      FMSInsightWebHost.JsonSettings(_serSettings);
 
       _messages = new System.Collections.Concurrent.BlockingCollection<ServerEvent>(100);
       _thread = new System.Threading.Thread(SendThread);
       _thread.IsBackground = true;
       _thread.Start();
 
-      if (impl.Backend != null)
-      {
-        impl.Backend.RepoConfig.NewLogEntry += (e, foreignId, db) => Send(new ServerEvent() { LogEntry = e });
-        impl.Backend.JobControl.OnNewJobs += (jobs) =>
-          Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
-        impl.Backend.OnNewCurrentStatus += (status) => Send(new ServerEvent() { NewCurrentStatus = status });
-        impl.Backend.QueueControl.OnEditMaterialInLog += (o) =>
-          Send(new ServerEvent() { EditMaterialInLog = o });
-      }
+      repo.NewLogEntry += (e, foreignId, db) => Send(new ServerEvent() { LogEntry = e });
+      jobAndQueue.OnNewJobs += (jobs) =>
+        Send(new ServerEvent() { NewJobs = jobs with { Programs = null, DebugMessage = null } });
+      jobAndQueue.OnNewCurrentStatus += (status) => Send(new ServerEvent() { NewCurrentStatus = status });
+      jobAndQueue.OnEditMaterialInLog += (o) => Send(new ServerEvent() { EditMaterialInLog = o });
     }
 
     private void Send(ServerEvent val)
@@ -205,8 +202,14 @@ namespace BlackMaple.MachineFramework.Controllers
       }
     }
 
-    public async Task CloseAll()
+    private bool _disposed = false;
+
+    public async ValueTask DisposeAsync()
     {
+      if (_disposed)
+        return;
+      _disposed = true;
+
       var tasks = new List<Task>();
       var sockets = _sockets.Clear();
 
