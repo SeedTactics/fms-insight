@@ -787,7 +787,20 @@ namespace MachineWatchTest
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "pallet-subset.json")),
         jsonSettings
       );
-      _writeJobs.AddJobs(_jobDB, newJobs, null);
+
+      _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
+      WriteJobs
+        .SyncFromDatabase(
+          _initialAllData,
+          _jobDB,
+          _writeMock,
+          _readMock,
+          _settings,
+          _mazakCfg,
+          new DateTime(2024, 6, 18, 22, 0, 0, DateTimeKind.Utc)
+        )
+        .Should()
+        .BeTrue();
 
       ShouldMatchSnapshot(_writeMock.UpdateSchedules, "pallet-subset-updatesch.json");
       ShouldMatchSnapshot(_writeMock.DeleteParts, "pallet-subset-delparts.json");

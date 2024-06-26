@@ -2,7 +2,7 @@
   "Schedules": [
     {
       "Id": 2,
-      "Comment": "bbb-1Pc6PyIjHQ2Bz0Ew2-Path1-1-0",
+      "Comment": "bbb-1Pc6PyIjHQ2Bz0Ew2-Insight",
       "PartName": "bbb:0:2",
       "PlanQuantity": 50,
       "CompleteQuantity": 0,
@@ -62,7 +62,7 @@
     },
     {
       "Id": 1,
-      "Comment": "aaa-0Pc6PyIjHQ2Bz0Ew2-Path1-1-0",
+      "Comment": "aaa-0Pc6PyIjHQ2Bz0Ew2-Insight",
       "PartName": "aaa:0:1",
       "PlanQuantity": 50,
       "CompleteQuantity": 0,

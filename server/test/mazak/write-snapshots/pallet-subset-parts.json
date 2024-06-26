@@ -3,7 +3,7 @@
   "Parts": [
     {
       "PartName": "aaa:0:1",
-      "Comment": "aaa-0Pc6PyIjHQ2Bz0Ew2-Path1-1-0",
+      "Comment": "aaa-0Pc6PyIjHQ2Bz0Ew2-Insight",
       "Price": 0,
       "TotalProcess": 2,
       "MaterialName": "",
@@ -58,7 +58,7 @@
     },
     {
       "PartName": "bbb:0:2",
-      "Comment": "bbb-1Pc6PyIjHQ2Bz0Ew2-Path1-1-0",
+      "Comment": "bbb-1Pc6PyIjHQ2Bz0Ew2-Insight",
       "Price": 0,
       "TotalProcess": 2,
       "MaterialName": "",
