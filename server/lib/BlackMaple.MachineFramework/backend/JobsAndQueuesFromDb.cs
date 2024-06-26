@@ -260,11 +260,6 @@ namespace BlackMaple.MachineFramework
             lock (_curStLock)
             {
               _lastCurrentStatus = st;
-              if (_syncError != null)
-              {
-                _syncError = null;
-                raiseNewCurStatus = true;
-              }
             }
 
             if (raiseNewCurStatus && Log.IsEnabled(Serilog.Events.LogEventLevel.Verbose))
@@ -284,6 +279,12 @@ namespace BlackMaple.MachineFramework
           } while (actionPerformed);
 
           _syncronizeErrorCount = 0;
+          if (_syncError != null)
+          {
+            _syncError = null;
+            raiseNewCurStatus = true;
+          }
+
           return timeUntilNextRefresh;
         }
       }
