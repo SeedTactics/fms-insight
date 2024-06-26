@@ -38,6 +38,8 @@ using System.Linq;
 using AutoFixture;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.VisualStudio.TestPlatform.TestHost;
 using Xunit;
 
 namespace MachineWatchTest
@@ -1219,21 +1221,18 @@ namespace MachineWatchTest
 
       //********  Complete the pal1 machining
       pal1Cycle.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          4,
-          "prog1",
-          false, //start of event
-          pal1CycleTime.AddMinutes(30),
-          "result"
+        _jobLog.RecordMachineEnd(
+          new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+          pallet: 1,
+          statName: "MC",
+          statNum: 4,
+          program: "prog1",
+          result: "result",
+          timeUTC: pal1CycleTime.AddMinutes(30),
+          elapsed: TimeSpan.FromMinutes(30),
+          active: TimeSpan.Zero
         )
-      ); //end of route
-
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(pal1Cycle[pal1Cycle.Count - 1]);
+      );
 
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog(1), DateTime.UtcNow.AddHours(-10));
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog(2), DateTime.UtcNow.AddHours(-10));
@@ -1244,23 +1243,15 @@ namespace MachineWatchTest
       );
 
       //********  Ignores invalidated and swap events
-      var invalidated = new LogEntry(
-        cntr: 0,
-        mat: new[] { mat1, mat2 },
-        pal: 1,
-        ty: LogType.MachineCycle,
-        locName: "OtherMC",
-        locNum: 100,
-        prog: "prog22",
-        start: true,
-        endTime: pal1CycleTime.AddMinutes(31),
-        result: "prog22"
+      var invalidated = _jobLog.RecordMachineStart(
+        new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+        pallet: 1,
+        statName: "OtherMC",
+        statNum: 100,
+        program: "prog22",
+        timeUTC: pal1CycleTime.AddMinutes(31),
+        extraData: new Dictionary<string, string> { { "PalletCycleInvalidated", "1" } }
       );
-      invalidated = invalidated with
-      {
-        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("PalletCycleInvalidated", "1")
-      };
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(invalidated);
 
       var swap = new LogEntry(
         cntr: 0,
@@ -1485,23 +1476,17 @@ namespace MachineWatchTest
         "2"
       );
 
-      var log1 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        16,
-        LogType.GeneralMessage,
-        "Hello",
-        5,
-        "program125",
-        false,
-        DateTime.UtcNow,
-        "result66",
-        TimeSpan.FromMinutes(166),
-        TimeSpan.FromMinutes(74)
+      Assert.Equal("", _jobLog.MaxForeignID());
+
+      var log1 = _jobLog.RecordGeneralMessage(
+        mats: [EventLogMaterial.FromLogMat(mat1), EventLogMaterial.FromLogMat(mat2)],
+        pallet: 16,
+        program: "program125",
+        result: "result66",
+        foreignId: "foreign1",
+        originalMessage: "the original message"
       );
 
-      Assert.Equal("", _jobLog.MaxForeignID());
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log1, "foreign1", "the original message");
       Assert.Equal("foreign1", _jobLog.MaxForeignID());
 
       _jobLog
@@ -1562,53 +1547,36 @@ namespace MachineWatchTest
       );
 
       //not adding all events, but at least one non-endofroute and one endofroute
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1_proc1 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "prog1",
-          false,
-          t.AddMinutes(5),
-          "",
-          TimeSpan.FromMinutes(10),
-          TimeSpan.FromMinutes(20)
-        )
+      _jobLog.RecordMachineEnd(
+        mats: [EventLogMaterial.FromLogMat(mat1_proc1)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "prog1",
+        result: "",
+        timeUTC: t.AddMinutes(5),
+        elapsed: TimeSpan.FromMinutes(10),
+        active: TimeSpan.FromMinutes(20)
       );
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1_proc2 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "prog2",
-          false,
-          t.AddMinutes(6),
-          "",
-          TimeSpan.FromMinutes(30),
-          TimeSpan.FromMinutes(40)
-        )
+      _jobLog.RecordMachineEnd(
+        mats: [EventLogMaterial.FromLogMat(mat1_proc2)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "prog2",
+        timeUTC: t.AddMinutes(6),
+        result: "",
+        elapsed: TimeSpan.FromMinutes(30),
+        active: TimeSpan.FromMinutes(40)
       );
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1_proc2, mat2_proc1 }, //mat2_proc1 should be ignored since it isn't final process
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          5,
-          "UNLOAD",
-          false,
-          t.AddMinutes(7),
-          "UNLOAD",
-          TimeSpan.FromMinutes(50),
-          TimeSpan.FromMinutes(60)
-        )
+      _jobLog.RecordUnloadEnd(
+        //mat2_proc1 should be ignored since it isn't final process
+        mats: [EventLogMaterial.FromLogMat(mat1_proc2), EventLogMaterial.FromLogMat(mat2_proc1)],
+        pallet: 1,
+        lulNum: 5,
+        timeUTC: t.AddMinutes(7),
+        elapsed: TimeSpan.FromMinutes(50),
+        active: TimeSpan.FromMinutes(60)
       );
 
       //four materials on the same pallet but different workorders
@@ -1653,37 +1621,24 @@ namespace MachineWatchTest
         ""
       );
 
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat3, mat4, mat5, mat6 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "progdouble",
-          false,
-          t.AddMinutes(15),
-          "",
-          TimeSpan.FromMinutes(3),
-          TimeSpan.FromMinutes(4)
-        )
+      _jobLog.RecordMachineEnd(
+        mats: new[] { mat3, mat4, mat5, mat6 }.Select(EventLogMaterial.FromLogMat),
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "progdouble",
+        timeUTC: t.AddMinutes(15),
+        result: "",
+        elapsed: TimeSpan.FromMinutes(3),
+        active: TimeSpan.FromMinutes(4)
       );
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat3, mat4, mat5, mat6 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          5,
-          "UNLOAD",
-          false,
-          t.AddMinutes(17),
-          "UNLOAD",
-          TimeSpan.FromMinutes(5),
-          TimeSpan.FromMinutes(6)
-        )
+      _jobLog.RecordUnloadEnd(
+        mats: new[] { mat3, mat4, mat5, mat6 }.Select(EventLogMaterial.FromLogMat),
+        pallet: 1,
+        lulNum: 5,
+        timeUTC: t.AddMinutes(17),
+        elapsed: TimeSpan.FromMinutes(5),
+        active: TimeSpan.FromMinutes(6)
       );
 
       //now record serial and workorder
@@ -1754,13 +1709,13 @@ namespace MachineWatchTest
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(10 + 30 + 3 * 1 / c2Cnt)) //10 + 30 from mat1, 3*1/4 for mat3
             .Add(
-              "Load",
+              "L/U",
               TimeSpan.FromMinutes(50 / 2 + 5 * 1 / c2Cnt)
             ) //50/2 from mat1_proc2, and 5*1/4 for mat3
           ,
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(20 + 40 + 4 * 1 / c2Cnt)) //20 + 40 from mat1, 4*1/4 for mat3
-            .Add("Load", TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt)), //60/2 from mat1_proc2, and 6*1/4 for mat3
+            .Add("L/U", TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt)), //60/2 from mat1_proc2, and 6*1/4 for mat3
           SimulatedFilled = work1part1.SimulatedFilled,
           SimulatedStart = work1part1.SimulatedStart,
         },
@@ -1776,10 +1731,10 @@ namespace MachineWatchTest
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(3 * 1 / c2Cnt))
-            .Add("Load", TimeSpan.FromMinutes(5 * 1 / c2Cnt)),
+            .Add("L/U", TimeSpan.FromMinutes(5 * 1 / c2Cnt)),
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(4 * 1 / c2Cnt))
-            .Add("Load", TimeSpan.FromMinutes(6 * 1 / c2Cnt)),
+            .Add("L/U", TimeSpan.FromMinutes(6 * 1 / c2Cnt)),
           SimulatedFilled = work1part2.SimulatedFilled,
           SimulatedStart = work1part2.SimulatedStart
         },
@@ -1796,10 +1751,10 @@ namespace MachineWatchTest
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(3 * 2 / c2Cnt))
-            .Add("Load", TimeSpan.FromMinutes(5 * 2 / c2Cnt)),
+            .Add("L/U", TimeSpan.FromMinutes(5 * 2 / c2Cnt)),
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(4 * 2 / c2Cnt))
-            .Add("Load", TimeSpan.FromMinutes(6 * 2 / c2Cnt)),
+            .Add("L/U", TimeSpan.FromMinutes(6 * 2 / c2Cnt)),
           SimulatedFilled = work2.SimulatedFilled,
           SimulatedStart = work2.SimulatedStart,
         }
@@ -5419,37 +5374,30 @@ namespace MachineWatchTest
         "themat4serial"
       );
 
-      var log1 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        1,
-        LogType.GeneralMessage,
-        "ABC",
-        1,
-        "prog1",
-        false,
-        t,
-        "result1",
-        TimeSpan.FromMinutes(10),
-        TimeSpan.FromMinutes(12)
-      );
-      var log2 = new LogEntry(
-        0,
-        new LogMaterial[] { mat1, mat2 },
-        2,
-        LogType.MachineCycle,
-        "MC",
-        1,
-        "prog2",
-        false,
-        t.AddMinutes(20),
-        "result2",
-        TimeSpan.FromMinutes(15),
-        TimeSpan.FromMinutes(17)
-      );
-
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log1);
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(log2);
+      var log1 = _jobLog.RecordGeneralMessage(
+        [EventLogMaterial.FromLogMat(mat1), EventLogMaterial.FromLogMat(mat2)],
+        pallet: 1,
+        program: "prog1",
+        result: "prog1",
+        timeUTC: t
+      ) with
+      {
+        Material = [mat1, mat2]
+      };
+      var log2 = _jobLog.RecordMachineEnd(
+        [EventLogMaterial.FromLogMat(mat1), EventLogMaterial.FromLogMat(mat2)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 1,
+        program: "prog2",
+        result: "result2",
+        timeUTC: t.AddMinutes(20),
+        elapsed: TimeSpan.FromMinutes(15),
+        active: TimeSpan.FromMinutes(17)
+      ) with
+      {
+        Material = [mat1, mat2]
+      };
 
       _jobLog.AddPendingLoad(1, "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
       _jobLog.AddPendingLoad(1, "key2", 7, TimeSpan.FromMinutes(44), TimeSpan.FromMinutes(49), "for2");
@@ -5725,8 +5673,8 @@ namespace MachineWatchTest
       );
 
       JobLogTest.CheckLog(
-        new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, ser1, ser2, ser3, ser5, nLoad5 },
         _jobLog.GetLogEntries(t.AddMinutes(-10), t.AddHours(1)).ToList(),
+        new LogEntry[] { ser4, log1, log2, palCycle, nLoad1, nLoad2, ser1, ser2, ser3, ser5, nLoad5 },
         t.AddMinutes(-10)
       );
 
