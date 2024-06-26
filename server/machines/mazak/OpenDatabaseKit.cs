@@ -183,7 +183,7 @@ namespace MazakMachineInterface
 
     private const int EntriesPerTransaction = 20;
 
-    internal static IEnumerable<MazakWriteData> SplitWriteData(MazakWriteData original)
+    public static IEnumerable<MazakWriteData> SplitWriteData(MazakWriteData original)
     {
       // Open Database Kit can lockup if too many commands are sent at once
       return original

@@ -35,8 +35,6 @@ using System.Linq;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.DependencyInjection;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
-
 namespace MazakMachineInterface
 {
   public static class MazakServices

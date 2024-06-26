@@ -34,8 +34,6 @@ using System;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.DependencyInjection;
 
-[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("BlackMaple.MachineFramework.Tests")]
-
 namespace BlackMaple.FMSInsight.Niigata
 {
   public static class NiigataServices
