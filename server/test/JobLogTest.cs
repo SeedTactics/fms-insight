@@ -1028,66 +1028,63 @@ namespace MachineWatchTest
 
       // *********** Add load cycle on pal1
       pal1Initial.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          2,
-          "prog1",
-          true, //start of event
-          pal1InitialTime,
-          "result"
+        _jobLog.RecordLoadStart(
+          mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+          pallet: 1,
+          lulNum: 2,
+          timeUTC: pal1InitialTime
         )
       ); //end of route
-      pal1Initial.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          2,
-          "prog1",
-          false, //start of event
-          pal1InitialTime.AddMinutes(5),
-          "result"
+      pal1Initial.AddRange(
+        _jobLog.RecordLoadEnd(
+          toLoad:
+          [
+            new MaterialToLoadOntoPallet()
+            {
+              LoadStation = 2,
+              Faces =
+              [
+                new MaterialToLoadOntoFace()
+                {
+                  MaterialIDs = [mat1.MaterialID, mat2.MaterialID],
+                  Process = mat1.Process,
+                  Path = mat1.Path,
+                  FaceNum = mat1.Face,
+                  ActiveOperationTime = TimeSpan.FromSeconds(22)
+                }
+              ]
+            }
+          ],
+          pallet: 1,
+          timeUTC: pal1InitialTime.AddMinutes(5)
         )
-      ); //end of route
+      );
 
       // *********** Add machine cycle on pal1
       pal1Initial.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          2,
-          "prog1",
-          true, //start of event
-          pal1InitialTime.AddMinutes(10),
-          "result"
+        _jobLog.RecordMachineStart(
+          mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+          pallet: 1,
+          statName: "MC",
+          statNum: 2,
+          program: "prog1",
+          timeUTC: pal1InitialTime.AddMinutes(10)
         )
       ); //end of route
       pal1Initial.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          2,
-          "prog1",
-          false, //start of event
-          pal1InitialTime.AddMinutes(20),
-          "result"
+        _jobLog.RecordMachineEnd(
+          mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+          pallet: 1,
+          statName: "MC",
+          statNum: 2,
+          program: "prog1",
+          timeUTC: pal1InitialTime.AddMinutes(20),
+          result: "result",
+          elapsed: TimeSpan.FromMinutes(10),
+          active: TimeSpan.Zero
         )
       ); //end of route
       // ***********  End of Route for pal1
-
-      AddToDB(pal1Initial);
 
       CheckLog(pal1Initial, _jobLog.CurrentPalletLog(1), DateTime.UtcNow.AddHours(-10));
       CheckLog(
@@ -1133,35 +1130,23 @@ namespace MachineWatchTest
 
       // *********** Add pal2 load event
       pal2Cycle.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          2,
-          LogType.LoadUnloadCycle,
-          "Load",
-          2,
-          "prog1",
-          true, //start of event
-          pal2CycleTime,
-          "result"
+        _jobLog.RecordLoadStart(
+          mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+          pallet: 2,
+          lulNum: 2,
+          timeUTC: pal2CycleTime
         )
       ); //end of route
-      pal2Cycle.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          2,
-          LogType.LoadUnloadCycle,
-          "Load",
-          2,
-          "prog1",
-          false, //start of event
-          pal2CycleTime.AddMinutes(10),
-          "result"
+      pal2Cycle.AddRange(
+        _jobLog.RecordUnloadEnd(
+          mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+          pallet: 2,
+          lulNum: 2,
+          timeUTC: pal2CycleTime.AddMinutes(10),
+          elapsed: TimeSpan.FromMinutes(10),
+          active: TimeSpan.Zero
         )
       ); //end of route
-
-      AddToDB(pal2Cycle);
 
       _jobLog.CurrentPalletLog(1).Should().BeEmpty();
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog(2), DateTime.UtcNow.AddHours(-10));
@@ -1170,51 +1155,49 @@ namespace MachineWatchTest
 
       // ********** Add pal1 load event
       pal1Cycle.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          2,
-          "prog1",
-          true, //start of event
-          pal1CycleTime,
-          "result"
+        _jobLog.RecordLoadStart(
+          mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+          pallet: 1,
+          lulNum: 2,
+          timeUTC: pal1CycleTime
         )
       ); //end of route
-      pal1Cycle.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          2,
-          "prog1",
-          false, //start of event
-          pal1CycleTime.AddMinutes(15),
-          "result"
+      pal1Cycle.AddRange(
+        _jobLog.RecordLoadEnd(
+          toLoad:
+          [
+            new MaterialToLoadOntoPallet()
+            {
+              LoadStation = 2,
+              Faces =
+              [
+                new MaterialToLoadOntoFace()
+                {
+                  MaterialIDs = [mat1.MaterialID, mat2.MaterialID],
+                  Process = mat1.Process,
+                  Path = mat1.Path,
+                  FaceNum = mat1.Face,
+                  ActiveOperationTime = TimeSpan.FromSeconds(22)
+                }
+              ]
+            }
+          ],
+          pallet: 1,
+          timeUTC: pal1CycleTime.AddMinutes(15)
         )
       ); //end of route
 
       // *********** Add pal1 start of machining
       pal1Cycle.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1, mat2 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          4,
-          "prog1",
-          true, //start of event
-          pal1CycleTime.AddMinutes(20),
-          "result"
+        _jobLog.RecordMachineStart(
+          mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+          pallet: 1,
+          statName: "MC",
+          statNum: 4,
+          program: "prog1",
+          timeUTC: pal1CycleTime.AddMinutes(20)
         )
       ); //end of route
-
-      AddToDB(pal1Cycle);
 
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog(1), DateTime.UtcNow.AddHours(-10));
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog(2), DateTime.UtcNow.AddHours(-10));
@@ -1242,7 +1225,7 @@ namespace MachineWatchTest
         DateTime.UtcNow.AddHours(-10)
       );
 
-      //********  Ignores invalidated and swap events
+      //********  Ignores invalidated
       var invalidated = _jobLog.RecordMachineStart(
         new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
         pallet: 1,
@@ -1253,21 +1236,7 @@ namespace MachineWatchTest
         extraData: new Dictionary<string, string> { { "PalletCycleInvalidated", "1" } }
       );
 
-      var swap = new LogEntry(
-        cntr: 0,
-        mat: new[] { mat1, mat2 },
-        pal: 1,
-        ty: LogType.SwapMaterialOnPallet,
-        locName: "SwapMatOnPallet",
-        locNum: 1,
-        prog: "SwapMatOnPallet",
-        start: false,
-        endTime: pal1CycleTime.AddMinutes(32),
-        result: "Replace aaa with bbb"
-      );
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(swap);
-
-      // neither invalidated nor swap added to pal1Cycle
+      // invalidated not added to pal1Cycle
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog(1), DateTime.UtcNow.AddHours(-10));
       CheckLog(
         pal1Initial.Concat(pal1Cycle).Concat(pal2Cycle).Where(e => !e.Material.IsEmpty),
@@ -1298,9 +1267,9 @@ namespace MachineWatchTest
       Assert.Equal(pal1CycleTime.AddMinutes(40), _jobLog.LastPalletCycleTime(1));
       _jobLog.CurrentPalletLog(1).Should().BeEmpty();
 
-      // add invalidated and swap when loading all entries
+      // add invalidated when loading all entries
       CheckLog(
-        pal1Cycle.Append(invalidated).Append(swap).ToList(),
+        pal1Cycle.Append(invalidated).ToList(),
         _jobLog.GetLogEntries(pal1CycleTime.AddMinutes(-5), DateTime.UtcNow).ToList(),
         DateTime.UtcNow.AddHours(-50)
       );
@@ -1866,200 +1835,144 @@ namespace MachineWatchTest
       );
 
       //mat1 has proc1 in old, proc2 in recent so everything should be loaded
-      var mat1_proc1old = AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1_proc1 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "prog1",
-          false,
-          old.AddMinutes(5),
-          "",
-          TimeSpan.FromMinutes(10),
-          TimeSpan.FromMinutes(20)
-        )
+      var mat1_proc1old = _jobLog.RecordMachineEnd(
+        mats: [EventLogMaterial.FromLogMat(mat1_proc1)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "prog1",
+        timeUTC: old.AddMinutes(5),
+        result: "",
+        elapsed: TimeSpan.FromMinutes(10),
+        active: TimeSpan.FromMinutes(20)
       );
-      var mat1_proc1complete = AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1_proc1 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          5,
-          "prog1",
-          false,
-          old.AddMinutes(6),
-          "",
-          TimeSpan.FromMinutes(11),
-          TimeSpan.FromMinutes(21)
-        )
+      var mat1_proc1complete = _jobLog.RecordLoadEnd(
+        toLoad:
+        [
+          new MaterialToLoadOntoPallet()
+          {
+            LoadStation = 5,
+            Faces =
+            [
+              new MaterialToLoadOntoFace()
+              {
+                MaterialIDs = [mat1_proc1.MaterialID],
+                Process = mat1_proc1.Process,
+                Path = mat1_proc1.Path,
+                FaceNum = mat1_proc1.Face,
+                ActiveOperationTime = TimeSpan.FromMinutes(21),
+              }
+            ],
+            Elapsed = TimeSpan.FromMinutes(11)
+          }
+        ],
+        pallet: 1,
+        timeUTC: old.AddMinutes(6)
       );
-      var mat1_proc2old = AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1_proc2 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "prog2",
-          false,
-          old.AddMinutes(7),
-          "",
-          TimeSpan.FromMinutes(12),
-          TimeSpan.FromMinutes(22)
-        )
+      var mat1_proc2old = _jobLog.RecordMachineEnd(
+        mats: [EventLogMaterial.FromLogMat(mat1_proc2)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "prog2",
+        timeUTC: old.AddMinutes(7),
+        result: "",
+        elapsed: TimeSpan.FromMinutes(12),
+        active: TimeSpan.FromMinutes(22)
       );
-      var mat1_proc2complete = AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat1_proc2 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          5,
-          "UNLOAD",
-          false,
-          recent.AddMinutes(4),
-          "UNLOAD",
-          TimeSpan.FromMinutes(30),
-          TimeSpan.FromMinutes(40)
-        )
+      var mat1_proc2complete = _jobLog.RecordUnloadEnd(
+        mats: [EventLogMaterial.FromLogMat(mat1_proc2)],
+        pallet: 1,
+        lulNum: 5,
+        timeUTC: recent.AddMinutes(4),
+        elapsed: TimeSpan.FromMinutes(30),
+        active: TimeSpan.FromMinutes(40)
       );
 
       //mat2 has everything in recent, (including proc1 complete) but no complete on proc2
-      AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat2_proc1 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "mach2",
-          false,
-          recent.AddMinutes(5),
-          "",
-          TimeSpan.FromMinutes(50),
-          TimeSpan.FromMinutes(60)
-        )
+      _jobLog.RecordMachineEnd(
+        mats: [EventLogMaterial.FromLogMat(mat2_proc1)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "mach2",
+        timeUTC: recent.AddMinutes(5),
+        result: "",
+        elapsed: TimeSpan.FromMinutes(50),
+        active: TimeSpan.FromMinutes(60)
       );
-      AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat2_proc1 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          5,
-          "load2",
-          false,
-          recent.AddMinutes(6),
-          "UNLOAD",
-          TimeSpan.FromMinutes(51),
-          TimeSpan.FromMinutes(61)
-        )
+      _jobLog.RecordUnloadEnd(
+        mats: [EventLogMaterial.FromLogMat(mat2_proc1)],
+        pallet: 1,
+        lulNum: 5,
+        timeUTC: recent.AddMinutes(6),
+        elapsed: TimeSpan.FromMinutes(51),
+        active: TimeSpan.FromMinutes(61)
       );
-      AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat2_proc2 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "mach2",
-          false,
-          old.AddMinutes(7),
-          "",
-          TimeSpan.FromMinutes(52),
-          TimeSpan.FromMinutes(62)
-        )
+      _jobLog.RecordMachineEnd(
+        mats: [EventLogMaterial.FromLogMat(mat2_proc2)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "mach2",
+        timeUTC: old.AddMinutes(7),
+        result: "",
+        elapsed: TimeSpan.FromMinutes(52),
+        active: TimeSpan.FromMinutes(62)
       );
 
       //mat3 has everything in old
-      AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat3 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "prog3",
-          false,
-          old.AddMinutes(20),
-          "",
-          TimeSpan.FromMinutes(70),
-          TimeSpan.FromMinutes(80)
-        )
+      _jobLog.RecordMachineEnd(
+        mats: [EventLogMaterial.FromLogMat(mat3)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "prog3",
+        timeUTC: old.AddMinutes(20),
+        result: "",
+        elapsed: TimeSpan.FromMinutes(70),
+        active: TimeSpan.FromMinutes(80)
       );
-      AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat3 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          5,
-          "load3",
-          false,
-          old.AddMinutes(25),
-          "UNLOAD",
-          TimeSpan.FromMinutes(71),
-          TimeSpan.FromMinutes(81)
-        )
+      _jobLog.RecordUnloadEnd(
+        mats: [EventLogMaterial.FromLogMat(mat3)],
+        pallet: 1,
+        lulNum: 5,
+        timeUTC: old.AddMinutes(25),
+        elapsed: TimeSpan.FromMinutes(71),
+        active: TimeSpan.FromMinutes(81)
       );
 
       //mat4 has everything in new
-      var mat4recent = AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat4 },
-          1,
-          LogType.MachineCycle,
-          "MC",
-          5,
-          "prog44",
-          false,
-          recent.AddMinutes(40),
-          "",
-          TimeSpan.FromMinutes(90),
-          TimeSpan.FromMinutes(100)
-        )
+      var mat4recent = _jobLog.RecordMachineEnd(
+        mats: [EventLogMaterial.FromLogMat(mat4)],
+        pallet: 1,
+        statName: "MC",
+        statNum: 5,
+        program: "prog44",
+        timeUTC: recent.AddMinutes(40),
+        result: "",
+        elapsed: TimeSpan.FromMinutes(90),
+        active: TimeSpan.FromMinutes(100)
       );
-      var mat4complete = AddLogEntry(
-        new LogEntry(
-          0,
-          new LogMaterial[] { mat4 },
-          1,
-          LogType.LoadUnloadCycle,
-          "Load",
-          5,
-          "load4",
-          false,
-          recent.AddMinutes(45),
-          "UNLOAD",
-          TimeSpan.FromMinutes(91),
-          TimeSpan.FromMinutes(101)
-        )
+      var mat4complete = _jobLog.RecordUnloadEnd(
+        mats: [EventLogMaterial.FromLogMat(mat4)],
+        pallet: 1,
+        lulNum: 5,
+        timeUTC: recent.AddMinutes(45),
+        elapsed: TimeSpan.FromMinutes(91),
+        active: TimeSpan.FromMinutes(101)
       );
 
       CheckLog(
-        new[]
-        {
-          mat1_proc1old,
-          mat1_proc1complete,
-          mat1_proc2old,
-          mat1_proc2complete,
-          mat4recent,
-          mat4complete
-        },
         _jobLog.GetCompletedPartLogs(recent.AddHours(-4), recent.AddHours(4)).ToList(),
+        [
+          mat1_proc1old,
+          .. mat1_proc1complete,
+          mat1_proc2old,
+          .. mat1_proc2complete,
+          mat4recent,
+          .. mat4complete
+        ],
         DateTime.MinValue
       );
     }
@@ -4861,31 +4774,6 @@ namespace MachineWatchTest
     }
 
     #region Helpers
-    private LogEntry AddLogEntry(LogEntry l)
-    {
-      using var _jobLog = _repoCfg.OpenConnection();
-      ((Repository)_jobLog).AddLogEntryFromUnitTest(l);
-      return l;
-    }
-
-    private System.DateTime AddToDB(IList<LogEntry> logs)
-    {
-      using var _jobLog = _repoCfg.OpenConnection();
-      System.DateTime last = default(System.DateTime);
-
-      foreach (var l in logs)
-      {
-        ((Repository)_jobLog).AddLogEntryFromUnitTest(l);
-
-        if (l.EndTimeUTC > last)
-        {
-          last = l.EndTimeUTC;
-        }
-      }
-
-      return last;
-    }
-
     public static long CheckLog(
       IEnumerable<LogEntry> logs,
       IEnumerable<LogEntry> otherLogs,

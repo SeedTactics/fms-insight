@@ -1391,17 +1391,6 @@ namespace BlackMaple.MachineFramework
       return logs;
     }
 
-    internal LogEntry AddLogEntryFromUnitTest(
-      LogEntry log,
-      string foreignId = null,
-      string origMessage = null
-    )
-    {
-      return AddEntryInTransaction(trans =>
-        AddLogEntry(trans, NewEventLogEntry.FromLogEntry(log), foreignId, origMessage)
-      );
-    }
-
     public LogEntry RecordLoadStart(
       IEnumerable<EventLogMaterial> mats,
       int pallet,

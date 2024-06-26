@@ -458,19 +458,157 @@ namespace DebugMachineWatchApiServer
             e.EndTimeUTC.Add(offset)
           );
         }
-        else
+        else if (e.LogType == LogType.Inspection)
         {
-          if (e.LogType == LogType.InspectionResult && e.Material.Any(m => m.MaterialID == 2965))
+          LogDB.ForceInspection(
+            mat: EventLogMaterial.FromLogMat(e.Material[0]),
+            inspType: e.ProgramDetails["InspectionType"],
+            utcNow: e.EndTimeUTC.Add(offset),
+            inspect: bool.Parse(e.Result)
+          );
+        }
+        else if (e.LogType == LogType.InspectionResult)
+        {
+          if (e.Material.Any(m => m.MaterialID == 2965))
           {
             // ignore inspection complete
             continue;
           }
-          var e2 = e with { EndTimeUTC = e.EndTimeUTC.Add(offset) };
-          if (tools.TryGetValue(e.Counter, out var usage))
-          {
-            e2 = e2 with { Tools = e2.Tools.AddRange(usage) };
-          }
-          ((Repository)LogDB).AddLogEntryFromUnitTest(e2);
+          LogDB.RecordInspectionCompleted(
+            mat: EventLogMaterial.FromLogMat(e.Material[0]),
+            inspectionLocNum: e.LocationNum,
+            inspectionType: e.Program,
+            success: bool.Parse(e.Result),
+            inspectTimeUTC: e.EndTimeUTC.Add(offset),
+            extraData: e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty,
+            elapsed: e.ElapsedTime,
+            active: e.ActiveOperationTime
+          );
+        }
+        else if (e.LogType == LogType.MachineCycle && e.StartOfCycle)
+        {
+          LogDB.RecordMachineStart(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            pallet: e.Pallet,
+            statName: e.LocationName,
+            statNum: e.LocationNum,
+            program: e.Program,
+            timeUTC: e.EndTimeUTC.Add(offset),
+            extraData: e.ProgramDetails
+          );
+        }
+        else if (e.LogType == LogType.MachineCycle && !e.StartOfCycle)
+        {
+          LogDB.RecordMachineEnd(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            pallet: e.Pallet,
+            statName: e.LocationName,
+            statNum: e.LocationNum,
+            program: e.Program,
+            timeUTC: e.EndTimeUTC.Add(offset),
+            extraData: e.ProgramDetails,
+            elapsed: e.ElapsedTime,
+            active: e.ActiveOperationTime,
+            result: e.Result,
+            tools: tools.GetValueOrDefault(e.Counter)?.ToImmutableList()
+          );
+        }
+        else if (e.LogType == LogType.LoadUnloadCycle && e.StartOfCycle)
+        {
+          LogDB.RecordLoadStart(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            lulNum: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset),
+            pallet: e.Pallet
+          );
+        }
+        else if (e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle)
+        {
+          LogDB.RecordLoadEnd(
+            toLoad:
+            [
+              new MaterialToLoadOntoPallet()
+              {
+                LoadStation = e.LocationNum,
+                Faces =
+                [
+                  new MaterialToLoadOntoFace()
+                  {
+                    MaterialIDs = e.Material.Select(m => m.MaterialID).ToImmutableList(),
+                    Process = e.Material[0].Process,
+                    Path = e.Material[0].Path,
+                    FaceNum = e.Material[0].Face,
+                    ActiveOperationTime = e.ActiveOperationTime
+                  }
+                ]
+              }
+            ],
+            pallet: e.Pallet,
+            timeUTC: e.EndTimeUTC.Add(offset)
+          );
+        }
+        else if (e.LogType == LogType.PalletCycle)
+        {
+          LogDB.CompletePalletCycle(pal: e.Pallet, timeUTC: e.EndTimeUTC.Add(offset));
+        }
+        else if (e.LogType == LogType.PalletOnRotaryInbound && e.StartOfCycle)
+        {
+          LogDB.RecordPalletArriveRotaryInbound(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            pallet: e.Pallet,
+            statName: e.LocationName,
+            statNum: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset)
+          );
+        }
+        else if (e.LogType == LogType.PalletOnRotaryInbound && !e.StartOfCycle)
+        {
+          LogDB.RecordPalletDepartRotaryInbound(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            pallet: e.Pallet,
+            statName: e.LocationName,
+            statNum: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset),
+            elapsed: e.ElapsedTime,
+            rotateIntoWorktable: e.Result == "RotateIntoWorktable"
+          );
+        }
+        else if (e.LogType == LogType.PalletInStocker && e.StartOfCycle)
+        {
+          LogDB.RecordPalletArriveStocker(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            pallet: e.Pallet,
+            stockerNum: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset),
+            waitForMachine: e.Result == "WaitForMachine"
+          );
+        }
+        else if (e.LogType == LogType.PalletInStocker && !e.StartOfCycle)
+        {
+          LogDB.RecordPalletDepartStocker(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            pallet: e.Pallet,
+            stockerNum: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset),
+            elapsed: e.ElapsedTime,
+            waitForMachine: e.Result == "WaitForMachine"
+          );
+        }
+        else if (e.LogType == LogType.CloseOut)
+        {
+          LogDB.RecordCloseoutCompleted(
+            mat: EventLogMaterial.FromLogMat(e.Material[0]),
+            locNum: e.LocationNum,
+            closeoutType: e.Program,
+            extraData: e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty,
+            elapsed: e.ElapsedTime,
+            active: e.ActiveOperationTime,
+            completeTimeUTC: e.EndTimeUTC.Add(offset)
+          );
+        }
+        else
+        {
+          throw new Exception("Invalid log type " + e.LogType);
         }
       }
     }
