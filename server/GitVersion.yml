@@ -1,6 +1,0 @@
-mode: Mainline
-tag-prefix: v
-major-version-bump-message: '\+semver server:\s?(breaking|major)'
-minor-version-bump-message: '\+semver server:\s?(feature|minor)'
-patch-version-bump-message: '\+semver server:\s?(fix|patch)'
-commit-message-incrementing: Enabled
