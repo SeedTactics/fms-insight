@@ -51,7 +51,8 @@ namespace BlackMaple.FMSInsight.Makino
     public TimeSpan TimeUntilNextRefresh => TimeSpan.FromMinutes(1);
   }
 
-  public sealed class MakinoSync(MakinoSettings settings) : ISynchronizeCellState<MakinoCellState>
+  public sealed class MakinoSync(MakinoSettings settings, IMakinoDB makinoDb)
+    : ISynchronizeCellState<MakinoCellState>
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSync>();
 
@@ -69,11 +70,7 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var ret = new List<string>();
 
-      IEnumerable<PalletLocation> mcs;
-      using (var makino = settings.OpenMakinoConnection())
-      {
-        mcs = makino.Devices().Values.Where(d => d.Location == PalletLocationEnum.Machine).ToList();
-      }
+      var mcs = makinoDb.Devices().Values.Where(d => d.Location == PalletLocationEnum.Machine).ToList();
       string allMachineNames = string.Join(
         ',',
         mcs.OrderBy(m => m.StationGroup).ThenBy(m => m.Num).Select(m => m.StationGroup + m.Num.ToString())
@@ -142,10 +139,9 @@ namespace BlackMaple.FMSInsight.Makino
         lastLog = nowUTC.AddDays(-30);
       }
 
-      using var makinoDB = settings.OpenMakinoConnection();
-      var newEvts = new LogBuilder(makinoDB, db).CheckLogs(lastLog, nowUTC);
+      var newEvts = new LogBuilder(makinoDb, db).CheckLogs(lastLog, nowUTC);
 
-      var st = makinoDB.LoadCurrentInfo(db, nowUTC);
+      var st = makinoDb.LoadCurrentInfo(db, nowUTC);
 
       var notCopied = db.LoadJobsNotCopiedToSystem(
         nowUTC.AddHours(-10),

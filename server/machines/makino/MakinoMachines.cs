@@ -39,17 +39,15 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino;
 
-public class MakinoMachines(MakinoSettings settings) : IMachineControl
+public class MakinoMachines(IMakinoDB db) : IMachineControl
 {
   public ImmutableList<ProgramInCellController> CurrentProgramsInCellController()
   {
-    using var db = settings.OpenMakinoConnection();
     return db.CurrentProgramsInCellController();
   }
 
   public ImmutableList<ToolInMachine> CurrentToolsInMachine(string machineGroup, int machineNum)
   {
-    using var db = settings.OpenMakinoConnection();
     var devId = db.Devices()
       .FirstOrDefault(kv => kv.Value.StationGroup == machineGroup && kv.Value.Num == machineNum);
     if (devId.Key > 0)
@@ -64,7 +62,6 @@ public class MakinoMachines(MakinoSettings settings) : IMachineControl
 
   public ImmutableList<ToolInMachine> CurrentToolsInMachines()
   {
-    using var db = settings.OpenMakinoConnection();
     return db.AllTools();
   }
 

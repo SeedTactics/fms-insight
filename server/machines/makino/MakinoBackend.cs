@@ -43,6 +43,7 @@ namespace BlackMaple.FMSInsight.Makino
     {
       Serilog.Log.Information("Using Makino Backend with config {@config}", makinoSt);
       s.AddSingleton(makinoSt);
+      s.AddSingleton<IMakinoDB, MakinoDB>();
       s.AddSingleton<IMachineControl, MakinoMachines>();
       s.AddSingleton<ISynchronizeCellState<MakinoCellState>, MakinoSync>();
       return s;

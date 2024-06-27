@@ -40,7 +40,7 @@ public record MakinoSettings
 {
   public required string ADEPath { get; init; }
   public required bool DownloadOnlyOrders { get; init; }
-  public required Func<IMakinoDB> OpenMakinoConnection { get; init; }
+  public required string DbConnectionString { get; init; }
 
   private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSettings>();
 
@@ -79,7 +79,7 @@ public record MakinoSettings
     {
       ADEPath = adePath,
       DownloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders"),
-      OpenMakinoConnection = () => new MakinoDB(connStr)
+      DbConnectionString = connStr
     };
   }
 

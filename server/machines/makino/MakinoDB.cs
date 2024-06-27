@@ -35,6 +35,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
@@ -142,9 +143,8 @@ namespace BlackMaple.FMSInsight.Makino
    *   - dbo.FixtureRun  (one row per PalletFixtureID)
    *       PalletFixtureID (a location on a pallet)
    *       current process, order, job
-   *       status flag (seems to be 1 or 2)
+   *       status flag (seems to be 1 or 2 for before/after?)
    *       MachineDeviceID
-   *       some status columns
    *
    *   - dbo.FixtureQuantity (one row per PalletFixtureID)
    *       PalletFixtureID (a location on a pallet)
@@ -161,7 +161,24 @@ namespace BlackMaple.FMSInsight.Makino
    *       DeviceID, status info
    *
    * 	 - dbo.MachineStatus (one row per machine)
-   *       DeviceID, status info
+   *       DeviceID
+   *
+   *       TablePalletID (matches with PalletLocation)
+   *       TableStatus (???)
+   *       FrontPalletID (incoming pallet)
+   *       FrontStatus (???)
+   *       BackPalletID (outgoing pallet)
+   *       BackStatus (???)
+   *
+   *       MachineAction bool for if machine is running?
+   *       Status (seems to be 1 for empty, 4 when running)
+   *       CNCRun (seems to be 0 when empty, 3 when running)
+   *       RunJob (bool if a job is running)
+   *       JobID (seems to be 0 when not running, or a JobID for which specific thing on the pallet is running)
+   *       MainONumber (always filled in, seems to be most recent number which ran or is running)
+   *       StartDateTime (when the machine started running, or null)
+   *       FinishDateTime (???, seems to be expected finish time)
+   *
    *
    *   - dbo.WorkSetCommand (load/unload instructions)
    *       DeviceID
@@ -347,10 +364,9 @@ namespace BlackMaple.FMSInsight.Makino
     public required List<WorkSetResults> WorkSetResults { get; init; }
   }
 
-  public interface IMakinoDB : IDisposable
+  public interface IMakinoDB
   {
     IDictionary<int, PalletLocation> Devices();
-    void CheckForQueryNotification();
     CurrentStatus LoadCurrentInfo(IRepository logDb, DateTime nowUTC);
     MakinoResults LoadResults(DateTime startUTC, DateTime endUTC);
     ImmutableList<ProgramInCellController> CurrentProgramsInCellController();
@@ -358,42 +374,108 @@ namespace BlackMaple.FMSInsight.Makino
     ImmutableList<ToolSnapshot> SnapshotForProgram(int NCProgramFileID, int deviceNum);
   }
 
-  public sealed class MakinoDB : IMakinoDB, IDisposable
+  public sealed class MakinoDB : IMakinoDB
   {
     #region Init
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoDB>();
 
-    private readonly IDbConnection _db;
+    private readonly MakinoSettings makinoCfg;
     private readonly string dbo;
+    private readonly bool machineStatusHasJobColumn;
 
-    public MakinoDB(string dbConnStr)
+    public MakinoDB(MakinoSettings cfg)
     {
-      if (string.IsNullOrEmpty(dbConnStr))
+      makinoCfg = cfg;
+      dbo = makinoCfg.DbConnectionString.StartsWith("sqlite:") ? "" : "dbo.";
+      machineStatusHasJobColumn = CheckForMachineStatusJobColumn();
+      CheckForQueryNotification();
+    }
+
+    public IDbConnection OpenConnection()
+    {
+      if (string.IsNullOrEmpty(makinoCfg.DbConnectionString))
       {
-        _db = new System.Data.SqlClient.SqlConnection(
+        var db = new System.Data.SqlClient.SqlConnection(
           "Data Source = (localdb)\\MSSQLLocalDB; Initial Catalog = Makino;"
         );
-        _db.Open();
-        dbo = "dbo.";
+        db.Open();
+        return db;
       }
-      else if (dbConnStr.StartsWith("sqlite:"))
+      else if (makinoCfg.DbConnectionString.StartsWith("sqlite:"))
       {
-        _db = new Microsoft.Data.Sqlite.SqliteConnection(dbConnStr[7..]);
-        _db.Open();
-        dbo = "";
+        var db = new Microsoft.Data.Sqlite.SqliteConnection(makinoCfg.DbConnectionString[7..]);
+        db.Open();
+        return db;
       }
       else
       {
-        _db = new System.Data.SqlClient.SqlConnection(dbConnStr);
-        _db.Open();
-        dbo = "dbo.";
+        var db = new System.Data.SqlClient.SqlConnection(makinoCfg.DbConnectionString);
+        db.Open();
+        return db;
       }
     }
 
-    public void Dispose()
+    private bool CheckForMachineStatusJobColumn()
     {
-      _db.Dispose();
+      try
+      {
+        using var db = OpenConnection();
+        using var cmd = db.CreateCommand();
+        if (makinoCfg.DbConnectionString.StartsWith("sqlite:"))
+        {
+          cmd.CommandText = "SELECT COUNT(*) FROM pragma_table_info('MachineStatus') WHERE name = 'JobID'";
+          return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
+        }
+        else
+        {
+          cmd.CommandText =
+            "SELECT COUNT(*) FROM sys.columns WHERE Object_ID = Object_ID(N'dbo.MachineStatus') AND Name = N'JobID'";
+          return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
+        }
+      }
+      catch (Exception ex)
+      {
+        Log.Debug(ex, "Error checking for JobID column in MachineStatus");
+        return false;
+      }
     }
+
+    // At the moment, not sure if Query Notification is enabled
+    private void CheckForQueryNotification()
+    {
+      if (makinoCfg.DbConnectionString.StartsWith("sqlite:"))
+        return;
+      using var _db = OpenConnection();
+      using (var cmd = _db.CreateCommand())
+      {
+        cmd.CommandText = "SELECT is_broker_enabled FROM sys.databases WHERE name = 'Makino'";
+        var result = cmd.ExecuteScalar();
+        Log.Debug("Query Notification {@result}", result);
+      }
+
+      // checking permissions now
+      try
+      {
+        System.Data.SqlClient.SqlDependency.Start(_db.ConnectionString);
+        Log.Debug("SqlDependency started");
+      }
+      catch (Exception ex)
+      {
+        Log.Debug(ex, "Error starting SqlDependency");
+      }
+      finally
+      {
+        try
+        {
+          System.Data.SqlClient.SqlDependency.Stop(_db.ConnectionString);
+        }
+        catch (Exception ex)
+        {
+          Log.Debug(ex, "Error stopping SqlDependency");
+        }
+      }
+    }
+
     #endregion
 
     #region Log Data
@@ -410,15 +492,21 @@ namespace BlackMaple.FMSInsight.Makino
 
     public MakinoResults LoadResults(DateTime startUTC, DateTime endUTC)
     {
+      using var _db = OpenConnection();
       using var trans = _db.BeginTransaction();
       return new MakinoResults
       {
-        MachineResults = QueryMachineResults(startUTC, endUTC, trans),
-        WorkSetResults = QueryLoadUnloadResults(startUTC, endUTC, trans)
+        MachineResults = QueryMachineResults(_db, startUTC, endUTC, trans),
+        WorkSetResults = QueryLoadUnloadResults(_db, startUTC, endUTC, trans)
       };
     }
 
-    private List<MachineResults> QueryMachineResults(DateTime startUTC, DateTime endUTC, IDbTransaction trans)
+    private List<MachineResults> QueryMachineResults(
+      IDbConnection _db,
+      DateTime startUTC,
+      DateTime endUTC,
+      IDbTransaction trans
+    )
     {
       using var cmd = _db.CreateCommand();
       cmd.Transaction = trans;
@@ -484,19 +572,20 @@ namespace BlackMaple.FMSInsight.Makino
 
       foreach (var m in ret)
       {
-        m.CommonValues = QueryCommonValues(m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, trans);
+        m.CommonValues = QueryCommonValues(_db, m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, trans);
       }
 
       return ret;
     }
 
     private List<WorkSetResults> QueryLoadUnloadResults(
+      IDbConnection db,
       DateTime startUTC,
       DateTime endUTC,
       IDbTransaction trans
     )
     {
-      using var cmd = _db.CreateCommand();
+      using var cmd = db.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
         "SELECT StartDateTime,FinishDateTime,DeviceID,PalletID,"
@@ -591,13 +680,14 @@ namespace BlackMaple.FMSInsight.Makino
     }
 
     private List<CommonValue> QueryCommonValues(
+      IDbConnection db,
       DateTime startLocal,
       DateTime endLocal,
       int deviceId,
       IDbTransaction trans
     )
     {
-      using var cmd = _db.CreateCommand();
+      using var cmd = db.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText =
         "SELECT ExecDateTime,Number,Value"
@@ -647,6 +737,7 @@ namespace BlackMaple.FMSInsight.Makino
 
     public IDictionary<int, PalletLocation> Devices()
     {
+      using var _db = OpenConnection();
       using var cmd = _db.CreateCommand();
       //Makino: Devices
       var devices = new Dictionary<int, PalletLocation>();
@@ -675,7 +766,8 @@ namespace BlackMaple.FMSInsight.Makino
       var devices = Devices();
 
       var map = new MakinoToJobMap(logDb);
-      var palMap = new MakinoToPalletMap();
+
+      using var _db = OpenConnection();
       using var trans = _db.BeginTransaction();
 
       Load(
@@ -741,7 +833,7 @@ namespace BlackMaple.FMSInsight.Makino
       map.CompleteStations();
 
       Load(
-        "SELECT a.PalletFixtureID, a.FixtureNumber, a.FixtureID, b.PalletNumber, c.CurDeviceType, c.CurDeviceNumber, d.DeviceName "
+        "SELECT a.PalletID, a.PalletFixtureID, a.FixtureNumber, a.FixtureID, b.PalletNumber, c.CurDeviceType, c.CurDeviceNumber, d.DeviceName "
           + $" FROM {dbo}PalletFixtures a, {dbo}Pallets b, {dbo}PalletLocation c "
           + $" LEFT OUTER JOIN {dbo}Devices d ON c.CurDeviceType = d.DeviceType AND c.CurDeviceNumber = d.DeviceNumber"
           + " WHERE a.PalletID = b.PalletID AND a.PalletID = c.PalletID "
@@ -749,18 +841,19 @@ namespace BlackMaple.FMSInsight.Makino
         reader =>
         {
           var loc = new PalletLocation(PalletLocationEnum.Buffer, "Unknown", 0);
-          if (!reader.IsDBNull(4) && !reader.IsDBNull(5))
+          if (!reader.IsDBNull(5) && !reader.IsDBNull(6))
             loc = ParseDevice(
-              reader.GetInt16(4),
               reader.GetInt16(5),
-              reader.IsDBNull(6) ? null : reader.GetString(6)
+              reader.GetInt16(6),
+              reader.IsDBNull(7) ? null : reader.GetString(7)
             );
 
-          palMap.AddPalletInfo(
+          map.AddPalletInfo(
             reader.GetInt32(0),
             reader.GetInt32(1),
             reader.GetInt32(2),
             reader.GetInt32(3),
+            reader.GetInt32(4),
             loc
           );
         },
@@ -771,7 +864,7 @@ namespace BlackMaple.FMSInsight.Makino
         "SELECT ProcessID, FixtureID FROM " + dbo + "FixtureProcesses",
         reader =>
         {
-          map.AddFixtureToProcess(reader.GetInt32(0), palMap.PalletsForFixture(reader.GetInt32(1)));
+          map.AddFixtureToProcess(reader.GetInt32(0), reader.GetInt32(1));
         },
         trans
       );
@@ -827,11 +920,24 @@ namespace BlackMaple.FMSInsight.Makino
         trans
       );
 
+      string loadFixRunCmd;
+      if (machineStatusHasJobColumn)
+      {
+        loadFixRunCmd =
+          "SELECT f.PalletFixtureID, f.CurProcessID, f.CurOrderID, f.CurJobID, f.LastMachiningJobID, m.TablePalletID, m.MachineAction, m.RunJob "
+          + $"FROM {dbo}FixtureRun f LEFT OUTER JOIN {dbo}MachineStatus m ON f.MachineDeviceID = m.DeviceID AND f.CurJobID = m.JobID"
+          + " WHERE f.CurProcessID IS NOT NULL";
+      }
+      else
+      {
+        loadFixRunCmd =
+          "SELECT f.PalletFixtureID, f.CurProcessID, f.CurOrderID, f.CurJobID, f.LastMachiningJobID, m.TablePalletID, m.MachineAction, 1 "
+          + $"FROM {dbo}FixtureRun f LEFT OUTER JOIN {dbo}MachineStatus m ON f.MachineDeviceID = m.DeviceID "
+          + " WHERE f.CurProcessID IS NOT NULL";
+      }
+
       Load(
-        "SELECT PalletFixtureID, CurProcessID, CurOrderID, LastMachiningJobID "
-          + "FROM "
-          + dbo
-          + "FixtureRun WHERE CurProcessID IS NOT NULL",
+        loadFixRunCmd,
         reader =>
         {
           int palfixID = reader.GetInt32(0);
@@ -843,7 +949,7 @@ namespace BlackMaple.FMSInsight.Makino
             orderName = job.UniqueStr;
 
           // Lookup (pallet,location) for this palfixID
-          palMap.PalletLocInfo(palfixID, out int palletNum, out int fixtureNum);
+          map.PalletLocInfo(palfixID, out int palletNum, out int fixtureNum);
 
           //look for material id
           IEnumerable<(long matId, string? serial, string? workorder)> mats;
@@ -877,18 +983,21 @@ namespace BlackMaple.FMSInsight.Makino
 
           foreach (var (matId, serial, workorder) in mats)
           {
-            var inProcMat = map.CreateMaterial(
+            map.AddMaterial(
+              fixturePalletID: palfixID,
               orderID: orderID,
               processID: reader.GetInt32(1),
               palletNum: palletNum,
               fixtureNum: fixtureNum,
-              lastMachiningJobID: reader.IsDBNull(3) ? null : reader.GetInt32(3),
+              curJobID: reader.IsDBNull(3) ? null : reader.GetInt32(3),
+              lastMachiningJobID: reader.IsDBNull(4) ? null : reader.GetInt32(4),
+              tablePalletID: reader.IsDBNull(5) ? null : reader.GetInt32(5),
+              machineAction: reader.IsDBNull(6) ? null : Convert.ToInt32(reader.GetValue(6)),
+              runJob: reader.IsDBNull(7) ? null : Convert.ToInt32(reader.GetValue(7)),
               matID: matId,
               serial: serial,
               workorder: workorder
             );
-
-            palMap.AddMaterial(palfixID, inProcMat);
           }
         },
         trans
@@ -913,7 +1022,7 @@ namespace BlackMaple.FMSInsight.Makino
             var procNum = map.ProcessForJobID(unclampJobID);
             var job = map.JobForOrder(unclampOrder);
             if (job != null)
-              palMap.SetMaterialAsUnload(palfixID, job.Processes.Count == procNum);
+              map.SetMaterialAsUnload(palfixID, job.Processes.Count == procNum);
           }
 
           if (!reader.IsDBNull(3) && !reader.IsDBNull(4))
@@ -928,7 +1037,29 @@ namespace BlackMaple.FMSInsight.Makino
               qty = reader.GetInt32(5);
 
             if (job != null)
-              palMap.AddMaterialToLoad(palfixID, job.UniqueStr, job.PartName, procNum, qty);
+              map.AddMaterialToLoad(palfixID, job.UniqueStr, job.PartName, procNum, qty);
+          }
+        },
+        trans
+      );
+
+      Load(
+        "SELECT DeviceID, FrontPalletID, BackPalletID "
+          + "FROM "
+          + dbo
+          + "MachineStatus"
+          + " WHERE FrontPalletID IS NOT NULL OR BackPalletID IS NOT NULL",
+        reader =>
+        {
+          var machine = devices[reader.GetInt32(0)].Num;
+
+          if (!reader.IsDBNull(1))
+          {
+            map.SetPalletOnRotary(machine, reader.GetInt32(1));
+          }
+          else if (!reader.IsDBNull(2))
+          {
+            map.SetPalletOnRotary(machine, reader.GetInt32(2));
           }
         },
         trans
@@ -938,18 +1069,18 @@ namespace BlackMaple.FMSInsight.Makino
       {
         TimeOfCurrentStatusUTC = nowUTC,
         Jobs = map.Jobs.ToImmutableDictionary(j => j.UniqueStr),
-        Pallets = palMap.Pallets.ToImmutableDictionary(),
-        Material = palMap.Material.ToImmutableList(),
+        Pallets = map.Pallets.ToImmutableDictionary(),
+        Material = map.Material.ToImmutableList(),
         Alarms = [],
         Queues = ImmutableDictionary<string, QueueInfo>.Empty
       };
     }
 
-    private void Load(string command, Action<IDataReader> onEachRow, IDbTransaction trans)
+    private static void Load(string command, Action<IDataReader> onEachRow, IDbTransaction trans)
     {
       Log.Debug(string.Concat("Loading ", command.AsSpan(7)));
 
-      using var cmd = _db.CreateCommand();
+      using var cmd = trans.Connection!.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText = command;
       using var reader = cmd.ExecuteReader();
@@ -1014,39 +1145,6 @@ namespace BlackMaple.FMSInsight.Makino
 
     #region Monitoring
 
-    // At the moment, not sure if Query Notification is enabled
-    public void CheckForQueryNotification()
-    {
-      using (var cmd = _db.CreateCommand())
-      {
-        cmd.CommandText = "SELECT is_broker_enabled FROM sys.databases WHERE name = 'Makino'";
-        var result = cmd.ExecuteScalar();
-        Log.Debug("Query Notification {@result}", result);
-      }
-
-      // checking permissions now
-      try
-      {
-        System.Data.SqlClient.SqlDependency.Start(_db.ConnectionString);
-        Log.Debug("SqlDependency started");
-      }
-      catch (Exception ex)
-      {
-        Log.Debug(ex, "Error starting SqlDependency");
-      }
-      finally
-      {
-        try
-        {
-          System.Data.SqlClient.SqlDependency.Stop(_db.ConnectionString);
-        }
-        catch (Exception ex)
-        {
-          Log.Debug(ex, "Error stopping SqlDependency");
-        }
-      }
-    }
-
     #endregion
 
     #region Programs and Tools
@@ -1054,6 +1152,7 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var progs = ImmutableList.CreateBuilder<ProgramInCellController>();
 
+      using var _db = OpenConnection();
       using var trans = _db.BeginTransaction();
       using var cmd = _db.CreateCommand();
       cmd.Transaction = trans;
@@ -1092,6 +1191,7 @@ namespace BlackMaple.FMSInsight.Makino
     {
       // I suspect ftd.ToolLifeType determines either time or count, but in the test data it is always
       // 3 which seems to be time
+      using var _db = OpenConnection();
       using var trans = _db.BeginTransaction();
       using var cmd = _db.CreateCommand();
       cmd.Transaction = trans;
@@ -1165,6 +1265,7 @@ namespace BlackMaple.FMSInsight.Makino
         sql += " WHERE d.DeviceId = @dev";
       }
 
+      using var _db = OpenConnection();
       using var trans = _db.BeginTransaction();
       using var cmd = _db.CreateCommand();
       cmd.Transaction = trans;
