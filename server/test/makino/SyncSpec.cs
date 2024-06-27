@@ -55,6 +55,7 @@ public sealed class SyncSpec : IDisposable
   private readonly RepositoryConfig _repo;
   private readonly AutoFixture.Fixture fix;
   private readonly MakinoSync sync;
+  private readonly IReadOnlyDictionary<int, PalletLocation> _devices;
 
   public SyncSpec()
   {
@@ -72,53 +73,50 @@ public sealed class SyncSpec : IDisposable
       {
         ADEPath = _tempDir,
         DownloadOnlyOrders = true,
-        OpenMakinoConnection = () => _makinoDB
-      }
+        DbConnectionString = "unused db conn str"
+      },
+      _makinoDB
     );
 
-    _makinoDB
-      .Devices()
-      .Returns(
-        new Dictionary<int, PalletLocation>()
+    _devices = new Dictionary<int, PalletLocation>()
+    {
+      {
+        1,
+        new PalletLocation()
         {
-          {
-            1,
-            new PalletLocation()
-            {
-              Location = PalletLocationEnum.LoadUnload,
-              Num = 1,
-              StationGroup = "L/U"
-            }
-          },
-          {
-            2,
-            new PalletLocation()
-            {
-              Location = PalletLocationEnum.LoadUnload,
-              Num = 2,
-              StationGroup = "L/U"
-            }
-          },
-          {
-            3,
-            new PalletLocation()
-            {
-              Location = PalletLocationEnum.Machine,
-              Num = 1,
-              StationGroup = "Mach"
-            }
-          },
-          {
-            4,
-            new PalletLocation()
-            {
-              Location = PalletLocationEnum.Machine,
-              Num = 2,
-              StationGroup = "Mach"
-            }
-          },
+          Location = PalletLocationEnum.LoadUnload,
+          Num = 1,
+          StationGroup = "L/U"
         }
-      );
+      },
+      {
+        2,
+        new PalletLocation()
+        {
+          Location = PalletLocationEnum.LoadUnload,
+          Num = 2,
+          StationGroup = "L/U"
+        }
+      },
+      {
+        3,
+        new PalletLocation()
+        {
+          Location = PalletLocationEnum.Machine,
+          Num = 1,
+          StationGroup = "Mach"
+        }
+      },
+      {
+        4,
+        new PalletLocation()
+        {
+          Location = PalletLocationEnum.Machine,
+          Num = 2,
+          StationGroup = "Mach"
+        }
+      },
+    };
   }
 
   void IDisposable.Dispose()
@@ -239,6 +237,8 @@ public sealed class SyncSpec : IDisposable
 
     var partName = fix.Create<string>();
 
+    _makinoDB.LoadMakinoDevices().Returns(_devices);
+
     sync.CheckNewJobs(
         db,
         new NewJobs()
@@ -299,7 +299,14 @@ public sealed class SyncSpec : IDisposable
 
     _makinoDB
       .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
-      .Returns(new MakinoResults() { MachineResults = [], WorkSetResults = [] });
+      .Returns(
+        new MakinoResults()
+        {
+          Devices = _devices,
+          MachineResults = [],
+          WorkSetResults = []
+        }
+      );
 
     var cur = fix.Create<CurrentStatus>();
     _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
@@ -333,6 +340,7 @@ public sealed class SyncSpec : IDisposable
       .Returns(
         new MakinoResults()
         {
+          Devices = _devices,
           MachineResults = [],
           WorkSetResults =
           [
@@ -399,7 +407,14 @@ public sealed class SyncSpec : IDisposable
 
     _makinoDB
       .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
-      .Returns(new MakinoResults() { MachineResults = [], WorkSetResults = [] });
+      .Returns(
+        new MakinoResults()
+        {
+          Devices = _devices,
+          MachineResults = [],
+          WorkSetResults = []
+        }
+      );
 
     var cur = fix.Create<CurrentStatus>();
     _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
@@ -584,7 +599,14 @@ public sealed class SyncSpec : IDisposable
     // ErrorDownloadingJobs should produce an alarm
     _makinoDB
       .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
-      .Returns(new MakinoResults() { MachineResults = [], WorkSetResults = [] });
+      .Returns(
+        new MakinoResults()
+        {
+          Devices = _devices,
+          MachineResults = [],
+          WorkSetResults = []
+        }
+      );
 
     var cur = fix.Create<CurrentStatus>();
     _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);

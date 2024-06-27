@@ -70,7 +70,10 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var ret = new List<string>();
 
-      var mcs = makinoDb.Devices().Values.Where(d => d.Location == PalletLocationEnum.Machine).ToList();
+      var mcs = makinoDb
+        .LoadMakinoDevices()
+        .Values.Where(d => d.Location == PalletLocationEnum.Machine)
+        .ToList();
       string allMachineNames = string.Join(
         ',',
         mcs.OrderBy(m => m.StationGroup).ThenBy(m => m.Num).Select(m => m.StationGroup + m.Num.ToString())

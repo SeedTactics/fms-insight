@@ -45,8 +45,6 @@ namespace BlackMaple.FMSInsight.Makino
 
     public bool CheckLogs(DateTime lastDate, DateTime nowUTC)
     {
-      var devices = makinoDB.Devices();
-
       var results = makinoDB.LoadResults(lastDate, nowUTC.AddMinutes(1));
 
       var machines = results.MachineResults;
@@ -69,23 +67,23 @@ namespace BlackMaple.FMSInsight.Makino
           //check which event occured first and process it
           if (mE.Current.EndDateTimeUTC < lE.Current.Key.EndDateTimeUTC)
           {
-            AddMachineToLog(lastDate, devices, mE.Current, ref newLogEntries);
+            AddMachineToLog(lastDate, results.Devices, mE.Current, ref newLogEntries);
             moreMachines = mE.MoveNext();
           }
           else
           {
-            AddLoadToLog(lastDate, devices, lE.Current, ref newLogEntries);
+            AddLoadToLog(lastDate, results.Devices, lE.Current, ref newLogEntries);
             moreLoads = lE.MoveNext();
           }
         }
         else if (moreMachines)
         {
-          AddMachineToLog(lastDate, devices, mE.Current, ref newLogEntries);
+          AddMachineToLog(lastDate, results.Devices, mE.Current, ref newLogEntries);
           moreMachines = mE.MoveNext();
         }
         else
         {
-          AddLoadToLog(lastDate, devices, lE.Current, ref newLogEntries);
+          AddLoadToLog(lastDate, results.Devices, lE.Current, ref newLogEntries);
           moreLoads = lE.MoveNext();
         }
       }
@@ -95,7 +93,7 @@ namespace BlackMaple.FMSInsight.Makino
 
     private void AddMachineToLog(
       DateTime timeToSkip,
-      IDictionary<int, PalletLocation> devices,
+      IReadOnlyDictionary<int, PalletLocation> devices,
       MachineResults m,
       ref bool newLogEntries
     )
@@ -246,7 +244,7 @@ namespace BlackMaple.FMSInsight.Makino
 
     private void AddLoadToLog(
       DateTime timeToSkip,
-      IDictionary<int, PalletLocation> devices,
+      IReadOnlyDictionary<int, PalletLocation> devices,
       IGrouping<
         (DateTime StartDateTimeUTC, DateTime EndDateTimeUTC, int DeviceID, int PalletID),
         WorkSetResults

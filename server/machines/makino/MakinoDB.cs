@@ -360,18 +360,18 @@ namespace BlackMaple.FMSInsight.Makino
 
   public record MakinoResults
   {
+    public required IReadOnlyDictionary<int, PalletLocation> Devices { get; init; }
     public required List<MachineResults> MachineResults { get; init; }
     public required List<WorkSetResults> WorkSetResults { get; init; }
   }
 
   public interface IMakinoDB
   {
-    IDictionary<int, PalletLocation> Devices();
+    IReadOnlyDictionary<int, PalletLocation> LoadMakinoDevices();
     CurrentStatus LoadCurrentInfo(IRepository logDb, DateTime nowUTC);
     MakinoResults LoadResults(DateTime startUTC, DateTime endUTC);
     ImmutableList<ProgramInCellController> CurrentProgramsInCellController();
-    ImmutableList<ToolInMachine> AllTools(int? deviceNum = null);
-    ImmutableList<ToolSnapshot> SnapshotForProgram(int NCProgramFileID, int deviceNum);
+    ImmutableList<ToolInMachine> AllTools(string? machineGroup = null, int? machineNum = null);
   }
 
   public sealed class MakinoDB : IMakinoDB
@@ -494,8 +494,10 @@ namespace BlackMaple.FMSInsight.Makino
     {
       using var _db = OpenConnection();
       using var trans = _db.BeginTransaction();
+      var devices = Devices(_db, trans);
       return new MakinoResults
       {
+        Devices = devices,
         MachineResults = QueryMachineResults(_db, startUTC, endUTC, trans),
         WorkSetResults = QueryLoadUnloadResults(_db, startUTC, endUTC, trans)
       };
@@ -734,11 +736,17 @@ namespace BlackMaple.FMSInsight.Makino
     #endregion
 
     #region Current Status
-
-    public IDictionary<int, PalletLocation> Devices()
+    public IReadOnlyDictionary<int, PalletLocation> LoadMakinoDevices()
     {
-      using var _db = OpenConnection();
-      using var cmd = _db.CreateCommand();
+      using var db = OpenConnection();
+      using var trans = db.BeginTransaction();
+      return Devices(db, trans);
+    }
+
+    private Dictionary<int, PalletLocation> Devices(IDbConnection db, IDbTransaction trans)
+    {
+      using var cmd = db.CreateCommand();
+      cmd.Transaction = trans;
       //Makino: Devices
       var devices = new Dictionary<int, PalletLocation>();
 
@@ -763,12 +771,12 @@ namespace BlackMaple.FMSInsight.Makino
 
     public CurrentStatus LoadCurrentInfo(IRepository logDb, DateTime nowUTC)
     {
-      var devices = Devices();
-
       var map = new MakinoToJobMap(logDb);
 
       using var _db = OpenConnection();
       using var trans = _db.BeginTransaction();
+
+      var devices = Devices(_db, trans);
 
       Load(
         "SELECT PartID, ProcessNumber, ProcessID FROM " + dbo + "Processes",
@@ -1249,8 +1257,30 @@ namespace BlackMaple.FMSInsight.Makino
       return tools.ToImmutable();
     }
 
-    public ImmutableList<ToolInMachine> AllTools(int? deviceId = null)
+    public ImmutableList<ToolInMachine> AllTools(string? machineName = null, int? machineNum = null)
     {
+      using var db = OpenConnection();
+      using var trans = db.BeginTransaction();
+
+      int? deviceId = null;
+
+      if (!string.IsNullOrEmpty(machineName) && machineNum.HasValue && machineNum.Value > 0)
+      {
+        deviceId = Devices(db, trans)
+          .FirstOrDefault(d =>
+            d.Value.Location == PalletLocationEnum.Machine
+            && d.Value.StationGroup == machineName
+            && d.Value.Num == machineNum.Value
+          )
+          .Key;
+
+        if (deviceId == 0)
+        {
+          // device not found
+          return [];
+        }
+      }
+
       var sql =
         $"SELECT ftd.FTNComment, ftd.FTN, ftd.TotalCutter, ftcd.CutterNo, ftcd.ToolLife, itd.ITN, itcd.ActualToolLife, tl.CurrentPot, d.DeviceType, d.DeviceNumber, d.DeviceName "
         + $" FROM {dbo}FunctionalToolData ftd"
@@ -1265,9 +1295,7 @@ namespace BlackMaple.FMSInsight.Makino
         sql += " WHERE d.DeviceId = @dev";
       }
 
-      using var _db = OpenConnection();
-      using var trans = _db.BeginTransaction();
-      using var cmd = _db.CreateCommand();
+      using var cmd = db.CreateCommand();
       cmd.Transaction = trans;
       cmd.CommandText = sql;
 

@@ -52,6 +52,7 @@ public sealed class LogBuilderSpec : IDisposable
   private readonly IMakinoDB _makinoDB;
   private readonly Fixture _fixture = new();
   private readonly List<LogEntry> _expectedLog = [];
+  private readonly IReadOnlyDictionary<int, PalletLocation> _devices;
 
   public LogBuilderSpec()
   {
@@ -69,49 +70,45 @@ public sealed class LogBuilderSpec : IDisposable
       .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
       .ThrowsForAnyArgs(new Exception("Load Results not configured"));
 
-    _makinoDB
-      .Devices()
-      .Returns(
-        new Dictionary<int, PalletLocation>()
+    _devices = new Dictionary<int, PalletLocation>()
+    {
+      {
+        1,
+        new PalletLocation()
         {
-          {
-            1,
-            new PalletLocation()
-            {
-              Location = PalletLocationEnum.LoadUnload,
-              Num = 1,
-              StationGroup = "L/U"
-            }
-          },
-          {
-            2,
-            new PalletLocation()
-            {
-              Location = PalletLocationEnum.LoadUnload,
-              Num = 2,
-              StationGroup = "L/U"
-            }
-          },
-          {
-            3,
-            new PalletLocation()
-            {
-              Location = PalletLocationEnum.Machine,
-              Num = 1,
-              StationGroup = "MC"
-            }
-          },
-          {
-            4,
-            new PalletLocation()
-            {
-              Location = PalletLocationEnum.Machine,
-              Num = 2,
-              StationGroup = "MC"
-            }
-          },
+          Location = PalletLocationEnum.LoadUnload,
+          Num = 1,
+          StationGroup = "L/U"
         }
-      );
+      },
+      {
+        2,
+        new PalletLocation()
+        {
+          Location = PalletLocationEnum.LoadUnload,
+          Num = 2,
+          StationGroup = "L/U"
+        }
+      },
+      {
+        3,
+        new PalletLocation()
+        {
+          Location = PalletLocationEnum.Machine,
+          Num = 1,
+          StationGroup = "MC"
+        }
+      },
+      {
+        4,
+        new PalletLocation()
+        {
+          Location = PalletLocationEnum.Machine,
+          Num = 2,
+          StationGroup = "MC"
+        }
+      },
+    };
   }
 
   void IDisposable.Dispose()
@@ -464,7 +461,14 @@ public sealed class LogBuilderSpec : IDisposable
           Math.Abs(x.Subtract(DateTime.UtcNow.AddMinutes(1)).Ticks) < TimeSpan.FromSeconds(2).Ticks
         )
       )
-      .Returns(new MakinoResults() { WorkSetResults = [], MachineResults = [], });
+      .Returns(
+        new MakinoResults()
+        {
+          Devices = _devices,
+          WorkSetResults = [],
+          MachineResults = [],
+        }
+      );
 
     new LogBuilder(_makinoDB, db).CheckLogs(lastDate, DateTime.UtcNow).Should().BeFalse();
 
@@ -487,6 +491,7 @@ public sealed class LogBuilderSpec : IDisposable
       .Returns(
         new MakinoResults()
         {
+          Devices = _devices,
           WorkSetResults =
           [
             Load(
@@ -547,6 +552,7 @@ public sealed class LogBuilderSpec : IDisposable
       .Returns(
         new MakinoResults()
         {
+          Devices = _devices,
           WorkSetResults =
           [
             Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
@@ -568,7 +574,14 @@ public sealed class LogBuilderSpec : IDisposable
       .ThrowsForAnyArgs(new Exception("Should not be called"));
     _makinoDB
       .LoadResults(start.AddMinutes(15 + 11), Arg.Any<DateTime>())
-      .Returns(new MakinoResults() { WorkSetResults = [], MachineResults = [mach] });
+      .Returns(
+        new MakinoResults()
+        {
+          Devices = _devices,
+          WorkSetResults = [],
+          MachineResults = [mach]
+        }
+      );
 
     new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(15 + 11), now).Should().BeFalse();
 
@@ -603,6 +616,7 @@ public sealed class LogBuilderSpec : IDisposable
       .Returns(
         new MakinoResults()
         {
+          Devices = _devices,
           WorkSetResults =
           [
             Load(
@@ -636,7 +650,14 @@ public sealed class LogBuilderSpec : IDisposable
       .ThrowsForAnyArgs(new Exception("Should not be called"));
     _makinoDB
       .LoadResults(start.AddMinutes(30 + 5), Arg.Any<DateTime>())
-      .Returns(new MakinoResults() { WorkSetResults = [unload], MachineResults = [] });
+      .Returns(
+        new MakinoResults()
+        {
+          Devices = _devices,
+          WorkSetResults = [unload],
+          MachineResults = []
+        }
+      );
 
     new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(30 + 5), now).Should().BeFalse();
 
@@ -664,6 +685,7 @@ public sealed class LogBuilderSpec : IDisposable
       .Returns(
         new MakinoResults()
         {
+          Devices = _devices,
           WorkSetResults =
           [
             Load(
@@ -732,6 +754,7 @@ public sealed class LogBuilderSpec : IDisposable
       .Returns(
         new MakinoResults()
         {
+          Devices = _devices,
           WorkSetResults =
           [
             // load 1
@@ -823,6 +846,7 @@ public sealed class LogBuilderSpec : IDisposable
       .Returns(
         new MakinoResults()
         {
+          Devices = _devices,
           WorkSetResults =
           [
             Load(
@@ -907,6 +931,7 @@ public sealed class LogBuilderSpec : IDisposable
       .Returns(
         new MakinoResults()
         {
+          Devices = _devices,
           WorkSetResults =
           [
             Load(
@@ -1016,6 +1041,7 @@ public sealed class LogBuilderSpec : IDisposable
       .Returns(
         new MakinoResults()
         {
+          Devices = _devices,
           WorkSetResults =
           [
             // two loads with equal start and end
@@ -1085,6 +1111,7 @@ public sealed class LogBuilderSpec : IDisposable
       .Returns(
         new MakinoResults()
         {
+          Devices = _devices,
           WorkSetResults =
           [
             Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),

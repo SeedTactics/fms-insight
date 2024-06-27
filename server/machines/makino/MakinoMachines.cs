@@ -48,11 +48,9 @@ public class MakinoMachines(IMakinoDB db) : IMachineControl
 
   public ImmutableList<ToolInMachine> CurrentToolsInMachine(string machineGroup, int machineNum)
   {
-    var devId = db.Devices()
-      .FirstOrDefault(kv => kv.Value.StationGroup == machineGroup && kv.Value.Num == machineNum);
-    if (devId.Key > 0)
+    if (!string.IsNullOrEmpty(machineGroup) && machineNum > 0)
     {
-      return db.AllTools(devId.Key);
+      return db.AllTools(machineGroup, machineNum);
     }
     else
     {
