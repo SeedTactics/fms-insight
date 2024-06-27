@@ -34,6 +34,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using System.Xml;
 using BlackMaple.MachineFramework;
 
@@ -41,12 +42,23 @@ namespace BlackMaple.FMSInsight.Makino
 {
   public static class OrderXML
   {
-    public static void WriteOrderXML(string filename, IEnumerable<Job> jobs, bool onlyOrders)
+    public static void WriteNewJobs(MakinoSettings makinoCfg, IEnumerable<Job> jobs, bool onlyOrders)
     {
+      WriteXML(makinoCfg, tempFile => WriteJobsXML(tempFile, jobs, onlyOrders));
+    }
+
+    public static void WriteDecrement(MakinoSettings makinoCfg, IEnumerable<RemainingToRun> decrs)
+    {
+      WriteXML(makinoCfg, tempFile => WriteDecrementXML(tempFile, decrs));
+    }
+
+    private static void WriteXML(MakinoSettings makinoCfg, Action<string> writeTempFile)
+    {
+      var fileName = "insight" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".xml";
       string tempFile = Path.GetTempFileName();
       try
       {
-        WriteFile(tempFile, jobs, onlyOrders);
+        writeTempFile(tempFile);
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -65,18 +77,31 @@ namespace BlackMaple.FMSInsight.Makino
           finfo.SetAccessControl(accControl);
         }
 
-        File.Move(tempFile, filename);
+        // now move the file to the ADE path and monitor for it being deleted
+
+        var tcs = new TaskCompletionSource<bool>();
+        using var fw = new FileSystemWatcher(makinoCfg.ADEPath, fileName);
+        fw.Deleted += (s, e) =>
+        {
+          if (e.Name == fileName)
+          {
+            tcs.SetResult(true);
+          }
+        };
+        fw.EnableRaisingEvents = true;
+
+        File.Move(tempFile, Path.Combine(makinoCfg.ADEPath, fileName));
+
+        if (Task.WaitAny([tcs.Task, Task.Delay(TimeSpan.FromSeconds(10))]) == 1)
+        {
+          Serilog.Log.Error("Makino did not process new jobs, perhaps the Makino software is not running?");
+          throw new Exception("Unable to copy orders to Makino: check that the Makino software is running");
+        }
       }
       finally
       {
-        try
-        {
-          File.Delete(tempFile);
-        }
-        catch
-        {
-          //Do nothing
-        }
+        File.Delete(Path.Combine(makinoCfg.ADEPath, fileName));
+        File.Delete(tempFile);
       }
     }
 
@@ -86,7 +111,7 @@ namespace BlackMaple.FMSInsight.Makino
       public required int Proc { get; init; }
     }
 
-    private static void WriteFile(string filename, IEnumerable<Job> jobs, bool onlyOrders)
+    public static void WriteJobsXML(string filename, IEnumerable<Job> jobs, bool onlyOrders)
     {
       using var xml = new XmlTextWriter(filename, System.Text.Encoding.UTF8);
       xml.Formatting = Formatting.Indented;
@@ -269,6 +294,28 @@ namespace BlackMaple.FMSInsight.Makino
       xml.WriteElementString("RemainQuantity", qty.ToString());
 
       xml.WriteEndElement(); // OrderQuantity
+    }
+
+    public static void WriteDecrementXML(string tempFile, IEnumerable<RemainingToRun> decrs)
+    {
+      using var xml = new XmlTextWriter(tempFile, System.Text.Encoding.UTF8);
+      xml.Formatting = Formatting.Indented;
+      xml.WriteStartDocument();
+      xml.WriteStartElement("MASData");
+      xml.WriteStartElement("OrderQuantities");
+
+      foreach (var decr in decrs)
+      {
+        xml.WriteStartElement("OrderQuantity");
+        xml.WriteAttributeString("orderName", decr.JobUnique);
+        xml.WriteElementString("ProcessNumber", "1");
+        xml.WriteElementString("RemainQuantity", (-decr.RemainingQuantity).ToString()); // +/- value to affect quantity
+        xml.WriteEndElement(); // OrderQuantity
+      }
+
+      xml.WriteEndElement(); // OrderQuantities
+      xml.WriteEndElement(); // MASData
+      xml.WriteEndDocument();
     }
 
     private static string Join<T>(string sep, IEnumerable<T> lst)

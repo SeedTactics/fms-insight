@@ -125,7 +125,7 @@ public sealed class SyncSpec : IDisposable
     _repo.Dispose();
   }
 
-  private Task<(bool, string)> ApplyActionsAndWatchForFile(IRepository db, MakinoCellState state)
+  private Task<(T, string)> WatchForFile<T>(Func<T> f)
   {
     var tcs = new TaskCompletionSource<string>();
     var watcher = new FileSystemWatcher(_tempDir, "insight*.xml");
@@ -143,7 +143,7 @@ public sealed class SyncSpec : IDisposable
       return t.Result;
     });
 
-    var syncTask = Task.Run(() => sync.ApplyActions(db, state));
+    var syncTask = Task.Run(f);
 
     var allTask = Task.WhenAll(syncTask, watcherTask);
 
@@ -446,8 +446,6 @@ public sealed class SyncSpec : IDisposable
     using var db = _repo.OpenConnection();
 
     sync.ApplyActions(db, st).Should().BeFalse();
-
-    sync.ErrorDownloadingJobs.Should().BeFalse();
   }
 
   [Fact]
@@ -501,8 +499,6 @@ public sealed class SyncSpec : IDisposable
     sync.ApplyActions(db, st).Should().BeFalse();
 
     db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeTrue();
-
-    sync.ErrorDownloadingJobs.Should().BeFalse();
   }
 
   [Fact]
@@ -544,11 +540,10 @@ public sealed class SyncSpec : IDisposable
 
     db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeFalse();
 
-    var (applyResult, file) = await ApplyActionsAndWatchForFile(db, st);
+    var (applyResult, file) = await WatchForFile(() => sync.ApplyActions(db, st));
 
     applyResult.Should().BeTrue();
     file.Should().Contain($"<Order action=\"ADD\" name=\"{job.UniqueStr}\">");
-    sync.ErrorDownloadingJobs.Should().BeFalse();
 
     db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeTrue();
   }
@@ -590,57 +585,69 @@ public sealed class SyncSpec : IDisposable
 
     db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeFalse();
 
-    sync.ApplyActions(db, st).Should().BeTrue();
-
-    sync.ErrorDownloadingJobs.Should().BeTrue();
+    sync.Invoking(s => s.ApplyActions(db, st))
+      .Should()
+      .Throw<Exception>()
+      .WithMessage("Unable to copy orders to Makino: check that the Makino software is running");
 
     db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeFalse();
-
-    // ErrorDownloadingJobs should produce an alarm
-    _makinoDB
-      .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
-      .Returns(
-        new MakinoResults()
-        {
-          Devices = _devices,
-          MachineResults = [],
-          WorkSetResults = []
-        }
-      );
-
-    var cur = fix.Create<CurrentStatus>();
-    _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
-
-    sync.CalculateCellState(db)
-      .Should()
-      .BeEquivalentTo(
-        new MakinoCellState()
-        {
-          CurrentStatus = cur with
-          {
-            Alarms = cur.Alarms.Add(
-              "Unable to copy orders to Makino: check that the Makino software is running"
-            )
-          },
-          JobsNotYetCopied =
-          [
-            job.CloneToDerived<HistoricJob, Job>() with
-            {
-              ScheduleId = schId,
-              Decrements = []
-            }
-          ],
-          StateUpdated = false
-        }
-      );
   }
 
   [Fact]
-  public void DoesNotDecrement()
+  public void DoesNotDecrementOnEmptyList()
   {
     using var db = _repo.OpenConnection();
     var st = fix.Create<MakinoCellState>();
 
+    _makinoDB.RemainingToRun().Returns([]);
+
     sync.DecrementJobs(db, st).Should().BeFalse();
+  }
+
+  [Fact]
+  public async Task WritesDecrement()
+  {
+    using var db = _repo.OpenConnection();
+    var now = DateTime.UtcNow;
+
+    // add as copied to system
+    var job = fix.Build<Job>()
+      .With(j => j.RouteStartUTC, now.AddHours(-1))
+      .With(j => j.RouteEndUTC, now.AddHours(4))
+      .Create()
+      .ClearCastingsOnLargerProcs();
+
+    var schId = fix.Create<string>();
+
+    db.AddJobs(
+      new NewJobs() { ScheduleId = schId, Jobs = [job] },
+      expectedPreviousScheduleId: null,
+      addAsCopiedToSystem: true
+    );
+
+    var st = new MakinoCellState()
+    {
+      CurrentStatus = fix.Build<CurrentStatus>()
+        .With(
+          j => j.Jobs,
+          ImmutableDictionary<string, ActiveJob>.Empty.Add(
+            job.UniqueStr,
+            job.CloneToDerived<ActiveJob, Job>()
+          )
+        )
+        .Create(),
+      JobsNotYetCopied = [],
+      StateUpdated = false
+    };
+    var remaining = new RemainingToRun() { JobUnique = job.UniqueStr, RemainingQuantity = job.Cycles - 2 };
+
+    _makinoDB.RemainingToRun().Returns([remaining]);
+
+    var (applyResult, file) = await WatchForFile(() => sync.DecrementJobs(db, st));
+
+    applyResult.Should().BeTrue();
+    file.Should().Contain($"<OrderQuantity orderName=\"{job.UniqueStr}\">");
+
+    db.LoadJob(job.UniqueStr).Decrements!.Select(d => d.Quantity).Should().BeEquivalentTo([2]);
   }
 }

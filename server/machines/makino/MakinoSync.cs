@@ -127,8 +127,6 @@ namespace BlackMaple.FMSInsight.Makino
       return ret;
     }
 
-    public bool ErrorDownloadingJobs { get; private set; } = false;
-
     public MakinoCellState CalculateCellState(IRepository db)
     {
       return CalculateCellState(db, DateTime.UtcNow);
@@ -154,14 +152,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       return new MakinoCellState
       {
-        CurrentStatus = ErrorDownloadingJobs
-          ? st with
-          {
-            Alarms = st.Alarms.Add(
-              "Unable to copy orders to Makino: check that the Makino software is running"
-            )
-          }
-          : st,
+        CurrentStatus = st,
         JobsNotYetCopied = notCopied,
         StateUpdated = newEvts
       };
@@ -187,52 +178,51 @@ namespace BlackMaple.FMSInsight.Makino
 
       if (jobsToSend.Count > 0)
       {
-        var fileName = "insight" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".xml";
-        var fullPath = Path.Combine(settings.ADEPath, fileName);
-        try
+        OrderXML.WriteNewJobs(settings, jobsToSend, settings.DownloadOnlyOrders);
+        foreach (var j in jobsToSend)
         {
-          var tcs = new TaskCompletionSource<bool>();
-          using var fw = new FileSystemWatcher(settings.ADEPath, fileName);
-          fw.Deleted += (s, e) =>
-          {
-            if (e.Name == fileName)
-            {
-              tcs.SetResult(true);
-            }
-          };
-          fw.EnableRaisingEvents = true;
-          OrderXML.WriteOrderXML(fullPath, jobsToSend, settings.DownloadOnlyOrders);
-          if (Task.WaitAny([tcs.Task, Task.Delay(TimeSpan.FromSeconds(10))]) == 1)
-          {
-            Log.Error("Makino did not process new jobs, perhaps the Makino software is not running?");
-            ErrorDownloadingJobs = true;
-          }
-          else
-          {
-            ErrorDownloadingJobs = false;
-            foreach (var j in jobsToSend)
-            {
-              db.MarkJobCopiedToSystem(j.UniqueStr);
-            }
-          }
-        }
-        finally
-        {
-          File.Delete(fullPath);
+          db.MarkJobCopiedToSystem(j.UniqueStr);
         }
         return true;
       }
       else
       {
-        ErrorDownloadingJobs = false;
         return false;
       }
     }
 
     public bool DecrementJobs(IRepository db, MakinoCellState state)
     {
-      // do nothing
-      return false;
+      var toDecr = makinoDb.RemainingToRun();
+
+      if (toDecr.Count == 0)
+      {
+        return false;
+      }
+
+      OrderXML.WriteDecrement(settings, toDecr);
+      db.AddNewDecrement(
+        toDecr
+          .Select(d =>
+          {
+            if (state.CurrentStatus.Jobs.TryGetValue(d.JobUnique, out var job))
+            {
+              var prevDec = job.Decrements?.Sum(d => d.Quantity) ?? 0;
+              return new NewDecrementQuantity()
+              {
+                JobUnique = d.JobUnique,
+                Part = job.PartName,
+                Quantity = job.Cycles - prevDec - d.RemainingQuantity
+              };
+            }
+            else
+            {
+              return null;
+            }
+          })
+          .Where(j => j != null)
+      );
+      return true;
     }
   }
 }

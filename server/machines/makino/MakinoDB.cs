@@ -365,11 +365,18 @@ namespace BlackMaple.FMSInsight.Makino
     public required List<WorkSetResults> WorkSetResults { get; init; }
   }
 
+  public record RemainingToRun
+  {
+    public required string JobUnique { get; init; }
+    public required int RemainingQuantity { get; init; }
+  }
+
   public interface IMakinoDB
   {
     IReadOnlyDictionary<int, PalletLocation> LoadMakinoDevices();
     CurrentStatus LoadCurrentInfo(IRepository logDb, DateTime nowUTC);
     MakinoResults LoadResults(DateTime startUTC, DateTime endUTC);
+    ImmutableList<RemainingToRun> RemainingToRun();
     ImmutableList<ProgramInCellController> CurrentProgramsInCellController();
     ImmutableList<ToolInMachine> AllTools(string? machineGroup = null, int? machineNum = null);
   }
@@ -1084,6 +1091,33 @@ namespace BlackMaple.FMSInsight.Makino
       };
     }
 
+    public ImmutableList<RemainingToRun> RemainingToRun()
+    {
+      var ret = ImmutableList.CreateBuilder<RemainingToRun>();
+
+      using var db = OpenConnection();
+      using var trans = db.BeginTransaction();
+
+      Load(
+        "SELECT o.OrderName, q.RemainingQuantity"
+          + $" FROM {dbo}Quantities q"
+          + $" INNER JOIN {dbo}Orders o ON q.OrderID = o.OrderID"
+          + $" INNER JOIN {dbo}Processes p ON q.ProcessID = p.ProcessID"
+          + $" INNER JOIN {dbo}Parts pa ON o.PartID = pa.PartID"
+          + " WHERE (pa.Revision = 'Insight' OR pa.Revision = 'SAIL') AND p.ProcessNumber = 1 "
+          + " AND o.OrderName IS NOT NULL AND q.RemainingQuantity > 0",
+        reader =>
+        {
+          ret.Add(
+            new RemainingToRun { JobUnique = reader.GetString(0), RemainingQuantity = reader.GetInt32(1) }
+          );
+        },
+        trans
+      );
+
+      return ret.ToImmutable();
+    }
+
     private static void Load(string command, Action<IDataReader> onEachRow, IDbTransaction trans)
     {
       Log.Debug(string.Concat("Loading ", command.AsSpan(7)));
@@ -1094,22 +1128,25 @@ namespace BlackMaple.FMSInsight.Makino
       using var reader = cmd.ExecuteReader();
       while (reader.Read())
       {
-        var row = "   ";
-        for (int i = 0; i < reader.FieldCount; i++)
+        if (Log.IsEnabled(Serilog.Events.LogEventLevel.Verbose))
         {
-          row += reader.GetName(i) + " ";
-          row += reader.GetDataTypeName(i) + ": ";
-          if (reader.IsDBNull(i))
+          var row = "   ";
+          for (int i = 0; i < reader.FieldCount; i++)
           {
-            row += "(null)";
+            row += reader.GetName(i) + " ";
+            row += reader.GetDataTypeName(i) + ": ";
+            if (reader.IsDBNull(i))
+            {
+              row += "(null)";
+            }
+            else
+            {
+              row += reader.GetValue(i).ToString();
+            }
+            row += "  ";
           }
-          else
-          {
-            row += reader.GetValue(i).ToString();
-          }
-          row += "  ";
+          Log.Verbose(row);
         }
-        Log.Verbose(row);
 
         onEachRow(reader);
       }

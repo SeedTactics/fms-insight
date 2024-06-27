@@ -32,9 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Collections.Immutable;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Xml;
 using BlackMaple.MachineFramework;
@@ -91,7 +89,7 @@ public sealed class OrderXMLSpec : IDisposable
       jsonSettings
     )!;
 
-    OrderXML.WriteOrderXML(_tempFile, newj.Jobs, onlyOrders: false);
+    OrderXML.WriteJobsXML(_tempFile, newj.Jobs, onlyOrders: false);
 
     CheckSnapshot("singleproc.xml");
   }
@@ -104,8 +102,22 @@ public sealed class OrderXMLSpec : IDisposable
       jsonSettings
     )!;
 
-    OrderXML.WriteOrderXML(_tempFile, newj.Jobs, onlyOrders: true);
+    OrderXML.WriteJobsXML(_tempFile, newj.Jobs, onlyOrders: true);
 
     CheckSnapshot("onlyorders.xml");
+  }
+
+  [Fact]
+  public void Decrements()
+  {
+    OrderXML.WriteDecrementXML(
+      _tempFile,
+      [
+        new RemainingToRun() { JobUnique = "12345", RemainingQuantity = 10 },
+        new RemainingToRun() { JobUnique = "67890", RemainingQuantity = 20 }
+      ]
+    );
+
+    CheckSnapshot("decrements.xml");
   }
 }
