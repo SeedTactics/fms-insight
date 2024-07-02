@@ -240,7 +240,7 @@ export function CostBreakdownPage() {
         </Tooltip>
       </Box>
       <main>
-        <Table>
+        <Table stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Part</TableCell>
@@ -296,7 +296,7 @@ export function CostBreakdownPage() {
 function CostOutputCard() {
   const costs = useAtomValue(computedCosts);
   return (
-    <Table>
+    <Table stickyHeader>
       <TableHead>
         <TableRow>
           <TableCell>Part</TableCell>

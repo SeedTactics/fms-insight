@@ -447,7 +447,7 @@ export function ToolSummaryTable(): JSX.Element {
   }
 
   return (
-    <Table>
+    <Table stickyHeader>
       <TableHead>
         <ToolTableRow>
           <TableCell />

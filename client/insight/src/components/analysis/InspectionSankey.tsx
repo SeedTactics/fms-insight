@@ -145,6 +145,9 @@ const SankeyDisplay = memo(function InspectionSankeyDiagram({
 }) {
   const { nodes, links } = useMemo(() => {
     const { nodes, links } = inspectionDataToSankey(data);
+    if (nodes.length === 0) {
+      return { nodes: [], links: [] };
+    }
     const generator = sankey<SankeyNode, SankeyLink>()
       .nodeWidth(10)
       .nodePadding(10)

@@ -159,7 +159,7 @@ export function ScheduleTable() {
 
   return (
     <div>
-      <Table>
+      <Table stickyHeader>
         <DataTableHead columns={cols} sort={sort} showDetailsCol={true} copyToClipboardRows={jobs} />
         <TableBody>
           {page.map((j, jIdx) => (

@@ -368,7 +368,7 @@ export const RecentSchedulesCard = memo(function RecentSchedules(): JSX.Element 
 
   return (
     <>
-      <Table>
+      <Table stickyHeader>
         <JobsHeader
           jobs={jobs}
           showMaterial={showMaterial}

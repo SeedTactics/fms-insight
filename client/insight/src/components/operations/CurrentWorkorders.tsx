@@ -100,7 +100,7 @@ const WorkorderDetails = memo(function WorkorderDetails({
   return (
     <Stack direction="row" flexWrap="wrap" justifyContent="space-around" ml="1em" mr="1em">
       <div>
-        <Table size="small">
+        <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
               <TableCell>Serial</TableCell>

@@ -363,7 +363,7 @@ export function ProgramSummaryTable(): JSX.Element {
   }
 
   return (
-    <Table>
+    <Table stickyHeader>
       <TableHead>
         <TableRow>
           <TableCell />
