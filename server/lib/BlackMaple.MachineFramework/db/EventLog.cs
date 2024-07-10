@@ -2045,6 +2045,7 @@ namespace BlackMaple.MachineFramework
       int process,
       int locNum,
       string closeoutType,
+      bool success,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active
@@ -2056,25 +2057,45 @@ namespace BlackMaple.MachineFramework
         Process = process,
         Face = 0
       };
-      return RecordCloseoutCompleted(mat, locNum, closeoutType, extraData, elapsed, active, DateTime.UtcNow);
+      return RecordCloseoutCompleted(
+        mat,
+        locNum,
+        closeoutType,
+        success,
+        extraData,
+        elapsed,
+        active,
+        DateTime.UtcNow
+      );
     }
 
     public LogEntry RecordCloseoutCompleted(
       EventLogMaterial mat,
       int locNum,
       string closeoutType,
+      bool success,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active
     )
     {
-      return RecordCloseoutCompleted(mat, locNum, closeoutType, extraData, elapsed, active, DateTime.UtcNow);
+      return RecordCloseoutCompleted(
+        mat,
+        locNum,
+        closeoutType,
+        success,
+        extraData,
+        elapsed,
+        active,
+        DateTime.UtcNow
+      );
     }
 
     public LogEntry RecordCloseoutCompleted(
       EventLogMaterial mat,
       int locNum,
       string closeoutType,
+      bool success,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active,
@@ -2091,7 +2112,7 @@ namespace BlackMaple.MachineFramework
         Program = closeoutType,
         StartOfCycle = false,
         EndTimeUTC = completeTimeUTC,
-        Result = "",
+        Result = success ? "" : "Failed",
         ElapsedTime = elapsed,
         ActiveOperationTime = active
       };

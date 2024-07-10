@@ -600,6 +600,7 @@ namespace DebugMachineWatchApiServer
             mat: EventLogMaterial.FromLogMat(e.Material[0]),
             locNum: e.LocationNum,
             closeoutType: e.Program,
+            success: e.Result != "Failed",
             extraData: e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty,
             elapsed: e.ElapsedTime,
             active: e.ActiveOperationTime,

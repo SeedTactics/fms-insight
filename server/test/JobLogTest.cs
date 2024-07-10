@@ -901,6 +901,7 @@ namespace MachineWatchTest
         EventLogMaterial.FromLogMat(mat1),
         7,
         "Closety",
+        success: true,
         new Dictionary<string, string> { { "z", "zzz" }, { "y", "yyy" } },
         TimeSpan.FromMinutes(44),
         TimeSpan.FromMinutes(9)
@@ -924,6 +925,36 @@ namespace MachineWatchTest
         ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("z", "zzz").Add("y", "yyy")
       };
       logsForMat1.Add(expectedWashLog);
+
+      var failedCloseout = _jobLog.RecordCloseoutCompleted(
+        materialID: mat1.MaterialID,
+        process: 12,
+        locNum: 4,
+        closeoutType: "TheType",
+        success: false,
+        new Dictionary<string, string> { { "a", "aaa" } },
+        TimeSpan.FromMinutes(22),
+        TimeSpan.FromMinutes(4)
+      );
+      var expectedFailedCloseout = new LogEntry(
+        -1,
+        new LogMaterial[] { mat1 with { Face = 0, Process = 12 } },
+        0,
+        LogType.CloseOut,
+        "CloseOut",
+        4,
+        "TheType",
+        false,
+        failedCloseout.EndTimeUTC,
+        "Failed",
+        TimeSpan.FromMinutes(22),
+        TimeSpan.FromMinutes(4)
+      );
+      expectedFailedCloseout = expectedFailedCloseout with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("a", "aaa")
+      };
+      logsForMat1.Add(expectedFailedCloseout);
 
       var generalLog = _jobLog.RecordGeneralMessage(
         EventLogMaterial.FromLogMat(mat1),
