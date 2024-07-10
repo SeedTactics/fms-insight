@@ -1816,7 +1816,7 @@ namespace MachineWatchTest
               {
                 Quarantined = true,
                 InspectionFailed = false,
-                Closeout = WorkorderSerialCloseout.CloseoutFailed
+                Closeout = WorkorderSerialCloseout.CloseOutFailed
               }
             )
             .Add(
