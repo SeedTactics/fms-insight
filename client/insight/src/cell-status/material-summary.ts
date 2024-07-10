@@ -197,6 +197,7 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
           mat = {
             ...mat,
             startedProcess1: true,
+            quarantineAfterUnload: false,
           };
         }
 
