@@ -501,6 +501,7 @@ const App = memo(function App(props: AppProps) {
         page = <CurrentWorkordersPage />;
         nav1 = OperationsTabs;
         menuNavItems = operationsReports;
+        addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Operations_Production:
         page = <RecentProductionPage />;

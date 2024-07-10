@@ -404,6 +404,7 @@ export function useCompleteInspection(): [(data: CompleteInspectionData) => void
 export interface CompleteCloseoutData {
   readonly mat: MaterialToShowInfo;
   readonly operator: string | null;
+  readonly failed: boolean;
 }
 
 export function useCompleteCloseout(): [(d: CompleteCloseoutData) => void, boolean] {
@@ -419,6 +420,7 @@ export function useCompleteCloseout(): [(d: CompleteCloseoutData) => void, boole
         active: "PT0S",
         elapsed: "PT0S",
         extraData: d.operator ? { operator: d.operator } : undefined,
+        failed: d.failed,
       }),
       d.mat.jobUnique,
       d.mat.partName,

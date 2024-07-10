@@ -54,7 +54,7 @@ import { TableRow } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableBody } from "@mui/material";
-import { PartIdenticon } from "../station-monitor/Material.js";
+import { MaterialDialog, PartIdenticon } from "../station-monitor/Material.js";
 import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
   KeyboardArrowUp as KeyboardArrowUpIcon,
@@ -71,11 +71,16 @@ import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
 import { IActiveWorkorder, WorkorderSerialCloseout, WorkorderSerialStatus } from "../../network/api.js";
 import { durationToMinutes } from "../../util/parseISODuration.js";
-import { materialDialogOpen } from "../../cell-status/material-details.js";
+import {
+  materialDialogOpen,
+  materialInDialogInfo,
+  useCompleteCloseout,
+} from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { WorkorderGantt } from "./WorkorderGantt.js";
 import { latestSimDayUsage } from "../../cell-status/sim-day-usage.js";
+import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
 
 const WorkorderTableRow = styled(TableRow)({
   "& > *": {
@@ -606,6 +611,45 @@ function WorkorderTable({ showSim }: { showSim: boolean }) {
   );
 }
 
+function WorkSerialButtons() {
+  const setWorkorderDialogOpen = useSetAtom(selectWorkorderDialogOpen);
+  const mat = useAtomValue(materialInDialogInfo);
+  const [complete, isCompleting] = useCompleteCloseout();
+  const setToShow = useSetAtom(materialDialogOpen);
+
+  if (mat === null || mat.materialID < 0) {
+    return null;
+  }
+
+  function closeout(failed: boolean) {
+    if (mat === null) return;
+    complete({
+      mat,
+      operator: "",
+      failed,
+    });
+    setToShow(null);
+  }
+
+  return (
+    <>
+      <Button color="primary" disabled={isCompleting} onClick={() => closeout(true)}>
+        Fail CloseOut
+      </Button>
+      <Button color="primary" disabled={isCompleting} onClick={() => closeout(false)}>
+        Pass CloseOut
+      </Button>
+      <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
+        Change Workorder
+      </Button>
+    </>
+  );
+}
+
+const WorkSerialDialog = memo(function WorkSerialDialog() {
+  return <MaterialDialog buttons={<WorkSerialButtons />} />;
+});
+
 export const CurrentWorkordersPage = memo(function RecentWorkordersPage(): JSX.Element {
   useSetTitle("Workorders");
   const currentSt = useAtomValue(currentStatus);
@@ -621,6 +665,8 @@ export const CurrentWorkordersPage = memo(function RecentWorkordersPage(): JSX.E
       {showSim ? <SimulatedWarning showSim={showSim} /> : undefined}
       {display === "table" ? <WorkorderTable showSim={showSim} /> : <WorkorderGantt />}
       <WorkorderCommentDialog />
+      <WorkSerialDialog />
+      <SelectWorkorderDialog />
     </Box>
   );
 });
