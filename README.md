@@ -54,7 +54,9 @@ public static void Main()
 {
   var cfg = Configuration.LoadFromIni();
   var serverSettings = ServerSettings.Load(cfg);
+
   InsightLogging.EnableSerilog(serverSettings, enableEventLog: true);
+
   var fmsSettings = FMSSettings.Load(cfg);
   var serialSt = SerialSettings.SerialsUsingBase62(cfg);
 
@@ -75,75 +77,115 @@ public static void Main()
 ## Server
 
 The server is written in C# and uses ASP.NET Core to expose a HTTP-based JSON
-and REST-like API. The server uses a local SQLite database to store the
-log and job data.
-The [server/lib/BlackMaple.MachineFramework](server/lib/BlackMaple.MachineFramework)
+and REST-like API. The server uses a local SQLite database to store the log and
+job data. The
+[server/lib/BlackMaple.MachineFramework](server/lib/BlackMaple.MachineFramework)
 directory contains the common server code, which includes data definitions,
-database code, and ASP.NET Core controllers.
-The BlackMaple.MachineFramework library proivdes a `AddFMSInsightWebHost` extension
-method on a host builder, which adds a kestral webhost and configures all the controllers.
+database code, and ASP.NET Core controllers. The main method of the
+BlackMaple.MachineFramework library is a `AddFMSInsightWebHost` extension method
+on a host builder, which adds a kestral webhost and configures all the
+controllers.
 
-Because the library is designed for FMS Insight to be installed by end-users, we do the
-configuration at the very beginning outside the HostBuilder. This allows more flexibility
-and makes it easier for the end-user (typically a non-technical manager on the shop floor)
-to configure. The example above shows loading using a helper method which reads an ini file,
-but you can configure however you wish. The main thing is to create an instance of
-`ServerSettings`, `FMSSettings`, and optionally `SerialSettings`.
+Because the library is designed for FMS Insight to be installed by end-users, we
+do the configuration at the very beginning outside the HostBuilder. This allows
+more flexibility and makes it easier for the end-user (typically a non-technical
+manager on the shop floor) to configure. The example above shows loading using a
+helper method which reads an ini file, but you can ignore this code and
+configure however you wish. It is only required that you create an instance of
+`ServerSettings`, `FMSSettings`, and optionally `SerialSettings`, and do that
+before creating the host builder.
 
-The library uses Serilog for logging, and provides a helper method `InsightLogging.EnableSerilog`
-to configure logging to files and the event log. You can also configure Serilog however you wish.
-FMS Insight has extensive Debug logging and some Verbose logging, so
-you should configure Serilog to log those levels on some kind of configuration flag (since
+The library uses Serilog for logging, and provides a helper method
+`InsightLogging.EnableSerilog` to configure logging to files and the event log.
+You can also ignore this method and configure Serilog however you wish. FMS
+Insight has extensive Debug logging and some Verbose logging, so you should
+configure Serilog to log those levels on some kind of configuration flag (since
 they produce a lot of data).
 
 The server stores data in a SQLite database and wraps that in a `RepositoryConfig` class.
-(This code is some of the oldest code, 20+years, and uses a custom SQL commands rather than
+(This code is some of the oldest code, 20+years, and uses custom SQL commands rather than
 an ORM like entity framework or dapper.) FMS Insight requires that a RepositoryConfig be
 registered as a singleton service, which is done by the `AddRepository` extension method.
 It takes the path to the database and an optional serial settings object to automatically
 assign serials (can be null if serials are not automatically assigned).
 
-Finally, the server requires `IMachineControl` and `ISyncronizeCellState` singleton
-services to be registered (see the next section).
+The server requires `IMachineControl` and `ISyncronizeCellState`
+singleton services to be registered (see the next section). In the example
+above, this is done by the `s.AddMazakBackend` call. The different backends
+provided by this project are in separate nuget packages and each registers
+instances of the two interfaces: `IMachineControl` and `ISyncronizeCellState`.
+You can also implement these interfaces yourself, and typically must implement
+them when talking directly to custom PLCs.
 
-## Backend
+## Machine Status
 
-The FMS Insight server requires two interfaces, `IMachineControl` and `ISyncronizeCellState`,
-to be registered as singletons. There are two main methods that facilitate almost all the
-communication between the server and the cell controller, `ISyncronizeCellState.CalculateCellState`
-and `ISyncronizeCellState.ApplyActions`. The server starts a thread and calls these methods whenever
-the `ISyncronizeCellState.NewCellState` event is raised or a timeout is reached. FMS Insight handles
-all the thread safety and error handling, and guarantees that the server calls these methods on
-a single thread. The server turns any exceptions into alarms, so no error handling inside
-these is needed.
+The `IMachineControl` interface provides a very simple interface to query data
+about a machine (the naming is unfortunate, it is read-only and does not
+directly control the machine). The interface provides methods to query information
+about the machine and these methods are called directly from HTTP controllers in responce
+to GET API requests.
 
-The server is designed around an event-sourcing type pattern, where the server maintains a log of
-all events and a log of planned jobs, and recalculates the current cell state by looking at the log
-and querying the current machines or PLCs. We try as much as possible to store no state about the
-system. Instead, `CalculateCellState` builds a new representation of the state of the cell from
-scratch.
+## Logs and Cell State
 
-If the cell controller provides some type of event such as a file creation event or a database
-notification, these can be configured to raise to the `NewCellState` event and then use a recheck
-timeout of 1-2 minutes. Otherwise, on some other machines, we implement a 10-second timeout and ignore
-the event, essentially polling the machines.
+The server is designed around an event-sourcing type pattern, where the server
+maintains a log of all events and a log of planned jobs, and this is stored in
+the SQLite database. The server recalculates the current cell state by looking
+at the log and querying the current machines or PLCs. We try as much as possible
+to store no state about the system either in memory or in the SQLite database.
 
-When the event is raised or the timeout occurs, the server calls `CalculateCellState` to build a new
-cell state and then immedietly calls `ApplyActions` to apply any changes to the cell state. The
-implementation should build a new cell state from the log and querying the machines, perhaps also
-recording any log messages. There are some helper static methods in the static class `BuildCellState`
-which can assist with this. You can also if you wish include in the cell state a list of
-potential changes that need to be made, e.g. jobs that are missing or need to be updated, etc.
-`ApplyActions` then takes the cell state and applies any changes to the cell, such as starting/stopping
-machines, changing pallets, and so on. The distinction of how much work is divided
-between `CalculateCellState` and `ApplyActions` is mostly left to the specific backend, FMS Insight
-doesn't care; it calls them both back-to-back. The main distinction is around error handling: if
-`CaluclateCellState` has an exception, the stale cell state from previously is still showed to the user,
-while if `CalculateCellState` is successful but `ApplyActions` gets an error the cell state is still updated.
+To handle the cell state, the server has a thread which repeatedly builds a new
+representation of the state of the cell from scratch and then decides if any
+actions need to be sent to the machines. The thread spawned by the server will
+recalculate the cell state on a timeout or whenever the backend raises an event.
+If the cell controller provides some type of event such as a file creation event
+or a database notification, these can be configured to raise to the
+`NewCellState` event and then use a recheck timeout of 1-2 minutes. On other
+systems which do not have events, we typically use a 10-second timeout,
+essentially polling the machines to recreate the cell state and decide any
+actions.
 
-There are some other methods in `ISyncronizeCellState` and `IMachineControl` which are used to handle
-specific situations, but in fact all other methods can do nothing and just return, and still have
-a functional FMS Insight server.
+The most recent calculated cell state is cached and used to respond to HTTP API
+requests by the controllers.
+
+## ISyncronizeCellState
+
+To facilitate the cell state, the server requires an implementation of the
+`ISyncronizeCellState` interface be registered. There are two main methods,
+`ISyncronizeCellState.CalculateCellState` and
+`ISyncronizeCellState.ApplyActions`.
+
+As mentioned above, the server starts a thread and waits either for the
+`ISyncronizeCellState.NewCellState` event to be raised or a configurable timeout
+to be reached. After that, the server thread calls `CalculateCellState` and then
+immedietly calls `ApplyActions`. The server guarantees that these methods are
+called on a single thread and handles all thread saftey; the implementation can
+assume `CalculateCellState` and `ApplyActions` are always called from the same
+thread. The server also handles all exceptions and turns them into alarms, so no
+error handling is needed inside these methods.
+
+For `CalculateCellState`, the implementation should build a new cell state from
+the log of events and querying the machines. While doing so, `CalculateCellState`
+might also record any missing log messages, for example if the machine has stopped
+it might record the machine end log event if one has not yet been recorded.
+There are some helper static methods in the static class `BuildCellState` which
+can assist with this.
+
+The `ApplyActions` method is called immediately after `CalculateCellState` with
+the newly calculated cell state, and should apply any changes to the cell. For example,
+it might start the machines, send data into the cell controller, print a label on
+a label printer, or so on.
+
+Since `CalculateCellState` and `ApplyActions` are always called together, the
+server is indifferent to how much you divide the work between
+`CalculateCellState` and `ApplyActions` methods. The main distinction is around
+error handling: if `CaluclateCellState` has an exception, the stale cached cell
+state from previously is still showed to the user, while if `CalculateCellState`
+is successful but `ApplyActions` gets an error the cached cell state is still
+updated.
+
+There are some other methods in `ISyncronizeCellState` and `IMachineControl`
+which are used to handle specific situations, but in fact all other methods can
+do nothing and just return, and still have a functional FMS Insight server.
 
 ## Customizing
 
