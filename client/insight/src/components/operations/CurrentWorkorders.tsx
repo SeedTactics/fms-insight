@@ -111,8 +111,8 @@ const WorkorderDetails = memo(function WorkorderDetails({
             <TableRow>
               <TableCell>Serial</TableCell>
               <TableCell>Quarantine?</TableCell>
-              <TableCell>Inspect Failed?</TableCell>
-              <TableCell>Close Out</TableCell>
+              <TableCell sx={{ whiteSpace: "nowrap" }}>Inspect Failed?</TableCell>
+              <TableCell sx={{ whiteSpace: "nowrap" }}>Close Out</TableCell>
               <TableCell padding="checkbox" />
             </TableRow>
           </TableHead>
@@ -120,19 +120,19 @@ const WorkorderDetails = memo(function WorkorderDetails({
             {LazySeq.ofObject(workorder.serials).map(([s, status]) => (
               <TableRow key={s}>
                 <TableCell>{s}</TableCell>
-                <TableCell sx={{ textAlign: "center" }}>
-                  {status.quarantined ? <SavedSearch fontSize="small" /> : ""}
+                <TableCell sx={{ textAlign: "center" }} padding="checkbox">
+                  {status.quarantined ? <SavedSearch fontSize="inherit" /> : ""}
                 </TableCell>
-                <TableCell sx={{ textAlign: "center" }}>
-                  {status.inspectionFailed ? <ErrorOutline fontSize="small" /> : ""}
+                <TableCell sx={{ textAlign: "center" }} padding="checkbox">
+                  {status.inspectionFailed ? <ErrorOutline fontSize="inherit" /> : ""}
                 </TableCell>
-                <TableCell sx={{ textAlign: "center" }}>
+                <TableCell sx={{ textAlign: "center" }} padding="checkbox">
                   {status.closeout === WorkorderSerialCloseout.None ? (
                     ""
                   ) : status.closeout === WorkorderSerialCloseout.ClosedOut ? (
-                    <Check fontSize="small" />
+                    <Check fontSize="inherit" />
                   ) : (
-                    <ErrorOutline fontSize="small" />
+                    <ErrorOutline fontSize="inherit" />
                   )}
                 </TableCell>
                 <TableCell padding="checkbox">
