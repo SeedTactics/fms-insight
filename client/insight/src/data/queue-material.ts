@@ -137,7 +137,7 @@ function workorderDetailForCasting(
 
   if (!workorder) return null;
 
-  return `Started: ${workorder.serials.length}; Planned: ${workorder.plannedQuantity}`;
+  return `Started: ${LazySeq.ofObject(workorder.serials).length()}; Planned: ${workorder.plannedQuantity}`;
 }
 
 function possibleCastings(

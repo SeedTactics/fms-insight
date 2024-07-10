@@ -38,7 +38,7 @@ namespace BlackMaple.MachineFramework.Controllers
 {
   [ApiController]
   [Route("api/v1/machines")]
-  public class machinesController(IMachineControl mach) : ControllerBase
+  public class MachinesController(IMachineControl mach) : ControllerBase
   {
     [HttpGet("tools")]
     public ImmutableList<ToolInMachine> GetToolsInMachines()

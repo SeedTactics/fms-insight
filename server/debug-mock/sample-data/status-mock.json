@@ -1344,7 +1344,18 @@
       "CompletedQuantity": 8,
       "SimulatedStartUTC": "2023-05-19T22:00:00Z",
       "SimulatedFilledUTC": "2023-05-27T03:00:00Z",
-      "Serials": ["00000000aa", "00000000ab"],
+      "Serials": {
+        "00000000aa": {
+          "Quarantined": false,
+          "InspectionFailed": true,
+          "Closeout": "None"
+        },
+        "00000000ab": {
+          "Quarantined": true,
+          "InspectionFailed": false,
+          "Closeout": "None"
+        }
+      },
       "ElapsedStationTime": {
         "MC": "PT10M",
         "L/U": "PT8M"
@@ -1373,7 +1384,23 @@
       "CompletedQuantity": 4,
       "SimulatedStartUTC": "2023-05-19T22:00:00Z",
       "SimulatedFilledUTC": "2023-05-27T03:00:00Z",
-      "Serials": ["00000000ccc", "00000000dd", "00000000ee"],
+      "Serials": {
+        "00000000ccc": {
+          "Quarantined": false,
+          "InspectionFailed": true,
+          "Closeout": "ClosedOut"
+        },
+        "00000000dd": {
+          "Quarantined": true,
+          "InspectionFailed": false,
+          "Closeout": "None"
+        },
+        "00000000ee": {
+          "Quarantined": false,
+          "InspectionFailed": false,
+          "Closeout": "CloseOutFailed"
+        }
+      },
       "ElapsedStationTime": {
         "MC": "PT10M",
         "L/U": "PT8M"
@@ -1392,7 +1419,18 @@
       "CompletedQuantity": 12,
       "SimulatedStartUTC": "2023-05-20T11:00:00Z",
       "SimulatedFilledUTC": "2023-06-02T14:00:00Z",
-      "Serials": ["00000000bb", "00000000bc"],
+      "Serials": {
+        "00000000bb": {
+          "Quarantined": false,
+          "InspectionFailed": false,
+          "Closeout": "None"
+        },
+        "00000000bc": {
+          "Quarantined": false,
+          "InspectionFailed": true,
+          "Closeout": "None"
+        }
+      },
       "ElapsedStationTime": {
         "MC": "PT4M",
         "L/U": "PT55M"

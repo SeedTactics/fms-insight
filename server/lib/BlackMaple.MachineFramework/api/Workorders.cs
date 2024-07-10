@@ -65,6 +65,20 @@ namespace BlackMaple.MachineFramework
     public required DateTime TimeUTC { get; init; }
   }
 
+  public enum WorkorderSerialCloseout
+  {
+    None,
+    ClosedOut,
+    CloseOutFailed
+  }
+
+  public record WorkorderSerialStatus
+  {
+    public required bool Quarantined { get; init; }
+    public required bool InspectionFailed { get; init; }
+    public required WorkorderSerialCloseout Closeout { get; init; }
+  }
+
   public record ActiveWorkorder
   {
     // original workorder details
@@ -86,14 +100,12 @@ namespace BlackMaple.MachineFramework
     // active data
     public required int CompletedQuantity { get; init; }
 
-    public required ImmutableList<string> Serials { get; init; }
-
     public ImmutableList<WorkorderComment>? Comments { get; init; }
-
-    public ImmutableList<string>? QuarantinedSerials { get; init; }
 
     public required ImmutableDictionary<string, TimeSpan> ElapsedStationTime { get; init; }
 
     public required ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; }
+
+    public required ImmutableDictionary<string, WorkorderSerialStatus> Serials { get; init; }
   }
 }

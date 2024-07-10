@@ -119,7 +119,7 @@ public static class FMSInsightWebHost
           {
             am.ApplicationParts.Add(
               new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(
-                typeof(Controllers.jobsController).Assembly
+                typeof(Controllers.JobsController).Assembly
               )
             );
             if (extraParts != null)
