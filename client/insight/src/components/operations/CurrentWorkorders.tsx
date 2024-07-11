@@ -589,7 +589,7 @@ function WorkorderTable({ showSim }: { showSim: boolean }) {
     [currentSt.workorders, sortBy, order],
   );
   return (
-    <Table>
+    <Table stickyHeader>
       <WorkorderHeader
         workorders={currentSt?.workorders ?? []}
         sortBy={sortBy}
@@ -625,7 +625,7 @@ function WorkSerialButtons() {
     if (mat === null) return;
     complete({
       mat,
-      operator: "",
+      operator: "Manager",
       failed,
     });
     setToShow(null);
