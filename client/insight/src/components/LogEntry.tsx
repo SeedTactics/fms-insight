@@ -50,7 +50,8 @@ type ColoredSpanType =
   | "pallet"
   | "queue"
   | "inspectionNotSignaled"
-  | "inspectionSignaled";
+  | "inspectionSignaled"
+  | "closeoutFailed";
 
 const ColoredSpan = styled("span", { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $type: ColoredSpanType;
@@ -67,6 +68,8 @@ const ColoredSpan = styled("span", { shouldForwardProp: (prop) => prop.toString(
     case "inspectionNotSignaled":
       return { color: "#4527A0" };
     case "inspectionSignaled":
+      return { color: "red" };
+    case "closeoutFailed":
       return { color: "red" };
   }
 });
@@ -268,7 +271,15 @@ function display(props: LogEntryProps): JSX.Element {
       }
 
     case api.LogType.CloseOut:
-      return <span>{entry.program && entry.program !== "" ? entry.program : "CloseOut"} Completed</span>;
+      if (entry.result.toLowerCase() === "failed") {
+        return (
+          <ColoredSpan $type="closeoutFailed">
+            {entry.program && entry.program !== "" ? entry.program : "CloseOut"} Failed
+          </ColoredSpan>
+        );
+      } else {
+        return <span>{entry.program && entry.program !== "" ? entry.program : "CloseOut"} Completed</span>;
+      }
 
     case api.LogType.AddToQueue:
       switch (entry.program) {

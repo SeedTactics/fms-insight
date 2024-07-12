@@ -111,6 +111,7 @@ namespace BlackMaple.MachineFramework
     // when adding types, must also update the convertLogType() function in client/backup-viewer/src/background.ts
   }
 
+  [KnownType(typeof(MaterialProcessActualPath))]
   public record LogEntry
   {
     [JsonPropertyName("counter")]

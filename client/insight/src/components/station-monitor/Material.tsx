@@ -361,7 +361,7 @@ const MatCard = forwardRef(function MatCard(
   } else if (props.mat.closeout_completed) {
     completedMsg = (
       <MatCardDetail fsize={props.fsize}>
-        <span>Closed Out </span>
+        <span>{props.mat.closeout_failed ? "Failed " : ""}Closed Out </span>
         <TimeAgo date={props.mat.closeout_completed} />
       </MatCardDetail>
     );

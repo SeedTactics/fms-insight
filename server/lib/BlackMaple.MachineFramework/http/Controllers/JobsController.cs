@@ -46,8 +46,8 @@ namespace BlackMaple.MachineFramework.Controllers
   }
 
   [ApiController]
-  [Route("api/v1/[controller]")]
-  public class jobsController(RepositoryConfig repo, IJobAndQueueControl jobAndQueue) : ControllerBase
+  [Route("api/v1/jobs")]
+  public class JobsController(RepositoryConfig repo, IJobAndQueueControl jobAndQueue) : ControllerBase
   {
     [HttpGet("history")]
     public HistoricData History([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)

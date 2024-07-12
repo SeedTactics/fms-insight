@@ -243,6 +243,7 @@ namespace BlackMaple.MachineFramework
       int process,
       int locNum,
       string closeoutType,
+      bool success,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active
@@ -251,6 +252,7 @@ namespace BlackMaple.MachineFramework
       EventLogMaterial mat,
       int locNum,
       string closeoutType,
+      bool success,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active
@@ -259,6 +261,7 @@ namespace BlackMaple.MachineFramework
       EventLogMaterial mat,
       int locNum,
       string closeoutType,
+      bool success,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active,

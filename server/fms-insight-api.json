@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v14.0.7.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v14.0.8.0 (NJsonSchema v11.0.1.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -10,9 +10,9 @@
     "/api/v1/fms/fms-information": {
       "get": {
         "tags": [
-          "fms"
+          "Fms"
         ],
-        "operationId": "fms_FMSInformation",
+        "operationId": "Fms_FMSInformation",
         "responses": {
           "200": {
             "description": "",
@@ -30,9 +30,9 @@
     "/api/v1/fms/find-instructions/{part}": {
       "get": {
         "tags": [
-          "fms"
+          "Fms"
         ],
-        "operationId": "fms_FindInstructions",
+        "operationId": "Fms_FindInstructions",
         "parameters": [
           {
             "name": "part",
@@ -113,9 +113,9 @@
     "/api/v1/fms/print-label/{materialId}": {
       "post": {
         "tags": [
-          "fms"
+          "Fms"
         ],
-        "operationId": "fms_PrintLabel",
+        "operationId": "Fms_PrintLabel",
         "parameters": [
           {
             "name": "materialId",
@@ -158,9 +158,9 @@
     "/api/v1/fms/parse-barcode": {
       "post": {
         "tags": [
-          "fms"
+          "Fms"
         ],
-        "operationId": "fms_ParseBarcode",
+        "operationId": "Fms_ParseBarcode",
         "parameters": [
           {
             "name": "barcode",
@@ -190,9 +190,9 @@
     "/api/v1/fms/enable-verbose-logging-for-five-minutes": {
       "post": {
         "tags": [
-          "fms"
+          "Fms"
         ],
-        "operationId": "fms_EnableVerboseLoggingForFiveMinutes",
+        "operationId": "Fms_EnableVerboseLoggingForFiveMinutes",
         "responses": {
           "200": {
             "description": ""
@@ -203,9 +203,9 @@
     "/api/v1/jobs/history": {
       "get": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_History",
+        "operationId": "Jobs_History",
         "parameters": [
           {
             "name": "startUTC",
@@ -243,9 +243,9 @@
       },
       "post": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_FilteredHistory",
+        "operationId": "Jobs_FilteredHistory",
         "parameters": [
           {
             "name": "startUTC",
@@ -300,9 +300,9 @@
     "/api/v1/jobs/recent": {
       "post": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_Recent",
+        "operationId": "Jobs_Recent",
         "parameters": [
           {
             "name": "startUTC",
@@ -347,9 +347,9 @@
     "/api/v1/jobs/latest-schedule": {
       "get": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_LatestSchedule",
+        "operationId": "Jobs_LatestSchedule",
         "responses": {
           "200": {
             "description": "",
@@ -367,9 +367,9 @@
     "/api/v1/jobs/unfilled-workorders/by-part/{part}": {
       "get": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_MostRecentUnfilledWorkordersForPart",
+        "operationId": "Jobs_MostRecentUnfilledWorkordersForPart",
         "parameters": [
           {
             "name": "part",
@@ -401,9 +401,9 @@
     "/api/v1/jobs/status": {
       "get": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_CurrentStatus",
+        "operationId": "Jobs_CurrentStatus",
         "responses": {
           "200": {
             "description": "",
@@ -421,9 +421,9 @@
     "/api/v1/jobs/add": {
       "post": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_Add",
+        "operationId": "Jobs_Add",
         "parameters": [
           {
             "name": "expectedPreviousScheduleId",
@@ -458,9 +458,9 @@
     "/api/v1/jobs/casting/{castingName}": {
       "post": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_AddUnallocatedCastingToQueue",
+        "operationId": "Jobs_AddUnallocatedCastingToQueue",
         "parameters": [
           {
             "name": "castingName",
@@ -545,9 +545,9 @@
     "/api/v1/jobs/job/{jobUnique}/plan": {
       "get": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_GetJobPlan",
+        "operationId": "Jobs_GetJobPlan",
         "parameters": [
           {
             "name": "jobUnique",
@@ -576,9 +576,9 @@
     "/api/v1/jobs/job/{jobUnique}/unprocessed-material": {
       "post": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_AddUnprocessedMaterialToQueue",
+        "operationId": "Jobs_AddUnprocessedMaterialToQueue",
         "parameters": [
           {
             "name": "jobUnique",
@@ -667,9 +667,9 @@
     "/api/v1/jobs/job/{jobUnique}/comment": {
       "put": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_SetJobComment",
+        "operationId": "Jobs_SetJobComment",
         "parameters": [
           {
             "name": "jobUnique",
@@ -703,9 +703,9 @@
     "/api/v1/jobs/material/{materialId}/queue": {
       "put": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_SetMaterialInQueue",
+        "operationId": "Jobs_SetMaterialInQueue",
         "parameters": [
           {
             "name": "materialId",
@@ -747,9 +747,9 @@
       },
       "delete": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_RemoveMaterialFromAllQueues",
+        "operationId": "Jobs_RemoveMaterialFromAllQueues",
         "parameters": [
           {
             "name": "materialId",
@@ -781,9 +781,9 @@
     "/api/v1/jobs/material/{materialId}/signal-quarantine": {
       "put": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_SignalMaterialForQuarantine",
+        "operationId": "Jobs_SignalMaterialForQuarantine",
         "parameters": [
           {
             "name": "materialId",
@@ -826,9 +826,9 @@
     "/api/v1/jobs/material/{materialId}/invalidate-process": {
       "put": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_InvalidatePalletCycle",
+        "operationId": "Jobs_InvalidatePalletCycle",
         "parameters": [
           {
             "name": "materialId",
@@ -882,9 +882,9 @@
     "/api/v1/jobs/material/{materialId}/swap-off-pallet": {
       "put": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_SwapMaterialOnPallet",
+        "operationId": "Jobs_SwapMaterialOnPallet",
         "parameters": [
           {
             "name": "materialId",
@@ -928,9 +928,9 @@
     "/api/v1/jobs/material": {
       "delete": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_BulkRemoveMaterialFromQueues",
+        "operationId": "Jobs_BulkRemoveMaterialFromQueues",
         "parameters": [
           {
             "name": "operName",
@@ -968,9 +968,9 @@
     "/api/v1/jobs/planned-cycles": {
       "delete": {
         "tags": [
-          "jobs"
+          "Jobs"
         ],
-        "operationId": "jobs_DecrementQuantities",
+        "operationId": "Jobs_DecrementQuantities",
         "parameters": [
           {
             "name": "loadDecrementsStrictlyAfterDecrementId",
@@ -1013,9 +1013,9 @@
     "/api/v1/log/events/all": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_Get",
+        "operationId": "Log_Get",
         "parameters": [
           {
             "name": "startUTC",
@@ -1058,9 +1058,9 @@
     "/api/v1/log/events.csv": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_GetEventCSV",
+        "operationId": "Log_GetEventCSV",
         "parameters": [
           {
             "name": "startUTC",
@@ -1101,9 +1101,9 @@
     "/api/v1/log/events/all-completed-parts": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_GetCompletedParts",
+        "operationId": "Log_GetCompletedParts",
         "parameters": [
           {
             "name": "startUTC",
@@ -1146,9 +1146,9 @@
     "/api/v1/log/events/recent": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_Recent",
+        "operationId": "Log_Recent",
         "parameters": [
           {
             "name": "lastSeenCounter",
@@ -1191,9 +1191,9 @@
     "/api/v1/log/events/for-material/{materialID}": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_LogForMaterial",
+        "operationId": "Log_LogForMaterial",
         "parameters": [
           {
             "name": "materialID",
@@ -1226,9 +1226,9 @@
     "/api/v1/log/events/for-material": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_LogForMaterials",
+        "operationId": "Log_LogForMaterials",
         "parameters": [
           {
             "name": "id",
@@ -1267,9 +1267,9 @@
     "/api/v1/log/events/for-serial/{serial}": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_LogForSerial",
+        "operationId": "Log_LogForSerial",
         "parameters": [
           {
             "name": "serial",
@@ -1301,9 +1301,9 @@
     "/api/v1/log/events/for-workorder/{workorder}": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_LogForWorkorder",
+        "operationId": "Log_LogForWorkorder",
         "parameters": [
           {
             "name": "workorder",
@@ -1335,9 +1335,9 @@
     "/api/v1/log/material-details/{materialID}": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_MaterialDetails",
+        "operationId": "Log_MaterialDetails",
         "parameters": [
           {
             "name": "materialID",
@@ -1367,9 +1367,9 @@
     "/api/v1/log/material-for-job/{jobUnique}": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_MaterialDetailsForJob",
+        "operationId": "Log_MaterialDetailsForJob",
         "parameters": [
           {
             "name": "jobUnique",
@@ -1401,9 +1401,9 @@
     "/api/v1/log/material-for-serial/{serial}": {
       "get": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_MaterialForSerial",
+        "operationId": "Log_MaterialForSerial",
         "parameters": [
           {
             "name": "serial",
@@ -1435,9 +1435,9 @@
     "/api/v1/log/material-details/{materialID}/serial": {
       "post": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_SetSerial",
+        "operationId": "Log_SetSerial",
         "parameters": [
           {
             "name": "materialID",
@@ -1489,9 +1489,9 @@
     "/api/v1/log/material-details/{materialID}/workorder": {
       "post": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_SetWorkorder",
+        "operationId": "Log_SetWorkorder",
         "parameters": [
           {
             "name": "materialID",
@@ -1543,9 +1543,9 @@
     "/api/v1/log/material-details/{materialID}/inspections/{inspType}": {
       "post": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_SetInspectionDecision",
+        "operationId": "Log_SetInspectionDecision",
         "parameters": [
           {
             "name": "materialID",
@@ -1606,9 +1606,9 @@
     "/api/v1/log/material-details/{materialID}/notes": {
       "post": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_RecordOperatorNotes",
+        "operationId": "Log_RecordOperatorNotes",
         "parameters": [
           {
             "name": "materialID",
@@ -1669,9 +1669,9 @@
     "/api/v1/log/events/inspection-result": {
       "post": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_RecordInspectionCompleted",
+        "operationId": "Log_RecordInspectionCompleted",
         "requestBody": {
           "x-name": "insp",
           "content": {
@@ -1701,9 +1701,9 @@
     "/api/v1/log/events/closeout": {
       "post": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_RecordCloseoutCompleted",
+        "operationId": "Log_RecordCloseoutCompleted",
         "requestBody": {
           "x-name": "insp",
           "content": {
@@ -1733,9 +1733,9 @@
     "/api/v1/log/workorder/{workorder}/comment": {
       "post": {
         "tags": [
-          "log"
+          "Log"
         ],
-        "operationId": "log_RecordWorkorderComment",
+        "operationId": "Log_RecordWorkorderComment",
         "parameters": [
           {
             "name": "workorder",
@@ -1785,9 +1785,9 @@
     "/api/v1/machines/tools": {
       "get": {
         "tags": [
-          "machines"
+          "Machines"
         ],
-        "operationId": "machines_GetToolsInMachines",
+        "operationId": "Machines_GetToolsInMachines",
         "responses": {
           "200": {
             "description": "",
@@ -1808,9 +1808,9 @@
     "/api/v1/machines/programs-in-cell-controller": {
       "get": {
         "tags": [
-          "machines"
+          "Machines"
         ],
-        "operationId": "machines_GetProgramsInCellController",
+        "operationId": "Machines_GetProgramsInCellController",
         "responses": {
           "200": {
             "description": "",
@@ -1831,9 +1831,9 @@
     "/api/v1/machines/program/{programName}/revisions": {
       "get": {
         "tags": [
-          "machines"
+          "Machines"
         ],
-        "operationId": "machines_GetProgramRevisionsInDescendingOrderOfRevision",
+        "operationId": "Machines_GetProgramRevisionsInDescendingOrderOfRevision",
         "parameters": [
           {
             "name": "programName",
@@ -1885,9 +1885,9 @@
     "/api/v1/machines/program/{programName}/revision/{revision}/content": {
       "get": {
         "tags": [
-          "machines"
+          "Machines"
         ],
-        "operationId": "machines_GetProgramRevisionContent",
+        "operationId": "Machines_GetProgramRevisionContent",
         "parameters": [
           {
             "name": "programName",
@@ -1926,9 +1926,9 @@
     "/api/v1/machines/program/{programName}/latest-revision/content": {
       "get": {
         "tags": [
-          "machines"
+          "Machines"
         ],
-        "operationId": "machines_GetLatestProgramRevisionContent",
+        "operationId": "Machines_GetLatestProgramRevisionContent",
         "parameters": [
           {
             "name": "programName",
@@ -3496,9 +3496,9 @@
           "DueDate",
           "Priority",
           "CompletedQuantity",
-          "Serials",
           "ElapsedStationTime",
-          "ActiveStationTime"
+          "ActiveStationTime",
+          "Serials"
         ],
         "properties": {
           "WorkorderId": {
@@ -3533,24 +3533,11 @@
             "type": "integer",
             "format": "int32"
           },
-          "Serials": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
           "Comments": {
             "type": "array",
             "nullable": true,
             "items": {
               "$ref": "#/components/schemas/WorkorderComment"
-            }
-          },
-          "QuarantinedSerials": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "type": "string"
             }
           },
           "ElapsedStationTime": {
@@ -3565,6 +3552,12 @@
             "additionalProperties": {
               "type": "string",
               "format": "duration"
+            }
+          },
+          "Serials": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/WorkorderSerialStatus"
             }
           }
         }
@@ -3585,6 +3578,40 @@
             "format": "date-time"
           }
         }
+      },
+      "WorkorderSerialStatus": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "Quarantined",
+          "InspectionFailed",
+          "Closeout"
+        ],
+        "properties": {
+          "Quarantined": {
+            "type": "boolean"
+          },
+          "InspectionFailed": {
+            "type": "boolean"
+          },
+          "Closeout": {
+            "$ref": "#/components/schemas/WorkorderSerialCloseout"
+          }
+        }
+      },
+      "WorkorderSerialCloseout": {
+        "type": "string",
+        "description": "",
+        "x-enumNames": [
+          "None",
+          "ClosedOut",
+          "CloseOutFailed"
+        ],
+        "enum": [
+          "None",
+          "ClosedOut",
+          "CloseOutFailed"
+        ]
       },
       "EditMaterialInLogEvents": {
         "type": "object",
@@ -3966,6 +3993,9 @@
           "Active": {
             "type": "string",
             "format": "duration"
+          },
+          "Failed": {
+            "type": "boolean"
           }
         }
       },

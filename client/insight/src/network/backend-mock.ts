@@ -238,7 +238,7 @@ export function registerMockBackend(
           dueDate: w.dueDate,
           priority: w.priority,
           completedQuantity: 0,
-          serials: [],
+          serials: {},
           elapsedStationTime: {},
           activeStationTime: {},
         }));

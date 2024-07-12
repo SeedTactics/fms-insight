@@ -94,7 +94,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
   [ApiController]
   [Route("api/v1/fms")]
-  public class fmsController : ControllerBase
+  public class FmsController : ControllerBase
   {
     private readonly FMSSettings _cfg;
     private readonly ServerSettings _serverSt;
@@ -108,7 +108,7 @@ namespace BlackMaple.MachineFramework.Controllers
     private readonly string _name;
     private readonly string _version;
 
-    public fmsController(
+    public FmsController(
       FMSSettings fmsSt,
       ServerSettings serverSt,
       IJobAndQueueControl jobsAndQueues,

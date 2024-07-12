@@ -81,11 +81,12 @@ function CompleteButton() {
     }
   }
 
-  function markComplete() {
+  function markComplete(failed: boolean) {
     if (mat === null) return;
     complete({
       mat,
       operator: operator,
+      failed,
     });
     setToShow(null);
   }
@@ -102,9 +103,14 @@ function CompleteButton() {
     );
   } else {
     return (
-      <Button color="primary" disabled={isCompleting} onClick={markComplete}>
-        Close Out
-      </Button>
+      <>
+        <Button color="primary" disabled={isCompleting} onClick={() => markComplete(true)}>
+          Fail Close Out
+        </Button>
+        <Button color="primary" disabled={isCompleting} onClick={() => markComplete(false)}>
+          Pass Close Out
+        </Button>
+      </>
     );
   }
 }

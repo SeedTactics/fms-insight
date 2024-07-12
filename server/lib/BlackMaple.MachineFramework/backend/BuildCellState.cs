@@ -183,11 +183,16 @@ public static class BuildCellState
               .Where(x => x.Inspect)
               .Select(x => x.InspType)
               .ToImmutableList(),
-            QuarantineAfterUnload = log.Any(e =>
-              e.LogType == LogType.SignalQuarantine && e.Material.Any(m => m.MaterialID == m.MaterialID)
-            )
-              ? true
-              : null,
+            QuarantineAfterUnload =
+              log.LastOrDefault(e =>
+                e.Material.Any(m => m.MaterialID == mat.MaterialID && m.Process == mat.Process)
+                && (
+                  e.LogType == LogType.SignalQuarantine
+                  || (e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle)
+                )
+              )?.LogType == LogType.SignalQuarantine
+                ? true
+                : null,
             LastCompletedMachiningRouteStopIndex = null,
             Location = new InProcessMaterialLocation()
             {
