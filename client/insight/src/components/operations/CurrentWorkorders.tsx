@@ -69,7 +69,7 @@ import { Collapse } from "@mui/material";
 import { addWorkorderComment, currentStatus } from "../../cell-status/current-status.js";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
-import { IActiveWorkorder, WorkorderSerialCloseout, WorkorderSerialStatus } from "../../network/api.js";
+import { IActiveWorkorder, WorkorderSerialCloseout, WorkorderMaterial } from "../../network/api.js";
 import { durationToMinutes } from "../../util/parseISODuration.js";
 import {
   materialDialogOpen,
@@ -103,6 +103,16 @@ const WorkorderDetails = memo(function WorkorderDetails({
     .map(([st]) => st)
     .distinctAndSortBy((s) => s);
 
+  function show(wmat: WorkorderMaterial) {
+    setMatToShow({
+      type: "MatSummary",
+      summary: {
+        ...wmat,
+        partName: workorder.part,
+      },
+    });
+  }
+
   return (
     <Stack direction="row" flexWrap="wrap" justifyContent="space-around" ml="1em" mr="1em">
       <div>
@@ -117,34 +127,26 @@ const WorkorderDetails = memo(function WorkorderDetails({
             </TableRow>
           </TableHead>
           <TableBody>
-            {LazySeq.ofObject(workorder.serials).map(([s, status]) => (
-              <TableRow key={s}>
-                <TableCell>{s}</TableCell>
+            {(workorder.material ?? []).map((s) => (
+              <TableRow key={s.materialID}>
+                <TableCell>{s.serial ?? ""}</TableCell>
                 <TableCell sx={{ textAlign: "center" }} padding="checkbox">
-                  {status.quarantined ? <SavedSearch fontSize="inherit" /> : ""}
+                  {s.quarantined ? <SavedSearch fontSize="inherit" /> : ""}
                 </TableCell>
                 <TableCell sx={{ textAlign: "center" }} padding="checkbox">
-                  {status.inspectionFailed ? <ErrorOutline fontSize="inherit" /> : ""}
+                  {s.inspectionFailed ? <ErrorOutline fontSize="inherit" /> : ""}
                 </TableCell>
                 <TableCell sx={{ textAlign: "center" }} padding="checkbox">
-                  {status.closeout === WorkorderSerialCloseout.None ? (
+                  {s.closeout === WorkorderSerialCloseout.None ? (
                     ""
-                  ) : status.closeout === WorkorderSerialCloseout.ClosedOut ? (
+                  ) : s.closeout === WorkorderSerialCloseout.ClosedOut ? (
                     <Check fontSize="inherit" />
                   ) : (
                     <ErrorOutline fontSize="inherit" />
                   )}
                 </TableCell>
                 <TableCell padding="checkbox">
-                  <IconButton
-                    onClick={() =>
-                      setMatToShow({
-                        type: "ManuallyEnteredSerial",
-                        serial: s,
-                      })
-                    }
-                    size="large"
-                  >
+                  <IconButton onClick={() => show(s)} size="large">
                     <MoreHoriz fontSize="inherit" />
                   </IconButton>
                 </TableCell>
@@ -218,15 +220,11 @@ function utcDateOnlyToString(d: Date | null | undefined): string {
   }
 }
 
-function isAbnormal([_, status]: readonly [string, WorkorderSerialStatus]): boolean {
-  if (status.closeout === WorkorderSerialCloseout.ClosedOut) {
+function isAbnormal(m: WorkorderMaterial): boolean {
+  if (m.closeout === WorkorderSerialCloseout.ClosedOut) {
     return false;
   }
-  return (
-    status.quarantined ||
-    status.inspectionFailed ||
-    status.closeout === WorkorderSerialCloseout.CloseOutFailed
-  );
+  return m.quarantined || m.inspectionFailed || m.closeout === WorkorderSerialCloseout.CloseOutFailed;
 }
 
 function WorkorderRow({
@@ -264,8 +262,8 @@ function WorkorderRow({
         <TableCell>{workorder.dueDate === null ? "" : workorder.dueDate.toLocaleDateString()}</TableCell>
         <TableCell align="right">{workorder.priority}</TableCell>
         <TableCell align="right">{workorder.plannedQuantity}</TableCell>
-        <TableCell align="right">{LazySeq.ofObject(workorder.serials).length()}</TableCell>
-        <TableCell align="right">{LazySeq.ofObject(workorder.serials).filter(isAbnormal).length()}</TableCell>
+        <TableCell align="right">{workorder.material?.length ?? 0}</TableCell>
+        <TableCell align="right">{workorder.material?.filter(isAbnormal).length ?? 0}</TableCell>
         <TableCell align="right">{workorder.completedQuantity}</TableCell>
         {showSim ? (
           <>
@@ -300,7 +298,7 @@ enum SortColumn {
   Priority,
   CompletedQty,
   AssignedQty,
-  QuarantinedQty,
+  AbnormalQty,
   SimulatedStart,
   SimulatedFilled,
 }
@@ -330,11 +328,11 @@ function sortWorkorders(
     case SortColumn.CompletedQty:
       sortCol = (j) => j.completedQuantity;
       break;
-    case SortColumn.QuarantinedQty:
-      sortCol = (j) => LazySeq.ofObject(j.serials).filter(isAbnormal).length();
+    case SortColumn.AbnormalQty:
+      sortCol = (j) => j.material?.filter(isAbnormal).length ?? 0;
       break;
     case SortColumn.AssignedQty:
-      sortCol = (j) => LazySeq.ofObject(j.serials).length();
+      sortCol = (j) => j.material?.length ?? 0;
       break;
     case SortColumn.SimulatedStart:
       sortCol = (j) => j.simulatedStart?.getTime() ?? null;
@@ -375,7 +373,7 @@ function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>, 
       table += `<td>${utcDateOnlyToString(w.simulatedStart)}</td>`;
       table += `<td>${utcDateOnlyToString(w.simulatedFilled)}</td>`;
     }
-    table += `<td>${LazySeq.ofObject(w.serials).fold("", (acc, [s, _]) => (acc === "" ? s : acc + ";" + s))}</td>`;
+    table += `<td>${(w.material ?? []).map((w) => w.serial ?? "").join(";")}</td>`;
     table += `<td>${LazySeq.ofObject(w.activeStationTime ?? {})
       .map(([st, t]) => `${st}: ${durationToMinutes(t)}`)
       .toRArray()
@@ -487,7 +485,7 @@ const WorkorderHeader = memo(function WorkorderHeader(props: {
         <SortColHeader align="right" col={SortColumn.AssignedQty} {...sort}>
           Started Quantity
         </SortColHeader>
-        <SortColHeader align="right" col={SortColumn.QuarantinedQty} {...sort}>
+        <SortColHeader align="right" col={SortColumn.AbnormalQty} {...sort}>
           Abnormal Quantity
         </SortColHeader>
         <SortColHeader align="right" col={SortColumn.CompletedQty} {...sort}>

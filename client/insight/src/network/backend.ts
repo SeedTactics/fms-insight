@@ -110,26 +110,10 @@ export interface LogAPI {
     inspType: string,
     process: number,
     inspect: boolean,
-    jobUnique?: string,
-    partName?: string,
   ): Promise<Readonly<api.ILogEntry>>;
-  recordInspectionCompleted(
-    insp: api.NewInspectionCompleted,
-    jobUnique?: string,
-    partName?: string,
-  ): Promise<Readonly<api.ILogEntry>>;
-  recordCloseoutCompleted(
-    insp: api.NewCloseout,
-    jobUnique?: string,
-    partName?: string,
-  ): Promise<Readonly<api.ILogEntry>>;
-  setWorkorder(
-    materialID: number,
-    process: number,
-    workorder: string,
-    jobUnique?: string,
-    partName?: string,
-  ): Promise<Readonly<api.ILogEntry>>;
+  recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>>;
+  recordCloseoutCompleted(insp: api.NewCloseout): Promise<Readonly<api.ILogEntry>>;
+  setWorkorder(materialID: number, process: number, workorder: string): Promise<Readonly<api.ILogEntry>>;
   recordOperatorNotes(
     materialID: number,
     process: number,

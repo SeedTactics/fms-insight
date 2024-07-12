@@ -160,6 +160,12 @@ async function loadEventsJson(
     );
 }
 
+function findMatById(evts: ReadonlyArray<api.ILogEntry>, matId: number): api.LogMaterial | undefined {
+  return LazySeq.of(evts)
+    .flatMap((e) => e.material)
+    .find((m) => m.id === matId);
+}
+
 export function registerMockBackend(
   offsetSeconds: number,
   mockD: Promise<MockData>,
@@ -238,7 +244,7 @@ export function registerMockBackend(
           dueDate: w.dueDate,
           priority: w.priority,
           completedQuantity: 0,
-          serials: {},
+          material: [],
           elapsedStationTime: {},
           activeStationTime: {},
         }));
@@ -343,25 +349,25 @@ export function registerMockBackend(
       ];
     },
 
-    setInspectionDecision(
+    async setInspectionDecision(
       materialID: number,
       inspType: string,
       process: number,
       inspect: boolean,
-      jobUnique?: string,
-      partName?: string,
     ): Promise<Readonly<api.ILogEntry>> {
-      const mat = new api.LogMaterial({
-        id: materialID,
-        uniq: jobUnique || "",
-        part: partName || "",
-        proc: process,
-        numproc: 1,
-        face: 1,
-      });
+      const evtMat =
+        findMatById(await events, materialID) ??
+        new api.LogMaterial({
+          id: materialID,
+          uniq: "",
+          part: "",
+          proc: process,
+          numproc: 1,
+          face: 1,
+        });
       const evt = {
         counter: 0,
-        material: [mat],
+        material: [evtMat],
         pal: 0,
         type: api.LogType.Inspection,
         startofcycle: false,
@@ -383,22 +389,20 @@ export function registerMockBackend(
         }),
       );
     },
-    recordInspectionCompleted(
-      insp: api.NewInspectionCompleted,
-      jobUnique?: string,
-      partName?: string,
-    ): Promise<Readonly<api.ILogEntry>> {
-      const mat = new api.LogMaterial({
-        id: insp.materialID,
-        uniq: jobUnique || "",
-        part: partName || "",
-        proc: insp.process,
-        numproc: 1,
-        face: 1,
-      });
+    async recordInspectionCompleted(insp: api.NewInspectionCompleted): Promise<Readonly<api.ILogEntry>> {
+      const evtMat =
+        findMatById(await events, insp.materialID) ??
+        new api.LogMaterial({
+          id: insp.materialID,
+          uniq: "",
+          part: "",
+          proc: insp.process,
+          numproc: 1,
+          face: 1,
+        });
       const evt: api.ILogEntry = {
         counter: 0,
-        material: [mat],
+        material: [evtMat],
         pal: 0,
         type: api.LogType.InspectionResult,
         startofcycle: false,
@@ -418,22 +422,20 @@ export function registerMockBackend(
         }),
       );
     },
-    recordCloseoutCompleted(
-      closeout: api.NewCloseout,
-      jobUnique?: string,
-      partName?: string,
-    ): Promise<Readonly<api.ILogEntry>> {
-      const mat = new api.LogMaterial({
-        id: closeout.materialID,
-        uniq: jobUnique || "",
-        part: partName || "",
-        proc: closeout.process,
-        numproc: 1,
-        face: 1,
-      });
+    async recordCloseoutCompleted(closeout: api.NewCloseout): Promise<Readonly<api.ILogEntry>> {
+      const evtMat =
+        findMatById(await events, closeout.materialID) ??
+        new api.LogMaterial({
+          id: closeout.materialID,
+          uniq: "",
+          part: "",
+          proc: closeout.process,
+          numproc: 1,
+          face: 1,
+        });
       const evt: api.ILogEntry = {
         counter: 0,
-        material: [mat],
+        material: [evtMat],
         pal: 0,
         type: api.LogType.CloseOut,
         startofcycle: false,
@@ -453,24 +455,24 @@ export function registerMockBackend(
         }),
       );
     },
-    setWorkorder(
+    async setWorkorder(
       materialID: number,
       process: number,
       workorder: string,
-      jobUnique?: string,
-      partName?: string,
     ): Promise<Readonly<api.ILogEntry>> {
-      const mat = new api.LogMaterial({
-        id: materialID,
-        uniq: jobUnique || "",
-        part: partName || "",
-        proc: process,
-        numproc: 1,
-        face: 1,
-      });
+      const evtMat =
+        findMatById(await events, materialID) ??
+        new api.LogMaterial({
+          id: materialID,
+          uniq: "",
+          part: "",
+          proc: process,
+          numproc: 1,
+          face: 1,
+        });
       const evt: api.ILogEntry = {
         counter: 0,
-        material: [mat],
+        material: [evtMat],
         pal: 0,
         type: api.LogType.OrderAssignment,
         startofcycle: false,

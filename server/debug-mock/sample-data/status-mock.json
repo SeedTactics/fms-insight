@@ -1344,18 +1344,22 @@
       "CompletedQuantity": 8,
       "SimulatedStartUTC": "2023-05-19T22:00:00Z",
       "SimulatedFilledUTC": "2023-05-27T03:00:00Z",
-      "Serials": {
-        "00000000aa": {
+      "Material": [
+        {
+          "MaterialID": 630,
+          "Serial": "00000000aa",
           "Quarantined": false,
           "InspectionFailed": true,
           "Closeout": "None"
         },
-        "00000000ab": {
+        {
+          "MaterialID": 631,
+          "Serial": "00000000ab",
           "Quarantined": true,
           "InspectionFailed": false,
           "Closeout": "None"
         }
-      },
+      ],
       "ElapsedStationTime": {
         "MC": "PT10M",
         "L/U": "PT8M"
@@ -1384,23 +1388,29 @@
       "CompletedQuantity": 4,
       "SimulatedStartUTC": "2023-05-19T22:00:00Z",
       "SimulatedFilledUTC": "2023-05-27T03:00:00Z",
-      "Serials": {
-        "00000000ccc": {
+      "Material": [
+        {
+          "MaterialID": 756,
+          "Serial": "00000000cc",
           "Quarantined": false,
           "InspectionFailed": true,
           "Closeout": "ClosedOut"
         },
-        "00000000dd": {
+        {
+          "MaterialID": 819,
+          "Serial": "00000000dd",
           "Quarantined": true,
           "InspectionFailed": false,
           "Closeout": "None"
         },
-        "00000000ee": {
+        {
+          "MaterialID": 882,
+          "Serial": "00000000ee",
           "Quarantined": false,
           "InspectionFailed": false,
           "Closeout": "CloseOutFailed"
         }
-      },
+      ],
       "ElapsedStationTime": {
         "MC": "PT10M",
         "L/U": "PT8M"
@@ -1419,18 +1429,21 @@
       "CompletedQuantity": 12,
       "SimulatedStartUTC": "2023-05-20T11:00:00Z",
       "SimulatedFilledUTC": "2023-06-02T14:00:00Z",
-      "Serials": {
-        "00000000bb": {
+      "Material": [
+        {
+          "MaterialID": 694,
+          "Serial": "00000000bc",
           "Quarantined": false,
           "InspectionFailed": false,
           "Closeout": "None"
         },
-        "00000000bc": {
+        {
+          "MaterialID": 695,
           "Quarantined": false,
           "InspectionFailed": true,
           "Closeout": "None"
         }
-      },
+      ],
       "ElapsedStationTime": {
         "MC": "PT4M",
         "L/U": "PT55M"

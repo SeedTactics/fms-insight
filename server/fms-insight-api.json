@@ -3497,8 +3497,7 @@
           "Priority",
           "CompletedQuantity",
           "ElapsedStationTime",
-          "ActiveStationTime",
-          "Serials"
+          "ActiveStationTime"
         ],
         "properties": {
           "WorkorderId": {
@@ -3554,10 +3553,11 @@
               "format": "duration"
             }
           },
-          "Serials": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/WorkorderSerialStatus"
+          "Material": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/WorkorderMaterial"
             }
           }
         }
@@ -3579,15 +3579,24 @@
           }
         }
       },
-      "WorkorderSerialStatus": {
+      "WorkorderMaterial": {
         "type": "object",
         "additionalProperties": false,
         "required": [
+          "MaterialID",
           "Quarantined",
           "InspectionFailed",
           "Closeout"
         ],
         "properties": {
+          "MaterialID": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "Serial": {
+            "type": "string",
+            "nullable": true
+          },
           "Quarantined": {
             "type": "boolean"
           },

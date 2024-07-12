@@ -128,12 +128,8 @@ function RecentFailedTable(props: RecentFailedInspectionsProps) {
                     summary: {
                       materialID: row.materialID,
                       partName: row.part,
-                      jobUnique: "",
                       serial: row.serial,
                       workorderId: row.workorder,
-                      startedProcess1: true,
-                      signaledInspections: [],
-                      quarantineAfterUnload: null,
                     },
                   });
                 }

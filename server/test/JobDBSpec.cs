@@ -1301,7 +1301,7 @@ namespace MachineWatchTest
               CompletedQuantity = 0,
               DueDate = initialWorks[0].DueDate,
               Priority = initialWorks[0].Priority,
-              Serials = ImmutableDictionary<string, WorkorderSerialStatus>.Empty,
+              Material = [],
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               SimulatedStart = initialWorks[0].SimulatedStart,

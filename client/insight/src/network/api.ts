@@ -4358,7 +4358,7 @@ export class ActiveWorkorder implements IActiveWorkorder {
     comments?: WorkorderComment[] | undefined;
     elapsedStationTime!: { [key: string]: string; };
     activeStationTime!: { [key: string]: string; };
-    serials!: { [key: string]: WorkorderSerialStatus; };
+    material?: WorkorderMaterial[] | undefined;
 
     constructor(data?: IActiveWorkorder) {
         if (data) {
@@ -4370,7 +4370,6 @@ export class ActiveWorkorder implements IActiveWorkorder {
         if (!data) {
             this.elapsedStationTime = {};
             this.activeStationTime = {};
-            this.serials = {};
         }
     }
 
@@ -4403,12 +4402,10 @@ export class ActiveWorkorder implements IActiveWorkorder {
                         (<any>this.activeStationTime)![key] = _data["ActiveStationTime"][key];
                 }
             }
-            if (_data["Serials"]) {
-                this.serials = {} as any;
-                for (let key in _data["Serials"]) {
-                    if (_data["Serials"].hasOwnProperty(key))
-                        (<any>this.serials)![key] = _data["Serials"][key] ? WorkorderSerialStatus.fromJS(_data["Serials"][key]) : new WorkorderSerialStatus();
-                }
+            if (Array.isArray(_data["Material"])) {
+                this.material = [] as any;
+                for (let item of _data["Material"])
+                    this.material!.push(WorkorderMaterial.fromJS(item));
             }
         }
     }
@@ -4449,12 +4446,10 @@ export class ActiveWorkorder implements IActiveWorkorder {
                     (<any>data["ActiveStationTime"])[key] = (<any>this.activeStationTime)[key];
             }
         }
-        if (this.serials) {
-            data["Serials"] = {};
-            for (let key in this.serials) {
-                if (this.serials.hasOwnProperty(key))
-                    (<any>data["Serials"])[key] = this.serials[key] ? this.serials[key].toJSON() : <any>undefined;
-            }
+        if (Array.isArray(this.material)) {
+            data["Material"] = [];
+            for (let item of this.material)
+                data["Material"].push(item.toJSON());
         }
         return data;
     }
@@ -4472,7 +4467,7 @@ export interface IActiveWorkorder {
     comments?: WorkorderComment[] | undefined;
     elapsedStationTime: { [key: string]: string; };
     activeStationTime: { [key: string]: string; };
-    serials: { [key: string]: WorkorderSerialStatus; };
+    material?: WorkorderMaterial[] | undefined;
 }
 
 export class WorkorderComment implements IWorkorderComment {
@@ -4515,12 +4510,14 @@ export interface IWorkorderComment {
     timeUTC: Date;
 }
 
-export class WorkorderSerialStatus implements IWorkorderSerialStatus {
+export class WorkorderMaterial implements IWorkorderMaterial {
+    materialID!: number;
+    serial?: string | undefined;
     quarantined!: boolean;
     inspectionFailed!: boolean;
     closeout!: WorkorderSerialCloseout;
 
-    constructor(data?: IWorkorderSerialStatus) {
+    constructor(data?: IWorkorderMaterial) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -4531,21 +4528,25 @@ export class WorkorderSerialStatus implements IWorkorderSerialStatus {
 
     init(_data?: any) {
         if (_data) {
+            this.materialID = _data["MaterialID"];
+            this.serial = _data["Serial"];
             this.quarantined = _data["Quarantined"];
             this.inspectionFailed = _data["InspectionFailed"];
             this.closeout = _data["Closeout"];
         }
     }
 
-    static fromJS(data: any): WorkorderSerialStatus {
+    static fromJS(data: any): WorkorderMaterial {
         data = typeof data === 'object' ? data : {};
-        let result = new WorkorderSerialStatus();
+        let result = new WorkorderMaterial();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
+        data["MaterialID"] = this.materialID;
+        data["Serial"] = this.serial;
         data["Quarantined"] = this.quarantined;
         data["InspectionFailed"] = this.inspectionFailed;
         data["Closeout"] = this.closeout;
@@ -4553,7 +4554,9 @@ export class WorkorderSerialStatus implements IWorkorderSerialStatus {
     }
 }
 
-export interface IWorkorderSerialStatus {
+export interface IWorkorderMaterial {
+    materialID: number;
+    serial?: string | undefined;
     quarantined: boolean;
     inspectionFailed: boolean;
     closeout: WorkorderSerialCloseout;

@@ -895,14 +895,12 @@ namespace BlackMaple.MachineFramework
 
       var serialQry =
         $@"
-				SELECT Serial, {quarantineSubQuery} AS Quarantined, {inspFailedSubQuery} AS InspFailed, {closeoutSubQuery} AS Closeout
+				SELECT matdetails.MaterialID, matdetails.Serial, {quarantineSubQuery} AS Quarantined, {inspFailedSubQuery} AS InspFailed, {closeoutSubQuery} AS Closeout
             FROM matdetails
 				    WHERE
 					    matdetails.Workorder = $workid
               AND
-              matdetails.PartName = $partname
-              AND
-              matdetails.Serial IS NOT NULL";
+              matdetails.PartName = $partname";
 
       var timeQry =
         @"
@@ -1000,29 +998,30 @@ namespace BlackMaple.MachineFramework
 
         serialCmd.Parameters[0].Value = workorder;
         serialCmd.Parameters[1].Value = part;
-        var serials = ImmutableDictionary.CreateBuilder<string, WorkorderSerialStatus>();
+        var serials = ImmutableList.CreateBuilder<WorkorderMaterial>();
         using (var serialReader = serialCmd.ExecuteReader())
         {
           while (serialReader.Read())
           {
             bool quarantined = false;
-            if (!serialReader.IsDBNull(1))
+            if (!serialReader.IsDBNull(2))
             {
-              var quarTy = (LogType)serialReader.GetInt32(1);
+              var quarTy = (LogType)serialReader.GetInt32(2);
               quarantined =
                 quarTy == LogType.SignalQuarantine
                 || quarTy == LogType.AddToQueue
                 || quarTy == LogType.RemoveFromQueue;
             }
             serials.Add(
-              serialReader.GetString(0),
-              new WorkorderSerialStatus()
+              new WorkorderMaterial()
               {
+                MaterialID = serialReader.GetInt64(0),
+                Serial = serialReader.IsDBNull(1) ? null : serialReader.GetString(1),
                 Quarantined = quarantined,
-                InspectionFailed = !serialReader.IsDBNull(2) && serialReader.GetBoolean(2),
-                Closeout = serialReader.IsDBNull(3)
+                InspectionFailed = !serialReader.IsDBNull(3) && serialReader.GetBoolean(3),
+                Closeout = serialReader.IsDBNull(4)
                   ? WorkorderSerialCloseout.None
-                  : serialReader.GetString(3) == "Failed"
+                  : serialReader.GetString(4) == "Failed"
                     ? WorkorderSerialCloseout.CloseOutFailed
                     : WorkorderSerialCloseout.ClosedOut
               }
@@ -1078,7 +1077,7 @@ namespace BlackMaple.MachineFramework
             SimulatedFilled = filled,
             Comments = comments.Count == 0 ? null : comments.ToImmutable(),
             CompletedQuantity = completed,
-            Serials = serials.ToImmutable(),
+            Material = serials.Count == 0 ? null : serials.ToImmutable(),
             ElapsedStationTime = elapsed.ToImmutable(),
             ActiveStationTime = active.ToImmutable()
           }

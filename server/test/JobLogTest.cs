@@ -1741,25 +1741,25 @@ namespace MachineWatchTest
           DueDate = work1part1.DueDate,
           Priority = work1part1.Priority,
           CompletedQuantity = 2, // mat1 and mat3
-          Serials = ImmutableDictionary<string, WorkorderSerialStatus>
-            .Empty.Add(
-              "serial1",
-              new WorkorderSerialStatus()
-              {
-                Quarantined = false,
-                InspectionFailed = false,
-                Closeout = WorkorderSerialCloseout.ClosedOut
-              }
-            )
-            .Add(
-              "serial3",
-              new WorkorderSerialStatus()
-              {
-                Quarantined = false,
-                InspectionFailed = true,
-                Closeout = WorkorderSerialCloseout.None
-              }
-            ),
+          Material =
+          [
+            new WorkorderMaterial()
+            {
+              MaterialID = mat1_proc2.MaterialID,
+              Serial = "serial1",
+              Quarantined = false,
+              InspectionFailed = false,
+              Closeout = WorkorderSerialCloseout.ClosedOut
+            },
+            new WorkorderMaterial()
+            {
+              MaterialID = mat3.MaterialID,
+              Serial = "serial3",
+              Quarantined = false,
+              InspectionFailed = true,
+              Closeout = WorkorderSerialCloseout.None
+            }
+          ],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(10 + 30 + 3 * 1 / c2Cnt)) //10 + 30 from mat1, 3*1/4 for mat3
@@ -1782,15 +1782,17 @@ namespace MachineWatchTest
           DueDate = work1part2.DueDate,
           Priority = work1part2.Priority,
           CompletedQuantity = 1,
-          Serials = ImmutableDictionary<string, WorkorderSerialStatus>.Empty.Add(
-            "serial4",
-            new WorkorderSerialStatus()
+          Material =
+          [
+            new WorkorderMaterial()
             {
+              MaterialID = mat4.MaterialID,
+              Serial = "serial4",
               Quarantined = false,
               InspectionFailed = false,
               Closeout = WorkorderSerialCloseout.None
             }
-          ),
+          ],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(3 * 1 / c2Cnt))
@@ -1809,25 +1811,25 @@ namespace MachineWatchTest
           DueDate = work2.DueDate,
           Priority = work2.Priority,
           CompletedQuantity = 2,
-          Serials = ImmutableDictionary<string, WorkorderSerialStatus>
-            .Empty.Add(
-              "serial5",
-              new WorkorderSerialStatus()
-              {
-                Quarantined = true,
-                InspectionFailed = false,
-                Closeout = WorkorderSerialCloseout.CloseOutFailed
-              }
-            )
-            .Add(
-              "serial6",
-              new WorkorderSerialStatus()
-              {
-                Quarantined = false,
-                InspectionFailed = false,
-                Closeout = WorkorderSerialCloseout.None
-              }
-            ),
+          Material =
+          [
+            new WorkorderMaterial()
+            {
+              MaterialID = mat5.MaterialID,
+              Serial = "serial5",
+              Quarantined = true,
+              InspectionFailed = false,
+              Closeout = WorkorderSerialCloseout.CloseOutFailed
+            },
+            new WorkorderMaterial()
+            {
+              MaterialID = mat6.MaterialID,
+              Serial = "serial6",
+              Quarantined = false,
+              InspectionFailed = false,
+              Closeout = WorkorderSerialCloseout.None
+            }
+          ],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(3 * 2 / c2Cnt))
