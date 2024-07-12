@@ -191,13 +191,9 @@ export default memo(function InspDataTable(props: InspectionDataTableProps) {
                               type: "MatSummary",
                               summary: {
                                 materialID: row.materialID,
-                                jobUnique: "",
                                 partName: row.partName,
-                                startedProcess1: true,
                                 serial: row.serial,
                                 workorderId: row.workorder,
-                                signaledInspections: [],
-                                quarantineAfterUnload: null,
                               },
                             })
                     }

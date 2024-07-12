@@ -785,7 +785,7 @@ namespace BlackMaple.MachineFramework
 
       if (string.IsNullOrEmpty(lastSchId))
       {
-        return ImmutableList<ActiveWorkorder>.Empty;
+        return [];
       }
 
       // we distinguish between a cell never using workorders at all and return null
@@ -834,35 +834,73 @@ namespace BlackMaple.MachineFramework
         workQry += " AND uw.Part = $part";
       }
 
-      var serialQry =
+      // For a given matdetails.MaterialID, check either for the most recent quarantine event
+      // or for a non-invalidated load/mc event, since a load/mc after a quarantine cancels
+      // the quarantine.  Thus by checking the result, can determine if the part is still in
+      // quarantine.
+      var quarantineSubQuery =
+        @"(
+           SELECT s.StationLoc
+            FROM stations s, stations_mat m
+            WHERE
+              s.Counter = m.Counter
+              AND
+              m.MaterialID = matdetails.MaterialID
+              AND
+              (s.StationLoc = $quarantineTy
+               OR
+               (s.StationLoc IN ($addQueueTy, $removeQueueTy) AND s.Program = 'Quarantine')
+               OR
+               (s.StationLoc IN ($loadty, $mcty) AND NOT EXISTS(
+                 SELECT 1 FROM program_details d
+                   WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'
+               ))
+              )
+            ORDER BY s.Counter DESC
+            LIMIT 1
+          )
+         ";
+
+      // check if an inspection failed for matdetails.MaterialID
+      var inspFailedSubQuery =
         @"
-				SELECT DISTINCT Serial FROM matdetails
+          EXISTS(
+           SELECT 1
+            FROM stations s, stations_mat m
+            WHERE
+              s.Counter = m.Counter
+              AND
+              m.MaterialID = matdetails.MaterialID
+              AND
+              s.StationLoc = $inspTy
+              AND
+              s.Result = 'False'
+          )
+         ";
+
+      // load the most recent closeout event for matdetails.MaterialID
+      var closeoutSubQuery =
+        @"(
+           SELECT s.Result
+            FROM stations s, stations_mat m
+            WHERE
+              s.Counter = m.Counter
+              AND
+              m.MaterialID = matdetails.MaterialID
+              AND
+              s.StationLoc = $closeoutTy
+            ORDER BY s.Counter DESC
+            LIMIT 1
+         )";
+
+      var serialQry =
+        $@"
+				SELECT matdetails.MaterialID, matdetails.Serial, {quarantineSubQuery} AS Quarantined, {inspFailedSubQuery} AS InspFailed, {closeoutSubQuery} AS Closeout
+            FROM matdetails
 				    WHERE
 					    matdetails.Workorder = $workid
               AND
-              matdetails.PartName = $partname
-              AND
-              matdetails.Serial IS NOT NULL";
-
-      var quarantinedQry =
-        @"
-        SELECT DISTINCT Serial FROM matdetails
-          WHERE
-            matdetails.Workorder = $workid
-            AND
-            matdetails.PartName = $partname
-            AND
-            matdetails.Serial IS NOT NULL
-            AND EXISTS (
-              SELECT 1 FROM stations s, stations_mat m
-                WHERE
-                  s.Counter = m.Counter
-                  AND
-                  m.MaterialID = matdetails.MaterialID
-                  AND
-                  (s.StationLoc = $quarantineTy OR (s.StationLoc IN ($addQueueTy, $removeQueueTy) AND s.Program = 'Quarantine'))
-            )
-        ";
+              matdetails.PartName = $partname";
 
       var timeQry =
         @"
@@ -924,12 +962,13 @@ namespace BlackMaple.MachineFramework
       serialCmd.CommandText = serialQry;
       serialCmd.Parameters.Add("workid", SqliteType.Text);
       serialCmd.Parameters.Add("partname", SqliteType.Text);
-      quarantinedCmd.CommandText = quarantinedQry;
-      quarantinedCmd.Parameters.Add("workid", SqliteType.Text);
-      quarantinedCmd.Parameters.Add("partname", SqliteType.Text);
-      quarantinedCmd.Parameters.Add("quarantineTy", SqliteType.Integer).Value = (int)LogType.SignalQuarantine;
-      quarantinedCmd.Parameters.Add("addQueueTy", SqliteType.Integer).Value = (int)LogType.AddToQueue;
-      quarantinedCmd.Parameters.Add("removeQueueTy", SqliteType.Integer).Value = (int)LogType.RemoveFromQueue;
+      serialCmd.Parameters.Add("quarantineTy", SqliteType.Integer).Value = (int)LogType.SignalQuarantine;
+      serialCmd.Parameters.Add("addQueueTy", SqliteType.Integer).Value = (int)LogType.AddToQueue;
+      serialCmd.Parameters.Add("removeQueueTy", SqliteType.Integer).Value = (int)LogType.RemoveFromQueue;
+      serialCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+      serialCmd.Parameters.Add("mcty", SqliteType.Integer).Value = (int)LogType.MachineCycle;
+      serialCmd.Parameters.Add("inspTy", SqliteType.Integer).Value = (int)LogType.InspectionResult;
+      serialCmd.Parameters.Add("closeoutTy", SqliteType.Integer).Value = (int)LogType.CloseOut;
       timeCmd.CommandText = timeQry;
       timeCmd.Parameters.Add("workid", SqliteType.Text);
       timeCmd.Parameters.Add("partname", SqliteType.Text);
@@ -959,23 +998,34 @@ namespace BlackMaple.MachineFramework
 
         serialCmd.Parameters[0].Value = workorder;
         serialCmd.Parameters[1].Value = part;
-        var serials = ImmutableList.CreateBuilder<string>();
+        var serials = ImmutableList.CreateBuilder<WorkorderMaterial>();
         using (var serialReader = serialCmd.ExecuteReader())
         {
           while (serialReader.Read())
           {
-            serials.Add(serialReader.GetString(0));
-          }
-        }
-
-        quarantinedCmd.Parameters[0].Value = workorder;
-        quarantinedCmd.Parameters[1].Value = part;
-        var quarantinedSerials = ImmutableList.CreateBuilder<string>();
-        using (var quarantinedReader = quarantinedCmd.ExecuteReader())
-        {
-          while (quarantinedReader.Read())
-          {
-            quarantinedSerials.Add(quarantinedReader.GetString(0));
+            bool quarantined = false;
+            if (!serialReader.IsDBNull(2))
+            {
+              var quarTy = (LogType)serialReader.GetInt32(2);
+              quarantined =
+                quarTy == LogType.SignalQuarantine
+                || quarTy == LogType.AddToQueue
+                || quarTy == LogType.RemoveFromQueue;
+            }
+            serials.Add(
+              new WorkorderMaterial()
+              {
+                MaterialID = serialReader.GetInt64(0),
+                Serial = serialReader.IsDBNull(1) ? null : serialReader.GetString(1),
+                Quarantined = quarantined,
+                InspectionFailed = !serialReader.IsDBNull(3) && serialReader.GetBoolean(3),
+                Closeout = serialReader.IsDBNull(4)
+                  ? WorkorderSerialCloseout.None
+                  : serialReader.GetString(4) == "Failed"
+                    ? WorkorderSerialCloseout.CloseOutFailed
+                    : WorkorderSerialCloseout.ClosedOut
+              }
+            );
           }
         }
 
@@ -1027,8 +1077,7 @@ namespace BlackMaple.MachineFramework
             SimulatedFilled = filled,
             Comments = comments.Count == 0 ? null : comments.ToImmutable(),
             CompletedQuantity = completed,
-            Serials = serials.ToImmutable(),
-            QuarantinedSerials = quarantinedSerials.Count == 0 ? null : quarantinedSerials.ToImmutable(),
+            Material = serials.Count == 0 ? null : serials.ToImmutable(),
             ElapsedStationTime = elapsed.ToImmutable(),
             ActiveStationTime = active.ToImmutable()
           }
@@ -2045,6 +2094,7 @@ namespace BlackMaple.MachineFramework
       int process,
       int locNum,
       string closeoutType,
+      bool success,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active
@@ -2056,25 +2106,45 @@ namespace BlackMaple.MachineFramework
         Process = process,
         Face = 0
       };
-      return RecordCloseoutCompleted(mat, locNum, closeoutType, extraData, elapsed, active, DateTime.UtcNow);
+      return RecordCloseoutCompleted(
+        mat,
+        locNum,
+        closeoutType,
+        success,
+        extraData,
+        elapsed,
+        active,
+        DateTime.UtcNow
+      );
     }
 
     public LogEntry RecordCloseoutCompleted(
       EventLogMaterial mat,
       int locNum,
       string closeoutType,
+      bool success,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active
     )
     {
-      return RecordCloseoutCompleted(mat, locNum, closeoutType, extraData, elapsed, active, DateTime.UtcNow);
+      return RecordCloseoutCompleted(
+        mat,
+        locNum,
+        closeoutType,
+        success,
+        extraData,
+        elapsed,
+        active,
+        DateTime.UtcNow
+      );
     }
 
     public LogEntry RecordCloseoutCompleted(
       EventLogMaterial mat,
       int locNum,
       string closeoutType,
+      bool success,
       IDictionary<string, string> extraData,
       TimeSpan elapsed,
       TimeSpan active,
@@ -2091,7 +2161,7 @@ namespace BlackMaple.MachineFramework
         Program = closeoutType,
         StartOfCycle = false,
         EndTimeUTC = completeTimeUTC,
-        Result = "",
+        Result = success ? "" : "Failed",
         ElapsedTime = elapsed,
         ActiveOperationTime = active
       };

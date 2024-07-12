@@ -901,6 +901,7 @@ namespace MachineWatchTest
         EventLogMaterial.FromLogMat(mat1),
         7,
         "Closety",
+        success: true,
         new Dictionary<string, string> { { "z", "zzz" }, { "y", "yyy" } },
         TimeSpan.FromMinutes(44),
         TimeSpan.FromMinutes(9)
@@ -924,6 +925,36 @@ namespace MachineWatchTest
         ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("z", "zzz").Add("y", "yyy")
       };
       logsForMat1.Add(expectedWashLog);
+
+      var failedCloseout = _jobLog.RecordCloseoutCompleted(
+        materialID: mat1.MaterialID,
+        process: 12,
+        locNum: 4,
+        closeoutType: "TheType",
+        success: false,
+        new Dictionary<string, string> { { "a", "aaa" } },
+        TimeSpan.FromMinutes(22),
+        TimeSpan.FromMinutes(4)
+      );
+      var expectedFailedCloseout = new LogEntry(
+        -1,
+        new LogMaterial[] { mat1 with { Face = 0, Process = 12 } },
+        0,
+        LogType.CloseOut,
+        "CloseOut",
+        4,
+        "TheType",
+        false,
+        failedCloseout.EndTimeUTC,
+        "Failed",
+        TimeSpan.FromMinutes(22),
+        TimeSpan.FromMinutes(4)
+      );
+      expectedFailedCloseout = expectedFailedCloseout with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("a", "aaa")
+      };
+      logsForMat1.Add(expectedFailedCloseout);
 
       var generalLog = _jobLog.RecordGeneralMessage(
         EventLogMaterial.FromLogMat(mat1),
@@ -1643,7 +1674,38 @@ namespace MachineWatchTest
       _jobLog.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(mat6), "work2");
       Assert.Equal("work2", _jobLog.GetMaterialDetails(mat5.MaterialID).Workorder);
 
-      // quarantine
+      // mat1 is closed out, mat5 failed closeout
+      _jobLog.RecordCloseoutCompleted(
+        EventLogMaterial.FromLogMat(mat1_proc2),
+        7,
+        "Closety",
+        success: true,
+        new Dictionary<string, string>(),
+        TimeSpan.FromMinutes(44),
+        TimeSpan.FromMinutes(9)
+      );
+      _jobLog.RecordCloseoutCompleted(
+        EventLogMaterial.FromLogMat(mat5),
+        7,
+        "Closety",
+        success: false,
+        new Dictionary<string, string>(),
+        TimeSpan.FromMinutes(44),
+        TimeSpan.FromMinutes(9)
+      );
+
+      // failed inspections for mat3
+      _jobLog.RecordInspectionCompleted(
+        EventLogMaterial.FromLogMat(mat3),
+        5,
+        "insptype1",
+        false,
+        new Dictionary<string, string> { { "a", "aaa" }, { "b", "bbb" } },
+        TimeSpan.FromMinutes(100),
+        TimeSpan.FromMinutes(5)
+      );
+
+      // quarantine. mat5 and mat6 are quarantined, but mat6 has other events so that overrides it
       _jobLog.SignalMaterialForQuarantine(
         EventLogMaterial.FromLogMat(mat5),
         pallet: 3,
@@ -1660,6 +1722,12 @@ namespace MachineWatchTest
         reason: "Quarantine",
         timeUTC: t.AddMinutes(11)
       );
+      _jobLog.RecordLoadStart(
+        mats: new[] { mat6 }.Select(EventLogMaterial.FromLogMat),
+        pallet: 3,
+        lulNum: 5,
+        timeUTC: t.AddMinutes(12)
+      );
 
       double c2Cnt = 4; //number of material on cycle 2
 
@@ -1673,7 +1741,25 @@ namespace MachineWatchTest
           DueDate = work1part1.DueDate,
           Priority = work1part1.Priority,
           CompletedQuantity = 2, // mat1 and mat3
-          Serials = ["serial1", "serial3"],
+          Material =
+          [
+            new WorkorderMaterial()
+            {
+              MaterialID = mat1_proc2.MaterialID,
+              Serial = "serial1",
+              Quarantined = false,
+              InspectionFailed = false,
+              Closeout = WorkorderSerialCloseout.ClosedOut
+            },
+            new WorkorderMaterial()
+            {
+              MaterialID = mat3.MaterialID,
+              Serial = "serial3",
+              Quarantined = false,
+              InspectionFailed = true,
+              Closeout = WorkorderSerialCloseout.None
+            }
+          ],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(10 + 30 + 3 * 1 / c2Cnt)) //10 + 30 from mat1, 3*1/4 for mat3
@@ -1696,7 +1782,17 @@ namespace MachineWatchTest
           DueDate = work1part2.DueDate,
           Priority = work1part2.Priority,
           CompletedQuantity = 1,
-          Serials = ImmutableList.Create("serial4"),
+          Material =
+          [
+            new WorkorderMaterial()
+            {
+              MaterialID = mat4.MaterialID,
+              Serial = "serial4",
+              Quarantined = false,
+              InspectionFailed = false,
+              Closeout = WorkorderSerialCloseout.None
+            }
+          ],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(3 * 1 / c2Cnt))
@@ -1715,8 +1811,25 @@ namespace MachineWatchTest
           DueDate = work2.DueDate,
           Priority = work2.Priority,
           CompletedQuantity = 2,
-          Serials = ["serial5", "serial6"],
-          QuarantinedSerials = ["serial5", "serial6"],
+          Material =
+          [
+            new WorkorderMaterial()
+            {
+              MaterialID = mat5.MaterialID,
+              Serial = "serial5",
+              Quarantined = true,
+              InspectionFailed = false,
+              Closeout = WorkorderSerialCloseout.CloseOutFailed
+            },
+            new WorkorderMaterial()
+            {
+              MaterialID = mat6.MaterialID,
+              Serial = "serial6",
+              Quarantined = false,
+              InspectionFailed = false,
+              Closeout = WorkorderSerialCloseout.None
+            }
+          ],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(3 * 2 / c2Cnt))

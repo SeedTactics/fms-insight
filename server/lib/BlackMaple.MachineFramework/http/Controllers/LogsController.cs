@@ -71,11 +71,13 @@ namespace BlackMaple.MachineFramework.Controllers
     public required TimeSpan Elapsed { get; init; }
 
     public required TimeSpan Active { get; init; }
+
+    public bool Failed { get; init; } = false;
   }
 
   [ApiController]
-  [Route("api/v1/[controller]")]
-  public class logController(RepositoryConfig repo, IJobAndQueueControl jobAndQueue) : ControllerBase
+  [Route("api/v1/log")]
+  public class LogController(RepositoryConfig repo, IJobAndQueueControl jobAndQueue) : ControllerBase
   {
     [HttpGet("events/all")]
     public IEnumerable<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
@@ -282,13 +284,14 @@ namespace BlackMaple.MachineFramework.Controllers
       using (var db = repo.OpenConnection())
       {
         log = db.RecordCloseoutCompleted(
-          insp.MaterialID,
-          insp.Process,
-          insp.LocationNum,
-          insp.CloseoutType,
-          insp.ExtraData ?? [],
-          insp.Elapsed,
-          insp.Active
+          materialID: insp.MaterialID,
+          process: insp.Process,
+          locNum: insp.LocationNum,
+          closeoutType: insp.CloseoutType,
+          success: !insp.Failed,
+          extraData: insp.ExtraData ?? [],
+          elapsed: insp.Elapsed,
+          active: insp.Active
         );
       }
       jobAndQueue.RecalculateCellState();

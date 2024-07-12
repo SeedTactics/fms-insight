@@ -54,25 +54,33 @@ import { TableRow } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableBody } from "@mui/material";
-import { PartIdenticon } from "../station-monitor/Material.js";
+import { MaterialDialog, PartIdenticon } from "../station-monitor/Material.js";
 import {
   KeyboardArrowDown as KeyboardArrowDownIcon,
   KeyboardArrowUp as KeyboardArrowUpIcon,
   ImportExport,
   MoreHoriz,
   Warning as WarningIcon,
+  Check,
+  ErrorOutline,
+  SavedSearch,
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
 import { addWorkorderComment, currentStatus } from "../../cell-status/current-status.js";
-import { LazySeq, OrderedSet, ToComparableBase } from "@seedtactics/immutable-collections";
+import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { useSetTitle } from "../routes.js";
-import { IActiveWorkorder } from "../../network/api.js";
+import { IActiveWorkorder, WorkorderSerialCloseout, WorkorderMaterial } from "../../network/api.js";
 import { durationToMinutes } from "../../util/parseISODuration.js";
-import { materialDialogOpen } from "../../cell-status/material-details.js";
+import {
+  materialDialogOpen,
+  materialInDialogInfo,
+  useCompleteCloseout,
+} from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { WorkorderGantt } from "./WorkorderGantt.js";
 import { latestSimDayUsage } from "../../cell-status/sim-day-usage.js";
+import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
 
 const WorkorderTableRow = styled(TableRow)({
   "& > *": {
@@ -95,7 +103,15 @@ const WorkorderDetails = memo(function WorkorderDetails({
     .map(([st]) => st)
     .distinctAndSortBy((s) => s);
 
-  const quarantinedSerials = OrderedSet.from(workorder.quarantinedSerials ?? []);
+  function show(wmat: WorkorderMaterial) {
+    setMatToShow({
+      type: "MatSummary",
+      summary: {
+        ...wmat,
+        partName: workorder.part,
+      },
+    });
+  }
 
   return (
     <Stack direction="row" flexWrap="wrap" justifyContent="space-around" ml="1em" mr="1em">
@@ -105,24 +121,32 @@ const WorkorderDetails = memo(function WorkorderDetails({
             <TableRow>
               <TableCell>Serial</TableCell>
               <TableCell>Quarantine?</TableCell>
+              <TableCell sx={{ whiteSpace: "nowrap" }}>Inspect Failed?</TableCell>
+              <TableCell sx={{ whiteSpace: "nowrap" }}>Close Out</TableCell>
               <TableCell padding="checkbox" />
             </TableRow>
           </TableHead>
           <TableBody>
-            {workorder.serials.map((s) => (
-              <TableRow key={s}>
-                <TableCell>{s}</TableCell>
-                <TableCell>{quarantinedSerials.has(s) ? "Quarantine" : ""}</TableCell>
+            {(workorder.material ?? []).map((s) => (
+              <TableRow key={s.materialID}>
+                <TableCell>{s.serial ?? ""}</TableCell>
+                <TableCell sx={{ textAlign: "center" }} padding="checkbox">
+                  {s.quarantined ? <SavedSearch fontSize="inherit" /> : ""}
+                </TableCell>
+                <TableCell sx={{ textAlign: "center" }} padding="checkbox">
+                  {s.inspectionFailed ? <ErrorOutline fontSize="inherit" /> : ""}
+                </TableCell>
+                <TableCell sx={{ textAlign: "center" }} padding="checkbox">
+                  {s.closeout === WorkorderSerialCloseout.None ? (
+                    ""
+                  ) : s.closeout === WorkorderSerialCloseout.ClosedOut ? (
+                    <Check fontSize="inherit" />
+                  ) : (
+                    <ErrorOutline fontSize="inherit" />
+                  )}
+                </TableCell>
                 <TableCell padding="checkbox">
-                  <IconButton
-                    onClick={() =>
-                      setMatToShow({
-                        type: "ManuallyEnteredSerial",
-                        serial: s,
-                      })
-                    }
-                    size="large"
-                  >
+                  <IconButton onClick={() => show(s)} size="large">
                     <MoreHoriz fontSize="inherit" />
                   </IconButton>
                 </TableCell>
@@ -166,7 +190,15 @@ const WorkorderDetails = memo(function WorkorderDetails({
           <TableBody>
             {(workorder.comments ?? []).map((c, idx) => (
               <TableRow key={idx}>
-                <TableCell>{c.timeUTC.toLocaleString()}</TableCell>
+                <TableCell>
+                  {c.timeUTC.toLocaleString(undefined, {
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "numeric",
+                  })}
+                </TableCell>
                 <TableCell>{c.comment}</TableCell>
               </TableRow>
             ))}
@@ -186,6 +218,13 @@ function utcDateOnlyToString(d: Date | null | undefined): string {
   } else {
     return "";
   }
+}
+
+function isAbnormal(m: WorkorderMaterial): boolean {
+  if (m.closeout === WorkorderSerialCloseout.ClosedOut) {
+    return false;
+  }
+  return m.quarantined || m.inspectionFailed || m.closeout === WorkorderSerialCloseout.CloseOutFailed;
 }
 
 function WorkorderRow({
@@ -223,8 +262,8 @@ function WorkorderRow({
         <TableCell>{workorder.dueDate === null ? "" : workorder.dueDate.toLocaleDateString()}</TableCell>
         <TableCell align="right">{workorder.priority}</TableCell>
         <TableCell align="right">{workorder.plannedQuantity}</TableCell>
-        <TableCell align="right">{workorder.serials.length}</TableCell>
-        <TableCell align="right">{workorder.quarantinedSerials?.length ?? ""}</TableCell>
+        <TableCell align="right">{workorder.material?.length ?? 0}</TableCell>
+        <TableCell align="right">{workorder.material?.filter(isAbnormal).length ?? 0}</TableCell>
         <TableCell align="right">{workorder.completedQuantity}</TableCell>
         {showSim ? (
           <>
@@ -259,7 +298,7 @@ enum SortColumn {
   Priority,
   CompletedQty,
   AssignedQty,
-  QuarantinedQty,
+  AbnormalQty,
   SimulatedStart,
   SimulatedFilled,
 }
@@ -289,11 +328,11 @@ function sortWorkorders(
     case SortColumn.CompletedQty:
       sortCol = (j) => j.completedQuantity;
       break;
-    case SortColumn.QuarantinedQty:
-      sortCol = (j) => j.quarantinedSerials?.length ?? 0;
+    case SortColumn.AbnormalQty:
+      sortCol = (j) => j.material?.filter(isAbnormal).length ?? 0;
       break;
     case SortColumn.AssignedQty:
-      sortCol = (j) => j.serials.length;
+      sortCol = (j) => j.material?.length ?? 0;
       break;
     case SortColumn.SimulatedStart:
       sortCol = (j) => j.simulatedStart?.getTime() ?? null;
@@ -334,7 +373,7 @@ function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>, 
       table += `<td>${utcDateOnlyToString(w.simulatedStart)}</td>`;
       table += `<td>${utcDateOnlyToString(w.simulatedFilled)}</td>`;
     }
-    table += `<td>${w.serials.join(";")}</td>`;
+    table += `<td>${(w.material ?? []).map((w) => w.serial ?? "").join(";")}</td>`;
     table += `<td>${LazySeq.ofObject(w.activeStationTime ?? {})
       .map(([st, t]) => `${st}: ${durationToMinutes(t)}`)
       .toRArray()
@@ -446,8 +485,8 @@ const WorkorderHeader = memo(function WorkorderHeader(props: {
         <SortColHeader align="right" col={SortColumn.AssignedQty} {...sort}>
           Started Quantity
         </SortColHeader>
-        <SortColHeader align="right" col={SortColumn.QuarantinedQty} {...sort}>
-          Quarantined
+        <SortColHeader align="right" col={SortColumn.AbnormalQty} {...sort}>
+          Abnormal Quantity
         </SortColHeader>
         <SortColHeader align="right" col={SortColumn.CompletedQty} {...sort}>
           Completed Quantity
@@ -548,7 +587,7 @@ function WorkorderTable({ showSim }: { showSim: boolean }) {
     [currentSt.workorders, sortBy, order],
   );
   return (
-    <Table>
+    <Table stickyHeader>
       <WorkorderHeader
         workorders={currentSt?.workorders ?? []}
         sortBy={sortBy}
@@ -570,6 +609,45 @@ function WorkorderTable({ showSim }: { showSim: boolean }) {
   );
 }
 
+function WorkSerialButtons() {
+  const setWorkorderDialogOpen = useSetAtom(selectWorkorderDialogOpen);
+  const mat = useAtomValue(materialInDialogInfo);
+  const [complete, isCompleting] = useCompleteCloseout();
+  const setToShow = useSetAtom(materialDialogOpen);
+
+  if (mat === null || mat.materialID < 0) {
+    return null;
+  }
+
+  function closeout(failed: boolean) {
+    if (mat === null) return;
+    complete({
+      mat,
+      operator: "Manager",
+      failed,
+    });
+    setToShow(null);
+  }
+
+  return (
+    <>
+      <Button color="primary" disabled={isCompleting} onClick={() => closeout(true)}>
+        Fail CloseOut
+      </Button>
+      <Button color="primary" disabled={isCompleting} onClick={() => closeout(false)}>
+        Pass CloseOut
+      </Button>
+      <Button color="primary" onClick={() => setWorkorderDialogOpen(true)}>
+        Change Workorder
+      </Button>
+    </>
+  );
+}
+
+const WorkSerialDialog = memo(function WorkSerialDialog() {
+  return <MaterialDialog buttons={<WorkSerialButtons />} />;
+});
+
 export const CurrentWorkordersPage = memo(function RecentWorkordersPage(): JSX.Element {
   useSetTitle("Workorders");
   const currentSt = useAtomValue(currentStatus);
@@ -585,6 +663,8 @@ export const CurrentWorkordersPage = memo(function RecentWorkordersPage(): JSX.E
       {showSim ? <SimulatedWarning showSim={showSim} /> : undefined}
       {display === "table" ? <WorkorderTable showSim={showSim} /> : <WorkorderGantt />}
       <WorkorderCommentDialog />
+      <WorkSerialDialog />
+      <SelectWorkorderDialog />
     </Box>
   );
 });

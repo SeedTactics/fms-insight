@@ -37,7 +37,7 @@ import { HistoricJob, IHistoricData, NewJobs } from "../network/api.js";
 import { last30SimProduction, specificMonthSimProduction } from "./sim-production.js";
 import { last30SimStationUse, specificMonthSimStationUse } from "./sim-station-use.js";
 import { last30Jobs, specificMonthJobs } from "./scheduled-jobs.js";
-import newJobsJson from "../../test/newjobs.json";
+import newJobsJson from "../../../../server/debug-mock/sample-data/newjobs.json";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { it, expect } from "vitest";
 import { toRawJs } from "../../test/to-raw-js.js";

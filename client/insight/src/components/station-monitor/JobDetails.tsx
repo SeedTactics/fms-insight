@@ -225,16 +225,7 @@ function JobMaterial(props: JobMaterialProps) {
                   onClick={() =>
                     setMatToShow({
                       type: "MatSummary",
-                      summary: props.matsFromEvents.get(mat.materialID) ?? {
-                        materialID: mat.materialID,
-                        jobUnique: mat.jobUnique ?? "",
-                        partName: mat.partName ?? "",
-                        startedProcess1: false,
-                        serial: mat.serial,
-                        workorderId: mat.workorderId,
-                        signaledInspections: [],
-                        quarantineAfterUnload: null,
-                      },
+                      summary: mat,
                     })
                   }
                   size="large"

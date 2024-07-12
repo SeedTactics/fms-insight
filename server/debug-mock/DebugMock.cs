@@ -513,7 +513,7 @@ namespace DebugMachineWatchApiServer
             tools: tools.GetValueOrDefault(e.Counter)?.ToImmutableList()
           );
         }
-        else if (e.LogType == LogType.LoadUnloadCycle && e.StartOfCycle)
+        else if (e.LogType == LogType.LoadUnloadCycle && e.StartOfCycle && e.Program == "LOAD")
         {
           LogDB.RecordLoadStart(
             mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
@@ -522,7 +522,7 @@ namespace DebugMachineWatchApiServer
             pallet: e.Pallet
           );
         }
-        else if (e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle)
+        else if (e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Program == "LOAD")
         {
           LogDB.RecordLoadEnd(
             toLoad:
@@ -545,6 +545,26 @@ namespace DebugMachineWatchApiServer
             ],
             pallet: e.Pallet,
             timeUTC: e.EndTimeUTC.Add(offset)
+          );
+        }
+        else if (e.LogType == LogType.LoadUnloadCycle && e.StartOfCycle && e.Program == "UNLOAD")
+        {
+          LogDB.RecordUnloadStart(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            pallet: e.Pallet,
+            lulNum: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset)
+          );
+        }
+        else if (e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Program == "UNLOAD")
+        {
+          LogDB.RecordUnloadEnd(
+            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+            pallet: e.Pallet,
+            lulNum: e.LocationNum,
+            timeUTC: e.EndTimeUTC.Add(offset),
+            elapsed: e.ElapsedTime,
+            active: e.ActiveOperationTime
           );
         }
         else if (e.LogType == LogType.PalletCycle)
@@ -600,6 +620,7 @@ namespace DebugMachineWatchApiServer
             mat: EventLogMaterial.FromLogMat(e.Material[0]),
             locNum: e.LocationNum,
             closeoutType: e.Program,
+            success: e.Result != "Failed",
             extraData: e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty,
             elapsed: e.ElapsedTime,
             active: e.ActiveOperationTime,

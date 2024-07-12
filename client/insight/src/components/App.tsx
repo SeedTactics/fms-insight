@@ -51,6 +51,7 @@ import {
   ShoppingBasket as PalletIcon,
   CallSplit,
   AttachMoney as CostIcon,
+  Opacity,
 } from "@mui/icons-material";
 
 import OperationDashboard from "./operations/Dashboard.js";
@@ -91,6 +92,7 @@ import { CurrentWorkordersPage } from "./operations/CurrentWorkorders.js";
 import { useAtom, useAtomValue } from "jotai";
 import { SimDayUsagePage } from "./operations/SimDayUsage.js";
 import { latestSimDayUsage } from "../cell-status/sim-day-usage.js";
+import { CloseoutReport } from "./operations/CloseoutReport.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -147,6 +149,11 @@ const operationsReports: ReadonlyArray<MenuNavItem> = [
     name: "Inspections",
     route: { route: routes.RouteLocation.Operations_Inspections },
     icon: <InspectionIcon />,
+  },
+  {
+    name: "Close Out",
+    route: { route: routes.RouteLocation.Operations_CloseoutReport },
+    icon: <Opacity />,
   },
   { separator: "Cell" },
   {
@@ -501,6 +508,7 @@ const App = memo(function App(props: AppProps) {
         page = <CurrentWorkordersPage />;
         nav1 = OperationsTabs;
         menuNavItems = operationsReports;
+        addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Operations_Production:
         page = <RecentProductionPage />;
@@ -517,6 +525,12 @@ const App = memo(function App(props: AppProps) {
         page = <QualityPaths />;
         nav1 = OperationsTabs;
         menuNavItems = operationsReports;
+        break;
+      case routes.RouteLocation.Operations_CloseoutReport:
+        page = <CloseoutReport />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        addBasicMaterialDialog = false;
         break;
       case routes.RouteLocation.Operations_Tools:
         page = <ToolReportPage />;

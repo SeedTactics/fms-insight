@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import curSt from "../../test/status-mock.json";
+import curSt from "../../../../server/debug-mock/sample-data/status-mock.json";
 import { selectAllMaterialIntoBins } from "./all-material-bins.js";
 import { CurrentStatus } from "../network/api.js";
 import { it, expect } from "vitest";

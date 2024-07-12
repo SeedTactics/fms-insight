@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { JobsBackend, LogBackend, OtherLogBackends, FmsServerBackend } from "../network/backend.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { MaterialSummary } from "./material-summary.js";
 import {
   IInProcessMaterial,
   ILogEntry,
@@ -52,9 +51,16 @@ import { atom, useSetAtom } from "jotai";
 import { loadable } from "jotai/utils";
 import { isLogEntryInvalidated } from "../components/LogEntry.js";
 
+export type MaterialToShowInfo = {
+  readonly materialID: number;
+  readonly partName: string;
+  readonly serial?: string;
+  readonly workorderId?: string;
+};
+
 export type MaterialToShow =
   | { readonly type: "InProcMat"; readonly inproc: Readonly<IInProcessMaterial> }
-  | { readonly type: "MatSummary"; readonly summary: Readonly<MaterialSummary> }
+  | { readonly type: "MatSummary"; readonly summary: MaterialToShowInfo }
   | { readonly type: "MatDetails"; readonly details: Readonly<IMaterialDetails> }
   | { readonly type: "LogMat"; readonly logMat: Readonly<ILogMaterial> }
   | { readonly type: "Barcode"; readonly barcode: string }
@@ -88,14 +94,6 @@ export const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | n
   }
 });
 
-export interface MaterialToShowInfo {
-  readonly materialID: number;
-  readonly jobUnique: string;
-  readonly partName: string;
-  readonly serial?: string;
-  readonly workorderId?: string;
-}
-
 export const materialInDialogInfo = atom<Promise<MaterialToShowInfo | null>>(async (get) => {
   const curMat = get(matToShow);
   if (curMat === null) return null;
@@ -105,14 +103,10 @@ export const materialInDialogInfo = atom<Promise<MaterialToShowInfo | null>>(asy
     case "MatSummary":
       return curMat.summary;
     case "MatDetails":
-      return {
-        ...curMat.details,
-        jobUnique: curMat.details.jobUnique ?? "",
-      };
+      return curMat.details;
     case "LogMat":
       return {
         materialID: curMat.logMat.id,
-        jobUnique: curMat.logMat.uniq,
         partName: curMat.logMat.part,
         serial: curMat.logMat.serial,
         workorderId: curMat.logMat.workorder,
@@ -120,15 +114,14 @@ export const materialInDialogInfo = atom<Promise<MaterialToShowInfo | null>>(asy
     case "Barcode": {
       const mat = await get(barcodeMaterialDetail);
       if (mat?.existingMaterial && mat.existingMaterial.materialID >= 0) {
-        return { ...mat.existingMaterial, jobUnique: mat.existingMaterial.jobUnique ?? "" };
+        return mat.existingMaterial;
       } else {
         return null;
       }
     }
     case "ManuallyEnteredSerial":
     case "AddMatWithEnteredSerial": {
-      const mat = (await LogBackend.materialForSerial(curMat.serial))?.[0] ?? null;
-      return mat ? { ...mat, jobUnique: mat.jobUnique ?? "" } : null;
+      return (await LogBackend.materialForSerial(curMat.serial))?.[0] ?? null;
     }
   }
 });
@@ -279,13 +272,7 @@ export const materialInDialogInspections = atom<MaterialToShowInspections>((get)
     return { signaledInspections: [], completedInspections: [] };
   }
 
-  const inspTypes = new Set<string>(
-    curMat.type === "MatSummary"
-      ? curMat.summary.signaledInspections
-      : curMat.type === "InProcMat"
-        ? curMat.inproc.signaledInspections
-        : [],
-  );
+  const inspTypes = new Set<string>(curMat.type === "InProcMat" ? curMat.inproc.signaledInspections : []);
   const completedTypes = new Set<string>();
 
   evts.forEach((e) => {
@@ -351,14 +338,7 @@ export function useForceInspection(): [(data: ForceInspectionData) => void, bool
   const callback = useCallback(
     (data: ForceInspectionData) => {
       setUpdating(true);
-      LogBackend.setInspectionDecision(
-        data.mat.materialID,
-        data.inspType,
-        1,
-        data.inspect,
-        data.mat.jobUnique,
-        data.mat.partName,
-      )
+      LogBackend.setInspectionDecision(data.mat.materialID, data.inspType, 1, data.inspect)
         .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
         .catch(console.log)
         .finally(() => setUpdating(false));
@@ -391,8 +371,6 @@ export function useCompleteInspection(): [(data: CompleteInspectionData) => void
         elapsed: "PT0S",
         extraData: data.operator ? { operator: data.operator } : undefined,
       }),
-      data.mat.jobUnique,
-      data.mat.partName,
     )
       .catch(console.log)
       .finally(() => setUpdating(false));
@@ -404,6 +382,7 @@ export function useCompleteInspection(): [(data: CompleteInspectionData) => void
 export interface CompleteCloseoutData {
   readonly mat: MaterialToShowInfo;
   readonly operator: string | null;
+  readonly failed: boolean;
 }
 
 export function useCompleteCloseout(): [(d: CompleteCloseoutData) => void, boolean] {
@@ -419,9 +398,8 @@ export function useCompleteCloseout(): [(d: CompleteCloseoutData) => void, boole
         active: "PT0S",
         elapsed: "PT0S",
         extraData: d.operator ? { operator: d.operator } : undefined,
+        failed: d.failed,
       }),
-      d.mat.jobUnique,
-      d.mat.partName,
     )
       .catch(console.log)
       .finally(() => setUpdating(false));
@@ -436,7 +414,7 @@ export function useAssignWorkorder(): [(mat: MaterialToShowInfo, workorder: stri
   const callback = useCallback(
     (mat: MaterialToShowInfo, workorder: string) => {
       setUpdating(true);
-      LogBackend.setWorkorder(mat.materialID, 1, workorder, mat.jobUnique, mat.partName)
+      LogBackend.setWorkorder(mat.materialID, 1, workorder)
         .then((evt) => setExtraLogEvts((evts) => [...evts, evt]))
         .catch(console.log)
         .finally(() => setUpdating(false));

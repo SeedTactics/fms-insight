@@ -137,7 +137,7 @@ function workorderDetailForCasting(
 
   if (!workorder) return null;
 
-  return `Started: ${workorder.serials.length}; Planned: ${workorder.plannedQuantity}`;
+  return `Started: ${workorder.material?.length ?? 0}; Planned: ${workorder.plannedQuantity}`;
 }
 
 function possibleCastings(
