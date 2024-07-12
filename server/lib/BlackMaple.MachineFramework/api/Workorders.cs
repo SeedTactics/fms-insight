@@ -35,6 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Immutable;
+using System.Text.Json.Serialization;
 
 namespace BlackMaple.MachineFramework
 {
@@ -72,8 +73,10 @@ namespace BlackMaple.MachineFramework
     CloseOutFailed
   }
 
-  public record WorkorderSerialStatus
+  public record WorkorderMaterial
   {
+    public required long MaterialID { get; init; }
+    public string? Serial { get; init; }
     public required bool Quarantined { get; init; }
     public required bool InspectionFailed { get; init; }
     public required WorkorderSerialCloseout Closeout { get; init; }
@@ -106,6 +109,12 @@ namespace BlackMaple.MachineFramework
 
     public required ImmutableDictionary<string, TimeSpan> ActiveStationTime { get; init; }
 
-    public required ImmutableDictionary<string, WorkorderSerialStatus> Serials { get; init; }
+    public ImmutableList<WorkorderMaterial>? Material { get; init; }
+
+    [
+      Obsolete("Use Material instead, serials is written to the JSON for backwards compatibility"),
+      JsonInclude
+    ]
+    protected ImmutableList<object> Serials => [];
   }
 }

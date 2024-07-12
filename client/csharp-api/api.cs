@@ -5694,9 +5694,8 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.IDictionary<string, System.TimeSpan> ActiveStationTime { get; set; } = new System.Collections.Generic.Dictionary<string, System.TimeSpan>();
 
-        [Newtonsoft.Json.JsonProperty("Serials", Required = Newtonsoft.Json.Required.Always)]
-        [System.ComponentModel.DataAnnotations.Required]
-        public System.Collections.Generic.IDictionary<string, WorkorderSerialStatus> Serials { get; set; } = new System.Collections.Generic.Dictionary<string, WorkorderSerialStatus>();
+        [Newtonsoft.Json.JsonProperty("Material", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<WorkorderMaterial> Material { get; set; }
 
     }
 
@@ -5714,8 +5713,14 @@ namespace BlackMaple.FMSInsight.API
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.0.8.0 (NJsonSchema v11.0.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class WorkorderSerialStatus
+    public partial class WorkorderMaterial
     {
+        [Newtonsoft.Json.JsonProperty("MaterialID", Required = Newtonsoft.Json.Required.Always)]
+        public long MaterialID { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("Serial", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string Serial { get; set; }
+
         [Newtonsoft.Json.JsonProperty("Quarantined", Required = Newtonsoft.Json.Required.Always)]
         public bool Quarantined { get; set; }
 
