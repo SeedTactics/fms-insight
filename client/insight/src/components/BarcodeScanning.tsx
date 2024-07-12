@@ -46,7 +46,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import { CameraAlt } from "@mui/icons-material";
-import { QrScanner } from "@yudiel/react-qr-scanner";
+import { IDetectedBarcode, Scanner } from "@yudiel/react-qr-scanner";
 
 export const BarcodeListener = memo(function BarcodeListener(): null {
   const setBarcode = useSetAtom(materialDialogOpen);
@@ -116,10 +116,12 @@ export const QRScanButton = memo(function QRScanButton() {
 
   if (window.location.protocol !== "https:" && window.location.hostname !== "localhost") return null;
 
-  function onScan(result: string): void {
-    setBarcode({ type: "Barcode", barcode: result });
-    setDialogOpen(false);
-    setManual("");
+  function onScan(results: ReadonlyArray<IDetectedBarcode>): void {
+    if (results.length > 0 && results[0].rawValue !== null && results[0].rawValue !== "") {
+      setBarcode({ type: "Barcode", barcode: results[0].rawValue });
+      setDialogOpen(false);
+      setManual("");
+    }
   }
 
   function onManual(): void {
@@ -135,8 +137,8 @@ export const QRScanButton = memo(function QRScanButton() {
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
         <DialogTitle>Scan a QR Code</DialogTitle>
         <DialogContent>
-          <Box minWidth="20em">
-            {dialogOpen ? <QrScanner onDecode={onScan} onError={(err) => console.log(err)} /> : undefined}
+          <Box width="15em" height="15em">
+            {dialogOpen ? <Scanner onScan={onScan} /> : undefined}
           </Box>
           <Box marginTop="1em">
             <TextField
