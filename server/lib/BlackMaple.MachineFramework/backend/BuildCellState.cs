@@ -185,7 +185,7 @@ public static class BuildCellState
               .ToImmutableList(),
             QuarantineAfterUnload =
               log.LastOrDefault(e =>
-                e.Material.Any(m => m.MaterialID == mat.MaterialID && m.Process == mat.Process)
+                e.Material.Any(m => m.MaterialID == mat.MaterialID)
                 && (
                   e.LogType == LogType.SignalQuarantine
                   || (e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle)
