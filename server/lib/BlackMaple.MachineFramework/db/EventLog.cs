@@ -769,40 +769,27 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter = null)
     {
       using var trans = _connection.BeginTransaction();
-      using var lastSchIdCmd = _connection.CreateCommand();
-
-      lastSchIdCmd.CommandText =
-        "SELECT MAX(ScheduleId) FROM unfilled_workorders WHERE ScheduleId IS NOT NULL";
-      var lastWorkSchId = lastSchIdCmd.ExecuteScalar() as string;
-      var lastJobSchId = LatestJobScheduleId(trans);
-      var lastSchId = string.IsNullOrEmpty(lastWorkSchId)
-        ? lastJobSchId
-        : string.IsNullOrEmpty(lastJobSchId)
-          ? lastWorkSchId
-          : lastWorkSchId.CompareTo(lastJobSchId) > 0
-            ? lastWorkSchId
-            : lastJobSchId;
-
-      if (string.IsNullOrEmpty(lastSchId))
-      {
-        return [];
-      }
 
       // we distinguish between a cell never using workorders at all and return null
       // vs a cell that has no workorders currently active where we return an empty list
-
       using (var checkExistingRowCmd = _connection.CreateCommand())
       {
-        checkExistingRowCmd.CommandText = "SELECT EXISTS (SELECT 1 FROM unfilled_workorders LIMIT 1)";
+        checkExistingRowCmd.CommandText = "SELECT EXISTS (SELECT 1 FROM workorder_cache LIMIT 1)";
         if (!Convert.ToBoolean(checkExistingRowCmd.ExecuteScalar()))
         {
           return null;
         }
       }
 
+      var lastSchId = LatestSimulationScheduleId(trans);
+      if (string.IsNullOrEmpty(lastSchId))
+      {
+        return [];
+      }
+
       var workQry =
         @"
-          SELECT uw.Workorder, uw.Part, uw.Quantity, uw.DueDate, uw.Priority, uw.SimulatedStartUTC, uw.SimulatedFilledUTC,
+          SELECT uw.Workorder, uw.Part, uw.Quantity, uw.DueDate, uw.Priority, sw.SimulatedStartDay, sw.SimulatedFilledDay,
           (
             SELECT COUNT(matdetails.MaterialID)
             FROM stations, stations_mat, matdetails
@@ -824,9 +811,9 @@ namespace BlackMaple.MachineFramework
             matdetails.PartName = uw.Part
           ) AS Completed
 
-          FROM unfilled_workorders uw
-          WHERE uw.ScheduleId = $schid
-          AND (uw.Archived IS NULL OR uw.Archived != 1)
+          FROM workorder_cache uw
+          LEFT OUTER JOIN sim_workorders sw ON sw.ScheduleId = $schid AND uw.Workorder = sw.Workorder AND uw.Part = sw.Part
+          WHERE uw.Archived = 0
       ";
 
       if (!string.IsNullOrEmpty(partToFilter))

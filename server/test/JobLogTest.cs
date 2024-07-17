@@ -1508,13 +1508,28 @@ namespace MachineWatchTest
       var work1part1 = _fixture.Create<Workorder>() with { WorkorderId = "work1", Part = "part1" };
       var work1part2 = _fixture.Create<Workorder>() with { WorkorderId = "work1", Part = "part2" };
       var work2 = _fixture.Create<Workorder>() with { WorkorderId = "work2", Part = "part3" };
+      var work1part1sim = _fixture
+        .Build<WorkorderSimFilled>()
+        .With(w => w.WorkorderId, "work1")
+        .With(w => w.Part, "part1")
+        .Create();
+      var work1part2sim = _fixture
+        .Build<WorkorderSimFilled>()
+        .With(w => w.WorkorderId, "work1")
+        .With(w => w.Part, "part2")
+        .Create();
+      var work2sim = _fixture
+        .Build<WorkorderSimFilled>()
+        .With(w => w.WorkorderId, "work2")
+        .With(w => w.Part, "part3")
+        .Create();
 
       _jobLog.AddJobs(
         new NewJobs()
         {
           ScheduleId = "aaaa",
-          Jobs = ImmutableList<Job>.Empty,
-          CurrentUnfilledWorkorders = ImmutableList.Create(earlierWork),
+          Jobs = [],
+          CurrentUnfilledWorkorders = [earlierWork],
         },
         null,
         true
@@ -1524,8 +1539,9 @@ namespace MachineWatchTest
         new NewJobs()
         {
           ScheduleId = "cccc",
-          Jobs = ImmutableList<Job>.Empty,
-          CurrentUnfilledWorkorders = ImmutableList.Create(work1part1, work1part2, work2),
+          Jobs = [],
+          CurrentUnfilledWorkorders = [work1part1, work1part2, work2],
+          SimWorkordersFilled = [work1part1sim, work1part2sim, work2sim],
         },
         null,
         true
@@ -1771,8 +1787,8 @@ namespace MachineWatchTest
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(20 + 40 + 4 * 1 / c2Cnt)) //20 + 40 from mat1, 4*1/4 for mat3
             .Add("L/U", TimeSpan.FromMinutes(60 / 2 + 6 * 1 / c2Cnt)), //60/2 from mat1_proc2, and 6*1/4 for mat3
-          SimulatedFilled = work1part1.SimulatedFilled,
-          SimulatedStart = work1part1.SimulatedStart,
+          SimulatedStart = work1part1sim.Started,
+          SimulatedFilled = work1part1sim.Filled,
         },
         new ActiveWorkorder()
         {
@@ -1800,8 +1816,8 @@ namespace MachineWatchTest
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(4 * 1 / c2Cnt))
             .Add("L/U", TimeSpan.FromMinutes(6 * 1 / c2Cnt)),
-          SimulatedFilled = work1part2.SimulatedFilled,
-          SimulatedStart = work1part2.SimulatedStart
+          SimulatedStart = work1part2sim.Started,
+          SimulatedFilled = work1part2sim.Filled,
         },
         new ActiveWorkorder()
         {
@@ -1837,8 +1853,8 @@ namespace MachineWatchTest
           ActiveStationTime = ImmutableDictionary<string, TimeSpan>
             .Empty.Add("MC", TimeSpan.FromMinutes(4 * 2 / c2Cnt))
             .Add("L/U", TimeSpan.FromMinutes(6 * 2 / c2Cnt)),
-          SimulatedFilled = work2.SimulatedFilled,
-          SimulatedStart = work2.SimulatedStart,
+          SimulatedStart = work2sim.Started,
+          SimulatedFilled = work2sim.Filled,
         }
       };
 
@@ -1901,9 +1917,14 @@ namespace MachineWatchTest
           }
         );
 
-      // new jobs without any workorders should return the empty list
+      // new jobs with empty workorders, should replace with empty
       _jobLog.AddJobs(
-        new NewJobs() { ScheduleId = "dddd", Jobs = ImmutableList.Create(_fixture.Create<Job>()), },
+        new NewJobs()
+        {
+          ScheduleId = "dddd",
+          Jobs = ImmutableList.Create(_fixture.Create<Job>()),
+          CurrentUnfilledWorkorders = []
+        },
         null,
         true
       );

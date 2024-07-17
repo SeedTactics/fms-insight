@@ -51,12 +51,16 @@ namespace BlackMaple.MachineFramework
 
     public required int Priority { get; init; }
 
-    public DateOnly? SimulatedStart { get; init; }
-
-    public DateOnly? SimulatedFilled { get; init; }
-
     ///<summary>If given, this value overrides the programs to run for this specific workorder.</summary>
     public ImmutableList<ProgramForJobStep>? Programs { get; init; }
+  }
+
+  public record WorkorderSimFilled
+  {
+    public required string WorkorderId { get; init; }
+    public required string Part { get; init; }
+    public DateOnly? Started { get; init; }
+    public DateOnly? Filled { get; init; }
   }
 
   public record WorkorderComment
@@ -96,11 +100,11 @@ namespace BlackMaple.MachineFramework
 
     public required int Priority { get; init; }
 
+    // active data
     public DateOnly? SimulatedStart { get; init; }
 
     public DateOnly? SimulatedFilled { get; init; }
 
-    // active data
     public required int CompletedQuantity { get; init; }
 
     public ImmutableList<WorkorderComment>? Comments { get; init; }

@@ -489,6 +489,7 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     void AddJobs(NewJobs newJobs, string expectedPreviousScheduleId, bool addAsCopiedToSystem);
     void AddPrograms(IEnumerable<NewProgramContent> programs, DateTime startingUtc);
+    void UpdateCachedWorkorders(IEnumerable<Workorder> workorders);
     void ArchiveJob(string UniqueStr);
     void ArchiveJobs(
       IEnumerable<string> uniqueStrs,

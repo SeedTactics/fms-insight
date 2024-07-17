@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -72,19 +72,37 @@ namespace BlackMaple.MachineFramework
     public required double Usage { get; init; }
   }
 
+  public record SimulationResults
+  {
+    public required string ScheduleId { get; init; }
+    public required ImmutableList<Job> Jobs { get; init; }
+    public ImmutableDictionary<string, int>? NewExtraParts { get; init; }
+    public required ImmutableList<SimulatedStationUtilization> SimStations { get; init; }
+    public ImmutableList<SimulatedStationUtilization>? SimStationsForExecutionOfCurrentStatus { get; init; }
+    public ImmutableList<SimulatedDayUsage>? SimDayUsage { get; init; }
+    public ImmutableList<WorkorderSimFilled>? SimWorkordersFilled { get; init; }
+    public ImmutableList<string>? AllocationWarning { get; init; }
+    public byte[]? DebugMessage { get; init; }
+  }
+
+  // NewJobs is SimulationResults plus workorders and programs and so conceptually should be derived
+  // from SimulationResults, but a few fields are renamed because of backwards compatibility with
+  // older APIs
   public record NewJobs
   {
     public required string ScheduleId { get; init; }
 
-    public required ImmutableList<MachineFramework.Job> Jobs { get; init; }
+    public required ImmutableList<Job> Jobs { get; init; }
+
+    public ImmutableDictionary<string, int>? ExtraParts { get; init; }
 
     public ImmutableList<SimulatedStationUtilization>? StationUse { get; init; }
 
+    public ImmutableList<SimulatedStationUtilization>? StationUseForCurrentStatus { get; init; }
+
     public ImmutableList<SimulatedDayUsage>? SimDayUsage { get; init; }
 
-    public string? SimDayUsageWarning { get; init; }
-
-    public ImmutableDictionary<string, int>? ExtraParts { get; init; }
+    public ImmutableList<WorkorderSimFilled>? SimWorkordersFilled { get; init; }
 
     public ImmutableList<Workorder>? CurrentUnfilledWorkorders { get; init; }
 

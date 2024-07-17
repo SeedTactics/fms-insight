@@ -36,6 +36,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.AspNetCore.Mvc;
 
+#nullable enable
+
 namespace BlackMaple.MachineFramework.Controllers
 {
   public record QueuePosition
@@ -47,7 +49,11 @@ namespace BlackMaple.MachineFramework.Controllers
 
   [ApiController]
   [Route("api/v1/jobs")]
-  public class JobsController(RepositoryConfig repo, IJobAndQueueControl jobAndQueue) : ControllerBase
+  public class JobsController(
+    RepositoryConfig repo,
+    IJobAndQueueControl jobAndQueue,
+    IProgramContentForJobs? programContent = null
+  ) : ControllerBase
   {
     [HttpGet("history")]
     public HistoricData History([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
@@ -88,25 +94,45 @@ namespace BlackMaple.MachineFramework.Controllers
       return db.LoadMostRecentSchedule();
     }
 
-    [HttpGet("unfilled-workorders/by-part/{part}")]
-    public ImmutableList<ActiveWorkorder> MostRecentUnfilledWorkordersForPart(string part)
-    {
-      if (string.IsNullOrEmpty(part))
-        throw new BadRequestException("Part must be non-empty");
-      using var db = repo.OpenConnection();
-      return db.GetActiveWorkorders(partToFilter: part);
-    }
-
     [HttpGet("status")]
     public CurrentStatus CurrentStatus()
     {
       return jobAndQueue.GetCurrentStatus();
     }
 
+    [HttpPost("add-from-sim")]
+    [ProducesResponseType(typeof(void), 200)]
+    public void AddFromSim(
+      [FromBody] SimulationResults simResults,
+      [FromQuery] string? expectedPreviousScheduleId
+    )
+    {
+      Add(
+        new NewJobs()
+        {
+          ScheduleId = simResults.ScheduleId,
+          Jobs = simResults.Jobs,
+          ExtraParts = simResults.NewExtraParts,
+          StationUse = simResults.SimStations,
+          StationUseForCurrentStatus = simResults.SimStationsForExecutionOfCurrentStatus,
+          SimDayUsage = simResults.SimDayUsage,
+          SimWorkordersFilled = simResults.SimWorkordersFilled,
+          DebugMessage = simResults.DebugMessage,
+          CurrentUnfilledWorkorders = null, // no updates to workorders
+          Programs = null // load from programContent
+        },
+        expectedPreviousScheduleId: expectedPreviousScheduleId
+      );
+    }
+
     [HttpPost("add")]
     [ProducesResponseType(typeof(void), 200)]
-    public void Add([FromBody] NewJobs newJobs, [FromQuery] string expectedPreviousScheduleId)
+    public void Add([FromBody] NewJobs newJobs, [FromQuery] string? expectedPreviousScheduleId)
     {
+      if (newJobs.Programs == null && programContent != null)
+      {
+        newJobs = newJobs with { Programs = programContent.ProgramsForJobs(newJobs.Jobs) };
+      }
       jobAndQueue.AddJobs(jobs: newJobs, expectedPreviousScheduleId: expectedPreviousScheduleId);
     }
 
@@ -116,8 +142,8 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] string queue,
       [FromBody] List<string> serials,
       [FromQuery] int qty = 1,
-      [FromQuery] string operName = null,
-      [FromQuery] string workorder = null
+      [FromQuery] string? operName = null,
+      [FromQuery] string? workorder = null
     )
     {
       if (string.IsNullOrEmpty(castingName))
@@ -147,9 +173,9 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] int lastCompletedProcess,
       [FromQuery] string queue,
       [FromQuery] int pos,
-      [FromBody] string serial,
-      [FromQuery] string operName = null,
-      [FromQuery] string workorder = null
+      [FromBody] string? serial,
+      [FromQuery] string? operName = null,
+      [FromQuery] string? workorder = null
     )
     {
       if (string.IsNullOrEmpty(jobUnique))
@@ -181,7 +207,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public void SetMaterialInQueue(
       long materialId,
       [FromBody] QueuePosition queue,
-      [FromQuery] string operName = null
+      [FromQuery] string? operName = null
     )
     {
       if (string.IsNullOrEmpty(queue.Queue))
@@ -191,7 +217,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpDelete("material/{materialId}/queue")]
     [ProducesResponseType(typeof(void), 200)]
-    public void RemoveMaterialFromAllQueues(long materialId, [FromQuery] string operName = null)
+    public void RemoveMaterialFromAllQueues(long materialId, [FromQuery] string? operName = null)
     {
       jobAndQueue.RemoveMaterialFromAllQueues(new[] { materialId }, operName);
     }
@@ -200,8 +226,8 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(typeof(void), 200)]
     public void SignalMaterialForQuarantine(
       long materialId,
-      [FromQuery] string operName = null,
-      [FromBody] string reason = null
+      [FromQuery] string? operName = null,
+      [FromBody] string? reason = null
     )
     {
       jobAndQueue.SignalMaterialForQuarantine(materialId, operatorName: operName, reason: reason);
@@ -212,8 +238,8 @@ namespace BlackMaple.MachineFramework.Controllers
     public void InvalidatePalletCycle(
       long materialId,
       [FromBody] int process,
-      [FromQuery] string putMatInQueue = null,
-      [FromQuery] string operName = null
+      [FromQuery] string? putMatInQueue = null,
+      [FromQuery] string? operName = null
     )
     {
       jobAndQueue.InvalidatePalletCycle(
@@ -236,7 +262,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public void SwapMaterialOnPallet(
       long materialId,
       [FromBody] MatToPutOnPallet mat,
-      [FromQuery] string operName = null
+      [FromQuery] string? operName = null
     )
     {
       jobAndQueue.SwapMaterialOnPallet(
@@ -249,7 +275,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpDelete("material")]
     [ProducesResponseType(typeof(void), 200)]
-    public void BulkRemoveMaterialFromQueues([FromBody] List<long> id, [FromQuery] string operName = null)
+    public void BulkRemoveMaterialFromQueues([FromBody] List<long> id, [FromQuery] string? operName = null)
     {
       if (id == null || id.Count == 0)
         return;
@@ -270,6 +296,14 @@ namespace BlackMaple.MachineFramework.Controllers
         throw new BadRequestException(
           "Must specify either loadDecrementsStrictlyAfterDecrementId or loadDecrementsAfterTimeUTC"
         );
+    }
+
+    [HttpPut("workorders")]
+    public void SetUnarchivedWorkorders([FromBody] List<Workorder> workorders)
+    {
+      using var db = repo.OpenConnection();
+      db.UpdateCachedWorkorders(workorders);
+      jobAndQueue.RecalculateCellState();
     }
   }
 }

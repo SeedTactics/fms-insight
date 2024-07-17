@@ -278,7 +278,8 @@ namespace MachineWatchTest
               .Create<string, HistoricJob>()
               .Add(job1.UniqueStr, job1history)
               .Add(job2.UniqueStr, job2history),
-            StationUse = job1StatUse.AddRange(job2SimUse)
+            StationUse = job1StatUse.AddRange(job2SimUse),
+            MostRecentSimulationId = schId2
           }
         );
 
@@ -289,7 +290,8 @@ namespace MachineWatchTest
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
-            StationUse = job2SimUse
+            StationUse = job2SimUse,
+            MostRecentSimulationId = schId2
           }
         );
 
@@ -300,7 +302,8 @@ namespace MachineWatchTest
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
-            StationUse = job2SimUse
+            StationUse = job2SimUse,
+            MostRecentSimulationId = schId2
           }
         );
 
@@ -322,7 +325,8 @@ namespace MachineWatchTest
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
-            StationUse = ImmutableList<SimulatedStationUtilization>.Empty
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+            MostRecentSimulationId = schId2
           }
         );
 
@@ -374,7 +378,6 @@ namespace MachineWatchTest
       var schId1 = "schId" + _fixture.Create<string>();
       var job1 = RandJob() with { RouteStartUTC = now, RouteEndUTC = now.AddHours(1) };
       var simDays1 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
-      var warning = _fixture.Create<string>();
       var job1history = job1.CloneToDerived<HistoricJob, Job>() with
       {
         ScheduleId = schId1,
@@ -390,7 +393,6 @@ namespace MachineWatchTest
           ScheduleId = schId1,
           Jobs = ImmutableList.Create(job1),
           SimDayUsage = simDays1,
-          SimDayUsageWarning = warning
         },
         null,
         addAsCopiedToSystem: true
@@ -417,7 +419,6 @@ namespace MachineWatchTest
             StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
             MostRecentSimulationId = schId1,
             MostRecentSimDayUsage = simDays1,
-            MostRecentSimDayUsageWarning = warning
           }
         );
 
@@ -448,7 +449,6 @@ namespace MachineWatchTest
           ScheduleId = schId2,
           Jobs = ImmutableList.Create(job2),
           SimDayUsage = simDays2,
-          SimDayUsageWarning = null
         },
         schId1,
         addAsCopiedToSystem: true
@@ -467,7 +467,6 @@ namespace MachineWatchTest
             StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
             MostRecentSimulationId = schId2,
             MostRecentSimDayUsage = simDays2,
-            MostRecentSimDayUsageWarning = null
           }
         );
 
@@ -491,7 +490,6 @@ namespace MachineWatchTest
             StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
             MostRecentSimulationId = schId2,
             MostRecentSimDayUsage = simDays2,
-            MostRecentSimDayUsageWarning = null
           }
         );
     }
@@ -503,7 +501,6 @@ namespace MachineWatchTest
       var now = DateTime.UtcNow;
       var schId1 = "schId" + _fixture.Create<string>();
       var simDays1 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
-      var warning = _fixture.Create<string>();
 
       _jobDB.AddJobs(
         new NewJobs()
@@ -511,7 +508,6 @@ namespace MachineWatchTest
           ScheduleId = schId1,
           Jobs = ImmutableList<Job>.Empty,
           SimDayUsage = simDays1,
-          SimDayUsageWarning = warning
         },
         null,
         addAsCopiedToSystem: true
@@ -538,7 +534,6 @@ namespace MachineWatchTest
             StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
             MostRecentSimulationId = schId1,
             MostRecentSimDayUsage = simDays1,
-            MostRecentSimDayUsageWarning = warning
           }
         );
 
@@ -1184,6 +1179,19 @@ namespace MachineWatchTest
         ]
       };
 
+      var workStart = ImmutableList.Create(
+        _fixture
+          .Build<WorkorderSimFilled>()
+          .With(w => w.WorkorderId, initialWorks[0].WorkorderId)
+          .With(w => w.Part, initialWorks[0].Part)
+          .Create(),
+        _fixture
+          .Build<WorkorderSimFilled>()
+          .With(w => w.WorkorderId, initialWorks[1].WorkorderId)
+          .With(w => w.Part, initialWorks[1].Part)
+          .Create()
+      );
+
       _jobDB.AddJobs(
         new NewJobs
         {
@@ -1205,7 +1213,8 @@ namespace MachineWatchTest
               Comment = "bbb comment",
               ProgramContent = "bbb program content"
             }
-          )
+          ),
+          SimWorkordersFilled = workStart
         },
         null,
         addAsCopiedToSystem: true
@@ -1303,8 +1312,8 @@ namespace MachineWatchTest
               Priority = initialWorks[0].Priority,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              SimulatedStart = initialWorks[0].SimulatedStart,
-              SimulatedFilled = initialWorks[0].SimulatedFilled
+              SimulatedStart = workStart[0].Started,
+              SimulatedFilled = workStart[0].Filled
             }
           }
         );

@@ -101,8 +101,6 @@ namespace BlackMaple.MachineFramework
     public string? MostRecentSimulationId { get; init; }
 
     public ImmutableList<SimulatedDayUsage>? MostRecentSimDayUsage { get; init; }
-
-    public string? MostRecentSimDayUsageWarning { get; init; }
   }
 
   public record PlannedSchedule
