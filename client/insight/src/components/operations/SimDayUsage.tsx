@@ -136,11 +136,10 @@ function ShowMonth({
 }
 
 function Warning() {
-  const warning = useAtomValue(latestSimDayUsage)?.warning;
   return (
     <Stack direction="row" spacing={2} alignItems="center">
       <WarningIcon fontSize="small" />
-      <Typography variant="caption">{warning ? ` ${warning}` : "Projected dates are estimates"}</Typography>
+      <Typography variant="caption">Projected dates are estimates</Typography>
     </Stack>
   );
 }

@@ -229,27 +229,6 @@ export function registerMockBackend(
     currentStatus(): Promise<Readonly<api.ICurrentStatus>> {
       return data.then((d) => d.curSt);
     },
-    mostRecentUnfilledWorkordersForPart(
-      part: string,
-    ): Promise<ReadonlyArray<Readonly<api.IActiveWorkorder>>> {
-      return data.then((d) => {
-        const ws = d.workorders.get(part);
-        if (!ws) {
-          return [];
-        }
-        return ws.map((w) => ({
-          workorderId: w.workorderId,
-          part: w.part,
-          plannedQuantity: w.quantity,
-          dueDate: w.dueDate,
-          priority: w.priority,
-          completedQuantity: 0,
-          material: [],
-          elapsedStationTime: {},
-          activeStationTime: {},
-        }));
-      });
-    },
     setJobComment(_uniq: string, _comment: string): Promise<void> {
       // do nothing
       return Promise.resolve();

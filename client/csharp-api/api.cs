@@ -995,86 +995,6 @@ namespace BlackMaple.FMSInsight.API
         }
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ActiveWorkorder>> MostRecentUnfilledWorkordersForPartAsync(string part)
-        {
-            return MostRecentUnfilledWorkordersForPartAsync(part, System.Threading.CancellationToken.None);
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ActiveWorkorder>> MostRecentUnfilledWorkordersForPartAsync(string part, System.Threading.CancellationToken cancellationToken)
-        {
-            if (part == null)
-                throw new System.ArgumentNullException("part");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
-                    // Operation Path: "api/v1/jobs/unfilled-workorders/by-part/{part}"
-                    urlBuilder_.Append("api/v1/jobs/unfilled-workorders/by-part/");
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(part, System.Globalization.CultureInfo.InvariantCulture)));
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<ActiveWorkorder>>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <exception cref="ApiException">A server side error occurred.</exception>
         public virtual System.Threading.Tasks.Task<CurrentStatus> CurrentStatusAsync()
         {
             return CurrentStatusAsync(System.Threading.CancellationToken.None);
@@ -1129,6 +1049,86 @@ namespace BlackMaple.FMSInsight.API
                                 throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
                             }
                             return objectResponse_.Object;
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task AddFromSimAsync(string expectedPreviousScheduleId, SimulationResults simResults)
+        {
+            return AddFromSimAsync(expectedPreviousScheduleId, simResults, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task AddFromSimAsync(string expectedPreviousScheduleId, SimulationResults simResults, System.Threading.CancellationToken cancellationToken)
+        {
+            if (simResults == null)
+                throw new System.ArgumentNullException("simResults");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    var json_ = Newtonsoft.Json.JsonConvert.SerializeObject(simResults, _settings.Value);
+                    var content_ = new System.Net.Http.StringContent(json_);
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    // Operation Path: "api/v1/jobs/add-from-sim"
+                    urlBuilder_.Append("api/v1/jobs/add-from-sim");
+                    urlBuilder_.Append('?');
+                    urlBuilder_.Append(System.Uri.EscapeDataString("expectedPreviousScheduleId")).Append('=').Append(System.Uri.EscapeDataString(expectedPreviousScheduleId != null ? ConvertToString(expectedPreviousScheduleId, System.Globalization.CultureInfo.InvariantCulture) : "")).Append('&');
+                    urlBuilder_.Length--;
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            return;
                         }
                         else
                         {
@@ -1243,6 +1243,9 @@ namespace BlackMaple.FMSInsight.API
             if (castingName == null)
                 throw new System.ArgumentNullException("castingName");
 
+            if (queue == null)
+                throw new System.ArgumentNullException("queue");
+
             if (serials == null)
                 throw new System.ArgumentNullException("serials");
 
@@ -1265,7 +1268,7 @@ namespace BlackMaple.FMSInsight.API
                     urlBuilder_.Append("api/v1/jobs/casting/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(castingName, System.Globalization.CultureInfo.InvariantCulture)));
                     urlBuilder_.Append('?');
-                    urlBuilder_.Append(System.Uri.EscapeDataString("queue")).Append('=').Append(System.Uri.EscapeDataString(queue != null ? ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture) : "")).Append('&');
+                    urlBuilder_.Append(System.Uri.EscapeDataString("queue")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     if (qty != null)
                     {
                         urlBuilder_.Append(System.Uri.EscapeDataString("qty")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(qty, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
@@ -1429,6 +1432,9 @@ namespace BlackMaple.FMSInsight.API
             if (lastCompletedProcess == null)
                 throw new System.ArgumentNullException("lastCompletedProcess");
 
+            if (queue == null)
+                throw new System.ArgumentNullException("queue");
+
             if (pos == null)
                 throw new System.ArgumentNullException("pos");
 
@@ -1456,7 +1462,7 @@ namespace BlackMaple.FMSInsight.API
                     urlBuilder_.Append("/unprocessed-material");
                     urlBuilder_.Append('?');
                     urlBuilder_.Append(System.Uri.EscapeDataString("lastCompletedProcess")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(lastCompletedProcess, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    urlBuilder_.Append(System.Uri.EscapeDataString("queue")).Append('=').Append(System.Uri.EscapeDataString(queue != null ? ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture) : "")).Append('&');
+                    urlBuilder_.Append(System.Uri.EscapeDataString("queue")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(queue, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     urlBuilder_.Append(System.Uri.EscapeDataString("pos")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(pos, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     if (operName != null)
                     {
@@ -2184,6 +2190,83 @@ namespace BlackMaple.FMSInsight.API
                                 throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
                             }
                             return objectResponse_.Object;
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task SetUnarchivedWorkordersAsync(System.Collections.Generic.IEnumerable<Workorder> workorders)
+        {
+            return SetUnarchivedWorkordersAsync(workorders, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task SetUnarchivedWorkordersAsync(System.Collections.Generic.IEnumerable<Workorder> workorders, System.Threading.CancellationToken cancellationToken)
+        {
+            if (workorders == null)
+                throw new System.ArgumentNullException("workorders");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    var json_ = Newtonsoft.Json.JsonConvert.SerializeObject(workorders, _settings.Value);
+                    var content_ = new System.Net.Http.StringContent(json_);
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("PUT");
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
+                    // Operation Path: "api/v1/jobs/workorders"
+                    urlBuilder_.Append("api/v1/jobs/workorders");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            return;
                         }
                         else
                         {
@@ -4940,17 +5023,20 @@ namespace BlackMaple.FMSInsight.API
         [System.ComponentModel.DataAnnotations.Required]
         public System.Collections.Generic.ICollection<Job> Jobs { get; set; } = new System.Collections.ObjectModel.Collection<Job>();
 
+        [Newtonsoft.Json.JsonProperty("ExtraParts", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.IDictionary<string, int> ExtraParts { get; set; }
+
         [Newtonsoft.Json.JsonProperty("StationUse", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<SimulatedStationUtilization> StationUse { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("StationUseForCurrentStatus", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<SimulatedStationUtilization> StationUseForCurrentStatus { get; set; }
 
         [Newtonsoft.Json.JsonProperty("SimDayUsage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<SimulatedDayUsage> SimDayUsage { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("SimDayUsageWarning", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string SimDayUsageWarning { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("ExtraParts", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.Collections.Generic.IDictionary<string, int> ExtraParts { get; set; }
+        [Newtonsoft.Json.JsonProperty("SimWorkordersFilled", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<WorkorderSimFilled> SimWorkordersFilled { get; set; }
 
         [Newtonsoft.Json.JsonProperty("CurrentUnfilledWorkorders", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<Workorder> CurrentUnfilledWorkorders { get; set; }
@@ -5235,6 +5321,27 @@ namespace BlackMaple.FMSInsight.API
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.0.8.0 (NJsonSchema v11.0.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class WorkorderSimFilled
+    {
+        [Newtonsoft.Json.JsonProperty("WorkorderId", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public string WorkorderId { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("Part", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public string Part { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("Started", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
+        public System.DateTimeOffset? Started { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("Filled", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
+        public System.DateTimeOffset? Filled { get; set; }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.0.8.0 (NJsonSchema v11.0.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class Workorder
     {
         [Newtonsoft.Json.JsonProperty("WorkorderId", Required = Newtonsoft.Json.Required.Always)]
@@ -5254,14 +5361,6 @@ namespace BlackMaple.FMSInsight.API
 
         [Newtonsoft.Json.JsonProperty("Priority", Required = Newtonsoft.Json.Required.Always)]
         public int Priority { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("SimulatedStart", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
-        public System.DateTimeOffset? SimulatedStart { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("SimulatedFilled", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        [Newtonsoft.Json.JsonConverter(typeof(DateFormatConverter))]
-        public System.DateTimeOffset? SimulatedFilled { get; set; }
 
         [Newtonsoft.Json.JsonProperty("Programs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<ProgramForJobStep> Programs { get; set; }
@@ -5870,9 +5969,6 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("MostRecentSimDayUsage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public System.Collections.Generic.ICollection<SimulatedDayUsage> MostRecentSimDayUsage { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("MostRecentSimDayUsageWarning", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string MostRecentSimDayUsageWarning { get; set; }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.0.8.0 (NJsonSchema v11.0.1.0 (Newtonsoft.Json v13.0.0.0))")]
@@ -5893,9 +5989,45 @@ namespace BlackMaple.FMSInsight.API
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.0.8.0 (NJsonSchema v11.0.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class SimulationResults
+    {
+        [Newtonsoft.Json.JsonProperty("ScheduleId", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public string ScheduleId { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("Jobs", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required]
+        public System.Collections.Generic.ICollection<Job> Jobs { get; set; } = new System.Collections.ObjectModel.Collection<Job>();
+
+        [Newtonsoft.Json.JsonProperty("NewExtraParts", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.IDictionary<string, int> NewExtraParts { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("SimStations", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required]
+        public System.Collections.Generic.ICollection<SimulatedStationUtilization> SimStations { get; set; } = new System.Collections.ObjectModel.Collection<SimulatedStationUtilization>();
+
+        [Newtonsoft.Json.JsonProperty("SimStationsForExecutionOfCurrentStatus", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<SimulatedStationUtilization> SimStationsForExecutionOfCurrentStatus { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("SimDayUsage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<SimulatedDayUsage> SimDayUsage { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("SimWorkordersFilled", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<WorkorderSimFilled> SimWorkordersFilled { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("AllocationWarning", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public System.Collections.Generic.ICollection<string> AllocationWarning { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("DebugMessage", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public byte[] DebugMessage { get; set; }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.0.8.0 (NJsonSchema v11.0.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class QueuePosition
     {
-        [Newtonsoft.Json.JsonProperty("Queue", Required = Newtonsoft.Json.Required.AllowNull)]
+        [Newtonsoft.Json.JsonProperty("Queue", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
         public string Queue { get; set; }
 
         [Newtonsoft.Json.JsonProperty("Position", Required = Newtonsoft.Json.Required.Always)]
