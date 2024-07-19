@@ -1724,6 +1724,7 @@ namespace BlackMaple.MachineFramework
       {
         using var trans = _connection.BeginTransaction();
         UpdateCachedWorkorders(trans, workorders, new Dictionary<(string, long), long>());
+        trans.Commit();
       }
     }
 

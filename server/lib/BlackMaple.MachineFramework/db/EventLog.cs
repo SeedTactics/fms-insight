@@ -784,7 +784,10 @@ namespace BlackMaple.MachineFramework
       var lastSchId = LatestSimulationScheduleId(trans);
       if (string.IsNullOrEmpty(lastSchId))
       {
-        return [];
+        // lastSchId is only used in the left outer join, and if it is null or empty it means
+        // the sim_workorders table is empty.  Therefore, we can use anything for the lastSchId
+        // and it will not affect the results.
+        lastSchId = "";
       }
 
       var workQry =

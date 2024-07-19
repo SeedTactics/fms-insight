@@ -2382,6 +2382,94 @@ namespace MachineWatchTest
     }
 
     [Fact]
+    public void UpdatesWorkorders()
+    {
+      var w1 = _fixture.Create<Workorder>();
+      var w2 = _fixture.Build<Workorder>().With(w => w.WorkorderId, w1.WorkorderId).Create();
+      var w3 = _fixture.Create<Workorder>();
+
+      using var _jobDB = _repoCfg.OpenConnection();
+
+      _jobDB.GetActiveWorkorders().Should().BeNull();
+
+      _jobDB.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = "aaa1",
+          Jobs = [],
+          CurrentUnfilledWorkorders = [w1, w2, w3]
+        },
+        null,
+        true
+      );
+
+      _jobDB
+        .GetActiveWorkorders()
+        .Select(w => (w.WorkorderId, w.Part))
+        .Should()
+        .BeEquivalentTo([(w1.WorkorderId, w1.Part), (w2.WorkorderId, w2.Part), (w3.WorkorderId, w3.Part)]);
+
+      // now update w1 with new data, keep w2 unchanged, and remove w3, and add a new w4
+      var w1New = _fixture
+        .Build<Workorder>()
+        .With(w => w.WorkorderId, w1.WorkorderId)
+        .With(w => w.Part, w1.Part)
+        .Create();
+      var w4 = _fixture.Create<Workorder>();
+
+      _jobDB.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = "aaa1",
+          Jobs = [],
+          CurrentUnfilledWorkorders = [w1New, w2, w4]
+        },
+        null,
+        true
+      );
+
+      _jobDB
+        .GetActiveWorkorders()
+        .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
+        .Should()
+        .BeEquivalentTo(
+          [
+            (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
+            (w2.WorkorderId, w2.Part, w2.Priority, w2.DueDate, w2.Quantity),
+            (w4.WorkorderId, w4.Part, w4.Priority, w4.DueDate, w4.Quantity)
+          ]
+        );
+
+      // now update w2 with new data, delete w4, and add a new w5
+      var w2New = _fixture
+        .Build<Workorder>()
+        .With(w => w.WorkorderId, w2.WorkorderId)
+        .With(w => w.Part, w2.Part)
+        .Create();
+      var w5 = _fixture.Create<Workorder>();
+
+      _jobDB.UpdateCachedWorkorders([w1New, w2New, w5]);
+
+      _jobDB
+        .GetActiveWorkorders()
+        .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
+        .Should()
+        .BeEquivalentTo(
+          [
+            (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
+            (w2New.WorkorderId, w2New.Part, w2New.Priority, w2New.DueDate, w2New.Quantity),
+            (w5.WorkorderId, w5.Part, w5.Priority, w5.DueDate, w5.Quantity)
+          ]
+        );
+
+      _jobDB.UpdateCachedWorkorders([]);
+
+      _jobDB.GetActiveWorkorders().Should().BeEmpty();
+
+      _jobDB.WorkordersById(w1New.WorkorderId).Should().BeEquivalentTo([w1New, w2New]);
+    }
+
+    [Fact]
     public void ErrorOnDuplicateSchId()
     {
       using var _jobDB = _repoCfg.OpenConnection();
