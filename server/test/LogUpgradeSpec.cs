@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -36,10 +36,97 @@ using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
+using Microsoft.Data.Sqlite;
 using Xunit;
 
 namespace MachineWatchTest
 {
+  public static class SchemaUpgradeSpec
+  {
+    private static void CheckSchema(SqliteConnection conn1, SqliteConnection conn2)
+    {
+      using var cmd1 = conn1.CreateCommand();
+      using var cmd2 = conn2.CreateCommand();
+      cmd1.CommandText = "SELECT type, name, tbl_name, sql FROM sqlite_master ORDER BY name";
+      cmd2.CommandText = "SELECT type, name, tbl_name, sql FROM sqlite_master ORDER BY name";
+
+      using var r1 = cmd1.ExecuteReader();
+      using var r2 = cmd2.ExecuteReader();
+
+      while (true)
+      {
+        var hasRow1 = r1.Read();
+        var hasRow2 = r2.Read();
+
+        if (!hasRow1 && !hasRow2)
+        {
+          break;
+        }
+
+        hasRow1.Should().BeTrue();
+        hasRow2.Should().BeTrue();
+
+        var name = r1.GetString(1);
+        name.Should().BeEquivalentTo(r2.GetString(1));
+
+        r1.GetString(0).Should().BeEquivalentTo(r2.GetString(0), because: name);
+        r1.GetString(2).Should().BeEquivalentTo(r2.GetString(2), because: name);
+
+        if (r2.IsDBNull(3))
+        {
+          r1.IsDBNull(3).Should().BeTrue(because: name);
+          continue;
+        }
+
+        var sql1 = r1.GetString(3);
+        var sql2 = r2.GetString(3);
+
+        if (sql2.StartsWith("CREATE TABLE pathdata"))
+        {
+          sql1 = sql1.Replace(" PathGroup INTEGER,", ""); // column was dropped
+        }
+
+        // Pallet column changed text to integer
+        if (sql2.StartsWith("CREATE TABLE pallets"))
+        {
+          sql1 = sql1.Replace("Pallet TEXT", "Pallet INTEGER");
+        }
+        if (sql2.StartsWith("CREATE TABLE pendingloads"))
+        {
+          sql1 = sql1.Replace("Pallet TEXT", "Pallet INTEGER");
+        }
+        if (sql2.StartsWith("CREATE TABLE stations"))
+        {
+          sql1 = sql1.Replace("Pallet TEXT", "Pallet INTEGER");
+        }
+
+        // Face was changed text to integer
+        if (sql2.StartsWith("CREATE TABLE stations_mat"))
+        {
+          sql1 = sql1.Replace("Face TEXT", "Face INTEGER");
+        }
+
+        sql1.Should().BeEquivalentTo(sql2);
+      }
+    }
+
+    public static void Check(string file1)
+    {
+      // open a connection to the file to see the upgraded schema
+      using var conn1 = new SqliteConnection("Data Source=" + file1);
+
+      // initialize a new memory database to see new schema
+      var guid = Guid.NewGuid();
+      using var memRepo = RepositoryConfig.InitializeMemoryDB(null, guid);
+      using var memDb = new SqliteConnection($"Data Source=file:${guid}?mode=memory&cache=shared");
+
+      conn1.Open();
+      memDb.Open();
+
+      CheckSchema(conn1, memDb);
+    }
+  }
+
   public sealed class EventDBUpgradeSpec : IDisposable
   {
     private readonly IRepository _log;
@@ -811,6 +898,12 @@ namespace MachineWatchTest
     }
 
     [Fact]
+    public void Schema()
+    {
+      SchemaUpgradeSpec.Check(_tempFile);
+    }
+
+    [Fact]
     public void LoadsVer25()
     {
       var evts = _repo.GetLogEntries(
@@ -819,6 +912,75 @@ namespace MachineWatchTest
       );
 
       evts.Should().HaveCount(1466);
+    }
+  }
+
+  // the ver32 has sample data in almost every table
+  public sealed class Ver32UpgradeSpec : IDisposable
+  {
+    private readonly string _tempFile;
+    private readonly RepositoryConfig _repo;
+
+    public Ver32UpgradeSpec()
+    {
+      _tempFile = System.IO.Path.GetTempFileName();
+      System.IO.File.Copy("repo.v32.db", _tempFile, overwrite: true);
+      _repo = RepositoryConfig.InitializeEventDatabase(null, _tempFile);
+    }
+
+    public void Dispose()
+    {
+      _repo.Dispose();
+      Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+      if (!string.IsNullOrEmpty(_tempFile) && System.IO.File.Exists(_tempFile))
+        System.IO.File.Delete(_tempFile);
+    }
+
+    [Fact]
+    public void Schema()
+    {
+      SchemaUpgradeSpec.Check(_tempFile);
+    }
+
+    [Fact]
+    public void LoadsUnfilledWorks()
+    {
+      // ver 32 to 33 changed around unfilled workorder tables
+      using var db = _repo.OpenConnection();
+      db.WorkordersById("work1")
+        .Should()
+        .BeEquivalentTo(
+          [
+            new Workorder()
+            {
+              WorkorderId = "work1",
+              Part = "aaa",
+              Quantity = 22,
+              DueDate = new DateTime(2024, 7, 24, 14, 6, 27, DateTimeKind.Utc),
+              Priority = 24,
+              Programs =
+              [
+                new ProgramForJobStep()
+                {
+                  ProcessNumber = 1,
+                  ProgramName = "prog4",
+                  Revision = 4,
+                  StopIndex = 0
+                }
+              ]
+            },
+            new Workorder()
+            {
+              WorkorderId = "work1",
+              Part = "bbb",
+              Quantity = 33,
+              DueDate = new DateTime(2024, 7, 30, 14, 6, 27, DateTimeKind.Utc),
+              Priority = 26
+            }
+          ]
+        );
+
+      db.WorkordersById("work2").Should().BeEmpty();
     }
   }
 }
