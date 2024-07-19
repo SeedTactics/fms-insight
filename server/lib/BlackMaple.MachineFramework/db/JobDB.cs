@@ -50,8 +50,6 @@ namespace BlackMaple.MachineFramework
       public ImmutableList<int>.Builder Stations { get; } = ImmutableList.CreateBuilder<int>();
       public required string Program { get; init; }
       public required long? ProgramRevision { get; init; }
-      public ImmutableDictionary<string, TimeSpan>.Builder Tools { get; } =
-        ImmutableDictionary.CreateBuilder<string, TimeSpan>();
       public required TimeSpan ExpectedCycleTime { get; init; }
     }
 
@@ -307,25 +305,6 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        //tools for routes
-        cmd.CommandText =
-          "SELECT Process, Path, RouteNum, Tool, ExpectedUse FROM tools WHERE UniqueStr = $uniq";
-        using (IDataReader reader = cmd.ExecuteReader())
-        {
-          while (reader.Read())
-          {
-            var key = (proc: reader.GetInt32(0), path: reader.GetInt32(1));
-            int routeNum = reader.GetInt32(2);
-            if (pathDatRows.TryGetValue(key, out var pathRow))
-            {
-              if (pathRow.Stops.TryGetValue(routeNum, out var stop))
-              {
-                stop.Tools[reader.GetString(3)] = TimeSpan.FromTicks(reader.GetInt64(4));
-              }
-            }
-          }
-        }
-
         //now add load/unload
         cmd.CommandText = "SELECT Process, Path, StatNum, Load FROM loadunload WHERE UniqueStr = $uniq";
         using (IDataReader reader = cmd.ExecuteReader())
@@ -487,7 +466,6 @@ namespace BlackMaple.MachineFramework
                       Stations = s.Stations.ToImmutable(),
                       Program = s.Program,
                       ProgramRevision = s.ProgramRevision,
-                      Tools = s.Tools.Count == 0 ? null : s.Tools.ToImmutable(),
                       ExpectedCycleTime = s.ExpectedCycleTime
                     })
                     .ToImmutableList(),
@@ -1450,43 +1428,6 @@ namespace BlackMaple.MachineFramework
                 cmd.Parameters[4].Value = stat;
 
                 cmd.ExecuteNonQuery();
-              }
-              routeNum += 1;
-            }
-          }
-        }
-
-        cmd.CommandText =
-          "INSERT INTO tools(UniqueStr, Process, Path, RouteNum, Tool, ExpectedUse) "
-          + "VALUES ($uniq,$proc,$path,$route,$tool,$use)";
-        cmd.Parameters.Clear();
-        cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
-        cmd.Parameters.Add("proc", SqliteType.Integer);
-        cmd.Parameters.Add("path", SqliteType.Integer);
-        cmd.Parameters.Add("route", SqliteType.Integer);
-        cmd.Parameters.Add("tool", SqliteType.Text);
-        cmd.Parameters.Add("use", SqliteType.Integer);
-
-        for (int i = 1; i <= job.Processes.Count; i++)
-        {
-          var proc = job.Processes[i - 1];
-          for (int j = 1; j <= proc.Paths.Count; j++)
-          {
-            var path = proc.Paths[j - 1];
-            int routeNum = 0;
-            foreach (var entry in path.Stops)
-            {
-              if (entry.Tools != null)
-              {
-                foreach (var tool in entry.Tools)
-                {
-                  cmd.Parameters[1].Value = i;
-                  cmd.Parameters[2].Value = j;
-                  cmd.Parameters[3].Value = routeNum;
-                  cmd.Parameters[4].Value = tool.Key;
-                  cmd.Parameters[5].Value = tool.Value.Ticks;
-                  cmd.ExecuteNonQuery();
-                }
               }
               routeNum += 1;
             }

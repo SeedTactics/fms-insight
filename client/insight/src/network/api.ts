@@ -3128,7 +3128,6 @@ export class MachiningStop implements IMachiningStop {
     expectedCycleTime!: string;
     program?: string | undefined;
     programRevision?: number | undefined;
-    tools?: { [key: string]: string; } | undefined;
 
     constructor(data?: IMachiningStop) {
         if (data) {
@@ -3153,13 +3152,6 @@ export class MachiningStop implements IMachiningStop {
             this.expectedCycleTime = _data["ExpectedCycleTime"];
             this.program = _data["Program"];
             this.programRevision = _data["ProgramRevision"];
-            if (_data["Tools"]) {
-                this.tools = {} as any;
-                for (let key in _data["Tools"]) {
-                    if (_data["Tools"].hasOwnProperty(key))
-                        (<any>this.tools)![key] = _data["Tools"][key];
-                }
-            }
         }
     }
 
@@ -3181,13 +3173,6 @@ export class MachiningStop implements IMachiningStop {
         data["ExpectedCycleTime"] = this.expectedCycleTime;
         data["Program"] = this.program;
         data["ProgramRevision"] = this.programRevision;
-        if (this.tools) {
-            data["Tools"] = {};
-            for (let key in this.tools) {
-                if (this.tools.hasOwnProperty(key))
-                    (<any>data["Tools"])[key] = (<any>this.tools)[key];
-            }
-        }
         return data;
     }
 }
@@ -3198,7 +3183,6 @@ export interface IMachiningStop {
     expectedCycleTime: string;
     program?: string | undefined;
     programRevision?: number | undefined;
-    tools?: { [key: string]: string; } | undefined;
 }
 
 export class SimulatedProduction implements ISimulatedProduction {

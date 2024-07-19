@@ -117,8 +117,6 @@ namespace BlackMaple.MachineFramework
     //   * A positive revision means the program exists in the job DB with this specific revision.
     //   * Negative revisions are never returned (they get translated as part of the download)
     public long? ProgramRevision { get; init; }
-
-    public ImmutableDictionary<string, TimeSpan>? Tools { get; init; } //key is tool, value is expected cutting time
   }
 
   public record HoldPattern

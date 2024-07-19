@@ -217,10 +217,6 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE tools(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, Tool STRING, ExpectedUse INTEGER, PRIMARY KEY(UniqueStr,Process,Path,RouteNum,Tool))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText =
           "CREATE TABLE loadunload(UniqueStr TEXT, Process INTEGER, Path INTEGER, StatNum INTEGER, Load INTEGER, PRIMARY KEY(UniqueStr,Process,Path,StatNum,Load))";
         cmd.ExecuteNonQuery();
 
@@ -920,7 +916,6 @@ namespace BlackMaple.MachineFramework
             "pallets",
             "stops",
             "stops_stations",
-            "tools",
             "loadunload",
             "path_inspections",
             "holds",
@@ -1148,6 +1143,9 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText = "DROP TABLE workorder_programs";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "DROP TABLE tools";
         cmd.ExecuteNonQuery();
       }
     }

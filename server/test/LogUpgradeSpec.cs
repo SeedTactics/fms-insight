@@ -477,9 +477,6 @@ namespace MachineWatchTest
                     Stations = ImmutableList.Create(12, 23),
                     Program = "Emily",
                     ExpectedCycleTime = TimeSpan.FromHours(1.2),
-                    Tools = ImmutableDictionary<string, TimeSpan>
-                      .Empty.Add("tool1", TimeSpan.FromMinutes(30))
-                      .Add("tool2", TimeSpan.FromMinutes(35)),
                   }
                 ),
                 Inspections = ImmutableList.Create(
@@ -538,9 +535,6 @@ namespace MachineWatchTest
                     Stations = ImmutableList.Create(23, 12),
                     Program = "awef",
                     ExpectedCycleTime = TimeSpan.FromHours(2.8),
-                    Tools = ImmutableDictionary<string, TimeSpan>
-                      .Empty.Add("tool1", TimeSpan.FromMinutes(9))
-                      .Add("tool33", TimeSpan.FromMinutes(42)),
                   }
                 ),
                 Inspections = ImmutableList.Create(
@@ -607,9 +601,6 @@ namespace MachineWatchTest
                     Stations = ImmutableList.Create(64, 323),
                     Program = "Goodbye",
                     ExpectedCycleTime = TimeSpan.FromHours(6.3),
-                    Tools = ImmutableDictionary<string, TimeSpan>
-                      .Empty.Add("tool2", TimeSpan.FromMinutes(12))
-                      .Add("tool44", TimeSpan.FromMinutes(99)),
                   },
                   new MachiningStop()
                   {

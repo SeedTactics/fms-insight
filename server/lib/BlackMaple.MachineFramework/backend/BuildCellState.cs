@@ -264,7 +264,6 @@ public static class BuildCellState
             Stations = stop.Stations,
             ExpectedCycleTime = stop.ExpectedCycleTime,
             ProgramRevision = stop.ProgramRevision,
-            Tools = stop.Tools,
             MachineStart = machStart,
             MachineEnd = machEnd,
           }
@@ -994,7 +993,6 @@ public static class BuildCellState
                   Stations = stop.Stations,
                   ExpectedCycleTime = stop.ExpectedCycleTime,
                   ProgramRevision = stop.ProgramRevision,
-                  Tools = stop.Tools,
                   MachineStart = null,
                   MachineEnd = null,
                 }

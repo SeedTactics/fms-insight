@@ -5215,9 +5215,6 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("ProgramRevision", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public long? ProgramRevision { get; set; }
 
-        [Newtonsoft.Json.JsonProperty("Tools", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.Collections.Generic.IDictionary<string, System.TimeSpan> Tools { get; set; }
-
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.0.8.0 (NJsonSchema v11.0.1.0 (Newtonsoft.Json v13.0.0.0))")]

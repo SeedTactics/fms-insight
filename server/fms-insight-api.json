@@ -2769,14 +2769,6 @@
             "type": "integer",
             "format": "int64",
             "nullable": true
-          },
-          "Tools": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": {
-              "type": "string",
-              "format": "duration"
-            }
           }
         }
       },
