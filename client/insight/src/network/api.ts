@@ -393,50 +393,6 @@ export class JobsClient {
         return Promise.resolve<PlannedSchedule>(null as any);
     }
 
-    mostRecentUnfilledWorkordersForPart(part: string): Promise<ActiveWorkorder[]> {
-        let url_ = this.baseUrl + "/api/v1/jobs/unfilled-workorders/by-part/{part}";
-        if (part === undefined || part === null)
-            throw new Error("The parameter 'part' must be defined.");
-        url_ = url_.replace("{part}", encodeURIComponent("" + part));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_: RequestInit = {
-            method: "GET",
-            headers: {
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processMostRecentUnfilledWorkordersForPart(_response);
-        });
-    }
-
-    protected processMostRecentUnfilledWorkordersForPart(response: Response): Promise<ActiveWorkorder[]> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(ActiveWorkorder.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<ActiveWorkorder[]>(null as any);
-    }
-
     currentStatus(): Promise<CurrentStatus> {
         let url_ = this.baseUrl + "/api/v1/jobs/status";
         url_ = url_.replace(/[?&]$/, "");
@@ -469,6 +425,44 @@ export class JobsClient {
             });
         }
         return Promise.resolve<CurrentStatus>(null as any);
+    }
+
+    addFromSim(expectedPreviousScheduleId: string | null, simResults: SimulationResults): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/add-from-sim?";
+        if (expectedPreviousScheduleId === undefined)
+            throw new Error("The parameter 'expectedPreviousScheduleId' must be defined.");
+        else if(expectedPreviousScheduleId !== null)
+            url_ += "expectedPreviousScheduleId=" + encodeURIComponent("" + expectedPreviousScheduleId) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(simResults);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processAddFromSim(_response);
+        });
+    }
+
+    protected processAddFromSim(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
     }
 
     add(expectedPreviousScheduleId: string | null, newJobs: NewJobs): Promise<void> {
@@ -509,14 +503,14 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    addUnallocatedCastingToQueue(castingName: string, queue: string | null, qty: number | undefined, operName: string | null | undefined, workorder: string | null | undefined, serials: string[]): Promise<InProcessMaterial[]> {
+    addUnallocatedCastingToQueue(castingName: string, queue: string, qty: number | undefined, operName: string | null | undefined, workorder: string | null | undefined, serials: string[]): Promise<InProcessMaterial[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/casting/{castingName}?";
         if (castingName === undefined || castingName === null)
             throw new Error("The parameter 'castingName' must be defined.");
         url_ = url_.replace("{castingName}", encodeURIComponent("" + castingName));
-        if (queue === undefined)
-            throw new Error("The parameter 'queue' must be defined.");
-        else if(queue !== null)
+        if (queue === undefined || queue === null)
+            throw new Error("The parameter 'queue' must be defined and cannot be null.");
+        else
             url_ += "queue=" + encodeURIComponent("" + queue) + "&";
         if (qty === null)
             throw new Error("The parameter 'qty' cannot be null.");
@@ -606,7 +600,7 @@ export class JobsClient {
         return Promise.resolve<HistoricJob>(null as any);
     }
 
-    addUnprocessedMaterialToQueue(jobUnique: string, lastCompletedProcess: number, queue: string | null, pos: number, operName: string | null | undefined, workorder: string | null | undefined, serial: string): Promise<InProcessMaterial> {
+    addUnprocessedMaterialToQueue(jobUnique: string, lastCompletedProcess: number, queue: string, pos: number, operName: string | null | undefined, workorder: string | null | undefined, serial: string): Promise<InProcessMaterial> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -615,9 +609,9 @@ export class JobsClient {
             throw new Error("The parameter 'lastCompletedProcess' must be defined and cannot be null.");
         else
             url_ += "lastCompletedProcess=" + encodeURIComponent("" + lastCompletedProcess) + "&";
-        if (queue === undefined)
-            throw new Error("The parameter 'queue' must be defined.");
-        else if(queue !== null)
+        if (queue === undefined || queue === null)
+            throw new Error("The parameter 'queue' must be defined and cannot be null.");
+        else
             url_ += "queue=" + encodeURIComponent("" + queue) + "&";
         if (pos === undefined || pos === null)
             throw new Error("The parameter 'pos' must be defined and cannot be null.");
@@ -972,6 +966,40 @@ export class JobsClient {
             });
         }
         return Promise.resolve<JobAndDecrementQuantity[]>(null as any);
+    }
+
+    setUnarchivedWorkorders(workorders: Workorder[]): Promise<void> {
+        let url_ = this.baseUrl + "/api/v1/jobs/workorders";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(workorders);
+
+        let options_: RequestInit = {
+            body: content_,
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((_response: Response) => {
+            return this.processSetUnarchivedWorkorders(_response);
+        });
+    }
+
+    protected processSetUnarchivedWorkorders(response: Response): Promise<void> {
+        const status = response.status;
+        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
+        if (status === 200) {
+            return response.text().then((_responseText) => {
+            return;
+            });
+        } else if (status !== 200 && status !== 204) {
+            return response.text().then((_responseText) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            });
+        }
+        return Promise.resolve<void>(null as any);
     }
 }
 
@@ -2587,10 +2615,11 @@ export interface IStop {
 export class NewJobs implements INewJobs {
     scheduleId!: string;
     jobs!: Job[];
-    stationUse?: SimulatedStationUtilization[] | undefined;
-    simDayUsage?: SimulatedDayUsage[] | undefined;
-    simDayUsageWarning?: string | undefined;
     extraParts?: { [key: string]: number; } | undefined;
+    stationUse?: SimulatedStationUtilization[] | undefined;
+    stationUseForCurrentStatus?: SimulatedStationUtilization[] | undefined;
+    simDayUsage?: SimulatedDayUsage[] | undefined;
+    simWorkordersFilled?: WorkorderSimFilled[] | undefined;
     currentUnfilledWorkorders?: Workorder[] | undefined;
     programs?: NewProgramContent[] | undefined;
     debugMessage?: string | undefined;
@@ -2615,23 +2644,32 @@ export class NewJobs implements INewJobs {
                 for (let item of _data["Jobs"])
                     this.jobs!.push(Job.fromJS(item));
             }
-            if (Array.isArray(_data["StationUse"])) {
-                this.stationUse = [] as any;
-                for (let item of _data["StationUse"])
-                    this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
-            }
-            if (Array.isArray(_data["SimDayUsage"])) {
-                this.simDayUsage = [] as any;
-                for (let item of _data["SimDayUsage"])
-                    this.simDayUsage!.push(SimulatedDayUsage.fromJS(item));
-            }
-            this.simDayUsageWarning = _data["SimDayUsageWarning"];
             if (_data["ExtraParts"]) {
                 this.extraParts = {} as any;
                 for (let key in _data["ExtraParts"]) {
                     if (_data["ExtraParts"].hasOwnProperty(key))
                         (<any>this.extraParts)![key] = _data["ExtraParts"][key];
                 }
+            }
+            if (Array.isArray(_data["StationUse"])) {
+                this.stationUse = [] as any;
+                for (let item of _data["StationUse"])
+                    this.stationUse!.push(SimulatedStationUtilization.fromJS(item));
+            }
+            if (Array.isArray(_data["StationUseForCurrentStatus"])) {
+                this.stationUseForCurrentStatus = [] as any;
+                for (let item of _data["StationUseForCurrentStatus"])
+                    this.stationUseForCurrentStatus!.push(SimulatedStationUtilization.fromJS(item));
+            }
+            if (Array.isArray(_data["SimDayUsage"])) {
+                this.simDayUsage = [] as any;
+                for (let item of _data["SimDayUsage"])
+                    this.simDayUsage!.push(SimulatedDayUsage.fromJS(item));
+            }
+            if (Array.isArray(_data["SimWorkordersFilled"])) {
+                this.simWorkordersFilled = [] as any;
+                for (let item of _data["SimWorkordersFilled"])
+                    this.simWorkordersFilled!.push(WorkorderSimFilled.fromJS(item));
             }
             if (Array.isArray(_data["CurrentUnfilledWorkorders"])) {
                 this.currentUnfilledWorkorders = [] as any;
@@ -2662,23 +2700,32 @@ export class NewJobs implements INewJobs {
             for (let item of this.jobs)
                 data["Jobs"].push(item.toJSON());
         }
-        if (Array.isArray(this.stationUse)) {
-            data["StationUse"] = [];
-            for (let item of this.stationUse)
-                data["StationUse"].push(item.toJSON());
-        }
-        if (Array.isArray(this.simDayUsage)) {
-            data["SimDayUsage"] = [];
-            for (let item of this.simDayUsage)
-                data["SimDayUsage"].push(item.toJSON());
-        }
-        data["SimDayUsageWarning"] = this.simDayUsageWarning;
         if (this.extraParts) {
             data["ExtraParts"] = {};
             for (let key in this.extraParts) {
                 if (this.extraParts.hasOwnProperty(key))
                     (<any>data["ExtraParts"])[key] = (<any>this.extraParts)[key];
             }
+        }
+        if (Array.isArray(this.stationUse)) {
+            data["StationUse"] = [];
+            for (let item of this.stationUse)
+                data["StationUse"].push(item.toJSON());
+        }
+        if (Array.isArray(this.stationUseForCurrentStatus)) {
+            data["StationUseForCurrentStatus"] = [];
+            for (let item of this.stationUseForCurrentStatus)
+                data["StationUseForCurrentStatus"].push(item.toJSON());
+        }
+        if (Array.isArray(this.simDayUsage)) {
+            data["SimDayUsage"] = [];
+            for (let item of this.simDayUsage)
+                data["SimDayUsage"].push(item.toJSON());
+        }
+        if (Array.isArray(this.simWorkordersFilled)) {
+            data["SimWorkordersFilled"] = [];
+            for (let item of this.simWorkordersFilled)
+                data["SimWorkordersFilled"].push(item.toJSON());
         }
         if (Array.isArray(this.currentUnfilledWorkorders)) {
             data["CurrentUnfilledWorkorders"] = [];
@@ -2698,10 +2745,11 @@ export class NewJobs implements INewJobs {
 export interface INewJobs {
     scheduleId: string;
     jobs: Job[];
-    stationUse?: SimulatedStationUtilization[] | undefined;
-    simDayUsage?: SimulatedDayUsage[] | undefined;
-    simDayUsageWarning?: string | undefined;
     extraParts?: { [key: string]: number; } | undefined;
+    stationUse?: SimulatedStationUtilization[] | undefined;
+    stationUseForCurrentStatus?: SimulatedStationUtilization[] | undefined;
+    simDayUsage?: SimulatedDayUsage[] | undefined;
+    simWorkordersFilled?: WorkorderSimFilled[] | undefined;
     currentUnfilledWorkorders?: Workorder[] | undefined;
     programs?: NewProgramContent[] | undefined;
     debugMessage?: string | undefined;
@@ -3080,7 +3128,6 @@ export class MachiningStop implements IMachiningStop {
     expectedCycleTime!: string;
     program?: string | undefined;
     programRevision?: number | undefined;
-    tools?: { [key: string]: string; } | undefined;
 
     constructor(data?: IMachiningStop) {
         if (data) {
@@ -3105,13 +3152,6 @@ export class MachiningStop implements IMachiningStop {
             this.expectedCycleTime = _data["ExpectedCycleTime"];
             this.program = _data["Program"];
             this.programRevision = _data["ProgramRevision"];
-            if (_data["Tools"]) {
-                this.tools = {} as any;
-                for (let key in _data["Tools"]) {
-                    if (_data["Tools"].hasOwnProperty(key))
-                        (<any>this.tools)![key] = _data["Tools"][key];
-                }
-            }
         }
     }
 
@@ -3133,13 +3173,6 @@ export class MachiningStop implements IMachiningStop {
         data["ExpectedCycleTime"] = this.expectedCycleTime;
         data["Program"] = this.program;
         data["ProgramRevision"] = this.programRevision;
-        if (this.tools) {
-            data["Tools"] = {};
-            for (let key in this.tools) {
-                if (this.tools.hasOwnProperty(key))
-                    (<any>data["Tools"])[key] = (<any>this.tools)[key];
-            }
-        }
         return data;
     }
 }
@@ -3150,7 +3183,6 @@ export interface IMachiningStop {
     expectedCycleTime: string;
     program?: string | undefined;
     programRevision?: number | undefined;
-    tools?: { [key: string]: string; } | undefined;
 }
 
 export class SimulatedProduction implements ISimulatedProduction {
@@ -3405,14 +3437,60 @@ export interface ISimulatedDayUsage {
     usage: number;
 }
 
+export class WorkorderSimFilled implements IWorkorderSimFilled {
+    workorderId!: string;
+    part!: string;
+    started?: Date | undefined;
+    filled?: Date | undefined;
+
+    constructor(data?: IWorkorderSimFilled) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.workorderId = _data["WorkorderId"];
+            this.part = _data["Part"];
+            this.started = _data["Started"] ? new Date(_data["Started"].toString()) : <any>undefined;
+            this.filled = _data["Filled"] ? new Date(_data["Filled"].toString()) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): WorkorderSimFilled {
+        data = typeof data === 'object' ? data : {};
+        let result = new WorkorderSimFilled();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["WorkorderId"] = this.workorderId;
+        data["Part"] = this.part;
+        data["Started"] = this.started ? formatDate(this.started) : <any>undefined;
+        data["Filled"] = this.filled ? formatDate(this.filled) : <any>undefined;
+        return data;
+    }
+}
+
+export interface IWorkorderSimFilled {
+    workorderId: string;
+    part: string;
+    started?: Date | undefined;
+    filled?: Date | undefined;
+}
+
 export class Workorder implements IWorkorder {
     workorderId!: string;
     part!: string;
     quantity!: number;
     dueDate!: Date;
     priority!: number;
-    simulatedStart?: Date | undefined;
-    simulatedFilled?: Date | undefined;
     programs?: ProgramForJobStep[] | undefined;
 
     constructor(data?: IWorkorder) {
@@ -3431,8 +3509,6 @@ export class Workorder implements IWorkorder {
             this.quantity = _data["Quantity"];
             this.dueDate = _data["DueDate"] ? new Date(_data["DueDate"].toString()) : <any>undefined;
             this.priority = _data["Priority"];
-            this.simulatedStart = _data["SimulatedStart"] ? new Date(_data["SimulatedStart"].toString()) : <any>undefined;
-            this.simulatedFilled = _data["SimulatedFilled"] ? new Date(_data["SimulatedFilled"].toString()) : <any>undefined;
             if (Array.isArray(_data["Programs"])) {
                 this.programs = [] as any;
                 for (let item of _data["Programs"])
@@ -3455,8 +3531,6 @@ export class Workorder implements IWorkorder {
         data["Quantity"] = this.quantity;
         data["DueDate"] = this.dueDate ? this.dueDate.toISOString() : <any>undefined;
         data["Priority"] = this.priority;
-        data["SimulatedStart"] = this.simulatedStart ? formatDate(this.simulatedStart) : <any>undefined;
-        data["SimulatedFilled"] = this.simulatedFilled ? formatDate(this.simulatedFilled) : <any>undefined;
         if (Array.isArray(this.programs)) {
             data["Programs"] = [];
             for (let item of this.programs)
@@ -3472,8 +3546,6 @@ export interface IWorkorder {
     quantity: number;
     dueDate: Date;
     priority: number;
-    simulatedStart?: Date | undefined;
-    simulatedFilled?: Date | undefined;
     programs?: ProgramForJobStep[] | undefined;
 }
 
@@ -4930,7 +5002,6 @@ export interface IHistoricData {
 export class RecentHistoricData extends HistoricData implements IRecentHistoricData {
     mostRecentSimulationId?: string | undefined;
     mostRecentSimDayUsage?: SimulatedDayUsage[] | undefined;
-    mostRecentSimDayUsageWarning?: string | undefined;
 
     constructor(data?: IRecentHistoricData) {
         super(data);
@@ -4945,7 +5016,6 @@ export class RecentHistoricData extends HistoricData implements IRecentHistoricD
                 for (let item of _data["MostRecentSimDayUsage"])
                     this.mostRecentSimDayUsage!.push(SimulatedDayUsage.fromJS(item));
             }
-            this.mostRecentSimDayUsageWarning = _data["MostRecentSimDayUsageWarning"];
         }
     }
 
@@ -4964,7 +5034,6 @@ export class RecentHistoricData extends HistoricData implements IRecentHistoricD
             for (let item of this.mostRecentSimDayUsage)
                 data["MostRecentSimDayUsage"].push(item.toJSON());
         }
-        data["MostRecentSimDayUsageWarning"] = this.mostRecentSimDayUsageWarning;
         super.toJSON(data);
         return data;
     }
@@ -4973,7 +5042,6 @@ export class RecentHistoricData extends HistoricData implements IRecentHistoricD
 export interface IRecentHistoricData extends IHistoricData {
     mostRecentSimulationId?: string | undefined;
     mostRecentSimDayUsage?: SimulatedDayUsage[] | undefined;
-    mostRecentSimDayUsageWarning?: string | undefined;
 }
 
 export class PlannedSchedule implements IPlannedSchedule {
@@ -5044,8 +5112,140 @@ export interface IPlannedSchedule {
     extraParts: { [key: string]: number; };
 }
 
+export class SimulationResults implements ISimulationResults {
+    scheduleId!: string;
+    jobs!: Job[];
+    newExtraParts?: { [key: string]: number; } | undefined;
+    simStations!: SimulatedStationUtilization[];
+    simStationsForExecutionOfCurrentStatus?: SimulatedStationUtilization[] | undefined;
+    simDayUsage?: SimulatedDayUsage[] | undefined;
+    simWorkordersFilled?: WorkorderSimFilled[] | undefined;
+    allocationWarning?: string[] | undefined;
+    debugMessage?: string | undefined;
+
+    constructor(data?: ISimulationResults) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+        if (!data) {
+            this.jobs = [];
+            this.simStations = [];
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.scheduleId = _data["ScheduleId"];
+            if (Array.isArray(_data["Jobs"])) {
+                this.jobs = [] as any;
+                for (let item of _data["Jobs"])
+                    this.jobs!.push(Job.fromJS(item));
+            }
+            if (_data["NewExtraParts"]) {
+                this.newExtraParts = {} as any;
+                for (let key in _data["NewExtraParts"]) {
+                    if (_data["NewExtraParts"].hasOwnProperty(key))
+                        (<any>this.newExtraParts)![key] = _data["NewExtraParts"][key];
+                }
+            }
+            if (Array.isArray(_data["SimStations"])) {
+                this.simStations = [] as any;
+                for (let item of _data["SimStations"])
+                    this.simStations!.push(SimulatedStationUtilization.fromJS(item));
+            }
+            if (Array.isArray(_data["SimStationsForExecutionOfCurrentStatus"])) {
+                this.simStationsForExecutionOfCurrentStatus = [] as any;
+                for (let item of _data["SimStationsForExecutionOfCurrentStatus"])
+                    this.simStationsForExecutionOfCurrentStatus!.push(SimulatedStationUtilization.fromJS(item));
+            }
+            if (Array.isArray(_data["SimDayUsage"])) {
+                this.simDayUsage = [] as any;
+                for (let item of _data["SimDayUsage"])
+                    this.simDayUsage!.push(SimulatedDayUsage.fromJS(item));
+            }
+            if (Array.isArray(_data["SimWorkordersFilled"])) {
+                this.simWorkordersFilled = [] as any;
+                for (let item of _data["SimWorkordersFilled"])
+                    this.simWorkordersFilled!.push(WorkorderSimFilled.fromJS(item));
+            }
+            if (Array.isArray(_data["AllocationWarning"])) {
+                this.allocationWarning = [] as any;
+                for (let item of _data["AllocationWarning"])
+                    this.allocationWarning!.push(item);
+            }
+            this.debugMessage = _data["DebugMessage"];
+        }
+    }
+
+    static fromJS(data: any): SimulationResults {
+        data = typeof data === 'object' ? data : {};
+        let result = new SimulationResults();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["ScheduleId"] = this.scheduleId;
+        if (Array.isArray(this.jobs)) {
+            data["Jobs"] = [];
+            for (let item of this.jobs)
+                data["Jobs"].push(item.toJSON());
+        }
+        if (this.newExtraParts) {
+            data["NewExtraParts"] = {};
+            for (let key in this.newExtraParts) {
+                if (this.newExtraParts.hasOwnProperty(key))
+                    (<any>data["NewExtraParts"])[key] = (<any>this.newExtraParts)[key];
+            }
+        }
+        if (Array.isArray(this.simStations)) {
+            data["SimStations"] = [];
+            for (let item of this.simStations)
+                data["SimStations"].push(item.toJSON());
+        }
+        if (Array.isArray(this.simStationsForExecutionOfCurrentStatus)) {
+            data["SimStationsForExecutionOfCurrentStatus"] = [];
+            for (let item of this.simStationsForExecutionOfCurrentStatus)
+                data["SimStationsForExecutionOfCurrentStatus"].push(item.toJSON());
+        }
+        if (Array.isArray(this.simDayUsage)) {
+            data["SimDayUsage"] = [];
+            for (let item of this.simDayUsage)
+                data["SimDayUsage"].push(item.toJSON());
+        }
+        if (Array.isArray(this.simWorkordersFilled)) {
+            data["SimWorkordersFilled"] = [];
+            for (let item of this.simWorkordersFilled)
+                data["SimWorkordersFilled"].push(item.toJSON());
+        }
+        if (Array.isArray(this.allocationWarning)) {
+            data["AllocationWarning"] = [];
+            for (let item of this.allocationWarning)
+                data["AllocationWarning"].push(item);
+        }
+        data["DebugMessage"] = this.debugMessage;
+        return data;
+    }
+}
+
+export interface ISimulationResults {
+    scheduleId: string;
+    jobs: Job[];
+    newExtraParts?: { [key: string]: number; } | undefined;
+    simStations: SimulatedStationUtilization[];
+    simStationsForExecutionOfCurrentStatus?: SimulatedStationUtilization[] | undefined;
+    simDayUsage?: SimulatedDayUsage[] | undefined;
+    simWorkordersFilled?: WorkorderSimFilled[] | undefined;
+    allocationWarning?: string[] | undefined;
+    debugMessage?: string | undefined;
+}
+
 export class QueuePosition implements IQueuePosition {
-    queue!: string | undefined;
+    queue!: string;
     position!: number;
 
     constructor(data?: IQueuePosition) {
@@ -5080,7 +5280,7 @@ export class QueuePosition implements IQueuePosition {
 }
 
 export interface IQueuePosition {
-    queue: string | undefined;
+    queue: string;
     position: number;
 }
 

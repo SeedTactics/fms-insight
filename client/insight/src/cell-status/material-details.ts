@@ -313,12 +313,14 @@ export const possibleWorkordersForMaterialInDialog = atom<Promise<ReadonlyArray<
     const mat = await get(materialInDialogInfo);
     if (mat === null || mat.partName === "") return [];
 
-    const works = await JobsBackend.mostRecentUnfilledWorkordersForPart(mat.partName);
+    const works = get(currentStatus)?.workorders ?? [];
 
-    return LazySeq.of(works).toSortedArray(
-      (w) => w.dueDate.getTime(),
-      (w) => -w.priority,
-    );
+    return LazySeq.of(works)
+      .filter((w) => w.part === mat.partName)
+      .toSortedArray(
+        (w) => w.dueDate.getTime(),
+        (w) => -w.priority,
+      );
   },
 );
 

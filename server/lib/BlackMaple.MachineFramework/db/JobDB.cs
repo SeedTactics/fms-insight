@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -50,8 +50,6 @@ namespace BlackMaple.MachineFramework
       public ImmutableList<int>.Builder Stations { get; } = ImmutableList.CreateBuilder<int>();
       public required string Program { get; init; }
       public required long? ProgramRevision { get; init; }
-      public ImmutableDictionary<string, TimeSpan>.Builder Tools { get; } =
-        ImmutableDictionary.CreateBuilder<string, TimeSpan>();
       public required TimeSpan ExpectedCycleTime { get; init; }
     }
 
@@ -307,25 +305,6 @@ namespace BlackMaple.MachineFramework
           }
         }
 
-        //tools for routes
-        cmd.CommandText =
-          "SELECT Process, Path, RouteNum, Tool, ExpectedUse FROM tools WHERE UniqueStr = $uniq";
-        using (IDataReader reader = cmd.ExecuteReader())
-        {
-          while (reader.Read())
-          {
-            var key = (proc: reader.GetInt32(0), path: reader.GetInt32(1));
-            int routeNum = reader.GetInt32(2);
-            if (pathDatRows.TryGetValue(key, out var pathRow))
-            {
-              if (pathRow.Stops.TryGetValue(routeNum, out var stop))
-              {
-                stop.Tools[reader.GetString(3)] = TimeSpan.FromTicks(reader.GetInt64(4));
-              }
-            }
-          }
-        }
-
         //now add load/unload
         cmd.CommandText = "SELECT Process, Path, StatNum, Load FROM loadunload WHERE UniqueStr = $uniq";
         using (IDataReader reader = cmd.ExecuteReader())
@@ -487,7 +466,6 @@ namespace BlackMaple.MachineFramework
                       Stations = s.Stations.ToImmutable(),
                       Program = s.Program,
                       ProgramRevision = s.ProgramRevision,
-                      Tools = s.Tools.Count == 0 ? null : s.Tools.ToImmutable(),
                       ExpectedCycleTime = s.ExpectedCycleTime
                     })
                     .ToImmutableList(),
@@ -581,7 +559,36 @@ namespace BlackMaple.MachineFramework
         string tag = "";
 
         object val = cmd.ExecuteScalar();
-        if ((val != null))
+        if (val != null && val != DBNull.Value)
+        {
+          tag = val.ToString();
+        }
+
+        return tag;
+      }
+    }
+
+    private string LatestSimulationScheduleId(IDbTransaction trans)
+    {
+      using (var cmd = _connection.CreateCommand())
+      {
+        ((IDbCommand)cmd).Transaction = trans;
+
+        cmd.CommandText =
+          @"SELECT MAX(ScheduleId) FROM
+            (
+              SELECT MAX(SimId) as ScheduleId FROM sim_station_use
+              UNION ALL
+              SELECT MAX(SimId) as ScheduleId FROM sim_day_usage
+              UNION ALL
+              SELECT MAX(ScheduleId) as ScheduleId FROM sim_workorders
+            )
+          ";
+
+        string tag = null;
+
+        object val = cmd.ExecuteScalar();
+        if (val != null && val != DBNull.Value)
         {
           tag = val.ToString();
         }
@@ -615,7 +622,6 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "SELECT EXISTS(SELECT 1 FROM jobs WHERE ScheduleId = $sid LIMIT 1) OR "
-          + "EXISTS(SELECT 1 FROM unfilled_workorders WHERE ScheduleId = $sid LIMIT 1) OR "
           + "EXISTS(SELECT 1 FROM sim_day_usage WHERE SimId = $sid LIMIT 1)";
         var param = cmd.Parameters.Add("sid", SqliteType.Text);
 
@@ -721,28 +727,6 @@ namespace BlackMaple.MachineFramework
       return ret.Count > 0 ? ret.ToImmutable() : null;
     }
 
-    private string LoadSimDayUsageWarning(string simId, SqliteTransaction trans)
-    {
-      if (string.IsNullOrEmpty(simId))
-        return null;
-
-      using var cmd = _connection.CreateCommand();
-      cmd.Transaction = trans;
-      cmd.CommandText = "SELECT Warning FROM sim_day_usage_warning WHERE SimId = $simId";
-      cmd.Parameters.Add("simId", SqliteType.Text).Value = simId;
-
-      var msg = cmd.ExecuteScalar();
-
-      if (msg != null && msg != DBNull.Value)
-      {
-        return (string)msg;
-      }
-      else
-      {
-        return null;
-      }
-    }
-
     private RecentHistoricData LoadHistory(
       SqliteCommand createTempCmd,
       bool includeRecentSimDayUsage,
@@ -762,19 +746,10 @@ namespace BlackMaple.MachineFramework
         string simIdForDayUsage = null;
         if (includeRecentSimDayUsage)
         {
-          using (var maxSimId = _connection.CreateCommand())
+          simIdForDayUsage = LatestSimulationScheduleId(trans);
+          if (alreadyKnownSchIds != null && alreadyKnownSchIds.Contains(simIdForDayUsage))
           {
-            maxSimId.Transaction = trans;
-            maxSimId.CommandText = "SELECT MAX(SimId) FROM sim_day_usage";
-            var max = maxSimId.ExecuteScalar();
-            if (
-              max != null
-              && max != DBNull.Value
-              && (alreadyKnownSchIds == null || !alreadyKnownSchIds.Contains(max))
-            )
-            {
-              simIdForDayUsage = (string)max;
-            }
+            simIdForDayUsage = null;
           }
         }
 
@@ -817,7 +792,6 @@ namespace BlackMaple.MachineFramework
           StationUse = LoadSimulatedStationUse(simCmd, simPartCmd),
           MostRecentSimulationId = simIdForDayUsage,
           MostRecentSimDayUsage = LoadSimDayUsage(simIdForDayUsage, trans),
-          MostRecentSimDayUsageWarning = LoadSimDayUsageWarning(simIdForDayUsage, trans)
         };
 
         return history;
@@ -920,12 +894,10 @@ namespace BlackMaple.MachineFramework
       using (var cmd = _connection.CreateCommand())
       {
         cmd.CommandText =
-          "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision, w.SimulatedStartUTC, w.SimulatedFilledUTC"
-          + " FROM unfilled_workorders w "
-          + " LEFT OUTER JOIN workorder_programs p ON w.ScheduleId = p.ScheduleId AND w.Workorder = p.Workorder AND w.Part = p.Part "
-          + " WHERE "
-          + "    w.ScheduleId = (SELECT MAX(v.ScheduleId) FROM unfilled_workorders v WHERE v.Workorder = $work)"
-          + "    AND w.Workorder = $work";
+          "SELECT w.Part, w.Quantity, w.DueDate, w.Priority, p.ProcessNumber, p.StopIndex, p.ProgramName, p.Revision"
+          + " FROM workorder_cache w "
+          + " LEFT OUTER JOIN workorder_program_cache p ON w.Workorder = p.Workorder AND w.Part = p.Part "
+          + " WHERE w.Workorder = $work";
         cmd.Parameters.Add("work", SqliteType.Text);
 
         foreach (var workorderId in workorderIds)
@@ -949,12 +921,6 @@ namespace BlackMaple.MachineFramework
                   Quantity = reader.GetInt32(1),
                   DueDate = new DateTime(reader.GetInt64(2)),
                   Priority = reader.GetInt32(3),
-                  SimulatedStart = reader.IsDBNull(8)
-                    ? (DateOnly?)null
-                    : DateOnly.FromDayNumber(reader.GetInt32(8)),
-                  SimulatedFilled = reader.IsDBNull(9)
-                    ? (DateOnly?)null
-                    : DateOnly.FromDayNumber(reader.GetInt32(9))
                 };
                 byPart.Add(part, (work: workorder, progs: ImmutableList.CreateBuilder<ProgramForJobStep>()));
               }
@@ -1161,16 +1127,21 @@ namespace BlackMaple.MachineFramework
         }
 
         AddSimulatedStations(trans, newJobs.StationUse);
-        AddSimDayUsage(newJobs.ScheduleId, newJobs.SimDayUsage, newJobs.SimDayUsageWarning, trans);
+        AddSimDayUsage(newJobs.ScheduleId, newJobs.SimDayUsage, trans);
 
         if (newJobs.ExtraParts != null)
         {
           AddExtraParts(trans, newJobs.ScheduleId, newJobs.ExtraParts);
         }
 
+        if (newJobs.SimWorkordersFilled != null)
+        {
+          AddWorkorderSim(trans, newJobs.ScheduleId, newJobs.SimWorkordersFilled);
+        }
+
         if (newJobs.CurrentUnfilledWorkorders != null)
         {
-          AddUnfilledWorkorders(trans, newJobs.ScheduleId, newJobs.CurrentUnfilledWorkorders, negRevisionMap);
+          UpdateCachedWorkorders(trans, newJobs.CurrentUnfilledWorkorders, negRevisionMap);
         }
 
         if (newJobs.DebugMessage != null)
@@ -1464,43 +1435,6 @@ namespace BlackMaple.MachineFramework
         }
 
         cmd.CommandText =
-          "INSERT INTO tools(UniqueStr, Process, Path, RouteNum, Tool, ExpectedUse) "
-          + "VALUES ($uniq,$proc,$path,$route,$tool,$use)";
-        cmd.Parameters.Clear();
-        cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
-        cmd.Parameters.Add("proc", SqliteType.Integer);
-        cmd.Parameters.Add("path", SqliteType.Integer);
-        cmd.Parameters.Add("route", SqliteType.Integer);
-        cmd.Parameters.Add("tool", SqliteType.Text);
-        cmd.Parameters.Add("use", SqliteType.Integer);
-
-        for (int i = 1; i <= job.Processes.Count; i++)
-        {
-          var proc = job.Processes[i - 1];
-          for (int j = 1; j <= proc.Paths.Count; j++)
-          {
-            var path = proc.Paths[j - 1];
-            int routeNum = 0;
-            foreach (var entry in path.Stops)
-            {
-              if (entry.Tools != null)
-              {
-                foreach (var tool in entry.Tools)
-                {
-                  cmd.Parameters[1].Value = i;
-                  cmd.Parameters[2].Value = j;
-                  cmd.Parameters[3].Value = routeNum;
-                  cmd.Parameters[4].Value = tool.Key;
-                  cmd.Parameters[5].Value = tool.Value.Ticks;
-                  cmd.ExecuteNonQuery();
-                }
-              }
-              routeNum += 1;
-            }
-          }
-        }
-
-        cmd.CommandText =
           "INSERT INTO loadunload(UniqueStr,Process,Path,StatNum,Load) VALUES ($uniq,$proc,$path,$stat,$load)";
         cmd.Parameters.Clear();
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
@@ -1650,12 +1584,7 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddSimDayUsage(
-      string simId,
-      ImmutableList<SimulatedDayUsage> dayUsage,
-      string dayUsageWarning,
-      IDbTransaction trans
-    )
+    private void AddSimDayUsage(string simId, ImmutableList<SimulatedDayUsage> dayUsage, IDbTransaction trans)
     {
       if (dayUsage != null && dayUsage.Count > 0)
       {
@@ -1677,20 +1606,6 @@ namespace BlackMaple.MachineFramework
             dayCmd.Parameters[3].Value = day.Usage;
             dayCmd.ExecuteNonQuery();
           }
-        }
-      }
-
-      if (!string.IsNullOrEmpty(dayUsageWarning))
-      {
-        using (var warningCmd = _connection.CreateCommand())
-        {
-          ((IDbCommand)warningCmd).Transaction = trans;
-
-          warningCmd.CommandText =
-            "INSERT OR REPLACE INTO sim_day_usage_warning(SimId, Warning) VALUES ($simid,$warning)";
-          warningCmd.Parameters.Add("simid", SqliteType.Text).Value = simId;
-          warningCmd.Parameters.Add("warning", SqliteType.Text).Value = dayUsageWarning;
-          warningCmd.ExecuteNonQuery();
         }
       }
     }
@@ -1716,99 +1631,137 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void AddUnfilledWorkorders(
+    private void AddWorkorderSim(
       IDbTransaction trans,
       string scheduleId,
+      IEnumerable<WorkorderSimFilled> simFilled
+    )
+    {
+      using var cmd = _connection.CreateCommand();
+      ((IDbCommand)cmd).Transaction = trans;
+
+      cmd.CommandText =
+        "INSERT OR REPLACE INTO sim_workorders(ScheduleId, Workorder, Part, SimulatedStartDay, SimulatedFilledDay) VALUES ($sid,$work,$part,$start,$filled)";
+      cmd.Parameters.Clear();
+      cmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
+      cmd.Parameters.Add("work", SqliteType.Text);
+      cmd.Parameters.Add("part", SqliteType.Text);
+      cmd.Parameters.Add("start", SqliteType.Integer);
+      cmd.Parameters.Add("filled", SqliteType.Integer);
+
+      foreach (var w in simFilled)
+      {
+        cmd.Parameters[1].Value = w.WorkorderId;
+        cmd.Parameters[2].Value = w.Part;
+        cmd.Parameters[3].Value = w?.Started.HasValue == true ? w.Started.Value.DayNumber : DBNull.Value;
+        cmd.Parameters[4].Value = w?.Filled.HasValue == true ? w.Filled.Value.DayNumber : DBNull.Value;
+        cmd.ExecuteNonQuery();
+      }
+    }
+
+    public void UpdateCachedWorkorders(IEnumerable<Workorder> workorders)
+    {
+      lock (_cfg)
+      {
+        using var trans = _connection.BeginTransaction();
+        UpdateCachedWorkorders(trans, workorders, new Dictionary<(string, long), long>());
+        trans.Commit();
+      }
+    }
+
+    private void UpdateCachedWorkorders(
+      SqliteTransaction trans,
       IEnumerable<Workorder> workorders,
       Dictionary<(string prog, long rev), long> negativeRevisionMap
     )
     {
-      using (var cmd = _connection.CreateCommand())
-      using (var prgCmd = _connection.CreateCommand())
+      using var cmd = _connection.CreateCommand();
+      using var prgCmd = _connection.CreateCommand();
+      using var delCmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      prgCmd.Transaction = trans;
+      delCmd.Transaction = trans;
+
+      cmd.CommandText = "UPDATE workorder_cache SET Archived = 1 WHERE Archived = 0";
+      cmd.ExecuteNonQuery();
+
+      cmd.CommandText =
+        "INSERT OR REPLACE INTO workorder_cache(Workorder, Part, Quantity, DueDate, Priority, Archived) VALUES ($work,$part,$qty,$due,$pri,0)";
+      cmd.Parameters.Clear();
+      cmd.Parameters.Add("work", SqliteType.Text);
+      cmd.Parameters.Add("part", SqliteType.Text);
+      cmd.Parameters.Add("qty", SqliteType.Integer);
+      cmd.Parameters.Add("due", SqliteType.Integer);
+      cmd.Parameters.Add("pri", SqliteType.Integer);
+
+      delCmd.CommandText = "DELETE FROM workorder_program_cache WHERE Workorder = $work AND Part = $part";
+      delCmd.Parameters.Add("work", SqliteType.Text);
+      delCmd.Parameters.Add("part", SqliteType.Text);
+
+      prgCmd.CommandText =
+        "INSERT INTO workorder_program_cache(Workorder, Part, ProcessNumber, StopIndex, ProgramName, Revision) VALUES ($work,$part,$proc,$stop,$name,$rev)";
+      prgCmd.Parameters.Add("work", SqliteType.Text);
+      prgCmd.Parameters.Add("part", SqliteType.Text);
+      prgCmd.Parameters.Add("proc", SqliteType.Integer);
+      prgCmd.Parameters.Add("stop", SqliteType.Integer);
+      prgCmd.Parameters.Add("name", SqliteType.Text);
+      prgCmd.Parameters.Add("rev", SqliteType.Integer);
+
+      foreach (var w in workorders)
       {
-        ((IDbCommand)cmd).Transaction = trans;
-        ((IDbCommand)prgCmd).Transaction = trans;
+        cmd.Parameters[0].Value = w.WorkorderId;
+        cmd.Parameters[1].Value = w.Part;
+        cmd.Parameters[2].Value = w.Quantity;
+        cmd.Parameters[3].Value = w.DueDate.Ticks;
+        cmd.Parameters[4].Value = w.Priority;
+        cmd.ExecuteNonQuery();
 
-        cmd.CommandText =
-          "INSERT OR REPLACE INTO unfilled_workorders(ScheduleId, Workorder, Part, Quantity, DueDate, Priority, Archived, SimulatedStartUTC, SimulatedFilledUTC) VALUES ($sid,$work,$part,$qty,$due,$pri,NULL,$start,$filled)";
-        cmd.Parameters.Clear();
-        cmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
-        cmd.Parameters.Add("work", SqliteType.Text);
-        cmd.Parameters.Add("part", SqliteType.Text);
-        cmd.Parameters.Add("qty", SqliteType.Integer);
-        cmd.Parameters.Add("due", SqliteType.Integer);
-        cmd.Parameters.Add("pri", SqliteType.Integer);
-        cmd.Parameters.Add("start", SqliteType.Integer);
-        cmd.Parameters.Add("filled", SqliteType.Integer);
+        delCmd.Parameters[0].Value = w.WorkorderId;
+        delCmd.Parameters[1].Value = w.Part;
+        delCmd.ExecuteNonQuery();
 
-        prgCmd.CommandText =
-          "INSERT OR REPLACE INTO workorder_programs(ScheduleId, Workorder, Part, ProcessNumber, StopIndex, ProgramName, Revision) VALUES ($sid,$work,$part,$proc,$stop,$name,$rev)";
-        prgCmd.Parameters.Add("sid", SqliteType.Text).Value = scheduleId;
-        prgCmd.Parameters.Add("work", SqliteType.Text);
-        prgCmd.Parameters.Add("part", SqliteType.Text);
-        prgCmd.Parameters.Add("proc", SqliteType.Integer);
-        prgCmd.Parameters.Add("stop", SqliteType.Integer);
-        prgCmd.Parameters.Add("name", SqliteType.Text);
-        prgCmd.Parameters.Add("rev", SqliteType.Integer);
-
-        foreach (var w in workorders)
+        if (w.Programs != null)
         {
-          cmd.Parameters[1].Value = w.WorkorderId;
-          cmd.Parameters[2].Value = w.Part;
-          cmd.Parameters[3].Value = w.Quantity;
-          cmd.Parameters[4].Value = w.DueDate.Ticks;
-          cmd.Parameters[5].Value = w.Priority;
-          cmd.Parameters[6].Value = w.SimulatedStart.HasValue
-            ? w.SimulatedStart.Value.DayNumber
-            : DBNull.Value;
-          cmd.Parameters[7].Value = w.SimulatedFilled.HasValue
-            ? w.SimulatedFilled.Value.DayNumber
-            : DBNull.Value;
-          cmd.ExecuteNonQuery();
-
-          if (w.Programs != null)
+          foreach (var prog in w.Programs)
           {
-            foreach (var prog in w.Programs)
+            long? rev = null;
+            if (!prog.Revision.HasValue || prog.Revision.Value == 0)
             {
-              long? rev = null;
-              if (!prog.Revision.HasValue || prog.Revision.Value == 0)
+              if (!string.IsNullOrEmpty(prog.ProgramName))
               {
-                if (!string.IsNullOrEmpty(prog.ProgramName))
-                {
-                  rev = LatestRevisionForProgram(trans, prog.ProgramName);
-                }
+                rev = LatestRevisionForProgram(trans, prog.ProgramName);
               }
-              else if (prog.Revision.Value > 0)
-              {
-                rev = prog.Revision.Value;
-              }
-              else if (
-                negativeRevisionMap.TryGetValue(
-                  (prog: prog.ProgramName, rev: prog.Revision.Value),
-                  out long convertedRev
-                )
-              )
-              {
-                rev = convertedRev;
-              }
-              else
-              {
-                throw new BadRequestException(
-                  $"Workorder {w.WorkorderId} "
-                    + "has a negative program revision but no matching negative program revision exists in the downloaded ProgramEntry list"
-                );
-              }
-
-              prgCmd.Parameters[1].Value = w.WorkorderId;
-              prgCmd.Parameters[2].Value = w.Part;
-              prgCmd.Parameters[3].Value = prog.ProcessNumber;
-              prgCmd.Parameters[4].Value = prog.StopIndex.HasValue
-                ? (object)prog.StopIndex.Value
-                : DBNull.Value;
-              prgCmd.Parameters[5].Value = prog.ProgramName;
-              prgCmd.Parameters[6].Value = rev != null ? (object)rev : DBNull.Value;
-              prgCmd.ExecuteNonQuery();
             }
+            else if (prog.Revision.Value > 0)
+            {
+              rev = prog.Revision.Value;
+            }
+            else if (
+              negativeRevisionMap.TryGetValue(
+                (prog: prog.ProgramName, rev: prog.Revision.Value),
+                out long convertedRev
+              )
+            )
+            {
+              rev = convertedRev;
+            }
+            else
+            {
+              throw new BadRequestException(
+                $"Workorder {w.WorkorderId} "
+                  + "has a negative program revision but no matching negative program revision exists in the downloaded ProgramEntry list"
+              );
+            }
+
+            prgCmd.Parameters[0].Value = w.WorkorderId;
+            prgCmd.Parameters[1].Value = w.Part;
+            prgCmd.Parameters[2].Value = prog.ProcessNumber;
+            prgCmd.Parameters[3].Value = prog.StopIndex.HasValue
+              ? (object)prog.StopIndex.Value
+              : DBNull.Value;
+            prgCmd.Parameters[4].Value = prog.ProgramName;
+            prgCmd.Parameters[5].Value = rev != null ? (object)rev : DBNull.Value;
+            prgCmd.ExecuteNonQuery();
           }
         }
       }

@@ -278,7 +278,8 @@ namespace MachineWatchTest
               .Create<string, HistoricJob>()
               .Add(job1.UniqueStr, job1history)
               .Add(job2.UniqueStr, job2history),
-            StationUse = job1StatUse.AddRange(job2SimUse)
+            StationUse = job1StatUse.AddRange(job2SimUse),
+            MostRecentSimulationId = schId2
           }
         );
 
@@ -289,7 +290,8 @@ namespace MachineWatchTest
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
-            StationUse = job2SimUse
+            StationUse = job2SimUse,
+            MostRecentSimulationId = schId2
           }
         );
 
@@ -300,7 +302,8 @@ namespace MachineWatchTest
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
-            StationUse = job2SimUse
+            StationUse = job2SimUse,
+            MostRecentSimulationId = schId2
           }
         );
 
@@ -322,7 +325,8 @@ namespace MachineWatchTest
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
-            StationUse = ImmutableList<SimulatedStationUtilization>.Empty
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
+            MostRecentSimulationId = schId2
           }
         );
 
@@ -374,7 +378,6 @@ namespace MachineWatchTest
       var schId1 = "schId" + _fixture.Create<string>();
       var job1 = RandJob() with { RouteStartUTC = now, RouteEndUTC = now.AddHours(1) };
       var simDays1 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
-      var warning = _fixture.Create<string>();
       var job1history = job1.CloneToDerived<HistoricJob, Job>() with
       {
         ScheduleId = schId1,
@@ -390,7 +393,6 @@ namespace MachineWatchTest
           ScheduleId = schId1,
           Jobs = ImmutableList.Create(job1),
           SimDayUsage = simDays1,
-          SimDayUsageWarning = warning
         },
         null,
         addAsCopiedToSystem: true
@@ -417,7 +419,6 @@ namespace MachineWatchTest
             StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
             MostRecentSimulationId = schId1,
             MostRecentSimDayUsage = simDays1,
-            MostRecentSimDayUsageWarning = warning
           }
         );
 
@@ -448,7 +449,6 @@ namespace MachineWatchTest
           ScheduleId = schId2,
           Jobs = ImmutableList.Create(job2),
           SimDayUsage = simDays2,
-          SimDayUsageWarning = null
         },
         schId1,
         addAsCopiedToSystem: true
@@ -467,7 +467,6 @@ namespace MachineWatchTest
             StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
             MostRecentSimulationId = schId2,
             MostRecentSimDayUsage = simDays2,
-            MostRecentSimDayUsageWarning = null
           }
         );
 
@@ -491,7 +490,6 @@ namespace MachineWatchTest
             StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
             MostRecentSimulationId = schId2,
             MostRecentSimDayUsage = simDays2,
-            MostRecentSimDayUsageWarning = null
           }
         );
     }
@@ -503,7 +501,6 @@ namespace MachineWatchTest
       var now = DateTime.UtcNow;
       var schId1 = "schId" + _fixture.Create<string>();
       var simDays1 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
-      var warning = _fixture.Create<string>();
 
       _jobDB.AddJobs(
         new NewJobs()
@@ -511,7 +508,6 @@ namespace MachineWatchTest
           ScheduleId = schId1,
           Jobs = ImmutableList<Job>.Empty,
           SimDayUsage = simDays1,
-          SimDayUsageWarning = warning
         },
         null,
         addAsCopiedToSystem: true
@@ -538,7 +534,6 @@ namespace MachineWatchTest
             StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
             MostRecentSimulationId = schId1,
             MostRecentSimDayUsage = simDays1,
-            MostRecentSimDayUsageWarning = warning
           }
         );
 
@@ -1184,6 +1179,19 @@ namespace MachineWatchTest
         ]
       };
 
+      var workStart = ImmutableList.Create(
+        _fixture
+          .Build<WorkorderSimFilled>()
+          .With(w => w.WorkorderId, initialWorks[0].WorkorderId)
+          .With(w => w.Part, initialWorks[0].Part)
+          .Create(),
+        _fixture
+          .Build<WorkorderSimFilled>()
+          .With(w => w.WorkorderId, initialWorks[1].WorkorderId)
+          .With(w => w.Part, initialWorks[1].Part)
+          .Create()
+      );
+
       _jobDB.AddJobs(
         new NewJobs
         {
@@ -1205,7 +1213,8 @@ namespace MachineWatchTest
               Comment = "bbb comment",
               ProgramContent = "bbb program content"
             }
-          )
+          ),
+          SimWorkordersFilled = workStart
         },
         null,
         addAsCopiedToSystem: true
@@ -1303,8 +1312,8 @@ namespace MachineWatchTest
               Priority = initialWorks[0].Priority,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              SimulatedStart = initialWorks[0].SimulatedStart,
-              SimulatedFilled = initialWorks[0].SimulatedFilled
+              SimulatedStart = workStart[0].Started,
+              SimulatedFilled = workStart[0].Filled
             }
           }
         );
@@ -2370,6 +2379,94 @@ namespace MachineWatchTest
         );
       _jobDB.LoadProgramContent("ccc", 5).Should().Be("ccc program content 5");
       _jobDB.LoadMostRecentProgram("ccc").Revision.Should().Be(5);
+    }
+
+    [Fact]
+    public void UpdatesWorkorders()
+    {
+      var w1 = _fixture.Create<Workorder>();
+      var w2 = _fixture.Build<Workorder>().With(w => w.WorkorderId, w1.WorkorderId).Create();
+      var w3 = _fixture.Create<Workorder>();
+
+      using var _jobDB = _repoCfg.OpenConnection();
+
+      _jobDB.GetActiveWorkorders().Should().BeNull();
+
+      _jobDB.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = "aaa1",
+          Jobs = [],
+          CurrentUnfilledWorkorders = [w1, w2, w3]
+        },
+        null,
+        true
+      );
+
+      _jobDB
+        .GetActiveWorkorders()
+        .Select(w => (w.WorkorderId, w.Part))
+        .Should()
+        .BeEquivalentTo([(w1.WorkorderId, w1.Part), (w2.WorkorderId, w2.Part), (w3.WorkorderId, w3.Part)]);
+
+      // now update w1 with new data, keep w2 unchanged, and remove w3, and add a new w4
+      var w1New = _fixture
+        .Build<Workorder>()
+        .With(w => w.WorkorderId, w1.WorkorderId)
+        .With(w => w.Part, w1.Part)
+        .Create();
+      var w4 = _fixture.Create<Workorder>();
+
+      _jobDB.AddJobs(
+        new NewJobs()
+        {
+          ScheduleId = "aaa1",
+          Jobs = [],
+          CurrentUnfilledWorkorders = [w1New, w2, w4]
+        },
+        null,
+        true
+      );
+
+      _jobDB
+        .GetActiveWorkorders()
+        .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
+        .Should()
+        .BeEquivalentTo(
+          [
+            (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
+            (w2.WorkorderId, w2.Part, w2.Priority, w2.DueDate, w2.Quantity),
+            (w4.WorkorderId, w4.Part, w4.Priority, w4.DueDate, w4.Quantity)
+          ]
+        );
+
+      // now update w2 with new data, delete w4, and add a new w5
+      var w2New = _fixture
+        .Build<Workorder>()
+        .With(w => w.WorkorderId, w2.WorkorderId)
+        .With(w => w.Part, w2.Part)
+        .Create();
+      var w5 = _fixture.Create<Workorder>();
+
+      _jobDB.UpdateCachedWorkorders([w1New, w2New, w5]);
+
+      _jobDB
+        .GetActiveWorkorders()
+        .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
+        .Should()
+        .BeEquivalentTo(
+          [
+            (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
+            (w2New.WorkorderId, w2New.Part, w2New.Priority, w2New.DueDate, w2New.Quantity),
+            (w5.WorkorderId, w5.Part, w5.Priority, w5.DueDate, w5.Quantity)
+          ]
+        );
+
+      _jobDB.UpdateCachedWorkorders([]);
+
+      _jobDB.GetActiveWorkorders().Should().BeEmpty();
+
+      _jobDB.WorkordersById(w1New.WorkorderId).Should().BeEquivalentTo([w1New, w2New]);
     }
 
     [Fact]

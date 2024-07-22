@@ -35,6 +35,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
+#nullable enable
+
 namespace BlackMaple.MachineFramework
 {
   public interface IMachineControl
@@ -83,23 +85,28 @@ namespace BlackMaple.MachineFramework
 
   public interface ICalculateInstructionPath
   {
-    public string InstructionPath(
+    public string? InstructionPath(
       string part,
       int? process,
       string type,
       long? materialID,
-      string operatorName,
+      string? operatorName,
       int pallet
     );
   }
 
   public interface IParseBarcode
   {
-    public ScannedMaterial ParseBarcode(string barcode, Uri httpReferer);
+    public ScannedMaterial? ParseBarcode(string barcode, Uri httpReferer);
   }
 
   public interface ICheckLicense
   {
     public DateTime? LicenseExpires();
+  }
+
+  public interface IProgramContentForJobs
+  {
+    public ImmutableList<NewProgramContent>? ProgramsForJobs(IEnumerable<Job> jobs);
   }
 }

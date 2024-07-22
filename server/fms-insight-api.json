@@ -364,40 +364,6 @@
         }
       }
     },
-    "/api/v1/jobs/unfilled-workorders/by-part/{part}": {
-      "get": {
-        "tags": [
-          "Jobs"
-        ],
-        "operationId": "Jobs_MostRecentUnfilledWorkordersForPart",
-        "parameters": [
-          {
-            "name": "part",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ActiveWorkorder"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/jobs/status": {
       "get": {
         "tags": [
@@ -414,6 +380,43 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/add-from-sim": {
+      "post": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "Jobs_AddFromSim",
+        "parameters": [
+          {
+            "name": "expectedPreviousScheduleId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
+        "requestBody": {
+          "x-name": "simResults",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationResults"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
           }
         }
       }
@@ -476,8 +479,7 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string",
-              "nullable": true
+              "type": "string"
             },
             "x-position": 2
           },
@@ -604,8 +606,7 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string",
-              "nullable": true
+              "type": "string"
             },
             "x-position": 3
           },
@@ -1006,6 +1007,34 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/workorders": {
+      "put": {
+        "tags": [
+          "Jobs"
+        ],
+        "operationId": "Jobs_SetUnarchivedWorkorders",
+        "requestBody": {
+          "x-name": "workorders",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Workorder"
+                }
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
           }
         }
       }
@@ -2421,7 +2450,22 @@
               "$ref": "#/components/schemas/Job"
             }
           },
+          "ExtraParts": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
           "StationUse": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/SimulatedStationUtilization"
+            }
+          },
+          "StationUseForCurrentStatus": {
             "type": "array",
             "nullable": true,
             "items": {
@@ -2435,16 +2479,11 @@
               "$ref": "#/components/schemas/SimulatedDayUsage"
             }
           },
-          "SimDayUsageWarning": {
-            "type": "string",
-            "nullable": true
-          },
-          "ExtraParts": {
-            "type": "object",
+          "SimWorkordersFilled": {
+            "type": "array",
             "nullable": true,
-            "additionalProperties": {
-              "type": "integer",
-              "format": "int32"
+            "items": {
+              "$ref": "#/components/schemas/WorkorderSimFilled"
             }
           },
           "CurrentUnfilledWorkorders": {
@@ -2730,14 +2769,6 @@
             "type": "integer",
             "format": "int64",
             "nullable": true
-          },
-          "Tools": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": {
-              "type": "string",
-              "format": "duration"
-            }
           }
         }
       },
@@ -2881,6 +2912,32 @@
           }
         }
       },
+      "WorkorderSimFilled": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "WorkorderId",
+          "Part"
+        ],
+        "properties": {
+          "WorkorderId": {
+            "type": "string"
+          },
+          "Part": {
+            "type": "string"
+          },
+          "Started": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          },
+          "Filled": {
+            "type": "string",
+            "format": "date",
+            "nullable": true
+          }
+        }
+      },
       "Workorder": {
         "type": "object",
         "additionalProperties": false,
@@ -2909,16 +2966,6 @@
           "Priority": {
             "type": "integer",
             "format": "int32"
-          },
-          "SimulatedStart": {
-            "type": "string",
-            "format": "date",
-            "nullable": true
-          },
-          "SimulatedFilled": {
-            "type": "string",
-            "format": "date",
-            "nullable": true
           },
           "Programs": {
             "type": "array",
@@ -3808,10 +3855,6 @@
                 "items": {
                   "$ref": "#/components/schemas/SimulatedDayUsage"
                 }
-              },
-              "MostRecentSimDayUsageWarning": {
-                "type": "string",
-                "nullable": true
               }
             }
           }
@@ -3844,6 +3887,73 @@
           }
         }
       },
+      "SimulationResults": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ScheduleId",
+          "Jobs",
+          "SimStations"
+        ],
+        "properties": {
+          "ScheduleId": {
+            "type": "string"
+          },
+          "Jobs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Job"
+            }
+          },
+          "NewExtraParts": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "SimStations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimulatedStationUtilization"
+            }
+          },
+          "SimStationsForExecutionOfCurrentStatus": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/SimulatedStationUtilization"
+            }
+          },
+          "SimDayUsage": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/SimulatedDayUsage"
+            }
+          },
+          "SimWorkordersFilled": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/WorkorderSimFilled"
+            }
+          },
+          "AllocationWarning": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "DebugMessage": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
+          }
+        }
+      },
       "QueuePosition": {
         "type": "object",
         "additionalProperties": false,
@@ -3853,8 +3963,7 @@
         ],
         "properties": {
           "Queue": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Position": {
             "type": "integer",

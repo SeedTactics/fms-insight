@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 32;
+    private const int Version = 33;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -217,10 +217,6 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE tools(UniqueStr TEXT, Process INTEGER, Path INTEGER, RouteNum INTEGER, Tool STRING, ExpectedUse INTEGER, PRIMARY KEY(UniqueStr,Process,Path,RouteNum,Tool))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText =
           "CREATE TABLE loadunload(UniqueStr TEXT, Process INTEGER, Path INTEGER, StatNum INTEGER, Load INTEGER, PRIMARY KEY(UniqueStr,Process,Path,StatNum,Load))";
         cmd.ExecuteNonQuery();
 
@@ -253,10 +249,6 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE sim_day_usage_warning(SimId TEXT NOT NULL, Warning TEXT, PRIMARY KEY(SimId))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText =
           "CREATE TABLE scheduled_bookings(UniqueStr TEXT NOT NULL, BookingId TEXT NOT NULL, PRIMARY KEY(UniqueStr, BookingId))";
         cmd.ExecuteNonQuery();
 
@@ -278,14 +270,19 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE unfilled_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, Archived INTEGER, SimulatedStartUTC INTEGER, SimulatedFilledUTC INTEGER, PRIMARY KEY(ScheduleId, Part, Workorder))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText = "CREATE INDEX workorder_id_idx ON unfilled_workorders(Workorder, ScheduleId)";
+          "CREATE TABLE sim_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, SimulatedStartDay INTEGER, SimulatedFilledDay INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE workorder_programs(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part, ProcessNumber, StopIndex))";
+          "CREATE TABLE workorder_cache(Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, Archived INTEGER NOT NULL, PRIMARY KEY(Workorder, Part))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE INDEX workorder_cache_non_archived ON workorder_cache(Archived) WHERE Archived = 0";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE workorder_program_cache(Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(Workorder, Part, ProcessNumber, StopIndex))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -464,6 +461,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 32)
             Ver31ToVer32(trans);
+
+          if (curVersion < 33)
+            Ver32ToVer33(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -916,7 +916,6 @@ namespace BlackMaple.MachineFramework
             "pallets",
             "stops",
             "stops_stations",
-            "tools",
             "loadunload",
             "path_inspections",
             "holds",
@@ -926,7 +925,6 @@ namespace BlackMaple.MachineFramework
             "scheduled_parts",
             "job_decrements",
             "schedule_debug",
-            "workorder_programs",
             "program_revisions"
           };
 
@@ -943,11 +941,6 @@ namespace BlackMaple.MachineFramework
           // pathdata PathGroup column is removed
           cmd.CommandText =
             "INSERT INTO main.pathdata(UniqueStr,Process,Path,StartingUTC,PartsPerPallet,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting) SELECT UniqueStr,Process,Path,StartingUTC,PartsPerPallet,SimAverageFlowTime,InputQueue,OutputQueue,LoadTime,UnloadTime,Fixture,Face,Casting FROM jobs.pathdata";
-          cmd.ExecuteNonQuery();
-
-          // unfilled_workorders added new columns
-          cmd.CommandText =
-            "INSERT INTO main.unfilled_workorders(ScheduleId,Workorder,Part,Quantity,DueDate,Priority,Archived) SELECT ScheduleId,Workorder,Part,Quantity,DueDate,Priority,Archived FROM jobs.unfilled_workorders";
           cmd.ExecuteNonQuery();
 
           // sim_station_use removed and added some columns
@@ -1099,6 +1092,62 @@ namespace BlackMaple.MachineFramework
 
       cmd.CommandText = "CREATE INDEX stations_foreignid ON stations(ForeignID) WHERE ForeignID IS NOT NULL";
       cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver32ToVer33(SqliteTransaction trans, bool updateJobTables)
+    {
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      cmd.CommandText = "DROP TABLE IF EXISTS sim_day_usage_warning";
+      cmd.ExecuteNonQuery();
+
+      if (updateJobTables)
+      {
+        cmd.CommandText =
+          "CREATE TABLE sim_workorders(ScheduleId TEXT NOT NULL, Workorder TEXT NOT NULL, Part TEXT NOT NULL, SimulatedStartDay INTEGER, SimulatedFilledDay INTEGER, PRIMARY KEY(ScheduleId, Workorder, Part))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE workorder_cache(Workorder TEXT NOT NULL, Part TEXT NOT NULL, Quantity INTEGER NOT NULL, DueDate INTEGER NOT NULL, Priority INTEGER NOT NULL, Archived INTEGER NOT NULL, PRIMARY KEY(Workorder, Part))";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE INDEX workorder_cache_non_archived ON workorder_cache(Archived) WHERE Archived = 0";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE workorder_program_cache(Workorder TEXT NOT NULL, Part TEXT NOT NULL, ProcessNumber INTEGER NOT NULL, StopIndex INTEGER, ProgramName TEXT NOT NULL, Revision INTEGER, PRIMARY KEY(Workorder, Part, ProcessNumber, StopIndex))";
+        cmd.ExecuteNonQuery();
+
+        // copy data from old unfilled_workorders table
+        cmd.CommandText = "SELECT MAX(ScheduleId) FROM unfilled_workorders WHERE ScheduleId IS NOT NULL";
+        var lastWorkSchId = cmd.ExecuteScalar() as string;
+        if (!string.IsNullOrEmpty(lastWorkSchId))
+        {
+          using var copyCmd = trans.Connection.CreateCommand();
+          copyCmd.Transaction = trans;
+          copyCmd.CommandText =
+            "INSERT INTO workorder_cache(Workorder, Part, Quantity, DueDate, Priority, Archived) "
+            + "SELECT Workorder, Part, Quantity, DueDate, Priority, 0 FROM unfilled_workorders WHERE ScheduleId = $schId";
+          copyCmd.Parameters.Add("schId", SqliteType.Text).Value = lastWorkSchId;
+          copyCmd.ExecuteNonQuery();
+
+          copyCmd.CommandText =
+            "INSERT INTO workorder_program_cache(Workorder, Part, ProcessNumber, StopIndex, ProgramName, Revision) "
+            + "SELECT Workorder, Part, ProcessNumber, StopIndex, ProgramName, Revision FROM workorder_programs WHERE ScheduleId = $schId";
+          copyCmd.ExecuteNonQuery();
+        }
+
+        cmd.CommandText = "DROP TABLE unfilled_workorders";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "DROP TABLE workorder_programs";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = "DROP TABLE tools";
+        cmd.ExecuteNonQuery();
+      }
     }
 
     #endregion

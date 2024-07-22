@@ -263,7 +263,7 @@ public sealed class MazakSyncSpec : IDisposable
             Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
             Material = [],
             Alarms = [],
-            Workorders = [],
+            Workorders = null,
             Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value)
           },
           AllData = allData,
@@ -405,7 +405,7 @@ public sealed class MazakSyncSpec : IDisposable
               }
             ],
             Alarms = [],
-            Workorders = [],
+            Workorders = null,
             Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value)
           },
           AllData = allData,

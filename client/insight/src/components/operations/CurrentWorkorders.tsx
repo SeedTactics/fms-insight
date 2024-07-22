@@ -79,7 +79,6 @@ import {
 import copy from "copy-to-clipboard";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { WorkorderGantt } from "./WorkorderGantt.js";
-import { latestSimDayUsage } from "../../cell-status/sim-day-usage.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
 
 const WorkorderTableRow = styled(TableRow)({
@@ -423,7 +422,6 @@ function SortColHeader(props: {
 const tableOrGantt = atom<"table" | "gantt">("table");
 
 const SimulatedWarning = memo(function SimulatedWarning({ showSim }: { showSim: boolean }) {
-  const warning = useAtomValue(latestSimDayUsage)?.warning;
   const [selected, setSelected] = useAtom(tableOrGantt);
 
   return (
@@ -431,9 +429,7 @@ const SimulatedWarning = memo(function SimulatedWarning({ showSim }: { showSim: 
       {showSim ? (
         <Stack direction="row" spacing={2} alignItems="center" flexGrow={1}>
           <WarningIcon fontSize="small" />
-          <Typography variant="caption">
-            {warning ? ` ${warning}` : "Projected dates are estimates"}
-          </Typography>
+          <Typography variant="caption">Projected dates are estimates</Typography>
         </Stack>
       ) : undefined}
       <FormControl size="small">

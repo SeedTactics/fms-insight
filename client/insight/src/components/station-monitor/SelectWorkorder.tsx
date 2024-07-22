@@ -99,7 +99,7 @@ function WorkorderList() {
   const [assignWorkorder] = matDetails.useAssignWorkorder();
   return (
     <List>
-      {workorders.map((w) => (
+      {(workorders ?? []).map((w) => (
         <ListItem key={w.workorderId}>
           <ListItemButton
             onClick={() => {
