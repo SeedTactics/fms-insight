@@ -278,7 +278,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE INDEX workorder_cache_non_archived ON workorder_cache(Archived, Part, DueDate) WHERE Archived = 0";
+          "CREATE INDEX workorder_cache_non_archived ON workorder_cache(Archived) WHERE Archived = 0";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -1113,7 +1113,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE INDEX workorder_cache_non_archived ON workorder_cache(Archived, Part, DueDate) WHERE Archived = 0";
+          "CREATE INDEX workorder_cache_non_archived ON workorder_cache(Archived) WHERE Archived = 0";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
