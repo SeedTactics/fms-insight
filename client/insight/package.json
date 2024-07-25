@@ -10,7 +10,7 @@
     "start": "vite",
     "test": "vitest run",
     "test:watch": "vitest watch",
-    "nswag": "./node_modules/nswag/bin/nswag.js aspnetcore2openapi /project:../../server/debug-mock /output:../../server/fms-insight-api.json && ./node_modules/nswag/bin/nswag.js openapi2tsclient /input:../../server/fms-insight-api.json /output:src/network/api.ts && ./node_modules/nswag/bin/nswag.js openapi2csclient /ParameterDateTimeFormat:'yyyy-MM-ddTHH:mm:ssZ' /input:../../server/fms-insight-api.json /namespace:BlackMaple.FMSInsight.API /output:../csharp-api/api.cs"
+    "nswag": "./node_modules/nswag/bin/nswag.js aspnetcore2openapi /project:../../server/debug-mock /output:../../server/fms-insight-api.json && ./node_modules/nswag/bin/nswag.js openapi2tsclient /UseAbortSignal:true /input:../../server/fms-insight-api.json /output:src/network/api.ts && ./node_modules/nswag/bin/nswag.js openapi2csclient /ParameterDateTimeFormat:'yyyy-MM-ddTHH:mm:ssZ' /input:../../server/fms-insight-api.json /namespace:BlackMaple.FMSInsight.API /output:../csharp-api/api.cs"
   },
   "packageManager": "pnpm@9.1.4",
   "dependencies": {

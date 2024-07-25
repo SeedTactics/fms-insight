@@ -53,11 +53,11 @@ export interface PathLookupRange {
 
 export const pathLookupRange = atom<PathLookupRange | null>(null);
 
-const localLogEntries = atom<Promise<PathLookupLogEntries>>(async (get) => {
+const localLogEntries = atom<Promise<PathLookupLogEntries>>(async (get, { signal }) => {
   const range = get(pathLookupRange);
   if (range == null) return HashMap.empty();
 
-  const events = await LogBackend.get(range.curStart, range.curEnd);
+  const events = await LogBackend.get(range.curStart, range.curEnd, signal);
   return LazySeq.of(events)
     .flatMap(convertLogToInspections)
     .filter((e) => e.key.part === range.part)

@@ -18,12 +18,13 @@ export class FmsClient {
         this.baseUrl = baseUrl ?? "";
     }
 
-    fMSInformation(): Promise<FMSInfo> {
+    fMSInformation(signal?: AbortSignal): Promise<FMSInfo> {
         let url_ = this.baseUrl + "/api/v1/fms/fms-information";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -52,7 +53,7 @@ export class FmsClient {
         return Promise.resolve<FMSInfo>(null as any);
     }
 
-    findInstructions(part: string, type: string | null, process: number | null | undefined, materialID: number | null | undefined, operatorName: string | null | undefined, pallet: number | undefined): Promise<void> {
+    findInstructions(part: string, type: string | null, process: number | null | undefined, materialID: number | null | undefined, operatorName: string | null | undefined, pallet: number | undefined, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/fms/find-instructions/{part}?";
         if (part === undefined || part === null)
             throw new Error("The parameter 'part' must be defined.");
@@ -75,6 +76,7 @@ export class FmsClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
             }
         };
@@ -106,7 +108,7 @@ export class FmsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    printLabel(materialId: number, process: number | undefined): Promise<void> {
+    printLabel(materialId: number, process: number | undefined, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/fms/print-label/{materialId}?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -119,6 +121,7 @@ export class FmsClient {
 
         let options_: RequestInit = {
             method: "POST",
+            signal,
             headers: {
             }
         };
@@ -150,7 +153,7 @@ export class FmsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    parseBarcode(barcode: string | null): Promise<ScannedMaterial> {
+    parseBarcode(barcode: string | null, signal?: AbortSignal): Promise<ScannedMaterial> {
         let url_ = this.baseUrl + "/api/v1/fms/parse-barcode?";
         if (barcode === undefined)
             throw new Error("The parameter 'barcode' must be defined.");
@@ -160,6 +163,7 @@ export class FmsClient {
 
         let options_: RequestInit = {
             method: "POST",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -188,12 +192,13 @@ export class FmsClient {
         return Promise.resolve<ScannedMaterial>(null as any);
     }
 
-    enableVerboseLoggingForFiveMinutes(): Promise<void> {
+    enableVerboseLoggingForFiveMinutes(signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/fms/enable-verbose-logging-for-five-minutes";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
             method: "POST",
+            signal,
             headers: {
             }
         };
@@ -229,7 +234,7 @@ export class JobsClient {
         this.baseUrl = baseUrl ?? "";
     }
 
-    history(startUTC: Date, endUTC: Date): Promise<HistoricData> {
+    history(startUTC: Date, endUTC: Date, signal?: AbortSignal): Promise<HistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/history?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
@@ -243,6 +248,7 @@ export class JobsClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -271,7 +277,7 @@ export class JobsClient {
         return Promise.resolve<HistoricData>(null as any);
     }
 
-    filteredHistory(startUTC: Date, endUTC: Date, alreadyKnownSchIds: string[]): Promise<HistoricData> {
+    filteredHistory(startUTC: Date, endUTC: Date, alreadyKnownSchIds: string[], signal?: AbortSignal): Promise<HistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/history?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
@@ -288,6 +294,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -317,7 +324,7 @@ export class JobsClient {
         return Promise.resolve<HistoricData>(null as any);
     }
 
-    recent(startUTC: Date, alreadyKnownSchIds: string[]): Promise<RecentHistoricData> {
+    recent(startUTC: Date, alreadyKnownSchIds: string[], signal?: AbortSignal): Promise<RecentHistoricData> {
         let url_ = this.baseUrl + "/api/v1/jobs/recent?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
@@ -330,6 +337,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -359,12 +367,13 @@ export class JobsClient {
         return Promise.resolve<RecentHistoricData>(null as any);
     }
 
-    latestSchedule(): Promise<PlannedSchedule> {
+    latestSchedule(signal?: AbortSignal): Promise<PlannedSchedule> {
         let url_ = this.baseUrl + "/api/v1/jobs/latest-schedule";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -393,12 +402,13 @@ export class JobsClient {
         return Promise.resolve<PlannedSchedule>(null as any);
     }
 
-    currentStatus(): Promise<CurrentStatus> {
+    currentStatus(signal?: AbortSignal): Promise<CurrentStatus> {
         let url_ = this.baseUrl + "/api/v1/jobs/status";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -427,7 +437,7 @@ export class JobsClient {
         return Promise.resolve<CurrentStatus>(null as any);
     }
 
-    addFromSim(expectedPreviousScheduleId: string | null, simResults: SimulationResults): Promise<void> {
+    addFromSim(expectedPreviousScheduleId: string | null, simResults: SimulationResults, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/add-from-sim?";
         if (expectedPreviousScheduleId === undefined)
             throw new Error("The parameter 'expectedPreviousScheduleId' must be defined.");
@@ -440,6 +450,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
             }
@@ -465,7 +476,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    add(expectedPreviousScheduleId: string | null, newJobs: NewJobs): Promise<void> {
+    add(expectedPreviousScheduleId: string | null, newJobs: NewJobs, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/add?";
         if (expectedPreviousScheduleId === undefined)
             throw new Error("The parameter 'expectedPreviousScheduleId' must be defined.");
@@ -478,6 +489,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
             }
@@ -503,7 +515,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    addUnallocatedCastingToQueue(castingName: string, queue: string, qty: number | undefined, operName: string | null | undefined, workorder: string | null | undefined, serials: string[]): Promise<InProcessMaterial[]> {
+    addUnallocatedCastingToQueue(castingName: string, queue: string, qty: number | undefined, operName: string | null | undefined, workorder: string | null | undefined, serials: string[], signal?: AbortSignal): Promise<InProcessMaterial[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/casting/{castingName}?";
         if (castingName === undefined || castingName === null)
             throw new Error("The parameter 'castingName' must be defined.");
@@ -527,6 +539,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -563,7 +576,7 @@ export class JobsClient {
         return Promise.resolve<InProcessMaterial[]>(null as any);
     }
 
-    getJobPlan(jobUnique: string): Promise<HistoricJob> {
+    getJobPlan(jobUnique: string, signal?: AbortSignal): Promise<HistoricJob> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/plan";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -572,6 +585,7 @@ export class JobsClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -600,7 +614,7 @@ export class JobsClient {
         return Promise.resolve<HistoricJob>(null as any);
     }
 
-    addUnprocessedMaterialToQueue(jobUnique: string, lastCompletedProcess: number, queue: string, pos: number, operName: string | null | undefined, workorder: string | null | undefined, serial: string): Promise<InProcessMaterial> {
+    addUnprocessedMaterialToQueue(jobUnique: string, lastCompletedProcess: number, queue: string, pos: number, operName: string | null | undefined, workorder: string | null | undefined, serial: string, signal?: AbortSignal): Promise<InProcessMaterial> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/unprocessed-material?";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -628,6 +642,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -657,7 +672,7 @@ export class JobsClient {
         return Promise.resolve<InProcessMaterial>(null as any);
     }
 
-    setJobComment(jobUnique: string, comment: string): Promise<void> {
+    setJobComment(jobUnique: string, comment: string, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/job/{jobUnique}/comment";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -669,6 +684,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "PUT",
+            signal,
             headers: {
                 "Content-Type": "application/json",
             }
@@ -694,7 +710,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    setMaterialInQueue(materialId: number, operName: string | null | undefined, queue: QueuePosition): Promise<void> {
+    setMaterialInQueue(materialId: number, operName: string | null | undefined, queue: QueuePosition, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -708,6 +724,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "PUT",
+            signal,
             headers: {
                 "Content-Type": "application/json",
             }
@@ -733,7 +750,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    removeMaterialFromAllQueues(materialId: number, operName: string | null | undefined): Promise<void> {
+    removeMaterialFromAllQueues(materialId: number, operName: string | null | undefined, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/queue?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -744,6 +761,7 @@ export class JobsClient {
 
         let options_: RequestInit = {
             method: "DELETE",
+            signal,
             headers: {
             }
         };
@@ -768,7 +786,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    signalMaterialForQuarantine(materialId: number, operName: string | null | undefined, reason: string | undefined): Promise<void> {
+    signalMaterialForQuarantine(materialId: number, operName: string | null | undefined, reason: string | undefined, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/signal-quarantine?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -782,6 +800,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "PUT",
+            signal,
             headers: {
                 "Content-Type": "application/json",
             }
@@ -807,7 +826,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    invalidatePalletCycle(materialId: number, putMatInQueue: string | null | undefined, operName: string | null | undefined, process: number): Promise<void> {
+    invalidatePalletCycle(materialId: number, putMatInQueue: string | null | undefined, operName: string | null | undefined, process: number, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/invalidate-process?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -823,6 +842,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "PUT",
+            signal,
             headers: {
                 "Content-Type": "application/json",
             }
@@ -848,7 +868,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    swapMaterialOnPallet(materialId: number, operName: string | null | undefined, mat: MatToPutOnPallet): Promise<void> {
+    swapMaterialOnPallet(materialId: number, operName: string | null | undefined, mat: MatToPutOnPallet, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/swap-off-pallet?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -862,6 +882,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "PUT",
+            signal,
             headers: {
                 "Content-Type": "application/json",
             }
@@ -887,7 +908,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    bulkRemoveMaterialFromQueues(operName: string | null | undefined, id: number[]): Promise<void> {
+    bulkRemoveMaterialFromQueues(operName: string | null | undefined, id: number[], signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material?";
         if (operName !== undefined && operName !== null)
             url_ += "operName=" + encodeURIComponent("" + operName) + "&";
@@ -898,6 +919,7 @@ export class JobsClient {
         let options_: RequestInit = {
             body: content_,
             method: "DELETE",
+            signal,
             headers: {
                 "Content-Type": "application/json",
             }
@@ -923,7 +945,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    decrementQuantities(loadDecrementsStrictlyAfterDecrementId: number | null | undefined, loadDecrementsAfterTimeUTC: Date | null | undefined): Promise<JobAndDecrementQuantity[]> {
+    decrementQuantities(loadDecrementsStrictlyAfterDecrementId: number | null | undefined, loadDecrementsAfterTimeUTC: Date | null | undefined, signal?: AbortSignal): Promise<JobAndDecrementQuantity[]> {
         let url_ = this.baseUrl + "/api/v1/jobs/planned-cycles?";
         if (loadDecrementsStrictlyAfterDecrementId !== undefined && loadDecrementsStrictlyAfterDecrementId !== null)
             url_ += "loadDecrementsStrictlyAfterDecrementId=" + encodeURIComponent("" + loadDecrementsStrictlyAfterDecrementId) + "&";
@@ -933,6 +955,7 @@ export class JobsClient {
 
         let options_: RequestInit = {
             method: "DELETE",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -979,7 +1002,7 @@ export class LogClient {
         this.baseUrl = baseUrl ?? "";
     }
 
-    get(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
+    get(startUTC: Date, endUTC: Date, signal?: AbortSignal): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/all?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
@@ -993,6 +1016,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1028,7 +1052,7 @@ export class LogClient {
         return Promise.resolve<LogEntry[]>(null as any);
     }
 
-    getEventCSV(startUTC: Date, endUTC: Date): Promise<FileResponse> {
+    getEventCSV(startUTC: Date, endUTC: Date, signal?: AbortSignal): Promise<FileResponse> {
         let url_ = this.baseUrl + "/api/v1/log/events.csv?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
@@ -1042,6 +1066,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/octet-stream"
             }
@@ -1074,7 +1099,7 @@ export class LogClient {
         return Promise.resolve<FileResponse>(null as any);
     }
 
-    getCompletedParts(startUTC: Date, endUTC: Date): Promise<LogEntry[]> {
+    getCompletedParts(startUTC: Date, endUTC: Date, signal?: AbortSignal): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/all-completed-parts?";
         if (startUTC === undefined || startUTC === null)
             throw new Error("The parameter 'startUTC' must be defined and cannot be null.");
@@ -1088,6 +1113,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1123,7 +1149,7 @@ export class LogClient {
         return Promise.resolve<LogEntry[]>(null as any);
     }
 
-    recent(lastSeenCounter: number, expectedEndUTCofLastSeen: Date | null | undefined): Promise<LogEntry[]> {
+    recent(lastSeenCounter: number, expectedEndUTCofLastSeen: Date | null | undefined, signal?: AbortSignal): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/recent?";
         if (lastSeenCounter === undefined || lastSeenCounter === null)
             throw new Error("The parameter 'lastSeenCounter' must be defined and cannot be null.");
@@ -1135,6 +1161,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1170,7 +1197,7 @@ export class LogClient {
         return Promise.resolve<LogEntry[]>(null as any);
     }
 
-    logForMaterial(materialID: number): Promise<LogEntry[]> {
+    logForMaterial(materialID: number, signal?: AbortSignal): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/for-material/{materialID}";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
@@ -1179,6 +1206,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1214,7 +1242,7 @@ export class LogClient {
         return Promise.resolve<LogEntry[]>(null as any);
     }
 
-    logForMaterials(id: number[] | null): Promise<LogEntry[]> {
+    logForMaterials(id: number[] | null, signal?: AbortSignal): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/for-material?";
         if (id === undefined)
             throw new Error("The parameter 'id' must be defined.");
@@ -1224,6 +1252,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1259,7 +1288,7 @@ export class LogClient {
         return Promise.resolve<LogEntry[]>(null as any);
     }
 
-    logForSerial(serial: string): Promise<LogEntry[]> {
+    logForSerial(serial: string, signal?: AbortSignal): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/for-serial/{serial}";
         if (serial === undefined || serial === null)
             throw new Error("The parameter 'serial' must be defined.");
@@ -1268,6 +1297,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1303,7 +1333,7 @@ export class LogClient {
         return Promise.resolve<LogEntry[]>(null as any);
     }
 
-    logForWorkorder(workorder: string): Promise<LogEntry[]> {
+    logForWorkorder(workorder: string, signal?: AbortSignal): Promise<LogEntry[]> {
         let url_ = this.baseUrl + "/api/v1/log/events/for-workorder/{workorder}";
         if (workorder === undefined || workorder === null)
             throw new Error("The parameter 'workorder' must be defined.");
@@ -1312,6 +1342,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1347,7 +1378,7 @@ export class LogClient {
         return Promise.resolve<LogEntry[]>(null as any);
     }
 
-    materialDetails(materialID: number): Promise<MaterialDetails> {
+    materialDetails(materialID: number, signal?: AbortSignal): Promise<MaterialDetails> {
         let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
@@ -1356,6 +1387,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1384,7 +1416,7 @@ export class LogClient {
         return Promise.resolve<MaterialDetails>(null as any);
     }
 
-    materialDetailsForJob(jobUnique: string): Promise<MaterialDetails[]> {
+    materialDetailsForJob(jobUnique: string, signal?: AbortSignal): Promise<MaterialDetails[]> {
         let url_ = this.baseUrl + "/api/v1/log/material-for-job/{jobUnique}";
         if (jobUnique === undefined || jobUnique === null)
             throw new Error("The parameter 'jobUnique' must be defined.");
@@ -1393,6 +1425,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1428,7 +1461,7 @@ export class LogClient {
         return Promise.resolve<MaterialDetails[]>(null as any);
     }
 
-    materialForSerial(serial: string): Promise<MaterialDetails[]> {
+    materialForSerial(serial: string, signal?: AbortSignal): Promise<MaterialDetails[]> {
         let url_ = this.baseUrl + "/api/v1/log/material-for-serial/{serial}";
         if (serial === undefined || serial === null)
             throw new Error("The parameter 'serial' must be defined.");
@@ -1437,6 +1470,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1472,7 +1506,7 @@ export class LogClient {
         return Promise.resolve<MaterialDetails[]>(null as any);
     }
 
-    setSerial(materialID: number, process: number | undefined, serial: string): Promise<LogEntry> {
+    setSerial(materialID: number, process: number | undefined, serial: string, signal?: AbortSignal): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/serial?";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
@@ -1488,6 +1522,7 @@ export class LogClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -1517,7 +1552,7 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    setWorkorder(materialID: number, process: number | undefined, workorder: string): Promise<LogEntry> {
+    setWorkorder(materialID: number, process: number | undefined, workorder: string, signal?: AbortSignal): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/workorder?";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
@@ -1533,6 +1568,7 @@ export class LogClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -1562,7 +1598,7 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    setInspectionDecision(materialID: number, inspType: string, process: number | undefined, inspect: boolean): Promise<LogEntry> {
+    setInspectionDecision(materialID: number, inspType: string, process: number | undefined, inspect: boolean, signal?: AbortSignal): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/inspections/{inspType}?";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
@@ -1581,6 +1617,7 @@ export class LogClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -1610,7 +1647,7 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    recordOperatorNotes(materialID: number, process: number | undefined, operatorName: string | null | undefined, notes: string): Promise<LogEntry> {
+    recordOperatorNotes(materialID: number, process: number | undefined, operatorName: string | null | undefined, notes: string, signal?: AbortSignal): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/notes?";
         if (materialID === undefined || materialID === null)
             throw new Error("The parameter 'materialID' must be defined.");
@@ -1628,6 +1665,7 @@ export class LogClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -1657,7 +1695,7 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    recordInspectionCompleted(insp: NewInspectionCompleted): Promise<LogEntry> {
+    recordInspectionCompleted(insp: NewInspectionCompleted, signal?: AbortSignal): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/events/inspection-result";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1666,6 +1704,7 @@ export class LogClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -1695,7 +1734,7 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    recordCloseoutCompleted(insp: NewCloseout): Promise<LogEntry> {
+    recordCloseoutCompleted(insp: NewCloseout, signal?: AbortSignal): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/events/closeout";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1704,6 +1743,7 @@ export class LogClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -1733,7 +1773,7 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    recordWorkorderComment(workorder: string, operatorName: string | null | undefined, comment: string): Promise<LogEntry> {
+    recordWorkorderComment(workorder: string, operatorName: string | null | undefined, comment: string, signal?: AbortSignal): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}/comment?";
         if (workorder === undefined || workorder === null)
             throw new Error("The parameter 'workorder' must be defined.");
@@ -1747,6 +1787,7 @@ export class LogClient {
         let options_: RequestInit = {
             body: content_,
             method: "POST",
+            signal,
             headers: {
                 "Content-Type": "application/json",
                 "Accept": "application/json"
@@ -1776,7 +1817,7 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    getActiveWorkorder(workorder: string): Promise<ActiveWorkorder[]> {
+    getActiveWorkorder(workorder: string, signal?: AbortSignal): Promise<ActiveWorkorder[]> {
         let url_ = this.baseUrl + "/api/v1/log/workorder/{workorder}";
         if (workorder === undefined || workorder === null)
             throw new Error("The parameter 'workorder' must be defined.");
@@ -1785,6 +1826,7 @@ export class LogClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1831,12 +1873,13 @@ export class MachinesClient {
         this.baseUrl = baseUrl ?? "";
     }
 
-    getToolsInMachines(): Promise<ToolInMachine[]> {
+    getToolsInMachines(signal?: AbortSignal): Promise<ToolInMachine[]> {
         let url_ = this.baseUrl + "/api/v1/machines/tools";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1872,12 +1915,13 @@ export class MachinesClient {
         return Promise.resolve<ToolInMachine[]>(null as any);
     }
 
-    getProgramsInCellController(): Promise<ProgramInCellController[]> {
+    getProgramsInCellController(signal?: AbortSignal): Promise<ProgramInCellController[]> {
         let url_ = this.baseUrl + "/api/v1/machines/programs-in-cell-controller";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1913,7 +1957,7 @@ export class MachinesClient {
         return Promise.resolve<ProgramInCellController[]>(null as any);
     }
 
-    getProgramRevisionsInDescendingOrderOfRevision(programName: string, count: number, revisionToStart: number | null | undefined): Promise<ProgramRevision[]> {
+    getProgramRevisionsInDescendingOrderOfRevision(programName: string, count: number, revisionToStart: number | null | undefined, signal?: AbortSignal): Promise<ProgramRevision[]> {
         let url_ = this.baseUrl + "/api/v1/machines/program/{programName}/revisions?";
         if (programName === undefined || programName === null)
             throw new Error("The parameter 'programName' must be defined.");
@@ -1928,6 +1972,7 @@ export class MachinesClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -1963,7 +2008,7 @@ export class MachinesClient {
         return Promise.resolve<ProgramRevision[]>(null as any);
     }
 
-    getProgramRevisionContent(programName: string, revision: number): Promise<string> {
+    getProgramRevisionContent(programName: string, revision: number, signal?: AbortSignal): Promise<string> {
         let url_ = this.baseUrl + "/api/v1/machines/program/{programName}/revision/{revision}/content";
         if (programName === undefined || programName === null)
             throw new Error("The parameter 'programName' must be defined.");
@@ -1975,6 +2020,7 @@ export class MachinesClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
@@ -2004,7 +2050,7 @@ export class MachinesClient {
         return Promise.resolve<string>(null as any);
     }
 
-    getLatestProgramRevisionContent(programName: string): Promise<string> {
+    getLatestProgramRevisionContent(programName: string, signal?: AbortSignal): Promise<string> {
         let url_ = this.baseUrl + "/api/v1/machines/program/{programName}/latest-revision/content";
         if (programName === undefined || programName === null)
             throw new Error("The parameter 'programName' must be defined.");
@@ -2013,6 +2059,7 @@ export class MachinesClient {
 
         let options_: RequestInit = {
             method: "GET",
+            signal,
             headers: {
                 "Accept": "application/json"
             }
