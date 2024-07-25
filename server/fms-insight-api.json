@@ -1783,6 +1783,40 @@
         }
       }
     },
+    "/api/v1/log/workorder/{workorder}": {
+      "get": {
+        "tags": [
+          "Log"
+        ],
+        "operationId": "Log_GetActiveWorkorder",
+        "parameters": [
+          {
+            "name": "workorder",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActiveWorkorder"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/machines/tools": {
       "get": {
         "tags": [

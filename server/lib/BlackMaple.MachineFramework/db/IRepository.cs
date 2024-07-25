@@ -57,6 +57,7 @@ namespace BlackMaple.MachineFramework
     DateTime LastPalletCycleTime(int pallet);
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
+    ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
     ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter = null);
     ImmutableList<string> GetWorkordersForUnique(string jobUnique);
     DateTime MaxLogDate();
