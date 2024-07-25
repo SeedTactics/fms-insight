@@ -1659,6 +1659,8 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    // This is a last resort, because normally updating workorders should also include a
+    // new simulation.  Otherwise, the simulated start and filled will be incorrect.
     public void UpdateCachedWorkorders(IEnumerable<Workorder> workorders)
     {
       lock (_cfg)

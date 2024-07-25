@@ -297,13 +297,5 @@ namespace BlackMaple.MachineFramework.Controllers
           "Must specify either loadDecrementsStrictlyAfterDecrementId or loadDecrementsAfterTimeUTC"
         );
     }
-
-    [HttpPut("workorders")]
-    public void SetUnarchivedWorkorders([FromBody] List<Workorder> workorders)
-    {
-      using var db = repo.OpenConnection();
-      db.UpdateCachedWorkorders(workorders);
-      jobAndQueue.RecalculateCellState();
-    }
   }
 }

@@ -1011,34 +1011,6 @@
         }
       }
     },
-    "/api/v1/jobs/workorders": {
-      "put": {
-        "tags": [
-          "Jobs"
-        ],
-        "operationId": "Jobs_SetUnarchivedWorkorders",
-        "requestBody": {
-          "x-name": "workorders",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/Workorder"
-                }
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/v1/log/events/all": {
       "get": {
         "tags": [
@@ -2498,6 +2470,13 @@
             "nullable": true,
             "items": {
               "$ref": "#/components/schemas/NewProgramContent"
+            }
+          },
+          "AllocationWarning": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
             }
           },
           "DebugMessage": {

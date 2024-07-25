@@ -108,6 +108,8 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableList<NewProgramContent>? Programs { get; init; }
 
+    public ImmutableList<string>? AllocationWarning { get; init; }
+
     public byte[]? DebugMessage { get; init; }
   }
 }

@@ -967,40 +967,6 @@ export class JobsClient {
         }
         return Promise.resolve<JobAndDecrementQuantity[]>(null as any);
     }
-
-    setUnarchivedWorkorders(workorders: Workorder[]): Promise<void> {
-        let url_ = this.baseUrl + "/api/v1/jobs/workorders";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(workorders);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processSetUnarchivedWorkorders(_response);
-        });
-    }
-
-    protected processSetUnarchivedWorkorders(response: Response): Promise<void> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            return;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<void>(null as any);
-    }
 }
 
 export class LogClient {
@@ -2622,6 +2588,7 @@ export class NewJobs implements INewJobs {
     simWorkordersFilled?: WorkorderSimFilled[] | undefined;
     currentUnfilledWorkorders?: Workorder[] | undefined;
     programs?: NewProgramContent[] | undefined;
+    allocationWarning?: string[] | undefined;
     debugMessage?: string | undefined;
 
     constructor(data?: INewJobs) {
@@ -2681,6 +2648,11 @@ export class NewJobs implements INewJobs {
                 for (let item of _data["Programs"])
                     this.programs!.push(NewProgramContent.fromJS(item));
             }
+            if (Array.isArray(_data["AllocationWarning"])) {
+                this.allocationWarning = [] as any;
+                for (let item of _data["AllocationWarning"])
+                    this.allocationWarning!.push(item);
+            }
             this.debugMessage = _data["DebugMessage"];
         }
     }
@@ -2737,6 +2709,11 @@ export class NewJobs implements INewJobs {
             for (let item of this.programs)
                 data["Programs"].push(item.toJSON());
         }
+        if (Array.isArray(this.allocationWarning)) {
+            data["AllocationWarning"] = [];
+            for (let item of this.allocationWarning)
+                data["AllocationWarning"].push(item);
+        }
         data["DebugMessage"] = this.debugMessage;
         return data;
     }
@@ -2752,6 +2729,7 @@ export interface INewJobs {
     simWorkordersFilled?: WorkorderSimFilled[] | undefined;
     currentUnfilledWorkorders?: Workorder[] | undefined;
     programs?: NewProgramContent[] | undefined;
+    allocationWarning?: string[] | undefined;
     debugMessage?: string | undefined;
 }
 
