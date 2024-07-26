@@ -766,7 +766,17 @@ namespace BlackMaple.MachineFramework
       }
     }
 
+    public ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder)
+    {
+      return GetActiveWorkorders(partToFilter: null, workorderToFilter: workorder);
+    }
+
     public ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter = null)
+    {
+      return GetActiveWorkorders(partToFilter: partToFilter, workorderToFilter: null);
+    }
+
+    private ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter, string workorderToFilter)
     {
       using var trans = _connection.BeginTransaction();
 
@@ -791,7 +801,7 @@ namespace BlackMaple.MachineFramework
       }
 
       var workQry =
-        @"
+        $@"
           SELECT uw.Workorder, uw.Part, uw.Quantity, uw.DueDate, uw.Priority, sw.SimulatedStartDay, sw.SimulatedFilledDay,
           (
             SELECT COUNT(matdetails.MaterialID)
@@ -816,8 +826,17 @@ namespace BlackMaple.MachineFramework
 
           FROM workorder_cache uw
           LEFT OUTER JOIN sim_workorders sw ON sw.ScheduleId = $schid AND uw.Workorder = sw.Workorder AND uw.Part = sw.Part
-          WHERE uw.Archived = 0
+          WHERE
       ";
+
+      if (!string.IsNullOrEmpty(workorderToFilter))
+      {
+        workQry += " uw.Workorder = $workorder";
+      }
+      else
+      {
+        workQry += " uw.Archived = 0";
+      }
 
       if (!string.IsNullOrEmpty(partToFilter))
       {
@@ -948,6 +967,10 @@ namespace BlackMaple.MachineFramework
       if (!string.IsNullOrEmpty(partToFilter))
       {
         workCmd.Parameters.Add("part", SqliteType.Text).Value = partToFilter;
+      }
+      if (!string.IsNullOrEmpty(workorderToFilter))
+      {
+        workCmd.Parameters.Add("workorder", SqliteType.Text).Value = workorderToFilter;
       }
       serialCmd.CommandText = serialQry;
       serialCmd.Parameters.Add("workid", SqliteType.Text);

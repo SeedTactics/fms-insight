@@ -30,15 +30,17 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { ReactNode, memo, useState, useMemo } from "react";
+import { ReactNode, memo, useState, useMemo, Suspense, useTransition } from "react";
 import {
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
+  keyframes,
   MenuItem,
   Select,
   Stack,
@@ -64,6 +66,9 @@ import {
   Check,
   ErrorOutline,
   SavedSearch,
+  Search,
+  Clear,
+  Loop,
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
 import { addWorkorderComment, currentStatus } from "../../cell-status/current-status.js";
@@ -80,6 +85,19 @@ import copy from "copy-to-clipboard";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { WorkorderGantt } from "./WorkorderGantt.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
+import { LogBackend } from "../../network/backend.js";
+
+const currentWorkorderIdToSearch = atom<string | null>(null);
+
+const currentSearchedWorkorder = atom<Promise<ReadonlyArray<Readonly<IActiveWorkorder>> | null>>(
+  async (get, { signal }) => {
+    const workId = get(currentWorkorderIdToSearch);
+    if (workId === null) {
+      return null;
+    }
+    return (await LogBackend.getActiveWorkorder(workId, signal)) ?? [];
+  },
+);
 
 const WorkorderTableRow = styled(TableRow)({
   "& > *": {
@@ -343,6 +361,43 @@ function sortWorkorders(
   return LazySeq.of(workorders).toSortedArray(order === "asc" ? { asc: sortCol } : { desc: sortCol });
 }
 
+function WorkorderRows({
+  sortBy,
+  order,
+  showSim,
+}: {
+  sortBy: SortColumn;
+  order: "asc" | "desc";
+  showSim: boolean;
+}) {
+  const currentSt = useAtomValue(currentStatus);
+  const searched = useAtomValue(currentSearchedWorkorder);
+  const sorted = useMemo(
+    () => sortWorkorders(searched ?? currentSt.workorders ?? [], sortBy, order),
+    [currentSt.workorders, sortBy, order, searched],
+  );
+
+  if (searched && searched.length === 0) {
+    return (
+      <TableRow>
+        <TableCell colSpan={showSim ? 10 : 8}>No workorders found</TableCell>
+      </TableRow>
+    );
+  } else {
+    return (
+      <>
+        {sorted.map((workorder) => (
+          <WorkorderRow
+            key={`${workorder.workorderId}-${workorder.part}`}
+            workorder={workorder}
+            showSim={showSim}
+          />
+        ))}
+      </>
+    );
+  }
+}
+
 function copyWorkordersToClipboard(workorders: ReadonlyArray<IActiveWorkorder>, showSim: boolean) {
   let table = "<table>\n<thead><tr>";
   table += "<th>Workorder</th>";
@@ -396,6 +451,7 @@ function SortColHeader(props: {
   readonly sortBy: SortColumn;
   readonly setSortBy: (c: SortColumn) => void;
   readonly children: ReactNode;
+  readonly extraIcon?: ReactNode;
 }) {
   return (
     <TableCell align={props.align} sortDirection={props.sortBy === props.col ? props.order : false}>
@@ -415,6 +471,7 @@ function SortColHeader(props: {
           {props.children}
         </TableSortLabel>
       </Tooltip>
+      {props.extraIcon}
     </TableCell>
   );
 }
@@ -446,6 +503,95 @@ const SimulatedWarning = memo(function SimulatedWarning({ showSim }: { showSim: 
   );
 });
 
+const rotateKeyframes = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+  `;
+
+const RotatingLoadingIcon = styled(Loop)(() => ({
+  animation: `${rotateKeyframes} 1.5s linear infinite`,
+}));
+
+function WorkorderSearchButton() {
+  const [open, setOpen] = useState<boolean>(false);
+  const [loading, startTrans] = useTransition();
+
+  const [searchWorkId, setSearchWorkId] = useAtom(currentWorkorderIdToSearch);
+  const [curWorkId, setCurWorkId] = useState<string | null>(null);
+
+  function search() {
+    if (curWorkId !== null && curWorkId !== "") {
+      startTrans(() => {
+        setSearchWorkId(curWorkId);
+      });
+      setOpen(false);
+      setCurWorkId(null);
+    }
+  }
+
+  return (
+    <>
+      {loading ? (
+        <Tooltip title={"Searching.... Click to cancel"}>
+          <IconButton size="small" onClick={() => setSearchWorkId(null)}>
+            <RotatingLoadingIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      ) : searchWorkId ? (
+        <Tooltip title="Clear Search">
+          <IconButton size="small" onClick={() => setSearchWorkId(null)}>
+            <Clear fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      ) : (
+        <Tooltip title="Search">
+          <IconButton
+            size="small"
+            onClick={(e) => {
+              setOpen(true);
+              e.currentTarget.blur();
+            }}
+          >
+            <Search fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )}
+      <Dialog open={open} onClose={() => setOpen(false)}>
+        <DialogTitle>Search Workorder</DialogTitle>
+        <DialogContent>
+          <TextField
+            variant="outlined"
+            fullWidth
+            autoFocus
+            sx={{ mt: "0.5em" }}
+            label="Workorder ID"
+            value={curWorkId ?? ""}
+            onChange={(e) => setCurWorkId(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                search();
+                e.preventDefault();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button color="primary" onClick={search}>
+            Search
+          </Button>
+          <Button color="secondary" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
+
 const WorkorderHeader = memo(function WorkorderHeader(props: {
   readonly workorders: ReadonlyArray<IActiveWorkorder>;
   readonly showSim: boolean;
@@ -460,10 +606,16 @@ const WorkorderHeader = memo(function WorkorderHeader(props: {
     order: props.order,
     setOrder: props.setOrder,
   };
+
   return (
     <TableHead>
       <TableRow>
-        <SortColHeader align="left" col={SortColumn.WorkorderId} {...sort}>
+        <SortColHeader
+          align="left"
+          col={SortColumn.WorkorderId}
+          {...sort}
+          extraIcon={<WorkorderSearchButton />}
+        >
           Workorder
         </SortColHeader>
         <SortColHeader align="left" col={SortColumn.Part} {...sort}>
@@ -574,14 +726,31 @@ function WorkorderCommentDialog() {
   );
 }
 
+function SearchingWorkorder() {
+  const [workId, setWorkId] = useAtom(currentWorkorderIdToSearch);
+  return (
+    <TableRow>
+      <TableCell colSpan={10}>
+        <Stack direction="column" mt="3em" flex="flex" alignItems="center" width="100%">
+          <Stack direction="row" spacing="3">
+            <CircularProgress />
+            {workId && workId !== "" ? (
+              <Typography variant="h6">Searching for workorder {workId}</Typography>
+            ) : (
+              <Typography variant="h6">Searching</Typography>
+            )}
+          </Stack>
+          <Button onClick={() => setWorkId(null)}>Cancel</Button>
+        </Stack>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 function WorkorderTable({ showSim }: { showSim: boolean }) {
   const [sortBy, setSortBy] = useState<SortColumn>(SortColumn.WorkorderId);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const currentSt = useAtomValue(currentStatus);
-  const sorted = useMemo(
-    () => sortWorkorders(currentSt.workorders ?? [], sortBy, order),
-    [currentSt.workorders, sortBy, order],
-  );
   return (
     <Table stickyHeader>
       <WorkorderHeader
@@ -593,13 +762,9 @@ function WorkorderTable({ showSim }: { showSim: boolean }) {
         setOrder={setOrder}
       />
       <TableBody>
-        {sorted.map((workorder) => (
-          <WorkorderRow
-            key={`${workorder.workorderId}-${workorder.part}`}
-            workorder={workorder}
-            showSim={showSim}
-          />
-        ))}
+        <Suspense fallback={<SearchingWorkorder />}>
+          <WorkorderRows sortBy={sortBy} order={order} showSim={showSim} />
+        </Suspense>
       </TableBody>
     </Table>
   );

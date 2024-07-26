@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlackMaple.MachineFramework.Controllers
@@ -312,6 +313,13 @@ namespace BlackMaple.MachineFramework.Controllers
       }
       jobAndQueue.RecalculateCellState();
       return log;
+    }
+
+    [HttpGet("workorder/{workorder}")]
+    public ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder)
+    {
+      using var db = repo.OpenConnection();
+      return db.GetActiveWorkorder(workorder);
     }
   }
 }

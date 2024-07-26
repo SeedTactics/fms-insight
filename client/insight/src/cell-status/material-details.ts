@@ -185,12 +185,12 @@ export const workorderInMaterialDialog = atom<Promise<string | null>>(async (get
 
 const extraLogEventsFromUpdates = atom<ReadonlyArray<ILogEntry>>([]);
 
-const localMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(async (get) => {
+const localMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(async (get, { signal }) => {
   const mat = await get(materialInDialogInfo);
   if (mat === null) {
     return [];
   } else if (mat.materialID >= 0) {
-    return await LogBackend.logForMaterial(mat.materialID);
+    return await LogBackend.logForMaterial(mat.materialID, signal);
   } else if (mat.serial && mat.serial !== "") {
     return await LogBackend.logForSerial(mat.serial);
   } else {
@@ -199,14 +199,14 @@ const localMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(async (
 });
 const localMatEventsLoadable = loadable(localMatEvents);
 
-const otherMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(async (get) => {
+const otherMatEvents = atom<Promise<ReadonlyArray<Readonly<ILogEntry>>>>(async (get, { signal }) => {
   const serial = await get(serialInMaterialDialog);
   if (serial === null || serial === "") return [];
 
   const evts: Array<Readonly<ILogEntry>> = [];
 
   for (const b of OtherLogBackends) {
-    evts.push.apply(await b.logForSerial(serial));
+    evts.push.apply(await b.logForSerial(serial, signal));
   }
 
   return evts;

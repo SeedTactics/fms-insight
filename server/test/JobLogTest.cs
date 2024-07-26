@@ -1860,6 +1860,13 @@ namespace MachineWatchTest
 
       _jobLog.GetActiveWorkorders().Should().BeEquivalentTo(expectedActiveWorks);
 
+      _jobLog
+        .GetActiveWorkorder(workorder: "work1")
+        .Should()
+        .BeEquivalentTo([expectedActiveWorks[0], expectedActiveWorks[1]]);
+
+      _jobLog.GetActiveWorkorder(workorder: "asdoiuhwe").Should().BeEmpty();
+
       //---- test comments
       var finalizedEntry = _jobLog.RecordWorkorderComment(
         "work1",
@@ -1930,6 +1937,9 @@ namespace MachineWatchTest
       );
 
       _jobLog.GetActiveWorkorders().Should().BeEmpty();
+
+      // still loads even if archived
+      _jobLog.GetActiveWorkorder(workorder: "work2").Should().BeEquivalentTo([expectedActiveWorks[2]]);
     }
 
     [Fact]

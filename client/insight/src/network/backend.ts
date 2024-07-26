@@ -94,14 +94,14 @@ export interface FmsAPI {
 }
 
 export interface LogAPI {
-  get(startUTC: Date, endUTC: Date): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  get(startUTC: Date, endUTC: Date, signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   recent(
     lastSeenCounter: number,
     expectedEndUTCofLastSeen: Date | null | undefined,
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  logForMaterial(materialID: number): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  logForMaterial(materialID: number, signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  logForSerial(serial: string): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  logForSerial(serial: string, signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>>;
 
   setInspectionDecision(
@@ -124,6 +124,10 @@ export interface LogAPI {
     operName: string | null | undefined,
     comment: string,
   ): Promise<Readonly<api.ILogEntry>>;
+  getActiveWorkorder(
+    workorder: string,
+    signal?: AbortSignal,
+  ): Promise<ReadonlyArray<Readonly<api.IActiveWorkorder>>>;
 }
 
 export interface MachineAPI {

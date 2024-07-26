@@ -470,6 +470,9 @@ export function registerMockBackend(
         }),
       );
     },
+    getActiveWorkorder(): Promise<ReadonlyArray<Readonly<api.IActiveWorkorder>>> {
+      return Promise.resolve([]);
+    },
     recordOperatorNotes(materialID: number, process: number, operatorName: string | null, notes: string) {
       const mat = new api.LogMaterial({
         id: materialID,
