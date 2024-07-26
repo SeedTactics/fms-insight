@@ -1937,6 +1937,9 @@ namespace MachineWatchTest
       );
 
       _jobLog.GetActiveWorkorders().Should().BeEmpty();
+
+      // still loads even if archived
+      _jobLog.GetActiveWorkorder(workorder: "work2").Should().BeEquivalentTo([expectedActiveWorks[2]]);
     }
 
     [Fact]

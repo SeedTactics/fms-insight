@@ -826,16 +826,21 @@ namespace BlackMaple.MachineFramework
 
           FROM workorder_cache uw
           LEFT OUTER JOIN sim_workorders sw ON sw.ScheduleId = $schid AND uw.Workorder = sw.Workorder AND uw.Part = sw.Part
-          WHERE uw.Archived = 0
+          WHERE
       ";
+
+      if (!string.IsNullOrEmpty(workorderToFilter))
+      {
+        workQry += " uw.Workorder = $workorder";
+      }
+      else
+      {
+        workQry += " uw.Archived = 0";
+      }
 
       if (!string.IsNullOrEmpty(partToFilter))
       {
         workQry += " AND uw.Part = $part";
-      }
-      if (!string.IsNullOrEmpty(workorderToFilter))
-      {
-        workQry += " AND uw.Workorder = $workorder";
       }
 
       // For a given matdetails.MaterialID, check either for the most recent quarantine event
