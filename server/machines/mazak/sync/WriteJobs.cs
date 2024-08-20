@@ -308,7 +308,7 @@ namespace MazakMachineInterface
             {
               JobUnique = j.UniqueStr,
               Part = j.PartName,
-              Quantity = j.Cycles - qty
+              Quantity = j.Cycles - qty,
             };
           }
           else

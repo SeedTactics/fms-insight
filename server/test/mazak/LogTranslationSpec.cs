@@ -86,7 +86,7 @@ namespace MachineWatchTest
         LoadActions = Enumerable.Empty<LoadAction>(),
         PalletPositions = _palletPositions,
         PalletSubStatuses = _palletSubStatus,
-        Parts = _mazakPartRows
+        Parts = _mazakPartRows,
       };
 
       log = new LogTranslation(
@@ -139,7 +139,7 @@ namespace MachineWatchTest
       };
       for (int i = 0; i < numProc; i++)
       {
-        sch.Processes.Add(new MazakScheduleProcessRow() { MazakScheduleRowId = sch.Id, });
+        sch.Processes.Add(new MazakScheduleProcessRow() { MazakScheduleRowId = sch.Id });
       }
       _schedules.Add(sch);
       return sch.Id;
@@ -151,7 +151,7 @@ namespace MachineWatchTest
       var partRow = new MazakPartRow()
       {
         PartName = sch.PartName,
-        Comment = insightPart ? sch.Comment : null
+        Comment = insightPart ? sch.Comment : null,
       };
       for (int i = 0; i < programs.Count; i++)
       {
@@ -176,7 +176,7 @@ namespace MachineWatchTest
           PalletNumber = pal,
           ScheduleID = schId,
           PartProcessNumber = proc,
-          FixQuantity = fixQty
+          FixQuantity = fixQty,
         }
       );
     }
@@ -215,7 +215,7 @@ namespace MachineWatchTest
           NumProcesses = NumProcess,
           Face = Process,
           Serial = SerialSettings.ConvertToBase62(MaterialID).PadLeft(10, '0'),
-          Workorder = ""
+          Workorder = "",
         };
       }
     }
@@ -311,7 +311,7 @@ namespace MachineWatchTest
     {
       None,
       Assigned,
-      Casting
+      Casting,
     }
 
     protected void AddMaterialToQueue(
@@ -369,7 +369,7 @@ namespace MachineWatchTest
           {
             MaterialID = material.MaterialID,
             Process = proc,
-            Face = 0
+            Face = 0,
           },
           queue: queue,
           position: -1,
@@ -388,7 +388,7 @@ namespace MachineWatchTest
           {
             MaterialID = mat.MaterialID,
             Process = proc,
-            Face = 0
+            Face = 0,
           },
           null,
           mat.EventStartTime.AddMinutes(offset)
@@ -455,7 +455,7 @@ namespace MachineWatchTest
           ProgramDetails = ImmutableDictionary<string, string>.Empty.Add(
             "ProgramRevision",
             progRev.Value.ToString()
-          )
+          ),
         };
       }
       expected.Add(expectedLog);
@@ -532,7 +532,7 @@ namespace MachineWatchTest
           ProgramDetails = ImmutableDictionary<string, string>.Empty.Add(
             "ProgramRevision",
             progRev.Value.ToString()
-          )
+          ),
         };
       }
       expected.Add(newEntry);
@@ -562,7 +562,7 @@ namespace MachineWatchTest
       {
         ProgramDetails = ImmutableDictionary<string, string>
           .Empty.Add("InspectionType", inspTy)
-          .Add("ActualPath", JsonSerializer.Serialize(path.ToList()))
+          .Add("ActualPath", JsonSerializer.Serialize(path.ToList())),
       };
       expected.Add(e);
     }
@@ -606,7 +606,7 @@ namespace MachineWatchTest
               face: "",
               serial: "",
               workorder: ""
-            )
+            ),
           },
           pal: mats.First().Pallet,
           ty: LogType.LoadUnloadCycle,
@@ -1123,7 +1123,7 @@ namespace MachineWatchTest
           {
             MaterialID = mat.MaterialID,
             Process = mat.Process,
-            Face = mat.Process
+            Face = mat.Process,
           },
           pallet: mat.Pallet,
           queue: queue,
@@ -1175,7 +1175,7 @@ namespace MachineWatchTest
               {
                 MaterialID = matToAdd.MaterialID,
                 Serial = SerialSettings.ConvertToBase62(matToAdd.MaterialID).PadLeft(10, '0'),
-                Path = logMat.Process == 0 ? null : matToAdd.Path
+                Path = logMat.Process == 0 ? null : matToAdd.Path,
               }
           )(expected[i]);
         }
@@ -1201,7 +1201,7 @@ namespace MachineWatchTest
                 {
                   JobUniqueStr = matToAdd.Unique,
                   NumProcesses = 2,
-                  Path = m.Process == 0 ? null : matToAdd.Path
+                  Path = m.Process == 0 ? null : matToAdd.Path,
                 }
             )(expected[i]);
           }
@@ -1315,7 +1315,7 @@ namespace MachineWatchTest
             NumProcesses = 1,
             Serial = SerialSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
             Workorder = null,
-            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
           },
           options => options.ComparingByMembers<MaterialDetails>()
         );
@@ -1535,11 +1535,11 @@ namespace MachineWatchTest
                   {
                     StationGroup = "machinespec",
                     ExpectedCycleTime = TimeSpan.FromMinutes(33),
-                    Stations = ImmutableList<int>.Empty
+                    Stations = ImmutableList<int>.Empty,
                   }
-                )
+                ),
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
@@ -1553,13 +1553,13 @@ namespace MachineWatchTest
                   {
                     StationGroup = "machinespec",
                     ExpectedCycleTime = TimeSpan.FromMinutes(44),
-                    Stations = ImmutableList<int>.Empty
+                    Stations = ImmutableList<int>.Empty,
                   }
-                )
+                ),
               }
-            )
+            ),
           }
-        )
+        ),
       };
       var j2 = new Job()
       {
@@ -1582,11 +1582,11 @@ namespace MachineWatchTest
                   {
                     StationGroup = "machinespec",
                     ExpectedCycleTime = TimeSpan.FromMinutes(33),
-                    Stations = ImmutableList<int>.Empty
+                    Stations = ImmutableList<int>.Empty,
                   }
-                )
+                ),
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
@@ -1600,13 +1600,13 @@ namespace MachineWatchTest
                   {
                     StationGroup = "machinespec",
                     ExpectedCycleTime = TimeSpan.FromMinutes(44),
-                    Stations = ImmutableList<int>.Empty
+                    Stations = ImmutableList<int>.Empty,
                   }
-                )
+                ),
               }
-            )
+            ),
           }
-        )
+        ),
       };
       var newJobs = new NewJobs() { Jobs = ImmutableList.Create<Job>(j1, j2), ScheduleId = "activeTimeSch" };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
@@ -1912,11 +1912,11 @@ namespace MachineWatchTest
                     Counter = "counter1",
                     MaxVal = 10,
                     RandomFreq = 0,
-                    TimeInterval = TimeSpan.FromMinutes(1000)
+                    TimeInterval = TimeSpan.FromMinutes(1000),
                   }
-                )
+                ),
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
@@ -1930,13 +1930,13 @@ namespace MachineWatchTest
                     Counter = "counter2",
                     MaxVal = 15,
                     RandomFreq = 0,
-                    TimeInterval = TimeSpan.FromMinutes(1500)
+                    TimeInterval = TimeSpan.FromMinutes(1500),
                   }
-                )
+                ),
               }
-            )
+            ),
           }
-        )
+        ),
       };
       var newJobs = new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "schinspections" };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
@@ -1964,8 +1964,8 @@ namespace MachineWatchTest
             Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() { StationName = "machinespec", StationNum = 4 }
             ),
-            UnloadStation = -1
-          }
+            UnloadStation = -1,
+          },
         }
       );
 
@@ -1994,7 +1994,7 @@ namespace MachineWatchTest
             Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() { StationName = "machinespec", StationNum = 4 }
             ),
-            UnloadStation = 1
+            UnloadStation = 1,
           },
           new MaterialProcessActualPath()
           {
@@ -2005,8 +2005,8 @@ namespace MachineWatchTest
             Stops = ImmutableList.Create(
               new MaterialProcessActualPath.Stop() { StationName = "machinespec", StationNum = 7 }
             ),
-            UnloadStation = -1
-          }
+            UnloadStation = -1,
+          },
         }
       );
 
@@ -2040,11 +2040,11 @@ namespace MachineWatchTest
                     ProgramRevision = 15,
                     StationGroup = "",
                     Stations = ImmutableList<int>.Empty,
-                    ExpectedCycleTime = TimeSpan.Zero
+                    ExpectedCycleTime = TimeSpan.Zero,
                   }
-                )
+                ),
               }
-            )
+            ),
           }
         ),
       };
@@ -2069,11 +2069,11 @@ namespace MachineWatchTest
                     ProgramRevision = 12,
                     StationGroup = "",
                     Stations = ImmutableList<int>.Empty,
-                    ExpectedCycleTime = TimeSpan.Zero
+                    ExpectedCycleTime = TimeSpan.Zero,
                   }
-                )
+                ),
               }
-            )
+            ),
           }
         ),
       };
@@ -2213,13 +2213,13 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" }),
           },
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
           }
-        )
+        ),
       };
       var newJobs = new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "queueSch" };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
@@ -2354,7 +2354,7 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" }),
           },
           new ProcessInfo()
           {
@@ -2362,11 +2362,11 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                OutputQueue = "externalq"
+                OutputQueue = "externalq",
               }
-            )
+            ),
           }
-        )
+        ),
       };
       var j2 = new Job()
       {
@@ -2379,7 +2379,7 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" }),
           },
           new ProcessInfo()
           {
@@ -2387,11 +2387,11 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                OutputQueue = "externalq"
+                OutputQueue = "externalq",
               }
-            )
+            ),
           }
-        )
+        ),
       };
       var newJobs = new NewJobs() { Jobs = ImmutableList.Create<Job>(j1, j2), ScheduleId = "queueSch" };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
@@ -2452,12 +2452,10 @@ namespace MachineWatchTest
                   Serial = SerialSettings.ConvertToBase62(i).PadLeft(10, '0'),
                   Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
                   AddTimeUTC = t.AddMinutes(
-                    i <= 3
-                      ? 15
-                      : i <= 6
-                        ? 27
-                        : 33
-                  )
+                    i <= 3 ? 15
+                    : i <= 6 ? 27
+                    : 33
+                  ),
                 }
             )
         );
@@ -2493,7 +2491,7 @@ namespace MachineWatchTest
                 NextProcess = 2,
                 Serial = SerialSettings.ConvertToBase62(i).PadLeft(10, '0'),
                 Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-                AddTimeUTC = t.AddMinutes(i <= 6 ? 27 : 33)
+                AddTimeUTC = t.AddMinutes(i <= 6 ? 27 : 33),
               }
           )
         );
@@ -2534,7 +2532,7 @@ namespace MachineWatchTest
                 NextProcess = 2,
                 Serial = SerialSettings.ConvertToBase62(i).PadLeft(10, '0'),
                 Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-                AddTimeUTC = t.AddMinutes(27)
+                AddTimeUTC = t.AddMinutes(27),
               }
           )
         );
@@ -2568,21 +2566,21 @@ namespace MachineWatchTest
               Server = "testserver",
               PartName = "pppp",
               Queue = "externalq",
-              Serial = "0000000001"
+              Serial = "0000000001",
             },
             new MaterialToSendToExternalQueue()
             {
               Server = "testserver",
               PartName = "pppp",
               Queue = "externalq",
-              Serial = "0000000002"
+              Serial = "0000000002",
             },
             new MaterialToSendToExternalQueue()
             {
               Server = "testserver",
               PartName = "pppp",
               Queue = "externalq",
-              Serial = "0000000003"
+              Serial = "0000000003",
             },
           }
         );
@@ -2612,13 +2610,13 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { OutputQueue = "thequeue" }),
           },
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
           }
-        )
+        ),
       };
       var newJobs = new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "queueSch" };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
@@ -2678,15 +2676,15 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "rawmat",
-                OutputQueue = "thequeue"
+                OutputQueue = "thequeue",
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
           }
-        )
+        ),
       };
       var newJobs = new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "swapSch" };
       jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
@@ -2755,7 +2753,7 @@ namespace MachineWatchTest
               Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
               PartNameOrCasting = mat1.JobPartName,
               NumProcesses = mat1.NumProcess,
-            }
+            },
           ],
           options => options.ComparingByMembers<QueuedMaterial>().Excluding(o => o.AddTimeUTC)
         );
@@ -2852,7 +2850,7 @@ namespace MachineWatchTest
             GroupNo = "ignored",
             IsToolDataValid = true,
             LifeUsed = 20,
-            LifeSpan = 101
+            LifeSpan = 101,
           },
           new ToolPocketRow()
           {
@@ -2861,7 +2859,7 @@ namespace MachineWatchTest
             GroupNo = "tool1",
             IsToolDataValid = true,
             LifeUsed = 30,
-            LifeSpan = 102
+            LifeSpan = 102,
           },
           new ToolPocketRow()
           {
@@ -2870,7 +2868,7 @@ namespace MachineWatchTest
             GroupNo = "tool2",
             IsToolDataValid = true,
             LifeUsed = 40,
-            LifeSpan = 103
+            LifeSpan = 103,
           },
           new ToolPocketRow()
           {
@@ -2879,7 +2877,7 @@ namespace MachineWatchTest
             GroupNo = "ignored",
             IsToolDataValid = false,
             LifeUsed = 50,
-            LifeSpan = 104
+            LifeSpan = 104,
           },
           new ToolPocketRow()
           {
@@ -2888,7 +2886,7 @@ namespace MachineWatchTest
             GroupNo = null,
             IsToolDataValid = false,
             LifeUsed = 60,
-            LifeSpan = 105
+            LifeSpan = 105,
           },
           new ToolPocketRow()
           {
@@ -2897,8 +2895,8 @@ namespace MachineWatchTest
             GroupNo = "ignored",
             IsToolDataValid = false,
             LifeUsed = 70,
-            LifeSpan = 106
-          }
+            LifeSpan = 106,
+          },
         }
       );
       MachStart(p, offset: 4, mach: 2);
@@ -2914,7 +2912,7 @@ namespace MachineWatchTest
             GroupNo = "ignored",
             IsToolDataValid = true,
             LifeUsed = 22,
-            LifeSpan = 101
+            LifeSpan = 101,
           },
           new ToolPocketRow()
           {
@@ -2923,7 +2921,7 @@ namespace MachineWatchTest
             GroupNo = "tool1",
             IsToolDataValid = true,
             LifeUsed = 33,
-            LifeSpan = 102
+            LifeSpan = 102,
           },
           new ToolPocketRow()
           {
@@ -2932,7 +2930,7 @@ namespace MachineWatchTest
             GroupNo = "tool2",
             IsToolDataValid = true,
             LifeUsed = 44,
-            LifeSpan = 103
+            LifeSpan = 103,
           },
           new ToolPocketRow()
           {
@@ -2941,7 +2939,7 @@ namespace MachineWatchTest
             GroupNo = "ignored",
             IsToolDataValid = false,
             LifeUsed = 55,
-            LifeSpan = 104
+            LifeSpan = 104,
           },
           new ToolPocketRow()
           {
@@ -2950,7 +2948,7 @@ namespace MachineWatchTest
             GroupNo = null,
             IsToolDataValid = false,
             LifeUsed = 66,
-            LifeSpan = 105
+            LifeSpan = 105,
           },
           new ToolPocketRow()
           {
@@ -2959,8 +2957,8 @@ namespace MachineWatchTest
             GroupNo = "ignored",
             IsToolDataValid = false,
             LifeUsed = 77,
-            LifeSpan = 106
-          }
+            LifeSpan = 106,
+          },
         }
       );
       MachEnd(
@@ -2976,7 +2974,7 @@ namespace MachineWatchTest
             Pocket = 10,
             ToolUseDuringCycle = TimeSpan.FromSeconds(33 - 30),
             TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(33),
-            ConfiguredToolLife = TimeSpan.FromSeconds(102)
+            ConfiguredToolLife = TimeSpan.FromSeconds(102),
           },
           new ToolUse()
           {
@@ -2984,8 +2982,8 @@ namespace MachineWatchTest
             Pocket = 20,
             ToolUseDuringCycle = TimeSpan.FromSeconds(44 - 40),
             TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(44),
-            ConfiguredToolLife = TimeSpan.FromSeconds(103)
-          }
+            ConfiguredToolLife = TimeSpan.FromSeconds(103),
+          },
         }
       );
 
@@ -3051,7 +3049,7 @@ namespace MachineWatchTest
             NumProcesses = 1,
             Serial = SerialSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
             Workorder = null,
-            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
           },
           options => options.ComparingByMembers<MaterialDetails>()
         );
@@ -3196,8 +3194,8 @@ namespace MachineWatchTest
               NextProcess = 2,
               Serial = SerialSettings.ConvertToBase62(m2proc1.MaterialID).PadLeft(10, '0'),
               Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-              AddTimeUTC = t.AddMinutes(10)
-            }
+              AddTimeUTC = t.AddMinutes(10),
+            },
           }
         );
 

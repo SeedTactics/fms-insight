@@ -100,7 +100,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             ProgramNum = newprog.ProgramNum,
             Comment = newprog.IccProgramComment,
             CycleTime = TimeSpan.FromMinutes(newprog.ProgramRevision),
-            Tools = new List<int>()
+            Tools = new List<int>(),
           };
           break;
       }
@@ -125,7 +125,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             Machining = false,
             CurrentlyExecutingProgram = 0,
             FMSLinkMode = true,
-            Alarm = false
+            Alarm = false,
           }
         );
         _lastMachineTransition[mach] = _status.TimeOfStatusUTC;
@@ -140,7 +140,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             Master = new PalletMaster() { PalletNum = pal, NoWork = true },
             CurStation = NiigataStationNum.Buffer(pal),
-            Tracking = new TrackingInfo() { RouteInvalid = true, Alarm = false }
+            Tracking = new TrackingInfo() { RouteInvalid = true, Alarm = false },
           }
         );
         _lastPalTransition[pal] = _status.TimeOfStatusUTC;
@@ -210,7 +210,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum]
                       .Add(LoadTime);
                     pal.Tracking.CurrentControlNum += 1;
-                  }
+                  },
                 }
               );
             }
@@ -233,7 +233,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     {
                       _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                       pal.CurStation = NiigataStationNum.Cart();
-                    }
+                    },
                   }
                 );
               }
@@ -263,7 +263,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                         .Add(CartTravelTime);
                       pal.CurStation = NiigataStationNum.LoadStation(lul);
                       _status.LoadStations[lul].PalletExists = true;
-                    }
+                    },
                   }
                 );
               }
@@ -286,7 +286,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                       _status.LoadStations[pal.CurStation.Location.Num].PalletExists = false;
                       pal.CurStation = NiigataStationNum.Cart();
-                    }
+                    },
                   }
                 );
               }
@@ -309,7 +309,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       pal.CurStation = NiigataStationNum.MachineQueue(mach, _statNames);
                       pal.Tracking.CurrentControlNum += 1;
                       pal.Tracking.CurrentStepNum += 1;
-                    }
+                    },
                   }
                 );
               }
@@ -326,7 +326,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       pal.CurStation = NiigataStationNum.Buffer(pal.Master.PalletNum);
                       pal.Tracking.CurrentControlNum += 1;
                       pal.Tracking.CurrentStepNum += 1;
-                    }
+                    },
                   }
                 );
               }
@@ -354,7 +354,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     {
                       _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                       pal.CurStation = NiigataStationNum.Cart();
-                    }
+                    },
                   }
                 );
               }
@@ -374,7 +374,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       _lastPalTransition[pal.Master.PalletNum] = _lastPalTransition[pal.Master.PalletNum]
                         .Add(CartTravelTime);
                       pal.CurStation = NiigataStationNum.MachineQueue(mc, _statNames);
-                    }
+                    },
                   }
                 );
               }
@@ -428,7 +428,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                         _lastPalTransition[palInsideMachine.Master.PalletNum] = swapTime;
                         palInsideMachine.CurStation = NiigataStationNum.MachineQueue(mc, _statNames);
                       }
-                    }
+                    },
                   }
                 );
               }
@@ -470,7 +470,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       pal.Tracking.CurrentControlNum += 1;
                       _status.Machines[mc].Machining = false;
                     }
-                  }
+                  },
                 }
               );
             }
@@ -527,7 +527,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                         _lastPalTransition[palOnQueue.Master.PalletNum] = swapTime;
                         palOnQueue.CurStation = NiigataStationNum.Machine(mc, _statNames);
                       }
-                    }
+                    },
                   }
                 );
               }
@@ -545,7 +545,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     {
                       _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                       pal.CurStation = NiigataStationNum.Cart();
-                    }
+                    },
                   }
                 );
               }
@@ -573,7 +573,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       pal.Tracking.CurrentStepNum += 1;
                       pal.Tracking.CurrentControlNum += 1;
                       _status.LoadStations[toLoad].PalletExists = true;
-                    }
+                    },
                   }
                 );
               }
@@ -590,7 +590,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       pal.CurStation = NiigataStationNum.Buffer(pal.Master.PalletNum);
                       pal.Tracking.CurrentStepNum += 1;
                       pal.Tracking.CurrentControlNum += 1;
-                    }
+                    },
                   }
                 );
               }
@@ -614,7 +614,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   {
                     _lastPalTransition[pal.Master.PalletNum] += ReclampTime;
                     pal.Tracking.CurrentControlNum += 1;
-                  }
+                  },
                 }
               );
             }
@@ -632,7 +632,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     {
                       _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                       pal.CurStation = NiigataStationNum.Cart();
-                    }
+                    },
                   }
                 );
               }
@@ -653,7 +653,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                         .Add(CartTravelTime);
                       pal.CurStation = NiigataStationNum.LoadStation(lul);
                       _status.LoadStations[lul].PalletExists = true;
-                    }
+                    },
                   }
                 );
               }
@@ -676,7 +676,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                       _status.LoadStations[pal.CurStation.Location.Num].PalletExists = false;
                       pal.CurStation = NiigataStationNum.Cart();
-                    }
+                    },
                   }
                 );
               }
@@ -695,7 +695,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     pal.CurStation = NiigataStationNum.Buffer(pal.Master.PalletNum);
                     pal.Tracking.CurrentControlNum += 1;
                     pal.Tracking.CurrentStepNum += 1;
-                  }
+                  },
                 }
               );
             }
@@ -729,7 +729,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       pal.Tracking.CurrentStepNum = 1;
                       pal.Tracking.CurrentControlNum = 2;
                     }
-                  }
+                  },
                 }
               );
             }
@@ -747,7 +747,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     {
                       _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                       pal.CurStation = NiigataStationNum.Cart();
-                    }
+                    },
                   }
                 );
               }
@@ -768,7 +768,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                         .Add(CartTravelTime);
                       pal.CurStation = NiigataStationNum.LoadStation(lul);
                       _status.LoadStations[lul].PalletExists = true;
-                    }
+                    },
                   }
                 );
               }
@@ -794,7 +794,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       _lastPalTransition[pal.Master.PalletNum] = _status.TimeOfStatusUTC;
                       _status.LoadStations[pal.CurStation.Location.Num].PalletExists = false;
                       pal.CurStation = NiigataStationNum.Cart();
-                    }
+                    },
                   }
                 );
               }
@@ -816,7 +816,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     pal.CurStation = NiigataStationNum.Buffer(pal.Master.PalletNum);
                     pal.Tracking.CurrentStepNum = 1;
                     pal.Tracking.CurrentControlNum = 1;
-                  }
+                  },
                 }
               );
             }

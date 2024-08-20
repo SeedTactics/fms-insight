@@ -552,7 +552,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = m.MaterialID,
         Process = m.Process,
-        Face = m.Face
+        Face = m.Face,
       };
     }
   }

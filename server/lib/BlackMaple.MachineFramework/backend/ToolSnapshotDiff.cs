@@ -185,7 +185,7 @@ namespace BlackMaple.MachineFramework
               ConfiguredToolLife = startPocket?.TotalLifeTime ?? endTool.TotalLifeTime,
               ToolUseCountDuringCycle = usageCount,
               TotalToolUseCountAtEndOfCycle = endTool.CurrentUseCount,
-              ConfiguredToolLifeCount = startPocket?.TotalLifeCount ?? endTool.TotalLifeCount
+              ConfiguredToolLifeCount = startPocket?.TotalLifeCount ?? endTool.TotalLifeCount,
             }
           );
         }

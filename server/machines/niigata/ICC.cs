@@ -156,7 +156,7 @@ namespace BlackMaple.FMSInsight.Niigata
         "status_pallet_route_step_program",
         "status_pallet_route_step",
         "status_program",
-        "status_program_tool"
+        "status_program_tool",
       }
     );
 
@@ -240,7 +240,7 @@ namespace BlackMaple.FMSInsight.Niigata
         Unload = 2,
         Reclamp = 3,
         Machine = 4,
-        Wash = 5
+        Wash = 5,
       }
 
       public int PalletNum { get; set; }
@@ -276,7 +276,7 @@ namespace BlackMaple.FMSInsight.Niigata
           Programs = new Dictionary<int, ProgramEntry>(),
           Machines = new Dictionary<int, MachineStatus>(),
           LoadStations = new Dictionary<int, LoadStatus>(),
-          TimeOfStatusUTC = DateTime.UtcNow
+          TimeOfStatusUTC = DateTime.UtcNow,
         };
       }
       using (var conn = new NpgsqlConnection(_connStr))
@@ -340,7 +340,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 {
                   Master = master,
                   Tracking = tracking,
-                  CurStation = new NiigataStationNum(curStat.StationNum ?? 1, _settings.StationNames)
+                  CurStation = new NiigataStationNum(curStat.StationNum ?? 1, _settings.StationNames),
                 },
               splitOn: $"{nameof(TrackingInfo.RouteInvalid)},{nameof(CurrentStationNum.StationNum)}",
               transaction: trans
@@ -400,7 +400,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 route = new UnloadStep()
                 {
                   UnloadStations = stats.ToList(),
-                  CompletedPartCount = step.CompletedPartCount
+                  CompletedPartCount = step.CompletedPartCount,
                 };
                 break;
 
@@ -419,7 +419,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 route = new WashStep()
                 {
                   WashStations = stats.ToList(),
-                  WashingPattern = step.WashingPattern
+                  WashingPattern = step.WashingPattern,
                 };
                 break;
 
@@ -766,7 +766,7 @@ namespace BlackMaple.FMSInsight.Niigata
                       RouteNo = idx + 1,
                       RouteType = StatusRouteStep.RouteTypeE.Load,
                       CompletedCount = 0,
-                      WashingPattern = 0
+                      WashingPattern = 0,
                     };
                   case UnloadStep unload:
                     return new
@@ -775,7 +775,7 @@ namespace BlackMaple.FMSInsight.Niigata
                       RouteNo = idx + 1,
                       RouteType = StatusRouteStep.RouteTypeE.Unload,
                       CompletedCount = unload.CompletedPartCount,
-                      WashingPattern = 0
+                      WashingPattern = 0,
                     };
                   case ReclampStep reclamp:
                     return new
@@ -784,7 +784,7 @@ namespace BlackMaple.FMSInsight.Niigata
                       RouteNo = idx + 1,
                       RouteType = StatusRouteStep.RouteTypeE.Reclamp,
                       CompletedCount = 0,
-                      WashingPattern = 0
+                      WashingPattern = 0,
                     };
                   case MachiningStep machine:
                     return new
@@ -793,7 +793,7 @@ namespace BlackMaple.FMSInsight.Niigata
                       RouteNo = idx + 1,
                       RouteType = StatusRouteStep.RouteTypeE.Machine,
                       CompletedCount = 0,
-                      WashingPattern = 0
+                      WashingPattern = 0,
                     };
                   case WashStep wash:
                     return new
@@ -802,7 +802,7 @@ namespace BlackMaple.FMSInsight.Niigata
                       RouteNo = idx + 1,
                       RouteType = StatusRouteStep.RouteTypeE.Machine,
                       CompletedCount = 0,
-                      WashingPattern = wash.WashingPattern
+                      WashingPattern = wash.WashingPattern,
                     };
                   default:
                     throw new Exception("Unknown route step");
@@ -830,7 +830,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   {
                     ProposalId,
                     RouteNo = idx + 1,
-                    StationNo = stat
+                    StationNo = stat,
                   })
             )
           );
@@ -859,7 +859,7 @@ namespace BlackMaple.FMSInsight.Niigata
                         ProposalId,
                         RouteNo = stepIdx + 1,
                         ProgramOrder = progIdx + 1,
-                        ProgramNum = prog
+                        ProgramNum = prog,
                       }
                   )
             )
@@ -1191,7 +1191,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               RegId = RegId,
               ProgNum = delete.ProgramNum,
-              Overwrite = true
+              Overwrite = true,
             },
             transaction: trans
           );

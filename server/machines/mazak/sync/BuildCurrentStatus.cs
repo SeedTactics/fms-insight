@@ -199,7 +199,7 @@ namespace MazakMachineInterface
               CurrentPalletLocation = palLoc,
               FixtureOnPallet = palRow.Fixture,
               NumFaces = 1,
-              OnHold = false
+              OnHold = false,
             }
           );
 
@@ -218,7 +218,7 @@ namespace MazakMachineInterface
 
             palletsByName[palName] = palletsByName[palName] with
             {
-              NumFaces = Math.Max(palletsByName[palName].NumFaces, palSub.PartProcessNumber)
+              NumFaces = Math.Max(palletsByName[palName].NumFaces, palSub.PartProcessNumber),
             };
 
             var job = jobsByUniq[jobUniqBySchID[palSub.ScheduleID]];
@@ -254,7 +254,7 @@ namespace MazakMachineInterface
 
               var action = new InProcessMaterialAction()
               {
-                Type = InProcessMaterialAction.ActionType.Waiting
+                Type = InProcessMaterialAction.ActionType.Waiting,
               };
 
               if (loadNext != null)
@@ -267,7 +267,7 @@ namespace MazakMachineInterface
                   LoadOntoPalletNum = palName,
                   ProcessAfterLoad = palSub.PartProcessNumber + 1,
                   PathAfterLoad = 1,
-                  ElapsedLoadUnloadTime = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null
+                  ElapsedLoadUnloadTime = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null,
                 };
               }
               else if (unload != null)
@@ -287,7 +287,7 @@ namespace MazakMachineInterface
                     oldCycles,
                     fmsSettings
                   ),
-                  ElapsedLoadUnloadTime = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null
+                  ElapsedLoadUnloadTime = start != null ? (TimeSpan?)utcNow.Subtract(start.EndTimeUTC) : null,
                 };
               }
               else
@@ -303,7 +303,7 @@ namespace MazakMachineInterface
                     Type = InProcessMaterialAction.ActionType.Machining,
                     ElapsedMachiningTime = elapsedTime,
                     ExpectedRemainingMachiningTime =
-                      machStop != null ? machStop.ExpectedCycleTime.Subtract(elapsedTime) : TimeSpan.Zero
+                      machStop != null ? machStop.ExpectedCycleTime.Subtract(elapsedTime) : TimeSpan.Zero,
                   };
                 }
               }
@@ -340,9 +340,9 @@ namespace MazakMachineInterface
                   {
                     Type = InProcessMaterialLocation.LocType.OnPallet,
                     PalletNum = palName,
-                    Face = face
+                    Face = face,
                   },
-                  Action = action
+                  Action = action,
                 }
               );
             }
@@ -402,7 +402,7 @@ namespace MazakMachineInterface
                 Enumerable.Range(1, p.Paths.Count).Select(x => precedence).ToImmutableList()
               )
               .ToImmutableList(),
-            AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(j.UniqueStr))
+            AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(j.UniqueStr)),
           };
         });
 
@@ -428,7 +428,7 @@ namespace MazakMachineInterface
                 ReasonForUserHold = "",
                 HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
                 HoldUnholdPatternStartUTC = DateTime.MinValue,
-                HoldUnholdPatternRepeats = false
+                HoldUnholdPatternRepeats = false,
               }
               : null,
             Cycles = job.Cycles,
@@ -440,7 +440,7 @@ namespace MazakMachineInterface
             RemainingToStart = Math.Max(job.Cycles - job.Started, 0),
             Decrements = EmptyToNull(jobDB.LoadDecrementsForJob(job.UniqueStr)),
             AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(job.UniqueStr)),
-            Precedence = job.Precedence.Select(p => p.ToImmutable()).ToImmutableList()
+            Precedence = job.Precedence.Select(p => p.ToImmutable()).ToImmutableList(),
           })
           .Concat(notCopied)
           .ToImmutableDictionary(j => j.UniqueStr),
@@ -451,7 +451,7 @@ namespace MazakMachineInterface
           .Where(a => !string.IsNullOrEmpty(a.AlarmMessage))
           .Select(a => a.AlarmMessage)
           .ToImmutableList(),
-        Workorders = jobDB.GetActiveWorkorders()
+        Workorders = jobDB.GetActiveWorkorders(),
       };
     }
 
@@ -545,7 +545,7 @@ namespace MazakMachineInterface
           Stations = machines.ToImmutable(),
           Program = partProcRow.MainProgram,
           ProgramRevision = null,
-          ExpectedCycleTime = dbPath?.Stops?.FirstOrDefault()?.ExpectedCycleTime ?? TimeSpan.Zero
+          ExpectedCycleTime = dbPath?.Stops?.FirstOrDefault()?.ExpectedCycleTime ?? TimeSpan.Zero,
         };
 
         //Planned Pallets
@@ -735,7 +735,7 @@ namespace MazakMachineInterface
                 LoadOntoFace = loadAct.Process,
                 ProcessAfterLoad = loadAct.Process,
                 PathAfterLoad = 1,
-                ElapsedLoadUnloadTime = elapsedLoadTime
+                ElapsedLoadUnloadTime = elapsedLoadTime,
               };
               currentActions.Remove(loadAct);
               break;
@@ -818,9 +818,9 @@ namespace MazakMachineInterface
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
                 PalletNum = palletName,
-                Face = unload.Process
+                Face = unload.Process,
               },
-              Action = action
+              Action = action,
             }
           );
         }
@@ -911,7 +911,7 @@ namespace MazakMachineInterface
                 LoadOntoFace = operation.Process,
                 ProcessAfterLoad = operation.Process,
                 PathAfterLoad = operation.Path,
-                ElapsedLoadUnloadTime = elapsedLoadTime
+                ElapsedLoadUnloadTime = elapsedLoadTime,
               },
               SignaledInspections =
                 matId >= 0

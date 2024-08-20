@@ -311,7 +311,7 @@ namespace MazakMachineInterface
       {
         ProgramName = "",
         CellControllerProgramName = template.MainProgram,
-        Revision = 0
+        Revision = 0,
       };
     }
 
@@ -459,7 +459,7 @@ namespace MazakMachineInterface
         {
           if (!UsedFixtures.Contains(fixRow.FixtureName))
           {
-            var newFixRow = fixRow with { Command = MazakWriteCommand.Delete, };
+            var newFixRow = fixRow with { Command = MazakWriteCommand.Delete };
             fixRows.Add(newFixRow);
           }
         }
@@ -492,7 +492,7 @@ namespace MazakMachineInterface
           {
             Command = MazakWriteCommand.Delete,
             MainProgram = prog.MainProgram,
-            Comment = prog.Comment
+            Comment = prog.Comment,
           }
         );
       }
@@ -563,7 +563,7 @@ namespace MazakMachineInterface
                   proc.PartProgram.ProgramName,
                   proc.PartProgram.Revision
                 ),
-                ProgramContent = getProgramContent(proc.PartProgram.ProgramName, proc.PartProgram.Revision)
+                ProgramContent = getProgramContent(proc.PartProgram.ProgramName, proc.PartProgram.Revision),
               };
               newProgs[(newProg.ProgramName, newProg.ProgramRevision)] = newProg;
             }
@@ -612,7 +612,9 @@ namespace MazakMachineInterface
             {
               Command = MazakWriteCommand.Delete,
               TotalProcess = partRow.Processes.Count(),
-              Processes = new List<MazakPartProcessRow>() // when deleting, don't need to add process rows
+              Processes =
+                new List<MazakPartProcessRow>() // when deleting, don't need to add process rows
+              ,
             };
             partRows.Add(newPartRow);
           }
@@ -638,7 +640,7 @@ namespace MazakMachineInterface
             //not found, can delete it
             var newPalRow = palRow with
             {
-              Command = MazakWriteCommand.Delete
+              Command = MazakWriteCommand.Delete,
             };
             palRows.Add(newPalRow);
           }
@@ -701,7 +703,7 @@ namespace MazakMachineInterface
         AllParts = allParts,
         Fixtures = groups,
         UsedFixtures = usedFixtures,
-        UsedMainProgramComments = usedProgs
+        UsedMainProgramComments = usedProgs,
       };
     }
 
@@ -910,7 +912,7 @@ namespace MazakMachineInterface
             {
               ProgramName = "",
               Revision = 0,
-              CellControllerProgramName = stop.Program
+              CellControllerProgramName = stop.Program,
             };
           }
           else

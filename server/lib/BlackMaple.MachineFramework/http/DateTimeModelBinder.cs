@@ -45,7 +45,7 @@ namespace BlackMaple.MachineFramework
     {
       "yyyyMMddTHHmmssZ",
       "yyyy-MM-ddTHH:mm:ssZ",
-      "yyyy-MM-ddTHH:mm:ss.FFFZ"
+      "yyyy-MM-ddTHH:mm:ss.FFFZ",
     };
 
     public Task BindModelAsync(ModelBindingContext bindingContext)

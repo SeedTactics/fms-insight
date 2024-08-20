@@ -50,7 +50,7 @@ namespace BlackMaple.MachineFramework
 
     Buffer,
 
-    Cart
+    Cart,
   }
 
   public record PalletLocation

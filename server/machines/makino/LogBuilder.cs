@@ -372,7 +372,7 @@ namespace BlackMaple.FMSInsight.Makino
               w.FixtureNumber,
               w.LoadOrderName,
               w.EndDateTimeUTC.AddSeconds(1)
-            )
+            ),
           }
         );
       }
@@ -386,8 +386,8 @@ namespace BlackMaple.FMSInsight.Makino
             {
               LoadStation = loc.Num,
               Elapsed = elapsed,
-              Faces = faces.ToImmutable()
-            }
+              Faces = faces.ToImmutable(),
+            },
           },
           pallet: ws.Key.PalletID,
           timeUTC: ws.Key.EndDateTimeUTC.AddSeconds(1)
@@ -433,7 +433,7 @@ namespace BlackMaple.FMSInsight.Makino
           {
             MaterialID = matId,
             Process = process,
-            Face = fixturenum
+            Face = fixturenum,
           })
           .ToList();
       }
@@ -443,7 +443,7 @@ namespace BlackMaple.FMSInsight.Makino
         {
           MaterialID = m.MaterialID,
           Process = process,
-          Face = fixturenum
+          Face = fixturenum,
         })
         .ToList();
 
@@ -465,7 +465,7 @@ namespace BlackMaple.FMSInsight.Makino
             {
               MaterialID = matId,
               Process = process,
-              Face = fixturenum
+              Face = fixturenum,
             })
         );
       }

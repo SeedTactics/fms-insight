@@ -60,7 +60,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       _serialSt = new SerialSettings()
       {
-        ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
+        ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10),
       };
       _fmsSt = new FMSSettings();
       _fmsSt.Queues.Add("Transfer", new QueueInfo() { MaxSizeBeforeStopUnloading = -1 });
@@ -99,7 +99,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         SQLConnectionString = "",
         RequireProgramsInJobs = false,
         StationNames = statNames,
-        MachineIPs = []
+        MachineIPs = [],
       };
 
       _sync = new SyncNiigataPallets(_fmsSt, settings, _sim, machConn, assign);
@@ -267,9 +267,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               ProgramName = p.prog,
               Revision = p.rev,
               Comment = "Comment " + p.prog + " rev" + p.rev.ToString(),
-              ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString()
+              ProgramContent = "ProgramCt " + p.prog + " rev" + p.rev.ToString(),
             })
-            .ToImmutableList()
+            .ToImmutableList(),
         }
       );
     }
@@ -483,7 +483,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
           IccMachineToJobMachNames = Enumerable
             .Range(1, 6)
-            .ToDictionary(mc => mc, mc => (group: "TestMC", num: mc + 100))
+            .ToDictionary(mc => mc, mc => (group: "TestMC", num: mc + 100)),
         }
       );
 
@@ -536,7 +536,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
           IccMachineToJobMachNames = Enumerable
             .Range(1, 6)
-            .ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+            .ToDictionary(mc => mc, mc => (group: "MC", num: mc)),
         }
       );
 
@@ -571,9 +571,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(5, 6),
                     ExpectedCycleTime = TimeSpan.FromMinutes(14),
-                    Program = "1111"
+                    Program = "1111",
                   }
-                )
+                ),
               },
               new ProcPathInfo()
               {
@@ -594,11 +594,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(3, 4),
                     ExpectedCycleTime = TimeSpan.FromMinutes(12),
-                    Program = "3333"
+                    Program = "3333",
                   }
-                )
+                ),
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
@@ -622,9 +622,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(1, 2),
                     ExpectedCycleTime = TimeSpan.FromMinutes(19),
-                    Program = "2222"
+                    Program = "2222",
                   }
-                )
+                ),
               },
               new ProcPathInfo()
               {
@@ -645,13 +645,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(1, 2),
                     ExpectedCycleTime = TimeSpan.FromMinutes(16),
-                    Program = "4444"
+                    Program = "4444",
                   }
-                )
+                ),
               }
-            )
+            ),
           }
-        )
+        ),
       };
 
       AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
@@ -692,7 +692,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
           IccMachineToJobMachNames = Enumerable
             .Range(1, 6)
-            .ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+            .ToDictionary(mc => mc, mc => (group: "MC", num: mc)),
         }
       );
 
@@ -726,9 +726,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(5, 6),
                     ExpectedCycleTime = TimeSpan.FromMinutes(14),
-                    Program = "1111"
+                    Program = "1111",
                   }
-                )
+                ),
               },
               new ProcPathInfo()
               {
@@ -748,11 +748,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(5, 6),
                     ExpectedCycleTime = TimeSpan.FromMinutes(12),
-                    Program = "3333"
+                    Program = "3333",
                   }
-                )
+                ),
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
@@ -775,9 +775,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(5, 6),
                     ExpectedCycleTime = TimeSpan.FromMinutes(19),
-                    Program = "2222"
+                    Program = "2222",
                   }
-                )
+                ),
               },
               new ProcPathInfo()
               {
@@ -797,13 +797,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(5, 6),
                     ExpectedCycleTime = TimeSpan.FromMinutes(16),
-                    Program = "4444"
+                    Program = "4444",
                   }
-                )
+                ),
               }
-            )
+            ),
           }
-        )
+        ),
       };
 
       AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
@@ -846,7 +846,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
           IccMachineToJobMachNames = Enumerable
             .Range(1, 6)
-            .ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+            .ToDictionary(mc => mc, mc => (group: "MC", num: mc)),
         }
       );
 
@@ -882,11 +882,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
                     ExpectedCycleTime = TimeSpan.FromMinutes(5),
-                    Program = "1111"
+                    Program = "1111",
                   }
-                )
+                ),
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
@@ -911,13 +911,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
                     ExpectedCycleTime = TimeSpan.FromMinutes(20),
-                    Program = "2222"
+                    Program = "2222",
                   }
-                )
+                ),
               }
-            )
+            ),
           }
-        )
+        ),
       };
 
       AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
@@ -951,7 +951,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
           IccMachineToJobMachNames = Enumerable
             .Range(1, 6)
-            .ToDictionary(mc => mc, mc => (group: "MC", num: mc))
+            .ToDictionary(mc => mc, mc => (group: "MC", num: mc)),
         }
       );
 
@@ -987,7 +987,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
                     ExpectedCycleTime = TimeSpan.FromMinutes(5),
-                    Program = "1111"
+                    Program = "1111",
                   },
                   new MachiningStop()
                   {
@@ -995,9 +995,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     Stations = ImmutableList.Create(2),
                     ExpectedCycleTime = TimeSpan.FromMinutes(3),
                   }
-                )
+                ),
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
@@ -1022,13 +1022,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                     StationGroup = "MC",
                     Stations = ImmutableList.Create(1, 2, 3, 4, 5, 6),
                     ExpectedCycleTime = TimeSpan.FromMinutes(20),
-                    Program = "2222"
+                    Program = "2222",
                   }
-                )
+                ),
               }
-            )
+            ),
           }
-        )
+        ),
       };
 
       AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
@@ -1071,7 +1071,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             { 6, (group: "FC", num: 2) },
             { 7, (group: "FC", num: 3) },
             { 8, (group: "FC", num: 4) },
-          }
+          },
         },
         numPals: 16,
         numLoads: 4,
@@ -1103,7 +1103,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             new[] { 2, 3, 4 },
             new[] { 5, 6, 7, 8, 9, 10 },
             new[] { 12, 13, 14, 15, 16 },
-            new[] { 11 }
+            new[] { 11 },
           },
           machGroups: new[] { new[] { "RO" }, new[] { "RO", "FC" }, new[] { "FC" }, new[] { "RO" } },
           progs: new[]
@@ -1134,7 +1134,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             { 6, (group: "FC", num: 2) },
             { 7, (group: "FC", num: 3) },
             { 8, (group: "FC", num: 4) },
-          }
+          },
         },
         numPals: 16,
         numLoads: 4,
@@ -1156,7 +1156,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   InputQueue = proc == 1 ? "castingQ" : draftPath.InputQueue,
                   Stops = draftPath
                     .Stops.Select(d => d with { Program = null, ProgramRevision = null })
-                    .ToImmutableList()
+                    .ToImmutableList(),
                 }
             )
           )
@@ -1177,35 +1177,35 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ProcessNumber = 1,
                   StopIndex = 0,
                   ProgramName = "aaa1RO",
-                  Revision = -1
+                  Revision = -1,
                 },
                 new ProgramForJobStep()
                 {
                   ProcessNumber = 2,
                   StopIndex = 0,
                   ProgramName = "aaa2RO",
-                  Revision = -1
+                  Revision = -1,
                 },
                 new ProgramForJobStep()
                 {
                   ProcessNumber = 2,
                   StopIndex = 1,
                   ProgramName = "aaa2FC",
-                  Revision = -1
+                  Revision = -1,
                 },
                 new ProgramForJobStep()
                 {
                   ProcessNumber = 3,
                   ProgramName = "aaa3FC",
-                  Revision = -1
+                  Revision = -1,
                 },
                 new ProgramForJobStep()
                 {
                   ProcessNumber = 4,
                   ProgramName = "aaa4RO",
-                  Revision = -1
+                  Revision = -1,
                 }
-              )
+              ),
             },
             new Workorder()
             {
@@ -1220,36 +1220,36 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   ProcessNumber = 1,
                   StopIndex = 0,
                   ProgramName = "aaa1RO",
-                  Revision = -2
+                  Revision = -2,
                 },
                 new ProgramForJobStep()
                 {
                   ProcessNumber = 2,
                   StopIndex = 0,
                   ProgramName = "aaa2RO",
-                  Revision = -2
+                  Revision = -2,
                 },
                 new ProgramForJobStep()
                 {
                   ProcessNumber = 2,
                   StopIndex = 1,
                   ProgramName = "aaa2FC",
-                  Revision = -2
+                  Revision = -2,
                 },
                 new ProgramForJobStep()
                 {
                   ProcessNumber = 3,
                   ProgramName = "zzz3FC",
-                  Revision = -1
+                  Revision = -1,
                 },
                 new ProgramForJobStep()
                 {
                   ProcessNumber = 4,
                   ProgramName = "zzz4RO",
-                  Revision = -1
+                  Revision = -1,
                 }
-              )
-            }
+              ),
+            },
           }
         ),
         Programs = newJobs.Programs.AddRange(
@@ -1260,38 +1260,38 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               ProgramName = "aaa1RO",
               Revision = -2,
               Comment = "a 1 RO rev -2",
-              ProgramContent = "aa 1 RO rev-2"
+              ProgramContent = "aa 1 RO rev-2",
             },
             new MachineFramework.NewProgramContent()
             {
               ProgramName = "aaa2RO",
               Revision = -2,
               Comment = "a 2 RO rev -2",
-              ProgramContent = "aa 2 RO rev-2"
+              ProgramContent = "aa 2 RO rev-2",
             },
             new MachineFramework.NewProgramContent()
             {
               ProgramName = "aaa2FC",
               Revision = -2,
               Comment = "a 2 FC rev -2",
-              ProgramContent = "aa 2 FC rev-2"
+              ProgramContent = "aa 2 FC rev-2",
             },
             new MachineFramework.NewProgramContent()
             {
               ProgramName = "zzz3FC",
               Revision = -1,
               Comment = "z 3 RO rev -1",
-              ProgramContent = "zz 3 FC rev-1"
+              ProgramContent = "zz 3 FC rev-1",
             },
             new MachineFramework.NewProgramContent()
             {
               ProgramName = "zzz4RO",
               Revision = -1,
               Comment = "z 4 RO rev -1",
-              ProgramContent = "zz 4 RO rev-1"
+              ProgramContent = "zz 4 RO rev-1",
             },
           }
-        )
+        ),
       };
 
       AddJobs(newJobs, expectNewRoute: false); // no route yet because no material
@@ -1309,7 +1309,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             {
               MaterialID = m,
               Process = 0,
-              Face = 0
+              Face = 0,
             },
             "castingQ",
             -1,
@@ -1341,7 +1341,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             new[] { 2, 3, 4 },
             new[] { 5, 6, 7, 8, 9, 10 },
             new[] { 12, 13, 14, 15, 16 },
-            new[] { 11 }
+            new[] { 11 },
           },
           machGroups: new[] { new[] { "RO" }, new[] { "RO", "FC" }, new[] { "FC" }, new[] { "RO" } },
           progs: m.Key % 2 == 1 // material ids start at 1, so odd is first
@@ -1380,8 +1380,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 Paths = ImmutableDictionary<int, int>.Empty,
                 PartNameOrCasting = "aaa",
                 NumProcesses = 1,
-                AddTimeUTC = addTime
-              }
+                AddTimeUTC = addTime,
+              },
             }
           );
       }

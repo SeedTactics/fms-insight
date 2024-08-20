@@ -90,7 +90,7 @@ namespace MazakMachineInterface
           {
             UserID = "mazakpmc",
             Password = "Fms-978",
-            DataSource = "(local)"
+            DataSource = "(local)",
           };
           dbConnStr = b.ConnectionString;
         }
@@ -146,7 +146,7 @@ namespace MazakMachineInterface
         UseStartingOffsetForDueDate = Convert.ToBoolean(
           cfg.GetValue("Use Starting Offset For Due Date", "true")
         ),
-        WaitForAllCastings = cfg.GetValue<bool>("Wait For All Castings", false)
+        WaitForAllCastings = cfg.GetValue<bool>("Wait For All Castings", false),
       };
     }
 

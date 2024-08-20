@@ -101,11 +101,11 @@ namespace MachineWatchTest
                 FixQuantity = 1,
                 ProcessNumber = 1,
                 ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
-        }
+                ProcessExecuteQuantity = 5,
+              },
+            },
+          },
+        },
       };
 
       var j = new Job
@@ -143,8 +143,8 @@ namespace MachineWatchTest
               FixQuantity = 1,
               ProcessNumber = 1,
               ProcessMaterialQuantity = 15,
-              ProcessExecuteQuantity = 5
-            }
+              ProcessExecuteQuantity = 5,
+            },
           }
         );
 
@@ -158,8 +158,8 @@ namespace MachineWatchTest
             {
               DecrementId = 0,
               TimeUTC = now,
-              Quantity = 50 - 35
-            }
+              Quantity = 50 - 35,
+            },
           }
         );
     }
@@ -188,11 +188,11 @@ namespace MachineWatchTest
                 FixQuantity = 1,
                 ProcessNumber = 1,
                 ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
-        }
+                ProcessExecuteQuantity = 5,
+              },
+            },
+          },
+        },
       };
 
       var j = new Job
@@ -244,11 +244,11 @@ namespace MachineWatchTest
                 FixQuantity = 1,
                 ProcessNumber = 1,
                 ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
-        }
+                ProcessExecuteQuantity = 5,
+              },
+            },
+          },
+        },
       };
 
       var j = new Job
@@ -277,8 +277,8 @@ namespace MachineWatchTest
           {
             JobUnique = "uuuu",
             Part = "pppp",
-            Quantity = 3
-          }
+            Quantity = 3,
+          },
         },
         now
       );
@@ -296,8 +296,8 @@ namespace MachineWatchTest
             {
               DecrementId = 0,
               TimeUTC = now,
-              Quantity = 3
-            }
+              Quantity = 3,
+            },
           }
         );
     }
@@ -326,10 +326,10 @@ namespace MachineWatchTest
                 FixQuantity = 1,
                 ProcessNumber = 1,
                 ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
+                ProcessExecuteQuantity = 5,
+              },
+            },
+          },
         },
         LoadActions = new[]
         {
@@ -341,7 +341,7 @@ namespace MachineWatchTest
             Part = "pppp",
             Process = 1,
             Path = 1,
-            Qty = 1
+            Qty = 1,
           },
           new LoadAction()
           {
@@ -351,7 +351,7 @@ namespace MachineWatchTest
             Part = "pppp",
             Process = 1,
             Path = 1,
-            Qty = 1
+            Qty = 1,
           },
           new LoadAction()
           {
@@ -361,9 +361,9 @@ namespace MachineWatchTest
             Part = "pppp",
             Process = 1,
             Path = 1,
-            Qty = 1
-          }
-        }
+            Qty = 1,
+          },
+        },
       };
 
       var j = new Job
@@ -379,7 +379,7 @@ namespace MachineWatchTest
         Archived = false,
       };
       _jobDB.AddJobs(
-        new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "sch3333", },
+        new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "sch3333" },
         null,
         addAsCopiedToSystem: true
       );
@@ -400,8 +400,8 @@ namespace MachineWatchTest
             {
               DecrementId = 0,
               TimeUTC = now,
-              Quantity = 50 - 36
-            }
+              Quantity = 50 - 36,
+            },
           }
         );
     }
@@ -431,11 +431,11 @@ namespace MachineWatchTest
                 FixQuantity = 1,
                 ProcessNumber = 1,
                 ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
-        }
+                ProcessExecuteQuantity = 5,
+              },
+            },
+          },
+        },
       };
 
       var j = new Job
@@ -451,7 +451,7 @@ namespace MachineWatchTest
         Archived = false,
       };
       _jobDB.AddJobs(
-        new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "aschId", },
+        new NewJobs() { Jobs = ImmutableList.Create(j), ScheduleId = "aschId" },
         null,
         addAsCopiedToSystem: true
       );
@@ -471,8 +471,8 @@ namespace MachineWatchTest
             {
               DecrementId = 0,
               TimeUTC = now,
-              Quantity = 50 - 35
-            }
+              Quantity = 50 - 35,
+            },
           }
         );
     }
@@ -502,11 +502,11 @@ namespace MachineWatchTest
                 FixQuantity = 1,
                 ProcessNumber = 1,
                 ProcessMaterialQuantity = 15,
-                ProcessExecuteQuantity = 5
-              }
-            }
-          }
-        }
+                ProcessExecuteQuantity = 5,
+              },
+            },
+          },
+        },
       };
 
       var now = DateTime.UtcNow;
@@ -536,7 +536,7 @@ namespace MachineWatchTest
         Archived = false,
       };
       _jobDB.AddJobs(
-        new NewJobs() { Jobs = ImmutableList.Create(uuuu, vvvv), ScheduleId = "sch44444", },
+        new NewJobs() { Jobs = ImmutableList.Create(uuuu, vvvv), ScheduleId = "sch44444" },
         null,
         addAsCopiedToSystem: false
       );
@@ -564,8 +564,8 @@ namespace MachineWatchTest
               FixQuantity = 1,
               ProcessNumber = 1,
               ProcessMaterialQuantity = 15,
-              ProcessExecuteQuantity = 5
-            }
+              ProcessExecuteQuantity = 5,
+            },
           }
         );
 
@@ -579,8 +579,8 @@ namespace MachineWatchTest
             {
               DecrementId = 0,
               TimeUTC = now,
-              Quantity = 50 - 35
-            }
+              Quantity = 50 - 35,
+            },
           }
         );
       _jobDB
@@ -593,7 +593,7 @@ namespace MachineWatchTest
             {
               DecrementId = 0,
               TimeUTC = now,
-              Quantity = 4 + 7
+              Quantity = 4 + 7,
             },
           }
         );
@@ -610,7 +610,7 @@ namespace MachineWatchTest
               JobUnique = "uuuu",
               Part = "pppp",
               Quantity = 50 - 35,
-              TimeUTC = now
+              TimeUTC = now,
             },
             new JobAndDecrementQuantity()
             {
@@ -618,7 +618,7 @@ namespace MachineWatchTest
               JobUnique = "vvvv",
               Part = "oooo",
               Quantity = 4 + 7,
-              TimeUTC = now
+              TimeUTC = now,
             },
           }
         );

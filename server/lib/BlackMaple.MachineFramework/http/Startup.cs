@@ -143,7 +143,7 @@ public static class FMSInsightWebHost
                 new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
                 {
                   ValidateIssuer = true,
-                  ValidAudiences = serverSt.AuthTokenAudiences.Split(';')
+                  ValidAudiences = serverSt.AuthTokenAudiences.Split(';'),
                 };
 #if DEBUG
               options.RequireHttpsMetadata = false;
@@ -158,7 +158,7 @@ public static class FMSInsightWebHost
                     context.Token = token;
                   }
                   return System.Threading.Tasks.Task.CompletedTask;
-                }
+                },
               };
             });
         }
@@ -199,7 +199,7 @@ public static class FMSInsightWebHost
               FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
                 fmsSt.InstructionFilePath
               ),
-              RequestPath = "/instructions"
+              RequestPath = "/instructions",
             }
           );
         }

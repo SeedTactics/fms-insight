@@ -182,7 +182,7 @@ namespace BlackMaple.FMSInsight.Niigata
               FixtureOnPallet = "",
               OnHold = pal.Status.Master.Skip,
               CurrentPalletLocation = pal.Status.CurStation.Location,
-              NumFaces = pal.Material.Count > 0 ? pal.Material.Max(m => m.Mat.Location.Face ?? 1) : 0
+              NumFaces = pal.Material.Count > 0 ? pal.Material.Max(m => m.Mat.Location.Face ?? 1) : 0,
             }
           ),
           Material = pals.SelectMany(pal => pal.Material)
@@ -200,7 +200,7 @@ namespace BlackMaple.FMSInsight.Niigata
             )
             .Concat(status.Alarm ? new[] { "ICC has an alarm" } : new string[] { })
             .ToImmutableList(),
-          Workorders = logDB.GetActiveWorkorders()
+          Workorders = logDB.GetActiveWorkorders(),
         },
       };
     }
@@ -242,7 +242,7 @@ namespace BlackMaple.FMSInsight.Niigata
             FaceIsMissingMaterial = false,
             Programs =
               m.ProgOverride?.ToImmutableList()
-              ?? JobProgramsFromStops(pathInfo.Stops, _stationNames).ToImmutableList()
+              ?? JobProgramsFromStops(pathInfo.Stops, _stationNames).ToImmutableList(),
           };
         })
         .ToList();
@@ -279,7 +279,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             Type = InProcessMaterialLocation.LocType.OnPallet,
             PalletNum = pallet.Master.PalletNum,
-            Face = m.Face
+            Face = m.Face,
           },
           Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
         };
@@ -319,7 +319,7 @@ namespace BlackMaple.FMSInsight.Niigata
             Job = job,
             Workorders = string.IsNullOrEmpty(inProcMat.WorkorderId)
               ? null
-              : logDB.WorkordersById(inProcMat.WorkorderId).ToImmutableList()
+              : logDB.WorkordersById(inProcMat.WorkorderId).ToImmutableList(),
           }
         );
       }
@@ -395,12 +395,12 @@ namespace BlackMaple.FMSInsight.Niigata
                   SignaledInspections = ImmutableList<string>.Empty,
                   QuarantineAfterUnload = null,
                   Location = actionIsLoading
-                    ? new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, }
+                    ? new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free }
                     : new InProcessMaterialLocation()
                     {
                       Type = InProcessMaterialLocation.LocType.OnPallet,
                       PalletNum = pallet.Status.Master.PalletNum,
-                      Face = face.Face
+                      Face = face.Face,
                     },
                   Action = actionIsLoading
                     ? new InProcessMaterialAction()
@@ -411,8 +411,8 @@ namespace BlackMaple.FMSInsight.Niigata
                       PathAfterLoad = face.Path,
                       LoadOntoFace = face.Face,
                     }
-                    : new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
-                }
+                    : new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+                },
               }
             );
             loadedMatCnt += 1;
@@ -443,7 +443,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 Paths = m.Paths?.ToDictionary(k => k.Key, k => k.Value),
                 Workorders = string.IsNullOrEmpty(m.Workorder)
                   ? null
-                  : logDB.WorkordersById(m.Workorder).ToImmutableList()
+                  : logDB.WorkordersById(m.Workorder).ToImmutableList(),
               };
             })
             .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face, _stationNames))
@@ -488,7 +488,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     {
                       Type = InProcessMaterialLocation.LocType.OnPallet,
                       PalletNum = pallet.Status.Master.PalletNum,
-                      Face = face.Face
+                      Face = face.Face,
                     },
                   Action = actionIsLoading
                     ? new InProcessMaterialAction()
@@ -499,9 +499,9 @@ namespace BlackMaple.FMSInsight.Niigata
                       PathAfterLoad = face.Path,
                       LoadOntoFace = face.Face,
                     }
-                    : new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+                    : new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
                 },
-                Workorders = mat.Workorders
+                Workorders = mat.Workorders,
               }
             );
             currentlyLoading.Add(mat.MaterialID);
@@ -539,13 +539,13 @@ namespace BlackMaple.FMSInsight.Niigata
                       {
                         Type = InProcessMaterialLocation.LocType.OnPallet,
                         PalletNum = pallet.Status.Master.PalletNum,
-                        Face = mat.Location.Face
+                        Face = mat.Location.Face,
                       }
                       : new InProcessMaterialLocation()
                       {
                         Type = InProcessMaterialLocation.LocType.OnPallet,
                         PalletNum = pallet.Status.Master.PalletNum,
-                        Face = face.Face
+                        Face = face.Face,
                       },
                     Action = actionIsLoading
                       ? new InProcessMaterialAction()
@@ -556,11 +556,11 @@ namespace BlackMaple.FMSInsight.Niigata
                         PathAfterLoad = face.Path,
                         LoadOntoFace = face.Face,
                       }
-                      : new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+                      : new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
                   },
                   Workorders = string.IsNullOrEmpty(mat.WorkorderId)
                     ? null
-                    : logDB.WorkordersById(mat.WorkorderId).ToImmutableList()
+                    : logDB.WorkordersById(mat.WorkorderId).ToImmutableList(),
                 }
               );
               unusedMatsOnPal.Remove(mat.MaterialID);
@@ -594,7 +594,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   Paths = m.Paths?.ToDictionary(k => k.Key, k => k.Value),
                   Workorders = string.IsNullOrEmpty(m.Workorder)
                     ? null
-                    : logDB.WorkordersById(m.Workorder).ToImmutableList()
+                    : logDB.WorkordersById(m.Workorder).ToImmutableList(),
                 };
               })
               .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face, _stationNames))
@@ -633,13 +633,13 @@ namespace BlackMaple.FMSInsight.Niigata
                       {
                         Type = InProcessMaterialLocation.LocType.InQueue,
                         CurrentQueue = inputQueue,
-                        QueuePosition = mat.QueuePosition
+                        QueuePosition = mat.QueuePosition,
                       }
                       : new InProcessMaterialLocation()
                       {
                         Type = InProcessMaterialLocation.LocType.OnPallet,
                         PalletNum = pallet.Status.Master.PalletNum,
-                        Face = face.Face
+                        Face = face.Face,
                       },
                     Action = actionIsLoading
                       ? new InProcessMaterialAction()
@@ -650,9 +650,9 @@ namespace BlackMaple.FMSInsight.Niigata
                         PathAfterLoad = face.Path,
                         LoadOntoFace = face.Face,
                       }
-                      : new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+                      : new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
                   },
-                  Workorders = mat.Workorders
+                  Workorders = mat.Workorders,
                 }
               );
 
@@ -714,12 +714,12 @@ namespace BlackMaple.FMSInsight.Niigata
                     SignaledInspections = ImmutableList<string>.Empty,
                     QuarantineAfterUnload = null,
                     Location = actionIsLoading
-                      ? new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, }
+                      ? new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free }
                       : new InProcessMaterialLocation()
                       {
                         Type = InProcessMaterialLocation.LocType.OnPallet,
                         PalletNum = pallet.Status.Master.PalletNum,
-                        Face = face.Face
+                        Face = face.Face,
                       },
                     Action = actionIsLoading
                       ? new InProcessMaterialAction()
@@ -730,7 +730,7 @@ namespace BlackMaple.FMSInsight.Niigata
                         PathAfterLoad = face.Path,
                         LoadOntoFace = face.Face,
                       }
-                      : new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+                      : new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
                   },
                 }
               );
@@ -798,7 +798,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               MaterialID = m.Mat.MaterialID,
               Process = m.Mat.Process,
-              Face = 0
+              Face = 0,
             },
             queue: _settings.QuarantineQueue,
             position: -1,
@@ -897,8 +897,8 @@ namespace BlackMaple.FMSInsight.Niigata
                 ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
                 : InProcessMaterialAction.ActionType.UnloadToInProcess,
             UnloadIntoQueue = OutputQueueForMaterial(mat, pallet.Log, defaultToScrap: true),
-            ElapsedLoadUnloadTime = elapsedLoadTime
-          }
+            ElapsedLoadUnloadTime = elapsedLoadTime,
+          },
         };
         pallet.Material.Add(mat);
       }
@@ -935,7 +935,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = proc,
-            Face = face.Key ?? 0
+            Face = face.Key ?? 0,
           }),
           pallet: pallet.Status.Master.PalletNum,
           lulNum: loadBegin.LocationNum,
@@ -991,11 +991,13 @@ namespace BlackMaple.FMSInsight.Niigata
                       FaceNum = face.Key,
                       Process = proc,
                       Path = path,
-                      ActiveOperationTime = TimeSpan.FromTicks(pathInfo.ExpectedLoadTime.Ticks * face.Count())
+                      ActiveOperationTime = TimeSpan.FromTicks(
+                        pathInfo.ExpectedLoadTime.Ticks * face.Count()
+                      ),
                     };
                   })
                   .ToImmutableList(),
-              }
+              },
             },
             pallet: pallet.Status.Master.PalletNum,
             timeUTC: nowUtc.AddSeconds(1)
@@ -1298,7 +1300,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   pallet.MachineStatus == null
                   || (pallet.MachineStatus.FMSLinkMode && pallet.MachineStatus.Alarm == false)
                 )
-              )
+              ),
           }
         );
 
@@ -1380,8 +1382,8 @@ namespace BlackMaple.FMSInsight.Niigata
                 ? ss.ProgramName + " rev" + ss.Revision.Value.ToString()
                 : ss.ProgramName,
               ElapsedMachiningTime = TimeSpan.Zero,
-              ExpectedRemainingMachiningTime = ss.JobStop.ExpectedCycleTime
-            }
+              ExpectedRemainingMachiningTime = ss.JobStop.ExpectedCycleTime,
+            },
           };
         }
       }
@@ -1400,8 +1402,8 @@ namespace BlackMaple.FMSInsight.Niigata
                 ? ss.ProgramName + " rev" + ss.Revision.Value.ToString()
                 : ss.ProgramName,
               ElapsedMachiningTime = elapsed,
-              ExpectedRemainingMachiningTime = ss.JobStop.ExpectedCycleTime.Subtract(elapsed)
-            }
+              ExpectedRemainingMachiningTime = ss.JobStop.ExpectedCycleTime.Subtract(elapsed),
+            },
           };
         }
       }
@@ -1484,7 +1486,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           MaterialID = m.Mat.MaterialID,
           Process = m.Mat.Process,
-          Face = face.Face
+          Face = face.Face,
         }),
         pallet: pallet.Status.Master.PalletNum,
         statName: statName,
@@ -1527,7 +1529,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = face.Face
+            Face = face.Face,
           }),
           pallet: pallet.Status.Master.PalletNum,
           lulNum: pallet.Status.CurStation.Location.Num,
@@ -1542,8 +1544,8 @@ namespace BlackMaple.FMSInsight.Niigata
             Action = new InProcessMaterialAction()
             {
               Type = InProcessMaterialAction.ActionType.Loading,
-              ElapsedLoadUnloadTime = TimeSpan.Zero
-            }
+              ElapsedLoadUnloadTime = TimeSpan.Zero,
+            },
           };
         }
       }
@@ -1556,8 +1558,8 @@ namespace BlackMaple.FMSInsight.Niigata
             Action = new InProcessMaterialAction()
             {
               Type = InProcessMaterialAction.ActionType.Loading,
-              ElapsedLoadUnloadTime = nowUtc.Subtract(reclampStart.EndTimeUTC)
-            }
+              ElapsedLoadUnloadTime = nowUtc.Subtract(reclampStart.EndTimeUTC),
+            },
           };
         }
       }
@@ -1614,7 +1616,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           MaterialID = m.Mat.MaterialID,
           Process = m.Mat.Process,
-          Face = face.Face
+          Face = face.Face,
         }),
         pallet: pallet.Status.Master.PalletNum,
         lulNum: statNum,
@@ -1693,7 +1695,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = m.Mat.Location.Face ?? 0
+            Face = m.Mat.Location.Face ?? 0,
           }),
           pallet: pallet.Status.Master.PalletNum,
           statName: pallet.Status.CurStation.Location.StationGroup,
@@ -1708,7 +1710,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = m.Mat.Location.Face ?? 0
+            Face = m.Mat.Location.Face ?? 0,
           }),
           pallet: pallet.Status.Master.PalletNum,
           statName: start.LocationName,
@@ -1766,7 +1768,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = m.Mat.Location.Face ?? 0
+            Face = m.Mat.Location.Face ?? 0,
           }),
           pallet: pallet.Status.Master.PalletNum,
           stockerNum: pallet.Status.CurStation.Location.Num,
@@ -1781,7 +1783,7 @@ namespace BlackMaple.FMSInsight.Niigata
           {
             MaterialID = m.Mat.MaterialID,
             Process = m.Mat.Process,
-            Face = m.Mat.Location.Face ?? 0
+            Face = m.Mat.Location.Face ?? 0,
           }),
           pallet: pallet.Status.Master.PalletNum,
           stockerNum: start.LocationNum,
@@ -1815,7 +1817,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           Job = m.Job,
           Mat = m.InProc,
-          Workorders = string.IsNullOrEmpty(m.InProc.WorkorderId) ? null : works[m.InProc.WorkorderId]
+          Workorders = string.IsNullOrEmpty(m.InProc.WorkorderId) ? null : works[m.InProc.WorkorderId],
         })
         .ToImmutableList();
     }
@@ -2000,7 +2002,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               MachineStopIndex = stopIdx,
               ProgramName = stop.Program,
-              Revision = stop.ProgramRevision
+              Revision = stop.ProgramRevision,
             }
         );
     }
@@ -2016,7 +2018,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           MachineStopIndex = p.StopIndex ?? 0,
           ProgramName = p.ProgramName,
-          Revision = p.Revision
+          Revision = p.Revision,
         });
     }
 
@@ -2226,7 +2228,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 PartName = "LongTool",
                 Process = 1,
                 Path = 1,
-                Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, },
+                Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free },
                 SignaledInspections = ImmutableList<string>.Empty,
                 QuarantineAfterUnload = null,
                 Action = new InProcessMaterialAction()
@@ -2235,8 +2237,8 @@ namespace BlackMaple.FMSInsight.Niigata
                   LoadOntoPalletNum = pal.Status.Master.PalletNum,
                   LoadOntoFace = 1,
                   ProcessAfterLoad = 1,
-                  PathAfterLoad = 1
-                }
+                  PathAfterLoad = 1,
+                },
               };
             }
             break;
@@ -2256,12 +2258,12 @@ namespace BlackMaple.FMSInsight.Niigata
                 {
                   Type = InProcessMaterialLocation.LocType.OnPallet,
                   PalletNum = pal.Status.Master.PalletNum,
-                  Face = 1
+                  Face = 1,
                 },
                 Action = new InProcessMaterialAction()
                 {
                   Type = InProcessMaterialAction.ActionType.UnloadToCompletedMaterial,
-                }
+                },
               };
             }
             break;

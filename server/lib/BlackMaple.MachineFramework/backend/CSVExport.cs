@@ -130,7 +130,7 @@ namespace BlackMaple.MachineFramework
             NumProcesses = 0,
             Face = "",
             ProgramDetails = BuildProgramDetails(e),
-          }
+          },
         };
       }
     }

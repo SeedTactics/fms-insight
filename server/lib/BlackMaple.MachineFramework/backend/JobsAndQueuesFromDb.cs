@@ -357,7 +357,7 @@ namespace BlackMaple.MachineFramework
             Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
             Material = [],
             Queues = ImmutableDictionary<string, QueueInfo>.Empty,
-            Alarms = ["FMS Insight is starting up..."]
+            Alarms = ["FMS Insight is starting up..."],
           };
         }
         else if (_syncError != null)
@@ -366,7 +366,7 @@ namespace BlackMaple.MachineFramework
           {
             Alarms = _lastCurrentStatus.CurrentStatus.Alarms.Add(
               $"Error communicating with machines: {_syncError}. Will try again in a few minutes."
-            )
+            ),
           };
         }
         else
@@ -487,11 +487,11 @@ namespace BlackMaple.MachineFramework
             {
               Type = InProcessMaterialLocation.LocType.InQueue,
               CurrentQueue = queue,
-              QueuePosition = log.LocationNum
+              QueuePosition = log.LocationNum,
             },
             Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
             SignaledInspections = [],
-            QuarantineAfterUnload = null
+            QuarantineAfterUnload = null,
           }
         );
       }
@@ -571,7 +571,7 @@ namespace BlackMaple.MachineFramework
             {
               MaterialID = matId,
               Process = process,
-              Face = 0
+              Face = 0,
             },
             serial,
             DateTime.UtcNow
@@ -584,7 +584,7 @@ namespace BlackMaple.MachineFramework
             {
               MaterialID = matId,
               Process = process,
-              Face = 0
+              Face = 0,
             },
             workorder,
             DateTime.UtcNow
@@ -615,11 +615,11 @@ namespace BlackMaple.MachineFramework
         {
           Type = InProcessMaterialLocation.LocType.InQueue,
           CurrentQueue = queue,
-          QueuePosition = logEvt.LastOrDefault()?.LocationNum
+          QueuePosition = logEvt.LastOrDefault()?.LocationNum,
         },
         Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
         SignaledInspections = [],
-        QuarantineAfterUnload = null
+        QuarantineAfterUnload = null,
       };
     }
 
@@ -795,7 +795,7 @@ namespace BlackMaple.MachineFramework
                     {
                       MaterialID = materialId,
                       Process = mat.Process,
-                      Face = 0
+                      Face = 0,
                     },
                     pallet: mat.Location.PalletNum ?? 0,
                     queue: _settings.QuarantineQueue ?? "",

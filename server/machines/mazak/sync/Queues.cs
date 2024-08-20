@@ -141,7 +141,7 @@ namespace MazakMachineInterface
             !waitForAllCastings && skippedCastings.Contains(casting),
           Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
           NewDueDate = null,
-          NewPriority = null
+          NewPriority = null,
         };
         bool missingProc = false;
         for (int proc = 1; proc <= job.Processes.Count; proc++)
@@ -248,7 +248,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = m,
                     Process = 0,
-                    Face = 0
+                    Face = 0,
                   },
                   queue: schProc.InputQueue,
                   position: -1,
@@ -267,7 +267,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = m.MaterialID,
                     Process = 1,
-                    Face = 0
+                    Face = 0,
                   }
                 );
               }
@@ -414,7 +414,7 @@ namespace MazakMachineInterface
         var newSch = sch.SchRow with
         {
           Command = MazakWriteCommand.ScheduleMaterialEdit,
-          Processes = sch.SchRow.Processes.ToList()
+          Processes = sch.SchRow.Processes.ToList(),
         };
 
         if (sch.NewDueDate.HasValue)
@@ -434,7 +434,7 @@ namespace MazakMachineInterface
           {
             newSch.Processes[i] = newProc with
             {
-              ProcessMaterialQuantity = oldProc.TargetMaterialCount.Value
+              ProcessMaterialQuantity = oldProc.TargetMaterialCount.Value,
             };
           }
         }

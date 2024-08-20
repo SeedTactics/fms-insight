@@ -79,7 +79,7 @@ public record MakinoSettings
     {
       ADEPath = adePath,
       DownloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders"),
-      DbConnectionString = connStr
+      DbConnectionString = connStr,
     };
   }
 
@@ -90,7 +90,7 @@ public record MakinoSettings
       UserID = "sa",
       Password = "M@k1n0Admin",
       InitialCatalog = "Makino",
-      DataSource = "(local)"
+      DataSource = "(local)",
     };
     return b.ConnectionString;
   }

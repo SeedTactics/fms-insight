@@ -264,11 +264,11 @@ namespace BlackMaple.MachineFramework
               i == proc - 1
                 ? p with
                 {
-                  Paths = p.Paths.Select((pa, j) => j == path - 1 ? f(pa) : pa).ToImmutableList()
+                  Paths = p.Paths.Select((pa, j) => j == path - 1 ? f(pa) : pa).ToImmutableList(),
                 }
                 : p
           )
-          .ToImmutableList()
+          .ToImmutableList(),
       };
     }
 
@@ -278,7 +278,7 @@ namespace BlackMaple.MachineFramework
       {
         Processes = job
           .Processes.Select(p => p with { Paths = p.Paths.Select(f).ToImmutableList() })
-          .ToImmutableList()
+          .ToImmutableList(),
       };
     }
 
@@ -290,7 +290,7 @@ namespace BlackMaple.MachineFramework
           .Processes.Select(
             (p, i) => p with { Paths = p.Paths.Select((pa, j) => f(i + 1, j + 1, pa)).ToImmutableList() }
           )
-          .ToImmutableList()
+          .ToImmutableList(),
       };
     }
   }

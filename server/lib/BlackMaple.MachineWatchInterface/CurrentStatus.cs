@@ -52,7 +52,7 @@ namespace BlackMaple.MachineWatchInterface
       Loading,
       UnloadToInProcess, // unload, but keep the material around because more processes must be machined
       UnloadToCompletedMaterial, // unload and the material has been completed
-      Machining
+      Machining,
     }
 
     [DataMember(IsRequired = true)]
@@ -182,7 +182,7 @@ namespace BlackMaple.MachineWatchInterface
     Buffer,
 
     [EnumMember]
-    Cart
+    Cart,
   }
 
   [Serializable, DataContract]

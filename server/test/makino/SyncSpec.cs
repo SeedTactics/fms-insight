@@ -73,7 +73,7 @@ public sealed class SyncSpec : IDisposable
       {
         ADEPath = _tempDir,
         DownloadOnlyOrders = true,
-        DbConnectionString = "unused db conn str"
+        DbConnectionString = "unused db conn str",
       },
       _makinoDB
     );
@@ -86,7 +86,7 @@ public sealed class SyncSpec : IDisposable
         {
           Location = PalletLocationEnum.LoadUnload,
           Num = 1,
-          StationGroup = "L/U"
+          StationGroup = "L/U",
         }
       },
       {
@@ -95,7 +95,7 @@ public sealed class SyncSpec : IDisposable
         {
           Location = PalletLocationEnum.LoadUnload,
           Num = 2,
-          StationGroup = "L/U"
+          StationGroup = "L/U",
         }
       },
       {
@@ -104,7 +104,7 @@ public sealed class SyncSpec : IDisposable
         {
           Location = PalletLocationEnum.Machine,
           Num = 1,
-          StationGroup = "Mach"
+          StationGroup = "Mach",
         }
       },
       {
@@ -113,7 +113,7 @@ public sealed class SyncSpec : IDisposable
         {
           Location = PalletLocationEnum.Machine,
           Num = 2,
-          StationGroup = "Mach"
+          StationGroup = "Mach",
         }
       },
     };
@@ -179,15 +179,15 @@ public sealed class SyncSpec : IDisposable
               RouteEndUTC = DateTime.UtcNow.AddHours(10),
               Archived = false,
               Cycles = fix.Create<int>(),
-              Processes = [new ProcessInfo() { Paths = [] }, new ProcessInfo() { Paths = [] }]
-            }
-          ]
+              Processes = [new ProcessInfo() { Paths = [] }, new ProcessInfo() { Paths = [] }],
+            },
+          ],
         }
       )
       .Should()
       .BeEquivalentTo(
         [
-          $"FMS Insight does not support multiple processes currently, please change {partName} to have one process."
+          $"FMS Insight does not support multiple processes currently, please change {partName} to have one process.",
         ]
       );
   }
@@ -216,16 +216,16 @@ public sealed class SyncSpec : IDisposable
               Cycles = fix.Create<int>(),
               Processes =
               [
-                new ProcessInfo() { Paths = [fix.Create<ProcPathInfo>(), fix.Create<ProcPathInfo>()] }
-              ]
-            }
-          ]
+                new ProcessInfo() { Paths = [fix.Create<ProcPathInfo>(), fix.Create<ProcPathInfo>()] },
+              ],
+            },
+          ],
         }
       )
       .Should()
       .BeEquivalentTo(
         [
-          $"FMS Insight does not support paths with the same color, please make sure each path has a distinct color in {partName}"
+          $"FMS Insight does not support paths with the same color, please make sure each path has a distinct color in {partName}",
         ]
       );
   }
@@ -267,27 +267,27 @@ public sealed class SyncSpec : IDisposable
                         fix.Create<MachiningStop>() with
                         {
                           StationGroup = "bad",
-                          Stations = [1]
+                          Stations = [1],
                         },
                         fix.Create<MachiningStop>() with
                         {
                           StationGroup = "Mach",
-                          Stations = [500]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+                          Stations = [500],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
         }
       )
       .Should()
       .BeEquivalentTo(
         [
           $"The flexibility plan for part {partName} uses machine bad number 1, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2",
-          $"The flexibility plan for part {partName} uses machine Mach number 500, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2"
+          $"The flexibility plan for part {partName} uses machine Mach number 500, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2",
         ]
       );
   }
@@ -304,7 +304,7 @@ public sealed class SyncSpec : IDisposable
         {
           Devices = _devices,
           MachineResults = [],
-          WorkSetResults = []
+          WorkSetResults = [],
         }
       );
 
@@ -318,7 +318,7 @@ public sealed class SyncSpec : IDisposable
         {
           CurrentStatus = cur,
           JobsNotYetCopied = [],
-          StateUpdated = false
+          StateUpdated = false,
         }
       );
 
@@ -349,8 +349,8 @@ public sealed class SyncSpec : IDisposable
               .With(w => w.EndDateTimeUTC, now + TimeSpan.FromMinutes(20))
               .With(w => w.DeviceID, 1)
               .With(w => w.Remachine, false)
-              .Create()
-          ]
+              .Create(),
+          ],
         }
       );
 
@@ -364,7 +364,7 @@ public sealed class SyncSpec : IDisposable
         {
           CurrentStatus = cur,
           JobsNotYetCopied = [],
-          StateUpdated = true
+          StateUpdated = true,
         }
       );
 
@@ -412,7 +412,7 @@ public sealed class SyncSpec : IDisposable
         {
           Devices = _devices,
           MachineResults = [],
-          WorkSetResults = []
+          WorkSetResults = [],
         }
       );
 
@@ -430,10 +430,10 @@ public sealed class SyncSpec : IDisposable
             job2.CloneToDerived<HistoricJob, Job>() with
             {
               ScheduleId = schId,
-              Decrements = []
-            }
+              Decrements = [],
+            },
           ],
-          StateUpdated = false
+          StateUpdated = false,
         }
       );
   }
@@ -471,8 +471,8 @@ public sealed class SyncSpec : IDisposable
           {
             CopiedToSystem = false,
             ScheduleId = schId,
-            Decrements = []
-          }
+            Decrements = [],
+          },
         ]
       )
       .With(
@@ -483,7 +483,7 @@ public sealed class SyncSpec : IDisposable
             Jobs = ImmutableDictionary<string, ActiveJob>.Empty.Add(
               job.UniqueStr,
               job.CloneToDerived<ActiveJob, Job>()
-            )
+            ),
           }
       )
       .Create();
@@ -532,8 +532,8 @@ public sealed class SyncSpec : IDisposable
           {
             CopiedToSystem = false,
             ScheduleId = schId,
-            Decrements = []
-          }
+            Decrements = [],
+          },
         ]
       )
       .Create();
@@ -577,8 +577,8 @@ public sealed class SyncSpec : IDisposable
           {
             CopiedToSystem = false,
             ScheduleId = schId,
-            Decrements = []
-          }
+            Decrements = [],
+          },
         ]
       )
       .Create();
@@ -637,7 +637,7 @@ public sealed class SyncSpec : IDisposable
         )
         .Create(),
       JobsNotYetCopied = [],
-      StateUpdated = false
+      StateUpdated = false,
     };
     var remaining = new RemainingToRun() { JobUnique = job.UniqueStr, RemainingQuantity = job.Cycles - 2 };
 

@@ -51,7 +51,7 @@ namespace BlackMaple.MachineFramework
       Loading,
       UnloadToInProcess, // unload, but keep the material around because more processes must be machined
       UnloadToCompletedMaterial, // unload and the material has been completed
-      Machining
+      Machining,
     }
 
     public required ActionType Type { get; init; }

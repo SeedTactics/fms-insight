@@ -203,16 +203,16 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
           },
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
           }
-        )
+        ),
       };
       _logDB.AddJobs(
-        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch11", },
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch11" },
         null,
         addAsCopiedToSystem: true
       );
@@ -278,22 +278,22 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                Casting = casting
+                Casting = casting,
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
           }
-        )
+        ),
       };
       if (casting == null)
       {
         casting = "pppp";
       }
       _logDB.AddJobs(
-        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch22", },
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch22" },
         null,
         addAsCopiedToSystem: true
       );
@@ -364,15 +364,15 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                Casting = casting
+                Casting = casting,
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
           }
-        )
+        ),
       };
       if (casting == null)
       {
@@ -461,13 +461,13 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "castingQ" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "castingQ" }),
           },
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "transQ" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "transQ" }),
           }
-        )
+        ),
       };
       _logDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch44" },
@@ -545,16 +545,16 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "castingQ" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "castingQ" }),
           },
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "transQ" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "transQ" }),
           }
-        )
+        ),
       };
       _logDB.AddJobs(
-        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch55", },
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch55" },
         null,
         addAsCopiedToSystem: true
       );
@@ -607,7 +607,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 2,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             }
         )
         .Append(
@@ -621,7 +621,7 @@ namespace MachineWatchTest
             NumProcesses = 1,
             AddTimeUTC = _now,
             NextProcess = 2,
-            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
           }
         )
         .ToList();
@@ -642,7 +642,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -654,8 +654,8 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-            }
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
+            },
           }.Concat(expectedTransQ)
         );
 
@@ -678,7 +678,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -690,7 +690,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -702,8 +702,8 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = actual.Last(m => m.Queue == "castingQ").AddTimeUTC,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-            }
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
+            },
           }.Concat(expectedTransQ)
         );
 
@@ -738,7 +738,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -750,7 +750,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -762,8 +762,8 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = actual.Last(m => m.Queue == "castingQ").AddTimeUTC,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
-            }
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
+            },
           }.Concat(expectedTransQ)
         );
     }
@@ -804,11 +804,11 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                Casting = casting
+                Casting = casting,
               }
-            )
+            ),
           }
-        )
+        ),
       };
       if (casting == null)
       {
@@ -847,7 +847,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -859,7 +859,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -871,7 +871,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -883,7 +883,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -907,7 +907,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -919,7 +919,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -931,7 +931,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -943,7 +943,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -992,11 +992,11 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                Casting = casting
+                Casting = casting,
               }
-            )
+            ),
           }
-        )
+        ),
       };
       if (casting == null)
       {
@@ -1036,7 +1036,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1048,7 +1048,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1060,7 +1060,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1072,7 +1072,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -1096,7 +1096,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1108,7 +1108,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -1120,7 +1120,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -1132,7 +1132,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -1181,11 +1181,11 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                Casting = "casting"
+                Casting = "casting",
               }
-            )
+            ),
           }
-        )
+        ),
       };
       _logDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch88" },
@@ -1219,7 +1219,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -1231,7 +1231,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -1243,7 +1243,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1255,7 +1255,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1267,7 +1267,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -1291,7 +1291,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -1303,7 +1303,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -1315,7 +1315,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1327,7 +1327,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1339,7 +1339,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -1387,11 +1387,11 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                Casting = "cccc"
+                Casting = "cccc",
               }
-            )
+            ),
           }
-        )
+        ),
       };
       _logDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch99" },
@@ -1420,7 +1420,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1432,7 +1432,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1444,7 +1444,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -1468,7 +1468,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1480,7 +1480,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -1492,7 +1492,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -1532,7 +1532,7 @@ namespace MachineWatchTest
         Cycles = 0,
         Processes = ImmutableList.Create(
           new ProcessInfo() { Paths = ImmutableList.Create(JobLogTest.EmptyPath) }
-        )
+        ),
       };
       _logDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch011" },
@@ -1589,18 +1589,18 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                Casting = casting
+                Casting = casting,
               }
-            )
+            ),
           }
-        )
+        ),
       };
       if (casting == null)
       {
         casting = "pppp";
       }
       _logDB.AddJobs(
-        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch012", },
+        new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch012" },
         null,
         addAsCopiedToSystem: true
       );
@@ -1625,7 +1625,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -1637,7 +1637,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
           }
         );
@@ -1671,7 +1671,7 @@ namespace MachineWatchTest
                 NumProcesses = 1,
                 AddTimeUTC = _now,
                 NextProcess = 1,
-                Paths = ImmutableDictionary<int, int>.Empty
+                Paths = ImmutableDictionary<int, int>.Empty,
               },
               new QueuedMaterial()
               {
@@ -1683,7 +1683,7 @@ namespace MachineWatchTest
                 NumProcesses = 1,
                 AddTimeUTC = _now,
                 NextProcess = 1,
-                Paths = ImmutableDictionary<int, int>.Empty
+                Paths = ImmutableDictionary<int, int>.Empty,
               },
             }
           );
@@ -1717,7 +1717,7 @@ namespace MachineWatchTest
                 Fixture = matchingFixtures ? "fixA" : null,
                 Face = matchingFixtures ? 10 : null,
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
@@ -1727,9 +1727,9 @@ namespace MachineWatchTest
                 InputQueue = "transQ",
                 PalletNums = ImmutableList.Create(2),
               }
-            )
+            ),
           }
-        )
+        ),
       };
 
       var j2 = new Job()
@@ -1752,7 +1752,7 @@ namespace MachineWatchTest
                 Fixture = matchingFixtures ? "fixA" : null,
                 Face = matchingFixtures ? 10 : null,
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
@@ -1762,9 +1762,9 @@ namespace MachineWatchTest
                 InputQueue = "transQ",
                 PalletNums = ImmutableList.Create(4),
               }
-            )
+            ),
           }
-        )
+        ),
       };
 
       _logDB.AddJobs(
@@ -2071,7 +2071,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2083,7 +2083,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2095,7 +2095,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2107,7 +2107,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -2132,7 +2132,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2144,7 +2144,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -2156,7 +2156,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -2168,7 +2168,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -2209,7 +2209,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2221,7 +2221,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -2233,7 +2233,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -2245,7 +2245,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -2257,7 +2257,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -2269,7 +2269,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -2393,7 +2393,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2405,7 +2405,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2417,7 +2417,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2429,7 +2429,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -2460,7 +2460,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2472,7 +2472,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -2484,7 +2484,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -2496,7 +2496,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -2508,7 +2508,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
             new QueuedMaterial()
             {
@@ -2520,7 +2520,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -2662,9 +2662,9 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
           }
-        )
+        ),
       };
       _logDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch014" },
@@ -2705,7 +2705,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
           }
         );
@@ -2739,7 +2739,7 @@ namespace MachineWatchTest
                 NumProcesses = 1,
                 AddTimeUTC = _now,
                 NextProcess = 1,
-                Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+                Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
               },
             }
           );
@@ -2782,9 +2782,9 @@ namespace MachineWatchTest
         Processes = ImmutableList.Create(
           new ProcessInfo()
           {
-            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" })
+            Paths = ImmutableList.Create(JobLogTest.EmptyPath with { InputQueue = "thequeue" }),
           }
-        )
+        ),
       };
       _logDB.AddJobs(
         new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "sch015" },
@@ -2820,7 +2820,7 @@ namespace MachineWatchTest
         timeUTC: DateTime.UtcNow,
         matFromPendingLoads: new Dictionary<string, IEnumerable<EventLogMaterial>>()
         {
-          { "pppp:10:1,unused", new EventLogMaterial[] { } }
+          { "pppp:10:1,unused", new EventLogMaterial[] { } },
         },
         additionalLoads: null,
         foreignID: null,
@@ -2843,7 +2843,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
           }
         );
@@ -2875,7 +2875,7 @@ namespace MachineWatchTest
                 NumProcesses = 1,
                 AddTimeUTC = _now,
                 NextProcess = 1,
-                Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+                Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
               },
             }
           );
@@ -2935,11 +2935,11 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                Casting = casting
+                Casting = casting,
               }
-            )
+            ),
           }
-        )
+        ),
       };
       var j2 = new Job()
       {
@@ -2956,11 +2956,11 @@ namespace MachineWatchTest
               JobLogTest.EmptyPath with
               {
                 InputQueue = "thequeue",
-                Casting = casting
+                Casting = casting,
               }
-            )
+            ),
           }
-        )
+        ),
       };
       if (casting == null)
       {
@@ -2994,7 +2994,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -3018,7 +3018,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -3043,7 +3043,7 @@ namespace MachineWatchTest
               NumProcesses = 1,
               AddTimeUTC = _now,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
             },
           }
         );

@@ -313,7 +313,7 @@ namespace BlackMaple.FMSInsight.Niigata
       Ready = 0,
       Manual = 1,
       Auto = 2,
-      Cycle = 3
+      Cycle = 3,
     }
 
     public ModeE Mode { get; set; }

@@ -95,7 +95,7 @@ namespace MachineWatchTest
         new HashSet<string>(),
         defaultMazakCfg with
         {
-          UseStartingOffsetForDueDate = useStartingOffset
+          UseStartingOffsetForDueDate = useStartingOffset,
         },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
@@ -106,7 +106,7 @@ namespace MachineWatchTest
 
       CheckNewFixtures(
         pMap,
-        new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1", },
+        new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1" },
         new[] { "unusedfixture", "Test" }
       );
 
@@ -197,7 +197,7 @@ namespace MachineWatchTest
         savedParts,
         defaultMazakCfg with
         {
-          UseStartingOffsetForDueDate = useStartingOffset
+          UseStartingOffsetForDueDate = useStartingOffset,
         },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
@@ -210,8 +210,8 @@ namespace MachineWatchTest
       {
         CheckNewFixtures(
           pMap,
-          new string[] { "F:3:2:1", "F:3:2:2", "F:3:3:1", },
-          new[] { "unusedfixture", "Test", }
+          new string[] { "F:3:2:1", "F:3:2:2", "F:3:3:1" },
+          new[] { "unusedfixture", "Test" }
         );
       }
       else
@@ -289,7 +289,7 @@ namespace MachineWatchTest
         new HashSet<string>(),
         defaultMazakCfg with
         {
-          UseStartingOffsetForDueDate = useStartingOffset
+          UseStartingOffsetForDueDate = useStartingOffset,
         },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
@@ -298,7 +298,7 @@ namespace MachineWatchTest
       if (log.Count > 0)
         Assert.Fail(log[0]);
 
-      CheckNewFixtures(pMap, new string[] { "F:3:1:1", "F:3:2:2", "F:3:3:2", });
+      CheckNewFixtures(pMap, new string[] { "F:3:1:1", "F:3:2:2", "F:3:3:2" });
 
       var trans = pMap.CreatePartPalletDatabaseRows(defaultMazakCfg);
 
@@ -369,7 +369,7 @@ namespace MachineWatchTest
         new HashSet<string>(),
         defaultMazakCfg with
         {
-          UseStartingOffsetForDueDate = true
+          UseStartingOffsetForDueDate = true,
         },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
@@ -380,7 +380,7 @@ namespace MachineWatchTest
 
       CheckNewFixtures(
         pMap,
-        new string[] { "F:3:1:fixAA:1", "F:3:1:fixAA:2", "F:3:2:fix3:1", "F:3:3:fix4:1", },
+        new string[] { "F:3:1:fixAA:1", "F:3:1:fixAA:2", "F:3:2:fix3:1", "F:3:3:fix4:1" },
         new[] { "Test" }
       );
 
@@ -453,7 +453,7 @@ namespace MachineWatchTest
         new HashSet<string>(),
         defaultMazakCfg with
         {
-          UseStartingOffsetForDueDate = useStartingOffset
+          UseStartingOffsetForDueDate = useStartingOffset,
         },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
@@ -470,7 +470,7 @@ namespace MachineWatchTest
         // creates three different groups
         CheckNewFixtures(
           pMap,
-          new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1", "F:3:2:2", "F:3:3:1", "F:3:3:2", },
+          new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1", "F:3:2:2", "F:3:3:1", "F:3:3:2" },
           new[] { "Test" }
         );
         part2BaseFix = "F:3:1";
@@ -480,11 +480,7 @@ namespace MachineWatchTest
       else
       {
         // creates only two groups
-        CheckNewFixtures(
-          pMap,
-          new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1", "F:3:2:2", },
-          new[] { "Test" }
-        );
+        CheckNewFixtures(pMap, new string[] { "F:3:1:1", "F:3:1:2", "F:3:2:1", "F:3:2:2" }, new[] { "Test" });
         part2BaseFix = "F:3:1";
         part3BaseFix = "F:3:2";
         part1BaseFix = "F:3:1";
@@ -549,7 +545,7 @@ namespace MachineWatchTest
         new HashSet<string>() { "part2:1:1" },
         defaultMazakCfg with
         {
-          UseStartingOffsetForDueDate = false
+          UseStartingOffsetForDueDate = false,
         },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
@@ -568,8 +564,8 @@ namespace MachineWatchTest
               PalletNumber = 5,
               Fixture = "aaaa:1",
               Command = MazakWriteCommand.Delete,
-              FixtureGroupV2 = 1
-            }
+              FixtureGroupV2 = 1,
+            },
           }
         );
       del.Parts.Should().BeEmpty();
@@ -586,7 +582,7 @@ namespace MachineWatchTest
               Command = MazakWriteCommand.Delete,
               TotalProcess = dset.TestParts[0].Processes.Count(),
               Processes = new List<MazakPartProcessRow>(),
-            }
+            },
           },
           options => options.ComparingByMembers<MazakPartRow>()
         );
@@ -616,7 +612,7 @@ namespace MachineWatchTest
         new HashSet<string>(),
         defaultMazakCfg with
         {
-          UseStartingOffsetForDueDate = false
+          UseStartingOffsetForDueDate = false,
         },
         fmsSettings: new FMSSettings(),
         lookupProgram: (p, r) =>
@@ -666,8 +662,8 @@ namespace MachineWatchTest
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev7", "ddd.EIA"), "Insight:7:ddd"); // latest revision of unused program, should be kept
 
       var lookupProgram = Substitute.For<Func<string, long?, ProgramRevision>>();
-      lookupProgram("aaa", null).Returns(new ProgramRevision() { ProgramName = "aaa", Revision = 3, });
-      lookupProgram("bbb", 7).Returns(new ProgramRevision() { ProgramName = "bbb", Revision = 7, });
+      lookupProgram("aaa", null).Returns(new ProgramRevision() { ProgramName = "aaa", Revision = 3 });
+      lookupProgram("bbb", 7).Returns(new ProgramRevision() { ProgramName = "bbb", Revision = 7 });
       lookupProgram("ccc", 9).Returns(new ProgramRevision() { ProgramName = "ccc", Revision = 9 });
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
@@ -678,7 +674,7 @@ namespace MachineWatchTest
         defaultMazakCfg with
         {
           DBType = MazakDbType.MazakSmooth,
-          UseStartingOffsetForDueDate = false
+          UseStartingOffsetForDueDate = false,
         },
         fmsSettings: new FMSSettings(),
         lookupProgram: lookupProgram,
@@ -703,7 +699,7 @@ namespace MachineWatchTest
               Comment = "Insight:3:aaa",
               ProgramName = "aaa",
               ProgramRevision = 3,
-              ProgramContent = "aaa 3 ct"
+              ProgramContent = "aaa 3 ct",
             },
             new NewMazakProgram()
             {
@@ -712,7 +708,7 @@ namespace MachineWatchTest
               Comment = "Insight:7:bbb",
               ProgramName = "bbb",
               ProgramRevision = 7,
-              ProgramContent = "bbb 7 ct"
+              ProgramContent = "bbb 7 ct",
             },
           }
         );
@@ -725,8 +721,8 @@ namespace MachineWatchTest
             {
               Command = MazakWriteCommand.Delete,
               MainProgram = System.IO.Path.Combine("theprogdir", "rev8", "ccc.EIA"),
-              Comment = "Insight:8:ccc"
-            }
+              Comment = "Insight:8:ccc",
+            },
             // ccc rev9 already exists, should not be added
           }
         );
@@ -760,7 +756,7 @@ namespace MachineWatchTest
           [4],
           [10],
           [10],
-          [3]
+          [3],
         ]
       );
 
@@ -777,7 +773,7 @@ namespace MachineWatchTest
         defaultMazakCfg with
         {
           DBType = MazakDbType.MazakSmooth,
-          UseStartingOffsetForDueDate = false
+          UseStartingOffsetForDueDate = false,
         },
         fmsSettings: new FMSSettings(),
         lookupProgram: (_, _) => null,
@@ -787,7 +783,7 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           [
             "Non-Insight part Part1 in the Mazak cell controller is using an Insight fixture fix:1.  Please edit the part in the cell controller to not use an Insight fixture.",
-            "Part Part1 program 1234 does not exist in the cell controller."
+            "Part Part1 program 1234 does not exist in the cell controller.",
           ]
         );
     }
@@ -810,7 +806,7 @@ namespace MachineWatchTest
       CreateProgram(dset, System.IO.Path.Combine("theprogdir", "rev6", "bbb.EIA"), "Insight:6:bbb");
 
       var lookupProgram = Substitute.For<Func<string, long?, ProgramRevision>>();
-      lookupProgram("aaa", null).Returns(new ProgramRevision() { ProgramName = "aaa", Revision = 3, });
+      lookupProgram("aaa", null).Returns(new ProgramRevision() { ProgramName = "aaa", Revision = 3 });
       lookupProgram("bbb", 7).Returns((ProgramRevision)null);
 
       var pMap = ConvertJobsToMazakParts.JobsToMazak(
@@ -821,7 +817,7 @@ namespace MachineWatchTest
         defaultMazakCfg with
         {
           DBType = MazakDbType.MazakSmooth,
-          UseStartingOffsetForDueDate = false
+          UseStartingOffsetForDueDate = false,
         },
         fmsSettings: new FMSSettings(),
         lookupProgram: lookupProgram,
@@ -829,7 +825,7 @@ namespace MachineWatchTest
       );
 
       log.Should()
-        .BeEquivalentTo(new[] { "Part Part1 program bbb rev7 does not exist in the cell controller.", });
+        .BeEquivalentTo(new[] { "Part Part1 program bbb rev7 does not exist in the cell controller." });
     }
 
     #region Checking
@@ -878,7 +874,7 @@ namespace MachineWatchTest
             ProcessNumber = proc,
             Fixture = fix + ":" + proc.ToString(),
             PartName = name,
-            MainProgram = program
+            MainProgram = program,
           }
         );
       }
@@ -898,7 +894,7 @@ namespace MachineWatchTest
           {
             Fixture = fix + ":" + i.ToString(),
             PalletNumber = pal,
-            FixtureGroupV2 = group
+            FixtureGroupV2 = group,
           }
         );
       }
@@ -955,7 +951,7 @@ namespace MachineWatchTest
                 ExpectedLoadTime = TimeSpan.Zero,
                 ExpectedUnloadTime = TimeSpan.Zero,
               }
-            )
+            ),
           })
           .ToImmutableList(),
       };
@@ -972,7 +968,7 @@ namespace MachineWatchTest
         {
           FixtureName = f,
           Comment = "Insight",
-          Command = MazakWriteCommand.Add
+          Command = MazakWriteCommand.Add,
         })
         .ToList();
       var del = (delFix ?? Enumerable.Empty<string>())
@@ -980,7 +976,7 @@ namespace MachineWatchTest
         {
           FixtureName = f,
           Comment = "Insight",
-          Command = MazakWriteCommand.Delete
+          Command = MazakWriteCommand.Delete,
         })
         .ToList();
 

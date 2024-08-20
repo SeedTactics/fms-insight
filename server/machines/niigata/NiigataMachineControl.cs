@@ -74,7 +74,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 CellControllerProgramName = p.ProgramNum.ToString(),
                 ProgramName = progName,
                 Revision = rev,
-                Comment = jobProg?.Comment
+                Comment = jobProg?.Comment,
               };
             }
             else
@@ -83,7 +83,7 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 CellControllerProgramName = p.ProgramNum.ToString(),
                 ProgramName = p.ProgramNum.ToString(),
-                Comment = p.Comment
+                Comment = p.Comment,
               };
             }
           })

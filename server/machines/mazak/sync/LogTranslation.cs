@@ -151,7 +151,7 @@ namespace MazakMachineInterface
             return new HandleEventResult()
             {
               MatsToSendToExternal = Enumerable.Empty<MaterialToSendToExternalQueue>(),
-              StoppedBecauseRecentMachineEnd = true
+              StoppedBecauseRecentMachineEnd = true,
             };
           }
 
@@ -343,7 +343,7 @@ namespace MazakMachineInterface
       return new HandleEventResult()
       {
         MatsToSendToExternal = sendToExternal ?? Enumerable.Empty<MaterialToSendToExternalQueue>(),
-        StoppedBecauseRecentMachineEnd = false
+        StoppedBecauseRecentMachineEnd = false,
       };
     }
     #endregion
@@ -357,7 +357,7 @@ namespace MazakMachineInterface
         {
           MaterialID = -1,
           Process = e.Process,
-          Face = 0
+          Face = 0,
         }
       );
       return ret;
@@ -417,7 +417,7 @@ namespace MazakMachineInterface
               Mat = byMatId.GetValueAtIndex(0),
               PartName = e.JobPartName,
               Unique = unique,
-              Path = path
+              Path = path,
             }
           );
           byMatId.RemoveAt(0);
@@ -432,11 +432,11 @@ namespace MazakMachineInterface
               {
                 MaterialID = repo.AllocateMaterialID(unique, e.JobPartName, numProc),
                 Process = e.Process,
-                Face = e.Process
+                Face = e.Process,
               },
               PartName = e.JobPartName,
               Unique = unique,
-              Path = path
+              Path = path,
             }
           );
 
@@ -496,7 +496,7 @@ namespace MazakMachineInterface
             {
               MaterialID = mat.MaterialID,
               Process = proc,
-              Face = proc
+              Face = proc,
             };
           }
         }
@@ -598,7 +598,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = qmat.MaterialID,
                     Process = proc,
-                    Face = proc
+                    Face = proc,
                   }
                 );
               }
@@ -617,7 +617,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = repo.AllocateMaterialID(unique, jobPartName, numProc),
                     Process = proc,
-                    Face = proc
+                    Face = proc,
                   }
                 );
               }
@@ -640,7 +640,7 @@ namespace MazakMachineInterface
                 {
                   MaterialID = repo.AllocateMaterialID(unique, jobPartName, numProc),
                   Process = proc,
-                  Face = proc
+                  Face = proc,
                 }
               );
             }
@@ -672,7 +672,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = old.MaterialID,
                     Process = proc,
-                    Face = proc
+                    Face = proc,
                   }
                 );
               }
@@ -684,7 +684,7 @@ namespace MazakMachineInterface
                   {
                     MaterialID = repo.AllocateMaterialID(unique, jobPartName, numProc),
                     Process = proc,
-                    Face = proc
+                    Face = proc,
                   }
                 );
 
@@ -777,7 +777,7 @@ namespace MazakMachineInterface
                 Server = fmsSettings.ExternalQueues[q],
                 PartName = mat.PartName,
                 Queue = q,
-                Serial = repo.GetMaterialDetails(mat.Mat.MaterialID)?.Serial
+                Serial = repo.GetMaterialDetails(mat.Mat.MaterialID)?.Serial,
               }
             );
           }
@@ -835,7 +835,7 @@ namespace MazakMachineInterface
             {
               MaterialID = extraMat.MaterialID,
               Process = extraMat.Process,
-              Face = 0
+              Face = 0,
             },
             queue: fmsSettings.QuarantineQueue,
             position: -1,

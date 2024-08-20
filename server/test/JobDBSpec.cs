@@ -93,7 +93,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = addAsCopied,
-        Decrements = ImmutableList<DecrementQuantity>.Empty
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
       _jobDB
@@ -103,7 +103,7 @@ namespace MachineWatchTest
           new HistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job1.UniqueStr, job1history),
-            StationUse = job1StatUse
+            StationUse = job1StatUse,
           }
         );
 
@@ -118,7 +118,7 @@ namespace MachineWatchTest
           new HistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
-            StationUse = ImmutableList<SimulatedStationUtilization>.Empty
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
           }
         );
 
@@ -140,7 +140,7 @@ namespace MachineWatchTest
           new HistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
-            StationUse = ImmutableList<SimulatedStationUtilization>.Empty
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
           }
         );
 
@@ -187,7 +187,7 @@ namespace MachineWatchTest
       var job2 = RandJob(job1.RouteStartUTC.AddHours(4)) with
       {
         ManuallyCreated = true,
-        PartName = job1.PartName
+        PartName = job1.PartName,
       };
       var job2SimUse = RandSimStationUse(schId2, job2.RouteStartUTC);
       var job2ExtraParts = _fixture.Create<Dictionary<string, int>>();
@@ -225,7 +225,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId2,
         CopiedToSystem = true,
-        Decrements = ImmutableList<DecrementQuantity>.Empty
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
       _jobDB
@@ -238,7 +238,7 @@ namespace MachineWatchTest
               .Create<string, HistoricJob>()
               .Add(job1.UniqueStr, job1history)
               .Add(job2.UniqueStr, job2history),
-            StationUse = job1StatUse.AddRange(job2SimUse)
+            StationUse = job1StatUse.AddRange(job2SimUse),
           }
         );
 
@@ -253,7 +253,7 @@ namespace MachineWatchTest
           new HistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
-            StationUse = job2SimUse
+            StationUse = job2SimUse,
           }
         );
 
@@ -264,7 +264,7 @@ namespace MachineWatchTest
           new HistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
-            StationUse = job2SimUse
+            StationUse = job2SimUse,
           }
         );
 
@@ -279,7 +279,7 @@ namespace MachineWatchTest
               .Add(job1.UniqueStr, job1history)
               .Add(job2.UniqueStr, job2history),
             StationUse = job1StatUse.AddRange(job2SimUse),
-            MostRecentSimulationId = schId2
+            MostRecentSimulationId = schId2,
           }
         );
 
@@ -291,7 +291,7 @@ namespace MachineWatchTest
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
             StationUse = job2SimUse,
-            MostRecentSimulationId = schId2
+            MostRecentSimulationId = schId2,
           }
         );
 
@@ -303,7 +303,7 @@ namespace MachineWatchTest
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
             StationUse = job2SimUse,
-            MostRecentSimulationId = schId2
+            MostRecentSimulationId = schId2,
           }
         );
 
@@ -314,7 +314,7 @@ namespace MachineWatchTest
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
-            StationUse = ImmutableList<SimulatedStationUtilization>.Empty
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
           }
         );
 
@@ -326,7 +326,7 @@ namespace MachineWatchTest
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
             StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
-            MostRecentSimulationId = schId2
+            MostRecentSimulationId = schId2,
           }
         );
 
@@ -382,7 +382,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId1,
         CopiedToSystem = true,
-        Decrements = ImmutableList<DecrementQuantity>.Empty
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
       simDays1.Count.Should().BeGreaterThan(0);
@@ -440,7 +440,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId2,
         CopiedToSystem = true,
-        Decrements = ImmutableList<DecrementQuantity>.Empty
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
       _jobDB.AddJobs(
@@ -557,7 +557,7 @@ namespace MachineWatchTest
       var job1 = RandJob() with { ManuallyCreated = false };
 
       _jobDB.AddJobs(
-        new NewJobs() { ScheduleId = schId, Jobs = ImmutableList.Create(job1), },
+        new NewJobs() { ScheduleId = schId, Jobs = ImmutableList.Create(job1) },
         null,
         addAsCopiedToSystem: true
       );
@@ -566,7 +566,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = true,
-        Decrements = ImmutableList<DecrementQuantity>.Empty
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history);
@@ -585,7 +585,7 @@ namespace MachineWatchTest
       var job1 = RandJob() with { ManuallyCreated = false };
 
       _jobDB.AddJobs(
-        new NewJobs() { ScheduleId = schId, Jobs = ImmutableList.Create(job1), },
+        new NewJobs() { ScheduleId = schId, Jobs = ImmutableList.Create(job1) },
         null,
         addAsCopiedToSystem: true
       );
@@ -594,7 +594,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = true,
-        Decrements = ImmutableList<DecrementQuantity>.Empty
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history);
@@ -622,12 +622,12 @@ namespace MachineWatchTest
                 {
                   Paths = (new[] { job1.Processes[0].Paths[0] with { HoldMachining = newMachHold } })
                     .Concat(job1.Processes[0].Paths.Skip(1))
-                    .ToImmutableList()
-                }
+                    .ToImmutableList(),
+                },
               }
             )
               .Concat(job1.Processes.Skip(1))
-              .ToImmutableList()
+              .ToImmutableList(),
           }
         );
 
@@ -651,21 +651,21 @@ namespace MachineWatchTest
                     {
                       job1.Processes[0].Paths[0] with
                       {
-                        HoldMachining = newMachHold
+                        HoldMachining = newMachHold,
                       },
                       job1.Processes[0].Paths[1] with
                       {
-                        HoldLoadUnload = newLoadHold
-                      }
+                        HoldLoadUnload = newLoadHold,
+                      },
                     }
                   )
                     .Concat(job1.Processes[0].Paths.Skip(2))
-                    .ToImmutableList()
-                }
+                    .ToImmutableList(),
+                },
               }
             )
               .Concat(job1.Processes.Skip(1))
-              .ToImmutableList()
+              .ToImmutableList(),
           }
         );
     }
@@ -678,7 +678,7 @@ namespace MachineWatchTest
       var job1 = RandJob() with { ManuallyCreated = false };
 
       _jobDB.AddJobs(
-        new NewJobs() { ScheduleId = schId, Jobs = ImmutableList.Create(job1), },
+        new NewJobs() { ScheduleId = schId, Jobs = ImmutableList.Create(job1) },
         null,
         addAsCopiedToSystem: false
       );
@@ -687,7 +687,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = false,
-        Decrements = ImmutableList<DecrementQuantity>.Empty
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
       _jobDB
@@ -718,7 +718,7 @@ namespace MachineWatchTest
       var job1 = RandJob() with { Archived = false };
 
       _jobDB.AddJobs(
-        new NewJobs() { ScheduleId = schId, Jobs = ImmutableList.Create(job1), },
+        new NewJobs() { ScheduleId = schId, Jobs = ImmutableList.Create(job1) },
         null,
         addAsCopiedToSystem: true
       );
@@ -727,7 +727,7 @@ namespace MachineWatchTest
       {
         ScheduleId = schId,
         CopiedToSystem = true,
-        Decrements = ImmutableList<DecrementQuantity>.Empty
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
       _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history);
@@ -764,8 +764,8 @@ namespace MachineWatchTest
             {
               CopiedToSystem = false,
               ScheduleId = "schId",
-              Decrements = ImmutableList<DecrementQuantity>.Empty
-            }
+              Decrements = ImmutableList<DecrementQuantity>.Empty,
+            },
           }
         );
 
@@ -777,14 +777,14 @@ namespace MachineWatchTest
           {
             JobUnique = job1.UniqueStr,
             Part = job1.PartName,
-            Quantity = 53
+            Quantity = 53,
           },
           new NewDecrementQuantity()
           {
             JobUnique = job2.UniqueStr,
             Part = job2.PartName,
-            Quantity = 821
-          }
+            Quantity = 821,
+          },
         },
         time1
       );
@@ -797,7 +797,7 @@ namespace MachineWatchTest
           JobUnique = job1.UniqueStr,
           TimeUTC = time1,
           Part = job1.PartName,
-          Quantity = 53
+          Quantity = 53,
         },
         new JobAndDecrementQuantity()
         {
@@ -805,8 +805,8 @@ namespace MachineWatchTest
           JobUnique = job2.UniqueStr,
           TimeUTC = time1,
           Part = job2.PartName,
-          Quantity = 821
-        }
+          Quantity = 821,
+        },
       };
 
       var expected1Job1 = ImmutableList.Create(
@@ -814,7 +814,7 @@ namespace MachineWatchTest
         {
           DecrementId = 0,
           TimeUTC = time1,
-          Quantity = 53
+          Quantity = 53,
         }
       );
       var expected1Job2 = ImmutableList.Create(
@@ -822,7 +822,7 @@ namespace MachineWatchTest
         {
           DecrementId = 0,
           TimeUTC = time1,
-          Quantity = 821
+          Quantity = 821,
         }
       );
 
@@ -838,8 +838,8 @@ namespace MachineWatchTest
             {
               CopiedToSystem = false,
               ScheduleId = "schId",
-              Decrements = expected1Job1
-            }
+              Decrements = expected1Job1,
+            },
           }
         );
 
@@ -853,7 +853,7 @@ namespace MachineWatchTest
           {
             CopiedToSystem = false,
             ScheduleId = "schId",
-            Decrements = expected1Job1
+            Decrements = expected1Job1,
           }
         );
 
@@ -865,7 +865,7 @@ namespace MachineWatchTest
           {
             CopiedToSystem = true,
             ScheduleId = "schId",
-            Decrements = expected1Job2
+            Decrements = expected1Job2,
           }
         );
 
@@ -882,7 +882,7 @@ namespace MachineWatchTest
                 {
                   CopiedToSystem = false,
                   ScheduleId = "schId",
-                  Decrements = expected1Job1
+                  Decrements = expected1Job1,
                 }
               )
               .Add(
@@ -891,10 +891,10 @@ namespace MachineWatchTest
                 {
                   CopiedToSystem = true,
                   ScheduleId = "schId",
-                  Decrements = expected1Job2
+                  Decrements = expected1Job2,
                 }
               ),
-            StationUse = ImmutableList<SimulatedStationUtilization>.Empty
+            StationUse = ImmutableList<SimulatedStationUtilization>.Empty,
           }
         );
 
@@ -908,20 +908,20 @@ namespace MachineWatchTest
           {
             JobUnique = job1.UniqueStr,
             Part = job1.PartName,
-            Quantity = 26
+            Quantity = 26,
           },
           new NewDecrementQuantity()
           {
             JobUnique = job2.UniqueStr,
             Part = job2.PartName,
-            Quantity = 44
-          }
+            Quantity = 44,
+          },
         },
         time2,
         new[]
         {
           new RemovedBooking() { JobUnique = job1.UniqueStr, BookingId = job1.BookingIds.First() },
-          new RemovedBooking() { JobUnique = job2.UniqueStr, BookingId = job2.BookingIds.First() }
+          new RemovedBooking() { JobUnique = job2.UniqueStr, BookingId = job2.BookingIds.First() },
         }
       );
 
@@ -933,7 +933,7 @@ namespace MachineWatchTest
           JobUnique = job1.UniqueStr,
           TimeUTC = time2,
           Part = job1.PartName,
-          Quantity = 26
+          Quantity = 26,
         },
         new JobAndDecrementQuantity()
         {
@@ -941,8 +941,8 @@ namespace MachineWatchTest
           JobUnique = job2.UniqueStr,
           TimeUTC = time2,
           Part = job2.PartName,
-          Quantity = 44
-        }
+          Quantity = 44,
+        },
       };
 
       _jobDB
@@ -969,14 +969,14 @@ namespace MachineWatchTest
             {
               DecrementId = 0,
               TimeUTC = time1,
-              Quantity = 53
+              Quantity = 53,
             },
             new DecrementQuantity()
             {
               DecrementId = 1,
               TimeUTC = time2,
-              Quantity = 26
-            }
+              Quantity = 26,
+            },
           }
         );
 
@@ -990,14 +990,14 @@ namespace MachineWatchTest
             {
               DecrementId = 0,
               TimeUTC = time1,
-              Quantity = 821
+              Quantity = 821,
             },
             new DecrementQuantity()
             {
               DecrementId = 1,
               TimeUTC = time2,
-              Quantity = 44
-            }
+              Quantity = 44,
+            },
           }
         );
     }
@@ -1018,7 +1018,7 @@ namespace MachineWatchTest
           {
             CopiedToSystem = true,
             ScheduleId = "theschId",
-            Decrements = ImmutableList<DecrementQuantity>.Empty
+            Decrements = ImmutableList<DecrementQuantity>.Empty,
           }
         );
 
@@ -1032,7 +1032,7 @@ namespace MachineWatchTest
           {
             JobUnique = job.UniqueStr,
             Part = job.PartName,
-            Quantity = 44
+            Quantity = 44,
           },
         },
         now
@@ -1052,9 +1052,9 @@ namespace MachineWatchTest
               {
                 DecrementId = 0,
                 TimeUTC = now,
-                Quantity = 44
+                Quantity = 44,
               }
-            )
+            ),
           }
         );
     }
@@ -1078,9 +1078,9 @@ namespace MachineWatchTest
                   ProgramRevision = null,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -1096,9 +1096,9 @@ namespace MachineWatchTest
                   ProgramRevision = 1,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -1114,9 +1114,9 @@ namespace MachineWatchTest
                   ProgramRevision = null,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -1132,9 +1132,9 @@ namespace MachineWatchTest
                   ProgramRevision = 6,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         );
 
@@ -1147,23 +1147,23 @@ namespace MachineWatchTest
           {
             ProcessNumber = 1,
             ProgramName = "aaa",
-            Revision = null
+            Revision = null,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 0,
             ProgramName = "aaa",
-            Revision = 1
+            Revision = 1,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 1,
             ProgramName = "bbb",
-            Revision = null
-          }
-        ]
+            Revision = null,
+          },
+        ],
       };
       initialWorks[1] = initialWorks[1] with
       {
@@ -1174,9 +1174,9 @@ namespace MachineWatchTest
             ProcessNumber = 1,
             StopIndex = 0,
             ProgramName = "bbb",
-            Revision = 6
-          }
-        ]
+            Revision = 6,
+          },
+        ],
       };
 
       var workStart = ImmutableList.Create(
@@ -1204,17 +1204,17 @@ namespace MachineWatchTest
               ProgramName = "aaa",
               Revision = 0, // auto assign
               Comment = "aaa comment",
-              ProgramContent = "aaa program content"
+              ProgramContent = "aaa program content",
             },
             new NewProgramContent()
             {
               ProgramName = "bbb",
               Revision = 6, // new revision
               Comment = "bbb comment",
-              ProgramContent = "bbb program content"
+              ProgramContent = "bbb program content",
             }
           ),
-          SimWorkordersFilled = workStart
+          SimWorkordersFilled = workStart,
         },
         null,
         addAsCopiedToSystem: true
@@ -1234,9 +1234,9 @@ namespace MachineWatchTest
                   ProgramRevision = 1,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -1252,9 +1252,9 @@ namespace MachineWatchTest
                   ProgramRevision = 6,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         );
       initialWorks[0] = initialWorks[0] with
@@ -1265,23 +1265,23 @@ namespace MachineWatchTest
           {
             ProcessNumber = 1,
             ProgramName = "aaa",
-            Revision = 1
+            Revision = 1,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 0,
             ProgramName = "aaa",
-            Revision = 1
+            Revision = 1,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 1,
             ProgramName = "bbb",
-            Revision = 6
-          }
-        ]
+            Revision = 6,
+          },
+        ],
       };
 
       _jobDB
@@ -1292,7 +1292,7 @@ namespace MachineWatchTest
           {
             ScheduleId = schId,
             CopiedToSystem = true,
-            Decrements = ImmutableList<DecrementQuantity>.Empty
+            Decrements = ImmutableList<DecrementQuantity>.Empty,
           }
         );
 
@@ -1313,8 +1313,8 @@ namespace MachineWatchTest
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               SimulatedStart = workStart[0].Started,
-              SimulatedFilled = workStart[0].Filled
-            }
+              SimulatedFilled = workStart[0].Filled,
+            },
           }
         );
 
@@ -1393,16 +1393,16 @@ namespace MachineWatchTest
                   ProgramName = "aaa",
                   Revision = 0, // auto assign
                   Comment = "aaa comment rev 2",
-                  ProgramContent = "aaa program content rev 2"
+                  ProgramContent = "aaa program content rev 2",
                 },
                 new NewProgramContent()
                 {
                   ProgramName = "bbb",
                   Revision = 6, // existing revision
                   Comment = "bbb comment",
-                  ProgramContent = "awofguhweoguhweg"
+                  ProgramContent = "awofguhweoguhweg",
                 }
-              )
+              ),
             },
             null,
             addAsCopiedToSystem: true
@@ -1422,14 +1422,14 @@ namespace MachineWatchTest
                 ProgramName = "aaa",
                 Revision = 0, // auto assign
                 Comment = "aaa comment rev 2",
-                ProgramContent = "aaa program content rev 2"
+                ProgramContent = "aaa program content rev 2",
               },
               new NewProgramContent()
               {
                 ProgramName = "bbb",
                 Revision = 6, // existing revision
                 Comment = "bbb comment",
-                ProgramContent = "awofguhweoguhweg"
+                ProgramContent = "awofguhweoguhweg",
               },
             },
             DateTime.Parse("2019-09-14T03:52:12Z")
@@ -1475,23 +1475,23 @@ namespace MachineWatchTest
           {
             ProcessNumber = 1,
             ProgramName = "aaa",
-            Revision = 1
+            Revision = 1,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 0,
             ProgramName = "aaa",
-            Revision = 2
+            Revision = 2,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 1,
             ProgramName = "bbb",
-            Revision = 6
-          }
-        ]
+            Revision = 6,
+          },
+        ],
       };
       newWorkorders[1] = newWorkorders[1] with
       {
@@ -1502,9 +1502,9 @@ namespace MachineWatchTest
             ProcessNumber = 1,
             StopIndex = 0,
             ProgramName = "ccc",
-            Revision = 0
-          }
-        ]
+            Revision = 0,
+          },
+        ],
       };
 
       _jobDB.AddJobs(
@@ -1519,9 +1519,9 @@ namespace MachineWatchTest
               ProgramName = "ccc",
               Revision = 0,
               Comment = "the ccc comment",
-              ProgramContent = "ccc first program"
+              ProgramContent = "ccc first program",
             }
-          )
+          ),
         },
         null,
         true
@@ -1537,9 +1537,9 @@ namespace MachineWatchTest
             ProcessNumber = 1,
             StopIndex = 0,
             ProgramName = "ccc",
-            Revision = 1
-          }
-        ]
+            Revision = 1,
+          },
+        ],
       };
 
       _jobDB
@@ -1574,23 +1574,25 @@ namespace MachineWatchTest
               ProgramName = "aaa",
               Revision = 0, // auto assign
               Comment = "aaa comment rev 2",
-              ProgramContent = "aaa program content rev 2"
+              ProgramContent = "aaa program content rev 2",
             },
             new NewProgramContent()
             {
               ProgramName = "bbb",
               Revision = 6, // existing revision
               Comment = "bbb comment",
-              ProgramContent = "bbb program content"
+              ProgramContent = "bbb program content",
             },
             new NewProgramContent()
             {
               ProgramName = "ccc",
               Revision = 0, // auto assign
               Comment = "ccc new comment", // comment does not match most recent revision
-              ProgramContent = "ccc first program" // content matches most recent revision
+              ProgramContent =
+                "ccc first program" // content matches most recent revision
+              ,
             }
-          )
+          ),
         },
         schId,
         addAsCopiedToSystem: true
@@ -1657,7 +1659,7 @@ namespace MachineWatchTest
             ProgramName = "aaa",
             Revision = 1,
             Comment = "aaa comment",
-            CellControllerProgramName = "aaa-1"
+            CellControllerProgramName = "aaa-1",
           }
         );
       _jobDB
@@ -1669,7 +1671,7 @@ namespace MachineWatchTest
             ProgramName = "aaa",
             Revision = 1,
             Comment = "aaa comment",
-            CellControllerProgramName = "aaa-1"
+            CellControllerProgramName = "aaa-1",
           }
         );
       _jobDB
@@ -1681,7 +1683,7 @@ namespace MachineWatchTest
             ProgramName = "bbb",
             Revision = 6,
             Comment = "bbb comment",
-            CellControllerProgramName = "bbb-6"
+            CellControllerProgramName = "bbb-6",
           }
         );
       _jobDB
@@ -1693,7 +1695,7 @@ namespace MachineWatchTest
             ProgramName = "bbb",
             Revision = 6,
             Comment = "bbb comment",
-            CellControllerProgramName = "bbb-6"
+            CellControllerProgramName = "bbb-6",
           }
         );
       _jobDB.ProgramFromCellControllerProgram("aagaiouhgi").Should().BeNull();
@@ -1708,15 +1710,15 @@ namespace MachineWatchTest
               ProgramName = "aaa",
               Revision = 1,
               Comment = "aaa comment",
-              CellControllerProgramName = "aaa-1"
+              CellControllerProgramName = "aaa-1",
             },
             new ProgramRevision()
             {
               ProgramName = "bbb",
               Revision = 6,
               Comment = "bbb comment",
-              CellControllerProgramName = "bbb-6"
-            }
+              CellControllerProgramName = "bbb-6",
+            },
           }
         );
 
@@ -1733,8 +1735,8 @@ namespace MachineWatchTest
               ProgramName = "bbb",
               Revision = 6,
               Comment = "bbb comment",
-              CellControllerProgramName = "bbb-6"
-            }
+              CellControllerProgramName = "bbb-6",
+            },
           }
         );
 
@@ -1765,14 +1767,14 @@ namespace MachineWatchTest
             ProgramName = "aaa",
             Revision = 0, // should be ignored because comment and content matches revision 1
             Comment = "aaa comment",
-            ProgramContent = "aaa program content"
+            ProgramContent = "aaa program content",
           },
           new NewProgramContent()
           {
             ProgramName = "bbb",
             Revision = 0, // allocate new
             Comment = "bbb comment rev7",
-            ProgramContent = "bbb program content rev7"
+            ProgramContent = "bbb program content rev7",
           },
         },
         job1.RouteStartUTC
@@ -1811,8 +1813,10 @@ namespace MachineWatchTest
             ProgramName = "aaa",
             Revision = 0, // allocate new
             Comment = "aaa comment", // comment matches
-            ProgramContent = "aaa program content rev 3" // content does not
-          }
+            ProgramContent =
+              "aaa program content rev 3" // content does not
+            ,
+          },
         },
         job1.RouteStartUTC
       );
@@ -1854,7 +1858,7 @@ namespace MachineWatchTest
               ProgramName = "aaa",
               Revision = 1,
               Comment = "aaa comment",
-            }
+            },
           },
           options => options.WithStrictOrdering()
         );
@@ -1869,7 +1873,7 @@ namespace MachineWatchTest
               ProgramName = "aaa",
               Revision = 3,
               Comment = "aaa comment",
-            }
+            },
           },
           options => options.WithStrictOrdering()
         );
@@ -1884,7 +1888,7 @@ namespace MachineWatchTest
               ProgramName = "aaa",
               Revision = 1,
               Comment = "aaa comment",
-            }
+            },
           },
           options => options.WithStrictOrdering()
         );
@@ -1908,23 +1912,23 @@ namespace MachineWatchTest
               ProgramName = "bbb",
               Revision = 6,
               Comment = "bbb comment 6",
-              ProgramContent = "bbb program content 6"
+              ProgramContent = "bbb program content 6",
             },
             new NewProgramContent()
             {
               ProgramName = "ccc",
               Revision = 3,
               Comment = "ccc comment 3",
-              ProgramContent = "ccc program content 3"
+              ProgramContent = "ccc program content 3",
             },
             new NewProgramContent()
             {
               ProgramName = "ccc",
               Revision = 4,
               Comment = "ccc comment 4",
-              ProgramContent = "ccc program content 4"
+              ProgramContent = "ccc program content 4",
             }
-          )
+          ),
         },
         null,
         addAsCopiedToSystem: true
@@ -1945,9 +1949,9 @@ namespace MachineWatchTest
                   ProgramRevision = -1,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -1963,9 +1967,9 @@ namespace MachineWatchTest
                   ProgramRevision = -2,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -1981,9 +1985,9 @@ namespace MachineWatchTest
                   ProgramRevision = -1,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -1999,9 +2003,9 @@ namespace MachineWatchTest
                   ProgramRevision = -2,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -2017,9 +2021,9 @@ namespace MachineWatchTest
                   ProgramRevision = -2,
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         );
 
@@ -2032,23 +2036,23 @@ namespace MachineWatchTest
           {
             ProcessNumber = 1,
             ProgramName = "aaa",
-            Revision = -1
+            Revision = -1,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 0,
             ProgramName = "aaa",
-            Revision = -2
+            Revision = -2,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 1,
             ProgramName = "bbb",
-            Revision = -1
-          }
-        ]
+            Revision = -1,
+          },
+        ],
       };
       initialWorks[1] = initialWorks[1] with
       {
@@ -2059,23 +2063,23 @@ namespace MachineWatchTest
             ProcessNumber = 1,
             StopIndex = 0,
             ProgramName = "bbb",
-            Revision = -2
+            Revision = -2,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 1,
             ProgramName = "ccc",
-            Revision = -1
+            Revision = -1,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 2,
             ProgramName = "ccc",
-            Revision = -2
-          }
-        ]
+            Revision = -2,
+          },
+        ],
       };
 
       _jobDB.AddJobs(
@@ -2090,44 +2094,44 @@ namespace MachineWatchTest
               ProgramName = "aaa",
               Revision = -1, // should be created to be revision 1
               Comment = "aaa comment 1",
-              ProgramContent = "aaa program content for 1"
+              ProgramContent = "aaa program content for 1",
             },
             new NewProgramContent()
             {
               ProgramName = "aaa",
               Revision = -2, // should be created to be revision 2
               Comment = "aaa comment 2",
-              ProgramContent = "aaa program content for 2"
+              ProgramContent = "aaa program content for 2",
             },
             new NewProgramContent()
             {
               ProgramName = "bbb",
               Revision = -1, // matches latest content so should be converted to 6
               Comment = "bbb other comment", // comment doesn't match but is ignored
-              ProgramContent = "bbb program content 6"
+              ProgramContent = "bbb program content 6",
             },
             new NewProgramContent()
             {
               ProgramName = "bbb",
               Revision = -2, // assigned a new val 7 since content differs
               Comment = "bbb comment 7",
-              ProgramContent = "bbb program content 7"
+              ProgramContent = "bbb program content 7",
             },
             new NewProgramContent()
             {
               ProgramName = "ccc",
               Revision = -1, // assigned to 3 (older than most recent) because comment and content match
               Comment = "ccc comment 3",
-              ProgramContent = "ccc program content 3"
+              ProgramContent = "ccc program content 3",
             },
             new NewProgramContent()
             {
               ProgramName = "ccc",
               Revision = -2, // assigned a new val since doesn't match existing, even if comment matches
               Comment = "ccc comment 3",
-              ProgramContent = "ccc program content 5"
+              ProgramContent = "ccc program content 5",
             }
-          )
+          ),
         },
         null,
         true
@@ -2146,9 +2150,9 @@ namespace MachineWatchTest
                   ProgramRevision = 1, // -1
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -2164,9 +2168,9 @@ namespace MachineWatchTest
                   ProgramRevision = 2, // -2
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -2182,9 +2186,9 @@ namespace MachineWatchTest
                   ProgramRevision = 6, // -1
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -2200,9 +2204,9 @@ namespace MachineWatchTest
                   ProgramRevision = 7, // -2
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         )
         .AdjustPath(
@@ -2218,9 +2222,9 @@ namespace MachineWatchTest
                   ProgramRevision = 5, // -2
                   StationGroup = "",
                   Stations = ImmutableList<int>.Empty,
-                  ExpectedCycleTime = TimeSpan.Zero
+                  ExpectedCycleTime = TimeSpan.Zero,
                 }
-              )
+              ),
             }
         );
 
@@ -2232,23 +2236,23 @@ namespace MachineWatchTest
           {
             ProcessNumber = 1,
             ProgramName = "aaa",
-            Revision = 1
+            Revision = 1,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 0,
             ProgramName = "aaa",
-            Revision = 2
+            Revision = 2,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 1,
             ProgramName = "bbb",
-            Revision = 6
-          }
-        ]
+            Revision = 6,
+          },
+        ],
       };
       initialWorks[1] = initialWorks[1] with
       {
@@ -2259,23 +2263,23 @@ namespace MachineWatchTest
             ProcessNumber = 1,
             StopIndex = 0,
             ProgramName = "bbb",
-            Revision = 7
+            Revision = 7,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 1,
             ProgramName = "ccc",
-            Revision = 3
+            Revision = 3,
           },
           new ProgramForJobStep()
           {
             ProcessNumber = 2,
             StopIndex = 2,
             ProgramName = "ccc",
-            Revision = 5
-          }
-        ]
+            Revision = 5,
+          },
+        ],
       };
 
       _jobDB
@@ -2286,7 +2290,7 @@ namespace MachineWatchTest
           {
             ScheduleId = schId,
             CopiedToSystem = true,
-            Decrements = ImmutableList<DecrementQuantity>.Empty
+            Decrements = ImmutableList<DecrementQuantity>.Empty,
           }
         );
 
@@ -2397,7 +2401,7 @@ namespace MachineWatchTest
         {
           ScheduleId = "aaa1",
           Jobs = [],
-          CurrentUnfilledWorkorders = [w1, w2, w3]
+          CurrentUnfilledWorkorders = [w1, w2, w3],
         },
         null,
         true
@@ -2422,7 +2426,7 @@ namespace MachineWatchTest
         {
           ScheduleId = "aaa1",
           Jobs = [],
-          CurrentUnfilledWorkorders = [w1New, w2, w4]
+          CurrentUnfilledWorkorders = [w1New, w2, w4],
         },
         null,
         true
@@ -2436,7 +2440,7 @@ namespace MachineWatchTest
           [
             (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
             (w2.WorkorderId, w2.Part, w2.Priority, w2.DueDate, w2.Quantity),
-            (w4.WorkorderId, w4.Part, w4.Priority, w4.DueDate, w4.Quantity)
+            (w4.WorkorderId, w4.Part, w4.Priority, w4.DueDate, w4.Quantity),
           ]
         );
 
@@ -2458,7 +2462,7 @@ namespace MachineWatchTest
           [
             (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
             (w2New.WorkorderId, w2New.Part, w2New.Priority, w2New.DueDate, w2New.Quantity),
-            (w5.WorkorderId, w5.Part, w5.Priority, w5.DueDate, w5.Quantity)
+            (w5.WorkorderId, w5.Part, w5.Priority, w5.DueDate, w5.Quantity),
           ]
         );
 
@@ -2486,7 +2490,7 @@ namespace MachineWatchTest
           {
             ScheduleId = "sch1",
             CopiedToSystem = true,
-            Decrements = ImmutableList<DecrementQuantity>.Empty
+            Decrements = ImmutableList<DecrementQuantity>.Empty,
           }
         );
 
@@ -2519,14 +2523,14 @@ namespace MachineWatchTest
               {
                 JobUnique = "uniq" + i,
                 Process = rnd.Next(1, 10),
-                Path = rnd.Next(1, 10)
+                Path = rnd.Next(1, 10),
               },
               new SimulatedStationPart()
               {
                 JobUnique = "uniq" + i,
                 Process = rnd.Next(1, 10),
-                Path = 11 + rnd.Next(1, 10)
-              }
+                Path = 11 + rnd.Next(1, 10),
+              },
             }
           );
         }
@@ -2540,7 +2544,7 @@ namespace MachineWatchTest
             StartUTC = start.AddMinutes(-rnd.Next(200, 300)),
             EndUTC = start.AddMinutes(rnd.Next(0, 100)),
             PlanDown = rnd.Next(0, 100) < 20 ? (rnd.Next(1, 100) < 50 ? null : false) : true,
-            Parts = parts
+            Parts = parts,
           }
         );
       }
@@ -2562,10 +2566,10 @@ namespace MachineWatchTest
               {
                 Paths = proc
                   .Paths.Select(path => path with { Casting = procIdx == 0 ? path.Casting : null })
-                  .ToImmutableList()
+                  .ToImmutableList(),
               }
           )
-          .ToImmutableList()
+          .ToImmutableList(),
       };
     }
   }

@@ -90,7 +90,7 @@ public record NiigataSettings
                 {
                   iccMc = idx + 1,
                   group,
-                  num
+                  num,
                 };
               }
               else
@@ -100,7 +100,7 @@ public record NiigataSettings
             }
           )
           .Where(x => x != null)
-          .ToDictionary(x => x!.iccMc, x => (x!.group, x.num))
+          .ToDictionary(x => x!.iccMc, x => (x!.group, x.num)),
     };
 
     return new NiigataSettings()

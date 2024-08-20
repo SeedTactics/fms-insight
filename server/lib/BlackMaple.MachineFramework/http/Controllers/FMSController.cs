@@ -303,7 +303,7 @@ namespace BlackMaple.MachineFramework.Controllers
         }
         else
         {
-          return new ScannedMaterial() { Casting = new ScannedCasting() { Serial = serial }, };
+          return new ScannedMaterial() { Casting = new ScannedCasting() { Serial = serial } };
         }
       }
     }

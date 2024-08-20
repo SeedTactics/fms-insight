@@ -61,7 +61,7 @@ namespace MazakMachineInterface
               prog = jobDb.LoadProgram(progFromComent, revFromComment);
               if (prog == null)
               {
-                prog = new ProgramRevision() { ProgramName = progFromComent, Revision = revFromComment, };
+                prog = new ProgramRevision() { ProgramName = progFromComent, Revision = revFromComment };
               }
             }
             return new ProgramInCellController()
@@ -69,7 +69,7 @@ namespace MazakMachineInterface
               ProgramName = prog?.ProgramName ?? p.MainProgram,
               CellControllerProgramName = p.MainProgram,
               Revision = prog?.Revision,
-              Comment = prog?.Comment ?? p.Comment
+              Comment = prog?.Comment ?? p.Comment,
             };
           })
           .ToImmutableList();
@@ -102,7 +102,7 @@ namespace MazakMachineInterface
           CurrentUse = TimeSpan.FromSeconds(t.LifeUsed ?? 0),
           TotalLifeTime = TimeSpan.FromSeconds(t.LifeSpan ?? 0),
           CurrentUseCount = null,
-          TotalLifeCount = null
+          TotalLifeCount = null,
         })
         .ToImmutableList();
     }

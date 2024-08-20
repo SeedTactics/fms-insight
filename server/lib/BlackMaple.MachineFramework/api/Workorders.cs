@@ -74,7 +74,7 @@ namespace BlackMaple.MachineFramework
   {
     None,
     ClosedOut,
-    CloseOutFailed
+    CloseOutFailed,
   }
 
   public record WorkorderMaterial
