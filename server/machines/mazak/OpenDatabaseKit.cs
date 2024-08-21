@@ -168,7 +168,7 @@ namespace MazakMachineInterface
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
         _connectionStr =
-          "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";"
+          "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";"
           + "User ID=Admin;"
           + "Data Source="
           + System.IO.Path.Combine(cfg.SQLConnectionString, "FCNETUSER1.mdb")
