@@ -167,10 +167,10 @@ namespace MachineWatchTest
           .Processes.Select(p =>
             p with
             {
-              Paths = p.Paths.Select(p => p with { Casting = null }).ToImmutableList()
+              Paths = p.Paths.Select(p => p with { Casting = null }).ToImmutableList(),
             }
           )
-          .ToImmutableList()
+          .ToImmutableList(),
       };
     }
   }

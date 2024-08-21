@@ -95,7 +95,7 @@ namespace MachineWatchTest
       Stops = ImmutableList<MachiningStop>.Empty,
       SimulatedStartingUTC = DateTime.MinValue,
       SimulatedAverageFlowTime = TimeSpan.Zero,
-      PartsPerPallet = 1
+      PartsPerPallet = 1,
     };
 
     private RepositoryConfig _repoCfg;
@@ -149,7 +149,7 @@ namespace MachineWatchTest
             JobUnique = "U1",
             PartName = "P1",
             NumProcesses = 52,
-            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 60).Add(2, 88)
+            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 60).Add(2, 88),
           },
           options => options.ComparingByMembers<MaterialDetails>()
         );
@@ -164,7 +164,7 @@ namespace MachineWatchTest
             JobUnique = "U2",
             PartName = "P2",
             NumProcesses = 66,
-            Paths = ImmutableDictionary<int, int>.Empty.Add(6, 10)
+            Paths = ImmutableDictionary<int, int>.Empty.Add(6, 10),
           },
           options => options.ComparingByMembers<MaterialDetails>()
         );
@@ -228,7 +228,7 @@ namespace MachineWatchTest
               PartName = "P1",
               NumProcesses = 52,
               Workorder = "work1",
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 60).Add(2, 88)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 60).Add(2, 88),
             },
             new MaterialDetails()
             {
@@ -237,7 +237,7 @@ namespace MachineWatchTest
               PartName = "P3",
               NumProcesses = 566,
               Workorder = "work1",
-            }
+            },
           }
         );
       _jobLog.CountMaterialForWorkorder("work1").Should().Be(2);
@@ -262,7 +262,7 @@ namespace MachineWatchTest
               PartName = "P1",
               NumProcesses = 52,
               Workorder = "work1",
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 60).Add(2, 88)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 60).Add(2, 88),
             },
           },
           options => options.ComparingByMembers<MaterialDetails>()
@@ -311,7 +311,7 @@ namespace MachineWatchTest
             MaterialID = 666,
             JobUnique = null,
             PartName = "abc",
-            NumProcesses = 32
+            NumProcesses = 32,
           }
         );
     }
@@ -432,7 +432,7 @@ namespace MachineWatchTest
                 MaterialIDs = ImmutableList.Create(mat2.MaterialID, mat15.MaterialID),
                 ActiveOperationTime = TimeSpan.FromSeconds(111),
               }
-            )
+            ),
           },
           new MaterialToLoadOntoPallet()
           {
@@ -455,8 +455,8 @@ namespace MachineWatchTest
                 MaterialIDs = ImmutableList.Create(matLoc2Face2.MaterialID),
                 ActiveOperationTime = TimeSpan.FromSeconds(3333),
               }
-            )
-          }
+            ),
+          },
         },
         pallet: 1234,
         timeUTC: start.AddHours(3)
@@ -701,7 +701,7 @@ namespace MachineWatchTest
       machineEndExpectedCycle = machineEndExpectedCycle with
       {
         ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("aa", "AA").Add("bb", "BB"),
-        Tools = machineEndUsage.ToImmutableList()
+        Tools = machineEndUsage.ToImmutableList(),
       };
       machineEndActualCycle
         .Should()
@@ -762,7 +762,7 @@ namespace MachineWatchTest
               "UNLOAD",
               TimeSpan.FromMinutes(152),
               TimeSpan.FromMinutes(55)
-            )
+            ),
           },
           options => options.ComparingByMembers<LogEntry>()
         );
@@ -893,7 +893,7 @@ namespace MachineWatchTest
       );
       expectedInspLog = expectedInspLog with
       {
-        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("a", "aaa").Add("b", "bbb")
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("a", "aaa").Add("b", "bbb"),
       };
       logsForMat1.Add(expectedInspLog);
 
@@ -922,7 +922,7 @@ namespace MachineWatchTest
       );
       expectedWashLog = expectedWashLog with
       {
-        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("z", "zzz").Add("y", "yyy")
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("z", "zzz").Add("y", "yyy"),
       };
       logsForMat1.Add(expectedWashLog);
 
@@ -952,7 +952,7 @@ namespace MachineWatchTest
       );
       expectedFailedCloseout = expectedFailedCloseout with
       {
-        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("a", "aaa")
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("a", "aaa"),
       };
       logsForMat1.Add(expectedFailedCloseout);
 
@@ -976,7 +976,7 @@ namespace MachineWatchTest
       );
       expectedGeneralLog = expectedGeneralLog with
       {
-        ProgramDetails = ImmutableDictionary<string, string>.Empty.SetItem("extra1", "value1")
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.SetItem("extra1", "value1"),
       };
       logsForMat1.Add(expectedGeneralLog);
 
@@ -999,7 +999,7 @@ namespace MachineWatchTest
             mat1.Serial,
             mat1.Workorder,
             ""
-          )
+          ),
         },
         0,
         LogType.GeneralMessage,
@@ -1014,7 +1014,7 @@ namespace MachineWatchTest
       {
         ProgramDetails = ImmutableDictionary<string, string>
           .Empty.SetItem("note", "The notes content")
-          .SetItem("operator", "Opername")
+          .SetItem("operator", "Opername"),
       };
       logsForMat1.Add(expectedNotesLog);
 
@@ -1081,10 +1081,10 @@ namespace MachineWatchTest
                   Process = mat1.Process,
                   Path = mat1.Path,
                   FaceNum = mat1.Face,
-                  ActiveOperationTime = TimeSpan.FromSeconds(22)
-                }
-              ]
-            }
+                  ActiveOperationTime = TimeSpan.FromSeconds(22),
+                },
+              ],
+            },
           ],
           pallet: 1,
           timeUTC: pal1InitialTime.AddMinutes(5)
@@ -1208,10 +1208,10 @@ namespace MachineWatchTest
                   Process = mat1.Process,
                   Path = mat1.Path,
                   FaceNum = mat1.Face,
-                  ActiveOperationTime = TimeSpan.FromSeconds(22)
-                }
-              ]
-            }
+                  ActiveOperationTime = TimeSpan.FromSeconds(22),
+                },
+              ],
+            },
           ],
           pallet: 1,
           timeUTC: pal1CycleTime.AddMinutes(15)
@@ -1331,7 +1331,7 @@ namespace MachineWatchTest
         {
           MaterialID = mat1ID,
           Process = 1,
-          Face = 0
+          Face = 0,
         },
         program: "general prog",
         result: "general result",
@@ -1347,13 +1347,13 @@ namespace MachineWatchTest
           {
             MaterialID = mat1ID,
             Process = 1,
-            Face = 0
+            Face = 0,
           },
           new()
           {
             MaterialID = mat2ID,
             Process = 1,
-            Face = 0
+            Face = 0,
           },
         ],
         pallet: 4,
@@ -1378,8 +1378,8 @@ namespace MachineWatchTest
           {
             MaterialID = mat2ID,
             Process = 1,
-            Face = 2
-          }
+            Face = 2,
+          },
         ],
         pallet: 4,
         stockerNum: 4,
@@ -1400,8 +1400,8 @@ namespace MachineWatchTest
         {
           MaterialID = mat1ID,
           Process = 2,
-          Face = 1
-        }
+          Face = 1,
+        },
       ];
       _jobLog.CompletePalletCycle(
         pal: 4,
@@ -1437,7 +1437,7 @@ namespace MachineWatchTest
         {
           MaterialID = mat1ID,
           Process = 2,
-          Face = 1
+          Face = 1,
         },
         "ser1",
         DateTime.UtcNow.AddHours(-2),
@@ -1678,7 +1678,7 @@ namespace MachineWatchTest
               PartName = "part1",
               NumProcesses = 2,
               Serial = "serial1",
-            }
+            },
           }
         );
       _jobLog.GetMaterialDetailsForSerial("waoheufweiuf").Should().BeEmpty();
@@ -1765,7 +1765,7 @@ namespace MachineWatchTest
               Serial = "serial1",
               Quarantined = false,
               InspectionFailed = false,
-              Closeout = WorkorderSerialCloseout.ClosedOut
+              Closeout = WorkorderSerialCloseout.ClosedOut,
             },
             new WorkorderMaterial()
             {
@@ -1773,8 +1773,8 @@ namespace MachineWatchTest
               Serial = "serial3",
               Quarantined = false,
               InspectionFailed = true,
-              Closeout = WorkorderSerialCloseout.None
-            }
+              Closeout = WorkorderSerialCloseout.None,
+            },
           ],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
@@ -1806,8 +1806,8 @@ namespace MachineWatchTest
               Serial = "serial4",
               Quarantined = false,
               InspectionFailed = false,
-              Closeout = WorkorderSerialCloseout.None
-            }
+              Closeout = WorkorderSerialCloseout.None,
+            },
           ],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
@@ -1835,7 +1835,7 @@ namespace MachineWatchTest
               Serial = "serial5",
               Quarantined = true,
               InspectionFailed = false,
-              Closeout = WorkorderSerialCloseout.CloseOutFailed
+              Closeout = WorkorderSerialCloseout.CloseOutFailed,
             },
             new WorkorderMaterial()
             {
@@ -1843,8 +1843,8 @@ namespace MachineWatchTest
               Serial = "serial6",
               Quarantined = false,
               InspectionFailed = false,
-              Closeout = WorkorderSerialCloseout.None
-            }
+              Closeout = WorkorderSerialCloseout.None,
+            },
           ],
           Comments = null,
           ElapsedStationTime = ImmutableDictionary<string, TimeSpan>
@@ -1855,7 +1855,7 @@ namespace MachineWatchTest
             .Add("L/U", TimeSpan.FromMinutes(6 * 2 / c2Cnt)),
           SimulatedStart = work2sim.Started,
           SimulatedFilled = work2sim.Filled,
-        }
+        },
       };
 
       _jobLog.GetActiveWorkorders().Should().BeEquivalentTo(expectedActiveWorks);
@@ -1892,13 +1892,13 @@ namespace MachineWatchTest
           {
             expectedActiveWorks[0] with
             {
-              Comments = ImmutableList.Create(expectedComment1)
+              Comments = ImmutableList.Create(expectedComment1),
             },
             expectedActiveWorks[1] with
             {
-              Comments = ImmutableList.Create(expectedComment1)
+              Comments = ImmutableList.Create(expectedComment1),
             },
-            expectedActiveWorks[2]
+            expectedActiveWorks[2],
           }
         );
 
@@ -1914,13 +1914,13 @@ namespace MachineWatchTest
           {
             expectedActiveWorks[0] with
             {
-              Comments = ImmutableList.Create(expectedComment1, expectedComment2)
+              Comments = ImmutableList.Create(expectedComment1, expectedComment2),
             },
             expectedActiveWorks[1] with
             {
-              Comments = ImmutableList.Create(expectedComment1, expectedComment2)
+              Comments = ImmutableList.Create(expectedComment1, expectedComment2),
             },
-            expectedActiveWorks[2]
+            expectedActiveWorks[2],
           }
         );
 
@@ -1930,7 +1930,7 @@ namespace MachineWatchTest
         {
           ScheduleId = "dddd",
           Jobs = ImmutableList.Create(_fixture.Create<Job>()),
-          CurrentUnfilledWorkorders = []
+          CurrentUnfilledWorkorders = [],
         },
         null,
         true
@@ -2005,10 +2005,10 @@ namespace MachineWatchTest
                 Path = mat1_proc1.Path,
                 FaceNum = mat1_proc1.Face,
                 ActiveOperationTime = TimeSpan.FromMinutes(21),
-              }
+              },
             ],
-            Elapsed = TimeSpan.FromMinutes(11)
-          }
+            Elapsed = TimeSpan.FromMinutes(11),
+          },
         ],
         pallet: 1,
         timeUTC: old.AddMinutes(6)
@@ -2115,7 +2115,7 @@ namespace MachineWatchTest
           mat1_proc2old,
           .. mat1_proc2complete,
           mat4recent,
-          .. mat4complete
+          .. mat4complete,
         ],
         DateTime.MinValue
       );
@@ -2145,7 +2145,7 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           new[]
           {
-            AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1), "theoper", "thereason")
+            AddToQueueExpectedEntry(otherQueueMat, 1, "BBBB", 0, start.AddHours(-1), "theoper", "thereason"),
           },
           options => options.ComparingByMembers<LogEntry>()
         );
@@ -2197,8 +2197,8 @@ namespace MachineWatchTest
               AddTimeUTC = start,
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog.GetMaterialInQueueByUnique("AAAA", "waeofuihwef").Should().BeEmpty();
@@ -2242,7 +2242,7 @@ namespace MachineWatchTest
               AddTimeUTC = start,
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -2264,8 +2264,8 @@ namespace MachineWatchTest
               Serial = "mat2serial",
               Workorder = "mat2workorder",
               NextProcess = 2,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
@@ -2291,7 +2291,7 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           new[]
           {
-            AddToQueueExpectedEntry(mat3, 7, "AAAA", 1, start.AddMinutes(20), "opernnnn", reason: "rrrrr")
+            AddToQueueExpectedEntry(mat3, 7, "AAAA", 1, start.AddMinutes(20), "opernnnn", reason: "rrrrr"),
           },
           options => options.ComparingByMembers<LogEntry>()
         );
@@ -2316,7 +2316,7 @@ namespace MachineWatchTest
               AddTimeUTC = start,
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52),
             },
           }
         );
@@ -2336,7 +2336,7 @@ namespace MachineWatchTest
               NumProcesses = 36,
               AddTimeUTC = start.AddMinutes(20),
               NextProcess = 4,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
           }
         );
@@ -2358,8 +2358,8 @@ namespace MachineWatchTest
               Serial = "mat2serial",
               Workorder = "mat2workorder",
               NextProcess = 2,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog
@@ -2379,7 +2379,7 @@ namespace MachineWatchTest
               AddTimeUTC = start,
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52),
             },
             new QueuedMaterial()
             {
@@ -2391,7 +2391,7 @@ namespace MachineWatchTest
               NumProcesses = 36,
               AddTimeUTC = start.AddMinutes(20),
               NextProcess = 4,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2405,7 +2405,7 @@ namespace MachineWatchTest
               Serial = "mat2serial",
               Workorder = "mat2workorder",
               NextProcess = 2,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2417,8 +2417,8 @@ namespace MachineWatchTest
               NumProcesses = 100,
               AddTimeUTC = start.AddHours(-1),
               NextProcess = 101,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
@@ -2433,7 +2433,7 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           new[]
           {
-            RemoveFromQueueExpectedEntry(mat3, 8, "AAAA", 1, 40 - 20, "", start.AddMinutes(40), "operyy")
+            RemoveFromQueueExpectedEntry(mat3, 8, "AAAA", 1, 40 - 20, "", start.AddMinutes(40), "operyy"),
           },
           options => options.ComparingByMembers<LogEntry>()
         );
@@ -2458,7 +2458,7 @@ namespace MachineWatchTest
               AddTimeUTC = start,
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52),
             },
             new QueuedMaterial()
             {
@@ -2472,7 +2472,7 @@ namespace MachineWatchTest
               Serial = "mat2serial",
               Workorder = "mat2workorder",
               NextProcess = 2,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2484,8 +2484,8 @@ namespace MachineWatchTest
               NumProcesses = 100,
               AddTimeUTC = start.AddHours(-1),
               NextProcess = 101,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog.IsMaterialInQueue(mat3.MaterialID).Should().BeFalse();
@@ -2521,7 +2521,7 @@ namespace MachineWatchTest
               AddTimeUTC = start,
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52),
             },
             new QueuedMaterial()
             {
@@ -2535,7 +2535,7 @@ namespace MachineWatchTest
               Serial = "mat2serial",
               Workorder = "mat2workorder",
               NextProcess = 2,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2547,7 +2547,7 @@ namespace MachineWatchTest
               NumProcesses = 36,
               AddTimeUTC = start.AddMinutes(45),
               NextProcess = 4,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2559,8 +2559,8 @@ namespace MachineWatchTest
               NumProcesses = 100,
               AddTimeUTC = start.AddHours(-1),
               NextProcess = 101,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
@@ -2583,7 +2583,7 @@ namespace MachineWatchTest
           new[]
           {
             RemoveFromQueueExpectedEntry(mat1, 10, "AAAA", 0, 50, "MovingInQueue", start.AddMinutes(50)),
-            AddToQueueExpectedEntry(mat1, 11, "AAAA", 1, start.AddMinutes(50))
+            AddToQueueExpectedEntry(mat1, 11, "AAAA", 1, start.AddMinutes(50)),
           },
           options => options.ComparingByMembers<LogEntry>()
         );
@@ -2610,7 +2610,7 @@ namespace MachineWatchTest
               Serial = "mat2serial",
               Workorder = "mat2workorder",
               NextProcess = 2,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2623,7 +2623,7 @@ namespace MachineWatchTest
               AddTimeUTC = start.AddMinutes(50),
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52),
             },
             new QueuedMaterial()
             {
@@ -2635,7 +2635,7 @@ namespace MachineWatchTest
               NumProcesses = 36,
               AddTimeUTC = start.AddMinutes(45),
               NextProcess = 4,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2647,8 +2647,8 @@ namespace MachineWatchTest
               NumProcesses = 100,
               AddTimeUTC = start.AddHours(-1),
               NextProcess = 101,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
@@ -2671,7 +2671,7 @@ namespace MachineWatchTest
           new[]
           {
             RemoveFromQueueExpectedEntry(mat3, 12, "AAAA", 2, 55 - 45, "MovingInQueue", start.AddMinutes(55)),
-            AddToQueueExpectedEntry(mat3, 13, "AAAA", 1, start.AddMinutes(55))
+            AddToQueueExpectedEntry(mat3, 13, "AAAA", 1, start.AddMinutes(55)),
           },
           options => options.ComparingByMembers<LogEntry>()
         );
@@ -2698,7 +2698,7 @@ namespace MachineWatchTest
               Serial = "mat2serial",
               Workorder = "mat2workorder",
               NextProcess = 2,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2710,7 +2710,7 @@ namespace MachineWatchTest
               NumProcesses = 36,
               AddTimeUTC = start.AddMinutes(55),
               NextProcess = 4,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2723,7 +2723,7 @@ namespace MachineWatchTest
               AddTimeUTC = start.AddMinutes(50),
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52),
             },
             new QueuedMaterial()
             {
@@ -2735,8 +2735,8 @@ namespace MachineWatchTest
               NumProcesses = 100,
               AddTimeUTC = start.AddHours(-1),
               NextProcess = 101,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
@@ -2779,7 +2779,7 @@ namespace MachineWatchTest
               Serial = "mat2serial",
               Workorder = "mat2workorder",
               NextProcess = 2,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2791,7 +2791,7 @@ namespace MachineWatchTest
               NumProcesses = 36,
               AddTimeUTC = start.AddMinutes(55),
               NextProcess = 4,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2804,7 +2804,7 @@ namespace MachineWatchTest
               AddTimeUTC = start.AddMinutes(50),
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52),
             },
             new QueuedMaterial()
             {
@@ -2816,7 +2816,7 @@ namespace MachineWatchTest
               NumProcesses = 44,
               AddTimeUTC = start.AddMinutes(58),
               NextProcess = 5,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2828,8 +2828,8 @@ namespace MachineWatchTest
               NumProcesses = 100,
               AddTimeUTC = start.AddHours(-1),
               NextProcess = 101,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
@@ -2874,7 +2874,7 @@ namespace MachineWatchTest
               Serial = "mat2serial",
               Workorder = "mat2workorder",
               NextProcess = 2,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2886,7 +2886,7 @@ namespace MachineWatchTest
               NumProcesses = 36,
               AddTimeUTC = start.AddMinutes(55),
               NextProcess = 4,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2899,7 +2899,7 @@ namespace MachineWatchTest
               AddTimeUTC = start.AddMinutes(50),
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52),
             },
             new QueuedMaterial()
             {
@@ -2911,7 +2911,7 @@ namespace MachineWatchTest
               NumProcesses = 44,
               AddTimeUTC = start.AddMinutes(58),
               NextProcess = 5,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2923,8 +2923,8 @@ namespace MachineWatchTest
               NumProcesses = 100,
               AddTimeUTC = start.AddHours(-1),
               NextProcess = 101,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog.GetMaterialInQueueByUnique("QQQ", "uniq1").Should().BeEmpty();
@@ -2936,7 +2936,7 @@ namespace MachineWatchTest
       //removing from queue with matid
       var mat2proc8 = mat2 with
       {
-        Process = 1
+        Process = 1,
       };
       _jobLog
         .RecordRemoveMaterialFromAllQueues(mat2.MaterialID, 1, null, start.AddMinutes(60))
@@ -2965,7 +2965,7 @@ namespace MachineWatchTest
               NumProcesses = 36,
               AddTimeUTC = start.AddMinutes(55),
               NextProcess = 4,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -2978,7 +2978,7 @@ namespace MachineWatchTest
               AddTimeUTC = start.AddMinutes(50),
               Serial = "mat1serial",
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52)
+              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 50).Add(2, 52),
             },
             new QueuedMaterial()
             {
@@ -2990,7 +2990,7 @@ namespace MachineWatchTest
               NumProcesses = 44,
               AddTimeUTC = start.AddMinutes(58),
               NextProcess = 5,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -3002,8 +3002,8 @@ namespace MachineWatchTest
               NumProcesses = 100,
               AddTimeUTC = start.AddHours(-1),
               NextProcess = 101,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
       _jobLog.NextProcessForQueuedMaterial(mat1.MaterialID).Should().Be(16);
@@ -3039,7 +3039,7 @@ namespace MachineWatchTest
         {
           MaterialID = mat1.MaterialID,
           Process = 14,
-          Face = 0
+          Face = 0,
         },
         "AAAA",
         -1,
@@ -3053,7 +3053,7 @@ namespace MachineWatchTest
         {
           MaterialID = mat2.MaterialID,
           Process = 0,
-          Face = 0
+          Face = 0,
         },
         "AAAA",
         -1,
@@ -3079,7 +3079,7 @@ namespace MachineWatchTest
               NumProcesses = 19,
               AddTimeUTC = start,
               NextProcess = 15,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -3091,8 +3091,8 @@ namespace MachineWatchTest
               NumProcesses = 22,
               AddTimeUTC = start,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
 
@@ -3116,10 +3116,10 @@ namespace MachineWatchTest
                 Process = mat1.Process,
                 Path = null,
                 ActiveOperationTime = TimeSpan.FromMinutes(20),
-                MaterialIDs = ImmutableList.Create(mat1.MaterialID)
+                MaterialIDs = ImmutableList.Create(mat1.MaterialID),
               }
-            )
-          }
+            ),
+          },
         },
         1,
         start.AddMinutes(10)
@@ -3151,7 +3151,7 @@ namespace MachineWatchTest
               10,
               "LoadedToPallet",
               start.AddMinutes(10)
-            )
+            ),
           },
           options => options.ComparingByMembers<LogEntry>()
         );
@@ -3173,8 +3173,8 @@ namespace MachineWatchTest
               NumProcesses = 22,
               AddTimeUTC = start,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
 
@@ -3233,7 +3233,7 @@ namespace MachineWatchTest
               NumProcesses = 22,
               AddTimeUTC = start,
               NextProcess = 1,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -3245,7 +3245,7 @@ namespace MachineWatchTest
               NumProcesses = 19,
               AddTimeUTC = start.AddMinutes(30),
               NextProcess = 16,
-              Paths = ImmutableDictionary<int, int>.Empty
+              Paths = ImmutableDictionary<int, int>.Empty,
             },
             new QueuedMaterial()
             {
@@ -3257,8 +3257,8 @@ namespace MachineWatchTest
               NumProcesses = 36,
               AddTimeUTC = start.AddMinutes(30),
               NextProcess = 4,
-              Paths = ImmutableDictionary<int, int>.Empty
-            }
+              Paths = ImmutableDictionary<int, int>.Empty,
+            },
           }
         );
 
@@ -3337,7 +3337,7 @@ namespace MachineWatchTest
                 serial: useSerial ? i.ToString() : "",
                 workorder: workorder,
                 face: ""
-              )
+              ),
             },
             pal: 0,
             ty: LogType.AddToQueue,
@@ -3353,7 +3353,7 @@ namespace MachineWatchTest
             ProgramDetails = (l.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
               "operator",
               "operName"
-            )
+            ),
           };
           return l;
         })
@@ -3377,7 +3377,7 @@ namespace MachineWatchTest
                   serial: useSerial ? i.ToString() : "",
                   workorder: workorder,
                   face: ""
-                )
+                ),
               },
               pal: 0,
               ty: LogType.PartMark,
@@ -3409,7 +3409,7 @@ namespace MachineWatchTest
                   serial: useSerial ? i.ToString() : "",
                   workorder: workorder,
                   face: ""
-                )
+                ),
               },
               pal: 0,
               ty: LogType.OrderAssignment,
@@ -3451,7 +3451,7 @@ namespace MachineWatchTest
                       serial: "",
                       workorder: "",
                       face: ""
-                    )
+                    ),
                   },
                   pal: 0,
                   ty: LogType.AddToQueue,
@@ -3461,7 +3461,7 @@ namespace MachineWatchTest
                   start: false,
                   endTime: addTime,
                   result: ""
-                )
+                ),
               }
               : Enumerable.Empty<LogEntry>()
           ),
@@ -3487,13 +3487,11 @@ namespace MachineWatchTest
                 ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
                 : null,
               Workorder =
-                existingMats && i == 1
-                  ? null
-                  : useWorkorder
-                    ? workorder
-                    : null,
+                existingMats && i == 1 ? null
+                : useWorkorder ? workorder
+                : null,
               Paths = ImmutableDictionary<int, int>.Empty,
-              AddTimeUTC = addTime
+              AddTimeUTC = addTime,
             })
         );
 
@@ -3516,13 +3514,11 @@ namespace MachineWatchTest
                 ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
                 : null,
               Workorder =
-                existingMats && i == 1
-                  ? null
-                  : useWorkorder
-                    ? workorder
-                    : null,
+                existingMats && i == 1 ? null
+                : useWorkorder ? workorder
+                : null,
               Paths = ImmutableDictionary<int, int>.Empty,
-              AddTimeUTC = addTime
+              AddTimeUTC = addTime,
             })
         );
       _jobLog.GetUnallocatedMaterialInQueue("ohuouh", "castingQ").Should().BeEmpty();
@@ -3547,7 +3543,7 @@ namespace MachineWatchTest
                 serial: useSerial ? (existingMats ? (matId == 2 ? "1" : "") : matId.ToString()) : "",
                 workorder: existingMats && matId == 1 ? "" : workorder,
                 face: ""
-              )
+              ),
             },
             pal: 0,
             ty: LogType.RemoveFromQueue,
@@ -3582,13 +3578,11 @@ namespace MachineWatchTest
                 ? (existingMats ? (i == 1 ? null : (i - 1).ToString()) : i.ToString())
                 : null,
               Workorder =
-                existingMats && i == 1
-                  ? null
-                  : useWorkorder
-                    ? workorder
-                    : null,
+                existingMats && i == 1 ? null
+                : useWorkorder ? workorder
+                : null,
               Paths = ImmutableDictionary<int, int>.Empty,
-              AddTimeUTC = addTime
+              AddTimeUTC = addTime,
             })
         );
     }
@@ -3669,10 +3663,10 @@ namespace MachineWatchTest
                 Process = 1,
                 Path = 1,
                 ActiveOperationTime = TimeSpan.FromMinutes(2),
-                MaterialIDs = ImmutableList.Create(5L)
+                MaterialIDs = ImmutableList.Create(5L),
               }
-            )
-          }
+            ),
+          },
         },
         pallet: 5,
         timeUTC: DateTime.UtcNow
@@ -3687,8 +3681,8 @@ namespace MachineWatchTest
           {
             MaterialID = 6,
             Process = 1,
-            Face = 12
-          }
+            Face = 12,
+          },
         },
         pallet: 4,
         statName: "MC",
@@ -3914,7 +3908,7 @@ namespace MachineWatchTest
             JobUnique = "uniqAAA",
             PartName = "part1",
             NumProcesses = 6312,
-            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1234)
+            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1234),
           },
           options => options.ComparingByMembers<MaterialDetails>()
         );
@@ -3929,7 +3923,7 @@ namespace MachineWatchTest
             JobUnique = "uniqAAA",
             PartName = "part1",
             NumProcesses = 6312,
-            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1234)
+            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1234),
           },
           options => options.ComparingByMembers<MaterialDetails>()
         );
@@ -3977,7 +3971,7 @@ namespace MachineWatchTest
         {
           MaterialID = firstMatId,
           Process = 1,
-          Face = 12
+          Face = 12,
         };
         _jobLog.RecordSerialForMaterialID(firstMat, "aaaa", now);
         _jobLog.RecordLoadEnd(
@@ -3994,10 +3988,10 @@ namespace MachineWatchTest
                   Process = firstMat.Process,
                   Path = null,
                   ActiveOperationTime = TimeSpan.FromMinutes(4),
-                  MaterialIDs = ImmutableList.Create(firstMat.MaterialID)
+                  MaterialIDs = ImmutableList.Create(firstMat.MaterialID),
                 }
-              )
-            }
+              ),
+            },
           },
           pallet: 5,
           timeUTC: now.AddMinutes(1)
@@ -4025,13 +4019,13 @@ namespace MachineWatchTest
       {
         MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
         Process = 0,
-        Face = 0
+        Face = 0,
       };
       var initiallyLoadedMatProc1 = new EventLogMaterial()
       {
         MaterialID = initiallyLoadedMatProc0.MaterialID,
         Process = 1,
-        Face = 1
+        Face = 1,
       };
 
       var initialMatAddToQueueTime = now;
@@ -4066,7 +4060,7 @@ namespace MachineWatchTest
                   Processes = ImmutableList.Create(
                     new ProcessInfo()
                     {
-                      Paths = ImmutableList.Create(EmptyPath with { Casting = rawMatName })
+                      Paths = ImmutableList.Create(EmptyPath with { Casting = rawMatName }),
                     }
                   ),
                   RouteStartUTC = DateTime.MinValue,
@@ -4074,7 +4068,7 @@ namespace MachineWatchTest
                   Archived = false,
                 }
               ),
-              ScheduleId = "anotherSchId"
+              ScheduleId = "anotherSchId",
             },
             null,
             true
@@ -4091,13 +4085,13 @@ namespace MachineWatchTest
       {
         MaterialID = newMatId,
         Process = 0,
-        Face = 0
+        Face = 0,
       };
       var newMatProc1 = new EventLogMaterial()
       {
         MaterialID = newMatId,
         Process = 1,
-        Face = 1
+        Face = 1,
       };
 
       var newMatAddToQueueTime = now;
@@ -4134,10 +4128,10 @@ namespace MachineWatchTest
                 Process = initiallyLoadedMatProc1.Process,
                 Path = null,
                 ActiveOperationTime = TimeSpan.FromMinutes(5),
-                MaterialIDs = ImmutableList.Create(initiallyLoadedMatProc1.MaterialID)
+                MaterialIDs = ImmutableList.Create(initiallyLoadedMatProc1.MaterialID),
               }
-            )
-          }
+            ),
+          },
         },
         pallet: 5,
         timeUTC: now
@@ -4246,7 +4240,7 @@ namespace MachineWatchTest
             NumProcesses = 2,
             Workorder = null,
             Serial = "bbbb",
-            Paths = newMatUnassigned ? null : ImmutableDictionary<int, int>.Empty.Add(1, 5)
+            Paths = newMatUnassigned ? null : ImmutableDictionary<int, int>.Empty.Add(1, 5),
           },
           options => options.ComparingByMembers<MaterialDetails>()
         );
@@ -4263,7 +4257,7 @@ namespace MachineWatchTest
             NumProcesses = 2,
             Workorder = null,
             Serial = "cccc",
-            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 5)
+            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 5),
           },
           options => options.ComparingByMembers<MaterialDetails>()
         );
@@ -4305,8 +4299,8 @@ namespace MachineWatchTest
           newLogMatProc0 with
           {
             Process = 1,
-            Path = 5
-          }
+            Path = 5,
+          },
         },
         pal: 5,
         ty: LogType.SwapMaterialOnPallet,
@@ -4332,7 +4326,7 @@ namespace MachineWatchTest
               NumProcesses = 2,
               Serial = "cccc",
               Workorder = "",
-              Face = 1
+              Face = 1,
             }
           )
         )
@@ -4366,7 +4360,7 @@ namespace MachineWatchTest
               reason: "SwapMaterial",
               timeUTC: now,
               operName: "theoper"
-            )
+            ),
           },
           options => options.Excluding(e => e.Counter).ComparingByMembers<LogEntry>()
         );
@@ -4446,7 +4440,7 @@ namespace MachineWatchTest
                 timeUTC: now,
                 reason: "SwapMaterial",
                 operName: "theoper"
-              )
+              ),
             }
           ),
           options => options.Excluding(c => c.Counter).ComparingByMembers<LogEntry>()
@@ -4491,7 +4485,7 @@ namespace MachineWatchTest
               Archived = false,
             }
           ),
-          ScheduleId = "aschId"
+          ScheduleId = "aschId",
         },
         null,
         true
@@ -4502,13 +4496,13 @@ namespace MachineWatchTest
       {
         MaterialID = firstMatId,
         Process = 0,
-        Face = 0
+        Face = 0,
       };
       var firstMat = new EventLogMaterial()
       {
         MaterialID = firstMatId,
         Process = 1,
-        Face = 1
+        Face = 1,
       };
       _jobLog.RecordSerialForMaterialID(firstMatProc0, serial: "aaaa", timeUTC: now);
       _jobLog.RecordLoadEnd(
@@ -4525,10 +4519,10 @@ namespace MachineWatchTest
                 Process = firstMat.Process,
                 Path = null,
                 ActiveOperationTime = TimeSpan.FromMinutes(4),
-                MaterialIDs = ImmutableList.Create(firstMat.MaterialID)
+                MaterialIDs = ImmutableList.Create(firstMat.MaterialID),
               }
-            )
-          }
+            ),
+          },
         },
         pallet: 5,
         timeUTC: now.AddMinutes(1)
@@ -4625,13 +4619,13 @@ namespace MachineWatchTest
       {
         MaterialID = _jobLog.AllocateMaterialID("uniq1", "part1", 2),
         Process = 0,
-        Face = 0
+        Face = 0,
       };
       var matProc1 = new EventLogMaterial()
       {
         MaterialID = matProc0.MaterialID,
         Process = 1,
-        Face = 12
+        Face = 12,
       };
 
       var initialMatAddToQueueTime = now;
@@ -4670,10 +4664,10 @@ namespace MachineWatchTest
                 Process = matProc1.Process,
                 Path = null,
                 ActiveOperationTime = TimeSpan.FromMinutes(5),
-                MaterialIDs = ImmutableList.Create(matProc1.MaterialID)
+                MaterialIDs = ImmutableList.Create(matProc1.MaterialID),
               }
-            )
-          }
+            ),
+          },
         },
         pallet: 5,
         timeUTC: now
@@ -4811,7 +4805,7 @@ namespace MachineWatchTest
       {
         ProgramDetails = ImmutableDictionary<string, string>
           .Empty.Add("EditedCounters", string.Join(",", origMatLog.Select(e => e.Counter)))
-          .Add("operator", "theoper")
+          .Add("operator", "theoper"),
       };
 
       var newMatLog = origMatLog
@@ -4823,7 +4817,7 @@ namespace MachineWatchTest
             ProgramDetails = (evt.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
               "PalletCycleInvalidated",
               "1"
-            )
+            ),
           };
         })
         .ToList();
@@ -4852,7 +4846,7 @@ namespace MachineWatchTest
               timeUTC: now,
               operName: "theoper",
               reason: "InvalidateCycle"
-            )
+            ),
           },
           options => options.Excluding(e => e.Counter).ComparingByMembers<LogEntry>()
         );
@@ -5027,7 +5021,7 @@ namespace MachineWatchTest
         {
           ProgramDetails = ImmutableDictionary<string, string>
             .Empty.Add("operator", operName)
-            .Add("note", reason)
+            .Add("note", reason),
         };
       }
       return e;
@@ -5072,17 +5066,17 @@ namespace MachineWatchTest
 
     public static Func<LogMaterial, LogMaterial> SetSerialInMat(string serial)
     {
-      return m => m with { Serial = serial, };
+      return m => m with { Serial = serial };
     }
 
     public static Func<LogMaterial, LogMaterial> SetWorkorderInMat(string work)
     {
-      return m => m with { Workorder = work, };
+      return m => m with { Workorder = work };
     }
 
     public static Func<LogMaterial, LogMaterial> SetProcInMat(int proc)
     {
-      return m => m with { Process = proc, };
+      return m => m with { Process = proc };
     }
 
     public static Func<LogEntry, LogEntry> TransformLog(
@@ -5093,7 +5087,7 @@ namespace MachineWatchTest
       return copy =>
         copy with
         {
-          Material = copy.Material.Select(m => m.MaterialID == matID ? transformMat(m) : m).ToImmutableList()
+          Material = copy.Material.Select(m => m.MaterialID == matID ? transformMat(m) : m).ToImmutableList(),
         };
     }
 
@@ -5112,7 +5106,7 @@ namespace MachineWatchTest
     {
       var settings = new SerialSettings()
       {
-        ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
+        ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10),
       };
       _repoCfg = RepositoryConfig.InitializeMemoryDB(settings);
     }
@@ -5149,7 +5143,7 @@ namespace MachineWatchTest
             serial: "0000000001",
             workorder: "",
             face: ""
-          )
+          ),
         },
         pal: 0,
         ty: LogType.PartMark,
@@ -5198,7 +5192,7 @@ namespace MachineWatchTest
             PartName = "zzz",
             NumProcesses = 202,
             Serial = "asdf",
-            Workorder = "www"
+            Workorder = "www",
           }
         );
 
@@ -5220,7 +5214,7 @@ namespace MachineWatchTest
                   serial: "asdf",
                   workorder: "", // NOTE: workorder not filled in yet because serial recorded first
                   face: ""
-                )
+                ),
               },
               pal: 0,
               ty: LogType.PartMark,
@@ -5244,7 +5238,7 @@ namespace MachineWatchTest
                   serial: "asdf",
                   workorder: "www",
                   face: ""
-                )
+                ),
               },
               pal: 0,
               ty: LogType.OrderAssignment,
@@ -5254,7 +5248,7 @@ namespace MachineWatchTest
               start: false,
               endTime: now.AddSeconds(1),
               result: "www"
-            )
+            ),
           }
         );
 
@@ -5277,7 +5271,7 @@ namespace MachineWatchTest
                   serial: "asdf",
                   workorder: "www",
                   face: ""
-                )
+                ),
               },
               pal: 0,
               ty: LogType.PartMark,
@@ -5301,7 +5295,7 @@ namespace MachineWatchTest
                   serial: "asdf",
                   workorder: "www",
                   face: ""
-                )
+                ),
               },
               pal: 0,
               ty: LogType.OrderAssignment,
@@ -5311,7 +5305,7 @@ namespace MachineWatchTest
               start: false,
               endTime: now.AddSeconds(1),
               result: "www"
-            )
+            ),
           }
         );
     }
@@ -5369,7 +5363,7 @@ namespace MachineWatchTest
         NumProcesses = 4,
         Serial = "themat4serial",
         Workorder = "",
-        Face = 2
+        Face = 2,
       };
       var mat5 = new LogMaterial()
       {
@@ -5381,7 +5375,7 @@ namespace MachineWatchTest
         NumProcesses = 5,
         Serial = "0000000005",
         Workorder = "",
-        Face = 555
+        Face = 555,
       };
 
       var serial1 = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0');
@@ -5414,7 +5408,7 @@ namespace MachineWatchTest
         timeUTC: t
       ) with
       {
-        Material = [mat1, mat2]
+        Material = [mat1, mat2],
       };
       var log2 = _jobLog.RecordMachineEnd(
         [EventLogMaterial.FromLogMat(mat1), EventLogMaterial.FromLogMat(mat2)],
@@ -5428,7 +5422,7 @@ namespace MachineWatchTest
         active: TimeSpan.FromMinutes(17)
       ) with
       {
-        Material = [mat1, mat2]
+        Material = [mat1, mat2],
       };
 
       _jobLog.AddPendingLoad(1, "key1", 5, TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(38), "for1");
@@ -5447,7 +5441,7 @@ namespace MachineWatchTest
               LoadStation = 5,
               Elapsed = TimeSpan.FromMinutes(32),
               ForeignID = "for1",
-              ActiveOperationTime = TimeSpan.FromMinutes(38)
+              ActiveOperationTime = TimeSpan.FromMinutes(38),
             },
             new PendingLoad()
             {
@@ -5456,8 +5450,8 @@ namespace MachineWatchTest
               LoadStation = 7,
               Elapsed = TimeSpan.FromMinutes(44),
               ForeignID = "for2",
-              ActiveOperationTime = TimeSpan.FromMinutes(49)
-            }
+              ActiveOperationTime = TimeSpan.FromMinutes(49),
+            },
           }
         );
       _jobLog
@@ -5473,7 +5467,7 @@ namespace MachineWatchTest
               LoadStation = 5,
               Elapsed = TimeSpan.FromMinutes(32),
               ForeignID = "for1",
-              ActiveOperationTime = TimeSpan.FromMinutes(38)
+              ActiveOperationTime = TimeSpan.FromMinutes(38),
             },
             new PendingLoad()
             {
@@ -5482,8 +5476,8 @@ namespace MachineWatchTest
               LoadStation = 7,
               Elapsed = TimeSpan.FromMinutes(44),
               ForeignID = "for2",
-              ActiveOperationTime = TimeSpan.FromMinutes(49)
-            }
+              ActiveOperationTime = TimeSpan.FromMinutes(49),
+            },
           }
         );
 
@@ -5509,7 +5503,7 @@ namespace MachineWatchTest
               LoadStation = 5,
               Elapsed = TimeSpan.FromMinutes(32),
               ForeignID = "for1",
-              ActiveOperationTime = TimeSpan.FromMinutes(38)
+              ActiveOperationTime = TimeSpan.FromMinutes(38),
             },
             new PendingLoad()
             {
@@ -5518,7 +5512,7 @@ namespace MachineWatchTest
               LoadStation = 7,
               Elapsed = TimeSpan.FromMinutes(44),
               ForeignID = "for2",
-              ActiveOperationTime = TimeSpan.FromMinutes(49)
+              ActiveOperationTime = TimeSpan.FromMinutes(49),
             },
             new PendingLoad()
             {
@@ -5527,8 +5521,8 @@ namespace MachineWatchTest
               LoadStation = 7,
               Elapsed = TimeSpan.FromMinutes(244),
               ForeignID = "extraforID",
-              ActiveOperationTime = TimeSpan.FromMinutes(249)
-            }
+              ActiveOperationTime = TimeSpan.FromMinutes(249),
+            },
           }
         );
 
@@ -5547,7 +5541,7 @@ namespace MachineWatchTest
               LoadStation = 5,
               Elapsed = TimeSpan.FromMinutes(32),
               ForeignID = "for1",
-              ActiveOperationTime = TimeSpan.FromMinutes(38)
+              ActiveOperationTime = TimeSpan.FromMinutes(38),
             },
             new PendingLoad()
             {
@@ -5556,8 +5550,8 @@ namespace MachineWatchTest
               LoadStation = 7,
               Elapsed = TimeSpan.FromMinutes(44),
               ForeignID = "for2",
-              ActiveOperationTime = TimeSpan.FromMinutes(49)
-            }
+              ActiveOperationTime = TimeSpan.FromMinutes(49),
+            },
           }
         );
 
@@ -5668,9 +5662,9 @@ namespace MachineWatchTest
                 Process = mat5.Process,
                 Path = 88,
                 ActiveOperationTime = TimeSpan.FromMinutes(555),
-                MaterialIDs = ImmutableList.Create(mat5.MaterialID)
+                MaterialIDs = ImmutableList.Create(mat5.MaterialID),
               }
-            )
+            ),
           }
         ),
         generateSerials: true
@@ -5752,7 +5746,7 @@ namespace MachineWatchTest
             NumProcesses = 4,
             Serial = "0000000001",
             Workorder = "",
-            Face = 0
+            Face = 0,
           }
         ),
         Pallet = 0,
@@ -5793,7 +5787,7 @@ namespace MachineWatchTest
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
-          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m),
         }
       );
       using var logDB = repoCfg.OpenConnection();
@@ -5826,7 +5820,7 @@ namespace MachineWatchTest
           new SerialSettings()
           {
             StartingMaterialID = SerialSettings.ConvertFromBase62("A000000000"),
-            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+            ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m),
           }
         );
       act.Should().Throw<Exception>().WithMessage("Starting Serial is too large");
@@ -5839,7 +5833,7 @@ namespace MachineWatchTest
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
-          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m),
         }
       );
       using var logFromCreate = repoCfg.OpenConnection();
@@ -5855,7 +5849,7 @@ namespace MachineWatchTest
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("B3t24s"),
-          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m),
         }
       );
       using var logFromUpgrade = repoCfg.OpenConnection();
@@ -5874,7 +5868,7 @@ namespace MachineWatchTest
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("AbCd12"),
-          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m),
         },
         guid,
         createTables: true
@@ -5891,7 +5885,7 @@ namespace MachineWatchTest
         new SerialSettings()
         {
           StartingMaterialID = SerialSettings.ConvertFromBase62("w53122"),
-          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m)
+          ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m),
         },
         guid,
         createTables: false

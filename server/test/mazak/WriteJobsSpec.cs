@@ -141,9 +141,9 @@ namespace MachineWatchTest
               {
                 MazakScheduleRowId = 1,
                 FixedMachineFlag = 1,
-                ProcessNumber = 1
-              }
-            }
+                ProcessNumber = 1,
+              },
+            },
           },
           // a non-completed schedule, should be untouched
           new MazakScheduleRow()
@@ -162,9 +162,9 @@ namespace MachineWatchTest
                 FixedMachineFlag = 1,
                 ProcessNumber = 1,
                 ProcessMaterialQuantity = 3,
-                ProcessExecuteQuantity = 2
-              }
-            }
+                ProcessExecuteQuantity = 2,
+              },
+            },
           },
         },
         Parts = new[]
@@ -181,9 +181,9 @@ namespace MachineWatchTest
                 PartName = "part1:1:1",
                 ProcessNumber = 1,
                 FixQuantity = 5,
-                Fixture = "fixtoremove"
-              }
-            }
+                Fixture = "fixtoremove",
+              },
+            },
           },
           //should be kept, since schedule is kept
           new MazakPartRow()
@@ -197,20 +197,20 @@ namespace MachineWatchTest
                 PartName = "part2:1:1",
                 ProcessNumber = 1,
                 FixQuantity = 2,
-                Fixture = "fixtokeep"
-              }
-            }
+                Fixture = "fixtokeep",
+              },
+            },
           },
         },
         Fixtures = new[]
         {
           new MazakFixtureRow() { FixtureName = "fixtoremove", Comment = "Insight" },
-          new MazakFixtureRow() { FixtureName = "fixtokeep", Comment = "Insight" }
+          new MazakFixtureRow() { FixtureName = "fixtokeep", Comment = "Insight" },
         },
         Pallets = new[]
         {
           new MazakPalletRow() { PalletNumber = 5, Fixture = "fixtoremove" },
-          new MazakPalletRow() { PalletNumber = 6, Fixture = "fixtokeep" }
+          new MazakPalletRow() { PalletNumber = 6, Fixture = "fixtokeep" },
         },
         PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
         PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
@@ -224,15 +224,15 @@ namespace MachineWatchTest
             new MazakProgramRow()
             {
               MainProgram = System.IO.Path.Combine("theprogdir", "rev2", "prog-bbb-1.EIA"),
-              Comment = "Insight:2:prog-bbb-1"
+              Comment = "Insight:2:prog-bbb-1",
             },
             new MazakProgramRow()
             {
               MainProgram = System.IO.Path.Combine("theprogdir", "rev3", "prog-bbb-1.EIA"),
-              Comment = "Insight:3:prog-bbb-1"
-            }
+              Comment = "Insight:3:prog-bbb-1",
+            },
           }
-        )
+        ),
       };
 
       //  write jobs calls LoadAllData between creating fixtures and schedules
@@ -266,7 +266,7 @@ namespace MachineWatchTest
         LogCSVPath = "unused log path",
         DBType = MazakDbType.MazakSmooth,
         ProgramDirectory = "theprogdir",
-        UseStartingOffsetForDueDate = true
+        UseStartingOffsetForDueDate = true,
       };
 
       jsonSettings = new JsonSerializerOptions();
@@ -434,14 +434,14 @@ namespace MachineWatchTest
           {
             ProgramName = "prog-aaa-1",
             Revision = 7,
-            ProgramContent = "prog-aaa-1 content rev 7"
+            ProgramContent = "prog-aaa-1 content rev 7",
           },
           new NewProgramContent()
           {
             ProgramName = "prog-bbb-1",
             Revision = 3,
-            ProgramContent = "prog-bbb-1 content rev 3"
-          }
+            ProgramContent = "prog-bbb-1 content rev 3",
+          },
         },
         newJobs.Jobs.First().RouteStartUTC
       );
@@ -479,7 +479,7 @@ namespace MachineWatchTest
         jsonSettings
       ) with
       {
-        ScheduleId = "zzzzzzzzzzzzz"
+        ScheduleId = "zzzzzzzzzzzzz",
       };
       _jobDB.AddJobs(newJ2, expectedPreviousScheduleId: newJ1.ScheduleId, addAsCopiedToSystem: false);
 
@@ -749,7 +749,7 @@ namespace MachineWatchTest
         Parts = parts,
         Pallets = pals,
         Fixtures = fixtures,
-        Programs = progs
+        Programs = progs,
       };
 
       //act

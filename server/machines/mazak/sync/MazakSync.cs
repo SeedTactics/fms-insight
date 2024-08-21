@@ -224,7 +224,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         : TimeSpan.FromMinutes(2),
       StoppedBecauseRecentMachineEnd = stoppedBecauseRecentMachineEnd,
       CurrentStatus = st,
-      AllData = mazakData
+      AllData = mazakData,
     };
   }
 

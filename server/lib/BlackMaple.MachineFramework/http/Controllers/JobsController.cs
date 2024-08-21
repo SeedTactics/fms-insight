@@ -119,7 +119,9 @@ namespace BlackMaple.MachineFramework.Controllers
           SimWorkordersFilled = simResults.SimWorkordersFilled,
           DebugMessage = simResults.DebugMessage,
           CurrentUnfilledWorkorders = null, // no updates to workorders
-          Programs = null // load from programContent
+          Programs =
+            null // load from programContent
+          ,
         },
         expectedPreviousScheduleId: expectedPreviousScheduleId
       );

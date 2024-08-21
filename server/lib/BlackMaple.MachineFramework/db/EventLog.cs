@@ -208,7 +208,7 @@ namespace BlackMaple.MachineFramework
                   Serial = serial,
                   Workorder = workorder,
                   Face = face,
-                  Path = path
+                  Path = path,
                 }
               );
             }
@@ -270,7 +270,7 @@ namespace BlackMaple.MachineFramework
             ElapsedTime = elapsed,
             ActiveOperationTime = active,
             ProgramDetails = progDetails.Count == 0 ? null : progDetails.ToImmutable(),
-            Tools = tools.Count == 0 ? null : tools.ToImmutable()
+            Tools = tools.Count == 0 ? null : tools.ToImmutable(),
           };
         }
       } // close usings
@@ -669,7 +669,7 @@ namespace BlackMaple.MachineFramework
                 TotalLifeTime = reader.IsDBNull(3) ? null : TimeSpan.FromTicks(reader.GetInt64(3)),
                 CurrentUseCount = reader.IsDBNull(4) ? null : (int?)reader.GetInt32(4),
                 TotalLifeCount = reader.IsDBNull(5) ? null : (int?)reader.GetInt32(5),
-                Serial = reader.IsDBNull(6) ? null : reader.GetString(6)
+                Serial = reader.IsDBNull(6) ? null : reader.GetString(6),
               }
             );
           }
@@ -1032,11 +1032,10 @@ namespace BlackMaple.MachineFramework
                 Serial = serialReader.IsDBNull(1) ? null : serialReader.GetString(1),
                 Quarantined = quarantined,
                 InspectionFailed = !serialReader.IsDBNull(3) && serialReader.GetBoolean(3),
-                Closeout = serialReader.IsDBNull(4)
-                  ? WorkorderSerialCloseout.None
-                  : serialReader.GetString(4) == "Failed"
-                    ? WorkorderSerialCloseout.CloseOutFailed
-                    : WorkorderSerialCloseout.ClosedOut
+                Closeout =
+                  serialReader.IsDBNull(4) ? WorkorderSerialCloseout.None
+                  : serialReader.GetString(4) == "Failed" ? WorkorderSerialCloseout.CloseOutFailed
+                  : WorkorderSerialCloseout.ClosedOut,
               }
             );
           }
@@ -1092,7 +1091,7 @@ namespace BlackMaple.MachineFramework
             CompletedQuantity = completed,
             Material = serials.Count == 0 ? null : serials.ToImmutable(),
             ElapsedStationTime = elapsed.ToImmutable(),
-            ActiveStationTime = active.ToImmutable()
+            ActiveStationTime = active.ToImmutable(),
           }
         );
       }
@@ -1159,11 +1158,9 @@ namespace BlackMaple.MachineFramework
             {
               var details = getDetails(m.MaterialID);
               int? path =
-                details?.Paths == null
-                  ? null
-                  : details.Paths.TryGetValue(m.Process, out var p)
-                    ? p
-                    : null;
+                details?.Paths == null ? null
+                : details.Paths.TryGetValue(m.Process, out var p) ? p
+                : null;
               return new LogMaterial()
               {
                 MaterialID = m.MaterialID,
@@ -1174,7 +1171,7 @@ namespace BlackMaple.MachineFramework
                 NumProcesses = details?.NumProcesses ?? 1,
                 Serial = details?.Serial ?? "",
                 Workorder = details?.Workorder ?? "",
-                Path = path
+                Path = path,
               };
             })
             .ToImmutableList(),
@@ -1192,7 +1189,7 @@ namespace BlackMaple.MachineFramework
             this.ProgramDetails == null || this.ProgramDetails.Count == 0
               ? null
               : this.ProgramDetails.ToImmutableDictionary(),
-          Tools = this.Tools == null || this.Tools.Count == 0 ? null : this.Tools
+          Tools = this.Tools == null || this.Tools.Count == 0 ? null : this.Tools,
         };
       }
 
@@ -1211,7 +1208,7 @@ namespace BlackMaple.MachineFramework
           Result = e.Result,
           ElapsedTime = e.ElapsedTime,
           ActiveOperationTime = e.ActiveOperationTime,
-          Tools = e.Tools
+          Tools = e.Tools,
         };
         if (e.ProgramDetails != null)
         {
@@ -1506,7 +1503,7 @@ namespace BlackMaple.MachineFramework
             {
               MaterialID = mat,
               Process = face.Process - 1,
-              Face = 0
+              Face = 0,
             };
             logs.AddRange(
               RemoveFromAllQueues(
@@ -1718,7 +1715,7 @@ namespace BlackMaple.MachineFramework
         StartOfCycle = true,
         EndTimeUTC = timeUTC,
         Result = "",
-        ToolPockets = pockets
+        ToolPockets = pockets,
       };
       if (extraData != null)
       {
@@ -1760,7 +1757,7 @@ namespace BlackMaple.MachineFramework
         ElapsedTime = elapsed,
         ActiveOperationTime = active,
         ToolPockets = pockets,
-        Tools = tools
+        Tools = tools,
       };
       if (extraData != null)
       {
@@ -1928,7 +1925,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = materialID,
         Process = proc,
-        Face = 0
+        Face = 0,
       };
       return RecordSerialForMaterialID(mat, serial, timeUTC, foreignID, originalMessage);
     }
@@ -1979,7 +1976,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = materialID,
         Process = proc,
-        Face = 0
+        Face = 0,
       };
       return RecordWorkorderForMaterialID(mat, workorder, DateTime.UtcNow);
     }
@@ -2035,7 +2032,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = materialID,
         Process = process,
-        Face = 0
+        Face = 0,
       };
       return RecordInspectionCompleted(
         mat,
@@ -2094,7 +2091,7 @@ namespace BlackMaple.MachineFramework
         EndTimeUTC = inspectTimeUTC,
         Result = success.ToString(),
         ElapsedTime = elapsed,
-        ActiveOperationTime = active
+        ActiveOperationTime = active,
       };
       foreach (var x in extraData)
         log.ProgramDetails.Add(x.Key, x.Value);
@@ -2117,7 +2114,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = materialID,
         Process = process,
-        Face = 0
+        Face = 0,
       };
       return RecordCloseoutCompleted(
         mat,
@@ -2176,7 +2173,7 @@ namespace BlackMaple.MachineFramework
         EndTimeUTC = completeTimeUTC,
         Result = success ? "" : "Failed",
         ElapsedTime = elapsed,
-        ActiveOperationTime = active
+        ActiveOperationTime = active,
       };
       foreach (var x in extraData)
         log.ProgramDetails.Add(x.Key, x.Value);
@@ -2421,7 +2418,7 @@ namespace BlackMaple.MachineFramework
         {
           MaterialID = materialId,
           Process = process,
-          Face = 0
+          Face = 0,
         },
         program: "OperatorNotes",
         result: "Operator Notes",
@@ -2537,11 +2534,11 @@ namespace BlackMaple.MachineFramework
                         {
                           MaterialID = newMatId,
                           Serial = newMatDetails.Serial ?? "",
-                          Workorder = newMatDetails.Workorder ?? ""
+                          Workorder = newMatDetails.Workorder ?? "",
                         }
                         : m
                     )
-                    .ToImmutableList()
+                    .ToImmutableList(),
                 }
               );
             }
@@ -2611,13 +2608,13 @@ namespace BlackMaple.MachineFramework
               {
                 MaterialID = oldMatId,
                 Process = oldMatProc,
-                Face = 0
+                Face = 0,
               },
               new EventLogMaterial()
               {
                 MaterialID = newMatId,
                 Process = oldMatProc,
-                Face = 0
+                Face = 0,
               },
             },
             Pallet = pallet,
@@ -2680,7 +2677,7 @@ namespace BlackMaple.MachineFramework
       return new SwapMaterialResult()
       {
         ChangedLogEntries = changedLogEntries,
-        NewLogEntries = newLogEntries
+        NewLogEntries = newLogEntries,
       };
     }
 
@@ -2691,7 +2688,7 @@ namespace BlackMaple.MachineFramework
         (int)LogType.AddToQueue,
         (int)LogType.RemoveFromQueue,
         (int)LogType.LoadUnloadCycle,
-        (int)LogType.MachineCycle
+        (int)LogType.MachineCycle,
       }
     );
 
@@ -2795,7 +2792,7 @@ namespace BlackMaple.MachineFramework
             {
               MaterialID = m,
               Process = process,
-              Face = 0
+              Face = 0,
             }),
             Pallet = 0,
             LogType = LogType.InvalidateCycle,
@@ -2923,7 +2920,7 @@ namespace BlackMaple.MachineFramework
               {
                 MaterialID = matId,
                 Process = 0,
-                Face = 0
+                Face = 0,
               },
               serial,
               timeUTC,
@@ -2983,7 +2980,7 @@ namespace BlackMaple.MachineFramework
                 {
                   MaterialID = matId,
                   Process = 0,
-                  Face = 0
+                  Face = 0,
                 },
                 serial,
                 time,
@@ -3001,7 +2998,7 @@ namespace BlackMaple.MachineFramework
                 {
                   MaterialID = matId,
                   Process = 0,
-                  Face = 0
+                  Face = 0,
                 },
                 workorder,
                 time
@@ -3018,7 +3015,7 @@ namespace BlackMaple.MachineFramework
           PartName = part,
           NumProcesses = numProc,
           Serial = serial,
-          Workorder = workorder
+          Workorder = workorder,
         };
       }
     }
@@ -3383,7 +3380,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = matId,
         Process = process,
-        Face = 0
+        Face = 0,
       };
 
       return AddToQueue(trans, mat, queue, position, operatorName, timeUTC, reason);
@@ -3478,7 +3475,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = matID,
         Process = process,
-        Face = 0
+        Face = 0,
       };
 
       return RemoveFromAllQueues(trans, mat, operatorName, reason, timeUTC);
@@ -3533,7 +3530,7 @@ namespace BlackMaple.MachineFramework
               StartOfCycle = false,
               EndTimeUTC = timeUTC,
               Result = "",
-              ElapsedTime = addTime.HasValue ? timeUTC.Subtract(addTime.Value) : TimeSpan.Zero
+              ElapsedTime = addTime.HasValue ? timeUTC.Subtract(addTime.Value) : TimeSpan.Zero,
             };
             if (!string.IsNullOrEmpty(operatorName))
             {
@@ -3688,8 +3685,8 @@ namespace BlackMaple.MachineFramework
                   {
                     MaterialID = matID,
                     Process = 0,
-                    Face = 0
-                  }
+                    Face = 0,
+                  },
                 },
                 Pallet = 0,
                 LogType = LogType.PartMark,
@@ -3713,8 +3710,8 @@ namespace BlackMaple.MachineFramework
                   {
                     MaterialID = matID,
                     Process = 0,
-                    Face = 0
-                  }
+                    Face = 0,
+                  },
                 },
                 Pallet = 0,
                 LogType = LogType.OrderAssignment,
@@ -3740,8 +3737,8 @@ namespace BlackMaple.MachineFramework
                 {
                   MaterialID = matID,
                   Process = 0,
-                  Face = 0
-                }
+                  Face = 0,
+                },
               },
               Pallet = 0,
               LogType = LogType.AddToQueue,
@@ -4300,7 +4297,7 @@ namespace BlackMaple.MachineFramework
               EndTimeUTC = timeUTC,
               Result = "PalletCycle",
               ElapsedTime = elapsedTime,
-              ActiveOperationTime = TimeSpan.Zero
+              ActiveOperationTime = TimeSpan.Zero,
             },
             foreignID,
             null
@@ -4328,7 +4325,7 @@ namespace BlackMaple.MachineFramework
                     {
                       MaterialID = mid,
                       Process = face.Process,
-                      Face = face.FaceNum
+                      Face = face.FaceNum,
                     }),
                     lul: load.LoadStation,
                     elapsed: load.Elapsed,
@@ -4443,7 +4440,7 @@ namespace BlackMaple.MachineFramework
                 {
                   MaterialID = mat.MaterialID,
                   Process = mat.Process - 1,
-                  Face = 0
+                  Face = 0,
                 };
                 newLoadEvts.AddRange(
                   RemoveFromAllQueues(
@@ -4524,7 +4521,7 @@ namespace BlackMaple.MachineFramework
               Value = reader.GetInt32(0),
               LastUTC = reader.IsDBNull(1)
                 ? DateTime.MaxValue
-                : new DateTime(reader.GetInt64(1), DateTimeKind.Utc)
+                : new DateTime(reader.GetInt64(1), DateTimeKind.Utc),
             };
           }
           else
@@ -4533,7 +4530,7 @@ namespace BlackMaple.MachineFramework
             {
               Counter = counter,
               Value = maxVal <= 1 ? 0 : _rand.Next(0, maxVal - 1),
-              LastUTC = DateTime.MaxValue
+              LastUTC = DateTime.MaxValue,
             };
           }
         }
@@ -4634,7 +4631,7 @@ namespace BlackMaple.MachineFramework
             Pallet = 0,
             LoadStation = -1,
             UnloadStation = -1,
-            Stops = ImmutableList<MaterialProcessActualPath.Stop>.Empty
+            Stops = ImmutableList<MaterialProcessActualPath.Stop>.Empty,
           };
           byProc.Add(proc, f(m));
         }
@@ -4696,7 +4693,7 @@ namespace BlackMaple.MachineFramework
                     {
                       Stops = mat.Stops.Add(
                         new MaterialProcessActualPath.Stop() { StationName = statName, StationNum = statNum }
-                      )
+                      ),
                     };
                     break;
                 }
@@ -4823,7 +4820,7 @@ namespace BlackMaple.MachineFramework
                     Counter = prog,
                     Inspect = inspect,
                     Forced = false,
-                    CreateUTC = timeUtc
+                    CreateUTC = timeUtc,
                   }
                 );
               }
@@ -4837,7 +4834,7 @@ namespace BlackMaple.MachineFramework
                     Counter = "",
                     Inspect = inspect,
                     Forced = true,
-                    CreateUTC = timeUtc
+                    CreateUTC = timeUtc,
                   }
                 );
               }
@@ -4985,7 +4982,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = matID,
         Process = proc,
-        Face = 0
+        Face = 0,
       };
       var pathSteps = actualPath.Values.OrderBy(p => p.Process).ToList();
 
@@ -5017,7 +5014,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = matID,
         Process = 1,
-        Face = 0
+        Face = 0,
       };
       return ForceInspection(mat, inspType, inspect: true, utcNow: DateTime.UtcNow);
     }
@@ -5028,7 +5025,7 @@ namespace BlackMaple.MachineFramework
       {
         MaterialID = materialID,
         Process = process,
-        Face = 0
+        Face = 0,
       };
       return ForceInspection(mat, inspType, inspect, DateTime.UtcNow);
     }
@@ -5113,7 +5110,7 @@ namespace BlackMaple.MachineFramework
                 {
                   MaterialID = matID,
                   Process = 1,
-                  Face = 0
+                  Face = 0,
                 };
                 logs.Add(RecordForceInspection(trans, mat, reader.GetString(0), inspect: true, utcNow: now));
               }

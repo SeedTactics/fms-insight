@@ -780,7 +780,7 @@ namespace MazakMachineInterface
         "Part_t",
         "PartProcess_t",
         "Schedule_t",
-        "ScheduleProcess_t"
+        "ScheduleProcess_t",
       };
 
       using (var cmd = conn.CreateCommand())
@@ -1052,7 +1052,7 @@ namespace MazakMachineInterface
           {
             PartName = proc.PartName,
             ProcessNumber = proc.ProcessNumber,
-            FixQuantity = proc.FixQuantity
+            FixQuantity = proc.FixQuantity,
           }
         );
       }

@@ -43,7 +43,7 @@ namespace BlackMaple.MachineFramework
     RawMaterial,
     InProcessTransfer,
     Quarantine,
-    Other
+    Other,
   }
 
   public record QueueInfo

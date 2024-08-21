@@ -150,7 +150,7 @@ namespace BlackMaple.FMSInsight.Makino
               {
                 var lst = new List<JobAndProc>
                 {
-                  new() { Job = j, Proc = proc }
+                  new() { Job = j, Proc = proc },
                 };
                 allFixtures.Add(fixName, lst);
               }

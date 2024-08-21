@@ -925,7 +925,7 @@ namespace BlackMaple.MachineFramework
             "scheduled_parts",
             "job_decrements",
             "schedule_debug",
-            "program_revisions"
+            "program_revisions",
           };
 
           foreach (var tableName in jobTableNames)

@@ -80,7 +80,7 @@ namespace BlackMaple.FMSInsight.ReverseProxy
               ValidateIssuer = true,
               ValidateAudience = true,
               ValidateLifetime = true,
-              ValidAudiences = ProxyConfig.AuthTokenAudiences
+              ValidAudiences = ProxyConfig.AuthTokenAudiences,
             };
 #if DEBUG
             options.RequireHttpsMetadata = false;
@@ -95,18 +95,18 @@ namespace BlackMaple.FMSInsight.ReverseProxy
                   context.Token = token;
                 }
                 return System.Threading.Tasks.Task.CompletedTask;
-              }
+              },
             };
           });
       }
     }
 
     private readonly HashSet<string> IgnoreRequestHeaders = new HashSet<string>(
-      new[] { "host", "connection", "keep-alive", "transfer-encoding", "upgrade", }
+      new[] { "host", "connection", "keep-alive", "transfer-encoding", "upgrade" }
     );
 
     private readonly HashSet<string> IgnoreResponseHeaders = new HashSet<string>(
-      new[] { "date", "server", "transfer-encoding", }
+      new[] { "date", "server", "transfer-encoding" }
     );
 
     public void Configure(IApplicationBuilder app, IHttpClientFactory httpFactory, ILogger<Startup> logger)
@@ -175,7 +175,7 @@ namespace BlackMaple.FMSInsight.ReverseProxy
               Scheme = "ws",
               Host = ProxyConfig.InsightHost,
               Port = ProxyConfig.InsightPort,
-              Path = "/api/v1/events"
+              Path = "/api/v1/events",
             };
             try
             {
@@ -239,7 +239,7 @@ namespace BlackMaple.FMSInsight.ReverseProxy
             Host = ProxyConfig.InsightHost,
             Port = ProxyConfig.InsightPort,
             Path = context.Request.Path,
-            Query = context.Request.QueryString.ToUriComponent()
+            Query = context.Request.QueryString.ToUriComponent(),
           };
           var msg = new HttpRequestMessage();
           msg.RequestUri = uriB.Uri;

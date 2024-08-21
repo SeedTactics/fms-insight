@@ -85,8 +85,8 @@ public static class BuildCellState
               CurrentQueue = mat.Queue,
               QueuePosition = mat.Position,
             },
-            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
-          }
+            Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+          },
         }
       );
     }
@@ -275,7 +275,7 @@ public static class BuildCellState
       if (lastCompletedStopIdx.HasValue)
       {
         loadedMats = loadedMats
-          .Select(mat => mat with { LastCompletedMachiningRouteStopIndex = lastCompletedStopIdx, })
+          .Select(mat => mat with { LastCompletedMachiningRouteStopIndex = lastCompletedStopIdx })
           .ToImmutableList();
       }
 
@@ -321,7 +321,7 @@ public static class BuildCellState
       Log = log,
       LastPalletCycle = lastPalletCycle,
       LoadBegin = loadBegin,
-      NewLogEvents = false
+      NewLogEvents = false,
     };
   }
 
@@ -450,7 +450,7 @@ public static class BuildCellState
         {
           pal = pal with
           {
-            MaterialLoadingOntoPallet = pal.MaterialLoadingOntoPallet.AddRange(unloading.NewMaterialToLoad)
+            MaterialLoadingOntoPallet = pal.MaterialLoadingOntoPallet.AddRange(unloading.NewMaterialToLoad),
           };
         }
         return pal;
@@ -543,8 +543,8 @@ public static class BuildCellState
         {
           LoadStation = loadNum,
           Elapsed = elapsedTime ?? TimeSpan.Zero,
-          Faces = matToLoad.Select(m => m.Item1).ToImmutableList()
-        }
+          Faces = matToLoad.Select(m => m.Item1).ToImmutableList(),
+        },
       },
       pallet: pal.PalletNum,
       timeUTC: nowUTC.AddSeconds(1)
@@ -561,7 +561,7 @@ public static class BuildCellState
     {
       Faces = newFaces.ToImmutable(),
       Log = pal.Log.AddRange(loadEnds),
-      NewLogEvents = true
+      NewLogEvents = true,
     };
   }
 
@@ -607,7 +607,7 @@ public static class BuildCellState
           {
             MaterialID = m.MaterialID,
             Process = m.Process,
-            Face = stop.face.FaceNum
+            Face = stop.face.FaceNum,
           })
         ),
         pallet: pal.PalletNum,
@@ -638,7 +638,7 @@ public static class BuildCellState
               stop.stop.StopIdx,
               stop.stop with
               {
-                MachineStart = machineStart
+                MachineStart = machineStart,
               }
             ),
             Material = stop
@@ -657,16 +657,16 @@ public static class BuildCellState
                   },
                 }
               )
-              .ToImmutableList()
+              .ToImmutableList(),
           }
-        )
+        ),
       };
     }
 
     return pal with
     {
       Log = newEvt ? pal.Log.Add(machineStart) : pal.Log,
-      NewLogEvents = pal.NewLogEvents || newEvt
+      NewLogEvents = pal.NewLogEvents || newEvt,
     };
   }
 
@@ -703,7 +703,7 @@ public static class BuildCellState
           {
             MaterialID = m.MaterialID,
             Process = m.Process,
-            Face = stop.face.FaceNum
+            Face = stop.face.FaceNum,
           })
         ),
         pallet: pal.PalletNum,
@@ -735,9 +735,9 @@ public static class BuildCellState
                     LastCompletedMachiningRouteStopIndex = stop.stop.StopIdx,
                   }
                 )
-                .ToImmutableList()
+                .ToImmutableList(),
             }
-          )
+          ),
         };
       }
     }
@@ -745,7 +745,7 @@ public static class BuildCellState
     return pal with
     {
       Log = newEvts.Count > 0 ? pal.Log.AddRange(newEvts) : pal.Log,
-      NewLogEvents = pal.NewLogEvents || newEvts.Count > 0
+      NewLogEvents = pal.NewLogEvents || newEvts.Count > 0,
     };
   }
 
@@ -785,12 +785,12 @@ public static class BuildCellState
           {
             MaterialID = m.MaterialID,
             Process = m.Process,
-            Face = faceNum
+            Face = faceNum,
           }),
           pallet: pal.PalletNum,
           lulNum: lulNum,
           timeUTC: nowUTC
-        )
+        ),
       };
       newEvt = face.UnloadStart;
     }
@@ -809,11 +809,11 @@ public static class BuildCellState
                 ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
                 : InProcessMaterialAction.ActionType.UnloadToInProcess,
               UnloadIntoQueue = outputQueue,
-              ElapsedLoadUnloadTime = nowUTC - face.UnloadStart.EndTimeUTC
-            }
+              ElapsedLoadUnloadTime = nowUTC - face.UnloadStart.EndTimeUTC,
+            },
           }
         )
-        .ToImmutableList()
+        .ToImmutableList(),
     };
 
     if (adjustUnloadingMats != null)
@@ -825,7 +825,7 @@ public static class BuildCellState
     {
       Faces = pal.Faces.SetItem(faceNum, face),
       Log = newEvt != null ? pal.Log.Add(newEvt) : pal.Log,
-      NewLogEvents = pal.NewLogEvents || newEvt != null
+      NewLogEvents = pal.NewLogEvents || newEvt != null,
     };
   }
 
@@ -864,7 +864,7 @@ public static class BuildCellState
           Server = serverName,
           PartName = mat.PartName,
           Queue = outputQueue,
-          Serial = mat.Serial ?? ""
+          Serial = mat.Serial ?? "",
         });
       }
 
@@ -873,7 +873,7 @@ public static class BuildCellState
         {
           MaterialID = m.MaterialID,
           Process = m.Process,
-          Face = faceNum
+          Face = faceNum,
         }),
         pallet: pal.PalletNum,
         lulNum: lulNum,
@@ -888,7 +888,7 @@ public static class BuildCellState
     {
       Faces = pal.Faces.Remove(faceNum),
       Log = newEvts != null ? pal.Log.AddRange(newEvts) : pal.Log,
-      NewLogEvents = pal.NewLogEvents || newEvts != null
+      NewLogEvents = pal.NewLogEvents || newEvts != null,
     };
 
     System.Threading.Tasks.Task.Run(() => SendMaterialToExternalQueue.Post(sendToExternal));
@@ -927,8 +927,8 @@ public static class BuildCellState
               {
                 Type = InProcessMaterialLocation.LocType.OnPallet,
                 PalletNum = palletNum,
-                Face = face.Key
-              }
+                Face = face.Key,
+              },
             }
           )
           .ToImmutableList();
@@ -965,7 +965,7 @@ public static class BuildCellState
             Process = process,
             Path = path,
             ActiveOperationTime = (expectedLoadTimeForOnePieceOfMaterial ?? TimeSpan.Zero) * face.Count(),
-            MaterialIDs = face.Select(m => m.MaterialID).ToImmutableList()
+            MaterialIDs = face.Select(m => m.MaterialID).ToImmutableList(),
           }
         );
 
@@ -1000,7 +1000,7 @@ public static class BuildCellState
             .ToImmutableList(),
           Material = matOnFaceAfterLoad,
           UnloadStart = null,
-          UnloadEnd = null
+          UnloadEnd = null,
         };
 
         return (matToLoad, newFace);
@@ -1035,7 +1035,7 @@ public static class BuildCellState
           LoadStation = loadNum,
           Faces = matsToLoad.Select(m => m.Item1).ToImmutableList(),
           Elapsed = unloadStartTime.HasValue ? nowUTC - unloadStartTime.Value : TimeSpan.Zero,
-        }
+        },
       }
     );
 
@@ -1051,7 +1051,7 @@ public static class BuildCellState
       Faces = newFaces.ToImmutable(),
       Log = loadEvts.ToImmutableList(),
       NewLogEvents = true,
-      LastPalletCycle = cycleEvt
+      LastPalletCycle = cycleEvt,
     };
 
     return pal;

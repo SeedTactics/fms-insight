@@ -323,7 +323,7 @@ namespace BlackMaple.FMSInsight.Niigata
         Cycles = pal.Status.Master.RemainingPalletCycles,
         NoWork = false,
         Skip = hold,
-        LongToolMachine = 0
+        LongToolMachine = 0,
       };
     }
   }

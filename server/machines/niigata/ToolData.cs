@@ -200,7 +200,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   BrokenAlarm = brokenAlrm,
                   CuttingAlarm = cuttingAlrm,
                   CheckingAlarm = checkingAlrm,
-                  LifeKind = lifeKind
+                  LifeKind = lifeKind,
                 }
               );
             }

@@ -65,9 +65,9 @@ namespace MachineWatchTest
               {
                 MazakScheduleRowId = 1,
                 FixedMachineFlag = 1,
-                ProcessNumber = 1
-              }
-            }
+                ProcessNumber = 1,
+              },
+            },
           },
           new MazakScheduleRow()
           {
@@ -85,11 +85,11 @@ namespace MachineWatchTest
                 FixedMachineFlag = 1,
                 ProcessNumber = 1,
                 ProcessMaterialQuantity = 3,
-                ProcessExecuteQuantity = 2
-              }
-            }
-          }
-        }
+                ProcessExecuteQuantity = 2,
+              },
+            },
+          },
+        },
       };
 
       var (actions, tokeep) = BuildMazakSchedules.RemoveCompletedSchedules(schedules);
@@ -138,9 +138,9 @@ namespace MachineWatchTest
                 ).ToUniversalTime(),
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 1,
-                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1)
-              }
-            }.ToImmutableList()
+                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1),
+              },
+            }.ToImmutableList(),
           },
           new ProcessInfo()
           {
@@ -150,11 +150,11 @@ namespace MachineWatchTest
               {
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 2,
-                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1)
-              }
-            }.ToImmutableList()
-          }
-        }.ToImmutableList()
+                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1),
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
       };
 
       var uniq2 = new HistoricJob()
@@ -185,9 +185,9 @@ namespace MachineWatchTest
                 ).ToUniversalTime(),
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 1,
-                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1)
-              }
-            }.ToImmutableList()
+                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1),
+              },
+            }.ToImmutableList(),
           },
           new ProcessInfo()
           {
@@ -197,11 +197,11 @@ namespace MachineWatchTest
               {
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 2,
-                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1)
-              }
-            }.ToImmutableList()
-          }
-        }.ToImmutableList()
+                PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1),
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
       };
 
       //two with an input queue
@@ -235,9 +235,9 @@ namespace MachineWatchTest
                 Fixture = conflictByFixture ? "fixA" : null,
                 Face = 2,
                 PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(1),
-                InputQueue = "aaa"
-              }
-            }.ToImmutableList()
+                InputQueue = "aaa",
+              },
+            }.ToImmutableList(),
           },
           new ProcessInfo()
           {
@@ -248,10 +248,10 @@ namespace MachineWatchTest
                 Fixture = null,
                 Face = 1,
                 PalletNums = ImmutableList<int>.Empty,
-              }
-            }.ToImmutableList()
-          }
-        }.ToImmutableList()
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
       };
 
       var uniq4 = new HistoricJob()
@@ -283,9 +283,9 @@ namespace MachineWatchTest
                 Fixture = null,
                 Face = 1,
                 PalletNums = ImmutableList<int>.Empty,
-                InputQueue = "bbb"
-              }
-            }.ToImmutableList()
+                InputQueue = "bbb",
+              },
+            }.ToImmutableList(),
           },
           new ProcessInfo()
           {
@@ -297,10 +297,10 @@ namespace MachineWatchTest
                 Fixture = conflictByFixture ? "fixB" : null,
                 Face = 2,
                 PalletNums = conflictByFixture ? ImmutableList<int>.Empty : ImmutableList.Create(2),
-              }
-            }.ToImmutableList()
-          }
-        }.ToImmutableList()
+              },
+            }.ToImmutableList(),
+          },
+        }.ToImmutableList(),
       };
 
       //two schedule which already exists, one with same route starting, one with different
@@ -330,11 +330,11 @@ namespace MachineWatchTest
                   6,
                   DateTimeKind.Local
                 ).ToUniversalTime(),
-              }
-            }.ToImmutableList()
+              },
+            }.ToImmutableList(),
           },
-          new ProcessInfo() { Paths = new[] { JobLogTest.EmptyPath }.ToImmutableList() }
-        }.ToImmutableList()
+          new ProcessInfo() { Paths = new[] { JobLogTest.EmptyPath }.ToImmutableList() },
+        }.ToImmutableList(),
       };
 
       // all the parts, plus a schedule for uniq5
@@ -342,11 +342,11 @@ namespace MachineWatchTest
       {
         Parts = new[]
         {
-          new MazakPartRow() { PartName = "part1:6:1", Comment = "uniq1-Insight", },
-          new MazakPartRow() { PartName = "part1:6:2", Comment = "uniq2-Insight", },
-          new MazakPartRow() { PartName = "part2:6:1", Comment = "uniq3-Path1-1", }, // old versions of Insight included -Path, check for backwards compatibility
-          new MazakPartRow() { PartName = "part2:6:2", Comment = "uniq4-Insight", },
-          new MazakPartRow() { PartName = "part3:6:1", Comment = "uniq5-Insight", }
+          new MazakPartRow() { PartName = "part1:6:1", Comment = "uniq1-Insight" },
+          new MazakPartRow() { PartName = "part1:6:2", Comment = "uniq2-Insight" },
+          new MazakPartRow() { PartName = "part2:6:1", Comment = "uniq3-Path1-1" }, // old versions of Insight included -Path, check for backwards compatibility
+          new MazakPartRow() { PartName = "part2:6:2", Comment = "uniq4-Insight" },
+          new MazakPartRow() { PartName = "part3:6:1", Comment = "uniq5-Insight" },
         },
         Schedules = new[]
         {
@@ -356,9 +356,9 @@ namespace MachineWatchTest
             PartName = "part3:6:1",
             Comment = "uniq5-Insight",
             DueDate = new DateTime(2020, 04, 14, 0, 0, 0, DateTimeKind.Local),
-            Priority = 17
-          }
-        }
+            Priority = 17,
+          },
+        },
       };
 
       var actions = BuildMazakSchedules.AddSchedules(
@@ -390,15 +390,15 @@ namespace MachineWatchTest
                 {
                   MazakScheduleRowId = 2,
                   ProcessNumber = 1,
-                  ProcessMaterialQuantity = 51
+                  ProcessMaterialQuantity = 51,
                 },
                 new MazakScheduleProcessRow()
                 {
                   MazakScheduleRowId = 2,
                   ProcessNumber = 2,
-                  ProcessMaterialQuantity = 0
+                  ProcessMaterialQuantity = 0,
                 },
-              }
+              },
             },
             new MazakScheduleRow()
             {
@@ -415,15 +415,15 @@ namespace MachineWatchTest
                 {
                   MazakScheduleRowId = 3,
                   ProcessNumber = 1,
-                  ProcessMaterialQuantity = 41
+                  ProcessMaterialQuantity = 41,
                 },
                 new MazakScheduleProcessRow()
                 {
                   MazakScheduleRowId = 3,
                   ProcessNumber = 2,
-                  ProcessMaterialQuantity = 0
+                  ProcessMaterialQuantity = 0,
                 },
-              }
+              },
             },
             new MazakScheduleRow()
             {
@@ -440,15 +440,17 @@ namespace MachineWatchTest
                 {
                   MazakScheduleRowId = 4,
                   ProcessNumber = 1,
-                  ProcessMaterialQuantity = 0 // no material, input queue
+                  ProcessMaterialQuantity =
+                    0 // no material, input queue
+                  ,
                 },
                 new MazakScheduleProcessRow()
                 {
                   MazakScheduleRowId = 4,
                   ProcessNumber = 2,
-                  ProcessMaterialQuantity = 0
+                  ProcessMaterialQuantity = 0,
                 },
-              }
+              },
             },
             new MazakScheduleRow()
             {
@@ -465,16 +467,18 @@ namespace MachineWatchTest
                 {
                   MazakScheduleRowId = 5,
                   ProcessNumber = 1,
-                  ProcessMaterialQuantity = 0 //no material, input queue
+                  ProcessMaterialQuantity =
+                    0 //no material, input queue
+                  ,
                 },
                 new MazakScheduleProcessRow()
                 {
                   MazakScheduleRowId = 5,
                   ProcessNumber = 2,
-                  ProcessMaterialQuantity = 0
+                  ProcessMaterialQuantity = 0,
                 },
-              }
-            }
+              },
+            },
           },
           options => options.ComparingByMembers<MazakScheduleRow>()
         );

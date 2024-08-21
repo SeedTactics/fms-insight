@@ -262,7 +262,7 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 job,
                 proc,
-                procNum = procIdx + 1
+                procNum = procIdx + 1,
               }
           )
         )
@@ -337,7 +337,7 @@ namespace BlackMaple.FMSInsight.Niigata
           Path = path.Path,
           Face = 1,
           FaceIsMissingMaterial = false,
-          Programs = programs
+          Programs = programs,
         },
         _statNames
       );
@@ -414,7 +414,7 @@ namespace BlackMaple.FMSInsight.Niigata
               {
                 MatIds = availMatIds.ToImmutable(),
                 ProgramsOverrideJob = programsOverrideJob,
-                Programs = programs
+                Programs = programs,
               };
             }
           }
@@ -450,7 +450,7 @@ namespace BlackMaple.FMSInsight.Niigata
             {
               MatIds = availMatIds.ToImmutable(),
               ProgramsOverrideJob = programsOverrideJob,
-              Programs = programs
+              Programs = programs,
             };
           }
         }
@@ -494,7 +494,7 @@ namespace BlackMaple.FMSInsight.Niigata
               Process = path.Process,
               Path = path.Path,
               Programs = matForPath.Programs,
-              ProgramsOverrideJob = matForPath.ProgramsOverrideJob
+              ProgramsOverrideJob = matForPath.ProgramsOverrideJob,
             }
           );
         }
@@ -516,7 +516,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 Process = path.Process,
                 Path = path.Path,
                 Programs = matForPath.Programs,
-                ProgramsOverrideJob = matForPath.ProgramsOverrideJob
+                ProgramsOverrideJob = matForPath.ProgramsOverrideJob,
               }
             );
           }
@@ -554,7 +554,7 @@ namespace BlackMaple.FMSInsight.Niigata
           Unique = path.Job.UniqueStr,
           Proc = path.Process,
           Path = path.Path,
-          ProgOverride = path.ProgramsOverrideJob ? path.Programs : null
+          ProgOverride = path.ProgramsOverrideJob ? path.Programs : null,
         })
         .ToList();
 
@@ -572,7 +572,7 @@ namespace BlackMaple.FMSInsight.Niigata
           Cycles = remaining,
           NoWork = false,
           Skip = false,
-          LongToolMachine = 0
+          LongToolMachine = 0,
         };
         return true;
       }
@@ -696,7 +696,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     }
                   })
                   .ToList(),
-                ProgramNumsToRun = new List<int> { iccProgram.Value }
+                ProgramNumsToRun = new List<int> { iccProgram.Value },
               }
             );
           }
@@ -797,10 +797,14 @@ namespace BlackMaple.FMSInsight.Niigata
           .Concat(
             new[]
             {
-              new UnloadStep() { UnloadStations = firstPath.PathInfo.Unload.ToList(), CompletedPartCount = 1 }
+              new UnloadStep()
+              {
+                UnloadStations = firstPath.PathInfo.Unload.ToList(),
+                CompletedPartCount = 1,
+              },
             }
           )
-          .ToList()
+          .ToList(),
       };
     }
 
@@ -919,7 +923,7 @@ namespace BlackMaple.FMSInsight.Niigata
         Cycles = pal.Status.Master.RemainingPalletCycles,
         NoWork = true,
         Skip = false,
-        LongToolMachine = 0
+        LongToolMachine = 0,
       };
     }
     #endregion
@@ -1057,7 +1061,7 @@ namespace BlackMaple.FMSInsight.Niigata
         IccProgramComment = CreateProgramComment(prog.ProgramName, prog.Revision),
         ProgramName = prog.ProgramName,
         ProgramRevision = prog.Revision,
-        ExpectedCuttingTime = elapsed
+        ExpectedCuttingTime = elapsed,
       };
     }
 
@@ -1072,7 +1076,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           ProgramNum = progNum,
           ProgramName = prog.ProgramName,
-          ProgramRevision = prog.Revision
+          ProgramRevision = prog.Revision,
         };
       }
 

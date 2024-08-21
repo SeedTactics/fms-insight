@@ -103,7 +103,7 @@ namespace MachineWatchTest
         Counter = "counter1",
         RandomFreq = 0.5,
         MaxVal = 0,
-        TimeInterval = TimeSpan.FromHours(100)
+        TimeInterval = TimeSpan.FromHours(100),
       };
 
       for (int i = 0; i < 100; i++)
@@ -141,7 +141,7 @@ namespace MachineWatchTest
         Counter = "counter1",
         MaxVal = 3,
         RandomFreq = 0,
-        TimeInterval = TimeSpan.FromHours(11)
+        TimeInterval = TimeSpan.FromHours(11),
       };
 
       //the lastutc should be 2 minutes too short, so only inspections from the counter should take place
@@ -192,7 +192,7 @@ namespace MachineWatchTest
         Counter = "counter1",
         MaxVal = 13,
         RandomFreq = 0,
-        TimeInterval = TimeSpan.FromHours(11)
+        TimeInterval = TimeSpan.FromHours(11),
       };
 
       //set the count as zero, otherwise it chooses a random
@@ -231,7 +231,7 @@ namespace MachineWatchTest
           Counter = "counter1",
           MaxVal = 3,
           RandomFreq = 0,
-          TimeInterval = TimeSpan.FromHours(11)
+          TimeInterval = TimeSpan.FromHours(11),
         }
       );
 
@@ -331,7 +331,7 @@ namespace MachineWatchTest
         Counter = counter,
         MaxVal = 10,
         RandomFreq = 0,
-        TimeInterval = TimeSpan.FromDays(2)
+        TimeInterval = TimeSpan.FromDays(2),
       };
 
       var now = DateTime.UtcNow;
@@ -368,7 +368,7 @@ namespace MachineWatchTest
               new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 13 }
             ),
             UnloadStation = 4,
-          }
+          },
         }
       );
 
@@ -402,7 +402,7 @@ namespace MachineWatchTest
               new MaterialProcessActualPath.Stop() { StationName = "MC", StationNum = 19 }
             ),
             UnloadStation = 9,
-          }
+          },
         }
       );
 
@@ -420,13 +420,13 @@ namespace MachineWatchTest
       {
         MaterialID = 1,
         Process = 1,
-        Face = 0
+        Face = 0,
       };
       var mat2 = new EventLogMaterial()
       {
         MaterialID = 2,
         Process = 1,
-        Face = 0
+        Face = 0,
       };
       _insp.ForceInspection(mat1, "myinspection", true, now);
       _insp.ForceInspection(mat2, "myinspection", false, now);
@@ -483,10 +483,10 @@ namespace MachineWatchTest
                   FaceNum = 1,
                   Process = mat[0].Process,
                   Path = mat[0].Path,
-                  ActiveOperationTime = TimeSpan.FromMinutes(4)
-                }
-              ]
-            }
+                  ActiveOperationTime = TimeSpan.FromMinutes(4),
+                },
+              ],
+            },
           ],
           pallet: pal,
           timeUTC: _lastCycleTime
@@ -565,7 +565,7 @@ namespace MachineWatchTest
                 Counter = d.Forced ? "" : counter,
                 Inspect = inspect,
                 Forced = d.Forced,
-                CreateUTC = now
+                CreateUTC = now,
               },
               options =>
                 options

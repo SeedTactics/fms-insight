@@ -506,7 +506,7 @@ namespace BlackMaple.FMSInsight.Makino
       {
         Devices = devices,
         MachineResults = QueryMachineResults(_db, startUTC, endUTC, trans),
-        WorkSetResults = QueryLoadUnloadResults(_db, startUTC, endUTC, trans)
+        WorkSetResults = QueryLoadUnloadResults(_db, startUTC, endUTC, trans),
       };
     }
 
@@ -547,7 +547,7 @@ namespace BlackMaple.FMSInsight.Makino
           var m = new MachineResults
           {
             StartDateTimeLocal = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local),
-            EndDateTimeLocal = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Local)
+            EndDateTimeLocal = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Local),
           };
           m.StartDateTimeUTC = m.StartDateTimeLocal.ToUniversalTime();
           m.EndDateTimeUTC = m.EndDateTimeLocal.ToUniversalTime();
@@ -629,7 +629,7 @@ namespace BlackMaple.FMSInsight.Makino
           var m = new WorkSetResults
           {
             StartDateTimeUTC = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local),
-            EndDateTimeUTC = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Local)
+            EndDateTimeUTC = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Local),
           };
           m.StartDateTimeUTC = m.StartDateTimeUTC.ToUniversalTime();
           m.EndDateTimeUTC = m.EndDateTimeUTC.ToUniversalTime();
@@ -909,7 +909,7 @@ namespace BlackMaple.FMSInsight.Makino
                 Cycles = reader.GetInt32(4),
                 Precedence =
                 [
-                  [reader.GetInt16(5)]
+                  [reader.GetInt16(5)],
                 ],
               }
           );
@@ -1087,7 +1087,7 @@ namespace BlackMaple.FMSInsight.Makino
         Pallets = map.Pallets.ToImmutableDictionary(),
         Material = map.Material.ToImmutableList(),
         Alarms = [],
-        Queues = ImmutableDictionary<string, QueueInfo>.Empty
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty,
       };
     }
 
@@ -1213,7 +1213,7 @@ namespace BlackMaple.FMSInsight.Makino
           {
             CellControllerProgramName = name,
             ProgramName = name,
-            Comment = reader.IsDBNull(1) ? "" : reader.GetString(1)
+            Comment = reader.IsDBNull(1) ? "" : reader.GetString(1),
           }
         );
       }
@@ -1371,7 +1371,7 @@ namespace BlackMaple.FMSInsight.Makino
             CurrentUse = TimeSpan.FromSeconds(reader.GetInt32(6)),
             TotalLifeTime = TimeSpan.FromSeconds(reader.GetInt32(4)),
             MachineGroupName = dev.StationGroup,
-            MachineNum = dev.Num
+            MachineNum = dev.Num,
           }
         );
       }

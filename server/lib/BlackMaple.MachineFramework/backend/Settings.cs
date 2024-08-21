@@ -110,7 +110,7 @@ public record SerialSettings
     return new SerialSettings()
     {
       StartingMaterialID = startingMatId,
-      ConvertMaterialIDToSerial = (long matId) => ConvertToBase62(matId, len)
+      ConvertMaterialIDToSerial = (long matId) => ConvertToBase62(matId, len),
     };
   }
 
@@ -165,13 +165,13 @@ public enum AddRawMaterialType
   AddAsUnassigned,
   RequireExistingMaterial,
   RequireBarcodeScan,
-  AddAndSpecifyJob
+  AddAndSpecifyJob,
 }
 
 public enum AddInProcessMaterialType
 {
   RequireExistingMaterial,
-  AddAndSpecifyJob
+  AddAndSpecifyJob,
 }
 
 public record FMSSettings

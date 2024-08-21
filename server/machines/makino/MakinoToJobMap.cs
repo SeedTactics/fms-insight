@@ -107,11 +107,11 @@ namespace BlackMaple.FMSInsight.Makino
                   SimulatedAverageFlowTime = TimeSpan.Zero,
                   ExpectedLoadTime = TimeSpan.Zero,
                   ExpectedUnloadTime = TimeSpan.Zero,
-                }
-              ]
+                },
+              ],
             })
             .ToImmutableList(),
-          Cycles = 0
+          Cycles = 0,
         }
       );
     }
@@ -163,7 +163,7 @@ namespace BlackMaple.FMSInsight.Makino
               StationGroup = loc.StationGroup,
               Program = _programs[jobID],
               Stations = [loc.Num],
-              ExpectedCycleTime = TimeSpan.Zero
+              ExpectedCycleTime = TimeSpan.Zero,
             }
           );
         }
@@ -270,7 +270,7 @@ namespace BlackMaple.FMSInsight.Makino
                                   {
                                     return jstop with
                                     {
-                                      ExpectedCycleTime = hpath.Stops[stopIdx].ExpectedCycleTime
+                                      ExpectedCycleTime = hpath.Stops[stopIdx].ExpectedCycleTime,
                                     };
                                   }
                                 }
@@ -288,11 +288,11 @@ namespace BlackMaple.FMSInsight.Makino
                           };
                         }
                       )
-                      .ToImmutableList()
+                      .ToImmutableList(),
                   }
               )
               .ToImmutableList()
-            : job.Processes
+            : job.Processes,
       };
 
       _byOrderID.Add(orderID, extra(newJob));
@@ -306,7 +306,7 @@ namespace BlackMaple.FMSInsight.Makino
       _byOrderID[orderID] = job with
       {
         RemainingToStart = procNum == 1 ? remaining : job.RemainingToStart,
-        Completed = job.Completed!.SetItem(procNum - 1, [completed + scrap])
+        Completed = job.Completed!.SetItem(procNum - 1, [completed + scrap]),
       };
     }
 
@@ -397,7 +397,7 @@ namespace BlackMaple.FMSInsight.Makino
     {
       var job = _byOrderID[orderID];
 
-      var action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting, };
+      var action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting };
 
       if (
         curJobID.HasValue
@@ -408,7 +408,7 @@ namespace BlackMaple.FMSInsight.Makino
         && _palletIdToPalletNum[tablePalletID.Value] == palletNum
       )
       {
-        action = action with { Type = InProcessMaterialAction.ActionType.Machining, Program = stop.Program, };
+        action = action with { Type = InProcessMaterialAction.ActionType.Machining, Program = stop.Program };
       }
 
       var mat = new InProcessMaterial()
@@ -436,8 +436,8 @@ namespace BlackMaple.FMSInsight.Makino
         {
           Type = InProcessMaterialLocation.LocType.OnPallet,
           PalletNum = palletNum,
-          Face = fixtureNum
-        }
+          Face = fixtureNum,
+        },
       };
 
       List<InProcessMaterial> ms;
@@ -468,8 +468,8 @@ namespace BlackMaple.FMSInsight.Makino
               {
                 Type = completed
                   ? InProcessMaterialAction.ActionType.UnloadToCompletedMaterial
-                  : InProcessMaterialAction.ActionType.UnloadToInProcess
-              }
+                  : InProcessMaterialAction.ActionType.UnloadToInProcess,
+              },
             }
           )
           .ToList();
@@ -501,14 +501,14 @@ namespace BlackMaple.FMSInsight.Makino
             PartName = partName,
             Process = procNum,
             Path = 1,
-            Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free, },
+            Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.Free },
             Action = new InProcessMaterialAction()
             {
               Type = InProcessMaterialAction.ActionType.Loading,
               ProcessAfterLoad = procNum,
               PathAfterLoad = 1,
               LoadOntoFace = face,
-              LoadOntoPalletNum = pal.PalletNum
+              LoadOntoPalletNum = pal.PalletNum,
             },
             SignaledInspections = [],
             QuarantineAfterUnload = null,
@@ -535,7 +535,7 @@ namespace BlackMaple.FMSInsight.Makino
               PalletLocationEnum.MachineQueue,
               value.CurrentPalletLocation.StationGroup,
               value.CurrentPalletLocation.Num
-            )
+            ),
           };
         }
         else

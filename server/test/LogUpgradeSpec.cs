@@ -332,8 +332,8 @@ namespace MachineWatchTest
               NumProcesses = 1,
               NextProcess = 2,
               Paths = ImmutableDictionary<int, int>.Empty,
-              AddTimeUTC = now.AddHours(2)
-            }
+              AddTimeUTC = now.AddHours(2),
+            },
           }
         );
     }
@@ -356,8 +356,8 @@ namespace MachineWatchTest
             {
               DecrementId = 12,
               TimeUTC = new DateTime(2020, 10, 22, 4, 5, 6, DateTimeKind.Utc),
-              Quantity = 123
-            }
+              Quantity = 123,
+            },
           }
         );
     }
@@ -373,7 +373,7 @@ namespace MachineWatchTest
         Processes = old.Processes.ConvertAll(p =>
           p with
           {
-            Paths = p.Paths.ConvertAll(path => path with { Inspections = null })
+            Paths = p.Paths.ConvertAll(path => path with { Inspections = null }),
           }
         ),
       };
@@ -396,8 +396,8 @@ namespace MachineWatchTest
           {
             JobUnique = "mynewunique",
             Part = "thepart",
-            Quantity = 88
-          }
+            Quantity = 88,
+          },
         },
         now
       );
@@ -411,8 +411,8 @@ namespace MachineWatchTest
             {
               DecrementId = 13, // existing old job had decrement id 12
               TimeUTC = now,
-              Quantity = 88
-            }
+              Quantity = 88,
+            },
           }
         );
     }
@@ -431,7 +431,7 @@ namespace MachineWatchTest
           {
             DecrementId = 12,
             TimeUTC = new DateTime(2020, 10, 22, 4, 5, 6, DateTimeKind.Utc),
-            Quantity = 123
+            Quantity = 123,
           }
         ),
         RouteStartUTC = routeStart,
@@ -450,7 +450,7 @@ namespace MachineWatchTest
             TimeSpan.FromMinutes(10),
             TimeSpan.FromMinutes(18),
             TimeSpan.FromMinutes(125)
-          )
+          ),
         },
         Processes = ImmutableList.Create(
           new ProcessInfo()
@@ -486,7 +486,7 @@ namespace MachineWatchTest
                     Counter = "counter1",
                     MaxVal = 53,
                     RandomFreq = -1,
-                    TimeInterval = TimeSpan.FromMinutes(100)
+                    TimeInterval = TimeSpan.FromMinutes(100),
                   },
                   new PathInspection()
                   {
@@ -494,7 +494,7 @@ namespace MachineWatchTest
                     Counter = "abcdef",
                     MaxVal = 175,
                     RandomFreq = -1,
-                    TimeInterval = TimeSpan.FromMinutes(121)
+                    TimeInterval = TimeSpan.FromMinutes(121),
                   }
                 ),
                 HoldMachining = new HoldPattern()
@@ -503,7 +503,7 @@ namespace MachineWatchTest
                   ReasonForUserHold = "reason for user hold",
                   HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/4 12:32 AM GMT").ToUniversalTime(),
                   HoldUnholdPatternRepeats = false,
-                  HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(53))
+                  HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(53)),
                 },
                 HoldLoadUnload = new HoldPattern()
                 {
@@ -511,7 +511,7 @@ namespace MachineWatchTest
                   ReasonForUserHold = "abcdef",
                   HoldUnholdPatternStartUTC = DateTime.Parse("2010/12/2 9:32 PM GMT").ToUniversalTime(),
                   HoldUnholdPatternRepeats = true,
-                  HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(63), TimeSpan.FromMinutes(7))
+                  HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(63), TimeSpan.FromMinutes(7)),
                 },
               },
               new ProcPathInfo()
@@ -544,7 +544,7 @@ namespace MachineWatchTest
                     Counter = "counter1",
                     MaxVal = 53,
                     RandomFreq = -1,
-                    TimeInterval = TimeSpan.FromMinutes(100)
+                    TimeInterval = TimeSpan.FromMinutes(100),
                   },
                   new PathInspection()
                   {
@@ -552,7 +552,7 @@ namespace MachineWatchTest
                     Counter = "abcdef",
                     MaxVal = 175,
                     RandomFreq = -1,
-                    TimeInterval = TimeSpan.FromMinutes(121)
+                    TimeInterval = TimeSpan.FromMinutes(121),
                   }
                 ),
                 HoldMachining = new HoldPattern()
@@ -561,7 +561,7 @@ namespace MachineWatchTest
                   ReasonForUserHold = "another reason for user hold",
                   HoldUnholdPatternStartUTC = DateTime.Parse("2010/5/12 11:12 PM GMT").ToUniversalTime(),
                   HoldUnholdPatternRepeats = true,
-                  HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(84), TimeSpan.FromMinutes(1))
+                  HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(84), TimeSpan.FromMinutes(1)),
                 },
                 HoldLoadUnload = new HoldPattern()
                 {
@@ -572,10 +572,10 @@ namespace MachineWatchTest
                   HoldUnholdPattern = ImmutableList.Create(
                     TimeSpan.FromMinutes(174),
                     TimeSpan.FromMinutes(83)
-                  )
+                  ),
                 },
               }
-            )
+            ),
           },
           new ProcessInfo()
           {
@@ -617,7 +617,7 @@ namespace MachineWatchTest
                     Counter = "counter1",
                     MaxVal = 12,
                     RandomFreq = -1,
-                    TimeInterval = TimeSpan.FromMinutes(64)
+                    TimeInterval = TimeSpan.FromMinutes(64),
                   },
                   new PathInspection()
                   {
@@ -625,7 +625,7 @@ namespace MachineWatchTest
                     Counter = "counter2",
                     RandomFreq = 16.12,
                     MaxVal = -1,
-                    TimeInterval = TimeSpan.FromMinutes(33)
+                    TimeInterval = TimeSpan.FromMinutes(33),
                   },
                   new PathInspection()
                   {
@@ -633,7 +633,7 @@ namespace MachineWatchTest
                     Counter = "counter3",
                     RandomFreq = 0.544,
                     MaxVal = -1,
-                    TimeInterval = TimeSpan.FromMinutes(44)
+                    TimeInterval = TimeSpan.FromMinutes(44),
                   }
                 ),
                 HoldMachining = new HoldPattern()
@@ -645,7 +645,7 @@ namespace MachineWatchTest
                   HoldUnholdPattern = ImmutableList.Create(
                     TimeSpan.FromMinutes(532),
                     TimeSpan.FromMinutes(64)
-                  )
+                  ),
                 },
                 HoldLoadUnload = new HoldPattern()
                 {
@@ -691,7 +691,7 @@ namespace MachineWatchTest
                     Counter = "counter1",
                     MaxVal = 12,
                     RandomFreq = -1,
-                    TimeInterval = TimeSpan.FromMinutes(64)
+                    TimeInterval = TimeSpan.FromMinutes(64),
                   },
                   new PathInspection()
                   {
@@ -699,7 +699,7 @@ namespace MachineWatchTest
                     Counter = "counter2",
                     RandomFreq = 16.12,
                     MaxVal = -1,
-                    TimeInterval = TimeSpan.FromMinutes(33)
+                    TimeInterval = TimeSpan.FromMinutes(33),
                   },
                   new PathInspection()
                   {
@@ -707,7 +707,7 @@ namespace MachineWatchTest
                     Counter = "counter3",
                     RandomFreq = 0.544,
                     MaxVal = -1,
-                    TimeInterval = TimeSpan.FromMinutes(44)
+                    TimeInterval = TimeSpan.FromMinutes(44),
                   }
                 ),
                 HoldMachining = new HoldPattern()
@@ -749,7 +749,7 @@ namespace MachineWatchTest
                     Counter = "counter1",
                     MaxVal = 12,
                     RandomFreq = -1,
-                    TimeInterval = TimeSpan.FromMinutes(64)
+                    TimeInterval = TimeSpan.FromMinutes(64),
                   },
                   new PathInspection()
                   {
@@ -757,7 +757,7 @@ namespace MachineWatchTest
                     Counter = "counter2",
                     RandomFreq = 16.12,
                     MaxVal = -1,
-                    TimeInterval = TimeSpan.FromMinutes(33)
+                    TimeInterval = TimeSpan.FromMinutes(33),
                   },
                   new PathInspection()
                   {
@@ -765,7 +765,7 @@ namespace MachineWatchTest
                     Counter = "counter3",
                     RandomFreq = 0.544,
                     MaxVal = -1,
-                    TimeInterval = TimeSpan.FromMinutes(44)
+                    TimeInterval = TimeSpan.FromMinutes(44),
                   }
                 ),
                 HoldMachining = new HoldPattern()
@@ -782,12 +782,15 @@ namespace MachineWatchTest
                   ReasonForUserHold = "erhagsad",
                   HoldUnholdPatternStartUTC = DateTime.Parse("2010/11/5 2:30 PM GMT").ToUniversalTime(),
                   HoldUnholdPatternRepeats = false,
-                  HoldUnholdPattern = ImmutableList.Create(TimeSpan.FromMinutes(32), TimeSpan.FromMinutes(64))
+                  HoldUnholdPattern = ImmutableList.Create(
+                    TimeSpan.FromMinutes(32),
+                    TimeSpan.FromMinutes(64)
+                  ),
                 },
               }
-            )
+            ),
           }
-        )
+        ),
       };
     }
 
@@ -956,9 +959,9 @@ namespace MachineWatchTest
                   ProcessNumber = 1,
                   ProgramName = "prog4",
                   Revision = 4,
-                  StopIndex = 0
-                }
-              ]
+                  StopIndex = 0,
+                },
+              ],
             },
             new Workorder()
             {
@@ -966,8 +969,8 @@ namespace MachineWatchTest
               Part = "bbb",
               Quantity = 33,
               DueDate = new DateTime(2024, 7, 30, 14, 6, 27, DateTimeKind.Utc),
-              Priority = 26
-            }
+              Priority = 26,
+            },
           ]
         );
 

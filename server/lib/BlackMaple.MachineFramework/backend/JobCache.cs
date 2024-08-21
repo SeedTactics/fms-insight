@@ -136,7 +136,7 @@ public class JobCache : IJobCache
           RouteStart = j.RouteStartUTC,
           Unique = j.UniqueStr,
           Process = proc,
-          Path = path
+          Path = path,
         };
         _precedence.Add(key, (j, proc, path));
       }
@@ -279,8 +279,8 @@ public static class JobHelpers
                 }
               )
               .ToImmutableList(),
-            AssignedWorkorders = db.GetWorkordersForUnique(j.UniqueStr)
-          }
+            AssignedWorkorders = db.GetWorkordersForUnique(j.UniqueStr),
+          },
         };
       })
       .ToImmutableDictionary(j => j.UniqueStr, j => j);
@@ -310,7 +310,7 @@ public static class JobHelpers
           {
             JobUnique = j.UniqueStr,
             Part = j.PartName,
-            Quantity = toStart
+            Quantity = toStart,
           }
         );
       }

@@ -122,7 +122,7 @@ public sealed class MazakSyncSpec : IDisposable
             new MazakProgramRow() { MainProgram = "1001", Comment = "" },
             new MazakProgramRow() { MainProgram = "1002", Comment = "" },
             new MazakProgramRow() { MainProgram = "1003", Comment = "" },
-            new MazakProgramRow() { MainProgram = "1004", Comment = "" }
+            new MazakProgramRow() { MainProgram = "1004", Comment = "" },
           ],
           Fixtures = [],
           Pallets = [],
@@ -156,7 +156,7 @@ public sealed class MazakSyncSpec : IDisposable
             new MazakProgramRow() { MainProgram = "1001", Comment = "" },
             // no 1002
             new MazakProgramRow() { MainProgram = "1003", Comment = "" },
-            new MazakProgramRow() { MainProgram = "1004", Comment = "" }
+            new MazakProgramRow() { MainProgram = "1004", Comment = "" },
           ],
           Fixtures = [],
           Pallets = [],
@@ -200,7 +200,7 @@ public sealed class MazakSyncSpec : IDisposable
             new MazakProgramRow() { MainProgram = "1001", Comment = "" },
             new MazakProgramRow() { MainProgram = "1002", Comment = "" },
             new MazakProgramRow() { MainProgram = "1003", Comment = "" },
-            new MazakProgramRow() { MainProgram = "1004", Comment = "" }
+            new MazakProgramRow() { MainProgram = "1004", Comment = "" },
           ],
           Fixtures = [],
           Pallets = [],
@@ -246,7 +246,7 @@ public sealed class MazakSyncSpec : IDisposable
       Parts = [],
       PalletPositions = [],
       Schedules = [],
-      LoadActions = []
+      LoadActions = [],
     };
     _read.LoadAllData().Returns(allData);
 
@@ -264,7 +264,7 @@ public sealed class MazakSyncSpec : IDisposable
             Material = [],
             Alarms = [],
             Workorders = null,
-            Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value)
+            Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
           },
           AllData = allData,
           StoppedBecauseRecentMachineEnd = false,
@@ -313,7 +313,7 @@ public sealed class MazakSyncSpec : IDisposable
           Pallets = [],
           Parts = [],
           Schedules = [],
-          LoadActions = []
+          LoadActions = [],
         }
       );
 
@@ -353,9 +353,9 @@ public sealed class MazakSyncSpec : IDisposable
               Process = 1,
               Path = 1,
               ActiveOperationTime = TimeSpan.FromMinutes(1),
-            }
-          ]
-        }
+            },
+          ],
+        },
       ],
       pallet: 4,
       timeUTC: now
@@ -370,7 +370,7 @@ public sealed class MazakSyncSpec : IDisposable
       PalletPositions = [new MazakPalletPositionRow() { PalletNumber = 4, PalletPosition = "S4" }],
       PalletSubStatuses = [],
       Schedules = [],
-      LoadActions = []
+      LoadActions = [],
     };
     _read.LoadAllData().Returns(allData);
 
@@ -401,12 +401,12 @@ public sealed class MazakSyncSpec : IDisposable
                   Type = InProcessMaterialLocation.LocType.InQueue,
                   CurrentQueue = "quarantine",
                   QueuePosition = 0,
-                }
-              }
+                },
+              },
             ],
             Alarms = [],
             Workorders = null,
-            Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value)
+            Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
           },
           AllData = allData,
           StoppedBecauseRecentMachineEnd = false,
@@ -445,7 +445,7 @@ public sealed class MazakSyncSpec : IDisposable
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
         Material = [],
-        Alarms = []
+        Alarms = [],
       },
       AllData = new MazakAllData()
       {
@@ -456,8 +456,8 @@ public sealed class MazakSyncSpec : IDisposable
         Pallets = [],
         Parts = [],
         Schedules = [],
-        LoadActions = []
-      }
+        LoadActions = [],
+      },
     };
 
     // Before writing schedules, we refresh the database
@@ -519,7 +519,7 @@ public sealed class MazakSyncSpec : IDisposable
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
         Material = [],
-        Alarms = []
+        Alarms = [],
       },
       AllData = new MazakAllData()
       {
@@ -549,19 +549,19 @@ public sealed class MazakSyncSpec : IDisposable
               {
                 ProcessNumber = 1,
                 ProcessMaterialQuantity = 0,
-                ProcessExecuteQuantity = 5
+                ProcessExecuteQuantity = 5,
               },
               new MazakScheduleProcessRow()
               {
                 ProcessNumber = 2,
                 ProcessMaterialQuantity = 0,
-                ProcessExecuteQuantity = 0
+                ProcessExecuteQuantity = 0,
               },
-            ]
-          }
+            ],
+          },
         ],
-        LoadActions = []
-      }
+        LoadActions = [],
+      },
     };
 
     var j = new Job()
@@ -576,9 +576,9 @@ public sealed class MazakSyncSpec : IDisposable
       [
         new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { InputQueue = "thequeue" }] },
         new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { InputQueue = "thequeue" }] },
-      ]
+      ],
     };
-    db.AddJobs(new NewJobs() { Jobs = [j], ScheduleId = "sch11", }, null, addAsCopiedToSystem: true);
+    db.AddJobs(new NewJobs() { Jobs = [j], ScheduleId = "sch11" }, null, addAsCopiedToSystem: true);
 
     // put 2 castings in queue, plus a different unique and a different process
     db.RecordAddMaterialToQueue(

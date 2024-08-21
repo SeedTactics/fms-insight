@@ -104,7 +104,7 @@ namespace DebugMachineWatchApiServer
         AllowChangeWorkorderAtLoadStation = true,
         UsingLabelPrinterForSerials = true,
         AddRawMaterial = AddRawMaterialType.RequireBarcodeScan,
-        AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial
+        AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial,
       };
 
       string tempDbFile = null;
@@ -290,7 +290,7 @@ namespace DebugMachineWatchApiServer
               Serial = barcode,
               Workorder = "work1",
               //PossibleCastings = ImmutableList.Create("part1", "part2"),
-              PossibleJobs = ImmutableList.Create("aaa-offline-2018-01-01", "bbb-offline-2018-01-01")
+              PossibleJobs = ImmutableList.Create("aaa-offline-2018-01-01", "bbb-offline-2018-01-01"),
             },
           };
         }
@@ -323,7 +323,7 @@ namespace DebugMachineWatchApiServer
         {
           CurrentStatus = CurrentStatus with
           {
-            Alarms = ImmutableList.Create("Test alarm " + _curStatusLoadCount.ToString(), "Another alarm")
+            Alarms = ImmutableList.Create("Test alarm " + _curStatusLoadCount.ToString(), "Another alarm"),
           };
         }
       }
@@ -332,7 +332,7 @@ namespace DebugMachineWatchApiServer
       {
         CurrentStatus = CurrentStatus,
         TimeUntilNextRefresh = TimeSpan.FromMinutes(1),
-        StateUpdated = changed
+        StateUpdated = changed,
       };
     }
 
@@ -393,7 +393,7 @@ namespace DebugMachineWatchApiServer
           ProgramName = programName,
           Revision = start - i,
           Comment = $"programName comment {start - i}",
-          CellControllerProgramName = "cell " + programName
+          CellControllerProgramName = "cell " + programName,
         })
         .ToImmutableList();
     }
@@ -538,10 +538,10 @@ namespace DebugMachineWatchApiServer
                     Process = e.Material[0].Process,
                     Path = e.Material[0].Path,
                     FaceNum = e.Material[0].Face,
-                    ActiveOperationTime = e.ActiveOperationTime
-                  }
-                ]
-              }
+                    ActiveOperationTime = e.ActiveOperationTime,
+                  },
+                ],
+              },
             ],
             pallet: e.Pallet,
             timeUTC: e.EndTimeUTC.Add(offset)
@@ -691,7 +691,7 @@ namespace DebugMachineWatchApiServer
                 AssignedWorkorders = j.AssignedWorkorders,
               }
             )
-            .ToImmutableDictionary(j => j.UniqueStr, j => j)
+            .ToImmutableDictionary(j => j.UniqueStr, j => j),
         };
         Statuses.Add(name, curSt);
       }
@@ -724,13 +724,13 @@ namespace DebugMachineWatchApiServer
                     SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
                     SimulatedProduction = path
                       .SimulatedProduction.Select(prod => prod with { TimeUTC = prod.TimeUTC.Add(offset) })
-                      .ToImmutableList()
+                      .ToImmutableList(),
                   }
                 )
-                .ToImmutableList()
+                .ToImmutableList(),
             }
           )
-          .ToImmutableList()
+          .ToImmutableList(),
       };
       // not converted: hold patterns
     }
@@ -768,7 +768,7 @@ namespace DebugMachineWatchApiServer
           {
             ProgramName = (string)prog["MainProgram"],
             CellControllerProgramName = (string)prog["MainProgram"],
-            Comment = (string)prog["Comment"]
+            Comment = (string)prog["Comment"],
           })
           .ToList();
       }
@@ -786,7 +786,7 @@ namespace DebugMachineWatchApiServer
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = ImmutableList<InProcessMaterial>.Empty,
         Alarms = ImmutableList<string>.Empty,
-        Queues = ImmutableDictionary<string, QueueInfo>.Empty
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty,
       };
     }
 

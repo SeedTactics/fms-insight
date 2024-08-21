@@ -57,7 +57,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolName = "tool1",
         CurrentUse = TimeSpan.FromSeconds(10),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     end.Add(
@@ -66,7 +66,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolName = "tool1",
         CurrentUse = TimeSpan.FromSeconds(50),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     expected.Add(
@@ -77,7 +77,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(50 - 10),
         TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(50),
         ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = null
+        ToolChangeOccurred = null,
       }
     );
 
@@ -88,7 +88,7 @@ public class ToolDiffSpec
         Pocket = 1,
         ToolName = "tool2",
         CurrentUse = TimeSpan.FromSeconds(10),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     end.Add(
@@ -97,7 +97,7 @@ public class ToolDiffSpec
         Pocket = 1,
         ToolName = "tool2",
         CurrentUse = TimeSpan.FromSeconds(10),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
 
@@ -108,7 +108,7 @@ public class ToolDiffSpec
         Pocket = 2,
         ToolName = "tool3",
         CurrentUse = TimeSpan.FromSeconds(70),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     end.Add(
@@ -117,7 +117,7 @@ public class ToolDiffSpec
         Pocket = 2,
         ToolName = "tool3",
         CurrentUse = TimeSpan.FromSeconds(20),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     expected.Add(
@@ -128,7 +128,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(100 - 70 + 20),
         TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(20),
         ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = true
+        ToolChangeOccurred = true,
       }
     );
 
@@ -139,7 +139,7 @@ public class ToolDiffSpec
         Pocket = 3,
         ToolName = "tool4",
         CurrentUse = TimeSpan.FromSeconds(60),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     start.Add(
@@ -148,7 +148,7 @@ public class ToolDiffSpec
         Pocket = 3,
         ToolName = "tool5",
         CurrentUse = TimeSpan.FromSeconds(80),
-        TotalLifeTime = TimeSpan.FromSeconds(200)
+        TotalLifeTime = TimeSpan.FromSeconds(200),
       }
     );
     end.Add(
@@ -157,7 +157,7 @@ public class ToolDiffSpec
         Pocket = 3,
         ToolName = "tool4",
         CurrentUse = TimeSpan.FromSeconds(0),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     end.Add(
@@ -166,7 +166,7 @@ public class ToolDiffSpec
         Pocket = 3,
         ToolName = "tool5",
         CurrentUse = TimeSpan.FromSeconds(110),
-        TotalLifeTime = TimeSpan.FromSeconds(200)
+        TotalLifeTime = TimeSpan.FromSeconds(200),
       }
     );
     expected.Add(
@@ -177,7 +177,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(100 - 60),
         TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(0),
         ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = true
+        ToolChangeOccurred = true,
       }
     );
     expected.Add(
@@ -188,7 +188,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(110 - 80),
         TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(110),
         ConfiguredToolLife = TimeSpan.FromSeconds(200),
-        ToolChangeOccurred = null
+        ToolChangeOccurred = null,
       }
     );
 
@@ -199,7 +199,7 @@ public class ToolDiffSpec
         Pocket = 4,
         ToolName = "tool6",
         CurrentUse = TimeSpan.FromSeconds(65),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     end.Add(
@@ -208,7 +208,7 @@ public class ToolDiffSpec
         Pocket = 4,
         ToolName = "tool7",
         CurrentUse = TimeSpan.FromSeconds(30),
-        TotalLifeTime = TimeSpan.FromSeconds(120)
+        TotalLifeTime = TimeSpan.FromSeconds(120),
       }
     );
     expected.Add(
@@ -219,7 +219,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(100 - 65),
         TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(0),
         ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = true
+        ToolChangeOccurred = true,
       }
     );
     expected.Add(
@@ -230,7 +230,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(30),
         TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(30),
         ConfiguredToolLife = TimeSpan.FromSeconds(120),
-        ToolChangeOccurred = null
+        ToolChangeOccurred = null,
       }
     );
 
@@ -241,7 +241,7 @@ public class ToolDiffSpec
         Pocket = 5,
         ToolName = "tool8",
         CurrentUse = TimeSpan.FromSeconds(80),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     expected.Add(
@@ -252,7 +252,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(100 - 80),
         TotalToolUseAtEndOfCycle = TimeSpan.Zero,
         ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = true
+        ToolChangeOccurred = true,
       }
     );
 
@@ -263,7 +263,7 @@ public class ToolDiffSpec
         Pocket = 6,
         ToolName = "tool9",
         CurrentUse = TimeSpan.FromSeconds(15),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     expected.Add(
@@ -274,7 +274,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(15),
         TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(15),
         ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = null
+        ToolChangeOccurred = null,
       }
     );
 
@@ -285,7 +285,7 @@ public class ToolDiffSpec
         Pocket = 7,
         ToolName = "tool10",
         CurrentUse = TimeSpan.FromSeconds(0),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
 
@@ -296,7 +296,7 @@ public class ToolDiffSpec
         Pocket = 8,
         ToolName = "tool11",
         CurrentUse = TimeSpan.FromSeconds(50),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     end.Add(
@@ -305,7 +305,7 @@ public class ToolDiffSpec
         Pocket = 8,
         ToolName = "tool11",
         CurrentUse = TimeSpan.FromSeconds(77),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     start.Add(
@@ -314,7 +314,7 @@ public class ToolDiffSpec
         Pocket = 9,
         ToolName = "tool11",
         CurrentUse = TimeSpan.FromSeconds(80),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     end.Add(
@@ -323,7 +323,7 @@ public class ToolDiffSpec
         Pocket = 9,
         ToolName = "tool11",
         CurrentUse = TimeSpan.FromSeconds(13),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     expected.Add(
@@ -334,7 +334,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(77 - 50),
         TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(77),
         ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = null
+        ToolChangeOccurred = null,
       }
     );
     expected.Add(
@@ -345,7 +345,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(100 - 80 + 13),
         TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(13),
         ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = true
+        ToolChangeOccurred = true,
       }
     );
 
@@ -356,7 +356,7 @@ public class ToolDiffSpec
         Pocket = 10,
         ToolName = "tool12",
         CurrentUse = TimeSpan.Zero,
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     end.Add(
@@ -365,7 +365,7 @@ public class ToolDiffSpec
         Pocket = 10,
         ToolName = "tool12",
         CurrentUse = TimeSpan.FromSeconds(34),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     expected.Add(
@@ -376,7 +376,7 @@ public class ToolDiffSpec
         ToolUseDuringCycle = TimeSpan.FromSeconds(34),
         TotalToolUseAtEndOfCycle = TimeSpan.FromSeconds(34),
         ConfiguredToolLife = TimeSpan.FromSeconds(100),
-        ToolChangeOccurred = null
+        ToolChangeOccurred = null,
       }
     );
 
@@ -397,7 +397,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolName = "tool1",
         CurrentUseCount = 1,
-        TotalLifeCount = 20
+        TotalLifeCount = 20,
       }
     );
     end.Add(
@@ -406,7 +406,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolName = "tool1",
         CurrentUseCount = 8,
-        TotalLifeCount = 30
+        TotalLifeCount = 30,
       }
     );
     expected.Add(
@@ -416,7 +416,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolUseCountDuringCycle = 8 - 1,
         TotalToolUseCountAtEndOfCycle = 8,
-        ConfiguredToolLifeCount = 30
+        ConfiguredToolLifeCount = 30,
       }
     );
 
@@ -429,7 +429,7 @@ public class ToolDiffSpec
         CurrentUse = TimeSpan.FromMinutes(20),
         TotalLifeTime = TimeSpan.FromMinutes(100),
         CurrentUseCount = 1,
-        TotalLifeCount = 20
+        TotalLifeCount = 20,
       }
     );
     end.Add(
@@ -440,7 +440,7 @@ public class ToolDiffSpec
         CurrentUse = TimeSpan.FromMinutes(32),
         TotalLifeTime = TimeSpan.FromMinutes(110),
         CurrentUseCount = 8,
-        TotalLifeCount = 30
+        TotalLifeCount = 30,
       }
     );
     expected.Add(
@@ -453,7 +453,7 @@ public class ToolDiffSpec
         ConfiguredToolLife = TimeSpan.FromMinutes(110),
         ToolUseCountDuringCycle = 8 - 1,
         TotalToolUseCountAtEndOfCycle = 8,
-        ConfiguredToolLifeCount = 30
+        ConfiguredToolLifeCount = 30,
       }
     );
 
@@ -464,7 +464,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolName = "tool3",
         CurrentUseCount = 5,
-        TotalLifeCount = 20
+        TotalLifeCount = 20,
       }
     );
     end.Add(
@@ -473,7 +473,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolName = "tool3",
         CurrentUseCount = 5,
-        TotalLifeCount = 30
+        TotalLifeCount = 30,
       }
     );
 
@@ -486,7 +486,7 @@ public class ToolDiffSpec
         CurrentUse = TimeSpan.FromMinutes(44),
         TotalLifeTime = TimeSpan.FromMinutes(100),
         CurrentUseCount = 5,
-        TotalLifeCount = 20
+        TotalLifeCount = 20,
       }
     );
     end.Add(
@@ -497,7 +497,7 @@ public class ToolDiffSpec
         CurrentUse = TimeSpan.FromMinutes(44),
         TotalLifeTime = TimeSpan.FromMinutes(110),
         CurrentUseCount = 5,
-        TotalLifeCount = 30
+        TotalLifeCount = 30,
       }
     );
 
@@ -510,7 +510,7 @@ public class ToolDiffSpec
         CurrentUse = TimeSpan.FromMinutes(24),
         TotalLifeTime = TimeSpan.FromMinutes(100),
         CurrentUseCount = 4,
-        TotalLifeCount = 30
+        TotalLifeCount = 30,
       }
     );
     end.Add(
@@ -521,7 +521,7 @@ public class ToolDiffSpec
         CurrentUse = TimeSpan.FromMinutes(24),
         TotalLifeTime = TimeSpan.FromMinutes(100),
         CurrentUseCount = 7,
-        TotalLifeCount = 30
+        TotalLifeCount = 30,
       }
     );
     expected.Add(
@@ -533,7 +533,7 @@ public class ToolDiffSpec
         ConfiguredToolLife = TimeSpan.FromMinutes(100),
         ToolUseCountDuringCycle = 7 - 4,
         TotalToolUseCountAtEndOfCycle = 7,
-        ConfiguredToolLifeCount = 30
+        ConfiguredToolLifeCount = 30,
       }
     );
 
@@ -546,7 +546,7 @@ public class ToolDiffSpec
         CurrentUse = TimeSpan.FromMinutes(24),
         TotalLifeTime = TimeSpan.FromMinutes(100),
         CurrentUseCount = 6,
-        TotalLifeCount = 30
+        TotalLifeCount = 30,
       }
     );
     end.Add(
@@ -557,7 +557,7 @@ public class ToolDiffSpec
         CurrentUse = TimeSpan.FromMinutes(35),
         TotalLifeTime = TimeSpan.FromMinutes(100),
         CurrentUseCount = 6,
-        TotalLifeCount = 30
+        TotalLifeCount = 30,
       }
     );
     expected.Add(
@@ -569,7 +569,7 @@ public class ToolDiffSpec
         TotalToolUseAtEndOfCycle = TimeSpan.FromMinutes(35),
         ConfiguredToolLife = TimeSpan.FromMinutes(100),
         TotalToolUseCountAtEndOfCycle = 6,
-        ConfiguredToolLifeCount = 30
+        ConfiguredToolLifeCount = 30,
       }
     );
 
@@ -580,7 +580,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolName = "tool7",
         CurrentUseCount = 6,
-        TotalLifeCount = 20
+        TotalLifeCount = 20,
       }
     );
     end.Add(
@@ -589,7 +589,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolName = "tool7",
         CurrentUseCount = 2,
-        TotalLifeCount = 30
+        TotalLifeCount = 30,
       }
     );
     expected.Add(
@@ -600,7 +600,7 @@ public class ToolDiffSpec
         ToolChangeOccurred = true,
         ToolUseCountDuringCycle = 20 - 6 + 2,
         TotalToolUseCountAtEndOfCycle = 2,
-        ConfiguredToolLifeCount = 20
+        ConfiguredToolLifeCount = 20,
       }
     );
 
@@ -611,7 +611,7 @@ public class ToolDiffSpec
         Pocket = 6,
         ToolName = "tool8",
         CurrentUseCount = 4,
-        TotalLifeCount = 22
+        TotalLifeCount = 22,
       }
     );
     expected.Add(
@@ -621,7 +621,7 @@ public class ToolDiffSpec
         Pocket = 6,
         ToolUseCountDuringCycle = 4,
         TotalToolUseCountAtEndOfCycle = 4,
-        ConfiguredToolLifeCount = 22
+        ConfiguredToolLifeCount = 22,
       }
     );
 
@@ -632,7 +632,7 @@ public class ToolDiffSpec
         Pocket = 7,
         ToolName = "tool9",
         CurrentUseCount = 0,
-        TotalLifeCount = 40
+        TotalLifeCount = 40,
       }
     );
 
@@ -643,7 +643,7 @@ public class ToolDiffSpec
         Pocket = 6,
         ToolName = "tool10",
         CurrentUseCount = 4,
-        TotalLifeCount = 22
+        TotalLifeCount = 22,
       }
     );
     expected.Add(
@@ -654,7 +654,7 @@ public class ToolDiffSpec
         ToolChangeOccurred = true,
         ToolUseCountDuringCycle = 22 - 4,
         TotalToolUseCountAtEndOfCycle = 0,
-        ConfiguredToolLifeCount = 22
+        ConfiguredToolLifeCount = 22,
       }
     );
 
@@ -676,7 +676,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolName = "tool1",
         CurrentUseCount = 3,
-        TotalLifeCount = 20
+        TotalLifeCount = 20,
       }
     );
     end.Add(
@@ -686,7 +686,7 @@ public class ToolDiffSpec
         Pocket = 0,
         ToolName = "tool1",
         CurrentUseCount = 6,
-        TotalLifeCount = 30
+        TotalLifeCount = 30,
       }
     );
     expected.Add(
@@ -698,7 +698,7 @@ public class ToolDiffSpec
         ToolSerialAtEndOfCycle = "aa",
         ToolUseCountDuringCycle = 6 - 3,
         TotalToolUseCountAtEndOfCycle = 6,
-        ConfiguredToolLifeCount = 30
+        ConfiguredToolLifeCount = 30,
       }
     );
 
@@ -710,7 +710,7 @@ public class ToolDiffSpec
         Pocket = 1,
         ToolName = "tool1",
         CurrentUseCount = 4,
-        TotalLifeCount = 20
+        TotalLifeCount = 20,
       }
     );
     end.Add(
@@ -720,7 +720,7 @@ public class ToolDiffSpec
         Pocket = 1,
         ToolName = "tool1",
         CurrentUseCount = 4,
-        TotalLifeCount = 20
+        TotalLifeCount = 20,
       }
     );
 
@@ -732,7 +732,7 @@ public class ToolDiffSpec
         Pocket = 2,
         ToolName = "tool1",
         CurrentUse = TimeSpan.FromSeconds(50),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     end.Add(
@@ -742,7 +742,7 @@ public class ToolDiffSpec
         Pocket = 2,
         ToolName = "tool1",
         CurrentUse = TimeSpan.FromSeconds(60),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     expected.Add(
@@ -767,7 +767,7 @@ public class ToolDiffSpec
         Pocket = 3,
         ToolName = "tool1",
         CurrentUse = TimeSpan.FromSeconds(30),
-        TotalLifeTime = TimeSpan.FromSeconds(100)
+        TotalLifeTime = TimeSpan.FromSeconds(100),
       }
     );
     start.Add(
@@ -777,7 +777,7 @@ public class ToolDiffSpec
         Pocket = 4,
         ToolName = "tool1",
         CurrentUse = TimeSpan.FromSeconds(4),
-        TotalLifeTime = TimeSpan.FromSeconds(101)
+        TotalLifeTime = TimeSpan.FromSeconds(101),
       }
     );
     // ee moved into pocket 4
@@ -788,7 +788,7 @@ public class ToolDiffSpec
         Pocket = 4,
         ToolName = "tool1",
         CurrentUse = TimeSpan.FromSeconds(35),
-        TotalLifeTime = TimeSpan.FromSeconds(102)
+        TotalLifeTime = TimeSpan.FromSeconds(102),
       }
     );
     expected.Add(
@@ -826,7 +826,7 @@ public class ToolDiffSpec
         Pocket = 5,
         ToolName = "tool1",
         CurrentUseCount = 4,
-        TotalLifeCount = 22
+        TotalLifeCount = 22,
       }
     );
     expected.Add(
@@ -838,7 +838,7 @@ public class ToolDiffSpec
         ToolSerialAtEndOfCycle = "gg",
         ToolUseCountDuringCycle = 4,
         TotalToolUseCountAtEndOfCycle = 4,
-        ConfiguredToolLifeCount = 22
+        ConfiguredToolLifeCount = 22,
       }
     );
 
@@ -850,7 +850,7 @@ public class ToolDiffSpec
         Pocket = 6,
         ToolName = "tool1",
         CurrentUseCount = 6,
-        TotalLifeCount = 18
+        TotalLifeCount = 18,
       }
     );
     expected.Add(
@@ -863,7 +863,7 @@ public class ToolDiffSpec
         ToolSerialAtEndOfCycle = null,
         ToolUseCountDuringCycle = 18 - 6,
         TotalToolUseCountAtEndOfCycle = 0,
-        ConfiguredToolLifeCount = 18
+        ConfiguredToolLifeCount = 18,
       }
     );
 

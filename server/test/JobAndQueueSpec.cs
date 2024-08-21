@@ -105,7 +105,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
           Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
           Material = [],
           Queues = ImmutableDictionary<string, QueueInfo>.Empty,
-          Alarms = ["FMS Insight is starting up..."]
+          Alarms = ["FMS Insight is starting up..."],
         },
         options =>
           options
@@ -147,8 +147,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
           Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
           Material = [],
           Alarms = [],
-          Queues = ImmutableDictionary<string, QueueInfo>.Empty
-        }
+          Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+        },
       };
       return true;
     }
@@ -201,13 +201,13 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
       Material = [],
       Alarms = [],
-      Queues = ImmutableDictionary<string, QueueInfo>.Empty
+      Queues = ImmutableDictionary<string, QueueInfo>.Empty,
     };
     _curSt = new MockCellState()
     {
       Uniq = 0,
       CurrentStatus = curSt,
-      StateUpdated = stateUpdated
+      StateUpdated = stateUpdated,
     };
     _executeActions = executeAction;
 
@@ -224,7 +224,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       executeAction: false,
       curSt: _curSt.CurrentStatus with
       {
-        Material = material
+        Material = material,
       }
     );
   }
@@ -243,7 +243,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
       Material = [],
       Alarms = ["An alarm"],
-      Queues = ImmutableDictionary<string, QueueInfo>.Empty
+      Queues = ImmutableDictionary<string, QueueInfo>.Empty,
     };
 
     await SetCurrentState(stateUpdated: true, executeAction: false, curSt: curSt);
@@ -260,8 +260,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
           Alarms =
           [
             "An alarm",
-            "Error communicating with machines: An error occurred. Will try again in a few minutes."
-          ]
+            "Error communicating with machines: An error occurred. Will try again in a few minutes.",
+          ],
         },
         options =>
           options
@@ -294,14 +294,14 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
       Material = [],
       Alarms = ["An alarm"],
-      Queues = ImmutableDictionary<string, QueueInfo>.Empty
+      Queues = ImmutableDictionary<string, QueueInfo>.Empty,
     };
 
     _curSt = new MockCellState()
     {
       Uniq = 0,
       CurrentStatus = curSt,
-      StateUpdated = false
+      StateUpdated = false,
     };
     _executeActionError = "An error occurred";
 
@@ -317,8 +317,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
           Alarms =
           [
             "An alarm",
-            "Error communicating with machines: An error occurred. Will try again in a few minutes."
-          ]
+            "Error communicating with machines: An error occurred. Will try again in a few minutes.",
+          ],
         },
         options =>
           options
@@ -352,10 +352,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             {
               Paths = proc
                 .Paths.Select(path => path with { Casting = procIdx == 0 ? path.Casting : null })
-                .ToImmutableList()
+                .ToImmutableList(),
             }
         )
-        .ToImmutableList()
+        .ToImmutableList(),
     };
   }
 
@@ -369,14 +369,14 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     var completedJob = RandJob() with
     {
       Cycles = 3,
-      Archived = false
+      Archived = false,
     };
     var toKeepJob = RandJob() with { Cycles = 10, Archived = false };
 
     var completedActive = completedJob.CloneToDerived<ActiveJob, Job>() with
     {
       Cycles = 4,
-      RemainingToStart = 0
+      RemainingToStart = 0,
     };
     var toKeepActive = toKeepJob.CloneToDerived<ActiveJob, Job>() with { Cycles = 10, RemainingToStart = 5 };
 
@@ -398,14 +398,14 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = [],
         Alarms = [],
-        Queues = ImmutableDictionary<string, QueueInfo>.Empty
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty,
       }
     );
 
     //some new jobs
     var newJob1 = RandJob() with
     {
-      Archived = false
+      Archived = false,
     };
     var newJob2 = RandJob() with { Archived = false };
     var newJobs = new NewJobs()
@@ -418,15 +418,15 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         {
           ProgramName = "prog1",
           ProgramContent = "content1",
-          Revision = 0
+          Revision = 0,
         },
         new NewProgramContent()
         {
           ProgramName = "prog2",
           ProgramContent = "content2",
-          Revision = 0
+          Revision = 0,
         },
-      ]
+      ],
     };
 
     var newStatusTask = CreateTaskToWaitForNewStatus();
@@ -450,10 +450,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     var now = DateTime.UtcNow;
     using var db = _repo.OpenConnection();
 
-    var j1 = RandJob() with { UniqueStr = "u1", Cycles = 12, };
+    var j1 = RandJob() with { UniqueStr = "u1", Cycles = 12 };
     var j1Active = j1.CloneToDerived<ActiveJob, Job>() with { RemainingToStart = 7 };
 
-    var j2 = RandJob() with { UniqueStr = "u2", Cycles = 22, };
+    var j2 = RandJob() with { UniqueStr = "u2", Cycles = 22 };
     var j2Active = j2.CloneToDerived<ActiveJob, Job>() with { RemainingToStart = 0 };
 
     db.AddJobs(new NewJobs() { ScheduleId = "old", Jobs = [j1, j2] }, null, addAsCopiedToSystem: true);
@@ -470,7 +470,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = [],
         Alarms = [],
-        Queues = ImmutableDictionary<string, QueueInfo>.Empty
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty,
       }
     );
 
@@ -499,7 +499,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             TimeUTC = now,
             Part = j1.PartName,
             Quantity = 7,
-          }
+          },
         }
       );
 
@@ -515,8 +515,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             {
               DecrementId = 0,
               TimeUTC = now,
-              Quantity = 7
-            }
+              Quantity = 7,
+            },
           }
         )
       );
@@ -593,7 +593,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             AddTimeUTC = mats[0].AddTimeUTC,
             Serial = "aaa",
             NextProcess = 1,
-            Paths = ImmutableDictionary<int, int>.Empty
+            Paths = ImmutableDictionary<int, int>.Empty,
           },
           new QueuedMaterial()
           {
@@ -605,8 +605,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             Unique = "",
             AddTimeUTC = mats[1].AddTimeUTC,
             NextProcess = 1,
-            Paths = ImmutableDictionary<int, int>.Empty
-          }
+            Paths = ImmutableDictionary<int, int>.Empty,
+          },
         }
       );
 
@@ -630,8 +630,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             Unique = "",
             AddTimeUTC = mats[0].AddTimeUTC,
             NextProcess = 1,
-            Paths = ImmutableDictionary<int, int>.Empty
-          }
+            Paths = ImmutableDictionary<int, int>.Empty,
+          },
         },
         options =>
           options
@@ -742,8 +742,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       [
         expectedMat2 with
         {
-          Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet, }
-        }
+          Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet },
+        },
       ]
     );
 
@@ -756,8 +756,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       [
         expectedMat2 with
         {
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading }
-        }
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
+        },
       ]
     );
 
@@ -855,8 +855,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             Serial = "aaa",
             Workorder = "work11",
             NextProcess = lastCompletedProcess + 1,
-            Paths = ImmutableDictionary<int, int>.Empty
-          }
+            Paths = ImmutableDictionary<int, int>.Empty,
+          },
         }
       );
 
@@ -891,8 +891,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             Serial = "aaa",
             Workorder = "work11",
             NextProcess = lastCompletedProcess + 1,
-            Paths = ImmutableDictionary<int, int>.Empty
-          }
+            Paths = ImmutableDictionary<int, int>.Empty,
+          },
         }
       );
 
@@ -916,8 +916,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             Serial = "aaa",
             Workorder = "work11",
             NextProcess = lastCompletedProcess + 1,
-            Paths = ImmutableDictionary<int, int>.Empty
-          }
+            Paths = ImmutableDictionary<int, int>.Empty,
+          },
         }
       );
 
@@ -984,8 +984,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       [
         expectedMat1 with
         {
-          Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet }
-        }
+          Location = new InProcessMaterialLocation() { Type = InProcessMaterialLocation.LocType.OnPallet },
+        },
       ]
     );
 
@@ -998,8 +998,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       [
         expectedMat1 with
         {
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading, }
-        }
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
+        },
       ]
     );
 
@@ -1069,7 +1069,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       [
         expectedMat1 with
         {
-          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading, }
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Loading },
         },
         expectedMat2,
       ]
@@ -1097,7 +1097,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     {
       Add,
       Signal,
-      Remove
+      Remove,
     }
 
     public required InProcessMaterialLocation.LocType LocType { get; init; }
@@ -1117,21 +1117,21 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       ActionType = InProcessMaterialAction.ActionType.Waiting,
       LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = "quarqqq",
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add,
     },
     new SignalQuarantineTheoryData()
     {
       ActionType = InProcessMaterialAction.ActionType.Waiting,
       LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = null,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Remove
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Remove,
     },
     new SignalQuarantineTheoryData
     {
       ActionType = InProcessMaterialAction.ActionType.Waiting,
       LocType = InProcessMaterialLocation.LocType.Free,
       QuarantineQueue = "quarqqq",
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add,
     },
     // Now OnPallet with various tests for transfer queues and proces
     new SignalQuarantineTheoryData
@@ -1141,7 +1141,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = "q1",
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
     },
     new SignalQuarantineTheoryData
     {
@@ -1150,7 +1150,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = "q1",
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
     },
     new SignalQuarantineTheoryData
     {
@@ -1159,7 +1159,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = "q1",
-      Error = "Material on pallet can not be quarantined while loading"
+      Error = "Material on pallet can not be quarantined while loading",
     },
     new SignalQuarantineTheoryData
     {
@@ -1178,7 +1178,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       QuarantineQueue = null,
       Process = 2,
       JobTransferQeuue = "q1",
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
     },
     new SignalQuarantineTheoryData
     {
@@ -1187,7 +1187,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       QuarantineQueue = "quarqqq",
       Process = 1,
       JobTransferQeuue = null,
-      Error = "Can only signal material for quarantine if the current process and path has an output queue"
+      Error = "Can only signal material for quarantine if the current process and path has an output queue",
     },
     new SignalQuarantineTheoryData
     {
@@ -1197,7 +1197,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       Process = 1,
       JobTransferQeuue = null,
       AllowQuarantineToCancelLoad = true,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
     },
     new SignalQuarantineTheoryData
     {
@@ -1206,7 +1206,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       QuarantineQueue = "quarqqq",
       Process = 2,
       JobTransferQeuue = null,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Signal,
     },
     // Loading from a queue
     new SignalQuarantineTheoryData()
@@ -1214,7 +1214,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       ActionType = InProcessMaterialAction.ActionType.Loading,
       LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = "quarqqq",
-      Error = "Invalid material state for quarantine"
+      Error = "Invalid material state for quarantine",
     },
     new SignalQuarantineTheoryData()
     {
@@ -1222,14 +1222,14 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = "quarqqq",
       AllowQuarantineToCancelLoad = true,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Add,
     },
     new SignalQuarantineTheoryData()
     {
       ActionType = InProcessMaterialAction.ActionType.Loading,
       LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = null,
-      Error = "Invalid material state for quarantine"
+      Error = "Invalid material state for quarantine",
     },
     new SignalQuarantineTheoryData()
     {
@@ -1237,7 +1237,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       LocType = InProcessMaterialLocation.LocType.InQueue,
       QuarantineQueue = null,
       AllowQuarantineToCancelLoad = true,
-      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Remove
+      QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Remove,
     },
   }.Select(d => new object[] { d });
 
@@ -1264,7 +1264,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       RouteEndUTC = DateTime.MinValue,
       Archived = false,
       Cycles = 0,
-      CopiedToSystem = true
+      CopiedToSystem = true,
     };
 
     db.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = [job] }, null, addAsCopiedToSystem: true);
@@ -1291,7 +1291,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = [],
         Alarms = [],
-        Queues = ImmutableDictionary<string, QueueInfo>.Empty
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty,
       }
     );
 
@@ -1303,7 +1303,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         {
           MaterialID = 1,
           Process = data.Process,
-          Face = 0
+          Face = 0,
         },
         queue: "q1",
         position: 0,
@@ -1349,9 +1349,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
           Location = new InProcessMaterialLocation()
           {
             Type = data.LocType,
-            PalletNum = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? 4 : null
-          }
-        }
+            PalletNum = data.LocType == InProcessMaterialLocation.LocType.OnPallet ? 4 : null,
+          },
+        },
       ]
     );
 
@@ -1541,7 +1541,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
           "operator",
           operName
-        )
+        ),
       };
     }
     return e;
@@ -1576,14 +1576,14 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
           "operator",
           operName
-        )
+        ),
       };
     }
     if (!string.IsNullOrEmpty(reason))
     {
       e = e with
       {
-        ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add("note", reason)
+        ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add("note", reason),
       };
     }
     return e;
@@ -1621,7 +1621,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
           "operator",
           operName
-        )
+        ),
       };
     }
     return e;
@@ -1656,7 +1656,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         CurrentQueue = queue,
         QueuePosition = pos,
       },
-      Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+      Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
     };
   }
 
@@ -1688,7 +1688,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         ProgramDetails = (e.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
           "operator",
           operName
-        )
+        ),
       };
     }
     return e;
@@ -1719,7 +1719,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         Type = InProcessMaterialLocation.LocType.OnPallet,
         PalletNum = pal,
       },
-      Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+      Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
     };
   }
   #endregion

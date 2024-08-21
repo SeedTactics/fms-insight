@@ -41,7 +41,7 @@ namespace MazakMachineInterface
   {
     MazakVersionE,
     MazakWeb,
-    MazakSmooth
+    MazakSmooth,
   }
 
   public enum MazakWriteCommand

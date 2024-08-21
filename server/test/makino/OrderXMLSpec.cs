@@ -114,7 +114,7 @@ public sealed class OrderXMLSpec : IDisposable
       _tempFile,
       [
         new RemainingToRun() { JobUnique = "12345", RemainingQuantity = 10 },
-        new RemainingToRun() { JobUnique = "67890", RemainingQuantity = 20 }
+        new RemainingToRun() { JobUnique = "67890", RemainingQuantity = 20 },
       ]
     );
 

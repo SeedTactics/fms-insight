@@ -137,7 +137,7 @@ namespace MazakMachineInterface
             Schedule = sch,
             Job = job,
             Proc1Path = 1,
-            NewPlanQty = CountCompletedOrMachiningStarted(sch) + loadingQty
+            NewPlanQty = CountCompletedOrMachiningStarted(sch) + loadingQty,
           }
         );
       }
@@ -185,7 +185,7 @@ namespace MazakMachineInterface
             {
               JobUnique = job.UniqueStr,
               Part = job.PartName,
-              Quantity = planned - newPlanQty
+              Quantity = planned - newPlanQty,
             }
           );
         }
@@ -203,7 +203,7 @@ namespace MazakMachineInterface
           {
             JobUnique = j.UniqueStr,
             Part = j.PartName,
-            Quantity = j.Cycles
+            Quantity = j.Cycles,
           }
         );
       }

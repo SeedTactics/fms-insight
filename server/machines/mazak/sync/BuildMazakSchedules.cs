@@ -196,12 +196,12 @@ namespace MazakMachineInterface
           newSchRow = newSchRow with
           {
             DueDate = routeStartDate,
-            Priority = Math.Min(100, startingPriority + earlierConflicts)
+            Priority = Math.Min(100, startingPriority + earlierConflicts),
           };
         }
         else
         {
-          newSchRow = newSchRow with { DueDate = routeStartDate, Priority = startingPriority, };
+          newSchRow = newSchRow with { DueDate = routeStartDate, Priority = startingPriority };
         }
       }
 

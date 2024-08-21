@@ -70,7 +70,7 @@ namespace BlackMaple.MachineFramework
           ReasonForUserHold = this.ReasonForUserHold,
           HoldUnholdPattern = this.HoldUnholdPattern.ToImmutable(),
           HoldUnholdPatternRepeats = this.HoldUnholdPatternRepeats,
-          HoldUnholdPatternStartUTC = this.HoldUnholdPatternStartUTC
+          HoldUnholdPatternStartUTC = this.HoldUnholdPatternStartUTC,
         };
       }
     }
@@ -207,7 +207,7 @@ namespace BlackMaple.MachineFramework
               UnloadTime = reader.IsDBNull(8) ? TimeSpan.Zero : TimeSpan.FromTicks(reader.GetInt64(8)),
               Fixture = fixture,
               Face = face,
-              Casting = reader.IsDBNull(11) ? null : reader.GetString(11)
+              Casting = reader.IsDBNull(11) ? null : reader.GetString(11),
             };
           }
         }
@@ -342,7 +342,7 @@ namespace BlackMaple.MachineFramework
               RandomFreq = reader.IsDBNull(6) ? 0 : reader.GetDouble(6),
               ExpectedInspectionTime = reader.IsDBNull(7)
                 ? null
-                : (TimeSpan?)TimeSpan.FromTicks(reader.GetInt64(7))
+                : (TimeSpan?)TimeSpan.FromTicks(reader.GetInt64(7)),
             };
 
             var proc = reader.GetInt32(0);
@@ -466,7 +466,7 @@ namespace BlackMaple.MachineFramework
                       Stations = s.Stations.ToImmutable(),
                       Program = s.Program,
                       ProgramRevision = s.ProgramRevision,
-                      ExpectedCycleTime = s.ExpectedCycleTime
+                      ExpectedCycleTime = s.ExpectedCycleTime,
                     })
                     .ToImmutableList(),
                   SimulatedProduction = p.SimProd.ToImmutable(),
@@ -478,11 +478,11 @@ namespace BlackMaple.MachineFramework
                   InputQueue = p.InputQueue,
                   OutputQueue = p.OutputQueue,
                   Inspections = p.Insps.Count == 0 ? null : p.Insps.ToImmutable(),
-                  Casting = p.Casting
+                  Casting = p.Casting,
                 })
-                .ToImmutableList()
+                .ToImmutableList(),
             })
-            .ToImmutableList()
+            .ToImmutableList(),
         };
       }
     }
@@ -518,7 +518,7 @@ namespace BlackMaple.MachineFramework
               Processes = details.Procs,
               BookingIds = details.Bookings,
               HoldJob = details.Hold?.ToHoldPattern(),
-              Decrements = LoadDecrementsForJob(trans, unique)
+              Decrements = LoadDecrementsForJob(trans, unique),
             }
           );
         }
@@ -696,7 +696,7 @@ namespace BlackMaple.MachineFramework
           StartUTC = e.Key.StartUTC,
           EndUTC = e.Key.EndUTC,
           PlanDown = e.Value.PlanDown ? true : null,
-          Parts = e.Value.Parts.Count == 0 ? null : e.Value.Parts.ToImmutable()
+          Parts = e.Value.Parts.Count == 0 ? null : e.Value.Parts.ToImmutable(),
         })
         .ToImmutableList();
     }
@@ -720,7 +720,7 @@ namespace BlackMaple.MachineFramework
           {
             Day = DateOnly.FromDayNumber(reader.GetInt32(0)),
             MachineGroup = reader.GetString(1),
-            Usage = reader.GetDouble(2)
+            Usage = reader.GetDouble(2),
           }
         );
       }
@@ -936,7 +936,7 @@ namespace BlackMaple.MachineFramework
                     ProcessNumber = reader.GetInt32(4),
                     StopIndex = reader.IsDBNull(5) ? (int?)null : (int?)reader.GetInt32(5),
                     ProgramName = reader.IsDBNull(6) ? null : reader.GetString(6),
-                    Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7)
+                    Revision = reader.IsDBNull(7) ? (int?)null : (int?)reader.GetInt32(7),
                   }
                 );
             }
@@ -1056,7 +1056,7 @@ namespace BlackMaple.MachineFramework
             Processes = details.Procs,
             BookingIds = details.Bookings,
             HoldJob = details.Hold?.ToHoldPattern(),
-            Decrements = LoadDecrementsForJob(trans, UniqueStr)
+            Decrements = LoadDecrementsForJob(trans, UniqueStr),
           };
         }
       }
@@ -2291,7 +2291,7 @@ namespace BlackMaple.MachineFramework
               ProgramName = reader.GetString(0),
               Revision = reader.GetInt64(1),
               Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
-              CellControllerProgramName = cellCtProgName
+              CellControllerProgramName = cellCtProgName,
             };
             break;
           }
@@ -2321,7 +2321,7 @@ namespace BlackMaple.MachineFramework
               ProgramName = program,
               Revision = revision,
               Comment = reader.IsDBNull(0) ? null : reader.GetString(0),
-              CellControllerProgramName = reader.IsDBNull(1) ? null : reader.GetString(1)
+              CellControllerProgramName = reader.IsDBNull(1) ? null : reader.GetString(1),
             };
             break;
           }
@@ -2375,7 +2375,7 @@ namespace BlackMaple.MachineFramework
                 ProgramName = program,
                 Revision = reader.GetInt64(0),
                 Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
-                CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
+                CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2),
               }
             );
           }
@@ -2403,7 +2403,7 @@ namespace BlackMaple.MachineFramework
               ProgramName = program,
               Revision = reader.GetInt64(0),
               Comment = reader.IsDBNull(1) ? null : reader.GetString(1),
-              CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2)
+              CellControllerProgramName = reader.IsDBNull(2) ? null : reader.GetString(2),
             };
             break;
           }
@@ -2461,7 +2461,7 @@ namespace BlackMaple.MachineFramework
                 ProgramName = reader.GetString(0),
                 Revision = reader.GetInt64(1),
                 Comment = reader.IsDBNull(2) ? null : reader.GetString(2),
-                CellControllerProgramName = reader.IsDBNull(3) ? null : reader.GetString(3)
+                CellControllerProgramName = reader.IsDBNull(3) ? null : reader.GetString(3),
               }
             );
           }

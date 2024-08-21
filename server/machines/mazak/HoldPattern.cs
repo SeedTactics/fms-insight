@@ -60,7 +60,7 @@ namespace MazakMachineInterface
       Shift1 = 0,
       FullHold = 1,
       Preperation = 2,
-      Shift2 = 3
+      Shift2 = 3,
     }
 
     public static HoldMode CalculateHoldMode(bool entireHold, bool machineHold)
@@ -115,8 +115,8 @@ namespace MazakMachineInterface
             {
               Command = MazakWriteCommand.ScheduleSafeEdit,
               HoldMode = (int)newHold,
-            }
-          }
+            },
+          },
         };
 
         _parent.database.Save(transSet, "Hold Mode");

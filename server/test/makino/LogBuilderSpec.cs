@@ -58,7 +58,7 @@ public sealed class LogBuilderSpec : IDisposable
   {
     var serialSettings = new SerialSettings()
     {
-      ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10)
+      ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10),
     };
     _repo = RepositoryConfig.InitializeMemoryDB(serialSettings);
 
@@ -78,7 +78,7 @@ public sealed class LogBuilderSpec : IDisposable
         {
           Location = PalletLocationEnum.LoadUnload,
           Num = 1,
-          StationGroup = "L/U"
+          StationGroup = "L/U",
         }
       },
       {
@@ -87,7 +87,7 @@ public sealed class LogBuilderSpec : IDisposable
         {
           Location = PalletLocationEnum.LoadUnload,
           Num = 2,
-          StationGroup = "L/U"
+          StationGroup = "L/U",
         }
       },
       {
@@ -96,7 +96,7 @@ public sealed class LogBuilderSpec : IDisposable
         {
           Location = PalletLocationEnum.Machine,
           Num = 1,
-          StationGroup = "MC"
+          StationGroup = "MC",
         }
       },
       {
@@ -105,7 +105,7 @@ public sealed class LogBuilderSpec : IDisposable
         {
           Location = PalletLocationEnum.Machine,
           Num = 2,
-          StationGroup = "MC"
+          StationGroup = "MC",
         }
       },
     };
@@ -146,7 +146,7 @@ public sealed class LogBuilderSpec : IDisposable
       FixtureNum = fixNum,
       FixtureName = "fix" + _fixture.Create<string>(),
       FixtureComment = "comment" + _fixture.Create<string>(),
-      StartingMatID = matId
+      StartingMatID = matId,
     };
   }
 
@@ -198,7 +198,7 @@ public sealed class LogBuilderSpec : IDisposable
                         StationGroup = "MC",
                         Stations = [3],
                         ExpectedCycleTime = TimeSpan.FromMinutes(mcMin),
-                      }
+                      },
                     ],
                     Inspections = inspect
                       ?
@@ -209,16 +209,16 @@ public sealed class LogBuilderSpec : IDisposable
                           Counter = $"CMM,{part},%stat1,1%",
                           MaxVal = 10,
                           RandomFreq = 0,
-                          TimeInterval = TimeSpan.Zero
-                        }
+                          TimeInterval = TimeSpan.Zero,
+                        },
                       ]
-                      : []
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+                      : [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
       },
       expectedPreviousScheduleId: null,
       addAsCopiedToSystem: true
@@ -254,7 +254,7 @@ public sealed class LogBuilderSpec : IDisposable
       ProcessName = "unused process name",
       Program = program,
       SpindleTimeSeconds = spindleSecs,
-      OperQuantities = mat.Quantity == 1 ? [1] : [1, mat.Quantity - 1]
+      OperQuantities = mat.Quantity == 1 ? [1] : [1, mat.Quantity - 1],
     };
 
     _expectedLog.Add(
@@ -273,7 +273,7 @@ public sealed class LogBuilderSpec : IDisposable
             Face = mat.FixtureNum,
             PartName = mat.PartName,
             Process = mat.Process,
-            Path = null
+            Path = null,
           })
           .ToImmutableList(),
         LogType = LogType.MachineCycle,
@@ -326,20 +326,16 @@ public sealed class LogBuilderSpec : IDisposable
       UnloadProcessName = "unused unload process name",
       LoadProcessName = "unused load process name",
       LoadQuantities =
-        loadMat == null
-          ? [0]
-          : loadMat.Quantity == 1
-            ? [1]
-            : [1, loadMat.Quantity - 1],
+        loadMat == null ? [0]
+        : loadMat.Quantity == 1 ? [1]
+        : [1, loadMat.Quantity - 1],
       UnloadNormalQuantities =
-        unloadMat == null
-          ? [0]
-          : unloadMat.Quantity == 1
-            ? [1]
-            : [1, unloadMat.Quantity - 1],
+        unloadMat == null ? [0]
+        : unloadMat.Quantity == 1 ? [1]
+        : [1, unloadMat.Quantity - 1],
       UnloadScrapQuantities = [],
       UnloadOutProcQuantities = [],
-      Remachine = remachine
+      Remachine = remachine,
     };
 
     if (remachine)
@@ -365,7 +361,7 @@ public sealed class LogBuilderSpec : IDisposable
               Face = mat.FixtureNum,
               PartName = mat.PartName,
               Process = mat.Process,
-              Path = null
+              Path = null,
             })
             .ToImmutableList(),
           LogType = LogType.LoadUnloadCycle,
@@ -380,7 +376,7 @@ public sealed class LogBuilderSpec : IDisposable
           Program = loadMat == mat ? "LOAD" : "UNLOAD",
           Result = loadMat == mat ? "LOAD" : "UNLOAD",
           ElapsedTime = TimeSpan.FromMinutes(elapsedMin),
-          ActiveOperationTime = TimeSpan.FromMinutes(loadMat == mat ? loadActiveMin : unloadActiveMin)
+          ActiveOperationTime = TimeSpan.FromMinutes(loadMat == mat ? loadActiveMin : unloadActiveMin),
         }
       );
     }
@@ -405,8 +401,8 @@ public sealed class LogBuilderSpec : IDisposable
                 Face = 0,
                 PartName = loadMat.PartName,
                 Process = 0,
-                Path = null
-              }
+                Path = null,
+              },
             ],
             LogType = LogType.PartMark,
             StartOfCycle = false,
@@ -417,7 +413,7 @@ public sealed class LogBuilderSpec : IDisposable
             Program = "MARK",
             Result = SerialSettings.ConvertToBase62(loadMat.StartingMatID + i, 10),
             ElapsedTime = TimeSpan.FromMinutes(-1),
-            ActiveOperationTime = TimeSpan.Zero
+            ActiveOperationTime = TimeSpan.Zero,
           }
         );
       }
@@ -511,12 +507,12 @@ public sealed class LogBuilderSpec : IDisposable
               unloadMat: mat,
               palCycleMin: 25,
               unloadActiveMin: 7
-            )
+            ),
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", activeMin: 8)
-          ]
+            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", activeMin: 8),
+          ],
         }
       );
 
@@ -557,7 +553,7 @@ public sealed class LogBuilderSpec : IDisposable
           [
             Load(start, elapsedMin: 10, device: 1, loadMat: mat, unloadMat: null, palCycleMin: 0),
           ],
-          MachineResults = [mach]
+          MachineResults = [mach],
         }
       );
 
@@ -579,7 +575,7 @@ public sealed class LogBuilderSpec : IDisposable
         {
           Devices = _devices,
           WorkSetResults = [],
-          MachineResults = [mach]
+          MachineResults = [mach],
         }
       );
 
@@ -628,12 +624,12 @@ public sealed class LogBuilderSpec : IDisposable
               palCycleMin: 0,
               loadActiveMin: 16
             ),
-            unload
+            unload,
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", activeMin: 18)
-          ]
+            Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat, program: "prog1", activeMin: 18),
+          ],
         }
       );
 
@@ -655,7 +651,7 @@ public sealed class LogBuilderSpec : IDisposable
         {
           Devices = _devices,
           WorkSetResults = [unload],
-          MachineResults = []
+          MachineResults = [],
         }
       );
 
@@ -723,13 +719,13 @@ public sealed class LogBuilderSpec : IDisposable
               unloadMat: mat1,
               palCycleMin: 85,
               unloadActiveMin: 7 * 2
-            )
+            ),
           ],
           MachineResults =
           [
             Mach(start.AddMinutes(15), elapsedMin: 11, device: 3, mat: mat1, program: "prog1", activeMin: 8),
-            Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", activeMin: 18)
-          ]
+            Mach(start.AddMinutes(45), elapsedMin: 6, device: 4, mat: mat2, program: "prog2", activeMin: 18),
+          ],
         }
       );
 
@@ -815,8 +811,8 @@ public sealed class LogBuilderSpec : IDisposable
               program: "prog3",
               activeMin: 5,
               spindleSecs: 5 * 60
-            )
-          ]
+            ),
+          ],
         }
       );
 
@@ -866,7 +862,7 @@ public sealed class LogBuilderSpec : IDisposable
               unloadMat: mat,
               palCycleMin: 25,
               unloadActiveMin: 11
-            )
+            ),
           ],
           MachineResults =
           [
@@ -885,17 +881,17 @@ public sealed class LogBuilderSpec : IDisposable
                 {
                   ExecDateTimeUTC = start.AddMinutes(15) + TimeSpan.FromSeconds(5),
                   Number = 23,
-                  Value = "common value 23"
+                  Value = "common value 23",
                 },
                 new CommonValue()
                 {
                   ExecDateTimeUTC = start.AddMinutes(15) + TimeSpan.FromSeconds(20),
                   Number = 24,
-                  Value = "common value 24"
-                }
-              ]
-            }
-          ]
+                  Value = "common value 24",
+                },
+              ],
+            },
+          ],
         }
       );
 
@@ -905,7 +901,7 @@ public sealed class LogBuilderSpec : IDisposable
     {
       ProgramDetails = ImmutableDictionary<string, string>
         .Empty.Add("23", "common value 23")
-        .Add("24", "common value 24")
+        .Add("24", "common value 24"),
     };
 
     new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
@@ -951,12 +947,12 @@ public sealed class LogBuilderSpec : IDisposable
               unloadMat: mat,
               palCycleMin: 25,
               unloadActiveMin: 11
-            )
+            ),
           ],
           MachineResults =
           [
-            Mach(start.AddMinutes(15), elapsedMin: 5, device: 3, mat: mat, program: "prog1", activeMin: 6)
-          ]
+            Mach(start.AddMinutes(15), elapsedMin: 5, device: 3, mat: mat, program: "prog1", activeMin: 6),
+          ],
         }
       );
 
@@ -976,8 +972,8 @@ public sealed class LogBuilderSpec : IDisposable
             Face = 0,
             PartName = mat.PartName,
             Process = mat.Process,
-            Path = null
-          }
+            Path = null,
+          },
         ],
         LogType = LogType.Inspection,
         StartOfCycle = false,
@@ -996,7 +992,7 @@ public sealed class LogBuilderSpec : IDisposable
             [{"MaterialID":1,"Process":1,"Pallet":2,"LoadStation":2,"Stops":[{"StationName":"MC","StationNum":1}],"UnloadStation":-1}]
             """
           )
-          .Add("InspectionType", "CMM")
+          .Add("InspectionType", "CMM"),
       }
     );
 
@@ -1018,7 +1014,7 @@ public sealed class LogBuilderSpec : IDisposable
             InspType = "CMM",
             Inspect = false,
             MaterialID = mat.StartingMatID,
-          }
+          },
         ]
       );
   }
@@ -1081,13 +1077,13 @@ public sealed class LogBuilderSpec : IDisposable
               unloadMat: mat2,
               palCycleMin: -1,
               unloadActiveMin: 21
-            )
+            ),
           ],
           MachineResults =
           [
             Mach(start.AddMinutes(15), elapsedMin: 2, device: 3, mat: mat1, program: "prog1", activeMin: 6),
             Mach(start.AddMinutes(18), elapsedMin: 3, device: 3, mat: mat2, program: "prog3", activeMin: 26),
-          ]
+          ],
         }
       );
 
@@ -1144,7 +1140,7 @@ public sealed class LogBuilderSpec : IDisposable
               activeMin: 8,
               spindleSecs: 8 * 60
             ),
-          ]
+          ],
         }
       );
 

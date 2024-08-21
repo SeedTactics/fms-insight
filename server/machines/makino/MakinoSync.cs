@@ -154,7 +154,7 @@ namespace BlackMaple.FMSInsight.Makino
       {
         CurrentStatus = st,
         JobsNotYetCopied = notCopied,
-        StateUpdated = newEvts
+        StateUpdated = newEvts,
       };
     }
 
@@ -212,7 +212,7 @@ namespace BlackMaple.FMSInsight.Makino
               {
                 JobUnique = d.JobUnique,
                 Part = job.PartName,
-                Quantity = job.Cycles - prevDec - d.RemainingQuantity
+                Quantity = job.Cycles - prevDec - d.RemainingQuantity,
               };
             }
             else
