@@ -77,8 +77,22 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     this.settings = settings;
     this.mazakConfig = mazakConfig;
 
-    logWatcher = new FileSystemWatcher(mazakConfig.LogCSVPath) { Filter = "*.csv" };
-    logWatcher.Created += LogFileCreated;
+    if (mazakConfig.DBType == MazakDbType.MazakVersionE)
+    {
+      if (string.IsNullOrEmpty(mazakConfig.LoadCSVPath))
+      {
+        throw new Exception("LoadCSVPath must be set for MazakVersionE");
+      }
+      logWatcher = new FileSystemWatcher(mazakConfig.LoadCSVPath) { Filter = "*.csv" };
+      logWatcher.Created += RaiseNewCellState;
+      logWatcher.Changed += RaiseNewCellState;
+    }
+    else
+    {
+      logWatcher = new FileSystemWatcher(mazakConfig.LogCSVPath) { Filter = "*.csv" };
+      logWatcher.Created += RaiseNewCellState;
+    }
+
     logWatcher.EnableRaisingEvents = true;
   }
 
@@ -90,11 +104,12 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       return;
     _disposed = true;
     logWatcher.EnableRaisingEvents = false;
-    logWatcher.Created -= LogFileCreated;
+    logWatcher.Created -= RaiseNewCellState;
+    logWatcher.Changed -= RaiseNewCellState;
     logWatcher.Dispose();
   }
 
-  private void LogFileCreated(object sender, FileSystemEventArgs e)
+  private void RaiseNewCellState(object sender, FileSystemEventArgs e)
   {
     NewCellState?.Invoke();
   }
@@ -157,7 +172,15 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     var mazakData = readDatabase.LoadAllData();
     var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
 
-    var logs = LogCSVParsing.LoadLog(db.MaxForeignID(), mazakConfig.LogCSVPath);
+    List<LogEntry> logs;
+    if (mazakConfig.DBType == MazakDbType.MazakVersionE)
+    {
+      logs = LogDataVerE.LoadLog(db.MaxForeignID(), readDatabase);
+    }
+    else
+    {
+      logs = LogCSVParsing.LoadLog(db.MaxForeignID(), mazakConfig.LogCSVPath);
+    }
 
     var trans = new LogTranslation(
       db,
@@ -219,9 +242,10 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     return new MazakState()
     {
       StateUpdated = logs.Count > 0 || palStChanged,
-      TimeUntilNextRefresh = stoppedBecauseRecentMachineEnd
-        ? TimeSpan.FromSeconds(15)
-        : TimeSpan.FromMinutes(2),
+      TimeUntilNextRefresh =
+        mazakConfig?.DBType == MazakDbType.MazakVersionE || stoppedBecauseRecentMachineEnd
+          ? TimeSpan.FromSeconds(15)
+          : TimeSpan.FromMinutes(2),
       StoppedBecauseRecentMachineEnd = stoppedBecauseRecentMachineEnd,
       CurrentStatus = st,
       AllData = mazakData,
