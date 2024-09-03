@@ -467,13 +467,16 @@ public sealed class MazakSyncSpec : IDisposable
       ),
       jsonSettings
     );
+    MazakWriteData writeData = null;
+    _write.WhenForAnyArgs(x => x.Save(default, default)).Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
+
     _read
       .LoadAllData()
       .Returns(
         (context) =>
           new MazakAllData()
           {
-            Schedules = Enumerable.Empty<MazakScheduleRow>(),
+            Schedules = writeData?.Schedules ?? [],
             Parts = parts.Parts,
             Pallets = parts.Pallets,
             PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
