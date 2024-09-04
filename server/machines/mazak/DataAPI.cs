@@ -386,7 +386,6 @@ namespace MazakMachineInterface
     IEnumerable<ToolPocketRow> LoadTools();
 
     bool CheckPartExists(string partName);
-    bool CheckProgramExists(string mainProgram);
 
     void Save(MazakWriteData data, string prefix);
 

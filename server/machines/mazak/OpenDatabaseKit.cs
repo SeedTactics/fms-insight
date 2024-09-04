@@ -1123,18 +1123,6 @@ namespace MazakMachineInterface
       return WithReadDBConnection(conn => conn.Query<MazakProgramRow>(_mainProgSelect).ToList());
     }
 
-    public bool CheckProgramExists(string mainProgram)
-    {
-      return WithReadDBConnection(conn =>
-      {
-        var cnt = conn.ExecuteScalar<int>(
-          "SELECT COUNT(*) FROM MainProgram WHERE MainProgram = @m",
-          new { m = mainProgram }
-        );
-        return cnt > 0;
-      });
-    }
-
     public IEnumerable<ToolPocketRow> LoadTools()
     {
       if (MazakType == MazakDbType.MazakSmooth)
