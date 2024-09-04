@@ -65,6 +65,12 @@ public static class DapperQueryExecute
     return result;
   }
 
+  private class PropAndParam
+  {
+    public System.Reflection.PropertyInfo Prop { get; set; }
+    public IDbDataParameter Param { get; set; }
+  }
+
   public static void Execute<T>(
     this IDbConnection conn,
     string sql,
@@ -76,21 +82,21 @@ public static class DapperQueryExecute
     cmd.Transaction = transaction;
     cmd.CommandText = sql;
 
-    var props = new List<(IDbDataParameter, System.Reflection.PropertyInfo)>();
+    var props = new List<PropAndParam>();
 
     foreach (var prop in typeof(T).GetProperties())
     {
       var param = cmd.CreateParameter();
       param.ParameterName = "@" + prop.Name;
       cmd.Parameters.Add(param);
-      props.Add((param, prop));
+      props.Add(new PropAndParam() { Prop = prop, Param = param });
     }
 
     foreach (var obj in objs)
     {
-      foreach (var (param, prop) in props)
+      foreach (var pp in props)
       {
-        param.Value = prop.GetValue(obj);
+        pp.Param.Value = pp.Prop.GetValue(obj);
       }
       cmd.ExecuteNonQuery();
     }

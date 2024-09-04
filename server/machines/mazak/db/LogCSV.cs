@@ -149,7 +149,7 @@ namespace MazakMachineInterface
         }
         catch (Exception ex)
         {
-          Serilog.Log.Warning(ex, "Error deleting file: " + f);
+          Serilog.Log.Error(ex, "Error deleting file: " + f);
         }
       }
     }
