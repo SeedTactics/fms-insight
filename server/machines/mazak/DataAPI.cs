@@ -385,8 +385,6 @@ namespace MazakMachineInterface
     IEnumerable<MazakProgramRow> LoadPrograms();
     IEnumerable<ToolPocketRow> LoadTools();
 
-    bool CheckPartExists(string partName);
-
     void Save(MazakWriteData data, string prefix);
 
     TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);

@@ -45,21 +45,6 @@ namespace MazakMachineInterface
       : base(msg) { }
   }
 
-  public class ErrorModifyingParts : Exception
-  {
-    // There is a suspected bug in the mazak software when deleting parts.  Sometimes, open database kit
-    // successfully deletes a part but still outputs an error 7.  This only happens occasionally, but
-    // if we get an error 7 when deleting the part table, check if the part was successfully deleted and
-    // if so ignore the error.
-    public HashSet<string> PartNames { get; }
-
-    public ErrorModifyingParts(HashSet<string> names)
-      : base("Mazak returned error when modifying parts: " + string.Join(",", names))
-    {
-      PartNames = names;
-    }
-  }
-
   public sealed class OpenDatabaseKitDB : IMazakDB
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitDB>();
@@ -270,7 +255,7 @@ namespace MazakMachineInterface
           foreach (int waitSecs in new[] { 5, 5, 10, 10, 15, 15, 30 })
           {
             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
-            if (CheckTransactionErrors(conn, prefix))
+            if (CheckTransactionErrors(conn, prefix, data))
             {
               return;
             }
@@ -695,13 +680,23 @@ namespace MazakMachineInterface
       public string PartName { get; set; }
     }
 
-    private static bool CheckTransactionErrors(IDbConnection conn, string prefix)
+    private bool CheckTransactionErrors(IDbConnection conn, string prefix, MazakWriteData writeData)
     {
       // Once Mazak processes a row, the row in the table is blanked.  If an error occurs, instead
       // the Command is changed to 9 and an error code is put in the TransactionStatus column.
+
+      // There is a suspected bug in the mazak software when deleting parts.  Sometimes, open database kit
+      // successfully deletes a part but still outputs an error 7.  This only happens occasionally, but
+      // if we get an error 7 when deleting the part table, check if the part was successfully deleted and
+      // if so ignore the error.
       bool foundUnprocesssedRow = false;
       var log = new List<string>();
-      var partEditErrors = new HashSet<string>();
+
+      var partsToDelete = new HashSet<string>(
+        writeData.Parts.Where(p => p.Command == MazakWriteCommand.Delete).Select(p => p.PartName)
+      );
+      var partDelErrors = new HashSet<string>();
+
       using (var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted))
       {
         foreach (var table in new[] { "Fixture_t", "Pallet_t", "Schedule_t" })
@@ -751,6 +746,7 @@ namespace MazakMachineInterface
             row.Command.Value == MazakWriteCommand.Error
             && row.TransactionStatus == 7
             && !string.IsNullOrEmpty(row.PartName)
+            && partsToDelete.Contains(row.PartName)
           )
           {
             Log.Debug(
@@ -758,7 +754,7 @@ namespace MazakMachineInterface
               partIdx,
               row.PartName
             );
-            partEditErrors.Add(row.PartName);
+            partDelErrors.Add(row.PartName);
           }
           else if (row.Command.Value == MazakWriteCommand.Error)
           {
@@ -789,9 +785,17 @@ namespace MazakMachineInterface
       {
         return false;
       }
-      else if (partEditErrors.Count > 0)
+      else if (partDelErrors.Count > 0)
       {
-        throw new ErrorModifyingParts(partEditErrors);
+        foreach (var part in partDelErrors)
+        {
+          if (CheckPartExists(part))
+          {
+            throw new Exception("Mazak returned an error when attempting to delete part " + part);
+          }
+        }
+        // if they all no longer exists, ignore the error
+        return true;
       }
       else
       {
@@ -1138,7 +1142,7 @@ namespace MazakMachineInterface
       }
     }
 
-    public bool CheckPartExists(string partName)
+    private bool CheckPartExists(string partName)
     {
       return WithReadDBConnection(conn =>
       {

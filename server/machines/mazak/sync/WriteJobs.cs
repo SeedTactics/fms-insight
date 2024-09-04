@@ -201,20 +201,7 @@ namespace MazakMachineInterface
       transSet = mazakJobs.DeleteOldPartRows();
       if (transSet.Parts.Any())
       {
-        try
-        {
-          mazakDb.Save(transSet, "Delete Parts");
-        }
-        catch (ErrorModifyingParts e)
-        {
-          foreach (var partName in e.PartNames)
-          {
-            if (mazakDb.CheckPartExists(partName))
-            {
-              throw new Exception("Mazak returned an error when attempting to delete part " + partName);
-            }
-          }
-        }
+        mazakDb.Save(transSet, "Delete Parts");
       }
 
       // delete pallets
