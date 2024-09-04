@@ -35,7 +35,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
 using System.Linq;
-#if !NET3_5
+#if !NET35
 // On net3.5, we have a small reflection-based implementation below
 using Dapper;
 #endif
@@ -1263,7 +1263,7 @@ namespace MazakMachineInterface
         using var trans = conn.BeginTransaction();
         var data = LoadAllData(conn, trans);
 
-        IReadOnlyList<LogEntry> logs;
+        IList<LogEntry> logs;
 
         if (MazakType == MazakDbType.MazakVersionE)
         {
@@ -1323,68 +1323,4 @@ namespace MazakMachineInterface
       }
     }
   }
-
-#if NET3_5
-  public static class DapperQueryExecute
-  {
-    public static IEnumerable<T> Query<T>(this IDbConnection conn, string sql, IDbTransaction transaction)
-    {
-      // implement Query just like dapper, but as a fallback for when dapper is not available
-      var result = new List<T>();
-      using var cmd = conn.CreateCommand();
-      cmd.Transaction = transaction;
-      cmd.CommandText = sql;
-      using var reader = cmd.ExecuteReader();
-
-      var props = typeof(T).GetProperties();
-
-      while (reader.Read())
-      {
-        var obj = Activator.CreateInstance<T>();
-        foreach (var prop in props)
-        {
-          var val = reader[prop.Name];
-          if (val != DBNull.Value && val != null)
-          {
-            prop.SetValue(obj, Convert.ChangeType(val, prop.PropertyType));
-          }
-        }
-        result.Add(obj);
-      }
-
-      return result;
-    }
-
-    public static void Execute<T>(
-      this IDbConnection conn,
-      string sql,
-      IEnumerable<T> objs,
-      IDbTransaction transaction
-    )
-    {
-      using var cmd = conn.CreateCommand();
-      cmd.Transaction = transaction;
-      cmd.CommandText = sql;
-
-      var props = new List<(IDbDataParameter, System.Reflection.PropertyInfo)>();
-
-      foreach (var prop in typeof(T).GetProperties())
-      {
-        var param = cmd.CreateParameter();
-        param.ParameterName = "@" + prop.Name;
-        cmd.Parameters.Add(param);
-        props.Add((param, prop));
-      }
-
-      foreach (var obj in objs)
-      {
-        foreach (var (param, prop) in props)
-        {
-          param.Value = prop.GetValue(obj);
-        }
-        cmd.ExecuteNonQuery();
-      }
-    }
-  }
-#endif
 }

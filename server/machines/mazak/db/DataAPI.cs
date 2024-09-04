@@ -257,28 +257,6 @@ namespace MazakMachineInterface
     public int Process { get; init; }
     public int Path { get; init; }
     public int Qty { get; init; }
-
-    public LoadAction(bool l, int stat, string p, string comment, int proc, int q)
-    {
-      LoadStation = stat;
-      LoadEvent = l;
-      Part = p;
-      Process = proc;
-      Qty = q;
-      if (string.IsNullOrEmpty(comment))
-      {
-        Unique = "";
-        Path = 1;
-      }
-      else
-      {
-        Unique = MazakPart.ParseComment(comment);
-        Path = 1;
-      }
-    }
-
-    [System.Text.Json.Serialization.JsonConstructor]
-    public LoadAction() { }
   }
 
   public record MazakCurrentStatus
@@ -374,7 +352,7 @@ namespace MazakMachineInterface
 
   public record MazakAllDataAndLogs : MazakAllData
   {
-    public IReadOnlyList<LogEntry> Logs { get; init; }
+    public IList<LogEntry> Logs { get; init; }
   }
 
   public interface ICurrentLoadActions
@@ -405,10 +383,10 @@ namespace MazakMachineInterface
 
   public record MazakWriteData
   {
-    public IReadOnlyList<MazakScheduleRow> Schedules { get; init; } = new List<MazakScheduleRow>();
-    public IReadOnlyList<MazakPartRow> Parts { get; init; } = new List<MazakPartRow>();
-    public IReadOnlyList<MazakPalletRow> Pallets { get; init; } = new List<MazakPalletRow>();
-    public IReadOnlyList<MazakFixtureRow> Fixtures { get; init; } = new List<MazakFixtureRow>();
-    public IReadOnlyList<NewMazakProgram> Programs { get; init; } = new List<NewMazakProgram>();
+    public IList<MazakScheduleRow> Schedules { get; init; } = new List<MazakScheduleRow>();
+    public IList<MazakPartRow> Parts { get; init; } = new List<MazakPartRow>();
+    public IList<MazakPalletRow> Pallets { get; init; } = new List<MazakPalletRow>();
+    public IList<MazakFixtureRow> Fixtures { get; init; } = new List<MazakFixtureRow>();
+    public IList<NewMazakProgram> Programs { get; init; } = new List<NewMazakProgram>();
   }
 }

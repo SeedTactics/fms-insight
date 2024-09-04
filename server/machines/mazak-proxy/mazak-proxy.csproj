@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net3.5</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../mazak/db/DataAPI.cs" />
+    <Compile Include="../mazak/db/LoadOperations.cs" />
+    <Compile Include="../mazak/db/LogCSV.cs" />
+    <Compile Include="../mazak/db/LogVerE.cs" />
+    <Compile Include="../mazak/db/OpenDatabaseKit.cs" />
+  </ItemGroup>
+
+</Project>

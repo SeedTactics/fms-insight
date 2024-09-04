@@ -36,7 +36,7 @@ using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-#if !NET3_5
+#if !NET35
 using Dapper;
 #endif
 
@@ -44,18 +44,10 @@ namespace MazakMachineInterface
 {
   public class LoadOperationsFromFile : ICurrentLoadActions
   {
-    private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperationsFromFile>();
-
     private readonly string mazakPath;
 
     public LoadOperationsFromFile(MazakConfig cfg)
     {
-      if (string.IsNullOrEmpty(cfg.LoadCSVPath) || !Directory.Exists(cfg.LoadCSVPath))
-      {
-        Log.Warning("No mazak Load CSV Path configured, will not read load instructions from file");
-        return;
-      }
-
       mazakPath = cfg.LoadCSVPath;
     }
 
@@ -110,7 +102,18 @@ namespace MazakMachineInterface
               if (split[0].StartsWith("REM"))
                 load = false;
 
-              ret.Add(new LoadAction(load, stat, part, comment, proc, qty));
+              ret.Add(
+                new LoadAction()
+                {
+                  LoadEvent = load,
+                  LoadStation = stat,
+                  Part = part,
+                  Process = proc,
+                  Unique = string.IsNullOrEmpty(comment) ? "" : MazakPart.ParseComment(comment),
+                  Path = 1,
+                  Qty = qty,
+                }
+              );
             }
           }
         }
@@ -122,8 +125,6 @@ namespace MazakMachineInterface
 
   public class LoadOperationsFromDB : ICurrentLoadActions
   {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<LoadOperationsFromDB>();
-
     private string _connStr;
 
     public LoadOperationsFromDB(MazakConfig cfg)
@@ -161,7 +162,6 @@ namespace MazakMachineInterface
       {
         if (string.IsNullOrEmpty(e.a9_ptnam))
         {
-          Log.Warning("Load operation has no part name {@load}", e);
           continue;
         }
 
@@ -176,7 +176,18 @@ namespace MazakMachineInterface
         int proc = e.a9_prcnum;
         int qty = e.a9_fixqty;
 
-        ret.Add(new LoadAction(true, stat, part, comment, proc, qty));
+        ret.Add(
+          new LoadAction()
+          {
+            LoadEvent = true,
+            LoadStation = stat,
+            Part = part,
+            Unique = string.IsNullOrEmpty(comment) ? "" : MazakPart.ParseComment(comment),
+            Path = 1,
+            Process = proc,
+            Qty = qty,
+          }
+        );
       }
       return ret;
     }
@@ -202,7 +213,6 @@ namespace MazakMachineInterface
       {
         if (string.IsNullOrEmpty(e.a8_ptnam))
         {
-          Log.Warning("Load operation has no part name {@load}", e);
           continue;
         }
 
@@ -217,7 +227,18 @@ namespace MazakMachineInterface
         int proc = e.a8_prcnum;
         int qty = e.a8_fixqty;
 
-        ret.Add(new LoadAction(false, stat, part, comment, proc, qty));
+        ret.Add(
+          new LoadAction()
+          {
+            LoadEvent = false,
+            LoadStation = stat,
+            Part = part,
+            Unique = string.IsNullOrEmpty(comment) ? "" : MazakPart.ParseComment(comment),
+            Process = proc,
+            Qty = qty,
+            Path = 1,
+          }
+        );
       }
       return ret;
     }

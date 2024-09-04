@@ -227,7 +227,16 @@ namespace MachineWatchTest
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "thequeue");
 
       //put something else at load station
-      var action = new LoadAction(true, 1, "pppp", "yyyy-Insight", 1, 1);
+      var action = new LoadAction()
+      {
+        LoadEvent = true,
+        LoadStation = 1,
+        Part = "pppp",
+        Unique = "yyyy",
+        Process = 1,
+        Qty = 1,
+        Path = 1,
+      };
 
       trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
 
@@ -2683,7 +2692,16 @@ namespace MachineWatchTest
       );
 
       //put something else at load station
-      var action = new LoadAction(true, 1, "pppp", "uuuu-Insight", 1, 1);
+      var action = new LoadAction()
+      {
+        LoadEvent = true,
+        LoadStation = 1,
+        Part = "pppp",
+        Unique = "uuuu",
+        Process = 1,
+        Qty = 1,
+        Path = 1,
+      };
       read.LoadActions.Add(action);
 
       var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
@@ -2973,7 +2991,16 @@ namespace MachineWatchTest
       );
 
       //put something at the load station for uuu2
-      var action = new LoadAction(true, 1, "pppp", "uuu2-Insight", 1, 1);
+      var action = new LoadAction()
+      {
+        LoadEvent = true,
+        LoadStation = 11,
+        Part = "pppp",
+        Unique = "uuu2",
+        Process = 1,
+        Qty = 1,
+        Path = 1,
+      };
       read.LoadActions.Add(action);
 
       var mat1 = AddCasting(casting, "thequeue");
