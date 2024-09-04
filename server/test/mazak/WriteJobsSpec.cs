@@ -235,20 +235,19 @@ namespace MachineWatchTest
         ),
       };
 
-      //  write jobs calls LoadAllData between creating fixtures and schedules, and then again after creating schedules
+      //  write jobs calls LoadAllData between creating fixtures and schedules
       _readMock
         .LoadAllData()
         .Returns(
-          // frist call, between parts and schedules
           (context) =>
             new MazakAllData()
             {
-              Schedules = _writeMock.AddSchedules?.Schedules ?? Enumerable.Empty<MazakScheduleRow>(),
-              Parts = _writeMock.AddParts?.Parts ?? [],
-              Pallets = _writeMock.AddParts?.Pallets ?? [],
-              PalletSubStatuses = [],
-              PalletPositions = [],
-              LoadActions = [],
+              Schedules = Enumerable.Empty<MazakScheduleRow>(),
+              Parts = _writeMock.AddParts.Parts,
+              Pallets = _writeMock.AddParts.Pallets,
+              PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
+              PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
+              LoadActions = Enumerable.Empty<LoadAction>(),
               MainPrograms = ImmutableList
                 .Create("1001", "1002", "1003", "1004", "1005")
                 .Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
@@ -619,7 +618,6 @@ namespace MachineWatchTest
 
       //finally succeed without error
       _writeMock.errorForPrefix = null;
-      _writeMock.AddSchedules = null;
       WriteJobs.SyncFromDatabase(
         _initialAllData,
         _jobDB,
@@ -815,127 +813,6 @@ namespace MachineWatchTest
       // The schedule snapshot should have checked this, but do it here too since it was the
       // bug which triggered this test case
       _writeMock.AddSchedules.Schedules.DistinctBy(p => p.Priority).Should().HaveCount(2);
-    }
-  }
-
-  public sealed class WriteJobsTimeoutsSpec
-  {
-    private readonly JsonSerializerOptions jsonSettings;
-    private readonly MazakAllData emptyData;
-    private readonly MazakConfig mazakConfig;
-
-    public WriteJobsTimeoutsSpec()
-    {
-      jsonSettings = new JsonSerializerOptions();
-      FMSInsightWebHost.JsonSettings(jsonSettings);
-      emptyData = new MazakAllData()
-      {
-        Schedules = [],
-        Fixtures = [],
-        Parts = [],
-        MainPrograms =
-        [
-          new() { MainProgram = "1001", Comment = "" },
-          new() { MainProgram = "1002", Comment = "" },
-          new() { MainProgram = "1003", Comment = "" },
-          new() { MainProgram = "1004", Comment = "" },
-        ],
-        Pallets = [],
-      };
-
-      mazakConfig = new MazakConfig()
-      {
-        SQLConnectionString = "unused connection string",
-        LogCSVPath = "unused log path",
-        DBType = MazakDbType.MazakSmooth,
-        ProgramDirectory = "theprogdir",
-        UseStartingOffsetForDueDate = true,
-      };
-    }
-
-    [Fact]
-    public void TimesOutAddingParts()
-    {
-      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
-        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-      );
-      using var jobDB = repoCfg.OpenConnection();
-
-      var writeMock = Substitute.For<IWriteData>();
-      var readMock = Substitute.For<IReadDataAccess>();
-      readMock.MazakType.Returns(MazakDbType.MazakSmooth);
-
-      // LoadAllData is called between loading parts and schedules.
-      // return empty data, i.e. without parts so that a timeout is triggered
-      readMock.LoadAllData().Returns(emptyData);
-
-      var newJobs = JsonSerializer.Deserialize<NewJobs>(
-        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "pallet-subset.json")),
-        jsonSettings
-      );
-      jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
-
-      FluentActions
-        .Invoking(
-          () =>
-            WriteJobs.SyncFromDatabase(
-              emptyData,
-              jobDB,
-              writeMock,
-              readMock,
-              new FMSSettings(),
-              mazakConfig,
-              new DateTime(2024, 6, 18, 22, 0, 0, DateTimeKind.Utc)
-            )
-        )
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("Timeout after adding parts: the new parts did not appear in mazak read DB");
-    }
-
-    [Fact]
-    public void TimesOutAddingSchedules()
-    {
-      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
-        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-      );
-      using var jobDB = repoCfg.OpenConnection();
-
-      var writeMock = Substitute.For<IWriteData>();
-      MazakWriteData writeData = null;
-      writeMock
-        .WhenForAnyArgs(x => x.Save(default, default))
-        .Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
-
-      var readMock = Substitute.For<IReadDataAccess>();
-      readMock.MazakType.Returns(MazakDbType.MazakSmooth);
-
-      // LoadAllData is called between loading parts and schedules and after schedules
-      // return the newly added parts data but not any schedules, so as to trigger a timeout
-      readMock.LoadAllData().Returns((context) => emptyData with { Parts = writeData?.Parts });
-
-      var newJobs = JsonSerializer.Deserialize<NewJobs>(
-        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "pallet-subset.json")),
-        jsonSettings
-      );
-      jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
-
-      FluentActions
-        .Invoking(
-          () =>
-            WriteJobs.SyncFromDatabase(
-              emptyData,
-              jobDB,
-              writeMock,
-              readMock,
-              new FMSSettings(),
-              mazakConfig,
-              new DateTime(2024, 6, 18, 22, 0, 0, DateTimeKind.Utc)
-            )
-        )
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("Timeout after adding schedules: the new schedules did not appear in mazak read DB");
     }
   }
 }
