@@ -1094,28 +1094,6 @@ namespace MazakMachineInterface
       return schs;
     }
 
-    public MazakCurrentStatus LoadStatus()
-    {
-      return WithReadDBConnection(conn =>
-      {
-        using (var trans = conn.BeginTransaction())
-        {
-          var parts = LoadParts(conn, trans, out var fixQty);
-          var ret = new MazakCurrentStatus()
-          {
-            Schedules = LoadSchedules(conn, trans, fixQty),
-            LoadActions = _loadOper.CurrentLoadActions(),
-            PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
-            PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
-            Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
-            Parts = parts,
-          };
-          trans.Commit();
-          return ret;
-        }
-      });
-    }
-
     private MazakAllData LoadAllData(IDbConnection conn, IDbTransaction trans)
     {
       var parts = LoadParts(conn, trans, out var fixQty);

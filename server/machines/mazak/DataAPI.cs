@@ -381,7 +381,6 @@ namespace MazakMachineInterface
   public interface IReadDataAccess
   {
     MazakDbType MazakType { get; }
-    MazakCurrentStatus LoadStatus();
     MazakAllData LoadAllData();
     IEnumerable<MazakProgramRow> LoadPrograms();
     IEnumerable<ToolPocketRow> LoadTools();
