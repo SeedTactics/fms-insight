@@ -35,6 +35,8 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
+#pragma warning disable CA1416 // Validate platform compatibility
+
 namespace MazakMachineInterface;
 
 public static class LogDataVerE
@@ -43,15 +45,6 @@ public static class LogDataVerE
 
   public static List<LogEntry> LoadLog(string lastForeignID, IDbConnection conn, IDbTransaction trans)
   {
-    if (
-      !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
-        System.Runtime.InteropServices.OSPlatform.Windows
-      )
-    )
-    {
-      throw new Exception("VerE only only supported on windows");
-    }
-
     using (System.Data.OleDb.OleDbCommand cmd = (System.Data.OleDb.OleDbCommand)conn.CreateCommand())
     {
       ((System.Data.IDbCommand)cmd).Transaction = trans;
@@ -168,15 +161,6 @@ public static class LogDataVerE
     DateTime lastDate
   )
   {
-    if (
-      !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
-        System.Runtime.InteropServices.OSPlatform.Windows
-      )
-    )
-    {
-      throw new Exception("VerE only only supported on windows");
-    }
-
     using (var cmd = conn.CreateCommand())
     {
       cmd.Transaction = trans;

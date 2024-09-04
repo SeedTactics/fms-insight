@@ -35,6 +35,11 @@ namespace Serilog
       throw new NotImplementedException();
     }
 
+    public static void Debug(Exception ex, string messageTemplate, params object[] propertyValues)
+    {
+      throw new NotImplementedException();
+    }
+
     void ILogger.Debug(string messageTemplate, params object[] propertyValues)
     {
       Log.Debug(messageTemplate, propertyValues);
