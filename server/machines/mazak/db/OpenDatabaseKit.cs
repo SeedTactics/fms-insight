@@ -35,7 +35,10 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
 using System.Linq;
+#if !NET3_5
+// On net3.5, we have a small reflection-based implementation below
 using Dapper;
+#endif
 
 namespace MazakMachineInterface
 {
@@ -824,7 +827,7 @@ namespace MazakMachineInterface
       {
         foreach (var part in partDelErrors)
         {
-          if (CheckPartExists(part))
+          if (CheckPartsExist([part]))
           {
             throw new Exception("Mazak returned an error when attempting to delete part " + part);
           }
@@ -1159,7 +1162,11 @@ namespace MazakMachineInterface
 
     public IEnumerable<MazakProgramRow> LoadPrograms()
     {
-      return WithReadDBConnection(conn => conn.Query<MazakProgramRow>(_mainProgSelect).ToList());
+      return WithReadDBConnection(conn =>
+      {
+        using var trans = conn.BeginTransaction();
+        return conn.Query<MazakProgramRow>(_mainProgSelect, transaction: trans).ToList();
+      });
     }
 
     public IEnumerable<ToolPocketRow> LoadTools()
@@ -1168,25 +1175,14 @@ namespace MazakMachineInterface
       {
         return WithReadDBConnection(conn =>
         {
-          return conn.Query<ToolPocketRow>(_toolSelect).ToList();
+          using var trans = conn.BeginTransaction();
+          return conn.Query<ToolPocketRow>(_toolSelect, transaction: trans).ToList();
         });
       }
       else
       {
         return Enumerable.Empty<ToolPocketRow>();
       }
-    }
-
-    private bool CheckPartExists(string partName)
-    {
-      return WithReadDBConnection(conn =>
-      {
-        var cnt = conn.ExecuteScalar<int>(
-          "SELECT COUNT(*) FROM Part WHERE PartName = @p",
-          new { p = partName }
-        );
-        return cnt > 0;
-      });
     }
 
     private bool CheckPartsExist(IList<string> parts)
@@ -1327,4 +1323,68 @@ namespace MazakMachineInterface
       }
     }
   }
+
+#if NET3_5
+  public static class DapperQueryExecute
+  {
+    public static IEnumerable<T> Query<T>(this IDbConnection conn, string sql, IDbTransaction transaction)
+    {
+      // implement Query just like dapper, but as a fallback for when dapper is not available
+      var result = new List<T>();
+      using var cmd = conn.CreateCommand();
+      cmd.Transaction = transaction;
+      cmd.CommandText = sql;
+      using var reader = cmd.ExecuteReader();
+
+      var props = typeof(T).GetProperties();
+
+      while (reader.Read())
+      {
+        var obj = Activator.CreateInstance<T>();
+        foreach (var prop in props)
+        {
+          var val = reader[prop.Name];
+          if (val != DBNull.Value && val != null)
+          {
+            prop.SetValue(obj, Convert.ChangeType(val, prop.PropertyType));
+          }
+        }
+        result.Add(obj);
+      }
+
+      return result;
+    }
+
+    public static void Execute<T>(
+      this IDbConnection conn,
+      string sql,
+      IEnumerable<T> objs,
+      IDbTransaction transaction
+    )
+    {
+      using var cmd = conn.CreateCommand();
+      cmd.Transaction = transaction;
+      cmd.CommandText = sql;
+
+      var props = new List<(IDbDataParameter, System.Reflection.PropertyInfo)>();
+
+      foreach (var prop in typeof(T).GetProperties())
+      {
+        var param = cmd.CreateParameter();
+        param.ParameterName = "@" + prop.Name;
+        cmd.Parameters.Add(param);
+        props.Add((param, prop));
+      }
+
+      foreach (var obj in objs)
+      {
+        foreach (var (param, prop) in props)
+        {
+          param.Value = prop.GetValue(obj);
+        }
+        cmd.ExecuteNonQuery();
+      }
+    }
+  }
+#endif
 }

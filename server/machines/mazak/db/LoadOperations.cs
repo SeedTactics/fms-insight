@@ -36,7 +36,9 @@ using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+#if !NET3_5
 using Dapper;
+#endif
 
 namespace MazakMachineInterface
 {
@@ -133,7 +135,8 @@ namespace MazakMachineInterface
     {
       using (var conn = new SqlConnection(_connStr))
       {
-        return LoadActions(conn).Concat(RemoveActions(conn));
+        using var trans = conn.BeginTransaction();
+        return LoadActions(conn, trans).Concat(RemoveActions(conn, trans));
       }
     }
 
@@ -146,15 +149,15 @@ namespace MazakMachineInterface
       public string a1_schcom { get; set; }
     }
 
-    private IEnumerable<LoadAction> LoadActions(SqlConnection conn)
+    private IEnumerable<LoadAction> LoadActions(SqlConnection conn, SqlTransaction trans)
     {
       var qry =
         "SELECT OperationID, a9_prcnum, a9_ptnam, a9_fixqty, a1_schcom "
         + " FROM A9_FixWork "
         + " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a9_ScheduleID";
       var ret = new List<LoadAction>();
-      var elems = conn.Query(qry);
-      foreach (var e in conn.Query<FixWork>(qry))
+      var elems = conn.Query(qry, transaction: trans);
+      foreach (var e in conn.Query<FixWork>(qry, transaction: trans))
       {
         if (string.IsNullOrEmpty(e.a9_ptnam))
         {
@@ -187,15 +190,15 @@ namespace MazakMachineInterface
       public string a1_schcom { get; set; }
     }
 
-    private IEnumerable<LoadAction> RemoveActions(SqlConnection conn)
+    private IEnumerable<LoadAction> RemoveActions(SqlConnection conn, SqlTransaction trans)
     {
       var qry =
         "SELECT OperationID,a8_prcnum,a8_ptnam,a8_fixqty,a1_schcom "
         + " FROM A8_RemoveWork "
         + " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
       var ret = new List<LoadAction>();
-      var elems = conn.Query(qry);
-      foreach (var e in conn.Query<RemoveWork>(qry))
+      var elems = conn.Query(qry, transaction: trans);
+      foreach (var e in conn.Query<RemoveWork>(qry, transaction: trans))
       {
         if (string.IsNullOrEmpty(e.a8_ptnam))
         {
