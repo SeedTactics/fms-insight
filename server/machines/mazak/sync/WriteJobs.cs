@@ -47,8 +47,7 @@ namespace MazakMachineInterface
     public static bool SyncFromDatabase(
       MazakAllData mazakData,
       IRepository db,
-      IWriteData writeDb,
-      IReadDataAccess readDb,
+      IMazakDB mazakDb,
       FMSSettings fmsSt,
       MazakConfig mazakCfg,
       DateTime now
@@ -108,7 +107,7 @@ namespace MazakMachineInterface
           mazakData,
           db,
           jobs.Where(j => !alreadyDownloadedSchs.Contains(j.UniqueStr)).ToImmutableList(),
-          writeDb,
+          mazakDb,
           mazakCfg
         );
       }
@@ -116,12 +115,12 @@ namespace MazakMachineInterface
       {
         ArchiveOldJobs(db, mazakData, jobs);
 
-        AddFixturesPalletsParts(mazakData, db, jobs, writeDb, fmsSt, mazakCfg, readDb);
+        AddFixturesPalletsParts(mazakData, db, jobs, mazakDb, fmsSt, mazakCfg);
 
         // Reload data after syncing fixtures, pallets, and parts
-        mazakData = readDb.LoadAllData();
+        mazakData = mazakDb.LoadAllData();
 
-        AddSchedules(mazakData, db, jobs.ToImmutableList(), writeDb, mazakCfg);
+        AddSchedules(mazakData, db, jobs.ToImmutableList(), mazakDb, mazakCfg);
       }
 
       return true;
@@ -143,10 +142,9 @@ namespace MazakMachineInterface
       MazakAllData mazakData,
       IRepository jobDB,
       IEnumerable<Job> jobs,
-      IWriteData writeDb,
+      IMazakDB mazakDb,
       FMSSettings fmsSt,
-      MazakConfig mazakCfg,
-      IReadDataAccess readDb
+      MazakConfig mazakCfg
     )
     {
       //first allocate a UID to use for this download
@@ -179,7 +177,7 @@ namespace MazakMachineInterface
 
       var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData);
       if (transSet.Schedules.Any())
-        writeDb.Save(transSet, "Update schedules");
+        mazakDb.Save(transSet, "Update schedules");
 
       Log.Debug("Saved Parts: {parts}", savedParts);
 
@@ -205,13 +203,13 @@ namespace MazakMachineInterface
       {
         try
         {
-          writeDb.Save(transSet, "Delete Parts");
+          mazakDb.Save(transSet, "Delete Parts");
         }
         catch (ErrorModifyingParts e)
         {
           foreach (var partName in e.PartNames)
           {
-            if (readDb.CheckPartExists(partName))
+            if (mazakDb.CheckPartExists(partName))
             {
               throw new Exception("Mazak returned an error when attempting to delete part " + partName);
             }
@@ -221,28 +219,28 @@ namespace MazakMachineInterface
 
       // delete pallets
       transSet = mazakJobs.DeleteOldPalletRows();
-      writeDb.Save(transSet, "Delete Pallets");
+      mazakDb.Save(transSet, "Delete Pallets");
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       transSet = mazakJobs.DeleteFixtureAndProgramDatabaseRows();
-      writeDb.Save(transSet, "Delete Fixtures");
+      mazakDb.Save(transSet, "Delete Fixtures");
 
       transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(
         jobDB.LoadProgramContent,
         mazakCfg.ProgramDirectory
       );
-      writeDb.Save(transSet, "Add Fixtures");
+      mazakDb.Save(transSet, "Add Fixtures");
 
       //now save the pallets and parts
       transSet = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
-      writeDb.Save(transSet, "Add Parts");
+      mazakDb.Save(transSet, "Add Parts");
     }
 
     private static void AddSchedules(
       MazakAllData mazakData,
       IRepository jobDB,
       IReadOnlyList<Job> jobs,
-      IWriteData writeDb,
+      IMazakDB writeDb,
       MazakConfig mazakCfg
     )
     {

@@ -48,14 +48,13 @@ namespace MazakMachineInterface
       }
 
       s.AddSingleton(mazakCfg);
-      s.AddSingleton<IWriteData, OpenDatabaseKitTransactionDB>();
 
       if (mazakCfg.DBType == MazakDbType.MazakWeb)
         s.AddSingleton<ICurrentLoadActions, LoadOperationsFromFile>();
       else
         s.AddSingleton<ICurrentLoadActions, LoadOperationsFromDB>();
 
-      s.AddSingleton<IReadDataAccess, OpenDatabaseKitReadDB>();
+      s.AddSingleton<IMazakDB, OpenDatabaseKitDB>();
       s.AddSingleton<MazakSync>();
       s.AddSingleton<ISynchronizeCellState<MazakState>>(sp => sp.GetRequiredService<MazakSync>());
       s.AddSingleton<INotifyMazakLogEvent>(sp => sp.GetRequiredService<MazakSync>());

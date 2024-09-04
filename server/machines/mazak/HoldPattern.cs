@@ -74,9 +74,9 @@ namespace MazakMachineInterface
     }
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<HoldPattern>();
-    private IWriteData database;
+    private IMazakDB database;
 
-    public HoldPattern(IWriteData d)
+    public HoldPattern(IMazakDB d)
     {
       database = d;
     }

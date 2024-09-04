@@ -42,7 +42,7 @@ public static class LogDataVerE
 {
   private const string DateTimeFormat = "yyyyMMddHHmmss";
 
-  public static List<LogEntry> LoadLog(string lastForeignID, IReadDataAccess _readDB)
+  public static List<LogEntry> LoadLog(string lastForeignID, IMazakDB _readDB)
   {
     return _readDB.WithReadDBConnection(conn =>
     {

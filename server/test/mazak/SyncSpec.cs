@@ -48,16 +48,14 @@ namespace MachineWatchTest;
 public sealed class MazakSyncSpec : IDisposable
 {
   private readonly MazakSync _sync;
-  private readonly IReadDataAccess _read;
-  private readonly IWriteData _write;
+  private readonly IMazakDB _mazakDB;
   private readonly string _tempDir;
   private readonly FMSSettings _fmsSt;
   private readonly RepositoryConfig repo;
 
   public MazakSyncSpec()
   {
-    _read = Substitute.For<IReadDataAccess>();
-    _write = Substitute.For<IWriteData>();
+    _mazakDB = Substitute.For<IMazakDB>();
     repo = RepositoryConfig.InitializeMemoryDB(
       new SerialSettings() { ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m) }
     );
@@ -71,8 +69,7 @@ public sealed class MazakSyncSpec : IDisposable
     _fmsSt.Queues.Add("queueCCC", new QueueInfo());
 
     _sync = new MazakSync(
-      _read,
-      _write,
+      _mazakDB,
       _fmsSt,
       new MazakConfig()
       {
@@ -112,7 +109,7 @@ public sealed class MazakSyncSpec : IDisposable
   {
     var jsonSettings = new JsonSerializerOptions();
     FMSInsightWebHost.JsonSettings(jsonSettings);
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         new MazakAllData()
@@ -146,7 +143,7 @@ public sealed class MazakSyncSpec : IDisposable
   {
     var jsonSettings = new JsonSerializerOptions();
     FMSInsightWebHost.JsonSettings(jsonSettings);
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         new MazakAllData()
@@ -190,7 +187,7 @@ public sealed class MazakSyncSpec : IDisposable
 
     var jsonSettings = new JsonSerializerOptions();
     FMSInsightWebHost.JsonSettings(jsonSettings);
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         new MazakAllData()
@@ -248,7 +245,7 @@ public sealed class MazakSyncSpec : IDisposable
       Schedules = [],
       LoadActions = [],
     };
-    _read.LoadAllData().Returns(allData);
+    _mazakDB.LoadAllData().Returns(allData);
 
     _sync
       .CalculateCellState(db)
@@ -303,7 +300,7 @@ public sealed class MazakSyncSpec : IDisposable
       [now.AddSeconds(10).ToString(dateFmt) + ",501,,12,,1,6,4,prog,,,,"]
     );
 
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         new MazakAllData()
@@ -372,7 +369,7 @@ public sealed class MazakSyncSpec : IDisposable
       Schedules = [],
       LoadActions = [],
     };
-    _read.LoadAllData().Returns(allData);
+    _mazakDB.LoadAllData().Returns(allData);
 
     _sync
       .CalculateCellState(db)
@@ -468,9 +465,9 @@ public sealed class MazakSyncSpec : IDisposable
       jsonSettings
     );
     MazakWriteData writeData = null;
-    _write.WhenForAnyArgs(x => x.Save(default, default)).Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
+    _mazakDB.WhenForAnyArgs(x => x.Save(default, default)).Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
 
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         (context) =>
@@ -490,7 +487,7 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync.ApplyActions(db, st).Should().BeTrue();
 
-    _write
+    _mazakDB
       .ReceivedCalls()
       .Where(c => c.GetMethodInfo().Name == "Save")
       .Select(c => c.GetArguments()[1] as string)
@@ -498,11 +495,11 @@ public sealed class MazakSyncSpec : IDisposable
       .BeEquivalentTo(["Delete Pallets", "Delete Fixtures", "Add Fixtures", "Add Parts", "Add Schedules"]);
     // more detailed tests are in the write data tests
 
-    _write.ClearReceivedCalls();
+    _mazakDB.ClearReceivedCalls();
 
     _sync.ApplyActions(db, st).Should().BeFalse();
 
-    _write.ReceivedCalls().Should().BeEmpty();
+    _mazakDB.ReceivedCalls().Should().BeEmpty();
   }
 
   [Fact]
@@ -595,10 +592,10 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync.ApplyActions(db, st).Should().BeTrue();
 
-    _write.ReceivedCalls().Should().HaveCount(1);
-    _write.Received().Save(Arg.Any<MazakWriteData>(), Arg.Is("Setting material from queues"));
+    _mazakDB.ReceivedCalls().Should().HaveCount(1);
+    _mazakDB.Received().Save(Arg.Any<MazakWriteData>(), Arg.Is("Setting material from queues"));
 
-    var trans = _write.ReceivedCalls().Select(c => c.GetArguments()[0] as MazakWriteData).First();
+    var trans = _mazakDB.ReceivedCalls().Select(c => c.GetArguments()[0] as MazakWriteData).First();
     trans.Schedules.Count.Should().Be(1);
     trans.Schedules[0].Id.Should().Be(10);
     trans.Schedules[0].Priority.Should().Be(10);

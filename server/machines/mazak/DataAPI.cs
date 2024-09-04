@@ -378,15 +378,17 @@ namespace MazakMachineInterface
     IEnumerable<LoadAction> CurrentLoadActions();
   }
 
-  public interface IReadDataAccess
+  public interface IMazakDB
   {
     MazakDbType MazakType { get; }
     MazakAllData LoadAllData();
     IEnumerable<MazakProgramRow> LoadPrograms();
     IEnumerable<ToolPocketRow> LoadTools();
 
-    bool CheckPartExists(string part);
+    bool CheckPartExists(string partName);
     bool CheckProgramExists(string mainProgram);
+
+    void Save(MazakWriteData data, string prefix);
 
     TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
   }
@@ -408,10 +410,5 @@ namespace MazakMachineInterface
     public IReadOnlyList<MazakPalletRow> Pallets { get; init; } = new List<MazakPalletRow>();
     public IReadOnlyList<MazakFixtureRow> Fixtures { get; init; } = new List<MazakFixtureRow>();
     public IReadOnlyList<NewMazakProgram> Programs { get; init; } = new List<NewMazakProgram>();
-  }
-
-  public interface IWriteData
-  {
-    void Save(MazakWriteData data, string prefix);
   }
 }

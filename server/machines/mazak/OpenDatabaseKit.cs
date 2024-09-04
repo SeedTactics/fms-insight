@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -34,7 +34,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
-using System.Diagnostics;
 using System.Linq;
 using Dapper;
 
@@ -61,17 +60,19 @@ namespace MazakMachineInterface
     }
   }
 
-  public class OpenDatabaseKitDB
+  public sealed class OpenDatabaseKitDB : IMazakDB
   {
-    //Global Settings
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitDB>();
     public static System.Threading.Mutex MazakTransactionLock = new System.Threading.Mutex();
 
-    protected string ready4ConectPath;
-    protected string _connectionStr;
+    private readonly string ready4ConectPath;
+    private readonly string _readConnStr;
+    private readonly string _writeConnStr;
+    private readonly ICurrentLoadActions _loadOper;
 
     public MazakDbType MazakType { get; }
 
-    protected void CheckReadyForConnect()
+    private void CheckReadyForConnect()
     {
       if (MazakType != MazakDbType.MazakVersionE)
         return;
@@ -81,16 +82,49 @@ namespace MazakMachineInterface
       }
     }
 
-    protected OpenDatabaseKitDB(string dbConnStr, MazakDbType ty)
+    public OpenDatabaseKitDB(MazakConfig cfg, ICurrentLoadActions loadOper)
     {
-      MazakType = ty;
+      MazakType = cfg.DBType;
+      _loadOper = loadOper;
+
       if (MazakType != MazakDbType.MazakSmooth)
       {
-        ready4ConectPath = System.IO.Path.Combine(dbConnStr, "ready4Conect.mdb");
+        ready4ConectPath = System.IO.Path.Combine(cfg.SQLConnectionString, "ready4Conect.mdb");
       }
+
+      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
+      {
+        _writeConnStr =
+          "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";"
+          + "User ID=Admin;"
+          + "Data Source="
+          + System.IO.Path.Combine(cfg.SQLConnectionString, "FCNETUSER1.mdb")
+          + ";"
+          + "Mode=Share Deny None;";
+      }
+      else
+      {
+        _writeConnStr = cfg.SQLConnectionString + ";Database=FCNETUSER01";
+      }
+
+      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
+      {
+        _readConnStr =
+          "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";User ID=Admin;"
+          + "Data Source="
+          + System.IO.Path.Combine(cfg.SQLConnectionString, "FCREADDAT01.mdb")
+          + ";"
+          + "Mode=Share Deny Write;";
+      }
+      else
+      {
+        _readConnStr = cfg.SQLConnectionString + ";Database=FCREADDAT01";
+      }
+
+      InitReadSQLStatements();
     }
 
-    private IDbConnection OpenReadonlyOleDb()
+    private static IDbConnection OpenOleDb(string connStr)
     {
       int attempts = 0;
 
@@ -104,7 +138,7 @@ namespace MazakMachineInterface
         throw new Exception("VerE and Web only only supported on windows");
       }
 
-      var conn = new OleDbConnection(_connectionStr);
+      var conn = new OleDbConnection(connStr);
       while (attempts < 20)
       {
         try
@@ -146,44 +180,35 @@ namespace MazakMachineInterface
       throw new Exception("Mazak database is locked and can not be accessed");
     }
 
-    protected IDbConnection CreateConnection()
+    private IDbConnection CreateReadConnection()
     {
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
-        return OpenReadonlyOleDb();
+        return OpenOleDb(_readConnStr);
       }
       else
       {
-        var conn = new System.Data.SqlClient.SqlConnection(_connectionStr);
+        var conn = new System.Data.SqlClient.SqlConnection(_readConnStr);
         conn.Open();
         return conn;
       }
     }
-  }
 
-  public class OpenDatabaseKitTransactionDB : OpenDatabaseKitDB, IWriteData
-  {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitTransactionDB>();
-
-    public OpenDatabaseKitTransactionDB(MazakConfig cfg)
-      : base(cfg.SQLConnectionString, cfg.DBType)
+    private IDbConnection CreateWriteConnection()
     {
       if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
       {
-        _connectionStr =
-          "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";"
-          + "User ID=Admin;"
-          + "Data Source="
-          + System.IO.Path.Combine(cfg.SQLConnectionString, "FCNETUSER1.mdb")
-          + ";"
-          + "Mode=Share Deny None;";
+        return OpenOleDb(_writeConnStr);
       }
       else
       {
-        _connectionStr = cfg.SQLConnectionString + ";Database=FCNETUSER01";
+        var conn = new System.Data.SqlClient.SqlConnection(_writeConnStr);
+        conn.Open();
+        return conn;
       }
     }
 
+    #region Writing
     private const int EntriesPerTransaction = 20;
 
     public static IEnumerable<MazakWriteData> SplitWriteData(MazakWriteData original)
@@ -233,7 +258,7 @@ namespace MazakMachineInterface
 
       try
       {
-        using (var conn = CreateConnection())
+        using (var conn = CreateWriteConnection())
         {
           using (var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted))
           {
@@ -670,7 +695,7 @@ namespace MazakMachineInterface
       public string PartName { get; set; }
     }
 
-    private bool CheckTransactionErrors(IDbConnection conn, string prefix)
+    private static bool CheckTransactionErrors(IDbConnection conn, string prefix)
     {
       // Once Mazak processes a row, the row in the table is blanked.  If an error occurs, instead
       // the Command is changed to 9 and an error code is put in the TransactionStatus column.
@@ -774,7 +799,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void ClearTransactionDatabase(IDbConnection conn, IDbTransaction trans)
+    private static void ClearTransactionDatabase(IDbConnection conn, IDbTransaction trans)
     {
       string[] TransactionTables =
       {
@@ -796,10 +821,9 @@ namespace MazakMachineInterface
         }
       }
     }
-  }
+    #endregion
 
-  public class OpenDatabaseKitReadDB : OpenDatabaseKitDB, IReadDataAccess
-  {
+    #region Reading
     private string _fixtureSelect;
     private string _palletSelect;
     private string _partSelect;
@@ -812,26 +836,8 @@ namespace MazakMachineInterface
     private string _alarmSelect;
     private string _toolSelect;
 
-    private ICurrentLoadActions _loadOper;
-
-    public OpenDatabaseKitReadDB(MazakConfig mazakCfg, ICurrentLoadActions loadOper)
-      : base(mazakCfg.SQLConnectionString, mazakCfg.DBType)
+    private void InitReadSQLStatements()
     {
-      _loadOper = loadOper;
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
-      {
-        _connectionStr =
-          "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";User ID=Admin;"
-          + "Data Source="
-          + System.IO.Path.Combine(mazakCfg.SQLConnectionString, "FCREADDAT01.mdb")
-          + ";"
-          + "Mode=Share Deny Write;";
-      }
-      else
-      {
-        _connectionStr = mazakCfg.SQLConnectionString + ";Database=FCREADDAT01";
-      }
-
       _fixtureSelect = "SELECT FixtureName, Comment FROM Fixture";
 
       if (MazakType != MazakDbType.MazakVersionE)
@@ -1019,7 +1025,7 @@ namespace MazakMachineInterface
     public TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action)
     {
       CheckReadyForConnect();
-      using (var conn = CreateConnection())
+      using (var conn = CreateReadConnection())
       {
         return action(conn);
       }
@@ -1170,6 +1176,7 @@ namespace MazakMachineInterface
 
       return data;
     }
+    #endregion
   }
 
   public static class ChunkList

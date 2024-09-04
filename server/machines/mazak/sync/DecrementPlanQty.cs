@@ -42,7 +42,7 @@ namespace MazakMachineInterface
     private static Serilog.ILogger Log = Serilog.Log.ForContext<DecrSchedule>();
 
     public static bool Decrement(
-      IWriteData write,
+      IMazakDB mazakDB,
       IRepository jobDB,
       MazakCurrentStatus status,
       DateTime? now = null
@@ -72,7 +72,7 @@ namespace MazakMachineInterface
       if (jobs.Count == 0)
         return false;
 
-      ReducePlannedQuantity(write, jobs);
+      ReducePlannedQuantity(mazakDB, jobs);
       RecordDecrement(jobDB, jobs, now);
 
       return true;
@@ -145,7 +145,7 @@ namespace MazakMachineInterface
       return jobs;
     }
 
-    private static void ReducePlannedQuantity(IWriteData writeData, ICollection<DecrSchedule> jobs)
+    private static void ReducePlannedQuantity(IMazakDB writeData, ICollection<DecrSchedule> jobs)
     {
       var schs = new List<MazakScheduleRow>();
       foreach (var job in jobs)
