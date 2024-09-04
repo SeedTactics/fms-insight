@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 
 namespace MazakMachineInterface
 {
@@ -373,6 +372,11 @@ namespace MazakMachineInterface
     public string FromPosition { get; init; }
   }
 
+  public record MazakAllDataAndLogs : MazakAllData
+  {
+    public IReadOnlyList<LogEntry> Logs { get; init; }
+  }
+
   public interface ICurrentLoadActions
   {
     IEnumerable<LoadAction> CurrentLoadActions();
@@ -382,12 +386,11 @@ namespace MazakMachineInterface
   {
     MazakDbType MazakType { get; }
     MazakAllData LoadAllData();
+    MazakAllDataAndLogs LoadAllDataAndLogs(string maxLogID);
     IEnumerable<MazakProgramRow> LoadPrograms();
     IEnumerable<ToolPocketRow> LoadTools();
 
     void Save(MazakWriteData data, string prefix);
-
-    TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action);
   }
 
   public record NewMazakProgram

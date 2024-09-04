@@ -235,7 +235,7 @@ public sealed class MazakSyncSpec : IDisposable
     );
     File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,1,6,4,prog,,,,"]);
 
-    var allData = new MazakAllData()
+    var allData = new MazakAllDataAndLogs()
     {
       MainPrograms = [],
       Fixtures = [],
@@ -244,8 +244,9 @@ public sealed class MazakSyncSpec : IDisposable
       PalletPositions = [],
       Schedules = [],
       LoadActions = [],
+      Logs = LogCSVParsing.LoadLog(null, _tempDir),
     };
-    _mazakDB.LoadAllData().Returns(allData);
+    _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
 
     _sync
       .CalculateCellState(db)
@@ -301,9 +302,9 @@ public sealed class MazakSyncSpec : IDisposable
     );
 
     _mazakDB
-      .LoadAllData()
+      .LoadAllDataAndLogs(Arg.Any<string>())
       .Returns(
-        new MazakAllData()
+        new MazakAllDataAndLogs()
         {
           MainPrograms = [],
           Fixtures = [],
@@ -311,6 +312,7 @@ public sealed class MazakSyncSpec : IDisposable
           Parts = [],
           Schedules = [],
           LoadActions = [],
+          Logs = LogCSVParsing.LoadLog(null, _tempDir),
         }
       );
 
@@ -358,7 +360,7 @@ public sealed class MazakSyncSpec : IDisposable
       timeUTC: now
     );
 
-    var allData = new MazakAllData()
+    var allData = new MazakAllDataAndLogs()
     {
       MainPrograms = [],
       Fixtures = [],
@@ -368,8 +370,9 @@ public sealed class MazakSyncSpec : IDisposable
       PalletSubStatuses = [],
       Schedules = [],
       LoadActions = [],
+      Logs = [],
     };
-    _mazakDB.LoadAllData().Returns(allData);
+    _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
 
     _sync
       .CalculateCellState(db)
@@ -444,7 +447,7 @@ public sealed class MazakSyncSpec : IDisposable
         Material = [],
         Alarms = [],
       },
-      AllData = new MazakAllData()
+      AllData = new MazakAllDataAndLogs()
       {
         MainPrograms = ImmutableList
           .Create("1001", "1002", "1003", "1004", "1005")
@@ -454,6 +457,7 @@ public sealed class MazakSyncSpec : IDisposable
         Parts = [],
         Schedules = [],
         LoadActions = [],
+        Logs = [],
       },
     };
 
@@ -521,7 +525,7 @@ public sealed class MazakSyncSpec : IDisposable
         Material = [],
         Alarms = [],
       },
-      AllData = new MazakAllData()
+      AllData = new MazakAllDataAndLogs()
       {
         Schedules =
         [
@@ -560,6 +564,7 @@ public sealed class MazakSyncSpec : IDisposable
             ],
           },
         ],
+        Logs = [],
         LoadActions = [],
       },
     };

@@ -54,8 +54,9 @@ namespace MazakMachineInterface
     private readonly string _readConnStr;
     private readonly string _writeConnStr;
     private readonly ICurrentLoadActions _loadOper;
+    private readonly MazakConfig _cfg;
 
-    public MazakDbType MazakType { get; }
+    public MazakDbType MazakType => _cfg.DBType;
 
     private void CheckReadyForConnect()
     {
@@ -69,7 +70,7 @@ namespace MazakMachineInterface
 
     public OpenDatabaseKitDB(MazakConfig cfg, ICurrentLoadActions loadOper)
     {
-      MazakType = cfg.DBType;
+      _cfg = cfg;
       _loadOper = loadOper;
 
       if (MazakType != MazakDbType.MazakSmooth)
@@ -1158,15 +1159,46 @@ namespace MazakMachineInterface
     {
       var data = WithReadDBConnection(conn =>
       {
-        using (var trans = conn.BeginTransaction())
-        {
-          var ret = LoadAllData(conn, trans);
-          trans.Commit();
-          return ret;
-        }
+        using var trans = conn.BeginTransaction();
+        var ret = LoadAllData(conn, trans);
+        return ret;
       });
 
       return data;
+    }
+
+    public MazakAllDataAndLogs LoadAllDataAndLogs(string maxLogID)
+    {
+      return WithReadDBConnection(conn =>
+      {
+        using var trans = conn.BeginTransaction();
+        var data = LoadAllData(conn, trans);
+
+        IReadOnlyList<LogEntry> logs;
+
+        if (MazakType == MazakDbType.MazakVersionE)
+        {
+          logs = LogDataVerE.LoadLog(maxLogID, conn, trans);
+        }
+        else
+        {
+          logs = LogCSVParsing.LoadLog(maxLogID, _cfg.LogCSVPath);
+        }
+
+        return new MazakAllDataAndLogs()
+        {
+          Schedules = data.Schedules,
+          LoadActions = data.LoadActions,
+          PalletSubStatuses = data.PalletSubStatuses,
+          PalletPositions = data.PalletPositions,
+          Alarms = data.Alarms,
+          Parts = data.Parts,
+          Pallets = data.Pallets,
+          MainPrograms = data.MainPrograms,
+          Fixtures = data.Fixtures,
+          Logs = logs,
+        };
+      });
     }
     #endregion
   }
