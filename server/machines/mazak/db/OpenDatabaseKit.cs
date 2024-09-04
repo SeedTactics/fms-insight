@@ -253,15 +253,49 @@ namespace MazakMachineInterface
             trans.Commit();
           }
 
+          // check for errors
           foreach (int waitSecs in new[] { 5, 5, 10, 10, 15, 15, 30 })
           {
             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
             if (CheckTransactionErrors(conn, prefix, data))
             {
-              return;
+              goto noErrors;
             }
           }
           throw new Exception("Timeout during download: open database kit is not running or responding");
+
+          noErrors:
+          // wait for any new parts and schedules
+          var newParts = data
+            .Parts.Where(p => p.Command == MazakWriteCommand.Add)
+            .Select(p => p.PartName)
+            .ToList();
+          var newSchIds = data
+            .Schedules.Where(s => s.Command == MazakWriteCommand.Add)
+            .Select(s => s.Id)
+            .ToList();
+
+          if (newParts.Count > 0 || newSchIds.Count > 0)
+          {
+            foreach (var waitSecs in new[] { 0.5, 1, 1, 3, 3, 5 })
+            {
+              System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
+              if (CheckPartsExist(newParts) && CheckSchedulesExist(newSchIds))
+              {
+                goto partsAndSchsExist;
+              }
+            }
+
+            Log.Error(
+              "Timeout waiting for new parts and schedules to appear in database: {@newParts} {@newSchIds}",
+              newParts,
+              newSchIds
+            );
+            throw new Exception("Timeout waiting for new parts and schedules to appear in database");
+          }
+
+          partsAndSchsExist:
+          ;
         }
       }
       catch (OleDbException ex)
@@ -1152,6 +1186,65 @@ namespace MazakMachineInterface
           new { p = partName }
         );
         return cnt > 0;
+      });
+    }
+
+    private bool CheckPartsExist(IList<string> parts)
+    {
+      if (parts.Count == 0)
+        return true;
+
+      return WithReadDBConnection(conn =>
+      {
+        using var trans = conn.BeginTransaction();
+        var cmd = conn.CreateCommand();
+        cmd.Transaction = trans;
+        cmd.CommandText = "SELECT COUNT(*) FROM Part WHERE PartName = @p";
+        var param = cmd.CreateParameter();
+        param.ParameterName = "@p";
+        param.DbType = DbType.String;
+        cmd.Parameters.Add(param);
+
+        foreach (var p in parts)
+        {
+          param.Value = p;
+          if ((int)cmd.ExecuteScalar() == 0)
+          {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    }
+
+    private bool CheckSchedulesExist(IList<int> scheduleIds)
+    {
+      if (scheduleIds.Count == 0)
+        return true;
+
+      return WithReadDBConnection(conn =>
+      {
+        using var trans = conn.BeginTransaction();
+        var cmd = conn.CreateCommand();
+        cmd.Transaction = trans;
+
+        cmd.CommandText = "SELECT COUNT(*) FROM Schedule WHERE ScheduleID = @s";
+        var param = cmd.CreateParameter();
+        param.ParameterName = "@s";
+        param.DbType = DbType.Int32;
+        cmd.Parameters.Add(param);
+
+        foreach (var s in scheduleIds)
+        {
+          param.Value = s;
+          if ((int)cmd.ExecuteScalar() == 0)
+          {
+            return false;
+          }
+        }
+
+        return true;
       });
     }
 
