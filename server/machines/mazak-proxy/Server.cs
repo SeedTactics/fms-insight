@@ -5,7 +5,7 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
   using System.Net;
   using System.Threading;
 
-  public interface IHttpServer
+  public interface IHttpServer : IDisposable
   {
     void AddLoadingHandler<T>(string path, Func<T> handler);
     void AddPostHandler<T, R>(string path, Func<T, R> handler);
