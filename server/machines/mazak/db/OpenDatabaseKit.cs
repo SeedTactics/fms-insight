@@ -1127,7 +1127,27 @@ namespace MazakMachineInterface
             }
           }
 
-          schRow.Processes.Add(proc with { FixQuantity = fixQty });
+          schRow.Processes.Add(
+            new MazakScheduleProcessRow()
+            {
+              FixQuantity = fixQty,
+
+              //all the rest the same
+              MazakScheduleRowId = proc.MazakScheduleRowId,
+              ProcessNumber = proc.ProcessNumber,
+              ProcessMaterialQuantity = proc.ProcessMaterialQuantity,
+              ProcessExecuteQuantity = proc.ProcessExecuteQuantity,
+              ProcessBadQuantity = proc.ProcessBadQuantity,
+              ProcessMachine = proc.ProcessMachine,
+              FixedMachineFlag = proc.FixedMachineFlag,
+              FixedMachineNumber = proc.FixedMachineNumber,
+              ScheduleProcess_1 = proc.ScheduleProcess_1,
+              ScheduleProcess_2 = proc.ScheduleProcess_2,
+              ScheduleProcess_3 = proc.ScheduleProcess_3,
+              ScheduleProcess_4 = proc.ScheduleProcess_4,
+              ScheduleProcess_5 = proc.ScheduleProcess_5,
+            }
+          );
         }
       }
       return schs;
