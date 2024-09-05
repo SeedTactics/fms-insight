@@ -56,7 +56,7 @@ public static class DapperQueryExecute
         var val = reader[prop.Name];
         if (val != DBNull.Value && val != null)
         {
-          prop.SetValue(obj, Convert.ChangeType(val, prop.PropertyType));
+          prop.SetValue(obj, Convert.ChangeType(val, prop.PropertyType), null);
         }
       }
       result.Add(obj);
@@ -96,7 +96,7 @@ public static class DapperQueryExecute
     {
       foreach (var pp in props)
       {
-        pp.Param.Value = pp.Prop.GetValue(obj);
+        pp.Param.Value = pp.Prop.GetValue(obj, null);
       }
       cmd.ExecuteNonQuery();
     }

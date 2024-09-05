@@ -196,10 +196,10 @@ namespace MazakMachineInterface
       // Open Database Kit can lockup if too many commands are sent at once
       return original
         .Schedules.Cast<object>()
-        .Concat(original.Parts)
-        .Concat(original.Pallets)
-        .Concat(original.Fixtures)
-        .Concat(original.Programs)
+        .Concat(original.Parts.Cast<object>())
+        .Concat(original.Pallets.Cast<object>())
+        .Concat(original.Fixtures.Cast<object>())
+        .Concat(original.Programs.Cast<object>())
         .Chunk(EntriesPerTransaction)
         .Select(chunk => new MazakWriteData()
         {
@@ -807,7 +807,7 @@ namespace MazakMachineInterface
       if (log.Any())
       {
         Log.Error("Error communicating with Open Database kit {@errs}", log);
-        throw new OpenDatabaseKitTransactionError(string.Join(Environment.NewLine, log));
+        throw new OpenDatabaseKitTransactionError(string.Join(Environment.NewLine, log.ToArray()));
       }
 
       if (foundUnprocesssedRow)

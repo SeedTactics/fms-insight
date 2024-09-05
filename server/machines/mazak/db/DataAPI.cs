@@ -366,7 +366,7 @@ namespace MazakMachineInterface
     {
       if (comment.EndsWith("-Insight"))
       {
-        return comment[..^8];
+        return comment.Substring(0, comment.Length - 8);
       }
 
       // Old FMS Insights had a -Path, strip it off for backwards compatibility
@@ -378,7 +378,7 @@ namespace MazakMachineInterface
       }
       else
       {
-        return comment[..idx];
+        return comment.Substring(0, idx);
       }
     }
   }

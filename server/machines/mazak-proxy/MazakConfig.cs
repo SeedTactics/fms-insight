@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace MazakMachineInterface;
 
-public record MazakConfig
+public class MazakConfig
 {
   public MazakDbType DBType { get; init; }
   public string SQLConnectionString { get; init; }
