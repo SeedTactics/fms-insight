@@ -127,7 +127,7 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
       catch (Exception ex)
       {
         resp.StatusCode = 500;
-        Console.Error.WriteLine(ex);
+        Serilog.Log.Error(ex, "Error handling request");
       }
 
       resp.Close();

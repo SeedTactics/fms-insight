@@ -280,11 +280,7 @@ namespace MazakMachineInterface
               }
             }
 
-            Log.Error(
-              "Timeout waiting for new parts and schedules to appear in database: {@newParts} {@newSchIds}",
-              newParts,
-              newSchIds
-            );
+            Log.Error("Timeout waiting for new parts and schedules to appear in database");
             throw new Exception("Timeout waiting for new parts and schedules to appear in database");
           }
 
@@ -806,7 +802,8 @@ namespace MazakMachineInterface
 
       if (log.Any())
       {
-        Log.Error("Error communicating with Open Database kit {@errs}", log);
+        var errs = string.Join(Environment.NewLine, log.ToArray());
+        Log.Error("Error communicating with Open Database kit " + errs);
         throw new OpenDatabaseKitTransactionError(string.Join(Environment.NewLine, log.ToArray()));
       }
 
