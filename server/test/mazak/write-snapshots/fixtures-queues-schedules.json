@@ -1,13 +1,14 @@
 {
+  "Prefix": "Add Schedules",
   "Schedules": [
     {
-      "Id": 2,
-      "Comment": "bbb-schId1234-Insight",
-      "PartName": "bbb:0:2",
-      "PlanQuantity": 20,
+      "Id": 1,
+      "Comment": "aaa-schId1234-Insight",
+      "PartName": "aaa:0:1",
+      "PlanQuantity": 11,
       "CompleteQuantity": 0,
       "Priority": 10,
-      "DueDate": "2018-07-18",
+      "DueDate": "2018-07-18T00:00:00-05:00",
       "FixForMachine": 0,
       "HoldMode": 0,
       "MissingFixture": 0,
@@ -21,13 +22,12 @@
       "Schedule_4": 0,
       "Schedule_5": 0,
       "Schedule_6": 0,
-      "StartDate": null,
       "SetNumber": 0,
       "SetQuantity": 0,
       "SetNumberSets": 0,
       "Processes": [
         {
-          "MazakScheduleRowId": 2,
+          "MazakScheduleRowId": 1,
           "FixQuantity": 0,
           "ProcessNumber": 1,
           "ProcessMaterialQuantity": 0,
@@ -43,7 +43,7 @@
           "ScheduleProcess_5": 0
         },
         {
-          "MazakScheduleRowId": 2,
+          "MazakScheduleRowId": 1,
           "FixQuantity": 0,
           "ProcessNumber": 2,
           "ProcessMaterialQuantity": 0,
@@ -62,13 +62,13 @@
       "Command": "Add"
     },
     {
-      "Id": 1,
-      "Comment": "aaa-schId1234-Insight",
-      "PartName": "aaa:0:1",
-      "PlanQuantity": 11,
+      "Id": 2,
+      "Comment": "bbb-schId1234-Insight",
+      "PartName": "bbb:0:2",
+      "PlanQuantity": 20,
       "CompleteQuantity": 0,
       "Priority": 10,
-      "DueDate": "2018-07-18",
+      "DueDate": "2018-07-18T00:00:00-05:00",
       "FixForMachine": 0,
       "HoldMode": 0,
       "MissingFixture": 0,
@@ -82,13 +82,12 @@
       "Schedule_4": 0,
       "Schedule_5": 0,
       "Schedule_6": 0,
-      "StartDate": null,
       "SetNumber": 0,
       "SetQuantity": 0,
       "SetNumberSets": 0,
       "Processes": [
         {
-          "MazakScheduleRowId": 1,
+          "MazakScheduleRowId": 2,
           "FixQuantity": 0,
           "ProcessNumber": 1,
           "ProcessMaterialQuantity": 0,
@@ -104,7 +103,7 @@
           "ScheduleProcess_5": 0
         },
         {
-          "MazakScheduleRowId": 1,
+          "MazakScheduleRowId": 2,
           "FixQuantity": 0,
           "ProcessNumber": 2,
           "ProcessMaterialQuantity": 0,
@@ -129,7 +128,7 @@
       "PlanQuantity": 38,
       "CompleteQuantity": 0,
       "Priority": 10,
-      "DueDate": "2018-07-18",
+      "DueDate": "2018-07-18T00:00:00-05:00",
       "FixForMachine": 0,
       "HoldMode": 0,
       "MissingFixture": 0,
@@ -143,7 +142,6 @@
       "Schedule_4": 0,
       "Schedule_5": 0,
       "Schedule_6": 0,
-      "StartDate": null,
       "SetNumber": 0,
       "SetQuantity": 0,
       "SetNumberSets": 0,
@@ -186,5 +184,6 @@
   ],
   "Parts": [],
   "Pallets": [],
-  "Fixtures": []
+  "Fixtures": [],
+  "Programs": []
 }

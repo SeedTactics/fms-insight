@@ -1,4 +1,5 @@
 {
+  "Prefix": "Delete Fixtures",
   "Schedules": [],
   "Parts": [],
   "Pallets": [],
@@ -11,9 +12,10 @@
   ],
   "Programs": [
     {
-      "Command": "Delete",
+      "ProgramRevision": 0,
       "MainProgram": "theprogdir/rev2/prog-bbb-1.EIA",
-      "Comment": "Insight:2:prog-bbb-1"
+      "Comment": "Insight:2:prog-bbb-1",
+      "Command": "Delete"
     }
   ]
 }

@@ -59,7 +59,7 @@ namespace MazakMachineInterface
           savedParts.Add(schRow.PartName);
         }
       }
-      var transSet = new MazakWriteData() { Schedules = schs };
+      var transSet = new MazakWriteData() { Prefix = "Update schedules", Schedules = schs };
       return (transSet, savedParts);
     }
 
@@ -70,7 +70,7 @@ namespace MazakMachineInterface
     )
     {
       if (!jobs.Any())
-        return new MazakWriteData();
+        return new MazakWriteData() { Prefix = "Add Schedules" };
 
       var schs = new List<MazakScheduleRow>();
       var routeStartDate = jobs.First().RouteStartUTC.ToLocalTime().Date;
@@ -146,9 +146,9 @@ namespace MazakMachineInterface
       }
 
       if (UseStartingOffsetForDueDate)
-        return new MazakWriteData() { Schedules = SortSchedulesByDate(schs) };
+        return new MazakWriteData() { Prefix = "Add Schedules", Schedules = SortSchedulesByDate(schs) };
       else
-        return new MazakWriteData() { Schedules = schs };
+        return new MazakWriteData() { Prefix = "Add Schedules", Schedules = schs };
     }
 
     private static MazakScheduleRow SchedulePart(

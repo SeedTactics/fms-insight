@@ -109,6 +109,7 @@ namespace MazakMachineInterface
       {
         var transSet = new MazakWriteData()
         {
+          Prefix = "Hold Mode",
           Schedules = new[]
           {
             _schRow with
@@ -119,7 +120,7 @@ namespace MazakMachineInterface
           },
         };
 
-        _parent.database.Save(transSet, "Hold Mode");
+        _parent.database.Save(transSet);
       }
 
       public MazakSchedule(

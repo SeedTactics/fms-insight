@@ -203,6 +203,7 @@ namespace MazakMachineInterface
         .Chunk(EntriesPerTransaction)
         .Select(chunk => new MazakWriteData()
         {
+          Prefix = original.Prefix,
           Schedules = chunk.OfType<MazakScheduleRow>().ToArray(),
           Parts = chunk.OfType<MazakPartRow>().ToArray(),
           Pallets = chunk.OfType<MazakPalletRow>().ToArray(),
@@ -212,15 +213,15 @@ namespace MazakMachineInterface
         .ToList();
     }
 
-    public void Save(MazakWriteData data, string prefix)
+    public void Save(MazakWriteData data)
     {
       foreach (var chunk in SplitWriteData(data))
       {
-        SaveChunck(chunk, prefix);
+        SaveChunck(chunk);
       }
     }
 
-    private void SaveChunck(MazakWriteData data, string prefix)
+    private void SaveChunck(MazakWriteData data)
     {
       CheckReadyForConnect();
 
@@ -251,7 +252,7 @@ namespace MazakMachineInterface
           foreach (int waitSecs in new[] { 5, 5, 10, 10, 15, 15, 30 })
           {
             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
-            if (CheckTransactionErrors(conn, prefix, data))
+            if (CheckTransactionErrors(conn, data))
             {
               goto noErrors;
             }
@@ -705,7 +706,7 @@ namespace MazakMachineInterface
       public string PartName { get; set; }
     }
 
-    private bool CheckTransactionErrors(IDbConnection conn, string prefix, MazakWriteData writeData)
+    private bool CheckTransactionErrors(IDbConnection conn, MazakWriteData writeData)
     {
       // Once Mazak processes a row, the row in the table is blanked.  If an error occurs, instead
       // the Command is changed to 9 and an error code is put in the TransactionStatus column.
@@ -739,7 +740,7 @@ namespace MazakMachineInterface
             if (row.Command.Value == MazakWriteCommand.Error)
             {
               log.Add(
-                prefix
+                writeData.Prefix
                   + " Mazak transaction on table "
                   + table
                   + " at index "
@@ -775,7 +776,8 @@ namespace MazakMachineInterface
           )
           {
             Log.Debug(
-              prefix + " mazak transaction on table Part_t at index {idx} returned error 7 for part {part}",
+              writeData.Prefix
+                + " mazak transaction on table Part_t at index {idx} returned error 7 for part {part}",
               partIdx,
               row.PartName
             );
@@ -784,7 +786,7 @@ namespace MazakMachineInterface
           else if (row.Command.Value == MazakWriteCommand.Error)
           {
             log.Add(
-              prefix
+              writeData.Prefix
                 + " Mazak transaction on table Part_t at index "
                 + partIdx.ToString()
                 + " returned error "

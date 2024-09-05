@@ -477,7 +477,12 @@ namespace MazakMachineInterface
         );
       }
 
-      return new MazakWriteData() { Fixtures = fixRows, Programs = progs };
+      return new MazakWriteData()
+      {
+        Prefix = "Delete Fixtures",
+        Fixtures = fixRows,
+        Programs = progs,
+      };
     }
 
     public MazakWriteData AddFixtureAndProgramDatabaseRows(
@@ -552,7 +557,12 @@ namespace MazakMachineInterface
         }
       }
 
-      return new MazakWriteData() { Fixtures = fixRows, Programs = newProgs.Values.ToArray() };
+      return new MazakWriteData()
+      {
+        Prefix = "Add Fixtures",
+        Fixtures = fixRows,
+        Programs = newProgs.Values.ToArray(),
+      };
     }
 
     public MazakWriteData CreatePartPalletDatabaseRows(MazakConfig cfg)
@@ -576,7 +586,12 @@ namespace MazakMachineInterface
           palRows.Add(p);
       }
 
-      return new MazakWriteData() { Parts = partRows, Pallets = palRows };
+      return new MazakWriteData()
+      {
+        Prefix = "Add Parts",
+        Parts = partRows,
+        Pallets = palRows,
+      };
     }
 
     public MazakWriteData DeleteOldPartRows()
@@ -600,7 +615,7 @@ namespace MazakMachineInterface
           }
         }
       }
-      return new MazakWriteData() { Parts = partRows };
+      return new MazakWriteData() { Prefix = "Delete Parts", Parts = partRows };
     }
 
     public MazakWriteData DeleteOldPalletRows()
@@ -626,7 +641,7 @@ namespace MazakMachineInterface
           }
         }
       }
-      return new MazakWriteData() { Pallets = palRows };
+      return new MazakWriteData() { Prefix = "Delete Pallets", Pallets = palRows };
     }
   }
 

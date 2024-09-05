@@ -269,7 +269,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
       if (transSet != null && transSet.Schedules.Count > 0)
       {
-        mazakDB.Save(transSet, "Setting material from queues");
+        mazakDB.Save(transSet);
         queuesChanged = true;
       }
     }

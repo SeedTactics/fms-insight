@@ -766,7 +766,7 @@ namespace MazakMachineInterface
     IEnumerable<MazakProgramRow> LoadPrograms();
     IEnumerable<ToolPocketRow> LoadTools();
 
-    void Save(MazakWriteData data, string prefix);
+    void Save(MazakWriteData data);
   }
 
   [DataContract]
@@ -802,6 +802,9 @@ namespace MazakMachineInterface
   public record MazakWriteData
 #endif
   {
+    [DataMember]
+    public string Prefix { get; init; } = "";
+
     [DataMember]
     public IList<MazakScheduleRow> Schedules { get; init; } = new List<MazakScheduleRow>();
 

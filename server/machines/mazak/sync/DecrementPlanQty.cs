@@ -163,8 +163,12 @@ namespace MazakMachineInterface
 
       if (schs.Count > 0)
       {
-        var write = new MazakWriteData() { Schedules = schs };
-        writeData.Save(write, "Decrement preventing new parts starting");
+        var write = new MazakWriteData()
+        {
+          Prefix = "Decrement preventing new parts starting",
+          Schedules = schs,
+        };
+        writeData.Save(write);
       }
     }
 

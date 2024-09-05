@@ -1,10 +1,11 @@
 {
+  "Prefix": "Delete Parts",
   "Schedules": [],
   "Parts": [
     {
       "PartName": "part1:1:1",
       "Comment": "uniq1-Insight",
-      "Price": 0.0,
+      "Price": 0,
       "TotalProcess": 1,
       "MaterialName": "",
       "Part_1": 0,
@@ -19,5 +20,6 @@
     }
   ],
   "Pallets": [],
-  "Fixtures": []
+  "Fixtures": [],
+  "Programs": []
 }

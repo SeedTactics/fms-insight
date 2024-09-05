@@ -442,7 +442,7 @@ namespace MazakMachineInterface
         newSchs.Add(newSch);
       }
 
-      return new MazakWriteData() { Schedules = newSchs };
+      return new MazakWriteData() { Prefix = "Setting material from queues", Schedules = newSchs };
     }
 
     private static int? FindPathGroup(IRepository log, Func<int, int, int> getPathGroup, long matId)

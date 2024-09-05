@@ -62,7 +62,9 @@ namespace MachineWatchTest
       return (MazakWriteData)
         _mazakDbMock
           .ReceivedCalls()
-          .LastOrDefault(e => e.GetMethodInfo().Name == "Save" && e.GetArguments()[1].ToString() == prefix)
+          .LastOrDefault(e =>
+            e.GetMethodInfo().Name == "Save" && ((MazakWriteData)e.GetArguments()[0]).Prefix == prefix
+          )
           ?.GetArguments()[0];
     }
 
@@ -438,7 +440,7 @@ namespace MachineWatchTest
     public void ErrorDuringPartsPallets()
     {
       _mazakDbMock
-        .When(x => x.Save(Arg.Any<MazakWriteData>(), "Add Parts"))
+        .When(x => x.Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Add Parts")))
         .Do(x => throw new Exception("Sample error"));
 
       var newJobs = JsonSerializer.Deserialize<NewJobs>(
@@ -483,7 +485,7 @@ namespace MachineWatchTest
     {
       bool throwError = true;
       _mazakDbMock
-        .When(x => x.Save(Arg.Any<MazakWriteData>(), "Add Schedules"))
+        .When(x => x.Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Add Schedules")))
         .Do(x =>
         {
           if (throwError)
@@ -572,7 +574,7 @@ namespace MachineWatchTest
     {
       bool throwError = true;
       _mazakDbMock
-        .When(x => x.Save(Arg.Any<MazakWriteData>(), "Add Schedules"))
+        .When(x => x.Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Add Schedules")))
         .Do(x =>
         {
           if (throwError)
@@ -692,6 +694,7 @@ namespace MachineWatchTest
 
       var orig = new MazakWriteData()
       {
+        Prefix = "test",
         Schedules = schs,
         Parts = parts,
         Pallets = pals,

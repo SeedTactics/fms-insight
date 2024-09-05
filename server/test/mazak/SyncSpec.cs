@@ -469,7 +469,7 @@ public sealed class MazakSyncSpec : IDisposable
       jsonSettings
     );
     MazakWriteData writeData = null;
-    _mazakDB.WhenForAnyArgs(x => x.Save(default, default)).Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
+    _mazakDB.WhenForAnyArgs(x => x.Save(default)).Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
 
     _mazakDB
       .LoadAllData()
@@ -494,7 +494,7 @@ public sealed class MazakSyncSpec : IDisposable
     _mazakDB
       .ReceivedCalls()
       .Where(c => c.GetMethodInfo().Name == "Save")
-      .Select(c => c.GetArguments()[1] as string)
+      .Select(c => ((MazakWriteData)c.GetArguments()[0]).Prefix)
       .Should()
       .BeEquivalentTo(["Delete Pallets", "Delete Fixtures", "Add Fixtures", "Add Parts", "Add Schedules"]);
     // more detailed tests are in the write data tests
@@ -598,7 +598,7 @@ public sealed class MazakSyncSpec : IDisposable
     _sync.ApplyActions(db, st).Should().BeTrue();
 
     _mazakDB.ReceivedCalls().Should().HaveCount(1);
-    _mazakDB.Received().Save(Arg.Any<MazakWriteData>(), Arg.Is("Setting material from queues"));
+    _mazakDB.Received().Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Setting material from queues"));
 
     var trans = _mazakDB.ReceivedCalls().Select(c => c.GetArguments()[0] as MazakWriteData).First();
     trans.Schedules.Count.Should().Be(1);

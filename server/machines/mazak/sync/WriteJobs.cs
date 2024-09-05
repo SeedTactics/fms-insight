@@ -177,7 +177,7 @@ namespace MazakMachineInterface
 
       var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData);
       if (transSet.Schedules.Any())
-        mazakDb.Save(transSet, "Update schedules");
+        mazakDb.Save(transSet);
 
       Log.Debug("Saved Parts: {parts}", savedParts);
 
@@ -201,26 +201,26 @@ namespace MazakMachineInterface
       transSet = mazakJobs.DeleteOldPartRows();
       if (transSet.Parts.Any())
       {
-        mazakDb.Save(transSet, "Delete Parts");
+        mazakDb.Save(transSet);
       }
 
       // delete pallets
       transSet = mazakJobs.DeleteOldPalletRows();
-      mazakDb.Save(transSet, "Delete Pallets");
+      mazakDb.Save(transSet);
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       transSet = mazakJobs.DeleteFixtureAndProgramDatabaseRows();
-      mazakDb.Save(transSet, "Delete Fixtures");
+      mazakDb.Save(transSet);
 
       transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(
         jobDB.LoadProgramContent,
         mazakCfg.ProgramDirectory
       );
-      mazakDb.Save(transSet, "Add Fixtures");
+      mazakDb.Save(transSet);
 
       //now save the pallets and parts
       transSet = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
-      mazakDb.Save(transSet, "Add Parts");
+      mazakDb.Save(transSet);
     }
 
     private static void AddSchedules(
@@ -236,7 +236,7 @@ namespace MazakMachineInterface
       var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, mazakCfg.UseStartingOffsetForDueDate);
       if (transSet.Schedules.Any())
       {
-        writeDb.Save(transSet, "Add Schedules");
+        writeDb.Save(transSet);
         foreach (var s in transSet.Schedules)
         {
           var uniq = MazakComment.Parse(s.Comment);
