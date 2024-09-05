@@ -105,7 +105,7 @@ namespace MazakMachineInterface
         {
           if (MazakPart.IsSailPart(partRow.PartName, partRow.Comment))
           {
-            var u = MazakPart.ParseComment(partRow.Comment);
+            var u = MazakComment.Parse(partRow.Comment);
             if (u == part.UniqueStr)
             {
               downloadUid = MazakPart.ParseUID(partRow.PartName);
@@ -301,7 +301,7 @@ namespace MazakMachineInterface
       return earlierConflicts;
     }
 
-    private static IReadOnlyList<MazakScheduleRow> SortSchedulesByDate(List<MazakScheduleRow> schs)
+    private static IList<MazakScheduleRow> SortSchedulesByDate(List<MazakScheduleRow> schs)
     {
       return schs.OrderBy(x => x.DueDate).ThenBy(x => -x.Priority).ToList();
     }

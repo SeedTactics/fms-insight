@@ -49,7 +49,7 @@ namespace MachineWatchTest
 
     private IMazakDB _write;
 
-    private IReadOnlyList<MazakScheduleRow> GetSchRows()
+    private IList<MazakScheduleRow> GetSchRows()
     {
       var wr =
         _write.ReceivedCalls().LastOrDefault(c => c.GetMethodInfo().Name == "Save")?.GetArguments()[0]

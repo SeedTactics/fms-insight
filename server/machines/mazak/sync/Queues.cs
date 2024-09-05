@@ -93,7 +93,7 @@ namespace MazakMachineInterface
         if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
           continue;
 
-        var unique = MazakPart.ParseComment(schRow.Comment);
+        var unique = MazakComment.Parse(schRow.Comment);
 
         var job = jdb.LoadJob(unique);
         if (job == null)

@@ -808,7 +808,7 @@ namespace MazakMachineInterface
           var sch = mazakSchedules.Schedules.FirstOrDefault(s => s.Id == st.ScheduleID);
           if (sch == null)
             continue;
-          var unique = MazakPart.ParseComment(sch.Comment);
+          var unique = MazakComment.Parse(sch.Comment);
           if (string.IsNullOrEmpty(unique))
             continue;
 

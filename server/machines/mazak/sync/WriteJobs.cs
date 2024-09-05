@@ -80,7 +80,7 @@ namespace MazakMachineInterface
         {
           if (MazakPart.IsSailPart(s.PartName, s.Comment))
           {
-            return MazakPart.ParseComment(s.Comment);
+            return MazakComment.Parse(s.Comment);
           }
           else
           {
@@ -239,7 +239,7 @@ namespace MazakMachineInterface
         writeDb.Save(transSet, "Add Schedules");
         foreach (var s in transSet.Schedules)
         {
-          var uniq = MazakPart.ParseComment(s.Comment);
+          var uniq = MazakComment.Parse(s.Comment);
           jobDB.MarkJobCopiedToSystem(uniq);
         }
       }
@@ -259,7 +259,7 @@ namespace MazakMachineInterface
           continue;
         if (!MazakPart.IsSailPart(sch.PartName, sch.Comment))
           continue;
-        var unique = MazakPart.ParseComment(sch.Comment);
+        var unique = MazakComment.Parse(sch.Comment);
         if (jobDB.LoadJob(unique) == null)
           continue;
 

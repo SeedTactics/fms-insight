@@ -109,7 +109,7 @@ namespace MazakMachineInterface
                   LoadStation = stat,
                   Part = part,
                   Process = proc,
-                  Unique = string.IsNullOrEmpty(comment) ? "" : MazakPart.ParseComment(comment),
+                  Unique = string.IsNullOrEmpty(comment) ? "" : MazakComment.Parse(comment),
                   Path = 1,
                   Qty = qty,
                 }
@@ -157,7 +157,6 @@ namespace MazakMachineInterface
         + " FROM A9_FixWork "
         + " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a9_ScheduleID";
       var ret = new List<LoadAction>();
-      var elems = conn.Query(qry, transaction: trans);
       foreach (var e in conn.Query<FixWork>(qry, transaction: trans))
       {
         if (string.IsNullOrEmpty(e.a9_ptnam))
@@ -182,7 +181,7 @@ namespace MazakMachineInterface
             LoadEvent = true,
             LoadStation = stat,
             Part = part,
-            Unique = string.IsNullOrEmpty(comment) ? "" : MazakPart.ParseComment(comment),
+            Unique = string.IsNullOrEmpty(comment) ? "" : MazakComment.Parse(comment),
             Path = 1,
             Process = proc,
             Qty = qty,
@@ -208,7 +207,6 @@ namespace MazakMachineInterface
         + " FROM A8_RemoveWork "
         + " LEFT OUTER JOIN A1_Schedule ON A1_Schedule.ScheduleID = a8_ScheduleID";
       var ret = new List<LoadAction>();
-      var elems = conn.Query(qry, transaction: trans);
       foreach (var e in conn.Query<RemoveWork>(qry, transaction: trans))
       {
         if (string.IsNullOrEmpty(e.a8_ptnam))
@@ -233,7 +231,7 @@ namespace MazakMachineInterface
             LoadEvent = false,
             LoadStation = stat,
             Part = part,
-            Unique = string.IsNullOrEmpty(comment) ? "" : MazakPart.ParseComment(comment),
+            Unique = string.IsNullOrEmpty(comment) ? "" : MazakComment.Parse(comment),
             Process = proc,
             Qty = qty,
             Path = 1,

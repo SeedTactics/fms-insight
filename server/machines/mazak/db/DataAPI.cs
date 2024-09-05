@@ -277,7 +277,7 @@ namespace MazakMachineInterface
       {
         if (schRow.PartName == mazakPartName && !string.IsNullOrEmpty(schRow.Comment))
         {
-          unique = MazakPart.ParseComment(schRow.Comment);
+          unique = MazakComment.Parse(schRow.Comment);
           numProc = schRow.Processes.Count;
           if (numProc < proc)
             numProc = proc;
@@ -353,6 +353,34 @@ namespace MazakMachineInterface
   public record MazakAllDataAndLogs : MazakAllData
   {
     public IList<LogEntry> Logs { get; init; }
+  }
+
+  public static class MazakComment
+  {
+    public static string Format(string unique)
+    {
+      return unique + "-Insight";
+    }
+
+    public static string Parse(string comment)
+    {
+      if (comment.EndsWith("-Insight"))
+      {
+        return comment[..^8];
+      }
+
+      // Old FMS Insights had a -Path, strip it off for backwards compatibility
+      int idx = comment.LastIndexOf("-Path");
+
+      if (idx < 0)
+      {
+        return comment;
+      }
+      else
+      {
+        return comment[..idx];
+      }
+    }
   }
 
   public interface ICurrentLoadActions

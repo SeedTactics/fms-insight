@@ -94,7 +94,7 @@ namespace MazakMachineInterface
 
       public string UniqueStr
       {
-        get { return MazakPart.ParseComment(_schRow.Comment); }
+        get { return MazakComment.Parse(_schRow.Comment); }
       }
 
       public HoldMode Hold
@@ -133,7 +133,7 @@ namespace MazakMachineInterface
 
         if (MazakPart.IsSailPart(_schRow.PartName, _schRow.Comment))
         {
-          var unique = MazakPart.ParseComment(_schRow.Comment);
+          var unique = MazakComment.Parse(_schRow.Comment);
           var job = jdb.LoadJob(unique);
           if (job != null)
           {

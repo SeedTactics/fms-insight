@@ -119,7 +119,7 @@ namespace MazakMachineInterface
           partName = partName.Substring(0, loc);
         string jobUnique = "";
         if (!string.IsNullOrEmpty(partRow.Comment))
-          jobUnique = MazakPart.ParseComment(partRow.Comment);
+          jobUnique = MazakComment.Parse(partRow.Comment);
 
         if (!uniqueToMaxProcess.ContainsKey(jobUnique))
           continue;
@@ -474,7 +474,7 @@ namespace MazakMachineInterface
           string jobUnique = "";
           int numProc = partRow.Processes.Count;
 
-          jobUnique = MazakPart.ParseComment(partRow.Comment);
+          jobUnique = MazakComment.Parse(partRow.Comment);
 
           if (jobDB.LoadJob(jobUnique) == null)
             continue;

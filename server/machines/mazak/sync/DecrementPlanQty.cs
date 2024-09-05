@@ -97,7 +97,7 @@ namespace MazakMachineInterface
           continue;
         if (string.IsNullOrEmpty(sch.Comment))
           continue;
-        var unique = MazakPart.ParseComment(sch.Comment);
+        var unique = MazakComment.Parse(sch.Comment);
 
         //load the job
         if (string.IsNullOrEmpty(unique))
