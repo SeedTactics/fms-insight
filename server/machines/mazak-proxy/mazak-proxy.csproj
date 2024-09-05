@@ -11,6 +11,8 @@
     <Compile Include="../mazak/db/LogCSV.cs" />
     <Compile Include="../mazak/db/LogVerE.cs" />
     <Compile Include="../mazak/db/OpenDatabaseKit.cs" />
+
+    <Reference Include="System.ServiceModel.Web" />
   </ItemGroup>
 
 </Project>
