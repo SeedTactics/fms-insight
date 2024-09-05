@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 public static class DapperQueryExecute
 {
@@ -46,17 +47,21 @@ public static class DapperQueryExecute
     cmd.CommandText = sql;
     using var reader = cmd.ExecuteReader();
 
-    var props = typeof(T).GetProperties();
+    var props = typeof(T).GetProperties().ToDictionary(p => p.Name);
 
     while (reader.Read())
     {
       var obj = Activator.CreateInstance<T>();
-      foreach (var prop in props)
+      for (int i = 0; i < reader.FieldCount; i++)
       {
-        var val = reader[prop.Name];
-        if (val != DBNull.Value && val != null)
+        var name = reader.GetName(i);
+        if (props.TryGetValue(name, out var prop))
         {
-          prop.SetValue(obj, Convert.ChangeType(val, prop.PropertyType), null);
+          var val = reader[i];
+          if (val != DBNull.Value && val != null)
+          {
+            prop.SetValue(obj, Convert.ChangeType(val, prop.PropertyType), null);
+          }
         }
       }
       result.Add(obj);
