@@ -36,7 +36,7 @@ using System.Data;
 using System.Data.OleDb;
 using System.Linq;
 #if !NET35
-// On net3.5, we have a small reflection-based implementation below
+// On net3.5, we have a small reflection-based implementation
 using Dapper;
 #endif
 
@@ -48,7 +48,7 @@ namespace MazakMachineInterface
       : base(msg) { }
   }
 
-  public sealed class OpenDatabaseKitDB : IMazakDB
+  public sealed class OpenDatabaseKitDB : IMazakDB, IDisposable
   {
     private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitDB>();
     public static System.Threading.Mutex MazakTransactionLock = new System.Threading.Mutex();
@@ -58,12 +58,12 @@ namespace MazakMachineInterface
     private readonly string _writeConnStr;
     private readonly ICurrentLoadActions _loadOper;
     private readonly MazakConfig _cfg;
-
-    public MazakDbType MazakType => _cfg.DBType;
+    private System.IO.FileSystemWatcher logWatcher;
+    private MazakDbType _dbType => _cfg.DBType;
 
     private void CheckReadyForConnect()
     {
-      if (MazakType != MazakDbType.MazakVersionE)
+      if (_dbType != MazakDbType.MazakVersionE)
         return;
       if (!System.IO.File.Exists(ready4ConectPath))
       {
@@ -76,41 +76,71 @@ namespace MazakMachineInterface
       _cfg = cfg;
       _loadOper = loadOper;
 
-      if (MazakType != MazakDbType.MazakSmooth)
+      if (_dbType != MazakDbType.MazakSmooth)
       {
-        ready4ConectPath = System.IO.Path.Combine(cfg.SQLConnectionString, "ready4Conect.mdb");
+        ready4ConectPath = System.IO.Path.Combine(cfg.OleDbDatabasePath, "ready4Conect.mdb");
       }
 
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
-      {
-        _writeConnStr =
-          "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";"
-          + "User ID=Admin;"
-          + "Data Source="
-          + System.IO.Path.Combine(cfg.SQLConnectionString, "FCNETUSER1.mdb")
-          + ";"
-          + "Mode=Share Deny None;";
-      }
-      else
-      {
-        _writeConnStr = cfg.SQLConnectionString + ";Database=FCNETUSER01";
-      }
-
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
+      if (_dbType == MazakDbType.MazakWeb || _dbType == MazakDbType.MazakVersionE)
       {
         _readConnStr =
-          "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";User ID=Admin;"
-          + "Data Source="
-          + System.IO.Path.Combine(cfg.SQLConnectionString, "FCREADDAT01.mdb")
-          + ";"
-          + "Mode=Share Deny Write;";
+          cfg.SQLConnectionString
+          + ";Data Source="
+          + System.IO.Path.Combine(cfg.OleDbDatabasePath, "FCREADDAT01.mdb")
+          + ";";
+        _writeConnStr =
+          cfg.SQLConnectionString
+          + ";Data Source="
+          + System.IO.Path.Combine(cfg.OleDbDatabasePath, "FCNETUSER1.mdb")
+          + ";";
       }
       else
       {
         _readConnStr = cfg.SQLConnectionString + ";Database=FCREADDAT01";
+        _writeConnStr = cfg.SQLConnectionString + ";Database=FCNETUSER01";
       }
 
+      if (_dbType == MazakDbType.MazakVersionE)
+      {
+        if (System.IO.Directory.Exists(cfg.LoadCSVPath))
+        {
+          logWatcher = new System.IO.FileSystemWatcher(cfg.LoadCSVPath) { Filter = "*.csv" };
+          logWatcher.Created += RaiseNewLog;
+          logWatcher.Changed += RaiseNewLog;
+        }
+        else
+        {
+          Log.Error("Load CSV Directory does not exist.  Set the directory in the config.ini file.");
+        }
+      }
+      else
+      {
+        if (System.IO.Directory.Exists(cfg.LogCSVPath))
+        {
+          logWatcher = new System.IO.FileSystemWatcher(cfg.LogCSVPath) { Filter = "*.csv" };
+          logWatcher.Created += RaiseNewLog;
+        }
+        else
+        {
+          Log.Error("Log CSV Directory does not exist.  Set the directory in the config.ini file.");
+        }
+      }
+      if (logWatcher != null)
+        logWatcher.EnableRaisingEvents = true;
+
       InitReadSQLStatements();
+    }
+
+    public void Dispose()
+    {
+      if (logWatcher != null)
+      {
+        logWatcher.EnableRaisingEvents = false;
+        logWatcher.Created -= RaiseNewLog;
+        logWatcher.Changed -= RaiseNewLog;
+        logWatcher.Dispose();
+        logWatcher = null;
+      }
     }
 
 #pragma warning disable CA1416 // Validate platform compatibility
@@ -162,7 +192,7 @@ namespace MazakMachineInterface
 
     private IDbConnection CreateReadConnection()
     {
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
+      if (_dbType == MazakDbType.MazakWeb || _dbType == MazakDbType.MazakVersionE)
       {
         return OpenOleDb(_readConnStr);
       }
@@ -176,7 +206,7 @@ namespace MazakMachineInterface
 
     private IDbConnection CreateWriteConnection()
     {
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
+      if (_dbType == MazakDbType.MazakWeb || _dbType == MazakDbType.MazakVersionE)
       {
         return OpenOleDb(_writeConnStr);
       }
@@ -314,7 +344,7 @@ namespace MazakMachineInterface
         transaction: trans
       );
 
-      if (MazakType == MazakDbType.MazakVersionE)
+      if (_dbType == MazakDbType.MazakVersionE)
       {
         // pallet version 1
         conn.Execute(
@@ -361,7 +391,7 @@ namespace MazakMachineInterface
         );
       }
 
-      if (MazakType == MazakDbType.MazakSmooth)
+      if (_dbType == MazakDbType.MazakSmooth)
       {
         conn.Execute(
           @"INSERT INTO ScheduleProcess_t(
@@ -649,7 +679,7 @@ namespace MazakMachineInterface
         );
       }
 
-      if (MazakType == MazakDbType.MazakSmooth)
+      if (_dbType == MazakDbType.MazakSmooth)
       {
         conn.Execute(
           @"INSERT INTO MainProgram_t(
@@ -872,7 +902,7 @@ namespace MazakMachineInterface
     {
       _fixtureSelect = "SELECT FixtureName, Comment FROM Fixture";
 
-      if (MazakType != MazakDbType.MazakVersionE)
+      if (_dbType != MazakDbType.MazakVersionE)
       {
         _palletSelect = "SELECT PalletNumber, FixtureGroup AS FixtureGroupV2, Fixture, RecordID FROM Pallet";
       }
@@ -881,7 +911,7 @@ namespace MazakMachineInterface
         _palletSelect = "SELECT PalletNumber, Angle AS AngleV1, Fixture, RecordID FROM Pallet";
       }
 
-      if (MazakType != MazakDbType.MazakSmooth)
+      if (_dbType != MazakDbType.MazakSmooth)
       {
         _partSelect = "SELECT Id, PartName, Comment, Price, TotalProcess FROM Part";
         _partSelect =
@@ -1181,7 +1211,7 @@ namespace MazakMachineInterface
 
     public IEnumerable<ToolPocketRow> LoadTools()
     {
-      if (MazakType == MazakDbType.MazakSmooth)
+      if (_dbType == MazakDbType.MazakSmooth)
       {
         return WithReadDBConnection(conn =>
         {
@@ -1275,7 +1305,7 @@ namespace MazakMachineInterface
 
         IList<LogEntry> logs;
 
-        if (MazakType == MazakDbType.MazakVersionE)
+        if (_dbType == MazakDbType.MazakVersionE)
         {
           logs = LogDataVerE.LoadLog(maxLogID, conn, trans);
         }
@@ -1298,6 +1328,25 @@ namespace MazakMachineInterface
           Logs = logs,
         };
       });
+    }
+
+    public void DeleteLogs(string lastSeenForeignId)
+    {
+      if (_dbType == MazakDbType.MazakVersionE)
+      {
+        // verE logs are deleted by Mazak
+      }
+      else
+      {
+        LogCSVParsing.DeleteLog(lastSeenForeignId, _cfg.LogCSVPath);
+      }
+    }
+
+    public event Action OnNewEvent;
+
+    private void RaiseNewLog(object sender, System.IO.FileSystemEventArgs e)
+    {
+      OnNewEvent?.Invoke();
     }
     #endregion
   }

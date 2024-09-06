@@ -67,47 +67,20 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   private readonly FMSSettings settings;
   private readonly MazakConfig mazakConfig;
 
-  private readonly FileSystemWatcher logWatcher;
-
   public MazakSync(IMazakDB mazakDb, FMSSettings settings, MazakConfig mazakConfig)
   {
     this.mazakDB = mazakDb;
     this.settings = settings;
     this.mazakConfig = mazakConfig;
-
-    if (mazakConfig.DBType == MazakDbType.MazakVersionE)
-    {
-      if (string.IsNullOrEmpty(mazakConfig.LoadCSVPath))
-      {
-        throw new Exception("LoadCSVPath must be set for MazakVersionE");
-      }
-      logWatcher = new FileSystemWatcher(mazakConfig.LoadCSVPath) { Filter = "*.csv" };
-      logWatcher.Created += RaiseNewCellState;
-      logWatcher.Changed += RaiseNewCellState;
-    }
-    else
-    {
-      logWatcher = new FileSystemWatcher(mazakConfig.LogCSVPath) { Filter = "*.csv" };
-      logWatcher.Created += RaiseNewCellState;
-    }
-
-    logWatcher.EnableRaisingEvents = true;
+    mazakDB.OnNewEvent += RaiseNewCellState;
   }
-
-  private bool _disposed = false;
 
   public void Dispose()
   {
-    if (_disposed)
-      return;
-    _disposed = true;
-    logWatcher.EnableRaisingEvents = false;
-    logWatcher.Created -= RaiseNewCellState;
-    logWatcher.Changed -= RaiseNewCellState;
-    logWatcher.Dispose();
+    mazakDB.OnNewEvent -= RaiseNewCellState;
   }
 
-  private void RaiseNewCellState(object sender, FileSystemEventArgs e)
+  private void RaiseNewCellState()
   {
     NewCellState?.Invoke();
   }
@@ -200,7 +173,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       }
     }
 
-    LogCSVParsing.DeleteLog(db.MaxForeignID(), mazakConfig.LogCSVPath);
+    mazakDB.DeleteLogs(db.MaxForeignID());
 
     bool palStChanged = false;
     if (!stoppedBecauseRecentMachineEnd)

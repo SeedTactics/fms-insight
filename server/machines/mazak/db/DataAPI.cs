@@ -760,13 +760,15 @@ namespace MazakMachineInterface
 
   public interface IMazakDB
   {
-    MazakDbType MazakType { get; }
     MazakAllData LoadAllData();
     MazakAllDataAndLogs LoadAllDataAndLogs(string maxLogID);
     IEnumerable<MazakProgramRow> LoadPrograms();
     IEnumerable<ToolPocketRow> LoadTools();
+    void DeleteLogs(string lastSeenForeignId);
 
     void Save(MazakWriteData data);
+
+    event Action OnNewEvent;
   }
 
   [DataContract]

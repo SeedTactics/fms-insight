@@ -37,6 +37,7 @@ public class MazakConfig
 {
   public MazakDbType DBType { get; init; }
   public string SQLConnectionString { get; init; }
+  public string OleDbDatabasePath { get; init; }
   public string LogCSVPath { get; init; }
   public string LoadCSVPath { get; init; }
 }
