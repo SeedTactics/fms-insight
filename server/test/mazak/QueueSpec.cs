@@ -232,10 +232,9 @@ namespace MachineWatchTest
         LoadEvent = true,
         LoadStation = 1,
         Part = "pppp",
-        Unique = "yyyy",
+        Comment = "yyyy-Insight",
         Process = 1,
         Qty = 1,
-        Path = 1,
       };
 
       trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
@@ -2697,10 +2696,9 @@ namespace MachineWatchTest
         LoadEvent = true,
         LoadStation = 1,
         Part = "pppp",
-        Unique = "uuuu",
+        Comment = "uuuu-Insight",
         Process = 1,
         Qty = 1,
-        Path = 1,
       };
       read.LoadActions.Add(action);
 
@@ -2996,10 +2994,9 @@ namespace MachineWatchTest
         LoadEvent = true,
         LoadStation = 11,
         Part = "pppp",
-        Unique = "uuu2",
+        Comment = "uuu2-Insight",
         Process = 1,
         Qty = 1,
-        Path = 1,
       };
       read.LoadActions.Add(action);
 

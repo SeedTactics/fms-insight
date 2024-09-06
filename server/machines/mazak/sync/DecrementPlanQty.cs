@@ -97,7 +97,7 @@ namespace MazakMachineInterface
           continue;
         if (string.IsNullOrEmpty(sch.Comment))
           continue;
-        var unique = MazakComment.Parse(sch.Comment);
+        var unique = MazakPart.UniqueFromComment(sch.Comment);
 
         //load the job
         if (string.IsNullOrEmpty(unique))
@@ -119,7 +119,12 @@ namespace MazakMachineInterface
         {
           foreach (var action in loadOpers)
           {
-            if (action.Unique == job.UniqueStr && action.Process == 1 && action.LoadEvent)
+            if (
+              !string.IsNullOrEmpty(action.Comment)
+              && MazakPart.UniqueFromComment(action.Comment) == job.UniqueStr
+              && action.Process == 1
+              && action.LoadEvent
+            )
             {
               loadingQty += action.Qty;
               Log.Debug(

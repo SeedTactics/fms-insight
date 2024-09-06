@@ -80,6 +80,7 @@ public sealed class MazakSyncSpec : IDisposable
         LoadCSVPath = "not used",
       }
     );
+    _mazakDB.ClearReceivedCalls();
   }
 
   public void Dispose()
@@ -96,7 +97,7 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync.NewCellState += () => complete.SetResult(true);
 
-    File.WriteAllLines(Path.Combine(_tempDir, "alog.csv"), ["2024,6,11,4,5,6,501,2,part,job,1,,2,,"]);
+    _mazakDB.OnNewEvent += Raise.Event<Action>();
 
     if (await Task.WhenAny(complete.Task, Task.Delay(5000)) != complete.Task)
     {
@@ -276,6 +277,11 @@ public sealed class MazakSyncSpec : IDisposable
       );
 
     db.MaxForeignID().Should().BeEquivalentTo("222loadend.csv");
+
+    _mazakDB.Received().DeleteLogs("222loadend.csv");
+
+    LogCSVParsing.DeleteLog("222loadend.csv", _tempDir);
+
     Directory.GetFiles(_tempDir, "*.csv").Should().BeEmpty();
   }
 
@@ -321,6 +327,10 @@ public sealed class MazakSyncSpec : IDisposable
     st.TimeUntilNextRefresh.Should().Be(TimeSpan.FromSeconds(15));
 
     db.MaxForeignID().Should().BeEquivalentTo("111loadstart.csv");
+
+    _mazakDB.Received().DeleteLogs("111loadstart.csv");
+
+    LogCSVParsing.DeleteLog("111loadstart.csv", _tempDir);
 
     Directory
       .GetFiles(_tempDir, "*.csv")

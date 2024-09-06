@@ -533,16 +533,13 @@ namespace MazakMachineInterface
     public bool LoadEvent { get; init; }
 
     [DataMember]
-    public string Unique { get; init; }
-
-    [DataMember]
     public string Part { get; init; }
 
     [DataMember]
-    public int Process { get; init; }
+    public string Comment { get; init; }
 
     [DataMember]
-    public int Path { get; init; }
+    public int Process { get; init; }
 
     [DataMember]
     public int Qty { get; init; }
@@ -572,25 +569,6 @@ namespace MazakMachineInterface
 
     [DataMember]
     public IEnumerable<MazakPartRow> Parts { get; init; }
-
-    public void FindSchedule(string mazakPartName, int proc, out string unique, out int path, out int numProc)
-    {
-      unique = "";
-      numProc = proc;
-      path = 1;
-      foreach (var schRow in Schedules)
-      {
-        if (schRow.PartName == mazakPartName && !string.IsNullOrEmpty(schRow.Comment))
-        {
-          unique = MazakComment.Parse(schRow.Comment);
-          numProc = schRow.Processes.Count;
-          if (numProc < proc)
-            numProc = proc;
-          path = 1;
-          return;
-        }
-      }
-    }
   }
 
   [DataContract]
@@ -723,34 +701,6 @@ namespace MazakMachineInterface
   {
     [DataMember]
     public IList<LogEntry> Logs { get; init; }
-  }
-
-  public static class MazakComment
-  {
-    public static string Format(string unique)
-    {
-      return unique + "-Insight";
-    }
-
-    public static string Parse(string comment)
-    {
-      if (comment.EndsWith("-Insight"))
-      {
-        return comment.Substring(0, comment.Length - 8);
-      }
-
-      // Old FMS Insights had a -Path, strip it off for backwards compatibility
-      int idx = comment.LastIndexOf("-Path");
-
-      if (idx < 0)
-      {
-        return comment;
-      }
-      else
-      {
-        return comment.Substring(0, idx);
-      }
-    }
   }
 
   public interface ICurrentLoadActions

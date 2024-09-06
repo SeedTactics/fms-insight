@@ -109,8 +109,7 @@ namespace MazakMachineInterface
                   LoadStation = stat,
                   Part = part,
                   Process = proc,
-                  Unique = string.IsNullOrEmpty(comment) ? "" : MazakComment.Parse(comment),
-                  Path = 1,
+                  Comment = comment,
                   Qty = qty,
                 }
               );
@@ -181,8 +180,7 @@ namespace MazakMachineInterface
             LoadEvent = true,
             LoadStation = stat,
             Part = part,
-            Unique = string.IsNullOrEmpty(comment) ? "" : MazakComment.Parse(comment),
-            Path = 1,
+            Comment = comment,
             Process = proc,
             Qty = qty,
           }
@@ -231,10 +229,9 @@ namespace MazakMachineInterface
             LoadEvent = false,
             LoadStation = stat,
             Part = part,
-            Unique = string.IsNullOrEmpty(comment) ? "" : MazakComment.Parse(comment),
+            Comment = comment,
             Process = proc,
             Qty = qty,
-            Path = 1,
           }
         );
       }

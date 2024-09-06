@@ -327,7 +327,7 @@
     {
       "LoadStation": 2,
       "LoadEvent": true,
-      "Unique": "aaa-schId1234",
+      "Comment": "aaa-schId1234-Insight",
       "Part": "aaa",
       "Process": 1,
       "Path": 1,
@@ -336,7 +336,7 @@
     {
       "LoadStation": 2,
       "LoadEvent": true,
-      "Unique": "aaa-schId1234",
+      "Comment": "aaa-schId1234-Insight",
       "Part": "aaa",
       "Process": 2,
       "Path": 1,
@@ -345,7 +345,7 @@
     {
       "LoadStation": 2,
       "LoadEvent": false,
-      "Unique": "aaa-schId1234",
+      "Comment": "aaa-schId1234-Insight",
       "Part": "aaa",
       "Process": 1,
       "Path": 1,
@@ -353,10 +353,22 @@
     }
   ],
   "MainPrograms": [
-    { "MainProgram": "1001", "Comment": "" },
-    { "MainProgram": "1002", "Comment": "" },
-    { "MainProgram": "1003", "Comment": "" },
-    { "MainProgram": "1004", "Comment": "" }
+    {
+      "MainProgram": "1001",
+      "Comment": ""
+    },
+    {
+      "MainProgram": "1002",
+      "Comment": ""
+    },
+    {
+      "MainProgram": "1003",
+      "Comment": ""
+    },
+    {
+      "MainProgram": "1004",
+      "Comment": ""
+    }
   ],
   "Schedules": [
     {

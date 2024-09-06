@@ -93,7 +93,7 @@ namespace MazakMachineInterface
         if (!MazakPart.IsSailPart(schRow.PartName, schRow.Comment))
           continue;
 
-        var unique = MazakComment.Parse(schRow.Comment);
+        var unique = MazakPart.UniqueFromComment(schRow.Comment);
 
         var job = jdb.LoadJob(unique);
         if (job == null)
@@ -109,7 +109,10 @@ namespace MazakMachineInterface
         bool foundJobAtLoad = false;
         foreach (var action in loadOpers)
         {
-          if (action.Unique == job.UniqueStr)
+          if (
+            !string.IsNullOrEmpty(action.Comment)
+            && MazakPart.UniqueFromComment(action.Comment) == job.UniqueStr
+          )
           {
             foundJobAtLoad = true;
             skippedCastings.Add(casting);
@@ -221,9 +224,7 @@ namespace MazakMachineInterface
         var matInQueue = QueuedMaterialForLoading(
           jobPlan.UniqueStr,
           logDb.GetMaterialInQueueByUnique(schProc.InputQueue, jobPlan.UniqueStr),
-          proc,
-          schProc.Path,
-          logDb
+          proc
         );
         var numMatInQueue = matInQueue.Count;
 
@@ -463,9 +464,7 @@ namespace MazakMachineInterface
     public static List<QueuedMaterial> QueuedMaterialForLoading(
       string jobUniq,
       IEnumerable<QueuedMaterial> materialToSearch,
-      int proc,
-      int path,
-      IRepository log
+      int proc
     )
     {
       var mats = new List<QueuedMaterial>();

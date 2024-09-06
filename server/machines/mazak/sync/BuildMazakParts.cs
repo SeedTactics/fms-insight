@@ -70,7 +70,7 @@ namespace MazakMachineInterface
 
     public string PartName { get; }
 
-    public string Comment => MazakComment.Format(Job.UniqueStr);
+    public string Comment => Job.UniqueStr + "-Insight";
 
     public static bool IsSailPart(string partName, string comment)
     {
@@ -112,6 +112,26 @@ namespace MazakMachineInterface
       else
       {
         return -1;
+      }
+    }
+
+    public static string UniqueFromComment(string comment)
+    {
+      if (comment.EndsWith("-Insight"))
+      {
+        return comment.Substring(0, comment.Length - 8);
+      }
+
+      // Old FMS Insights had a -Path, strip it off for backwards compatibility
+      int idx = comment.LastIndexOf("-Path");
+
+      if (idx < 0)
+      {
+        return comment;
+      }
+      else
+      {
+        return comment.Substring(0, idx);
       }
     }
   }

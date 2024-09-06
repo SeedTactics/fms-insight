@@ -76,7 +76,6 @@ namespace MachineWatchTest
       _jobDB = _repoCfg.OpenConnection();
 
       _mazakDbMock = Substitute.For<IMazakDB>();
-      _mazakDbMock.MazakType.Returns(MazakDbType.MazakSmooth);
 
       _initialAllData = new MazakAllData()
       {

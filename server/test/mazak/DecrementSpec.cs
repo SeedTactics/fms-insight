@@ -337,30 +337,27 @@ namespace MachineWatchTest
           {
             LoadStation = 1,
             LoadEvent = true, // load
-            Unique = "uuuu",
+            Comment = "uuuu-Insight",
             Part = "pppp",
             Process = 1,
-            Path = 1,
             Qty = 1,
           },
           new LoadAction()
           {
             LoadStation = 1,
             LoadEvent = false, // unload, should be ignored
-            Unique = "uuuu",
+            Comment = "uuuu-Insight",
             Part = "pppp",
             Process = 1,
-            Path = 1,
             Qty = 1,
           },
           new LoadAction()
           {
             LoadStation = 2,
             LoadEvent = true, // load of different part
-            Unique = "uuuu2",
+            Comment = "uuuu2-Insight",
             Part = "pppp",
             Process = 1,
-            Path = 1,
             Qty = 1,
           },
         },
