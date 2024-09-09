@@ -126,11 +126,18 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
       }
       catch (Exception ex)
       {
+        var buffer = System.Text.Encoding.UTF8.GetBytes(ex.ToString());
         resp.StatusCode = 500;
+        resp.ContentType = "text/plain";
+        resp.ContentEncoding = System.Text.Encoding.UTF8;
+        resp.ContentLength64 = buffer.Length;
+        resp.OutputStream.Write(buffer, 0, buffer.Length);
         Serilog.Log.Error(ex, "Error handling request");
       }
-
-      resp.Close();
+      finally
+      {
+        resp.Close();
+      }
     }
 
     private void HandleConnections()
