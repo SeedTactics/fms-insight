@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+using System;
+
 namespace MazakMachineInterface;
 
 public class MazakConfig
@@ -40,4 +42,22 @@ public class MazakConfig
   public string OleDbDatabasePath { get; init; }
   public string LogCSVPath { get; init; }
   public string LoadCSVPath { get; init; }
+
+  public const string DefaultConnectionStr =
+    "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";User ID=Admin;Mode=Share Deny None;";
+
+  public static MazakConfig LoadFromRegistry()
+  {
+    using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+      @"SOFTWARE\SeedTactics\FMS Insight Mazak Proxy"
+    );
+    return new MazakConfig()
+    {
+      DBType = (MazakDbType)Enum.Parse(typeof(MazakDbType), key.GetValue("DBType", "MazakWeb").ToString()),
+      SQLConnectionString = key.GetValue("SQLConnectionString", DefaultConnectionStr).ToString(),
+      OleDbDatabasePath = key.GetValue("OleDbDatabasePath", "c:\\Mazak\\NFMS\\DB").ToString(),
+      LogCSVPath = key.GetValue("LogCSVPath", "c:\\Mazak\\FMS\\Log").ToString(),
+      LoadCSVPath = key.GetValue("LoadCSVPath", "c:\\Mazak\\FMS\\LDS").ToString(),
+    };
+  }
 }

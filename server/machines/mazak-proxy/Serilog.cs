@@ -6,6 +6,7 @@ namespace Serilog
   public interface ILogger
   {
     public void Error(string message);
+    public void Information(string message);
     public void Debug(string messageTemplate, params object[] propertyValues);
   }
 
@@ -52,6 +53,19 @@ namespace Serilog
 
       // Also to debug
       Debug(ex, message);
+    }
+
+    void ILogger.Information(string message)
+    {
+      Log.Information(message);
+    }
+
+    public static void Information(string message)
+    {
+      using (var ev = new EventLog(EventLogConfig.LogName, ".", EventLogConfig.SourceName))
+      {
+        ev.WriteEntry(message, EventLogEntryType.Information);
+      }
     }
 
     public static void Debug(string messageTemplate, params object[] propertyValues)
