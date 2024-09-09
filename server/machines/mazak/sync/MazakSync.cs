@@ -97,6 +97,36 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     {
       ProgramRevision lookupProg(string prog, long? rev)
       {
+        // while checking jobs, a newly downloaded program might not yet
+        // be in the database.  Therefore, we need to check if the program
+        // is going to be included as part of the download
+        NewProgramContent? newlyAdded = jobs.Programs?.FirstOrDefault(p =>
+        {
+          if (rev.HasValue && rev.Value != 0)
+          {
+            return p.ProgramName == prog && p.Revision == rev.Value;
+          }
+          else
+          {
+            // 0 revision just means most recent
+            return p.ProgramName == prog;
+          }
+        });
+
+        if (newlyAdded != null)
+        {
+          return new ProgramRevision()
+          {
+            ProgramName = prog,
+            Comment = newlyAdded.Comment,
+            CellControllerProgramName = "", // not yet in the cell controller
+            // This revision isn't correct since a 0 or negative revision will be
+            // assigned as part of the transaction adding the jobs and programs
+            // to the database.
+            Revision = newlyAdded.Revision,
+          };
+        }
+
         if (rev.HasValue)
         {
           return db.LoadProgram(prog, rev.Value);
