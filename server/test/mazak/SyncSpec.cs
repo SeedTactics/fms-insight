@@ -186,7 +186,7 @@ public sealed class MazakSyncSpec : IDisposable
   {
     var jsonSettings = new JsonSerializerOptions();
     FMSInsightWebHost.JsonSettings(jsonSettings);
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         new MazakAllData()
