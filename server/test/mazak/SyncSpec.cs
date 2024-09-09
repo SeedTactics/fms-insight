@@ -184,6 +184,54 @@ public sealed class MazakSyncSpec : IDisposable
   }
 
   [Fact]
+  public void CheckSucceedIfProgramInDownload()
+  {
+    var jsonSettings = new JsonSerializerOptions();
+    FMSInsightWebHost.JsonSettings(jsonSettings);
+    _read
+      .LoadAllData()
+      .Returns(
+        new MazakAllData()
+        {
+          MainPrograms =
+          [
+            new MazakProgramRow() { MainProgram = "1001", Comment = "" },
+            // no 1002
+            new MazakProgramRow() { MainProgram = "1003", Comment = "" },
+            new MazakProgramRow() { MainProgram = "1004", Comment = "" },
+          ],
+          Fixtures = [],
+          Pallets = [],
+          Parts = [],
+          Schedules = [],
+        }
+      );
+
+    var newJ = JsonSerializer.Deserialize<NewJobs>(
+      File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+      jsonSettings
+    );
+
+    newJ = newJ with
+    {
+      Programs =
+      [
+        new NewProgramContent()
+        {
+          ProgramName = "1002",
+          Comment = "program 1002",
+          ProgramContent = "content for 1002",
+          Revision = -1,
+        },
+      ],
+    };
+
+    using var db = repo.OpenConnection();
+
+    _sync.CheckNewJobs(db, newJ).Should().BeEmpty();
+  }
+
+  [Fact]
   public void MissingQueue()
   {
     _fmsSt.Queues.Remove("queueAAA");
