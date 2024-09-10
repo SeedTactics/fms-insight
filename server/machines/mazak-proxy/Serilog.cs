@@ -101,6 +101,9 @@ namespace Serilog
       {
         ev.WriteEntry(message, EventLogEntryType.Information);
       }
+
+      // Also to debug
+      Debug(message);
     }
 
     public static void Debug(string messageTemplate, params object[] propertyValues)
@@ -154,6 +157,7 @@ namespace Serilog
           Properties = propertyValues,
         }
       );
+      file.WriteLine();
     }
   }
 }

@@ -9,7 +9,6 @@ VersionInfoVersion={#VERSION}
 
 DefaultDirName={pf}\SeedTactics\FMS Insight Mazak Proxy
 DefaultGroupName=SeedTactics
-UninstallDisplayIcon={app}\mazak-proxy.exe
 Compression=lzma
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64
@@ -29,16 +28,26 @@ Filename: {sys}\sc.exe; Parameters: "create fmsinsightmazakproxy start=auto binP
 Filename: {sys}\sc.exe; Parameters: "stop fmsinsightmazakproxy" ; Flags: runhidden
 Filename: {sys}\sc.exe; Parameters: "delete fmsinsightmazakproxy" ; Flags: runhidden
 
+[Registry]
+Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
+  ValueName: "DBType"; ValueData: "{code:GetDBType}" \
+  Flags: createvalueifdoesntexist, uninstdeletekey
+Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
+  ValueName: "OleDbDatabasePath"; ValueData: "{code:GetDatabasePath}" \
+  Flags: createvalueifdoesntexist, uninstdeletekey
+Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
+  ValueName: "LogCSVPath"; ValueData: "{code:GetLogCSVPath}"
+  Flags: createvalueifdoesntexist, uninstdeletekey
+Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
+  ValueName: "LoadCSVPath"; ValueData: "{code:GetLoadCSVPath}" \
+  Flags: createvalueifdoesntexist, uninstdeletekey
+
 [Code]
 var
-  DatabasePage: TInputDirWizardPage;
-  SqlDatabasePage: TInputQueryWizardPage;
   VersionPage: TInputOptionWizardPage;
+  DatabasePage: TInputDirWizardPage;
   LogCSVPage: TInputDirWizardPage;
-  StartingOffsetPage: TInputOptionWizardPage;
-  DecrPriorityPage: TInputOptionWizardPage;
-  configansi : AnsiString;
-  configstr: String;
+  LoadCSVPage: TInputDirWizardPage;
 
 function IsUpgrade(): Boolean;
 var
@@ -71,30 +80,16 @@ begin
     False, '');
   DatabasePage.Add('');
 
-  SqlDatabasePage := CreateInputQueryPage(DatabasePage.ID,
-    'Select Mazak SQL Server Location', 'What computer is running Mazak Smooth?',
-    'Select the DNS name or IP address of the computer running SQL Server');
-  SqlDatabasePage.Add('Server Loc:', False);
-  SqlDatabasePage.Values[0] := 'localhost';
-
-  LogCSVPage := CreateInputDirPage(SqlDatabasePage.ID,
+  LogCSVPage := CreateInputDirPage(DatabasePage.ID,
     'Select Log CSV', 'Please select the directory containing the log CSV files.',
     '', False, '');
   LogCSVPage.Add('');
 
-  StartingOffsetPage := CreateInputOptionPage(LogCSVPage.ID,
-    'Use Starting Offset',  '',
-    'When creating schedules, use the starting offset from the simulation to set due dates.',
-    True, False);
-  StartingOffsetPage.Add('Yes');
-  StartingOffsetPage.Add('No');
+  LoadCSVPage := CreateInputDirPage(LogCSVPage.ID,
+    'Select Load CSV', 'Please select the directory containing the load/unload LDS files.',
+    '', False, '');
+  LoadCSVPage.Add('');
 
-  DecrPriorityPage := CreateInputOptionPage(StartingOffsetPage.ID,
-    'Decerment Schedule Priority',  '',
-    'When downloading, decrement the priority of all existing schedules by one.',
-    True, False);
-  DecrPriorityPage.Add('Yes');
-  DecrPriorityPage.Add('No');
 end;
 
 function ShouldSkipPage(PageID: Integer): Boolean;
@@ -105,14 +100,6 @@ begin
       exit;
     end;
 
-  if PageID = LogCSVPage.ID then begin
-    if VersionPage.Values[0] then begin
-      Result := True;
-    end else begin
-      Result := False;
-    end;
-  end;
-
   if PageID = DatabasePage.ID then begin
     if VersionPage.Values[2] then begin
       Result := True
@@ -121,51 +108,47 @@ begin
     end;
   end;
 
-  if PageID = SqlDatabasePage.ID then begin
-    if VersionPage.Values[2] then begin
-      Result := False
-    end else begin
+  if PageID = LogCSVPage.ID then begin
+    if VersionPage.Values[0] then begin
       Result := True
+    end else begin
+      Result := False
+    end
+  end;
+
+  if PageID = LoadCSVPage.ID then begin
+    if VersionPage.Values[2] then begin
+      Result := True
+    end else begin
+      Result := False
     end;
   end;
 end;
 
-procedure ReplaceSetting(key: String; value: String);
+function GetDBType(Param: string): string
 begin
-  StringChangeEx(configstr, '<appSettings>',
-     '<appSettings>' + #13#10 + '<add key="' + key + '" value="' + value + '"/>', False);
-end;
+  if VersionPage.Values[0] then begin
+    Result := "MazakVersionE"
+  end
+  if VersionPage.Values[1] then begin
+    Result := "MazakWeb"
+  end
+  if VersionPage.Values[2] then begin
+    Result := "MazakSmooth"
+  end
+end
 
-; TODO: switch to registry
-procedure SaveSettings(filename: String);
+function GetDatabasePath(Param: string): string
 begin
-  if not IsUpgrade() and LoadStringFromFile(ExpandConstant(filename), configansi) then
-    begin
-      configstr := String(configansi);
-      if VersionPage.Values[1] then begin
-        ReplaceSetting('Mazak Web Version', 'True');
-        ReplaceSetting('Mazak Log CSV Path', LogCSVPage.Values[0]);
-      end else begin
-        ReplaceSetting('Mazak Web Version', 'False');
-      end;
-      if VersionPage.Values[2] then begin
-        ReplaceSetting('Mazak Smooth Version', 'True');
-        ReplaceSetting('Mazak Log CSV Path', LogCSVPage.Values[0]);
-        ReplaceSetting('Mazak Database Path', SqlDatabasePage.Values[0]);
-      end else begin
-        ReplaceSetting('Mazak Smooth Version', 'False');
-        ReplaceSetting('Mazak Database Path', DatabasePage.Values[0]);
-      end;
-      if StartingOffsetPage.Values[0] then begin
-        ReplaceSetting('Mazak Use Starting Offset For Due Date', 'True');
-      end else begin
-        ReplaceSetting('Mazak Use Starting Offset For Due Date', 'False');
-      end;
-      if DecrPriorityPage.Values[0] then begin
-        ReplaceSetting('Mazak Decrement Priority On Download', 'True');
-      end else begin
-        ReplaceSetting('Mazak Decrement Priority On Download', 'False');
-      end;
-      SaveStringToFile(ExpandConstant(filename), configstr, False);
-    end;
-end;
+  Result := DatabasePage.Values[0];
+end
+
+function GetLogCSVPath(Param: string): string
+begin
+  Result := LogCSVPage.Values[0];
+end
+
+function GetLoadCSVPath(Param: string): string
+begin
+  Result := LoadCSVPage.Values[0]
+end

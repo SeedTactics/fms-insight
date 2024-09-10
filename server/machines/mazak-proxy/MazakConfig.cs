@@ -49,7 +49,7 @@ public class MazakConfig
   public static MazakConfig LoadFromRegistry()
   {
     using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
-      @"SOFTWARE\SeedTactics\FMS Insight Mazak Proxy"
+      @"Software\SeedTactics\FMS Insight Mazak Proxy"
     );
     return new MazakConfig()
     {
