@@ -1233,7 +1233,7 @@ namespace MazakMachineInterface
       return WithReadDBConnection(conn =>
       {
         using var trans = conn.BeginTransaction();
-        var cmd = conn.CreateCommand();
+        using var cmd = conn.CreateCommand();
         cmd.Transaction = trans;
         cmd.CommandText = "SELECT COUNT(*) FROM Part WHERE PartName = @p";
         var param = cmd.CreateParameter();
@@ -1244,7 +1244,7 @@ namespace MazakMachineInterface
         foreach (var p in parts)
         {
           param.Value = p;
-          if ((int)cmd.ExecuteScalar() == 0)
+          if ((long)cmd.ExecuteScalar() == 0)
           {
             return false;
           }
@@ -1262,7 +1262,7 @@ namespace MazakMachineInterface
       return WithReadDBConnection(conn =>
       {
         using var trans = conn.BeginTransaction();
-        var cmd = conn.CreateCommand();
+        using var cmd = conn.CreateCommand();
         cmd.Transaction = trans;
 
         cmd.CommandText = "SELECT COUNT(*) FROM Schedule WHERE ScheduleID = @s";
@@ -1274,7 +1274,7 @@ namespace MazakMachineInterface
         foreach (var s in scheduleIds)
         {
           param.Value = s;
-          if ((int)cmd.ExecuteScalar() == 0)
+          if ((long)cmd.ExecuteScalar() == 0)
           {
             return false;
           }
@@ -1311,6 +1311,7 @@ namespace MazakMachineInterface
         }
         else
         {
+          trans.Rollback();
           logs = LogCSVParsing.LoadLog(maxLogID, _cfg.LogCSVPath);
         }
 
