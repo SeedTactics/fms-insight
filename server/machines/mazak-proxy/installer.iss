@@ -18,7 +18,9 @@ DisableProgramGroupPage=auto
 CloseApplications=yes
 
 [Files]
-Source: "bin\Release\net35\*"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\Release\net35\mazak-proxy.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\Release\net35\mazak-proxy.pdb"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\Release\net35\mazak-proxy.exe.config"; DestDir: "{app}"; Flags: ignoreversion
 
 [Run]
 Filename: {sys}\sc.exe; Parameters: "create fmsinsightmazakproxy start=auto binPath=""{app}\mazak-proxy.exe"" displayname=""SeedTactic FMS Insight Mazak Proxy"""; Flags: runhidden

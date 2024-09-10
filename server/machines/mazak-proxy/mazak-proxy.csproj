@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net3.5</TargetFramework>
     <LangVersion>latest</LangVersion>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
