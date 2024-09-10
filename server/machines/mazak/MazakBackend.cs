@@ -54,7 +54,15 @@ namespace MazakMachineInterface
       else
         s.AddSingleton<ICurrentLoadActions, LoadOperationsFromDB>();
 
-      s.AddSingleton<IMazakDB, OpenDatabaseKitDB>();
+      if (string.IsNullOrEmpty(mazakCfg.ProxyDBUrl))
+      {
+        s.AddSingleton<IMazakDB, OpenDatabaseKitDB>();
+      }
+      else
+      {
+        s.AddSingleton<IMazakDB, MazakProxyDB>();
+      }
+
       s.AddSingleton<MazakSync>();
       s.AddSingleton<ISynchronizeCellState<MazakState>>(sp => sp.GetRequiredService<MazakSync>());
       s.AddSingleton<INotifyMazakLogEvent>(sp => sp.GetRequiredService<MazakSync>());

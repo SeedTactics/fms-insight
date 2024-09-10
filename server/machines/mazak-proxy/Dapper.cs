@@ -36,6 +36,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
+// A few methods with the same API as dapper but directly implemented for .NET 3.5
+
 public static class DapperQueryExecute
 {
   public static IEnumerable<T> Query<T>(this IDbConnection conn, string sql, IDbTransaction transaction)

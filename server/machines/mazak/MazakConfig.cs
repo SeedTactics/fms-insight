@@ -47,6 +47,8 @@ namespace MazakMachineInterface
     public string? LogCSVPath { get; init; }
     public string? ProgramDirectory { get; init; }
     public string? LoadCSVPath { get; init; }
+
+    public string? ProxyDBUrl { get; init; }
     public bool UseStartingOffsetForDueDate { get; init; } = true;
     public bool WaitForAllCastings { get; init; } = false;
 
@@ -70,6 +72,7 @@ namespace MazakMachineInterface
       var cfg = configuration.GetSection("Mazak");
       var localDbPath = cfg.GetValue<string>("Database Path") ?? "c:\\Mazak\\NFMS\\DB";
       var dbtype = DetectMazakType(cfg, localDbPath);
+      var proxyDBUrl = cfg.GetValue<string?>("Proxy DB Url");
 
       // database settings
       string dbConnStr;
@@ -95,7 +98,11 @@ namespace MazakMachineInterface
 
       // log csv
       var logPath = cfg.GetValue<string>("Log CSV Path") ?? "c:\\Mazak\\FMS\\Log";
-      if (dbtype != MazakDbType.MazakVersionE && !System.IO.Directory.Exists(logPath))
+      if (
+        string.IsNullOrEmpty(proxyDBUrl)
+        && (dbtype == MazakDbType.MazakSmooth || dbtype == MazakDbType.MazakWeb)
+        && !System.IO.Directory.Exists(logPath)
+      )
       {
         Serilog.Log.Error(
           "Log CSV Directory {path} does not exist.  Set the directory in the config.ini file.",
@@ -104,7 +111,10 @@ namespace MazakMachineInterface
       }
 
       string? loadPath = null;
-      if (dbtype == MazakDbType.MazakVersionE || dbtype == MazakDbType.MazakWeb)
+      if (
+        string.IsNullOrEmpty(proxyDBUrl)
+        && (dbtype == MazakDbType.MazakVersionE || dbtype == MazakDbType.MazakWeb)
+      )
       {
         loadPath = cfg.GetValue<string>("Load CSV Path") ?? "c:\\mazak\\FMS\\LDS";
         if (!System.IO.Directory.Exists(loadPath))
@@ -121,6 +131,7 @@ namespace MazakMachineInterface
         DBType = dbtype,
         SQLConnectionString = dbConnStr,
         OleDbDatabasePath = localDbPath,
+        ProxyDBUrl = proxyDBUrl,
         LogCSVPath = logPath,
         LoadCSVPath = loadPath,
         ProgramDirectory = cfg.GetValue<string?>("Program Directory") ?? "C:\\NCProgs",
