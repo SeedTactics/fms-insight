@@ -48,7 +48,7 @@ namespace MazakMachineInterface
     public string? ProgramDirectory { get; init; }
     public string? LoadCSVPath { get; init; }
 
-    public string? ProxyDBUrl { get; init; }
+    public Uri? ProxyDBUri { get; init; }
     public bool UseStartingOffsetForDueDate { get; init; } = true;
     public bool WaitForAllCastings { get; init; } = false;
 
@@ -126,12 +126,27 @@ namespace MazakMachineInterface
         }
       }
 
+      Uri? proxyUri = null;
+      if (!string.IsNullOrEmpty(proxyDBUrl))
+      {
+        var b = new UriBuilder(proxyDBUrl);
+        if (b.Scheme != "http" && b.Scheme != "https")
+        {
+          b.Scheme = "http";
+        }
+        if (b.Port == 0)
+        {
+          b.Port = 5001;
+        }
+        proxyUri = b.Uri;
+      }
+
       return new MazakConfig
       {
         DBType = dbtype,
         SQLConnectionString = dbConnStr,
         OleDbDatabasePath = localDbPath,
-        ProxyDBUrl = proxyDBUrl,
+        ProxyDBUri = proxyUri,
         LogCSVPath = logPath,
         LoadCSVPath = loadPath,
         ProgramDirectory = cfg.GetValue<string?>("Program Directory") ?? "C:\\NCProgs",

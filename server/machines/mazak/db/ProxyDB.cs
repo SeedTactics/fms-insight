@@ -52,7 +52,7 @@ public class MazakProxyDB : IMazakDB, IDisposable
   public MazakProxyDB(MazakConfig cfg)
   {
     _client = new HttpClient();
-    _client.BaseAddress = new Uri(cfg.ProxyDBUrl);
+    _client.BaseAddress = cfg.ProxyDBUri;
     _longPollThread = new Thread(LongPollThread);
     _longPollThread.IsBackground = true;
     _longPollThread.Start();
