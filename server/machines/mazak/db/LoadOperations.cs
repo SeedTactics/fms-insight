@@ -135,6 +135,7 @@ namespace MazakMachineInterface
     {
       using (var conn = new SqlConnection(_connStr))
       {
+        conn.Open();
         using var trans = conn.BeginTransaction();
         return LoadActions(conn, trans).Concat(RemoveActions(conn, trans));
       }
