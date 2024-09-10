@@ -54,7 +54,7 @@ namespace MazakMachineInterface
       else
         s.AddSingleton<ICurrentLoadActions, LoadOperationsFromDB>();
 
-      if (string.IsNullOrEmpty(mazakCfg.ProxyDBUrl))
+      if (mazakCfg.ProxyDBUri == null)
       {
         s.AddSingleton<IMazakDB, OpenDatabaseKitDB>();
       }

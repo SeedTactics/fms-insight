@@ -194,6 +194,8 @@ public class MazakProxyDB : IMazakDB, IDisposable
         {
           OnNewEvent?.Invoke();
         }
+        // sleep for a bit
+        Thread.Sleep(TimeSpan.FromSeconds(0.5));
       }
       catch (OperationCanceledException ex)
       {
