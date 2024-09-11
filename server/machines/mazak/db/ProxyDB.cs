@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Runtime.Serialization.Json;
@@ -53,6 +52,7 @@ public class MazakProxyDB : IMazakDB, IDisposable
   {
     _client = new HttpClient();
     _client.BaseAddress = cfg.ProxyDBUri;
+    _client.Timeout = TimeSpan.FromSeconds(30);
     _longPollThread = new Thread(LongPollThread);
     _longPollThread.IsBackground = true;
     _longPollThread.Start();
@@ -96,48 +96,85 @@ public class MazakProxyDB : IMazakDB, IDisposable
   }
 
   #region HTTP
-  private async Task<T> LoadAsync<T>(string path)
+  private Exception HandleAggregateException(AggregateException ex)
   {
-    var resp = await _client.GetAsync(path);
+    // Log the full error
+    Log.Error(ex, "Error communicating with mazak proxy");
+
+    // Make a more user-friendly error message to show as an alarm to the user
+    string msg = "Error communicating with mazak proxy at " + _client.BaseAddress.ToString();
+    foreach (var inner in ex.InnerExceptions)
+    {
+      switch (inner)
+      {
+        case TaskCanceledException _:
+          // TaskCanceled is a timeout from the HttpClient in GetAsync/PostAsync
+          msg = $"Timeout communicating with mazak proxy at {_client.BaseAddress}";
+          break;
+        case HttpRequestException httpEx:
+          // HttpRequestException is from HttpClient with some error communicating
+          msg = $"Error communicating with mazak proxy at {_client.BaseAddress}: {httpEx.Message}";
+          break;
+        case OperationCanceledException cancelEx:
+          // pass this one directly through, since the cancellation token fired
+          return cancelEx;
+
+        // other inner exceptions don't have a specific message (but the full details are logged to Serilog)
+      }
+    }
+    return new Exception(msg);
+  }
+
+  private async Task<T> LoadAsync<T>(string path, CancellationToken? cancel = null)
+  {
+    var resp = await _client.GetAsync(path, cancellationToken: cancel ?? CancellationToken.None);
     if (resp.IsSuccessStatusCode)
     {
       // use DataContractJsonSerializer to deserialize, since that is what the proxy db uses
       var ser = new DataContractJsonSerializer(typeof(T));
-      return (T)ser.ReadObject(await resp.Content.ReadAsStreamAsync());
+      return (T)
+        ser.ReadObject(
+          await resp.Content.ReadAsStreamAsync(cancellationToken: cancel ?? CancellationToken.None)
+        );
     }
     else
     {
-      var message = await resp.Content.ReadAsStringAsync();
+      var message = await resp.Content.ReadAsStringAsync(cancellationToken: cancel ?? CancellationToken.None);
       var lineIdx = message.IndexOfAny(['\n', '\r']);
       Log.Error("Failed to load {path} from proxy db: {status} {content}", path, resp.StatusCode, message);
-      throw new Exception(
-        "Failed to load from mazak proxy: " + message[..(lineIdx >= 0 ? lineIdx : message.Length)]
-      );
+      throw new HttpRequestException(message[..(lineIdx >= 0 ? lineIdx : message.Length)]);
     }
   }
 
   private T Load<T>(string path, CancellationToken? cancel = null)
   {
-    var task = LoadAsync<T>(path);
+    var task = LoadAsync<T>(path, cancel);
     if (
       0
       == Task.WaitAny(
         [task],
-        millisecondsTimeout: (int)TimeSpan.FromMinutes(1).TotalMilliseconds,
+        millisecondsTimeout: (int)TimeSpan.FromMinutes(5).TotalMilliseconds,
         cancellationToken: cancel ?? CancellationToken.None
       )
     )
     {
-      return task.Result;
+      try
+      {
+        return task.Result;
+      }
+      catch (AggregateException aggEx)
+      {
+        throw HandleAggregateException(aggEx);
+      }
     }
     else
     {
       Log.Error("Timeout loading {path} from proxy db", path);
-      throw new Exception("Timeout loading from mazak proxy");
+      throw new Exception("Timeout communicating with mazak proxy at " + _client.BaseAddress.ToString());
     }
   }
 
-  private async Task<R> PostAsync<T, R>(string path, T data)
+  private async Task<R> PostAsync<T, R>(string path, T data, CancellationToken? cancel = null)
   {
     var ser = new DataContractJsonSerializer(typeof(T));
     using var ms = new System.IO.MemoryStream();
@@ -145,36 +182,52 @@ public class MazakProxyDB : IMazakDB, IDisposable
     ms.Position = 0;
     var resp = await _client.PostAsync(
       path,
-      new StreamContent(ms) { Headers = { { "Content-Type", "application/json" } } }
+      new StreamContent(ms) { Headers = { { "Content-Type", "application/json" } } },
+      cancellationToken: cancel ?? CancellationToken.None
     );
     if (resp.IsSuccessStatusCode)
     {
       var serResp = new DataContractJsonSerializer(typeof(R));
-      return (R)serResp.ReadObject(await resp.Content.ReadAsStreamAsync());
+      return (R)
+        serResp.ReadObject(
+          await resp.Content.ReadAsStreamAsync(cancellationToken: cancel ?? CancellationToken.None)
+        );
     }
     else
     {
-      var msg = await resp.Content.ReadAsStringAsync();
+      var msg = await resp.Content.ReadAsStringAsync(cancellationToken: cancel ?? CancellationToken.None);
       var lineIdx = msg.IndexOfAny(['\n', '\r']);
       Log.Error("Failed to post {path} to proxy db: {status} {content}", path, resp.StatusCode, msg);
-      throw new Exception(
-        "Failed to send data to mazak proxy: " + msg[..(lineIdx >= 0 ? lineIdx : msg.Length)]
-      );
+      throw new HttpRequestException(msg[..(lineIdx >= 0 ? lineIdx : msg.Length)]);
     }
   }
 
-  private R Post<T, R>(string path, T data)
+  private R Post<T, R>(string path, T data, CancellationToken? cancel = null)
   {
-    var task = PostAsync<T, R>(path, data);
+    var task = PostAsync<T, R>(path, data, cancel);
     // long timeout, since downloading data can take a while
-    if (Task.WaitAll([task], timeout: TimeSpan.FromMinutes(10)))
+    if (
+      0
+      == Task.WaitAny(
+        [task],
+        millisecondsTimeout: (int)TimeSpan.FromMinutes(10).TotalMilliseconds,
+        cancellationToken: cancel ?? CancellationToken.None
+      )
+    )
     {
-      return task.Result;
+      try
+      {
+        return task.Result;
+      }
+      catch (AggregateException ex)
+      {
+        throw HandleAggregateException(ex);
+      }
     }
     else
     {
       Log.Error("Timeout posting {path} to proxy db", path);
-      throw new Exception("Timeout communicating with mazak proxy");
+      throw new Exception("Timeout communicating with mazak proxy at " + _client.BaseAddress.ToString());
     }
   }
   #endregion
@@ -195,7 +248,7 @@ public class MazakProxyDB : IMazakDB, IDisposable
           OnNewEvent?.Invoke();
         }
         // sleep for a bit
-        Thread.Sleep(TimeSpan.FromSeconds(0.5));
+        Thread.Sleep(TimeSpan.FromSeconds(1));
       }
       catch (OperationCanceledException ex)
       {

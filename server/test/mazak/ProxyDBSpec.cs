@@ -56,7 +56,7 @@ public sealed class ProxyDBspec : IDisposable
   {
     _server = WireMockServer.Start();
     _db = new MazakProxyDB(
-      new MazakConfig() { DBType = MazakDbType.MazakSmooth, ProxyDBUri = new Uri(_server.Urls[0]) }
+      new MazakConfig() { DBType = MazakDbType.MazakSmooth, ProxyDBUri = new Uri(_server.Url) }
     );
   }
 
@@ -109,7 +109,9 @@ public sealed class ProxyDBspec : IDisposable
 
     Action act = () => _db.LoadAllData();
 
-    act.Should().Throw<Exception>().WithMessage("Failed to load from mazak proxy: The error text");
+    act.Should()
+      .Throw<Exception>()
+      .WithMessage($"Error communicating with mazak proxy at {_server.Url}/: The error text");
   }
 
   [Fact]
@@ -215,7 +217,9 @@ public sealed class ProxyDBspec : IDisposable
 
     Action act = () => _db.Save(_fixture.Create<MazakWriteData>());
 
-    act.Should().Throw<Exception>().WithMessage("Failed to send data to mazak proxy: The error text");
+    act.Should()
+      .Throw<Exception>()
+      .WithMessage($"Error communicating with mazak proxy at {_server.Url}/: The error text");
   }
 
   [Fact]
