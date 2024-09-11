@@ -45,11 +45,9 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
     void Start();
   }
 
-  public sealed class HttpServer : IDisposable, IHttpServer
+  public sealed class HttpServer : IHttpServer, IDisposable
   {
     private readonly HttpListener _listener;
-    private Thread _listenThread = null;
-    private readonly ManualResetEvent _cancel;
 
     private class PostHandler
     {
@@ -64,9 +62,24 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
     {
       _listener = new HttpListener();
       _listener.Prefixes.Add(url);
-      _cancel = new ManualResetEvent(false);
       _loadingHandlers = new Dictionary<string, Func<object>>();
       _postHandlers = new Dictionary<string, PostHandler>();
+    }
+
+    public void Dispose()
+    {
+      _listener.Close();
+    }
+
+    public void Start()
+    {
+      _listener.Start();
+      Listen();
+    }
+
+    private void Listen()
+    {
+      _listener.BeginGetContext(HandleRequest, _listener);
     }
 
     public void AddLoadingHandler<T>(string path, Func<T> handler)
@@ -79,34 +92,15 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
       _postHandlers.Add(path, new PostHandler { BodyType = typeof(T), Handler = t => handler((T)t) });
     }
 
-    public void Start()
-    {
-      if (_listenThread == null)
-      {
-        _listener.Start();
-        _listenThread = new Thread(HandleConnections);
-        _listenThread.IsBackground = true;
-        _listenThread.Start();
-      }
-    }
-
-    public void Dispose()
-    {
-      if (_listenThread != null)
-      {
-        _cancel.Set();
-        _listenThread.Join(TimeSpan.FromSeconds(5));
-        _listenThread.Abort();
-        _listener.Close();
-      }
-    }
-
     private void HandleRequest(IAsyncResult asyncResult)
     {
       HttpListener listener = (HttpListener)asyncResult.AsyncState;
       var ctx = listener.EndGetContext(asyncResult);
       var req = ctx.Request;
       var resp = ctx.Response;
+
+      // listen for another request
+      Listen();
 
       try
       {
@@ -170,18 +164,6 @@ namespace BlackMaple.FMSInsight.Mazak.Proxy
       finally
       {
         resp.Close();
-      }
-    }
-
-    private void HandleConnections()
-    {
-      while (true)
-      {
-        if (_cancel.WaitOne(0))
-        {
-          break;
-        }
-        _listener.BeginGetContext(HandleRequest, _listener);
       }
     }
   }

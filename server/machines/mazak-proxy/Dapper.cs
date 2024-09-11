@@ -62,7 +62,8 @@ public static class DapperQueryExecute
           var val = reader[i];
           if (val != DBNull.Value && val != null)
           {
-            prop.SetValue(obj, Convert.ChangeType(val, prop.PropertyType), null);
+            Type t = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+            prop.SetValue(obj, Convert.ChangeType(val, t), null);
           }
         }
       }
