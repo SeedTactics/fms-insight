@@ -123,19 +123,22 @@ function JobDisplay(props: JobDisplayProps) {
                   <div>
                     Load Stations: {path.load.join(",")} |{" "}
                     {durationToMinutes(path.expectedLoadTime).toFixed(1)} mins
+                    {path.partsPerPallet > 1 ? " per piece" : ""}
                   </div>
                   {path.stops.map((stop, stopIdx) => (
                     <Fragment key={stopIdx}>
                       <div>
                         {stop.stationGroup}: {(stop.stationNums ?? []).join(",")} | Program: {stop.program}
                         {stop.programRevision ? " rev" + stop.programRevision.toString() : undefined} |{" "}
-                        {durationToMinutes(stop.expectedCycleTime).toFixed(1)} mins
+                        {(durationToMinutes(stop.expectedCycleTime) / path.partsPerPallet).toFixed(1)} mins
+                        {path.partsPerPallet > 1 ? " per piece" : ""}
                       </div>
                     </Fragment>
                   ))}
                   <div>
                     Unload Stations: {path.unload.join(",")} |{" "}
                     {durationToMinutes(path.expectedUnloadTime).toFixed(1)} mins
+                    {path.partsPerPallet > 1 ? " per piece" : ""}
                   </div>
                   {path.outputQueue ? <div>Output Queue: {path.outputQueue}</div> : undefined}
                   {path.inspections && path.inspections.length > 0 ? (
