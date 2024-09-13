@@ -48,7 +48,7 @@ namespace Serilog
   public static class EventLogConfig
   {
     public const string SourceName = "FMS Insight Mazak Proxy";
-    public const string LogName = "Log";
+    public const string LogName = "Application";
 
     static EventLogConfig()
     {
@@ -97,9 +97,13 @@ namespace Serilog
 
     public static void Information(string message)
     {
-      using (var ev = new EventLog(EventLogConfig.LogName, ".", EventLogConfig.SourceName))
-      {
-        ev.WriteEntry(message, EventLogEntryType.Information);
+      try {
+        using (var ev = new EventLog(EventLogConfig.LogName, ".", EventLogConfig.SourceName))
+        {
+          ev.WriteEntry(message, EventLogEntryType.Information);
+        }
+      } catch (Exception ex) {
+        Debug(ex, "Error writing to event log");
       }
 
       // Also to debug
@@ -127,7 +131,7 @@ namespace Serilog
     public static void Debug(Exception ex, string messageTemplate, params object[] propertyValues)
     {
       var dir = System.IO.Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "FMS Insight Mazak Proxy"
       );
       if (!System.IO.Directory.Exists(dir))
