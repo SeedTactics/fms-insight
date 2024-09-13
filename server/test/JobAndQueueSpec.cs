@@ -55,6 +55,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
   private readonly RepositoryConfig _repo;
   private FMSSettings _settings;
+  private ServerSettings _serverSettings;
   private JobsAndQueuesFromDb<MockCellState> _jq;
   private readonly Fixture _fixture;
 
@@ -67,6 +68,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     _settings = new FMSSettings() { };
     _settings.Queues.Add("q1", new QueueInfo());
     _settings.Queues.Add("q2", new QueueInfo());
+
+    _serverSettings = new ServerSettings();
   }
 
   void IDisposable.Dispose()
@@ -92,7 +95,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
   private async Task StartSyncThread()
   {
     var newCellSt = CreateTaskToWaitForNewStatus();
-    _jq = new JobsAndQueuesFromDb<MockCellState>(_repo, _settings, this, startThread: false);
+    _jq = new JobsAndQueuesFromDb<MockCellState>(_repo, _serverSettings, _settings, this, startThread: false);
     _jq.OnNewCurrentStatus += OnNewCurrentStatus;
     _jq.StartThread();
     (await newCellSt)
@@ -1722,5 +1725,70 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
     };
   }
+  #endregion
+
+  #region TimeZone
+
+  [Fact(Timeout = 10000)]
+  public async Task NoAlarm()
+  {
+    _serverSettings = new ServerSettings() { ExpectedTimeZone = TimeZoneInfo.Local };
+
+    await StartSyncThread();
+
+    var curSt = new CurrentStatus()
+    {
+      TimeOfCurrentStatusUTC = DateTime.UtcNow,
+      Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+      Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+      Material = [],
+      Alarms = [],
+      Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+    };
+
+    await SetCurrentState(stateUpdated: true, executeAction: false, curSt: curSt);
+  }
+
+  [Fact(Timeout = 10000)]
+  public async Task WrongTimezone()
+  {
+    _serverSettings = new ServerSettings()
+    {
+      ExpectedTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Hawaiian Standard Time"),
+    };
+
+    await StartSyncThread();
+
+    var curSt = new CurrentStatus()
+    {
+      TimeOfCurrentStatusUTC = DateTime.UtcNow,
+      Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+      Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+      Material = [],
+      Alarms = [],
+      Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+    };
+    _curSt = new MockCellState()
+    {
+      Uniq = 0,
+      CurrentStatus = curSt,
+      StateUpdated = true,
+    };
+
+    var task = CreateTaskToWaitForNewStatus();
+    NewCellState?.Invoke();
+    (await task)
+      .Should()
+      .BeEquivalentTo(
+        curSt with
+        {
+          Alarms =
+          [
+            $"The server is running in timezone {TimeZoneInfo.Local.Id} but was expected to be Hawaiian Standard Time.",
+          ],
+        }
+      );
+  }
+
   #endregion
 }

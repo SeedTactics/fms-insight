@@ -82,6 +82,7 @@ public record ServerSettings
   public string? OpenIDConnectClientId { get; init; } = null;
   public string? AuthAuthority { get; init; } = null;
   public string? AuthTokenAudiences { get; init; } = null;
+  public TimeZoneInfo? ExpectedTimeZone { get; init; } = null;
 
   public bool UseAuthentication =>
     !string.IsNullOrEmpty(OpenIDConnectClientId)

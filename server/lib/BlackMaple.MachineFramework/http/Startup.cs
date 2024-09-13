@@ -84,6 +84,15 @@ public static class FMSInsightWebHost
         s.AddSingleton<ServerSettings>(serverSt);
         s.AddSingleton<FMSSettings>(fmsSt);
 
+        if (serverSt.ExpectedTimeZone != null && serverSt.ExpectedTimeZone.Id != TimeZoneInfo.Local.Id)
+        {
+          Log.Error(
+            "Expecting timezone {expected} but running in {actual}",
+            serverSt.ExpectedTimeZone.Id,
+            TimeZoneInfo.Local.Id
+          );
+        }
+
         var jobStType =
           s.Select(service =>
               service.ServiceType.IsGenericType
