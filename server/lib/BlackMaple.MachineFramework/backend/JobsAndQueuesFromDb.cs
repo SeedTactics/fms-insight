@@ -132,6 +132,7 @@ namespace BlackMaple.MachineFramework
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<JobsAndQueuesFromDb<St>>();
 
     private readonly RepositoryConfig _repo;
+    private readonly ServerSettings _serverSettings;
     private readonly FMSSettings _settings;
     private readonly ISynchronizeCellState<St> _syncState;
     private readonly IEnumerable<IAdditionalCheckJobs> _additionalCheckJobs;
@@ -141,6 +142,7 @@ namespace BlackMaple.MachineFramework
 
     public JobsAndQueuesFromDb(
       RepositoryConfig repo,
+      ServerSettings serverSt,
       FMSSettings settings,
       ISynchronizeCellState<St> syncSt,
       IEnumerable<IAdditionalCheckJobs> additionalCheckJobs = null,
@@ -149,6 +151,7 @@ namespace BlackMaple.MachineFramework
     {
       _repo = repo;
       _settings = settings;
+      _serverSettings = serverSt;
       _syncState = syncSt;
       _additionalCheckJobs = additionalCheckJobs ?? Enumerable.Empty<IAdditionalCheckJobs>();
       _syncState.NewCellState += NewCellState;
@@ -371,7 +374,22 @@ namespace BlackMaple.MachineFramework
         }
         else
         {
-          return _lastCurrentStatus.CurrentStatus;
+          if (
+            _serverSettings.ExpectedTimeZone != null
+            && _serverSettings.ExpectedTimeZone.Id != TimeZoneInfo.Local.Id
+          )
+          {
+            return _lastCurrentStatus.CurrentStatus with
+            {
+              Alarms = _lastCurrentStatus.CurrentStatus.Alarms.Add(
+                $"The server is running in timezone {TimeZoneInfo.Local.Id} but was expected to be {_serverSettings.ExpectedTimeZone.Id}."
+              ),
+            };
+          }
+          else
+          {
+            return _lastCurrentStatus.CurrentStatus;
+          }
         }
       }
     }
