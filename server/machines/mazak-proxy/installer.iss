@@ -1,3 +1,5 @@
+#define VERSION GetDateTimeString('yyyy.mmdd.hhnn', '', '')
+
 [Setup]
 AppName=FMS Insight Mazak Proxy
 AppVersion={#VERSION}
@@ -17,9 +19,9 @@ DisableProgramGroupPage=auto
 CloseApplications=yes
 
 [Files]
-Source: "bin\Release\net35\mazak-proxy.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\Release\net35\mazak-proxy.pdb"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\Release\net35\mazak-proxy.exe.config"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\Release\net3.5\publish\mazak-proxy.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\Release\net3.5\publish\mazak-proxy.pdb"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\Release\net3.5\publish\mazak-proxy.exe.config"; DestDir: "{app}"; Flags: ignoreversion
 
 [Run]
 Filename: {sys}\sc.exe; Parameters: "create fmsinsightmazakproxy start=auto binPath=""{app}\mazak-proxy.exe"" displayname=""SeedTactic FMS Insight Mazak Proxy"""; Flags: runhidden
@@ -30,17 +32,17 @@ Filename: {sys}\sc.exe; Parameters: "delete fmsinsightmazakproxy" ; Flags: runhi
 
 [Registry]
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
-  ValueName: "DBType"; ValueData: "{code:GetDBType}" \
-  Flags: createvalueifdoesntexist, uninstdeletekey
+  ValueName: "DBType"; ValueData: "{code:GetDBType}"; \
+Flags: createvalueifdoesntexist uninsdeletekey
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
-  ValueName: "OleDbDatabasePath"; ValueData: "{code:GetDatabasePath}" \
-  Flags: createvalueifdoesntexist, uninstdeletekey
+  ValueName: "OleDbDatabasePath"; ValueData: "{code:GetDatabasePath}"; \
+  Flags: createvalueifdoesntexist uninsdeletekey
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
-  ValueName: "LogCSVPath"; ValueData: "{code:GetLogCSVPath}"
-  Flags: createvalueifdoesntexist, uninstdeletekey
+  ValueName: "LogCSVPath"; ValueData: "{code:GetLogCSVPath}"; \
+  Flags: createvalueifdoesntexist uninsdeletekey
 Root: HKLM; Subkey: "Software\SeedTactics\FMS Insight Mazak Proxy"; ValueType: string; \
-  ValueName: "LoadCSVPath"; ValueData: "{code:GetLoadCSVPath}" \
-  Flags: createvalueifdoesntexist, uninstdeletekey
+  ValueName: "LoadCSVPath"; ValueData: "{code:GetLoadCSVPath}"; \
+  Flags: createvalueifdoesntexist uninsdeletekey
 
 [Code]
 var
@@ -125,30 +127,30 @@ begin
   end;
 end;
 
-function GetDBType(Param: string): string
+function GetDBType(Param: string): string;
 begin
   if VersionPage.Values[0] then begin
-    Result := "MazakVersionE"
-  end
+    Result := 'MazakVersionE'
+  end;
   if VersionPage.Values[1] then begin
-    Result := "MazakWeb"
-  end
+    Result := 'MazakWeb'
+  end;
   if VersionPage.Values[2] then begin
-    Result := "MazakSmooth"
-  end
-end
+    Result := 'MazakSmooth'
+  end;
+end;
 
-function GetDatabasePath(Param: string): string
+function GetDatabasePath(Param: string): string;
 begin
-  Result := DatabasePage.Values[0];
-end
+  Result := DatabasePage.Values[0]
+end;
 
-function GetLogCSVPath(Param: string): string
+function GetLogCSVPath(Param: string): string;
 begin
-  Result := LogCSVPage.Values[0];
-end
+  Result := LogCSVPage.Values[0]
+end;
 
-function GetLoadCSVPath(Param: string): string
+function GetLoadCSVPath(Param: string): string;
 begin
   Result := LoadCSVPage.Values[0]
-end
+end;
