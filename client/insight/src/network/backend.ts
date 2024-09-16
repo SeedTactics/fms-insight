@@ -31,8 +31,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+import { atom, useAtomValue } from "jotai";
 import * as api from "./api.js";
 import { User } from "oidc-client-ts";
+
+export const isDemoAtom = atom<boolean>(false);
+
+export function useIsDemo(): boolean {
+  return useAtomValue(isDemoAtom);
+}
+
 
 export interface JobAPI {
   history(startUTC: Date, endUTC: Date): Promise<Readonly<api.IHistoricData>>;

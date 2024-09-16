@@ -45,7 +45,8 @@ import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { instructionUrl } from "../../network/backend.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
-import { useIsDemo, useSetTitle } from "../routes.js";
+import { useIsDemo } from "../../network/backend.js";
+import { useSetTitle } from "../title.js";
 import { useAtomValue, useSetAtom } from "jotai";
 
 interface InspButtonsProps {

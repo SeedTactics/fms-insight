@@ -52,7 +52,7 @@ import {
   useTablePage,
 } from "../analysis/DataTable.js";
 import { materialDialogOpen } from "../../cell-status/material-details.js";
-import { useIsDemo } from "../routes.js";
+import { useIsDemo } from "../../network/backend.js";
 import { last30Inspections } from "../../cell-status/inspections.js";
 import { useAtomValue, useSetAtom } from "jotai";
 

@@ -73,7 +73,7 @@ import {
 import { Collapse } from "@mui/material";
 import { addWorkorderComment, currentStatus } from "../../cell-status/current-status.js";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { IActiveWorkorder, WorkorderSerialCloseout, WorkorderMaterial } from "../../network/api.js";
 import { durationToMinutes } from "../../util/parseISODuration.js";
 import {

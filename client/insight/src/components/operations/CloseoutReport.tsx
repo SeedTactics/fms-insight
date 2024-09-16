@@ -59,7 +59,7 @@ import {
   last30MaterialSummary,
   MaterialSummaryAndCompletedData,
 } from "../../cell-status/material-summary.js";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
 import { Check, ErrorOutline, MoreHoriz, SkipNext, SkipPrevious } from "@mui/icons-material";

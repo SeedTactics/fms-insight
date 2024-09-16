@@ -76,7 +76,7 @@ import {
 } from "./InvalidateCycle.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { SelectInspTypeDialog, SignalInspectionButton } from "./SelectInspType.js";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { useAtomValue, useSetAtom } from "jotai";
 
 const CollapsedIconSize = 45;
@@ -150,9 +150,9 @@ function useCellOverview(): CellOverview {
       ([[_statGroup, statNum], _pals]) => statNum,
       ([[statGroup, statNum], pals]) => {
         const worktable = pals.find((p) => p.currentPalletLocation.loc === PalletLocationEnum.Machine);
-        const worktableMats = worktable ? matByPal.get(worktable.palletNum) ?? [] : null;
+        const worktableMats = worktable ? (matByPal.get(worktable.palletNum) ?? []) : null;
         const rotary = pals.find((p) => p.currentPalletLocation.loc === PalletLocationEnum.MachineQueue);
-        const rotaryMats = rotary ? matByPal.get(rotary.palletNum) ?? [] : null;
+        const rotaryMats = rotary ? (matByPal.get(rotary.palletNum) ?? []) : null;
 
         let isInbound = true;
         const rotaryMat0 = rotaryMats?.[0];
@@ -457,7 +457,7 @@ function PalletFaces({
       : LazySeq.of(mats)
           .filter((m) => noFilter || m.location.type === LocType.OnPallet)
           .orderedGroupBy((m) =>
-            m.action.type === ActionType.Loading ? m.action.loadOntoFace ?? 1 : m.location.face ?? 1,
+            m.action.type === ActionType.Loading ? (m.action.loadOntoFace ?? 1) : (m.location.face ?? 1),
           );
 
     return (

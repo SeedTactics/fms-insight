@@ -37,7 +37,7 @@ import { LazySeq, OrderedMap, OrderedSet } from "@seedtactics/immutable-collecti
 import { atom, useAtomValue } from "jotai";
 import { latestSimDayUsage } from "../../cell-status/sim-day-usage";
 import { ISimulatedDayUsage } from "../../network/api";
-import { useSetTitle } from "../routes";
+import { useSetTitle } from "../title.js";
 import { scaleLinear } from "@visx/scale";
 import { Warning as WarningIcon } from "@mui/icons-material";
 

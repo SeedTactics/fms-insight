@@ -42,7 +42,7 @@ import { outlierMachineCycles, outlierLoadCycles, copyCyclesToClipboard } from "
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { useAtomValue } from "jotai";
 
 // -----------------------------------------------------------------------------------

@@ -55,7 +55,7 @@ import { PartIdenticon } from "../station-monitor/Material.js";
 import { Typography } from "@mui/material";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage, atomFamily } from "jotai/utils";
 
@@ -101,7 +101,7 @@ function AutomationCostInput() {
       style={{ marginTop: "1.5em" }}
       inputProps={{ min: 0 }}
       variant="outlined"
-      value={cost === null ? automationCost ?? "" : isNaN(cost) ? "" : cost}
+      value={cost === null ? (automationCost ?? "") : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
       onBlur={() => {
         if (cost != null) {
@@ -131,7 +131,7 @@ function LaborCost() {
       }
       inputProps={{ min: 0 }}
       variant="outlined"
-      value={cost === null ? laborCost ?? "" : isNaN(cost) ? "" : cost}
+      value={cost === null ? (laborCost ?? "") : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
       onBlur={() => {
         if (cost != null) {
@@ -158,7 +158,7 @@ function SingleStationCostInput(props: StationCostInputProps & { readonly machin
       variant="outlined"
       label={"Cost for " + props.machineGroup + " per station per year"}
       style={{ marginTop: "1.5em" }}
-      value={cost === null ? machineCost[props.machineGroup] ?? "" : isNaN(cost) ? "" : cost}
+      value={cost === null ? (machineCost[props.machineGroup] ?? "") : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
       onBlur={() => {
         if (cost != null) {

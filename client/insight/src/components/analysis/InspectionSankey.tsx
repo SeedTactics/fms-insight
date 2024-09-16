@@ -46,7 +46,7 @@ import {
 import InspectionDataTable from "./InspectionDataTable.js";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection.js";
 import { DataTableActionZoomType } from "./DataTable.js";
-import { isDemoAtom } from "../routes.js";
+import { isDemoAtom } from "../../network/backend.js";
 import { Group } from "@visx/group";
 import { green } from "@mui/material/colors";
 import { localPoint } from "@visx/event";

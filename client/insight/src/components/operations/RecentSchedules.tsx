@@ -62,7 +62,7 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { useAtomValue } from "jotai";
 
 export const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })(

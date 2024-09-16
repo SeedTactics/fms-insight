@@ -36,7 +36,7 @@ import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { InspectionSankey } from "./InspectionSankey.js";
 import { DataTableActionZoomType } from "./DataTable.js";
 import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections.js";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { useAtomValue } from "jotai";
 
 export function AnalysisQualityPage() {

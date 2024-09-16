@@ -36,6 +36,7 @@ import { useEffect } from "react";
 import "urlpattern-polyfill";
 import { materialDialogOpen } from "../cell-status/material-details.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
+import { isDemoAtom } from "../network/backend.js";
 
 export enum RouteLocation {
   ChooseMode = "/",
@@ -243,7 +244,6 @@ function urlToRoute(url: URL): RouteState {
 }
 
 const currentRouteLocation = atom<RouteState>(urlToRoute(new URL(location.href)));
-export const isDemoAtom = atom<boolean>(false);
 
 export const currentRoute = atom(
   (get) => get(currentRouteLocation),
@@ -272,17 +272,6 @@ export function useWatchHistory(): void {
 
     return () => removeEventListener("popstate", updateRoute);
   }, [isDemo, setCurRoute]);
-}
-
-export function useIsDemo(): boolean {
-  return useAtomValue(isDemoAtom);
-}
-
-export function useSetTitle(title: string): void {
-  const demo = useIsDemo();
-  useEffect(() => {
-    document.title = title + " - FMS Insight";
-  }, [demo, title]);
 }
 
 export function helpUrl(r: RouteState): string {

@@ -81,7 +81,7 @@ import { Collapse } from "@mui/material";
 import { rawMaterialQueues } from "../../cell-status/names.js";
 import { SortableRegion } from "./Whiteboard.js";
 import { MultiMaterialDialog, QueuedMaterialDialog } from "./QueuesMatDialog.js";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{

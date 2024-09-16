@@ -52,7 +52,7 @@ import {
 import { JobDetailRow, JobTableRow } from "../operations/RecentSchedules.js";
 import { JobDetails } from "../station-monitor/JobDetails.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { useAtomValue } from "jotai";
 
 enum ScheduleCols {

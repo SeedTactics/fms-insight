@@ -62,7 +62,8 @@ import { Tooltip } from "@mui/material";
 import { Fab } from "@mui/material";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
-import { useIsDemo, useSetTitle } from "../routes.js";
+import { useIsDemo } from "../../network/backend.js";
+import { useSetTitle } from "../title.js";
 import { PrintOnClientButton } from "./QueuesMatDialog.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { durationToSeconds } from "../../util/parseISODuration.js";
@@ -559,7 +560,7 @@ function InstructionButton({ pallet }: { pallet: number | null }) {
     material.materialID,
     pallet,
     material.action.type === api.ActionType.Loading
-      ? material.action.processAfterLoad ?? material.process
+      ? (material.action.processAfterLoad ?? material.process)
       : material.process,
     operator,
   );

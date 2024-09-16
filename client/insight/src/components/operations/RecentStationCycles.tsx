@@ -60,7 +60,7 @@ import {
 } from "../../cell-status/estimated-cycle-times.js";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
 export type CycleType = "labor" | "machine";
@@ -145,7 +145,7 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
       });
     }
   }, [cycles, ty, selectedPart, selectedPallet, selectedOperation, showGraph]);
-  const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
+  const curOperation = selectedPart ? (selectedOperation ?? points.allMachineOperations[0]) : undefined;
   const plannedMinutes = useMemo(() => {
     if (curOperation) {
       return plannedOperationMinutes(points, false);

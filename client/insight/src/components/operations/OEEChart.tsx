@@ -58,7 +58,7 @@ import { addDays, startOfToday } from "date-fns";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30SimStationUse } from "../../cell-status/sim-station-use.js";
 import { ImportExport } from "@mui/icons-material";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { atom, useAtom, useAtomValue } from "jotai";
 
 export interface OEEProps {

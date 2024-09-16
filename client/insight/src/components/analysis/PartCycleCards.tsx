@@ -56,7 +56,8 @@ import {
 } from "../../data/results.cycles.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import StationDataTable from "./StationDataTable.js";
-import { useSetTitle, isDemoAtom } from "../routes.js";
+import { isDemoAtom } from "../../network/backend.js";
+import { useSetTitle } from "../title.js";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
 import {
   last30EstimatedCycleTimes,
@@ -154,7 +155,7 @@ export function PartMachineCycleChart() {
       }
     }
   }, [selectedPart, selectedPallet, selectedMachine, selectedOperation, cycles]);
-  const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
+  const curOperation = selectedPart ? (selectedOperation ?? points.allMachineOperations[0]) : undefined;
   const plannedMinutes = useMemo(() => {
     if (curOperation) {
       return plannedOperationMinutes(points, false);

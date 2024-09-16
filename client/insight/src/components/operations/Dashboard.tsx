@@ -37,7 +37,7 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 import { IProcPathInfo } from "../../network/api.js";
 import { ParentSize } from "@visx/responsive";
 import { RecentCycleChart } from "./RecentCycleChart.js";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { useAtomValue } from "jotai";
 
 const pctFormat = new Intl.NumberFormat(undefined, { style: "percent", minimumFractionDigits: 1 });

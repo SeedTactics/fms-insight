@@ -41,7 +41,7 @@ import { rawMaterialQueues } from "../../cell-status/names.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30BufferEntries, specificMonthBufferEntries } from "../../cell-status/buffers.js";
 import { Box, ToggleButton, Slider, Typography } from "@mui/material";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { useAtomValue } from "jotai";
 import { HashSet } from "@seedtactics/immutable-collections";
 

@@ -92,7 +92,7 @@ import {
   rectIntersection,
 } from "@dnd-kit/core";
 import { QuarantineMatButton } from "../station-monitor/QuarantineButton.js";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 type ColWithTitleProps = {

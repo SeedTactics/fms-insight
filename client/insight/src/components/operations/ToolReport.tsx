@@ -67,7 +67,8 @@ import {
 } from "../../data/tools-programs.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { PartIdenticon } from "../station-monitor/Material.js";
-import { useIsDemo, useSetTitle } from "../routes.js";
+import { useIsDemo } from "../../network/backend.js";
+import { useSetTitle } from "../title.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
 import { useAtom, useAtomValue } from "jotai";
 

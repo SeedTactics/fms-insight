@@ -65,7 +65,7 @@ import {
   specificMonthStationCycles,
 } from "../../cell-status/station-cycles.js";
 import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { atom, useAtom, useAtomValue } from "jotai";
 
 // --------------------------------------------------------------------------------

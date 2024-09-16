@@ -34,7 +34,7 @@ import { memo, useMemo } from "react";
 import { addDays, startOfToday } from "date-fns";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
 import { last30Inspections } from "../../cell-status/inspections.js";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { useAtomValue } from "jotai";
 
 export const QualityPaths = memo(function SelectedInspections() {

@@ -68,7 +68,7 @@ import { Circle } from "@visx/shape";
 import { addDays, addMonths, startOfToday } from "date-fns";
 import { ChartTooltip } from "../ChartTooltip.js";
 import { localPoint } from "@visx/event";
-import { useSetTitle } from "../routes.js";
+import { useSetTitle } from "../title.js";
 import { atom, useAtom, useAtomValue } from "jotai";
 
 type ReplacementTableProps = {
