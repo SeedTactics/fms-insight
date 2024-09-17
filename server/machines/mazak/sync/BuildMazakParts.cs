@@ -115,11 +115,11 @@ namespace MazakMachineInterface
       }
     }
 
-    public static string ParseComment(string comment)
+    public static string UniqueFromComment(string comment)
     {
       if (comment.EndsWith("-Insight"))
       {
-        return comment[..^8];
+        return comment.Substring(0, comment.Length - 8);
       }
 
       // Old FMS Insights had a -Path, strip it off for backwards compatibility
@@ -131,7 +131,7 @@ namespace MazakMachineInterface
       }
       else
       {
-        return comment[..idx];
+        return comment.Substring(0, idx);
       }
     }
   }
@@ -497,7 +497,12 @@ namespace MazakMachineInterface
         );
       }
 
-      return new MazakWriteData() { Fixtures = fixRows, Programs = progs };
+      return new MazakWriteData()
+      {
+        Prefix = "Delete Fixtures",
+        Fixtures = fixRows,
+        Programs = progs,
+      };
     }
 
     public MazakWriteData AddFixtureAndProgramDatabaseRows(
@@ -572,7 +577,12 @@ namespace MazakMachineInterface
         }
       }
 
-      return new MazakWriteData() { Fixtures = fixRows, Programs = newProgs.Values.ToArray() };
+      return new MazakWriteData()
+      {
+        Prefix = "Add Fixtures",
+        Fixtures = fixRows,
+        Programs = newProgs.Values.ToArray(),
+      };
     }
 
     public MazakWriteData CreatePartPalletDatabaseRows(MazakConfig cfg)
@@ -596,7 +606,12 @@ namespace MazakMachineInterface
           palRows.Add(p);
       }
 
-      return new MazakWriteData() { Parts = partRows, Pallets = palRows };
+      return new MazakWriteData()
+      {
+        Prefix = "Add Parts",
+        Parts = partRows,
+        Pallets = palRows,
+      };
     }
 
     public MazakWriteData DeleteOldPartRows()
@@ -620,7 +635,7 @@ namespace MazakMachineInterface
           }
         }
       }
-      return new MazakWriteData() { Parts = partRows };
+      return new MazakWriteData() { Prefix = "Delete Parts", Parts = partRows };
     }
 
     public MazakWriteData DeleteOldPalletRows()
@@ -646,7 +661,7 @@ namespace MazakMachineInterface
           }
         }
       }
-      return new MazakWriteData() { Pallets = palRows };
+      return new MazakWriteData() { Prefix = "Delete Pallets", Pallets = palRows };
     }
   }
 

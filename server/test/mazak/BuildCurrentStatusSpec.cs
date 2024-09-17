@@ -196,7 +196,7 @@ namespace MachineWatchTest
       /*
       File.WriteAllText(
         Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json"),
-        JsonConvert.SerializeObject(status, jsonSettings)
+        JsonSerializer.Serialize(status, jsonSettings)
       );
       */
 

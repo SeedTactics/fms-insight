@@ -38,6 +38,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
+using Castle.Components.DictionaryAdapter;
 using FluentAssertions;
 using MazakMachineInterface;
 using NSubstitute;
@@ -47,68 +48,25 @@ namespace MachineWatchTest
 {
   public sealed class WriteJobsSpec : IDisposable
   {
-    private class WriteMock : IWriteData
-    {
-      public MazakDbType MazakType => MazakDbType.MazakSmooth;
-      public MazakWriteData DeleteParts { get; set; }
-      public MazakWriteData DeletePallets { get; set; }
-      public MazakWriteData DelFixtures { get; set; }
-      public MazakWriteData AddFixtures { get; set; }
-      public MazakWriteData AddParts { get; set; }
-      public MazakWriteData AddSchedules { get; set; }
-      public MazakWriteData UpdateSchedules { get; set; }
-      public string errorForPrefix;
-
-      public void Save(MazakWriteData data, string prefix)
-      {
-        if (prefix == "Delete Parts")
-        {
-          DeleteParts = data;
-        }
-        else if (prefix == "Delete Pallets")
-        {
-          DeletePallets = data;
-        }
-        else if (prefix == "Delete Fixtures")
-        {
-          DelFixtures = data;
-        }
-        else if (prefix == "Add Fixtures")
-        {
-          AddFixtures = data;
-        }
-        else if (prefix == "Add Parts")
-        {
-          AddParts = data;
-        }
-        else if (prefix == "Add Schedules")
-        {
-          AddSchedules = data;
-        }
-        else if (prefix == "Update schedules")
-        {
-          UpdateSchedules = data;
-        }
-        else
-        {
-          Assert.Fail("Unexpected prefix " + prefix);
-        }
-        if (errorForPrefix == prefix)
-        {
-          throw new Exception("Sample error");
-        }
-      }
-    }
-
     private readonly RepositoryConfig _repoCfg;
     private readonly IRepository _jobDB;
-    private WriteMock _writeMock;
-    private readonly IReadDataAccess _readMock;
+    private readonly IMazakDB _mazakDbMock;
     private readonly JsonSerializerOptions jsonSettings;
     private readonly FMSSettings _settings;
     private readonly MazakConfig _mazakCfg;
     private readonly MazakAllData _initialAllData;
     private static readonly DateTime fixtureQueueTime = new(2018, 07, 19, 1, 2, 3, DateTimeKind.Utc);
+
+    private MazakWriteData FindWrite(string prefix)
+    {
+      return (MazakWriteData)
+        _mazakDbMock
+          .ReceivedCalls()
+          .LastOrDefault(e =>
+            e.GetMethodInfo().Name == "Save" && ((MazakWriteData)e.GetArguments()[0]).Prefix == prefix
+          )
+          ?.GetArguments()[0];
+    }
 
     public WriteJobsSpec()
     {
@@ -117,10 +75,7 @@ namespace MachineWatchTest
       );
       _jobDB = _repoCfg.OpenConnection();
 
-      _writeMock = new WriteMock();
-
-      _readMock = Substitute.For<IReadDataAccess>();
-      _readMock.MazakType.Returns(MazakDbType.MazakSmooth);
+      _mazakDbMock = Substitute.For<IMazakDB>();
 
       _initialAllData = new MazakAllData()
       {
@@ -235,20 +190,19 @@ namespace MachineWatchTest
         ),
       };
 
-      //  write jobs calls LoadAllData between creating fixtures and schedules, and then again after creating schedules
-      _readMock
+      //  write jobs calls LoadAllData between creating fixtures and schedules
+      _mazakDbMock
         .LoadAllData()
         .Returns(
-          // frist call, between parts and schedules
           (context) =>
             new MazakAllData()
             {
-              Schedules = _writeMock.AddSchedules?.Schedules ?? Enumerable.Empty<MazakScheduleRow>(),
-              Parts = _writeMock.AddParts?.Parts ?? [],
-              Pallets = _writeMock.AddParts?.Pallets ?? [],
-              PalletSubStatuses = [],
-              PalletPositions = [],
-              LoadActions = [],
+              Schedules = Enumerable.Empty<MazakScheduleRow>(),
+              Parts = FindWrite("Add Parts")?.Parts ?? [],
+              Pallets = FindWrite("Add Parts")?.Pallets ?? [],
+              PalletSubStatuses = Enumerable.Empty<MazakPalletSubStatusRow>(),
+              PalletPositions = Enumerable.Empty<MazakPalletPositionRow>(),
+              LoadActions = Enumerable.Empty<LoadAction>(),
               MainPrograms = ImmutableList
                 .Create("1001", "1002", "1003", "1004", "1005")
                 .Select(p => new MazakProgramRow() { MainProgram = p, Comment = "" }),
@@ -358,25 +312,17 @@ namespace MachineWatchTest
       _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
 
       WriteJobs
-        .SyncFromDatabase(
-          _initialAllData,
-          _jobDB,
-          _writeMock,
-          _readMock,
-          _settings,
-          _mazakCfg,
-          fixtureQueueTime
-        )
+        .SyncFromDatabase(_initialAllData, _jobDB, _mazakDbMock, _settings, _mazakCfg, fixtureQueueTime)
         .Should()
         .BeTrue();
 
-      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
-      _writeMock.DeletePallets.Pallets.Should().BeEmpty();
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
-      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+      ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts.json");
+      FindWrite("Delete Pallets")?.Pallets.Should().BeNullOrEmpty();
+      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts.json");
+      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
 
       var start = newJobs.Jobs.First().RouteStartUTC;
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Should().BeEmpty();
@@ -400,15 +346,7 @@ namespace MachineWatchTest
         );
 
       WriteJobs
-        .SyncFromDatabase(
-          _initialAllData,
-          _jobDB,
-          _writeMock,
-          _readMock,
-          _settings,
-          _mazakCfg,
-          fixtureQueueTime
-        )
+        .SyncFromDatabase(_initialAllData, _jobDB, _mazakDbMock, _settings, _mazakCfg, fixtureQueueTime)
         .Should()
         .BeFalse();
     }
@@ -451,19 +389,18 @@ namespace MachineWatchTest
       WriteJobs.SyncFromDatabase(
         _initialAllData,
         _jobDB,
-        _writeMock,
-        _readMock,
+        _mazakDbMock,
         _settings,
         _mazakCfg,
         newJobs.Jobs.First().RouteStartUTC
       );
 
-      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "managed-progs-add-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "managed-progs-del-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.AddParts, "managed-progs-parts.json");
-      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+      ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts.json");
+      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "managed-progs-add-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "managed-progs-del-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Add Parts"), "managed-progs-parts.json");
+      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
     }
 
     [Fact]
@@ -485,31 +422,25 @@ namespace MachineWatchTest
       _jobDB.AddJobs(newJ2, expectedPreviousScheduleId: newJ1.ScheduleId, addAsCopiedToSystem: false);
 
       WriteJobs
-        .SyncFromDatabase(
-          _initialAllData,
-          _jobDB,
-          _writeMock,
-          _readMock,
-          _settings,
-          _mazakCfg,
-          fixtureQueueTime
-        )
+        .SyncFromDatabase(_initialAllData, _jobDB, _mazakDbMock, _settings, _mazakCfg, fixtureQueueTime)
         .Should()
         .BeTrue();
 
-      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
-      _writeMock.DeletePallets.Pallets.Should().BeEmpty();
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
-      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+      ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts.json");
+      FindWrite("Delete Pallets")?.Pallets.Should().BeNullOrEmpty();
+      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts.json");
+      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
     }
 
     [Fact]
     public void ErrorDuringPartsPallets()
     {
-      _writeMock.errorForPrefix = "Add Parts";
+      _mazakDbMock
+        .When(x => x.Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Add Parts")))
+        .Do(x => throw new Exception("Sample error"));
 
       var newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
@@ -523,8 +454,7 @@ namespace MachineWatchTest
             WriteJobs.SyncFromDatabase(
               _initialAllData,
               _jobDB,
-              _writeMock,
-              _readMock,
+              _mazakDbMock,
               _settings,
               _mazakCfg,
               fixtureQueueTime
@@ -534,12 +464,12 @@ namespace MachineWatchTest
         .Throw<Exception>()
         .WithMessage("Sample error");
 
-      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
-      _writeMock.AddSchedules.Should().BeNull();
+      ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts.json");
+      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts.json");
+      FindWrite("Add Schedules").Should().BeNull();
 
       var start = newJobs.Jobs.First().RouteStartUTC;
       _jobDB
@@ -552,7 +482,16 @@ namespace MachineWatchTest
     [Fact]
     public void ErrorDuringSchedule()
     {
-      _writeMock.errorForPrefix = "Add Schedules";
+      bool throwError = true;
+      _mazakDbMock
+        .When(x => x.Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Add Schedules")))
+        .Do(x =>
+        {
+          if (throwError)
+          {
+            throw new Exception("Sample error");
+          }
+        });
 
       var newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
@@ -566,8 +505,7 @@ namespace MachineWatchTest
             WriteJobs.SyncFromDatabase(
               _initialAllData,
               _jobDB,
-              _writeMock,
-              _readMock,
+              _mazakDbMock,
               _settings,
               _mazakCfg,
               fixtureQueueTime
@@ -577,12 +515,12 @@ namespace MachineWatchTest
         .Throw<Exception>()
         .WithMessage("Sample error");
 
-      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeleteParts, "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "fixtures-queues-add-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "fixtures-queues-del-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.AddParts, "fixtures-queues-parts.json");
-      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+      ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch.json");
+      ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts.json");
+      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts.json");
+      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
 
       var start = newJobs.Jobs.First().RouteStartUTC;
       _jobDB
@@ -592,15 +530,13 @@ namespace MachineWatchTest
         .BeEquivalentTo(newJobs.Jobs.Select(j => j.UniqueStr));
 
       //try again still with error
-      _writeMock.AddSchedules = null;
       FluentActions
         .Invoking(
           () =>
             WriteJobs.SyncFromDatabase(
               _initialAllData,
               _jobDB,
-              _writeMock,
-              _readMock,
+              _mazakDbMock,
               _settings,
               _mazakCfg,
               fixtureQueueTime
@@ -610,7 +546,7 @@ namespace MachineWatchTest
         .Throw<Exception>()
         .WithMessage("Sample error");
 
-      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
       _jobDB
         .LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))
         .Select(j => j.UniqueStr)
@@ -618,18 +554,16 @@ namespace MachineWatchTest
         .BeEquivalentTo(newJobs.Jobs.Select(j => j.UniqueStr));
 
       //finally succeed without error
-      _writeMock.errorForPrefix = null;
-      _writeMock.AddSchedules = null;
+      throwError = false;
       WriteJobs.SyncFromDatabase(
         _initialAllData,
         _jobDB,
-        _writeMock,
-        _readMock,
+        _mazakDbMock,
         _settings,
         _mazakCfg,
         fixtureQueueTime
       );
-      ShouldMatchSnapshot(_writeMock.AddSchedules, "fixtures-queues-schedules.json");
+      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
 
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Should().BeEmpty();
     }
@@ -637,7 +571,17 @@ namespace MachineWatchTest
     [Fact]
     public void ResumesADownloadInterruptedDuringSchedules()
     {
-      _writeMock.errorForPrefix = "Add Schedules";
+      bool throwError = true;
+      _mazakDbMock
+        .When(x => x.Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Add Schedules")))
+        .Do(x =>
+        {
+          if (throwError)
+          {
+            throwError = false;
+            throw new Exception("Sample error");
+          }
+        });
 
       var newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
@@ -651,8 +595,7 @@ namespace MachineWatchTest
             WriteJobs.SyncFromDatabase(
               _initialAllData,
               _jobDB,
-              _writeMock,
-              _readMock,
+              _mazakDbMock,
               _settings,
               _mazakCfg,
               fixtureQueueTime
@@ -663,10 +606,14 @@ namespace MachineWatchTest
         .WithMessage("Sample error");
 
       // Now with the parts and only the aaa schedule
-      var allParts = _writeMock.AddParts.Parts.ToList();
-      var aaaSch = _writeMock.AddSchedules.Schedules.Where(s => s.PartName.StartsWith("aaa")).ToList();
-      var bbbAndCCCSch = _writeMock.AddSchedules.Schedules.Where(s => !s.PartName.StartsWith("aaa")).ToList();
-      _writeMock = new WriteMock();
+      var allParts = FindWrite("Add Parts").Parts.ToList();
+      var aaaSch = FindWrite("Add Schedules").Schedules.Where(s => s.PartName.StartsWith("aaa")).ToList();
+      var bbbAndCCCSch = FindWrite("Add Schedules")
+        .Schedules.Where(s => !s.PartName.StartsWith("aaa"))
+        .ToList();
+
+      throwError = false;
+      _mazakDbMock.ClearReceivedCalls();
 
       WriteJobs.SyncFromDatabase(
         new MazakAllData()
@@ -677,22 +624,21 @@ namespace MachineWatchTest
           Fixtures = [],
         },
         _jobDB,
-        _writeMock,
-        _readMock,
+        _mazakDbMock,
         _settings,
         _mazakCfg,
         fixtureQueueTime
       );
 
-      _writeMock.AddFixtures.Should().BeNull();
-      _writeMock.AddParts.Should().BeNull();
-      _writeMock.DelFixtures.Should().BeNull();
-      _writeMock.DeleteParts.Should().BeNull();
-      _writeMock.DeletePallets.Should().BeNull();
-      _writeMock.UpdateSchedules.Should().BeNull();
+      FindWrite("Add Fixtures").Should().BeNull();
+      FindWrite("Add Parts").Should().BeNull();
+      FindWrite("Delete Fixtures").Should().BeNull();
+      FindWrite("Delete Parts").Should().BeNull();
+      FindWrite("Delete Pallets")?.Pallets.Should().BeNullOrEmpty();
+      FindWrite("Update schedules").Should().BeNull();
       // adds only bbb and ccc
-      _writeMock
-        .AddSchedules.Schedules.Should()
+      FindWrite("Add Schedules")
+        .Schedules.Should()
         .BeEquivalentTo(bbbAndCCCSch.Select(s => s with { Priority = s.Priority + 1 }));
 
       _jobDB
@@ -747,6 +693,7 @@ namespace MachineWatchTest
 
       var orig = new MazakWriteData()
       {
+        Prefix = "test",
         Schedules = schs,
         Parts = parts,
         Pallets = pals,
@@ -755,7 +702,7 @@ namespace MachineWatchTest
       };
 
       //act
-      var chunks = OpenDatabaseKitTransactionDB.SplitWriteData(orig);
+      var chunks = OpenDatabaseKitDB.SplitWriteData(orig);
 
       // check
 
@@ -795,8 +742,7 @@ namespace MachineWatchTest
         .SyncFromDatabase(
           _initialAllData,
           _jobDB,
-          _writeMock,
-          _readMock,
+          _mazakDbMock,
           _settings,
           _mazakCfg,
           new DateTime(2024, 6, 18, 22, 0, 0, DateTimeKind.Utc)
@@ -804,138 +750,17 @@ namespace MachineWatchTest
         .Should()
         .BeTrue();
 
-      ShouldMatchSnapshot(_writeMock.UpdateSchedules, "pallet-subset-updatesch.json");
-      ShouldMatchSnapshot(_writeMock.DeleteParts, "pallet-subset-delparts.json");
-      _writeMock.DeletePallets.Pallets.Should().BeEmpty();
-      ShouldMatchSnapshot(_writeMock.AddFixtures, "pallet-subset-add-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.DelFixtures, "pallet-subset-del-fixtures.json");
-      ShouldMatchSnapshot(_writeMock.AddParts, "pallet-subset-parts.json");
-      ShouldMatchSnapshot(_writeMock.AddSchedules, "pallet-subset-schedules.json");
+      ShouldMatchSnapshot(FindWrite("Update schedules"), "pallet-subset-updatesch.json");
+      ShouldMatchSnapshot(FindWrite("Delete Parts"), "pallet-subset-delparts.json");
+      FindWrite("Delete Pallets")?.Pallets.Should().BeNullOrEmpty();
+      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "pallet-subset-add-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "pallet-subset-del-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Add Parts"), "pallet-subset-parts.json");
+      ShouldMatchSnapshot(FindWrite("Add Schedules"), "pallet-subset-schedules.json");
 
       // The schedule snapshot should have checked this, but do it here too since it was the
       // bug which triggered this test case
-      _writeMock.AddSchedules.Schedules.DistinctBy(p => p.Priority).Should().HaveCount(2);
-    }
-  }
-
-  public sealed class WriteJobsTimeoutsSpec
-  {
-    private readonly JsonSerializerOptions jsonSettings;
-    private readonly MazakAllData emptyData;
-    private readonly MazakConfig mazakConfig;
-
-    public WriteJobsTimeoutsSpec()
-    {
-      jsonSettings = new JsonSerializerOptions();
-      FMSInsightWebHost.JsonSettings(jsonSettings);
-      emptyData = new MazakAllData()
-      {
-        Schedules = [],
-        Fixtures = [],
-        Parts = [],
-        MainPrograms =
-        [
-          new() { MainProgram = "1001", Comment = "" },
-          new() { MainProgram = "1002", Comment = "" },
-          new() { MainProgram = "1003", Comment = "" },
-          new() { MainProgram = "1004", Comment = "" },
-        ],
-        Pallets = [],
-      };
-
-      mazakConfig = new MazakConfig()
-      {
-        SQLConnectionString = "unused connection string",
-        LogCSVPath = "unused log path",
-        DBType = MazakDbType.MazakSmooth,
-        ProgramDirectory = "theprogdir",
-        UseStartingOffsetForDueDate = true,
-      };
-    }
-
-    [Fact]
-    public void TimesOutAddingParts()
-    {
-      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
-        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-      );
-      using var jobDB = repoCfg.OpenConnection();
-
-      var writeMock = Substitute.For<IWriteData>();
-      var readMock = Substitute.For<IReadDataAccess>();
-      readMock.MazakType.Returns(MazakDbType.MazakSmooth);
-
-      // LoadAllData is called between loading parts and schedules.
-      // return empty data, i.e. without parts so that a timeout is triggered
-      readMock.LoadAllData().Returns(emptyData);
-
-      var newJobs = JsonSerializer.Deserialize<NewJobs>(
-        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "pallet-subset.json")),
-        jsonSettings
-      );
-      jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
-
-      FluentActions
-        .Invoking(
-          () =>
-            WriteJobs.SyncFromDatabase(
-              emptyData,
-              jobDB,
-              writeMock,
-              readMock,
-              new FMSSettings(),
-              mazakConfig,
-              new DateTime(2024, 6, 18, 22, 0, 0, DateTimeKind.Utc)
-            )
-        )
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("Timeout after adding parts: the new parts did not appear in mazak read DB");
-    }
-
-    [Fact]
-    public void TimesOutAddingSchedules()
-    {
-      using var repoCfg = RepositoryConfig.InitializeMemoryDB(
-        new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
-      );
-      using var jobDB = repoCfg.OpenConnection();
-
-      var writeMock = Substitute.For<IWriteData>();
-      MazakWriteData writeData = null;
-      writeMock
-        .WhenForAnyArgs(x => x.Save(default, default))
-        .Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
-
-      var readMock = Substitute.For<IReadDataAccess>();
-      readMock.MazakType.Returns(MazakDbType.MazakSmooth);
-
-      // LoadAllData is called between loading parts and schedules and after schedules
-      // return the newly added parts data but not any schedules, so as to trigger a timeout
-      readMock.LoadAllData().Returns((context) => emptyData with { Parts = writeData?.Parts });
-
-      var newJobs = JsonSerializer.Deserialize<NewJobs>(
-        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "pallet-subset.json")),
-        jsonSettings
-      );
-      jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
-
-      FluentActions
-        .Invoking(
-          () =>
-            WriteJobs.SyncFromDatabase(
-              emptyData,
-              jobDB,
-              writeMock,
-              readMock,
-              new FMSSettings(),
-              mazakConfig,
-              new DateTime(2024, 6, 18, 22, 0, 0, DateTimeKind.Utc)
-            )
-        )
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("Timeout after adding schedules: the new schedules did not appear in mazak read DB");
+      FindWrite("Add Schedules").Schedules.DistinctBy(p => p.Priority).Should().HaveCount(2);
     }
   }
 }

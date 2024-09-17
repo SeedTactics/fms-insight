@@ -47,21 +47,20 @@ namespace MachineWatchTest
   {
     private RepositoryConfig _repoCfg;
 
-    private class WriteMock : IWriteData
+    private IMazakDB _write;
+
+    private IList<MazakScheduleRow> GetSchRows()
     {
-      public MazakDbType MazakType => MazakDbType.MazakSmooth;
-      public IReadOnlyList<MazakScheduleRow> Schedules { get; private set; }
+      var wr =
+        _write.ReceivedCalls().LastOrDefault(c => c.GetMethodInfo().Name == "Save")?.GetArguments()[0]
+        as MazakWriteData;
 
-      public void Save(MazakWriteData data, string prefix)
-      {
-        Schedules = data.Schedules;
-        data.Pallets.Should().BeEmpty();
-        data.Parts.Should().BeEmpty();
-        data.Fixtures.Should().BeEmpty();
-      }
+      wr?.Pallets.Should().BeNullOrEmpty();
+      wr?.Parts.Should().BeNullOrEmpty();
+      wr?.Fixtures.Should().BeNullOrEmpty();
+
+      return wr?.Schedules;
     }
-
-    private WriteMock _write;
 
     public DecrementSpec()
     {
@@ -69,7 +68,7 @@ namespace MachineWatchTest
         new SerialSettings() { ConvertMaterialIDToSerial = (id) => id.ToString() }
       );
 
-      _write = new WriteMock();
+      _write = Substitute.For<IMazakDB>();
     }
 
     public void Dispose()
@@ -129,8 +128,9 @@ namespace MachineWatchTest
       var now = DateTime.UtcNow;
       DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
-      _write.Schedules.Count.Should().Be(1);
-      var sch = _write.Schedules[0];
+      var schR = GetSchRows();
+      schR.Count.Should().Be(1);
+      var sch = schR[0];
       sch.Id.Should().Be(15);
       sch.PlanQuantity.Should().Be(35);
       sch.Processes.Should()
@@ -216,7 +216,7 @@ namespace MachineWatchTest
 
       DecrementPlanQty.Decrement(_write, _jobDB, st);
 
-      _write.Schedules.Should().BeNull();
+      GetSchRows().Should().BeNull();
       _jobDB.LoadDecrementsForJob("uuuu").Should().BeEmpty();
     }
 
@@ -285,7 +285,7 @@ namespace MachineWatchTest
 
       DecrementPlanQty.Decrement(_write, _jobDB, st);
 
-      _write.Schedules.Should().BeNull();
+      GetSchRows().Should().BeNull();
       _jobDB
         .LoadDecrementsForJob("uuuu")
         .Should()
@@ -337,30 +337,27 @@ namespace MachineWatchTest
           {
             LoadStation = 1,
             LoadEvent = true, // load
-            Unique = "uuuu",
+            Comment = "uuuu-Insight",
             Part = "pppp",
             Process = 1,
-            Path = 1,
             Qty = 1,
           },
           new LoadAction()
           {
             LoadStation = 1,
             LoadEvent = false, // unload, should be ignored
-            Unique = "uuuu",
+            Comment = "uuuu-Insight",
             Part = "pppp",
             Process = 1,
-            Path = 1,
             Qty = 1,
           },
           new LoadAction()
           {
             LoadStation = 2,
             LoadEvent = true, // load of different part
-            Unique = "uuuu2",
+            Comment = "uuuu2-Insight",
             Part = "pppp",
             Process = 1,
-            Path = 1,
             Qty = 1,
           },
         },
@@ -387,8 +384,9 @@ namespace MachineWatchTest
       var now = DateTime.UtcNow;
       DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
-      _write.Schedules.Count.Should().Be(1);
-      _write.Schedules[0].PlanQuantity.Should().Be(36);
+      var schR = GetSchRows();
+      schR.Count.Should().Be(1);
+      schR[0].PlanQuantity.Should().Be(36);
 
       _jobDB
         .LoadDecrementsForJob("uuuu")
@@ -459,7 +457,7 @@ namespace MachineWatchTest
       var now = DateTime.UtcNow;
       DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
-      _write.Schedules.Should().BeNull();
+      GetSchRows().Should().BeNull();
 
       _jobDB
         .LoadDecrementsForJob("uuuu")
@@ -550,8 +548,9 @@ namespace MachineWatchTest
 
       DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
-      _write.Schedules.Count.Should().Be(1);
-      var sch = _write.Schedules[0];
+      var schR = GetSchRows();
+      schR.Count.Should().Be(1);
+      var sch = schR[0];
       sch.Id.Should().Be(15);
       sch.PlanQuantity.Should().Be(35);
       sch.Processes.Should()

@@ -74,9 +74,9 @@ namespace MazakMachineInterface
     }
 
     private static Serilog.ILogger Log = Serilog.Log.ForContext<HoldPattern>();
-    private IWriteData database;
+    private IMazakDB database;
 
-    public HoldPattern(IWriteData d)
+    public HoldPattern(IMazakDB d)
     {
       database = d;
     }
@@ -94,7 +94,7 @@ namespace MazakMachineInterface
 
       public string UniqueStr
       {
-        get { return MazakPart.ParseComment(_schRow.Comment); }
+        get { return MazakPart.UniqueFromComment(_schRow.Comment); }
       }
 
       public HoldMode Hold
@@ -109,6 +109,7 @@ namespace MazakMachineInterface
       {
         var transSet = new MazakWriteData()
         {
+          Prefix = "Hold Mode",
           Schedules = new[]
           {
             _schRow with
@@ -119,7 +120,7 @@ namespace MazakMachineInterface
           },
         };
 
-        _parent.database.Save(transSet, "Hold Mode");
+        _parent.database.Save(transSet);
       }
 
       public MazakSchedule(
@@ -133,7 +134,7 @@ namespace MazakMachineInterface
 
         if (MazakPart.IsSailPart(_schRow.PartName, _schRow.Comment))
         {
-          var unique = MazakPart.ParseComment(_schRow.Comment);
+          var unique = MazakPart.UniqueFromComment(_schRow.Comment);
           var job = jdb.LoadJob(unique);
           if (job != null)
           {

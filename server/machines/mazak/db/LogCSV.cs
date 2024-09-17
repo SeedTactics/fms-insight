@@ -33,7 +33,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 
 namespace MazakMachineInterface
 {
@@ -150,7 +149,7 @@ namespace MazakMachineInterface
         }
         catch (Exception ex)
         {
-          Serilog.Log.Warning(ex, "Error deleting file: " + f);
+          Serilog.Log.Error(ex, "Error deleting file: " + f);
         }
       }
     }

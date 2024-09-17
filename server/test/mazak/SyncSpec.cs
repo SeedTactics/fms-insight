@@ -48,16 +48,14 @@ namespace MachineWatchTest;
 public sealed class MazakSyncSpec : IDisposable
 {
   private readonly MazakSync _sync;
-  private readonly IReadDataAccess _read;
-  private readonly IWriteData _write;
+  private readonly IMazakDB _mazakDB;
   private readonly string _tempDir;
   private readonly FMSSettings _fmsSt;
   private readonly RepositoryConfig repo;
 
   public MazakSyncSpec()
   {
-    _read = Substitute.For<IReadDataAccess>();
-    _write = Substitute.For<IWriteData>();
+    _mazakDB = Substitute.For<IMazakDB>();
     repo = RepositoryConfig.InitializeMemoryDB(
       new SerialSettings() { ConvertMaterialIDToSerial = m => SerialSettings.ConvertToBase62(m) }
     );
@@ -71,8 +69,7 @@ public sealed class MazakSyncSpec : IDisposable
     _fmsSt.Queues.Add("queueCCC", new QueueInfo());
 
     _sync = new MazakSync(
-      _read,
-      _write,
+      _mazakDB,
       _fmsSt,
       new MazakConfig()
       {
@@ -83,6 +80,7 @@ public sealed class MazakSyncSpec : IDisposable
         LoadCSVPath = "not used",
       }
     );
+    _mazakDB.ClearReceivedCalls();
   }
 
   public void Dispose()
@@ -99,7 +97,7 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync.NewCellState += () => complete.SetResult(true);
 
-    File.WriteAllLines(Path.Combine(_tempDir, "alog.csv"), ["2024,6,11,4,5,6,501,2,part,job,1,,2,,"]);
+    _mazakDB.OnNewEvent += Raise.Event<Action>();
 
     if (await Task.WhenAny(complete.Task, Task.Delay(5000)) != complete.Task)
     {
@@ -112,7 +110,7 @@ public sealed class MazakSyncSpec : IDisposable
   {
     var jsonSettings = new JsonSerializerOptions();
     FMSInsightWebHost.JsonSettings(jsonSettings);
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         new MazakAllData()
@@ -146,7 +144,7 @@ public sealed class MazakSyncSpec : IDisposable
   {
     var jsonSettings = new JsonSerializerOptions();
     FMSInsightWebHost.JsonSettings(jsonSettings);
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         new MazakAllData()
@@ -188,7 +186,7 @@ public sealed class MazakSyncSpec : IDisposable
   {
     var jsonSettings = new JsonSerializerOptions();
     FMSInsightWebHost.JsonSettings(jsonSettings);
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         new MazakAllData()
@@ -238,7 +236,7 @@ public sealed class MazakSyncSpec : IDisposable
 
     var jsonSettings = new JsonSerializerOptions();
     FMSInsightWebHost.JsonSettings(jsonSettings);
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         new MazakAllData()
@@ -286,7 +284,7 @@ public sealed class MazakSyncSpec : IDisposable
     );
     File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,1,6,4,prog,,,,"]);
 
-    var allData = new MazakAllData()
+    var allData = new MazakAllDataAndLogs()
     {
       MainPrograms = [],
       Fixtures = [],
@@ -295,8 +293,9 @@ public sealed class MazakSyncSpec : IDisposable
       PalletPositions = [],
       Schedules = [],
       LoadActions = [],
+      Logs = LogCSVParsing.LoadLog(null, _tempDir),
     };
-    _read.LoadAllData().Returns(allData);
+    _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
 
     _sync
       .CalculateCellState(db)
@@ -326,6 +325,11 @@ public sealed class MazakSyncSpec : IDisposable
       );
 
     db.MaxForeignID().Should().BeEquivalentTo("222loadend.csv");
+
+    _mazakDB.Received().DeleteLogs("222loadend.csv");
+
+    LogCSVParsing.DeleteLog("222loadend.csv", _tempDir);
+
     Directory.GetFiles(_tempDir, "*.csv").Should().BeEmpty();
   }
 
@@ -351,10 +355,10 @@ public sealed class MazakSyncSpec : IDisposable
       [now.AddSeconds(10).ToString(dateFmt) + ",501,,12,,1,6,4,prog,,,,"]
     );
 
-    _read
-      .LoadAllData()
+    _mazakDB
+      .LoadAllDataAndLogs(Arg.Any<string>())
       .Returns(
-        new MazakAllData()
+        new MazakAllDataAndLogs()
         {
           MainPrograms = [],
           Fixtures = [],
@@ -362,6 +366,7 @@ public sealed class MazakSyncSpec : IDisposable
           Parts = [],
           Schedules = [],
           LoadActions = [],
+          Logs = LogCSVParsing.LoadLog(null, _tempDir),
         }
       );
 
@@ -370,6 +375,10 @@ public sealed class MazakSyncSpec : IDisposable
     st.TimeUntilNextRefresh.Should().Be(TimeSpan.FromSeconds(15));
 
     db.MaxForeignID().Should().BeEquivalentTo("111loadstart.csv");
+
+    _mazakDB.Received().DeleteLogs("111loadstart.csv");
+
+    LogCSVParsing.DeleteLog("111loadstart.csv", _tempDir);
 
     Directory
       .GetFiles(_tempDir, "*.csv")
@@ -409,7 +418,7 @@ public sealed class MazakSyncSpec : IDisposable
       timeUTC: now
     );
 
-    var allData = new MazakAllData()
+    var allData = new MazakAllDataAndLogs()
     {
       MainPrograms = [],
       Fixtures = [],
@@ -419,8 +428,9 @@ public sealed class MazakSyncSpec : IDisposable
       PalletSubStatuses = [],
       Schedules = [],
       LoadActions = [],
+      Logs = [],
     };
-    _read.LoadAllData().Returns(allData);
+    _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
 
     _sync
       .CalculateCellState(db)
@@ -495,7 +505,7 @@ public sealed class MazakSyncSpec : IDisposable
         Material = [],
         Alarms = [],
       },
-      AllData = new MazakAllData()
+      AllData = new MazakAllDataAndLogs()
       {
         MainPrograms = ImmutableList
           .Create("1001", "1002", "1003", "1004", "1005")
@@ -505,6 +515,7 @@ public sealed class MazakSyncSpec : IDisposable
         Parts = [],
         Schedules = [],
         LoadActions = [],
+        Logs = [],
       },
     };
 
@@ -516,9 +527,9 @@ public sealed class MazakSyncSpec : IDisposable
       jsonSettings
     );
     MazakWriteData writeData = null;
-    _write.WhenForAnyArgs(x => x.Save(default, default)).Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
+    _mazakDB.WhenForAnyArgs(x => x.Save(default)).Do((ctx) => writeData = ctx.Arg<MazakWriteData>());
 
-    _read
+    _mazakDB
       .LoadAllData()
       .Returns(
         (context) =>
@@ -538,19 +549,19 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync.ApplyActions(db, st).Should().BeTrue();
 
-    _write
+    _mazakDB
       .ReceivedCalls()
       .Where(c => c.GetMethodInfo().Name == "Save")
-      .Select(c => c.GetArguments()[1] as string)
+      .Select(c => ((MazakWriteData)c.GetArguments()[0]).Prefix)
       .Should()
       .BeEquivalentTo(["Delete Pallets", "Delete Fixtures", "Add Fixtures", "Add Parts", "Add Schedules"]);
     // more detailed tests are in the write data tests
 
-    _write.ClearReceivedCalls();
+    _mazakDB.ClearReceivedCalls();
 
     _sync.ApplyActions(db, st).Should().BeFalse();
 
-    _write.ReceivedCalls().Should().BeEmpty();
+    _mazakDB.ReceivedCalls().Should().BeEmpty();
   }
 
   [Fact]
@@ -572,7 +583,7 @@ public sealed class MazakSyncSpec : IDisposable
         Material = [],
         Alarms = [],
       },
-      AllData = new MazakAllData()
+      AllData = new MazakAllDataAndLogs()
       {
         Schedules =
         [
@@ -611,6 +622,7 @@ public sealed class MazakSyncSpec : IDisposable
             ],
           },
         ],
+        Logs = [],
         LoadActions = [],
       },
     };
@@ -643,10 +655,10 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync.ApplyActions(db, st).Should().BeTrue();
 
-    _write.ReceivedCalls().Should().HaveCount(1);
-    _write.Received().Save(Arg.Any<MazakWriteData>(), Arg.Is("Setting material from queues"));
+    _mazakDB.ReceivedCalls().Should().HaveCount(1);
+    _mazakDB.Received().Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Setting material from queues"));
 
-    var trans = _write.ReceivedCalls().Select(c => c.GetArguments()[0] as MazakWriteData).First();
+    var trans = _mazakDB.ReceivedCalls().Select(c => c.GetArguments()[0] as MazakWriteData).First();
     trans.Schedules.Count.Should().Be(1);
     trans.Schedules[0].Id.Should().Be(10);
     trans.Schedules[0].Priority.Should().Be(10);

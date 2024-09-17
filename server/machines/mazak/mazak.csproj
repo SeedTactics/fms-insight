@@ -30,6 +30,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="..\mazak-proxy\mazak-proxy.csproj">
+      <PackagePath>contentFiles\any\net8.0\mazak-proxy\mazak-proxy.csproj</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
+    <Content Include="..\mazak-proxy\installer.iss">
+      <PackagePath>contentFiles\any\net8.0\mazak-proxy\installer.iss</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
+    <Content Include="..\mazak-proxy\*.cs">
+      <PackagePath>contentFiles\any\net8.0\mazak-proxy</PackagePath>
+      <PackageCopyToOutput>true</PackageCopyToOutput>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />

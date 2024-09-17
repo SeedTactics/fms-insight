@@ -42,7 +42,7 @@ namespace MazakMachineInterface
     private static Serilog.ILogger Log = Serilog.Log.ForContext<DecrSchedule>();
 
     public static bool Decrement(
-      IWriteData write,
+      IMazakDB mazakDB,
       IRepository jobDB,
       MazakCurrentStatus status,
       DateTime? now = null
@@ -72,7 +72,7 @@ namespace MazakMachineInterface
       if (jobs.Count == 0)
         return false;
 
-      ReducePlannedQuantity(write, jobs);
+      ReducePlannedQuantity(mazakDB, jobs);
       RecordDecrement(jobDB, jobs, now);
 
       return true;
@@ -97,7 +97,7 @@ namespace MazakMachineInterface
           continue;
         if (string.IsNullOrEmpty(sch.Comment))
           continue;
-        var unique = MazakPart.ParseComment(sch.Comment);
+        var unique = MazakPart.UniqueFromComment(sch.Comment);
 
         //load the job
         if (string.IsNullOrEmpty(unique))
@@ -119,7 +119,12 @@ namespace MazakMachineInterface
         {
           foreach (var action in loadOpers)
           {
-            if (action.Unique == job.UniqueStr && action.Process == 1 && action.LoadEvent)
+            if (
+              !string.IsNullOrEmpty(action.Comment)
+              && MazakPart.UniqueFromComment(action.Comment) == job.UniqueStr
+              && action.Process == 1
+              && action.LoadEvent
+            )
             {
               loadingQty += action.Qty;
               Log.Debug(
@@ -145,7 +150,7 @@ namespace MazakMachineInterface
       return jobs;
     }
 
-    private static void ReducePlannedQuantity(IWriteData writeData, ICollection<DecrSchedule> jobs)
+    private static void ReducePlannedQuantity(IMazakDB writeData, ICollection<DecrSchedule> jobs)
     {
       var schs = new List<MazakScheduleRow>();
       foreach (var job in jobs)
@@ -163,8 +168,12 @@ namespace MazakMachineInterface
 
       if (schs.Count > 0)
       {
-        var write = new MazakWriteData() { Schedules = schs };
-        writeData.Save(write, "Decrement preventing new parts starting");
+        var write = new MazakWriteData()
+        {
+          Prefix = "Decrement preventing new parts starting",
+          Schedules = schs,
+        };
+        writeData.Save(write);
       }
     }
 

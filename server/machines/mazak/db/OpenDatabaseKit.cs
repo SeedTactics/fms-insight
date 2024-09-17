@@ -1,4 +1,4 @@
-/* Copyright (c) 2020, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -34,9 +34,11 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
-using System.Diagnostics;
 using System.Linq;
+#if !NET35
+// On net3.5, we have a small reflection-based implementation
 using Dapper;
+#endif
 
 namespace MazakMachineInterface
 {
@@ -46,34 +48,22 @@ namespace MazakMachineInterface
       : base(msg) { }
   }
 
-  public class ErrorModifyingParts : Exception
+  public sealed class OpenDatabaseKitDB : IMazakDB, IDisposable
   {
-    // There is a suspected bug in the mazak software when deleting parts.  Sometimes, open database kit
-    // successfully deletes a part but still outputs an error 7.  This only happens occasionally, but
-    // if we get an error 7 when deleting the part table, check if the part was successfully deleted and
-    // if so ignore the error.
-    public HashSet<string> PartNames { get; }
-
-    public ErrorModifyingParts(HashSet<string> names)
-      : base("Mazak returned error when modifying parts: " + string.Join(",", names))
-    {
-      PartNames = names;
-    }
-  }
-
-  public class OpenDatabaseKitDB
-  {
-    //Global Settings
+    private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitDB>();
     public static System.Threading.Mutex MazakTransactionLock = new System.Threading.Mutex();
 
-    protected string ready4ConectPath;
-    protected string _connectionStr;
+    private readonly string ready4ConectPath;
+    private readonly string _readConnStr;
+    private readonly string _writeConnStr;
+    private readonly ICurrentLoadActions _loadOper;
+    private readonly MazakConfig _cfg;
+    private System.IO.FileSystemWatcher logWatcher;
+    private MazakDbType _dbType => _cfg.DBType;
 
-    public MazakDbType MazakType { get; }
-
-    protected void CheckReadyForConnect()
+    private void CheckReadyForConnect()
     {
-      if (MazakType != MazakDbType.MazakVersionE)
+      if (_dbType != MazakDbType.MazakVersionE)
         return;
       if (!System.IO.File.Exists(ready4ConectPath))
       {
@@ -81,30 +71,84 @@ namespace MazakMachineInterface
       }
     }
 
-    protected OpenDatabaseKitDB(string dbConnStr, MazakDbType ty)
+    public OpenDatabaseKitDB(MazakConfig cfg, ICurrentLoadActions loadOper)
     {
-      MazakType = ty;
-      if (MazakType != MazakDbType.MazakSmooth)
+      _cfg = cfg;
+      _loadOper = loadOper;
+
+      if (_dbType != MazakDbType.MazakSmooth)
       {
-        ready4ConectPath = System.IO.Path.Combine(dbConnStr, "ready4Conect.mdb");
+        ready4ConectPath = System.IO.Path.Combine(cfg.OleDbDatabasePath, "ready4Conect.mdb");
+      }
+
+      if (_dbType == MazakDbType.MazakWeb || _dbType == MazakDbType.MazakVersionE)
+      {
+        _readConnStr =
+          cfg.SQLConnectionString
+          + ";Data Source="
+          + System.IO.Path.Combine(cfg.OleDbDatabasePath, "FCREADDAT01.mdb")
+          + ";";
+        _writeConnStr =
+          cfg.SQLConnectionString
+          + ";Data Source="
+          + System.IO.Path.Combine(cfg.OleDbDatabasePath, "FCNETUSER1.mdb")
+          + ";";
+      }
+      else
+      {
+        _readConnStr = cfg.SQLConnectionString + ";Database=FCREADDAT01";
+        _writeConnStr = cfg.SQLConnectionString + ";Database=FCNETUSER01";
+      }
+
+      if (_dbType == MazakDbType.MazakVersionE)
+      {
+        if (System.IO.Directory.Exists(cfg.LoadCSVPath))
+        {
+          logWatcher = new System.IO.FileSystemWatcher(cfg.LoadCSVPath) { Filter = "*.csv" };
+          logWatcher.Created += RaiseNewLog;
+          logWatcher.Changed += RaiseNewLog;
+        }
+        else
+        {
+          Log.Error("Load CSV Directory does not exist.  Set the directory in the config.ini file.");
+        }
+      }
+      else
+      {
+        if (System.IO.Directory.Exists(cfg.LogCSVPath))
+        {
+          logWatcher = new System.IO.FileSystemWatcher(cfg.LogCSVPath) { Filter = "*.csv" };
+          logWatcher.Created += RaiseNewLog;
+        }
+        else
+        {
+          Log.Error("Log CSV Directory does not exist.  Set the directory in the config.ini file.");
+        }
+      }
+      if (logWatcher != null)
+        logWatcher.EnableRaisingEvents = true;
+
+      InitReadSQLStatements();
+    }
+
+    public void Dispose()
+    {
+      if (logWatcher != null)
+      {
+        logWatcher.EnableRaisingEvents = false;
+        logWatcher.Created -= RaiseNewLog;
+        logWatcher.Changed -= RaiseNewLog;
+        logWatcher.Dispose();
+        logWatcher = null;
       }
     }
 
-    private IDbConnection OpenReadonlyOleDb()
+#pragma warning disable CA1416 // Validate platform compatibility
+    private static IDbConnection OpenOleDb(string connStr)
     {
       int attempts = 0;
 
-      // check if windows
-      if (
-        !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
-          System.Runtime.InteropServices.OSPlatform.Windows
-        )
-      )
-      {
-        throw new Exception("VerE and Web only only supported on windows");
-      }
-
-      var conn = new OleDbConnection(_connectionStr);
+      var conn = new OleDbConnection(connStr);
       while (attempts < 20)
       {
         try
@@ -146,44 +190,35 @@ namespace MazakMachineInterface
       throw new Exception("Mazak database is locked and can not be accessed");
     }
 
-    protected IDbConnection CreateConnection()
+    private IDbConnection CreateReadConnection()
     {
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
+      if (_dbType == MazakDbType.MazakWeb || _dbType == MazakDbType.MazakVersionE)
       {
-        return OpenReadonlyOleDb();
+        return OpenOleDb(_readConnStr);
       }
       else
       {
-        var conn = new System.Data.SqlClient.SqlConnection(_connectionStr);
+        var conn = new System.Data.SqlClient.SqlConnection(_readConnStr);
         conn.Open();
         return conn;
       }
     }
-  }
 
-  public class OpenDatabaseKitTransactionDB : OpenDatabaseKitDB, IWriteData
-  {
-    private static Serilog.ILogger Log = Serilog.Log.ForContext<OpenDatabaseKitTransactionDB>();
-
-    public OpenDatabaseKitTransactionDB(MazakConfig cfg)
-      : base(cfg.SQLConnectionString, cfg.DBType)
+    private IDbConnection CreateWriteConnection()
     {
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
+      if (_dbType == MazakDbType.MazakWeb || _dbType == MazakDbType.MazakVersionE)
       {
-        _connectionStr =
-          "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";"
-          + "User ID=Admin;"
-          + "Data Source="
-          + System.IO.Path.Combine(cfg.SQLConnectionString, "FCNETUSER1.mdb")
-          + ";"
-          + "Mode=Share Deny None;";
+        return OpenOleDb(_writeConnStr);
       }
       else
       {
-        _connectionStr = cfg.SQLConnectionString + ";Database=FCNETUSER01";
+        var conn = new System.Data.SqlClient.SqlConnection(_writeConnStr);
+        conn.Open();
+        return conn;
       }
     }
 
+    #region Writing
     private const int EntriesPerTransaction = 20;
 
     public static IEnumerable<MazakWriteData> SplitWriteData(MazakWriteData original)
@@ -191,13 +226,14 @@ namespace MazakMachineInterface
       // Open Database Kit can lockup if too many commands are sent at once
       return original
         .Schedules.Cast<object>()
-        .Concat(original.Parts)
-        .Concat(original.Pallets)
-        .Concat(original.Fixtures)
-        .Concat(original.Programs)
+        .Concat(original.Parts.Cast<object>())
+        .Concat(original.Pallets.Cast<object>())
+        .Concat(original.Fixtures.Cast<object>())
+        .Concat(original.Programs.Cast<object>())
         .Chunk(EntriesPerTransaction)
         .Select(chunk => new MazakWriteData()
         {
+          Prefix = original.Prefix,
           Schedules = chunk.OfType<MazakScheduleRow>().ToArray(),
           Parts = chunk.OfType<MazakPartRow>().ToArray(),
           Pallets = chunk.OfType<MazakPalletRow>().ToArray(),
@@ -207,15 +243,15 @@ namespace MazakMachineInterface
         .ToList();
     }
 
-    public void Save(MazakWriteData data, string prefix)
+    public void Save(MazakWriteData data)
     {
       foreach (var chunk in SplitWriteData(data))
       {
-        SaveChunck(chunk, prefix);
+        SaveChunck(chunk);
       }
     }
 
-    private void SaveChunck(MazakWriteData data, string prefix)
+    private void SaveChunck(MazakWriteData data)
     {
       CheckReadyForConnect();
 
@@ -233,7 +269,7 @@ namespace MazakMachineInterface
 
       try
       {
-        using (var conn = CreateConnection())
+        using (var conn = CreateWriteConnection())
         {
           using (var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted))
           {
@@ -242,15 +278,45 @@ namespace MazakMachineInterface
             trans.Commit();
           }
 
+          // check for errors
           foreach (int waitSecs in new[] { 5, 5, 10, 10, 15, 15, 30 })
           {
             System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
-            if (CheckTransactionErrors(conn, prefix))
+            if (CheckTransactionErrors(conn, data))
             {
-              return;
+              goto noErrors;
             }
           }
           throw new Exception("Timeout during download: open database kit is not running or responding");
+
+          noErrors:
+          // wait for any new parts and schedules
+          var newParts = data
+            .Parts.Where(p => p.Command == MazakWriteCommand.Add)
+            .Select(p => p.PartName)
+            .ToList();
+          var newSchIds = data
+            .Schedules.Where(s => s.Command == MazakWriteCommand.Add)
+            .Select(s => s.Id)
+            .ToList();
+
+          if (newParts.Count > 0 || newSchIds.Count > 0)
+          {
+            foreach (var waitSecs in new[] { 0.5, 1, 1, 3, 3, 5 })
+            {
+              System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
+              if (CheckPartsExist(newParts) && CheckSchedulesExist(newSchIds))
+              {
+                goto partsAndSchsExist;
+              }
+            }
+
+            Log.Error("Timeout waiting for new parts and schedules to appear in database");
+            throw new Exception("Timeout waiting for new parts and schedules to appear in database");
+          }
+
+          partsAndSchsExist:
+          ;
         }
       }
       catch (OleDbException ex)
@@ -278,7 +344,7 @@ namespace MazakMachineInterface
         transaction: trans
       );
 
-      if (MazakType == MazakDbType.MazakVersionE)
+      if (_dbType == MazakDbType.MazakVersionE)
       {
         // pallet version 1
         conn.Execute(
@@ -325,7 +391,7 @@ namespace MazakMachineInterface
         );
       }
 
-      if (MazakType == MazakDbType.MazakSmooth)
+      if (_dbType == MazakDbType.MazakSmooth)
       {
         conn.Execute(
           @"INSERT INTO ScheduleProcess_t(
@@ -613,7 +679,7 @@ namespace MazakMachineInterface
         );
       }
 
-      if (MazakType == MazakDbType.MazakSmooth)
+      if (_dbType == MazakDbType.MazakSmooth)
       {
         conn.Execute(
           @"INSERT INTO MainProgram_t(
@@ -670,13 +736,23 @@ namespace MazakMachineInterface
       public string PartName { get; set; }
     }
 
-    private bool CheckTransactionErrors(IDbConnection conn, string prefix)
+    private bool CheckTransactionErrors(IDbConnection conn, MazakWriteData writeData)
     {
       // Once Mazak processes a row, the row in the table is blanked.  If an error occurs, instead
       // the Command is changed to 9 and an error code is put in the TransactionStatus column.
+
+      // There is a suspected bug in the mazak software when deleting parts.  Sometimes, open database kit
+      // successfully deletes a part but still outputs an error 7.  This only happens occasionally, but
+      // if we get an error 7 when deleting the part table, check if the part was successfully deleted and
+      // if so ignore the error.
       bool foundUnprocesssedRow = false;
       var log = new List<string>();
-      var partEditErrors = new HashSet<string>();
+
+      var partsToDelete = new HashSet<string>(
+        writeData.Parts.Where(p => p.Command == MazakWriteCommand.Delete).Select(p => p.PartName)
+      );
+      var partDelErrors = new HashSet<string>();
+
       using (var trans = conn.BeginTransaction(IsolationLevel.ReadCommitted))
       {
         foreach (var table in new[] { "Fixture_t", "Pallet_t", "Schedule_t" })
@@ -694,7 +770,7 @@ namespace MazakMachineInterface
             if (row.Command.Value == MazakWriteCommand.Error)
             {
               log.Add(
-                prefix
+                writeData.Prefix
                   + " Mazak transaction on table "
                   + table
                   + " at index "
@@ -726,19 +802,21 @@ namespace MazakMachineInterface
             row.Command.Value == MazakWriteCommand.Error
             && row.TransactionStatus == 7
             && !string.IsNullOrEmpty(row.PartName)
+            && partsToDelete.Contains(row.PartName)
           )
           {
             Log.Debug(
-              prefix + " mazak transaction on table Part_t at index {idx} returned error 7 for part {part}",
+              writeData.Prefix
+                + " mazak transaction on table Part_t at index {idx} returned error 7 for part {part}",
               partIdx,
               row.PartName
             );
-            partEditErrors.Add(row.PartName);
+            partDelErrors.Add(row.PartName);
           }
           else if (row.Command.Value == MazakWriteCommand.Error)
           {
             log.Add(
-              prefix
+              writeData.Prefix
                 + " Mazak transaction on table Part_t at index "
                 + partIdx.ToString()
                 + " returned error "
@@ -756,17 +834,26 @@ namespace MazakMachineInterface
 
       if (log.Any())
       {
-        Log.Error("Error communicating with Open Database kit {@errs}", log);
-        throw new OpenDatabaseKitTransactionError(string.Join(Environment.NewLine, log));
+        var errs = string.Join(Environment.NewLine, log.ToArray());
+        Log.Error("Error communicating with Open Database kit " + errs);
+        throw new OpenDatabaseKitTransactionError(string.Join(Environment.NewLine, log.ToArray()));
       }
 
       if (foundUnprocesssedRow)
       {
         return false;
       }
-      else if (partEditErrors.Count > 0)
+      else if (partDelErrors.Count > 0)
       {
-        throw new ErrorModifyingParts(partEditErrors);
+        foreach (var part in partDelErrors)
+        {
+          if (CheckPartsExist([part]))
+          {
+            throw new Exception("Mazak returned an error when attempting to delete part " + part);
+          }
+        }
+        // if they all no longer exists, ignore the error
+        return true;
       }
       else
       {
@@ -774,7 +861,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private void ClearTransactionDatabase(IDbConnection conn, IDbTransaction trans)
+    private static void ClearTransactionDatabase(IDbConnection conn, IDbTransaction trans)
     {
       string[] TransactionTables =
       {
@@ -796,10 +883,9 @@ namespace MazakMachineInterface
         }
       }
     }
-  }
+    #endregion
 
-  public class OpenDatabaseKitReadDB : OpenDatabaseKitDB, IReadDataAccess
-  {
+    #region Reading
     private string _fixtureSelect;
     private string _palletSelect;
     private string _partSelect;
@@ -812,29 +898,11 @@ namespace MazakMachineInterface
     private string _alarmSelect;
     private string _toolSelect;
 
-    private ICurrentLoadActions _loadOper;
-
-    public OpenDatabaseKitReadDB(MazakConfig mazakCfg, ICurrentLoadActions loadOper)
-      : base(mazakCfg.SQLConnectionString, mazakCfg.DBType)
+    private void InitReadSQLStatements()
     {
-      _loadOper = loadOper;
-      if (MazakType == MazakDbType.MazakWeb || MazakType == MazakDbType.MazakVersionE)
-      {
-        _connectionStr =
-          "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";User ID=Admin;"
-          + "Data Source="
-          + System.IO.Path.Combine(mazakCfg.SQLConnectionString, "FCREADDAT01.mdb")
-          + ";"
-          + "Mode=Share Deny Write;";
-      }
-      else
-      {
-        _connectionStr = mazakCfg.SQLConnectionString + ";Database=FCREADDAT01";
-      }
-
       _fixtureSelect = "SELECT FixtureName, Comment FROM Fixture";
 
-      if (MazakType != MazakDbType.MazakVersionE)
+      if (_dbType != MazakDbType.MazakVersionE)
       {
         _palletSelect = "SELECT PalletNumber, FixtureGroup AS FixtureGroupV2, Fixture, RecordID FROM Pallet";
       }
@@ -843,7 +911,7 @@ namespace MazakMachineInterface
         _palletSelect = "SELECT PalletNumber, Angle AS AngleV1, Fixture, RecordID FROM Pallet";
       }
 
-      if (MazakType != MazakDbType.MazakSmooth)
+      if (_dbType != MazakDbType.MazakSmooth)
       {
         _partSelect = "SELECT Id, PartName, Comment, Price, TotalProcess FROM Part";
         _partSelect =
@@ -1019,7 +1087,7 @@ namespace MazakMachineInterface
     public TResult WithReadDBConnection<TResult>(Func<IDbConnection, TResult> action)
     {
       CheckReadyForConnect();
-      using (var conn = CreateConnection())
+      using (var conn = CreateReadConnection())
       {
         return action(conn);
       }
@@ -1088,32 +1156,30 @@ namespace MazakMachineInterface
             }
           }
 
-          schRow.Processes.Add(proc with { FixQuantity = fixQty });
+          schRow.Processes.Add(
+            new MazakScheduleProcessRow()
+            {
+              FixQuantity = fixQty,
+
+              //all the rest the same
+              MazakScheduleRowId = proc.MazakScheduleRowId,
+              ProcessNumber = proc.ProcessNumber,
+              ProcessMaterialQuantity = proc.ProcessMaterialQuantity,
+              ProcessExecuteQuantity = proc.ProcessExecuteQuantity,
+              ProcessBadQuantity = proc.ProcessBadQuantity,
+              ProcessMachine = proc.ProcessMachine,
+              FixedMachineFlag = proc.FixedMachineFlag,
+              FixedMachineNumber = proc.FixedMachineNumber,
+              ScheduleProcess_1 = proc.ScheduleProcess_1,
+              ScheduleProcess_2 = proc.ScheduleProcess_2,
+              ScheduleProcess_3 = proc.ScheduleProcess_3,
+              ScheduleProcess_4 = proc.ScheduleProcess_4,
+              ScheduleProcess_5 = proc.ScheduleProcess_5,
+            }
+          );
         }
       }
       return schs;
-    }
-
-    public MazakCurrentStatus LoadStatus()
-    {
-      return WithReadDBConnection(conn =>
-      {
-        using (var trans = conn.BeginTransaction())
-        {
-          var parts = LoadParts(conn, trans, out var fixQty);
-          var ret = new MazakCurrentStatus()
-          {
-            Schedules = LoadSchedules(conn, trans, fixQty),
-            LoadActions = _loadOper.CurrentLoadActions(),
-            PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
-            PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
-            Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
-            Parts = parts,
-          };
-          trans.Commit();
-          return ret;
-        }
-      });
     }
 
     private MazakAllData LoadAllData(IDbConnection conn, IDbTransaction trans)
@@ -1136,28 +1202,21 @@ namespace MazakMachineInterface
 
     public IEnumerable<MazakProgramRow> LoadPrograms()
     {
-      return WithReadDBConnection(conn => conn.Query<MazakProgramRow>(_mainProgSelect).ToList());
-    }
-
-    public bool CheckProgramExists(string mainProgram)
-    {
       return WithReadDBConnection(conn =>
       {
-        var cnt = conn.ExecuteScalar<int>(
-          "SELECT COUNT(*) FROM MainProgram WHERE MainProgram = @m",
-          new { m = mainProgram }
-        );
-        return cnt > 0;
+        using var trans = conn.BeginTransaction();
+        return conn.Query<MazakProgramRow>(_mainProgSelect, transaction: trans).ToList();
       });
     }
 
     public IEnumerable<ToolPocketRow> LoadTools()
     {
-      if (MazakType == MazakDbType.MazakSmooth)
+      if (_dbType == MazakDbType.MazakSmooth)
       {
         return WithReadDBConnection(conn =>
         {
-          return conn.Query<ToolPocketRow>(_toolSelect).ToList();
+          using var trans = conn.BeginTransaction();
+          return conn.Query<ToolPocketRow>(_toolSelect, transaction: trans).ToList();
         });
       }
       else
@@ -1166,15 +1225,62 @@ namespace MazakMachineInterface
       }
     }
 
-    public bool CheckPartExists(string partName)
+    private bool CheckPartsExist(IList<string> parts)
     {
+      if (parts.Count == 0)
+        return true;
+
       return WithReadDBConnection(conn =>
       {
-        var cnt = conn.ExecuteScalar<int>(
-          "SELECT COUNT(*) FROM Part WHERE PartName = @p",
-          new { p = partName }
-        );
-        return cnt > 0;
+        using var trans = conn.BeginTransaction();
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = trans;
+        cmd.CommandText = "SELECT COUNT(*) FROM Part WHERE PartName = @p";
+        var param = cmd.CreateParameter();
+        param.ParameterName = "@p";
+        param.DbType = DbType.String;
+        cmd.Parameters.Add(param);
+
+        foreach (var p in parts)
+        {
+          param.Value = p;
+          if ((long)cmd.ExecuteScalar() == 0)
+          {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    }
+
+    private bool CheckSchedulesExist(IList<int> scheduleIds)
+    {
+      if (scheduleIds.Count == 0)
+        return true;
+
+      return WithReadDBConnection(conn =>
+      {
+        using var trans = conn.BeginTransaction();
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = trans;
+
+        cmd.CommandText = "SELECT COUNT(*) FROM Schedule WHERE ScheduleID = @s";
+        var param = cmd.CreateParameter();
+        param.ParameterName = "@s";
+        param.DbType = DbType.Int32;
+        cmd.Parameters.Add(param);
+
+        foreach (var s in scheduleIds)
+        {
+          param.Value = s;
+          if ((long)cmd.ExecuteScalar() == 0)
+          {
+            return false;
+          }
+        }
+
+        return true;
       });
     }
 
@@ -1182,16 +1288,68 @@ namespace MazakMachineInterface
     {
       var data = WithReadDBConnection(conn =>
       {
-        using (var trans = conn.BeginTransaction())
-        {
-          var ret = LoadAllData(conn, trans);
-          trans.Commit();
-          return ret;
-        }
+        using var trans = conn.BeginTransaction();
+        var ret = LoadAllData(conn, trans);
+        return ret;
       });
 
       return data;
     }
+
+    public MazakAllDataAndLogs LoadAllDataAndLogs(string maxLogID)
+    {
+      return WithReadDBConnection(conn =>
+      {
+        using var trans = conn.BeginTransaction();
+        var data = LoadAllData(conn, trans);
+
+        IList<LogEntry> logs;
+
+        if (_dbType == MazakDbType.MazakVersionE)
+        {
+          logs = LogDataVerE.LoadLog(maxLogID, conn, trans);
+        }
+        else
+        {
+          trans.Rollback();
+          logs = LogCSVParsing.LoadLog(maxLogID, _cfg.LogCSVPath);
+        }
+
+        return new MazakAllDataAndLogs()
+        {
+          Schedules = data.Schedules,
+          LoadActions = data.LoadActions,
+          PalletSubStatuses = data.PalletSubStatuses,
+          PalletPositions = data.PalletPositions,
+          Alarms = data.Alarms,
+          Parts = data.Parts,
+          Pallets = data.Pallets,
+          MainPrograms = data.MainPrograms,
+          Fixtures = data.Fixtures,
+          Logs = logs,
+        };
+      });
+    }
+
+    public void DeleteLogs(string lastSeenForeignId)
+    {
+      if (_dbType == MazakDbType.MazakVersionE)
+      {
+        // verE logs are deleted by Mazak
+      }
+      else
+      {
+        LogCSVParsing.DeleteLog(lastSeenForeignId, _cfg.LogCSVPath);
+      }
+    }
+
+    public event Action OnNewEvent;
+
+    private void RaiseNewLog(object sender, System.IO.FileSystemEventArgs e)
+    {
+      OnNewEvent?.Invoke();
+    }
+    #endregion
   }
 
   public static class ChunkList

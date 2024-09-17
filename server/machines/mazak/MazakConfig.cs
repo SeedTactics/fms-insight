@@ -42,10 +42,13 @@ namespace MazakMachineInterface
   public record MazakConfig
   {
     public required MazakDbType DBType { get; init; }
-    public required string SQLConnectionString { get; init; }
-    public required string LogCSVPath { get; init; }
-    public required string ProgramDirectory { get; init; }
+    public string? SQLConnectionString { get; init; }
+    public string? OleDbDatabasePath { get; init; }
+    public string? LogCSVPath { get; init; }
+    public string? ProgramDirectory { get; init; }
     public string? LoadCSVPath { get; init; }
+
+    public Uri? ProxyDBUri { get; init; }
     public bool UseStartingOffsetForDueDate { get; init; } = true;
     public bool WaitForAllCastings { get; init; } = false;
 
@@ -67,45 +70,39 @@ namespace MazakMachineInterface
     public static MazakConfig Load(IConfiguration configuration)
     {
       var cfg = configuration.GetSection("Mazak");
-      var localDbPath = cfg.GetValue<string>("Database Path");
-      var sqlConnectString = cfg.GetValue<string>("SQL ConnectionString");
+      var localDbPath = cfg.GetValue<string>("Database Path") ?? "c:\\Mazak\\NFMS\\DB";
       var dbtype = DetectMazakType(cfg, localDbPath);
+      var proxyDBUrl = cfg.GetValue<string?>("Proxy DB Url");
 
       // database settings
       string dbConnStr;
-      if (dbtype == MazakDbType.MazakSmooth)
+      var sqlConnectString = cfg.GetValue<string>("SQL ConnectionString");
+      if (!string.IsNullOrEmpty(sqlConnectString))
       {
-        if (!string.IsNullOrEmpty(sqlConnectString))
+        dbConnStr = sqlConnectString;
+      }
+      else if (dbtype == MazakDbType.MazakSmooth)
+      {
+        var b = new System.Data.SqlClient.SqlConnectionStringBuilder
         {
-          dbConnStr = sqlConnectString;
-        }
-        else if (!string.IsNullOrEmpty(localDbPath))
-        {
-          // old installers put sql server computer name in localDbPath
-          dbConnStr = "Server=" + localDbPath + "\\pmcsqlserver;" + "User ID=mazakpmc;Password=Fms-978";
-        }
-        else
-        {
-          var b = new System.Data.SqlClient.SqlConnectionStringBuilder
-          {
-            UserID = "mazakpmc",
-            Password = "Fms-978",
-            DataSource = "(local)",
-          };
-          dbConnStr = b.ConnectionString;
-        }
+          UserID = "mazakpmc",
+          Password = "Fms-978",
+          DataSource = "(local)",
+        };
+        dbConnStr = b.ConnectionString;
       }
       else
       {
-        dbConnStr = localDbPath ?? "c:\\Mazak\\NFMS\\DB";
+        dbConnStr = "Provider=Microsoft.ACE.OLEDB.12.0;Password=\"\";User ID=Admin;Mode=Share Deny None;";
       }
 
       // log csv
-      var logPath = cfg.GetValue<string>("Log CSV Path");
-      if (logPath == null || logPath == "")
-        logPath = "c:\\Mazak\\FMS\\Log";
-
-      if (dbtype != MazakDbType.MazakVersionE && !System.IO.Directory.Exists(logPath))
+      var logPath = cfg.GetValue<string>("Log CSV Path") ?? "c:\\Mazak\\FMS\\Log";
+      if (
+        string.IsNullOrEmpty(proxyDBUrl)
+        && (dbtype == MazakDbType.MazakSmooth || dbtype == MazakDbType.MazakWeb)
+        && !System.IO.Directory.Exists(logPath)
+      )
       {
         Serilog.Log.Error(
           "Log CSV Directory {path} does not exist.  Set the directory in the config.ini file.",
@@ -114,32 +111,42 @@ namespace MazakMachineInterface
       }
 
       string? loadPath = null;
-      if (dbtype == MazakDbType.MazakVersionE || dbtype == MazakDbType.MazakWeb)
+      if (
+        string.IsNullOrEmpty(proxyDBUrl)
+        && (dbtype == MazakDbType.MazakVersionE || dbtype == MazakDbType.MazakWeb)
+      )
       {
-        loadPath = cfg.GetValue<string>("Load CSV Path");
-        if (string.IsNullOrEmpty(loadPath))
-        {
-          loadPath = "c:\\mazak\\FMS\\LDS\\";
-        }
-
+        loadPath = cfg.GetValue<string>("Load CSV Path") ?? "c:\\mazak\\FMS\\LDS";
         if (!System.IO.Directory.Exists(loadPath))
         {
-          loadPath = "c:\\mazak\\LDS\\";
-
-          if (!System.IO.Directory.Exists(loadPath))
-          {
-            Serilog.Log.Error(
-              "Unable to determine the path to the mazak load CSV files.  Please add/update a setting"
-                + " called 'Load CSV Path' in config file"
-            );
-          }
+          Serilog.Log.Error(
+            "Load CSV Directory {path} does not exist.  Set the directory in the config.ini file.",
+            loadPath
+          );
         }
+      }
+
+      Uri? proxyUri = null;
+      if (!string.IsNullOrEmpty(proxyDBUrl))
+      {
+        var b = new UriBuilder(proxyDBUrl);
+        if (b.Scheme != "http" && b.Scheme != "https")
+        {
+          b.Scheme = "http";
+        }
+        if (b.Port == 0)
+        {
+          b.Port = 5001;
+        }
+        proxyUri = b.Uri;
       }
 
       return new MazakConfig
       {
         DBType = dbtype,
         SQLConnectionString = dbConnStr,
+        OleDbDatabasePath = localDbPath,
+        ProxyDBUri = proxyUri,
         LogCSVPath = logPath,
         LoadCSVPath = loadPath,
         ProgramDirectory = cfg.GetValue<string?>("Program Directory") ?? "C:\\NCProgs",
@@ -150,11 +157,24 @@ namespace MazakMachineInterface
       };
     }
 
-    private static MazakDbType DetectMazakType(IConfigurationSection cfg, string? localDbPath)
+    private static MazakDbType DetectMazakType(IConfigurationSection cfg, string localDbPath)
     {
       var verE = cfg.GetValue<bool>("VersionE");
       var webver = cfg.GetValue<bool>("Web Version");
       var smoothVer = cfg.GetValue<bool>("Smooth Version");
+
+      string testPath = System.IO.Path.Combine(localDbPath, "FCREADDAT01.mdb");
+
+      if (verE || webver)
+      {
+        if (!System.IO.File.Exists(testPath))
+        {
+          Serilog.Log.Error(
+            "Mazak Version E or Web Version selected, but database file {path} does not exist.",
+            testPath
+          );
+        }
+      }
 
       if (verE)
         return MazakDbType.MazakVersionE;
@@ -162,16 +182,6 @@ namespace MazakMachineInterface
         return MazakDbType.MazakWeb;
       else if (smoothVer)
         return MazakDbType.MazakSmooth;
-
-      string testPath;
-      if (string.IsNullOrEmpty(localDbPath))
-      {
-        testPath = "C:\\Mazak\\NFMS\\DB\\FCREADDAT01.mdb";
-      }
-      else
-      {
-        testPath = System.IO.Path.Combine(localDbPath, "FCREADDAT01.mdb");
-      }
 
       if (System.IO.File.Exists(testPath))
       {

@@ -47,7 +47,7 @@ public record MazakState : ICellState
   public required TimeSpan TimeUntilNextRefresh { get; init; }
   public required bool StoppedBecauseRecentMachineEnd { get; init; }
   public required CurrentStatus CurrentStatus { get; init; }
-  public required MazakAllData AllData { get; init; }
+  public required MazakAllDataAndLogs AllData { get; init; }
 }
 
 public delegate void MazakLogEventDel(LogEntry e, IRepository jobDB);
@@ -63,53 +63,24 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   public event Action? NewCellState;
   public event MazakLogEventDel? MazakLogEvent;
 
-  private readonly IReadDataAccess readDatabase;
-  private readonly IWriteData writeDatabase;
+  private readonly IMazakDB mazakDB;
   private readonly FMSSettings settings;
   private readonly MazakConfig mazakConfig;
 
-  private readonly FileSystemWatcher logWatcher;
-
-  public MazakSync(IReadDataAccess readDb, IWriteData writeDb, FMSSettings settings, MazakConfig mazakConfig)
+  public MazakSync(IMazakDB mazakDb, FMSSettings settings, MazakConfig mazakConfig)
   {
-    this.readDatabase = readDb;
-    this.writeDatabase = writeDb;
+    this.mazakDB = mazakDb;
     this.settings = settings;
     this.mazakConfig = mazakConfig;
-
-    if (mazakConfig.DBType == MazakDbType.MazakVersionE)
-    {
-      if (string.IsNullOrEmpty(mazakConfig.LoadCSVPath))
-      {
-        throw new Exception("LoadCSVPath must be set for MazakVersionE");
-      }
-      logWatcher = new FileSystemWatcher(mazakConfig.LoadCSVPath) { Filter = "*.csv" };
-      logWatcher.Created += RaiseNewCellState;
-      logWatcher.Changed += RaiseNewCellState;
-    }
-    else
-    {
-      logWatcher = new FileSystemWatcher(mazakConfig.LogCSVPath) { Filter = "*.csv" };
-      logWatcher.Created += RaiseNewCellState;
-    }
-
-    logWatcher.EnableRaisingEvents = true;
+    mazakDB.OnNewEvent += RaiseNewCellState;
   }
-
-  private bool _disposed = false;
 
   public void Dispose()
   {
-    if (_disposed)
-      return;
-    _disposed = true;
-    logWatcher.EnableRaisingEvents = false;
-    logWatcher.Created -= RaiseNewCellState;
-    logWatcher.Changed -= RaiseNewCellState;
-    logWatcher.Dispose();
+    mazakDB.OnNewEvent -= RaiseNewCellState;
   }
 
-  private void RaiseNewCellState(object sender, FileSystemEventArgs e)
+  private void RaiseNewCellState()
   {
     NewCellState?.Invoke();
   }
@@ -120,7 +91,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
   {
     var logMessages = new List<string>();
-    MazakAllData mazakData = readDatabase.LoadAllData();
+    MazakAllData mazakData = mazakDB.LoadAllData();
 
     try
     {
@@ -199,18 +170,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   public MazakState CalculateCellState(IRepository db)
   {
     var now = DateTime.UtcNow;
-    var mazakData = readDatabase.LoadAllData();
+    var mazakData = mazakDB.LoadAllDataAndLogs(db.MaxForeignID());
     var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
-
-    List<LogEntry> logs;
-    if (mazakConfig.DBType == MazakDbType.MazakVersionE)
-    {
-      logs = LogDataVerE.LoadLog(db.MaxForeignID(), readDatabase);
-    }
-    else
-    {
-      logs = LogCSVParsing.LoadLog(db.MaxForeignID(), mazakConfig.LogCSVPath);
-    }
 
     var trans = new LogTranslation(
       db,
@@ -219,12 +180,12 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       settings,
       le => MazakLogEvent?.Invoke(le, db),
       mazakConfig: mazakConfig,
-      loadTools: readDatabase.LoadTools
+      loadTools: mazakDB.LoadTools
     );
     var sendToExternal = new List<MaterialToSendToExternalQueue>();
 
     var stoppedBecauseRecentMachineEnd = false;
-    foreach (var ev in logs)
+    foreach (var ev in mazakData.Logs)
     {
       try
       {
@@ -242,7 +203,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       }
     }
 
-    LogCSVParsing.DeleteLog(db.MaxForeignID(), mazakConfig.LogCSVPath);
+    mazakDB.DeleteLogs(db.MaxForeignID());
 
     bool palStChanged = false;
     if (!stoppedBecauseRecentMachineEnd)
@@ -271,7 +232,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
     return new MazakState()
     {
-      StateUpdated = logs.Count > 0 || palStChanged,
+      StateUpdated = mazakData.Logs.Count > 0 || palStChanged,
       TimeUntilNextRefresh =
         mazakConfig?.DBType == MazakDbType.MazakVersionE || stoppedBecauseRecentMachineEnd
           ? TimeSpan.FromSeconds(15)
@@ -293,8 +254,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     bool jobsCopied = WriteJobs.SyncFromDatabase(
       st.AllData,
       db,
-      writeDatabase,
-      readDatabase,
+      mazakDB,
       settings,
       mazakConfig,
       st.CurrentStatus.TimeOfCurrentStatusUTC
@@ -312,7 +272,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
       if (transSet != null && transSet.Schedules.Count > 0)
       {
-        writeDatabase.Save(transSet, "Setting material from queues");
+        mazakDB.Save(transSet);
         queuesChanged = true;
       }
     }
@@ -325,6 +285,6 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
   public bool DecrementJobs(IRepository db, MazakState st)
   {
     // TODO: reload AllData to make sure it is up to date?
-    return DecrementPlanQty.Decrement(writeDatabase, db, st.AllData);
+    return DecrementPlanQty.Decrement(mazakDB, db, st.AllData);
   }
 }

@@ -47,8 +47,7 @@ namespace MazakMachineInterface
     public static bool SyncFromDatabase(
       MazakAllData mazakData,
       IRepository db,
-      IWriteData writeDb,
-      IReadDataAccess readDb,
+      IMazakDB mazakDb,
       FMSSettings fmsSt,
       MazakConfig mazakCfg,
       DateTime now
@@ -81,7 +80,7 @@ namespace MazakMachineInterface
         {
           if (MazakPart.IsSailPart(s.PartName, s.Comment))
           {
-            return MazakPart.ParseComment(s.Comment);
+            return MazakPart.UniqueFromComment(s.Comment);
           }
           else
           {
@@ -108,8 +107,7 @@ namespace MazakMachineInterface
           mazakData,
           db,
           jobs.Where(j => !alreadyDownloadedSchs.Contains(j.UniqueStr)).ToImmutableList(),
-          readDb,
-          writeDb,
+          mazakDb,
           mazakCfg
         );
       }
@@ -117,9 +115,12 @@ namespace MazakMachineInterface
       {
         ArchiveOldJobs(db, mazakData, jobs);
 
-        mazakData = AddFixturesPalletsParts(mazakData, db, jobs, writeDb, fmsSt, mazakCfg, readDb);
+        AddFixturesPalletsParts(mazakData, db, jobs, mazakDb, fmsSt, mazakCfg);
 
-        AddSchedules(mazakData, db, jobs.ToImmutableList(), readDb, writeDb, mazakCfg);
+        // Reload data after syncing fixtures, pallets, and parts
+        mazakData = mazakDb.LoadAllData();
+
+        AddSchedules(mazakData, db, jobs.ToImmutableList(), mazakDb, mazakCfg);
       }
 
       return true;
@@ -137,14 +138,13 @@ namespace MazakMachineInterface
       }
     }
 
-    private static MazakAllData AddFixturesPalletsParts(
+    private static void AddFixturesPalletsParts(
       MazakAllData mazakData,
       IRepository jobDB,
       IEnumerable<Job> jobs,
-      IWriteData writeDb,
+      IMazakDB mazakDb,
       FMSSettings fmsSt,
-      MazakConfig mazakCfg,
-      IReadDataAccess readDb
+      MazakConfig mazakCfg
     )
     {
       //first allocate a UID to use for this download
@@ -177,7 +177,7 @@ namespace MazakMachineInterface
 
       var (transSet, savedParts) = BuildMazakSchedules.RemoveCompletedSchedules(mazakData);
       if (transSet.Schedules.Any())
-        writeDb.Save(transSet, "Update schedules");
+        mazakDb.Save(transSet);
 
       Log.Debug("Saved Parts: {parts}", savedParts);
 
@@ -201,64 +201,33 @@ namespace MazakMachineInterface
       transSet = mazakJobs.DeleteOldPartRows();
       if (transSet.Parts.Any())
       {
-        try
-        {
-          writeDb.Save(transSet, "Delete Parts");
-        }
-        catch (ErrorModifyingParts e)
-        {
-          foreach (var partName in e.PartNames)
-          {
-            if (readDb.CheckPartExists(partName))
-            {
-              throw new Exception("Mazak returned an error when attempting to delete part " + partName);
-            }
-          }
-        }
+        mazakDb.Save(transSet);
       }
 
       // delete pallets
       transSet = mazakJobs.DeleteOldPalletRows();
-      writeDb.Save(transSet, "Delete Pallets");
+      mazakDb.Save(transSet);
 
       //have to delete fixtures after schedule, parts, and pallets are already deleted
       transSet = mazakJobs.DeleteFixtureAndProgramDatabaseRows();
-      writeDb.Save(transSet, "Delete Fixtures");
+      mazakDb.Save(transSet);
 
       transSet = mazakJobs.AddFixtureAndProgramDatabaseRows(
         jobDB.LoadProgramContent,
         mazakCfg.ProgramDirectory
       );
-      writeDb.Save(transSet, "Add Fixtures");
+      mazakDb.Save(transSet);
 
       //now save the pallets and parts
       transSet = mazakJobs.CreatePartPalletDatabaseRows(mazakCfg);
-      writeDb.Save(transSet, "Add Parts");
-
-      // wait for new parts to appear in mazak read DB
-      // occasionally takes a few seconds
-      MazakAllData curData = null;
-      foreach (var waitSecs in new[] { 0.1, 0.5, 1, 3, 3, 3, 5 })
-      {
-        System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
-        curData = readDb.LoadAllData();
-        var curParts = curData.Parts.Select(p => p.PartName).ToHashSet();
-        if (transSet.Parts.All(p => curParts.Contains(p.PartName)))
-        {
-          return curData;
-        }
-      }
-
-      Log.Error("After adding parts, they did not appear in mazak read DB.  {@mostRecent}", curData);
-      throw new Exception("Timeout after adding parts: the new parts did not appear in mazak read DB");
+      mazakDb.Save(transSet);
     }
 
     private static void AddSchedules(
       MazakAllData mazakData,
       IRepository jobDB,
       IReadOnlyList<Job> jobs,
-      IReadDataAccess readDb,
-      IWriteData writeDb,
+      IMazakDB writeDb,
       MazakConfig mazakCfg
     )
     {
@@ -267,35 +236,12 @@ namespace MazakMachineInterface
       var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, mazakCfg.UseStartingOffsetForDueDate);
       if (transSet.Schedules.Any())
       {
-        writeDb.Save(transSet, "Add Schedules");
-
-        var newSchedules = transSet.Schedules.Select(s => s.PartName).ToHashSet();
-
-        // wait for new schedules to appear, may take a few seconds
-        MazakAllData curData = null;
-        foreach (var waitSecs in new[] { 0.1, 0.5, 1, 3, 3, 3, 5 })
+        writeDb.Save(transSet);
+        foreach (var s in transSet.Schedules)
         {
-          System.Threading.Thread.Sleep(TimeSpan.FromSeconds(waitSecs));
-          curData = readDb.LoadAllData();
-          foreach (var curSch in curData.Schedules)
-          {
-            if (newSchedules.Contains(curSch.PartName))
-            {
-              newSchedules.Remove(curSch.PartName);
-              jobDB.MarkJobCopiedToSystem(MazakPart.ParseComment(curSch.Comment));
-            }
-          }
-
-          if (newSchedules.Count == 0)
-          {
-            return;
-          }
+          var uniq = MazakPart.UniqueFromComment(s.Comment);
+          jobDB.MarkJobCopiedToSystem(uniq);
         }
-
-        Log.Error("After adding schedules, they did not appear in mazak read DB.  {@mostRecent}", curData);
-        throw new Exception(
-          "Timeout after adding schedules: the new schedules did not appear in mazak read DB"
-        );
       }
     }
 
@@ -313,7 +259,7 @@ namespace MazakMachineInterface
           continue;
         if (!MazakPart.IsSailPart(sch.PartName, sch.Comment))
           continue;
-        var unique = MazakPart.ParseComment(sch.Comment);
+        var unique = MazakPart.UniqueFromComment(sch.Comment);
         if (jobDB.LoadJob(unique) == null)
           continue;
 

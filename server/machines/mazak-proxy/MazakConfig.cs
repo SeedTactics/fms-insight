@@ -30,45 +30,34 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 using System;
-using System.Linq;
-using BlackMaple.MachineFramework;
-using Microsoft.Extensions.DependencyInjection;
 
-namespace MazakMachineInterface
+namespace MazakMachineInterface;
+
+public class MazakConfig
 {
-  public static class MazakServices
+  public MazakDbType DBType { get; init; }
+  public string SQLConnectionString { get; init; }
+  public string OleDbDatabasePath { get; init; }
+  public string LogCSVPath { get; init; }
+  public string LoadCSVPath { get; init; }
+
+  public const string DefaultConnectionStr =
+    "Provider=Microsoft.Jet.OLEDB.4.0;Password=\"\";User ID=Admin;Mode=Share Deny None;";
+
+  public static MazakConfig LoadFromRegistry()
   {
-    public static IServiceCollection AddMazakBackend(this IServiceCollection s, MazakConfig mazakCfg)
+    using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+      @"Software\SeedTactics\FMS Insight Mazak Proxy"
+    );
+    return new MazakConfig()
     {
-      Serilog.Log.Information("Using Mazak Backend with config {@config}", mazakCfg);
-      if (mazakCfg.DBType == MazakDbType.MazakVersionE)
-      {
-        throw new Exception("This version of FMS Insight does not support Mazak Version E");
-      }
-
-      s.AddSingleton(mazakCfg);
-
-      if (mazakCfg.DBType == MazakDbType.MazakWeb)
-        s.AddSingleton<ICurrentLoadActions, LoadOperationsFromFile>();
-      else
-        s.AddSingleton<ICurrentLoadActions, LoadOperationsFromDB>();
-
-      if (mazakCfg.ProxyDBUri == null)
-      {
-        s.AddSingleton<IMazakDB, OpenDatabaseKitDB>();
-      }
-      else
-      {
-        s.AddSingleton<IMazakDB, MazakProxyDB>();
-      }
-
-      s.AddSingleton<MazakSync>();
-      s.AddSingleton<ISynchronizeCellState<MazakState>>(sp => sp.GetRequiredService<MazakSync>());
-      s.AddSingleton<INotifyMazakLogEvent>(sp => sp.GetRequiredService<MazakSync>());
-      s.AddSingleton<IMachineControl, MazakMachineControl>();
-
-      return s;
-    }
+      DBType = (MazakDbType)Enum.Parse(typeof(MazakDbType), key.GetValue("DBType", "MazakWeb").ToString()),
+      SQLConnectionString = key.GetValue("SQLConnectionString", DefaultConnectionStr).ToString(),
+      OleDbDatabasePath = key.GetValue("OleDbDatabasePath", "c:\\Mazak\\NFMS\\DB").ToString(),
+      LogCSVPath = key.GetValue("LogCSVPath", "c:\\Mazak\\FMS\\Log").ToString(),
+      LoadCSVPath = key.GetValue("LoadCSVPath", "c:\\Mazak\\FMS\\LDS").ToString(),
+    };
   }
 }

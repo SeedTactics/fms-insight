@@ -60,6 +60,8 @@ function* jobToPartCompleted(jobs: Iterable<Readonly<IJob>>): Iterable<SimPartCo
       const procInfo = j.procsAndPaths[proc];
       for (let path = 0; path < procInfo.paths.length; path++) {
         const pathInfo = procInfo.paths[path];
+        // machTime is per cycle, and so is pathInfo.simulatedProduction
+        // so we are correctly yielding the expected machine time for the entire cycle
         let machTime = 0;
         for (const stop of pathInfo.stops) {
           machTime += durationToMinutes(stop.expectedCycleTime);

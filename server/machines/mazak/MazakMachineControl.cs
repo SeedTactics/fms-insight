@@ -38,7 +38,7 @@ using BlackMaple.MachineFramework;
 
 namespace MazakMachineInterface
 {
-  public class MazakMachineControl(RepositoryConfig jobDbCfg, IReadDataAccess readData, MazakConfig mazakCfg)
+  public class MazakMachineControl(RepositoryConfig jobDbCfg, IMazakDB readData, MazakConfig mazakCfg)
     : IMachineControl
   {
     public ImmutableList<ProgramInCellController> CurrentProgramsInCellController()
@@ -128,7 +128,7 @@ namespace MazakMachineInterface
         }
       }
 
-      if (readData.CheckProgramExists(programName) && System.IO.File.Exists(programName))
+      if (System.IO.File.Exists(programName))
       {
         return System.IO.File.ReadAllText(programName);
       }
