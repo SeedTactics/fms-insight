@@ -1,4 +1,4 @@
-#define VERSION GetVersionNumbersString('proxy-build/mazak-proxy.exe)
+#define VERSION GetVersionNumbersString('proxy-build/mazak-proxy.exe')
 
 [Setup]
 AppName=FMS Insight Mazak Proxy
