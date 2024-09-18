@@ -1,0 +1,1 @@
+../mazak/db/LogVerE.cs
