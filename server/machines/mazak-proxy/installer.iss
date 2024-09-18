@@ -1,4 +1,4 @@
-#define VERSION GetDateTimeString('yyyy.mmdd.hhnn', '', '')
+#define VERSION GetVersionNumbersString('proxy-build/mazak-proxy.exe)
 
 [Setup]
 AppName=FMS Insight Mazak Proxy
@@ -19,9 +19,9 @@ DisableProgramGroupPage=auto
 CloseApplications=yes
 
 [Files]
-Source: "bin\Release\net3.5\publish\mazak-proxy.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\Release\net3.5\publish\mazak-proxy.pdb"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\Release\net3.5\publish\mazak-proxy.exe.config"; DestDir: "{app}"; Flags: ignoreversion
+Source: "proxy-build\mazak-proxy.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "proxy-build\mazak-proxy.pdb"; DestDir: "{app}"; Flags: ignoreversion
+Source: "proxy-build\mazak-proxy.exe.config"; DestDir: "{app}"; Flags: ignoreversion
 
 [Run]
 Filename: {sys}\sc.exe; Parameters: "create fmsinsightmazakproxy start=auto binPath=""{app}\mazak-proxy.exe"" displayname=""SeedTactic FMS Insight Mazak Proxy"""; Flags: runhidden
