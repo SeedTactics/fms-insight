@@ -118,7 +118,7 @@ public class ProxyService : System.ServiceProcess.ServiceBase
       _db = new OpenDatabaseKitDB(_cfg, _load);
       _db.OnNewEvent += OnNewEvent;
 
-      _server = new HttpServer("http://*:5001/");
+      _server = new HttpServer("http://*:5200/");
 
       _server.AddLoadingHandler("/all-data", _db.LoadAllData);
       _server.AddPostHandler<string, MazakAllDataAndLogs>("/all-data-and-logs", _db.LoadAllDataAndLogs);

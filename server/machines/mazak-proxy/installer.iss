@@ -1,5 +1,3 @@
-#define VERSION GetVersionNumbersString('proxy-build/mazak-proxy.exe')
-
 [Setup]
 AppName=FMS Insight Mazak Proxy
 AppVersion={#VERSION}
@@ -13,7 +11,6 @@ DefaultDirName={pf}\SeedTactics\FMS Insight Mazak Proxy
 DefaultGroupName=SeedTactics
 Compression=lzma
 SolidCompression=yes
-ArchitecturesInstallIn64BitMode=x64
 DisableDirPage=auto
 DisableProgramGroupPage=auto
 CloseApplications=yes
@@ -24,7 +21,7 @@ Source: "proxy-build\mazak-proxy.pdb"; DestDir: "{app}"; Flags: ignoreversion
 Source: "proxy-build\mazak-proxy.exe.config"; DestDir: "{app}"; Flags: ignoreversion
 
 [Run]
-Filename: {sys}\sc.exe; Parameters: "create fmsinsightmazakproxy start=auto binPath=""{app}\mazak-proxy.exe"" displayname=""SeedTactic FMS Insight Mazak Proxy"""; Flags: runhidden
+Filename: {sys}\sc.exe; Parameters: "create fmsinsightmazakproxy start= auto binPath= ""{app}\mazak-proxy.exe"" DisplayName= ""SeedTactic FMS Insight Mazak Proxy"""; Flags: runhidden
 
 [UninstallRun]
 Filename: {sys}\sc.exe; Parameters: "stop fmsinsightmazakproxy" ; Flags: runhidden

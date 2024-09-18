@@ -136,7 +136,7 @@ namespace MazakMachineInterface
         }
         if (b.Port == 0)
         {
-          b.Port = 5001;
+          b.Port = 5200;
         }
         proxyUri = b.Uri;
       }
