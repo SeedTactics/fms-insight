@@ -130,11 +130,7 @@ namespace MazakMachineInterface
       if (!string.IsNullOrEmpty(proxyDBUrl))
       {
         var b = new UriBuilder(proxyDBUrl);
-        if (b.Scheme != "http" && b.Scheme != "https")
-        {
-          b.Scheme = "http";
-        }
-        if (b.Port == 0)
+        if (b.Port == 80 && !proxyDBUrl.Contains(":80"))
         {
           b.Port = 5200;
         }

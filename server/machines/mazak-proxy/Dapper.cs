@@ -63,7 +63,14 @@ public static class DapperQueryExecute
           if (val != DBNull.Value && val != null)
           {
             Type t = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-            prop.SetValue(obj, Convert.ChangeType(val, t), null);
+            if (t.IsEnum)
+            {
+              prop.SetValue(obj, Enum.ToObject(t, val), null);
+            }
+            else
+            {
+              prop.SetValue(obj, Convert.ChangeType(val, t), null);
+            }
           }
         }
       }
@@ -90,21 +97,36 @@ public static class DapperQueryExecute
     cmd.Transaction = transaction;
     cmd.CommandText = sql;
 
+    var propInfo = typeof(T).GetProperties().ToDictionary(p => p.Name.ToLower());
+    var paramRegex = new System.Text.RegularExpressions.Regex(@"@(\w+)");
+
     var props = new List<PropAndParam>();
 
-    foreach (var prop in typeof(T).GetProperties())
+    foreach (var param in paramRegex.Matches(sql).Cast<System.Text.RegularExpressions.Match>())
     {
-      var param = cmd.CreateParameter();
-      param.ParameterName = "@" + prop.Name;
-      cmd.Parameters.Add(param);
-      props.Add(new PropAndParam() { Prop = prop, Param = param });
+      var paramName = param.Groups[1].Value;
+      if (propInfo.TryGetValue(paramName.ToLower(), out var prop))
+      {
+        var paramDb = cmd.CreateParameter();
+        paramDb.ParameterName = "@" + paramName;
+        cmd.Parameters.Add(paramDb);
+        props.Add(new PropAndParam() { Prop = prop, Param = paramDb });
+      }
     }
 
     foreach (var obj in objs)
     {
       foreach (var pp in props)
       {
-        pp.Param.Value = pp.Prop.GetValue(obj, null);
+        var val = pp.Prop.GetValue(obj, null);
+        if (val == null)
+        {
+          pp.Param.Value = DBNull.Value;
+        }
+        else
+        {
+          pp.Param.Value = val;
+        }
       }
       cmd.ExecuteNonQuery();
     }

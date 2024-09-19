@@ -517,7 +517,7 @@ namespace MazakMachineInterface
             @Fixture,
             @MainProgram,
             @RemoveLDS,
-            @REmovePhoto,
+            @RemovePhoto,
             @WashType,
             @PartProcess_1,
             @PartProcess_2,
