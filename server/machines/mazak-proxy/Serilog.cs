@@ -97,12 +97,15 @@ namespace Serilog
 
     public static void Information(string message)
     {
-      try {
+      try
+      {
         using (var ev = new EventLog(EventLogConfig.LogName, ".", EventLogConfig.SourceName))
         {
           ev.WriteEntry(message, EventLogEntryType.Information);
         }
-      } catch (Exception ex) {
+      }
+      catch (Exception ex)
+      {
         Debug(ex, "Error writing to event log");
       }
 
@@ -150,18 +153,18 @@ namespace Serilog
 
       var today = DateTime.Today.ToString("yyyy-MM-dd");
       using var file = System.IO.File.AppendText(System.IO.Path.Combine(dir, $"debug{today}.txt"));
-      var ser = new System.Xml.Serialization.XmlSerializer(typeof(DebugMessage));
-      ser.Serialize(
-        file,
-        new DebugMessage
-        {
-          UtcNow = DateTime.UtcNow,
-          Message = messageTemplate,
-          Exception = ex?.ToString(),
-          Properties = propertyValues,
-        }
+      var ser = new System.Web.Script.Serialization.JavaScriptSerializer();
+      file.WriteLine(
+        ser.Serialize(
+          new DebugMessage
+          {
+            UtcNow = DateTime.UtcNow,
+            Message = messageTemplate,
+            Exception = ex?.ToString(),
+            Properties = propertyValues,
+          }
+        )
       );
-      file.WriteLine();
     }
   }
 }
