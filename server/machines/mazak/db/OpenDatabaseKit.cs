@@ -1244,7 +1244,8 @@ namespace MazakMachineInterface
         foreach (var p in parts)
         {
           param.Value = p;
-          if ((long)cmd.ExecuteScalar() == 0)
+          var ret = cmd.ExecuteScalar();
+          if (ret == null && ret == DBNull.Value || Convert.ToInt64(ret) == 0)
           {
             return false;
           }
