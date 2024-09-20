@@ -2,8 +2,22 @@
   "TimeOfCurrentStatusUTC": "2021-06-02T19:30:44.3605104Z",
   "Jobs": {
     "bbb-schId1234": {
-      "Completed": [[0], [0]],
-      "Precedence": [[1], [1]],
+      "Completed": [
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "Precedence": [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
       "ScheduleId": "schId1234",
       "CopiedToSystem": true,
       "Decrements": null,
@@ -21,17 +35,30 @@
         {
           "paths": [
             {
-              "PalletNums": [2],
+              "PalletNums": [
+                2
+              ],
               "Fixture": "fixtureBB",
               "Face": 1,
-              "Load": [1, 2],
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "1001",
                   "ExpectedCycleTime": "PT4M"
                 }
@@ -130,17 +157,30 @@
         {
           "paths": [
             {
-              "PalletNums": [2],
+              "PalletNums": [
+                2
+              ],
               "Fixture": "fixtureBB",
               "Face": 1,
-              "Load": [1, 2],
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "1002",
                   "ExpectedCycleTime": "PT30M"
                 }
@@ -238,8 +278,22 @@
       ]
     },
     "aaa-schId1234": {
-      "Completed": [[3], [0]],
-      "Precedence": [[2], [2]],
+      "Completed": [
+        [
+          3
+        ],
+        [
+          0
+        ]
+      ],
+      "Precedence": [
+        [
+          2
+        ],
+        [
+          2
+        ]
+      ],
       "ScheduleId": "schId1234",
       "CopiedToSystem": true,
       "Decrements": null,
@@ -257,17 +311,30 @@
         {
           "paths": [
             {
-              "PalletNums": [1],
+              "PalletNums": [
+                1
+              ],
               "Fixture": "fixtureAA1",
               "Face": 1,
-              "Load": [1, 2],
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "1001",
                   "ExpectedCycleTime": "PT12M12S"
                 }
@@ -330,17 +397,30 @@
         {
           "paths": [
             {
-              "PalletNums": [1],
+              "PalletNums": [
+                1
+              ],
               "Fixture": "fixtureAA2",
               "Face": 2,
-              "Load": [1, 2],
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "1002",
                   "ExpectedCycleTime": "PT1H10M18S"
                 }
@@ -402,8 +482,22 @@
       ]
     },
     "ccc-schId1234": {
-      "Completed": [[0], [0]],
-      "Precedence": [[3], [3]],
+      "Completed": [
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      "Precedence": [
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
       "ScheduleId": "schId1234",
       "CopiedToSystem": true,
       "Decrements": null,
@@ -421,17 +515,30 @@
         {
           "paths": [
             {
-              "PalletNums": [5],
+              "PalletNums": [
+                5
+              ],
               "Fixture": "fixtureCC5",
               "Face": 1,
-              "Load": [1, 2],
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "1003",
                   "ExpectedCycleTime": "PT4M"
                 }
@@ -525,17 +632,30 @@
         {
           "paths": [
             {
-              "PalletNums": [6],
+              "PalletNums": [
+                6
+              ],
               "Fixture": "fixtureCC6",
               "Face": 2,
-              "Load": [1, 2],
+              "Load": [
+                1,
+                2
+              ],
               "ExpectedLoadTime": "PT5M",
-              "Unload": [1, 2],
+              "Unload": [
+                1,
+                2
+              ],
               "ExpectedUnloadTime": "PT5M",
               "Stops": [
                 {
                   "StationGroup": "MC",
-                  "StationNums": [1, 2, 3, 4],
+                  "StationNums": [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
                   "Program": "1004",
                   "ExpectedCycleTime": "PT45M30S"
                 }
@@ -666,7 +786,7 @@
     "2": {
       "PalletNum": 2,
       "FixtureOnPallet": "F:0:fixtureBB:1",
-      "OnHold": false,
+      "OnHold": true,
       "CurrentPalletLocation": {
         "loc": "Buffer",
         "group": "Buffer",
@@ -715,7 +835,10 @@
       }
     }
   ],
-  "Alarms": ["Test alarm 1", "Test alarm two"],
+  "Alarms": [
+    "Test alarm 1",
+    "Test alarm two"
+  ],
   "Queues": {
     "queueCCC": {},
     "castings": {},

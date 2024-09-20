@@ -892,6 +892,7 @@ namespace MazakMachineInterface
     private string _partProcSelect;
     private string _scheduleSelect;
     private string _scheduleProcSelect;
+    private string _palStatusSelect;
     private string _palSubStatusSelect;
     private string _palPositionSelect;
     private string _mainProgSelect;
@@ -1051,6 +1052,7 @@ namespace MazakMachineInterface
           FROM ScheduleProcess";
       }
 
+      _palStatusSelect = "SELECT PalletNumber, IsOnHold FROM PalletStatus";
       _palSubStatusSelect =
         "SELECT FixQuantity, FixtureName, PalletNumber, PartName, PartProcessNumber, ScheduleID FROM PalletSubStatus";
       _palPositionSelect = "SELECT PalletNumber, PalletPosition FROM PalletPosition WHERE PalletNumber > 0";
@@ -1190,6 +1192,7 @@ namespace MazakMachineInterface
       {
         Schedules = LoadSchedules(conn, trans, fixQty),
         LoadActions = _loadOper.CurrentLoadActions(),
+        PalletStatuses = conn.Query<MazakPalletStatusRow>(_palStatusSelect, transaction: trans),
         PalletSubStatuses = conn.Query<MazakPalletSubStatusRow>(_palSubStatusSelect, transaction: trans),
         PalletPositions = conn.Query<MazakPalletPositionRow>(_palPositionSelect, transaction: trans),
         Alarms = conn.Query<MazakAlarmRow>(_alarmSelect, transaction: trans),
@@ -1320,6 +1323,7 @@ namespace MazakMachineInterface
         {
           Schedules = data.Schedules,
           LoadActions = data.LoadActions,
+          PalletStatuses = data.PalletStatuses,
           PalletSubStatuses = data.PalletSubStatuses,
           PalletPositions = data.PalletPositions,
           Alarms = data.Alarms,
