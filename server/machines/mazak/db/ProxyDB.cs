@@ -44,13 +44,15 @@ public class MazakProxyDB : IMazakDB, IDisposable
 {
   private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MazakProxyDB>();
 
-  private readonly MazakConfig _cfg;
+  private readonly HttpClient _client;
   private readonly Thread _longPollThread;
   private readonly CancellationTokenSource _cancelLongPoll = new();
 
-  public MazakProxyDB(MazakConfig mazakCfg)
+  public MazakProxyDB(MazakConfig cfg)
   {
-    _cfg = mazakCfg;
+    _client = new HttpClient();
+    _client.BaseAddress = cfg.ProxyDBUri;
+    _client.Timeout = TimeSpan.FromMinutes(10);
     _longPollThread = new Thread(LongPollThread);
     _longPollThread.IsBackground = true;
     _longPollThread.Start();
@@ -60,6 +62,7 @@ public class MazakProxyDB : IMazakDB, IDisposable
   {
     _cancelLongPoll.Cancel();
     _longPollThread.Join(TimeSpan.FromSeconds(10));
+    _client.Dispose();
   }
 
   public MazakAllData LoadAllData()
@@ -103,7 +106,7 @@ public class MazakProxyDB : IMazakDB, IDisposable
     Log.Error(ex, "Error communicating with mazak proxy");
 
     // Make a more user-friendly error message to show as an alarm to the user
-    string msg = "Error communicating with mazak proxy at " + _cfg.ProxyDBUri.ToString();
+    string msg = "Error communicating with mazak proxy at " + _client.BaseAddress.ToString();
     foreach (var inner in ex.InnerExceptions)
     {
       switch (inner)
@@ -111,12 +114,12 @@ public class MazakProxyDB : IMazakDB, IDisposable
         case TaskCanceledException _:
         case OperationCanceledException cancelEx:
           // TaskCanceled is a timeout from the HttpClient in GetAsync/PostAsync
-          msg = $"Timeout communicating with mazak proxy at {_cfg.ProxyDBUri}";
+          msg = $"Timeout communicating with mazak proxy at {_client.BaseAddress}";
           break;
 
         case HttpRequestException httpEx:
           // HttpRequestException is from HttpClient with some error communicating
-          msg = $"Error communicating with mazak proxy at {_cfg.ProxyDBUri}: {httpEx.Message}";
+          msg = $"Error communicating with mazak proxy at {_client.BaseAddress}: {httpEx.Message}";
           break;
 
         // other inner exceptions don't have a specific message (but the full details are logged to Serilog)
@@ -128,12 +131,7 @@ public class MazakProxyDB : IMazakDB, IDisposable
 
   private async Task<T> LoadAsync<T>(string path, CancellationToken cancel)
   {
-    // use a new client each time because the proxy doesn't support pipelining... want a new connection each time
-    using var client = new HttpClient();
-    client.BaseAddress = _cfg.ProxyDBUri;
-    client.Timeout = TimeSpan.FromMinutes(10);
-
-    var resp = await client.GetAsync(path, cancellationToken: cancel);
+    var resp = await _client.GetAsync(path, cancellationToken: cancel);
     if (resp.IsSuccessStatusCode)
     {
       // use DataContractJsonSerializer to deserialize, since that is what the proxy db uses
@@ -178,16 +176,11 @@ public class MazakProxyDB : IMazakDB, IDisposable
 
   private async Task<R> PostAsync<T, R>(string path, T data, CancellationToken cancel)
   {
-    // use a new client each time because the proxy doesn't support pipelining... want a new connection each time
-    using var client = new HttpClient();
-    client.BaseAddress = _cfg.ProxyDBUri;
-    client.Timeout = TimeSpan.FromMinutes(10);
-
     var ser = new DataContractJsonSerializer(typeof(T));
     using var ms = new System.IO.MemoryStream();
     ser.WriteObject(ms, data);
     ms.Position = 0;
-    var resp = await client.PostAsync(
+    var resp = await _client.PostAsync(
       path,
       new StreamContent(ms) { Headers = { { "Content-Type", "application/json" } } },
       cancellationToken: cancel
