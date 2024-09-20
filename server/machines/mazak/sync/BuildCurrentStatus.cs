@@ -183,6 +183,9 @@ namespace MazakMachineInterface
       //Now add pallets
       var palletsByName = ImmutableDictionary.CreateBuilder<int, PalletStatus>();
       var material = ImmutableList.CreateBuilder<InProcessMaterial>();
+      var palOnHold = mazakData
+        .PalletStatuses?.GroupBy(p => p.PalletNumber)
+        .ToDictionary(g => g.Key, g => g.Any(p => p.IsOnHold > 0));
       foreach (var palRow in mazakData.Pallets)
       {
         if (palRow.PalletNumber > 0 && !palletsByName.ContainsKey(palRow.PalletNumber))
@@ -199,7 +202,7 @@ namespace MazakMachineInterface
               CurrentPalletLocation = palLoc,
               FixtureOnPallet = palRow.Fixture,
               NumFaces = 1,
-              OnHold = false,
+              OnHold = palOnHold != null && palOnHold.TryGetValue(palName, out var h) && h,
             }
           );
 

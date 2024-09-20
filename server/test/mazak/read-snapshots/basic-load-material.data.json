@@ -184,6 +184,20 @@
       "FixtureGroupV2": 4
     }
   ],
+  "PalletStatuses": [
+    {
+      "PalletNumber": 1,
+      "IsOnHold": 0
+    },
+    {
+      "PalletNumber": 2,
+      "IsOnHold": 1
+    },
+    {
+      "PalletNumber": 3,
+      "IsOnHold": 0
+    }
+  ],
   "PalletSubStatuses": [],
   "PalletPositions": [
     {

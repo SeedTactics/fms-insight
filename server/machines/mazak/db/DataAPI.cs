@@ -379,6 +379,20 @@ namespace MazakMachineInterface
 
   [DataContract]
 #if NET35
+  public class MazakPalletStatusRow
+#else
+  public record MazakPalletStatusRow
+#endif
+  {
+    [DataMember]
+    public int PalletNumber { get; init; }
+
+    [DataMember]
+    public int IsOnHold { get; init; }
+  }
+
+  [DataContract]
+#if NET35
   public class MazakPalletSubStatusRow
 #else
   public record MazakPalletSubStatusRow
@@ -557,6 +571,9 @@ namespace MazakMachineInterface
 
     [DataMember]
     public IEnumerable<LoadAction> LoadActions { get; init; }
+
+    [DataMember(IsRequired = false)]
+    public IEnumerable<MazakPalletStatusRow> PalletStatuses { get; init; }
 
     [DataMember]
     public IEnumerable<MazakPalletSubStatusRow> PalletSubStatuses { get; init; }
