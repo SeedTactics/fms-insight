@@ -1278,7 +1278,8 @@ namespace MazakMachineInterface
         foreach (var s in scheduleIds)
         {
           param.Value = s;
-          if ((long)cmd.ExecuteScalar() == 0)
+          var ret = cmd.ExecuteScalar();
+          if (ret == null && ret == DBNull.Value || Convert.ToInt64(ret) == 0)
           {
             return false;
           }
