@@ -281,19 +281,13 @@ namespace MazakMachineInterface
         .Where(j => toArchive.Contains(j.UniqueStr))
         .Select(j =>
         {
-          int qty = 0;
-          if (completed.TryGetValue(j.UniqueStr, out var compCnt))
-          {
-            qty += compCnt;
-          }
-
-          if (j.Cycles > qty)
+          if (completed.TryGetValue(j.UniqueStr, out var compCnt) && j.Cycles > compCnt)
           {
             return new NewDecrementQuantity()
             {
               JobUnique = j.UniqueStr,
               Part = j.PartName,
-              Quantity = j.Cycles - qty,
+              Quantity = j.Cycles - compCnt,
             };
           }
           else
