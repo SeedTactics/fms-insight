@@ -524,8 +524,11 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    public IEnumerable<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC)
+    public IEnumerable<LogEntry> GetLogOfAllCompletedParts(DateTime startUTC, DateTime endUTC)
     {
+      // This gets all logs between the start and end dates, but may include log events earlier than startUTC
+      // if it comes from a completed part which completed during the time range.  Thus, allows a view of all
+      // logs for all parts which completed during the time range.
       var searchCompleted =
         @"
                 SELECT Counter FROM stations_mat
@@ -569,6 +572,24 @@ namespace BlackMaple.MachineFramework
             yield return l;
           }
         }
+      }
+    }
+
+    public IEnumerable<LogEntry> CompletedUnloadsSince(long counter)
+    {
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
+        + " FROM stations WHERE Counter > $cntr AND StationLoc = $loadty AND Result = 'UNLOAD' AND Start = 0";
+      cmd.Parameters.Add("cntr", SqliteType.Integer).Value = counter;
+      cmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
+
+      using var reader = cmd.ExecuteReader();
+      foreach (var l in LoadLog(reader, trans))
+      {
+        yield return l;
       }
     }
 

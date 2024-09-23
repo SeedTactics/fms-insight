@@ -1990,7 +1990,7 @@ namespace MachineWatchTest
         elapsed: TimeSpan.FromMinutes(10),
         active: TimeSpan.FromMinutes(20)
       );
-      var mat1_proc1complete = _jobLog.RecordLoadEnd(
+      var mat1_proc1load = _jobLog.RecordLoadEnd(
         toLoad:
         [
           new MaterialToLoadOntoPallet()
@@ -2045,7 +2045,7 @@ namespace MachineWatchTest
         elapsed: TimeSpan.FromMinutes(50),
         active: TimeSpan.FromMinutes(60)
       );
-      _jobLog.RecordUnloadEnd(
+      var mat2_proc1complete = _jobLog.RecordUnloadEnd(
         mats: [EventLogMaterial.FromLogMat(mat2_proc1)],
         pallet: 1,
         lulNum: 5,
@@ -2077,7 +2077,7 @@ namespace MachineWatchTest
         elapsed: TimeSpan.FromMinutes(70),
         active: TimeSpan.FromMinutes(80)
       );
-      _jobLog.RecordUnloadEnd(
+      var mat3_complete = _jobLog.RecordUnloadEnd(
         mats: [EventLogMaterial.FromLogMat(mat3)],
         pallet: 1,
         lulNum: 5,
@@ -2108,14 +2108,29 @@ namespace MachineWatchTest
       );
 
       CheckLog(
-        _jobLog.GetCompletedPartLogs(recent.AddHours(-4), recent.AddHours(4)).ToList(),
+        _jobLog.GetLogOfAllCompletedParts(recent.AddHours(-4), recent.AddHours(4)).ToList(),
+        [mat1_proc1old, .. mat1_proc1load, mat1_proc2old, .. mat1_proc2complete, mat4recent, .. mat4complete],
+        DateTime.MinValue
+      );
+
+      CheckLog(
+        _jobLog.CompletedUnloadsSince(counter: -1),
         [
-          mat1_proc1old,
-          .. mat1_proc1complete,
-          mat1_proc2old,
-          .. mat1_proc2complete,
-          mat4recent,
-          .. mat4complete,
+          mat1_proc2complete.First(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"),
+          mat2_proc1complete.First(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"),
+          mat3_complete.First(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"),
+          mat4complete.First(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"),
+        ],
+        DateTime.MinValue
+      );
+
+      CheckLog(
+        _jobLog.CompletedUnloadsSince(
+          counter: mat2_proc1complete.First(e => e.LogType == LogType.LoadUnloadCycle).Counter
+        ),
+        [
+          mat3_complete.First(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"),
+          mat4complete.First(e => e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD"),
         ],
         DateTime.MinValue
       );

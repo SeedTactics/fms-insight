@@ -121,7 +121,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public IEnumerable<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
     {
       using var db = repo.OpenConnection();
-      foreach (var l in db.GetCompletedPartLogs(startUTC, endUTC))
+      foreach (var l in db.GetLogOfAllCompletedParts(startUTC, endUTC))
       {
         yield return l;
       }

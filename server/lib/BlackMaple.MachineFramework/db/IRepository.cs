@@ -47,8 +47,9 @@ namespace BlackMaple.MachineFramework
     // --------------------------------------------------------------------------------
     IEnumerable<LogEntry> GetRecentLog(long lastSeenCounter, DateTime? expectedEndUTCofLastSeen = null);
     IEnumerable<LogEntry> GetLogEntries(DateTime startUTC, DateTime endUTC);
-    IEnumerable<LogEntry> GetCompletedPartLogs(DateTime startUTC, DateTime endUTC);
+    IEnumerable<LogEntry> GetLogOfAllCompletedParts(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);
+    IEnumerable<LogEntry> CompletedUnloadsSince(long counter);
     List<LogEntry> GetLogForMaterial(long materialID, bool includeInvalidatedCycles = true);
     List<LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs);
     IEnumerable<LogEntry> GetLogForSerial(string serial);
