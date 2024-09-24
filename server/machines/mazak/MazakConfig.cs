@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #nullable enable
 
 using System;
+using System.Collections.Immutable;
 using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 
@@ -51,6 +52,8 @@ namespace MazakMachineInterface
     public Uri? ProxyDBUri { get; init; }
     public bool UseStartingOffsetForDueDate { get; init; } = true;
     public bool WaitForAllCastings { get; init; } = false;
+
+    public ImmutableList<int>? MachineNumbers { get; init; } = null;
 
     // When a robot is configured in the Mazak software, it can jump ahead when searching
     // for the next part to load, which can cause parts to run out of sequence (because
@@ -71,8 +74,8 @@ namespace MazakMachineInterface
     {
       var cfg = configuration.GetSection("Mazak");
       var localDbPath = cfg.GetValue<string>("Database Path") ?? "c:\\Mazak\\NFMS\\DB";
-      var dbtype = DetectMazakType(cfg, localDbPath);
       var proxyDBUrl = cfg.GetValue<string?>("Proxy DB Url");
+      var dbtype = DetectMazakType(cfg, localDbPath, proxyDBUrl);
 
       // database settings
       string dbConnStr;
@@ -137,6 +140,23 @@ namespace MazakMachineInterface
         proxyUri = b.Uri;
       }
 
+      var machNumsCfg = cfg.GetValue<string>("Machine Numbers");
+      var machineNumbers = ImmutableList.CreateBuilder<int>();
+      if (!string.IsNullOrEmpty(machNumsCfg))
+      {
+        foreach (var nstr in machNumsCfg.Split(','))
+        {
+          if (int.TryParse(nstr.Trim(), out var n))
+          {
+            machineNumbers.Add(n);
+          }
+          else
+          {
+            Serilog.Log.Error("Invalid machine number {num}", nstr.Trim());
+          }
+        }
+      }
+
       return new MazakConfig
       {
         DBType = dbtype,
@@ -145,6 +165,7 @@ namespace MazakMachineInterface
         ProxyDBUri = proxyUri,
         LogCSVPath = logPath,
         LoadCSVPath = loadPath,
+        MachineNumbers = machineNumbers.Count > 0 ? machineNumbers.ToImmutable() : null,
         ProgramDirectory = cfg.GetValue<string?>("Program Directory") ?? "C:\\NCProgs",
         UseStartingOffsetForDueDate = Convert.ToBoolean(
           cfg.GetValue("Use Starting Offset For Due Date", "true")
@@ -153,7 +174,11 @@ namespace MazakMachineInterface
       };
     }
 
-    private static MazakDbType DetectMazakType(IConfigurationSection cfg, string localDbPath)
+    private static MazakDbType DetectMazakType(
+      IConfigurationSection cfg,
+      string localDbPath,
+      string? proxyUrl
+    )
     {
       var verE = cfg.GetValue<bool>("VersionE");
       var webver = cfg.GetValue<bool>("Web Version");
@@ -163,7 +188,7 @@ namespace MazakMachineInterface
 
       if (verE || webver)
       {
-        if (!System.IO.File.Exists(testPath))
+        if (!System.IO.File.Exists(testPath) && string.IsNullOrEmpty(proxyUrl))
         {
           Serilog.Log.Error(
             "Mazak Version E or Web Version selected, but database file {path} does not exist.",

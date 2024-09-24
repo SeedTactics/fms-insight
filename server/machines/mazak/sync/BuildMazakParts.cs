@@ -201,7 +201,7 @@ namespace MazakMachineInterface
     public abstract (string fixture, int? face) FixtureFace();
     public abstract ProgramRevision PartProgram { get; set; }
 
-    public abstract void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy);
+    public abstract void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakConfig cfg);
 
     protected static int ConvertStatStrV1ToV2(string v1str)
     {
@@ -237,7 +237,7 @@ namespace MazakMachineInterface
       return (PathInfo.Fixture, PathInfo.Face);
     }
 
-    public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
+    public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakConfig mazakCfg)
     {
       char[] FixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
@@ -247,7 +247,8 @@ namespace MazakMachineInterface
       {
         foreach (int statNum in routeEntry.Stations)
         {
-          Cut[statNum - 1] = statNum.ToString()[0];
+          int stat = mazakCfg.MachineNumbers == null ? statNum : mazakCfg.MachineNumbers.IndexOf(statNum) + 1;
+          Cut[stat - 1] = stat.ToString()[0];
         }
       }
 
@@ -269,15 +270,15 @@ namespace MazakMachineInterface
         WashType = 0,
         MainProgram = PartProgram.CellControllerProgramName,
         FixLDS =
-          mazakTy != MazakDbType.MazakVersionE
+          mazakCfg.DBType != MazakDbType.MazakVersionE
             ? ConvertStatStrV1ToV2(new string(FixLDS)).ToString()
             : new string(FixLDS),
         RemoveLDS =
-          mazakTy != MazakDbType.MazakVersionE
+          mazakCfg.DBType != MazakDbType.MazakVersionE
             ? ConvertStatStrV1ToV2(new string(UnfixLDS)).ToString()
             : new string(UnfixLDS),
         CutMc =
-          mazakTy != MazakDbType.MazakVersionE
+          mazakCfg.DBType != MazakDbType.MazakVersionE
             ? ConvertStatStrV1ToV2(new string(Cut)).ToString()
             : new string(Cut),
       };
@@ -322,7 +323,7 @@ namespace MazakMachineInterface
 
     public override (string fixture, int? face) FixtureFace() => (null, null);
 
-    public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakDbType mazakTy)
+    public override void CreateDatabaseRow(MazakPartRow newPart, string fixture, MazakConfig cfg)
     {
       char[] FixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
       char[] UnfixLDS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0' };
@@ -332,7 +333,8 @@ namespace MazakMachineInterface
       {
         foreach (int statNum in routeEntry.Stations)
         {
-          Cut[statNum - 1] = statNum.ToString()[0];
+          int stat = cfg.MachineNumbers == null ? statNum : cfg.MachineNumbers.IndexOf(statNum) + 1;
+          Cut[stat - 1] = stat.ToString()[0];
         }
       }
 
@@ -352,15 +354,15 @@ namespace MazakMachineInterface
         Fixture = fixture,
         ProcessNumber = ProcessNumber,
         FixLDS =
-          mazakTy != MazakDbType.MazakVersionE
+          cfg.DBType != MazakDbType.MazakVersionE
             ? ConvertStatStrV1ToV2(new string(FixLDS)).ToString()
             : new string(FixLDS),
         RemoveLDS =
-          mazakTy != MazakDbType.MazakVersionE
+          cfg.DBType != MazakDbType.MazakVersionE
             ? ConvertStatStrV1ToV2(new string(UnfixLDS)).ToString()
             : new string(UnfixLDS),
         CutMc =
-          mazakTy != MazakDbType.MazakVersionE
+          cfg.DBType != MazakDbType.MazakVersionE
             ? ConvertStatStrV1ToV2(new string(Cut)).ToString()
             : new string(Cut),
       };
@@ -599,7 +601,7 @@ namespace MazakMachineInterface
       {
         foreach (var p in g.Processes)
         {
-          p.CreateDatabaseRow(byName[p.Part.PartName], g.MazakFixtureName, MazakType);
+          p.CreateDatabaseRow(byName[p.Part.PartName], g.MazakFixtureName, cfg);
         }
 
         foreach (var p in g.CreateDatabasePalletRows(OldMazakData, cfg, DownloadUID))
@@ -905,6 +907,19 @@ namespace MazakMachineInterface
           {
             ErrorDuringCreate = "Part " + job.PartName + " has no stations assigned.";
             return;
+          }
+
+          if (mazakCfg.MachineNumbers != null)
+          {
+            foreach (var stat in stop.Stations)
+            {
+              if (!mazakCfg.MachineNumbers.Contains(stat))
+              {
+                ErrorDuringCreate =
+                  "Part " + job.PartName + " has an invalid machine number " + stat.ToString();
+                return;
+              }
+            }
           }
 
           if (stop.Program == null || stop.Program == "")

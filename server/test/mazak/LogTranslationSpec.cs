@@ -55,6 +55,7 @@ namespace MachineWatchTest
     protected List<MazakMachineInterface.LogEntry> expectedMazakLogEntries =
       new List<MazakMachineInterface.LogEntry>();
     private FMSSettings settings;
+    protected MazakConfig mazakCfg;
     protected MazakCurrentStatus mazakData;
     protected List<ToolPocketRow> mazakDataTools;
     private List<MazakScheduleRow> _schedules;
@@ -89,13 +90,15 @@ namespace MachineWatchTest
         Parts = _mazakPartRows,
       };
 
+      mazakCfg = new MazakConfig() { DBType = MazakDbType.MazakSmooth };
+
       log = new LogTranslation(
         jobLog,
         mazakData,
         machGroupName: "machinespec",
         settings,
         e => raisedByEvent.Add(e),
-        mazakConfig: null,
+        mazakConfig: mazakCfg,
         loadTools: () => mazakDataTools
       );
     }
@@ -114,7 +117,7 @@ namespace MachineWatchTest
         machGroupName: "machinespec",
         settings,
         e => raisedByEvent.Add(e),
-        mazakConfig: null,
+        mazakConfig: mazakCfg,
         loadTools: () => mazakDataTools
       );
     }
@@ -442,7 +445,7 @@ namespace MachineWatchTest
         pal: mats.First().Pallet,
         ty: LogType.MachineCycle,
         locName: "machinespec",
-        locNum: e2.StationNumber,
+        locNum: mazakCfg.MachineNumbers?[e2.StationNumber - 1] ?? e2.StationNumber,
         prog: logProg ?? prog,
         start: true,
         endTime: e2.TimeUTC,
@@ -513,7 +516,7 @@ namespace MachineWatchTest
         pal: mats.First().Pallet,
         ty: LogType.MachineCycle,
         locName: "machinespec",
-        locNum: e2.StationNumber,
+        locNum: mazakCfg.MachineNumbers?[e2.StationNumber - 1] ?? e2.StationNumber,
         prog: logProg ?? prog,
         start: false,
         endTime: e2.TimeUTC,
@@ -933,7 +936,7 @@ namespace MachineWatchTest
           pal: mats.First().Pallet,
           ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
-          locNum: mc,
+          locNum: mazakCfg.MachineNumbers?[mc - 1] ?? mc,
           prog: "Arrive",
           start: true,
           endTime: e2.TimeUTC,
@@ -967,7 +970,7 @@ namespace MachineWatchTest
           pal: mats.First().Pallet,
           ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
-          locNum: mc,
+          locNum: mazakCfg.MachineNumbers?[mc - 1] ?? mc,
           prog: "Depart",
           result: "RotateIntoWorktable",
           start: false,
@@ -1003,7 +1006,7 @@ namespace MachineWatchTest
           pal: mats.First().Pallet,
           ty: LogType.PalletOnRotaryInbound,
           locName: "machinespec",
-          locNum: mc,
+          locNum: mazakCfg.MachineNumbers?[mc - 1] ?? mc,
           prog: "Depart",
           start: false,
           endTime: e2.TimeUTC,
@@ -1321,9 +1324,17 @@ namespace MachineWatchTest
         );
     }
 
-    [Fact]
-    public void MultipleMachineCycles()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void MultipleMachineCycles(bool customMachineNums)
     {
+      if (customMachineNums)
+      {
+        mazakCfg = mazakCfg with { MachineNumbers = [201, 202, 203, 204, 205] };
+        ResetLogTranslation();
+      }
+
       var j = new Job()
       {
         UniqueStr = "unique",

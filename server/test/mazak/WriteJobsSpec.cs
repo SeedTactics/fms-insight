@@ -762,5 +762,42 @@ namespace MachineWatchTest
       // bug which triggered this test case
       FindWrite("Add Schedules").Schedules.DistinctBy(p => p.Priority).Should().HaveCount(2);
     }
+
+    [Fact]
+    public void LargeMachineNumbers()
+    {
+      // should translate machine numbers 101, 102, 103, 104 to 1, 2, 3, 4
+      // Careful when looking at the resulting snapshots, since machine numbers are
+      // sent to Mazak in binary format, i.e. 14 is machines 2, 3, 4
+
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "machine-numbers.json")),
+        jsonSettings
+      );
+
+      _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
+      WriteJobs
+        .SyncFromDatabase(
+          _initialAllData,
+          _jobDB,
+          _mazakDbMock,
+          _settings,
+          _mazakCfg with
+          {
+            MachineNumbers = [101, 102, 103, 104],
+          },
+          new DateTime(2024, 9, 24, 16, 0, 0, DateTimeKind.Utc)
+        )
+        .Should()
+        .BeTrue();
+
+      ShouldMatchSnapshot(FindWrite("Update schedules"), "machine-numbers-updatesch.json");
+      ShouldMatchSnapshot(FindWrite("Delete Parts"), "machine-numbers-delparts.json");
+      FindWrite("Delete Pallets")?.Pallets.Should().BeNullOrEmpty();
+      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "machine-numbers-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "machine-numbers-del-fixtures.json");
+      ShouldMatchSnapshot(FindWrite("Add Parts"), "machine-numbers-parts.json");
+      ShouldMatchSnapshot(FindWrite("Add Schedules"), "machine-numbers-schedules.json");
+    }
   }
 }

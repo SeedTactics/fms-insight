@@ -219,7 +219,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     var st = BuildCurrentStatus.Build(
       db,
       settings,
-      mazakConfig.DBType,
+      mazakConfig,
       mazakData,
       machineGroupName: machineGroupName,
       now

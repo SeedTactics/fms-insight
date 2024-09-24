@@ -93,7 +93,7 @@ namespace MazakMachineInterface
             }
             if (!Enum.IsDefined(typeof(LogCode), code))
             {
-              Serilog.Log.Debug("Unused log message {msg}", s);
+              Serilog.Log.Verbose("Unused log message {msg}", s);
               continue;
             }
 

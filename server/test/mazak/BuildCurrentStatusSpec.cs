@@ -47,6 +47,7 @@ namespace MachineWatchTest
     private RepositoryConfig _repoCfg;
     private JsonSerializerOptions jsonSettings;
     private FMSSettings _settings;
+    private MazakConfig _mazakCfg;
 
     public BuildCurrentStatusSpec()
     {
@@ -59,6 +60,8 @@ namespace MachineWatchTest
       _settings.Queues["queueAAA"] = new QueueInfo();
       _settings.Queues["queueBBB"] = new QueueInfo();
       _settings.Queues["queueCCC"] = new QueueInfo();
+
+      _mazakCfg = new MazakConfig() { DBType = MazakDbType.MazakSmooth, MachineNumbers = null };
 
       jsonSettings = new JsonSerializerOptions();
       FMSInsightWebHost.JsonSettings(jsonSettings);
@@ -180,7 +183,7 @@ namespace MachineWatchTest
         status = BuildCurrentStatus.Build(
           repository,
           _settings,
-          MazakDbType.MazakSmooth,
+          _mazakCfg,
           allData,
           machineGroupName: "MC",
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
@@ -267,7 +270,7 @@ namespace MachineWatchTest
       var status = BuildCurrentStatus.Build(
         _memoryLog,
         _settings,
-        MazakDbType.MazakSmooth,
+        _mazakCfg,
         allData,
         machineGroupName: "MC",
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
@@ -355,7 +358,7 @@ namespace MachineWatchTest
         status = BuildCurrentStatus.Build(
           repository,
           _settings,
-          MazakDbType.MazakSmooth,
+          _mazakCfg,
           allData,
           machineGroupName: "MC",
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
@@ -412,6 +415,55 @@ namespace MachineWatchTest
               .ComparingByMembers<InProcessMaterial>()
               .ComparingByMembers<PalletStatus>()
         );
+    }
+
+    [Fact]
+    public void WithMachineNumbers()
+    {
+      using var repository = _repoCfg.OpenConnection();
+
+      var newJobs = JsonSerializer.Deserialize<NewJobs>(
+        File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+        jsonSettings
+      );
+      repository.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+
+      var allData = JsonSerializer.Deserialize<MazakAllData>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-cutting.data.json")
+        ),
+        jsonSettings
+      );
+
+      var status = BuildCurrentStatus.Build(
+        repository,
+        _settings,
+        _mazakCfg with
+        {
+          MachineNumbers = [101, 102, 103, 104],
+        },
+        allData,
+        machineGroupName: "MC",
+        new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
+      );
+
+      /*
+      File.WriteAllText(
+        Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-cutting-mach-nums.status.json"),
+        JsonSerializer.Serialize(status, jsonSettings)
+      );
+      */
+
+      var expectedStatus = JsonSerializer.Deserialize<CurrentStatus>(
+        File.ReadAllText(
+          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-cutting-mach-nums.status.json")
+        ),
+        jsonSettings
+      );
+
+      status
+        .Should()
+        .BeEquivalentTo(expectedStatus, options => options.Excluding(c => c.TimeOfCurrentStatusUTC));
     }
   }
 }

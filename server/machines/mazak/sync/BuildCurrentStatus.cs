@@ -78,7 +78,7 @@ namespace MazakMachineInterface
     public static CurrentStatus Build(
       IRepository jobDB,
       FMSSettings fmsSettings,
-      MazakDbType dbType,
+      MazakConfig mazakCfg,
       MazakAllData mazakData,
       string machineGroupName,
       DateTime utcNow
@@ -177,7 +177,7 @@ namespace MazakMachineInterface
         else
           job.UserHold = false;
 
-        AddRoutingToJob(mazakData, partRow, job, machineGroupName, dbType, precedence);
+        AddRoutingToJob(mazakData, partRow, job, machineGroupName, mazakCfg, precedence);
       }
 
       //Now add pallets
@@ -191,7 +191,7 @@ namespace MazakMachineInterface
         if (palRow.PalletNumber > 0 && !palletsByName.ContainsKey(palRow.PalletNumber))
         {
           var palName = palRow.PalletNumber;
-          var palLoc = FindPalletLocation(machineGroupName, mazakData, dbType, palRow.PalletNumber);
+          var palLoc = FindPalletLocation(machineGroupName, mazakData, mazakCfg, palRow.PalletNumber);
 
           //Create the pallet
           palletsByName.Add(
@@ -494,7 +494,7 @@ namespace MazakMachineInterface
       MazakPartRow partRow,
       CurrentJob job,
       string machineGroupName,
-      MazakDbType mazakTy,
+      MazakConfig mazakCfg,
       long precedence
     )
     {
@@ -510,7 +510,7 @@ namespace MazakMachineInterface
         string cutStr = partProcRow.CutMc;
         string removeStr = partProcRow.RemoveLDS;
 
-        if (mazakTy != MazakDbType.MazakVersionE)
+        if (mazakCfg.DBType != MazakDbType.MazakVersionE)
         {
           fixStr = ConvertStatIntV2ToV1(Convert.ToInt32(fixStr));
           cutStr = ConvertStatIntV2ToV1(Convert.ToInt32(cutStr));
@@ -530,7 +530,12 @@ namespace MazakMachineInterface
         {
           if (c != '0')
           {
-            machines.Add(int.Parse(c.ToString()));
+            int num = int.Parse(c.ToString());
+            if (mazakCfg.MachineNumbers != null && num > 0 && num <= mazakCfg.MachineNumbers.Count)
+            {
+              num = mazakCfg.MachineNumbers[num - 1];
+            }
+            machines.Add(num);
           }
         }
 
@@ -1078,7 +1083,7 @@ namespace MazakMachineInterface
     private static PalletLocation FindPalletLocation(
       string machName,
       MazakAllData mazakData,
-      MazakDbType dbType,
+      MazakConfig mazakCfg,
       int palletNum
     )
     {
@@ -1086,13 +1091,13 @@ namespace MazakMachineInterface
       {
         if (palLocRow.PalletNumber == palletNum)
         {
-          if (dbType != MazakDbType.MazakVersionE)
+          if (mazakCfg.DBType != MazakDbType.MazakVersionE)
           {
-            return ParseStatNameWeb(machName, palLocRow.PalletPosition);
+            return ParseStatNameWeb(machName, palLocRow.PalletPosition, mazakCfg);
           }
           else
           {
-            return ParseStatNameVerE(machName, palLocRow.PalletPosition);
+            return ParseStatNameVerE(machName, palLocRow.PalletPosition, mazakCfg);
           }
         }
       }
@@ -1100,7 +1105,7 @@ namespace MazakMachineInterface
       return new PalletLocation(PalletLocationEnum.Buffer, "Buffer", 0);
     }
 
-    private static PalletLocation ParseStatNameVerE(string machName, string pos)
+    private static PalletLocation ParseStatNameVerE(string machName, string pos, MazakConfig cfg)
     {
       if (pos.StartsWith("LS"))
       {
@@ -1115,11 +1120,16 @@ namespace MazakMachineInterface
       else if (pos.StartsWith("M"))
       {
         //M23 means machine 2, on the table (M21 is is the input pos, M22 is the output pos)
+        int num = Convert.ToInt32(pos[1].ToString());
+        if (cfg.MachineNumbers != null && num > 0 && num <= cfg.MachineNumbers.Count)
+        {
+          num = cfg.MachineNumbers[num - 1];
+        }
         return new PalletLocation()
         {
           Location = pos[2] == '3' ? PalletLocationEnum.Machine : PalletLocationEnum.MachineQueue,
           StationGroup = machName,
-          Num = Convert.ToInt32(pos[1].ToString()),
+          Num = num,
         };
       }
       else if (pos.StartsWith("S"))
@@ -1154,7 +1164,7 @@ namespace MazakMachineInterface
       }
     }
 
-    private static PalletLocation ParseStatNameWeb(string machName, string pos)
+    private static PalletLocation ParseStatNameWeb(string machName, string pos, MazakConfig cfg)
     {
       if (pos.StartsWith("LS"))
       {
@@ -1169,11 +1179,16 @@ namespace MazakMachineInterface
       else if (pos.StartsWith("M"))
       {
         //M023 means machine 2, on the table (M021 is is the input pos, M022 is the output pos)
+        int num = Convert.ToInt32(pos[2].ToString());
+        if (cfg.MachineNumbers != null && num > 0 && num <= cfg.MachineNumbers.Count)
+        {
+          num = cfg.MachineNumbers[num - 1];
+        }
         return new PalletLocation()
         {
           Location = pos[3] == '3' ? PalletLocationEnum.Machine : PalletLocationEnum.MachineQueue,
           StationGroup = machName,
-          Num = Convert.ToInt32(pos[2].ToString()),
+          Num = num,
         };
       }
       else if (pos.StartsWith("S"))

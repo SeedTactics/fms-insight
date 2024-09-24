@@ -115,11 +115,17 @@ namespace MazakMachineInterface
         {
           // There should never be any pending loads since the pallet movement event should have fired.
           // Just in case, we check for pending loads here
+          int mcNum = e.StationNumber;
+          if (mazakConfig.MachineNumbers != null && mcNum > 0 && mcNum <= mazakConfig.MachineNumbers.Count)
+          {
+            mcNum = mazakConfig.MachineNumbers[mcNum - 1];
+          }
+
           cycle = CheckPendingLoads(e.Pallet, e.TimeUTC.AddSeconds(-1), "", false, cycle);
           IEnumerable<ToolSnapshot> pockets = null;
           if ((DateTime.UtcNow - e.TimeUTC).Duration().TotalMinutes < 5)
           {
-            pockets = ToolsToSnapshot(e.StationNumber, loadTools());
+            pockets = ToolsToSnapshot(mcNum, loadTools());
           }
 
           var machineMats = GetMaterialOnPallet(e, cycle);
@@ -128,7 +134,7 @@ namespace MazakMachineInterface
             mats: machineMats.Select(m => m.Mat),
             pallet: e.Pallet,
             statName: machGroupName,
-            statNum: e.StationNumber,
+            statNum: mcNum,
             program: progName,
             timeUTC: e.TimeUTC,
             pockets: pockets,
@@ -142,6 +148,12 @@ namespace MazakMachineInterface
         }
 
         case LogCode.MachineCycleEnd:
+        {
+          int mcNum = e.StationNumber;
+          if (mazakConfig.MachineNumbers != null && mcNum > 0 && mcNum <= mazakConfig.MachineNumbers.Count)
+          {
+            mcNum = mazakConfig.MachineNumbers[mcNum - 1];
+          }
 
           // Tool snapshots take ~5 seconds from the end of the cycle until the updated tools are available in open database kit,
           // so stop processing log entries if the machine cycle end occurred 15 seconds in the past.
@@ -155,7 +167,7 @@ namespace MazakMachineInterface
             };
           }
 
-          var machStart = FindMachineStart(e, cycle, e.StationNumber);
+          var machStart = FindMachineStart(e, cycle, mcNum);
           TimeSpan elapsed;
           IEnumerable<ToolSnapshot> toolsAtStart;
           if (machStart != null)
@@ -169,7 +181,7 @@ namespace MazakMachineInterface
             elapsed = TimeSpan.Zero;
             toolsAtStart = Enumerable.Empty<ToolSnapshot>();
           }
-          var toolsAtEnd = ToolsToSnapshot(e.StationNumber, loadTools());
+          var toolsAtEnd = ToolsToSnapshot(mcNum, loadTools());
 
           if (elapsed > TimeSpan.FromSeconds(30))
           {
@@ -179,7 +191,7 @@ namespace MazakMachineInterface
               mats: machineMats.Select(m => m.Mat),
               pallet: e.Pallet,
               statName: machGroupName,
-              statNum: e.StationNumber,
+              statNum: mcNum,
               program: progName,
               timeUTC: e.TimeUTC,
               result: "",
@@ -206,6 +218,7 @@ namespace MazakMachineInterface
           }
 
           break;
+        }
 
         case LogCode.UnloadBegin:
 
@@ -242,17 +255,24 @@ namespace MazakMachineInterface
           break;
 
         case LogCode.StartRotatePalletIntoMachine:
+        {
+          int mcNum = e.StationNumber;
+          if (mazakConfig.MachineNumbers != null && mcNum > 0 && mcNum <= mazakConfig.MachineNumbers.Count)
+          {
+            mcNum = mazakConfig.MachineNumbers[mcNum - 1];
+          }
           repo.RecordPalletDepartRotaryInbound(
             mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
             pallet: e.Pallet,
             statName: machGroupName,
-            statNum: e.StationNumber,
+            statNum: mcNum,
             timeUTC: e.TimeUTC,
             rotateIntoWorktable: true,
-            elapsed: CalculateElapsed(e, cycle, LogType.PalletOnRotaryInbound, e.StationNumber),
+            elapsed: CalculateElapsed(e, cycle, LogType.PalletOnRotaryInbound, mcNum),
             foreignId: e.ForeignID
           );
           break;
+        }
 
         case LogCode.PalletMoving:
           if (e.FromPosition != null && e.FromPosition.StartsWith("LS"))
@@ -271,6 +291,14 @@ namespace MazakMachineInterface
               LastEventWasRotaryDropoff(cycle) && int.TryParse(e.FromPosition.Substring(1, 2), out var mcNum)
             )
             {
+              if (
+                mazakConfig.MachineNumbers != null
+                && mcNum > 0
+                && mcNum <= mazakConfig.MachineNumbers.Count
+              )
+              {
+                mcNum = mazakConfig.MachineNumbers[mcNum - 1];
+              }
               repo.RecordPalletDepartRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet,
@@ -311,6 +339,14 @@ namespace MazakMachineInterface
           {
             if (int.TryParse(e.TargetPosition.Substring(1, 2), out var mcNum))
             {
+              if (
+                mazakConfig.MachineNumbers != null
+                && mcNum > 0
+                && mcNum <= mazakConfig.MachineNumbers.Count
+              )
+              {
+                mcNum = mazakConfig.MachineNumbers[mcNum - 1];
+              }
               repo.RecordPalletArriveRotaryInbound(
                 mats: GetAllMaterialOnPallet(cycle).Select(EventLogMaterial.FromLogMat),
                 pallet: e.Pallet,

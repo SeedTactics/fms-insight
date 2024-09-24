@@ -1,0 +1,52 @@
+{
+  "Prefix": "Update schedules",
+  "Schedules": [
+    {
+      "Id": 1,
+      "Comment": "uniq1-Insight",
+      "PartName": "part1:1:1",
+      "PlanQuantity": 15,
+      "CompleteQuantity": 15,
+      "Priority": 50,
+      "FixForMachine": 0,
+      "HoldMode": 0,
+      "MissingFixture": 0,
+      "MissingProgram": 0,
+      "MissingTool": 0,
+      "MixScheduleID": 0,
+      "ProcessingPriority": 0,
+      "Schedule_1": 0,
+      "Schedule_2": 0,
+      "Schedule_3": 0,
+      "Schedule_4": 0,
+      "Schedule_5": 0,
+      "Schedule_6": 0,
+      "SetNumber": 0,
+      "SetQuantity": 0,
+      "SetNumberSets": 0,
+      "Processes": [
+        {
+          "MazakScheduleRowId": 1,
+          "FixQuantity": 0,
+          "ProcessNumber": 1,
+          "ProcessMaterialQuantity": 0,
+          "ProcessExecuteQuantity": 0,
+          "ProcessBadQuantity": 0,
+          "ProcessMachine": 0,
+          "FixedMachineFlag": 1,
+          "FixedMachineNumber": 0,
+          "ScheduleProcess_1": 0,
+          "ScheduleProcess_2": 0,
+          "ScheduleProcess_3": 0,
+          "ScheduleProcess_4": 0,
+          "ScheduleProcess_5": 0
+        }
+      ],
+      "Command": "Delete"
+    }
+  ],
+  "Parts": [],
+  "Pallets": [],
+  "Fixtures": [],
+  "Programs": []
+}
