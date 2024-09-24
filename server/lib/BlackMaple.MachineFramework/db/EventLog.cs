@@ -409,52 +409,66 @@ namespace BlackMaple.MachineFramework
       return "";
     }
 
-    public List<LogEntry> GetLogForMaterial(long materialID, bool includeInvalidatedCycles = true)
+    public IEnumerable<LogEntry> GetLogForMaterial(long materialID, bool includeInvalidatedCycles = true)
     {
       if (materialID < 0)
-        return new List<LogEntry>();
-      using (var trans = _connection.BeginTransaction())
-      using (var cmd = _connection.CreateCommand())
       {
-        cmd.Transaction = trans;
-        cmd.CommandText =
-          "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName "
-          + " FROM stations s "
-          + " WHERE s.Counter IN (SELECT m.Counter FROM stations_mat m WHERE m.MaterialID = $mat)"
-          + (includeInvalidatedCycles ? "" : " AND " + ignoreInvalidEventCondition)
-          + " ORDER BY s.Counter ASC";
-        cmd.Parameters.Add("mat", SqliteType.Integer).Value = materialID;
+        yield break;
+      }
 
-        using (var reader = cmd.ExecuteReader())
-        {
-          return LoadLog(reader, trans).ToList();
-        }
+      using var trans = _connection.BeginTransaction();
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+      cmd.CommandText =
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName "
+        + " FROM stations s "
+        + " WHERE s.Counter IN (SELECT m.Counter FROM stations_mat m WHERE m.MaterialID = $mat)"
+        + (includeInvalidatedCycles ? "" : " AND " + ignoreInvalidEventCondition)
+        + " ORDER BY s.Counter ASC";
+      cmd.Parameters.Add("mat", SqliteType.Integer).Value = materialID;
+
+      using var reader = cmd.ExecuteReader();
+
+      foreach (var e in LoadLog(reader, trans))
+      {
+        yield return e;
       }
     }
 
-    public List<LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs)
+    public IEnumerable<LogEntry> GetLogForMaterial(
+      IEnumerable<long> materialIDs,
+      bool includeInvalidatedCycles = true
+    )
     {
-      var ret = new List<LogEntry>();
-      using (var cmd = _connection.CreateCommand())
-      using (var trans = _connection.BeginTransaction())
-      {
-        cmd.Transaction = trans;
-        cmd.CommandText =
-          "SELECT Counter, Pallet, StationLoc, StationNum, Program, Start, TimeUTC, Result, EndOfRoute, Elapsed, ActiveTime, StationName "
-          + " FROM stations WHERE Counter IN (SELECT Counter FROM stations_mat WHERE MaterialID = $mat) ORDER BY Counter ASC";
-        var param = cmd.Parameters.Add("mat", SqliteType.Integer);
+      using var cmd = _connection.CreateCommand();
+      using var trans = _connection.BeginTransaction();
 
-        foreach (var matId in materialIDs)
-        {
-          param.Value = matId;
-          using (var reader = cmd.ExecuteReader())
-          {
-            ret.AddRange(LoadLog(reader, trans));
-          }
-        }
-        trans.Commit();
+      cmd.Transaction = trans;
+      cmd.CommandText = "CREATE TEMP TABLE temp_mat_ids (MaterialID INTEGER)";
+      cmd.ExecuteNonQuery();
+
+      cmd.CommandText = "INSERT INTO temp_mat_ids (MaterialID) VALUES ($mat)";
+      cmd.Parameters.Add("mat", SqliteType.Integer);
+      foreach (var mat in materialIDs)
+      {
+        cmd.Parameters[0].Value = mat;
+        cmd.ExecuteNonQuery();
       }
-      return ret;
+
+      cmd.CommandText =
+        "SELECT s.Counter, s.Pallet, s.StationLoc, s.StationNum, s.Program, s.Start, s.TimeUTC, s.Result, s.EndOfRoute, s.Elapsed, s.ActiveTime, s.StationName "
+        + " FROM stations s WHERE s.Counter IN "
+        + "     (SELECT m.Counter FROM stations_mat m WHERE m.MaterialID IN "
+        + "        (SELECT t.MaterialID FROM temp_mat_ids t))"
+        + (includeInvalidatedCycles ? "" : " AND " + ignoreInvalidEventCondition)
+        + " ORDER BY s.Counter ASC";
+      cmd.Parameters.Clear();
+
+      using var reader = cmd.ExecuteReader();
+      foreach (var e in LoadLog(reader, trans))
+      {
+        yield return e;
+      }
     }
 
     public IEnumerable<LogEntry> GetLogForSerial(string serial)

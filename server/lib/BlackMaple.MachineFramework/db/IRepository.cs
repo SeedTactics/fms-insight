@@ -50,8 +50,11 @@ namespace BlackMaple.MachineFramework
     IEnumerable<LogEntry> GetLogOfAllCompletedParts(DateTime startUTC, DateTime endUTC);
     IEnumerable<LogEntry> GetLogForJobUnique(string jobUnique);
     IEnumerable<LogEntry> CompletedUnloadsSince(long counter);
-    List<LogEntry> GetLogForMaterial(long materialID, bool includeInvalidatedCycles = true);
-    List<LogEntry> GetLogForMaterial(IEnumerable<long> materialIDs);
+    IEnumerable<LogEntry> GetLogForMaterial(long materialID, bool includeInvalidatedCycles = true);
+    IEnumerable<LogEntry> GetLogForMaterial(
+      IEnumerable<long> materialIDs,
+      bool includeInvalidatedCycles = true
+    );
     IEnumerable<LogEntry> GetLogForSerial(string serial);
     IEnumerable<LogEntry> GetLogForWorkorder(string workorder);
     List<LogEntry> CurrentPalletLog(int pallet, bool includeLastPalletCycleEvt = false);

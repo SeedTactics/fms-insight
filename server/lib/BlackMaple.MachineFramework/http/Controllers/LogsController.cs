@@ -141,19 +141,28 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("events/for-material/{materialID}")]
-    public List<LogEntry> LogForMaterial(long materialID)
+    public IEnumerable<LogEntry> LogForMaterial(long materialID)
     {
       using var db = repo.OpenConnection();
-      return db.GetLogForMaterial(materialID);
+      foreach (var e in db.GetLogForMaterial(materialID))
+      {
+        yield return e;
+      }
     }
 
     [HttpGet("events/for-material")]
-    public List<LogEntry> LogForMaterials([FromQuery] List<long> id)
+    public IEnumerable<LogEntry> LogForMaterials([FromQuery] List<long> id)
     {
       if (id == null || id.Count == 0)
-        return [];
+      {
+        yield break;
+      }
+
       using var db = repo.OpenConnection();
-      return db.GetLogForMaterial(id);
+      foreach (var e in db.GetLogForMaterial(id))
+      {
+        yield return e;
+      }
     }
 
     [HttpGet("events/for-serial/{serial}")]

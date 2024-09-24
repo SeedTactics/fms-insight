@@ -585,7 +585,6 @@ namespace MachineWatchTest
       Assert.Equal(forcedCnt, forced ? 1 : 0);
 
       using var _insp = _repoCfg.OpenConnection();
-      var log = _insp.GetLogForMaterial(matID);
       int inspEntries = 0;
       int forceEntries = 0;
       foreach (var entry in _insp.GetLogForMaterial(matID))

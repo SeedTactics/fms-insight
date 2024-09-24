@@ -809,13 +809,14 @@ namespace MachineWatchTest
 
       Assert.False(_jobLog.CycleExists(DateTime.Parse("4/6/2011"), 123, LogType.MachineCycle, "MC", 3));
 
-      CheckLog(logsForMat1, _jobLog.GetLogForMaterial(1), start);
+      CheckLog(logsForMat1, _jobLog.GetLogForMaterial(1).ToList(), start);
       CheckLog(
         logsForMat1.Concat(logsForMat2).ToList(),
-        _jobLog.GetLogForMaterial(new[] { 1, mat2.MaterialID }),
+        _jobLog.GetLogForMaterial(new[] { 1, mat2.MaterialID }).ToList(),
         start
       );
       _jobLog.GetLogForMaterial(18).Should().BeEmpty();
+      _jobLog.GetLogForMaterial([18, 19]).Should().BeEmpty();
 
       var markLog = _jobLog.RecordSerialForMaterialID(
         EventLogMaterial.FromLogMat(mat1),
@@ -1120,7 +1121,14 @@ namespace MachineWatchTest
       CheckLog(pal1Initial, _jobLog.CurrentPalletLog(1), DateTime.UtcNow.AddHours(-10));
       CheckLog(
         pal1Initial,
-        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false),
+        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false).ToList(),
+        DateTime.UtcNow.AddHours(-10)
+      );
+      CheckLog(
+        pal1Initial,
+        _jobLog
+          .GetLogForMaterial([mat1.MaterialID, mat2.MaterialID], includeInvalidatedCycles: false)
+          .ToList(),
         DateTime.UtcNow.AddHours(-10)
       );
       _jobLog.CurrentPalletLog(2).Should().BeEmpty();
@@ -1252,7 +1260,14 @@ namespace MachineWatchTest
       CheckLog(pal2Cycle, _jobLog.CurrentPalletLog(2), DateTime.UtcNow.AddHours(-10));
       CheckLog(
         pal1Initial.Concat(pal1Cycle).Concat(pal2Cycle).Where(e => !e.Material.IsEmpty),
-        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false),
+        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false).ToList(),
+        DateTime.UtcNow.AddHours(-10)
+      );
+      CheckLog(
+        pal1Initial.Concat(pal1Cycle).Concat(pal2Cycle).Where(e => !e.Material.IsEmpty),
+        _jobLog
+          .GetLogForMaterial([mat1.MaterialID, mat2.MaterialID], includeInvalidatedCycles: false)
+          .ToList(),
         DateTime.UtcNow.AddHours(-10)
       );
 
@@ -1271,7 +1286,14 @@ namespace MachineWatchTest
       CheckLog(pal1Cycle, _jobLog.CurrentPalletLog(1), DateTime.UtcNow.AddHours(-10));
       CheckLog(
         pal1Initial.Concat(pal1Cycle).Concat(pal2Cycle).Where(e => !e.Material.IsEmpty),
-        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false),
+        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false).ToList(),
+        DateTime.UtcNow.AddHours(-10)
+      );
+      CheckLog(
+        pal1Initial.Concat(pal1Cycle).Concat(pal2Cycle).Where(e => !e.Material.IsEmpty),
+        _jobLog
+          .GetLogForMaterial([mat1.MaterialID, mat2.MaterialID], includeInvalidatedCycles: false)
+          .ToList(),
         DateTime.UtcNow.AddHours(-10)
       );
 
@@ -1309,7 +1331,7 @@ namespace MachineWatchTest
 
       CheckLog(
         pal1Initial.Concat(pal1Cycle).Concat(pal2Cycle).Where(e => !e.Material.IsEmpty),
-        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false),
+        _jobLog.GetLogForMaterial(mat1.MaterialID, includeInvalidatedCycles: false).ToList(),
         DateTime.UtcNow.AddHours(-10)
       );
     }
