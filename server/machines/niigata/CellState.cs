@@ -817,7 +817,7 @@ namespace BlackMaple.FMSInsight.Niigata
           pallet.Material,
           pallet.Status.Master.PalletNum
         );
-        logDB.CompletePalletCycle(pallet.Status.Master.PalletNum, nowUtc);
+        logDB.RecordEmptyPallet(pallet.Status.Master.PalletNum, nowUtc);
         pallet.Material.Clear();
         palletStateUpdated = true;
       }
@@ -912,6 +912,8 @@ namespace BlackMaple.FMSInsight.Niigata
       IRepository logDB
     )
     {
+      var toUnload = new List<MaterialToUnloadFromFace>();
+
       // record unload-end
       foreach (var face in pallet.Material.GroupBy(m => m.Mat.Location.Face))
       {
@@ -920,40 +922,26 @@ namespace BlackMaple.FMSInsight.Niigata
         var proc = face.First().Mat.Process;
         var path = face.First().Mat.Path;
         var pathInfo = job.Processes[proc - 1].Paths[path - 1];
-        var queues = new Dictionary<long, string>();
-        foreach (var mat in face)
-        {
-          var q = OutputQueueForMaterial(mat, pallet.Log, defaultToScrap: false);
-          if (!string.IsNullOrEmpty(q))
-          {
-            queues[mat.Mat.MaterialID] = q;
-          }
-        }
 
-        logDB.RecordUnloadEnd(
-          mats: face.Select(m => new EventLogMaterial()
+        toUnload.Add(
+          new MaterialToUnloadFromFace()
           {
-            MaterialID = m.Mat.MaterialID,
+            MaterialIDToQueue = face.ToImmutableDictionary(
+              m => m.Mat.MaterialID,
+              m => OutputQueueForMaterial(m, pallet.Log, defaultToScrap: false)
+            ),
+            FaceNum = face.Key ?? 0,
             Process = proc,
-            Face = face.Key ?? 0,
-          }),
-          pallet: pallet.Status.Master.PalletNum,
-          lulNum: loadBegin.LocationNum,
-          timeUTC: nowUtc,
-          elapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),
-          active: TimeSpan.FromTicks(pathInfo.ExpectedUnloadTime.Ticks * face.Count()),
-          unloadIntoQueues: queues
+            ActiveOperationTime = TimeSpan.FromTicks(pathInfo.ExpectedUnloadTime.Ticks * face.Count()),
+          }
         );
       }
-
-      // complete the pallet cycle so new cycle starts with the below Load end
-      logDB.CompletePalletCycle(pallet.Status.Master.PalletNum, nowUtc);
 
       var unusedMatsOnPal = pallet.Material.ToDictionary(m => m.Mat.MaterialID, m => m);
       pallet.Material.Clear();
 
       // add load-end for material put onto
-      var newLoadEvents = new List<LogEntry>();
+      var toLoad = new List<MaterialToLoadOntoFace>();
 
       if (pallet.Status.HasWork)
       {
@@ -968,44 +956,38 @@ namespace BlackMaple.FMSInsight.Niigata
           logDB: logDB
         );
 
-        newLoadEvents.AddRange(
-          logDB.RecordLoadEnd(
-            toLoad: new[]
-            {
-              new MaterialToLoadOntoPallet()
-              {
-                LoadStation = loadBegin.LocationNum,
-                Elapsed = nowUtc.Subtract(loadBegin.EndTimeUTC),
-                Faces = pallet
-                  .Material.GroupBy(p => p.Mat.Location.Face ?? 1)
-                  .Select(face =>
-                  {
-                    var job = face.First().Job;
-                    var proc = face.First().Mat.Process;
-                    var path = face.First().Mat.Path;
-                    var pathInfo = job.Processes[proc - 1].Paths[path - 1];
+        toLoad = pallet
+          .Material.GroupBy(p => p.Mat.Location.Face ?? 1)
+          .Select(face =>
+          {
+            var job = face.First().Job;
+            var proc = face.First().Mat.Process;
+            var path = face.First().Mat.Path;
+            var pathInfo = job.Processes[proc - 1].Paths[path - 1];
 
-                    return new MaterialToLoadOntoFace()
-                    {
-                      MaterialIDs = face.Select(m => m.Mat.MaterialID).ToImmutableList(),
-                      FaceNum = face.Key,
-                      Process = proc,
-                      Path = path,
-                      ActiveOperationTime = TimeSpan.FromTicks(
-                        pathInfo.ExpectedLoadTime.Ticks * face.Count()
-                      ),
-                    };
-                  })
-                  .ToImmutableList(),
-              },
-            },
-            pallet: pallet.Status.Master.PalletNum,
-            timeUTC: nowUtc.AddSeconds(1)
-          )
-        );
+            return new MaterialToLoadOntoFace()
+            {
+              MaterialIDs = face.Select(m => m.Mat.MaterialID).ToImmutableList(),
+              FaceNum = face.Key,
+              Process = proc,
+              Path = path,
+              ActiveOperationTime = TimeSpan.FromTicks(pathInfo.ExpectedLoadTime.Ticks * face.Count()),
+            };
+          })
+          .ToList();
       }
 
-      pallet.Log = newLoadEvents;
+      var lulEvts = logDB.RecordLoadUnloadComplete(
+        toLoad: toLoad,
+        toUnload: toUnload,
+        lulNum: loadBegin.LocationNum,
+        pallet: pallet.Status.Master.PalletNum,
+        totalElapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),
+        timeUTC: nowUtc,
+        externalQueues: _settings.ExternalQueues
+      );
+
+      pallet.Log = lulEvts.Where(e => e.EndTimeUTC > nowUtc).ToList();
     }
 
     private void EnsureAllNonloadStopsHaveEvents(
