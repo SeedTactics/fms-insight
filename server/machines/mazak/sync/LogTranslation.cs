@@ -113,30 +113,91 @@ namespace MazakMachineInterface
     }
 
     #region Events
-    private static long RoundDivide(long numerator, long denominator)
+    // should be union
+    private record LogChunk
     {
-      return (numerator + denominator / 2) / denominator;
+      public IReadOnlyList<LogEntry> LulChunk { get; init; }
+      public LogEntry NonLulEvt { get; init; }
+      public bool FinalEventsAreLUL { get; init; }
     }
 
-    private static bool IsLoadEnd(LogCode e)
+    private static IEnumerable<LogChunk> ChunkLulEvents(IEnumerable<LogEntry> entries)
     {
-      return e == LogCode.LoadEnd || e == LogCode.UnloadEnd;
+      // We want to group the LoadEnd and UnloadEnd events together since Mazak creates
+      // one event per process/face. We assume that Mazak generates the logs serially so
+      // as soon as another non-LUL event is generated, we can assume that the previous
+      // chunk is complete and yield it.
+      var curChunk = new List<LogEntry>();
+
+      foreach (var e in entries)
+      {
+        if (e.Code == LogCode.LoadEnd || e.Code == LogCode.UnloadEnd)
+        {
+          if (curChunk.Count == 0)
+          {
+            curChunk.Add(e);
+          }
+          else if (
+            curChunk[0].Pallet == e.Pallet
+            && curChunk[0].TimeUTC.Subtract(e.TimeUTC).Duration() < TimeSpan.FromSeconds(3)
+          )
+          {
+            curChunk.Add(e);
+          }
+          else
+          {
+            // yield the current chunk and start a new one
+            yield return new LogChunk() { LulChunk = curChunk };
+            curChunk = [e];
+          }
+        }
+        else
+        {
+          // something not LUL, yield the current chunk if there is one
+          if (curChunk.Count > 0)
+          {
+            // yield the current chunk and start a new one
+            yield return new LogChunk() { LulChunk = curChunk };
+            curChunk = [];
+          }
+
+          yield return new LogChunk() { NonLulEvt = e };
+        }
+      }
+
+      if (curChunk.Count > 0)
+      {
+        // If the most recent event is a LUL, we may be reading the logs in the middle of
+        // Mazak writing them out.  In this case, don't process the events and leave them
+        // on disk for the next time we read the logs.
+        yield return new LogChunk() { FinalEventsAreLUL = true };
+      }
     }
 
     private HandleEventResult Process()
     {
       var stoppedEarly = false;
-      foreach (
-        var evs in mazakData.Logs.GroupBy(e =>
-          (RoundDivide(e.TimeUTC.Ticks, TimeSpan.FromSeconds(3).Ticks), e.Pallet, IsLoadEnd(e.Code))
-        )
-      )
+      foreach (var e in ChunkLulEvents(mazakData.Logs))
       {
-        if (evs.Key.Item3)
+        if (e.LulChunk != null)
         {
           try
           {
-            if (!HandleLoadEnd(evs, evs.Key.Item2))
+            HandleLoadEnd(e.LulChunk);
+          }
+          catch (Exception ex)
+          {
+            Log.Error(
+              ex,
+              "Error translating log event at time " + e.LulChunk.First().TimeUTC.ToLocalTime().ToString()
+            );
+          }
+        }
+        else if (e.NonLulEvt != null)
+        {
+          try
+          {
+            if (!HandleEvent(e.NonLulEvt))
             {
               stoppedEarly = true;
               break;
@@ -146,27 +207,14 @@ namespace MazakMachineInterface
           {
             Log.Error(
               ex,
-              "Error translating log event at time " + evs.First().TimeUTC.ToLocalTime().ToString()
+              "Error translating log event at time " + e.NonLulEvt.TimeUTC.ToLocalTime().ToString()
             );
           }
         }
-        else
+        else if (e.FinalEventsAreLUL)
         {
-          foreach (var ev in evs)
-          {
-            try
-            {
-              if (!HandleEvent(ev))
-              {
-                stoppedEarly = true;
-                break;
-              }
-            }
-            catch (Exception ex)
-            {
-              Log.Error(ex, "Error translating log event at time " + ev.TimeUTC.ToLocalTime().ToString());
-            }
-          }
+          stoppedEarly = true;
+          break;
         }
       }
 
@@ -183,13 +231,9 @@ namespace MazakMachineInterface
       };
     }
 
-    private bool HandleLoadEnd(IEnumerable<LogEntry> es, int pallet)
+    private void HandleLoadEnd(IReadOnlyList<LogEntry> es)
     {
-      var timeSinceEnd = DateTime.UtcNow.Subtract(es.First().TimeUTC);
-      if (TimeSpan.FromSeconds(-5) <= timeSinceEnd && timeSinceEnd <= TimeSpan.FromSeconds(5))
-      {
-        return false;
-      }
+      int pallet = es[0].Pallet;
 
       var cycle = new List<MWI.LogEntry>();
       if (pallet >= 1)
@@ -202,18 +246,11 @@ namespace MazakMachineInterface
         toLoad: toLoad,
         toUnload: toUnload,
         pallet: pallet,
-        lulNum: es.First().StationNumber,
-        totalElapsed: CalculateElapsed(
-          es.First().TimeUTC,
-          LogType.LoadUnloadCycle,
-          cycle,
-          es.First().StationNumber
-        ),
-        timeUTC: es.First().TimeUTC,
+        lulNum: es[0].StationNumber,
+        totalElapsed: CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, es[0].StationNumber),
+        timeUTC: es[0].TimeUTC,
         externalQueues: fmsSettings.ExternalQueues
       );
-
-      return true;
     }
 
     private bool HandleEvent(LogEntry e)
@@ -286,8 +323,7 @@ namespace MazakMachineInterface
 
           // Tool snapshots take ~5 seconds from the end of the cycle until the updated tools are available in open database kit,
           // so stop processing log entries if the machine cycle end occurred 15 seconds in the past.
-          var timeSinceEnd = DateTime.UtcNow.Subtract(e.TimeUTC);
-          if (TimeSpan.FromSeconds(-15) <= timeSinceEnd && timeSinceEnd <= TimeSpan.FromSeconds(15))
+          if (DateTime.UtcNow.Subtract(e.TimeUTC).Duration() <= TimeSpan.FromSeconds(15))
           {
             return false;
           }

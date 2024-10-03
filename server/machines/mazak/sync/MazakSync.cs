@@ -45,7 +45,7 @@ public record MazakState : ICellState
 {
   public required bool StateUpdated { get; init; }
   public required TimeSpan TimeUntilNextRefresh { get; init; }
-  public required bool StoppedBecauseRecentMachineEnd { get; init; }
+  public required bool StoppedBecauseRecentLogEvent { get; init; }
   public required CurrentStatus CurrentStatus { get; init; }
   public required MazakAllDataAndLogs AllData { get; init; }
 }
@@ -206,7 +206,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
         mazakConfig?.DBType == MazakDbType.MazakVersionE || evtResults.StoppedBecauseRecentLogEvent
           ? TimeSpan.FromSeconds(15)
           : TimeSpan.FromMinutes(2),
-      StoppedBecauseRecentMachineEnd = evtResults.StoppedBecauseRecentLogEvent,
+      StoppedBecauseRecentLogEvent = evtResults.StoppedBecauseRecentLogEvent,
       CurrentStatus = st,
       AllData = mazakData,
     };
@@ -214,7 +214,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
   public bool ApplyActions(IRepository db, MazakState st)
   {
-    if (st.StoppedBecauseRecentMachineEnd)
+    if (st.StoppedBecauseRecentLogEvent)
     {
       return false;
     }
