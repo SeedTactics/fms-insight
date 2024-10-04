@@ -191,6 +191,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       mazakConfig,
       mazakData,
       machineGroupName: machineGroupName,
+      evtResults.PalletWithMostRecentEventAsLoadUnloadEnd,
       now
     );
 
@@ -203,10 +204,14 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     {
       StateUpdated = mazakData.Logs.Count > 0 || evtResults.PalletStatusChanged,
       TimeUntilNextRefresh =
-        mazakConfig?.DBType == MazakDbType.MazakVersionE || evtResults.StoppedBecauseRecentLogEvent
+        mazakConfig?.DBType == MazakDbType.MazakVersionE
+        || evtResults.StoppedBecauseRecentMachineEvent
+        || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue
           ? TimeSpan.FromSeconds(15)
           : TimeSpan.FromMinutes(2),
-      StoppedBecauseRecentLogEvent = evtResults.StoppedBecauseRecentLogEvent,
+      StoppedBecauseRecentLogEvent =
+        evtResults.StoppedBecauseRecentMachineEvent
+        || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue,
       CurrentStatus = st,
       AllData = mazakData,
     };

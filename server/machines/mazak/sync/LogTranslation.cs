@@ -92,8 +92,9 @@ namespace MazakMachineInterface
 
     public record HandleEventResult
     {
-      public bool StoppedBecauseRecentLogEvent { get; init; }
-      public bool PalletStatusChanged { get; init; }
+      public required bool StoppedBecauseRecentMachineEvent { get; init; }
+      public required int? PalletWithMostRecentEventAsLoadUnloadEnd { get; init; }
+      public required bool PalletStatusChanged { get; init; }
     }
 
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<LogTranslation>();
@@ -118,7 +119,7 @@ namespace MazakMachineInterface
     {
       public IReadOnlyList<LogEntry> LulChunk { get; init; }
       public LogEntry NonLulEvt { get; init; }
-      public bool FinalEventsAreLUL { get; init; }
+      public int? PalletForFinalLULEvents { get; init; }
     }
 
     private static IEnumerable<LogChunk> ChunkLulEvents(IEnumerable<LogEntry> entries)
@@ -170,13 +171,15 @@ namespace MazakMachineInterface
         // If the most recent event is a LUL, we may be reading the logs in the middle of
         // Mazak writing them out.  In this case, don't process the events and leave them
         // on disk for the next time we read the logs.
-        yield return new LogChunk() { FinalEventsAreLUL = true };
+        yield return new LogChunk() { PalletForFinalLULEvents = curChunk[0].Pallet };
       }
     }
 
     private HandleEventResult Process()
     {
-      var stoppedEarly = false;
+      var stoppedFromMcEvt = false;
+      int? palForFinalEvts = null;
+
       foreach (var e in ChunkLulEvents(mazakData.Logs))
       {
         if (e.LulChunk != null)
@@ -199,7 +202,7 @@ namespace MazakMachineInterface
           {
             if (!HandleEvent(e.NonLulEvt))
             {
-              stoppedEarly = true;
+              stoppedFromMcEvt = true;
               break;
             }
           }
@@ -211,22 +214,23 @@ namespace MazakMachineInterface
             );
           }
         }
-        else if (e.FinalEventsAreLUL)
+        else if (e.PalletForFinalLULEvents.HasValue)
         {
-          stoppedEarly = true;
+          palForFinalEvts = e.PalletForFinalLULEvents.Value;
           break;
         }
       }
 
       bool palStChanged = false;
-      if (!stoppedEarly)
+      if (!stoppedFromMcEvt && !palForFinalEvts.HasValue)
       {
         palStChanged = CheckPalletStatusMatchesLogs();
       }
 
       return new HandleEventResult()
       {
-        StoppedBecauseRecentLogEvent = stoppedEarly,
+        StoppedBecauseRecentMachineEvent = stoppedFromMcEvt,
+        PalletWithMostRecentEventAsLoadUnloadEnd = palForFinalEvts,
         PalletStatusChanged = palStChanged,
       };
     }
