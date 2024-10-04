@@ -416,56 +416,61 @@ namespace MachineWatchTest
         "2"
       );
 
-      var loadEndActualCycle = _jobLog.RecordLoadEnd(
+      var loadEndActualCycle = _jobLog.RecordLoadUnloadComplete(
         toLoad: new[]
         {
-          new MaterialToLoadOntoPallet()
+          new MaterialToLoadOntoFace()
           {
-            LoadStation = 111,
-            Elapsed = TimeSpan.FromMinutes(11122),
-            Faces = ImmutableList.Create(
-              new MaterialToLoadOntoFace()
-              {
-                FaceNum = 22,
-                Process = mat2.Process,
-                Path = null,
-                MaterialIDs = ImmutableList.Create(mat2.MaterialID, mat15.MaterialID),
-                ActiveOperationTime = TimeSpan.FromSeconds(111),
-              }
-            ),
+            FaceNum = 22,
+            Process = mat2.Process,
+            Path = null,
+            MaterialIDs = [mat2.MaterialID, mat15.MaterialID],
+            ActiveOperationTime = TimeSpan.FromSeconds(111),
           },
-          new MaterialToLoadOntoPallet()
+          new MaterialToLoadOntoFace()
           {
-            LoadStation = 222,
-            Elapsed = TimeSpan.FromMinutes(22211),
-            Faces = ImmutableList.Create(
-              new MaterialToLoadOntoFace()
-              {
-                FaceNum = matLoc2Face1.Face,
-                Process = matLoc2Face1.Process,
-                Path = 33,
-                MaterialIDs = ImmutableList.Create(matLoc2Face1.MaterialID),
-                ActiveOperationTime = TimeSpan.FromSeconds(2222),
-              },
-              new MaterialToLoadOntoFace()
-              {
-                FaceNum = matLoc2Face2.Face,
-                Process = matLoc2Face2.Process,
-                Path = 44,
-                MaterialIDs = ImmutableList.Create(matLoc2Face2.MaterialID),
-                ActiveOperationTime = TimeSpan.FromSeconds(3333),
-              }
-            ),
+            FaceNum = matLoc2Face1.Face,
+            Process = matLoc2Face1.Process,
+            Path = 33,
+            MaterialIDs = [matLoc2Face1.MaterialID],
+            ActiveOperationTime = TimeSpan.FromSeconds(222),
+          },
+          new MaterialToLoadOntoFace()
+          {
+            FaceNum = matLoc2Face2.Face,
+            Process = matLoc2Face2.Process,
+            Path = 44,
+            MaterialIDs = [matLoc2Face2.MaterialID],
+            ActiveOperationTime = TimeSpan.FromSeconds(333),
           },
         },
+        toUnload: null,
+        lulNum: 111,
+        totalElapsed: TimeSpan.FromMinutes(4000),
         pallet: 1234,
-        timeUTC: start.AddHours(3)
+        timeUTC: start.AddHours(3),
+        externalQueues: null
       );
       loadEndActualCycle
         .Should()
         .BeEquivalentTo(
           new[]
           {
+            new LogEntry()
+            {
+              Counter = -1,
+              Material = [],
+              Pallet = 1234,
+              LogType = LogType.PalletCycle,
+              LocationName = "PalletCycle",
+              LocationNum = 1,
+              Program = "PalletCycle",
+              StartOfCycle = false,
+              EndTimeUTC = start.AddHours(3),
+              Result = "PalletCycle",
+              ElapsedTime = TimeSpan.FromMinutes(-1),
+              ActiveOperationTime = TimeSpan.Zero,
+            },
             new LogEntry(
               -1,
               new LogMaterial[] { mat2, mat15 },
@@ -475,9 +480,9 @@ namespace MachineWatchTest
               111,
               "LOAD",
               false,
-              start.AddHours(3),
+              start.AddHours(3).AddSeconds(1),
               "LOAD",
-              TimeSpan.FromMinutes(11122),
+              TimeSpan.FromMinutes(111 * 4000 / (111 + 222 + 333)),
               TimeSpan.FromSeconds(111)
             ),
             new LogEntry(
@@ -486,27 +491,27 @@ namespace MachineWatchTest
               1234,
               LogType.LoadUnloadCycle,
               "L/U",
-              222,
+              111,
               "LOAD",
               false,
-              start.AddHours(3),
+              start.AddHours(3).AddSeconds(1),
               "LOAD",
-              TimeSpan.FromMinutes(22211),
-              TimeSpan.FromSeconds(2222)
+              TimeSpan.FromMinutes(222 * 4000 / (111 + 222 + 333)),
+              TimeSpan.FromSeconds(222)
             ),
             new LogEntry(
               -1,
               new LogMaterial[] { matLoc2Face2 with { Path = 44 } },
-              1234,
+              111,
               LogType.LoadUnloadCycle,
               "L/U",
               222,
               "LOAD",
               false,
-              start.AddHours(3),
+              start.AddHours(3).AddSeconds(1),
               "LOAD",
-              TimeSpan.FromMinutes(22211),
-              TimeSpan.FromSeconds(3333)
+              TimeSpan.FromMinutes(333 * 4000 / (111 + 222 + 333)),
+              TimeSpan.FromSeconds(333)
             ),
           },
           options => options.ComparingByMembers<LogEntry>().Excluding(x => x.Counter)
@@ -736,13 +741,25 @@ namespace MachineWatchTest
         );
       logs.Add(unloadStartActualCycle);
 
-      var unloadEndActualCycle = _jobLog.RecordUnloadEnd(
-        mats: new[] { mat2, mat19 }.Select(EventLogMaterial.FromLogMat),
+      var unloadEndActualCycle = _jobLog.RecordLoadUnloadComplete(
+        toLoad: null,
+        toUnload:
+        [
+          new MaterialToUnloadFromFace()
+          {
+            MaterialIDToQueue = ImmutableDictionary<long, string>
+              .Empty.Add(mat2.MaterialID, null)
+              .Add(mat19.MaterialID, null),
+            FaceNum = mat2.Face,
+            Process = mat2.Process,
+            ActiveOperationTime = TimeSpan.FromSeconds(55),
+          },
+        ],
         pallet: 3,
         lulNum: 14,
         timeUTC: start.AddHours(7),
-        elapsed: TimeSpan.FromMinutes(152),
-        active: TimeSpan.FromMinutes(55)
+        totalElapsed: TimeSpan.FromMinutes(152),
+        externalQueues: null
       );
       unloadEndActualCycle
         .Should()
@@ -763,11 +780,26 @@ namespace MachineWatchTest
               TimeSpan.FromMinutes(152),
               TimeSpan.FromMinutes(55)
             ),
+            new LogEntry()
+            {
+              Counter = -1,
+              Material = [],
+              Pallet = 3,
+              LogType = LogType.PalletCycle,
+              LocationName = "PalletCycle",
+              LocationNum = 1,
+              Program = "PalletCycle",
+              StartOfCycle = false,
+              EndTimeUTC = start.AddHours(7),
+              Result = "PalletCycle",
+              ElapsedTime = TimeSpan.FromMinutes(-1),
+              ActiveOperationTime = TimeSpan.Zero,
+            },
           },
           options => options.ComparingByMembers<LogEntry>()
         );
-      logs.Add(unloadEndActualCycle.First());
-      logsForMat2.Add(unloadEndActualCycle.First());
+      logs.AddRange(unloadEndActualCycle);
+      logsForMat2.Add(unloadEndActualCycle.Last());
 
       // ----- check loading of logs -----
 
@@ -1059,38 +1091,37 @@ namespace MachineWatchTest
       DateTime pal1InitialTime = DateTime.UtcNow.AddHours(-4);
 
       // *********** Add load cycle on pal1
-      pal1Initial.Add(
-        _jobLog.RecordLoadStart(
-          mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
-          pallet: 1,
-          lulNum: 2,
-          timeUTC: pal1InitialTime
-        )
-      ); //end of route
-      pal1Initial.AddRange(
-        _jobLog.RecordLoadEnd(
-          toLoad:
-          [
-            new MaterialToLoadOntoPallet()
-            {
-              LoadStation = 2,
-              Faces =
-              [
-                new MaterialToLoadOntoFace()
-                {
-                  MaterialIDs = [mat1.MaterialID, mat2.MaterialID],
-                  Process = mat1.Process,
-                  Path = mat1.Path,
-                  FaceNum = mat1.Face,
-                  ActiveOperationTime = TimeSpan.FromSeconds(22),
-                },
-              ],
-            },
-          ],
-          pallet: 1,
-          timeUTC: pal1InitialTime.AddMinutes(5)
-        )
+      // load start won't be on the cycle created by RecordLoadUnloadComplete
+      var loadStart = _jobLog.RecordLoadStart(
+        mats: new[] { mat1, mat2 }.Select(EventLogMaterial.FromLogMat),
+        pallet: 1,
+        lulNum: 2,
+        timeUTC: pal1InitialTime
       );
+      pal1Initial.AddRange(
+        _jobLog
+          .RecordLoadUnloadComplete(
+            toLoad:
+            [
+              new MaterialToLoadOntoFace()
+              {
+                MaterialIDs = [mat1.MaterialID, mat2.MaterialID],
+                Process = mat1.Process,
+                Path = mat1.Path,
+                FaceNum = mat1.Face,
+                ActiveOperationTime = TimeSpan.FromSeconds(22),
+              },
+            ],
+            toUnload: null,
+            pallet: 1,
+            lulNum: 2,
+            totalElapsed: TimeSpan.FromMinutes(10),
+            timeUTC: pal1InitialTime.AddMinutes(5),
+            externalQueues: null
+          )
+          .Where(e => e.LogType != LogType.PalletCycle)
+      );
+      Assert.Equal(pal1InitialTime.AddMinutes(5), _jobLog.LastPalletCycleTime(1));
 
       // *********** Add machine cycle on pal1
       pal1Initial.Add(
@@ -1133,28 +1164,40 @@ namespace MachineWatchTest
       );
       _jobLog.CurrentPalletLog(2).Should().BeEmpty();
 
-      _jobLog.CompletePalletCycle(1, pal1InitialTime.AddMinutes(25), "");
-
-      pal1Initial.Add(
-        new LogEntry(
-          0,
-          new LogMaterial[] { },
-          1,
-          LogType.PalletCycle,
-          "Pallet Cycle",
-          1,
-          "",
-          false,
-          pal1InitialTime.AddMinutes(25),
-          "PalletCycle",
-          TimeSpan.Zero,
-          TimeSpan.Zero
-        )
+      var pal1CycleEvt = _jobLog.RecordLoadUnloadComplete(
+        toLoad: null,
+        toUnload: null,
+        lulNum: 2,
+        pallet: 1,
+        totalElapsed: TimeSpan.Zero,
+        timeUTC: pal1InitialTime.AddMinutes(25),
+        externalQueues: null
       );
+
+      pal1CycleEvt
+        .Should()
+        .BeEquivalentTo(
+          [
+            new LogEntry(
+              0,
+              new LogMaterial[] { },
+              1,
+              LogType.PalletCycle,
+              "Pallet Cycle",
+              1,
+              "",
+              false,
+              pal1InitialTime.AddMinutes(25),
+              "PalletCycle",
+              TimeSpan.Zero,
+              TimeSpan.Zero
+            ),
+          ]
+        );
 
       Assert.Equal(pal1InitialTime.AddMinutes(25), _jobLog.LastPalletCycleTime(1));
       CheckLog(
-        pal1Initial,
+        [.. pal1Initial, loadStart, .. pal1Cycle],
         _jobLog.GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow).ToList(),
         DateTime.UtcNow.AddHours(-50)
       );
@@ -1162,7 +1205,7 @@ namespace MachineWatchTest
       _jobLog
         .CurrentPalletLog(1, includeLastPalletCycleEvt: true)
         .Should()
-        .BeEquivalentTo(new[] { pal1Initial.Last() }, options => options.Excluding(x => x.Counter));
+        .BeEquivalentTo(pal1CycleEvt, options => options.Excluding(x => x.Counter));
       _jobLog.CurrentPalletLog(2).Should().BeEmpty();
 
       DateTime pal2CycleTime = DateTime.UtcNow.AddHours(-3);

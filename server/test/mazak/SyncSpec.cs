@@ -396,26 +396,24 @@ public sealed class MazakSyncSpec : IDisposable
     var now = DateTime.UtcNow;
 
     var mat = db.AllocateMaterialID("uuuu", "pppp", 1);
-    db.RecordLoadEnd(
+    db.RecordLoadUnloadComplete(
+      toLoad:
       [
-        new()
+        new MaterialToLoadOntoFace()
         {
-          LoadStation = 2,
-          Faces =
-          [
-            new MaterialToLoadOntoFace()
-            {
-              MaterialIDs = [mat],
-              FaceNum = 1,
-              Process = 1,
-              Path = 1,
-              ActiveOperationTime = TimeSpan.FromMinutes(1),
-            },
-          ],
+          MaterialIDs = [mat],
+          FaceNum = 1,
+          Process = 1,
+          Path = 1,
+          ActiveOperationTime = TimeSpan.FromMinutes(1),
         },
       ],
+      toUnload: null,
+      lulNum: 2,
       pallet: 4,
-      timeUTC: now
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: now,
+      externalQueues: null
     );
 
     var allData = new MazakAllDataAndLogs()
