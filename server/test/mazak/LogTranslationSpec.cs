@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Data.Common;
 using System.Linq;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
@@ -48,7 +49,6 @@ namespace MachineWatchTest
   {
     protected RepositoryConfig _repoCfg;
     protected IRepository jobLog;
-    protected LogTranslation log;
     protected List<BlackMaple.MachineFramework.LogEntry> expected =
       new List<BlackMaple.MachineFramework.LogEntry>();
     protected List<MazakMachineInterface.LogEntry> raisedByEvent = new List<MazakMachineInterface.LogEntry>();
@@ -56,7 +56,7 @@ namespace MachineWatchTest
       new List<MazakMachineInterface.LogEntry>();
     private FMSSettings settings;
     protected MazakConfig mazakCfg;
-    protected MazakCurrentStatus mazakData;
+    protected MazakAllDataAndLogs mazakData;
     protected List<ToolPocketRow> mazakDataTools;
     private List<MazakScheduleRow> _schedules;
     private List<MazakPalletSubStatusRow> _palletSubStatus;
@@ -81,7 +81,7 @@ namespace MachineWatchTest
       _palletPositions = new List<MazakPalletPositionRow>();
       _mazakPartRows = new List<MazakPartRow>();
       mazakDataTools = new List<ToolPocketRow>();
-      mazakData = new MazakCurrentStatus()
+      mazakData = new MazakAllDataAndLogs()
       {
         Schedules = _schedules,
         LoadActions = Enumerable.Empty<LoadAction>(),
@@ -91,16 +91,6 @@ namespace MachineWatchTest
       };
 
       mazakCfg = new MazakConfig() { DBType = MazakDbType.MazakSmooth };
-
-      log = new LogTranslation(
-        jobLog,
-        mazakData,
-        machGroupName: "machinespec",
-        settings,
-        e => raisedByEvent.Add(e),
-        mazakConfig: mazakCfg,
-        loadTools: () => mazakDataTools
-      );
     }
 
     public void Dispose()
@@ -109,25 +99,45 @@ namespace MachineWatchTest
       _repoCfg.Dispose();
     }
 
-    protected void ResetLogTranslation()
+    protected void HandleEvent(
+      MazakMachineInterface.LogEntry e,
+      bool expectedMachineEnd = false,
+      bool expectedFinalLulEvt = false
+    )
     {
-      log = new LogTranslation(
-        jobLog,
-        mazakData,
+      expectedMazakLogEntries.Add(e);
+
+      var ret = LogTranslation.HandleEvents(
+        repo: jobLog,
+        mazakData: mazakData with
+        {
+          Logs = [e],
+        },
         machGroupName: "machinespec",
-        settings,
+        fmsSettings: settings,
         e => raisedByEvent.Add(e),
         mazakConfig: mazakCfg,
         loadTools: () => mazakDataTools
       );
+
+      ret.StoppedBecauseRecentMachineEvent.Should().Be(expectedMachineEnd);
+      ret.PalletWithMostRecentEventAsLoadUnloadEnd.Should().Be(expectedFinalLulEvt ? null : e.Pallet);
     }
 
-    protected IEnumerable<MaterialToSendToExternalQueue> HandleEvent(MazakMachineInterface.LogEntry e)
+    protected LogTranslation.HandleEventResult CheckPalletStatusMatchesLogs()
     {
-      expectedMazakLogEntries.Add(e);
-      var ret = log.HandleEvent(e);
-      ret.StoppedBecauseRecentMachineEnd.Should().BeFalse();
-      return ret.MatsToSendToExternal;
+      return LogTranslation.HandleEvents(
+        repo: jobLog,
+        mazakData: mazakData with
+        {
+          Logs = [],
+        },
+        machGroupName: "machinespec",
+        fmsSettings: settings,
+        e => raisedByEvent.Add(e),
+        mazakConfig: mazakCfg,
+        loadTools: () => mazakDataTools
+      );
     }
 
     #region Mazak Data Setup
@@ -743,8 +753,6 @@ namespace MachineWatchTest
       );
     }
 
-    protected List<MaterialToSendToExternalQueue> sendToExternal = new List<MaterialToSendToExternalQueue>();
-
     protected void UnloadEnd(TestMaterial mat, int offset, int load, int elapMin, int activeMin = 0)
     {
       UnloadEnd(new[] { mat }, offset, load, elapMin, activeMin);
@@ -774,7 +782,7 @@ namespace MachineWatchTest
         FromPosition = "",
       };
 
-      sendToExternal.AddRange(HandleEvent(e2));
+      HandleEvent(e2);
 
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
@@ -1332,7 +1340,6 @@ namespace MachineWatchTest
       if (customMachineNums)
       {
         mazakCfg = mazakCfg with { MachineNumbers = [201, 202, 203, 204, 205] };
-        ResetLogTranslation();
       }
 
       var j = new Job()
@@ -2267,8 +2274,6 @@ namespace MachineWatchTest
       MachEnd(proc2, offset: 39, mach: 6, elapMin: 9);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
-
-      sendToExternal.Should().BeEmpty();
     }
 
     [Fact]
@@ -2567,6 +2572,9 @@ namespace MachineWatchTest
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
 
+      // TODO: server?
+      Assert.Fail("Check sent to server with WireShark");
+      /*
       sendToExternal
         .Should()
         .BeEquivalentTo(
@@ -2595,6 +2603,7 @@ namespace MachineWatchTest
             },
           }
         );
+        */
     }
 
     [Theory]
@@ -2657,8 +2666,6 @@ namespace MachineWatchTest
       MovePallet(t, pal: 8, offset: 25, load: 2, elapMin: 25 - 6);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
-
-      sendToExternal.Should().BeEmpty();
     }
 
     [Fact]
@@ -2814,8 +2821,6 @@ namespace MachineWatchTest
         );
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
-
-      sendToExternal.Should().BeEmpty();
     }
 
     [Fact]
@@ -3152,7 +3157,7 @@ namespace MachineWatchTest
       MachStart(m1proc1, offset: 10, mach: 4);
 
       // shouldn't do anything here, statuses match
-      log.CheckPalletStatusMatchesLogs().Should().BeFalse();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
       jobLog.GetMaterialInAllQueues().Should().BeEmpty();
 
       MachEnd(m1proc1, offset: 15, mach: 4, elapMin: 5);
@@ -3165,7 +3170,7 @@ namespace MachineWatchTest
       ClearPalletFace(pal: 3, proc: 1);
 
       // shouldn't do anything, pallet at load station
-      log.CheckPalletStatusMatchesLogs().Should().BeFalse();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
       jobLog.GetMaterialInAllQueues().Should().BeEmpty();
 
       UnloadEnd(m1proc1, offset: 22, load: 2, elapMin: 2);
@@ -3179,15 +3184,14 @@ namespace MachineWatchTest
       StockerStart(new[] { m1proc2, m2proc1 }, offset: 25, stocker: 3, waitForMachine: true);
 
       // shouldn't do anything, statuses match
-      log.CheckPalletStatusMatchesLogs().Should().BeFalse();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
       jobLog.GetMaterialInAllQueues().Should().BeEmpty();
 
       // remove process 1
       ClearPalletFace(pal: 3, proc: 1);
 
-      log.CheckPalletStatusMatchesLogs(t.AddMinutes(10)).Should().BeTrue();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeTrue();
 
-      ExpectAddToQueue(m2proc1, offset: 10, queue: "quarantineQ", pos: 0, reason: "MaterialMissingOnPallet");
       jobLog
         .GetMaterialInAllQueues()
         .Should()
@@ -3205,15 +3209,35 @@ namespace MachineWatchTest
               NextProcess = 2,
               Serial = SerialSettings.ConvertToBase62(m2proc1.MaterialID).PadLeft(10, '0'),
               Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-              AddTimeUTC = t.AddMinutes(10),
+              AddTimeUTC = DateTime.UtcNow,
             },
-          }
+          },
+          options =>
+            options
+              .Using<DateTime>(ctx =>
+                ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(5))
+              )
+              .When(p => p.Path.EndsWith("AddTimeUTC"))
         );
 
-      // need to reload material in queues
-      ResetLogTranslation();
+      expected.Add(
+        new BlackMaple.MachineFramework.LogEntry(
+          cntr: -1,
+          mat: [m2proc1.ToLogMat() with { Face = 0 }],
+          pal: 0,
+          ty: LogType.AddToQueue,
+          locName: "quarantineQ",
+          locNum: 0,
+          prog: "MaterialMissingOnPallet",
+          start: false,
+          endTime: jobLog.GetMaterialInAllQueues().First().AddTimeUTC.Value,
+          result: ""
+        )
+      );
 
-      log.CheckPalletStatusMatchesLogs().Should().BeFalse();
+      // need to reload material in queues
+
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
 
       // now future events don't have the material
       StockerEnd(new[] { m1proc2 }, offset: 30, stocker: 3, waitForMachine: true, elapMin: 5);
@@ -3240,9 +3264,7 @@ namespace MachineWatchTest
         FromPosition = "",
       };
 
-      var ret = log.HandleEvent(e);
-      ret.StoppedBecauseRecentMachineEnd.Should().BeTrue();
-      ret.MatsToSendToExternal.Should().BeEmpty();
+      HandleEvent(e, expectedMachineEnd: true);
       raisedByEvent.Should().BeEmpty();
       jobLog.GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow.AddHours(10)).Should().BeEmpty();
     }

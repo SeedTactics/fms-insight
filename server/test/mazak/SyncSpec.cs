@@ -314,7 +314,7 @@ public sealed class MazakSyncSpec : IDisposable
             Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
           },
           AllData = allData,
-          StoppedBecauseRecentMachineEnd = false,
+          StoppedBecauseRecentLogEvent = false,
           StateUpdated = true,
           TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
         },
@@ -371,7 +371,7 @@ public sealed class MazakSyncSpec : IDisposable
       );
 
     var st = _sync.CalculateCellState(db);
-    st.StoppedBecauseRecentMachineEnd.Should().BeTrue();
+    st.StoppedBecauseRecentLogEvent.Should().BeTrue();
     st.TimeUntilNextRefresh.Should().Be(TimeSpan.FromSeconds(15));
 
     db.MaxForeignID().Should().BeEquivalentTo("111loadstart.csv");
@@ -396,26 +396,24 @@ public sealed class MazakSyncSpec : IDisposable
     var now = DateTime.UtcNow;
 
     var mat = db.AllocateMaterialID("uuuu", "pppp", 1);
-    db.RecordLoadEnd(
+    db.RecordLoadUnloadComplete(
+      toLoad:
       [
-        new()
+        new MaterialToLoadOntoFace()
         {
-          LoadStation = 2,
-          Faces =
-          [
-            new MaterialToLoadOntoFace()
-            {
-              MaterialIDs = [mat],
-              FaceNum = 1,
-              Process = 1,
-              Path = 1,
-              ActiveOperationTime = TimeSpan.FromMinutes(1),
-            },
-          ],
+          MaterialIDs = [mat],
+          FaceNum = 1,
+          Process = 1,
+          Path = 1,
+          ActiveOperationTime = TimeSpan.FromMinutes(1),
         },
       ],
+      toUnload: null,
+      lulNum: 2,
       pallet: 4,
-      timeUTC: now
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: now,
+      externalQueues: null
     );
 
     var allData = new MazakAllDataAndLogs()
@@ -467,7 +465,7 @@ public sealed class MazakSyncSpec : IDisposable
             Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
           },
           AllData = allData,
-          StoppedBecauseRecentMachineEnd = false,
+          StoppedBecauseRecentLogEvent = false,
           StateUpdated = true,
           TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
         },
@@ -495,7 +493,7 @@ public sealed class MazakSyncSpec : IDisposable
     {
       StateUpdated = false,
       TimeUntilNextRefresh = TimeSpan.FromMinutes(1),
-      StoppedBecauseRecentMachineEnd = false,
+      StoppedBecauseRecentLogEvent = false,
       CurrentStatus = new()
       {
         TimeOfCurrentStatusUTC = new(2018, 07, 19, 1, 2, 3, DateTimeKind.Utc),
@@ -573,7 +571,7 @@ public sealed class MazakSyncSpec : IDisposable
     {
       StateUpdated = true,
       TimeUntilNextRefresh = TimeSpan.FromMinutes(1),
-      StoppedBecauseRecentMachineEnd = false,
+      StoppedBecauseRecentLogEvent = false,
       CurrentStatus = new()
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
