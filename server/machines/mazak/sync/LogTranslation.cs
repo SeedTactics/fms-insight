@@ -873,7 +873,7 @@ namespace MazakMachineInterface
     #endregion
 
     #region Compare Status With Events
-    public bool CheckPalletStatusMatchesLogs(DateTime? timeUTC = null)
+    private bool CheckPalletStatusMatchesLogs()
     {
       if (string.IsNullOrEmpty(fmsSettings.QuarantineQueue))
         return false;
@@ -924,8 +924,7 @@ namespace MazakMachineInterface
             queue: fmsSettings.QuarantineQueue,
             position: -1,
             operatorName: null,
-            reason: "MaterialMissingOnPallet",
-            timeUTC: timeUTC
+            reason: "MaterialMissingOnPallet"
           );
           matMovedToQueue = true;
         }

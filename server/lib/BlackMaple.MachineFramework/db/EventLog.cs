@@ -1643,7 +1643,7 @@ namespace BlackMaple.MachineFramework
           if (string.IsNullOrEmpty(matAndQ.Value))
             continue;
 
-          if (externalQueues.TryGetValue(matAndQ.Value, out var server))
+          if (externalQueues != null && externalQueues.TryGetValue(matAndQ.Value, out var server))
           {
             var details = GetMaterialDetails(matAndQ.Key, trans: trans);
             sendToExternal.Add(

@@ -124,6 +124,22 @@ namespace MachineWatchTest
       ret.PalletWithMostRecentEventAsLoadUnloadEnd.Should().Be(expectedFinalLulEvt ? null : e.Pallet);
     }
 
+    protected LogTranslation.HandleEventResult CheckPalletStatusMatchesLogs()
+    {
+      return LogTranslation.HandleEvents(
+        repo: jobLog,
+        mazakData: mazakData with
+        {
+          Logs = [],
+        },
+        machGroupName: "machinespec",
+        fmsSettings: settings,
+        e => raisedByEvent.Add(e),
+        mazakConfig: mazakCfg,
+        loadTools: () => mazakDataTools
+      );
+    }
+
     #region Mazak Data Setup
     protected int AddTestPart(string unique, string part, int numProc)
     {
@@ -3141,7 +3157,7 @@ namespace MachineWatchTest
       MachStart(m1proc1, offset: 10, mach: 4);
 
       // shouldn't do anything here, statuses match
-      log.CheckPalletStatusMatchesLogs().Should().BeFalse();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
       jobLog.GetMaterialInAllQueues().Should().BeEmpty();
 
       MachEnd(m1proc1, offset: 15, mach: 4, elapMin: 5);
@@ -3154,7 +3170,7 @@ namespace MachineWatchTest
       ClearPalletFace(pal: 3, proc: 1);
 
       // shouldn't do anything, pallet at load station
-      log.CheckPalletStatusMatchesLogs().Should().BeFalse();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
       jobLog.GetMaterialInAllQueues().Should().BeEmpty();
 
       UnloadEnd(m1proc1, offset: 22, load: 2, elapMin: 2);
@@ -3168,15 +3184,14 @@ namespace MachineWatchTest
       StockerStart(new[] { m1proc2, m2proc1 }, offset: 25, stocker: 3, waitForMachine: true);
 
       // shouldn't do anything, statuses match
-      log.CheckPalletStatusMatchesLogs().Should().BeFalse();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
       jobLog.GetMaterialInAllQueues().Should().BeEmpty();
 
       // remove process 1
       ClearPalletFace(pal: 3, proc: 1);
 
-      log.CheckPalletStatusMatchesLogs(t.AddMinutes(10)).Should().BeTrue();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeTrue();
 
-      ExpectAddToQueue(m2proc1, offset: 10, queue: "quarantineQ", pos: 0, reason: "MaterialMissingOnPallet");
       jobLog
         .GetMaterialInAllQueues()
         .Should()
@@ -3194,14 +3209,35 @@ namespace MachineWatchTest
               NextProcess = 2,
               Serial = SerialSettings.ConvertToBase62(m2proc1.MaterialID).PadLeft(10, '0'),
               Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-              AddTimeUTC = t.AddMinutes(10),
+              AddTimeUTC = DateTime.UtcNow,
             },
-          }
+          },
+          options =>
+            options
+              .Using<DateTime>(ctx =>
+                ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(5))
+              )
+              .When(p => p.Path.EndsWith("AddTimeUTC"))
         );
+
+      expected.Add(
+        new BlackMaple.MachineFramework.LogEntry(
+          cntr: -1,
+          mat: [m2proc1.ToLogMat() with { Face = 0 }],
+          pal: 0,
+          ty: LogType.AddToQueue,
+          locName: "quarantineQ",
+          locNum: 0,
+          prog: "MaterialMissingOnPallet",
+          start: false,
+          endTime: jobLog.GetMaterialInAllQueues().First().AddTimeUTC.Value,
+          result: ""
+        )
+      );
 
       // need to reload material in queues
 
-      log.CheckPalletStatusMatchesLogs().Should().BeFalse();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
 
       // now future events don't have the material
       StockerEnd(new[] { m1proc2 }, offset: 30, stocker: 3, waitForMachine: true, elapMin: 5);
