@@ -4271,10 +4271,16 @@ namespace MachineWatchTest
         timeUTC: now,
         externalQueues: null
       );
-      loadEndOrigEvts.Count().Should().Be(2);
-      loadEndOrigEvts.First().LogType.Should().Be(LogType.RemoveFromQueue);
-      loadEndOrigEvts.First().Material.First().MaterialID.Should().Be(initiallyLoadedMatProc1.MaterialID);
-      loadEndOrigEvts.First().Material.First().Process.Should().Be(0);
+      loadEndOrigEvts.Count().Should().Be(3);
+      loadEndOrigEvts.First().LogType.Should().Be(LogType.PalletCycle);
+      loadEndOrigEvts.Skip(1).First().LogType.Should().Be(LogType.RemoveFromQueue);
+      loadEndOrigEvts
+        .Skip(1)
+        .First()
+        .Material.First()
+        .MaterialID.Should()
+        .Be(initiallyLoadedMatProc1.MaterialID);
+      loadEndOrigEvts.Skip(1).First().Material.First().Process.Should().Be(0);
       loadEndOrigEvts.Last().LogType.Should().Be(LogType.LoadUnloadCycle);
       origLog.Add(loadEndOrigEvts.Last());
 
@@ -4801,10 +4807,11 @@ namespace MachineWatchTest
         timeUTC: now,
         externalQueues: null
       );
-      loadEndOrigEvts.Count().Should().Be(2);
-      loadEndOrigEvts.First().LogType.Should().Be(LogType.RemoveFromQueue);
-      loadEndOrigEvts.First().Material.First().MaterialID.Should().Be(matProc1.MaterialID);
-      loadEndOrigEvts.First().Material.First().Process.Should().Be(0);
+      loadEndOrigEvts.Count().Should().Be(3);
+      loadEndOrigEvts.First().LogType.Should().Be(LogType.PalletCycle);
+      loadEndOrigEvts.Skip(1).First().LogType.Should().Be(LogType.RemoveFromQueue);
+      loadEndOrigEvts.Skip(1).First().Material.First().MaterialID.Should().Be(matProc1.MaterialID);
+      loadEndOrigEvts.Skip(1).First().Material.First().Process.Should().Be(0);
       loadEndOrigEvts.Last().LogType.Should().Be(LogType.LoadUnloadCycle);
       origMatLog.Add(loadEndOrigEvts.Last());
 
