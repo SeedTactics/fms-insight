@@ -1681,14 +1681,14 @@ namespace BlackMaple.MachineFramework
               totalElapsed.TotalSeconds
                 * face.ActiveOperationTime.TotalSeconds
                 / totalActive.Value.TotalSeconds,
-              2
+              1
             )
           );
         }
         else
         {
           elapsed = TimeSpan.FromSeconds(
-            Math.Round(totalElapsed.TotalSeconds * face.MaterialIDToQueue.Count / totMatCnt, 2)
+            Math.Round(totalElapsed.TotalSeconds * face.MaterialIDToQueue.Count / totMatCnt, 1)
           );
         }
 
@@ -1791,7 +1791,7 @@ namespace BlackMaple.MachineFramework
               prevProcMat,
               operatorName: null,
               reason: "LoadedToPallet",
-              timeUTC: timeUTC
+              timeUTC: timeUTC.AddSeconds(1)
             )
           );
         }
@@ -1812,14 +1812,14 @@ namespace BlackMaple.MachineFramework
               totalElapsed.TotalSeconds
                 * face.ActiveOperationTime.TotalSeconds
                 / totalActive.Value.TotalSeconds,
-              2
+              1
             )
           );
         }
         else
         {
           elapsed = TimeSpan.FromSeconds(
-            Math.Round(totalElapsed.TotalSeconds * face.MaterialIDs.Count / totMatCnt, 2)
+            Math.Round(totalElapsed.TotalSeconds * face.MaterialIDs.Count / totMatCnt, 1)
           );
         }
 
