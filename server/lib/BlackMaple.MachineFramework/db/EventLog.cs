@@ -1791,7 +1791,7 @@ namespace BlackMaple.MachineFramework
               prevProcMat,
               operatorName: null,
               reason: "LoadedToPallet",
-              timeUTC: timeUTC.AddSeconds(1)
+              timeUTC: timeUTC
             )
           );
         }

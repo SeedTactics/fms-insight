@@ -2641,10 +2641,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   locNum: removeFromQueueEvt.Position,
                   prog: removeFromQueueEvt.Reason ?? "",
                   start: false,
-                  endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                  endTime: _status.TimeOfStatusUTC,
                   result: "",
-                  // add 1 second because addtoqueue event is one-second after load end
-                  elapsed: TimeSpan.FromMinutes(removeFromQueueEvt.ElapsedMins).Add(TimeSpan.FromSeconds(1)),
+                  elapsed: TimeSpan.FromMinutes(removeFromQueueEvt.ElapsedMins),
                   active: TimeSpan.Zero
                 ))
               );
