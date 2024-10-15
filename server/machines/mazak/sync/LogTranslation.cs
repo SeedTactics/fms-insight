@@ -117,20 +117,22 @@ namespace MazakMachineInterface
     // should be union
     private record LogChunk
     {
-      public IReadOnlyList<LogEntry> LulChunk { get; init; }
-      public LogEntry NonLulEvt { get; init; }
+      public IReadOnlyList<LogEntry> LulEndChunk { get; init; }
+      public LogEntry NonLulEndEvt { get; init; }
       public int? PalletForFinalLULEvents { get; init; }
     }
 
     private static IEnumerable<LogChunk> ChunkLulEvents(IEnumerable<LogEntry> entries)
     {
       // We want to group the LoadEnd and UnloadEnd events together since Mazak creates
-      // one event per process/face. We assume that Mazak generates the logs serially so
-      // as soon as another non-LUL event is generated, we can assume that the previous
+      // one event per process/face. Mazak generates the logs serially and always seems to
+      // generate all the load and unload events wit the same filename/foreignID of
+      // LGdate-time-001.csv, LGdate-time-002.csv, LGdate-time-003.csv with the date/time identical.
+      // Thus, as soon as another non-LUL event is generated, we can assume that the previous
       // chunk is complete and yield it.
       var curChunk = new List<LogEntry>();
 
-      foreach (var e in entries)
+      foreach (var e in entries.OrderBy(e => e.ForeignID))
       {
         if (e.Code == LogCode.LoadEnd || e.Code == LogCode.UnloadEnd)
         {
@@ -140,6 +142,8 @@ namespace MazakMachineInterface
           }
           else if (
             curChunk[0].Pallet == e.Pallet
+            // We could check ForeignID prefix matches here, but be more lenient
+            // just in case.
             && curChunk[0].TimeUTC.Subtract(e.TimeUTC).Duration() < TimeSpan.FromSeconds(3)
           )
           {
@@ -148,8 +152,9 @@ namespace MazakMachineInterface
           else
           {
             // yield the current chunk and start a new one
-            yield return new LogChunk() { LulChunk = curChunk };
-            curChunk = [e];
+            yield return new LogChunk() { LulEndChunk = curChunk };
+            curChunk.Clear();
+            curChunk.Add(e);
           }
         }
         else
@@ -158,11 +163,11 @@ namespace MazakMachineInterface
           if (curChunk.Count > 0)
           {
             // yield the current chunk and start a new one
-            yield return new LogChunk() { LulChunk = curChunk };
-            curChunk = [];
+            yield return new LogChunk() { LulEndChunk = curChunk };
+            curChunk.Clear();
           }
 
-          yield return new LogChunk() { NonLulEvt = e };
+          yield return new LogChunk() { NonLulEndEvt = e };
         }
       }
 
@@ -182,36 +187,39 @@ namespace MazakMachineInterface
 
       foreach (var e in ChunkLulEvents(mazakData.Logs))
       {
-        if (e.LulChunk != null)
+        if (e.LulEndChunk != null)
         {
           try
           {
-            HandleLoadEnd(e.LulChunk);
-          }
-          catch (Exception ex)
-          {
-            Log.Error(
-              ex,
-              "Error translating log event at time " + e.LulChunk.First().TimeUTC.ToLocalTime().ToString()
-            );
-          }
-        }
-        else if (e.NonLulEvt != null)
-        {
-          try
-          {
-            if (!HandleEvent(e.NonLulEvt))
+            HandleLoadEnd(e.LulEndChunk);
+            foreach (var lul in e.LulEndChunk)
             {
-              stoppedFromMcEvt = true;
-              break;
+              onMazakLog(lul);
             }
           }
           catch (Exception ex)
           {
-            Log.Error(
-              ex,
-              "Error translating log event at time " + e.NonLulEvt.TimeUTC.ToLocalTime().ToString()
-            );
+            Log.Error(ex, "Error translating log event at time {t}", e.LulEndChunk[0].TimeUTC);
+          }
+        }
+        else if (e.NonLulEndEvt != null)
+        {
+          try
+          {
+            if (!HandleNonLulEndEvent(e.NonLulEndEvt))
+            {
+              onMazakLog(e.NonLulEndEvt);
+              stoppedFromMcEvt = true;
+              break;
+            }
+            else
+            {
+              onMazakLog(e.NonLulEndEvt);
+            }
+          }
+          catch (Exception ex)
+          {
+            Log.Error(ex, "Error translating log event at time {t}", e.NonLulEndEvt.TimeUTC);
           }
         }
         else if (e.PalletForFinalLULEvents.HasValue)
@@ -257,7 +265,7 @@ namespace MazakMachineInterface
       );
     }
 
-    private bool HandleEvent(LogEntry e)
+    private bool HandleNonLulEndEvent(LogEntry e)
     {
       var cycle = new List<MWI.LogEntry>();
       if (e.Pallet >= 1)
@@ -275,7 +283,27 @@ namespace MazakMachineInterface
         case LogCode.LoadBegin:
 
           repo.RecordLoadStart(
-            mats: CreateMaterialWithoutIDs(e),
+            mats:
+            [
+              new EventLogMaterial()
+              {
+                MaterialID = -1,
+                Process = e.Process,
+                Face = 0,
+              },
+            ],
+            pallet: e.Pallet,
+            lulNum: e.StationNumber,
+            timeUTC: e.TimeUTC,
+            foreignId: e.ForeignID
+          );
+
+          break;
+
+        case LogCode.UnloadBegin:
+
+          repo.RecordUnloadStart(
+            mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
             pallet: e.Pallet,
             lulNum: e.StationNumber,
             timeUTC: e.TimeUTC,
@@ -370,7 +398,7 @@ namespace MazakMachineInterface
                 ? null
                 : new Dictionary<string, string> { { "ProgramRevision", progRev.Value.ToString() } }
             );
-            HandleMachiningCompleted(s, machineMats);
+            CheckForInspections(s, machineMats);
           }
           else
           {
@@ -384,18 +412,6 @@ namespace MazakMachineInterface
 
           break;
         }
-
-        case LogCode.UnloadBegin:
-
-          repo.RecordUnloadStart(
-            mats: GetMaterialOnPallet(e, cycle).Select(m => m.Mat),
-            pallet: e.Pallet,
-            lulNum: e.StationNumber,
-            timeUTC: e.TimeUTC,
-            foreignId: e.ForeignID
-          );
-
-          break;
 
         case LogCode.StartRotatePalletIntoMachine:
         {
@@ -513,35 +529,18 @@ namespace MazakMachineInterface
           break;
       }
 
-      onMazakLog(e);
-
       return true;
     }
     #endregion
 
     #region Material
-    private List<EventLogMaterial> CreateMaterialWithoutIDs(LogEntry e)
-    {
-      var ret = new List<EventLogMaterial>();
-      ret.Add(
-        new EventLogMaterial()
-        {
-          MaterialID = -1,
-          Process = e.Process,
-          Face = 0,
-        }
-      );
-      return ret;
-    }
-
     private List<MWI.LogMaterial> GetAllMaterialOnPallet(IList<MWI.LogEntry> oldEvents)
     {
       return oldEvents
         .Where(e => e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Result == "LOAD")
         .SelectMany(e => e.Material)
         .Where(m => !repo.IsMaterialInQueue(m.MaterialID))
-        .GroupBy(m => m.MaterialID)
-        .Select(ms => ms.First())
+        .DistinctBy(m => m.MaterialID)
         .ToList();
     }
 
@@ -557,7 +556,6 @@ namespace MazakMachineInterface
       var byMatId = ParseMaterialFromPreviousEvents(
         jobPartName: e.JobPartName,
         proc: e.Process,
-        fixQty: e.FixedQuantity,
         isUnloadEnd: e.Code == LogCode.UnloadEnd,
         oldEvents: oldEvents
       );
@@ -592,7 +590,13 @@ namespace MazakMachineInterface
             {
               Mat = new EventLogMaterial()
               {
-                MaterialID = repo.AllocateMaterialID(unique, e.JobPartName, numProc),
+                MaterialID = repo.AllocateMaterialIDAndGenerateSerial(
+                  unique,
+                  e.JobPartName,
+                  numProc,
+                  e.TimeUTC,
+                  out var _
+                ),
                 Process = e.Process,
                 Face = e.Process,
               },
@@ -620,12 +624,11 @@ namespace MazakMachineInterface
     private SortedList<long, EventLogMaterial> ParseMaterialFromPreviousEvents(
       string jobPartName,
       int proc,
-      int fixQty,
       bool isUnloadEnd,
       IList<MWI.LogEntry> oldEvents
     )
     {
-      var byMatId = new SortedList<long, EventLogMaterial>(); //face -> material
+      var byMatId = new SortedList<long, EventLogMaterial>();
 
       for (int i = oldEvents.Count - 1; i >= 0; i -= 1)
       {
@@ -720,7 +723,9 @@ namespace MazakMachineInterface
                 proc,
                 e
               );
-              mats.Add(repo.AllocateMaterialID(unique, e.JobPartName, numProc));
+              mats.Add(
+                repo.AllocateMaterialIDAndGenerateSerial(unique, e.JobPartName, numProc, e.TimeUTC, out var _)
+              );
             }
           }
         }
@@ -730,7 +735,9 @@ namespace MazakMachineInterface
           Log.Debug("Creating new material for unique {unique} process 1", unique);
           for (int i = 1; i <= fixQty; i += 1)
           {
-            mats.Add(repo.AllocateMaterialID(unique, e.JobPartName, numProc));
+            mats.Add(
+              repo.AllocateMaterialIDAndGenerateSerial(unique, e.JobPartName, numProc, e.TimeUTC, out var _)
+            );
           }
         }
         else
@@ -745,7 +752,6 @@ namespace MazakMachineInterface
           var byMatId = ParseMaterialFromPreviousEvents(
             jobPartName: e.JobPartName,
             proc: proc - 1,
-            fixQty: fixQty,
             isUnloadEnd: false,
             oldEvents: oldPalEvents
           );
@@ -760,7 +766,9 @@ namespace MazakMachineInterface
             else
             {
               //something went wrong, must create material
-              mats.Add(repo.AllocateMaterialID(unique, e.JobPartName, numProc));
+              mats.Add(
+                repo.AllocateMaterialIDAndGenerateSerial(unique, e.JobPartName, numProc, e.TimeUTC, out var _)
+              );
 
               Log.Warning(
                 "Could not find material for previous process {proc}, creating new material for {@event}",
@@ -778,7 +786,7 @@ namespace MazakMachineInterface
             Process = proc,
             FaceNum = proc,
             Path = 1,
-            ActiveOperationTime = CalculateActiveLoadTime(e),
+            ActiveOperationTime = CalculateActiveLoadTime(e, job),
             ForeignID = e.ForeignID,
           }
         );
@@ -1002,10 +1010,8 @@ namespace MazakMachineInterface
       return total;
     }
 
-    private TimeSpan CalculateActiveLoadTime(LogEntry e)
+    private static TimeSpan CalculateActiveLoadTime(LogEntry e, Job job)
     {
-      FindSchedule(e.FullPartName, e.Process, out string unique, out int numProc);
-      var job = GetJob(unique);
       if (job == null)
         return TimeSpan.Zero;
       return TimeSpan.FromTicks(
@@ -1026,7 +1032,9 @@ namespace MazakMachineInterface
         .Sum();
       return TimeSpan.FromTicks(ticks);
     }
+    #endregion
 
+    #region Programs, Inspections, and Tools
     private void LookupProgram(
       IReadOnlyList<LogMaterialAndPath> mats,
       LogEntry e,
@@ -1105,10 +1113,8 @@ namespace MazakMachineInterface
       rev = null;
       return true;
     }
-    #endregion
 
-    #region Inspections
-    private void HandleMachiningCompleted(MWI.LogEntry cycle, IEnumerable<LogMaterialAndPath> mats)
+    private void CheckForInspections(MWI.LogEntry cycle, IEnumerable<LogMaterialAndPath> mats)
     {
       foreach (LogMaterialAndPath mat in mats)
       {
@@ -1152,9 +1158,7 @@ namespace MazakMachineInterface
         }
       }
     }
-    #endregion
 
-    #region Tools
     private IEnumerable<ToolSnapshot> ToolsToSnapshot(int machine, IEnumerable<ToolPocketRow> tools)
     {
       if (tools == null)
