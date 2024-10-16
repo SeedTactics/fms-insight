@@ -50,6 +50,7 @@ public sealed class LogBuilderSpec : IDisposable
 {
   private readonly RepositoryConfig _repo;
   private readonly IMakinoDB _makinoDB;
+  private readonly FMSSettings _settings;
   private readonly Fixture _fixture = new();
   private readonly List<LogEntry> _expectedLog = [];
   private readonly IReadOnlyDictionary<int, PalletLocation> _devices;
@@ -61,6 +62,8 @@ public sealed class LogBuilderSpec : IDisposable
       ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10),
     };
     _repo = RepositoryConfig.InitializeMemoryDB(serialSettings);
+
+    _settings = new FMSSettings();
 
     _makinoDB = Substitute.For<IMakinoDB>();
     _makinoDB
@@ -301,6 +304,7 @@ public sealed class LogBuilderSpec : IDisposable
     int palCycleMin,
     int loadActiveMin = 0,
     int unloadActiveMin = 0,
+    int totalActiveMin = 0,
     bool remachine = false
   )
   {
@@ -341,6 +345,11 @@ public sealed class LogBuilderSpec : IDisposable
     if (remachine)
       return workr;
 
+    int nonNullMatCnt =
+      (loadMat == null ? 0 : loadMat.Quantity) + (unloadMat == null ? 0 : unloadMat.Quantity);
+
+    int totalActive = totalActiveMin == 0 ? loadActiveMin + unloadActiveMin : totalActiveMin;
+
     foreach (var mat in new[] { loadMat, unloadMat })
     {
       if (mat == null)
@@ -375,7 +384,17 @@ public sealed class LogBuilderSpec : IDisposable
           Pallet = loadMat?.PalletID ?? unloadMat!.PalletID,
           Program = loadMat == mat ? "LOAD" : "UNLOAD",
           Result = loadMat == mat ? "LOAD" : "UNLOAD",
-          ElapsedTime = TimeSpan.FromMinutes(elapsedMin),
+          ElapsedTime = TimeSpan.FromSeconds(
+            Math.Round(
+              loadActiveMin + unloadActiveMin == 0
+                ? 60.0
+                  * elapsedMin
+                  * (loadMat == mat ? loadMat.Quantity : unloadMat?.Quantity ?? 0)
+                  / nonNullMatCnt
+                : 60.0 * elapsedMin * (loadMat == mat ? loadActiveMin : unloadActiveMin) / totalActive,
+              1
+            )
+          ),
           ActiveOperationTime = TimeSpan.FromMinutes(loadMat == mat ? loadActiveMin : unloadActiveMin),
         }
       );
@@ -466,7 +485,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(lastDate, DateTime.UtcNow).Should().BeFalse();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(lastDate, DateTime.UtcNow).Should().BeFalse();
 
     db.MaxLogDate().Should().Be(DateTime.MinValue);
   }
@@ -516,7 +535,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -557,7 +576,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -579,7 +598,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(15 + 11), now).Should().BeFalse();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(start.AddMinutes(15 + 11), now).Should().BeFalse();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -633,7 +652,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -655,7 +674,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(start.AddMinutes(30 + 5), now).Should().BeFalse();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(start.AddMinutes(30 + 5), now).Should().BeFalse();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -729,7 +748,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
     db.GetLogEntries(start, now)
       .Should()
       .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
@@ -754,7 +773,7 @@ public sealed class LogBuilderSpec : IDisposable
           WorkSetResults =
           [
             // load 1
-            Load(start, elapsedMin: 10, device: 1, loadMat: mat1, unloadMat: null, palCycleMin: 0),
+            Load(start, elapsedMin: 5, device: 1, loadMat: mat1, unloadMat: null, palCycleMin: 0),
             // unload 1, load 2
             Load(
               start.AddMinutes(30),
@@ -762,7 +781,7 @@ public sealed class LogBuilderSpec : IDisposable
               device: 2,
               loadMat: mat2,
               unloadMat: mat1,
-              palCycleMin: 25
+              palCycleMin: 30
             ),
             // unload 2, load 3
             Load(
@@ -818,7 +837,7 @@ public sealed class LogBuilderSpec : IDisposable
 
     using var db = _repo.OpenConnection();
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -904,7 +923,7 @@ public sealed class LogBuilderSpec : IDisposable
         .Add("24", "common value 24"),
     };
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -996,7 +1015,7 @@ public sealed class LogBuilderSpec : IDisposable
       }
     );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -1048,7 +1067,8 @@ public sealed class LogBuilderSpec : IDisposable
               loadMat: mat1,
               unloadMat: null,
               palCycleMin: 0,
-              loadActiveMin: 10
+              loadActiveMin: 10,
+              totalActiveMin: 30
             ),
             Load(
               start,
@@ -1057,7 +1077,8 @@ public sealed class LogBuilderSpec : IDisposable
               loadMat: mat2,
               unloadMat: null,
               palCycleMin: -1,
-              loadActiveMin: 20
+              loadActiveMin: 20,
+              totalActiveMin: 30
             ),
             // two unloads with equal start and end
             Load(
@@ -1067,7 +1088,8 @@ public sealed class LogBuilderSpec : IDisposable
               loadMat: null,
               unloadMat: mat1,
               palCycleMin: 25,
-              unloadActiveMin: 11
+              unloadActiveMin: 11,
+              totalActiveMin: 21 + 11
             ),
             Load(
               start.AddMinutes(30),
@@ -1076,7 +1098,8 @@ public sealed class LogBuilderSpec : IDisposable
               loadMat: null,
               unloadMat: mat2,
               palCycleMin: -1,
-              unloadActiveMin: 21
+              unloadActiveMin: 21,
+              totalActiveMin: 21 + 11
             ),
           ],
           MachineResults =
@@ -1087,7 +1110,7 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()
@@ -1146,7 +1169,7 @@ public sealed class LogBuilderSpec : IDisposable
 
     using var db = _repo.OpenConnection();
 
-    new LogBuilder(_makinoDB, db).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
 
     db.GetLogEntries(start, now)
       .Should()

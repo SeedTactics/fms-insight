@@ -38,7 +38,7 @@ using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
 {
-  public class LogBuilder(IMakinoDB makinoDB, IRepository logDb)
+  public class LogBuilder(IMakinoDB makinoDB, IRepository logDb, FMSSettings fmsSettings)
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<LogBuilder>();
     private readonly JobCache _jobCache = new(logDb);
@@ -276,6 +276,9 @@ namespace BlackMaple.FMSInsight.Makino
       //calculate the elapsed time
       var elapsed = ws.Key.EndDateTimeUTC.Subtract(ws.Key.StartDateTimeUTC);
 
+      var toUnload = new List<MaterialToUnloadFromFace>();
+      var toLoad = new List<MaterialToLoadOntoFace>();
+
       // first unloads
       foreach (var w in ws)
       {
@@ -310,27 +313,18 @@ namespace BlackMaple.FMSInsight.Makino
             active = unloadJob.Processes[w.UnloadProcessNum - 1].Paths[0].ExpectedUnloadTime;
           }
 
-          logDb.RecordUnloadEnd(
-            mats: matList,
-            pallet: w.PalletID,
-            lulNum: loc.Num,
-            timeUTC: w.EndDateTimeUTC,
-            elapsed: elapsed,
-            active: active * matList.Count,
-            foreignId: MkForeignID(w.PalletID, w.FixtureNumber, w.UnloadOrderName, w.EndDateTimeUTC)
+          toUnload.Add(
+            new MaterialToUnloadFromFace()
+            {
+              MaterialIDToQueue = matList.ToImmutableDictionary(m => m.MaterialID, m => (string?)null),
+              FaceNum = w.FixtureNumber,
+              Process = w.UnloadProcessNum,
+              ActiveOperationTime = active * matList.Count,
+              ForeignID = MkForeignID(w.PalletID, w.FixtureNumber, w.UnloadOrderName, w.EndDateTimeUTC),
+            }
           );
-          newLogEntries = true;
         }
       }
-
-      //Pallet Cycle
-      if (ws.Any(w => !w.Remachine))
-      {
-        logDb.CompletePalletCycle(ws.Key.PalletID, ws.Key.EndDateTimeUTC, "");
-        newLogEntries = true;
-      }
-
-      var faces = ImmutableList.CreateBuilder<MaterialToLoadOntoFace>();
 
       foreach (var w in ws.OrderBy(w => w.FixtureNumber))
       {
@@ -359,7 +353,7 @@ namespace BlackMaple.FMSInsight.Makino
           active = loadJob.Processes[w.LoadProcessNum - 1].Paths[0].ExpectedLoadTime;
         }
 
-        faces.Add(
+        toLoad.Add(
           new MaterialToLoadOntoFace()
           {
             MaterialIDs = ImmutableList.CreateRange(matList),
@@ -377,20 +371,16 @@ namespace BlackMaple.FMSInsight.Makino
         );
       }
 
-      if (faces.Count > 0)
+      if (toLoad.Count > 0 || toUnload.Count > 0)
       {
-        logDb.RecordLoadEnd(
-          toLoad: new[]
-          {
-            new MaterialToLoadOntoPallet()
-            {
-              LoadStation = loc.Num,
-              Elapsed = elapsed,
-              Faces = faces.ToImmutable(),
-            },
-          },
+        logDb.RecordLoadUnloadComplete(
+          toLoad: toLoad,
+          toUnload: toUnload,
+          lulNum: loc.Num,
           pallet: ws.Key.PalletID,
-          timeUTC: ws.Key.EndDateTimeUTC.AddSeconds(1)
+          totalElapsed: elapsed,
+          timeUTC: ws.Key.EndDateTimeUTC,
+          externalQueues: fmsSettings.ExternalQueues
         );
         newLogEntries = true;
       }
