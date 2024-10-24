@@ -204,6 +204,10 @@ public record FMSSettings
 
   public IReadOnlyList<string> AdditionalLogServers { get; init; } = [];
 
+  // If null, rebookings are not allowed.  Otherwise, this prefix followed by a UUID is
+  // the booking ID created for rebookings.
+  public string? RebookingPrefix { get; init; } = null;
+
   public FMSSettings() { }
 
   public static FMSSettings Load(IConfiguration config)

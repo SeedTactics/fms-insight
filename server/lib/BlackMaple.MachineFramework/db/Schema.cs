@@ -41,7 +41,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 33;
+    private const int Version = 34;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -296,6 +296,18 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText =
           "CREATE INDEX program_comment_idx ON program_revisions(ProgramName, RevisionComment, ProgramRevision) WHERE RevisionComment IS NOT NULL";
         cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE rebookings(BookingId TEXT PRIMARY KEY, TimeUTC INTEGER NOT NULL, Part TEXT NOT NULL, Notes TEXT, MaterialID INTEGER, Workorder TEXT, Quantity INTEGER, Priority INTEGER, JobUnique TEXT, Canceled INTEGER)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE INDEX rebookings_open ON rebookings(Canceled, JobUnique) WHERE Canceled IS NULL AND JobUnique IS NULL";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText =
+          "CREATE TABLE rebookings_procs(BookingId TEXT, Process INTEGER, PRIMARY KEY(BookingId, Process))";
+        cmd.ExecuteNonQuery();
       }
     }
     #endregion
@@ -464,6 +476,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 33)
             Ver32ToVer33(trans, updateJobsTables);
+
+          if (curVersion < 34)
+            Ver33ToVer34(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1148,6 +1163,27 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "DROP TABLE tools";
         cmd.ExecuteNonQuery();
       }
+    }
+
+    private static void Ver33ToVer34(SqliteTransaction trans, bool updateJobTables)
+    {
+      if (!updateJobTables)
+        return;
+
+      using var cmd = trans.Connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      cmd.CommandText =
+        "CREATE TABLE rebookings(BookingId TEXT PRIMARY KEY, TimeUTC INTEGER NOT NULL, Part TEXT NOT NULL, Notes TEXT, MaterialID INTEGER, Workorder TEXT, Quantity INTEGER, Priority INTEGER, JobUnique TEXT, Canceled INTEGER)";
+      cmd.ExecuteNonQuery();
+
+      cmd.CommandText =
+        "CREATE INDEX rebookings_open ON rebookings(Canceled, JobUnique) WHERE Canceled IS NULL AND JobUnique IS NULL";
+      cmd.ExecuteNonQuery();
+
+      cmd.CommandText =
+        "CREATE TABLE rebookings_procs(BookingId TEXT, Process INTEGER, PRIMARY KEY(BookingId, Process))";
+      cmd.ExecuteNonQuery();
     }
 
     #endregion

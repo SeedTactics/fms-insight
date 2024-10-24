@@ -8,6 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
-    <PackageReference Include="NSwag.AspNetCore" Version="14.0.*"/>
+    <PackageReference Include="NSwag.AspNetCore" Version="14.1.*"/>
   </ItemGroup>
 </Project>

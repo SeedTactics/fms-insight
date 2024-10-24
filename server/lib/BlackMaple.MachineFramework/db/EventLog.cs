@@ -2889,6 +2889,235 @@ namespace BlackMaple.MachineFramework
 
       return newLogEntries;
     }
+
+    public LogEntry CreateRebookingForMaterial(
+      string bookingId,
+      long matId,
+      string notes = null,
+      int? priority = null,
+      IReadOnlySet<int> restrictedProcs = null,
+      DateTime? timeUTC = null
+    )
+    {
+      return AddEntryInTransaction(trans =>
+      {
+        var time = timeUTC ?? DateTime.UtcNow;
+
+        var details = GetMaterialDetails(matID: matId, trans: trans);
+
+        CreateRebooking(
+          bookingId: bookingId,
+          partName: details.PartName,
+          notes: notes,
+          workorder: details.Workorder,
+          qty: 1,
+          priority: priority,
+          restrictedProcs: restrictedProcs,
+          matId: matId,
+          timeUTC: time,
+          trans: trans
+        );
+
+        var log = new NewEventLogEntry()
+        {
+          Material =
+            restrictedProcs == null || restrictedProcs.Count == 0
+              ?
+              [
+                new EventLogMaterial()
+                {
+                  MaterialID = matId,
+                  Process = 0,
+                  Face = 0,
+                },
+              ]
+              : restrictedProcs.Select(proc => new EventLogMaterial()
+              {
+                MaterialID = matId,
+                Process = proc,
+                Face = 0,
+              }),
+          Pallet = 0,
+          LogType = LogType.Rebooking,
+          LocationName = "Rebooking",
+          LocationNum = priority ?? 0,
+          Program = details.PartName,
+          StartOfCycle = false,
+          EndTimeUTC = time,
+          Result = bookingId,
+        };
+        log.ProgramDetails.Add("Notes", notes);
+
+        return AddLogEntry(trans, log, foreignID: null, origMessage: null);
+      });
+    }
+
+    public LogEntry CreateRebookingWithoutMaterial(
+      string bookingId,
+      string partName,
+      int qty = 1,
+      string notes = null,
+      int? priority = null,
+      string workorder = null,
+      IReadOnlySet<int> restrictedProcs = null,
+      DateTime? timeUTC = null
+    )
+    {
+      if (qty <= 0)
+      {
+        throw new ArgumentException("Quantity must be greater than 0", nameof(qty));
+      }
+
+      return AddEntryInTransaction(trans =>
+      {
+        var time = timeUTC ?? DateTime.UtcNow;
+
+        CreateRebooking(
+          bookingId: bookingId,
+          partName: partName,
+          notes: notes,
+          workorder: workorder,
+          qty: qty,
+          priority: priority,
+          restrictedProcs: restrictedProcs,
+          matId: null,
+          timeUTC: time,
+          trans: trans
+        );
+
+        var log = new NewEventLogEntry()
+        {
+          Material =
+            restrictedProcs == null || restrictedProcs.Count == 0
+              ? Enumerable
+                .Range(0, qty)
+                .Select(_ => new EventLogMaterial()
+                {
+                  MaterialID = -1,
+                  Process = 0,
+                  Face = 0,
+                })
+              : restrictedProcs.SelectMany(proc =>
+                Enumerable
+                  .Range(0, qty)
+                  .Select(_ => new EventLogMaterial()
+                  {
+                    MaterialID = -1,
+                    Process = proc,
+                    Face = 0,
+                  })
+              ),
+          Pallet = 0,
+          LogType = LogType.Rebooking,
+          LocationName = "Rebooking",
+          LocationNum = priority ?? 0,
+          Program = partName,
+          StartOfCycle = false,
+          EndTimeUTC = time,
+          Result = bookingId,
+        };
+        log.ProgramDetails.Add("Notes", notes);
+        log.ProgramDetails.Add("Workorder", workorder);
+
+        return AddLogEntry(trans, log, foreignID: null, origMessage: null);
+      });
+    }
+
+    private void CreateRebooking(
+      string bookingId,
+      string partName,
+      string notes,
+      string workorder,
+      int qty,
+      int? priority,
+      IReadOnlySet<int> restrictedProcs,
+      DateTime timeUTC,
+      long? matId,
+      IDbTransaction trans
+    )
+    {
+      using var cmd = _connection.CreateCommand();
+      ((IDbCommand)cmd).Transaction = trans;
+      cmd.CommandText =
+        "INSERT INTO rebookings(BookingId, TimeUTC, Part, Notes, MaterialID, Workorder, Quantity, Priority) VALUES ($id, $time, $part, $notes, $matid, $workorder, $qty, $pri)";
+
+      cmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
+      cmd.Parameters.Add("time", SqliteType.Integer).Value = timeUTC.Ticks;
+      cmd.Parameters.Add("part", SqliteType.Text).Value = partName;
+      cmd.Parameters.Add("notes", SqliteType.Text).Value = string.IsNullOrEmpty(notes) ? DBNull.Value : notes;
+      cmd.Parameters.Add("matid", SqliteType.Integer).Value = matId.HasValue ? matId.Value : DBNull.Value;
+      cmd.Parameters.Add("workorder", SqliteType.Text).Value = string.IsNullOrEmpty(workorder)
+        ? DBNull.Value
+        : workorder;
+      cmd.Parameters.Add("qty", SqliteType.Integer).Value = qty;
+      cmd.Parameters.Add("pri", SqliteType.Integer).Value = priority.HasValue ? priority.Value : DBNull.Value;
+
+      cmd.ExecuteNonQuery();
+
+      if (restrictedProcs != null)
+      {
+        using var procCmd = _connection.CreateCommand();
+        ((IDbCommand)procCmd).Transaction = trans;
+
+        procCmd.CommandText = "INSERT INTO rebooking_procs(BookingId, Process) VALUES ($id, $proc)";
+        procCmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
+        procCmd.Parameters.Add("proc", SqliteType.Integer);
+
+        foreach (var proc in restrictedProcs)
+        {
+          procCmd.Parameters[1].Value = proc;
+          procCmd.ExecuteNonQuery();
+        }
+      }
+    }
+
+    public LogEntry CancelRebooking(string bookingId, DateTime? timeUTC = null)
+    {
+      return AddEntryInTransaction(trans =>
+      {
+        long? matId;
+
+        using (var lookup = _connection.CreateCommand())
+        {
+          ((IDbCommand)lookup).Transaction = trans;
+          lookup.CommandText = "SELECT MaterialID FROM rebookings WHERE BookingId = $id";
+          lookup.Parameters.Add("id", SqliteType.Text).Value = bookingId;
+          var matIdM = lookup.ExecuteScalar();
+          matId = matIdM == null || matIdM == DBNull.Value ? null : Convert.ToInt64(matIdM);
+        }
+
+        var log = new NewEventLogEntry()
+        {
+          Material = matId.HasValue
+            ?
+            [
+              new EventLogMaterial()
+              {
+                MaterialID = matId.Value,
+                Process = 0,
+                Face = 0,
+              },
+            ]
+            : [],
+          Pallet = 0,
+          LogType = LogType.CancelRebooking,
+          LocationName = "CancelRebooking",
+          LocationNum = 1,
+          Program = "",
+          StartOfCycle = false,
+          EndTimeUTC = timeUTC ?? DateTime.UtcNow,
+          Result = bookingId,
+        };
+
+        using var cmd = _connection.CreateCommand();
+        ((IDbCommand)cmd).Transaction = trans;
+        cmd.CommandText = "UPDATE rebookings SET Canceled = 1 WHERE BookingId = $id";
+        cmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
+        cmd.ExecuteNonQuery();
+
+        return AddLogEntry(trans, log, foreignID: null, origMessage: null);
+      });
+    }
     #endregion
 
     #region Material IDs

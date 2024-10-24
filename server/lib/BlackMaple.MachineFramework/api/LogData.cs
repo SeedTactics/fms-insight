@@ -108,7 +108,10 @@ namespace BlackMaple.MachineFramework
     InvalidateCycle = 112,
 
     SwapMaterialOnPallet = 113,
-    // when adding types, must also update the convertLogType() function in client/backup-viewer/src/background.ts
+
+    Rebooking = 114,
+    CancelRebooking = 115,
+    // when adding types, must also update the display in client/insight/src/components/LogEntry.tsx
   }
 
   [KnownType(typeof(MaterialProcessActualPath))]

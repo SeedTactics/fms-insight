@@ -161,7 +161,7 @@ namespace MachineWatchTest
         .LoadMostRecentSchedule()
         .Should()
         .BeEquivalentTo(
-          new PlannedSchedule()
+          new MostRecentSchedule()
           {
             LatestScheduleId = schId,
             Jobs = ImmutableList.Create(job1history),
@@ -335,7 +335,7 @@ namespace MachineWatchTest
         .Should()
         .BeEquivalentTo(
           // job2 is manually created and should be ignored
-          new PlannedSchedule()
+          new MostRecentSchedule()
           {
             LatestScheduleId = schId,
             Jobs = ImmutableList.Create(job1history),
