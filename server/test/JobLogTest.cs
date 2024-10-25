@@ -4948,6 +4948,315 @@ namespace MachineWatchTest
         );
     }
 
+    [Fact]
+    public void RecordsRebookings()
+    {
+      var now = DateTime.UtcNow.AddHours(-5);
+
+      using var db = _repoCfg.OpenConnection();
+      var mat = db.AllocateMaterialID("uniq1", "part1", 2);
+      var workLogMat1 = db.RecordWorkorderForMaterialID(
+        new EventLogMaterial()
+        {
+          MaterialID = mat,
+          Process = 0,
+          Face = 0,
+        },
+        "work1",
+        now.AddSeconds(1)
+      );
+
+      var booking1 = _fixture.Create<string>();
+      var note = _fixture.Create<string>();
+      var pri = _fixture.Create<int>();
+
+      var expectedLog = new LogEntry()
+      {
+        Counter = 2,
+        Material =
+        [
+          new LogMaterial()
+          {
+            MaterialID = mat,
+            JobUniqueStr = "uniq1",
+            PartName = "part1",
+            Serial = "",
+            Workorder = "work1",
+            Process = 0,
+            Face = 0,
+            NumProcesses = 2,
+          },
+        ],
+        Pallet = 0,
+        LogType = LogType.Rebooking,
+        LocationName = "Rebooking",
+        LocationNum = pri,
+        Program = "part1",
+        StartOfCycle = false,
+        EndTimeUTC = now.AddMinutes(1),
+        ElapsedTime = TimeSpan.Zero,
+        ActiveOperationTime = TimeSpan.Zero,
+        Result = booking1,
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("Notes", note),
+      };
+
+      var expectedR = new Rebooking()
+      {
+        BookingId = booking1,
+        PartName = "part1",
+        Quantity = 1,
+        Priority = pri,
+        Workorder = "work1",
+        Notes = note,
+        TimeUTC = now.AddMinutes(1),
+        Material = db.GetMaterialDetails(mat),
+      };
+
+      db.CreateRebookingForMaterial(
+          bookingId: booking1,
+          matId: mat,
+          notes: note,
+          priority: pri,
+          timeUTC: now.AddMinutes(1)
+        )
+        .Should()
+        .BeEquivalentTo(expectedLog);
+
+      db.GetLogForMaterial(mat).Should().BeEquivalentTo([workLogMat1, expectedLog]);
+
+      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR]);
+      db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR]);
+
+      // record another one, not from mat
+      var booking2 = _fixture.Create<string>();
+      var part2 = _fixture.Create<string>();
+      var pri2 = _fixture.Create<int>();
+      var note2 = _fixture.Create<string>();
+      var work2 = _fixture.Create<string>();
+
+      var expectedLog2 = new LogEntry()
+      {
+        Counter = 3,
+        Material = [],
+        Pallet = 0,
+        LogType = LogType.Rebooking,
+        LocationName = "Rebooking",
+        LocationNum = pri2,
+        Program = part2,
+        StartOfCycle = false,
+        EndTimeUTC = now.AddMinutes(2),
+        ElapsedTime = TimeSpan.Zero,
+        ActiveOperationTime = TimeSpan.Zero,
+        Result = booking2,
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.Add("Notes", note2)
+          .Add("Workorder", work2)
+          .Add("Quantity", "2"),
+      };
+
+      var expectedR2 = new Rebooking()
+      {
+        BookingId = booking2,
+        PartName = part2,
+        Quantity = 2,
+        Priority = pri2,
+        Workorder = work2,
+        Notes = note2,
+        TimeUTC = now.AddMinutes(2),
+        Material = null,
+      };
+
+      db.CreateRebookingWithoutMaterial(
+          bookingId: booking2,
+          partName: part2,
+          qty: 2,
+          notes: note2,
+          priority: pri2,
+          workorder: work2,
+          timeUTC: now.AddMinutes(2)
+        )
+        .Should()
+        .BeEquivalentTo(expectedLog2);
+
+      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR, expectedR2]);
+      db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR, expectedR2]);
+
+      // now cancel the first one
+
+      var expectedCancel = new LogEntry()
+      {
+        Counter = 4,
+        Material =
+        [
+          new LogMaterial()
+          {
+            MaterialID = mat,
+            JobUniqueStr = "uniq1",
+            PartName = "part1",
+            Serial = "",
+            Workorder = "work1",
+            Process = 0,
+            Face = 0,
+            NumProcesses = 2,
+          },
+        ],
+        Pallet = 0,
+        LogType = LogType.CancelRebooking,
+        LocationName = "CancelRebooking",
+        LocationNum = 1,
+        Program = "",
+        StartOfCycle = false,
+        EndTimeUTC = now.AddMinutes(3),
+        ElapsedTime = TimeSpan.Zero,
+        ActiveOperationTime = TimeSpan.Zero,
+        Result = booking1,
+      };
+
+      db.CancelRebooking(bookingId: booking1, timeUTC: now.AddMinutes(3))
+        .Should()
+        .BeEquivalentTo(expectedCancel);
+
+      db.GetLogForMaterial(mat).Should().BeEquivalentTo([workLogMat1, expectedLog, expectedCancel]);
+
+      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR2]);
+      db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR2]);
+    }
+
+    [Fact]
+    public void RebookingsMatWithProcs()
+    {
+      var now = DateTime.UtcNow.AddHours(-5);
+
+      using var db = _repoCfg.OpenConnection();
+      var mat = db.AllocateMaterialID("uniq1", "part1", 4);
+
+      var booking1 = _fixture.Create<string>();
+      var note = _fixture.Create<string>();
+      var pri = _fixture.Create<int>();
+
+      var expectedLog = new LogEntry()
+      {
+        Counter = 1,
+        Material = (new[] { 1, 3 })
+          .Select(proc => new LogMaterial()
+          {
+            MaterialID = mat,
+            JobUniqueStr = "uniq1",
+            PartName = "part1",
+            Serial = "",
+            Workorder = "",
+            Process = proc,
+            Face = 0,
+            NumProcesses = 4,
+          })
+          .ToImmutableList(),
+        Pallet = 0,
+        LogType = LogType.Rebooking,
+        LocationName = "Rebooking",
+        LocationNum = pri,
+        Program = "part1",
+        StartOfCycle = false,
+        EndTimeUTC = now.AddMinutes(1),
+        ElapsedTime = TimeSpan.Zero,
+        ActiveOperationTime = TimeSpan.Zero,
+        Result = booking1,
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("Notes", note),
+      };
+
+      var expectedR = new Rebooking()
+      {
+        BookingId = booking1,
+        PartName = "part1",
+        Quantity = 1,
+        Priority = pri,
+        Notes = note,
+        TimeUTC = now.AddMinutes(1),
+        Material = db.GetMaterialDetails(mat),
+        RestrictedProcs = [1, 3],
+      };
+
+      db.CreateRebookingForMaterial(
+          bookingId: booking1,
+          matId: mat,
+          notes: note,
+          priority: pri,
+          timeUTC: now.AddMinutes(1),
+          restrictedProcs: new HashSet<int>([1, 3])
+        )
+        .Should()
+        .BeEquivalentTo(expectedLog);
+
+      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR]);
+      db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR]);
+    }
+
+    [Fact]
+    public void RebookingWithoutMatRestrictedProcs()
+    {
+      var now = DateTime.UtcNow.AddHours(-5);
+
+      using var db = _repoCfg.OpenConnection();
+      var booking1 = _fixture.Create<string>();
+      var part1 = _fixture.Create<string>();
+      var note = _fixture.Create<string>();
+      var pri = _fixture.Create<int>();
+
+      var expectedLog = new LogEntry()
+      {
+        Counter = 1,
+        Material = (new int[] { 1, 5 })
+          .Select(proc => new LogMaterial()
+          {
+            MaterialID = -1,
+            JobUniqueStr = "",
+            PartName = "",
+            Serial = "",
+            Workorder = "",
+            Process = proc,
+            Face = 0,
+            NumProcesses = 1,
+          })
+          .ToImmutableList(),
+        Pallet = 0,
+        LogType = LogType.Rebooking,
+        LocationName = "Rebooking",
+        LocationNum = pri,
+        Program = part1,
+        StartOfCycle = false,
+        EndTimeUTC = now.AddMinutes(1),
+        ElapsedTime = TimeSpan.Zero,
+        ActiveOperationTime = TimeSpan.Zero,
+        Result = booking1,
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("Notes", note).Add("Quantity", "2"),
+      };
+
+      var expectedR = new Rebooking()
+      {
+        BookingId = booking1,
+        PartName = part1,
+        Quantity = 2,
+        Priority = pri,
+        Notes = note,
+        TimeUTC = now.AddMinutes(1),
+        RestrictedProcs = [1, 5],
+      };
+
+      db.CreateRebookingWithoutMaterial(
+          bookingId: booking1,
+          partName: part1,
+          qty: 2,
+          notes: note,
+          priority: pri,
+          timeUTC: now.AddMinutes(1),
+          restrictedProcs: new HashSet<int>([1, 5])
+        )
+        .Should()
+        .BeEquivalentTo(expectedLog);
+
+      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR]);
+      db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR]);
+    }
+
     #region Helpers
     public static long CheckLog(
       IEnumerable<LogEntry> logs,

@@ -1099,7 +1099,7 @@ namespace BlackMaple.MachineFramework
 
       using var procCmd = _connection.CreateCommand();
       procCmd.Transaction = trans;
-      procCmd.CommandText = "SELECT Process FROM rebooking_processes WHERE BookingId = $bid";
+      procCmd.CommandText = "SELECT Process FROM rebookings_procs WHERE BookingId = $bid";
       procCmd.Parameters.Add("bid", SqliteType.Text);
 
       var ret = ImmutableList.CreateBuilder<Rebooking>();

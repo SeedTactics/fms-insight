@@ -2944,9 +2944,14 @@ namespace BlackMaple.MachineFramework
           Program = details.PartName,
           StartOfCycle = false,
           EndTimeUTC = time,
+          ElapsedTime = TimeSpan.Zero,
+          ActiveOperationTime = TimeSpan.Zero,
           Result = bookingId,
         };
-        log.ProgramDetails.Add("Notes", notes);
+        if (!string.IsNullOrEmpty(notes))
+        {
+          log.ProgramDetails.Add("Notes", notes);
+        }
 
         return AddLogEntry(trans, log, foreignID: null, origMessage: null);
       });
@@ -2989,24 +2994,13 @@ namespace BlackMaple.MachineFramework
         {
           Material =
             restrictedProcs == null || restrictedProcs.Count == 0
-              ? Enumerable
-                .Range(0, qty)
-                .Select(_ => new EventLogMaterial()
-                {
-                  MaterialID = -1,
-                  Process = 0,
-                  Face = 0,
-                })
-              : restrictedProcs.SelectMany(proc =>
-                Enumerable
-                  .Range(0, qty)
-                  .Select(_ => new EventLogMaterial()
-                  {
-                    MaterialID = -1,
-                    Process = proc,
-                    Face = 0,
-                  })
-              ),
+              ? []
+              : restrictedProcs.Select(proc => new EventLogMaterial()
+              {
+                MaterialID = -1,
+                Process = proc,
+                Face = 0,
+              }),
           Pallet = 0,
           LogType = LogType.Rebooking,
           LocationName = "Rebooking",
@@ -3014,10 +3008,19 @@ namespace BlackMaple.MachineFramework
           Program = partName,
           StartOfCycle = false,
           EndTimeUTC = time,
+          ElapsedTime = TimeSpan.Zero,
+          ActiveOperationTime = TimeSpan.Zero,
           Result = bookingId,
         };
-        log.ProgramDetails.Add("Notes", notes);
-        log.ProgramDetails.Add("Workorder", workorder);
+        if (!string.IsNullOrEmpty(notes))
+        {
+          log.ProgramDetails.Add("Notes", notes);
+        }
+        if (!string.IsNullOrEmpty(workorder))
+        {
+          log.ProgramDetails.Add("Workorder", workorder);
+        }
+        log.ProgramDetails.Add("Quantity", qty.ToString());
 
         return AddLogEntry(trans, log, foreignID: null, origMessage: null);
       });
@@ -3059,7 +3062,7 @@ namespace BlackMaple.MachineFramework
         using var procCmd = _connection.CreateCommand();
         ((IDbCommand)procCmd).Transaction = trans;
 
-        procCmd.CommandText = "INSERT INTO rebooking_procs(BookingId, Process) VALUES ($id, $proc)";
+        procCmd.CommandText = "INSERT INTO rebookings_procs(BookingId, Process) VALUES ($id, $proc)";
         procCmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
         procCmd.Parameters.Add("proc", SqliteType.Integer);
 
@@ -3106,6 +3109,8 @@ namespace BlackMaple.MachineFramework
           Program = "",
           StartOfCycle = false,
           EndTimeUTC = timeUTC ?? DateTime.UtcNow,
+          ElapsedTime = TimeSpan.Zero,
+          ActiveOperationTime = TimeSpan.Zero,
           Result = bookingId,
         };
 

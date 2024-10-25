@@ -297,6 +297,7 @@ namespace BlackMaple.MachineFramework
           "CREATE INDEX program_comment_idx ON program_revisions(ProgramName, RevisionComment, ProgramRevision) WHERE RevisionComment IS NOT NULL";
         cmd.ExecuteNonQuery();
 
+        // The rebookings table is just be a cache of the planned rebookings from the station log + job scheduled bookings, but are extracted here for easier querying.
         cmd.CommandText =
           "CREATE TABLE rebookings(BookingId TEXT PRIMARY KEY, TimeUTC INTEGER NOT NULL, Part TEXT NOT NULL, Notes TEXT, MaterialID INTEGER, Workorder TEXT, Quantity INTEGER, Priority INTEGER, JobUnique TEXT, Canceled INTEGER)";
         cmd.ExecuteNonQuery();
