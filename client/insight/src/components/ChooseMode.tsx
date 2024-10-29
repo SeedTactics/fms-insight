@@ -30,9 +30,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { Paper } from "@mui/material";
+import { ListItem, ListItemButton, Paper } from "@mui/material";
 import { List } from "@mui/material";
-import { ListItem } from "@mui/material";
 import { ListItemIcon } from "@mui/material";
 import { ListSubheader } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -157,14 +156,16 @@ export interface ChooseModeProps {
 export function ChooseMode(p: ChooseModeProps): JSX.Element {
   const navList = (
     <Paper>
-      <List component="nav">
+      <List component="nav" dense>
         {(p.modes ?? defaultChooseModes).map((mode, idx) =>
           mode.type === "Subheader" ? (
             <ListSubheader key={idx}>{mode.caption}</ListSubheader>
           ) : (
-            <ListItem key={idx} button onClick={() => p.setRoute(mode.route)}>
-              <ListItemIcon>{mode.icon}</ListItemIcon>
-              <ListItemText>{mode.label}</ListItemText>
+            <ListItem key={idx}>
+              <ListItemButton onClick={() => p.setRoute(mode.route)}>
+                <ListItemIcon>{mode.icon}</ListItemIcon>
+                <ListItemText>{mode.label}</ListItemText>
+              </ListItemButton>
             </ListItem>
           ),
         )}

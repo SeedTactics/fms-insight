@@ -703,9 +703,9 @@ function AddAndPrintOnClientButton({
   const printRef = useRef(null);
   const [adding, setAdding] = useState<boolean>(false);
   const print = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     onAfterPrint: close,
-    copyStyles: false,
+    ignoreGlobalStyles: true,
   });
   const [materialToPrint, setMaterialToPrint] = useState<ReadonlyArray<api.IInProcessMaterial>>([]);
   const [addNewCasting] = useAddNewCastingToQueue();

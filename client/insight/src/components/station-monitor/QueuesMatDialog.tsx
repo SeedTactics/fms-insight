@@ -78,13 +78,13 @@ export function PrintOnClientButton({
 }) {
   const printRef = useRef(null);
   const print = useReactToPrint({
-    content: () => printRef.current,
-    copyStyles: false,
+    contentRef: printRef,
+    ignoreGlobalStyles: true,
   });
 
   return (
     <>
-      <Button color="primary" onClick={print}>
+      <Button color="primary" onClick={() => print()}>
         Print Label
       </Button>
       <div style={{ display: "none" }}>
