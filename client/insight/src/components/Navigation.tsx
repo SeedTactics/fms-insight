@@ -63,12 +63,14 @@ import { RouteLocation, RouteState, currentRoute, helpUrl } from "./routes";
 import { fmsInformation, logout } from "../network/server-settings";
 import { useAtom, useAtomValue } from "jotai";
 import { QRScanButton } from "./BarcodeScanning";
+import { IFMSInfo } from "../network/api";
 
 export type MenuNavItem =
   | {
       readonly name: string;
       readonly icon: ReactNode;
       readonly route: RouteState;
+      readonly hidden?: (info: Readonly<IFMSInfo>) => boolean;
     }
   | { readonly separator: string };
 
@@ -168,6 +170,7 @@ function ToolButtons({
 }
 
 function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
+  const fmsInfo = useAtomValue(fmsInformation);
   const [curRoute, setCurrentRoute] = useAtom(currentRoute);
   const [isPending, startTransition] = useTransition();
   return (
@@ -201,7 +204,7 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
         {menuNavs.map((item) =>
           "separator" in item ? (
             <ListSubheader key={item.separator}>{item.separator}</ListSubheader>
-          ) : (
+          ) : item.hidden?.(fmsInfo) ? undefined : (
             <MenuItem key={item.name} value={item.route.route}>
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.name} />
@@ -282,6 +285,7 @@ export function Header({
 }
 
 export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem> }) {
+  const fmsInfo = useAtomValue(fmsInformation);
   const [curRoute, setCurrentRoute] = useAtom(currentRoute);
   const [isPending, startTransition] = useTransition();
 
@@ -304,7 +308,7 @@ export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem>
         {menuItems?.map((item) =>
           "separator" in item ? (
             <ListSubheader key={item.separator}>{item.separator}</ListSubheader>
-          ) : (
+          ) : item.hidden?.(fmsInfo) ? undefined : (
             <ListItem key={item.name}>
               <ListItemButton
                 selected={curRoute.route === item.route.route}

@@ -84,6 +84,7 @@ export interface JobAPI {
     operName: string | null,
     process: number,
   ): Promise<void>;
+  unscheduledRebookings(signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.IRebooking>>>;
 }
 
 export interface FmsAPI {

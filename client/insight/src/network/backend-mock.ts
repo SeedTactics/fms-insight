@@ -262,6 +262,9 @@ export function registerMockBackend(
     invalidatePalletCycle(): Promise<void> {
       return Promise.resolve();
     },
+    unscheduledRebookings(): Promise<ReadonlyArray<Readonly<api.IRebooking>>> {
+      return Promise.resolve([]);
+    }
   };
 
   const serialsToMatId = data.then(() =>

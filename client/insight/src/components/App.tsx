@@ -52,6 +52,7 @@ import {
   CallSplit,
   AttachMoney as CostIcon,
   Opacity,
+  Replay,
 } from "@mui/icons-material";
 
 import OperationDashboard from "./operations/Dashboard.js";
@@ -93,6 +94,7 @@ import { useAtom, useAtomValue } from "jotai";
 import { SimDayUsagePage } from "./operations/SimDayUsage.js";
 import { latestSimDayUsage } from "../cell-status/sim-day-usage.js";
 import { CloseoutReport } from "./operations/CloseoutReport.js";
+import { RebookingsPage } from "./operations/Rebookings.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -170,6 +172,12 @@ const operationsReports: ReadonlyArray<MenuNavItem> = [
     name: "Production",
     route: { route: routes.RouteLocation.Operations_Production },
     icon: <ProductionIcon />,
+  },
+  {
+    name: "Rebooking",
+    route: { route: routes.RouteLocation.Operations_Rebookings },
+    icon: <Replay />,
+    hidden: (info) => Boolean(info.supportsRebookings),
   },
 ];
 
@@ -539,6 +547,11 @@ const App = memo(function App(props: AppProps) {
         break;
       case routes.RouteLocation.Operations_Programs:
         page = <ProgramReportPage />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        break;
+      case routes.RouteLocation.Operations_Rebookings:
+        page = <RebookingsPage />;
         nav1 = OperationsTabs;
         menuNavItems = operationsReports;
         break;

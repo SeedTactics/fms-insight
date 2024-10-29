@@ -54,6 +54,7 @@ import * as palCycles from "./pallet-cycles.js";
 import * as statCycles from "./station-cycles.js";
 import * as toolReplace from "./tool-replacements.js";
 import * as simDayUsage from "./sim-day-usage.js";
+import * as rebookings from "./rebookings.js";
 import { Atom, atom } from "jotai";
 
 export interface ServerEventAndTime {
@@ -78,6 +79,7 @@ export const onServerEvent = atom(null, (_, set, evt: ServerEventAndTime) => {
   set(palCycles.updateLast30PalletCycles, evt);
   set(toolReplace.updateLastToolReplacements, evt);
   set(statCycles.updateLast30StationCycles, evt);
+  set(rebookings.updateLast30Rebookings, evt);
   set(simDayUsage.updateLatestSimDayUsage, evt);
 
   if (evt.evt.logEntry) {
@@ -93,6 +95,7 @@ export const onLoadLast30Jobs = atom(null, (get, set, historicData: Readonly<IRe
   set(schJobs.setLast30Jobs, filtered);
   set(names.setNamesFromLast30Jobs, filtered);
   set(simDayUsage.setLatestSimDayUsage, filtered);
+  set(rebookings.setLast30RebookingJobs, filtered);
 });
 
 export const onLoadLast30Log = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
@@ -105,6 +108,7 @@ export const onLoadLast30Log = atom(null, (_, set, log: ReadonlyArray<Readonly<I
   set(palCycles.setLast30PalletCycles, log);
   set(toolReplace.setLast30ToolReplacements, log);
   set(statCycles.setLast30StationCycles, log);
+  set(rebookings.setLast30Rebookings, log);
 
   const newCntr = LazySeq.of(log).maxBy((x) => x.counter)?.counter ?? null;
   set(lastEventCounterRW, (oldCntr) => (oldCntr === null ? newCntr : Math.max(oldCntr, newCntr ?? -1)));
