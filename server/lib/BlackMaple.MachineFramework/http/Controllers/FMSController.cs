@@ -69,6 +69,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public string CustomStationMonitorDialogUrl { get; init; }
 
     public bool? SupportsRebookings { get; init; }
+    public bool? ManagementOnlyRebookings { get; init; }
 
     // LoadStation Options
     public bool? AllowChangeWorkorderAtLoadStation { get; init; }
@@ -162,6 +163,7 @@ namespace BlackMaple.MachineFramework.Controllers
         AllowEditJobPlanQuantityFromQueuesPage = _cfg.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineToCancelLoad = _jobsAndQueues.AllowQuarantineToCancelLoad,
         SupportsRebookings = _cfg.RebookingPrefix != null,
+        ManagementOnlyRebookings = _cfg.ManagementOnlyRebookings ? true : null,
         AllowChangeWorkorderAtLoadStation = _cfg.AllowChangeWorkorderAtLoadStation,
         AllowInvalidateMaterialAtLoadStation = _cfg.AllowInvalidateMaterialAtLoadStation,
         AllowInvalidateMaterialOnQueuesPage = _cfg.AllowInvalidateMaterialOnQueuesPage,

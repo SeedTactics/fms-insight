@@ -2279,6 +2279,7 @@ export class FMSInfo implements IFMSInfo {
     quarantineQueue?: string | undefined;
     customStationMonitorDialogUrl?: string | undefined;
     supportsRebookings?: boolean | undefined;
+    managementOnlyRebookings?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowSwapSerialAtLoadStation?: boolean | undefined;
     allowInvalidateMaterialAtLoadStation?: boolean | undefined;
@@ -2318,6 +2319,7 @@ export class FMSInfo implements IFMSInfo {
             this.quarantineQueue = _data["QuarantineQueue"];
             this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
             this.supportsRebookings = _data["SupportsRebookings"];
+            this.managementOnlyRebookings = _data["ManagementOnlyRebookings"];
             this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
             this.allowSwapSerialAtLoadStation = _data["AllowSwapSerialAtLoadStation"];
             this.allowInvalidateMaterialAtLoadStation = _data["AllowInvalidateMaterialAtLoadStation"];
@@ -2357,6 +2359,7 @@ export class FMSInfo implements IFMSInfo {
         data["QuarantineQueue"] = this.quarantineQueue;
         data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
         data["SupportsRebookings"] = this.supportsRebookings;
+        data["ManagementOnlyRebookings"] = this.managementOnlyRebookings;
         data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["AllowSwapSerialAtLoadStation"] = this.allowSwapSerialAtLoadStation;
         data["AllowInvalidateMaterialAtLoadStation"] = this.allowInvalidateMaterialAtLoadStation;
@@ -2385,6 +2388,7 @@ export interface IFMSInfo {
     quarantineQueue?: string | undefined;
     customStationMonitorDialogUrl?: string | undefined;
     supportsRebookings?: boolean | undefined;
+    managementOnlyRebookings?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowSwapSerialAtLoadStation?: boolean | undefined;
     allowInvalidateMaterialAtLoadStation?: boolean | undefined;

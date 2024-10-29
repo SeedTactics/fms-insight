@@ -2238,6 +2238,10 @@
             "type": "boolean",
             "nullable": true
           },
+          "ManagementOnlyRebookings": {
+            "type": "boolean",
+            "nullable": true
+          },
           "AllowChangeWorkorderAtLoadStation": {
             "type": "boolean",
             "nullable": true

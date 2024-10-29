@@ -5078,6 +5078,9 @@ namespace BlackMaple.FMSInsight.API
         [Newtonsoft.Json.JsonProperty("SupportsRebookings", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? SupportsRebookings { get; set; }
 
+        [Newtonsoft.Json.JsonProperty("ManagementOnlyRebookings", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public bool? ManagementOnlyRebookings { get; set; }
+
         [Newtonsoft.Json.JsonProperty("AllowChangeWorkorderAtLoadStation", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? AllowChangeWorkorderAtLoadStation { get; set; }
 
