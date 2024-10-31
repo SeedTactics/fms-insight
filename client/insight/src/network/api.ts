@@ -2278,7 +2278,7 @@ export class FMSInfo implements IFMSInfo {
     allowQuarantineToCancelLoad?: boolean | undefined;
     quarantineQueue?: string | undefined;
     customStationMonitorDialogUrl?: string | undefined;
-    supportsRebookings?: boolean | undefined;
+    supportsRebookings?: string | undefined;
     managementOnlyRebookings?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowSwapSerialAtLoadStation?: boolean | undefined;
@@ -2387,7 +2387,7 @@ export interface IFMSInfo {
     allowQuarantineToCancelLoad?: boolean | undefined;
     quarantineQueue?: string | undefined;
     customStationMonitorDialogUrl?: string | undefined;
-    supportsRebookings?: boolean | undefined;
+    supportsRebookings?: string | undefined;
     managementOnlyRebookings?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowSwapSerialAtLoadStation?: boolean | undefined;

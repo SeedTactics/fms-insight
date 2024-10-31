@@ -67,7 +67,7 @@ import { IFMSInfo } from "../network/api";
 
 export type MenuNavItem =
   | {
-      readonly name: string;
+      readonly name: string | ((info: Readonly<IFMSInfo>) => string);
       readonly icon: ReactNode;
       readonly route: RouteState;
       readonly hidden?: (info: Readonly<IFMSInfo>) => boolean;
@@ -194,20 +194,20 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
             <Box display="flex" alignItems="center">
               {item.icon}
               <Typography variant="h6" style={{ marginLeft: "1em" }}>
-                {item.name}
+                {typeof item.name === "string" ? item.name : item.name(fmsInfo)}
                 {isPending ? "..." : ""}
               </Typography>
             </Box>
           );
         }}
       >
-        {menuNavs.map((item) =>
+        {menuNavs.map((item, idx) =>
           "separator" in item ? (
             <ListSubheader key={item.separator}>{item.separator}</ListSubheader>
           ) : item.hidden?.(fmsInfo) ? undefined : (
-            <MenuItem key={item.name} value={item.route.route}>
+            <MenuItem key={idx} value={item.route.route}>
               <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.name} />
+              <ListItemText primary={typeof item.name === "string" ? item.name : item.name(fmsInfo)} />
             </MenuItem>
           ),
         )}
@@ -305,18 +305,18 @@ export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem>
       }}
     >
       <List dense>
-        {menuItems?.map((item) =>
+        {menuItems?.map((item, idx) =>
           "separator" in item ? (
             <ListSubheader key={item.separator}>{item.separator}</ListSubheader>
           ) : item.hidden?.(fmsInfo) ? undefined : (
-            <ListItem key={item.name}>
+            <ListItem key={idx}>
               <ListItemButton
                 selected={curRoute.route === item.route.route}
                 onClick={() => startTransition(() => setCurrentRoute(item.route))}
               >
                 <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText
-                  primary={item.name}
+                  primary={typeof item.name === "string" ? item.name : item.name(fmsInfo)}
                   sx={isPending ? (theme) => ({ color: theme.palette.grey[700] }) : undefined}
                 />
               </ListItemButton>

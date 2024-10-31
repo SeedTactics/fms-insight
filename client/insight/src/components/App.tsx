@@ -174,10 +174,10 @@ const operationsReports: ReadonlyArray<MenuNavItem> = [
     icon: <ProductionIcon />,
   },
   {
-    name: "Rebooking",
+    name: (info) => info.supportsRebookings ?? "Rebooking",
     route: { route: routes.RouteLocation.Operations_Rebookings },
     icon: <Replay />,
-    hidden: (info) => Boolean(info.supportsRebookings),
+    hidden: (info) => info.supportsRebookings !== null,
   },
 ];
 

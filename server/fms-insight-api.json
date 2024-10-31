@@ -2235,7 +2235,7 @@
             "nullable": true
           },
           "SupportsRebookings": {
-            "type": "boolean",
+            "type": "string",
             "nullable": true
           },
           "ManagementOnlyRebookings": {

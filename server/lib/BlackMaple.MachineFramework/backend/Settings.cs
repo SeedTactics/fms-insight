@@ -209,6 +209,9 @@ public record FMSSettings
   public string? RebookingPrefix { get; init; } = null;
   public bool ManagementOnlyRebookings { get; init; } = false;
 
+  // If provided, the display name will be used in the client webpages for rebookings
+  public string? RebookingsDisplayName { get; init; } = null;
+
   public FMSSettings() { }
 
   public static FMSSettings Load(IConfiguration config)

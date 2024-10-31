@@ -5076,7 +5076,7 @@ namespace BlackMaple.FMSInsight.API
         public string CustomStationMonitorDialogUrl { get; set; }
 
         [Newtonsoft.Json.JsonProperty("SupportsRebookings", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool? SupportsRebookings { get; set; }
+        public string SupportsRebookings { get; set; }
 
         [Newtonsoft.Json.JsonProperty("ManagementOnlyRebookings", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? ManagementOnlyRebookings { get; set; }
