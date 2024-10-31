@@ -34,10 +34,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { Atom, atom, Setter } from "jotai";
 import { ServerEventAndTime } from "./loading";
 import { IJob, ILogEntry, IRebooking, IRecentHistoricData, LogType, MaterialDetails } from "../network/api";
-import { LazySeq, OrderedMap, OrderedSet } from "@seedtactics/immutable-collections";
-import { JobsBackend } from "../network/backend";
+import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
+import { JobsBackend, LogBackend } from "../network/backend";
 import { loadable } from "jotai/utils";
 import { addDays } from "date-fns";
+import { useCallback, useState } from "react";
 
 const rebookingEvts = atom(OrderedMap.empty<string, Readonly<IRebooking>>());
 
@@ -62,8 +63,8 @@ export const last30Rebookings: Atom<OrderedMap<string, Readonly<IRebooking>>> = 
   }
 });
 
-const canceledRebookingsRW = atom(OrderedSet.empty<string>());
-export const canceledRebookings: Atom<OrderedSet<string>> = canceledRebookingsRW;
+const canceledRebookingsRW = atom(OrderedMap.empty<string, Date>());
+export const canceledRebookings: Atom<OrderedMap<string, Date>> = canceledRebookingsRW;
 
 type ScheduledBooking = {
   readonly scheduledTime: Date;
@@ -121,7 +122,7 @@ export const setLast30Rebookings = atom(null, (get, set, log: ReadonlyArray<Read
     old.union(
       LazySeq.of(log)
         .filter((e) => e.type === LogType.CancelRebooking)
-        .toOrderedSet((e) => e.result),
+        .toOrderedMap((e) => [e.result, e.endUTC]),
     ),
   );
 });
@@ -165,7 +166,45 @@ export const updateLast30Rebookings = atom(null, (get, set, { evt, now, expire }
     if (e.type === LogType.Rebooking) {
       set(rebookingEvts, (old) => old.set(e.result, convertLogToRebooking(e)));
     } else if (e.type === LogType.CancelRebooking) {
-      set(canceledRebookingsRW, (old) => old.add(e.result));
+      set(canceledRebookingsRW, (old) => old.set(e.result, e.endUTC));
     }
   }
 });
+
+export function useCancelRebooking(): [(bookingId: string) => Promise<void>, boolean] {
+  const [loading, setLoading] = useState(false);
+  const callback = useCallback((bookingId: string) => {
+    setLoading(true);
+    return LogBackend.cancelRebooking(bookingId)
+      .then(() => {})
+      .catch(console.log)
+      .finally(() => setLoading(false));
+  }, []);
+  return [callback, loading];
+}
+
+export type NewRebooking = {
+  readonly part: string;
+  readonly qty?: number;
+  readonly workorder?: string | null;
+  readonly restrictedProcs?: ReadonlyArray<number> | null;
+  readonly notes?: string;
+};
+
+export function useNewRebooking(): [(n: NewRebooking) => Promise<void>, boolean] {
+  const [loading, setLoading] = useState(false);
+  const callback = useCallback((n: NewRebooking) => {
+    setLoading(true);
+    return LogBackend.requestRebookingWithoutMaterial(
+      n.part,
+      n.qty,
+      n.workorder,
+      n.restrictedProcs as number[],
+      n.notes,
+    )
+      .then(() => {})
+      .catch(console.log)
+      .finally(() => setLoading(false));
+  }, []);
+  return [callback, loading];
+}

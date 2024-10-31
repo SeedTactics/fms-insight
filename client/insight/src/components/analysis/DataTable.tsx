@@ -527,9 +527,13 @@ export function useTablePage(): TablePage {
   );
 }
 
-export function useColSort<Id, Row>(defSortCol: Id, cols: ReadonlyArray<Column<Id, Row>>): ColSort<Id, Row> {
+export function useColSort<Id, Row>(
+  defSortCol: Id,
+  cols: ReadonlyArray<Column<Id, Row>>,
+  defOrder?: "asc" | "desc" | undefined,
+): ColSort<Id, Row> {
   const [orderBy, setOrderBy] = useState(defSortCol);
-  const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [order, setOrder] = useState<"asc" | "desc">(defOrder ?? "asc");
 
   return useMemo(() => {
     function handleRequestSort(property: Id) {
