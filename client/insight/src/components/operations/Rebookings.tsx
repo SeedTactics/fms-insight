@@ -35,6 +35,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  Checkbox,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -42,6 +43,7 @@ import {
   DialogTitle,
   Divider,
   Fab,
+  FormControlLabel,
   InputAdornment,
   Stack,
   Table,
@@ -49,7 +51,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { atom, useAtomValue } from "jotai";
+import { atom, useAtom, useAtomValue } from "jotai";
 import { fmsInformation } from "../../network/server-settings.js";
 import {
   Column,
@@ -96,6 +98,9 @@ type Row = Readonly<IRebooking> & {
 };
 
 type Col = Column<ColumnId, Row>;
+
+const unscheduledFilterDialogOpen = atom(false);
+const showOnlyUnscheduledAtom = atom(false);
 
 const columns: ReadonlyArray<Col> = [
   {
@@ -155,6 +160,7 @@ const columns: ReadonlyArray<Col> = [
     numeric: false,
     label: "Scheduled Job",
     getDisplay: (r) => r.job ?? "",
+    openFilterDialog: unscheduledFilterDialogOpen,
   },
   {
     id: ColumnId.SchTime,
@@ -175,6 +181,7 @@ const BookingTable = memo(function BookingTable({
   const rebookings: OrderedMap<string, Row> = useAtomValue(last30Rebookings);
   const canceled = useAtomValue(canceledRebookings);
   const scheduled = useAtomValue(last30ScheduledBookings);
+  const unschOnly = useAtomValue(showOnlyUnscheduledAtom);
 
   const rows = useMemo(
     () =>
@@ -190,8 +197,9 @@ const BookingTable = memo(function BookingTable({
         )
         .adjust(canceled, (r, t) => (r ? { ...r, canceled: t } : undefined))
         .valuesToAscLazySeq()
+        .transform((s) => (unschOnly ? s.filter((r) => !r.job) : s))
         .toSortedArray(sort.sortOn),
-    [sort.sortOn, rebookings, canceled, scheduled],
+    [sort.sortOn, rebookings, canceled, scheduled, unschOnly],
   );
 
   return (
@@ -413,6 +421,31 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
   );
 });
 
+const UnschFilterDialog = memo(function UnschFilterDialog() {
+  const [open, setOpen] = useAtom(unscheduledFilterDialogOpen);
+  const [showOnlyUnscheduled, setShowOnlyUnscheduled] = useAtom(showOnlyUnscheduledAtom);
+
+  return (
+    <Dialog open={open} onClose={() => setOpen(false)}>
+      <DialogTitle>Filter Scheduled Bookings</DialogTitle>
+      <DialogContent>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={showOnlyUnscheduled}
+              onChange={(e) => setShowOnlyUnscheduled(e.target.checked)}
+            />
+          }
+          label="Show only unscheduled"
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setOpen(false)}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+});
+
 export function RebookingsPage() {
   const fmsInfo = useAtomValue(fmsInformation);
   useSetTitle(fmsInfo.supportsRebookings ?? "Rebookings");
@@ -423,6 +456,7 @@ export function RebookingsPage() {
       <BookingTable setRebookingToShow={setRebookingToShow} />
       <RebookingDialog rebooking={rebookingToShow} close={setRebookingToShow} />
       <NewRebookingDialog />
+      <UnschFilterDialog />
     </Box>
   );
 }
