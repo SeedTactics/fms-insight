@@ -312,6 +312,22 @@ function JobRawMaterial({ fsize, mat }: { mat: Readonly<api.IInProcessMaterial>;
   }
 }
 
+function JobCommentElipsis({ fsize, uniq }: { fsize?: MatCardFontSize; uniq: string }) {
+  const job = useAtomValue(currentStatus).jobs[uniq];
+  if (job && job.comment) {
+    return (
+      <MatCardDetail
+        fsize={fsize}
+        style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", width: "100%" }}
+      >
+        {job.comment}
+      </MatCardDetail>
+    );
+  } else {
+    return null;
+  }
+}
+
 interface MaterialDragProps {
   readonly dragRootProps?: HTMLAttributes<HTMLDivElement>;
   readonly showDragHandle?: boolean;
@@ -330,6 +346,7 @@ export interface MaterialSummaryProps {
   readonly focusInspectionType?: string | null;
   readonly hideWarningIcon?: boolean;
   readonly displayJob?: boolean;
+  readonly showJobComment?: boolean;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
   readonly showRawMaterial?: boolean;
@@ -440,6 +457,9 @@ const MatCard = forwardRef(function MatCard(
             props.inProcMat.process === 0 ? (
               <JobRawMaterial fsize={props.fsize} mat={props.inProcMat} />
             ) : undefined}
+            {props.showJobComment && props.mat.jobUnique && props.mat.jobUnique !== "" ? (
+              <JobCommentElipsis fsize={props.fsize} uniq={props.mat.jobUnique} />
+            ) : undefined}
             {props.inProcMat ? (
               <MaterialAction
                 mat={props.inProcMat}
@@ -484,6 +504,7 @@ export type InProcMaterialProps = {
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
   readonly showRawMaterial?: boolean;
+  readonly showJobComment?: boolean;
 };
 
 export type ShakeProp = {
@@ -504,6 +525,7 @@ export const InProcMaterial = memo(function InProcMaterial(
       showDragHandle={props.showHandle}
       hideEmptySerial={props.hideEmptySerial}
       showRawMaterial={props.showRawMaterial}
+      showJobComment={props.showJobComment}
       shake={props.shake}
     />
   );
@@ -698,6 +720,22 @@ function MaterialEvents({ highlightProcess }: { highlightProcess?: number }) {
   return <LogEntries entries={events} copyToClipboard highlightProcess={highlightProcess} />;
 }
 
+function JobComment() {
+  const mat = useAtomValue(matDetails.inProcessMaterialInDialog);
+  const jobs = useAtomValue(currentStatus).jobs;
+  const job = mat ? jobs[mat.jobUnique] : null;
+
+  if (job && job.comment && job.comment !== "") {
+    return (
+      <Typography variant="caption" sx={{ width: "100%", textWrap: "wrap" }}>
+        Comment: {job.comment}
+      </Typography>
+    );
+  } else {
+    return null;
+  }
+}
+
 export const MaterialDetailContent = memo(function MaterialDetailContent({
   highlightProcess,
 }: {
@@ -742,6 +780,11 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
             }
           >
             <MaterialInspections />
+          </DisplayLoadingAndError>
+        </div>
+        <div>
+          <DisplayLoadingAndError fallback={<div />}>
+            <JobComment />
           </DisplayLoadingAndError>
         </div>
       </div>
