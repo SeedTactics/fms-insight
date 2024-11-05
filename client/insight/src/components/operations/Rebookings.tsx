@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import {
+  Autocomplete,
   Box,
   Button,
   CircularProgress,
@@ -41,11 +42,14 @@ import {
   DialogTitle,
   Divider,
   Fab,
+  InputAdornment,
   Stack,
   Table,
+  TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { useAtomValue } from "jotai";
+import { atom, useAtomValue } from "jotai";
 import { fmsInformation } from "../../network/server-settings.js";
 import {
   Column,
@@ -62,10 +66,15 @@ import {
   canceledRebookings,
   last30Rebookings,
   last30ScheduledBookings,
+  NewRebooking,
   useCancelRebooking,
+  useNewRebooking,
 } from "../../cell-status/rebookings.js";
-import { OrderedMap } from "@seedtactics/immutable-collections";
+import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { Add } from "@mui/icons-material";
+import { currentStatus } from "../../cell-status/current-status.js";
+import { last30Jobs } from "../../cell-status/scheduled-jobs.js";
+import { PartIdenticon } from "../station-monitor/Material.js";
 
 enum ColumnId {
   BookingId,
@@ -73,8 +82,6 @@ enum ColumnId {
   Quantity,
   RequestTime,
   Priority,
-  Workorder,
-  Serial,
   Canceled,
   Job,
   SchTime,
@@ -98,7 +105,7 @@ const columns: ReadonlyArray<Col> = [
     getDisplay: (r) => r.bookingId,
     Cell: ({ row }: { row: Row }) =>
       row.canceled ? (
-        <Typography sx={{ textDecoration: "line-through" }}>{row.bookingId}</Typography>
+        <Typography sx={{ textDecoration: "line-through", fontSize: "inherit" }}>{row.bookingId}</Typography>
       ) : (
         row.bookingId
       ),
@@ -108,6 +115,12 @@ const columns: ReadonlyArray<Col> = [
     numeric: false,
     label: "Part",
     getDisplay: (r) => r.partName,
+    Cell: ({ row }: { row: Row }) => (
+      <Stack direction="row" spacing={1} alignItems="center">
+        <PartIdenticon part={row.partName} size={25} />
+        {row.partName}
+      </Stack>
+    ),
   },
   {
     id: ColumnId.Quantity,
@@ -129,18 +142,6 @@ const columns: ReadonlyArray<Col> = [
     label: "Priority",
     getDisplay: (r) => (r.priority ? r.priority.toString() : ""),
     getForSort: (r) => r.priority ?? 0,
-  },
-  {
-    id: ColumnId.Workorder,
-    numeric: false,
-    label: "Workorder",
-    getDisplay: (r) => r.workorder ?? "",
-  },
-  {
-    id: ColumnId.Serial,
-    numeric: false,
-    label: "Serial",
-    getDisplay: (r) => r.material?.serial ?? "",
   },
   {
     id: ColumnId.Canceled,
@@ -209,6 +210,14 @@ const BookingTable = memo(function BookingTable({
   );
 });
 
+const longDateFormat = new Intl.DateTimeFormat(undefined, {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+});
+
 const RebookingDialog = memo(function RebookingDialog({
   rebooking,
   close,
@@ -236,13 +245,20 @@ const RebookingDialog = memo(function RebookingDialog({
         )}
       </DialogTitle>
       <DialogContent>
-        <Stack direction="row" spacing={1}>
-          <Typography>Part: {rebooking?.partName}</Typography>
+        <Stack direction="column" spacing={1}>
+          {rebooking?.canceled && (
+            <Typography variant="h5">Canceled at {longDateFormat.format(rebooking.canceled)}</Typography>
+          )}
+          <Stack direction="row" spacing={1}>
+            <span>Part:</span>
+            {rebooking?.partName && <PartIdenticon part={rebooking?.partName} size={25} />}
+            <span>{rebooking?.partName}</span>
+          </Stack>
           <Typography>Quantity: {rebooking?.quantity}</Typography>
-          <Typography>Request Time: {rebooking?.timeUTC.toLocaleString()}</Typography>
+          <Typography>Request Time: {longDateFormat.format(rebooking?.timeUTC)}</Typography>
           <Typography>Priority: {rebooking?.priority}</Typography>
-          <Typography>Workorder: {rebooking?.workorder}</Typography>
-          <Typography>Serial: {rebooking?.material?.serial}</Typography>
+          {rebooking?.workorder && <Typography>Workorder: {rebooking?.workorder}</Typography>}
+          {rebooking?.material?.serial && <Typography>Serial: {rebooking?.material?.serial}</Typography>}
           <Typography>Note: {rebooking?.notes}</Typography>
         </Stack>
         {rebooking?.job && (
@@ -254,7 +270,6 @@ const RebookingDialog = memo(function RebookingDialog({
             </Stack>
           </>
         )}
-        {rebooking?.canceled && <Typography>Canceled: {rebooking.canceled.toLocaleString()}</Typography>}
       </DialogContent>
       <DialogActions>
         {!rebooking?.canceled && !rebooking?.job && (
@@ -269,28 +284,131 @@ const RebookingDialog = memo(function RebookingDialog({
   );
 });
 
+const partNamesAtom = atom<ReadonlyArray<string>>((get) =>
+  LazySeq.ofObject(get(currentStatus).jobs)
+    .map(([_, j]) => j.partName)
+    .concat(
+      get(last30Jobs)
+        .valuesToLazySeq()
+        .map((j) => j.partName),
+    )
+    .distinctAndSortBy((p) => p)
+    .toRArray(),
+);
+
 const NewRebookingDialog = memo(function NewRebookingDialog() {
   const [open, setOpen] = useState(false);
+  const [rebooking, setRebooking] = useState<NewRebooking>({ part: "" });
+  const partNames = useAtomValue(partNamesAtom);
+  const [createNew, creating] = useNewRebooking();
+
+  const allowCreate = rebooking.part !== "" && !!rebooking.qty && !isNaN(rebooking.qty);
+
+  function close() {
+    setOpen(false);
+    setRebooking({ part: "" });
+  }
 
   function create() {
-    // TODO
+    if (!allowCreate) {
+      return;
+    }
+    createNew(rebooking).then(close).catch(console.log);
   }
 
   return (
     <>
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      <Dialog open={open} onClose={close}>
         <DialogTitle>Create New</DialogTitle>
-        <DialogContent></DialogContent>
+        <DialogContent>
+          <Stack direction="column" spacing={2} sx={{ mt: "0.5em", minWidth: "25em" }}>
+            <Autocomplete
+              freeSolo
+              selectOnFocus
+              clearOnBlur
+              handleHomeEndKeys
+              disableClearable
+              options={partNames}
+              value={rebooking.part}
+              onChange={(_, v) => setRebooking((r) => ({ ...r, part: v }))}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Part Name"
+                  slotProps={{
+                    input: {
+                      ...params.InputProps,
+                      startAdornment: (
+                        <>
+                          {rebooking.part !== "" ? (
+                            <InputAdornment position="start">
+                              <PartIdenticon part={rebooking.part} size={25} />
+                            </InputAdornment>
+                          ) : undefined}
+                          {params.InputProps.startAdornment}
+                        </>
+                      ),
+                    },
+                  }}
+                />
+              )}
+              renderOption={(props, option) => (
+                <li {...props}>
+                  <Stack direction="row" spacing="1" alignItems="center">
+                    <PartIdenticon part={option} size={25} />
+                    {option}
+                  </Stack>
+                </li>
+              )}
+              filterOptions={(options, params) => {
+                const filtered = options.filter((o) =>
+                  o.toLowerCase().includes(params.inputValue.toLowerCase()),
+                );
+                return filtered.length === 0 && params.inputValue !== "" ? [params.inputValue] : filtered;
+              }}
+            />
+            <TextField
+              label="Quantity"
+              type="number"
+              value={rebooking.qty && !isNaN(rebooking.qty) ? rebooking.qty : ""}
+              onChange={(e) => setRebooking((r) => ({ ...r, qty: parseInt(e.target.value) }))}
+            />
+            <TextField
+              label="Workorder (optional)"
+              value={rebooking.workorder ?? ""}
+              onChange={(e) => setRebooking((r) => ({ ...r, workorder: e.target.value }))}
+            />
+            <TextField
+              label="Priority (optional)"
+              type="number"
+              value={rebooking.priority && !isNaN(rebooking.priority) ? rebooking.priority : ""}
+              onChange={(e) => setRebooking((r) => ({ ...r, priority: parseInt(e.target.value) }))}
+            />
+            <TextField
+              label="Notes (optional)"
+              multiline
+              value={rebooking.notes ?? ""}
+              onChange={(e) => setRebooking((r) => ({ ...r, notes: e.target.value }))}
+            />
+          </Stack>
+        </DialogContent>
         <DialogActions>
-          <Button color="secondary" onClick={create}>
+          <Button color="secondary" onClick={create} disabled={!allowCreate || creating}>
+            {creating ? <CircularProgress size={24} /> : undefined}
             Create
           </Button>
           <Button onClick={() => setOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
-      <Fab onClick={() => setOpen(true)} sx={{ position: "fixed", bottom: "24px", right: "24px" }}>
-        <Add />
-      </Fab>
+      <Tooltip title="Add Rebooking">
+        <Fab
+          onClick={() => setOpen(true)}
+          sx={{ position: "fixed", bottom: "24px", right: "24px" }}
+          color="primary"
+        >
+          <Add />
+        </Fab>
+      </Tooltip>
     </>
   );
 });

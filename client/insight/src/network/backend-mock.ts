@@ -551,6 +551,7 @@ export function registerMockBackend(
       qty: number | undefined,
       workorder: string | null | undefined,
       restrictedProcs: number[] | null | undefined,
+      priority: number | null | undefined,
       notes: string | undefined,
     ): Promise<Readonly<api.ILogEntry>> {
       return Promise.resolve({
@@ -561,7 +562,7 @@ export function registerMockBackend(
         startofcycle: false,
         endUTC: new Date(),
         loc: "Rebooking",
-        locnum: 1,
+        locnum: priority ?? 0,
         result: "Rebooking",
         program: partName,
         elapsed: "PT0S",

@@ -1796,6 +1796,16 @@
               }
             },
             "x-position": 5
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 6
           }
         ],
         "requestBody": {

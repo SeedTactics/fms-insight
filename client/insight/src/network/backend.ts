@@ -135,6 +135,7 @@ export interface LogAPI {
     qty: number | undefined,
     workorder: string | null | undefined,
     restrictedProcs: number[] | null | undefined,
+    priority: number | null | undefined,
     notes: string | undefined,
   ): Promise<Readonly<api.ILogEntry>>;
 }

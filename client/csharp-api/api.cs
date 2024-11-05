@@ -3836,14 +3836,14 @@ namespace BlackMaple.FMSInsight.API
         }
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<LogEntry> RequestRebookingWithoutMaterialAsync(string partName, int? qty, string workorder, System.Collections.Generic.IEnumerable<int> restrictedProcs, string notes)
+        public virtual System.Threading.Tasks.Task<LogEntry> RequestRebookingWithoutMaterialAsync(string partName, int? qty, string workorder, System.Collections.Generic.IEnumerable<int> restrictedProcs, int? priority, string notes)
         {
-            return RequestRebookingWithoutMaterialAsync(partName, qty, workorder, restrictedProcs, notes, System.Threading.CancellationToken.None);
+            return RequestRebookingWithoutMaterialAsync(partName, qty, workorder, restrictedProcs, priority, notes, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<LogEntry> RequestRebookingWithoutMaterialAsync(string partName, int? qty, string workorder, System.Collections.Generic.IEnumerable<int> restrictedProcs, string notes, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<LogEntry> RequestRebookingWithoutMaterialAsync(string partName, int? qty, string workorder, System.Collections.Generic.IEnumerable<int> restrictedProcs, int? priority, string notes, System.Threading.CancellationToken cancellationToken)
         {
             if (partName == null)
                 throw new System.ArgumentNullException("partName");
@@ -3878,6 +3878,10 @@ namespace BlackMaple.FMSInsight.API
                     if (restrictedProcs != null)
                     {
                         foreach (var item_ in restrictedProcs) { urlBuilder_.Append(System.Uri.EscapeDataString("restrictedProcs")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture))).Append('&'); }
+                    }
+                    if (priority != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("priority")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(priority, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     urlBuilder_.Length--;
 

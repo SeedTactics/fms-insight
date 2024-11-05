@@ -80,7 +80,7 @@ function convertLogToRebooking(log: Readonly<ILogEntry>): Readonly<IRebooking> {
     qty = parseInt(log.details["Quantity"], 10);
   }
   let mat: MaterialDetails | undefined;
-  if (log.material?.[0].id >= 0) {
+  if (log.material?.[0]?.id >= 0) {
     const m = log.material[0];
     mat = new MaterialDetails({
       materialID: m.id,
@@ -104,7 +104,7 @@ function convertLogToRebooking(log: Readonly<ILogEntry>): Readonly<IRebooking> {
     timeUTC: log.endUTC,
     priority: log.locnum,
     notes: log.details?.["Notes"],
-    workorder: log.details?.["Workorder"] ?? log.material?.[0].workorder,
+    workorder: log.details?.["Workorder"] ?? log.material?.[0]?.workorder,
     restrictedProcs: restrictedProcs as number[],
     material: mat,
   };
@@ -188,6 +188,7 @@ export type NewRebooking = {
   readonly qty?: number;
   readonly workorder?: string | null;
   readonly restrictedProcs?: ReadonlyArray<number> | null;
+  readonly priority?: number | null;
   readonly notes?: string;
 };
 
@@ -197,9 +198,10 @@ export function useNewRebooking(): [(n: NewRebooking) => Promise<void>, boolean]
     setLoading(true);
     return LogBackend.requestRebookingWithoutMaterial(
       n.part,
-      n.qty,
+      n.qty && !isNaN(n.qty) ? n.qty : 1,
       n.workorder,
       n.restrictedProcs as number[],
+      n.priority !== undefined && n.priority !== null && !isNaN(n.priority) ? n.priority : undefined,
       n.notes,
     )
       .then(() => {})

@@ -292,7 +292,8 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] int qty = 1,
       [FromBody] string? notes = null,
       [FromQuery] string? workorder = null,
-      [FromQuery] int[]? restrictedProcs = null
+      [FromQuery] int[]? restrictedProcs = null,
+      [FromQuery] int? priority = null
     )
     {
       if (fmsSt.RebookingPrefix == null)
@@ -304,6 +305,7 @@ namespace BlackMaple.MachineFramework.Controllers
         bookingId: fmsSt.RebookingPrefix + Guid.NewGuid().ToString(),
         partName: partName,
         workorder: workorder,
+        priority: priority,
         qty: qty,
         notes: notes,
         restrictedProcs: restrictedProcs == null ? null : new HashSet<int>(restrictedProcs)
