@@ -84,6 +84,7 @@ enum ColumnId {
   Quantity,
   RequestTime,
   Priority,
+  Workorder,
   Canceled,
   Job,
   SchTime,
@@ -147,6 +148,12 @@ const columns: ReadonlyArray<Col> = [
     label: "Priority",
     getDisplay: (r) => (r.priority ? r.priority.toString() : ""),
     getForSort: (r) => r.priority ?? 0,
+  },
+  {
+    id: ColumnId.Workorder,
+    numeric: false,
+    label: "Workorder",
+    getDisplay: (r) => r.workorder ?? "",
   },
   {
     id: ColumnId.Canceled,
@@ -382,19 +389,20 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
               onChange={(e) => setRebooking((r) => ({ ...r, qty: parseInt(e.target.value) }))}
             />
             <TextField
-              label="Workorder (optional)"
-              value={rebooking.workorder ?? ""}
-              onChange={(e) => setRebooking((r) => ({ ...r, workorder: e.target.value }))}
-            />
-            <TextField
               label="Priority (optional)"
               type="number"
               value={rebooking.priority && !isNaN(rebooking.priority) ? rebooking.priority : ""}
               onChange={(e) => setRebooking((r) => ({ ...r, priority: parseInt(e.target.value) }))}
             />
             <TextField
+              label="Workorder (optional)"
+              value={rebooking.workorder ?? ""}
+              onChange={(e) => setRebooking((r) => ({ ...r, workorder: e.target.value }))}
+            />
+            <TextField
               label="Notes (optional)"
               multiline
+              minRows={2}
               value={rebooking.notes ?? ""}
               onChange={(e) => setRebooking((r) => ({ ...r, notes: e.target.value }))}
             />
@@ -405,7 +413,7 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
             {creating ? <CircularProgress size={24} /> : undefined}
             Create
           </Button>
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={close}>Cancel</Button>
         </DialogActions>
       </Dialog>
       <Tooltip title="Add Rebooking">
