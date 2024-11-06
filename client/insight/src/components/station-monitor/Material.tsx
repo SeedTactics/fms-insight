@@ -322,7 +322,7 @@ function RebookingNoteElipsis({ fsize, uniq }: { fsize?: MatCardFontSize; uniq: 
       return (
         <MatCardDetail
           fsize={fsize}
-          style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", width: "100%" }}
+          style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: "10em" }}
         >
           {b.notes}
         </MatCardDetail>
@@ -735,7 +735,7 @@ function RebookingNote() {
     if (b && b.notes && b.notes !== "") {
       return (
         <Typography variant="caption" sx={{ width: "100%", textWrap: "wrap" }}>
-          Rebooking: {b.notes}
+          {b.notes}
         </Typography>
       );
     }
