@@ -384,6 +384,7 @@ namespace BlackMaple.MachineFramework
       DateTime? timeUTC = null
     );
     LogEntry CancelRebooking(string bookingId, DateTime? timeUTC = null);
+    Rebooking LookupRebooking(string bookingId);
 
     // --------------------------------------------------------------------------------
     // Material IDs

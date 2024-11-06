@@ -3123,6 +3123,53 @@ namespace BlackMaple.MachineFramework
         return AddLogEntry(trans, log, foreignID: null, origMessage: null);
       });
     }
+
+    public Rebooking LookupRebooking(string bookingId)
+    {
+      using var cmd = _connection.CreateCommand();
+      using var trans = _connection.BeginTransaction();
+      cmd.Transaction = trans;
+
+      cmd.CommandText = "SELECT Process FROM rebookings_procs WHERE BookingId = $id";
+      cmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
+
+      var procs = ImmutableHashSet.CreateBuilder<int>();
+
+      using (var reader = cmd.ExecuteReader())
+      {
+        while (reader.Read())
+        {
+          procs.Add(reader.GetInt32(0));
+        }
+      }
+
+      cmd.CommandText =
+        "SELECT BookingId, TimeUTC, Part, Notes, MaterialID, Workorder, Quantity, Priority FROM rebookings WHERE BookingId = $id LIMIT 1";
+
+      using (var reader = cmd.ExecuteReader())
+      {
+        if (reader.Read() == false)
+        {
+          return null;
+        }
+
+        long matId = reader.IsDBNull(4) ? -1 : reader.GetInt64(4);
+        var details = matId >= 0 ? GetMaterialDetails(matId, trans: trans) : null;
+
+        return new Rebooking()
+        {
+          BookingId = reader.GetString(0),
+          TimeUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc),
+          PartName = reader.GetString(2),
+          Notes = reader.IsDBNull(3) ? null : reader.GetString(3),
+          Material = details,
+          Workorder = reader.IsDBNull(5) ? null : reader.GetString(5),
+          Quantity = reader.GetInt32(6),
+          Priority = reader.IsDBNull(7) ? null : reader.GetInt32(7),
+          RestrictedProcs = procs.Count == 0 ? null : procs.ToImmutable(),
+        };
+      }
+    }
     #endregion
 
     #region Material IDs

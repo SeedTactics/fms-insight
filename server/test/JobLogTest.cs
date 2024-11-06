@@ -5024,6 +5024,8 @@ namespace MachineWatchTest
 
       db.GetLogForMaterial(mat).Should().BeEquivalentTo([workLogMat1, expectedLog]);
 
+      db.LookupRebooking(booking1).Should().BeEquivalentTo(expectedR);
+      db.LookupRebooking("notfound").Should().BeNull();
       db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR]);
       db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR]);
 
