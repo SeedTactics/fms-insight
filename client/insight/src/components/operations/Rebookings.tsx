@@ -275,16 +275,14 @@ const RebookingDialog = memo(function RebookingDialog({
           {rebooking?.workorder && <Typography>Workorder: {rebooking?.workorder}</Typography>}
           {rebooking?.material?.serial && <Typography>Serial: {rebooking?.material?.serial}</Typography>}
           <Typography>Note: {rebooking?.notes}</Typography>
-        </Stack>
-        {rebooking?.job && (
-          <>
-            <Divider />
-            <Stack direction="row" spacing={1}>
+          {rebooking?.job && (
+            <>
+              <Divider />
               <Typography>Scheduled Job: {rebooking?.job}</Typography>
               <Typography>Scheduled Time: {rebooking?.schTime?.toLocaleString()}</Typography>
-            </Stack>
-          </>
-        )}
+            </>
+          )}
+        </Stack>
       </DialogContent>
       <DialogActions>
         {!rebooking?.canceled && !rebooking?.job && (
