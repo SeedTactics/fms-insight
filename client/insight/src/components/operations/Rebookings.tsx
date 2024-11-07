@@ -273,7 +273,6 @@ const RebookingDialog = memo(function RebookingDialog({
           <Typography>Request Time: {longDateFormat.format(rebooking?.timeUTC)}</Typography>
           <Typography>Priority: {rebooking?.priority}</Typography>
           {rebooking?.workorder && <Typography>Workorder: {rebooking?.workorder}</Typography>}
-          {rebooking?.material?.serial && <Typography>Serial: {rebooking?.material?.serial}</Typography>}
           <Typography>Note: {rebooking?.notes}</Typography>
           {rebooking?.job && (
             <>

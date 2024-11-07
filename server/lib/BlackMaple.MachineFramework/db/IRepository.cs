@@ -365,15 +365,7 @@ namespace BlackMaple.MachineFramework
       string operatorName,
       DateTime? timeUTC = null
     );
-    LogEntry CreateRebookingForMaterial(
-      string bookingId,
-      long matId,
-      string notes = null,
-      int? priority = null,
-      IReadOnlySet<int> restrictedProcs = null,
-      DateTime? timeUTC = null
-    );
-    LogEntry CreateRebookingWithoutMaterial(
+    LogEntry CreateRebooking(
       string bookingId,
       string partName,
       int qty = 1,

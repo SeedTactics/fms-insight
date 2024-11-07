@@ -1689,70 +1689,12 @@
         }
       }
     },
-    "/api/v1/log/material-details/{materialID}/rebooking": {
-      "post": {
-        "tags": [
-          "Log"
-        ],
-        "operationId": "Log_RequestRebookingForMaterial",
-        "parameters": [
-          {
-            "name": "materialID",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "restrictedProcs",
-            "in": "query",
-            "style": "form",
-            "explode": true,
-            "schema": {
-              "type": "array",
-              "nullable": true,
-              "items": {
-                "type": "integer",
-                "format": "int32"
-              }
-            },
-            "x-position": 3
-          }
-        ],
-        "requestBody": {
-          "x-name": "notes",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          },
-          "x-position": 2
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LogEntry"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/log/events/rebooking": {
       "post": {
         "tags": [
           "Log"
         ],
-        "operationId": "Log_RequestRebookingWithoutMaterial",
+        "operationId": "Log_RequestRebooking",
         "parameters": [
           {
             "name": "partName",
@@ -2231,10 +2173,6 @@
           },
           "SupportsRebookings": {
             "type": "string",
-            "nullable": true
-          },
-          "ManagementOnlyRebookings": {
-            "type": "boolean",
             "nullable": true
           },
           "AllowChangeWorkorderAtLoadStation": {
@@ -4137,22 +4075,6 @@
           "Workorder": {
             "type": "string",
             "nullable": true
-          },
-          "RestrictedProcs": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          "Material": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/MaterialDetails"
-              }
-            ]
           }
         }
       },

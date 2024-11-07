@@ -3745,105 +3745,14 @@ namespace BlackMaple.FMSInsight.API
         }
 
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<LogEntry> RequestRebookingForMaterialAsync(long materialID, System.Collections.Generic.IEnumerable<int> restrictedProcs, string notes)
+        public virtual System.Threading.Tasks.Task<LogEntry> RequestRebookingAsync(string partName, int? qty, string workorder, int? priority, string notes)
         {
-            return RequestRebookingForMaterialAsync(materialID, restrictedProcs, notes, System.Threading.CancellationToken.None);
+            return RequestRebookingAsync(partName, qty, workorder, priority, notes, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<LogEntry> RequestRebookingForMaterialAsync(long materialID, System.Collections.Generic.IEnumerable<int> restrictedProcs, string notes, System.Threading.CancellationToken cancellationToken)
-        {
-            if (materialID == null)
-                throw new System.ArgumentNullException("materialID");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = Newtonsoft.Json.JsonConvert.SerializeObject(notes, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.StringContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                    if (!string.IsNullOrEmpty(_baseUrl)) urlBuilder_.Append(_baseUrl);
-                    // Operation Path: "api/v1/log/material-details/{materialID}/rebooking"
-                    urlBuilder_.Append("api/v1/log/material-details/");
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(materialID, System.Globalization.CultureInfo.InvariantCulture)));
-                    urlBuilder_.Append("/rebooking");
-                    urlBuilder_.Append('?');
-                    if (restrictedProcs != null)
-                    {
-                        foreach (var item_ in restrictedProcs) { urlBuilder_.Append(System.Uri.EscapeDataString("restrictedProcs")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture))).Append('&'); }
-                    }
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<LogEntry>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
-                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<LogEntry> RequestRebookingWithoutMaterialAsync(string partName, int? qty, string workorder, int? priority, string notes)
-        {
-            return RequestRebookingWithoutMaterialAsync(partName, qty, workorder, priority, notes, System.Threading.CancellationToken.None);
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<LogEntry> RequestRebookingWithoutMaterialAsync(string partName, int? qty, string workorder, int? priority, string notes, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<LogEntry> RequestRebookingAsync(string partName, int? qty, string workorder, int? priority, string notes, System.Threading.CancellationToken cancellationToken)
         {
             if (partName == null)
                 throw new System.ArgumentNullException("partName");
@@ -5077,9 +4986,6 @@ namespace BlackMaple.FMSInsight.API
 
         [Newtonsoft.Json.JsonProperty("SupportsRebookings", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string SupportsRebookings { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("ManagementOnlyRebookings", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public bool? ManagementOnlyRebookings { get; set; }
 
         [Newtonsoft.Json.JsonProperty("AllowChangeWorkorderAtLoadStation", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public bool? AllowChangeWorkorderAtLoadStation { get; set; }
@@ -6398,12 +6304,6 @@ namespace BlackMaple.FMSInsight.API
 
         [Newtonsoft.Json.JsonProperty("Workorder", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Workorder { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("RestrictedProcs", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public System.Collections.Generic.ICollection<int> RestrictedProcs { get; set; }
-
-        [Newtonsoft.Json.JsonProperty("Material", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public MaterialDetails Material { get; set; }
 
     }
 

@@ -1737,51 +1737,7 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    requestRebookingForMaterial(materialID: number, restrictedProcs: number[] | null | undefined, notes: string | undefined, signal?: AbortSignal): Promise<LogEntry> {
-        let url_ = this.baseUrl + "/api/v1/log/material-details/{materialID}/rebooking?";
-        if (materialID === undefined || materialID === null)
-            throw new Error("The parameter 'materialID' must be defined.");
-        url_ = url_.replace("{materialID}", encodeURIComponent("" + materialID));
-        if (restrictedProcs !== undefined && restrictedProcs !== null)
-            restrictedProcs && restrictedProcs.forEach(item => { url_ += "restrictedProcs=" + encodeURIComponent("" + item) + "&"; });
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(notes);
-
-        let options_: RequestInit = {
-            body: content_,
-            method: "POST",
-            signal,
-            headers: {
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            }
-        };
-
-        return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRequestRebookingForMaterial(_response);
-        });
-    }
-
-    protected processRequestRebookingForMaterial(response: Response): Promise<LogEntry> {
-        const status = response.status;
-        let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
-        if (status === 200) {
-            return response.text().then((_responseText) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = LogEntry.fromJS(resultData200);
-            return result200;
-            });
-        } else if (status !== 200 && status !== 204) {
-            return response.text().then((_responseText) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            });
-        }
-        return Promise.resolve<LogEntry>(null as any);
-    }
-
-    requestRebookingWithoutMaterial(partName: string, qty: number | undefined, workorder: string | null | undefined, priority: number | null | undefined, notes: string | undefined, signal?: AbortSignal): Promise<LogEntry> {
+    requestRebooking(partName: string, qty: number | undefined, workorder: string | null | undefined, priority: number | null | undefined, notes: string | undefined, signal?: AbortSignal): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/events/rebooking?";
         if (partName === undefined || partName === null)
             throw new Error("The parameter 'partName' must be defined and cannot be null.");
@@ -1810,11 +1766,11 @@ export class LogClient {
         };
 
         return this.http.fetch(url_, options_).then((_response: Response) => {
-            return this.processRequestRebookingWithoutMaterial(_response);
+            return this.processRequestRebooking(_response);
         });
     }
 
-    protected processRequestRebookingWithoutMaterial(response: Response): Promise<LogEntry> {
+    protected processRequestRebooking(response: Response): Promise<LogEntry> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
@@ -2279,7 +2235,6 @@ export class FMSInfo implements IFMSInfo {
     quarantineQueue?: string | undefined;
     customStationMonitorDialogUrl?: string | undefined;
     supportsRebookings?: string | undefined;
-    managementOnlyRebookings?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowSwapSerialAtLoadStation?: boolean | undefined;
     allowInvalidateMaterialAtLoadStation?: boolean | undefined;
@@ -2319,7 +2274,6 @@ export class FMSInfo implements IFMSInfo {
             this.quarantineQueue = _data["QuarantineQueue"];
             this.customStationMonitorDialogUrl = _data["CustomStationMonitorDialogUrl"];
             this.supportsRebookings = _data["SupportsRebookings"];
-            this.managementOnlyRebookings = _data["ManagementOnlyRebookings"];
             this.allowChangeWorkorderAtLoadStation = _data["AllowChangeWorkorderAtLoadStation"];
             this.allowSwapSerialAtLoadStation = _data["AllowSwapSerialAtLoadStation"];
             this.allowInvalidateMaterialAtLoadStation = _data["AllowInvalidateMaterialAtLoadStation"];
@@ -2359,7 +2313,6 @@ export class FMSInfo implements IFMSInfo {
         data["QuarantineQueue"] = this.quarantineQueue;
         data["CustomStationMonitorDialogUrl"] = this.customStationMonitorDialogUrl;
         data["SupportsRebookings"] = this.supportsRebookings;
-        data["ManagementOnlyRebookings"] = this.managementOnlyRebookings;
         data["AllowChangeWorkorderAtLoadStation"] = this.allowChangeWorkorderAtLoadStation;
         data["AllowSwapSerialAtLoadStation"] = this.allowSwapSerialAtLoadStation;
         data["AllowInvalidateMaterialAtLoadStation"] = this.allowInvalidateMaterialAtLoadStation;
@@ -2388,7 +2341,6 @@ export interface IFMSInfo {
     quarantineQueue?: string | undefined;
     customStationMonitorDialogUrl?: string | undefined;
     supportsRebookings?: string | undefined;
-    managementOnlyRebookings?: boolean | undefined;
     allowChangeWorkorderAtLoadStation?: boolean | undefined;
     allowSwapSerialAtLoadStation?: boolean | undefined;
     allowInvalidateMaterialAtLoadStation?: boolean | undefined;
@@ -5386,8 +5338,6 @@ export class Rebooking implements IRebooking {
     priority?: number | undefined;
     notes?: string | undefined;
     workorder?: string | undefined;
-    restrictedProcs?: number[] | undefined;
-    material?: MaterialDetails | undefined;
 
     constructor(data?: IRebooking) {
         if (data) {
@@ -5407,12 +5357,6 @@ export class Rebooking implements IRebooking {
             this.priority = _data["Priority"];
             this.notes = _data["Notes"];
             this.workorder = _data["Workorder"];
-            if (Array.isArray(_data["RestrictedProcs"])) {
-                this.restrictedProcs = [] as any;
-                for (let item of _data["RestrictedProcs"])
-                    this.restrictedProcs!.push(item);
-            }
-            this.material = _data["Material"] ? MaterialDetails.fromJS(_data["Material"]) : <any>undefined;
         }
     }
 
@@ -5432,12 +5376,6 @@ export class Rebooking implements IRebooking {
         data["Priority"] = this.priority;
         data["Notes"] = this.notes;
         data["Workorder"] = this.workorder;
-        if (Array.isArray(this.restrictedProcs)) {
-            data["RestrictedProcs"] = [];
-            for (let item of this.restrictedProcs)
-                data["RestrictedProcs"].push(item);
-        }
-        data["Material"] = this.material ? this.material.toJSON() : <any>undefined;
         return data;
     }
 }
@@ -5450,8 +5388,6 @@ export interface IRebooking {
     priority?: number | undefined;
     notes?: string | undefined;
     workorder?: string | undefined;
-    restrictedProcs?: number[] | undefined;
-    material?: MaterialDetails | undefined;
 }
 
 export class SimulationResults implements ISimulationResults {

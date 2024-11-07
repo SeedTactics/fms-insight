@@ -2513,13 +2513,7 @@ namespace MachineWatchTest
       var booking2 = _fixture.Create<string>();
       var job = RandJob() with { BookingIds = [booking1] };
 
-      db.CreateRebookingWithoutMaterial(
-        bookingId: booking1,
-        partName: job.PartName,
-        qty: 4,
-        priority: 12,
-        timeUTC: now
-      );
+      db.CreateRebooking(bookingId: booking1, partName: job.PartName, qty: 4, priority: 12, timeUTC: now);
 
       var rebooking1 = new Rebooking()
       {
@@ -2528,10 +2522,9 @@ namespace MachineWatchTest
         Quantity = 4,
         TimeUTC = now,
         Priority = 12,
-        Material = null,
       };
 
-      db.CreateRebookingWithoutMaterial(
+      db.CreateRebooking(
         bookingId: booking2,
         partName: job.PartName,
         qty: 5,
@@ -2547,7 +2540,6 @@ namespace MachineWatchTest
         Quantity = 5,
         TimeUTC = now.AddMinutes(1),
         Priority = 13,
-        Material = null,
         Workorder = "work22",
       };
 

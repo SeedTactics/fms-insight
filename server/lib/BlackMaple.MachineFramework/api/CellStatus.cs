@@ -98,8 +98,6 @@ namespace BlackMaple.MachineFramework
     public int? Priority { get; init; }
     public string? Notes { get; init; }
     public string? Workorder { get; init; }
-    public ImmutableHashSet<int>? RestrictedProcs { get; init; }
-    public MaterialDetails? Material { get; init; }
   }
 
   public record HistoricData

@@ -130,7 +130,7 @@ export interface LogAPI {
     signal?: AbortSignal,
   ): Promise<ReadonlyArray<Readonly<api.IActiveWorkorder>>>;
   cancelRebooking(bookingId: string): Promise<Readonly<api.ILogEntry>>;
-  requestRebookingWithoutMaterial(
+  requestRebooking(
     partName: string,
     qty: number | undefined,
     workorder: string | null | undefined,

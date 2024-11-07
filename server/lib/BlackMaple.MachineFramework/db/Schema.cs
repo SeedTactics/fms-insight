@@ -299,15 +299,11 @@ namespace BlackMaple.MachineFramework
 
         // The rebookings table is just be a cache of the planned rebookings from the station log + job scheduled bookings, but are extracted here for easier querying.
         cmd.CommandText =
-          "CREATE TABLE rebookings(BookingId TEXT PRIMARY KEY, TimeUTC INTEGER NOT NULL, Part TEXT NOT NULL, Notes TEXT, MaterialID INTEGER, Workorder TEXT, Quantity INTEGER, Priority INTEGER, JobUnique TEXT, Canceled INTEGER)";
+          "CREATE TABLE rebookings(BookingId TEXT PRIMARY KEY, TimeUTC INTEGER NOT NULL, Part TEXT NOT NULL, Notes TEXT, Workorder TEXT, Quantity INTEGER, Priority INTEGER, JobUnique TEXT, Canceled INTEGER)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
           "CREATE INDEX rebookings_open ON rebookings(Canceled, JobUnique) WHERE Canceled IS NULL AND JobUnique IS NULL";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText =
-          "CREATE TABLE rebookings_procs(BookingId TEXT, Process INTEGER, PRIMARY KEY(BookingId, Process))";
         cmd.ExecuteNonQuery();
       }
     }
@@ -1175,15 +1171,11 @@ namespace BlackMaple.MachineFramework
       cmd.Transaction = trans;
 
       cmd.CommandText =
-        "CREATE TABLE rebookings(BookingId TEXT PRIMARY KEY, TimeUTC INTEGER NOT NULL, Part TEXT NOT NULL, Notes TEXT, MaterialID INTEGER, Workorder TEXT, Quantity INTEGER, Priority INTEGER, JobUnique TEXT, Canceled INTEGER)";
+        "CREATE TABLE rebookings(BookingId TEXT PRIMARY KEY, TimeUTC INTEGER NOT NULL, Part TEXT NOT NULL, Notes TEXT, Workorder TEXT, Quantity INTEGER, Priority INTEGER, JobUnique TEXT, Canceled INTEGER)";
       cmd.ExecuteNonQuery();
 
       cmd.CommandText =
         "CREATE INDEX rebookings_open ON rebookings(Canceled, JobUnique) WHERE Canceled IS NULL AND JobUnique IS NULL";
-      cmd.ExecuteNonQuery();
-
-      cmd.CommandText =
-        "CREATE TABLE rebookings_procs(BookingId TEXT, Process INTEGER, PRIMARY KEY(BookingId, Process))";
       cmd.ExecuteNonQuery();
     }
 

@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { Atom, atom, Setter } from "jotai";
 import { ServerEventAndTime } from "./loading";
-import { IJob, ILogEntry, IRebooking, IRecentHistoricData, LogType, MaterialDetails } from "../network/api";
+import { IJob, ILogEntry, IRebooking, IRecentHistoricData, LogType } from "../network/api";
 import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { JobsBackend, LogBackend } from "../network/backend";
 import { loadable } from "jotai/utils";
@@ -79,23 +79,6 @@ function convertLogToRebooking(log: Readonly<ILogEntry>): Readonly<IRebooking> {
   if (log.details?.["Quantity"]) {
     qty = parseInt(log.details["Quantity"], 10);
   }
-  let mat: MaterialDetails | undefined;
-  if (log.material?.[0]?.id >= 0) {
-    const m = log.material[0];
-    mat = new MaterialDetails({
-      materialID: m.id,
-      jobUnique: m.uniq,
-      partName: m.part,
-      numProcesses: m.numproc,
-      workorder: m.workorder,
-      serial: m.serial,
-    });
-  }
-
-  const restrictedProcs = LazySeq.of(log.material ?? [])
-    .map((m) => m.proc)
-    .filter((p) => p > 0)
-    .toSortedArray((p) => p);
 
   return {
     bookingId: log.result,
@@ -105,8 +88,6 @@ function convertLogToRebooking(log: Readonly<ILogEntry>): Readonly<IRebooking> {
     priority: log.locnum,
     notes: log.details?.["Notes"],
     workorder: log.details?.["Workorder"] ?? log.material?.[0]?.workorder,
-    restrictedProcs: restrictedProcs as number[],
-    material: mat,
   };
 }
 
@@ -195,7 +176,7 @@ export function useNewRebooking(): [(n: NewRebooking) => Promise<void>, boolean]
   const [loading, setLoading] = useState(false);
   const callback = useCallback((n: NewRebooking) => {
     setLoading(true);
-    return LogBackend.requestRebookingWithoutMaterial(
+    return LogBackend.requestRebooking(
       n.part,
       n.qty && !isNaN(n.qty) ? n.qty : 1,
       n.workorder,

@@ -4954,17 +4954,6 @@ namespace MachineWatchTest
       var now = DateTime.UtcNow.AddHours(-5);
 
       using var db = _repoCfg.OpenConnection();
-      var mat = db.AllocateMaterialID("uniq1", "part1", 2);
-      var workLogMat1 = db.RecordWorkorderForMaterialID(
-        new EventLogMaterial()
-        {
-          MaterialID = mat,
-          Process = 0,
-          Face = 0,
-        },
-        "work1",
-        now.AddSeconds(1)
-      );
 
       var booking1 = _fixture.Create<string>();
       var note = _fixture.Create<string>();
@@ -4972,21 +4961,8 @@ namespace MachineWatchTest
 
       var expectedLog = new LogEntry()
       {
-        Counter = 2,
-        Material =
-        [
-          new LogMaterial()
-          {
-            MaterialID = mat,
-            JobUniqueStr = "uniq1",
-            PartName = "part1",
-            Serial = "",
-            Workorder = "work1",
-            Process = 0,
-            Face = 0,
-            NumProcesses = 2,
-          },
-        ],
+        Counter = 1,
+        Material = [],
         Pallet = 0,
         LogType = LogType.Rebooking,
         LocationName = "Rebooking",
@@ -4997,7 +4973,10 @@ namespace MachineWatchTest
         ElapsedTime = TimeSpan.Zero,
         ActiveOperationTime = TimeSpan.Zero,
         Result = booking1,
-        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("Notes", note),
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.Add("Notes", note)
+          .Add("Workorder", "work1")
+          .Add("Quantity", "1"),
       };
 
       var expectedR = new Rebooking()
@@ -5009,20 +4988,19 @@ namespace MachineWatchTest
         Workorder = "work1",
         Notes = note,
         TimeUTC = now.AddMinutes(1),
-        Material = db.GetMaterialDetails(mat),
       };
 
-      db.CreateRebookingForMaterial(
+      db.CreateRebooking(
           bookingId: booking1,
-          matId: mat,
+          partName: "part1",
+          workorder: "work1",
+          qty: 1,
           notes: note,
           priority: pri,
           timeUTC: now.AddMinutes(1)
         )
         .Should()
         .BeEquivalentTo(expectedLog);
-
-      db.GetLogForMaterial(mat).Should().BeEquivalentTo([workLogMat1, expectedLog]);
 
       db.LookupRebooking(booking1).Should().BeEquivalentTo(expectedR);
       db.LookupRebooking("notfound").Should().BeNull();
@@ -5038,7 +5016,7 @@ namespace MachineWatchTest
 
       var expectedLog2 = new LogEntry()
       {
-        Counter = 3,
+        Counter = 2,
         Material = [],
         Pallet = 0,
         LogType = LogType.Rebooking,
@@ -5065,10 +5043,9 @@ namespace MachineWatchTest
         Workorder = work2,
         Notes = note2,
         TimeUTC = now.AddMinutes(2),
-        Material = null,
       };
 
-      db.CreateRebookingWithoutMaterial(
+      db.CreateRebooking(
           bookingId: booking2,
           partName: part2,
           qty: 2,
@@ -5087,21 +5064,8 @@ namespace MachineWatchTest
 
       var expectedCancel = new LogEntry()
       {
-        Counter = 4,
-        Material =
-        [
-          new LogMaterial()
-          {
-            MaterialID = mat,
-            JobUniqueStr = "uniq1",
-            PartName = "part1",
-            Serial = "",
-            Workorder = "work1",
-            Process = 0,
-            Face = 0,
-            NumProcesses = 2,
-          },
-        ],
+        Counter = 3,
+        Material = [],
         Pallet = 0,
         LogType = LogType.CancelRebooking,
         LocationName = "CancelRebooking",
@@ -5118,78 +5082,8 @@ namespace MachineWatchTest
         .Should()
         .BeEquivalentTo(expectedCancel);
 
-      db.GetLogForMaterial(mat).Should().BeEquivalentTo([workLogMat1, expectedLog, expectedCancel]);
-
       db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR2]);
       db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR2]);
-    }
-
-    [Fact]
-    public void RebookingsMatWithProcs()
-    {
-      var now = DateTime.UtcNow.AddHours(-5);
-
-      using var db = _repoCfg.OpenConnection();
-      var mat = db.AllocateMaterialID("uniq1", "part1", 4);
-
-      var booking1 = _fixture.Create<string>();
-      var note = _fixture.Create<string>();
-      var pri = _fixture.Create<int>();
-
-      var expectedLog = new LogEntry()
-      {
-        Counter = 1,
-        Material = (new[] { 1, 3 })
-          .Select(proc => new LogMaterial()
-          {
-            MaterialID = mat,
-            JobUniqueStr = "uniq1",
-            PartName = "part1",
-            Serial = "",
-            Workorder = "",
-            Process = proc,
-            Face = 0,
-            NumProcesses = 4,
-          })
-          .ToImmutableList(),
-        Pallet = 0,
-        LogType = LogType.Rebooking,
-        LocationName = "Rebooking",
-        LocationNum = pri,
-        Program = "part1",
-        StartOfCycle = false,
-        EndTimeUTC = now.AddMinutes(1),
-        ElapsedTime = TimeSpan.Zero,
-        ActiveOperationTime = TimeSpan.Zero,
-        Result = booking1,
-        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("Notes", note),
-      };
-
-      var expectedR = new Rebooking()
-      {
-        BookingId = booking1,
-        PartName = "part1",
-        Quantity = 1,
-        Priority = pri,
-        Notes = note,
-        TimeUTC = now.AddMinutes(1),
-        Material = db.GetMaterialDetails(mat),
-        RestrictedProcs = [1, 3],
-      };
-
-      db.CreateRebookingForMaterial(
-          bookingId: booking1,
-          matId: mat,
-          notes: note,
-          priority: pri,
-          timeUTC: now.AddMinutes(1),
-          restrictedProcs: new HashSet<int>([1, 3])
-        )
-        .Should()
-        .BeEquivalentTo(expectedLog);
-
-      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR]);
-      db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR]);
     }
 
     #region Helpers

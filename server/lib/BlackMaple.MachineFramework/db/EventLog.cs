@@ -2890,74 +2890,7 @@ namespace BlackMaple.MachineFramework
       return newLogEntries;
     }
 
-    public LogEntry CreateRebookingForMaterial(
-      string bookingId,
-      long matId,
-      string notes = null,
-      int? priority = null,
-      IReadOnlySet<int> restrictedProcs = null,
-      DateTime? timeUTC = null
-    )
-    {
-      return AddEntryInTransaction(trans =>
-      {
-        var time = timeUTC ?? DateTime.UtcNow;
-
-        var details = GetMaterialDetails(matID: matId, trans: trans);
-
-        CreateRebooking(
-          bookingId: bookingId,
-          partName: details.PartName,
-          notes: notes,
-          workorder: details.Workorder,
-          qty: 1,
-          priority: priority,
-          restrictedProcs: restrictedProcs,
-          matId: matId,
-          timeUTC: time,
-          trans: trans
-        );
-
-        var log = new NewEventLogEntry()
-        {
-          Material =
-            restrictedProcs == null || restrictedProcs.Count == 0
-              ?
-              [
-                new EventLogMaterial()
-                {
-                  MaterialID = matId,
-                  Process = 0,
-                  Face = 0,
-                },
-              ]
-              : restrictedProcs.Select(proc => new EventLogMaterial()
-              {
-                MaterialID = matId,
-                Process = proc,
-                Face = 0,
-              }),
-          Pallet = 0,
-          LogType = LogType.Rebooking,
-          LocationName = "Rebooking",
-          LocationNum = priority ?? 0,
-          Program = details.PartName,
-          StartOfCycle = false,
-          EndTimeUTC = time,
-          ElapsedTime = TimeSpan.Zero,
-          ActiveOperationTime = TimeSpan.Zero,
-          Result = bookingId,
-        };
-        if (!string.IsNullOrEmpty(notes))
-        {
-          log.ProgramDetails.Add("Notes", notes);
-        }
-
-        return AddLogEntry(trans, log, foreignID: null, origMessage: null);
-      });
-    }
-
-    public LogEntry CreateRebookingWithoutMaterial(
+    public LogEntry CreateRebooking(
       string bookingId,
       string partName,
       int qty = 1,
@@ -2976,18 +2909,26 @@ namespace BlackMaple.MachineFramework
       {
         var time = timeUTC ?? DateTime.UtcNow;
 
-        CreateRebooking(
-          bookingId: bookingId,
-          partName: partName,
-          notes: notes,
-          workorder: workorder,
-          qty: qty,
-          priority: priority,
-          restrictedProcs: null,
-          matId: null,
-          timeUTC: time,
-          trans: trans
-        );
+        using var cmd = _connection.CreateCommand();
+        ((IDbCommand)cmd).Transaction = trans;
+        cmd.CommandText =
+          "INSERT INTO rebookings(BookingId, TimeUTC, Part, Notes, Workorder, Quantity, Priority) VALUES ($id, $time, $part, $notes, $workorder, $qty, $pri)";
+
+        cmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
+        cmd.Parameters.Add("time", SqliteType.Integer).Value = time.Ticks;
+        cmd.Parameters.Add("part", SqliteType.Text).Value = partName;
+        cmd.Parameters.Add("notes", SqliteType.Text).Value = string.IsNullOrEmpty(notes)
+          ? DBNull.Value
+          : notes;
+        cmd.Parameters.Add("workorder", SqliteType.Text).Value = string.IsNullOrEmpty(workorder)
+          ? DBNull.Value
+          : workorder;
+        cmd.Parameters.Add("qty", SqliteType.Integer).Value = qty;
+        cmd.Parameters.Add("pri", SqliteType.Integer).Value = priority.HasValue
+          ? priority.Value
+          : DBNull.Value;
+
+        cmd.ExecuteNonQuery();
 
         var log = new NewEventLogEntry()
         {
@@ -3017,82 +2958,13 @@ namespace BlackMaple.MachineFramework
       });
     }
 
-    private void CreateRebooking(
-      string bookingId,
-      string partName,
-      string notes,
-      string workorder,
-      int qty,
-      int? priority,
-      IReadOnlySet<int> restrictedProcs,
-      DateTime timeUTC,
-      long? matId,
-      IDbTransaction trans
-    )
-    {
-      using var cmd = _connection.CreateCommand();
-      ((IDbCommand)cmd).Transaction = trans;
-      cmd.CommandText =
-        "INSERT INTO rebookings(BookingId, TimeUTC, Part, Notes, MaterialID, Workorder, Quantity, Priority) VALUES ($id, $time, $part, $notes, $matid, $workorder, $qty, $pri)";
-
-      cmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
-      cmd.Parameters.Add("time", SqliteType.Integer).Value = timeUTC.Ticks;
-      cmd.Parameters.Add("part", SqliteType.Text).Value = partName;
-      cmd.Parameters.Add("notes", SqliteType.Text).Value = string.IsNullOrEmpty(notes) ? DBNull.Value : notes;
-      cmd.Parameters.Add("matid", SqliteType.Integer).Value = matId.HasValue ? matId.Value : DBNull.Value;
-      cmd.Parameters.Add("workorder", SqliteType.Text).Value = string.IsNullOrEmpty(workorder)
-        ? DBNull.Value
-        : workorder;
-      cmd.Parameters.Add("qty", SqliteType.Integer).Value = qty;
-      cmd.Parameters.Add("pri", SqliteType.Integer).Value = priority.HasValue ? priority.Value : DBNull.Value;
-
-      cmd.ExecuteNonQuery();
-
-      if (restrictedProcs != null)
-      {
-        using var procCmd = _connection.CreateCommand();
-        ((IDbCommand)procCmd).Transaction = trans;
-
-        procCmd.CommandText = "INSERT INTO rebookings_procs(BookingId, Process) VALUES ($id, $proc)";
-        procCmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
-        procCmd.Parameters.Add("proc", SqliteType.Integer);
-
-        foreach (var proc in restrictedProcs)
-        {
-          procCmd.Parameters[1].Value = proc;
-          procCmd.ExecuteNonQuery();
-        }
-      }
-    }
-
     public LogEntry CancelRebooking(string bookingId, DateTime? timeUTC = null)
     {
       return AddEntryInTransaction(trans =>
       {
-        long? matId;
-
-        using (var lookup = _connection.CreateCommand())
-        {
-          ((IDbCommand)lookup).Transaction = trans;
-          lookup.CommandText = "SELECT MaterialID FROM rebookings WHERE BookingId = $id";
-          lookup.Parameters.Add("id", SqliteType.Text).Value = bookingId;
-          var matIdM = lookup.ExecuteScalar();
-          matId = matIdM == null || matIdM == DBNull.Value ? null : Convert.ToInt64(matIdM);
-        }
-
         var log = new NewEventLogEntry()
         {
-          Material = matId.HasValue
-            ?
-            [
-              new EventLogMaterial()
-              {
-                MaterialID = matId.Value,
-                Process = 0,
-                Face = 0,
-              },
-            ]
-            : [],
+          Material = [],
           Pallet = 0,
           LogType = LogType.CancelRebooking,
           LocationName = "CancelRebooking",
@@ -3121,21 +2993,9 @@ namespace BlackMaple.MachineFramework
       using var trans = _connection.BeginTransaction();
       cmd.Transaction = trans;
 
-      cmd.CommandText = "SELECT Process FROM rebookings_procs WHERE BookingId = $id";
-      cmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
-
-      var procs = ImmutableHashSet.CreateBuilder<int>();
-
-      using (var reader = cmd.ExecuteReader())
-      {
-        while (reader.Read())
-        {
-          procs.Add(reader.GetInt32(0));
-        }
-      }
-
       cmd.CommandText =
-        "SELECT BookingId, TimeUTC, Part, Notes, MaterialID, Workorder, Quantity, Priority FROM rebookings WHERE BookingId = $id LIMIT 1";
+        "SELECT BookingId, TimeUTC, Part, Notes, Workorder, Quantity, Priority FROM rebookings WHERE BookingId = $id LIMIT 1";
+      cmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
 
       using (var reader = cmd.ExecuteReader())
       {
@@ -3144,20 +3004,15 @@ namespace BlackMaple.MachineFramework
           return null;
         }
 
-        long matId = reader.IsDBNull(4) ? -1 : reader.GetInt64(4);
-        var details = matId >= 0 ? GetMaterialDetails(matId, trans: trans) : null;
-
         return new Rebooking()
         {
           BookingId = reader.GetString(0),
           TimeUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc),
           PartName = reader.GetString(2),
           Notes = reader.IsDBNull(3) ? null : reader.GetString(3),
-          Material = details,
-          Workorder = reader.IsDBNull(5) ? null : reader.GetString(5),
-          Quantity = reader.GetInt32(6),
-          Priority = reader.IsDBNull(7) ? null : reader.GetInt32(7),
-          RestrictedProcs = procs.Count == 0 ? null : procs.ToImmutable(),
+          Workorder = reader.IsDBNull(4) ? null : reader.GetString(4),
+          Quantity = reader.GetInt32(5),
+          Priority = reader.IsDBNull(6) ? null : reader.GetInt32(6),
         };
       }
     }

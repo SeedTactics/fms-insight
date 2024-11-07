@@ -1094,46 +1094,23 @@ namespace BlackMaple.MachineFramework
       cmd.Transaction = trans;
 
       cmd.CommandText =
-        "SELECT BookingId, TimeUTC, Part, Notes, MaterialID, Workorder, Quantity, Priority FROM rebookings "
+        "SELECT BookingId, TimeUTC, Part, Notes, Workorder, Quantity, Priority FROM rebookings "
         + "WHERE Canceled IS NULL AND JobUnique IS NULL";
-
-      using var procCmd = _connection.CreateCommand();
-      procCmd.Transaction = trans;
-      procCmd.CommandText = "SELECT Process FROM rebookings_procs WHERE BookingId = $bid";
-      procCmd.Parameters.Add("bid", SqliteType.Text);
 
       var ret = ImmutableList.CreateBuilder<Rebooking>();
       using var reader = cmd.ExecuteReader();
       while (reader.Read())
       {
-        var bookingId = reader.GetString(0);
-
-        ImmutableHashSet<int>.Builder procs = null;
-        procCmd.Parameters[0].Value = bookingId;
-        using (var procReader = procCmd.ExecuteReader())
-        {
-          while (procReader.Read())
-          {
-            if (procs == null)
-            {
-              procs = ImmutableHashSet.CreateBuilder<int>();
-            }
-            procs.Add(procReader.GetInt32(0));
-          }
-        }
-
         ret.Add(
           new Rebooking()
           {
             BookingId = reader.GetString(0),
             TimeUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc),
-            Quantity = reader.IsDBNull(6) ? 0 : reader.GetInt32(6),
             PartName = reader.GetString(2),
-            Priority = reader.IsDBNull(7) ? 0 : reader.GetInt32(7),
             Notes = reader.IsDBNull(3) ? null : reader.GetString(3),
-            Workorder = reader.IsDBNull(5) ? null : reader.GetString(5),
-            Material = reader.IsDBNull(4) ? null : GetMaterialDetails(reader.GetInt64(4), trans),
-            RestrictedProcs = procs?.ToImmutable(),
+            Workorder = reader.IsDBNull(4) ? null : reader.GetString(4),
+            Quantity = reader.IsDBNull(5) ? 0 : reader.GetInt32(5),
+            Priority = reader.IsDBNull(6) ? 0 : reader.GetInt32(6),
           }
         );
       }

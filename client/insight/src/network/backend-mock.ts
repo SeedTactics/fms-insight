@@ -546,7 +546,7 @@ export function registerMockBackend(
         active: "PT0S",
       });
     },
-    requestRebookingWithoutMaterial(
+    requestRebooking(
       partName: string,
       qty: number | undefined,
       workorder: string | null | undefined,

@@ -207,7 +207,6 @@ public record FMSSettings
   // If null, rebookings are not allowed.  Otherwise, this prefix followed by a UUID is
   // the booking ID created for rebookings.
   public string? RebookingPrefix { get; init; } = null;
-  public bool ManagementOnlyRebookings { get; init; } = false;
 
   // If provided, the display name will be used in the client webpages for rebookings
   public string? RebookingsDisplayName { get; init; } = null;

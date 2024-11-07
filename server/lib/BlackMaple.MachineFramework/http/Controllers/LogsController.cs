@@ -267,27 +267,8 @@ namespace BlackMaple.MachineFramework.Controllers
       return log;
     }
 
-    [HttpPost("material-details/{materialID}/rebooking")]
-    public LogEntry RequestRebookingForMaterial(
-      long materialID,
-      [FromBody] string? notes = null,
-      [FromQuery] int[]? restrictedProcs = null
-    )
-    {
-      if (fmsSt.RebookingPrefix == null)
-        throw new BadRequestException("Rebookings are not allowed");
-
-      using var db = repo.OpenConnection();
-      return db.CreateRebookingForMaterial(
-        bookingId: fmsSt.RebookingPrefix + Guid.NewGuid().ToString(),
-        matId: materialID,
-        notes: notes,
-        restrictedProcs: restrictedProcs == null ? null : new HashSet<int>(restrictedProcs)
-      );
-    }
-
     [HttpPost("events/rebooking")]
-    public LogEntry RequestRebookingWithoutMaterial(
+    public LogEntry RequestRebooking(
       [FromQuery] string partName,
       [FromQuery] int qty = 1,
       [FromBody] string? notes = null,
@@ -300,7 +281,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
       using var db = repo.OpenConnection();
 
-      return db.CreateRebookingWithoutMaterial(
+      return db.CreateRebooking(
         bookingId: fmsSt.RebookingPrefix + Guid.NewGuid().ToString(),
         partName: partName,
         workorder: workorder,
