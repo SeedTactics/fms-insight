@@ -63,12 +63,14 @@ import { RouteLocation, RouteState, currentRoute, helpUrl } from "./routes";
 import { fmsInformation, logout } from "../network/server-settings";
 import { useAtom, useAtomValue } from "jotai";
 import { QRScanButton } from "./BarcodeScanning";
+import { IFMSInfo } from "../network/api";
 
 export type MenuNavItem =
   | {
-      readonly name: string;
+      readonly name: string | ((info: Readonly<IFMSInfo>) => string);
       readonly icon: ReactNode;
       readonly route: RouteState;
+      readonly hidden?: (info: Readonly<IFMSInfo>) => boolean;
     }
   | { readonly separator: string };
 
@@ -168,6 +170,7 @@ function ToolButtons({
 }
 
 function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
+  const fmsInfo = useAtomValue(fmsInformation);
   const [curRoute, setCurrentRoute] = useAtom(currentRoute);
   const [isPending, startTransition] = useTransition();
   return (
@@ -191,20 +194,20 @@ function MenuNavSelect({ menuNavs }: { menuNavs: ReadonlyArray<MenuNavItem> }) {
             <Box display="flex" alignItems="center">
               {item.icon}
               <Typography variant="h6" style={{ marginLeft: "1em" }}>
-                {item.name}
+                {typeof item.name === "string" ? item.name : item.name(fmsInfo)}
                 {isPending ? "..." : ""}
               </Typography>
             </Box>
           );
         }}
       >
-        {menuNavs.map((item) =>
+        {menuNavs.map((item, idx) =>
           "separator" in item ? (
             <ListSubheader key={item.separator}>{item.separator}</ListSubheader>
-          ) : (
-            <MenuItem key={item.name} value={item.route.route}>
+          ) : item.hidden?.(fmsInfo) ? undefined : (
+            <MenuItem key={idx} value={item.route.route}>
               <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.name} />
+              <ListItemText primary={typeof item.name === "string" ? item.name : item.name(fmsInfo)} />
             </MenuItem>
           ),
         )}
@@ -282,6 +285,7 @@ export function Header({
 }
 
 export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem> }) {
+  const fmsInfo = useAtomValue(fmsInformation);
   const [curRoute, setCurrentRoute] = useAtom(currentRoute);
   const [isPending, startTransition] = useTransition();
 
@@ -301,18 +305,18 @@ export function SideMenu({ menuItems }: { menuItems?: ReadonlyArray<MenuNavItem>
       }}
     >
       <List dense>
-        {menuItems?.map((item) =>
+        {menuItems?.map((item, idx) =>
           "separator" in item ? (
             <ListSubheader key={item.separator}>{item.separator}</ListSubheader>
-          ) : (
-            <ListItem key={item.name}>
+          ) : item.hidden?.(fmsInfo) ? undefined : (
+            <ListItem key={idx}>
               <ListItemButton
                 selected={curRoute.route === item.route.route}
                 onClick={() => startTransition(() => setCurrentRoute(item.route))}
               >
                 <ListItemIcon>{item.icon}</ListItemIcon>
                 <ListItemText
-                  primary={item.name}
+                  primary={typeof item.name === "string" ? item.name : item.name(fmsInfo)}
                   sx={isPending ? (theme) => ({ color: theme.palette.grey[700] }) : undefined}
                 />
               </ListItemButton>

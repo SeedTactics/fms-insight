@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { useState, memo } from "react";
-import { Button } from "@mui/material";
+import { Button, ListItemButton } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
 import { ListItemText } from "@mui/material";
@@ -90,18 +90,18 @@ function InspectionList() {
   return (
     <List>
       {sortedInspTypes.map((iType) => (
-        <ListItem
-          key={iType}
-          button
-          onClick={() => {
-            forceInsp({ mat, inspType: iType, inspect: true });
-            close(false);
-          }}
-        >
-          <ListItemIcon>
-            <SearchIcon />
-          </ListItemIcon>
-          <ListItemText primary={iType} />
+        <ListItem key={iType}>
+          <ListItemButton
+            onClick={() => {
+              forceInsp({ mat, inspType: iType, inspect: true });
+              close(false);
+            }}
+          >
+            <ListItemIcon>
+              <SearchIcon />
+            </ListItemIcon>
+            <ListItemText primary={iType} />
+          </ListItemButton>
         </ListItem>
       ))}
     </List>

@@ -2889,6 +2889,133 @@ namespace BlackMaple.MachineFramework
 
       return newLogEntries;
     }
+
+    public LogEntry CreateRebooking(
+      string bookingId,
+      string partName,
+      int qty = 1,
+      string notes = null,
+      int? priority = null,
+      string workorder = null,
+      DateTime? timeUTC = null
+    )
+    {
+      if (qty <= 0)
+      {
+        throw new ArgumentException("Quantity must be greater than 0", nameof(qty));
+      }
+
+      return AddEntryInTransaction(trans =>
+      {
+        var time = timeUTC ?? DateTime.UtcNow;
+
+        using var cmd = _connection.CreateCommand();
+        ((IDbCommand)cmd).Transaction = trans;
+        cmd.CommandText =
+          "INSERT INTO rebookings(BookingId, TimeUTC, Part, Notes, Workorder, Quantity, Priority) VALUES ($id, $time, $part, $notes, $workorder, $qty, $pri)";
+
+        cmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
+        cmd.Parameters.Add("time", SqliteType.Integer).Value = time.Ticks;
+        cmd.Parameters.Add("part", SqliteType.Text).Value = partName;
+        cmd.Parameters.Add("notes", SqliteType.Text).Value = string.IsNullOrEmpty(notes)
+          ? DBNull.Value
+          : notes;
+        cmd.Parameters.Add("workorder", SqliteType.Text).Value = string.IsNullOrEmpty(workorder)
+          ? DBNull.Value
+          : workorder;
+        cmd.Parameters.Add("qty", SqliteType.Integer).Value = qty;
+        cmd.Parameters.Add("pri", SqliteType.Integer).Value = priority.HasValue
+          ? priority.Value
+          : DBNull.Value;
+
+        cmd.ExecuteNonQuery();
+
+        var log = new NewEventLogEntry()
+        {
+          Material = [],
+          Pallet = 0,
+          LogType = LogType.Rebooking,
+          LocationName = "Rebooking",
+          LocationNum = priority ?? 0,
+          Program = partName,
+          StartOfCycle = false,
+          EndTimeUTC = time,
+          ElapsedTime = TimeSpan.Zero,
+          ActiveOperationTime = TimeSpan.Zero,
+          Result = bookingId,
+        };
+        if (!string.IsNullOrEmpty(notes))
+        {
+          log.ProgramDetails.Add("Notes", notes);
+        }
+        if (!string.IsNullOrEmpty(workorder))
+        {
+          log.ProgramDetails.Add("Workorder", workorder);
+        }
+        log.ProgramDetails.Add("Quantity", qty.ToString());
+
+        return AddLogEntry(trans, log, foreignID: null, origMessage: null);
+      });
+    }
+
+    public LogEntry CancelRebooking(string bookingId, DateTime? timeUTC = null)
+    {
+      return AddEntryInTransaction(trans =>
+      {
+        var log = new NewEventLogEntry()
+        {
+          Material = [],
+          Pallet = 0,
+          LogType = LogType.CancelRebooking,
+          LocationName = "CancelRebooking",
+          LocationNum = 1,
+          Program = "",
+          StartOfCycle = false,
+          EndTimeUTC = timeUTC ?? DateTime.UtcNow,
+          ElapsedTime = TimeSpan.Zero,
+          ActiveOperationTime = TimeSpan.Zero,
+          Result = bookingId,
+        };
+
+        using var cmd = _connection.CreateCommand();
+        ((IDbCommand)cmd).Transaction = trans;
+        cmd.CommandText = "UPDATE rebookings SET Canceled = 1 WHERE BookingId = $id";
+        cmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
+        cmd.ExecuteNonQuery();
+
+        return AddLogEntry(trans, log, foreignID: null, origMessage: null);
+      });
+    }
+
+    public Rebooking LookupRebooking(string bookingId)
+    {
+      using var cmd = _connection.CreateCommand();
+      using var trans = _connection.BeginTransaction();
+      cmd.Transaction = trans;
+
+      cmd.CommandText =
+        "SELECT BookingId, TimeUTC, Part, Notes, Workorder, Quantity, Priority FROM rebookings WHERE BookingId = $id LIMIT 1";
+      cmd.Parameters.Add("id", SqliteType.Text).Value = bookingId;
+
+      using (var reader = cmd.ExecuteReader())
+      {
+        if (reader.Read() == false)
+        {
+          return null;
+        }
+
+        return new Rebooking()
+        {
+          BookingId = reader.GetString(0),
+          TimeUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc),
+          PartName = reader.GetString(2),
+          Notes = reader.IsDBNull(3) ? null : reader.GetString(3),
+          Workorder = reader.IsDBNull(4) ? null : reader.GetString(4),
+          Quantity = reader.GetInt32(5),
+          Priority = reader.IsDBNull(6) ? null : reader.GetInt32(6),
+        };
+      }
+    }
     #endregion
 
     #region Material IDs

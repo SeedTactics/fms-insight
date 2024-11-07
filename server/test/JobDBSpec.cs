@@ -161,7 +161,7 @@ namespace MachineWatchTest
         .LoadMostRecentSchedule()
         .Should()
         .BeEquivalentTo(
-          new PlannedSchedule()
+          new MostRecentSchedule()
           {
             LatestScheduleId = schId,
             Jobs = ImmutableList.Create(job1history),
@@ -335,7 +335,7 @@ namespace MachineWatchTest
         .Should()
         .BeEquivalentTo(
           // job2 is manually created and should be ignored
-          new PlannedSchedule()
+          new MostRecentSchedule()
           {
             LatestScheduleId = schId,
             Jobs = ImmutableList.Create(job1history),
@@ -2501,6 +2501,84 @@ namespace MachineWatchTest
         .Should()
         .Throw<BadRequestException>()
         .WithMessage("Schedule ID sch1 already exists!");
+    }
+
+    [Fact]
+    public void SchedulesRebooking()
+    {
+      using var db = _repoCfg.OpenConnection();
+
+      var now = DateTime.UtcNow;
+      var booking1 = _fixture.Create<string>();
+      var booking2 = _fixture.Create<string>();
+      var job = RandJob() with { BookingIds = [booking1] };
+
+      db.CreateRebooking(bookingId: booking1, partName: job.PartName, qty: 4, priority: 12, timeUTC: now);
+
+      var rebooking1 = new Rebooking()
+      {
+        BookingId = booking1,
+        PartName = job.PartName,
+        Quantity = 4,
+        TimeUTC = now,
+        Priority = 12,
+      };
+
+      db.CreateRebooking(
+        bookingId: booking2,
+        partName: job.PartName,
+        qty: 5,
+        priority: 13,
+        workorder: "work22",
+        timeUTC: now.AddMinutes(1)
+      );
+
+      var rebooking2 = new Rebooking()
+      {
+        BookingId = booking2,
+        PartName = job.PartName,
+        Quantity = 5,
+        TimeUTC = now.AddMinutes(1),
+        Priority = 13,
+        Workorder = "work22",
+      };
+
+      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([rebooking1, rebooking2]);
+      db.LoadMostRecentSchedule()
+        .Should()
+        .BeEquivalentTo(
+          new MostRecentSchedule()
+          {
+            LatestScheduleId = "",
+            Jobs = [],
+            ExtraParts = ImmutableDictionary<string, int>.Empty,
+            UnscheduledRebookings = [rebooking1, rebooking2],
+          }
+        );
+
+      var schId = "sch" + _fixture.Create<string>();
+
+      db.AddJobs(new NewJobs() { ScheduleId = schId, Jobs = [job] }, null, true);
+
+      var jobhistory = job.CloneToDerived<HistoricJob, Job>() with
+      {
+        ScheduleId = schId,
+        CopiedToSystem = true,
+        Decrements = ImmutableList<DecrementQuantity>.Empty,
+      };
+
+      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([rebooking2]);
+      db.LoadMostRecentSchedule()
+        .Should()
+        .BeEquivalentTo(
+          new MostRecentSchedule()
+          {
+            LatestScheduleId = schId,
+            Jobs = [jobhistory],
+            ExtraParts = ImmutableDictionary<string, int>.Empty,
+            UnscheduledRebookings = [rebooking2],
+          }
+        );
     }
 
     private static ImmutableList<SimulatedStationUtilization> RandSimStationUse(string schId, DateTime start)

@@ -56,12 +56,14 @@ import {
   SkipPrevious as SkipPrevIcon,
   SkipNext as SkipNextIcon,
   ImportExport,
+  FilterList,
 } from "@mui/icons-material";
 import copy from "copy-to-clipboard";
 
 import { addDays, addHours, addMonths } from "date-fns";
 import { ToComparable, ToComparableBase } from "@seedtactics/immutable-collections";
 import { SelectedAnalysisPeriod } from "../../network/load-specific-month.js";
+import { useSetAtom, WritableAtom } from "jotai";
 
 export interface Column<Id, Row> {
   readonly id: Id;
@@ -73,6 +75,7 @@ export interface Column<Id, Row> {
   readonly Cell?: ComponentType<{ readonly row: Row }>;
   readonly expanded?: boolean;
   readonly ignoreDuringExport?: boolean;
+  readonly openFilterDialog?: WritableAtom<unknown, [boolean], unknown>;
 }
 
 export type ColSort<Id, Row> = {
@@ -133,6 +136,17 @@ export interface DataTableHeadProps<Id, Row> {
   readonly copyToClipboardRows?: Iterable<Row>;
 }
 
+function OpenFilterButton({ open }: { open: WritableAtom<unknown, [boolean], unknown> }) {
+  const setOpen = useSetAtom(open);
+  return (
+    <Tooltip title="Filter" enterDelay={300}>
+      <IconButton onClick={() => setOpen(true)} size="small">
+        <FilterList />
+      </IconButton>
+    </Tooltip>
+  );
+}
+
 export function DataTableHead<Id extends string | number, Row>(
   props: DataTableHeadProps<Id, Row>,
 ): JSX.Element {
@@ -156,6 +170,7 @@ export function DataTableHead<Id extends string | number, Row>(
                 {col.label}
               </TableSortLabel>
             </Tooltip>
+            {col.openFilterDialog ? <OpenFilterButton open={col.openFilterDialog} /> : undefined}
           </DataCell>
         ))}
         {props.showDetailsCol ? (
@@ -527,9 +542,13 @@ export function useTablePage(): TablePage {
   );
 }
 
-export function useColSort<Id, Row>(defSortCol: Id, cols: ReadonlyArray<Column<Id, Row>>): ColSort<Id, Row> {
+export function useColSort<Id, Row>(
+  defSortCol: Id,
+  cols: ReadonlyArray<Column<Id, Row>>,
+  defOrder?: "asc" | "desc" | undefined,
+): ColSort<Id, Row> {
   const [orderBy, setOrderBy] = useState(defSortCol);
-  const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [order, setOrder] = useState<"asc" | "desc">(defOrder ?? "asc");
 
   return useMemo(() => {
     function handleRequestSort(property: Id) {

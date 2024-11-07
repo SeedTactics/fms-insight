@@ -4948,6 +4948,144 @@ namespace MachineWatchTest
         );
     }
 
+    [Fact]
+    public void RecordsRebookings()
+    {
+      var now = DateTime.UtcNow.AddHours(-5);
+
+      using var db = _repoCfg.OpenConnection();
+
+      var booking1 = _fixture.Create<string>();
+      var note = _fixture.Create<string>();
+      var pri = _fixture.Create<int>();
+
+      var expectedLog = new LogEntry()
+      {
+        Counter = 1,
+        Material = [],
+        Pallet = 0,
+        LogType = LogType.Rebooking,
+        LocationName = "Rebooking",
+        LocationNum = pri,
+        Program = "part1",
+        StartOfCycle = false,
+        EndTimeUTC = now.AddMinutes(1),
+        ElapsedTime = TimeSpan.Zero,
+        ActiveOperationTime = TimeSpan.Zero,
+        Result = booking1,
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.Add("Notes", note)
+          .Add("Workorder", "work1")
+          .Add("Quantity", "1"),
+      };
+
+      var expectedR = new Rebooking()
+      {
+        BookingId = booking1,
+        PartName = "part1",
+        Quantity = 1,
+        Priority = pri,
+        Workorder = "work1",
+        Notes = note,
+        TimeUTC = now.AddMinutes(1),
+      };
+
+      db.CreateRebooking(
+          bookingId: booking1,
+          partName: "part1",
+          workorder: "work1",
+          qty: 1,
+          notes: note,
+          priority: pri,
+          timeUTC: now.AddMinutes(1)
+        )
+        .Should()
+        .BeEquivalentTo(expectedLog);
+
+      db.LookupRebooking(booking1).Should().BeEquivalentTo(expectedR);
+      db.LookupRebooking("notfound").Should().BeNull();
+      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR]);
+      db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR]);
+
+      // record another one, not from mat
+      var booking2 = _fixture.Create<string>();
+      var part2 = _fixture.Create<string>();
+      var pri2 = _fixture.Create<int>();
+      var note2 = _fixture.Create<string>();
+      var work2 = _fixture.Create<string>();
+
+      var expectedLog2 = new LogEntry()
+      {
+        Counter = 2,
+        Material = [],
+        Pallet = 0,
+        LogType = LogType.Rebooking,
+        LocationName = "Rebooking",
+        LocationNum = pri2,
+        Program = part2,
+        StartOfCycle = false,
+        EndTimeUTC = now.AddMinutes(2),
+        ElapsedTime = TimeSpan.Zero,
+        ActiveOperationTime = TimeSpan.Zero,
+        Result = booking2,
+        ProgramDetails = ImmutableDictionary<string, string>
+          .Empty.Add("Notes", note2)
+          .Add("Workorder", work2)
+          .Add("Quantity", "2"),
+      };
+
+      var expectedR2 = new Rebooking()
+      {
+        BookingId = booking2,
+        PartName = part2,
+        Quantity = 2,
+        Priority = pri2,
+        Workorder = work2,
+        Notes = note2,
+        TimeUTC = now.AddMinutes(2),
+      };
+
+      db.CreateRebooking(
+          bookingId: booking2,
+          partName: part2,
+          qty: 2,
+          notes: note2,
+          priority: pri2,
+          workorder: work2,
+          timeUTC: now.AddMinutes(2)
+        )
+        .Should()
+        .BeEquivalentTo(expectedLog2);
+
+      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR, expectedR2]);
+      db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR, expectedR2]);
+
+      // now cancel the first one
+
+      var expectedCancel = new LogEntry()
+      {
+        Counter = 3,
+        Material = [],
+        Pallet = 0,
+        LogType = LogType.CancelRebooking,
+        LocationName = "CancelRebooking",
+        LocationNum = 1,
+        Program = "",
+        StartOfCycle = false,
+        EndTimeUTC = now.AddMinutes(3),
+        ElapsedTime = TimeSpan.Zero,
+        ActiveOperationTime = TimeSpan.Zero,
+        Result = booking1,
+      };
+
+      db.CancelRebooking(bookingId: booking1, timeUTC: now.AddMinutes(3))
+        .Should()
+        .BeEquivalentTo(expectedCancel);
+
+      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR2]);
+      db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR2]);
+    }
+
     #region Helpers
     public static long CheckLog(
       IEnumerable<LogEntry> logs,

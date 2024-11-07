@@ -140,6 +140,12 @@ function logType(entry: api.ILogEntry): string {
     case api.LogType.InvalidateCycle:
       return "Invalidate Cycle";
 
+    case api.LogType.Rebooking:
+      return "Rebooking";
+
+    case api.LogType.CancelRebooking:
+      return "Cancel Rebooking";
+
     default:
       return "Message";
   }
@@ -390,6 +396,12 @@ function display(props: LogEntryProps): JSX.Element {
 
     case api.LogType.InvalidateCycle:
       return <span>{entry.result}</span>;
+
+    case api.LogType.Rebooking:
+      return <span>Rebooking requested with ID {entry.result}</span>;
+
+    case api.LogType.CancelRebooking:
+      return <span>Rebooking {entry.result} canceled</span>;
 
     default:
       return <span>{entry.result}</span>;

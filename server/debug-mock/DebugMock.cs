@@ -105,6 +105,8 @@ namespace DebugMachineWatchApiServer
         UsingLabelPrinterForSerials = true,
         AddRawMaterial = AddRawMaterialType.RequireBarcodeScan,
         AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial,
+        RebookingPrefix = "RE:",
+        RebookingsDisplayName = "DRebook",
       };
 
       string tempDbFile = null;
