@@ -1783,21 +1783,6 @@
             "x-position": 4
           },
           {
-            "name": "restrictedProcs",
-            "in": "query",
-            "style": "form",
-            "explode": true,
-            "schema": {
-              "type": "array",
-              "nullable": true,
-              "items": {
-                "type": "integer",
-                "format": "int32"
-              }
-            },
-            "x-position": 5
-          },
-          {
             "name": "priority",
             "in": "query",
             "schema": {
@@ -1805,7 +1790,7 @@
               "format": "int32",
               "nullable": true
             },
-            "x-position": 6
+            "x-position": 5
           }
         ],
         "requestBody": {

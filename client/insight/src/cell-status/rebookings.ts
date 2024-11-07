@@ -187,7 +187,6 @@ export type NewRebooking = {
   readonly part: string;
   readonly qty?: number;
   readonly workorder?: string | null;
-  readonly restrictedProcs?: ReadonlyArray<number> | null;
   readonly priority?: number | null;
   readonly notes?: string;
 };
@@ -200,7 +199,6 @@ export function useNewRebooking(): [(n: NewRebooking) => Promise<void>, boolean]
       n.part,
       n.qty && !isNaN(n.qty) ? n.qty : 1,
       n.workorder,
-      n.restrictedProcs as number[],
       n.priority !== undefined && n.priority !== null && !isNaN(n.priority) ? n.priority : undefined,
       n.notes,
     )

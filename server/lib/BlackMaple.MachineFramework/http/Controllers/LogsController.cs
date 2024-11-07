@@ -292,7 +292,6 @@ namespace BlackMaple.MachineFramework.Controllers
       [FromQuery] int qty = 1,
       [FromBody] string? notes = null,
       [FromQuery] string? workorder = null,
-      [FromQuery] int[]? restrictedProcs = null,
       [FromQuery] int? priority = null
     )
     {
@@ -307,8 +306,7 @@ namespace BlackMaple.MachineFramework.Controllers
         workorder: workorder,
         priority: priority,
         qty: qty,
-        notes: notes,
-        restrictedProcs: restrictedProcs == null ? null : new HashSet<int>(restrictedProcs)
+        notes: notes
       );
     }
 

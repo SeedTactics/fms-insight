@@ -1781,7 +1781,7 @@ export class LogClient {
         return Promise.resolve<LogEntry>(null as any);
     }
 
-    requestRebookingWithoutMaterial(partName: string, qty: number | undefined, workorder: string | null | undefined, restrictedProcs: number[] | null | undefined, priority: number | null | undefined, notes: string | undefined, signal?: AbortSignal): Promise<LogEntry> {
+    requestRebookingWithoutMaterial(partName: string, qty: number | undefined, workorder: string | null | undefined, priority: number | null | undefined, notes: string | undefined, signal?: AbortSignal): Promise<LogEntry> {
         let url_ = this.baseUrl + "/api/v1/log/events/rebooking?";
         if (partName === undefined || partName === null)
             throw new Error("The parameter 'partName' must be defined and cannot be null.");
@@ -1793,8 +1793,6 @@ export class LogClient {
             url_ += "qty=" + encodeURIComponent("" + qty) + "&";
         if (workorder !== undefined && workorder !== null)
             url_ += "workorder=" + encodeURIComponent("" + workorder) + "&";
-        if (restrictedProcs !== undefined && restrictedProcs !== null)
-            restrictedProcs && restrictedProcs.forEach(item => { url_ += "restrictedProcs=" + encodeURIComponent("" + item) + "&"; });
         if (priority !== undefined && priority !== null)
             url_ += "priority=" + encodeURIComponent("" + priority) + "&";
         url_ = url_.replace(/[?&]$/, "");

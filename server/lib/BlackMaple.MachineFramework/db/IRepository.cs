@@ -380,7 +380,6 @@ namespace BlackMaple.MachineFramework
       string notes = null,
       int? priority = null,
       string workorder = null,
-      IReadOnlySet<int> restrictedProcs = null,
       DateTime? timeUTC = null
     );
     LogEntry CancelRebooking(string bookingId, DateTime? timeUTC = null);

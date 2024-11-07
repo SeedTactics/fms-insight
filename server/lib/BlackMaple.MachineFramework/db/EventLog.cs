@@ -2964,7 +2964,6 @@ namespace BlackMaple.MachineFramework
       string notes = null,
       int? priority = null,
       string workorder = null,
-      IReadOnlySet<int> restrictedProcs = null,
       DateTime? timeUTC = null
     )
     {
@@ -2984,7 +2983,7 @@ namespace BlackMaple.MachineFramework
           workorder: workorder,
           qty: qty,
           priority: priority,
-          restrictedProcs: restrictedProcs,
+          restrictedProcs: null,
           matId: null,
           timeUTC: time,
           trans: trans
@@ -2992,15 +2991,7 @@ namespace BlackMaple.MachineFramework
 
         var log = new NewEventLogEntry()
         {
-          Material =
-            restrictedProcs == null || restrictedProcs.Count == 0
-              ? []
-              : restrictedProcs.Select(proc => new EventLogMaterial()
-              {
-                MaterialID = -1,
-                Process = proc,
-                Face = 0,
-              }),
+          Material = [],
           Pallet = 0,
           LogType = LogType.Rebooking,
           LocationName = "Rebooking",
