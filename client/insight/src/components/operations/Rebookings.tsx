@@ -100,8 +100,9 @@ type Row = Readonly<IRebooking> & {
 
 type Col = Column<ColumnId, Row>;
 
-const unscheduledFilterDialogOpen = atom(false);
-const showOnlyUnscheduledAtom = atom(false);
+const filterDialogOpen = atom(false);
+const hideScheduledAtom = atom(false);
+const hideCanceledAtom = atom(false);
 
 const columns: ReadonlyArray<Col> = [
   {
@@ -161,13 +162,14 @@ const columns: ReadonlyArray<Col> = [
     label: "Canceled",
     getDisplay: (r) => r.canceled?.toLocaleString() ?? "",
     getForSort: (r) => r.canceled?.getTime() ?? 0,
+    openFilterDialog: filterDialogOpen,
   },
   {
     id: ColumnId.Job,
     numeric: false,
     label: "Scheduled Job",
     getDisplay: (r) => r.job ?? "",
-    openFilterDialog: unscheduledFilterDialogOpen,
+    openFilterDialog: filterDialogOpen,
   },
   {
     id: ColumnId.SchTime,
@@ -188,7 +190,8 @@ const BookingTable = memo(function BookingTable({
   const rebookings: OrderedMap<string, Row> = useAtomValue(last30Rebookings);
   const canceled = useAtomValue(canceledRebookings);
   const scheduled = useAtomValue(last30ScheduledBookings);
-  const unschOnly = useAtomValue(showOnlyUnscheduledAtom);
+  const unschOnly = useAtomValue(hideScheduledAtom);
+  const hideCanceled = useAtomValue(hideCanceledAtom);
 
   const rows = useMemo(
     () =>
@@ -205,8 +208,9 @@ const BookingTable = memo(function BookingTable({
         .adjust(canceled, (r, t) => (r ? { ...r, canceled: t } : undefined))
         .valuesToAscLazySeq()
         .transform((s) => (unschOnly ? s.filter((r) => !r.job) : s))
+        .transform((s) => (hideCanceled ? s.filter((r) => !r.canceled) : s))
         .toSortedArray(sort.sortOn),
-    [sort.sortOn, rebookings, canceled, scheduled, unschOnly],
+    [sort.sortOn, rebookings, canceled, scheduled, unschOnly, hideCanceled],
   );
 
   return (
@@ -426,23 +430,30 @@ const NewRebookingDialog = memo(function NewRebookingDialog() {
   );
 });
 
-const UnschFilterDialog = memo(function UnschFilterDialog() {
-  const [open, setOpen] = useAtom(unscheduledFilterDialogOpen);
-  const [showOnlyUnscheduled, setShowOnlyUnscheduled] = useAtom(showOnlyUnscheduledAtom);
+const FilterDialog = memo(function UnschFilterDialog() {
+  const [open, setOpen] = useAtom(filterDialogOpen);
+  const [showOnlyUnscheduled, setShowOnlyUnscheduled] = useAtom(hideScheduledAtom);
+  const [hideCanceled, setHideCanceled] = useAtom(hideCanceledAtom);
 
   return (
     <Dialog open={open} onClose={() => setOpen(false)}>
-      <DialogTitle>Filter Scheduled Bookings</DialogTitle>
+      <DialogTitle>Filter</DialogTitle>
       <DialogContent>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={showOnlyUnscheduled}
-              onChange={(e) => setShowOnlyUnscheduled(e.target.checked)}
-            />
-          }
-          label="Show only unscheduled"
-        />
+        <Stack direction="column" spacing={2}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={showOnlyUnscheduled}
+                onChange={(e) => setShowOnlyUnscheduled(e.target.checked)}
+              />
+            }
+            label="Hide scheduled"
+          />
+          <FormControlLabel
+            control={<Checkbox checked={hideCanceled} onChange={(e) => setHideCanceled(e.target.checked)} />}
+            label="Hide canceled"
+          />
+        </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={() => setOpen(false)}>Close</Button>
@@ -461,7 +472,7 @@ export function RebookingsPage() {
       <BookingTable setRebookingToShow={setRebookingToShow} />
       <RebookingDialog rebooking={rebookingToShow} close={setRebookingToShow} />
       <NewRebookingDialog />
-      <UnschFilterDialog />
+      <FilterDialog />
     </Box>
   );
 }
