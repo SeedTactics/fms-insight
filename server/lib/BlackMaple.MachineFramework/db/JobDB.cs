@@ -956,7 +956,7 @@ namespace BlackMaple.MachineFramework
       return byWorkId.ToImmutable();
     }
 
-    public PlannedSchedule LoadMostRecentSchedule()
+    public MostRecentSchedule LoadMostRecentSchedule()
     {
       using (var cmd = _connection.CreateCommand())
       {
@@ -969,11 +969,12 @@ namespace BlackMaple.MachineFramework
           var latestSchId = LatestJobScheduleId(trans);
           cmd.Parameters.Add("sid", SqliteType.Text).Value = latestSchId;
           cmd.Transaction = trans;
-          return new PlannedSchedule()
+          return new MostRecentSchedule()
           {
             LatestScheduleId = latestSchId,
             Jobs = LoadJobsHelper(cmd, trans),
             ExtraParts = LoadExtraParts(trans, latestSchId),
+            UnscheduledRebookings = LoadUnscheduledRebookings(trans),
           };
         }
       }
@@ -1079,6 +1080,45 @@ namespace BlackMaple.MachineFramework
         else
           return false;
       }
+    }
+
+    public ImmutableList<Rebooking> LoadUnscheduledRebookings()
+    {
+      using var trans = _connection.BeginTransaction();
+      return LoadUnscheduledRebookings(trans);
+    }
+
+    public ImmutableList<Rebooking> LoadUnscheduledRebookings(SqliteTransaction trans)
+    {
+      using var cmd = _connection.CreateCommand();
+      cmd.Transaction = trans;
+
+      cmd.CommandText =
+        "SELECT BookingId, TimeUTC, Part, Notes, Workorder, Quantity, Priority FROM rebookings "
+        + "WHERE Canceled IS NULL AND JobUnique IS NULL";
+
+      var ret = ImmutableList.CreateBuilder<Rebooking>();
+      using var reader = cmd.ExecuteReader();
+      while (reader.Read())
+      {
+        ret.Add(
+          new Rebooking()
+          {
+            BookingId = reader.GetString(0),
+            TimeUTC = new DateTime(reader.GetInt64(1), DateTimeKind.Utc),
+            PartName = reader.GetString(2),
+            Notes = reader.IsDBNull(3) ? null : reader.GetString(3),
+            Workorder = reader.IsDBNull(4) ? null : reader.GetString(4),
+            Quantity = reader.IsDBNull(5) ? 0 : reader.GetInt32(5),
+            Priority = reader.IsDBNull(6) ? 0 : reader.GetInt32(6),
+          }
+        );
+      }
+
+      if (ret.Count > 0)
+        return ret.ToImmutable();
+      else
+        return null;
     }
 
     #endregion
@@ -1213,6 +1253,13 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters.Clear();
           cmd.Parameters.Add("uniq", SqliteType.Text).Value = job.UniqueStr;
           cmd.Parameters.Add("booking", SqliteType.Text);
+          foreach (var b in job.BookingIds)
+          {
+            cmd.Parameters[1].Value = b;
+            cmd.ExecuteNonQuery();
+          }
+
+          cmd.CommandText = "UPDATE rebookings SET JobUnique = $uniq WHERE BookingId = $booking";
           foreach (var b in job.BookingIds)
           {
             cmd.Parameters[1].Value = b;

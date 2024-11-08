@@ -89,6 +89,17 @@ namespace BlackMaple.MachineFramework
     public required int Quantity { get; init; }
   }
 
+  public record Rebooking
+  {
+    public required string BookingId { get; init; }
+    public required string PartName { get; init; }
+    public required int Quantity { get; init; }
+    public required DateTime TimeUTC { get; init; }
+    public int? Priority { get; init; }
+    public string? Notes { get; init; }
+    public string? Workorder { get; init; }
+  }
+
   public record HistoricData
   {
     public required ImmutableDictionary<string, MachineFramework.HistoricJob> Jobs { get; init; }
@@ -103,12 +114,14 @@ namespace BlackMaple.MachineFramework
     public ImmutableList<SimulatedDayUsage>? MostRecentSimDayUsage { get; init; }
   }
 
-  public record PlannedSchedule
+  public record MostRecentSchedule
   {
     public required string LatestScheduleId { get; init; }
 
     public required ImmutableList<MachineFramework.HistoricJob> Jobs { get; init; }
 
     public required ImmutableDictionary<string, int> ExtraParts { get; init; }
+
+    public ImmutableList<Rebooking>? UnscheduledRebookings { get; init; }
   }
 }

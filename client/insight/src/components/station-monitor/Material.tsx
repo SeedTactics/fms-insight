@@ -79,6 +79,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { loadable } from "jotai/utils";
+import { last30Rebookings } from "../../cell-status/rebookings.js";
 
 export class PartIdenticon extends PureComponent<{
   part: string;
@@ -312,6 +313,25 @@ function JobRawMaterial({ fsize, mat }: { mat: Readonly<api.IInProcessMaterial>;
   }
 }
 
+function RebookingNoteElipsis({ fsize, uniq }: { fsize?: MatCardFontSize; uniq: string }) {
+  const job = useAtomValue(currentStatus).jobs[uniq];
+  const rebookings = useAtomValue(last30Rebookings);
+  if (job && job.bookings && job.bookings.length > 0) {
+    const b = rebookings.get(job.bookings[0]);
+    if (b && b.notes && b.notes !== "") {
+      return (
+        <MatCardDetail
+          fsize={fsize}
+          style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", maxWidth: "10em" }}
+        >
+          {b.notes}
+        </MatCardDetail>
+      );
+    }
+  }
+  return null;
+}
+
 interface MaterialDragProps {
   readonly dragRootProps?: HTMLAttributes<HTMLDivElement>;
   readonly showDragHandle?: boolean;
@@ -330,6 +350,7 @@ export interface MaterialSummaryProps {
   readonly focusInspectionType?: string | null;
   readonly hideWarningIcon?: boolean;
   readonly displayJob?: boolean;
+  readonly showJobComment?: boolean;
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
   readonly showRawMaterial?: boolean;
@@ -440,6 +461,9 @@ const MatCard = forwardRef(function MatCard(
             props.inProcMat.process === 0 ? (
               <JobRawMaterial fsize={props.fsize} mat={props.inProcMat} />
             ) : undefined}
+            {props.showJobComment && props.mat.jobUnique && props.mat.jobUnique !== "" ? (
+              <RebookingNoteElipsis fsize={props.fsize} uniq={props.mat.jobUnique} />
+            ) : undefined}
             {props.inProcMat ? (
               <MaterialAction
                 mat={props.inProcMat}
@@ -484,6 +508,7 @@ export type InProcMaterialProps = {
   readonly hideAvatar?: boolean;
   readonly hideEmptySerial?: boolean;
   readonly showRawMaterial?: boolean;
+  readonly showJobComment?: boolean;
 };
 
 export type ShakeProp = {
@@ -504,6 +529,7 @@ export const InProcMaterial = memo(function InProcMaterial(
       showDragHandle={props.showHandle}
       hideEmptySerial={props.hideEmptySerial}
       showRawMaterial={props.showRawMaterial}
+      showJobComment={props.showJobComment}
       shake={props.shake}
     />
   );
@@ -698,6 +724,25 @@ function MaterialEvents({ highlightProcess }: { highlightProcess?: number }) {
   return <LogEntries entries={events} copyToClipboard highlightProcess={highlightProcess} />;
 }
 
+function RebookingNote() {
+  const mat = useAtomValue(matDetails.inProcessMaterialInDialog);
+  const jobs = useAtomValue(currentStatus).jobs;
+  const rebookigns = useAtomValue(last30Rebookings);
+  const job = mat ? jobs[mat.jobUnique] : null;
+
+  if (job && job.bookings && job.bookings.length > 0) {
+    const b = rebookigns.get(job.bookings[0]);
+    if (b && b.notes && b.notes !== "") {
+      return (
+        <Typography variant="caption" sx={{ width: "100%", textWrap: "wrap" }}>
+          {b.notes}
+        </Typography>
+      );
+    }
+  }
+  return null;
+}
+
 export const MaterialDetailContent = memo(function MaterialDetailContent({
   highlightProcess,
 }: {
@@ -742,6 +787,11 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
             }
           >
             <MaterialInspections />
+          </DisplayLoadingAndError>
+        </div>
+        <div>
+          <DisplayLoadingAndError fallback={<div />}>
+            <RebookingNote />
           </DisplayLoadingAndError>
         </div>
       </div>

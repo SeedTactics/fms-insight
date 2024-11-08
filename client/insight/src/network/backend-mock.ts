@@ -262,6 +262,9 @@ export function registerMockBackend(
     invalidatePalletCycle(): Promise<void> {
       return Promise.resolve();
     },
+    unscheduledRebookings(): Promise<ReadonlyArray<Readonly<api.IRebooking>>> {
+      return Promise.resolve([]);
+    },
   };
 
   const serialsToMatId = data.then(() =>
@@ -524,6 +527,49 @@ export function registerMockBackend(
         details: {
           Comment: comment,
           Operator: operName ?? "",
+        },
+      });
+    },
+    cancelRebooking(bookingId: string): Promise<Readonly<api.ILogEntry>> {
+      return Promise.resolve({
+        counter: 0,
+        material: [],
+        pal: 0,
+        type: api.LogType.CancelRebooking,
+        startofcycle: false,
+        endUTC: new Date(),
+        loc: "Rebooking",
+        locnum: 1,
+        result: bookingId,
+        program: "",
+        elapsed: "PT0S",
+        active: "PT0S",
+      });
+    },
+    requestRebooking(
+      partName: string,
+      qty: number | undefined,
+      workorder: string | null | undefined,
+      priority: number | null | undefined,
+      notes: string | undefined,
+    ): Promise<Readonly<api.ILogEntry>> {
+      return Promise.resolve({
+        counter: 0,
+        material: [],
+        pal: 0,
+        type: api.LogType.Rebooking,
+        startofcycle: false,
+        endUTC: new Date(),
+        loc: "Rebooking",
+        locnum: priority ?? 0,
+        result: "Rebooking",
+        program: partName,
+        elapsed: "PT0S",
+        active: "PT0S",
+        details: {
+          Quantity: qty?.toString() ?? "1",
+          Workorder: workorder ?? "",
+          Notes: notes ?? "",
         },
       });
     },

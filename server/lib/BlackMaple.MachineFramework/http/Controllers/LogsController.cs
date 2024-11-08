@@ -31,6 +31,8 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -50,7 +52,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
     public required bool Success { get; init; }
 
-    public Dictionary<string, string> ExtraData { get; init; }
+    public Dictionary<string, string>? ExtraData { get; init; }
 
     public required TimeSpan Elapsed { get; init; }
 
@@ -67,7 +69,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
     public required string CloseoutType { get; init; }
 
-    public Dictionary<string, string> ExtraData { get; init; }
+    public Dictionary<string, string>? ExtraData { get; init; }
 
     public required TimeSpan Elapsed { get; init; }
 
@@ -78,7 +80,8 @@ namespace BlackMaple.MachineFramework.Controllers
 
   [ApiController]
   [Route("api/v1/log")]
-  public class LogController(RepositoryConfig repo, IJobAndQueueControl jobAndQueue) : ControllerBase
+  public class LogController(RepositoryConfig repo, IJobAndQueueControl jobAndQueue, FMSSettings fmsSt)
+    : ControllerBase
   {
     [HttpGet("events/all")]
     public IEnumerable<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
@@ -252,7 +255,7 @@ namespace BlackMaple.MachineFramework.Controllers
       long materialID,
       [FromBody] string notes,
       [FromQuery] int process = 1,
-      [FromQuery] string operatorName = null
+      [FromQuery] string? operatorName = null
     )
     {
       LogEntry log;
@@ -262,6 +265,40 @@ namespace BlackMaple.MachineFramework.Controllers
       }
       jobAndQueue.RecalculateCellState();
       return log;
+    }
+
+    [HttpPost("events/rebooking")]
+    public LogEntry RequestRebooking(
+      [FromQuery] string partName,
+      [FromQuery] int qty = 1,
+      [FromBody] string? notes = null,
+      [FromQuery] string? workorder = null,
+      [FromQuery] int? priority = null
+    )
+    {
+      if (fmsSt.RebookingPrefix == null)
+        throw new BadRequestException("Rebookings are not allowed");
+
+      using var db = repo.OpenConnection();
+
+      return db.CreateRebooking(
+        bookingId: fmsSt.RebookingPrefix + Guid.NewGuid().ToString(),
+        partName: partName,
+        workorder: workorder,
+        priority: priority,
+        qty: qty,
+        notes: notes
+      );
+    }
+
+    [HttpPost("events/cancel-rebooking/{bookingId}")]
+    public LogEntry CancelRebooking(string bookingId)
+    {
+      if (fmsSt.RebookingPrefix == null)
+        throw new BadRequestException("Rebookings are not allowed");
+
+      using var db = repo.OpenConnection();
+      return db.CancelRebooking(bookingId: bookingId);
     }
 
     [HttpPost("events/inspection-result")]
@@ -312,7 +349,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public LogEntry RecordWorkorderComment(
       string workorder,
       [FromBody] string comment,
-      [FromQuery] string operatorName = null
+      [FromQuery] string? operatorName = null
     )
     {
       LogEntry log;

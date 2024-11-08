@@ -84,6 +84,7 @@ export interface JobAPI {
     operName: string | null,
     process: number,
   ): Promise<void>;
+  unscheduledRebookings(signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.IRebooking>>>;
 }
 
 export interface FmsAPI {
@@ -128,6 +129,14 @@ export interface LogAPI {
     workorder: string,
     signal?: AbortSignal,
   ): Promise<ReadonlyArray<Readonly<api.IActiveWorkorder>>>;
+  cancelRebooking(bookingId: string): Promise<Readonly<api.ILogEntry>>;
+  requestRebooking(
+    partName: string,
+    qty: number | undefined,
+    workorder: string | null | undefined,
+    priority: number | null | undefined,
+    notes: string | undefined,
+  ): Promise<Readonly<api.ILogEntry>>;
 }
 
 export interface MachineAPI {

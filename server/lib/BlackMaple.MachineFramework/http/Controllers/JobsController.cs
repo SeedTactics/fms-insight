@@ -88,7 +88,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("latest-schedule")]
-    public PlannedSchedule LatestSchedule()
+    public MostRecentSchedule LatestSchedule()
     {
       using var db = repo.OpenConnection();
       return db.LoadMostRecentSchedule();
@@ -98,6 +98,13 @@ namespace BlackMaple.MachineFramework.Controllers
     public CurrentStatus CurrentStatus()
     {
       return jobAndQueue.GetCurrentStatus();
+    }
+
+    [HttpGet("unscheduled-rebookings")]
+    public ImmutableList<Rebooking> UnscheduledRebookings()
+    {
+      using var db = repo.OpenConnection();
+      return db.LoadUnscheduledRebookings();
     }
 
     [HttpPost("add-from-sim")]

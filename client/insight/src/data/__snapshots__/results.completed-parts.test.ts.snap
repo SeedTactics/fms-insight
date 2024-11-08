@@ -2,12 +2,12 @@
 
 exports[`bins actual cycles by day > cycles binned by day and part 1`] = `
 Map {
-  "{day: 2018-03-04T06:00:00.000Z}, part: partC-2}" => {
-    "activeMachineMins": 20,
+  "{day: 2018-03-04T06:00:00.000Z}, part: party-3}" => {
+    "activeMachineMins": 15,
     "count": 1,
   },
-  "{day: 2018-03-04T06:00:00.000Z}, part: partz-3}" => {
-    "activeMachineMins": 15,
+  "{day: 2018-03-04T06:00:00.000Z}, part: partf-4}" => {
+    "activeMachineMins": 20,
     "count": 1,
   },
 }
@@ -41,7 +41,7 @@ exports[`bins actual cycles by day > heatmap clipboard table 1`] = `
 
       <tr>
         <th>
-          partC-2
+          partf-4
         </th>
         <th>
           20.0
@@ -57,7 +57,7 @@ exports[`bins actual cycles by day > heatmap clipboard table 1`] = `
 
       <tr>
         <th>
-          partz-3
+          party-3
         </th>
         <th>
           15.0

@@ -389,6 +389,7 @@ function MaterialRegion({
               displayActionForSinglePallet={data.pallet ? data.pallet.palletNum : 0}
               fsize={data.fsize}
               showRawMaterial
+              showJobComment
             />
           ) : (
             <SortableInProcMaterial
@@ -405,6 +406,7 @@ function MaterialRegion({
                   : undefined
               }
               showRawMaterial
+              showJobComment
             />
           )}
         </MoveMaterialArrowNode>
@@ -559,7 +561,7 @@ function InstructionButton({ pallet }: { pallet: number | null }) {
     material.materialID,
     pallet,
     material.action.type === api.ActionType.Loading
-      ? material.action.processAfterLoad ?? material.process
+      ? (material.action.processAfterLoad ?? material.process)
       : material.process,
     operator,
   );

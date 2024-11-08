@@ -359,6 +359,17 @@ namespace BlackMaple.MachineFramework
       string operatorName,
       DateTime? timeUTC = null
     );
+    LogEntry CreateRebooking(
+      string bookingId,
+      string partName,
+      int qty = 1,
+      string notes = null,
+      int? priority = null,
+      string workorder = null,
+      DateTime? timeUTC = null
+    );
+    LogEntry CancelRebooking(string bookingId, DateTime? timeUTC = null);
+    Rebooking LookupRebooking(string bookingId);
 
     // --------------------------------------------------------------------------------
     // Material IDs
@@ -461,10 +472,11 @@ namespace BlackMaple.MachineFramework
       IEnumerable<string> alreadyKnownSchIds = null
     );
     RecentHistoricData LoadRecentJobHistory(DateTime startUTC, IEnumerable<string> alreadyKnownSchIds = null);
-    PlannedSchedule LoadMostRecentSchedule();
+    MostRecentSchedule LoadMostRecentSchedule();
     IEnumerable<string> StationGroupsOnMostRecentSchedule();
     ImmutableList<Workorder> WorkordersById(string workorderId);
     ImmutableDictionary<string, ImmutableList<Workorder>> WorkordersById(IReadOnlySet<string> workorderId);
+    ImmutableList<Rebooking> LoadUnscheduledRebookings();
 
     // --------------------------------------------------------------------------------
     // Adding and Updating Jobs
