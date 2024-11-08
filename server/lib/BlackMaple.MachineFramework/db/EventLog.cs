@@ -1554,22 +1554,28 @@ namespace BlackMaple.MachineFramework
         var totMatCnt =
           (toLoad?.Sum(l => l.MaterialIDs.Count) ?? 0) + (toUnload?.Sum(l => l.MaterialIDToQueue.Count) ?? 0);
 
-        bool allHaveActive = false;
+        bool allHaveActive = true;
         TimeSpan totalActive = TimeSpan.Zero;
         foreach (var l in toLoad ?? [])
         {
           if (l.ActiveOperationTime > TimeSpan.Zero)
           {
-            allHaveActive = true;
             totalActive += l.ActiveOperationTime;
+          }
+          else
+          {
+            allHaveActive = false;
           }
         }
         foreach (var u in toUnload ?? [])
         {
           if (u.ActiveOperationTime > TimeSpan.Zero)
           {
-            allHaveActive = true;
             totalActive += u.ActiveOperationTime;
+          }
+          else
+          {
+            allHaveActive = false;
           }
         }
 
@@ -1579,7 +1585,7 @@ namespace BlackMaple.MachineFramework
           pallet: pallet,
           totalElapsed: totalElapsed,
           totMatCnt: totMatCnt,
-          totalActive: allHaveActive ? totalActive : null,
+          totalActive: allHaveActive && totalActive > TimeSpan.Zero ? totalActive : null,
           timeUTC: timeUTC,
           logs: logs,
           externalQueues: externalQueues,
@@ -1593,7 +1599,7 @@ namespace BlackMaple.MachineFramework
           pallet: pallet,
           totalElapsed: totalElapsed,
           totMatCnt: totMatCnt,
-          totalActive: allHaveActive ? totalActive : null,
+          totalActive: allHaveActive && totalActive > TimeSpan.Zero ? totalActive : null,
           timeUTC: timeUTC,
           logs: logs,
           trans: trans
