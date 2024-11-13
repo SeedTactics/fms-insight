@@ -35,11 +35,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading.Tasks;
 using AutoFixture;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
+using WireMock.RequestBuilders;
+using WireMock.ResponseBuilders;
+using WireMock.Server;
 using Xunit;
 
 namespace MachineWatchTest
@@ -454,9 +456,27 @@ namespace MachineWatchTest
             ActiveOperationTime = TimeSpan.FromMinutes(333),
           },
         },
-        toUnload: null,
+        toUnload:
+        [
+          new MaterialToUnloadFromFace()
+          {
+            MaterialIDToQueue = ImmutableDictionary<long, string>
+              .Empty.Add(mat20.MaterialID, null)
+              .Add(mat19.MaterialID, null),
+            FaceNum = mat20.Face,
+            Process = mat20.Process,
+            ActiveOperationTime = TimeSpan.FromMinutes(123),
+          },
+          new MaterialToUnloadFromFace()
+          {
+            MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat1.MaterialID, null),
+            FaceNum = mat1.Face,
+            Process = mat1.Process,
+            ActiveOperationTime = TimeSpan.FromMinutes(211),
+          },
+        ],
         lulNum: 111,
-        totalElapsed: TimeSpan.FromMinutes(4000),
+        totalElapsed: TimeSpan.FromMinutes(40000),
         pallet: 1234,
         timeUTC: start.AddHours(3),
         externalQueues: null
@@ -466,6 +486,34 @@ namespace MachineWatchTest
         .BeEquivalentTo(
           new[]
           {
+            new LogEntry(
+              -1,
+              new LogMaterial[] { mat20, mat19 with { Face = 22, Process = 1 } },
+              1234,
+              LogType.LoadUnloadCycle,
+              "L/U",
+              111,
+              "UNLOAD",
+              false,
+              start.AddHours(3),
+              "UNLOAD",
+              TimeSpan.FromMinutes(123 * 40000.0 / (111 + 222 + 333 + 123 + 211)),
+              TimeSpan.FromMinutes(123)
+            ),
+            new LogEntry(
+              -1,
+              new LogMaterial[] { mat1 },
+              1234,
+              LogType.LoadUnloadCycle,
+              "L/U",
+              111,
+              "UNLOAD",
+              false,
+              start.AddHours(3),
+              "UNLOAD",
+              TimeSpan.FromMinutes(211 * 40000.0 / (111 + 222 + 333 + 123 + 211)),
+              TimeSpan.FromMinutes(211)
+            ),
             new LogEntry()
             {
               Counter = -1,
@@ -492,7 +540,7 @@ namespace MachineWatchTest
               false,
               start.AddHours(3).AddSeconds(1),
               "LOAD",
-              TimeSpan.FromMinutes(111 * 4000.0 / (111 + 222 + 333)),
+              TimeSpan.FromMinutes(111 * 40000.0 / (111 + 222 + 333 + 123 + 211)),
               TimeSpan.FromMinutes(111)
             ),
             new LogEntry(
@@ -506,7 +554,7 @@ namespace MachineWatchTest
               false,
               start.AddHours(3).AddSeconds(1),
               "LOAD",
-              TimeSpan.FromMinutes(222 * 4000.0 / (111 + 222 + 333)),
+              TimeSpan.FromMinutes(222 * 40000.0 / (111 + 222 + 333 + 123 + 211)),
               TimeSpan.FromMinutes(222)
             ),
             new LogEntry(
@@ -520,14 +568,15 @@ namespace MachineWatchTest
               false,
               start.AddHours(3).AddSeconds(1),
               "LOAD",
-              TimeSpan.FromMinutes(333 * 4000.0 / (111 + 222 + 333)),
+              TimeSpan.FromMinutes(333 * 40000.0 / (111 + 222 + 333 + 123 + 211)),
               TimeSpan.FromMinutes(333)
             ),
           },
           options => options.ComparingByMembers<LogEntry>().Excluding(x => x.Counter)
         );
       logs.AddRange(loadEndActualCycle);
-      logsForMat2.Add(loadEndActualCycle.Skip(1).First());
+      logsForMat1.Add(loadEndActualCycle.Skip(1).First());
+      logsForMat2.Add(loadEndActualCycle.Skip(3).First());
       _jobLog.ToolPocketSnapshotForCycle(loadEndActualCycle.First().Counter).Should().BeEmpty();
       _jobLog
         .GetMaterialDetails(matLoc2Face1.MaterialID)
@@ -1340,6 +1389,27 @@ namespace MachineWatchTest
           .ToList(),
         DateTime.UtcNow.AddHours(-10)
       );
+
+      _jobLog.RecordEmptyPallet(pallet: 1, timeUTC: pal1CycleTime.AddMinutes(40));
+      pal1Cycle.Add(
+        new LogEntry(
+          0,
+          new LogMaterial[] { },
+          1,
+          LogType.PalletCycle,
+          "Pallet Cycle",
+          1,
+          "",
+          false,
+          pal1CycleTime.AddMinutes(40),
+          "PalletCycle",
+          TimeSpan.FromMinutes(40 - 15),
+          TimeSpan.Zero
+        )
+      );
+
+      Assert.Equal(pal1CycleTime.AddMinutes(40), _jobLog.LastPalletCycleTime(1));
+      _jobLog.CurrentPalletLog(1).Should().BeEmpty();
 
       // add invalidated when loading all entries
       CheckLog(
@@ -5183,6 +5253,117 @@ namespace MachineWatchTest
 
       db.LoadUnscheduledRebookings().Should().BeEquivalentTo([expectedR2]);
       db.LoadMostRecentSchedule().UnscheduledRebookings.Should().BeEquivalentTo([expectedR2]);
+    }
+
+    [Fact]
+    public async Task ExternalQueues()
+    {
+      using var server = WireMockServer.Start();
+
+      server
+        .Given(Request.Create().WithPath(path => path.StartsWith("/api/v1/jobs/casting/")))
+        .RespondWith(Response.Create().WithStatusCode(200));
+
+      using var db = _repoCfg.OpenConnection();
+      var fix = new Fixture();
+      var partName = fix.Create<string>();
+      var serial = fix.Create<string>();
+
+      var now = DateTime.UtcNow.AddHours(-5);
+
+      var mat1 = db.AllocateMaterialID(unique: "uuu1", part: partName, numProc: 2);
+      db.RecordSerialForMaterialID(
+        new EventLogMaterial()
+        {
+          MaterialID = mat1,
+          Face = 0,
+          Process = 0,
+        },
+        serial,
+        now
+      );
+
+      db.RecordLoadUnloadComplete(
+          toLoad: [],
+          toUnload:
+          [
+            new MaterialToUnloadFromFace()
+            {
+              MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat1, "queue1"),
+              FaceNum = 1,
+              Process = 1,
+              ActiveOperationTime = TimeSpan.FromMinutes(5),
+            },
+          ],
+          lulNum: 10,
+          pallet: 20,
+          totalElapsed: TimeSpan.FromMinutes(6),
+          timeUTC: now.AddMinutes(2),
+          externalQueues: new Dictionary<string, string> { { "queue1", server.Urls[0] } }
+        )
+        .Should()
+        .BeEquivalentTo(
+          [
+            new LogEntry()
+            {
+              Counter = 3,
+              Material = [],
+              LogType = LogType.PalletCycle,
+              LocationName = "Pallet Cycle",
+              LocationNum = 1,
+              Pallet = 20,
+              Program = "",
+              StartOfCycle = false,
+              EndTimeUTC = now.AddMinutes(2),
+              ElapsedTime = TimeSpan.Zero,
+              ActiveOperationTime = TimeSpan.Zero,
+              Result = "PalletCycle",
+            },
+            new LogEntry()
+            {
+              Counter = 2,
+              Material =
+              [
+                new LogMaterial()
+                {
+                  MaterialID = mat1,
+                  Process = 1,
+                  Face = 1,
+                  JobUniqueStr = "uuu1",
+                  NumProcesses = 2,
+                  PartName = partName,
+                  Serial = serial,
+                  Workorder = "",
+                },
+              ],
+              Pallet = 20,
+              LogType = LogType.LoadUnloadCycle,
+              LocationName = "L/U",
+              LocationNum = 10,
+              Program = "UNLOAD",
+              StartOfCycle = false,
+              EndTimeUTC = now.AddMinutes(2),
+              ElapsedTime = TimeSpan.FromMinutes(6),
+              ActiveOperationTime = TimeSpan.FromMinutes(5),
+              Result = "UNLOAD",
+            },
+          ]
+        );
+
+      // The sends to external queues happen on a new thread so need to wait
+      int numWaits = 0;
+      while (server.LogEntries.Count() < 1 && numWaits < 10)
+      {
+        await Task.Delay(100);
+        numWaits++;
+      }
+
+      server.LogEntries.Should().HaveCount(1);
+      var req = server.LogEntries.First().RequestMessage;
+
+      req.Path.Should().Be("/api/v1/jobs/casting/" + partName);
+      req.Query.Should().BeEquivalentTo(new Dictionary<string, List<string>> { { "queue", ["queue1"] } });
+      req.Body.Should().Be("[\"" + serial + "\"]");
     }
 
     #region Helpers
