@@ -369,6 +369,25 @@ namespace MazakMachineInterface
         }
       }
 
+      // add any pallets on hold that are not currently used in any parts
+      foreach (var pal in palOnHold?.Where(p => p.Value) ?? [])
+      {
+        if (!palletsByName.ContainsKey(pal.Key))
+        {
+          palletsByName.Add(
+            pal.Key,
+            new PalletStatus()
+            {
+              PalletNum = pal.Key,
+              CurrentPalletLocation = FindPalletLocation(machineGroupName, mazakData, mazakCfg, pal.Key),
+              FixtureOnPallet = "",
+              NumFaces = 1,
+              OnHold = true,
+            }
+          );
+        }
+      }
+
       //now queued
       var seenMatIds = new HashSet<long>(material.Select(m => m.MaterialID));
       material.AddRange(

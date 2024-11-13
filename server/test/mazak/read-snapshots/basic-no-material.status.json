@@ -666,11 +666,22 @@
     "2": {
       "PalletNum": 2,
       "FixtureOnPallet": "F:0:fixtureBB:1",
-      "OnHold": false,
+      "OnHold": true,
       "CurrentPalletLocation": {
         "loc": "Buffer",
         "group": "Buffer",
         "num": 2
+      },
+      "NumFaces": 1
+    },
+    "15": {
+      "PalletNum": 15,
+      "FixtureOnPallet": "",
+      "OnHold": true,
+      "CurrentPalletLocation": {
+        "loc": "Buffer",
+        "group": "Buffer",
+        "num": 15
       },
       "NumFaces": 1
     }
