@@ -1716,7 +1716,7 @@ namespace BlackMaple.MachineFramework
               Program = "UNLOAD",
               StartOfCycle = false,
               EndTimeUTC = timeUTC,
-              ElapsedTime = elapsed, // TODO: split
+              ElapsedTime = elapsed,
               ActiveOperationTime = face.ActiveOperationTime,
               Result = "UNLOAD",
             },
@@ -1849,7 +1849,7 @@ namespace BlackMaple.MachineFramework
               // Add 1 second to be after the pallet cycle
               EndTimeUTC = timeUTC.AddSeconds(1),
               Result = "LOAD",
-              ElapsedTime = elapsed, // TODO: split
+              ElapsedTime = elapsed,
               ActiveOperationTime = face.ActiveOperationTime,
             },
             face.ForeignID,
