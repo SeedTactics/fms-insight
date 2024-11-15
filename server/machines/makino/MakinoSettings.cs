@@ -41,6 +41,7 @@ public record MakinoSettings
   public required string ADEPath { get; init; }
   public required bool DownloadOnlyOrders { get; init; }
   public required string DbConnectionString { get; init; }
+  public TimeZoneInfo LocalTimeZone { get; init; } = TimeZoneInfo.Local;
 
   private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSettings>();
 

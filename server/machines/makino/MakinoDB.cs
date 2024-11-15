@@ -246,8 +246,6 @@ namespace BlackMaple.FMSInsight.Makino
 
   public record MachineResults
   {
-    public DateTime StartDateTimeLocal { get; set; }
-    public DateTime EndDateTimeLocal { get; set; }
     public DateTime StartDateTimeUTC { get; set; }
     public DateTime EndDateTimeUTC { get; set; }
 
@@ -530,12 +528,12 @@ namespace BlackMaple.FMSInsight.Makino
       var param = cmd.CreateParameter();
       param.ParameterName = "@start";
       param.DbType = DbType.DateTime;
-      param.Value = startUTC.ToLocalTime();
+      param.Value = TimeZoneInfo.ConvertTimeFromUtc(startUTC, makinoCfg.LocalTimeZone);
       cmd.Parameters.Add(param);
       param = cmd.CreateParameter();
       param.ParameterName = "@end";
       param.DbType = DbType.DateTime;
-      param.Value = endUTC.ToLocalTime();
+      param.Value = TimeZoneInfo.ConvertTimeFromUtc(endUTC, makinoCfg.LocalTimeZone);
       cmd.Parameters.Add(param);
 
       var ret = new List<MachineResults>();
@@ -544,13 +542,13 @@ namespace BlackMaple.FMSInsight.Makino
       {
         while (reader.Read())
         {
+          var localStart = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Unspecified);
+          var localEnd = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Unspecified);
           var m = new MachineResults
           {
-            StartDateTimeLocal = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local),
-            EndDateTimeLocal = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Local),
+            StartDateTimeUTC = TimeZoneInfo.ConvertTimeToUtc(localStart, makinoCfg.LocalTimeZone),
+            EndDateTimeUTC = TimeZoneInfo.ConvertTimeToUtc(localEnd, makinoCfg.LocalTimeZone),
           };
-          m.StartDateTimeUTC = m.StartDateTimeLocal.ToUniversalTime();
-          m.EndDateTimeUTC = m.EndDateTimeLocal.ToUniversalTime();
 
           m.DeviceID = reader.GetInt32(2);
           m.PalletID = reader.GetInt32(3);
@@ -575,13 +573,10 @@ namespace BlackMaple.FMSInsight.Makino
             m.OperQuantities.Add(reader.GetInt32(16 + i));
           }
 
+          m.CommonValues = QueryCommonValues(_db, localStart, localEnd, m.DeviceID, trans);
+
           ret.Add(m);
         }
-      }
-
-      foreach (var m in ret)
-      {
-        m.CommonValues = QueryCommonValues(_db, m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, trans);
       }
 
       return ret;
@@ -612,12 +607,12 @@ namespace BlackMaple.FMSInsight.Makino
       var param = cmd.CreateParameter();
       param.ParameterName = "@start";
       param.DbType = DbType.DateTime;
-      param.Value = startUTC.ToLocalTime();
+      param.Value = TimeZoneInfo.ConvertTimeFromUtc(startUTC, makinoCfg.LocalTimeZone);
       cmd.Parameters.Add(param);
       param = cmd.CreateParameter();
       param.ParameterName = "@end";
       param.DbType = DbType.DateTime;
-      param.Value = endUTC.ToLocalTime();
+      param.Value = TimeZoneInfo.ConvertTimeFromUtc(endUTC, makinoCfg.LocalTimeZone);
       cmd.Parameters.Add(param);
 
       var ret = new List<WorkSetResults>();
@@ -628,11 +623,15 @@ namespace BlackMaple.FMSInsight.Makino
         {
           var m = new WorkSetResults
           {
-            StartDateTimeUTC = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local),
-            EndDateTimeUTC = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Local),
+            StartDateTimeUTC = TimeZoneInfo.ConvertTimeToUtc(
+              DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Unspecified),
+              makinoCfg.LocalTimeZone
+            ),
+            EndDateTimeUTC = TimeZoneInfo.ConvertTimeToUtc(
+              DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Unspecified),
+              makinoCfg.LocalTimeZone
+            ),
           };
-          m.StartDateTimeUTC = m.StartDateTimeUTC.ToUniversalTime();
-          m.EndDateTimeUTC = m.EndDateTimeUTC.ToUniversalTime();
 
           m.DeviceID = reader.GetInt32(2);
           m.PalletID = reader.GetInt32(3);
@@ -726,10 +725,12 @@ namespace BlackMaple.FMSInsight.Makino
       {
         while (reader.Read())
         {
-          var execLocal = DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Local);
           var v = new CommonValue()
           {
-            ExecDateTimeUTC = execLocal.ToUniversalTime(),
+            ExecDateTimeUTC = TimeZoneInfo.ConvertTimeToUtc(
+              DateTime.SpecifyKind(reader.GetDateTime(0), DateTimeKind.Unspecified),
+              makinoCfg.LocalTimeZone
+            ),
             Number = reader.GetInt32(1),
             Value = reader.GetValue(2).ToString(),
           };
