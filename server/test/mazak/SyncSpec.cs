@@ -283,6 +283,10 @@ public sealed class MazakSyncSpec : IDisposable
       ["2024,6,11,4,5,6,501,,12,,1,6,4,prog,,,,"]
     );
     File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,1,6,4,prog,,,,"]);
+    File.WriteAllLines(
+      Path.Combine(_tempDir, "333leaveload.csv"),
+      ["2024,6,11,4,6,10,301,,,,,,4,,,,L01,S04"]
+    );
 
     var allData = new MazakAllDataAndLogs()
     {
@@ -330,7 +334,66 @@ public sealed class MazakSyncSpec : IDisposable
 
     LogCSVParsing.DeleteLog("222loadend.csv", _tempDir);
 
-    Directory.GetFiles(_tempDir, "*.csv").Should().BeEmpty();
+    Directory
+      .GetFiles(_tempDir, "*.csv")
+      .Should()
+      .BeEquivalentTo([Path.Combine(_tempDir, "333leaveload.csv")]);
+  }
+
+  [Fact]
+  public void StopsProcessingOnLoadEvents()
+  {
+    using var db = repo.OpenConnection();
+
+    File.WriteAllLines(
+      Path.Combine(_tempDir, "111loadstart.csv"),
+      ["2024,6,11,4,5,6,501,,12,,1,6,4,prog,,,,"]
+    );
+    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,1,6,4,prog,,,,"]);
+
+    var allData = new MazakAllDataAndLogs()
+    {
+      MainPrograms = [],
+      Fixtures = [],
+      Pallets = [],
+      Parts = [],
+      PalletPositions = [],
+      Schedules = [],
+      LoadActions = [],
+      Logs = LogCSVParsing.LoadLog(null, _tempDir),
+    };
+    _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
+
+    _sync
+      .CalculateCellState(db)
+      .Should()
+      .BeEquivalentTo(
+        new MazakState()
+        {
+          CurrentStatus = new CurrentStatus()
+          {
+            TimeOfCurrentStatusUTC = DateTime.UtcNow,
+            Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+            Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+            Material = [],
+            Alarms = [],
+            Workorders = null,
+            Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
+          },
+          AllData = allData,
+          StoppedBecauseRecentLogEvent = true,
+          StateUpdated = true,
+          TimeUntilNextRefresh = TimeSpan.FromSeconds(15),
+        },
+        options =>
+          options
+            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(2)))
+            .When(info => info.Path.EndsWith("TimeOfCurrentStatusUTC"))
+      );
+
+    db.MaxForeignID().Should().BeEquivalentTo("111loadstart.csv");
+
+    _mazakDB.Received().DeleteLogs("111loadstart.csv");
   }
 
   [Fact]
