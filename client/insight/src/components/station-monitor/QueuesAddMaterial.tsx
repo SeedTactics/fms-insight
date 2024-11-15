@@ -379,7 +379,9 @@ function PromptForMaterialType({
   if (existingMat) return null;
   if (serial === null) return null;
 
-  if (materialTypes.castings.length === 0 && materialTypes.jobs.length === 0) {
+  if (toQueue === null) {
+    return <div>No queue is selected</div>;
+  } else if (materialTypes.castings.length === 0 && materialTypes.jobs.length === 0) {
     return <div>No scheduled material uses this queue</div>;
   }
 
