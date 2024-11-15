@@ -49,6 +49,7 @@ public sealed class MazakSyncSpec : IDisposable
 {
   private readonly MazakSync _sync;
   private readonly IMazakDB _mazakDB;
+  private readonly JsonSerializerOptions _jsonSettings;
   private readonly string _tempDir;
   private readonly FMSSettings _fmsSt;
   private readonly RepositoryConfig repo;
@@ -67,6 +68,10 @@ public sealed class MazakSyncSpec : IDisposable
     _fmsSt.Queues.Add("queueAAA", new QueueInfo());
     _fmsSt.Queues.Add("queueBBB", new QueueInfo());
     _fmsSt.Queues.Add("queueCCC", new QueueInfo());
+
+    _jsonSettings = new JsonSerializerOptions();
+    FMSInsightWebHost.JsonSettings(_jsonSettings);
+    _jsonSettings.WriteIndented = true;
 
     _sync = new MazakSync(
       _mazakDB,
@@ -280,9 +285,9 @@ public sealed class MazakSyncSpec : IDisposable
 
     File.WriteAllLines(
       Path.Combine(_tempDir, "111loadstart.csv"),
-      ["2024,6,11,4,5,6,501,,12,,1,6,4,prog,,,,"]
+      ["2024,6,11,4,5,6,501,,12,,,1,6,4,prog,,,"]
     );
-    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,1,6,4,prog,,,,"]);
+    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,,12,,1,6,4,prog,,,"]);
     File.WriteAllLines(
       Path.Combine(_tempDir, "333leaveload.csv"),
       ["2024,6,11,4,6,10,301,,,,,,4,,,,L01,S04"]
@@ -345,51 +350,66 @@ public sealed class MazakSyncSpec : IDisposable
   {
     using var db = repo.OpenConnection();
 
+    var newJobs = JsonSerializer.Deserialize<NewJobs>(
+      File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+      _jsonSettings
+    );
+    db.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+    var matId = db.AllocateMaterialID("aaa-schId1234", "aaa", 2);
+    db.RecordAddMaterialToQueue(
+      new EventLogMaterial()
+      {
+        MaterialID = matId,
+        Process = 0,
+        Face = 0,
+      },
+      "castings",
+      -1,
+      operatorName: null,
+      reason: "TheQueueReason"
+    );
+
     File.WriteAllLines(
       Path.Combine(_tempDir, "111loadstart.csv"),
-      ["2024,6,11,4,5,6,501,,12,,1,6,4,prog,,,,"]
+      ["2024,6,11,4,5,6,501,,12,,,1,6,1,prog,,,"]
     );
-    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,1,6,4,prog,,,,"]);
+    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,,1,6,1,prog,,,"]);
 
-    var allData = new MazakAllDataAndLogs()
+    var allData = JsonSerializer.Deserialize<MazakAllDataAndLogs>(
+      File.ReadAllText(
+        Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.data.json")
+      ),
+      _jsonSettings
+    ) with
     {
-      MainPrograms = [],
-      Fixtures = [],
-      Pallets = [],
-      Parts = [],
-      PalletPositions = [],
-      Schedules = [],
-      LoadActions = [],
       Logs = LogCSVParsing.LoadLog(null, _tempDir),
     };
     _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
 
-    _sync
-      .CalculateCellState(db)
-      .Should()
+    var st = _sync.CalculateCellState(db);
+
+    st.AllData.Should().Be(allData);
+    st.StoppedBecauseRecentLogEvent.Should().BeTrue();
+    st.StateUpdated.Should().BeTrue();
+    st.TimeUntilNextRefresh.Should().Be(TimeSpan.FromSeconds(15));
+
+    // just a little check of the status that it correctly saw the load event,
+    // the full testing is in BuildCurrentStatusSpec.  Check the material
+    // has been loaded, even though we haven't yet processed the load
+    st.CurrentStatus.Material.Should().HaveCount(1);
+    st.CurrentStatus.Material[0]
+      .Location.Should()
       .BeEquivalentTo(
-        new MazakState()
+        new InProcessMaterialLocation()
         {
-          CurrentStatus = new CurrentStatus()
-          {
-            TimeOfCurrentStatusUTC = DateTime.UtcNow,
-            Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-            Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-            Material = [],
-            Alarms = [],
-            Workorders = null,
-            Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
-          },
-          AllData = allData,
-          StoppedBecauseRecentLogEvent = true,
-          StateUpdated = true,
-          TimeUntilNextRefresh = TimeSpan.FromSeconds(15),
-        },
-        options =>
-          options
-            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(2)))
-            .When(info => info.Path.EndsWith("TimeOfCurrentStatusUTC"))
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          PalletNum = 1,
+          Face = 1,
+        }
       );
+    st.CurrentStatus.Material[0]
+      .Action.Should()
+      .BeEquivalentTo(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
 
     db.MaxForeignID().Should().BeEquivalentTo("111loadstart.csv");
 
