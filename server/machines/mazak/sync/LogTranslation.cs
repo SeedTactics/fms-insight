@@ -208,7 +208,6 @@ namespace MazakMachineInterface
           {
             if (!HandleNonLulEndEvent(e.NonLulEndEvt))
             {
-              onMazakLog(e.NonLulEndEvt);
               stoppedFromMcEvt = true;
               break;
             }
