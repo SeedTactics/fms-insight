@@ -375,7 +375,9 @@ namespace BlackMaple.FMSInsight.Makino
       {
         logDb.RecordLoadUnloadComplete(
           toLoad: toLoad,
+          previouslyLoaded: [],
           toUnload: toUnload,
+          previouslyUnloaded: [],
           lulNum: loc.Num,
           pallet: ws.Key.PalletID,
           totalElapsed: elapsed,

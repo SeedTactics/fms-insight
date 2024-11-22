@@ -482,6 +482,8 @@ namespace MachineWatchTest
             },
           ],
           toUnload: null,
+          previouslyLoaded: null,
+          previouslyUnloaded: null,
           lulNum: statNum,
           totalElapsed: TimeSpan.FromMinutes(10),
           pallet: pal,

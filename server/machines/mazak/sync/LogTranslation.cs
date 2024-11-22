@@ -255,7 +255,9 @@ namespace MazakMachineInterface
 
       repo.RecordLoadUnloadComplete(
         toLoad: toLoad,
+        previouslyLoaded: null,
         toUnload: toUnload,
+        previouslyUnloaded: null,
         pallet: pallet,
         lulNum: es[0].StationNumber,
         totalElapsed: CalculateElapsed(es[0].TimeUTC, LogType.LoadUnloadCycle, cycle, es[0].StationNumber),

@@ -992,6 +992,8 @@ public static class BuildCellState
     var newEvts = db.RecordLoadUnloadComplete(
       toLoad: matsToLoad.Select((m) => m.Item1).ToImmutableList(),
       toUnload: toUnload,
+      previouslyLoaded: null, // TODO: previouslyLoaded
+      previouslyUnloaded: null, // TODO: previouslyUnloaded
       lulNum: loadNum,
       pallet: pal.PalletNum,
       totalElapsed: nowUTC - (LoadUnloadStartTime(pal) ?? nowUTC),

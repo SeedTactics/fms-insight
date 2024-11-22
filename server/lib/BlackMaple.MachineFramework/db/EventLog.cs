@@ -1593,7 +1593,9 @@ namespace BlackMaple.MachineFramework
 
     public IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
+      IReadOnlyList<EventLogMaterial> previouslyLoaded,
       IReadOnlyList<MaterialToUnloadFromFace> toUnload,
+      IReadOnlyList<EventLogMaterial> previouslyUnloaded,
       int lulNum,
       int pallet,
       TimeSpan totalElapsed,
@@ -1650,7 +1652,46 @@ namespace BlackMaple.MachineFramework
           sendToExternal: sendToExternal,
           trans: trans
         );
-        RecordPalletCycle(pallet: pallet, timeUTC: timeUTC, logs: logs, trans: trans, foreignId: null);
+
+        var allUnload = (previouslyUnloaded ?? []).Concat(
+          (toUnload ?? []).SelectMany(u =>
+            u.MaterialIDToQueue.Keys.Select(mid => new EventLogMaterial()
+            {
+              MaterialID = mid,
+              Process = u.Process,
+              Face = u.FaceNum,
+            })
+          )
+        );
+        if (allUnload.Any())
+        {
+          RecordPalletCycleEnd(pallet: pallet, mats: allUnload, timeUTC: timeUTC, logs: logs, trans: trans);
+        }
+
+        RecordLoadMaterialPaths(toLoad: toLoad, trans: trans);
+
+        var allLoad = (previouslyLoaded ?? []).Concat(
+          (toLoad ?? []).SelectMany(l =>
+            l.MaterialIDs.Select(mid => new EventLogMaterial()
+            {
+              MaterialID = mid,
+              Process = l.Process,
+              Face = l.FaceNum,
+            })
+          )
+        );
+        if (allLoad.Any())
+        {
+          RecordPalletCycleStart(
+            pallet: pallet,
+            mats: allLoad,
+            timeUTC: timeUTC,
+            logs: logs,
+            trans: trans,
+            foreignId: null
+          );
+        }
+
         RecordLoadEnd(
           toLoad: toLoad,
           lulNum: lulNum,
@@ -1679,7 +1720,14 @@ namespace BlackMaple.MachineFramework
         trans =>
         {
           var logs = new List<LogEntry>();
-          RecordPalletCycle(pallet: pallet, timeUTC: timeUTC, logs: logs, trans: trans, foreignId: foreignId);
+          RecordPalletCycleStart(
+            pallet: pallet,
+            mats: [],
+            timeUTC: timeUTC,
+            logs: logs,
+            trans: trans,
+            foreignId: foreignId
+          );
           return logs;
         },
         foreignId: foreignId
@@ -1785,12 +1833,44 @@ namespace BlackMaple.MachineFramework
       }
     }
 
-    private void RecordPalletCycle(
+    private void RecordPalletCycleStart(
       int pallet,
+      IEnumerable<EventLogMaterial> mats,
       DateTime timeUTC,
       List<LogEntry> logs,
       IDbTransaction trans,
       string foreignId
+    )
+    {
+      logs.Add(
+        AddLogEntry(
+          trans,
+          new NewEventLogEntry()
+          {
+            Material = mats,
+            Pallet = pallet,
+            LogType = LogType.PalletCycle,
+            LocationName = "Pallet Cycle",
+            LocationNum = 1,
+            Program = "",
+            StartOfCycle = true,
+            EndTimeUTC = timeUTC,
+            Result = "PalletCycle",
+            ElapsedTime = TimeSpan.Zero,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+          foreignID: foreignId,
+          null
+        )
+      );
+    }
+
+    private void RecordPalletCycleEnd(
+      int pallet,
+      IEnumerable<EventLogMaterial> mats,
+      DateTime timeUTC,
+      List<LogEntry> logs,
+      IDbTransaction trans
     )
     {
       using var lastTimeCmd = _connection.CreateCommand();
@@ -1809,7 +1889,7 @@ namespace BlackMaple.MachineFramework
           trans,
           new NewEventLogEntry()
           {
-            Material = [],
+            Material = mats,
             Pallet = pallet,
             LogType = LogType.PalletCycle,
             LocationName = "Pallet Cycle",
@@ -1821,10 +1901,24 @@ namespace BlackMaple.MachineFramework
             ElapsedTime = elapsedTime,
             ActiveOperationTime = TimeSpan.Zero,
           },
-          foreignID: foreignId,
+          null,
           null
         )
       );
+    }
+
+    private void RecordLoadMaterialPaths(IEnumerable<MaterialToLoadOntoFace> toLoad, IDbTransaction trans)
+    {
+      foreach (var face in toLoad ?? [])
+      {
+        if (face.Path.HasValue)
+        {
+          foreach (var mat in face.MaterialIDs)
+          {
+            RecordPathForProcess(mat, face.Process, face.Path.Value, trans);
+          }
+        }
+      }
     }
 
     private void RecordLoadEnd(
@@ -1858,14 +1952,6 @@ namespace BlackMaple.MachineFramework
               timeUTC: timeUTC
             )
           );
-        }
-
-        if (face.Path.HasValue)
-        {
-          foreach (var mat in face.MaterialIDs)
-          {
-            RecordPathForProcess(mat, face.Process, face.Path.Value, trans);
-          }
         }
 
         TimeSpan elapsed;
@@ -2742,7 +2828,7 @@ namespace BlackMaple.MachineFramework
           }
 
           // load old events
-          var oldEvents = CurrentPalletLog(pallet, includeLastPalletCycleEvt: false, trans);
+          var oldEvents = CurrentPalletLog(pallet, includeLastPalletCycleEvt: true, trans);
           var oldMatProcM = oldEvents
             .SelectMany(e => e.Material)
             .Where(m => m.MaterialID == oldMatId)

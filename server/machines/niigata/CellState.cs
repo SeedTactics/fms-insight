@@ -979,7 +979,9 @@ namespace BlackMaple.FMSInsight.Niigata
 
       var lulEvts = logDB.RecordLoadUnloadComplete(
         toLoad: toLoad,
+        previouslyLoaded: null,
         toUnload: toUnload,
+        previouslyUnloaded: null,
         lulNum: loadBegin.LocationNum,
         pallet: pallet.Status.Master.PalletNum,
         totalElapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),

@@ -102,7 +102,9 @@ namespace BlackMaple.MachineFramework
     );
     IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
+      IReadOnlyList<EventLogMaterial> previouslyLoaded,
       IReadOnlyList<MaterialToUnloadFromFace> toUnload,
+      IReadOnlyList<EventLogMaterial> previouslyUnloaded,
       int lulNum,
       int pallet,
       TimeSpan totalElapsed,

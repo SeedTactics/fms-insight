@@ -492,6 +492,8 @@ public sealed class MazakSyncSpec : IDisposable
         },
       ],
       toUnload: null,
+      previouslyLoaded: null,
+      previouslyUnloaded: null,
       lulNum: 2,
       pallet: 4,
       totalElapsed: TimeSpan.FromMinutes(1),
