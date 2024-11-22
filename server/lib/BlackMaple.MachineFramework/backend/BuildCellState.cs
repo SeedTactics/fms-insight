@@ -348,6 +348,12 @@ public static class BuildCellState
   {
     private LoadedPalletStatus() { }
 
+    public record LulFinished : LoadedPalletStatus
+    {
+      public required int LoadNum { get; init; }
+      public IEnumerable<InProcessMaterial>? MaterialToLoad { get; init; } = null;
+    }
+
     public record MachineStopped() : LoadedPalletStatus;
 
     public record MachineRunning : LoadedPalletStatus
@@ -361,16 +367,11 @@ public static class BuildCellState
     {
       public required int LoadNum { get; init; }
       public ImmutableList<int> UnloadingFaces { get; init; } = ImmutableList<int>.Empty;
+      public ImmutableList<int> UnloadCompletedFaces { get; init; } = ImmutableList<int>.Empty;
       public Func<LoadedFace, ImmutableList<InProcessMaterial>>? AdjustUnloadingMaterial { get; init; } =
         null;
       public ImmutableList<InProcessMaterial>? NewMaterialToLoad { get; init; } = null;
       public DateTime? MachiningStopTime { get; init; } = null;
-    }
-
-    public record CompletePalletCycle : LoadedPalletStatus
-    {
-      public required int LoadNum { get; init; }
-      public IEnumerable<InProcessMaterial>? MaterialToLoad { get; init; } = null;
     }
   }
 
@@ -386,6 +387,22 @@ public static class BuildCellState
   {
     switch (status)
     {
+      case LoadedPalletStatus.LulFinished loaded:
+        pal = SetMachineNotRunning(pal: pal, db: db, machineControl: machineControl, nowUTC: nowUTC);
+        if (!CheckMaterialMatches(pal, loaded.MaterialToLoad))
+        {
+          pal = CompletePalletCycle(
+            pal: pal,
+            loadNum: loaded.LoadNum,
+            materialToLoad: loaded.MaterialToLoad,
+            jobs: jobs,
+            db: db,
+            nowUTC: nowUTC,
+            fmsSettings: settings
+          );
+        }
+        return pal;
+
       case LoadedPalletStatus.MachineStopped machineStopped:
         return SetMachineNotRunning(pal: pal, db: db, machineControl: machineControl, nowUTC: nowUTC);
 
@@ -407,6 +424,7 @@ public static class BuildCellState
           machineControl: machineControl,
           nowUTC: unloading.MachiningStopTime ?? nowUTC
         );
+        pal = EnsureLoadBegin(pal: pal, db: db, nowUTC: nowUTC);
         foreach (var face in unloading.UnloadingFaces)
         {
           pal = SetUnloading(
@@ -418,6 +436,17 @@ public static class BuildCellState
             adjustUnloadingMats: unloading.AdjustUnloadingMaterial
           );
         }
+        foreach (var face in unloading.UnloadCompletedFaces)
+        {
+          pal = SetPartialUnloadComplete(
+            pal: pal,
+            faceNum: face,
+            lulNum: unloading.LoadNum,
+            fmsSettings: settings,
+            db: db,
+            nowUTC: nowUTC
+          );
+        }
         if (unloading.NewMaterialToLoad != null)
         {
           pal = pal with
@@ -425,19 +454,6 @@ public static class BuildCellState
             MaterialLoadingOntoPallet = pal.MaterialLoadingOntoPallet.AddRange(unloading.NewMaterialToLoad),
           };
         }
-        return pal;
-
-      case LoadedPalletStatus.CompletePalletCycle complete:
-        pal = SetMachineNotRunning(pal: pal, db: db, machineControl: machineControl, nowUTC: nowUTC);
-        pal = CompletePalletCycle(
-          pal: pal,
-          loadNum: complete.LoadNum,
-          materialToLoad: complete.MaterialToLoad,
-          jobs: jobs,
-          db: db,
-          nowUTC: nowUTC,
-          fmsSettings: settings
-        );
         return pal;
 
       default:
@@ -709,12 +725,8 @@ public static class BuildCellState
     };
   }
 
-  private static MaterialToUnloadFromFace? UnloadMaterial(Pallet pal, int faceNum)
+  private static MaterialToUnloadFromFace? UnloadMaterial(Pallet pal, LoadedFace face)
   {
-    var face = pal.Faces.GetValueOrDefault(faceNum);
-    if (face == null)
-      return null;
-
     if (face.UnloadEnd == null)
     {
       var outputQueue = OutputQueueForMaterial(face, pal.Log);
@@ -730,6 +742,56 @@ public static class BuildCellState
     }
 
     return null;
+  }
+
+  private static DateTime? LoadUnloadStartTime(Pallet pal)
+  {
+    // A load/unload starts with a LoadBegin event, then a sequence of partial unloads,
+    // then the pallet cycle which contains any remaining unloads and the loads.
+
+    var lastPartialUnload = pal.Log.LastOrDefault(e =>
+      e.LogType == LogType.LoadUnloadCycle && e.Result == "UNLOAD" && !e.StartOfCycle
+    );
+
+    return lastPartialUnload?.EndTimeUTC ?? pal.LoadBegin?.EndTimeUTC;
+  }
+
+  private static Pallet SetPartialUnloadComplete(
+    Pallet pal,
+    int faceNum,
+    int lulNum,
+    FMSSettings fmsSettings,
+    IRepository db,
+    DateTime nowUTC
+  )
+  {
+    var face = pal.Faces.GetValueOrDefault(faceNum);
+    if (face == null)
+    {
+      return pal;
+    }
+
+    IEnumerable<LogEntry>? newEvts = null;
+
+    var toUnload = UnloadMaterial(pal, face);
+    if (toUnload != null)
+    {
+      newEvts = db.RecordPartialUnloadEnd(
+        toUnload: [toUnload],
+        totalElapsed: nowUTC - (LoadUnloadStartTime(pal) ?? nowUTC),
+        pallet: pal.PalletNum,
+        lulNum: lulNum,
+        timeUTC: nowUTC,
+        externalQueues: fmsSettings.ExternalQueues
+      );
+    }
+
+    return pal with
+    {
+      Faces = pal.Faces.Remove(faceNum),
+      Log = newEvts != null ? pal.Log.AddRange(newEvts) : pal.Log,
+      NewLogEvents = pal.NewLogEvents || newEvts != null,
+    };
   }
 
   private static ImmutableList<(
@@ -844,6 +906,64 @@ public static class BuildCellState
       .ToImmutableList();
   }
 
+  private static bool CheckMaterialMatches(Pallet pal, IEnumerable<InProcessMaterial>? materialToLoad)
+  {
+    if (materialToLoad == null || !materialToLoad.Any())
+    {
+      // no material to load, check if there is any material on the pallet
+      return pal.Faces.Count == 0;
+    }
+
+    if (pal.Faces.Count == 0)
+    {
+      // material to load, but no faces
+      return false;
+    }
+
+    var mats = materialToLoad.ToLookup(m =>
+      m.Action.Type == InProcessMaterialAction.ActionType.Loading ? m.Action.LoadOntoFace : m.Location.Face
+    );
+
+    if (mats.Count != pal.Faces.Count)
+    {
+      // different number of faces
+      return false;
+    }
+
+    foreach (var faceToLoad in mats)
+    {
+      if (faceToLoad.Key.HasValue && pal.Faces.TryGetValue(faceToLoad.Key.Value, out var face))
+      {
+        // check if list of (MaterialID, Proc)s is different
+        if (
+          !faceToLoad
+            .Select(m =>
+              (
+                m.MaterialID,
+                (
+                  m.Action.Type == InProcessMaterialAction.ActionType.Loading
+                    ? m.Action.ProcessAfterLoad
+                    : null
+                ) ?? m.Process
+              )
+            )
+            .OrderBy(mid => mid)
+            .SequenceEqual(face.Material.Select(m => (m.MaterialID, m.Process)).OrderBy(mid => mid))
+        )
+        {
+          return false;
+        }
+      }
+      else
+      {
+        // face not found
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   private static Pallet CompletePalletCycle(
     Pallet pal,
     int loadNum,
@@ -854,18 +974,13 @@ public static class BuildCellState
     DateTime nowUTC
   )
   {
-    DateTime? unloadStartTime = null;
     var toUnload = new List<MaterialToUnloadFromFace>();
     foreach (var face in pal.Faces.Values)
     {
-      var u = UnloadMaterial(pal, face.FaceNum);
+      var u = UnloadMaterial(pal, face);
       if (u != null)
       {
         toUnload.Add(u);
-      }
-      if (face.UnloadStart != null)
-      {
-        unloadStartTime = face.UnloadStart.EndTimeUTC;
       }
     }
 
@@ -879,7 +994,7 @@ public static class BuildCellState
       toUnload: toUnload,
       lulNum: loadNum,
       pallet: pal.PalletNum,
-      totalElapsed: nowUTC - (unloadStartTime ?? pal.LoadBegin?.EndTimeUTC ?? nowUTC),
+      totalElapsed: nowUTC - (LoadUnloadStartTime(pal) ?? nowUTC),
       timeUTC: nowUTC,
       externalQueues: fmsSettings.ExternalQueues
     );
