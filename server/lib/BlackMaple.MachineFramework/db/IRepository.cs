@@ -92,6 +92,14 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
+    IEnumerable<LogEntry> RecordPartialUnloadEnd(
+      IReadOnlyList<MaterialToUnloadFromFace> toUnload,
+      int lulNum,
+      int pallet,
+      TimeSpan totalElapsed,
+      DateTime timeUTC,
+      IReadOnlyDictionary<string, string> externalQueues
+    );
     IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<MaterialToUnloadFromFace> toUnload,

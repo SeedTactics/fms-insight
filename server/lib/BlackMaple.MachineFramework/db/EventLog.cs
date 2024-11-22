@@ -1533,6 +1533,64 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
+    public IEnumerable<LogEntry> RecordPartialUnloadEnd(
+      IReadOnlyList<MaterialToUnloadFromFace> toUnload,
+      int lulNum,
+      int pallet,
+      TimeSpan totalElapsed,
+      DateTime timeUTC,
+      IReadOnlyDictionary<string, string> externalQueues
+    )
+    {
+      var sendToExternal = new List<MaterialToSendToExternalQueue>();
+
+      var newLogs = AddEntryInTransaction(trans =>
+      {
+        var logs = new List<LogEntry>();
+
+        // calculate total active time and total material count to be able
+        // to split the totalElpased up
+        var totMatCnt = toUnload?.Sum(l => l.MaterialIDToQueue.Count) ?? 0;
+
+        bool allHaveActive = true;
+        TimeSpan totalActive = TimeSpan.Zero;
+        foreach (var u in toUnload ?? [])
+        {
+          if (u.ActiveOperationTime > TimeSpan.Zero)
+          {
+            totalActive += u.ActiveOperationTime;
+          }
+          else
+          {
+            allHaveActive = false;
+          }
+        }
+
+        RecordUnloadEnd(
+          toUnload: toUnload,
+          lulNum: lulNum,
+          pallet: pallet,
+          totalElapsed: totalElapsed,
+          totMatCnt: totMatCnt,
+          totalActive: allHaveActive && totalActive > TimeSpan.Zero ? totalActive : null,
+          timeUTC: timeUTC,
+          logs: logs,
+          externalQueues: externalQueues,
+          sendToExternal: sendToExternal,
+          trans: trans
+        );
+
+        return logs;
+      });
+
+      if (sendToExternal.Count > 0)
+      {
+        System.Threading.Tasks.Task.Run(() => SendMaterialToExternalQueue.Post(sendToExternal));
+      }
+
+      return newLogs;
+    }
+
     public IEnumerable<LogEntry> RecordLoadUnloadComplete(
       IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<MaterialToUnloadFromFace> toUnload,

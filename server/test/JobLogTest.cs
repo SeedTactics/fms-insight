@@ -1663,8 +1663,7 @@ namespace MachineWatchTest
         elapsed: TimeSpan.FromMinutes(30),
         active: TimeSpan.FromMinutes(40)
       );
-      _jobLog.RecordLoadUnloadComplete(
-        toLoad: null,
+      _jobLog.RecordPartialUnloadEnd(
         toUnload:
         [
           new MaterialToUnloadFromFace()
@@ -5364,6 +5363,141 @@ namespace MachineWatchTest
       req.Path.Should().Be("/api/v1/jobs/casting/" + partName);
       req.Query.Should().BeEquivalentTo(new Dictionary<string, List<string>> { { "queue", ["queue1"] } });
       req.Body.Should().Be("[\"" + serial + "\"]");
+
+      // Now test PartialUnloadEnd
+
+      server.ResetLogEntries();
+
+      var mat2 = db.AllocateMaterialID(unique: "uuu1", part: partName, numProc: 2);
+      var mat3 = db.AllocateMaterialID(unique: "uuu1", part: partName, numProc: 2);
+      var serial2 = fix.Create<string>();
+      var serial3 = fix.Create<string>();
+      db.RecordSerialForMaterialID(
+        new EventLogMaterial()
+        {
+          MaterialID = mat2,
+          Face = 0,
+          Process = 0,
+        },
+        serial2,
+        now
+      );
+      db.RecordSerialForMaterialID(
+        new EventLogMaterial()
+        {
+          MaterialID = mat3,
+          Face = 0,
+          Process = 0,
+        },
+        serial3,
+        now
+      );
+
+      db.RecordPartialUnloadEnd(
+          toUnload:
+          [
+            new MaterialToUnloadFromFace()
+            {
+              MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat2, "queue1"),
+              FaceNum = 3,
+              Process = 2,
+              ActiveOperationTime = TimeSpan.FromMinutes(4),
+            },
+            new MaterialToUnloadFromFace()
+            {
+              MaterialIDToQueue = ImmutableDictionary<long, string>.Empty.Add(mat3, "queue1"),
+              FaceNum = 1,
+              Process = 1,
+              ActiveOperationTime = TimeSpan.FromMinutes(5),
+            },
+          ],
+          lulNum: 10,
+          pallet: 20,
+          timeUTC: now.AddMinutes(3),
+          totalElapsed: TimeSpan.FromMinutes(18),
+          externalQueues: new Dictionary<string, string> { { "queue1", server.Urls[0] } }
+        )
+        .Should()
+        .BeEquivalentTo(
+          [
+            new LogEntry()
+            {
+              Counter = 6,
+              Material =
+              [
+                new LogMaterial()
+                {
+                  MaterialID = mat2,
+                  Process = 2,
+                  Face = 3,
+                  JobUniqueStr = "uuu1",
+                  NumProcesses = 2,
+                  PartName = partName,
+                  Serial = serial2,
+                  Workorder = "",
+                },
+              ],
+              Pallet = 20,
+              LogType = LogType.LoadUnloadCycle,
+              LocationName = "L/U",
+              LocationNum = 10,
+              Program = "UNLOAD",
+              StartOfCycle = false,
+              EndTimeUTC = now.AddMinutes(3),
+              ElapsedTime = TimeSpan.FromMinutes(18 * 4 / (4 + 5)),
+              ActiveOperationTime = TimeSpan.FromMinutes(4),
+              Result = "UNLOAD",
+            },
+            new LogEntry()
+            {
+              Counter = 7,
+              Material =
+              [
+                new LogMaterial()
+                {
+                  MaterialID = mat3,
+                  Process = 1,
+                  Face = 1,
+                  JobUniqueStr = "uuu1",
+                  NumProcesses = 2,
+                  PartName = partName,
+                  Serial = serial3,
+                  Workorder = "",
+                },
+              ],
+              Pallet = 20,
+              LogType = LogType.LoadUnloadCycle,
+              LocationName = "L/U",
+              LocationNum = 10,
+              Program = "UNLOAD",
+              StartOfCycle = false,
+              EndTimeUTC = now.AddMinutes(3),
+              ElapsedTime = TimeSpan.FromMinutes(18 * 5 / (4 + 5)),
+              ActiveOperationTime = TimeSpan.FromMinutes(5),
+              Result = "UNLOAD",
+            },
+          ]
+        );
+
+      // The sends to external queues happen on a new thread so need to wait
+      numWaits = 0;
+      while (server.LogEntries.Count() < 2 && numWaits < 10)
+      {
+        await Task.Delay(100);
+        numWaits++;
+      }
+
+      server.LogEntries.Should().HaveCount(2);
+
+      req = server.LogEntries.First().RequestMessage;
+      req.Path.Should().Be("/api/v1/jobs/casting/" + partName);
+      req.Query.Should().BeEquivalentTo(new Dictionary<string, List<string>> { { "queue", ["queue1"] } });
+      req.Body.Should().Be("[\"" + serial2 + "\"]");
+
+      req = server.LogEntries.Last().RequestMessage;
+      req.Path.Should().Be("/api/v1/jobs/casting/" + partName);
+      req.Query.Should().BeEquivalentTo(new Dictionary<string, List<string>> { { "queue", ["queue1"] } });
+      req.Body.Should().Be("[\"" + serial3 + "\"]");
     }
 
     #region Helpers
