@@ -1034,7 +1034,10 @@ public static class BuildCellState
         {
           LoadStation = loadNum,
           Faces = matsToLoad.Select(m => m.Item1).ToImmutableList(),
-          Elapsed = unloadStartTime.HasValue ? nowUTC - unloadStartTime.Value : TimeSpan.Zero,
+          Elapsed =
+            unloadStartTime.HasValue ? nowUTC - unloadStartTime.Value
+            : pal.LoadBegin != null ? nowUTC - pal.LoadBegin.EndTimeUTC
+            : TimeSpan.Zero,
         },
       }
     );
