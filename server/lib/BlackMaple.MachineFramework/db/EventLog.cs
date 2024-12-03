@@ -3559,6 +3559,7 @@ namespace BlackMaple.MachineFramework
     )
     {
       var ret = new List<LogEntry>();
+      mat = mat with { Face = 0 };
 
       ret.AddRange(RemoveFromAllQueues(trans, mat, operatorName, reason: "MovingInQueue", timeUTC));
 

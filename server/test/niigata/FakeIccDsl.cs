@@ -2670,7 +2670,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.AddRange(
                 addToQueueEvt.Material.Select(m => new LogEntry(
                   cntr: -1,
-                  mat: [m],
+                  mat: [m with { Face = 0 }],
                   pal: 0,
                   ty: LogType.AddToQueue,
                   locName: addToQueueEvt.ToQueue,

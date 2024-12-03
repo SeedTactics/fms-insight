@@ -1057,7 +1057,7 @@ namespace MachineWatchTest
         expected.Add(
           new BlackMaple.MachineFramework.LogEntry(
             cntr: -1,
-            mat: [mat.ToLogMat() with { Face = reason == null ? mat.Process : 0 }],
+            mat: [mat.ToLogMat() with { Face = 0 }],
             pal: 0,
             ty: LogType.AddToQueue,
             locName: queue,
