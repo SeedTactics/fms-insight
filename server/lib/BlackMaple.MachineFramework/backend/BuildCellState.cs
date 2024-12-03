@@ -441,6 +441,7 @@ public static class BuildCellState
             pal: pal,
             faceNum: face,
             lulNum: unloading.LoadNum,
+            materialToLoad: unloading.NewMaterialToLoad,
             fmsSettings: settings,
             db: db,
             nowUTC: nowUTC
@@ -465,6 +466,7 @@ public static class BuildCellState
             faceNum: face.FaceNum,
             lulNum: complete.LoadNum,
             fmsSettings: settings,
+            materialToLoad: complete.MaterialToLoad,
             db: db,
             nowUTC: nowUTC
           );
@@ -833,6 +835,7 @@ public static class BuildCellState
     Pallet pal,
     int faceNum,
     int lulNum,
+    IEnumerable<InProcessMaterial>? materialToLoad,
     IRepository db,
     FMSSettings fmsSettings,
     DateTime nowUTC
@@ -847,12 +850,21 @@ public static class BuildCellState
 
     if (face.UnloadEnd == null)
     {
+      var loadingMatIds = materialToLoad?.Select(m => m.MaterialID).ToHashSet() ?? new HashSet<long>();
       Dictionary<long, string>? queues = null;
       var outputQueue = OutputQueueForMaterial(face, pal.Log);
 
       if (!string.IsNullOrEmpty(outputQueue) && fmsSettings.Queues.ContainsKey(outputQueue))
       {
-        queues = face.Material.ToDictionary(m => m.MaterialID, m => outputQueue);
+        foreach (var mat in face.Material)
+        {
+          if (loadingMatIds.Contains(mat.MaterialID))
+          {
+            continue;
+          }
+          queues ??= [];
+          queues[mat.MaterialID] = outputQueue;
+        }
       }
       else if (
         !string.IsNullOrEmpty(outputQueue)
