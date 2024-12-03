@@ -2212,11 +2212,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       public int Pallet { get; set; }
       public int Minutes { get; set; }
+      public bool Start { get; init; }
+      public IEnumerable<LogMaterial> Material { get; init; }
     }
 
-    public static ExpectedChange ExpectPalletCycle(int pal, int mins)
+    public static ExpectedChange ExpectPalletStart(int pal, IEnumerable<LogMaterial> mats)
     {
-      return new ExpectPalletCycleChange() { Pallet = pal, Minutes = mins };
+      return new ExpectPalletCycleChange()
+      {
+        Pallet = pal,
+        Minutes = 0,
+        Start = true,
+        Material = mats,
+      };
+    }
+
+    public static ExpectedChange ExpectPalletEnd(int pal, int mins, IEnumerable<LogMaterial> mats)
+    {
+      return new ExpectPalletCycleChange()
+      {
+        Pallet = pal,
+        Minutes = mins,
+        Start = false,
+        Material = mats,
+      };
     }
 
     private class ExpectAddProgram : ExpectedChange
@@ -2486,13 +2505,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.Add(
                 new LogEntry(
                   cntr: -1,
-                  mat: Enumerable.Empty<LogMaterial>(),
+                  mat: palletCycleChange.Material,
                   pal: palletCycleChange.Pallet,
                   ty: LogType.PalletCycle,
                   locName: "Pallet Cycle",
                   locNum: 1,
                   prog: "",
-                  start: false,
+                  start: palletCycleChange.Start,
                   endTime: _status.TimeOfStatusUTC,
                   result: "PalletCycle",
                   elapsed: TimeSpan.FromMinutes(palletCycleChange.Minutes),
