@@ -958,7 +958,7 @@ export const MaterialDialog = memo(function MaterialDialog(props: MaterialDialog
   }
   return (
     <>
-      <Dialog open={dialogOpen !== null} onClose={close} maxWidth="md">
+      <Dialog open={dialogOpen !== null} onClose={close} maxWidth="lg">
         {body}
       </Dialog>
       {props.allowNote ? (

@@ -442,6 +442,7 @@ public static class BuildCellState
             pal: pal,
             faceNum: face,
             lulNum: unloading.LoadNum,
+            materialToLoad: unloading.NewMaterialToLoad,
             fmsSettings: settings,
             db: db,
             nowUTC: nowUTC
@@ -760,6 +761,7 @@ public static class BuildCellState
     Pallet pal,
     int faceNum,
     int lulNum,
+    IEnumerable<InProcessMaterial>? materialToLoad,
     FMSSettings fmsSettings,
     IRepository db,
     DateTime nowUTC
@@ -776,6 +778,20 @@ public static class BuildCellState
     var toUnload = UnloadMaterial(pal, face);
     if (toUnload != null)
     {
+      if (materialToLoad != null)
+      {
+        foreach (var m in materialToLoad)
+        {
+          if (toUnload.MaterialIDToQueue.ContainsKey(m.MaterialID))
+          {
+            // ensure material being loaded isn't sent to a queue
+            toUnload = toUnload with
+            {
+              MaterialIDToQueue = toUnload.MaterialIDToQueue.Add(m.MaterialID, null),
+            };
+          }
+        }
+      }
       newEvts = db.RecordPartialUnloadEnd(
         toUnload: [toUnload],
         totalElapsed: nowUTC - (LoadUnloadStartTime(pal) ?? nowUTC),

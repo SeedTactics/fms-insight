@@ -153,7 +153,11 @@ function SelectRawMaterial({
             <ListItemIcon>
               <PartIdenticon part={casting.casting} />
             </ListItemIcon>
-            <ListItemText primary={casting.casting} secondary={casting.message ?? undefined} />
+            <ListItemText
+              primary={casting.casting}
+              primaryTypographyProps={{ variant: "h4" }}
+              secondary={casting.message ?? undefined}
+            />
           </ListItemButton>
         </ListItem>
       ))}
@@ -204,6 +208,7 @@ function SelectJob({
                   </ListItemIcon>
                   <ListItemText
                     primary={j.job.partName + " (" + j.job.unique + ")"}
+                    primaryTypographyProps={{ variant: "h4" }}
                     secondary={
                       <Typography variant="body2">
                         {j.machinedProcs[0].lastProc === 0
@@ -244,6 +249,7 @@ function SelectJob({
                 </ListItemIcon>
                 <ListItemText
                   primary={j.job.partName + " (" + j.job.unique + ")"}
+                  primaryTypographyProps={{ variant: "h4" }}
                   secondary={j.job.routeStartUTC.toLocaleDateString()}
                 />
               </ListItemButton>
@@ -899,6 +905,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
                   </ListItemIcon>
                   <ListItemText
                     primary={casting}
+                    primaryTypographyProps={{ variant: "h4" }}
                     secondary={
                       jobCnt === 0
                         ? "Not used by any current jobs"
