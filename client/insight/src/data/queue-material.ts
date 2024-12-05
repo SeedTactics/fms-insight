@@ -185,11 +185,7 @@ function possibleJobs(
     return LazySeq.ofObject<Readonly<api.IJob>>(currentSt.jobs)
       .map(([, j]) => j)
       .concat(historicJobs.valuesToLazySeq())
-      .filter(
-        (j) =>
-          possible.has(j.unique) &&
-          LazySeq.of(j.procsAndPaths?.[0].paths ?? []).some((p) => p.inputQueue === toQueue),
-      )
+      .filter((j) => possible.has(j.unique))
       .distinctBy((j) => j.unique)
       .map((j) => ({
         job: j,
@@ -249,33 +245,14 @@ function isMatAssignedRaw(unique: string, m: Readonly<api.IInProcessMaterial>): 
   );
 }
 
-function isMatAvailUnassigned(
-  queue: string,
-  rawMatName: string,
-  m: Readonly<api.IInProcessMaterial>,
-): boolean {
-  return (
-    m.location.type === api.LocType.InQueue &&
-    m.location.currentQueue === queue &&
-    (!m.jobUnique || m.jobUnique === "") &&
-    m.process === 0 &&
-    m.partName === rawMatName
-  );
-}
-
 export function extractJobRawMaterial(
-  queue: string,
   jobs: {
     [key: string]: Readonly<api.IActiveJob>;
   },
   mats: Iterable<Readonly<api.IInProcessMaterial>>,
 ): ReadonlyArray<JobRawMaterialData> {
   return LazySeq.ofObject(jobs)
-    .filter(
-      ([, j]) =>
-        (j.remainingToStart === undefined || j.remainingToStart > 0) &&
-        LazySeq.of(j.procsAndPaths?.[0]?.paths ?? []).some((p) => p.inputQueue === queue),
-    )
+    .filter(([, j]) => j.remainingToStart === undefined || j.remainingToStart > 0)
     .map(([, j]) => {
       const rawMatName: string =
         LazySeq.of(j.procsAndPaths?.[0]?.paths ?? [])
@@ -291,9 +268,7 @@ export function extractJobRawMaterial(
         assignedRaw: LazySeq.of(mats)
           .filter((m) => isMatAssignedRaw(j.unique, m))
           .length(),
-        availableUnassigned: LazySeq.of(mats)
-          .filter((m) => isMatAvailUnassigned(queue, rawMatName, m))
-          .length(),
+        availableUnassigned: LazySeq.of(mats).length(),
       };
       // })
     })
