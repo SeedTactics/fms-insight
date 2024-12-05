@@ -762,15 +762,12 @@ function AddAndPrintOnClientButton({
   );
 }
 
-function JobsForCasting({ queue, casting }: { queue: string; casting: string }) {
+function JobsForCasting({ casting }: { casting: string }) {
   const currentSt = useAtomValue(currentStatus);
 
   const jobs = useMemo(
-    () =>
-      extractJobRawMaterial(queue, currentSt.jobs, currentSt.material).filter(
-        (j) => j.rawMatName === casting,
-      ),
-    [currentSt.jobs, currentSt.material, casting, queue],
+    () => extractJobRawMaterial(currentSt.jobs, currentSt.material).filter((j) => j.rawMatName === casting),
+    [currentSt.jobs, currentSt.material, casting],
   );
 
   if (jobs.length === 0) return null;
@@ -933,7 +930,7 @@ export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWit
               />
             ) : undefined}
             {selectedCasting !== null && queue !== null ? (
-              <JobsForCasting queue={queue} casting={selectedCasting} />
+              <JobsForCasting casting={selectedCasting} />
             ) : undefined}
           </Stack>
         </DialogContent>

@@ -220,10 +220,7 @@ interface RawMaterialJobTableProps {
 
 function RawMaterialJobTable(props: RawMaterialJobTableProps) {
   const currentSt = useAtomValue(currentStatus);
-  const jobs = useMemo(
-    () => extractJobRawMaterial(props.queue, currentSt.jobs, currentSt.material),
-    [props.queue, currentSt],
-  );
+  const jobs = useMemo(() => extractJobRawMaterial(currentSt.jobs, currentSt.material), [currentSt]);
 
   if (jobs.length === 0) return null;
 

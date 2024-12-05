@@ -65,22 +65,6 @@ export const setNamesFromLast30Evts = atom(null, (_, set, logs: ReadonlyArray<Re
 export const setNamesFromCurrentStatus = atom(null, onCurrentStatus);
 
 function onNewJobs(set: Setter, newJobs: ReadonlyArray<Readonly<IJob>>): void {
-  set(rawMaterialQueuesRW, (queues) => {
-    const newQ = new Set<string>();
-    for (const j of newJobs) {
-      for (const path of j.procsAndPaths[0].paths) {
-        if (path.inputQueue && path.inputQueue !== "" && !queues.has(path.inputQueue)) {
-          newQ.add(path.inputQueue);
-        }
-      }
-    }
-    if (newQ.size === 0) {
-      return queues;
-    } else {
-      return new Set([...queues, ...newQ]);
-    }
-  });
-
   set(castingNamesRW, (names) => {
     const newC = new Set<string>();
     for (const j of newJobs) {
