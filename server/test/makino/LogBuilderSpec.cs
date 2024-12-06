@@ -303,6 +303,8 @@ public sealed class LogBuilderSpec : IDisposable
     int loadActiveMin = 0,
     int unloadActiveMin = 0,
     int totalActiveMin = 0,
+    TestMat? extraPalCycleLoadMat = null,
+    TestMat? extraPalCycleUnloadMat = null,
     bool remachine = false
   )
   {
@@ -434,15 +436,100 @@ public sealed class LogBuilderSpec : IDisposable
           }
         );
       }
+
+      if (palCycleMin >= 0)
+      {
+        _expectedLog.Add(
+          new LogEntry()
+          {
+            Counter = 0,
+            Material = Enumerable
+              .Range(0, loadMat.Quantity)
+              .Select(i => new LogMaterial()
+              {
+                MaterialID = loadMat.StartingMatID + i,
+                JobUniqueStr = loadMat.OrderName,
+                Serial = SerialSettings.ConvertToBase62(loadMat.StartingMatID + i, 10),
+                Workorder = "",
+                NumProcesses = 1,
+                Face = loadMat.FixtureNum,
+                PartName = loadMat.PartName,
+                Process = loadMat.Process,
+                Path = null,
+              })
+              .Concat(
+                extraPalCycleLoadMat == null
+                  ? []
+                  : Enumerable
+                    .Range(0, extraPalCycleLoadMat.Quantity)
+                    .Select(i => new LogMaterial()
+                    {
+                      MaterialID = extraPalCycleLoadMat.StartingMatID + i,
+                      JobUniqueStr = extraPalCycleLoadMat.OrderName,
+                      Serial = SerialSettings.ConvertToBase62(extraPalCycleLoadMat.StartingMatID + i, 10),
+                      Workorder = "",
+                      NumProcesses = 1,
+                      Face = extraPalCycleLoadMat.FixtureNum,
+                      PartName = extraPalCycleLoadMat.PartName,
+                      Process = extraPalCycleLoadMat.Process,
+                      Path = null,
+                    })
+              )
+              .ToImmutableList(),
+            LogType = LogType.PalletCycle,
+            StartOfCycle = true,
+            EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin),
+            LocationName = "Pallet Cycle",
+            LocationNum = 1,
+            Pallet = loadMat.PalletID,
+            Program = "",
+            Result = "PalletCycle",
+            ElapsedTime = TimeSpan.Zero,
+            ActiveOperationTime = TimeSpan.Zero,
+          }
+        );
+      }
     }
 
-    if (palCycleMin >= 0)
+    if (palCycleMin >= 0 && unloadMat != null)
     {
       _expectedLog.Add(
         new LogEntry()
         {
           Counter = 0,
-          Material = [],
+          Material = Enumerable
+            .Range(0, unloadMat.Quantity)
+            .Select(i => new LogMaterial()
+            {
+              MaterialID = unloadMat.StartingMatID + i,
+              JobUniqueStr = unloadMat.OrderName,
+              Serial = SerialSettings.ConvertToBase62(unloadMat.StartingMatID + i, 10),
+              Workorder = "",
+              NumProcesses = 1,
+              Face = unloadMat.FixtureNum,
+              PartName = unloadMat.PartName,
+              Process = unloadMat.Process,
+              Path = null,
+            })
+            .Concat(
+              extraPalCycleUnloadMat == null
+                ? []
+                : Enumerable
+                  .Range(0, extraPalCycleUnloadMat.Quantity)
+                  .Select(i => new LogMaterial()
+                  {
+                    MaterialID = extraPalCycleUnloadMat.StartingMatID + i,
+                    JobUniqueStr = extraPalCycleUnloadMat.OrderName,
+                    Serial = SerialSettings.ConvertToBase62(extraPalCycleUnloadMat.StartingMatID + i, 10),
+                    Workorder = "",
+                    NumProcesses = 1,
+                    Face = extraPalCycleUnloadMat.FixtureNum,
+                    PartName = extraPalCycleUnloadMat.PartName,
+                    Process = extraPalCycleUnloadMat.Process,
+                    Path = null,
+                  })
+            )
+            .ToImmutableList(),
           LogType = LogType.PalletCycle,
           StartOfCycle = false,
           EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin),
@@ -1066,7 +1153,8 @@ public sealed class LogBuilderSpec : IDisposable
               unloadMat: null,
               palCycleMin: 0,
               loadActiveMin: 10,
-              totalActiveMin: 30
+              totalActiveMin: 30,
+              extraPalCycleLoadMat: mat2
             ),
             Load(
               start,
@@ -1087,7 +1175,8 @@ public sealed class LogBuilderSpec : IDisposable
               unloadMat: mat1,
               palCycleMin: 25,
               unloadActiveMin: 11,
-              totalActiveMin: 21 + 11
+              totalActiveMin: 21 + 11,
+              extraPalCycleUnloadMat: mat2
             ),
             Load(
               start.AddMinutes(30),
