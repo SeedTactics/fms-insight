@@ -2299,7 +2299,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(
           new[]
           {
-            FakeIccDsl.ExpectPalletStart(pal: 2, mats: CCCproc1),
             _dsl.LoadToFace(
               pal: 2,
               face: 1,
@@ -2312,6 +2311,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               loadingMats: CCCproc1,
               loadedMats: out var CCCproc2
             ),
+            FakeIccDsl.ExpectPalletStart(pal: 2, mats: CCCproc2),
             FakeIccDsl.RemoveFromQueue(
               queue: "qqq",
               pos: 0,
@@ -3685,7 +3685,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             FakeIccDsl.ExpectAddNewProgram(progNum: 2103, name: "prog111", rev: 11, mcMin: 14),
             FakeIccDsl.ExpectNoWork(pal: 3, noWork: true),
-            FakeIccDsl.ExpectPalletEnd(pal: 3, mins: 0, mats: []),
+            FakeIccDsl.ExpectPalletStart(pal: 3, mats: []),
           }
         )
         // now try process 1 -> 2
@@ -4791,7 +4791,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               totalActiveMins: 9 + 8,
               mats: out var CCCproc1
             ),
-            FakeIccDsl.ExpectPalletStart(pal: 4, mats: CCCproc1),
+            FakeIccDsl.ExpectPalletStart(pal: 1, mats: CCCproc1),
             FakeIccDsl.ExpectNewRoute(
               pal: 4,
               pri: 1,
@@ -4845,7 +4845,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(
           new[]
           {
-            FakeIccDsl.ExpectPalletStart(pal: 4, mats: AAAProc1),
             _dsl.LoadToFace(
               pal: 4,
               face: 1,
@@ -4858,6 +4857,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               loadingMats: AAAProc1,
               loadedMats: out var AAAproc2
             ),
+            FakeIccDsl.ExpectPalletStart(pal: 4, mats: AAAproc2),
             FakeIccDsl.RemoveFromQueue(
               "sizedQ",
               pos: 0,
@@ -5462,7 +5462,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           expectedChanges: new[]
           {
             FakeIccDsl.ExpectNoWork(pal: 2, noWork: true),
-            FakeIccDsl.ExpectPalletEnd(pal: 2, mins: 0, mats: []),
+            FakeIccDsl.ExpectPalletStart(pal: 2, mats: []),
           }
         )
         .MoveToBuffer(pal: 2, buff: 2)
@@ -5691,7 +5691,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         // now assume the operator presses unload button to set nowork
         .SetNoWork(pal: 2)
         .UpdateExpectedMaterial(AAAproc1, a => new() { Type = InProcessMaterialAction.ActionType.Waiting })
-        .ExpectTransition(new[] { FakeIccDsl.ExpectPalletEnd(pal: 2, mins: 0, mats: []) });
+        .ExpectTransition(new[] { FakeIccDsl.ExpectPalletStart(pal: 2, mats: []) });
     }
 
     [Fact]
@@ -5796,7 +5796,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           new[]
           {
             FakeIccDsl.ExpectRotaryEnd(pal: 1, mach: 3, rotate: false, elapMin: 3, mats: fstMats),
-            FakeIccDsl.ExpectPalletEnd(pal: 1, mins: 5, mats: fstMats),
+            FakeIccDsl.ExpectPalletStart(pal: 1, mats: []),
             FakeIccDsl.AddToQueue(
               "Quarantine",
               0,
@@ -6675,7 +6675,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               reason: "PalletToManualControl",
               mat: FakeIccDsl.ClearFaces(fstMats)
             ),
-            FakeIccDsl.ExpectPalletEnd(pal: 1, mins: 11, mats: []),
+            FakeIccDsl.ExpectPalletStart(pal: 1, mats: []),
           }
         )
         // no longer logs anything

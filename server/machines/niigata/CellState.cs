@@ -977,19 +977,27 @@ namespace BlackMaple.FMSInsight.Niigata
           .ToList();
       }
 
-      var lulEvts = logDB.RecordLoadUnloadComplete(
-        toLoad: toLoad,
-        previouslyLoaded: null,
-        toUnload: toUnload,
-        previouslyUnloaded: null,
-        lulNum: loadBegin.LocationNum,
-        pallet: pallet.Status.Master.PalletNum,
-        totalElapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),
-        timeUTC: nowUtc,
-        externalQueues: _settings.ExternalQueues
-      );
+      if (toLoad.Count > 0 || toUnload.Count > 0)
+      {
+        var lulEvts = logDB.RecordLoadUnloadComplete(
+          toLoad: toLoad,
+          previouslyLoaded: null,
+          toUnload: toUnload,
+          previouslyUnloaded: null,
+          lulNum: loadBegin.LocationNum,
+          pallet: pallet.Status.Master.PalletNum,
+          totalElapsed: nowUtc.Subtract(loadBegin.EndTimeUTC),
+          timeUTC: nowUtc,
+          externalQueues: _settings.ExternalQueues
+        );
 
-      pallet.Log = lulEvts.Where(e => e.EndTimeUTC > nowUtc).ToList();
+        pallet.Log = lulEvts.Where(e => e.EndTimeUTC > nowUtc).ToList();
+      }
+      else
+      {
+        logDB.RecordEmptyPallet(pallet: pallet.Status.Master.PalletNum, timeUTC: nowUtc);
+        pallet.Log = [];
+      }
     }
 
     private void EnsureAllNonloadStopsHaveEvents(
