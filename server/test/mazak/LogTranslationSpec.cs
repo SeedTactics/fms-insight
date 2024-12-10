@@ -840,12 +840,38 @@ namespace MachineWatchTest
       );
     }
 
-    protected void ExpectPalletCycle(DateTime t, int pal, int offset, int elapMin)
+    protected void ExpectPalletStart(DateTime t, int pal, int offset, IEnumerable<TestMaterial> mats)
     {
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
           cntr: -1,
-          mat: new LogMaterial[] { },
+          mat: mats.Select(mat => mat.ToLogMat()),
+          pal: pal,
+          ty: LogType.PalletCycle,
+          locName: "Pallet Cycle",
+          locNum: 1,
+          prog: "",
+          start: true,
+          endTime: t.AddMinutes(offset),
+          result: "PalletCycle",
+          elapsed: TimeSpan.Zero,
+          active: TimeSpan.Zero
+        )
+      );
+    }
+
+    protected void ExpectPalletCycle(
+      DateTime t,
+      int pal,
+      int offset,
+      int elapMin,
+      IEnumerable<TestMaterial> mats = null
+    )
+    {
+      expected.Add(
+        new BlackMaple.MachineFramework.LogEntry(
+          cntr: -1,
+          mat: (mats ?? []).Select(mat => mat.ToLogMat()),
           pal: pal,
           ty: LogType.PalletCycle,
           locName: "Pallet Cycle",
@@ -1353,7 +1379,7 @@ namespace MachineWatchTest
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, elapMin: 2);
-      ExpectPalletCycle(t, pal: 3, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 3, offset: 2, mats: [p]);
       MovePallet(t, offset: 3, load: 1, pal: 3);
 
       MachStart(p, offset: 4, mach: 2);
@@ -1361,7 +1387,7 @@ namespace MachineWatchTest
 
       UnloadStart(p, offset: 22, load: 1);
       UnloadEnd(p, offset: 23, load: 1, elapMin: 1);
-      ExpectPalletCycle(t, pal: 3, offset: 23, elapMin: 21);
+      ExpectPalletCycle(t, pal: 3, offset: 23, elapMin: 21, mats: [p]);
       MovePallet(t, offset: 24, pal: 3, load: 1);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -1425,13 +1451,13 @@ namespace MachineWatchTest
       LoadStart(p2, offset: 1, load: 2);
 
       LoadEnd(p1, offset: 2, load: 1, elapMin: 2);
-      ExpectPalletCycle(t, pal: 3, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 3, offset: 2, mats: [p1]);
       MovePallet(t, offset: 2, load: 1, pal: 3);
 
       MachStart(p1, offset: 3, mach: 2);
 
       LoadEnd(p2, offset: 4, load: 2, elapMin: 3);
-      ExpectPalletCycle(t, pal: 6, offset: 4, elapMin: 0);
+      ExpectPalletStart(t, pal: 6, offset: 4, mats: [p2]);
       MovePallet(t, offset: 4, load: 2, pal: 6);
 
       MachStart(p2, offset: 5, mach: 3);
@@ -1446,19 +1472,20 @@ namespace MachineWatchTest
 
       LoadEnd(p3, offset: 37, load: 4, elapMin: 12 / 2);
       UnloadEnd(p1, offset: 37, load: 4, elapMin: 12 / 2);
-      ExpectPalletCycle(t, pal: 3, offset: 37, elapMin: 37 - 2);
+      ExpectPalletCycle(t, pal: 3, offset: 37, elapMin: 37 - 2, mats: [p1]);
+      ExpectPalletStart(t, pal: 3, offset: 37, mats: [p3]);
       MovePallet(t, offset: 38, load: 4, pal: 3);
 
       MachStart(p3, offset: 40, mach: 1);
 
       UnloadEnd(p2, offset: 41, load: 3, elapMin: 8);
-      ExpectPalletCycle(t, pal: 6, offset: 41, elapMin: 41 - 4);
+      ExpectPalletCycle(t, pal: 6, offset: 41, elapMin: 41 - 4, mats: [p2]);
       MovePallet(t, offset: 41, load: 3, pal: 6);
 
       MachEnd(p3, offset: 61, mach: 1, elapMin: 21);
       UnloadStart(p3, offset: 62, load: 6);
       UnloadEnd(p3, offset: 66, load: 6, elapMin: 4);
-      ExpectPalletCycle(t, pal: 3, offset: 66, elapMin: 66 - 37);
+      ExpectPalletCycle(t, pal: 3, offset: 66, elapMin: 66 - 37, mats: [p3]);
       MovePallet(t, offset: 66, load: 6, pal: 3);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -1501,11 +1528,11 @@ namespace MachineWatchTest
       LoadStart(p2, offset: 2, load: 2);
 
       LoadEnd(p1d1, offset: 4, load: 1, elapMin: 4);
-      ExpectPalletCycle(t, pal: 3, offset: 4, elapMin: 0);
+      ExpectPalletStart(t, pal: 3, offset: 4, mats: [p1d1]);
       MovePallet(t, offset: 5, load: 1, pal: 3);
 
       LoadEnd(p2, offset: 6, load: 2, elapMin: 4);
-      ExpectPalletCycle(t, pal: 6, offset: 6, elapMin: 0);
+      ExpectPalletStart(t, pal: 6, offset: 6, mats: [p2]);
       MovePallet(t, offset: 6, load: 2, pal: 6);
 
       MachStart(p1d1, offset: 10, mach: 1);
@@ -1519,7 +1546,8 @@ namespace MachineWatchTest
       LoadEnd(p3d1, offset: 24, load: 3, elapMin: 3 / 3);
       UnloadEnd(p1d1, offset: 24, load: 3, elapMin: 3 / 3);
       LoadEnd(p1d2, offset: 24, load: 3, elapMin: 3 / 3);
-      ExpectPalletCycle(t, pal: 3, offset: 24, elapMin: 24 - 4);
+      ExpectPalletCycle(t, pal: 3, offset: 24, elapMin: 24 - 4, mats: [p1d1]);
+      ExpectPalletStart(t, pal: 3, offset: 24, mats: [p3d1, p1d2]);
       MovePallet(t, offset: 24, load: 3, pal: 3);
 
       MachStart(p1d2, offset: 30, mach: 4);
@@ -1531,7 +1559,7 @@ namespace MachineWatchTest
       MachStart(p3d1, offset: 43, mach: 4);
 
       UnloadEnd(p2, offset: 44, load: 4, elapMin: 4);
-      ExpectPalletCycle(t, pal: 6, offset: 44, elapMin: 44 - 6);
+      ExpectPalletCycle(t, pal: 6, offset: 44, elapMin: 44 - 6, mats: [p2]);
       MovePallet(t, offset: 45, load: 4, pal: 6);
 
       MachEnd(p3d1, offset: 50, mach: 4, elapMin: 7);
@@ -1540,7 +1568,7 @@ namespace MachineWatchTest
       UnloadStart(p1d2, offset: 52, load: 1);
       UnloadEnd(p3d1, offset: 54, load: 1, elapMin: 2 / 2);
       UnloadEnd(p1d2, offset: 54, load: 1, elapMin: 2 / 2);
-      ExpectPalletCycle(t, pal: 3, offset: 54, elapMin: 54 - 24);
+      ExpectPalletCycle(t, pal: 3, offset: 54, elapMin: 54 - 24, mats: [p3d1, p1d2]);
       MovePallet(t, offset: 55, load: 1, pal: 3);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -1695,11 +1723,11 @@ namespace MachineWatchTest
       LoadStart(proc1path2, offset: 1, load: 2);
 
       LoadEnd(proc1path1, offset: 2, load: 1, elapMin: 2, activeMin: 11);
-      ExpectPalletCycle(t, pal: 2, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 2, offset: 2, mats: [proc1path1]);
       MovePallet(t, offset: 5, pal: 2, load: 1);
 
       LoadEnd(proc1path2, offset: 7, load: 2, elapMin: 6, activeMin: 12);
-      ExpectPalletCycle(t, pal: 4, offset: 7, elapMin: 0);
+      ExpectPalletStart(t, pal: 4, offset: 7, mats: [proc1path2]);
       MovePallet(t, offset: 8, pal: 4, load: 2);
 
       MachStart(proc1path1, offset: 10, mach: 1);
@@ -1716,12 +1744,14 @@ namespace MachineWatchTest
 
       UnloadEnd(proc1path1, offset: 28, load: 1, elapMin: 28 - 24, activeMin: 711, totalActiveMin: 21 + 711);
       LoadEnd(proc2path1, offset: 28, load: 1, elapMin: 28 - 24, activeMin: 21, totalActiveMin: 21 + 711);
-      ExpectPalletCycle(t, pal: 2, offset: 28, elapMin: 28 - 2);
+      ExpectPalletCycle(t, pal: 2, offset: 28, elapMin: 28 - 2, mats: [proc1path1]);
+      ExpectPalletStart(t, pal: 2, offset: 28, mats: [proc2path1]);
       MovePallet(t, offset: 29, pal: 2, load: 1);
 
       UnloadEnd(proc1path2, offset: 30, load: 2, elapMin: 30 - 27, activeMin: 712, totalActiveMin: 712 + 22);
       LoadEnd(proc2path2, offset: 30, load: 2, elapMin: 30 - 27, activeMin: 22, totalActiveMin: 712 + 22);
-      ExpectPalletCycle(t, pal: 4, offset: 30, elapMin: 30 - 7);
+      ExpectPalletCycle(t, pal: 4, offset: 30, elapMin: 30 - 7, mats: [proc1path2]);
+      ExpectPalletStart(t, pal: 4, offset: 30, mats: [proc2path2]);
       MovePallet(t, offset: 33, pal: 4, load: 2);
 
       MachStart(proc2path1, offset: 40, mach: 1);
@@ -1732,13 +1762,13 @@ namespace MachineWatchTest
 
       UnloadStart(proc2path1, offset: 60, load: 2);
       UnloadEnd(proc2path1, offset: 61, load: 2, elapMin: 1, activeMin: 721);
-      ExpectPalletCycle(t, pal: 2, offset: 61, elapMin: 61 - 28);
+      ExpectPalletCycle(t, pal: 2, offset: 61, elapMin: 61 - 28, mats: [proc2path1]);
 
       MovePallet(t, offset: 62, pal: 2, load: 2);
 
       UnloadStart(proc2path2, offset: 65, load: 1);
       UnloadEnd(proc2path2, offset: 67, load: 1, elapMin: 2, activeMin: 722);
-      ExpectPalletCycle(t, pal: 4, offset: 67, elapMin: 67 - 30);
+      ExpectPalletCycle(t, pal: 4, offset: 67, elapMin: 67 - 30, mats: [proc2path2]);
 
       MovePallet(t, offset: 70, pal: 4, load: 1);
 
@@ -1818,7 +1848,7 @@ namespace MachineWatchTest
 
       LoadStart(proc1, offset: 0, load: 1);
       LoadEnd(proc1, offset: 5, load: 1, elapMin: 5);
-      ExpectPalletCycle(t, pal: 1, offset: 5, elapMin: 0);
+      ExpectPalletStart(t, pal: 1, offset: 5, mats: proc1);
       MovePallet(t, pal: 1, offset: 6, load: 1);
 
       MachStart(proc1, offset: 10, mach: 5);
@@ -1831,7 +1861,8 @@ namespace MachineWatchTest
       UnloadEnd(proc1, offset: 24, load: 2, elapMin: 4, totalMatCnt: 3 * 3);
       LoadEnd(proc2, offset: 24, load: 2, elapMin: 4, totalMatCnt: 3 * 3);
       LoadEnd(proc1snd, offset: 24, load: 2, elapMin: 4, totalMatCnt: 3 * 3);
-      ExpectPalletCycle(t, pal: 1, offset: 24, elapMin: 24 - 5);
+      ExpectPalletCycle(t, pal: 1, offset: 24, elapMin: 24 - 5, mats: proc1);
+      ExpectPalletStart(t, pal: 1, offset: 24, mats: [.. proc2, .. proc1snd]);
       MovePallet(t, pal: 1, offset: 25, load: 2);
 
       MachStart(proc2, offset: 30, mach: 6);
@@ -1848,7 +1879,8 @@ namespace MachineWatchTest
       UnloadEnd(proc1snd, offset: 45, load: 1, elapMin: 5, totalMatCnt: 4 * 3);
       LoadEnd(proc2snd, offset: 45, load: 1, elapMin: 5, totalMatCnt: 4 * 3);
       LoadEnd(proc1thrd, offset: 45, load: 1, elapMin: 5, totalMatCnt: 4 * 3);
-      ExpectPalletCycle(t, pal: 1, offset: 45, elapMin: 45 - 24);
+      ExpectPalletCycle(t, pal: 1, offset: 45, elapMin: 45 - 24, mats: [.. proc2, .. proc1snd]);
+      ExpectPalletStart(t, pal: 1, offset: 45, mats: [.. proc2snd, .. proc1thrd]);
       MovePallet(t, pal: 1, offset: 50, load: 1);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -1883,7 +1915,7 @@ namespace MachineWatchTest
 
       LoadStart(p1, offset: 0, load: 1);
       LoadEnd(p1, offset: 2, load: 1, elapMin: 2);
-      ExpectPalletCycle(t, pal: 3, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 3, offset: 2, mats: [p1]);
       MovePallet(t, offset: 2, load: 1, pal: 3);
 
       MachStart(p1, offset: 8, mach: 3);
@@ -1912,7 +1944,7 @@ namespace MachineWatchTest
 
       UnloadStart(p1, offset: 30, load: 1);
       UnloadEnd(p1, offset: 33, load: 1, elapMin: 3);
-      ExpectPalletCycle(t, pal: 3, offset: 33, elapMin: 33 - 2);
+      ExpectPalletCycle(t, pal: 3, offset: 33, elapMin: 33 - 2, mats: [p1]);
       MovePallet(t, offset: 33, load: 1, pal: 3);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -1948,7 +1980,7 @@ namespace MachineWatchTest
 
       LoadStart(p1, offset: 0, load: 5);
       LoadEnd(p1, offset: 2, load: 5, elapMin: 2);
-      ExpectPalletCycle(t, pal: 3, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 3, offset: 2, mats: [p1]);
       MovePallet(t, offset: 3, load: 1, pal: 3);
 
       MachStart(p1, offset: 4, mach: 2);
@@ -1966,7 +1998,8 @@ namespace MachineWatchTest
       LoadStart(p2, offset: 45, load: 2);
       UnloadEnd(p1, offset: 47, load: 2, elapMin: 2, totalMatCnt: 2);
       LoadEnd(p2, offset: 47, load: 2, elapMin: 2, totalMatCnt: 2);
-      ExpectPalletCycle(t, pal: 3, offset: 47, elapMin: 47 - 2);
+      ExpectPalletCycle(t, pal: 3, offset: 47, elapMin: 47 - 2, mats: [p1]);
+      ExpectPalletStart(t, pal: 3, offset: 47, mats: [p2]);
       MovePallet(t, offset: 48, load: 2, pal: 3);
 
       MachStart(p2, offset: 50, mach: 1);
@@ -1974,7 +2007,7 @@ namespace MachineWatchTest
 
       UnloadStart(p2, offset: 60, load: 1);
       UnloadEnd(p2, offset: 66, load: 1, elapMin: 6);
-      ExpectPalletCycle(t, pal: 3, offset: 66, elapMin: 66 - 47);
+      ExpectPalletCycle(t, pal: 3, offset: 66, elapMin: 66 - 47, mats: [p2]);
       MovePallet(t, offset: 66, load: 1, pal: 3);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -2041,7 +2074,7 @@ namespace MachineWatchTest
 
       LoadStart(proc1, offset: 0, load: 6);
       LoadEnd(proc1, offset: 2, load: 6, elapMin: 2);
-      ExpectPalletCycle(t, pal: 2, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 2, offset: 2, mats: [proc1]);
       MovePallet(t, offset: 5, pal: 2, load: 1);
 
       MachStart(proc1, offset: 10, mach: 4);
@@ -2073,7 +2106,8 @@ namespace MachineWatchTest
 
       UnloadEnd(proc1, offset: 28, load: 1, elapMin: 28 - 24, totalMatCnt: 2);
       LoadEnd(proc2, offset: 28, load: 1, elapMin: 28 - 24, totalMatCnt: 2);
-      ExpectPalletCycle(t, pal: 2, offset: 28, elapMin: 28 - 2);
+      ExpectPalletCycle(t, pal: 2, offset: 28, elapMin: 28 - 2, mats: [proc1]);
+      ExpectPalletStart(t, pal: 2, offset: 28, mats: [proc2]);
       MovePallet(t, offset: 29, pal: 2, load: 1);
 
       MachStart(proc2, offset: 40, mach: 7);
@@ -2112,7 +2146,7 @@ namespace MachineWatchTest
 
       UnloadStart(proc2, offset: 60, load: 2);
       UnloadEnd(proc2, offset: 61, load: 2, elapMin: 1);
-      ExpectPalletCycle(t, pal: 2, offset: 61, elapMin: 61 - 28);
+      ExpectPalletCycle(t, pal: 2, offset: 61, elapMin: 61 - 28, mats: [proc2]);
       MovePallet(t, offset: 62, pal: 2, load: 2);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -2205,7 +2239,7 @@ namespace MachineWatchTest
 
       LoadStart(path1, offset: 0, load: 5);
       LoadEnd(path1, offset: 2, load: 5, elapMin: 2);
-      ExpectPalletCycle(t, pal: 3, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 3, offset: 2, mats: [path1]);
       MovePallet(t, offset: 3, load: 1, pal: 3);
 
       MachStart(path1, offset: 4, mach: 2, mazakProg: "the-mazak-prog", logProg: "the-log-prog", progRev: 15);
@@ -2232,7 +2266,7 @@ namespace MachineWatchTest
 
       LoadStart(path2, offset: 100, load: 5);
       LoadEnd(path2, offset: 102, load: 5, elapMin: 2);
-      ExpectPalletCycle(t, pal: 4, offset: 102, elapMin: 0);
+      ExpectPalletStart(t, pal: 4, offset: 102, mats: [path2]);
       MovePallet(t, offset: 103, load: 1, pal: 4);
 
       MachStart(
@@ -2287,7 +2321,7 @@ namespace MachineWatchTest
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, elapMin: 2);
-      ExpectPalletCycle(t, pal: 3, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 3, offset: 2, mats: [p]);
       MovePallet(t, offset: 3, load: 1, pal: 3);
 
       MachStart(p, offset: 4, mach: 2, mazakProg: "the-mazak-prog", logProg: "the-log-prog");
@@ -2331,7 +2365,7 @@ namespace MachineWatchTest
 
       LoadStart(proc1, offset: 0, load: 1);
       LoadEnd(proc1, offset: 5, load: 1, elapMin: 5);
-      ExpectPalletCycle(t, pal: 8, offset: 5, elapMin: 0);
+      ExpectPalletStart(t, pal: 8, offset: 5, mats: [proc1]);
       MovePallet(t, pal: 8, offset: 6, load: 1);
 
       MachStart(proc1, offset: 10, mach: 5);
@@ -2342,12 +2376,13 @@ namespace MachineWatchTest
       UnloadEnd(proc1, offset: 24, load: 2, elapMin: 4, totalMatCnt: 2);
       ExpectAddToQueue(proc1, offset: 24, queue: "thequeue", pos: 0);
       LoadEnd(proc1snd, offset: 24, load: 2, elapMin: 4, totalMatCnt: 2);
-      ExpectPalletCycle(t, pal: 8, offset: 24, elapMin: 24 - 5);
+      ExpectPalletCycle(t, pal: 8, offset: 24, elapMin: 24 - 5, mats: [proc1]);
+      ExpectPalletStart(t, pal: 8, offset: 24, mats: [proc1snd]);
       MovePallet(t, pal: 8, offset: 25, load: 2);
 
       LoadStart(proc2, offset: 28, load: 1);
       LoadEnd(proc2, offset: 29, load: 1, elapMin: 1);
-      ExpectPalletCycle(t, pal: 9, offset: 29, elapMin: 0);
+      ExpectPalletStart(t, pal: 9, offset: 29, mats: [proc2]);
       MovePallet(t, pal: 9, offset: 30, load: 1);
       ExpectRemoveFromQueue(
         proc1,
@@ -2510,7 +2545,7 @@ namespace MachineWatchTest
 
       LoadStart(proc1path1, offset: 0, load: 10);
       LoadEnd(proc1path1, offset: 2, load: 10, elapMin: 2);
-      ExpectPalletCycle(t, pal: 4, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 4, offset: 2, mats: proc1path1);
       MovePallet(t, offset: 3, pal: 4, load: 10);
 
       MachStart(proc1path1, offset: 5, mach: 7);
@@ -2518,7 +2553,7 @@ namespace MachineWatchTest
 
       LoadStart(proc1path2, offset: 10, load: 9);
       LoadEnd(proc1path2, offset: 11, load: 9, elapMin: 1);
-      ExpectPalletCycle(t, pal: 6, offset: 11, elapMin: 0);
+      ExpectPalletStart(t, pal: 6, offset: 11, mats: proc1path2);
       MovePallet(t, offset: 11, pal: 6, load: 9);
 
       UnloadStart(proc1path1, offset: 12, load: 3);
@@ -2526,7 +2561,8 @@ namespace MachineWatchTest
       UnloadEnd(proc1path1, offset: 15, load: 3, elapMin: 3, totalMatCnt: 6);
       ExpectAddToQueue(proc1path1, offset: 15, queue: "thequeue", startPos: 0);
       LoadEnd(proc1path1snd, offset: 15, load: 3, elapMin: 3, totalMatCnt: 6);
-      ExpectPalletCycle(t, pal: 4, offset: 15, elapMin: 15 - 2);
+      ExpectPalletCycle(t, pal: 4, offset: 15, elapMin: 15 - 2, mats: proc1path1);
+      ExpectPalletStart(t, pal: 4, offset: 15, mats: proc1path1snd);
       MovePallet(t, offset: 16, pal: 4, load: 3);
 
       MachStart(proc1path2, offset: 18, mach: 1);
@@ -2537,7 +2573,7 @@ namespace MachineWatchTest
 
       UnloadStart(proc1path2, offset: 26, load: 3);
       UnloadEnd(proc1path2, offset: 27, load: 3, elapMin: 1);
-      ExpectPalletCycle(t, pal: 6, offset: 27, elapMin: 27 - 11);
+      ExpectPalletCycle(t, pal: 6, offset: 27, elapMin: 27 - 11, mats: proc1path2);
       ExpectAddToQueue(proc1path2, offset: 27, queue: "thequeue", startPos: 3);
 
       UnloadStart(proc1path1snd, offset: 30, load: 1);
@@ -2545,7 +2581,8 @@ namespace MachineWatchTest
       UnloadEnd(proc1path1snd, offset: 33, load: 1, elapMin: 3, totalMatCnt: 6);
       ExpectAddToQueue(proc1path1snd, offset: 33, queue: "thequeue", startPos: 6);
       LoadEnd(proc1path1thrd, offset: 33, load: 1, elapMin: 3, totalMatCnt: 6);
-      ExpectPalletCycle(t, pal: 4, offset: 33, elapMin: 33 - 15);
+      ExpectPalletCycle(t, pal: 4, offset: 33, elapMin: 33 - 15, mats: proc1path1snd);
+      ExpectPalletStart(t, pal: 4, offset: 33, mats: proc1path1thrd);
       MovePallet(t, offset: 34, pal: 4, load: 1);
 
       //queue now has 9 elements
@@ -2581,7 +2618,7 @@ namespace MachineWatchTest
 
       LoadStart(proc2path1, offset: 40, load: 2);
       LoadEnd(proc2path1, offset: 44, load: 2, elapMin: 4);
-      ExpectPalletCycle(t, pal: 5, offset: 44, elapMin: 0);
+      ExpectPalletStart(t, pal: 5, offset: 44, mats: proc2path1);
       MovePallet(t, offset: 45, pal: 5, load: 2);
       ExpectRemoveFromQueue(
         proc1path1,
@@ -2623,7 +2660,8 @@ namespace MachineWatchTest
       LoadStart(proc2path1snd, offset: 60, load: 1);
       UnloadEnd(proc2path1, offset: 65, load: 1, elapMin: 5, totalMatCnt: 6);
       LoadEnd(proc2path1snd, offset: 65, load: 1, elapMin: 5, totalMatCnt: 6);
-      ExpectPalletCycle(t, pal: 5, offset: 65, elapMin: 65 - 44);
+      ExpectPalletCycle(t, pal: 5, offset: 65, elapMin: 65 - 44, mats: proc2path1);
+      ExpectPalletStart(t, pal: 5, offset: 65, mats: proc2path1snd);
       MovePallet(t, offset: 66, pal: 5, load: 1);
       ExpectRemoveFromQueue(
         proc1path1snd,
@@ -2659,7 +2697,7 @@ namespace MachineWatchTest
       // finally, load of path2 pulls remaining 4, 5, 6
       LoadStart(proc2path2, offset: 70, load: 2);
       LoadEnd(proc2path2, offset: 73, load: 2, elapMin: 3);
-      ExpectPalletCycle(t, pal: 7, offset: 73, elapMin: 0);
+      ExpectPalletStart(t, pal: 7, offset: 73, mats: proc2path2);
       MovePallet(t, offset: 74, pal: 7, load: 2);
       ExpectRemoveFromQueue(
         proc1path2,
@@ -2737,7 +2775,7 @@ namespace MachineWatchTest
 
       LoadStart(proc1, offset: 0, load: 1);
       LoadEnd(proc1, offset: 5, load: 1, elapMin: 5);
-      ExpectPalletCycle(t, pal: 8, offset: 5, elapMin: 0);
+      ExpectPalletStart(t, pal: 8, offset: 5, mats: [proc1]);
       MovePallet(t, pal: 8, offset: 6, load: 1);
 
       MachStart(proc1, offset: 10, mach: 5);
@@ -2758,7 +2796,8 @@ namespace MachineWatchTest
       UnloadEnd(proc1, offset: 24, load: 2, elapMin: 4, totalMatCnt: 2);
       ExpectAddToQueue(proc1, offset: 24, queue: "QuarantineQ", pos: 0);
       LoadEnd(proc1snd, offset: 24, load: 2, elapMin: 4, totalMatCnt: 2);
-      ExpectPalletCycle(t, pal: 8, offset: 24, elapMin: 24 - 5);
+      ExpectPalletCycle(t, pal: 8, offset: 24, elapMin: 24 - 5, mats: [proc1]);
+      ExpectPalletStart(t, pal: 8, offset: 24, mats: [proc1snd]);
       MovePallet(t, pal: 8, offset: 25, load: 2);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -2810,7 +2849,7 @@ namespace MachineWatchTest
 
       LoadStart(mat1, offset: 4, load: 1);
       LoadEnd(mat1, offset: 5, load: 1, elapMin: 5 - 4, expectMark: false);
-      ExpectPalletCycle(t, pal: 8, offset: 5, elapMin: 0);
+      ExpectPalletStart(t, pal: 8, offset: 5, mats: [mat1]);
       MovePallet(t, pal: 8, offset: 6, load: 1);
       ExpectRemoveFromQueue(
         AdjProcess(mat1, 0),
@@ -2882,7 +2921,7 @@ namespace MachineWatchTest
       //----- Now Unassigned
       LoadStart(mat3, offset: 25, load: 2);
       LoadEnd(mat3, offset: 30, load: 2, elapMin: 30 - 25, expectMark: false);
-      ExpectPalletCycle(t, pal: 4, offset: 30, elapMin: 0);
+      ExpectPalletStart(t, pal: 4, offset: 30, mats: [mat3]);
       MovePallet(t, pal: 4, offset: 30, load: 2);
       ExpectRemoveFromQueue(
         AdjProcess(mat3, 0),
@@ -2950,7 +2989,7 @@ namespace MachineWatchTest
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, elapMin: 2);
-      ExpectPalletCycle(t, pal: 3, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 3, offset: 2, mats: [p]);
       MovePallet(t, offset: 3, load: 1, pal: 3);
 
       // some basic snapshots.  More complicated scenarios are tested as part of the Repository spec
@@ -3134,7 +3173,7 @@ namespace MachineWatchTest
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, elapMin: 2);
-      ExpectPalletCycle(t, pal: 7, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 7, offset: 2, mats: [p]);
       MovePallet(t, offset: 3, load: 1, pal: 7);
 
       StockerStart(p, offset: 4, stocker: 7, waitForMachine: true);
@@ -3150,7 +3189,7 @@ namespace MachineWatchTest
 
       UnloadStart(p, offset: 22, load: 1);
       UnloadEnd(p, offset: 23, load: 1, elapMin: 1);
-      ExpectPalletCycle(t, pal: 7, offset: 23, elapMin: 23 - 2);
+      ExpectPalletCycle(t, pal: 7, offset: 23, elapMin: 23 - 2, mats: [p]);
       MovePallet(t, offset: 24, load: 0, pal: 7);
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
@@ -3202,7 +3241,7 @@ namespace MachineWatchTest
 
       LoadStart(p, offset: 0, load: 5);
       LoadEnd(p, offset: 2, load: 5, elapMin: 2);
-      ExpectPalletCycle(t, pal: 7, offset: 2, elapMin: 0);
+      ExpectPalletStart(t, pal: 7, offset: 2, mats: [p]);
       MovePallet(t, offset: 3, load: 1, pal: 7);
 
       RotaryQueueStart(p, offset: 7, mc: 2);
@@ -3253,7 +3292,7 @@ namespace MachineWatchTest
       SetPallet(pal: 3, atLoadStation: true);
       LoadStart(m1proc1, offset: 0, load: 1);
       LoadEnd(m1proc1, offset: 4, load: 1, elapMin: 4);
-      ExpectPalletCycle(t, pal: 3, offset: 4, elapMin: 0);
+      ExpectPalletStart(t, pal: 3, offset: 4, mats: [m1proc1]);
       MovePallet(t, offset: 5, load: 1, pal: 3);
       SetPallet(pal: 3, atLoadStation: false);
       SetPalletFace(pal: 3, schId: schId, proc: 1, fixQty: 1);
@@ -3280,7 +3319,8 @@ namespace MachineWatchTest
       UnloadEnd(m1proc1, offset: 22, load: 2, elapMin: 2, totalMatCnt: 3);
       LoadEnd(m1proc2, offset: 22, load: 2, elapMin: 2, totalMatCnt: 3);
       LoadEnd(m2proc1, offset: 22, load: 2, elapMin: 2, totalMatCnt: 3);
-      ExpectPalletCycle(t, pal: 3, offset: 22, elapMin: 22 - 4);
+      ExpectPalletCycle(t, pal: 3, offset: 22, elapMin: 22 - 4, mats: [m1proc1]);
+      ExpectPalletStart(t, pal: 3, offset: 22, mats: [m1proc2, m2proc1]);
       MovePallet(t, offset: 23, pal: 3, load: 2);
       SetPallet(pal: 3, atLoadStation: false);
       SetPalletFace(pal: 3, schId: schId, proc: 1, fixQty: 1);
