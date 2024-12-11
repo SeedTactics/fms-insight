@@ -350,12 +350,6 @@ public static class BuildCellState
   {
     private LoadedPalletStatus() { }
 
-    public record LulFinished : LoadedPalletStatus
-    {
-      public required int LoadNum { get; init; }
-      public IEnumerable<InProcessMaterial>? MaterialToLoad { get; init; } = null;
-    }
-
     public record MachineStopped() : LoadedPalletStatus;
 
     public record MachineRunning : LoadedPalletStatus
@@ -365,15 +359,21 @@ public static class BuildCellState
       public required string Program { get; init; }
     }
 
-    public record Unloading : LoadedPalletStatus
+    public record LulOngoing : LoadedPalletStatus
     {
       public required int LoadNum { get; init; }
+      public ImmutableList<InProcessMaterial>? NewMaterialToLoad { get; init; } = null;
       public ImmutableList<int> UnloadingFaces { get; init; } = ImmutableList<int>.Empty;
       public ImmutableList<int> UnloadCompletedFaces { get; init; } = ImmutableList<int>.Empty;
       public Func<LoadedFace, ImmutableList<InProcessMaterial>>? AdjustUnloadingMaterial { get; init; } =
         null;
-      public ImmutableList<InProcessMaterial>? NewMaterialToLoad { get; init; } = null;
       public DateTime? MachiningStopTime { get; init; } = null;
+    }
+
+    public record LulFinished : LoadedPalletStatus
+    {
+      public required int LoadNum { get; init; }
+      public IEnumerable<InProcessMaterial>? MaterialToLoad { get; init; } = null;
     }
   }
 
@@ -389,22 +389,6 @@ public static class BuildCellState
   {
     switch (status)
     {
-      case LoadedPalletStatus.LulFinished loaded:
-        pal = SetMachineNotRunning(pal: pal, db: db, machineControl: machineControl, nowUTC: nowUTC);
-        if (!CheckMaterialMatches(pal, loaded.MaterialToLoad))
-        {
-          pal = CompletePalletCycle(
-            pal: pal,
-            loadNum: loaded.LoadNum,
-            materialToLoad: loaded.MaterialToLoad,
-            jobs: jobs,
-            db: db,
-            nowUTC: nowUTC,
-            fmsSettings: settings
-          );
-        }
-        return pal;
-
       case LoadedPalletStatus.MachineStopped machineStopped:
         return SetMachineNotRunning(pal: pal, db: db, machineControl: machineControl, nowUTC: nowUTC);
 
@@ -419,7 +403,7 @@ public static class BuildCellState
           nowUTC: nowUTC
         );
 
-      case LoadedPalletStatus.Unloading unloading:
+      case LoadedPalletStatus.LulOngoing unloading:
         pal = SetMachineNotRunning(
           pal: pal,
           db: db,
@@ -456,6 +440,22 @@ public static class BuildCellState
           {
             MaterialLoadingOntoPallet = pal.MaterialLoadingOntoPallet.AddRange(unloading.NewMaterialToLoad),
           };
+        }
+        return pal;
+
+      case LoadedPalletStatus.LulFinished loaded:
+        pal = SetMachineNotRunning(pal: pal, db: db, machineControl: machineControl, nowUTC: nowUTC);
+        if (!CheckMaterialMatches(pal, loaded.MaterialToLoad))
+        {
+          pal = CompletePalletCycle(
+            pal: pal,
+            loadNum: loaded.LoadNum,
+            materialToLoad: loaded.MaterialToLoad,
+            jobs: jobs,
+            db: db,
+            nowUTC: nowUTC,
+            fmsSettings: settings
+          );
         }
         return pal;
 
