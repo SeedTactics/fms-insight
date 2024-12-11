@@ -1652,7 +1652,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int Count { get; set; }
       public string Unique { get; set; }
       public int Path { get; set; }
-      public int ElapsedMin { get; set; }
+      public TimeSpan Elapsed { get; set; }
       public int ActiveMins { get; set; }
       public Func<InProcessMaterial, InProcessMaterial> MatAdjust { get; set; }
       public List<LogMaterial> OutMaterial { get; set; }
@@ -1667,6 +1667,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       int cnt,
       int elapsedMin,
       int activeMins,
+      int totalActiveMins,
       out IEnumerable<LogMaterial> mats,
       Func<InProcessMaterial, InProcessMaterial> adj = null
     )
@@ -1679,7 +1680,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Count = cnt,
         Unique = unique,
         Path = path,
-        ElapsedMin = elapsedMin,
+        Elapsed = TimeSpan.FromMinutes(elapsedMin * activeMins / ((float)totalActiveMins)),
         ActiveMins = activeMins,
         MatAdjust = adj,
         OutMaterial = new List<LogMaterial>(),
@@ -1693,7 +1694,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int Pallet { get; set; }
       public int LoadStation { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
-      public int ElapsedMin { get; set; }
+      public TimeSpan Elapsed { get; set; }
       public int ActiveMins { get; set; }
     }
 
@@ -1705,6 +1706,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       int lul,
       int elapsedMin,
       int activeMins,
+      int totalActiveMins,
       IEnumerable<LogMaterial> loadingMats,
       out IEnumerable<LogMaterial> loadedMats,
       string part = null
@@ -1725,7 +1727,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Pallet = pal,
         LoadStation = lul,
         Material = loadedMats,
-        ElapsedMin = elapsedMin,
+        Elapsed = TimeSpan.FromMinutes(elapsedMin * activeMins / ((float)totalActiveMins)),
         ActiveMins = activeMins,
       };
     }
@@ -1762,7 +1764,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       public int Pallet { get; set; }
       public int LoadStation { get; set; }
       public IEnumerable<LogMaterial> Material { get; set; }
-      public int ElapsedMin { get; set; }
+      public TimeSpan Elapsed { get; set; }
       public int ActiveMins { get; set; }
     }
 
@@ -1771,6 +1773,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       int lul,
       int elapsedMin,
       int activeMins,
+      int totalActiveMins,
       IEnumerable<LogMaterial> mats
     )
     {
@@ -1779,7 +1782,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         Pallet = pal,
         LoadStation = lul,
         Material = mats,
-        ElapsedMin = elapsedMin,
+        Elapsed = TimeSpan.FromMinutes(elapsedMin * activeMins / ((float)totalActiveMins)),
         ActiveMins = activeMins,
       };
     }
@@ -2209,11 +2212,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       public int Pallet { get; set; }
       public int Minutes { get; set; }
+      public bool Start { get; init; }
+      public IEnumerable<LogMaterial> Material { get; init; }
     }
 
-    public static ExpectedChange ExpectPalletCycle(int pal, int mins)
+    public static ExpectedChange ExpectPalletStart(int pal, IEnumerable<LogMaterial> mats)
     {
-      return new ExpectPalletCycleChange() { Pallet = pal, Minutes = mins };
+      return new ExpectPalletCycleChange()
+      {
+        Pallet = pal,
+        Minutes = 0,
+        Start = true,
+        Material = mats,
+      };
+    }
+
+    public static ExpectedChange ExpectPalletEnd(int pal, int mins, IEnumerable<LogMaterial> mats)
+    {
+      return new ExpectPalletCycleChange()
+      {
+        Pallet = pal,
+        Minutes = mins,
+        Start = false,
+        Material = mats,
+      };
     }
 
     private class ExpectAddProgram : ExpectedChange
@@ -2483,13 +2505,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               expectedLogs.Add(
                 new LogEntry(
                   cntr: -1,
-                  mat: Enumerable.Empty<LogMaterial>(),
+                  mat: palletCycleChange.Material,
                   pal: palletCycleChange.Pallet,
                   ty: LogType.PalletCycle,
                   locName: "Pallet Cycle",
                   locNum: 1,
                   prog: "",
-                  start: false,
+                  start: palletCycleChange.Start,
                   endTime: _status.TimeOfStatusUTC,
                   result: "PalletCycle",
                   elapsed: TimeSpan.FromMinutes(palletCycleChange.Minutes),
@@ -2556,7 +2578,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                   result: "LOAD",
-                  elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
+                  elapsed: TimeSpan.FromSeconds(Math.Round(load.Elapsed.TotalSeconds, 1)),
                   active: TimeSpan.FromMinutes(load.ActiveMins)
                 )
               );
@@ -2621,7 +2643,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC.AddSeconds(1),
                   result: "LOAD",
-                  elapsed: TimeSpan.FromMinutes(load.ElapsedMin),
+                  elapsed: TimeSpan.FromSeconds(Math.Round(load.Elapsed.TotalSeconds, 1)),
                   active: TimeSpan.FromMinutes(load.ActiveMins)
                 )
               );
@@ -2638,10 +2660,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   locNum: removeFromQueueEvt.Position,
                   prog: removeFromQueueEvt.Reason ?? "",
                   start: false,
-                  endTime: _status.TimeOfStatusUTC.AddSeconds(1),
+                  endTime: _status.TimeOfStatusUTC,
                   result: "",
-                  // add 1 second because addtoqueue event is one-second after load end
-                  elapsed: TimeSpan.FromMinutes(removeFromQueueEvt.ElapsedMins).Add(TimeSpan.FromSeconds(1)),
+                  elapsed: TimeSpan.FromMinutes(removeFromQueueEvt.ElapsedMins),
                   active: TimeSpan.Zero
                 ))
               );
@@ -2660,7 +2681,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                   start: false,
                   endTime: _status.TimeOfStatusUTC,
                   result: "UNLOAD",
-                  elapsed: TimeSpan.FromMinutes(unload.ElapsedMin),
+                  elapsed: TimeSpan.FromSeconds(Math.Round(unload.Elapsed.TotalSeconds, 1)),
                   active: TimeSpan.FromMinutes(unload.ActiveMins)
                 )
               );
