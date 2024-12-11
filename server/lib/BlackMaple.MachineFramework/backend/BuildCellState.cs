@@ -113,7 +113,6 @@ public static class BuildCellState
 
     public required ImmutableList<InProcessMaterial> Material { get; init; }
 
-    public required LogEntry? LoadEnd { get; init; }
     public required ImmutableList<MachiningStopAndEvents> Stops { get; init; }
     public required LogEntry? UnloadStart { get; init; }
     public required LogEntry? UnloadEnd { get; init; }
@@ -125,7 +124,7 @@ public static class BuildCellState
     public required ImmutableDictionary<int, LoadedFace> Faces { get; init; }
     public required ImmutableList<InProcessMaterial> MaterialLoadingOntoPallet { get; init; }
     public required ImmutableList<LogEntry> Log { get; init; }
-    public required LogEntry? LastPalletCycle { get; init; }
+    public required LogEntry? PalletBegin { get; init; }
     public required LogEntry? LoadBegin { get; init; }
     public required bool NewLogEvents { get; init; }
 
@@ -137,7 +136,7 @@ public static class BuildCellState
         Faces = ImmutableDictionary<int, LoadedFace>.Empty,
         MaterialLoadingOntoPallet = ImmutableList<InProcessMaterial>.Empty,
         Log = ImmutableList<LogEntry>.Empty,
-        LastPalletCycle = null,
+        PalletBegin = null,
         LoadBegin = null,
         NewLogEvents = false,
       };
@@ -149,26 +148,30 @@ public static class BuildCellState
     var faces = ImmutableDictionary.CreateBuilder<int, LoadedFace>();
     var log = db.CurrentPalletLog(pallet, includeLastPalletCycleEvt: true).ToImmutableList();
 
-    var lastPalletCycle = log.LastOrDefault(e => e.LogType == LogType.PalletCycle);
+    var lastPalletBegin = log.LastOrDefault(e => e.LogType == LogType.PalletCycle && e.StartOfCycle);
 
     var loadBegin = log.LastOrDefault(e =>
       e.LogType == LogType.LoadUnloadCycle && e.Result == "LOAD" && e.StartOfCycle
     );
 
-    var lastLoaded = log.Where(e =>
-        e.LogType == LogType.LoadUnloadCycle
-        && e.Result == "LOAD"
-        && !e.StartOfCycle
-        && e.Material != null
-        && e.Material.Any()
-      )
-      .GroupBy(e => e.Material.First().Face)
-      .Select(g => new { Face = g.Key, LoadEnd = g.Last() });
+    // In older versions, the pallet begin event did not exist and the first load event was the start of the cycle.
+    // Fallback to that old behavior (which will only be used during for the cycles that are currently in the middle
+    // of execution at the time Insight is upgraded).
+    IEnumerable<LogMaterial> lastLoadedMats =
+      lastPalletBegin == null ? []
+      : lastPalletBegin.Material.Count > 0 ? lastPalletBegin.Material
+      : log.Where(e =>
+          e.LogType == LogType.LoadUnloadCycle
+          && e.Result == "LOAD"
+          && !e.StartOfCycle
+          && e.Material != null
+          && e.Material.Any()
+        )
+        .SelectMany(e => e.Material);
 
-    foreach (var face in lastLoaded)
+    foreach (var face in lastLoadedMats.GroupBy(e => e.Face))
     {
-      var loadedMats = face
-        .LoadEnd.Material.Select(mat =>
+      var loadedMats = face.Select(mat =>
         {
           return new InProcessMaterial()
           {
@@ -198,7 +201,7 @@ public static class BuildCellState
             {
               Type = InProcessMaterialLocation.LocType.OnPallet,
               PalletNum = pallet,
-              Face = face.Face,
+              Face = face.Key,
             },
             Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
           };
@@ -294,10 +297,10 @@ public static class BuildCellState
       );
 
       faces.Add(
-        face.Face,
+        face.Key,
         new LoadedFace()
         {
-          FaceNum = face.Face,
+          FaceNum = face.Key,
           Job = job,
           Process = firstMat.Process,
           Path = firstMat.Path,
@@ -305,7 +308,6 @@ public static class BuildCellState
           OutputQueue = outputQueue,
           ExpectedUnloadTimeForOnePieceOfMaterial = expectedUnloadTimeForOnePieceOfMaterial,
           Material = loadedMats,
-          LoadEnd = face.LoadEnd,
           Stops = stopsAndEvts.ToImmutable(),
           UnloadStart = unloadStart,
           UnloadEnd = unloadEnd,
@@ -319,7 +321,7 @@ public static class BuildCellState
       Faces = faces.ToImmutable(),
       MaterialLoadingOntoPallet = ImmutableList<InProcessMaterial>.Empty,
       Log = log,
-      LastPalletCycle = lastPalletCycle,
+      PalletBegin = lastPalletBegin,
       LoadBegin = loadBegin,
       NewLogEvents = false,
     };
@@ -726,7 +728,11 @@ public static class BuildCellState
     };
   }
 
-  private static MaterialToUnloadFromFace? UnloadMaterial(Pallet pal, LoadedFace face)
+  private static MaterialToUnloadFromFace? UnloadMaterial(
+    Pallet pal,
+    LoadedFace face,
+    IReadOnlySet<long> matIdsToLoad
+  )
   {
     if (face.UnloadEnd == null)
     {
@@ -734,7 +740,10 @@ public static class BuildCellState
 
       return new MaterialToUnloadFromFace()
       {
-        MaterialIDToQueue = face.Material.ToImmutableDictionary(m => m.MaterialID, m => outputQueue),
+        MaterialIDToQueue = face.Material.ToImmutableDictionary(
+          m => m.MaterialID,
+          m => matIdsToLoad.Contains(m.MaterialID) ? null : outputQueue
+        ),
         Process = face.Process,
         FaceNum = face.FaceNum,
         ActiveOperationTime =
@@ -775,7 +784,7 @@ public static class BuildCellState
 
     IEnumerable<LogEntry>? newEvts = null;
 
-    var toUnload = UnloadMaterial(pal, face);
+    var toUnload = UnloadMaterial(pal, face, ImmutableHashSet<long>.Empty);
     if (toUnload != null)
     {
       if (materialToLoad != null)
@@ -892,10 +901,6 @@ public static class BuildCellState
           IsFinalProcess = isFinalProcess,
           OutputQueue = outputQueue,
           ExpectedUnloadTimeForOnePieceOfMaterial = expectedUnloadTimeForOnePieceOfMaterial,
-          LoadEnd = loadEnds.First(e =>
-            e.LogType == LogType.LoadUnloadCycle
-            && e.Material.Any(m => face.Any(f => f.MaterialID == m.MaterialID))
-          ),
           Stops = stops
             .Select(
               (stop, stopIdx) =>
@@ -990,20 +995,21 @@ public static class BuildCellState
     DateTime nowUTC
   )
   {
+    var matsToLoad =
+      materialToLoad != null
+        ? CalcMaterialToLoad(palletNum: pal.PalletNum, materialToLoad: materialToLoad, jobs: jobs)
+        : [];
+    var matIdsToLoad = matsToLoad.SelectMany(m => m.Item1.MaterialIDs).ToHashSet();
+
     var toUnload = new List<MaterialToUnloadFromFace>();
     foreach (var face in pal.Faces.Values)
     {
-      var u = UnloadMaterial(pal, face);
+      var u = UnloadMaterial(pal, face, matIdsToLoad);
       if (u != null)
       {
         toUnload.Add(u);
       }
     }
-
-    var matsToLoad =
-      materialToLoad != null
-        ? CalcMaterialToLoad(palletNum: pal.PalletNum, materialToLoad: materialToLoad, jobs: jobs)
-        : ImmutableList<(MaterialToLoadOntoFace, Func<IEnumerable<LogEntry>, LoadedFace>)>.Empty;
 
     var newEvts = db.RecordLoadUnloadComplete(
       toLoad: matsToLoad.Select((m) => m.Item1).ToImmutableList(),
@@ -1017,7 +1023,7 @@ public static class BuildCellState
       externalQueues: fmsSettings.ExternalQueues
     );
 
-    var cycleEvt = newEvts.First(e => e.LogType == LogType.PalletCycle);
+    var cycleEvt = newEvts.FirstOrDefault(e => e.LogType == LogType.PalletCycle && e.StartOfCycle);
     var loadEvts = newEvts.Where(e => e.EndTimeUTC > nowUTC).ToImmutableList();
 
     var newFaces = ImmutableDictionary.CreateBuilder<int, LoadedFace>();
@@ -1032,7 +1038,7 @@ public static class BuildCellState
       Faces = newFaces.ToImmutable(),
       Log = loadEvts.ToImmutableList(),
       NewLogEvents = true,
-      LastPalletCycle = cycleEvt,
+      PalletBegin = cycleEvt,
     };
 
     return pal;
