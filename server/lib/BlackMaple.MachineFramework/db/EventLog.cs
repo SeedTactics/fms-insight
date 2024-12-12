@@ -1533,7 +1533,8 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public IEnumerable<LogEntry> RecordPartialUnloadEnd(
+    public IEnumerable<LogEntry> RecordPartialLoadUnload(
+      IReadOnlyList<MaterialToLoadOntoFace> toLoad,
       IReadOnlyList<MaterialToUnloadFromFace> toUnload,
       int lulNum,
       int pallet,
@@ -1550,10 +1551,22 @@ namespace BlackMaple.MachineFramework
 
         // calculate total active time and total material count to be able
         // to split the totalElpased up
-        var totMatCnt = toUnload?.Sum(l => l.MaterialIDToQueue.Count) ?? 0;
+        var totMatCnt =
+          (toLoad?.Sum(l => l.MaterialIDs.Count) ?? 0) + (toUnload?.Sum(l => l.MaterialIDToQueue.Count) ?? 0);
 
         bool allHaveActive = true;
         TimeSpan totalActive = TimeSpan.Zero;
+        foreach (var l in toLoad ?? [])
+        {
+          if (l.ActiveOperationTime > TimeSpan.Zero)
+          {
+            totalActive += l.ActiveOperationTime;
+          }
+          else
+          {
+            allHaveActive = false;
+          }
+        }
         foreach (var u in toUnload ?? [])
         {
           if (u.ActiveOperationTime > TimeSpan.Zero)
@@ -1577,6 +1590,20 @@ namespace BlackMaple.MachineFramework
           logs: logs,
           externalQueues: externalQueues,
           sendToExternal: sendToExternal,
+          trans: trans
+        );
+
+        RecordLoadMaterialPaths(toLoad: toLoad, trans: trans);
+
+        RecordLoadEnd(
+          toLoad: toLoad,
+          lulNum: lulNum,
+          pallet: pallet,
+          totalElapsed: totalElapsed,
+          totMatCnt: totMatCnt,
+          totalActive: allHaveActive && totalActive > TimeSpan.Zero ? totalActive : null,
+          timeUTC: timeUTC,
+          logs: logs,
           trans: trans
         );
 

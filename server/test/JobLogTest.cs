@@ -1694,6 +1694,16 @@ namespace MachineWatchTest
         "",
         ""
       );
+      var mat7 = MkLogMat.Mk(
+        _jobLog.AllocateMaterialID("uniq1", "part1", 2),
+        "uniq1",
+        1,
+        "part1",
+        2,
+        "",
+        "",
+        ""
+      );
 
       //not adding all events, but at least one non-endofroute and one endofroute
       _jobLog.RecordMachineEnd(
@@ -1718,7 +1728,18 @@ namespace MachineWatchTest
         elapsed: TimeSpan.FromMinutes(30),
         active: TimeSpan.FromMinutes(40)
       );
-      _jobLog.RecordPartialUnloadEnd(
+      _jobLog.RecordPartialLoadUnload(
+        toLoad:
+        [
+          new MaterialToLoadOntoFace()
+          {
+            MaterialIDs = [mat7.MaterialID],
+            Process = mat7.Process,
+            Path = mat7.Path,
+            FaceNum = mat7.Face,
+            ActiveOperationTime = TimeSpan.FromMinutes(30),
+          },
+        ],
         toUnload:
         [
           new MaterialToUnloadFromFace()
@@ -1735,7 +1756,7 @@ namespace MachineWatchTest
         pallet: 1,
         lulNum: 5,
         timeUTC: t.AddMinutes(7),
-        totalElapsed: TimeSpan.FromMinutes(50),
+        totalElapsed: TimeSpan.FromMinutes(75),
         externalQueues: null
       );
 
@@ -5468,12 +5489,13 @@ namespace MachineWatchTest
       req.Query.Should().BeEquivalentTo(new Dictionary<string, List<string>> { { "queue", ["queue1"] } });
       req.Body.Should().Be("[\"" + serial + "\"]");
 
-      // Now test PartialUnloadEnd
+      // Now test PartialLoadUnload
 
       server.ResetLogEntries();
 
       var mat2 = db.AllocateMaterialID(unique: "uuu1", part: partName, numProc: 2);
       var mat3 = db.AllocateMaterialID(unique: "uuu1", part: partName, numProc: 2);
+      var mat4 = db.AllocateMaterialID(unique: "uuu1", part: partName, numProc: 2);
       var serial2 = fix.Create<string>();
       var serial3 = fix.Create<string>();
       db.RecordSerialForMaterialID(
@@ -5497,7 +5519,18 @@ namespace MachineWatchTest
         now
       );
 
-      db.RecordPartialUnloadEnd(
+      db.RecordPartialLoadUnload(
+          toLoad:
+          [
+            new MaterialToLoadOntoFace()
+            {
+              FaceNum = 1,
+              Process = 1,
+              Path = 7,
+              ActiveOperationTime = TimeSpan.FromMinutes(3),
+              MaterialIDs = [mat4],
+            },
+          ],
           toUnload:
           [
             new MaterialToUnloadFromFace()
@@ -5518,7 +5551,7 @@ namespace MachineWatchTest
           lulNum: 10,
           pallet: 20,
           timeUTC: now.AddMinutes(3),
-          totalElapsed: TimeSpan.FromMinutes(18),
+          totalElapsed: TimeSpan.FromMinutes(24),
           externalQueues: new Dictionary<string, string> { { "queue1", server.Urls[0] } }
         )
         .Should()
@@ -5548,7 +5581,7 @@ namespace MachineWatchTest
               Program = "UNLOAD",
               StartOfCycle = false,
               EndTimeUTC = now.AddMinutes(3),
-              ElapsedTime = TimeSpan.FromMinutes(18 * 4 / (4 + 5)),
+              ElapsedTime = TimeSpan.FromMinutes(24 * 4 / (3 + 4 + 5)),
               ActiveOperationTime = TimeSpan.FromMinutes(4),
               Result = "UNLOAD",
             },
@@ -5576,12 +5609,45 @@ namespace MachineWatchTest
               Program = "UNLOAD",
               StartOfCycle = false,
               EndTimeUTC = now.AddMinutes(3),
-              ElapsedTime = TimeSpan.FromMinutes(18 * 5 / (4 + 5)),
+              ElapsedTime = TimeSpan.FromMinutes(24 * 5 / (3 + 4 + 5)),
               ActiveOperationTime = TimeSpan.FromMinutes(5),
               Result = "UNLOAD",
             },
+            new LogEntry()
+            {
+              Counter = 8,
+              Material =
+              [
+                new LogMaterial()
+                {
+                  MaterialID = mat4,
+                  Process = 1,
+                  Face = 1,
+                  Path = 7,
+                  JobUniqueStr = "uuu1",
+                  NumProcesses = 2,
+                  PartName = partName,
+                  Serial = "",
+                  Workorder = "",
+                },
+              ],
+              Pallet = 20,
+              LogType = LogType.LoadUnloadCycle,
+              LocationName = "L/U",
+              LocationNum = 10,
+              Program = "LOAD",
+              StartOfCycle = false,
+              EndTimeUTC = now.AddMinutes(3).AddSeconds(1),
+              ElapsedTime = TimeSpan.FromMinutes(24 * 3 / (3 + 4 + 5)),
+              ActiveOperationTime = TimeSpan.FromMinutes(3),
+              Result = "LOAD",
+            },
           ]
         );
+
+      db.GetMaterialDetails(mat4)
+        .Paths.Should()
+        .BeEquivalentTo(ImmutableDictionary<int, int>.Empty.Add(1, 7));
 
       // The sends to external queues happen on a new thread so need to wait
       numWaits = 0;

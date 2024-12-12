@@ -363,8 +363,7 @@ public static class BuildCellState
     {
       public required int LoadNum { get; init; }
       public ImmutableList<InProcessMaterial>? NewMaterialToLoad { get; init; } = null;
-      public ImmutableList<int> UnloadingFaces { get; init; } = ImmutableList<int>.Empty;
-      public ImmutableList<int> UnloadCompletedFaces { get; init; } = ImmutableList<int>.Empty;
+      public ImmutableList<int> UnloadingFaces { get; init; } = [];
       public Func<LoadedFace, ImmutableList<InProcessMaterial>>? AdjustUnloadingMaterial { get; init; } =
         null;
       public DateTime? MachiningStopTime { get; init; } = null;
@@ -420,18 +419,6 @@ public static class BuildCellState
             db: db,
             nowUTC: nowUTC,
             adjustUnloadingMats: unloading.AdjustUnloadingMaterial
-          );
-        }
-        foreach (var face in unloading.UnloadCompletedFaces)
-        {
-          pal = SetPartialUnloadComplete(
-            pal: pal,
-            faceNum: face,
-            lulNum: unloading.LoadNum,
-            materialToLoad: unloading.NewMaterialToLoad,
-            fmsSettings: settings,
-            db: db,
-            nowUTC: nowUTC
           );
         }
         if (unloading.NewMaterialToLoad != null)
@@ -764,59 +751,6 @@ public static class BuildCellState
     );
 
     return lastPartialUnload?.EndTimeUTC ?? pal.LoadBegin?.EndTimeUTC;
-  }
-
-  private static Pallet SetPartialUnloadComplete(
-    Pallet pal,
-    int faceNum,
-    int lulNum,
-    IEnumerable<InProcessMaterial>? materialToLoad,
-    FMSSettings fmsSettings,
-    IRepository db,
-    DateTime nowUTC
-  )
-  {
-    var face = pal.Faces.GetValueOrDefault(faceNum);
-    if (face == null)
-    {
-      return pal;
-    }
-
-    IEnumerable<LogEntry>? newEvts = null;
-
-    var toUnload = UnloadMaterial(pal, face, ImmutableHashSet<long>.Empty);
-    if (toUnload != null)
-    {
-      if (materialToLoad != null)
-      {
-        foreach (var m in materialToLoad)
-        {
-          if (toUnload.MaterialIDToQueue.ContainsKey(m.MaterialID))
-          {
-            // ensure material being loaded isn't sent to a queue
-            toUnload = toUnload with
-            {
-              MaterialIDToQueue = toUnload.MaterialIDToQueue.Add(m.MaterialID, null),
-            };
-          }
-        }
-      }
-      newEvts = db.RecordPartialUnloadEnd(
-        toUnload: [toUnload],
-        totalElapsed: nowUTC - (LoadUnloadStartTime(pal) ?? nowUTC),
-        pallet: pal.PalletNum,
-        lulNum: lulNum,
-        timeUTC: nowUTC,
-        externalQueues: fmsSettings.ExternalQueues
-      );
-    }
-
-    return pal with
-    {
-      Faces = pal.Faces.Remove(faceNum),
-      Log = newEvts != null ? pal.Log.AddRange(newEvts) : pal.Log,
-      NewLogEvents = pal.NewLogEvents || newEvts != null,
-    };
   }
 
   private static ImmutableList<(
