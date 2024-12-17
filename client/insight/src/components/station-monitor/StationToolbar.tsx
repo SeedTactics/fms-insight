@@ -41,6 +41,7 @@ import { last30InspectionTypes } from "../../cell-status/names.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { SystemOverviewDialogButton } from "./SystemOverview.js";
 import { useAtom, useAtomValue } from "jotai";
+import { ReactNode } from "react";
 
 const toolbarStyle = {
   display: "flex",
@@ -69,7 +70,7 @@ enum StationMonitorType {
   AllMaterial = "AllMaterial",
 }
 
-export function StationToolbar(): JSX.Element {
+export function StationToolbar(): ReactNode {
   const [route, setRoute] = useAtom(currentRoute);
   const inspTypes = useAtomValue(last30InspectionTypes);
   const queueNames = Object.keys(useAtomValue(currentStatus).queues).sort();

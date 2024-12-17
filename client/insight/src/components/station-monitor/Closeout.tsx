@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { memo, useMemo } from "react";
+import { memo, ReactNode, useMemo } from "react";
 import { addHours } from "date-fns";
 import { Box, Typography } from "@mui/material";
 import { Button } from "@mui/material";
@@ -172,7 +172,7 @@ currentNearestMinutes.onMount = (set) => {
   return () => clearInterval(interval);
 };
 
-export function Closeout({ forceSingleColumn }: { forceSingleColumn?: boolean }): JSX.Element {
+export function Closeout({ forceSingleColumn }: { forceSingleColumn?: boolean }): ReactNode {
   const matSummary = useAtomValue(last30MaterialSummary);
   const nearestMinute = useAtomValue(currentNearestMinutes);
 
@@ -241,7 +241,7 @@ export function Closeout({ forceSingleColumn }: { forceSingleColumn?: boolean })
   );
 }
 
-export function CloseoutPage(): JSX.Element {
+export function CloseoutPage(): ReactNode {
   useSetTitle("Close Out");
 
   return (

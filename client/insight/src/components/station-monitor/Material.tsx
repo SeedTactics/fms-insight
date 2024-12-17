@@ -42,6 +42,7 @@ import {
   memo,
   useState,
   Suspense,
+  ReactNode,
 } from "react";
 import * as jdenticon from "jdenticon";
 import {
@@ -196,7 +197,7 @@ export function MaterialAction({
   mat: Readonly<api.IInProcessMaterial>;
   displayActionForSinglePallet?: number;
   fsize?: MatCardFontSize;
-}): JSX.Element | null {
+}): ReactNode | null {
   const curSt = useAtomValue(currentStatus);
 
   switch (mat.action.type) {
@@ -364,7 +365,7 @@ const MatCard = forwardRef(function MatCard(
 
   const completed = props.mat.completedInspections || {};
 
-  let completedMsg: JSX.Element | undefined;
+  let completedMsg: ReactNode | undefined;
   if (props.focusInspectionType && completed[props.focusInspectionType]) {
     completedMsg = (
       <MatCardDetail fsize={props.fsize}>
@@ -890,10 +891,10 @@ function AddNoteButton({ setNotesOpen }: { setNotesOpen: (o: boolean) => void })
 }
 
 export interface MaterialDialogProps {
-  buttons?: JSX.Element;
+  buttons?: ReactNode;
   onClose?: () => void;
   allowNote?: boolean;
-  extraDialogElements?: JSX.Element;
+  extraDialogElements?: ReactNode;
   highlightProcess?: number;
 }
 
@@ -906,8 +907,8 @@ export const MaterialDialog = memo(function MaterialDialog(props: MaterialDialog
     if (props.onClose) props.onClose();
   }
 
-  let body: JSX.Element | undefined;
-  let notesBody: JSX.Element | undefined;
+  let body: ReactNode | undefined;
+  let notesBody: ReactNode | undefined;
   if (dialogOpen) {
     body = (
       <>

@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, ReactNode } from "react";
 import { Box, Fab, FormControl, styled } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { Card } from "@mui/material";
@@ -247,7 +247,7 @@ type SortColumn =
   | "DeviationBelow"
   | "Planned";
 
-export function ProgramSummaryTable(): JSX.Element {
+export function ProgramSummaryTable(): ReactNode {
   const report = useAtomValue(currentProgramReport);
   const [sortCol, setSortCol] = useState<SortColumn>("ProgramName");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -506,7 +506,7 @@ function ProgramContentCode() {
   );
 }
 
-export function ProgramContentDialog(): JSX.Element {
+export function ProgramContentDialog(): ReactNode {
   const [program, setProgramToShowContent] = useAtom(programToShowContent);
   const history = useAtomValue(programToShowHistory);
 
@@ -624,7 +624,7 @@ interface LastPage {
   readonly hasMore: boolean;
 }
 
-export function ProgramHistoryDialog(): JSX.Element {
+export function ProgramHistoryDialog(): ReactNode {
   const [program, setProgram] = useAtom(programToShowHistory);
   const [programForContent, setProgramForContent] = useAtom(programToShowContent);
 
@@ -833,7 +833,7 @@ function ProgNavHeader() {
   }
 }
 
-export function ProgramReportPage(): JSX.Element {
+export function ProgramReportPage(): ReactNode {
   useSetTitle("Programs");
 
   return (

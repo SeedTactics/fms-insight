@@ -52,10 +52,11 @@ import {
 } from "@mui/icons-material";
 
 import { RouteState, RouteLocation } from "./routes.js";
+import { ReactNode } from "react";
 
 export type ChooseModeItem =
   | { readonly type: "Subheader"; readonly caption: string }
-  | { readonly type: "Link"; route: RouteState; readonly icon: JSX.Element; readonly label: string };
+  | { readonly type: "Link"; route: RouteState; readonly icon: ReactNode; readonly label: string };
 
 export const defaultChooseModes: ReadonlyArray<ChooseModeItem> = [
   { type: "Subheader", caption: "Shop Floor" },
@@ -153,7 +154,7 @@ export interface ChooseModeProps {
   readonly modes?: ReadonlyArray<ChooseModeItem> | null;
 }
 
-export function ChooseMode(p: ChooseModeProps): JSX.Element {
+export function ChooseMode(p: ChooseModeProps): ReactNode {
   const navList = (
     <Paper>
       <List component="nav" dense>

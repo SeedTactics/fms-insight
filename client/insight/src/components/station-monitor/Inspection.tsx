@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { memo, useMemo } from "react";
+import { memo, ReactNode, useMemo } from "react";
 import { addDays } from "date-fns";
 import { Box, Typography } from "@mui/material";
 import { Button } from "@mui/material";
@@ -161,7 +161,7 @@ interface InspectionProps {
   readonly forceSingleColumn?: boolean;
 }
 
-export function Inspection({ focusInspectionType, forceSingleColumn }: InspectionProps): JSX.Element {
+export function Inspection({ focusInspectionType, forceSingleColumn }: InspectionProps): ReactNode {
   const matSummary = useAtomValue(last30MaterialSummary);
   const recent_inspections = useMemo(
     () => extractRecentInspections(matSummary.matsById, focusInspectionType),
@@ -279,7 +279,7 @@ function extractRecentInspections(
   };
 }
 
-export default function InspectionPage(props: InspectionProps): JSX.Element {
+export default function InspectionPage(props: InspectionProps): ReactNode {
   useSetTitle(
     props.focusInspectionType && props.focusInspectionType !== ""
       ? `Inspection ${props.focusInspectionType}`

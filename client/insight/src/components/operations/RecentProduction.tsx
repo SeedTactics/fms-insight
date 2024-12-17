@@ -43,7 +43,7 @@ import {
   Typography,
 } from "@mui/material";
 import { addDays, startOfToday } from "date-fns";
-import { useMemo, memo, useState } from "react";
+import { useMemo, memo, useState, ReactNode } from "react";
 import {
   Column,
   copyTableToClipboard,
@@ -266,7 +266,7 @@ const RecentProductionTable = memo(function RecentSchedules({
 }: {
   readonly columns: ReadonlyArray<ProdColumn>;
   readonly rows: ReadonlyArray<ProdRow>;
-}): JSX.Element {
+}): ReactNode {
   const sort = useColSort(ColumnId.Part, columns);
 
   return (
@@ -328,7 +328,7 @@ const RecentProductionToolbar = function RecentProductionToolbar({
   readonly setDay: (s: (d: Date) => Date) => void;
   readonly columns: ReadonlyArray<ProdColumn>;
   readonly rows: ReadonlyArray<ProdRow>;
-}): JSX.Element {
+}): ReactNode {
   return (
     <Box
       component="nav"
@@ -360,7 +360,7 @@ const RecentProductionToolbar = function RecentProductionToolbar({
   );
 };
 
-export function RecentProductionPage(): JSX.Element {
+export function RecentProductionPage(): ReactNode {
   useSetTitle("Recent Completed Parts");
   const [day, setDay] = useState<Date>(startOfToday);
   const columns = useColumns(day);

@@ -809,7 +809,7 @@ const WorkSerialDialog = memo(function WorkSerialDialog() {
   return <MaterialDialog buttons={<WorkSerialButtons />} />;
 });
 
-export const CurrentWorkordersPage = memo(function RecentWorkordersPage(): JSX.Element {
+export const CurrentWorkordersPage = memo(function RecentWorkordersPage(): ReactNode {
   useSetTitle("Workorders");
   const currentSt = useAtomValue(currentStatus);
   const display = useAtomValue(tableOrGantt);
