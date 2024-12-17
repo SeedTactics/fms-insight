@@ -75,7 +75,8 @@ public sealed class SyncSpec : IDisposable
         DownloadOnlyOrders = true,
         DbConnectionString = "unused db conn str",
       },
-      _makinoDB
+      _makinoDB,
+      new FMSSettings()
     );
 
     _devices = new Dictionary<int, PalletLocation>()

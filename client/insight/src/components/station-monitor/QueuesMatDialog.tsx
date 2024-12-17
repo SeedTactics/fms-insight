@@ -76,7 +76,7 @@ export function PrintOnClientButton({
   materialName?: string | null;
   operator?: string | null;
 }) {
-  const printRef = useRef(null);
+  const printRef = useRef<HTMLDivElement>(null);
   const print = useReactToPrint({
     contentRef: printRef,
     ignoreGlobalStyles: true,

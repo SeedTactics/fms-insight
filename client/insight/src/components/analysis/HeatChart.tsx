@@ -94,14 +94,16 @@ function useScales({
 
   const xMax = width - marginLeft - marginRight;
 
+  const dateRangeStart = dateRange[0];
+  const dateRangeEnd = dateRange[1];
   const xScale = useMemo(() => {
     const xValues: Array<Date> = [];
-    if (dateRange[1] < dateRange[0]) {
+    if (dateRangeEnd < dateRangeStart) {
       // should never happen, just do something in case
-      xValues.push(dateRange[0]);
+      xValues.push(dateRangeStart);
     } else {
-      let d = dateRange[0];
-      while (d < dateRange[1]) {
+      let d = dateRangeStart;
+      while (d < dateRangeEnd) {
         xValues.push(d);
         d = addDays(d, 1);
       }
@@ -112,8 +114,7 @@ function useScales({
       align: 0,
       padding: 0.05,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange[0], dateRange[1], xMax]);
+  }, [dateRangeStart, dateRangeEnd, xMax]);
 
   const { yScale, height, colorScale } = useMemo(() => {
     const yValues = new Set<string>();

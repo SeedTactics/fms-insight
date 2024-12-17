@@ -322,7 +322,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     )
     {
       var matLogs = logs.Where(e =>
-          e.LogType != LogType.PalletInStocker && e.LogType != LogType.PalletOnRotaryInbound
+          e.LogType != LogType.PalletInStocker
+          && e.LogType != LogType.PalletOnRotaryInbound
+          && e.LogType != LogType.PalletCycle
         )
         .ToList();
       matLogs.Should().BeInAscendingOrder(e => e.EndTimeUTC);

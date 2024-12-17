@@ -58,7 +58,7 @@ export interface SortableRegionProps {
   readonly matIds: ReadonlyArray<number>;
   readonly direction: "vertical" | "rect";
   readonly queueName: string;
-  readonly renderDragOverlay: (mat: Readonly<IInProcessMaterial>) => JSX.Element;
+  readonly renderDragOverlay: (mat: Readonly<IInProcessMaterial>) => ReactNode;
   readonly children?: ReactNode;
 }
 

@@ -90,7 +90,7 @@ function ShowLicense({ d }: { d: Date }) {
 function Brand() {
   const fmsInfo = useAtomValue(fmsInformation);
 
-  let tooltip: JSX.Element | string = "";
+  let tooltip: ReactNode | string = "";
   if (fmsInfo.name) {
     tooltip = (fmsInfo.name || "") + " " + (fmsInfo.version || "");
   } else {

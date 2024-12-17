@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { Fragment } from "react";
+import { Fragment, ReactNode } from "react";
 import * as api from "../../network/api.js";
 import { IconButton } from "@mui/material";
 import { Table } from "@mui/material";
@@ -249,7 +249,7 @@ export interface JobDetailsProps {
   readonly checkAnalysisMonth: boolean;
 }
 
-export function JobDetails(props: JobDetailsProps): JSX.Element {
+export function JobDetails(props: JobDetailsProps): ReactNode {
   const period = useAtomValue(selectedAnalysisPeriod);
   const matsFromEvents = useAtomValue(
     props.checkAnalysisMonth && period.type === "SpecificMonth"

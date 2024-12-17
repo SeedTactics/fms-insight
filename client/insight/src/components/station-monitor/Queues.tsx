@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useState, useMemo, memo, useCallback } from "react";
+import { useState, useMemo, memo, useCallback, ReactNode } from "react";
 import { Table, Box, styled } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
@@ -745,7 +745,7 @@ export const Queues = (props: QueueProps) => {
   );
 };
 
-export default function QueuesPage(props: QueueProps): JSX.Element {
+export default function QueuesPage(props: QueueProps): ReactNode {
   useSetTitle("Queues");
 
   return (

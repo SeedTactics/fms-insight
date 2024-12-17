@@ -331,7 +331,7 @@ const JobsHeader = memo(function JobsHeader(props: {
   );
 });
 
-export const RecentSchedulesCard = memo(function RecentSchedules(): JSX.Element {
+export const RecentSchedulesCard = memo(function RecentSchedules(): ReactNode {
   const [curEditNoteJob, setCurEditNoteJob] = useState<ScheduledJobDisplay | null>(null);
   const [sortBy, setSortBy] = useState<SortColumn>(SortColumn.Date);
   const [order, setOrder] = useState<"asc" | "desc">("desc");
@@ -396,7 +396,7 @@ export const RecentSchedulesCard = memo(function RecentSchedules(): JSX.Element 
   );
 });
 
-export function RecentSchedulesPage(): JSX.Element {
+export function RecentSchedulesPage(): ReactNode {
   useSetTitle("Scheduled Jobs");
   return (
     <main style={{ padding: "24px" }}>

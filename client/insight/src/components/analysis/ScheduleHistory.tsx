@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, ReactNode } from "react";
 import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs.js";
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { last30MaterialSummary, specificMonthMaterialSummary } from "../../cell-status/material-summary.js";
@@ -172,7 +172,7 @@ export function ScheduleTable() {
   );
 }
 
-export function ScheduleHistory(): JSX.Element {
+export function ScheduleHistory(): ReactNode {
   useSetTitle("Scheduled Jobs");
   return (
     <>

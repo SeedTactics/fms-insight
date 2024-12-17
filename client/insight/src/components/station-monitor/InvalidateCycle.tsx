@@ -47,6 +47,7 @@ import {
 import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAtomValue, useSetAtom } from "jotai";
+import { ReactNode } from "react";
 
 interface InvalidateCycle {
   readonly process: number | null;
@@ -200,7 +201,7 @@ export interface SwapMaterialProps {
   readonly setState: (s: SwapMaterialState) => void;
 }
 
-export function SwapMaterialDialogContent(props: SwapMaterialProps): JSX.Element {
+export function SwapMaterialDialogContent(props: SwapMaterialProps): ReactNode {
   const status = useAtomValue(currentStatus);
   const curMat = useAtomValue(inProcessMaterialInDialog);
 
