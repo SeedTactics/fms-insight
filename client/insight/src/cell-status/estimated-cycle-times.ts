@@ -266,56 +266,56 @@ export function splitElapsedTimeAmongChunk<T extends { material: ReadonlyArray<u
   }));
 }
 
-export function splitElapsedLoadTime<T extends { material: ReadonlyArray<unknown> }>(
-  cycles: LazySeq<T>,
-  getLuL: (c: T) => number,
-  getTime: (c: T) => Date,
-  getElapsedMins: (c: T) => number,
-  getActiveMins: (c: T) => number,
-): LazySeq<LogEntryWithSplitElapsed<T>> {
-  return chunkCyclesWithSimilarEndTime(cycles, getLuL, (c) => getTime(c))
-    .flatMap(([_, cycles]) => cycles)
-    .map((cs) => splitElapsedTimeAmongChunk(cs, getElapsedMins, getActiveMins))
-    .flatMap((chunk) => chunk);
-}
+// In older versions of FMS Insight, load cycles had a shared elapsed time among all events
+// for the cycle and each event had the total elapsed time for the whole combination of operations.
+// An update to the server changed this so that the server splits the elapsed time among the events.
+// But, for backwards compatibility, detect if we need to split the elpased time in the client too.
+export function calcElapsedForCycles(
+  cycles: LazySeq<Readonly<ILogEntry>>,
+): LazySeq<LogEntryWithSplitElapsed<Readonly<ILogEntry>>> {
+  return chunkCyclesWithSimilarEndTime(
+    cycles,
+    (c) => c.loc + " #" + c.locnum.toString(),
+    (c) => c.endUTC,
+  )
+    .flatMap(([_lul, chunks]) => chunks)
+    .flatMap((chunk) => {
+      // Check if need to split the elapsed
+      const chunk0Elapsed = durationToMinutes(chunk[0].elapsed);
+      const shouldSplit =
+        chunk.length >= 2 && chunk.every((c) => durationToMinutes(c.elapsed) === chunk0Elapsed);
 
-export function activeMinutes(
-  cycle: Readonly<ILogEntry>,
-  stats: StatisticalCycleTime | null | undefined,
-): number {
-  const aMins = durationToMinutes(cycle.active);
-  if (cycle.active === "" || aMins <= 0 || cycle.material.length === 0) {
-    return (stats?.expectedCycleMinutesForSingleMat ?? 0) * cycle.material.length;
-  } else {
-    return aMins;
-  }
+      if (shouldSplit) {
+        return splitElapsedTimeAmongChunk(
+          chunk,
+          (c) => durationToMinutes(c.elapsed),
+          (c) => (c.active === "" ? -1 : durationToMinutes(c.active)),
+        );
+      } else {
+        return chunk.map((c) => ({
+          cycle: c,
+          elapsedForSingleMaterialMinutes:
+            c.material.length > 0 ? durationToMinutes(c.elapsed) / c.material.length : 0,
+        }));
+      }
+    });
 }
 
 function estimateCycleTimesOfParts(cycles: Iterable<Readonly<ILogEntry>>): EstimatedCycleTimes {
-  const machines = LazySeq.of(cycles)
-    .filter((c) => c.type === LogType.MachineCycle && !c.startofcycle && c.material.length > 0)
-    .toLookup((c) => PartAndStationOperation.ofLogCycle(c))
-    .mapValues((cyclesForPartAndStat) =>
-      estimateCycleTimes(
-        cyclesForPartAndStat.map((cycle) => durationToMinutes(cycle.elapsed) / cycle.material.length),
-      ),
-    );
-
-  const loads = splitElapsedLoadTime(
+  return calcElapsedForCycles(
     LazySeq.of(cycles).filter(
-      (c) => c.type === LogType.LoadUnloadCycle && !c.startofcycle && c.material.length > 0,
+      (c) =>
+        (c.type === LogType.LoadUnloadCycle || c.type === LogType.MachineCycle) &&
+        !c.startofcycle &&
+        c.loc !== "" &&
+        c.material.length > 0,
     ),
-    (c) => c.locnum,
-    (c) => c.endUTC,
-    (c) => durationToMinutes(c.elapsed),
-    (c) => (c.active === "" ? -1 : durationToMinutes(c.active)),
   )
-    .toLookup((c) => PartAndStationOperation.ofLogCycle(c.cycle))
-    .mapValues((cyclesForPartAndStat) =>
-      estimateCycleTimes(cyclesForPartAndStat.map((c) => c.elapsedForSingleMaterialMinutes)),
-    );
-
-  return machines.union(loads);
+    .toLookup(
+      (c) => PartAndStationOperation.ofLogCycle(c.cycle),
+      (c) => c.elapsedForSingleMaterialMinutes,
+    )
+    .mapValues(estimateCycleTimes);
 }
 
 export const setLast30EstimatedCycleTimes = atom(null, (_, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {

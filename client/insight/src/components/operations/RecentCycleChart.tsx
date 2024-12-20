@@ -523,11 +523,8 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
 
   const cycles = useMemo(() => {
     const cutoff = addHours(new Date(), -12);
-    return recentCycles(
-      last30Cycles.valuesToLazySeq().filter((e) => e.x >= cutoff),
-      estimated,
-    );
-  }, [last30Cycles, estimated]);
+    return recentCycles(last30Cycles.valuesToLazySeq().filter((e) => e.endTime >= cutoff));
+  }, [last30Cycles]);
 
   const current = useMemo(() => {
     return currentCycles(currentSt, estimated);

@@ -101,8 +101,8 @@ export function binCyclesByDayAndPart(
   const activeTimeByMatId = LazySeq.of(cycles)
     .filter(
       (cycle) =>
-        cycle.x >= start &&
-        cycle.x <= end &&
+        cycle.endTime >= start &&
+        cycle.endTime <= end &&
         !cycle.isLabor &&
         cycle.activeMinutes > 0 &&
         cycle.material.length > 0,

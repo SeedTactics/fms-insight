@@ -63,7 +63,11 @@ export class DayAndStation {
   }
 }
 
-function splitTimeToDays(startTime: Date, endTime: Date, mins: number): Array<{ day: Date; value: number }> {
+function splitTimeToDays(
+  startTime: Date,
+  endTime: Date,
+  mins: number,
+): ReadonlyArray<{ day: Date; value: number }> {
   const startDay = startOfDay(startTime);
   const endDay = startOfDay(endTime);
   if (startDay.getTime() === endDay.getTime()) {
@@ -90,45 +94,48 @@ function splitTimeToDays(startTime: Date, endTime: Date, mins: number): Array<{ 
   }
 }
 
-export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): HashMap<DayAndStation, number> {
-  return LazySeq.of(cycles)
-    .flatMap((point) =>
-      // point.x is the end time, point.y is elapsed in minutes, so point.x - point.y is start time
-      // also, use addSeconds since addMinutes from date-fns rounds to nearest minute
-      splitTimeToDays(addSeconds(point.x, -point.y * 60), point.x, point.activeMinutes).map((x) => ({
-        ...x,
-        station: stat_name_and_num(point.stationGroup, point.stationNumber),
-        isLabor: point.isLabor,
-      })),
+function binCycles(
+  cycles: Iterable<PartCycleData>,
+  f: (c: PartCycleData) => number,
+): HashMap<DayAndStation, number> {
+  return chunkCyclesWithSimilarEndTime(
+    LazySeq.of(cycles),
+    (c) => stat_name_and_num(c.stationGroup, c.stationNumber),
+    (c) => c.endTime,
+  )
+    .flatMap(([statNameAndNum, cyclesForStat]) =>
+      cyclesForStat
+        .flatMap((chunk) => {
+          // sum elapsed time for chunk and subtract from end time to get start time
+          const elapForChunkMins = LazySeq.of(chunk).sumBy(
+            (c) => c.elapsedMinsPerMaterial * c.material.length,
+          );
+          const startTime = addSeconds(chunk[0].endTime, -elapForChunkMins * 60);
+
+          // sum value for chunk
+          const valForChunk = LazySeq.of(chunk).sumBy((c) => f(c));
+
+          return splitTimeToDays(startTime, chunk[0].endTime, valForChunk);
+        })
+        .map((s) => ({
+          ...s,
+          statNameAndNum,
+        })),
     )
-    .toHashMap(
-      (p) => [new DayAndStation(p.day, p.station), p.value],
-      (v1, v2) => v1 + v2,
+    .buildHashMap<DayAndStation, number>(
+      (p) => new DayAndStation(p.day, p.statNameAndNum),
+      (old, p) => p.value + (old ?? 0),
     );
+}
+
+export function binActiveCyclesByDayAndStat(cycles: Iterable<PartCycleData>): HashMap<DayAndStation, number> {
+  return binCycles(cycles, (c) => c.activeMinutes);
 }
 
 export function binOccupiedCyclesByDayAndStat(
   cycles: Iterable<PartCycleData>,
 ): HashMap<DayAndStation, number> {
-  return chunkCyclesWithSimilarEndTime(
-    LazySeq.of(cycles),
-    (point) => stat_name_and_num(point.stationGroup, point.stationNumber),
-    (c) => c.x,
-  )
-    .flatMap(([station, cyclesForStat]) =>
-      cyclesForStat.flatMap((chunk) =>
-        // point.x is the end time, point.y is elapsed in minutes, so point.x - point.y is start time
-        splitTimeToDays(addSeconds(chunk[0].x, -chunk[0].y * 60), chunk[0].x, chunk[0].y).map((split) => ({
-          ...split,
-          station: station,
-          isLabor: chunk[0].isLabor,
-        })),
-      ),
-    )
-    .toHashMap(
-      (p) => [new DayAndStation(p.day, p.station), p.value] as [DayAndStation, number],
-      (v1, v2) => v1 + v2,
-    );
+  return binCycles(cycles, (c) => c.elapsedMinsPerMaterial * c.material.length);
 }
 
 // --------------------------------------------------------------------------------
@@ -298,7 +305,7 @@ export function buildOeeSeries(
   statUse: Iterable<SimStationUse>,
 ): ReadonlyArray<OEEBarSeries> {
   const filteredCycles = LazySeq.of(cycles).filter(
-    (e) => (ty === "labor") === e.isLabor && e.x >= start && e.x <= end,
+    (e) => (ty === "labor") === e.isLabor && e.endTime >= start && e.endTime <= end,
   );
   const actualBins = binActiveCyclesByDayAndStat(filteredCycles);
   const filteredStatUse = LazySeq.of(statUse).filter(
