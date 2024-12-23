@@ -42,7 +42,7 @@ import {
 } from "../cell-status/estimated-cycle-times.js";
 import { PartCycleData, stat_name_and_num } from "../cell-status/station-cycles.js";
 import { PalletCyclesByPallet } from "../cell-status/pallet-cycles.js";
-import { HashSet, HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { HashMap, LazySeq, OrderedSet, OrderedMap } from "@seedtactics/immutable-collections";
 
 export interface PartAndProcess {
   readonly part: string;
@@ -61,19 +61,19 @@ function extractFilterOptions(
   cycles: Iterable<PartCycleData>,
   selectedPart?: PartAndProcess,
 ): CycleFilterOptions {
-  const palNames = new Set<number>();
-  const lulNames = new Set<string>();
-  const mcNames = new Set<string>();
-  let partNames = HashMap.empty<string, HashSet<number>>();
-  let oper = HashSet.empty<PartAndStationOperation>();
+  let palNames = OrderedSet.empty<number>();
+  let lulNames = OrderedSet.empty<string>();
+  let mcNames = OrderedSet.empty<string>();
+  let partNames = OrderedMap.empty<string, OrderedSet<number>>();
+  let oper = OrderedSet.empty<PartAndStationOperation>();
 
   for (const c of cycles) {
-    palNames.add(c.pallet);
+    palNames = palNames.add(c.pallet);
 
     if (c.isLabor) {
-      lulNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
+      lulNames = lulNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
     } else {
-      mcNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
+      mcNames = mcNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
 
       if (
         selectedPart &&
@@ -85,25 +85,19 @@ function extractFilterOptions(
     }
 
     for (const m of c.material) {
-      partNames = partNames.modify(m.part, (old) => (old ?? HashSet.empty()).add(m.proc));
+      partNames = partNames.alter(m.part, (old) => (old ?? OrderedSet.empty()).add(m.proc));
     }
   }
 
   return {
-    allPalletNames: Array.from(palNames).sort(),
-    allLoadStationNames: Array.from(lulNames).sort((a, b) => a.localeCompare(b)),
-    allMachineNames: Array.from(mcNames).sort((a, b) => a.localeCompare(b)),
-    allPartAndProcNames: LazySeq.of(partNames)
-      .sortBy(([p, _]) => p)
-      .flatMap(([part, procs]) => procs.toLazySeq().map((proc) => ({ part: part, proc: proc })))
-      .toSortedArray(
-        (n) => n.part,
-        (n) => n.proc,
-      ),
-    allMachineOperations: oper.toLazySeq().toSortedArray(
-      (p) => p.statGroup,
-      (p) => p.operation,
-    ),
+    allPalletNames: palNames.toAscLazySeq().toRArray(),
+    allLoadStationNames: lulNames.toAscLazySeq().toRArray(),
+    allMachineNames: mcNames.toAscLazySeq().toRArray(),
+    allPartAndProcNames: partNames
+      .toAscLazySeq()
+      .flatMap(([part, procs]) => procs.toAscLazySeq().map((proc) => ({ part: part, proc: proc })))
+      .toRArray(),
+    allMachineOperations: oper.toAscLazySeq().toRArray(),
   };
 }
 

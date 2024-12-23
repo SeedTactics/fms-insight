@@ -73,7 +73,7 @@ enum StationMonitorType {
 export function StationToolbar(): ReactNode {
   const [route, setRoute] = useAtom(currentRoute);
   const inspTypes = useAtomValue(last30InspectionTypes);
-  const queueNames = Object.keys(useAtomValue(currentStatus).queues).sort();
+  const queueNames = Object.keys(useAtomValue(currentStatus).queues).sort((a, b) => a.localeCompare(b));
   const theme = useTheme();
   const full = useMediaQuery(theme.breakpoints.down("md"));
 
