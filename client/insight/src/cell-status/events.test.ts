@@ -31,9 +31,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { fakeCycle } from "../../test/events.fake.js";
+import { fakeCycle, fakeLoadOrUnload } from "../../test/events.fake.js";
 import { lastEventCounter, onLoadLast30Log, onLoadSpecificMonthLog, onServerEvent } from "./loading.js";
-import { addDays } from "date-fns";
+import { addDays, addMinutes } from "date-fns";
 import { last30BufferEntries, specificMonthBufferEntries } from "./buffers.js";
 import { last30EstimatedCycleTimes, specificMonthEstimatedCycleTimes } from "./estimated-cycle-times.js";
 import { last30Inspections, specificMonthInspections } from "./inspections.js";
@@ -46,6 +46,7 @@ import { it, expect } from "vitest";
 
 import { toRawJs } from "../../test/to-raw-js.js";
 import { createStore } from "jotai";
+import { LazySeq } from "@seedtactics/immutable-collections";
 
 function checkLast30(snapshot: ReturnType<typeof createStore>, msg: string) {
   expect(toRawJs(snapshot.get(last30BufferEntries))).toMatchSnapshot(msg + " - buffers");
@@ -144,4 +145,128 @@ it("processes events in a specific month", () => {
   expect(toRawJs(snapshot.get(specificMonthMaterialSummary))).toMatchSnapshot("material summary");
   expect(toRawJs(snapshot.get(specificMonthPalletCycles))).toMatchSnapshot("pallet cycles");
   expect(toRawJs(snapshot.get(specificMonthStationCycles))).toMatchSnapshot("station cycles");
+});
+
+it("splits load elapsed times", () => {
+  const evts = [
+    // load and unload cycles with same time and same elapsed time, should have the elapsed time split
+
+    // use an elapsed time of 30 mins for 4 parts
+    // but the load has 16 active mins and unload 8, so time is split
+    // so the load gets 16/24 * 30 = 20 mins / 2 mats and the unload 10 mins / 2 mats
+    ...fakeLoadOrUnload({
+      counter: 300,
+      part: "part111",
+      numMats: 2,
+      proc: 2,
+      pal: 8,
+      isLoad: true,
+      time: new Date(2024, 12, 14, 11, 4, 5),
+      elapsedMin: 30,
+      activeMin: 8,
+    }),
+    ...fakeLoadOrUnload({
+      counter: 400,
+      part: "part111",
+      numMats: 2,
+      proc: 4,
+      pal: 2,
+      isLoad: false,
+      time: new Date(2024, 12, 14, 11, 4, 5), // same time
+      elapsedMin: 30, // same elapsed
+      activeMin: 4, // half the active time
+    }),
+  ];
+
+  const store = createStore();
+  store.set(onLoadLast30Log, evts);
+
+  const cycles = store.get(last30StationCycles);
+
+  expect(cycles.size).toBe(2);
+
+  expect(cycles.get(300)?.elapsedMinsPerMaterial).toBe((30 * 16) / 24 / 2);
+  expect(cycles.get(400)?.elapsedMinsPerMaterial).toBe((30 * 8) / 24 / 2);
+});
+
+it("doesn't split load elapsed times if they differ", () => {
+  const evts = [
+    // load and unload cycles with same time and different elapsed time (already split by the server)
+    // should not be split again
+
+    ...fakeLoadOrUnload({
+      counter: 300,
+      part: "part111",
+      numMats: 2,
+      proc: 1,
+      pal: 9,
+      isLoad: true,
+      time: new Date(2024, 12, 16, 11, 4, 5),
+      elapsedMin: 22,
+      activeMin: 8,
+    }),
+    ...fakeLoadOrUnload({
+      counter: 400,
+      part: "part111",
+      numMats: 2,
+      proc: 2,
+      pal: 7,
+      isLoad: false,
+      time: new Date(2024, 12, 16, 11, 4, 5), // same time
+      elapsedMin: 6,
+      activeMin: 4,
+    }),
+  ];
+
+  const store = createStore();
+  store.set(onLoadLast30Log, evts);
+
+  const cycles = store.get(last30StationCycles);
+
+  expect(cycles.size).toBe(2);
+
+  expect(cycles.get(300)?.elapsedMinsPerMaterial).toBe(22 / 2);
+  expect(cycles.get(400)?.elapsedMinsPerMaterial).toBe(6 / 2);
+});
+
+it("detects outliers", () => {
+  const evts = LazySeq.ofRange(1, 100)
+    .flatMap((i) =>
+      fakeLoadOrUnload({
+        counter: 2 * i,
+        numMats: 2,
+        part: "part111",
+        proc: 4,
+        pal: 2,
+        isLoad: true,
+        time: addMinutes(new Date(2024, 12, 14, 9, 4, 5), i),
+        activeMin: 30,
+        // elapsed is random between 30 and 40
+        elapsedMin: Math.random() * 10 + 30,
+      }),
+    )
+    .concat(
+      // add an outlier
+      fakeLoadOrUnload({
+        counter: 300,
+        numMats: 2,
+        part: "part111",
+        proc: 4,
+        pal: 2,
+        isLoad: true,
+        time: new Date(2024, 12, 20, 10, 4, 5),
+        elapsedMin: 100,
+        activeMin: 30,
+      }),
+    )
+    .toRArray();
+
+  const store = createStore();
+  store.set(onLoadLast30Log, evts);
+
+  expect(store.get(last30StationCycles).size).toBe(100);
+  for (let i = 1; i < 100; i++) {
+    expect(store.get(last30StationCycles).get(2 * i)?.isOutlier).toBe(false);
+  }
+  expect(store.get(last30StationCycles).get(300)?.isOutlier).toBe(true);
 });
