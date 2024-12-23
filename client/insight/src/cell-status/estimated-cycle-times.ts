@@ -123,7 +123,7 @@ export function isOutlierAbove(s: StatisticalCycleTime, mins: number): boolean {
 }
 
 function median(vals: LazySeq<number>): number {
-  const sorted = vals.toMutableArray().sort();
+  const sorted = vals.toMutableArray().sort((a, b) => a - b);
   const cnt = sorted.length;
   if (cnt === 0) {
     return 0;

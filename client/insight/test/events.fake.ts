@@ -251,6 +251,7 @@ export function fakeLoadOrUnload({
   proc,
   pal,
   isLoad,
+  lulNum,
   time,
   elapsedMin,
   activeMin,
@@ -262,6 +263,7 @@ export function fakeLoadOrUnload({
   pal?: number;
   isLoad: boolean;
   time: Date;
+  lulNum?: number;
   elapsedMin: number;
   activeMin?: number;
 }): ReadonlyArray<ILogEntry> {
@@ -278,7 +280,7 @@ export function fakeLoadOrUnload({
     startofcycle: false,
     endUTC: time,
     loc: "L/U",
-    locnum: 1,
+    locnum: lulNum ?? 1,
     result: isLoad ? "LOAD" : "UNLOAD",
     program: isLoad ? "LOAD" : "UNLOAD",
     elapsed: `PT${elapsedMin}M`,
