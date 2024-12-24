@@ -5476,7 +5476,7 @@ namespace MachineWatchTest
 
       // The sends to external queues happen on a new thread so need to wait
       int numWaits = 0;
-      while (server.LogEntries.Count() < 1 && numWaits < 10)
+      while (server.LogEntries.Count() < 1 && numWaits < 20)
       {
         await Task.Delay(100);
         numWaits++;
