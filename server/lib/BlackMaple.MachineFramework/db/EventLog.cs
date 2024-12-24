@@ -743,24 +743,10 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "SELECT MAX(ForeignID) FROM stations WHERE ForeignID IS NOT NULL";
         var maxStat = cmd.ExecuteScalar();
 
-        cmd.CommandText = "SELECT MAX(ForeignID) FROM pendingloads WHERE ForeignID IS NOT NULL";
-        var maxLoad = cmd.ExecuteScalar();
-
-        if (maxStat == DBNull.Value && maxLoad == DBNull.Value)
+        if (maxStat == DBNull.Value)
           return "";
-        else if (maxStat != DBNull.Value && maxLoad == DBNull.Value)
-          return (string)maxStat;
-        else if (maxStat == DBNull.Value && maxLoad != DBNull.Value)
-          return (string)maxLoad;
         else
-        {
-          var s = (string)maxStat;
-          var l = (string)maxLoad;
-          if (s.CompareTo(l) > 0)
-            return s;
-          else
-            return l;
-        }
+          return (string)maxStat;
       }
     }
 
