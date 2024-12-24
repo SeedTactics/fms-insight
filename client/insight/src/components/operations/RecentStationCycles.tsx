@@ -145,14 +145,14 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
       });
     }
   }, [cycles, ty, selectedPart, selectedPallet, selectedOperation, showGraph]);
-  const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
+  const curOperation = selectedPart ? (selectedOperation ?? points.allMachineOperations[0]) : undefined;
   const plannedMinutes = useMemo(() => {
-    if (curOperation) {
+    if (curOperation && ty === "machine") {
       return plannedOperationMinutes(points, false);
     } else {
       return undefined;
     }
-  }, [points, curOperation]);
+  }, [points, ty, curOperation]);
 
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
@@ -290,7 +290,7 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
             set_date_zoom_range={setChartZoom}
             yZoom={yZoom}
             setYZoom={setYZoom}
-            stats={curOperation ? estimatedCycleTimes.get(curOperation) : undefined}
+            stats={curOperation && ty === "machine" ? estimatedCycleTimes.get(curOperation) : undefined}
             partCntPerPoint={
               curOperation ? LazySeq.of(points.data).head()?.[1]?.[0]?.material?.length : undefined
             }
