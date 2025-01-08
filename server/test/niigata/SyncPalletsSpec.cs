@@ -1188,6 +1188,19 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             .Should()
             .AllSatisfy(e => e.LocationNum.Should().Be(2))
         );
+
+      foreach (var m in byMat)
+      {
+        CheckSingleMaterial(
+          m,
+          m.Key,
+          "uniq1",
+          "part1",
+          1,
+          pals: new[] { new[] { 1, 2 } },
+          machGroups: new[] { new[] { "TestMC" } }
+        );
+      }
     }
 
     [Fact]
