@@ -69,7 +69,7 @@ namespace BlackMaple.FMSInsight.Niigata
     private static Serilog.ILogger Log = Serilog.Log.ForContext<AssignNewRoutesOnPallets>();
     private readonly NiigataStationNames _statNames;
 
-    public delegate bool ExtraPartFilterDelegate(
+    public delegate MachineFramework.ProcPathInfo ExtraPathFilterDelegate(
       MachineFramework.Job job,
       int procNum,
       int pathNum,
@@ -80,12 +80,12 @@ namespace BlackMaple.FMSInsight.Niigata
       IReadOnlyList<(MachineFramework.HistoricJob job, int process, int path)> newPaths
     );
 
-    private readonly ExtraPartFilterDelegate _extraPathFilter;
+    private readonly ExtraPathFilterDelegate _extraPathFilter;
     private readonly PathToPriorityDelegate _pathToPriority;
 
     public AssignNewRoutesOnPallets(
       NiigataStationNames n,
-      ExtraPartFilterDelegate extraPathFilter = null,
+      ExtraPathFilterDelegate extraPathFilter = null,
       PathToPriorityDelegate pathToPriority = null
     )
     {
@@ -267,9 +267,10 @@ namespace BlackMaple.FMSInsight.Niigata
           )
         )
         .SelectMany(j =>
-          j.proc.Paths.Select(
+          j.proc.Paths.SelectMany(
             (path, pathIdx) =>
-              new JobPath
+            {
+              var p = new JobPath
               {
                 Job = j.job,
                 PathInfo = path,
@@ -277,16 +278,29 @@ namespace BlackMaple.FMSInsight.Niigata
                 Path = pathIdx + 1,
                 Precedence = j.job.Precedence[j.procNum - 1][pathIdx],
                 RemainingProc1ToRun = j.procNum == 1 ? j.job.RemainingToStart > 0 : false,
+              };
+              if (_extraPathFilter == null)
+              {
+                return [p];
               }
+              else
+              {
+                var newPath = _extraPathFilter(j.job, j.procNum, pathIdx + 1, path);
+                if (newPath == null)
+                {
+                  return Enumerable.Empty<JobPath>();
+                }
+                else
+                {
+                  return [p with { PathInfo = newPath }];
+                }
+              }
+            }
           )
         )
         .Where(j => j.Process > 1 || !string.IsNullOrEmpty(j.PathInfo.InputQueue) || j.RemainingProc1ToRun)
         .Where(j => loadStation == null || j.PathInfo.Load.Contains(loadStation.Value))
         .Where(j => j.PathInfo.PalletNums.Contains(pallet))
-        .Where(j =>
-          _extraPathFilter == null
-          || _extraPathFilter(job: j.Job, procNum: j.Process, pathNum: j.Path, pathInfo: j.PathInfo)
-        )
         .OrderBy(j => j.Precedence)
         .ToImmutableList();
     }
