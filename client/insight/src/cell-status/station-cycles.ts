@@ -42,7 +42,7 @@ import {
 } from "./estimated-cycle-times.js";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { addDays } from "date-fns";
-import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { HashMap } from "@seedtactics/immutable-collections";
 import { Atom, atom } from "jotai";
 
 export interface PartCycleData {
@@ -126,14 +126,7 @@ function convertOldLogsToCycles(
   estimateCycleTimes: EstimatedCycleTimes,
   log: ReadonlyArray<Readonly<ILogEntry>>,
 ): StationCyclesByCntr {
-  return calcElapsedForCycles(
-    LazySeq.of(log).filter(
-      (e) =>
-        (e.type === LogType.LoadUnloadCycle || e.type === LogType.MachineCycle) &&
-        !e.startofcycle &&
-        e.loc !== "",
-    ),
-  )
+  return calcElapsedForCycles(log)
     .collect((c) => convertLogToCycle(estimateCycleTimes, c.cycle, c.elapsedForSingleMaterialMinutes))
     .buildHashMap((c) => c.cntr);
 }

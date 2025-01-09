@@ -270,20 +270,35 @@ export function splitElapsedTimeAmongChunk<T extends { material: ReadonlyArray<u
 // for the cycle and each event had the total elapsed time for the whole combination of operations.
 // An update to the server changed this so that the server splits the elapsed time among the events.
 // But, for backwards compatibility, detect if we need to split the elpased time in the client too.
+// To detect new vs old, the new version also started adding the material IDs to pallet begin and end events,
+// so if the material appears in a begin/end event that means it does not need to be signaled.
 export function calcElapsedForCycles(
-  cycles: LazySeq<Readonly<ILogEntry>>,
+  eventLog: ReadonlyArray<Readonly<ILogEntry>>,
 ): LazySeq<LogEntryWithSplitElapsed<Readonly<ILogEntry>>> {
+  const matsInPalEvts = new Set<number>();
+  for (const e of eventLog) {
+    if (e.type === LogType.PalletCycle && e.material.length > 0) {
+      for (const m of e.material) {
+        matsInPalEvts.add(m.id);
+      }
+    }
+  }
+
   return chunkCyclesWithSimilarEndTime(
-    cycles,
+    LazySeq.of(eventLog).filter(
+      (e) =>
+        (e.type === LogType.LoadUnloadCycle || e.type === LogType.MachineCycle) &&
+        !e.startofcycle &&
+        e.loc !== "",
+    ),
     (c) => c.loc + " #" + c.locnum.toString(),
     (c) => c.endUTC,
   )
     .flatMap(([_lul, chunks]) => chunks)
     .flatMap((chunk) => {
       // Check if need to split the elapsed
-      const chunk0Elapsed = durationToMinutes(chunk[0].elapsed);
       const shouldSplit =
-        chunk.length >= 2 && chunk.every((c) => durationToMinutes(c.elapsed) === chunk0Elapsed);
+        chunk.length >= 2 && chunk.every((c) => c.material.every((m) => !matsInPalEvts.has(m.id)));
 
       if (shouldSplit) {
         return splitElapsedTimeAmongChunk(
@@ -301,16 +316,8 @@ export function calcElapsedForCycles(
     });
 }
 
-function estimateCycleTimesOfParts(cycles: Iterable<Readonly<ILogEntry>>): EstimatedCycleTimes {
-  return calcElapsedForCycles(
-    LazySeq.of(cycles).filter(
-      (c) =>
-        (c.type === LogType.LoadUnloadCycle || c.type === LogType.MachineCycle) &&
-        !c.startofcycle &&
-        c.loc !== "" &&
-        c.material.length > 0,
-    ),
-  )
+function estimateCycleTimesOfParts(cycles: ReadonlyArray<Readonly<ILogEntry>>): EstimatedCycleTimes {
+  return calcElapsedForCycles(cycles)
     .toLookup(
       (c) => PartAndStationOperation.ofLogCycle(c.cycle),
       (c) => c.elapsedForSingleMaterialMinutes,
