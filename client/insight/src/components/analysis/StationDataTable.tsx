@@ -84,8 +84,8 @@ function buildColumns(
       id: ColumnId.Date,
       numeric: false,
       label: "Date",
-      getDisplay: (c) => c.x.toLocaleString(),
-      getForSort: (c) => c.x.getTime(),
+      getDisplay: (c) => c.endTime.toLocaleString(),
+      getForSort: (c) => c.endTime.getTime(),
     },
     {
       id: ColumnId.Part,
@@ -157,7 +157,7 @@ function buildColumns(
       id: ColumnId.ElapsedMin,
       numeric: true,
       label: "Elapsed Min",
-      getDisplay: (c) => c.y.toFixed(1),
+      getDisplay: (c) => (c.elapsedMinsPerMaterial * c.material.length).toFixed(1),
     },
     {
       id: ColumnId.ActiveMin,
@@ -212,12 +212,12 @@ function extractData(
 
   const data = LazySeq.of(points.values()).flatMap((x) => x);
   const arr = currentZoom
-    ? data.filter((p) => p.x >= currentZoom.start && p.x <= currentZoom.end).toMutableArray()
+    ? data.filter((p) => p.endTime >= currentZoom.start && p.endTime <= currentZoom.end).toMutableArray()
     : data.toMutableArray();
   return arr.sort(
     mkCompareByProperties(
       order === "desc" ? { desc: getDataC } : { asc: getDataC },
-      order === "desc" ? { desc: (a) => a.x.getTime() } : { asc: (a) => a.x.getTime() },
+      order === "desc" ? { desc: (a) => a.endTime.getTime() } : { asc: (a) => a.endTime.getTime() },
     ),
   );
 }

@@ -385,7 +385,10 @@ Map {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 306,
+    "elapsedMinsPerMaterial": 3,
+    "endTime": 2018-01-06T09:45:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 4,
@@ -405,14 +408,15 @@ Map {
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 2,
-    "x": 2018-01-06T09:45:05.000Z,
-    "y": 3,
   },
   "304" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 18,
     "cntr": 304,
+    "elapsedMinsPerMaterial": 18,
+    "endTime": 2018-01-06T09:35:05.000Z,
     "isLabor": false,
+    "isOutlier": false,
     "material": [
       {
         "face": 4,
@@ -432,14 +436,15 @@ Map {
     "part": "part222",
     "stationGroup": "MC",
     "stationNumber": 1,
-    "x": 2018-01-06T09:35:05.000Z,
-    "y": 18,
   },
   "206" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 206,
+    "elapsedMinsPerMaterial": 3,
+    "endTime": 2018-01-31T09:51:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 2,
@@ -459,14 +464,15 @@ Map {
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 2,
-    "x": 2018-01-31T09:51:05.000Z,
-    "y": 3,
   },
   "300" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 300,
+    "elapsedMinsPerMaterial": 6,
+    "endTime": 2018-01-06T09:09:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 4,
@@ -486,14 +492,15 @@ Map {
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 1,
-    "x": 2018-01-06T09:09:05.000Z,
-    "y": 6,
   },
   "204" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 24,
     "cntr": 204,
+    "elapsedMinsPerMaterial": 24,
+    "endTime": 2018-01-31T09:41:05.000Z,
     "isLabor": false,
+    "isOutlier": false,
     "material": [
       {
         "face": 2,
@@ -513,14 +520,15 @@ Map {
     "part": "part222",
     "stationGroup": "MC",
     "stationNumber": 1,
-    "x": 2018-01-31T09:41:05.000Z,
-    "y": 24,
   },
   "106" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 106,
+    "elapsedMinsPerMaterial": 3,
+    "endTime": 2018-02-02T09:57:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 9,
@@ -540,14 +548,15 @@ Map {
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 2,
-    "x": 2018-02-02T09:57:05.000Z,
-    "y": 3,
   },
   "200" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 200,
+    "elapsedMinsPerMaterial": 6,
+    "endTime": 2018-01-31T09:09:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 2,
@@ -567,14 +576,15 @@ Map {
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 1,
-    "x": 2018-01-31T09:09:05.000Z,
-    "y": 6,
   },
   "104" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 30,
     "cntr": 104,
+    "elapsedMinsPerMaterial": 30,
+    "endTime": 2018-02-02T09:47:05.000Z,
     "isLabor": false,
+    "isOutlier": false,
     "material": [
       {
         "face": 9,
@@ -594,14 +604,15 @@ Map {
     "part": "part111",
     "stationGroup": "MC",
     "stationNumber": 1,
-    "x": 2018-02-02T09:47:05.000Z,
-    "y": 30,
   },
   "100" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 100,
+    "elapsedMinsPerMaterial": 6,
+    "endTime": 2018-02-02T09:09:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 9,
@@ -621,8 +632,6 @@ Map {
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 1,
-    "x": 2018-02-02T09:09:05.000Z,
-    "y": 6,
   },
 }
 `;
@@ -973,7 +982,10 @@ Map {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 406,
+    "elapsedMinsPerMaterial": 3,
+    "endTime": 2018-02-08T09:39:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 10,
@@ -993,14 +1005,15 @@ Map {
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 2,
-    "x": 2018-02-08T09:39:05.000Z,
-    "y": 3,
   },
   "404" => {
     "MAD_aboveMinutes": 0,
     "activeMinutes": 12,
     "cntr": 404,
+    "elapsedMinsPerMaterial": 12,
+    "endTime": 2018-02-08T09:29:05.000Z,
     "isLabor": false,
+    "isOutlier": false,
     "material": [
       {
         "face": 10,
@@ -1020,14 +1033,15 @@ Map {
     "part": "part111",
     "stationGroup": "MC",
     "stationNumber": 1,
-    "x": 2018-02-08T09:29:05.000Z,
-    "y": 12,
   },
   "400" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 400,
+    "elapsedMinsPerMaterial": 6,
+    "endTime": 2018-02-08T09:09:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 10,
@@ -1047,14 +1061,15 @@ Map {
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 1,
-    "x": 2018-02-08T09:09:05.000Z,
-    "y": 6,
   },
   "206" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 206,
+    "elapsedMinsPerMaterial": 3,
+    "endTime": 2018-01-31T09:51:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 1,
@@ -1074,14 +1089,15 @@ Map {
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 2,
-    "x": 2018-01-31T09:51:05.000Z,
-    "y": 3,
   },
   "204" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 24,
     "cntr": 204,
+    "elapsedMinsPerMaterial": 24,
+    "endTime": 2018-01-31T09:41:05.000Z,
     "isLabor": false,
+    "isOutlier": false,
     "material": [
       {
         "face": 1,
@@ -1101,14 +1117,15 @@ Map {
     "part": "part222",
     "stationGroup": "MC",
     "stationNumber": 1,
-    "x": 2018-01-31T09:41:05.000Z,
-    "y": 24,
   },
   "106" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 106,
+    "elapsedMinsPerMaterial": 3,
+    "endTime": 2018-02-02T09:57:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 10,
@@ -1128,14 +1145,15 @@ Map {
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 2,
-    "x": 2018-02-02T09:57:05.000Z,
-    "y": 3,
   },
   "200" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 200,
+    "elapsedMinsPerMaterial": 6,
+    "endTime": 2018-01-31T09:09:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 1,
@@ -1155,14 +1173,15 @@ Map {
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 1,
-    "x": 2018-01-31T09:09:05.000Z,
-    "y": 6,
   },
   "104" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 30,
     "cntr": 104,
+    "elapsedMinsPerMaterial": 30,
+    "endTime": 2018-02-02T09:47:05.000Z,
     "isLabor": false,
+    "isOutlier": false,
     "material": [
       {
         "face": 10,
@@ -1182,14 +1201,15 @@ Map {
     "part": "part111",
     "stationGroup": "MC",
     "stationNumber": 1,
-    "x": 2018-02-02T09:47:05.000Z,
-    "y": 30,
   },
   "100" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 100,
+    "elapsedMinsPerMaterial": 6,
+    "endTime": 2018-02-02T09:09:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 10,
@@ -1209,8 +1229,6 @@ Map {
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 1,
-    "x": 2018-02-02T09:09:05.000Z,
-    "y": 6,
   },
 }
 `;
@@ -1634,7 +1652,10 @@ Map {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 306,
+    "elapsedMinsPerMaterial": 3,
+    "endTime": 2018-01-06T09:45:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 5,
@@ -1654,14 +1675,15 @@ Map {
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 2,
-    "x": 2018-01-06T09:45:05.000Z,
-    "y": 3,
   },
   "304" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 18,
     "cntr": 304,
+    "elapsedMinsPerMaterial": 18,
+    "endTime": 2018-01-06T09:35:05.000Z,
     "isLabor": false,
+    "isOutlier": false,
     "material": [
       {
         "face": 5,
@@ -1681,14 +1703,15 @@ Map {
     "part": "part222",
     "stationGroup": "MC",
     "stationNumber": 1,
-    "x": 2018-01-06T09:35:05.000Z,
-    "y": 18,
   },
   "206" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 206,
+    "elapsedMinsPerMaterial": 3,
+    "endTime": 2018-01-31T09:51:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 1,
@@ -1708,14 +1731,15 @@ Map {
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 2,
-    "x": 2018-01-31T09:51:05.000Z,
-    "y": 3,
   },
   "300" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 300,
+    "elapsedMinsPerMaterial": 6,
+    "endTime": 2018-01-06T09:09:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 5,
@@ -1735,14 +1759,15 @@ Map {
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 1,
-    "x": 2018-01-06T09:09:05.000Z,
-    "y": 6,
   },
   "204" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 24,
     "cntr": 204,
+    "elapsedMinsPerMaterial": 24,
+    "endTime": 2018-01-31T09:41:05.000Z,
     "isLabor": false,
+    "isOutlier": false,
     "material": [
       {
         "face": 1,
@@ -1762,14 +1787,15 @@ Map {
     "part": "part222",
     "stationGroup": "MC",
     "stationNumber": 1,
-    "x": 2018-01-31T09:41:05.000Z,
-    "y": 24,
   },
   "106" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 3,
     "cntr": 106,
+    "elapsedMinsPerMaterial": 3,
+    "endTime": 2018-02-02T09:57:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 10,
@@ -1789,14 +1815,15 @@ Map {
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 2,
-    "x": 2018-02-02T09:57:05.000Z,
-    "y": 3,
   },
   "200" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 200,
+    "elapsedMinsPerMaterial": 6,
+    "endTime": 2018-01-31T09:09:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 1,
@@ -1816,14 +1843,15 @@ Map {
     "part": "part222",
     "stationGroup": "L/U",
     "stationNumber": 1,
-    "x": 2018-01-31T09:09:05.000Z,
-    "y": 6,
   },
   "104" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 30,
     "cntr": 104,
+    "elapsedMinsPerMaterial": 30,
+    "endTime": 2018-02-02T09:47:05.000Z,
     "isLabor": false,
+    "isOutlier": false,
     "material": [
       {
         "face": 10,
@@ -1843,14 +1871,15 @@ Map {
     "part": "part111",
     "stationGroup": "MC",
     "stationNumber": 1,
-    "x": 2018-02-02T09:47:05.000Z,
-    "y": 30,
   },
   "100" => {
     "MAD_aboveMinutes": 0.25,
     "activeMinutes": 6,
     "cntr": 100,
+    "elapsedMinsPerMaterial": 6,
+    "endTime": 2018-02-02T09:09:05.000Z,
     "isLabor": true,
+    "isOutlier": false,
     "material": [
       {
         "face": 10,
@@ -1870,8 +1899,6 @@ Map {
     "part": "part111",
     "stationGroup": "L/U",
     "stationNumber": 1,
-    "x": 2018-02-02T09:09:05.000Z,
-    "y": 6,
   },
 }
 `;

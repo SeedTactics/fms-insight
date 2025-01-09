@@ -45,7 +45,7 @@ public record MazakState : ICellState
 {
   public required bool StateUpdated { get; init; }
   public required TimeSpan TimeUntilNextRefresh { get; init; }
-  public required bool StoppedBecauseRecentMachineEnd { get; init; }
+  public required bool StoppedBecauseRecentLogEvent { get; init; }
   public required CurrentStatus CurrentStatus { get; init; }
   public required MazakAllDataAndLogs AllData { get; init; }
 }
@@ -173,7 +173,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     var mazakData = mazakDB.LoadAllDataAndLogs(db.MaxForeignID());
     var machineGroupName = BuildCurrentStatus.FindMachineGroupName(db);
 
-    var trans = new LogTranslation(
+    var evtResults = LogTranslation.HandleEvents(
       db,
       mazakData,
       machGroupName: machineGroupName,
@@ -182,39 +182,8 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       mazakConfig: mazakConfig,
       loadTools: mazakDB.LoadTools
     );
-    var sendToExternal = new List<MaterialToSendToExternalQueue>();
-
-    var stoppedBecauseRecentMachineEnd = false;
-    foreach (var ev in mazakData.Logs)
-    {
-      try
-      {
-        var result = trans.HandleEvent(ev);
-        sendToExternal.AddRange(result.MatsToSendToExternal);
-        if (result.StoppedBecauseRecentMachineEnd)
-        {
-          stoppedBecauseRecentMachineEnd = true;
-          break;
-        }
-      }
-      catch (Exception ex)
-      {
-        Log.Error(ex, "Error translating log event at time " + ev.TimeUTC.ToLocalTime().ToString());
-      }
-    }
 
     mazakDB.DeleteLogs(db.MaxForeignID());
-
-    bool palStChanged = false;
-    if (!stoppedBecauseRecentMachineEnd)
-    {
-      palStChanged = trans.CheckPalletStatusMatchesLogs();
-    }
-
-    if (sendToExternal.Count > 0)
-    {
-      SendMaterialToExternalQueue.Post(sendToExternal).Wait(TimeSpan.FromSeconds(30));
-    }
 
     var st = BuildCurrentStatus.Build(
       db,
@@ -222,6 +191,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
       mazakConfig,
       mazakData,
       machineGroupName: machineGroupName,
+      evtResults.PalletWithMostRecentEventAsLoadUnloadEnd,
       now
     );
 
@@ -232,12 +202,16 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
     return new MazakState()
     {
-      StateUpdated = mazakData.Logs.Count > 0 || palStChanged,
+      StateUpdated = mazakData.Logs.Count > 0 || evtResults.PalletStatusChanged,
       TimeUntilNextRefresh =
-        mazakConfig?.DBType == MazakDbType.MazakVersionE || stoppedBecauseRecentMachineEnd
+        mazakConfig?.DBType == MazakDbType.MazakVersionE
+        || evtResults.StoppedBecauseRecentMachineEvent
+        || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue
           ? TimeSpan.FromSeconds(15)
           : TimeSpan.FromMinutes(2),
-      StoppedBecauseRecentMachineEnd = stoppedBecauseRecentMachineEnd,
+      StoppedBecauseRecentLogEvent =
+        evtResults.StoppedBecauseRecentMachineEvent
+        || evtResults.PalletWithMostRecentEventAsLoadUnloadEnd.HasValue,
       CurrentStatus = st,
       AllData = mazakData,
     };
@@ -245,7 +219,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
 
   public bool ApplyActions(IRepository db, MazakState st)
   {
-    if (st.StoppedBecauseRecentMachineEnd)
+    if (st.StoppedBecauseRecentLogEvent)
     {
       return false;
     }

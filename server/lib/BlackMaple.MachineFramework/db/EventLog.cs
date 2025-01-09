@@ -743,24 +743,10 @@ namespace BlackMaple.MachineFramework
         cmd.CommandText = "SELECT MAX(ForeignID) FROM stations WHERE ForeignID IS NOT NULL";
         var maxStat = cmd.ExecuteScalar();
 
-        cmd.CommandText = "SELECT MAX(ForeignID) FROM pendingloads WHERE ForeignID IS NOT NULL";
-        var maxLoad = cmd.ExecuteScalar();
-
-        if (maxStat == DBNull.Value && maxLoad == DBNull.Value)
+        if (maxStat == DBNull.Value)
           return "";
-        else if (maxStat != DBNull.Value && maxLoad == DBNull.Value)
-          return (string)maxStat;
-        else if (maxStat == DBNull.Value && maxLoad != DBNull.Value)
-          return (string)maxLoad;
         else
-        {
-          var s = (string)maxStat;
-          var l = (string)maxLoad;
-          if (s.CompareTo(l) > 0)
-            return s;
-          else
-            return l;
-        }
+          return (string)maxStat;
       }
     }
 
@@ -1509,83 +1495,6 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public IEnumerable<LogEntry> RecordLoadEnd(
-      IEnumerable<MaterialToLoadOntoPallet> toLoad,
-      int pallet,
-      DateTime timeUTC
-    )
-    {
-      return AddEntryInTransaction(trans =>
-        RecordLoadEnd(toLoad: toLoad, pallet: pallet, timeUTC: timeUTC, trans: trans)
-      );
-    }
-
-    private IReadOnlyList<LogEntry> RecordLoadEnd(
-      int pallet,
-      DateTime timeUTC,
-      IEnumerable<MaterialToLoadOntoPallet> toLoad,
-      IDbTransaction trans
-    )
-    {
-      var logs = new List<LogEntry>();
-      foreach (var loadStation in toLoad)
-      {
-        foreach (var face in loadStation.Faces)
-        {
-          foreach (var mat in face.MaterialIDs)
-          {
-            var prevProcMat = new EventLogMaterial()
-            {
-              MaterialID = mat,
-              Process = face.Process - 1,
-              Face = 0,
-            };
-            logs.AddRange(
-              RemoveFromAllQueues(
-                trans,
-                prevProcMat,
-                operatorName: null,
-                reason: "LoadedToPallet",
-                timeUTC: timeUTC
-              )
-            );
-          }
-
-          var log = new NewEventLogEntry()
-          {
-            Material = face.MaterialIDs.Select(m => new EventLogMaterial()
-            {
-              MaterialID = m,
-              Face = face.FaceNum,
-              Process = face.Process,
-            }),
-            Pallet = pallet,
-            LogType = LogType.LoadUnloadCycle,
-            LocationName = "L/U",
-            LocationNum = loadStation.LoadStation,
-            Program = "LOAD",
-            StartOfCycle = false,
-            EndTimeUTC = timeUTC,
-            Result = "LOAD",
-            ElapsedTime = loadStation.Elapsed,
-            ActiveOperationTime = face.ActiveOperationTime,
-          };
-
-          if (face.Path.HasValue)
-          {
-            foreach (var mat in face.MaterialIDs)
-            {
-              RecordPathForProcess(mat, face.Process, face.Path.Value, trans);
-            }
-          }
-
-          logs.Add(AddLogEntry(trans, log, face.ForeignID, face.OriginalMessage));
-        }
-      }
-
-      return logs;
-    }
-
     public LogEntry RecordUnloadStart(
       IEnumerable<EventLogMaterial> mats,
       int pallet,
@@ -1610,58 +1519,501 @@ namespace BlackMaple.MachineFramework
       return AddEntryInTransaction(trans => AddLogEntry(trans, log, foreignId, originalMessage));
     }
 
-    public IEnumerable<LogEntry> RecordUnloadEnd(
-      IEnumerable<EventLogMaterial> mats,
-      int pallet,
+    public IEnumerable<LogEntry> RecordPartialLoadUnload(
+      IReadOnlyList<MaterialToLoadOntoFace> toLoad,
+      IReadOnlyList<MaterialToUnloadFromFace> toUnload,
       int lulNum,
+      int pallet,
+      TimeSpan totalElapsed,
       DateTime timeUTC,
-      TimeSpan elapsed,
-      TimeSpan active,
-      Dictionary<long, string> unloadIntoQueues = null, // key is material id, value is queue name
-      string foreignId = null,
-      string originalMessage = null
+      IReadOnlyDictionary<string, string> externalQueues
     )
     {
-      var log = new NewEventLogEntry()
+      var sendToExternal = new List<MaterialToSendToExternalQueue>();
+
+      var newLogs = AddEntryInTransaction(trans =>
       {
-        Material = mats,
-        Pallet = pallet,
-        LogType = LogType.LoadUnloadCycle,
-        LocationName = "L/U",
-        LocationNum = lulNum,
-        Program = "UNLOAD",
-        StartOfCycle = false,
-        EndTimeUTC = timeUTC,
-        ElapsedTime = elapsed,
-        ActiveOperationTime = active,
-        Result = "UNLOAD",
-      };
-      return AddEntryInTransaction(trans =>
-      {
-        var msgs = new List<LogEntry>();
-        if (unloadIntoQueues != null)
+        var logs = new List<LogEntry>();
+
+        // calculate total active time and total material count to be able
+        // to split the totalElpased up
+        var totMatCnt =
+          (toLoad?.Sum(l => l.MaterialIDs.Count) ?? 0) + (toUnload?.Sum(l => l.MaterialIDToQueue.Count) ?? 0);
+
+        bool allHaveActive = true;
+        TimeSpan totalActive = TimeSpan.Zero;
+        foreach (var l in toLoad ?? [])
         {
-          foreach (var mat in mats)
+          if (l.ActiveOperationTime > TimeSpan.Zero)
           {
-            if (unloadIntoQueues.TryGetValue(mat.MaterialID, out var queueName) && queueName != null)
-            {
-              msgs.AddRange(
-                AddToQueue(
-                  trans,
-                  mat,
-                  queueName,
-                  -1,
-                  operatorName: null,
-                  timeUTC: timeUTC,
-                  reason: "Unloaded"
-                )
-              );
-            }
+            totalActive += l.ActiveOperationTime;
+          }
+          else
+          {
+            allHaveActive = false;
           }
         }
-        msgs.Add(AddLogEntry(trans, log, foreignId, originalMessage));
-        return msgs;
+        foreach (var u in toUnload ?? [])
+        {
+          if (u.ActiveOperationTime > TimeSpan.Zero)
+          {
+            totalActive += u.ActiveOperationTime;
+          }
+          else
+          {
+            allHaveActive = false;
+          }
+        }
+
+        RecordUnloadEnd(
+          toUnload: toUnload,
+          lulNum: lulNum,
+          pallet: pallet,
+          totalElapsed: totalElapsed,
+          totMatCnt: totMatCnt,
+          totalActive: allHaveActive && totalActive > TimeSpan.Zero ? totalActive : null,
+          timeUTC: timeUTC,
+          logs: logs,
+          externalQueues: externalQueues,
+          sendToExternal: sendToExternal,
+          trans: trans
+        );
+
+        RecordLoadMaterialPaths(toLoad: toLoad, trans: trans);
+
+        RecordLoadEnd(
+          toLoad: toLoad,
+          lulNum: lulNum,
+          pallet: pallet,
+          totalElapsed: totalElapsed,
+          totMatCnt: totMatCnt,
+          totalActive: allHaveActive && totalActive > TimeSpan.Zero ? totalActive : null,
+          timeUTC: timeUTC,
+          logs: logs,
+          trans: trans
+        );
+
+        return logs;
       });
+
+      if (sendToExternal.Count > 0)
+      {
+        System.Threading.Tasks.Task.Run(() => SendMaterialToExternalQueue.Post(sendToExternal));
+      }
+
+      return newLogs;
+    }
+
+    public IEnumerable<LogEntry> RecordLoadUnloadComplete(
+      IReadOnlyList<MaterialToLoadOntoFace> toLoad,
+      IReadOnlyList<EventLogMaterial> previouslyLoaded,
+      IReadOnlyList<MaterialToUnloadFromFace> toUnload,
+      IReadOnlyList<EventLogMaterial> previouslyUnloaded,
+      int lulNum,
+      int pallet,
+      TimeSpan totalElapsed,
+      DateTime timeUTC,
+      IReadOnlyDictionary<string, string> externalQueues
+    )
+    {
+      var sendToExternal = new List<MaterialToSendToExternalQueue>();
+
+      var newLogs = AddEntryInTransaction(trans =>
+      {
+        var logs = new List<LogEntry>();
+
+        // calculate total active time and total material count to be able
+        // to split the totalElpased up
+        var totMatCnt =
+          (toLoad?.Sum(l => l.MaterialIDs.Count) ?? 0) + (toUnload?.Sum(l => l.MaterialIDToQueue.Count) ?? 0);
+
+        bool allHaveActive = true;
+        TimeSpan totalActive = TimeSpan.Zero;
+        foreach (var l in toLoad ?? [])
+        {
+          if (l.ActiveOperationTime > TimeSpan.Zero)
+          {
+            totalActive += l.ActiveOperationTime;
+          }
+          else
+          {
+            allHaveActive = false;
+          }
+        }
+        foreach (var u in toUnload ?? [])
+        {
+          if (u.ActiveOperationTime > TimeSpan.Zero)
+          {
+            totalActive += u.ActiveOperationTime;
+          }
+          else
+          {
+            allHaveActive = false;
+          }
+        }
+
+        RecordUnloadEnd(
+          toUnload: toUnload,
+          lulNum: lulNum,
+          pallet: pallet,
+          totalElapsed: totalElapsed,
+          totMatCnt: totMatCnt,
+          totalActive: allHaveActive && totalActive > TimeSpan.Zero ? totalActive : null,
+          timeUTC: timeUTC,
+          logs: logs,
+          externalQueues: externalQueues,
+          sendToExternal: sendToExternal,
+          trans: trans
+        );
+
+        var allUnload = (previouslyUnloaded ?? []).Concat(
+          (toUnload ?? []).SelectMany(u =>
+            u.MaterialIDToQueue.Keys.Select(mid => new EventLogMaterial()
+            {
+              MaterialID = mid,
+              Process = u.Process,
+              Face = u.FaceNum,
+            })
+          )
+        );
+        if (allUnload.Any())
+        {
+          RecordPalletCycleEnd(pallet: pallet, mats: allUnload, timeUTC: timeUTC, logs: logs, trans: trans);
+        }
+
+        RecordLoadMaterialPaths(toLoad: toLoad, trans: trans);
+
+        var allLoad = (previouslyLoaded ?? []).Concat(
+          (toLoad ?? []).SelectMany(l =>
+            l.MaterialIDs.Select(mid => new EventLogMaterial()
+            {
+              MaterialID = mid,
+              Process = l.Process,
+              Face = l.FaceNum,
+            })
+          )
+        );
+        if (allLoad.Any())
+        {
+          RecordPalletCycleStart(
+            pallet: pallet,
+            mats: allLoad,
+            timeUTC: timeUTC,
+            logs: logs,
+            trans: trans,
+            foreignId: null
+          );
+        }
+
+        RecordLoadEnd(
+          toLoad: toLoad,
+          lulNum: lulNum,
+          pallet: pallet,
+          totalElapsed: totalElapsed,
+          totMatCnt: totMatCnt,
+          totalActive: allHaveActive && totalActive > TimeSpan.Zero ? totalActive : null,
+          timeUTC: timeUTC,
+          logs: logs,
+          trans: trans
+        );
+        return logs;
+      });
+
+      if (sendToExternal.Count > 0)
+      {
+        System.Threading.Tasks.Task.Run(() => SendMaterialToExternalQueue.Post(sendToExternal));
+      }
+
+      return newLogs;
+    }
+
+    public IEnumerable<LogEntry> RecordEmptyPallet(int pallet, DateTime timeUTC, string foreignId = null)
+    {
+      return AddEntryInTransaction(
+        trans =>
+        {
+          var logs = new List<LogEntry>();
+          RecordPalletCycleStart(
+            pallet: pallet,
+            mats: [],
+            timeUTC: timeUTC,
+            logs: logs,
+            trans: trans,
+            foreignId: foreignId
+          );
+          return logs;
+        },
+        foreignId: foreignId
+      );
+    }
+
+    private void RecordUnloadEnd(
+      IEnumerable<MaterialToUnloadFromFace> toUnload,
+      int lulNum,
+      int pallet,
+      TimeSpan totalElapsed,
+      TimeSpan? totalActive,
+      int totMatCnt,
+      DateTime timeUTC,
+      List<LogEntry> logs,
+      IReadOnlyDictionary<string, string> externalQueues,
+      List<MaterialToSendToExternalQueue> sendToExternal,
+      IDbTransaction trans
+    )
+    {
+      foreach (var face in toUnload ?? [])
+      {
+        foreach (var matAndQ in face.MaterialIDToQueue)
+        {
+          if (string.IsNullOrEmpty(matAndQ.Value))
+            continue;
+
+          if (externalQueues != null && externalQueues.TryGetValue(matAndQ.Value, out var server))
+          {
+            var details = GetMaterialDetails(matAndQ.Key, trans: trans);
+            sendToExternal.Add(
+              new MaterialToSendToExternalQueue()
+              {
+                Queue = matAndQ.Value,
+                Server = server,
+                PartName = details?.PartName,
+                Serial = details?.Serial,
+              }
+            );
+          }
+          else
+          {
+            logs.AddRange(
+              AddToQueue(
+                trans: trans,
+                matId: matAndQ.Key,
+                process: face.Process,
+                queue: matAndQ.Value,
+                position: -1,
+                operatorName: null,
+                timeUTC: timeUTC,
+                reason: "Unloaded"
+              )
+            );
+          }
+        }
+
+        TimeSpan elapsed;
+        if (totalActive.HasValue)
+        {
+          elapsed = TimeSpan.FromSeconds(
+            Math.Round(
+              totalElapsed.TotalSeconds
+                * face.ActiveOperationTime.TotalSeconds
+                / totalActive.Value.TotalSeconds,
+              1
+            )
+          );
+        }
+        else
+        {
+          elapsed = TimeSpan.FromSeconds(
+            Math.Round(totalElapsed.TotalSeconds * face.MaterialIDToQueue.Count / totMatCnt, 1)
+          );
+        }
+
+        logs.Add(
+          AddLogEntry(
+            trans,
+            new NewEventLogEntry()
+            {
+              Material = face.MaterialIDToQueue.Keys.Select(m => new EventLogMaterial()
+              {
+                MaterialID = m,
+                Face = face.FaceNum,
+                Process = face.Process,
+              }),
+              Pallet = pallet,
+              LogType = LogType.LoadUnloadCycle,
+              LocationName = "L/U",
+              LocationNum = lulNum,
+              Program = "UNLOAD",
+              StartOfCycle = false,
+              EndTimeUTC = timeUTC,
+              ElapsedTime = elapsed,
+              ActiveOperationTime = face.ActiveOperationTime,
+              Result = "UNLOAD",
+            },
+            face.ForeignID,
+            face.OriginalMessage
+          )
+        );
+      }
+    }
+
+    private void RecordPalletCycleStart(
+      int pallet,
+      IEnumerable<EventLogMaterial> mats,
+      DateTime timeUTC,
+      List<LogEntry> logs,
+      IDbTransaction trans,
+      string foreignId
+    )
+    {
+      logs.Add(
+        AddLogEntry(
+          trans,
+          new NewEventLogEntry()
+          {
+            Material = mats,
+            Pallet = pallet,
+            LogType = LogType.PalletCycle,
+            LocationName = "Pallet Cycle",
+            LocationNum = 1,
+            Program = "",
+            StartOfCycle = true,
+            EndTimeUTC = timeUTC,
+            Result = "PalletCycle",
+            ElapsedTime = TimeSpan.Zero,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+          foreignID: foreignId,
+          null
+        )
+      );
+    }
+
+    private void RecordPalletCycleEnd(
+      int pallet,
+      IEnumerable<EventLogMaterial> mats,
+      DateTime timeUTC,
+      List<LogEntry> logs,
+      IDbTransaction trans
+    )
+    {
+      using var lastTimeCmd = _connection.CreateCommand();
+      lastTimeCmd.CommandText =
+        "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' "
+        + "ORDER BY Counter DESC LIMIT 1";
+      lastTimeCmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
+
+      var elapsedTime = TimeSpan.Zero;
+      var lastCycleTime = lastTimeCmd.ExecuteScalar();
+      if (lastCycleTime != null && lastCycleTime != DBNull.Value)
+        elapsedTime = timeUTC.Subtract(new DateTime((long)lastCycleTime, DateTimeKind.Utc));
+
+      logs.Add(
+        AddLogEntry(
+          trans,
+          new NewEventLogEntry()
+          {
+            Material = mats,
+            Pallet = pallet,
+            LogType = LogType.PalletCycle,
+            LocationName = "Pallet Cycle",
+            LocationNum = 1,
+            Program = "",
+            StartOfCycle = false,
+            EndTimeUTC = timeUTC,
+            Result = "PalletCycle",
+            ElapsedTime = elapsedTime,
+            ActiveOperationTime = TimeSpan.Zero,
+          },
+          null,
+          null
+        )
+      );
+    }
+
+    private void RecordLoadMaterialPaths(IEnumerable<MaterialToLoadOntoFace> toLoad, IDbTransaction trans)
+    {
+      foreach (var face in toLoad ?? [])
+      {
+        if (face.Path.HasValue)
+        {
+          foreach (var mat in face.MaterialIDs)
+          {
+            RecordPathForProcess(mat, face.Process, face.Path.Value, trans);
+          }
+        }
+      }
+    }
+
+    private void RecordLoadEnd(
+      IEnumerable<MaterialToLoadOntoFace> toLoad,
+      int lulNum,
+      int pallet,
+      TimeSpan totalElapsed,
+      TimeSpan? totalActive,
+      int totMatCnt,
+      DateTime timeUTC,
+      List<LogEntry> logs,
+      IDbTransaction trans
+    )
+    {
+      foreach (var face in toLoad ?? [])
+      {
+        foreach (var mat in face.MaterialIDs)
+        {
+          var prevProcMat = new EventLogMaterial()
+          {
+            MaterialID = mat,
+            Process = face.Process - 1,
+            Face = 0,
+          };
+          logs.AddRange(
+            RemoveFromAllQueues(
+              trans,
+              prevProcMat,
+              operatorName: null,
+              reason: "LoadedToPallet",
+              timeUTC: timeUTC
+            )
+          );
+        }
+
+        TimeSpan elapsed;
+        if (totalActive.HasValue)
+        {
+          elapsed = TimeSpan.FromSeconds(
+            Math.Round(
+              totalElapsed.TotalSeconds
+                * face.ActiveOperationTime.TotalSeconds
+                / totalActive.Value.TotalSeconds,
+              1
+            )
+          );
+        }
+        else
+        {
+          elapsed = TimeSpan.FromSeconds(
+            Math.Round(totalElapsed.TotalSeconds * face.MaterialIDs.Count / totMatCnt, 1)
+          );
+        }
+
+        logs.Add(
+          AddLogEntry(
+            trans,
+            new NewEventLogEntry()
+            {
+              Material = face.MaterialIDs.Select(m => new EventLogMaterial()
+              {
+                MaterialID = m,
+                Face = face.FaceNum,
+                Process = face.Process,
+              }),
+              Pallet = pallet,
+              LogType = LogType.LoadUnloadCycle,
+              LocationName = "L/U",
+              LocationNum = lulNum,
+              Program = "LOAD",
+              StartOfCycle = false,
+              // Add 1 second to be after the pallet cycle
+              EndTimeUTC = timeUTC.AddSeconds(1),
+              Result = "LOAD",
+              ElapsedTime = elapsed,
+              ActiveOperationTime = face.ActiveOperationTime,
+            },
+            face.ForeignID,
+            face.OriginalMessage
+          )
+        );
+      }
     }
 
     public LogEntry RecordManualWorkAtLULStart(
@@ -2489,7 +2841,7 @@ namespace BlackMaple.MachineFramework
           }
 
           // load old events
-          var oldEvents = CurrentPalletLog(pallet, includeLastPalletCycleEvt: false, trans);
+          var oldEvents = CurrentPalletLog(pallet, includeLastPalletCycleEvt: true, trans);
           var oldMatProcM = oldEvents
             .SelectMany(e => e.Material)
             .Where(m => m.MaterialID == oldMatId)
@@ -4268,399 +4620,6 @@ namespace BlackMaple.MachineFramework
         }
       }
     }
-    #endregion
-
-    #region Pending Loads
-
-    public void AddPendingLoad(
-      int pal,
-      string key,
-      int load,
-      TimeSpan elapsed,
-      TimeSpan active,
-      string foreignID
-    )
-    {
-      lock (_cfg)
-      {
-        using (var trans = _connection.BeginTransaction())
-        using (var cmd = _connection.CreateCommand())
-        {
-          cmd.Transaction = trans;
-
-          cmd.CommandText =
-            "INSERT INTO pendingloads(Pallet, Key, LoadStation, Elapsed, ActiveTime, ForeignID)"
-            + "VALUES ($pal,$key,$load,$elapsed,$active,$foreign)";
-
-          cmd.Parameters.Add("pal", SqliteType.Integer).Value = pal;
-          cmd.Parameters.Add("key", SqliteType.Text).Value = key;
-          cmd.Parameters.Add("load", SqliteType.Integer).Value = load;
-          cmd.Parameters.Add("elapsed", SqliteType.Integer).Value = elapsed.Ticks;
-          cmd.Parameters.Add("active", SqliteType.Integer).Value = active.Ticks;
-          if (string.IsNullOrEmpty(foreignID))
-            cmd.Parameters.Add("foreign", SqliteType.Text).Value = DBNull.Value;
-          else
-            cmd.Parameters.Add("foreign", SqliteType.Text).Value = foreignID;
-
-          cmd.ExecuteNonQuery();
-
-          trans.Commit();
-        }
-      }
-    }
-
-    public List<PendingLoad> PendingLoads(int pallet)
-    {
-      using var trans = _connection.BeginTransaction();
-      var ret = PendingLoads(pallet, trans);
-      trans.Commit();
-      return ret;
-    }
-
-    private List<PendingLoad> PendingLoads(int pallet, IDbTransaction trans)
-    {
-      var ret = new List<PendingLoad>();
-      using (var cmd = _connection.CreateCommand())
-      {
-        ((IDbCommand)cmd).Transaction = trans;
-
-        cmd.CommandText =
-          "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID FROM pendingloads WHERE Pallet = $pal";
-        cmd.Parameters.Add("pal", SqliteType.Integer).Value = pallet;
-
-        using (var reader = cmd.ExecuteReader())
-        {
-          while (reader.Read())
-          {
-            var p = new PendingLoad()
-            {
-              Pallet = pallet,
-              Key = reader.GetString(0),
-              LoadStation = reader.GetInt32(1),
-              Elapsed = new TimeSpan(reader.GetInt64(2)),
-              ActiveOperationTime = !reader.IsDBNull(3)
-                ? TimeSpan.FromTicks(reader.GetInt64(3))
-                : TimeSpan.Zero,
-              ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
-            };
-            ret.Add(p);
-          }
-        }
-        return ret;
-      }
-    }
-
-    public void CancelPendingLoads(string foreignID)
-    {
-      lock (_cfg)
-      {
-        using var trans = _connection.BeginTransaction();
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = "DELETE FROM pendingloads WHERE ForeignID = $fid";
-        cmd.Parameters.Add("fid", SqliteType.Text).Value = foreignID;
-        cmd.ExecuteNonQuery();
-        trans.Commit();
-      }
-    }
-
-    public List<PendingLoad> AllPendingLoads()
-    {
-      var ret = new List<PendingLoad>();
-
-      using (var trans = _connection.BeginTransaction())
-      using (var cmd = _connection.CreateCommand())
-      {
-        cmd.Transaction = trans;
-
-        cmd.CommandText = "SELECT Key, LoadStation, Elapsed, ActiveTime, ForeignID, Pallet FROM pendingloads";
-
-        using (var reader = cmd.ExecuteReader())
-        {
-          while (reader.Read())
-          {
-            int pal;
-            if (reader.GetFieldType(5) == typeof(string))
-            {
-              int.TryParse(reader.GetString(5), out pal);
-            }
-            else
-            {
-              pal = reader.GetInt32(5);
-            }
-            var p = new PendingLoad()
-            {
-              Key = reader.GetString(0),
-              LoadStation = reader.GetInt32(1),
-              Elapsed = new TimeSpan(reader.GetInt64(2)),
-              ActiveOperationTime = !reader.IsDBNull(3)
-                ? TimeSpan.FromTicks(reader.GetInt64(3))
-                : TimeSpan.Zero,
-              ForeignID = reader.IsDBNull(4) ? null : reader.GetString(4),
-              Pallet = pal,
-            };
-            ret.Add(p);
-          }
-        }
-
-        trans.Commit();
-      }
-
-      return ret;
-    }
-
-    public LogEntry CompletePalletCycle(int pal, DateTime timeUTC, string foreignID = null)
-    {
-      return CompletePalletCycle(
-        pal: pal,
-        timeUTC: timeUTC,
-        foreignID: foreignID,
-        matFromPendingLoads: null,
-        additionalLoads: null,
-        generateSerials: false
-      ).Item1;
-    }
-
-    public (LogEntry, IEnumerable<LogEntry>) CompletePalletCycle(
-      int pal,
-      DateTime timeUTC,
-      IReadOnlyDictionary<string, IEnumerable<EventLogMaterial>> matFromPendingLoads,
-      IEnumerable<MaterialToLoadOntoPallet> additionalLoads,
-      bool generateSerials = false,
-      string foreignID = null
-    )
-    {
-      lock (_cfg)
-      {
-        LogEntry cycleEvt;
-        var newLoadEvts = new List<LogEntry>();
-        using (var trans = _connection.BeginTransaction())
-        using (var lastTimeCmd = _connection.CreateCommand())
-        {
-          lastTimeCmd.CommandText =
-            "SELECT TimeUTC FROM stations where Pallet = $pal AND Result = 'PalletCycle' "
-            + "ORDER BY Counter DESC LIMIT 1";
-          lastTimeCmd.Parameters.Add("pal", SqliteType.Integer).Value = pal;
-
-          var elapsedTime = TimeSpan.Zero;
-          var lastCycleTime = lastTimeCmd.ExecuteScalar();
-          if (lastCycleTime != null && lastCycleTime != DBNull.Value)
-            elapsedTime = timeUTC.Subtract(new DateTime((long)lastCycleTime, DateTimeKind.Utc));
-
-          cycleEvt = AddLogEntry(
-            trans,
-            new NewEventLogEntry()
-            {
-              Material = new EventLogMaterial[] { },
-              Pallet = pal,
-              LogType = LogType.PalletCycle,
-              LocationName = "Pallet Cycle",
-              LocationNum = 1,
-              Program = "",
-              StartOfCycle = false,
-              EndTimeUTC = timeUTC,
-              Result = "PalletCycle",
-              ElapsedTime = elapsedTime,
-              ActiveOperationTime = TimeSpan.Zero,
-            },
-            foreignID,
-            null
-          );
-
-          // pending loads
-          var loads =
-            new List<(
-              IEnumerable<EventLogMaterial> mats,
-              int lul,
-              TimeSpan elapsed,
-              TimeSpan active,
-              int? path
-            )>();
-
-          if (additionalLoads != null)
-          {
-            foreach (var load in additionalLoads)
-            {
-              foreach (var face in load.Faces)
-              {
-                loads.Add(
-                  (
-                    mats: face.MaterialIDs.Select(mid => new EventLogMaterial()
-                    {
-                      MaterialID = mid,
-                      Process = face.Process,
-                      Face = face.FaceNum,
-                    }),
-                    lul: load.LoadStation,
-                    elapsed: load.Elapsed,
-                    active: face.ActiveOperationTime,
-                    path: face.Path
-                  )
-                );
-              }
-            }
-          }
-
-          string maxPendingForeignId = null;
-          if (matFromPendingLoads != null && matFromPendingLoads.Any())
-          {
-            foreach (var pending in PendingLoads(pal, trans))
-            {
-              if (maxPendingForeignId == null || pending.ForeignID.CompareTo(maxPendingForeignId) > 0)
-              {
-                maxPendingForeignId = pending.ForeignID;
-              }
-              if (matFromPendingLoads.TryGetValue(pending.Key, out var mats))
-              {
-                loads.Add(
-                  (
-                    mats: mats,
-                    lul: pending.LoadStation,
-                    elapsed: pending.Elapsed,
-                    active: pending.ActiveOperationTime,
-                    path: 1
-                  )
-                );
-              }
-            }
-          }
-
-          // serials
-          if (generateSerials)
-          {
-            foreach (var newFace in loads)
-            {
-              if (_cfg.SerialSettings != null)
-              {
-                using (var checkConn = _connection.CreateCommand())
-                {
-                  checkConn.Transaction = trans;
-                  checkConn.CommandText = "SELECT Serial FROM matdetails WHERE MaterialID = $mid LIMIT 1";
-                  checkConn.Parameters.Add("mid", SqliteType.Integer);
-                  foreach (var m in newFace.mats)
-                  {
-                    checkConn.Parameters[0].Value = m.MaterialID;
-                    var existingSerial = checkConn.ExecuteScalar();
-                    if (
-                      existingSerial != null
-                      && existingSerial != DBNull.Value
-                      && !string.IsNullOrEmpty(existingSerial.ToString())
-                    )
-                    {
-                      //already has an assigned serial, skip assignment
-                      continue;
-                    }
-
-                    var serial = _cfg.SerialSettings.ConvertMaterialIDToSerial(m.MaterialID);
-                    if (m.MaterialID < 0)
-                      continue;
-                    RecordSerialForMaterialID(trans, m.MaterialID, serial);
-                    newLoadEvts.Add(
-                      AddLogEntry(
-                        trans,
-                        new NewEventLogEntry()
-                        {
-                          Material = new[] { m },
-                          Pallet = 0,
-                          LogType = LogType.PartMark,
-                          LocationName = "Mark",
-                          LocationNum = 1,
-                          Program = "MARK",
-                          StartOfCycle = false,
-                          EndTimeUTC = timeUTC.AddSeconds(2),
-                          Result = serial,
-                        },
-                        null,
-                        null
-                      )
-                    );
-                  }
-                }
-              }
-            }
-          }
-
-          if (loads.Any())
-          {
-            /*
-            RecordLoadEnd requires integer faces, so we can't use it yet until Mazak is converted to integer faces
-            newLoadEvts.AddRange(
-              RecordLoadEnd(
-                toLoad: matToLoad,
-                pallet: pal,
-                timeUTC: timeUTC.AddSeconds(1),
-                foreignId: maxPendingForeignId,
-                originalMessage: null,
-                trans: trans
-              )
-            );
-            */
-
-            foreach (var load in loads)
-            {
-              foreach (var mat in load.mats)
-              {
-                var prevProcMat = new EventLogMaterial()
-                {
-                  MaterialID = mat.MaterialID,
-                  Process = mat.Process - 1,
-                  Face = 0,
-                };
-                newLoadEvts.AddRange(
-                  RemoveFromAllQueues(
-                    trans,
-                    prevProcMat,
-                    operatorName: null,
-                    reason: "LoadedToPallet",
-                    timeUTC: timeUTC.AddSeconds(1)
-                  )
-                );
-              }
-
-              var log = new NewEventLogEntry()
-              {
-                Material = load.mats,
-                Pallet = pal,
-                LogType = LogType.LoadUnloadCycle,
-                LocationName = "L/U",
-                LocationNum = load.lul,
-                Program = "LOAD",
-                StartOfCycle = false,
-                EndTimeUTC = timeUTC.AddSeconds(1),
-                Result = "LOAD",
-                ElapsedTime = load.elapsed,
-                ActiveOperationTime = load.active,
-              };
-
-              if (load.path.HasValue)
-              {
-                foreach (var mat in load.mats)
-                {
-                  RecordPathForProcess(mat.MaterialID, mat.Process, load.path.Value, trans);
-                }
-              }
-              newLoadEvts.Add(AddLogEntry(trans, log, foreignID: maxPendingForeignId, origMessage: null));
-            }
-          }
-
-          using (var delCmd = _connection.CreateCommand())
-          {
-            delCmd.Transaction = trans;
-            delCmd.CommandText = "DELETE FROM pendingloads WHERE Pallet = $pal";
-            delCmd.Parameters.Add("pal", SqliteType.Integer).Value = pal;
-            delCmd.ExecuteNonQuery();
-          }
-
-          trans.Commit();
-        }
-
-        _cfg.OnNewLogEntry(cycleEvt, foreignID, this);
-        foreach (var e in newLoadEvts)
-          _cfg.OnNewLogEntry(e, foreignID, this);
-
-        return (cycleEvt, newLoadEvts);
-      }
-    }
-
     #endregion
 
     #region Inspection Counts

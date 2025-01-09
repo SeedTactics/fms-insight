@@ -75,7 +75,6 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
   }
   for (const m of status.material) {
     if (m.location.face && typeof m.location.face === "string") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       m.location.face = parseInt(m.location.face, 10);
     }
   }

@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { memo, useState } from "react";
+import { memo, ReactNode, useState } from "react";
 import * as api from "../network/api.js";
 import { styled, Table } from "@mui/material";
 import { TableBody } from "@mui/material";
@@ -187,7 +187,7 @@ function displayQueueMat(mats: ReadonlyArray<api.ILogMaterial>) {
   }
 }
 
-function display(props: LogEntryProps): JSX.Element {
+function display(props: LogEntryProps): ReactNode {
   const entry = props.entry;
   switch (entry.type) {
     case api.LogType.LoadUnloadCycle:

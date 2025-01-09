@@ -469,27 +469,26 @@ namespace MachineWatchTest
 
       if (loc == LogType.LoadUnloadCycle)
       {
-        _insp.RecordLoadEnd(
+        _insp.RecordLoadUnloadComplete(
           toLoad:
           [
-            new MaterialToLoadOntoPallet()
+            new MaterialToLoadOntoFace()
             {
-              LoadStation = statNum,
-              Faces =
-              [
-                new MaterialToLoadOntoFace()
-                {
-                  MaterialIDs = mat.Select(m => m.MaterialID).ToImmutableList(),
-                  FaceNum = 1,
-                  Process = mat[0].Process,
-                  Path = mat[0].Path,
-                  ActiveOperationTime = TimeSpan.FromMinutes(4),
-                },
-              ],
+              MaterialIDs = mat.Select(m => m.MaterialID).ToImmutableList(),
+              FaceNum = 1,
+              Process = mat[0].Process,
+              Path = mat[0].Path,
+              ActiveOperationTime = TimeSpan.FromMinutes(4),
             },
           ],
+          toUnload: null,
+          previouslyLoaded: null,
+          previouslyUnloaded: null,
+          lulNum: statNum,
+          totalElapsed: TimeSpan.FromMinutes(10),
           pallet: pal,
-          timeUTC: _lastCycleTime
+          timeUTC: _lastCycleTime,
+          externalQueues: null
         );
       }
       else

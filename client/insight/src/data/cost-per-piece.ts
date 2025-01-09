@@ -75,7 +75,7 @@ export function compute_monthly_cost_percentages(
   const stationCount = new Map<string, Set<number>>();
 
   for (const c of cycles) {
-    if (c.x < start || c.x > end) continue;
+    if (c.endTime < start || c.endTime > end) continue;
     if (isUnloadCycle(c)) {
       totalPalletCycles += 1;
     }
@@ -107,7 +107,7 @@ export function compute_monthly_cost_percentages(
     );
 
   const parts = LazySeq.of(cycles)
-    .filter((c) => c.x >= start && c.x <= end)
+    .filter((c) => c.endTime >= start && c.endTime <= end)
     .groupBy((c) => c.part)
     .map(([partName, forPart]) => ({
       part: partName,

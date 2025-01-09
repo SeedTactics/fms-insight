@@ -32,16 +32,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using Microsoft.Data.Sqlite;
 
 namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 34;
+    private const int Version = 35;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -127,14 +125,6 @@ namespace BlackMaple.MachineFramework
 
         cmd.CommandText =
           "CREATE TABLE mat_path_details(MaterialID INTEGER, Process INTEGER, Path INTEGER, PRIMARY KEY(MaterialID, Process))";
-        cmd.ExecuteNonQuery();
-
-        cmd.CommandText =
-          "CREATE TABLE pendingloads(Pallet INTEGER, Key TEXT, LoadStation INTEGER, Elapsed INTEGER, ActiveTime INTEGER, ForeignID TEXT)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX pending_pal on pendingloads(Pallet)";
-        cmd.ExecuteNonQuery();
-        cmd.CommandText = "CREATE INDEX pending_foreign on pendingloads(ForeignID)";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -476,6 +466,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 34)
             Ver33ToVer34(trans, updateJobsTables);
+
+          if (curVersion < 35)
+            Ver34ToVer35(trans);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1176,6 +1169,14 @@ namespace BlackMaple.MachineFramework
 
       cmd.CommandText =
         "CREATE INDEX rebookings_open ON rebookings(Canceled, JobUnique) WHERE Canceled IS NULL AND JobUnique IS NULL";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver34ToVer35(IDbTransaction trans)
+    {
+      using var cmd = trans.Connection.CreateCommand();
+
+      cmd.CommandText = "DROP TABLE IF EXISTS pendingloads";
       cmd.ExecuteNonQuery();
     }
 

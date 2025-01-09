@@ -42,7 +42,6 @@ async function main(): Promise<void> {
   const store = createStore();
   store.set(fmsInformation, await loadInfo());
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   render(null, document.getElementById("root")!, store);
 }
 

@@ -46,13 +46,13 @@ import {
   filterStationCycles,
   FilterAnyMachineKey,
   copyCyclesToClipboard,
-  estimateLulOperations,
   plannedOperationMinutes,
   LoadCycleData,
   loadOccupancyCycles,
   FilterAnyLoadKey,
   emptyStationCycles,
   PartAndProcess,
+  PartCycleChartData,
 } from "../../data/results.cycles.js";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import StationDataTable from "./StationDataTable.js";
@@ -63,11 +63,7 @@ import {
   PartAndStationOperation,
   specificMonthEstimatedCycleTimes,
 } from "../../cell-status/estimated-cycle-times.js";
-import {
-  last30StationCycles,
-  PartCycleData,
-  specificMonthStationCycles,
-} from "../../cell-status/station-cycles.js";
+import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomWithDefault } from "jotai/utils";
@@ -91,7 +87,7 @@ export function PartMachineCycleChart() {
   const setMatToShow = useSetAtom(matDetails.materialDialogOpen);
   const extraStationCycleTooltip = useCallback(
     function extraStationCycleTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
-      const partC = point as PartCycleData;
+      const partC = point as PartCycleChartData;
       const ret = [];
       for (const mat of partC.material) {
         ret.push({
@@ -154,7 +150,7 @@ export function PartMachineCycleChart() {
       }
     }
   }, [selectedPart, selectedPallet, selectedMachine, selectedOperation, cycles]);
-  const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
+  const curOperation = selectedPart ? (selectedOperation ?? points.allMachineOperations[0]) : undefined;
   const plannedMinutes = useMemo(() => {
     if (curOperation) {
       return plannedOperationMinutes(points, false);
@@ -415,7 +411,7 @@ export function PartLoadStationCycleChart() {
   const points = useMemo(() => {
     if (selectedPart || selectedPallet || selectedLoadStation !== FilterAnyLoadKey) {
       if (curOperation) {
-        return estimateLulOperations(cycles.valuesToLazySeq(), {
+        return filterStationCycles(cycles.valuesToLazySeq(), {
           operation: curOperation,
           pallet: selectedPallet,
           station: selectedLoadStation,

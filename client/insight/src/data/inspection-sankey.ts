@@ -173,9 +173,7 @@ export function inspectionDataToSankey(d: Iterable<InspectionLogEntry>): SankeyD
     )
     .toLazySeq()
     .map(([link, value]) => ({
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       source: nodesToIdx.get(link.from)!,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       target: nodesToIdx.get(link.to)!,
       value,
     }))
