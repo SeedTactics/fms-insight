@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { fakeCycle, fakeLoadOrUnload } from "../../test/events.fake.js";
+import { fakeCycle, fakeLoadOrUnload, fakeMaterial, fakePalletBegin } from "../../test/events.fake.js";
 import { lastEventCounter, onLoadLast30Log, onLoadSpecificMonthLog, onServerEvent } from "./loading.js";
 import { addDays, addMinutes } from "date-fns";
 import { last30BufferEntries, specificMonthBufferEntries } from "./buffers.js";
@@ -41,7 +41,7 @@ import { last30MaterialSummary, specificMonthMaterialSummary } from "./material-
 import { last30PalletCycles, specificMonthPalletCycles } from "./pallet-cycles.js";
 import { last30StationCycles, specificMonthStationCycles } from "./station-cycles.js";
 import { last30ToolUse } from "./tool-usage.js";
-import { LogEntry } from "../network/api.js";
+import { LogEntry, LogMaterial } from "../network/api.js";
 import { it, expect } from "vitest";
 
 import { toRawJs } from "../../test/to-raw-js.js";
@@ -227,6 +227,59 @@ it("doesn't split load elapsed times if they differ", () => {
 
   expect(cycles.get(300)?.elapsedMinsPerMaterial).toBe(22 / 2);
   expect(cycles.get(400)?.elapsedMinsPerMaterial).toBe(6 / 2);
+});
+
+it("doesn't split load elapsed times if they are the same", () => {
+  // new versions add the material to begin pallet cycle events, which is used to determine
+  // the need to split even when the elapsed times are equal.
+
+  const mats1 = [fakeMaterial("part444", 1), fakeMaterial("part444", 1)];
+  const mats2 = mats1.map((m) => new LogMaterial({ ...m, proc: 2 }));
+
+  const evts = [
+    // load and unload cycles with same time and elapsed time but in a pallet cycle event
+    // are already split by the server, should not be split again
+
+    fakePalletBegin({
+      counter: 100,
+      time: new Date(2024, 1, 28, 11, 4, 5),
+      pal: 6,
+      material: mats1,
+    }),
+
+    ...fakeLoadOrUnload({
+      counter: 300,
+      part: "part444",
+      material: mats1,
+      proc: 1,
+      pal: 6,
+      isLoad: true,
+      time: new Date(2025, 1, 28, 11, 4, 5),
+      elapsedMin: 14,
+      activeMin: 8,
+    }),
+    ...fakeLoadOrUnload({
+      counter: 400,
+      part: "part444",
+      material: mats2,
+      proc: 2,
+      pal: 6,
+      isLoad: false,
+      time: new Date(2025, 1, 28, 11, 4, 5), // same time
+      elapsedMin: 14,
+      activeMin: 4,
+    }),
+  ];
+
+  const store = createStore();
+  store.set(onLoadLast30Log, evts);
+
+  const cycles = store.get(last30StationCycles);
+
+  expect(cycles.size).toBe(2);
+
+  expect(cycles.get(300)?.elapsedMinsPerMaterial).toBe(14 / 2);
+  expect(cycles.get(400)?.elapsedMinsPerMaterial).toBe(14 / 2);
 });
 
 it("detects outliers", () => {

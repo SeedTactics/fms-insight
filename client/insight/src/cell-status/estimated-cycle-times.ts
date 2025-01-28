@@ -271,7 +271,7 @@ export function splitElapsedTimeAmongChunk<T extends { material: ReadonlyArray<u
 // An update to the server changed this so that the server splits the elapsed time among the events.
 // But, for backwards compatibility, detect if we need to split the elpased time in the client too.
 // To detect new vs old, the new version also started adding the material IDs to pallet begin and end events,
-// so if the material appears in a begin/end event that means it does not need to be signaled.
+// so if the material appears in a begin/end event that means it does not need to be split.
 export function calcElapsedForCycles(
   eventLog: ReadonlyArray<Readonly<ILogEntry>>,
 ): LazySeq<LogEntryWithSplitElapsed<Readonly<ILogEntry>>> {
@@ -297,8 +297,14 @@ export function calcElapsedForCycles(
     .flatMap(([_lul, chunks]) => chunks)
     .flatMap((chunk) => {
       // Check if need to split the elapsed
+      const chunk0Elapsed = durationToMinutes(chunk[0].elapsed);
       const shouldSplit =
-        chunk.length >= 2 && chunk.every((c) => c.material.every((m) => !matsInPalEvts.has(m.id)));
+        chunk.length >= 2 &&
+        chunk.every(
+          (c) =>
+            durationToMinutes(c.elapsed) === chunk0Elapsed &&
+            c.material.every((m) => !matsInPalEvts.has(m.id)),
+        );
 
       if (shouldSplit) {
         return splitElapsedTimeAmongChunk(
