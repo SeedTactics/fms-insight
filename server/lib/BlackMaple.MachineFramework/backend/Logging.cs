@@ -155,7 +155,7 @@ namespace BlackMaple.MachineFramework
       Log.Logger = logConfig.CreateLogger();
     }
 
-    private static object _verboseLoggingLock = new object();
+    private static System.Threading.Lock _verboseLoggingLock = new();
     private static Serilog.Events.LogEventLevel _oldLogLevel = Serilog.Events.LogEventLevel.Information;
     private static DateTime? _timeToReenableOldLogLevel = null;
 
