@@ -186,6 +186,7 @@ namespace MachineWatchTest
           _mazakCfg,
           allData,
           machineGroupName: "MC",
+          null,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
         );
       }
@@ -244,15 +245,6 @@ namespace MachineWatchTest
         jsonSettings
       );
 
-      _memoryLog.AddPendingLoad(
-        1,
-        "thekey",
-        1,
-        TimeSpan.FromMinutes(1),
-        TimeSpan.FromMinutes(1),
-        "foreignid"
-      );
-
       var matId = _memoryLog.AllocateMaterialID("aaa-schId1234", "aaa", 2);
       _memoryLog.RecordAddMaterialToQueue(
         new EventLogMaterial()
@@ -273,6 +265,7 @@ namespace MachineWatchTest
         _mazakCfg,
         allData,
         machineGroupName: "MC",
+        palletWithUnprocessedUnloads: 1,
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
       );
 
@@ -361,6 +354,7 @@ namespace MachineWatchTest
           _mazakCfg,
           allData,
           machineGroupName: "MC",
+          null,
           new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
         );
       }
@@ -444,6 +438,7 @@ namespace MachineWatchTest
         },
         allData,
         machineGroupName: "MC",
+        null,
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
       );
 

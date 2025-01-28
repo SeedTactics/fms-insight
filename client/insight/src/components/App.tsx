@@ -322,7 +322,7 @@ function SalesTabs() {
 export interface AppProps {
   readonly renderCustomPage?: (custom: ReadonlyArray<string>) => {
     readonly nav: ComponentType | undefined;
-    readonly page: JSX.Element;
+    readonly page: ReactNode;
   };
   readonly chooseModes?: (i: serverSettings.FMSInfoAndUser) => ReadonlyArray<ChooseModeItem> | null;
 }
@@ -334,7 +334,7 @@ const App = memo(function App(props: AppProps) {
 
   const showLogout = fmsInfo.user !== null && fmsInfo.user !== undefined;
 
-  let page: JSX.Element;
+  let page: ReactNode;
   let nav1: ComponentType | undefined = undefined;
   let nav2: ComponentType | undefined = undefined;
   let menuNavItems: ReadonlyArray<MenuNavItem> | undefined = undefined;

@@ -86,7 +86,6 @@ namespace MazakMachineInterface
     {
       var loadOpers = mazakData.LoadActions;
       var schs = new List<ScheduleWithQueues>();
-      var pending = jdb.AllPendingLoads();
       var skippedCastings = new HashSet<string>();
       foreach (var schRow in mazakData.Schedules.OrderBy(s => s.DueDate).ThenBy(s => s.Priority))
       {
@@ -116,16 +115,6 @@ namespace MazakMachineInterface
           {
             foundJobAtLoad = true;
             skippedCastings.Add(casting);
-            break;
-          }
-        }
-        foreach (var pendingLoad in pending)
-        {
-          var s = pendingLoad.Key.Split(',');
-          if (schRow.PartName == s[0])
-          {
-            skippedCastings.Add(casting);
-            foundJobAtLoad = true;
             break;
           }
         }

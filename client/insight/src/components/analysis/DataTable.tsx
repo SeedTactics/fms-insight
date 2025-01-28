@@ -30,7 +30,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { ComponentType, SetStateAction, MouseEvent, useState, memo, PureComponent, useMemo } from "react";
+import {
+  ComponentType,
+  SetStateAction,
+  MouseEvent,
+  useState,
+  memo,
+  PureComponent,
+  useMemo,
+  ReactNode,
+} from "react";
 import { Dialog, DialogActions, DialogContent, DialogTitle, styled, TableBody } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableHead } from "@mui/material";
@@ -149,7 +158,7 @@ function OpenFilterButton({ open }: { open: WritableAtom<unknown, [boolean], unk
 
 export function DataTableHead<Id extends string | number, Row>(
   props: DataTableHeadProps<Id, Row>,
-): JSX.Element {
+): ReactNode {
   const clipboardRows = props.copyToClipboardRows;
   return (
     <TableHead>
@@ -301,7 +310,7 @@ export const DataTableActions = memo(function DataTableActions({
   zoom,
   tpage,
   count,
-}: DataTableActionsProps): JSX.Element {
+}: DataTableActionsProps): ReactNode {
   let zoomCtrl;
   if (zoom && zoom.type === DataTableActionZoomType.Last30Days) {
     zoomCtrl = (
@@ -464,7 +473,7 @@ export interface DataTableBodyProps<Id, Row> {
 export class DataTableBody<Id extends string | number, Row> extends PureComponent<
   DataTableBodyProps<Id, Row>
 > {
-  override render(): JSX.Element {
+  override render(): ReactNode {
     const onClickDetails = this.props.onClickDetails;
     const rows = [...this.props.pageData];
     const emptyRows =
@@ -545,7 +554,7 @@ export function useTablePage(): TablePage {
 export function useColSort<Id, Row>(
   defSortCol: Id,
   cols: ReadonlyArray<Column<Id, Row>>,
-  defOrder?: "asc" | "desc" | undefined,
+  defOrder?: "asc" | "desc",
 ): ColSort<Id, Row> {
   const [orderBy, setOrderBy] = useState(defSortCol);
   const [order, setOrder] = useState<"asc" | "desc">(defOrder ?? "asc");

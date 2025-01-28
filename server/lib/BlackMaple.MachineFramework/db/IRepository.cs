@@ -84,11 +84,6 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
-    IEnumerable<LogEntry> RecordLoadEnd(
-      IEnumerable<MaterialToLoadOntoPallet> toLoad,
-      int pallet,
-      DateTime timeUTC
-    );
     LogEntry RecordUnloadStart(
       IEnumerable<EventLogMaterial> mats,
       int pallet,
@@ -97,17 +92,27 @@ namespace BlackMaple.MachineFramework
       string foreignId = null,
       string originalMessage = null
     );
-    IEnumerable<LogEntry> RecordUnloadEnd(
-      IEnumerable<EventLogMaterial> mats,
-      int pallet,
+    IEnumerable<LogEntry> RecordPartialLoadUnload(
+      IReadOnlyList<MaterialToLoadOntoFace> toLoad,
+      IReadOnlyList<MaterialToUnloadFromFace> toUnload,
       int lulNum,
+      int pallet,
+      TimeSpan totalElapsed,
       DateTime timeUTC,
-      TimeSpan elapsed,
-      TimeSpan active,
-      Dictionary<long, string> unloadIntoQueues = null,
-      string foreignId = null,
-      string originalMessage = null
+      IReadOnlyDictionary<string, string> externalQueues
     );
+    IEnumerable<LogEntry> RecordLoadUnloadComplete(
+      IReadOnlyList<MaterialToLoadOntoFace> toLoad,
+      IReadOnlyList<EventLogMaterial> previouslyLoaded,
+      IReadOnlyList<MaterialToUnloadFromFace> toUnload,
+      IReadOnlyList<EventLogMaterial> previouslyUnloaded,
+      int lulNum,
+      int pallet,
+      TimeSpan totalElapsed,
+      DateTime timeUTC,
+      IReadOnlyDictionary<string, string> externalQueues
+    );
+    IEnumerable<LogEntry> RecordEmptyPallet(int pallet, DateTime timeUTC, string foreignId = null);
     LogEntry RecordManualWorkAtLULStart(
       IEnumerable<EventLogMaterial> mats,
       int pallet,
@@ -441,23 +446,6 @@ namespace BlackMaple.MachineFramework
     );
 
     // --------------------------------------------------------------------------------
-    // Pending Loads
-    // --------------------------------------------------------------------------------
-    void AddPendingLoad(int pal, string key, int load, TimeSpan elapsed, TimeSpan active, string foreignID);
-    List<PendingLoad> PendingLoads(int pallet);
-    List<PendingLoad> AllPendingLoads();
-    void CancelPendingLoads(string foreignID);
-    LogEntry CompletePalletCycle(int pal, DateTime timeUTC, string foreignID = null);
-    (LogEntry, IEnumerable<LogEntry>) CompletePalletCycle(
-      int pal,
-      DateTime timeUTC,
-      IReadOnlyDictionary<string, IEnumerable<EventLogMaterial>> matFromPendingLoads,
-      IEnumerable<MaterialToLoadOntoPallet> additionalLoads,
-      bool generateSerials = false,
-      string foreignID = null
-    );
-
-    // --------------------------------------------------------------------------------
     // Inspections
     // --------------------------------------------------------------------------------
     List<InspectCount> LoadInspectCounts();
@@ -610,11 +598,14 @@ namespace BlackMaple.MachineFramework
     public string OriginalMessage { get; init; } = null;
   }
 
-  public record MaterialToLoadOntoPallet
+  public record MaterialToUnloadFromFace
   {
-    public required int LoadStation { get; init; }
-    public TimeSpan Elapsed { get; init; }
-    public ImmutableList<MaterialToLoadOntoFace> Faces { get; init; }
+    public required ImmutableDictionary<long, string> MaterialIDToQueue { get; init; }
+    public required int FaceNum { get; init; }
+    public required int Process { get; init; }
+    public required TimeSpan ActiveOperationTime { get; init; }
+    public string ForeignID { get; init; } = null;
+    public string OriginalMessage { get; init; } = null;
   }
 
   public record QueuedMaterial

@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { memo, useMemo, useState } from "react";
+import { memo, ReactNode, useMemo, useState } from "react";
 import { addDays, startOfToday } from "date-fns";
 import {
   Box,
@@ -316,7 +316,7 @@ const CloseoutRow = memo(function CloseoutRow({ mat }: { mat: MaterialSummaryAnd
   );
 });
 
-function CloseoutTable({ day }: { day: Date }): JSX.Element {
+function CloseoutTable({ day }: { day: Date }): ReactNode {
   const matSummary = useAtomValue(last30MaterialSummary);
 
   const material: ReadonlyArray<MaterialSummaryAndCompletedData> = useMemo(() => {
@@ -359,7 +359,7 @@ function CloseoutTable({ day }: { day: Date }): JSX.Element {
   );
 }
 
-export function CloseoutReport(): JSX.Element {
+export function CloseoutReport(): ReactNode {
   useSetTitle("Close Out");
   const [day, setDay] = useState(startOfToday());
 

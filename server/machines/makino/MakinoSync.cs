@@ -51,7 +51,7 @@ namespace BlackMaple.FMSInsight.Makino
     public TimeSpan TimeUntilNextRefresh => TimeSpan.FromMinutes(1);
   }
 
-  public sealed class MakinoSync(MakinoSettings settings, IMakinoDB makinoDb)
+  public sealed class MakinoSync(MakinoSettings settings, IMakinoDB makinoDb, FMSSettings fmsSettings)
     : ISynchronizeCellState<MakinoCellState>
   {
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSync>();
@@ -140,7 +140,7 @@ namespace BlackMaple.FMSInsight.Makino
         lastLog = nowUTC.AddDays(-30);
       }
 
-      var newEvts = new LogBuilder(makinoDb, db).CheckLogs(lastLog, nowUTC);
+      var newEvts = new LogBuilder(makinoDb, db, fmsSettings).CheckLogs(lastLog, nowUTC);
 
       var st = makinoDb.LoadCurrentInfo(db, nowUTC);
 

@@ -708,7 +708,7 @@ function AddAndPrintOnClientButton({
   qty: number | null;
   disabled: boolean;
 }) {
-  const printRef = useRef(null);
+  const printRef = useRef<HTMLDivElement>(null);
   const [adding, setAdding] = useState<boolean>(false);
   const print = useReactToPrint({
     contentRef: printRef,

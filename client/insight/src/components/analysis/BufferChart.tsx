@@ -60,17 +60,18 @@ const BufferChart = memo(function BufferChart(props: BufferChartProps) {
 
   const [disabledBuffers, setDisabledBuffers] = useState(HashSet.empty<string>());
 
+  const defaultDateRangeStart = defaultDateRange[0];
+  const defaultDateRangeEnd = defaultDateRange[1];
   const series = useMemo(
     () =>
       buildBufferChart(
-        defaultDateRange[0],
-        defaultDateRange[1],
+        defaultDateRangeStart,
+        defaultDateRangeEnd,
         props.movingAverageDistanceInHours,
         rawMatQueues,
         entries.valuesToLazySeq(),
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [defaultDateRange[0], defaultDateRange[1], entries, props.movingAverageDistanceInHours, rawMatQueues],
+    [defaultDateRangeStart, defaultDateRangeEnd, entries, props.movingAverageDistanceInHours, rawMatQueues],
   );
 
   const emptySeries = series.findIndex((s) => !disabledBuffers.has(s.label)) < 0;

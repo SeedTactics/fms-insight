@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useState, memo } from "react";
+import { useState, memo, ReactNode } from "react";
 import { Button, ListItemButton } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
@@ -52,7 +52,7 @@ import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 
 const selectInspTypeDialogOpen = atom<boolean>(false);
 
-function ManualInspTypeEntry(): JSX.Element {
+function ManualInspTypeEntry(): ReactNode {
   const [inspType, setInspType] = useState<string | null>(null);
   const mat = useAtomValue(matDetails.materialInDialogInfo);
   const [forceInsp] = matDetails.useForceInspection();
@@ -122,7 +122,7 @@ export function SignalInspectionButton() {
 export const SelectInspTypeDialog = memo(function SelectInspTypeDialog() {
   const [dialogOpen, setDialogOpen] = useAtom(selectInspTypeDialogOpen);
 
-  let body: JSX.Element | undefined;
+  let body: ReactNode | undefined;
   if (dialogOpen === false) {
     body = <p>None</p>;
   } else {

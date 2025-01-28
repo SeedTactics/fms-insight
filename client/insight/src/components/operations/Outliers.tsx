@@ -38,9 +38,8 @@ import { IconButton } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 
 import StationDataTable from "../analysis/StationDataTable.js";
-import { outlierMachineCycles, outlierLoadCycles, copyCyclesToClipboard } from "../../data/results.cycles.js";
+import { copyCyclesToClipboard } from "../../data/results.cycles.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
-import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
@@ -55,26 +54,22 @@ export function OutlierCycles({ outlierTy }: { outlierTy: OutlierType }) {
   useSetTitle(outlierTy === "machine" ? "Machine Outliers" : "L/U Outliers");
   const matSummary = useAtomValue(last30MaterialSummary);
   const today = startOfToday();
-  const estimatedCycleTimes = useAtomValue(last30EstimatedCycleTimes);
   const allCycles = useAtomValue(last30StationCycles);
   const points = useMemo(() => {
     const today = startOfToday();
-    if (outlierTy === "labor") {
-      return outlierLoadCycles(
-        allCycles.valuesToLazySeq(),
-        addDays(today, -4),
-        addDays(today, 1),
-        estimatedCycleTimes,
-      );
-    } else {
-      return outlierMachineCycles(
-        allCycles.valuesToLazySeq(),
-        addDays(today, -4),
-        addDays(today, 1),
-        estimatedCycleTimes,
-      );
-    }
-  }, [outlierTy, estimatedCycleTimes, allCycles]);
+    const start = addDays(today, -4);
+    const end = addDays(today, 1);
+    return {
+      seriesLabel: "Part",
+      data: allCycles
+        .valuesToLazySeq()
+        .filter(
+          (c) =>
+            c.isOutlier && c.endTime >= start && c.endTime < end && c.isLabor === (outlierTy === "labor"),
+        )
+        .toRLookup((e) => e.part + "-" + e.material[0].proc.toString()),
+    };
+  }, [outlierTy, allCycles]);
 
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">

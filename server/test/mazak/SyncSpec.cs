@@ -49,6 +49,7 @@ public sealed class MazakSyncSpec : IDisposable
 {
   private readonly MazakSync _sync;
   private readonly IMazakDB _mazakDB;
+  private readonly JsonSerializerOptions _jsonSettings;
   private readonly string _tempDir;
   private readonly FMSSettings _fmsSt;
   private readonly RepositoryConfig repo;
@@ -67,6 +68,10 @@ public sealed class MazakSyncSpec : IDisposable
     _fmsSt.Queues.Add("queueAAA", new QueueInfo());
     _fmsSt.Queues.Add("queueBBB", new QueueInfo());
     _fmsSt.Queues.Add("queueCCC", new QueueInfo());
+
+    _jsonSettings = new JsonSerializerOptions();
+    FMSInsightWebHost.JsonSettings(_jsonSettings);
+    _jsonSettings.WriteIndented = true;
 
     _sync = new MazakSync(
       _mazakDB,
@@ -280,9 +285,13 @@ public sealed class MazakSyncSpec : IDisposable
 
     File.WriteAllLines(
       Path.Combine(_tempDir, "111loadstart.csv"),
-      ["2024,6,11,4,5,6,501,,12,,1,6,4,prog,,,,"]
+      ["2024,6,11,4,5,6,501,,12,,,1,6,4,prog,,,"]
     );
-    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,1,6,4,prog,,,,"]);
+    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,,12,,1,6,4,prog,,,"]);
+    File.WriteAllLines(
+      Path.Combine(_tempDir, "333leaveload.csv"),
+      ["2024,6,11,4,6,10,301,,,,,,4,,,,L01,S04"]
+    );
 
     var allData = new MazakAllDataAndLogs()
     {
@@ -314,7 +323,7 @@ public sealed class MazakSyncSpec : IDisposable
             Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
           },
           AllData = allData,
-          StoppedBecauseRecentMachineEnd = false,
+          StoppedBecauseRecentLogEvent = false,
           StateUpdated = true,
           TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
         },
@@ -330,7 +339,81 @@ public sealed class MazakSyncSpec : IDisposable
 
     LogCSVParsing.DeleteLog("222loadend.csv", _tempDir);
 
-    Directory.GetFiles(_tempDir, "*.csv").Should().BeEmpty();
+    Directory
+      .GetFiles(_tempDir, "*.csv")
+      .Should()
+      .BeEquivalentTo([Path.Combine(_tempDir, "333leaveload.csv")]);
+  }
+
+  [Fact]
+  public void StopsProcessingOnLoadEvents()
+  {
+    using var db = repo.OpenConnection();
+
+    var newJobs = JsonSerializer.Deserialize<NewJobs>(
+      File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
+      _jsonSettings
+    );
+    db.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+    var matId = db.AllocateMaterialID("aaa-schId1234", "aaa", 2);
+    db.RecordAddMaterialToQueue(
+      new EventLogMaterial()
+      {
+        MaterialID = matId,
+        Process = 0,
+        Face = 0,
+      },
+      "castings",
+      -1,
+      operatorName: null,
+      reason: "TheQueueReason"
+    );
+
+    File.WriteAllLines(
+      Path.Combine(_tempDir, "111loadstart.csv"),
+      ["2024,6,11,4,5,6,501,,12,,,1,6,1,prog,,,"]
+    );
+    File.WriteAllLines(Path.Combine(_tempDir, "222loadend.csv"), ["2024,6,11,4,5,9,502,,12,,,1,6,1,prog,,,"]);
+
+    var allData = JsonSerializer.Deserialize<MazakAllDataAndLogs>(
+      File.ReadAllText(
+        Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.data.json")
+      ),
+      _jsonSettings
+    ) with
+    {
+      Logs = LogCSVParsing.LoadLog(null, _tempDir),
+    };
+    _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
+
+    var st = _sync.CalculateCellState(db);
+
+    st.AllData.Should().Be(allData);
+    st.StoppedBecauseRecentLogEvent.Should().BeTrue();
+    st.StateUpdated.Should().BeTrue();
+    st.TimeUntilNextRefresh.Should().Be(TimeSpan.FromSeconds(15));
+
+    // just a little check of the status that it correctly saw the load event,
+    // the full testing is in BuildCurrentStatusSpec.  Check the material
+    // has been loaded, even though we haven't yet processed the load
+    st.CurrentStatus.Material.Should().HaveCount(1);
+    st.CurrentStatus.Material[0]
+      .Location.Should()
+      .BeEquivalentTo(
+        new InProcessMaterialLocation()
+        {
+          Type = InProcessMaterialLocation.LocType.OnPallet,
+          PalletNum = 1,
+          Face = 1,
+        }
+      );
+    st.CurrentStatus.Material[0]
+      .Action.Should()
+      .BeEquivalentTo(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+
+    db.MaxForeignID().Should().BeEquivalentTo("111loadstart.csv");
+
+    _mazakDB.Received().DeleteLogs("111loadstart.csv");
   }
 
   [Fact]
@@ -371,7 +454,7 @@ public sealed class MazakSyncSpec : IDisposable
       );
 
     var st = _sync.CalculateCellState(db);
-    st.StoppedBecauseRecentMachineEnd.Should().BeTrue();
+    st.StoppedBecauseRecentLogEvent.Should().BeTrue();
     st.TimeUntilNextRefresh.Should().Be(TimeSpan.FromSeconds(15));
 
     db.MaxForeignID().Should().BeEquivalentTo("111loadstart.csv");
@@ -396,26 +479,26 @@ public sealed class MazakSyncSpec : IDisposable
     var now = DateTime.UtcNow;
 
     var mat = db.AllocateMaterialID("uuuu", "pppp", 1);
-    db.RecordLoadEnd(
+    db.RecordLoadUnloadComplete(
+      toLoad:
       [
-        new()
+        new MaterialToLoadOntoFace()
         {
-          LoadStation = 2,
-          Faces =
-          [
-            new MaterialToLoadOntoFace()
-            {
-              MaterialIDs = [mat],
-              FaceNum = 1,
-              Process = 1,
-              Path = 1,
-              ActiveOperationTime = TimeSpan.FromMinutes(1),
-            },
-          ],
+          MaterialIDs = [mat],
+          FaceNum = 1,
+          Process = 1,
+          Path = 1,
+          ActiveOperationTime = TimeSpan.FromMinutes(1),
         },
       ],
+      toUnload: null,
+      previouslyLoaded: null,
+      previouslyUnloaded: null,
+      lulNum: 2,
       pallet: 4,
-      timeUTC: now
+      totalElapsed: TimeSpan.FromMinutes(1),
+      timeUTC: now,
+      externalQueues: null
     );
 
     var allData = new MazakAllDataAndLogs()
@@ -467,7 +550,7 @@ public sealed class MazakSyncSpec : IDisposable
             Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
           },
           AllData = allData,
-          StoppedBecauseRecentMachineEnd = false,
+          StoppedBecauseRecentLogEvent = false,
           StateUpdated = true,
           TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
         },
@@ -495,7 +578,7 @@ public sealed class MazakSyncSpec : IDisposable
     {
       StateUpdated = false,
       TimeUntilNextRefresh = TimeSpan.FromMinutes(1),
-      StoppedBecauseRecentMachineEnd = false,
+      StoppedBecauseRecentLogEvent = false,
       CurrentStatus = new()
       {
         TimeOfCurrentStatusUTC = new(2018, 07, 19, 1, 2, 3, DateTimeKind.Utc),
@@ -573,7 +656,7 @@ public sealed class MazakSyncSpec : IDisposable
     {
       StateUpdated = true,
       TimeUntilNextRefresh = TimeSpan.FromMinutes(1),
-      StoppedBecauseRecentMachineEnd = false,
+      StoppedBecauseRecentLogEvent = false,
       CurrentStatus = new()
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,

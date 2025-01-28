@@ -91,10 +91,6 @@ namespace MachineWatchTest
         {
           sql1 = sql1.Replace("Pallet TEXT", "Pallet INTEGER");
         }
-        if (sql2.StartsWith("CREATE TABLE pendingloads"))
-        {
-          sql1 = sql1.Replace("Pallet TEXT", "Pallet INTEGER");
-        }
         if (sql2.StartsWith("CREATE TABLE stations"))
         {
           sql1 = sql1.Replace("Pallet TEXT", "Pallet INTEGER");

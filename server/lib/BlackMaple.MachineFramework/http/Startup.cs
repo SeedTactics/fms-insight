@@ -58,6 +58,7 @@ public static class FMSInsightWebHost
     settings.AllowTrailingCommas = true;
     settings.PropertyNamingPolicy = null;
     settings.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    settings.RespectNullableAnnotations = true;
   }
 
   public static IHostBuilder AddFMSInsightWebHost(

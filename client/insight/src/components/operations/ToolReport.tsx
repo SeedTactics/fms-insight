@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { useState, Fragment } from "react";
+import { useState, Fragment, ReactNode } from "react";
 import { Fab, styled, Box, FormControl } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import TimeAgo from "react-timeago";
@@ -377,7 +377,7 @@ type SortColumn =
 
 const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
 
-export function ToolSummaryTable(): JSX.Element {
+export function ToolSummaryTable(): ReactNode {
   const machineFilter = useAtomValue(toolReportMachineFilter);
   const tools = useAtomValue(currentToolReport);
   const [sortCol, setSortCol] = useState<SortColumn>("ToolName");
@@ -670,7 +670,7 @@ function ToolNavHeader() {
   }
 }
 
-export function ToolReportPage(): JSX.Element {
+export function ToolReportPage(): ReactNode {
   useSetTitle("Tool Report");
 
   return (

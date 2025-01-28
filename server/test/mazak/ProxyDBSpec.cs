@@ -248,7 +248,7 @@ public sealed class ProxyDBspec : IDisposable
         Response.Create().WithStatusCode(200).WithBodyAsJson(true).WithDelay(TimeSpan.FromSeconds(1.5))
       );
 
-    await Task.Delay(TimeSpan.FromSeconds(3));
+    await Task.Delay(TimeSpan.FromSeconds(4));
 
     monitor.Should().Raise("OnNewEvent");
   }

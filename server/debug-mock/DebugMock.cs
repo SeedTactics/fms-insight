@@ -526,26 +526,23 @@ namespace DebugMachineWatchApiServer
         }
         else if (e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Program == "LOAD")
         {
-          LogDB.RecordLoadEnd(
+          LogDB.RecordPartialLoadUnload(
+            toUnload: null,
+            lulNum: e.LocationNum,
             toLoad:
             [
-              new MaterialToLoadOntoPallet()
+              new MaterialToLoadOntoFace()
               {
-                LoadStation = e.LocationNum,
-                Faces =
-                [
-                  new MaterialToLoadOntoFace()
-                  {
-                    MaterialIDs = e.Material.Select(m => m.MaterialID).ToImmutableList(),
-                    Process = e.Material[0].Process,
-                    Path = e.Material[0].Path,
-                    FaceNum = e.Material[0].Face,
-                    ActiveOperationTime = e.ActiveOperationTime,
-                  },
-                ],
+                MaterialIDs = e.Material.Select(m => m.MaterialID).ToImmutableList(),
+                Process = e.Material[0].Process,
+                Path = e.Material[0].Path,
+                FaceNum = e.Material[0].Face,
+                ActiveOperationTime = e.ActiveOperationTime,
               },
             ],
             pallet: e.Pallet,
+            totalElapsed: e.ElapsedTime,
+            externalQueues: null,
             timeUTC: e.EndTimeUTC.Add(offset)
           );
         }
@@ -560,18 +557,28 @@ namespace DebugMachineWatchApiServer
         }
         else if (e.LogType == LogType.LoadUnloadCycle && !e.StartOfCycle && e.Program == "UNLOAD")
         {
-          LogDB.RecordUnloadEnd(
-            mats: e.Material.Select(EventLogMaterial.FromLogMat).ToImmutableList(),
+          LogDB.RecordPartialLoadUnload(
+            toLoad: null,
+            toUnload:
+            [
+              new MaterialToUnloadFromFace()
+              {
+                MaterialIDToQueue = e.Material.ToImmutableDictionary(m => m.MaterialID, m => (string)null),
+                FaceNum = e.Material[0].Face,
+                Process = e.Material[0].Process,
+                ActiveOperationTime = e.ActiveOperationTime,
+              },
+            ],
             pallet: e.Pallet,
             lulNum: e.LocationNum,
             timeUTC: e.EndTimeUTC.Add(offset),
-            elapsed: e.ElapsedTime,
-            active: e.ActiveOperationTime
+            totalElapsed: e.ElapsedTime,
+            externalQueues: null
           );
         }
         else if (e.LogType == LogType.PalletCycle)
         {
-          LogDB.CompletePalletCycle(pal: e.Pallet, timeUTC: e.EndTimeUTC.Add(offset));
+          LogDB.RecordEmptyPallet(pallet: e.Pallet, timeUTC: e.EndTimeUTC.Add(offset));
         }
         else if (e.LogType == LogType.PalletOnRotaryInbound && e.StartOfCycle)
         {

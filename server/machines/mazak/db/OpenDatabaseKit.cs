@@ -198,7 +198,7 @@ namespace MazakMachineInterface
       }
       else
       {
-        var conn = new System.Data.SqlClient.SqlConnection(_readConnStr);
+        var conn = new Microsoft.Data.SqlClient.SqlConnection(_readConnStr);
         conn.Open();
         return conn;
       }
@@ -212,7 +212,7 @@ namespace MazakMachineInterface
       }
       else
       {
-        var conn = new System.Data.SqlClient.SqlConnection(_writeConnStr);
+        var conn = new Microsoft.Data.SqlClient.SqlConnection(_writeConnStr);
         conn.Open();
         return conn;
       }

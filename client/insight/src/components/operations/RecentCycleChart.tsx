@@ -40,6 +40,7 @@ import {
   useState,
   useRef,
   useEffect,
+  ReactNode,
 } from "react";
 import { last30StationCycles } from "../../cell-status/station-cycles.js";
 import { last30EstimatedCycleTimes } from "../../cell-status/estimated-cycle-times.js";
@@ -159,7 +160,7 @@ function useScales(
   return { xScale, yScale, actualPlannedScale };
 }
 
-function AxisAndGrid({ xScale, yScale }: Pick<ChartScales, "xScale" | "yScale">): JSX.Element {
+function AxisAndGrid({ xScale, yScale }: Pick<ChartScales, "xScale" | "yScale">): ReactNode {
   return (
     <>
       <Axis
@@ -209,7 +210,7 @@ function RecentSeries({
 }: ChartScales & {
   cycles: ReadonlyArray<RecentCycle>;
   hideTooltipRef: MutableRefObject<NodeJS.Timeout | null>;
-}): JSX.Element {
+}): ReactNode {
   const actualOffset = actualPlannedScale("actual") ?? 0;
   const setTooltip = useSetAtom(tooltipData);
 
@@ -290,7 +291,7 @@ function CurrentSeries({
   now: Date;
   cycles: ReadonlyArray<CurrentCycle>;
   hideTooltipRef: MutableRefObject<NodeJS.Timeout | null>;
-}): JSX.Element {
+}): ReactNode {
   const actualOffset = actualPlannedScale("actual") ?? 0;
   const setTooltip = useSetAtom(tooltipData);
 
@@ -371,7 +372,7 @@ function SimSeries({
 }: ChartScales & {
   sim: ReadonlyArray<SimCycle>;
   hideTooltipRef: MutableRefObject<NodeJS.Timeout | null>;
-}): JSX.Element {
+}): ReactNode {
   const plannedOffset = actualPlannedScale("planned") ?? 0;
 
   const setTooltip = useSetAtom(tooltipData);
@@ -490,11 +491,7 @@ const Tooltip = memo(function Tooltip() {
   );
 });
 
-function NowLine({
-  now,
-  xScale,
-  yScale,
-}: Pick<ChartScales, "xScale" | "yScale"> & { now: Date }): JSX.Element {
+function NowLine({ now, xScale, yScale }: Pick<ChartScales, "xScale" | "yScale"> & { now: Date }): ReactNode {
   const x = xScale(now);
   const fontSize = 11;
   return (
@@ -526,11 +523,8 @@ export function RecentCycleChart({ height, width }: { height: number; width: num
 
   const cycles = useMemo(() => {
     const cutoff = addHours(new Date(), -12);
-    return recentCycles(
-      last30Cycles.valuesToLazySeq().filter((e) => e.x >= cutoff),
-      estimated,
-    );
-  }, [last30Cycles, estimated]);
+    return recentCycles(last30Cycles.valuesToLazySeq().filter((e) => e.endTime >= cutoff));
+  }, [last30Cycles]);
 
   const current = useMemo(() => {
     return currentCycles(currentSt, estimated);

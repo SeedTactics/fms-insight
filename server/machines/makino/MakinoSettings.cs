@@ -86,7 +86,7 @@ public record MakinoSettings
 
   private static string DetectSqlConnectionStr()
   {
-    var b = new System.Data.SqlClient.SqlConnectionStringBuilder
+    var b = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder
     {
       UserID = "sa",
       Password = "M@k1n0Admin",

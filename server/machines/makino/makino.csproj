@@ -4,7 +4,7 @@
     <AssemblyName>BlackMaple.FMSInsight.Makino</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.Makino</PackageId>
     <OutputType>Library</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
 
     <Title>SeedTactics FMS Insight Makino Backend</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -35,7 +35,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.6"/>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.*"/>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
   </ItemGroup>
 </Project>

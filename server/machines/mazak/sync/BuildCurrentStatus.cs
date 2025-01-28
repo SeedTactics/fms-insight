@@ -81,6 +81,7 @@ namespace MazakMachineInterface
       MazakConfig mazakCfg,
       MazakAllData mazakData,
       string machineGroupName,
+      int? palletWithUnprocessedUnloads,
       DateTime utcNow
     )
     {
@@ -207,7 +208,6 @@ namespace MazakMachineInterface
           );
 
           var oldCycles = jobDB.CurrentPalletLog(palName);
-          var pending = jobDB.PendingLoads(palName);
 
           //Add the material currently on the pallet
           foreach (var palSub in mazakData.PalletSubStatuses)
@@ -227,7 +227,13 @@ namespace MazakMachineInterface
             var job = jobsByUniq[jobUniqBySchID[palSub.ScheduleID]];
 
             var matIDs = new Queue<long>(
-              FindMatIDsFromOldCycles(oldCycles, pending.Count > 0, job, palSub.PartProcessNumber, jobDB)
+              FindMatIDsFromOldCycles(
+                oldCycles,
+                palletWithUnprocessedUnloads == palName,
+                job,
+                palSub.PartProcessNumber,
+                jobDB
+              )
             );
 
             for (int i = 1; i <= palSub.FixQuantity; i++)

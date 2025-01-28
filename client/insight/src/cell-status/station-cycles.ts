@@ -1,4 +1,4 @@
-/* Copyright (c) 2021, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -33,22 +33,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import { IEditMaterialInLogEvents, ILogEntry, ILogMaterial, LogType } from "../network/api.js";
 import type { ServerEventAndTime } from "./loading.js";
 import {
-  activeMinutes,
+  calcElapsedForCycles,
   EstimatedCycleTimes,
+  isOutlier,
   last30EstimatedCycleTimes,
-  LogEntryWithSplitElapsed,
   PartAndStationOperation,
   specificMonthEstimatedCycleTimes,
-  splitElapsedLoadTime,
 } from "./estimated-cycle-times.js";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { addDays } from "date-fns";
-import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
+import { HashMap } from "@seedtactics/immutable-collections";
 import { Atom, atom } from "jotai";
 
 export interface PartCycleData {
-  readonly x: Date;
-  readonly y: number; // cycle time in minutes
+  readonly endTime: Date;
+  readonly elapsedMinsPerMaterial: number;
   readonly cntr: number;
   readonly part: string;
   readonly stationGroup: string;
@@ -56,11 +55,13 @@ export interface PartCycleData {
   readonly operation: string;
   readonly pallet: number;
   readonly activeMinutes: number; // active time in minutes
-  readonly medianCycleMinutes: number;
-  readonly MAD_aboveMinutes: number;
   readonly isLabor: boolean;
   readonly material: ReadonlyArray<Readonly<ILogMaterial>>;
   readonly operator: string;
+
+  readonly medianCycleMinutes: number;
+  readonly MAD_aboveMinutes: number;
+  readonly isOutlier: boolean;
 }
 
 export type StationCyclesByCntr = HashMap<number, PartCycleData>;
@@ -73,18 +74,6 @@ export function stat_name_and_num(stationGroup: string, stationNumber: number): 
   }
 }
 
-export function splitElapsedLoadTimeAmongCycles(
-  cycles: LazySeq<PartCycleData>,
-): LazySeq<LogEntryWithSplitElapsed<PartCycleData>> {
-  return splitElapsedLoadTime(
-    cycles,
-    (c) => c.stationNumber,
-    (c) => c.x,
-    (c) => c.y,
-    (c) => c.activeMinutes,
-  );
-}
-
 const last30StationCyclesRW = atom<StationCyclesByCntr>(HashMap.empty<number, PartCycleData>());
 export const last30StationCycles: Atom<StationCyclesByCntr> = last30StationCyclesRW;
 
@@ -94,7 +83,8 @@ export const specificMonthStationCycles: Atom<StationCyclesByCntr> = specificMon
 function convertLogToCycle(
   estimatedCycleTimes: EstimatedCycleTimes,
   cycle: ILogEntry,
-): [number, PartCycleData] | null {
+  elapsedPerMat: number,
+): PartCycleData | null {
   if (
     cycle.startofcycle ||
     (cycle.type !== LogType.LoadUnloadCycle && cycle.type !== LogType.MachineCycle) ||
@@ -107,26 +97,38 @@ function convertLogToCycle(
     cycle.material.length > 0
       ? estimatedCycleTimes.get(PartAndStationOperation.ofLogCycle(cycle))
       : undefined;
-  const elapsed = durationToMinutes(cycle.elapsed);
-  return [
-    cycle.counter,
-    {
-      x: cycle.endUTC,
-      y: elapsed,
-      cntr: cycle.counter,
-      activeMinutes: activeMinutes(cycle, stats),
-      medianCycleMinutes: (stats?.medianMinutesForSingleMat ?? 0) * cycle.material.length,
-      MAD_aboveMinutes: stats?.MAD_aboveMinutes ?? 0,
-      part: part,
-      pallet: cycle.pal,
-      material: cycle.material,
-      isLabor: cycle.type === LogType.LoadUnloadCycle,
-      stationGroup: cycle.loc,
-      stationNumber: cycle.locnum,
-      operation: cycle.type === LogType.LoadUnloadCycle ? cycle.result : cycle.program,
-      operator: cycle.details ? cycle.details.operator || "" : "",
-    },
-  ];
+
+  let activeMins = durationToMinutes(cycle.active);
+  if (cycle.active === "" || activeMins <= 0 || cycle.material.length == 0) {
+    activeMins = (stats?.expectedCycleMinutesForSingleMat ?? 0) * cycle.material.length;
+  }
+
+  return {
+    endTime: cycle.endUTC,
+    elapsedMinsPerMaterial: elapsedPerMat,
+    cntr: cycle.counter,
+    activeMinutes: activeMins,
+    medianCycleMinutes: (stats?.medianMinutesForSingleMat ?? 0) * cycle.material.length,
+    MAD_aboveMinutes: stats?.MAD_aboveMinutes ?? 0,
+    part: part,
+    pallet: cycle.pal,
+    material: cycle.material,
+    isLabor: cycle.type === LogType.LoadUnloadCycle,
+    isOutlier: stats ? isOutlier(stats, elapsedPerMat) : false,
+    stationGroup: cycle.loc,
+    stationNumber: cycle.locnum,
+    operation: cycle.type === LogType.LoadUnloadCycle ? cycle.result : cycle.program,
+    operator: cycle.details ? cycle.details.operator || "" : "",
+  };
+}
+
+function convertOldLogsToCycles(
+  estimateCycleTimes: EstimatedCycleTimes,
+  log: ReadonlyArray<Readonly<ILogEntry>>,
+): StationCyclesByCntr {
+  return calcElapsedForCycles(log)
+    .collect((c) => convertLogToCycle(estimateCycleTimes, c.cycle, c.elapsedForSingleMaterialMinutes))
+    .buildHashMap((c) => c.cntr);
 }
 
 function process_swap(
@@ -146,11 +148,7 @@ function process_swap(
 export const setLast30StationCycles = atom(null, (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
   const estimatedCycleTimes = get(last30EstimatedCycleTimes);
   set(last30StationCyclesRW, (oldCycles) =>
-    oldCycles.union(
-      LazySeq.of(log)
-        .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
-        .toHashMap((x) => x),
-    ),
+    oldCycles.union(convertOldLogsToCycles(estimatedCycleTimes, log)),
   );
 });
 
@@ -172,16 +170,24 @@ export const updateLast30StationCycles = atom(null, (get, set, { evt, now, expir
     }
   } else if (evt.logEntry) {
     const estimatedCycleTimes = get(last30EstimatedCycleTimes);
-    const converted = convertLogToCycle(estimatedCycleTimes, evt.logEntry);
+
+    // new events arriving over websocket are garuanteed to use the new method of calculating elapsed time
+    // where the server already splits the elapsed time among a chunk, so no need to chunk here
+    const elapsedPerMat =
+      evt.logEntry.material.length > 0
+        ? durationToMinutes(evt.logEntry.elapsed) / evt.logEntry.material.length
+        : 0;
+
+    const converted = convertLogToCycle(estimatedCycleTimes, evt.logEntry, elapsedPerMat);
     if (!converted) return;
 
     set(last30StationCyclesRW, (cycles) => {
       if (expire) {
         const thirtyDaysAgo = addDays(now, -30);
-        cycles = cycles.filter((e) => e.x >= thirtyDaysAgo);
+        cycles = cycles.filter((e) => e.endTime >= thirtyDaysAgo);
       }
 
-      cycles = cycles.set(converted[0], converted[1]);
+      cycles = cycles.set(converted.cntr, converted);
 
       return cycles;
     });
@@ -195,11 +201,6 @@ export const setSpecificMonthStationCycles = atom(
   null,
   (get, set, log: ReadonlyArray<Readonly<ILogEntry>>) => {
     const estimatedCycleTimes = get(specificMonthEstimatedCycleTimes);
-    set(
-      specificMonthStationCyclesRW,
-      LazySeq.of(log)
-        .collect((c) => convertLogToCycle(estimatedCycleTimes, c))
-        .toHashMap((x) => x),
-    );
+    set(specificMonthStationCyclesRW, convertOldLogsToCycles(estimatedCycleTimes, log));
   },
 );

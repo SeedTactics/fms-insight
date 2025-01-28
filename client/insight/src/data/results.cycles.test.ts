@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { addHours } from "date-fns";
+import { addHours, addMinutes } from "date-fns";
 
 import { fakeCycle, fakeLoadOrUnload, fakeMachineCycle } from "../../test/events.fake.js";
 import { ILogEntry } from "../network/api.js";
@@ -38,20 +38,13 @@ import {
   filterStationCycles,
   buildCycleTable,
   buildLogEntriesTable,
-  outlierLoadCycles,
-  outlierMachineCycles,
   recentCycles,
 } from "./results.cycles.js";
 import { onLoadLast30Log } from "../cell-status/loading.js";
 import { last30StationCycles } from "../cell-status/station-cycles.js";
 import { last30MaterialSummary } from "../cell-status/material-summary.js";
-import {
-  last30EstimatedCycleTimes,
-  PartAndStationOperation,
-  StatisticalCycleTime,
-} from "../cell-status/estimated-cycle-times.js";
 import { it, expect } from "vitest";
-import { HashMap } from "@seedtactics/immutable-collections";
+import { LazySeq } from "@seedtactics/immutable-collections";
 import { createStore } from "jotai";
 
 it("creates cycles clipboard table", () => {
@@ -77,36 +70,6 @@ it("creates cycles clipboard table", () => {
   expect(table).toMatchSnapshot("cycle filtered clipboard table");
 });
 
-it("loads outlier cycles", () => {
-  const now = new Date(2018, 2, 5); // midnight in local time
-
-  const evts = ([] as ILogEntry[]).concat(
-    fakeCycle({ time: now, machineTime: 30, counter: 100 }),
-    fakeCycle({ time: addHours(now, -3), machineTime: 20, counter: 200 }),
-    fakeCycle({ time: addHours(now, -15), machineTime: 15, counter: 300 }),
-  );
-  const snapshot = createStore();
-  snapshot.set(onLoadLast30Log, evts);
-  const cycles = snapshot.get(last30StationCycles);
-  const estimatedCycleTimes = snapshot.get(last30EstimatedCycleTimes);
-
-  const loadOutliers = outlierLoadCycles(
-    cycles.valuesToLazySeq(),
-    new Date(2018, 0, 1),
-    new Date(2018, 11, 1),
-    estimatedCycleTimes,
-  );
-  expect(loadOutliers.data.size).toBe(0);
-
-  const machineOutliers = outlierMachineCycles(
-    cycles.valuesToLazySeq(),
-    new Date(2018, 0, 1),
-    new Date(2018, 11, 1),
-    estimatedCycleTimes,
-  );
-  expect(machineOutliers.data.size).toBe(0);
-});
-
 it("creates log entries clipboard table", () => {
   const now = new Date(2018, 2, 5); // midnight in local time
 
@@ -122,109 +85,115 @@ it("creates log entries clipboard table", () => {
 
 it("calculates recent cycles", () => {
   const now = new Date(Date.UTC(2018, 2, 5, 7, 0, 0));
+  const tenDaysAgo = addHours(now, -24 * 10);
 
-  const evts = ([] as ILogEntry[]).concat([
-    // one good machine cycle
-    ...fakeMachineCycle({
-      time: now,
-      part: "part1",
-      proc: 1,
-      program: "abcd",
-      numMats: 3,
-      activeMin: 28,
-      elapsedMin: 29,
-      counter: 100,
-    }),
+  const evts =
+    // use cycles 10 days ago to establish the expected cycle times for outliers
+    LazySeq.ofRange(1, 300)
+      .flatMap((i) =>
+        fakeMachineCycle({
+          counter: 2 * i,
+          numMats: 3,
+          part: "part1",
+          proc: 1,
+          program: "abcd",
+          time: addMinutes(tenDaysAgo, i),
+          // elapsed is random between 25 and 35
+          elapsedMin: Math.random() * 10 + 25,
+        }),
+      )
+      .concat(
+        LazySeq.ofRange(1, 300).flatMap((i) =>
+          fakeLoadOrUnload({
+            counter: 600 + 2 * i,
+            numMats: 2,
+            part: "part3",
+            proc: 1,
+            isLoad: true,
+            time: addMinutes(tenDaysAgo, 400 + i),
+            // elapsed is random between 10 and 15
+            elapsedMin: Math.random() * 5 + 10,
+          }),
+        ),
+      )
+      .concat([
+        // one good machine cycle
+        ...fakeMachineCycle({
+          time: now,
+          part: "part1",
+          proc: 1,
+          program: "abcd",
+          numMats: 3,
+          activeMin: 28,
+          elapsedMin: 29,
+          counter: 2000,
+        }),
 
-    // one outlier machine cycle
-    ...fakeMachineCycle({
-      time: addHours(now, 1),
-      part: "part1",
-      proc: 1,
-      program: "abcd",
-      numMats: 3,
-      activeMin: 28,
-      elapsedMin: 40,
-      counter: 200,
-    }),
+        // one outlier machine cycle
+        ...fakeMachineCycle({
+          time: addHours(now, 1),
+          part: "part1",
+          proc: 1,
+          program: "abcd",
+          numMats: 3,
+          activeMin: 28,
+          elapsedMin: 45,
+          counter: 2010,
+        }),
 
-    // one load and one unload at the same time
-    ...fakeLoadOrUnload({
-      time: addHours(now, 2),
-      part: "part3",
-      proc: 1,
-      isLoad: true,
-      elapsedMin: 21,
-      numMats: 2,
-      activeMin: 8,
-      counter: 300,
-    }),
-    ...fakeLoadOrUnload({
-      time: addHours(now, 2),
-      part: "part4",
-      proc: 2,
-      isLoad: false,
-      elapsedMin: 21,
-      numMats: 2,
-      activeMin: 12,
-      counter: 400,
-    }),
+        // one load and one unload at the same time
+        ...fakeLoadOrUnload({
+          time: addHours(now, 2),
+          part: "part3",
+          proc: 1,
+          lulNum: 2,
+          numMats: 2,
+          isLoad: true,
+          elapsedMin: 12,
+          activeMin: 8,
+          counter: 3000,
+        }),
+        ...fakeLoadOrUnload({
+          time: addHours(now, 2),
+          part: "part4",
+          proc: 2,
+          lulNum: 2,
+          numMats: 2,
+          isLoad: false,
+          elapsedMin: 21,
+          activeMin: 12,
+          counter: 4000,
+        }),
 
-    // one load and one unload at the same time but is outlier
-    ...fakeLoadOrUnload({
-      time: addHours(now, 3),
-      part: "part3",
-      proc: 1,
-      isLoad: true,
-      elapsedMin: 28,
-      numMats: 2,
-      activeMin: 8,
-      counter: 500,
-    }),
-    ...fakeLoadOrUnload({
-      time: addHours(now, 3),
-      part: "part4",
-      proc: 2,
-      isLoad: false,
-      elapsedMin: 28,
-      numMats: 2,
-      activeMin: 12,
-      counter: 600,
-    }),
-  ]);
-
-  const expected = HashMap.from<PartAndStationOperation, StatisticalCycleTime>([
-    [
-      new PartAndStationOperation("part1", "MC", "abcd"),
-      {
-        medianMinutesForSingleMat: 28 / 3, // 3 parts per face
-        MAD_aboveMinutes: 1.2,
-        MAD_belowMinutes: 1.2,
-        expectedCycleMinutesForSingleMat: 100000, // not used
-      },
-    ],
-    [
-      new PartAndStationOperation("part3", "L/U", "LOAD-1"),
-      {
-        medianMinutesForSingleMat: 8 / 2, // 2 parts per face
-        MAD_aboveMinutes: 1,
-        MAD_belowMinutes: 1,
-        expectedCycleMinutesForSingleMat: 100000, // not used
-      },
-    ],
-    [
-      new PartAndStationOperation("part4", "L/U", "UNLOAD-2"),
-      {
-        medianMinutesForSingleMat: 11 / 2, // two parts per face
-        MAD_aboveMinutes: 1,
-        MAD_belowMinutes: 1,
-        expectedCycleMinutesForSingleMat: 100000, // not used
-      },
-    ],
-  ]);
+        // one load and one unload at the same time but is outlier
+        ...fakeLoadOrUnload({
+          time: addHours(now, 3),
+          part: "part3",
+          proc: 1,
+          isLoad: true,
+          elapsedMin: 25, // outside range of 10 to 15
+          numMats: 2,
+          activeMin: 8,
+          counter: 5000,
+        }),
+        ...fakeLoadOrUnload({
+          time: addHours(now, 3),
+          part: "part4",
+          proc: 2,
+          isLoad: false,
+          elapsedMin: 28,
+          numMats: 2,
+          activeMin: 12,
+          counter: 6000,
+        }),
+      ])
+      .toRArray();
 
   const snapshot = createStore();
   snapshot.set(onLoadLast30Log, evts);
+
   const cycles = snapshot.get(last30StationCycles);
-  expect(recentCycles(cycles.valuesToLazySeq(), expected)).toMatchSnapshot("recent cycles");
+  expect(recentCycles(cycles.valuesToLazySeq().filter((e) => e.endTime >= now))).toMatchSnapshot(
+    "recent cycles",
+  );
 });

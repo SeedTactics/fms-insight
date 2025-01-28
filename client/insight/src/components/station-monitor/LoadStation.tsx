@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useMemo, memo, useState, useCallback } from "react";
+import { useMemo, memo, useState, useCallback, ReactNode } from "react";
 import { Box, useMediaQuery, Button, Typography } from "@mui/material";
 import { LazySeq, mkCompareByProperties, OrderedMap } from "@seedtactics/immutable-collections";
 
@@ -900,7 +900,7 @@ export function LoadStation(props: LoadStationProps) {
   );
 }
 
-function LoadStationCheckWidth(props: LoadStationProps): JSX.Element {
+function LoadStationCheckWidth(props: LoadStationProps): ReactNode {
   useSetTitle("Load " + props.loadNum.toString());
   return <LoadStation {...props} />;
 }

@@ -1,4 +1,6 @@
-export function SeedtacticLogo(): JSX.Element {
+import type { ReactNode } from "react";
+
+export function SeedtacticLogo(): ReactNode {
   return (
     <svg width="30px" height="30px" viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">
       <defs>

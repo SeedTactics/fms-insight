@@ -177,15 +177,15 @@ namespace BlackMaple.MachineFramework
 
     // changeLock prevents decrement and queue changes from occuring at the same time as the thread
     // is deciding what to put onto a pallet
-    private readonly object _changeLock = new();
+    private readonly Lock _changeLock = new();
 
     // curStLock protects _lastCurrentStatus and _syncError field
-    private readonly object _curStLock = new();
+    private readonly Lock _curStLock = new();
     private St _lastCurrentStatus = default;
     private string _syncError = null;
 
     #region Thread and Messages
-    private readonly System.Threading.Thread _thread;
+    private readonly Thread _thread;
     private readonly AutoResetEvent _shutdown = new(false);
     private readonly AutoResetEvent _recheck = new(false);
     private readonly ManualResetEvent _newCellState = new(false);

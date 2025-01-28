@@ -86,7 +86,7 @@ namespace MazakMachineInterface
       }
       else if (dbtype == MazakDbType.MazakSmooth)
       {
-        var b = new System.Data.SqlClient.SqlConnectionStringBuilder
+        var b = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder
         {
           UserID = "mazakpmc",
           Password = "Fms-978",

@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useState, memo } from "react";
+import { useState, memo, ReactNode } from "react";
 import { Button, ListItemButton } from "@mui/material";
 import { List } from "@mui/material";
 import { ListItem } from "@mui/material";
@@ -123,7 +123,7 @@ function WorkorderList() {
 export const SelectWorkorderDialog = memo(function SelectWorkorderDialog() {
   const [workDialogOpen, setWorkDialogOpen] = useAtom(selectWorkorderDialogOpen);
 
-  let body: JSX.Element | undefined;
+  let body: ReactNode | undefined;
   if (workDialogOpen === false) {
     body = <p>None</p>;
   } else {

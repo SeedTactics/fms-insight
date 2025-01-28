@@ -247,27 +247,33 @@ export function fakeMachineCycle({
 export function fakeLoadOrUnload({
   counter,
   numMats,
+  material,
   part,
   proc,
   pal,
   isLoad,
+  lulNum,
   time,
   elapsedMin,
   activeMin,
 }: {
   counter: number;
   numMats?: number;
+  material?: LogMaterial[];
   part: string;
   proc: number;
   pal?: number;
   isLoad: boolean;
   time: Date;
+  lulNum?: number;
   elapsedMin: number;
   activeMin?: number;
 }): ReadonlyArray<ILogEntry> {
-  const material = LazySeq.ofRange(0, numMats ?? 1)
-    .map(() => fakeMaterial(part, proc))
-    .toMutableArray();
+  material =
+    material ??
+    LazySeq.ofRange(0, numMats ?? 1)
+      .map(() => fakeMaterial(part, proc))
+      .toMutableArray();
 
   const es: Array<ILogEntry> = [];
   addStartAndEnd(es, {
@@ -278,13 +284,40 @@ export function fakeLoadOrUnload({
     startofcycle: false,
     endUTC: time,
     loc: "L/U",
-    locnum: 1,
+    locnum: lulNum ?? 1,
     result: isLoad ? "LOAD" : "UNLOAD",
     program: isLoad ? "LOAD" : "UNLOAD",
     elapsed: `PT${elapsedMin}M`,
     active: activeMin ? `PT${activeMin}M` : "PT-1S",
   });
   return es;
+}
+
+export function fakePalletBegin({
+  counter,
+  material,
+  pal,
+  time,
+}: {
+  counter: number;
+  material: LogMaterial[];
+  pal: number;
+  time: Date;
+}) {
+  return {
+    counter,
+    material,
+    pal: pal,
+    type: LogType.PalletCycle,
+    startofcycle: true,
+    endUTC: time,
+    loc: "Pallet Cycle",
+    locnum: 1,
+    result: "PalletCycle",
+    program: "",
+    elapsed: "PT0S",
+    active: "PT0S",
+  };
 }
 
 export function fakeCycle({
@@ -409,8 +442,8 @@ export function fakeCycle({
     type: LogType.PalletCycle,
     startofcycle: false,
     endUTC: time,
-    loc: "L/U",
-    locnum: 2,
+    loc: "Pallet Cycle",
+    locnum: 1,
     result: "PalletCycle",
     program: "",
     elapsed: "PT44M",

@@ -60,7 +60,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
     private class WebsocketDict
     {
-      private object _lock = new object();
+      private System.Threading.Lock _lock = new();
       private Dictionary<Guid, WebSocket> _sockets = new Dictionary<Guid, WebSocket>();
 
       public List<WebSocket> AllSockets()

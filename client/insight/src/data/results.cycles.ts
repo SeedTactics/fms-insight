@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2024, John Lenz
 
 All rights reserved.
 
@@ -32,24 +32,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api.js";
-import { differenceInSeconds, addMinutes } from "date-fns";
+import { addMinutes, addSeconds } from "date-fns";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
 import copy from "copy-to-clipboard";
 import {
   chunkCyclesWithSimilarEndTime,
-  EstimatedCycleTimes,
-  isOutlier,
   PartAndStationOperation,
-  splitElapsedTimeAmongChunk,
 } from "../cell-status/estimated-cycle-times.js";
-import {
-  PartCycleData,
-  splitElapsedLoadTimeAmongCycles,
-  stat_name_and_num,
-} from "../cell-status/station-cycles.js";
+import { PartCycleData, stat_name_and_num } from "../cell-status/station-cycles.js";
 import { PalletCyclesByPallet } from "../cell-status/pallet-cycles.js";
-import { HashSet, HashMap, LazySeq } from "@seedtactics/immutable-collections";
+import { HashMap, LazySeq, OrderedSet, OrderedMap } from "@seedtactics/immutable-collections";
 
 export interface PartAndProcess {
   readonly part: string;
@@ -68,19 +61,19 @@ function extractFilterOptions(
   cycles: Iterable<PartCycleData>,
   selectedPart?: PartAndProcess,
 ): CycleFilterOptions {
-  const palNames = new Set<number>();
-  const lulNames = new Set<string>();
-  const mcNames = new Set<string>();
-  let partNames = HashMap.empty<string, HashSet<number>>();
-  let oper = HashSet.empty<PartAndStationOperation>();
+  let palNames = OrderedSet.empty<number>();
+  let lulNames = OrderedSet.empty<string>();
+  let mcNames = OrderedSet.empty<string>();
+  let partNames = OrderedMap.empty<string, OrderedSet<number>>();
+  let oper = OrderedSet.empty<PartAndStationOperation>();
 
   for (const c of cycles) {
-    palNames.add(c.pallet);
+    palNames = palNames.add(c.pallet);
 
     if (c.isLabor) {
-      lulNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
+      lulNames = lulNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
     } else {
-      mcNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
+      mcNames = mcNames.add(stat_name_and_num(c.stationGroup, c.stationNumber));
 
       if (
         selectedPart &&
@@ -92,31 +85,27 @@ function extractFilterOptions(
     }
 
     for (const m of c.material) {
-      partNames = partNames.modify(m.part, (old) => (old ?? HashSet.empty()).add(m.proc));
+      partNames = partNames.alter(m.part, (old) => (old ?? OrderedSet.empty()).add(m.proc));
     }
   }
 
   return {
-    allPalletNames: Array.from(palNames).sort(),
-    allLoadStationNames: Array.from(lulNames).sort((a, b) => a.localeCompare(b)),
-    allMachineNames: Array.from(mcNames).sort((a, b) => a.localeCompare(b)),
-    allPartAndProcNames: LazySeq.of(partNames)
-      .sortBy(([p, _]) => p)
-      .flatMap(([part, procs]) => procs.toLazySeq().map((proc) => ({ part: part, proc: proc })))
-      .toSortedArray(
-        (n) => n.part,
-        (n) => n.proc,
-      ),
-    allMachineOperations: oper.toLazySeq().toSortedArray(
-      (p) => p.statGroup,
-      (p) => p.operation,
-    ),
+    allPalletNames: palNames.toAscLazySeq().toRArray(),
+    allLoadStationNames: lulNames.toAscLazySeq().toRArray(),
+    allMachineNames: mcNames.toAscLazySeq().toRArray(),
+    allPartAndProcNames: partNames
+      .toAscLazySeq()
+      .flatMap(([part, procs]) => procs.toAscLazySeq().map((proc) => ({ part: part, proc: proc })))
+      .toRArray(),
+    allMachineOperations: oper.toAscLazySeq().toRArray(),
   };
 }
 
+export type PartCycleChartData = PartCycleData & { readonly x: Date; readonly y: number };
+
 export interface FilteredStationCycles {
   readonly seriesLabel: string;
-  readonly data: ReadonlyMap<string, ReadonlyArray<PartCycleData>>;
+  readonly data: ReadonlyMap<string, ReadonlyArray<PartCycleChartData>>;
 }
 
 export const FilterAnyMachineKey = "@@@_FMSInsight_FilterAnyMachineKey_@@@";
@@ -136,7 +125,7 @@ export function emptyStationCycles(
   return {
     ...extractFilterOptions(allCycles),
     seriesLabel: "Station",
-    data: new Map<string, ReadonlyArray<PartCycleData>>(),
+    data: new Map<string, ReadonlyArray<PartCycleChartData>>(),
   };
 }
 
@@ -146,14 +135,15 @@ export function filterStationCycles(
 ): FilteredStationCycles & CycleFilterOptions {
   const groupByPal =
     partAndProc && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
-  const groupByPart = pallet && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
+  const groupByPart =
+    pallet && !operation && station && station !== FilterAnyMachineKey && station !== FilterAnyLoadKey;
 
   return {
     ...extractFilterOptions(allCycles, partAndProc),
     seriesLabel: groupByPal ? "Pallet" : groupByPart ? "Part" : "Station",
     data: LazySeq.of(allCycles)
       .filter((e) => {
-        if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
+        if (zoom && (e.endTime < zoom.start || e.endTime > zoom.end)) {
           return false;
         }
         if (
@@ -184,27 +174,34 @@ export function filterStationCycles(
 
         return true;
       })
-      .toRLookup((e) => {
-        if (groupByPal) {
-          return e.pallet.toString();
-        } else if (groupByPart) {
-          return (
-            e.part +
-            "-" +
-            LazySeq.of(e.material)
-              .map((m) => m.proc)
-              .distinctAndSortBy((p) => p)
-              .toRArray()
-              .join(":")
-          );
-        } else {
-          return stat_name_and_num(e.stationGroup, e.stationNumber);
-        }
-      }),
+      .toRLookup(
+        (e) => {
+          if (groupByPal) {
+            return e.pallet.toString();
+          } else if (groupByPart) {
+            return (
+              e.part +
+              "-" +
+              LazySeq.of(e.material)
+                .map((m) => m.proc)
+                .distinctAndSortBy((p) => p)
+                .toRArray()
+                .join(":")
+            );
+          } else {
+            return stat_name_and_num(e.stationGroup, e.stationNumber);
+          }
+        },
+        (e) => ({
+          ...e,
+          x: e.endTime,
+          y: e.elapsedMinsPerMaterial * e.material.length,
+        }),
+      ),
   };
 }
 
-export interface LoadCycleData extends PartCycleData {
+export interface LoadCycleData extends PartCycleChartData {
   readonly operations?: ReadonlyArray<{
     readonly mat: Readonly<api.ILogMaterial>;
     readonly operation: string;
@@ -240,8 +237,8 @@ export function loadOccupancyCycles(
     seriesLabel: "Station",
     data: chunkCyclesWithSimilarEndTime(
       filteredCycles,
-      (e) => stat_name_and_num(e.stationGroup, e.stationNumber),
-      (c) => c.x,
+      (c) => stat_name_and_num(c.stationGroup, c.stationNumber),
+      (c) => c.endTime,
     )
       .map(
         ([statNameAndNum, cyclesForStat]) =>
@@ -250,7 +247,7 @@ export function loadOccupancyCycles(
             LazySeq.of(cyclesForStat)
               .collect((chunk) => {
                 const cycle = chunk.find((e) => {
-                  if (zoom && (e.x < zoom.start || e.x > zoom.end)) {
+                  if (zoom && (e.endTime < zoom.start || e.endTime > zoom.end)) {
                     return false;
                   }
                   if (
@@ -268,6 +265,8 @@ export function loadOccupancyCycles(
                 if (cycle) {
                   return {
                     ...cycle,
+                    x: cycle.endTime,
+                    y: chunk.reduce((acc, e) => acc + e.elapsedMinsPerMaterial * e.material.length, 0),
                     operations: LazySeq.of(chunk)
                       .flatMap((e) =>
                         e.material.map((mat) => ({
@@ -286,133 +285,6 @@ export function loadOccupancyCycles(
       )
       .filter(([, e]) => e.length > 0)
       .toRMap((x) => x),
-  };
-}
-
-export interface LoadOpFilters {
-  readonly operation: PartAndStationOperation;
-  readonly pallet?: number;
-  readonly station?: string;
-  readonly zoom?: { readonly start: Date; readonly end: Date };
-}
-
-export function estimateLulOperations(
-  allCycles: Iterable<PartCycleData>,
-  { operation, pallet, zoom, station }: LoadOpFilters,
-): FilteredLoadCycles & CycleFilterOptions {
-  const filteredCycles = LazySeq.of(allCycles).filter((e) => {
-    if (!station || station === FilterAnyLoadKey) {
-      return e.isLabor;
-    } else {
-      return stat_name_and_num(e.stationGroup, e.stationNumber) === station;
-    }
-  });
-  return {
-    ...extractFilterOptions(allCycles),
-    seriesLabel: "Station",
-    data: chunkCyclesWithSimilarEndTime(
-      filteredCycles,
-      (e) => stat_name_and_num(e.stationGroup, e.stationNumber),
-      (c) => c.x,
-    )
-      .map(
-        ([statNameAndNum, cyclesForStat]) =>
-          [
-            statNameAndNum,
-            LazySeq.of(cyclesForStat)
-              .collect((chunk) => {
-                const split = splitElapsedTimeAmongChunk(
-                  chunk,
-                  (c) => c.y,
-                  (c) => c.activeMinutes,
-                );
-                const splitCycle = split.find((e) => {
-                  if (zoom && (e.cycle.x < zoom.start || e.cycle.x > zoom.end)) {
-                    return false;
-                  }
-                  if (operation.compare(PartAndStationOperation.ofPartCycle(e.cycle)) !== 0) {
-                    return false;
-                  }
-                  if (pallet && e.cycle.pallet !== pallet) {
-                    return false;
-                  }
-                  return true;
-                });
-
-                if (splitCycle) {
-                  return {
-                    ...splitCycle.cycle,
-                    y: splitCycle.elapsedForSingleMaterialMinutes,
-                    operations: LazySeq.of(chunk)
-                      .flatMap((e) =>
-                        e.material.map((mat) => ({
-                          mat,
-                          operation: e.operation + (e === splitCycle.cycle ? "*" : ""),
-                        })),
-                      )
-                      .toRArray(),
-                  };
-                } else {
-                  return null;
-                }
-              })
-              .toRArray(),
-          ] as const,
-      )
-      .filter(([_, e]) => e.length > 0)
-      .toRMap((x) => x),
-  };
-}
-
-export function outlierMachineCycles(
-  allCycles: Iterable<PartCycleData>,
-  start: Date,
-  end: Date,
-  estimated: EstimatedCycleTimes,
-): FilteredStationCycles {
-  return {
-    seriesLabel: "Part",
-    data: LazySeq.of(allCycles)
-      .filter((e) => !e.isLabor && e.x >= start && e.x <= end)
-      .filter((cycle) => {
-        if (cycle.material.length === 0) return false;
-        const stats = estimated.get(PartAndStationOperation.ofPartCycle(cycle));
-        return stats !== undefined && isOutlier(stats, cycle.y / cycle.material.length);
-      })
-      .toRLookup((e) => e.part + "-" + e.material[0].proc.toString()),
-  };
-}
-
-export function outlierLoadCycles(
-  allCycles: Iterable<PartCycleData>,
-  start: Date,
-  end: Date,
-  estimated: EstimatedCycleTimes,
-): FilteredStationCycles {
-  const loadCycles = LazySeq.of(allCycles).filter((e) => e.isLabor && e.x >= start && e.x <= end);
-  const now = new Date();
-  return {
-    seriesLabel: "Part",
-    data: splitElapsedLoadTimeAmongCycles(loadCycles)
-      .filter((e) => {
-        if (e.cycle.material.length === 0) return false;
-        // if it is too close to the start (or end) we might have cut off and only seen half of the events
-        if (differenceInSeconds(e.cycle.x, start) < 20 || differenceInSeconds(end, e.cycle.x) < 20)
-          return false;
-
-        // if the cycle is within 15 seconds of now, don't display it yet.  We might only have received some
-        // of the events for the load and the others are in-flight about to be received.
-        // Technically, using now is wrong since the result of outlierLoadCycles is cached, but as soon as
-        // another cycle arrives it will be recaluclated.  Thus showing stale data isn't a huge problem.
-        if (Math.abs(differenceInSeconds(now, e.cycle.x)) < 15) return false;
-
-        const stats = estimated.get(PartAndStationOperation.ofPartCycle(e.cycle));
-        return stats !== undefined && isOutlier(stats, e.elapsedForSingleMaterialMinutes);
-      })
-      .toRLookup(
-        (e) => e.cycle.part + "-" + e.cycle.material[0].proc.toString(),
-        (e) => e.cycle,
-      ),
   };
 }
 
@@ -441,69 +313,43 @@ export interface RecentCycle {
   readonly parts: ReadonlyArray<{ part: string; oper: string }>;
 }
 
-export function recentCycles(
-  allCycles: LazySeq<PartCycleData>,
-  estimated: EstimatedCycleTimes,
-): ReadonlyArray<RecentCycle> {
+export function recentCycles(allCycles: LazySeq<PartCycleData>): ReadonlyArray<RecentCycle> {
   return chunkCyclesWithSimilarEndTime(
     allCycles,
     (c) => stat_name_and_num(c.stationGroup, c.stationNumber),
-    (c) => c.x,
+    (c) => c.endTime,
   )
     .flatMap(function* procChunk([station, chunks]) {
       for (const chunk of chunks) {
-        if (chunk[0].isLabor) {
-          const entries = splitElapsedTimeAmongChunk(
-            chunk,
-            (c) => c.y,
-            (c) => c.activeMinutes,
-          );
-          const endTime = chunk[0].x;
-          const occupiedMins = chunk[0].y;
-          let activeMins = 0;
-          let outlier = false;
-          for (let i = 0; i < chunk.length; i++) {
-            activeMins += chunk[i].activeMinutes;
-            const stats = estimated.get(PartAndStationOperation.ofPartCycle(chunk[i]));
-            if (stats && isOutlier(stats, entries[i].elapsedForSingleMaterialMinutes)) {
-              outlier = true;
-            }
-          }
-          yield {
-            station,
-            startTime: addMinutes(endTime, -occupiedMins),
-            endActive: activeMins > 0 ? addMinutes(endTime, activeMins - occupiedMins) : undefined,
-            endOccupied: endTime,
-            outlier,
-            parts: LazySeq.of(chunk)
-              .distinctAndSortBy(
-                (c) => c.part,
-                (c) => c.material[0].proc, // load events have the same process on all mats on face
-                (c) => c.operation,
-              )
-              .map((c) => ({
-                part: c.part + "-" + c.material[0].proc.toString(),
-                oper: c.operation,
-              }))
-              .toRArray(),
-          };
-        } else {
-          for (const c of chunk) {
-            const stats = estimated.get(PartAndStationOperation.ofPartCycle(c));
-            yield {
-              station,
-              startTime: addMinutes(c.x, -c.y),
-              endActive: c.activeMinutes > 0 ? addMinutes(c.x, c.activeMinutes - c.y) : undefined,
-              endOccupied: c.x,
-              outlier: stats ? isOutlier(stats, c.y / c.material.length) : false,
-              parts: LazySeq.of(c.material)
-                .map((m) => m.proc)
-                .distinctAndSortBy((p) => p)
-                .map((proc) => ({ part: c.part + "-" + proc.toString(), oper: c.operation }))
-                .toRArray(),
-            };
-          }
-        }
+        // sum elapsed time for chunk and subtract from end time to get start time
+        const elapForChunkMins = LazySeq.of(chunk).sumBy((c) => c.elapsedMinsPerMaterial * c.material.length);
+        const startTime = addSeconds(chunk[0].endTime, -elapForChunkMins * 60);
+
+        const activeMins = LazySeq.of(chunk).sumBy((c) => c.activeMinutes);
+
+        yield {
+          station,
+          startTime,
+          endActive: activeMins > 0 ? addMinutes(startTime, activeMins) : undefined,
+          endOccupied: chunk[0].endTime,
+          outlier: chunk.some((c) => c.isOutlier),
+          parts: LazySeq.of(chunk)
+            .flatMap((c) =>
+              LazySeq.of(c.material)
+                .distinctBy((m) => m.proc)
+                .map((m) => ({ part: c.part, proc: m.proc, oper: c.operation })),
+            )
+            .distinctAndSortBy(
+              (c) => c.part,
+              (c) => c.proc,
+              (c) => c.oper,
+            )
+            .map((c) => ({
+              part: c.part + "-" + c.proc.toString(),
+              oper: c.oper,
+            }))
+            .toRArray(),
+        };
       }
     })
     .toRArray();
@@ -548,8 +394,13 @@ export function format_cycle_inspection(
   return ret.join(", ");
 }
 
+export type ClipboardStationCycles = {
+  readonly seriesLabel: string;
+  readonly data: ReadonlyMap<string, ReadonlyArray<PartCycleData>>;
+};
+
 export function buildCycleTable(
-  cycles: FilteredStationCycles,
+  cycles: ClipboardStationCycles,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   startD: Date | undefined,
   endD: Date | undefined,
@@ -566,13 +417,13 @@ export function buildCycleTable(
 
   const filteredCycles = LazySeq.of(cycles.data)
     .flatMap(([_, c]) => c)
-    .filter((p) => (!startD || p.x >= startD) && (!endD || p.x < endD))
-    .toSortedArray((a) => a.x.getTime());
+    .filter((p) => (!startD || p.endTime >= startD) && (!endD || p.endTime < endD))
+    .toSortedArray((a) => a.endTime.getTime());
   for (const cycle of filteredCycles) {
     table += "<tr>";
     table +=
       "<td>" +
-      cycle.x.toLocaleString(undefined, {
+      cycle.endTime.toLocaleString(undefined, {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -607,7 +458,7 @@ export function buildCycleTable(
         .join(",") +
       "</td>";
     table += "<td>" + format_cycle_inspection(cycle, matsById) + "</td>";
-    table += "<td>" + cycle.y.toFixed(1) + "</td>";
+    table += "<td>" + (cycle.elapsedMinsPerMaterial * cycle.material.length).toFixed(1) + "</td>";
     table += "<td>" + cycle.activeMinutes.toFixed(1) + "</td>";
     if (!hideMedian) {
       table += "<td>" + cycle.medianCycleMinutes.toFixed(1) + "</td>";
@@ -620,7 +471,7 @@ export function buildCycleTable(
 }
 
 export function copyCyclesToClipboard(
-  cycles: FilteredStationCycles,
+  cycles: ClipboardStationCycles,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   zoom: { start: Date; end: Date } | undefined,
   hideMedian?: boolean,
