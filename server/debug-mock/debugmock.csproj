@@ -2,12 +2,12 @@
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework.DebugMock</PackageId>
     <AssemblyName>BlackMaple.MachineFramework.DebugMock</AssemblyName>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj"/>
-    <PackageReference Include="NSwag.AspNetCore" Version="14.1.*"/>
+    <PackageReference Include="NSwag.AspNetCore" Version="14.2.*"/>
   </ItemGroup>
 </Project>

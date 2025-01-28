@@ -35,7 +35,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using BlackMaple.MachineFramework;
 
 namespace BlackMaple.FMSInsight.Makino
@@ -400,7 +399,7 @@ namespace BlackMaple.FMSInsight.Makino
     {
       if (string.IsNullOrEmpty(makinoCfg.DbConnectionString))
       {
-        var db = new System.Data.SqlClient.SqlConnection(
+        var db = new Microsoft.Data.SqlClient.SqlConnection(
           "Data Source = (localdb)\\MSSQLLocalDB; Initial Catalog = Makino;"
         );
         db.Open();
@@ -414,7 +413,7 @@ namespace BlackMaple.FMSInsight.Makino
       }
       else
       {
-        var db = new System.Data.SqlClient.SqlConnection(makinoCfg.DbConnectionString);
+        var db = new Microsoft.Data.SqlClient.SqlConnection(makinoCfg.DbConnectionString);
         db.Open();
         return db;
       }
@@ -461,7 +460,7 @@ namespace BlackMaple.FMSInsight.Makino
       // checking permissions now
       try
       {
-        System.Data.SqlClient.SqlDependency.Start(_db.ConnectionString);
+        Microsoft.Data.SqlClient.SqlDependency.Start(_db.ConnectionString);
         Log.Debug("SqlDependency started");
       }
       catch (Exception ex)
@@ -472,7 +471,7 @@ namespace BlackMaple.FMSInsight.Makino
       {
         try
         {
-          System.Data.SqlClient.SqlDependency.Stop(_db.ConnectionString);
+          Microsoft.Data.SqlClient.SqlDependency.Stop(_db.ConnectionString);
         }
         catch (Exception ex)
         {

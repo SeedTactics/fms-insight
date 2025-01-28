@@ -4,7 +4,7 @@
     <AssemblyName>BlackMaple.FMSInsight.Niigata</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.Niigata</PackageId>
     <OutputType>Library</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
 
     <Title>Niigata backend for FMS Insight</Title>
     <Company>Black Maple Software, LLC</Company>
@@ -32,7 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <PackageReference Include="Dapper" Version="2.1.35" />
-    <PackageReference Include="Npgsql" Version="8.0.3" />
+    <PackageReference Include="Npgsql" Version="9.0.*" />
 
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
