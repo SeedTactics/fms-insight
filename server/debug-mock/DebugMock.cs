@@ -39,6 +39,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -85,6 +86,18 @@ namespace DebugMachineWatchApiServer
       }
     }
 
+    public class OpenApiStartupFilter : IStartupFilter
+    {
+      public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
+      {
+        return app =>
+        {
+          next(app);
+          app.UseEndpoints(e => e.MapOpenApi());
+        };
+      }
+    }
+
     public static void Main()
     {
       var cfg = new ConfigurationBuilder().AddEnvironmentVariables().Build();
@@ -122,6 +135,9 @@ namespace DebugMachineWatchApiServer
           );
           s.AddSingleton<IPrintLabelForMaterial>(sp => sp.GetRequiredService<MockServerBackend>());
           s.AddSingleton<IParseBarcode>(sp => sp.GetRequiredService<MockServerBackend>());
+
+          s.AddOpenApi();
+          s.AddTransient<IStartupFilter, OpenApiStartupFilter>();
 
           s.AddOpenApiDocument(cfg =>
           {
