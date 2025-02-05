@@ -80,6 +80,9 @@ function transformTime(offsetSeconds: number, mockD: MockData): TransformedMockD
   }
   for (const w of status.workorders ?? []) {
     w.dueDate = addSeconds(w.dueDate, offsetSeconds);
+    for (const c of w.comments ?? []) {
+      c.timeUTC = addSeconds(c.timeUTC, offsetSeconds);
+    }
   }
 
   const allNewJobs = mockD.jobs.map(api.NewJobs.fromJS);
