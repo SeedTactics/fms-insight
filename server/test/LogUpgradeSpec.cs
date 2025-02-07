@@ -35,8 +35,8 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
 using Microsoft.Data.Sqlite;
+using Shouldly;
 using Xunit;
 
 namespace MachineWatchTest
@@ -63,18 +63,18 @@ namespace MachineWatchTest
           break;
         }
 
-        hasRow1.Should().BeTrue();
-        hasRow2.Should().BeTrue();
+        hasRow1.ShouldBeTrue();
+        hasRow2.ShouldBeTrue();
 
         var name = r1.GetString(1);
-        name.Should().BeEquivalentTo(r2.GetString(1));
+        name.ShouldBe(r2.GetString(1));
 
-        r1.GetString(0).Should().BeEquivalentTo(r2.GetString(0), because: name);
-        r1.GetString(2).Should().BeEquivalentTo(r2.GetString(2), because: name);
+        r1.GetString(0).ShouldBe(r2.GetString(0), name);
+        r1.GetString(2).ShouldBe(r2.GetString(2), name);
 
         if (r2.IsDBNull(3))
         {
-          r1.IsDBNull(3).Should().BeTrue(because: name);
+          r1.IsDBNull(3).ShouldBeTrue(name);
           continue;
         }
 
@@ -102,7 +102,7 @@ namespace MachineWatchTest
           sql1 = sql1.Replace("Face TEXT", "Face INTEGER");
         }
 
-        sql1.Should().BeEquivalentTo(sql2);
+        sql1.ShouldBe(sql2);
       }
     }
 
@@ -164,8 +164,7 @@ namespace MachineWatchTest
 
       _log.GetLogEntries(now, now.AddDays(1))
         .ToList()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new[]
           {
             new LogEntry(
@@ -252,13 +251,13 @@ namespace MachineWatchTest
               endTime: now.AddMinutes(60),
               result: "work3"
             ),
-          },
-          options => options.Excluding(x => x.Counter).ComparingByMembers<LogEntry>()
+          }
+            .Select((e, idx) => e with { Counter = idx + 1 })
+            .ToList()
         );
 
       _log.GetMaterialDetails(1)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new MaterialDetails()
           {
             MaterialID = 1,
@@ -270,8 +269,7 @@ namespace MachineWatchTest
           }
         );
       _log.GetMaterialDetails(2)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new MaterialDetails()
           {
             MaterialID = 2,
@@ -283,8 +281,7 @@ namespace MachineWatchTest
           }
         );
       _log.GetMaterialDetails(3)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new MaterialDetails()
           {
             MaterialID = 3,
@@ -314,8 +311,7 @@ namespace MachineWatchTest
       );
 
       _log.GetMaterialInAllQueues()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new QueuedMaterial()
@@ -340,12 +336,10 @@ namespace MachineWatchTest
       var expected = CreateJob();
       var actual = _log.LoadJob("Unique1");
 
-      actual.Processes[0].Should().BeEquivalentTo(expected.Processes[0]);
-      actual.Should().BeEquivalentTo(expected);
+      expected.ShouldBeEquivalentTo(actual);
 
       _log.LoadDecrementsForJob("Unique1")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new DecrementQuantity()
@@ -382,7 +376,7 @@ namespace MachineWatchTest
 
       var actual = _log.LoadJob("mynewunique");
 
-      actual.Should().BeEquivalentTo(newJob with { ScheduleId = newJob.ScheduleId + "newSch" });
+      actual.ShouldBeEquivalentTo(newJob with { ScheduleId = newJob.ScheduleId + "newSch" });
 
       var now = DateTime.UtcNow;
       _log.AddNewDecrement(
@@ -399,8 +393,7 @@ namespace MachineWatchTest
       );
 
       _log.LoadDecrementsForJob("mynewunique")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new DecrementQuantity()
@@ -520,7 +513,7 @@ namespace MachineWatchTest
                 PalletNums = ImmutableList.Create(4, 35),
                 Fixture = "ABC",
                 Face = 4,
-                Load = ImmutableList.Create(785, 15),
+                Load = ImmutableList.Create(15, 785),
                 ExpectedLoadTime = TimeSpan.FromMinutes(53),
                 Unload = ImmutableList.Create(53),
                 ExpectedUnloadTime = TimeSpan.FromMinutes(12),
@@ -528,7 +521,7 @@ namespace MachineWatchTest
                   new MachiningStop()
                   {
                     StationGroup = "Other Machine",
-                    Stations = ImmutableList.Create(23, 12),
+                    Stations = ImmutableList.Create(12, 23),
                     Program = "awef",
                     ExpectedCycleTime = TimeSpan.FromHours(2.8),
                   }
@@ -586,7 +579,7 @@ namespace MachineWatchTest
                 PalletNums = ImmutableList.Create(12, 64),
                 Fixture = "Fix123",
                 Face = 6,
-                Load = ImmutableList.Create(647, 474),
+                Load = ImmutableList.Create(474, 647),
                 ExpectedLoadTime = TimeSpan.FromHours(52),
                 Unload = ImmutableList.Create(563),
                 ExpectedUnloadTime = TimeSpan.FromHours(63),
@@ -601,7 +594,7 @@ namespace MachineWatchTest
                   new MachiningStop()
                   {
                     StationGroup = "Test",
-                    Stations = ImmutableList.Create(245, 36),
+                    Stations = ImmutableList.Create(36, 245),
                     Program = "dduuude",
                     ExpectedCycleTime = TimeSpan.Zero,
                   }
@@ -658,9 +651,9 @@ namespace MachineWatchTest
                 SimulatedStartingUTC = DateTime.Parse("4/20/2011 3:22 PM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(3.5),
                 SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
-                PalletNums = ImmutableList.Create(55, 2),
+                PalletNums = ImmutableList.Create(2, 55),
                 // has non-integer face so should be ignored
-                Load = ImmutableList.Create(785, 53),
+                Load = ImmutableList.Create(53, 785),
                 ExpectedLoadTime = TimeSpan.FromSeconds(98),
                 Unload = ImmutableList.Create(2, 12),
                 ExpectedUnloadTime = TimeSpan.FromSeconds(73),
@@ -901,7 +894,7 @@ namespace MachineWatchTest
         new DateTime(2023, 11, 25, 0, 0, 0, DateTimeKind.Utc)
       );
 
-      evts.Should().HaveCount(1466);
+      evts.Count().ShouldBe(1466);
     }
   }
 
@@ -938,8 +931,7 @@ namespace MachineWatchTest
       // ver 32 to 33 changed around unfilled workorder tables
       using var db = _repo.OpenConnection();
       db.WorkordersById("work1")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           [
             new Workorder()
             {
@@ -970,7 +962,7 @@ namespace MachineWatchTest
           ]
         );
 
-      db.WorkordersById("work2").Should().BeEmpty();
+      db.WorkordersById("work2").ShouldBeEmpty();
     }
   }
 }

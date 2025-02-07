@@ -36,7 +36,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using AutoFixture;
-using FluentAssertions;
 
 namespace MachineWatchTest
 {
