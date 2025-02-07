@@ -38,7 +38,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using AutoFixture;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 namespace MachineWatchTest;
@@ -98,23 +98,21 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     _jq = new JobsAndQueuesFromDb<MockCellState>(_repo, _serverSettings, _settings, this, startThread: false);
     _jq.OnNewCurrentStatus += OnNewCurrentStatus;
     _jq.StartThread();
-    (await newCellSt)
-      .Should()
-      .BeEquivalentTo(
-        new CurrentStatus()
-        {
-          TimeOfCurrentStatusUTC = DateTime.UtcNow,
-          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-          Material = [],
-          Queues = ImmutableDictionary<string, QueueInfo>.Empty,
-          Alarms = ["FMS Insight is starting up..."],
-        },
-        options =>
-          options
-            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4)))
-            .WhenTypeIs<DateTime>()
-      );
+
+    var actual = await newCellSt;
+
+    actual.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(4));
+    actual.ShouldBeEquivalentTo(
+      new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = actual.TimeOfCurrentStatusUTC,
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+        Material = [],
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+        Alarms = ["FMS Insight is starting up..."],
+      }
+    );
   }
 
   public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
@@ -136,7 +134,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
   bool ISynchronizeCellState<MockCellState>.ApplyActions(IRepository db, MockCellState st)
   {
-    st.Should().Be(_curSt);
+    st.ShouldBe(_curSt);
     if (_executeActions)
     {
       _executeActions = false;
@@ -167,9 +165,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
   bool ISynchronizeCellState<MockCellState>.DecrementJobs(IRepository db, MockCellState st)
   {
-    _expectsDecrement.Should().BeTrue();
+    _expectsDecrement.ShouldBeTrue();
     var toDecr = _curSt.CurrentStatus.BuildJobsToDecrement();
-    toDecr.Should().NotBeEmpty();
+    toDecr.ShouldNotBeEmpty();
     db.AddNewDecrement(toDecr, nowUTC: _curSt.CurrentStatus.TimeOfCurrentStatusUTC);
     return true;
   }
@@ -180,13 +178,13 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
   {
     var tcs = _newCellStateTcs;
     _newCellStateTcs = null;
-    (tcs as object).Should().NotBeNull();
+    tcs.ShouldNotBeNull();
     tcs.SetResult(st);
   }
 
   private Task<CurrentStatus> CreateTaskToWaitForNewStatus()
   {
-    (_newCellStateTcs as object).Should().BeNull();
+    (_newCellStateTcs as object).ShouldBeNull();
     var tcs = new TaskCompletionSource<CurrentStatus>();
     _newCellStateTcs = tcs;
     return tcs.Task;
@@ -217,7 +215,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     // wait for NewCurrentStatus after raising NewCellState event
     var task = CreateTaskToWaitForNewStatus();
     NewCellState?.Invoke();
-    (await task).Should().Be(curSt);
+    (await task).ShouldBe(curSt);
   }
 
   private async Task SetCurrentMaterial(ImmutableList<InProcessMaterial> material)
@@ -255,22 +253,16 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     var task = CreateTaskToWaitForNewStatus();
     NewCellState?.Invoke();
-    (await task)
-      .Should()
-      .BeEquivalentTo(
-        curSt with
-        {
-          Alarms =
-          [
-            "An alarm",
-            "Error communicating with machines: An error occurred. Will try again in a few minutes.",
-          ],
-        },
-        options =>
-          options
-            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4)))
-            .WhenTypeIs<DateTime>()
-      );
+    (await task).ShouldBeEquivalentTo(
+      curSt with
+      {
+        Alarms =
+        [
+          "An alarm",
+          "Error communicating with machines: An error occurred. Will try again in a few minutes.",
+        ],
+      }
+    );
 
     // the error handling waits 2 seconds and tries again, so wait 3 seconds.
     // This checks that since the error is the same the OnNewCurrentStatus is not raised,
@@ -280,7 +272,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     // clear the error, and then wait for a new current status since the error changed
     var newStatusTask = CreateTaskToWaitForNewStatus();
     _calculateStateError = null;
-    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
   }
 
   [Fact(Timeout = 15000)]
@@ -312,22 +304,16 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     // then after that get the error during the action
     var task = CreateTaskToWaitForNewStatus();
     NewCellState?.Invoke();
-    (await task)
-      .Should()
-      .BeEquivalentTo(
-        curSt with
-        {
-          Alarms =
-          [
-            "An alarm",
-            "Error communicating with machines: An error occurred. Will try again in a few minutes.",
-          ],
-        },
-        options =>
-          options
-            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(4)))
-            .WhenTypeIs<DateTime>()
-      );
+    (await task).ShouldBeEquivalentTo(
+      curSt with
+      {
+        Alarms =
+        [
+          "An alarm",
+          "Error communicating with machines: An error occurred. Will try again in a few minutes.",
+        ],
+      }
+    );
 
     // the error handling waits 2 seconds and tries again, so wait 3 seconds.
     // This checks that since the error is the same the OnNewCurrentStatus is not raised,
@@ -337,7 +323,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     // clear the error, and then wait for the new current status again
     var newStatusTask = CreateTaskToWaitForNewStatus();
     _executeActionError = null;
-    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
   }
 
   #region Jobs
@@ -436,12 +422,14 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     ((IJobAndQueueControl)_jq).AddJobs(newJobs, null);
 
-    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
     db.LoadUnarchivedJobs()
       .Select(j => j.UniqueStr)
-      .Should()
-      .BeEquivalentTo([completedJob.UniqueStr, toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr]);
+      .ShouldBe(
+        new[] { completedJob.UniqueStr, toKeepJob.UniqueStr, newJob1.UniqueStr, newJob2.UniqueStr },
+        ignoreOrder: true
+      );
   }
 
   [Theory(Timeout = 10000)]
@@ -490,27 +478,24 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       decrs = ((IJobAndQueueControl)_jq).DecrementJobQuantites(-1);
     }
 
-    decrs
-      .Should()
-      .BeEquivalentTo(
-        new[]
+    decrs.ShouldBe(
+      new[]
+      {
+        new JobAndDecrementQuantity()
         {
-          new JobAndDecrementQuantity()
-          {
-            DecrementId = 0,
-            JobUnique = j1.UniqueStr,
-            TimeUTC = now,
-            Part = j1.PartName,
-            Quantity = 7,
-          },
-        }
-      );
+          DecrementId = 0,
+          JobUnique = j1.UniqueStr,
+          TimeUTC = now,
+          Part = j1.PartName,
+          Quantity = 7,
+        },
+      }
+    );
 
-    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
     db.LoadDecrementsForJob("u1")
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         ImmutableList.Create(
           new[]
           {
@@ -524,7 +509,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         )
       );
 
-    db.LoadDecrementsForJob("u2").Should().BeEmpty();
+    db.LoadDecrementsForJob("u2").ShouldBeEmpty();
   }
   #endregion
 
@@ -539,6 +524,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     await SetCurrentState(stateUpdated: false, executeAction: false);
     var newStatusTask = CreateTaskToWaitForNewStatus();
 
+    var now = DateTime.UtcNow;
+
     //add a casting
     _jq.AddUnallocatedCastingToQueue(
         casting: "c1",
@@ -548,8 +535,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         workorder: null,
         operatorName: "theoper"
       )
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         new[]
         {
           QueuedMat(matId: 1, job: null, part: "c1", proc: 0, path: 1, serial: "aaa", queue: "q1", pos: 0),
@@ -557,8 +543,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         }
       );
     db.GetMaterialDetails(1)
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         new MaterialDetails()
         {
           MaterialID = 1,
@@ -568,8 +553,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         }
       );
     db.GetMaterialDetails(2)
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         new MaterialDetails()
         {
           MaterialID = 2,
@@ -580,71 +564,63 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       );
 
     var mats = db.GetMaterialInAllQueues().ToList();
-    mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(4));
-    mats.Should()
-      .BeEquivalentTo(
-        new[]
+    mats[0].AddTimeUTC.Value.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(4));
+    mats.ShouldBe(
+      new[]
+      {
+        new QueuedMaterial()
         {
-          new QueuedMaterial()
-          {
-            MaterialID = 1,
-            NumProcesses = 1,
-            PartNameOrCasting = "c1",
-            Position = 0,
-            Queue = "q1",
-            Unique = "",
-            AddTimeUTC = mats[0].AddTimeUTC,
-            Serial = "aaa",
-            NextProcess = 1,
-            Paths = ImmutableDictionary<int, int>.Empty,
-          },
-          new QueuedMaterial()
-          {
-            MaterialID = 2,
-            NumProcesses = 1,
-            PartNameOrCasting = "c1",
-            Position = 1,
-            Queue = "q1",
-            Unique = "",
-            AddTimeUTC = mats[1].AddTimeUTC,
-            NextProcess = 1,
-            Paths = ImmutableDictionary<int, int>.Empty,
-          },
-        }
-      );
+          MaterialID = 1,
+          NumProcesses = 1,
+          PartNameOrCasting = "c1",
+          Position = 0,
+          Queue = "q1",
+          Unique = "",
+          AddTimeUTC = mats[0].AddTimeUTC,
+          Serial = "aaa",
+          NextProcess = 1,
+          Paths = ImmutableDictionary<int, int>.Empty,
+        },
+        new QueuedMaterial()
+        {
+          MaterialID = 2,
+          NumProcesses = 1,
+          PartNameOrCasting = "c1",
+          Position = 1,
+          Queue = "q1",
+          Unique = "",
+          AddTimeUTC = mats[1].AddTimeUTC,
+          NextProcess = 1,
+          Paths = ImmutableDictionary<int, int>.Empty,
+        },
+      }
+    );
 
-    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
     newStatusTask = CreateTaskToWaitForNewStatus();
 
     _jq.RemoveMaterialFromAllQueues(new List<long> { 1 }, "theoper");
     mats = db.GetMaterialInAllQueues().ToList();
-    mats.Should()
-      .BeEquivalentTo(
-        new[]
+    mats.ShouldBe(
+      new[]
+      {
+        new QueuedMaterial()
         {
-          new QueuedMaterial()
-          {
-            MaterialID = 2,
-            NumProcesses = 1,
-            PartNameOrCasting = "c1",
-            Position = 0,
-            Queue = "q1",
-            Unique = "",
-            AddTimeUTC = mats[0].AddTimeUTC,
-            NextProcess = 1,
-            Paths = ImmutableDictionary<int, int>.Empty,
-          },
+          MaterialID = 2,
+          NumProcesses = 1,
+          PartNameOrCasting = "c1",
+          Position = 0,
+          Queue = "q1",
+          Unique = "",
+          AddTimeUTC = mats[0].AddTimeUTC,
+          NextProcess = 1,
+          Paths = ImmutableDictionary<int, int>.Empty,
         },
-        options =>
-          options
-            .Using<DateTime?>(ctx =>
-              ctx.Subject.Value.Should().BeCloseTo(ctx.Expectation.Value, TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<DateTime?>()
-      );
+      }
+    );
 
-    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
     var mat1 = MkLogMat.Mk(
       matID: 1,
@@ -667,19 +643,25 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       face: ""
     );
 
-    db.GetLogForMaterial(materialID: 1)
-      .Should()
-      .BeEquivalentTo(
+    var actualMat1Logs = db.GetLogForMaterial(materialID: 1).ToList();
+    actualMat1Logs.ShouldAllBe(e =>
+      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4 && e.ElapsedTime < TimeSpan.FromSeconds(4)
+    );
+    actualMat1Logs
+      .Select(e => e with { EndTimeUTC = now, ElapsedTime = TimeSpan.Zero })
+      .ToArray()
+      .ShouldBeEquivalentTo(
         new[]
         {
-          MarkExpectedEntry(mat1, cntr: 1, serial: "aaa"),
+          MarkExpectedEntry(mat1, cntr: 1, serial: "aaa", timeUTC: now),
           AddToQueueExpectedEntry(
             mat1,
             cntr: 2,
             queue: "q1",
             position: 0,
             operName: "theoper",
-            reason: "SetByOperator"
+            reason: "SetByOperator",
+            timeUTC: now
           ),
           RemoveFromQueueExpectedEntry(
             mat1,
@@ -688,25 +670,20 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             reason: "",
             position: 0,
             elapsedMin: 0,
-            operName: "theoper"
+            operName: "theoper",
+            timeUTC: now
           ),
-        },
-        options =>
-          options
-            .Using<DateTime>(ctx =>
-              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<DateTime>()
-            .Using<TimeSpan>(ctx =>
-              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<TimeSpan>()
-            .ComparingByMembers<LogEntry>()
+        }
       );
 
-    db.GetLogForMaterial(materialID: 2)
-      .Should()
-      .BeEquivalentTo(
+    var actualMat2Logs = db.GetLogForMaterial(materialID: 2).ToList();
+    actualMat2Logs.ShouldAllBe(e =>
+      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4 && e.ElapsedTime < TimeSpan.FromSeconds(4)
+    );
+    actualMat2Logs
+      .Select(e => e with { EndTimeUTC = now, ElapsedTime = TimeSpan.Zero })
+      .ToArray()
+      .ShouldBeEquivalentTo(
         new[]
         {
           AddToQueueExpectedEntry(
@@ -715,20 +692,10 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             queue: "q1",
             position: 1,
             operName: "theoper",
-            reason: "SetByOperator"
+            reason: "SetByOperator",
+            timeUTC: now
           ),
-        },
-        options =>
-          options
-            .Using<DateTime>(ctx =>
-              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<DateTime>()
-            .Using<TimeSpan>(ctx =>
-              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<TimeSpan>()
-            .ComparingByMembers<LogEntry>()
+        }
       );
 
     var expectedMat2 = QueuedMat(
@@ -750,10 +717,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       ]
     );
 
-    _jq.Invoking(j => j.RemoveMaterialFromAllQueues([2L], "theoper"))
-      .Should()
-      .Throw<BadRequestException>()
-      .WithMessage("Material on pallet can not be removed from queues");
+    Should
+      .Throw<BadRequestException>(() => _jq.RemoveMaterialFromAllQueues([2L], "theoper"))
+      .Message.ShouldBe("Material on pallet can not be removed from queues");
 
     await SetCurrentMaterial(
       [
@@ -764,12 +730,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       ]
     );
 
-    _jq.Invoking(j => j.RemoveMaterialFromAllQueues([2L], "theoper"))
-      .Should()
-      .Throw<BadRequestException>()
-      .WithMessage("Only waiting material can be removed from queues");
+    Should
+      .Throw<BadRequestException>(() => _jq.RemoveMaterialFromAllQueues([2L], "theoper"))
+      .Message.ShouldBe("Only waiting material can be removed from queues");
 
-    db.GetMaterialInAllQueues().Should().Contain(m => m.MaterialID == 2);
+    db.GetMaterialInAllQueues().ShouldContain(m => m.MaterialID == 2);
   }
 
   [Theory(Timeout = 10000)]
@@ -798,6 +763,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     await SetCurrentState(stateUpdated: false, executeAction: false);
 
+    var now = DateTime.UtcNow;
+
     //add an allocated material
     var expectedMat1 = QueuedMat(
       matId: 1,
@@ -821,13 +788,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         workorder: "work11",
         operatorName: "theoper"
       )
-      .Should()
-      .BeEquivalentTo(expectedMat1);
-    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+      .ShouldBe(expectedMat1);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
     db.GetMaterialDetails(1)
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         new MaterialDetails()
         {
           MaterialID = 1,
@@ -836,93 +801,89 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
           Serial = "aaa",
           Workorder = "work11",
           JobUnique = "uuu1",
-        },
-        options => options.ComparingByMembers<MaterialDetails>()
+        }
       );
 
     var mats = db.GetMaterialInAllQueues().ToList();
-    mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(4));
-    mats.Should()
-      .BeEquivalentTo(
-        new[]
+    mats[0].AddTimeUTC.Value.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(4));
+    mats.ShouldBe(
+      new[]
+      {
+        new QueuedMaterial()
         {
-          new QueuedMaterial()
-          {
-            MaterialID = 1,
-            NumProcesses = 2,
-            PartNameOrCasting = "p1",
-            Position = 0,
-            Queue = "q1",
-            Unique = "uuu1",
-            AddTimeUTC = mats[0].AddTimeUTC,
-            Serial = "aaa",
-            Workorder = "work11",
-            NextProcess = lastCompletedProcess + 1,
-            Paths = ImmutableDictionary<int, int>.Empty,
-          },
-        }
-      );
+          MaterialID = 1,
+          NumProcesses = 2,
+          PartNameOrCasting = "p1",
+          Position = 0,
+          Queue = "q1",
+          Unique = "uuu1",
+          AddTimeUTC = mats[0].AddTimeUTC,
+          Serial = "aaa",
+          Workorder = "work11",
+          NextProcess = lastCompletedProcess + 1,
+          Paths = ImmutableDictionary<int, int>.Empty,
+        },
+      }
+    );
 
     await SetCurrentMaterial([expectedMat1]);
 
     newStatusTask = CreateTaskToWaitForNewStatus();
 
     //remove it
-    _jq.RemoveMaterialFromAllQueues(new List<long> { 1 }, "myoper");
-    db.GetMaterialInAllQueues().Should().BeEmpty();
+    _jq.RemoveMaterialFromAllQueues(ImmutableList.Create(1L), "myoper");
+    db.GetMaterialInAllQueues().ShouldBeEmpty();
 
-    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
     newStatusTask = CreateTaskToWaitForNewStatus();
 
     //add it back in
     _jq.SetMaterialInQueue(1, "q1", 0, "theoper");
     mats = db.GetMaterialInAllQueues().ToList();
-    mats.Should()
-      .BeEquivalentTo(
-        new[]
+    mats.ShouldBe(
+      new[]
+      {
+        new QueuedMaterial()
         {
-          new QueuedMaterial()
-          {
-            MaterialID = 1,
-            NumProcesses = 2,
-            PartNameOrCasting = "p1",
-            Position = 0,
-            Queue = "q1",
-            Unique = "uuu1",
-            AddTimeUTC = mats[0].AddTimeUTC,
-            Serial = "aaa",
-            Workorder = "work11",
-            NextProcess = lastCompletedProcess + 1,
-            Paths = ImmutableDictionary<int, int>.Empty,
-          },
-        }
-      );
+          MaterialID = 1,
+          NumProcesses = 2,
+          PartNameOrCasting = "p1",
+          Position = 0,
+          Queue = "q1",
+          Unique = "uuu1",
+          AddTimeUTC = mats[0].AddTimeUTC,
+          Serial = "aaa",
+          Workorder = "work11",
+          NextProcess = lastCompletedProcess + 1,
+          Paths = ImmutableDictionary<int, int>.Empty,
+        },
+      }
+    );
 
-    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
     mats = db.GetMaterialInAllQueues().ToList();
-    mats[0].AddTimeUTC.Value.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(4));
-    mats.Should()
-      .BeEquivalentTo(
-        new[]
+    mats[0].AddTimeUTC.Value.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(4));
+    mats.ShouldBe(
+      new[]
+      {
+        new QueuedMaterial()
         {
-          new QueuedMaterial()
-          {
-            MaterialID = 1,
-            NumProcesses = 2,
-            PartNameOrCasting = "p1",
-            Position = 0,
-            Queue = "q1",
-            Unique = "uuu1",
-            AddTimeUTC = mats[0].AddTimeUTC,
-            Serial = "aaa",
-            Workorder = "work11",
-            NextProcess = lastCompletedProcess + 1,
-            Paths = ImmutableDictionary<int, int>.Empty,
-          },
-        }
-      );
+          MaterialID = 1,
+          NumProcesses = 2,
+          PartNameOrCasting = "p1",
+          Position = 0,
+          Queue = "q1",
+          Unique = "uuu1",
+          AddTimeUTC = mats[0].AddTimeUTC,
+          Serial = "aaa",
+          Workorder = "work11",
+          NextProcess = lastCompletedProcess + 1,
+          Paths = ImmutableDictionary<int, int>.Empty,
+        },
+      }
+    );
 
     var logMat = MkLogMat.Mk(
       matID: 1,
@@ -936,15 +897,16 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     );
     var expectedLog = new[]
     {
-      MarkExpectedEntry(logMat, cntr: 1, serial: "aaa"),
-      AssignWorkExpectedEntry(logMat, cntr: 2, workorder: "work11"),
+      MarkExpectedEntry(logMat, cntr: 1, serial: "aaa", timeUTC: now),
+      AssignWorkExpectedEntry(logMat, cntr: 2, workorder: "work11", timeUTC: now),
       AddToQueueExpectedEntry(
         logMat,
         cntr: 3,
         queue: "q1",
         position: 0,
         operName: "theoper",
-        reason: "SetByOperator"
+        reason: "SetByOperator",
+        timeUTC: now
       ),
       RemoveFromQueueExpectedEntry(
         logMat,
@@ -953,7 +915,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         position: 0,
         reason: "",
         elapsedMin: 0,
-        operName: "myoper"
+        operName: "myoper",
+        timeUTC: now
       ),
       AddToQueueExpectedEntry(
         logMat,
@@ -961,26 +924,19 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         queue: "q1",
         position: 0,
         operName: "theoper",
-        reason: "SetByOperator"
+        reason: "SetByOperator",
+        timeUTC: now
       ),
     };
 
-    db.GetLogForMaterial(materialID: 1)
-      .Should()
-      .BeEquivalentTo(
-        expectedLog,
-        options =>
-          options
-            .Using<DateTime>(ctx =>
-              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<DateTime>()
-            .Using<TimeSpan>(ctx =>
-              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<TimeSpan>()
-            .ComparingByMembers<LogEntry>()
-      );
+    var actualMat1Logs = db.GetLogForMaterial(materialID: 1).ToList();
+    actualMat1Logs.ShouldAllBe(e =>
+      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4 && e.ElapsedTime < TimeSpan.FromSeconds(4)
+    );
+    actualMat1Logs
+      .Select(e => e with { EndTimeUTC = now, ElapsedTime = TimeSpan.Zero })
+      .ToArray()
+      .ShouldBeEquivalentTo(expectedLog);
 
     // should error if it is loading or on a pallet
     await SetCurrentMaterial(
@@ -992,10 +948,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       ]
     );
 
-    _jq.Invoking(j => j.SetMaterialInQueue(materialId: 1, "q1", 3, "oper"))
-      .Should()
-      .Throw<BadRequestException>()
-      .WithMessage("Material on pallet can not be moved to a queue");
+    Should
+      .Throw<BadRequestException>(() => _jq.SetMaterialInQueue(materialId: 1, "q1", 3, "theoper"))
+      .Message.ShouldBe("Material on pallet can not be moved to a queue");
 
     await SetCurrentMaterial(
       [
@@ -1006,27 +961,12 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       ]
     );
 
-    _jq.Invoking(j => j.SetMaterialInQueue(materialId: 1, "q2", 3, "oper"))
-      .Should()
-      .Throw<BadRequestException>()
-      .WithMessage("Only waiting material can be moved between queues");
+    Should
+      .Throw<BadRequestException>(() => _jq.SetMaterialInQueue(materialId: 1, "q2", 3, "oper"))
+      .Message.ShouldBe("Only waiting material can be moved between queues");
 
-    db.GetLogForMaterial(materialID: 1)
-      .Should()
-      .BeEquivalentTo(
-        expectedLog,
-        options =>
-          options
-            .Using<DateTime>(ctx =>
-              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<DateTime>()
-            .Using<TimeSpan>(ctx =>
-              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<TimeSpan>()
-            .ComparingByMembers<LogEntry>()
-      );
+    // no new events added, already checked them equal to expectedLog above
+    db.GetLogForMaterial(materialID: 1).Count().ShouldBe(expectedLog.Length);
   }
 
   [Fact(Timeout = 10000)]
@@ -1065,8 +1005,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         workorder: null,
         operatorName: "theoper"
       )
-      .Should()
-      .BeEquivalentTo(new[] { expectedMat1, expectedMat2 });
+      .ShouldBe(new[] { expectedMat1, expectedMat2 });
 
     await SetCurrentMaterial(
       [
@@ -1078,20 +1017,19 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       ]
     );
 
-    db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal([1L, 2L]);
+    db.GetMaterialInAllQueues().Select(m => m.MaterialID).ShouldBe(new[] { 1L, 2L });
 
     var newStatusTask = CreateTaskToWaitForNewStatus();
 
     _jq.SetMaterialInQueue(materialId: 1, "q1", 1, "oper");
 
-    (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+    (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
-    db.GetMaterialInAllQueues().Select(m => m.MaterialID).Should().Equal([2L, 1L]);
+    db.GetMaterialInAllQueues().Select(m => m.MaterialID).ShouldBe(new[] { 2L, 1L });
 
-    _jq.Invoking(j => j.SetMaterialInQueue(materialId: 1, "q2", -1, "oper"))
-      .Should()
-      .Throw<BadRequestException>()
-      .WithMessage("Only waiting material can be moved between queues");
+    Should
+      .Throw<BadRequestException>(() => _jq.SetMaterialInQueue(materialId: 1, "q2", -1, "oper"))
+      .Message.ShouldBe("Only waiting material can be moved between queues");
   }
 
   public record SignalQuarantineTheoryData
@@ -1252,6 +1190,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     AllowQuarantineToCancelLoad = data.AllowQuarantineToCancelLoad;
     await StartSyncThread();
 
+    var now = DateTime.UtcNow;
+
     using var db = _repo.OpenConnection();
 
     var job = new ActiveJob()
@@ -1272,7 +1212,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     db.AddJobs(new NewJobs() { ScheduleId = "abcd", Jobs = [job] }, null, addAsCopiedToSystem: true);
 
-    db.AllocateMaterialID("uuu1", "p1", 2).Should().Be(1);
+    db.AllocateMaterialID("uuu1", "p1", 2).ShouldBe(1);
     var logMat = MkLogMat.Mk(
       matID: 1,
       uniq: "uuu1",
@@ -1321,17 +1261,17 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
           queue: "q1",
           position: 0,
           operName: "anoper",
-          reason: "Test"
+          reason: "Test",
+          timeUTC: now
         )
       );
     }
 
-    _jq.Invoking(j =>
-        j.SignalMaterialForQuarantine(materialId: 1, operatorName: "theoper", reason: "a reason")
+    Should
+      .Throw<BadRequestException>(
+        () => _jq.SignalMaterialForQuarantine(materialId: 1, operatorName: "theoper", reason: "a reason")
       )
-      .Should()
-      .Throw<BadRequestException>()
-      .WithMessage("Material not found");
+      .Message.ShouldBe("Material not found");
 
     var queuedMat = QueuedMat(
       matId: 1,
@@ -1360,10 +1300,11 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     if (data.Error != null)
     {
-      _jq.Invoking(j => j.SignalMaterialForQuarantine(materialId: 1, "theoper", reason: "a reason"))
-        .Should()
-        .Throw<BadRequestException>()
-        .WithMessage(data.Error);
+      Should
+        .Throw<BadRequestException>(
+          () => _jq.SignalMaterialForQuarantine(materialId: 1, "theoper", reason: "a reason")
+        )
+        .Message.ShouldBe(data.Error);
     }
     else
     {
@@ -1371,7 +1312,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
       _jq.SignalMaterialForQuarantine(1, "theoper", reason: "signaling reason");
 
-      (await newStatusTask).Should().Be(_curSt.CurrentStatus);
+      (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
 
       if (data.QuarantineAction == SignalQuarantineTheoryData.QuarantineType.Signal)
       {
@@ -1382,7 +1323,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             pal: 4,
             queue: data.QuarantineQueue ?? "",
             operName: "theoper",
-            reason: "signaling reason"
+            reason: "signaling reason",
+            timeUTC: now
           )
         );
       }
@@ -1393,7 +1335,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             logMat,
             cntr: expectedLog.Count + 1,
             note: "signaling reason",
-            operName: "theoper"
+            operName: "theoper",
+            timeUTC: now
           )
         );
 
@@ -1409,7 +1352,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
               reason: data.QuarantineAction == SignalQuarantineTheoryData.QuarantineType.Add
                 ? "MovingInQueue"
                 : "Quarantine",
-              operName: "theoper"
+              operName: "theoper",
+              timeUTC: now
             )
           );
         }
@@ -1424,28 +1368,21 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
             queue: data.QuarantineQueue,
             position: 0,
             reason: "Quarantine",
-            operName: "theoper"
+            operName: "theoper",
+            timeUTC: now
           )
         );
       }
     }
 
-    db.GetLogForMaterial(materialID: 1)
-      .Should()
-      .BeEquivalentTo(
-        expectedLog,
-        options =>
-          options
-            .Using<DateTime>(ctx =>
-              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<DateTime>()
-            .Using<TimeSpan>(ctx =>
-              ctx.Subject.Should().BeCloseTo(ctx.Expectation, precision: TimeSpan.FromSeconds(4))
-            )
-            .WhenTypeIs<TimeSpan>()
-            .ComparingByMembers<LogEntry>()
-      );
+    var mat1Log = db.GetLogForMaterial(materialID: 1).ToList();
+    mat1Log.ShouldAllBe(e =>
+      Math.Abs(e.EndTimeUTC.Subtract(now).TotalSeconds) < 4 && e.ElapsedTime < TimeSpan.FromSeconds(4)
+    );
+    mat1Log
+      .Select(e => e with { EndTimeUTC = now, ElapsedTime = TimeSpan.Zero })
+      .ToList()
+      .ShouldBeEquivalentTo(expectedLog);
   }
 
   private static LogEntry MarkExpectedEntry(
@@ -1465,7 +1402,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       prog: "MARK",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: serial
+      result: serial,
+      elapsed: TimeSpan.Zero,
+      active: TimeSpan.Zero
     );
     return e;
   }
@@ -1487,7 +1426,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       prog: "",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: workorder
+      result: workorder,
+      elapsed: TimeSpan.Zero,
+      active: TimeSpan.Zero
     );
     return e;
   }
@@ -1535,7 +1476,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       prog: reason ?? "",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: ""
+      result: "",
+      elapsed: TimeSpan.Zero,
+      active: TimeSpan.Zero
     );
     if (!string.IsNullOrEmpty(operName))
     {
@@ -1570,7 +1513,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       prog: "QuarantineAfterUnload",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: "QuarantineAfterUnload"
+      result: "QuarantineAfterUnload",
+      elapsed: TimeSpan.Zero,
+      active: TimeSpan.Zero
     );
     if (!string.IsNullOrEmpty(operName))
     {
@@ -1681,7 +1626,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       prog: "OperatorNotes",
       start: false,
       endTime: timeUTC ?? DateTime.UtcNow,
-      result: "Operator Notes"
+      result: "Operator Notes",
+      elapsed: TimeSpan.Zero,
+      active: TimeSpan.Zero
     );
     e = e with { ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("note", note) };
     if (!string.IsNullOrEmpty(operName))
@@ -1777,17 +1724,15 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
     var task = CreateTaskToWaitForNewStatus();
     NewCellState?.Invoke();
-    (await task)
-      .Should()
-      .BeEquivalentTo(
-        curSt with
-        {
-          Alarms =
-          [
-            $"The server is running in timezone {TimeZoneInfo.Local.Id} but was expected to be Hawaiian Standard Time.",
-          ],
-        }
-      );
+    (await task).ShouldBeEquivalentTo(
+      curSt with
+      {
+        Alarms =
+        [
+          $"The server is running in timezone {TimeZoneInfo.Local.Id} but was expected to be Hawaiian Standard Time.",
+        ],
+      }
+    );
   }
 
   #endregion
