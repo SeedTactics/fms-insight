@@ -43,6 +43,7 @@ namespace Serilog
     public void Error(string message);
     public void Information(string message);
     public void Debug(string messageTemplate, params object[] propertyValues);
+    public void Verbose(string messageTemplate, params object[] propertyValues);
   }
 
   public static class EventLogConfig
@@ -121,6 +122,16 @@ namespace Serilog
     void ILogger.Debug(string messageTemplate, params object[] propertyValues)
     {
       Log.Debug(messageTemplate, propertyValues);
+    }
+
+    void ILogger.Verbose(string messageTemplate, params object[] propertyValues)
+    {
+      Log.Debug(messageTemplate, propertyValues);
+    }
+
+    public static void Verbose(string messageTemplate, params object[] propertyValues)
+    {
+      Debug(null, messageTemplate, propertyValues);
     }
 
     public class DebugMessage

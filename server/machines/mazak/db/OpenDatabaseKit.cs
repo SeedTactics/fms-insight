@@ -35,9 +35,12 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.OleDb;
 using System.Linq;
-#if !NET35
+#if NET35
+using System.Data.SqlClient;
+#else
 // On net3.5, we have a small reflection-based implementation
 using Dapper;
+using Microsoft.Data.SqlClient;
 #endif
 
 namespace MazakMachineInterface
@@ -198,7 +201,7 @@ namespace MazakMachineInterface
       }
       else
       {
-        var conn = new Microsoft.Data.SqlClient.SqlConnection(_readConnStr);
+        var conn = new SqlConnection(_readConnStr);
         conn.Open();
         return conn;
       }
@@ -212,7 +215,7 @@ namespace MazakMachineInterface
       }
       else
       {
-        var conn = new Microsoft.Data.SqlClient.SqlConnection(_writeConnStr);
+        var conn = new SqlConnection(_writeConnStr);
         conn.Open();
         return conn;
       }

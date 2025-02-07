@@ -35,8 +35,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+#if NET35
+using System.Data.SqlClient;
+#else
 using Microsoft.Data.SqlClient;
-#if !NET35
 using Dapper;
 #endif
 
