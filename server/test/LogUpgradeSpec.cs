@@ -931,8 +931,8 @@ namespace MachineWatchTest
       // ver 32 to 33 changed around unfilled workorder tables
       using var db = _repo.OpenConnection();
       db.WorkordersById("work1")
-        .ShouldBe(
-          [
+        .ShouldBeEquivalentTo(
+          ImmutableList.Create(
             new Workorder()
             {
               WorkorderId = "work1",
@@ -958,8 +958,8 @@ namespace MachineWatchTest
               Quantity = 33,
               DueDate = new DateTime(2024, 7, 30, 14, 6, 27, DateTimeKind.Utc),
               Priority = 26,
-            },
-          ]
+            }
+          )
         );
 
       db.WorkordersById("work2").ShouldBeEmpty();
