@@ -1081,12 +1081,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Paths = ImmutableList.Create(
                 new ProcPathInfo()
                 {
-                  Load = luls.ToImmutableList(),
-                  Unload = luls.ToImmutableList(),
+                  Load = luls.ToImmutableSortedSet(),
+                  Unload = luls.ToImmutableSortedSet(),
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins),
                   PartsPerPallet = partsPerPal,
-                  PalletNums = pals.ToImmutableList(),
+                  PalletNums = pals.ToImmutableSortedSet(),
                   Fixture = fixture,
                   Face = face,
                   InputQueue = queue,
@@ -1100,7 +1100,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       Program = prog,
                       ProgramRevision = progRev,
                       ExpectedCycleTime = TimeSpan.FromMinutes(machMins),
-                      Stations = machs.Select(m => m + 100).ToImmutableList(),
+                      Stations = machs.Select(m => m + 100).ToImmutableSortedSet(),
                     }
                   ),
                 }
@@ -1147,7 +1147,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Program = prog1,
           ProgramRevision = prog1Rev,
           ExpectedCycleTime = TimeSpan.FromMinutes(machMins1),
-          Stations = machs1.Select(m => m + 100).ToImmutableList(),
+          Stations = machs1.Select(m => m + 100).ToImmutableSortedSet(),
         }
       );
 
@@ -1158,7 +1158,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Program = prog2,
           ProgramRevision = prog2Rev,
           ExpectedCycleTime = TimeSpan.FromMinutes(machMins2),
-          Stations = machs2.Select(m => m + 100).ToImmutableList(),
+          Stations = machs2.Select(m => m + 100).ToImmutableSortedSet(),
         }
       );
 
@@ -1169,7 +1169,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             StationGroup = "TestReclamp",
             ExpectedCycleTime = TimeSpan.FromMinutes(reclampMins),
-            Stations = reclamp.ToImmutableList(),
+            Stations = reclamp.ToImmutableSortedSet(),
           }
         );
       }
@@ -1189,12 +1189,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Paths = ImmutableList.Create(
                 new ProcPathInfo()
                 {
-                  Load = luls.ToImmutableList(),
-                  Unload = luls.ToImmutableList(),
+                  Load = luls.ToImmutableSortedSet(),
+                  Unload = luls.ToImmutableSortedSet(),
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins),
                   PartsPerPallet = partsPerPal,
-                  PalletNums = pals.ToImmutableList(),
+                  PalletNums = pals.ToImmutableSortedSet(),
                   Fixture = fixture,
                   Face = face,
                   InputQueue = queue,
@@ -1252,12 +1252,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 new ProcPathInfo()
                 {
                   SimulatedStartingUTC = DateTime.UtcNow.AddHours(-priority).AddMinutes(10),
-                  Load = luls.ToImmutableList(),
-                  Unload = luls.ToImmutableList(),
+                  Load = luls.ToImmutableSortedSet(),
+                  Unload = luls.ToImmutableSortedSet(),
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins1),
                   PartsPerPallet = partsPerPal,
-                  PalletNums = pals.ToImmutableList(),
+                  PalletNums = pals.ToImmutableSortedSet(),
                   Fixture = fixture,
                   Face = face1,
                   SimulatedAverageFlowTime = TimeSpan.Zero,
@@ -1268,7 +1268,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       Program = prog1,
                       ProgramRevision = prog1Rev,
                       ExpectedCycleTime = TimeSpan.FromMinutes(machMins1),
-                      Stations = machs.Select(m => m + 100).ToImmutableList(),
+                      Stations = machs.Select(m => m + 100).ToImmutableSortedSet(),
                     }
                   ),
                 }
@@ -1280,13 +1280,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 new ProcPathInfo()
                 {
                   SimulatedStartingUTC = DateTime.UtcNow.AddHours(-priority).AddMinutes(20),
-                  Load = luls.ToImmutableList(),
-                  Unload = luls.ToImmutableList(),
+                  Load = luls.ToImmutableSortedSet(),
+                  Unload = luls.ToImmutableSortedSet(),
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
                   PartsPerPallet = partsPerPal,
                   SimulatedAverageFlowTime = TimeSpan.Zero,
-                  PalletNums = pals.ToImmutableList(),
+                  PalletNums = pals.ToImmutableSortedSet(),
                   Fixture = fixture,
                   Face = face2,
                   Stops = ImmutableList.Create(
@@ -1296,7 +1296,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                       Program = prog2,
                       ProgramRevision = prog2Rev,
                       ExpectedCycleTime = TimeSpan.FromMinutes(machMins2),
-                      Stations = machs.Select(m => m + 100).ToImmutableList(),
+                      Stations = machs.Select(m => m + 100).ToImmutableSortedSet(),
                     }
                   ),
                 }
@@ -1353,7 +1353,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Program = prog1,
           ProgramRevision = prog1Rev,
           ExpectedCycleTime = TimeSpan.FromMinutes(machMins1),
-          Stations = machs.Select(m => m + 100).ToImmutableList(),
+          Stations = machs.Select(m => m + 100).ToImmutableSortedSet(),
         }
       );
 
@@ -1364,7 +1364,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             StationGroup = "TestReclamp",
             ExpectedCycleTime = TimeSpan.FromMinutes(reclamp1Mins),
-            Stations = reclamp1.ToImmutableList(),
+            Stations = reclamp1.ToImmutableSortedSet(),
           }
         );
       }
@@ -1376,7 +1376,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             StationGroup = "TestReclamp",
             ExpectedCycleTime = TimeSpan.FromMinutes(reclamp2Min),
-            Stations = reclamp2.ToImmutableList(),
+            Stations = reclamp2.ToImmutableSortedSet(),
           }
         );
       }
@@ -1388,7 +1388,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Program = prog2,
           ProgramRevision = prog2Rev,
           ExpectedCycleTime = TimeSpan.FromMinutes(machMins2),
-          Stations = machs.Select(m => m + 100).ToImmutableList(),
+          Stations = machs.Select(m => m + 100).ToImmutableSortedSet(),
         }
       );
 
@@ -1407,12 +1407,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Paths = ImmutableList.Create(
                 new ProcPathInfo()
                 {
-                  Load = load1.ToImmutableList(),
-                  Unload = unload1.ToImmutableList(),
+                  Load = load1.ToImmutableSortedSet(),
+                  Unload = unload1.ToImmutableSortedSet(),
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins1),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins1),
                   PartsPerPallet = partsPerPal,
-                  PalletNums = pals1.ToImmutableList(),
+                  PalletNums = pals1.ToImmutableSortedSet(),
                   Fixture = fixture,
                   Face = 1,
                   SimulatedStartingUTC = DateTime.MinValue,
@@ -1429,12 +1429,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               Paths = ImmutableList.Create(
                 new ProcPathInfo()
                 {
-                  Load = load2.ToImmutableList(),
-                  Unload = unload2.ToImmutableList(),
+                  Load = load2.ToImmutableSortedSet(),
+                  Unload = unload2.ToImmutableSortedSet(),
                   ExpectedLoadTime = TimeSpan.FromMinutes(loadMins2),
                   ExpectedUnloadTime = TimeSpan.FromMinutes(unloadMins2),
                   PartsPerPallet = partsPerPal,
-                  PalletNums = pals2.ToImmutableList(),
+                  PalletNums = pals2.ToImmutableSortedSet(),
                   Fixture = fixture,
                   Face = 1,
                   SimulatedStartingUTC = DateTime.MinValue,

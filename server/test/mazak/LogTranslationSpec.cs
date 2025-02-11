@@ -1643,7 +1643,7 @@ namespace MachineWatchTest
                   {
                     StationGroup = "machinespec",
                     ExpectedCycleTime = TimeSpan.FromMinutes(33),
-                    Stations = ImmutableList<int>.Empty,
+                    Stations = [],
                   }
                 ),
               }
@@ -1661,7 +1661,7 @@ namespace MachineWatchTest
                   {
                     StationGroup = "machinespec",
                     ExpectedCycleTime = TimeSpan.FromMinutes(44),
-                    Stations = ImmutableList<int>.Empty,
+                    Stations = [],
                   }
                 ),
               }
@@ -1690,7 +1690,7 @@ namespace MachineWatchTest
                   {
                     StationGroup = "machinespec",
                     ExpectedCycleTime = TimeSpan.FromMinutes(33),
-                    Stations = ImmutableList<int>.Empty,
+                    Stations = [],
                   }
                 ),
               }
@@ -1708,7 +1708,7 @@ namespace MachineWatchTest
                   {
                     StationGroup = "machinespec",
                     ExpectedCycleTime = TimeSpan.FromMinutes(44),
-                    Stations = ImmutableList<int>.Empty,
+                    Stations = [],
                   }
                 ),
               }
@@ -2175,7 +2175,7 @@ namespace MachineWatchTest
                     Program = "the-log-prog",
                     ProgramRevision = 15,
                     StationGroup = "",
-                    Stations = ImmutableList<int>.Empty,
+                    Stations = [],
                     ExpectedCycleTime = TimeSpan.Zero,
                   }
                 ),
@@ -2204,7 +2204,7 @@ namespace MachineWatchTest
                     Program = "other-log-prog",
                     ProgramRevision = 12,
                     StationGroup = "",
-                    Stations = ImmutableList<int>.Empty,
+                    Stations = [],
                     ExpectedCycleTime = TimeSpan.Zero,
                   }
                 ),

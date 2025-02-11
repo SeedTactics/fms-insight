@@ -47,7 +47,7 @@ namespace BlackMaple.MachineFramework
     private record PathStopRow
     {
       public required string StationGroup { get; init; }
-      public ImmutableList<int>.Builder Stations { get; } = ImmutableList.CreateBuilder<int>();
+      public ImmutableSortedSet<int>.Builder Stations { get; } = ImmutableSortedSet.CreateBuilder<int>();
       public required string Program { get; init; }
       public required long? ProgramRevision { get; init; }
       public required TimeSpan ExpectedCycleTime { get; init; }
@@ -89,11 +89,11 @@ namespace BlackMaple.MachineFramework
       public required string Fixture { get; init; }
       public required int? Face { get; init; }
       public required string Casting { get; init; }
-      public ImmutableList<int>.Builder Loads { get; } = ImmutableList.CreateBuilder<int>();
-      public ImmutableList<int>.Builder Unloads { get; } = ImmutableList.CreateBuilder<int>();
+      public ImmutableSortedSet<int>.Builder Loads { get; } = ImmutableSortedSet.CreateBuilder<int>();
+      public ImmutableSortedSet<int>.Builder Unloads { get; } = ImmutableSortedSet.CreateBuilder<int>();
       public ImmutableList<PathInspection>.Builder Insps { get; } =
         ImmutableList.CreateBuilder<PathInspection>();
-      public ImmutableList<int>.Builder Pals { get; } = ImmutableList.CreateBuilder<int>();
+      public ImmutableSortedSet<int>.Builder Pals { get; } = ImmutableSortedSet.CreateBuilder<int>();
       public ImmutableList<SimulatedProduction>.Builder SimProd { get; } =
         ImmutableList.CreateBuilder<SimulatedProduction>();
       public SortedList<int, PathStopRow> Stops { get; } = new SortedList<int, PathStopRow>();
@@ -104,7 +104,7 @@ namespace BlackMaple.MachineFramework
     private record JobDetails
     {
       public required ImmutableList<int> CyclesOnFirstProc { get; init; }
-      public required ImmutableList<string> Bookings { get; init; }
+      public required ImmutableSortedSet<string> Bookings { get; init; }
       public required ImmutableList<ProcessInfo> Procs { get; init; }
       public required HoldRow Hold { get; init; }
     }
@@ -152,7 +152,7 @@ namespace BlackMaple.MachineFramework
 
         //scheduled bookings
         cmd.CommandText = "SELECT BookingId FROM scheduled_bookings WHERE UniqueStr = $uniq";
-        var bookings = ImmutableList.CreateBuilder<string>();
+        var bookings = ImmutableSortedSet.CreateBuilder<string>();
         using (IDataReader reader = cmd.ExecuteReader())
         {
           while (reader.Read())

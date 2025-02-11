@@ -93,7 +93,7 @@ namespace BlackMaple.MachineFramework
     public required string StationGroup { get; init; }
 
     [JsonPropertyName("StationNums")]
-    public required ImmutableList<int> Stations { get; init; }
+    public required ImmutableSortedSet<int> Stations { get; init; }
 
     public required TimeSpan ExpectedCycleTime { get; init; }
 
@@ -152,18 +152,17 @@ namespace BlackMaple.MachineFramework
 
   public record ProcPathInfo
   {
-    // not required only for backwards compatibility, make required once Pallets as strings is removed
-    public required ImmutableList<int> PalletNums { get; init; }
+    public required ImmutableSortedSet<int> PalletNums { get; init; }
 
     public string? Fixture { get; init; }
 
     public int? Face { get; init; }
 
-    public required ImmutableList<int> Load { get; init; }
+    public required ImmutableSortedSet<int> Load { get; init; }
 
     public required TimeSpan ExpectedLoadTime { get; init; }
 
-    public required ImmutableList<int> Unload { get; init; }
+    public required ImmutableSortedSet<int> Unload { get; init; }
 
     public required TimeSpan ExpectedUnloadTime { get; init; }
 
@@ -185,7 +184,7 @@ namespace BlackMaple.MachineFramework
 
     public string? OutputQueue { get; init; }
 
-    public ImmutableList<MachineFramework.PathInspection>? Inspections { get; init; }
+    public ImmutableList<PathInspection>? Inspections { get; init; }
 
     public string? Casting { get; init; }
   }
@@ -208,7 +207,7 @@ namespace BlackMaple.MachineFramework
     public string? AllocationAlgorithm { get; init; }
 
     [JsonPropertyName("Bookings")]
-    public ImmutableList<string>? BookingIds { get; init; }
+    public ImmutableSortedSet<string>? BookingIds { get; init; }
 
     public bool ManuallyCreated { get; init; }
 
@@ -247,7 +246,7 @@ namespace BlackMaple.MachineFramework
     // lower numbers come first, while -1 means no-data.
     public ImmutableList<ImmutableList<long>>? Precedence { get; init; }
 
-    public ImmutableList<string>? AssignedWorkorders { get; init; }
+    public ImmutableSortedSet<string>? AssignedWorkorders { get; init; }
 
     public long? RemainingToStart { get; init; }
   }
