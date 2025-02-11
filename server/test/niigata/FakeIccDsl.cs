@@ -2952,7 +2952,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           p =>
             p with
             {
-              Inspections = (p.Inspections ?? ImmutableList<PathInspection>.Empty).Add(
+              Inspections = (p.Inspections ?? []).Add(
                 new PathInspection()
                 {
                   InspectionType = inspTy,

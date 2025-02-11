@@ -40,7 +40,7 @@ using System.Text.Json.Serialization;
 
 namespace BlackMaple.MachineFramework
 {
-  public record PathInspection
+  public record PathInspection : IComparable<PathInspection>
   {
     public required string InspectionType { get; init; }
 
@@ -86,6 +86,9 @@ namespace BlackMaple.MachineFramework
     {
       return "%stat" + proc.ToString() + "," + routeNum.ToString() + "%";
     }
+
+    int IComparable<PathInspection>.CompareTo(PathInspection? other) =>
+      InspectionType.CompareTo(other?.InspectionType);
   }
 
   public record MachiningStop
@@ -137,11 +140,14 @@ namespace BlackMaple.MachineFramework
     public required bool HoldUnholdPatternRepeats { get; init; }
   }
 
-  public record SimulatedProduction
+  public record SimulatedProduction : IComparable<SimulatedProduction>
   {
     public required DateTime TimeUTC { get; init; }
 
     public required int Quantity { get; init; } //total quantity simulated to be completed at TimeUTC
+
+    int IComparable<SimulatedProduction>.CompareTo(SimulatedProduction? other) =>
+      TimeUTC.CompareTo(other?.TimeUTC);
   }
 
   public record ProcessInfo
@@ -168,7 +174,7 @@ namespace BlackMaple.MachineFramework
 
     public required ImmutableList<MachiningStop> Stops { get; init; }
 
-    public ImmutableList<SimulatedProduction>? SimulatedProduction { get; init; }
+    public ImmutableSortedSet<SimulatedProduction>? SimulatedProduction { get; init; }
 
     public required DateTime SimulatedStartingUTC { get; init; }
 
@@ -184,7 +190,7 @@ namespace BlackMaple.MachineFramework
 
     public string? OutputQueue { get; init; }
 
-    public ImmutableList<PathInspection>? Inspections { get; init; }
+    public ImmutableSortedSet<PathInspection>? Inspections { get; init; }
 
     public string? Casting { get; init; }
   }

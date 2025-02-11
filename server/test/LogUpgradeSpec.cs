@@ -451,7 +451,7 @@ namespace MachineWatchTest
                 InputQueue = "in11",
                 SimulatedStartingUTC = DateTime.Parse("1/5/2011 11:34 PM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(0.5),
-                SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+                SimulatedProduction = [],
                 PalletNums = [2, 5],
                 Fixture = "Fix1",
                 Face = 1,
@@ -468,7 +468,8 @@ namespace MachineWatchTest
                     ExpectedCycleTime = TimeSpan.FromHours(1.2),
                   }
                 ),
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "Insp1",
@@ -484,8 +485,8 @@ namespace MachineWatchTest
                     MaxVal = 175,
                     RandomFreq = -1,
                     TimeInterval = TimeSpan.FromMinutes(121),
-                  }
-                ),
+                  },
+                ],
                 HoldMachining = new HoldPattern()
                 {
                   UserHold = false,
@@ -509,7 +510,7 @@ namespace MachineWatchTest
                 OutputQueue = "out12",
                 SimulatedStartingUTC = DateTime.Parse("2/10/2011 12:45 AM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(1.5),
-                SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+                SimulatedProduction = [],
                 PalletNums = [4, 35],
                 Fixture = "ABC",
                 Face = 4,
@@ -526,7 +527,8 @@ namespace MachineWatchTest
                     ExpectedCycleTime = TimeSpan.FromHours(2.8),
                   }
                 ),
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "Insp1",
@@ -542,8 +544,8 @@ namespace MachineWatchTest
                     MaxVal = 175,
                     RandomFreq = -1,
                     TimeInterval = TimeSpan.FromMinutes(121),
-                  }
-                ),
+                  },
+                ],
                 HoldMachining = new HoldPattern()
                 {
                   UserHold = true,
@@ -575,7 +577,7 @@ namespace MachineWatchTest
                 InputQueue = "in21",
                 SimulatedStartingUTC = DateTime.Parse("3/14/2011 2:03 AM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(2.5),
-                SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+                SimulatedProduction = [],
                 PalletNums = [12, 64],
                 Fixture = "Fix123",
                 Face = 6,
@@ -599,7 +601,8 @@ namespace MachineWatchTest
                     ExpectedCycleTime = TimeSpan.Zero,
                   }
                 ),
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "Insp2",
@@ -623,8 +626,8 @@ namespace MachineWatchTest
                     RandomFreq = 0.544,
                     MaxVal = -1,
                     TimeInterval = TimeSpan.FromMinutes(44),
-                  }
-                ),
+                  },
+                ],
                 HoldMachining = new HoldPattern()
                 {
                   UserHold = false,
@@ -650,7 +653,7 @@ namespace MachineWatchTest
                 PartsPerPallet = 22,
                 SimulatedStartingUTC = DateTime.Parse("4/20/2011 3:22 PM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(3.5),
-                SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+                SimulatedProduction = [],
                 PalletNums = [55, 2],
                 // has non-integer face so should be ignored
                 Load = [785, 53],
@@ -673,7 +676,8 @@ namespace MachineWatchTest
                     ExpectedCycleTime = TimeSpan.Zero,
                   }
                 ),
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "Insp2",
@@ -697,8 +701,8 @@ namespace MachineWatchTest
                     RandomFreq = 0.544,
                     MaxVal = -1,
                     TimeInterval = TimeSpan.FromMinutes(44),
-                  }
-                ),
+                  },
+                ],
                 HoldMachining = new HoldPattern()
                 {
                   HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
@@ -722,7 +726,7 @@ namespace MachineWatchTest
                 OutputQueue = "out23",
                 SimulatedStartingUTC = DateTime.Parse("5/22/2011 4:18 AM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(4.5),
-                SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+                SimulatedProduction = [],
                 PalletNums = [5, 22],
                 Fixture = "Fix17",
                 Face = 7,
@@ -731,7 +735,8 @@ namespace MachineWatchTest
                 Unload = [32],
                 ExpectedUnloadTime = TimeSpan.FromSeconds(532),
                 Stops = ImmutableList<MachiningStop>.Empty,
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "Insp2",
@@ -755,8 +760,8 @@ namespace MachineWatchTest
                     RandomFreq = 0.544,
                     MaxVal = -1,
                     TimeInterval = TimeSpan.FromMinutes(44),
-                  }
-                ),
+                  },
+                ],
                 HoldMachining = new HoldPattern()
                 {
                   HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),

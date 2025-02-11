@@ -91,11 +91,11 @@ namespace BlackMaple.MachineFramework
       public required string Casting { get; init; }
       public ImmutableSortedSet<int>.Builder Loads { get; } = ImmutableSortedSet.CreateBuilder<int>();
       public ImmutableSortedSet<int>.Builder Unloads { get; } = ImmutableSortedSet.CreateBuilder<int>();
-      public ImmutableList<PathInspection>.Builder Insps { get; } =
-        ImmutableList.CreateBuilder<PathInspection>();
+      public ImmutableSortedSet<PathInspection>.Builder Insps { get; } =
+        ImmutableSortedSet.CreateBuilder<PathInspection>();
       public ImmutableSortedSet<int>.Builder Pals { get; } = ImmutableSortedSet.CreateBuilder<int>();
-      public ImmutableList<SimulatedProduction>.Builder SimProd { get; } =
-        ImmutableList.CreateBuilder<SimulatedProduction>();
+      public ImmutableSortedSet<SimulatedProduction>.Builder SimProd { get; } =
+        ImmutableSortedSet.CreateBuilder<SimulatedProduction>();
       public SortedList<int, PathStopRow> Stops { get; } = new SortedList<int, PathStopRow>();
       public HoldRow MachHold { get; set; } = null;
       public HoldRow LoadHold { get; set; } = null;
