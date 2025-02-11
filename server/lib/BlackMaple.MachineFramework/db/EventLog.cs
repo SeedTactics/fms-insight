@@ -1120,7 +1120,7 @@ namespace BlackMaple.MachineFramework
       return ret.ToImmutable();
     }
 
-    public ImmutableList<string> GetWorkordersForUnique(string jobUnique)
+    public ImmutableSortedSet<string> GetWorkordersForUnique(string jobUnique)
     {
       using (var cmd = _connection.CreateCommand())
       using (var trans = _connection.BeginTransaction())
@@ -1130,7 +1130,7 @@ namespace BlackMaple.MachineFramework
         cmd.Transaction = trans;
         cmd.Parameters.Add("uniq", SqliteType.Text).Value = jobUnique;
 
-        var ret = ImmutableList.CreateBuilder<string>();
+        var ret = ImmutableSortedSet.CreateBuilder<string>();
         using (var reader = cmd.ExecuteReader())
         {
           while (reader.Read())

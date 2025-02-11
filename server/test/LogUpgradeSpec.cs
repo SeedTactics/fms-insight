@@ -435,7 +435,7 @@ namespace MachineWatchTest
         Archived = false,
         ScheduleId = "Job1tag1245",
         Comment = "Hello there",
-        BookingIds = ImmutableList.Create("booking1", "booking2", "booking3"),
+        BookingIds = ["booking1", "booking2", "booking3"],
         HoldJob = new HoldPattern()
         {
           UserHold = true,
@@ -459,18 +459,18 @@ namespace MachineWatchTest
                 SimulatedStartingUTC = DateTime.Parse("1/5/2011 11:34 PM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(0.5),
                 SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
-                PalletNums = ImmutableList.Create(2, 5),
+                PalletNums = [2, 5],
                 Fixture = "Fix1",
                 Face = 1,
-                Load = ImmutableList.Create(35, 64),
+                Load = [35, 64],
                 ExpectedLoadTime = TimeSpan.FromSeconds(100),
-                Unload = ImmutableList.Create(75, 234),
+                Unload = [75, 234],
                 ExpectedUnloadTime = TimeSpan.FromSeconds(13),
                 Stops = ImmutableList.Create(
                   new MachiningStop()
                   {
                     StationGroup = "Machine",
-                    Stations = ImmutableList.Create(12, 23),
+                    Stations = [12, 23],
                     Program = "Emily",
                     ExpectedCycleTime = TimeSpan.FromHours(1.2),
                   }
@@ -517,18 +517,18 @@ namespace MachineWatchTest
                 SimulatedStartingUTC = DateTime.Parse("2/10/2011 12:45 AM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(1.5),
                 SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
-                PalletNums = ImmutableList.Create(4, 35),
+                PalletNums = [4, 35],
                 Fixture = "ABC",
                 Face = 4,
-                Load = ImmutableList.Create(785, 15),
+                Load = [785, 15],
                 ExpectedLoadTime = TimeSpan.FromMinutes(53),
-                Unload = ImmutableList.Create(53),
+                Unload = [53],
                 ExpectedUnloadTime = TimeSpan.FromMinutes(12),
                 Stops = ImmutableList.Create(
                   new MachiningStop()
                   {
                     StationGroup = "Other Machine",
-                    Stations = ImmutableList.Create(23, 12),
+                    Stations = [23, 12],
                     Program = "awef",
                     ExpectedCycleTime = TimeSpan.FromHours(2.8),
                   }
@@ -583,25 +583,25 @@ namespace MachineWatchTest
                 SimulatedStartingUTC = DateTime.Parse("3/14/2011 2:03 AM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(2.5),
                 SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
-                PalletNums = ImmutableList.Create(12, 64),
+                PalletNums = [12, 64],
                 Fixture = "Fix123",
                 Face = 6,
-                Load = ImmutableList.Create(647, 474),
+                Load = [647, 474],
                 ExpectedLoadTime = TimeSpan.FromHours(52),
-                Unload = ImmutableList.Create(563),
+                Unload = [563],
                 ExpectedUnloadTime = TimeSpan.FromHours(63),
                 Stops = ImmutableList.Create(
                   new MachiningStop()
                   {
                     StationGroup = "Test",
-                    Stations = ImmutableList.Create(64, 323),
+                    Stations = [64, 323],
                     Program = "Goodbye",
                     ExpectedCycleTime = TimeSpan.FromHours(6.3),
                   },
                   new MachiningStop()
                   {
                     StationGroup = "Test",
-                    Stations = ImmutableList.Create(245, 36),
+                    Stations = [245, 36],
                     Program = "dduuude",
                     ExpectedCycleTime = TimeSpan.Zero,
                   }
@@ -658,24 +658,24 @@ namespace MachineWatchTest
                 SimulatedStartingUTC = DateTime.Parse("4/20/2011 3:22 PM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(3.5),
                 SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
-                PalletNums = ImmutableList.Create(55, 2),
+                PalletNums = [55, 2],
                 // has non-integer face so should be ignored
-                Load = ImmutableList.Create(785, 53),
+                Load = [785, 53],
                 ExpectedLoadTime = TimeSpan.FromSeconds(98),
-                Unload = ImmutableList.Create(2, 12),
+                Unload = [2, 12],
                 ExpectedUnloadTime = TimeSpan.FromSeconds(73),
                 Stops = ImmutableList.Create(
                   new MachiningStop()
                   {
                     StationGroup = "Test",
-                    Stations = ImmutableList.Create(32, 64),
+                    Stations = [32, 64],
                     Program = "wefq",
                     ExpectedCycleTime = TimeSpan.Zero,
                   },
                   new MachiningStop()
                   {
                     StationGroup = "Test",
-                    Stations = ImmutableList.Create(23, 53),
+                    Stations = [23, 53],
                     Program = "so cool",
                     ExpectedCycleTime = TimeSpan.Zero,
                   }
@@ -730,12 +730,12 @@ namespace MachineWatchTest
                 SimulatedStartingUTC = DateTime.Parse("5/22/2011 4:18 AM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(4.5),
                 SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
-                PalletNums = ImmutableList.Create(5, 22),
+                PalletNums = [5, 22],
                 Fixture = "Fix17",
                 Face = 7,
-                Load = ImmutableList.Create(15),
+                Load = [15],
                 ExpectedLoadTime = TimeSpan.FromSeconds(35),
-                Unload = ImmutableList.Create(32),
+                Unload = [32],
                 ExpectedUnloadTime = TimeSpan.FromSeconds(532),
                 Stops = ImmutableList<MachiningStop>.Empty,
                 Inspections = ImmutableList.Create(

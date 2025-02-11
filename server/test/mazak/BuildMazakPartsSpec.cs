@@ -45,14 +45,13 @@ namespace MachineWatchTest
 {
   public class BuildMazakPartsSpec
   {
-    private readonly MazakConfig defaultMazakCfg =
-      new()
-      {
-        SQLConnectionString = "unused",
-        LogCSVPath = "unused path",
-        ProgramDirectory = "unused prog dir",
-        DBType = MazakDbType.MazakVersionE,
-      };
+    private readonly MazakConfig defaultMazakCfg = new()
+    {
+      SQLConnectionString = "unused",
+      LogCSVPath = "unused path",
+      ProgramDirectory = "unused prog dir",
+      DBType = MazakDbType.MazakVersionE,
+    };
 
     [Theory]
     [InlineData(true)]
@@ -930,16 +929,16 @@ namespace MachineWatchTest
             Paths = ImmutableList.Create(
               new ProcPathInfo()
               {
-                PalletNums = ImmutableList.CreateRange(pals[p - 1]),
+                PalletNums = [.. pals[p - 1]],
                 SimulatedStartingUTC = (p == 1 ? simStart : null) ?? DateTime.MinValue,
                 SimulatedAverageFlowTime = TimeSpan.Zero,
-                Load = ImmutableList.Create(1),
-                Unload = ImmutableList.Create(1),
+                Load = [1],
+                Unload = [1],
                 Stops = ImmutableList.Create(
                   new MachiningStop()
                   {
                     StationGroup = "machine",
-                    Stations = ImmutableList.Create(1),
+                    Stations = [1],
                     Program = progs?[p - 1].prog ?? "1234",
                     ProgramRevision = progs?[p - 1].rev,
                     ExpectedCycleTime = TimeSpan.Zero,

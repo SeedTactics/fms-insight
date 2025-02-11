@@ -104,6 +104,31 @@ namespace MachineWatchTest
           .GetValue(null);
         return addRange.Invoke(emptyDict, new[] { dict });
       }
+      else if (
+        args.Length == 1
+        && t.GetGenericTypeDefinition().FullName.StartsWith("System.Collections.Immutable.ImmutableSortedSet")
+      )
+      {
+        var union = t.GetMethods(
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance
+          )
+          .Where(m =>
+            m.Name == "Union"
+            && m.GetParameters().Length == 1
+            && m.GetParameters()[0]
+              .ParameterType.FullName.StartsWith("System.Collections.Generic.IEnumerable")
+          )
+          .FirstOrDefault();
+
+        var sortedSet = context.Resolve(typeof(SortedSet<>).MakeGenericType(args[0]));
+        var emptySet = t.GetField(
+            "Empty",
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static
+          )
+          .GetValue(null);
+
+        return union.Invoke(emptySet, new[] { sortedSet });
+      }
       else
       {
         return new AutoFixture.Kernel.NoSpecimen();
