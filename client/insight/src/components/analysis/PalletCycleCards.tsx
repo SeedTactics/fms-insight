@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2025, John Lenz
 
 All rights reserved.
 
@@ -30,7 +30,6 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { useMemo } from "react";
 import { addMonths, addDays, startOfToday } from "date-fns";
 import { Box, FormControl, Typography } from "@mui/material";
 import { Select } from "@mui/material";
@@ -40,20 +39,82 @@ import { IconButton } from "@mui/material";
 import { ImportExport } from "@mui/icons-material";
 
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
-import { CycleChart, CycleChartPoint, YZoomRange } from "./CycleChart.js";
-import { copyPalletCyclesToClipboard } from "../../data/results.cycles.js";
+import { CycleChart, CycleChartPoint, ExtraTooltip, YZoomRange } from "./CycleChart.js";
+import { copyPalletCyclesToClipboard, PartAndProcess } from "../../data/results.cycles.js";
 import { isDemoAtom, useSetTitle } from "../routes.js";
-import { last30PalletCycles, specificMonthPalletCycles } from "../../cell-status/pallet-cycles.js";
-import { atom, useAtom, useAtomValue } from "jotai";
+import {
+  last30PalletCycles,
+  PalletCycleData,
+  specificMonthPalletCycles,
+} from "../../cell-status/pallet-cycles.js";
+import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomWithDefault } from "jotai/utils";
+import { LazySeq } from "@seedtactics/immutable-collections";
+import { PartIdenticon } from "../station-monitor/Material.js";
+import { materialDialogOpen } from "../../cell-status/material-details.js";
+import { useCallback } from "react";
 
 const selectedPalletAtom = atomWithDefault<number | undefined>((get) => (get(isDemoAtom) ? 3 : undefined));
+const selectedPartAtom = atom<PartAndProcess | undefined>(undefined);
 const zoomDateRangeAtom = atom<{ start: Date; end: Date } | undefined>(undefined);
 const yZoomAtom = atom<YZoomRange | null>(null);
+
+const filteredPoints = atom((get) => {
+  const selPal = get(selectedPalletAtom);
+  const selPart = get(selectedPartAtom);
+  if (!selPal && !selPart) return new Map<string, ReadonlyArray<CycleChartPoint>>();
+
+  const period = get(selectedAnalysisPeriod);
+  const palletCycles = get(period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles);
+
+  if (selPal) {
+    // Pick out the single pallet and optionally filter it by part
+    let cyclesForPal = palletCycles.get(selPal)?.valuesToLazySeq() ?? LazySeq.of([]);
+    if (selPart) {
+      cyclesForPal = cyclesForPal.filter((c) =>
+        c.mats.some((m) => m.part === selPart.part && m.proc === selPart.proc),
+      );
+    }
+    return new Map<string, ReadonlyArray<CycleChartPoint>>([[selPal.toString(), Array.from(cyclesForPal)]]);
+  } else if (selPart) {
+    // go through all the pallets, filter each by part, and keep those that have any cycles
+    return LazySeq.of(palletCycles)
+      .collect(([pal, cycles]) => {
+        const cyclesForPart = cycles
+          .valuesToLazySeq()
+          .filter((c) => c.mats.some((m) => m.part === selPart.part && m.proc === selPart.proc))
+          .toRArray();
+        if (cyclesForPart.length > 0) {
+          return [pal, cyclesForPart] as const;
+        } else {
+          return null;
+        }
+      })
+      .toRMap(([pal, cycles]) => [pal.toString(), cycles]);
+  } else {
+    return new Map<string, ReadonlyArray<CycleChartPoint>>();
+  }
+});
+
+const allPartNames = atom((get) => {
+  const period = get(selectedAnalysisPeriod);
+  const palletCycles = get(period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles);
+
+  return LazySeq.of(palletCycles)
+    .flatMap(([, cycles]) => cycles)
+    .flatMap(([, c]) => c.mats)
+    .distinctAndSortBy(
+      (m) => m.part,
+      (m) => m.proc,
+    )
+    .map((m) => ({ part: m.part, proc: m.proc }))
+    .toRArray();
+});
 
 export function PalletCycleChart() {
   useSetTitle("Pallet Cycles");
   const [selectedPallet, setSelectedPallet] = useAtom(selectedPalletAtom);
+  const [selectedPart, setSelectedPart] = useAtom(selectedPartAtom);
   const [zoomDateRange, setZoomRange] = useAtom(zoomDateRangeAtom);
   const [yZoom, setYZoom] = useAtom(yZoomAtom);
 
@@ -66,17 +127,22 @@ export function PalletCycleChart() {
   const palletCycles = useAtomValue(
     period.type === "Last30" ? last30PalletCycles : specificMonthPalletCycles,
   );
-  const points = useMemo(() => {
-    if (selectedPallet) {
-      const palData = palletCycles.get(selectedPallet);
-      if (palData !== undefined) {
-        return new Map<string, ReadonlyArray<CycleChartPoint>>([
-          [selectedPallet.toString(), Array.from(palData.valuesToLazySeq())],
-        ]);
-      }
-    }
-    return new Map<string, ReadonlyArray<CycleChartPoint>>();
-  }, [selectedPallet, palletCycles]);
+  const points = useAtomValue(filteredPoints);
+  const partNames = useAtomValue(allPartNames);
+
+  const setMatToShow = useSetAtom(materialDialogOpen);
+  const extraPalletTooltip = useCallback(
+    function extraPalletTooltip(point: CycleChartPoint): ReadonlyArray<ExtraTooltip> {
+      const palC = point as PalletCycleData;
+      return palC.mats.map((mat) => ({
+        title: mat.part + "-" + mat.proc,
+        value: mat.serial ?? "",
+        link: mat.serial ? () => setMatToShow({ type: "LogMat", logMat: mat }) : undefined,
+      }));
+    },
+    [setMatToShow],
+  );
+
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
       <Box
@@ -94,14 +160,14 @@ export function PalletCycleChart() {
           <Select
             autoWidth
             displayEmpty
-            value={selectedPallet || ""}
-            onChange={(e) => setSelectedPallet(e.target.value as number)}
+            value={selectedPallet ?? -1}
+            onChange={(e) =>
+              setSelectedPallet(e.target.value === -1 ? undefined : (e.target.value as number))
+            }
           >
-            {selectedPallet !== undefined ? undefined : (
-              <MenuItem key={0} value="">
-                <em>Select Pallet</em>
-              </MenuItem>
-            )}
+            <MenuItem key={0} value={-1}>
+              <em>Any Pallet</em>
+            </MenuItem>
             {palletCycles
               .keysToLazySeq()
               .sortBy((x) => x)
@@ -114,6 +180,37 @@ export function PalletCycleChart() {
               ))}
           </Select>
         </FormControl>
+        {partNames.length > 0 ? (
+          <FormControl size="small">
+            <Select
+              autoWidth
+              displayEmpty
+              value={
+                selectedPart
+                  ? partNames.findIndex((o) => selectedPart.part === o.part && selectedPart.proc === o.proc)
+                  : -1
+              }
+              style={{ marginLeft: "1em" }}
+              onChange={(e) => {
+                setSelectedPart(e.target.value === -1 ? undefined : partNames[e.target.value as number]);
+              }}
+            >
+              <MenuItem key={0} value={-1}>
+                <em>Any Part</em>
+              </MenuItem>
+              {partNames.map((n, idx) => (
+                <MenuItem key={idx} value={idx}>
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <PartIdenticon part={n.part} size={20} />
+                    <span style={{ marginRight: "1em" }}>
+                      {n.part}-{n.proc}
+                    </span>
+                  </div>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : undefined}
         <Tooltip title="Copy to Clipboard">
           <IconButton
             onClick={() => copyPalletCyclesToClipboard(palletCycles)}
@@ -133,6 +230,7 @@ export function PalletCycleChart() {
           set_date_zoom_range={(z) => setZoomRange(z.zoom)}
           yZoom={yZoom}
           setYZoom={setYZoom}
+          extra_tooltip={extraPalletTooltip}
         />
       </main>
     </Box>
