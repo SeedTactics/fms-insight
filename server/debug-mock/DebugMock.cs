@@ -578,7 +578,11 @@ namespace DebugMachineWatchApiServer
         }
         else if (e.LogType == LogType.PalletCycle)
         {
-          LogDB.RecordEmptyPallet(pallet: e.Pallet, timeUTC: e.EndTimeUTC.Add(offset));
+          LogDB.RecordEmptyPallet(
+            pallet: e.Pallet,
+            timeUTC: e.EndTimeUTC.Add(offset),
+            palletEnd: !e.StartOfCycle
+          );
         }
         else if (e.LogType == LogType.PalletOnRotaryInbound && e.StartOfCycle)
         {

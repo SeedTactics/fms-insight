@@ -1727,20 +1727,32 @@ namespace BlackMaple.MachineFramework
       return newLogs;
     }
 
-    public IEnumerable<LogEntry> RecordEmptyPallet(int pallet, DateTime timeUTC, string foreignId = null)
+    public IEnumerable<LogEntry> RecordEmptyPallet(
+      int pallet,
+      DateTime timeUTC,
+      string foreignId = null,
+      bool palletEnd = false
+    )
     {
       return AddEntryInTransaction(
         trans =>
         {
           var logs = new List<LogEntry>();
-          RecordPalletCycleStart(
-            pallet: pallet,
-            mats: [],
-            timeUTC: timeUTC,
-            logs: logs,
-            trans: trans,
-            foreignId: foreignId
-          );
+          if (palletEnd)
+          {
+            RecordPalletCycleEnd(pallet: pallet, mats: [], timeUTC: timeUTC, logs: logs, trans: trans);
+          }
+          else
+          {
+            RecordPalletCycleStart(
+              pallet: pallet,
+              mats: [],
+              timeUTC: timeUTC,
+              logs: logs,
+              trans: trans,
+              foreignId: foreignId
+            );
+          }
           return logs;
         },
         foreignId: foreignId
