@@ -127,6 +127,7 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
     if (selectedOperation) {
       return filterStationCycles(cycles.valuesToLazySeq(), {
         zoom: { start: addDays(today, -4), end: addDays(today, 1) },
+        partAndProc: selectedPart,
         pallet: selectedPallet,
         operation: selectedOperation,
       });
@@ -145,7 +146,11 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
       });
     }
   }, [cycles, ty, selectedPart, selectedPallet, selectedOperation, showGraph]);
-  const curOperation = selectedPart ? (selectedOperation ?? points.allMachineOperations[0]) : undefined;
+  // If we have selected a part and there is only one operation, default to it.
+  const curOperation = selectedPart
+    ? (selectedOperation ??
+      (points.allMachineOperations.length === 1 ? points.allMachineOperations[0] : undefined))
+    : undefined;
   const plannedMinutes = useMemo(() => {
     if (curOperation && ty === "machine") {
       return plannedOperationMinutes(points, false);
@@ -232,17 +237,20 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
               style={{ marginLeft: "1em" }}
               onChange={(e) => setSelectedOperation(points.allMachineOperations[e.target.value as number])}
             >
-              {points.allMachineOperations.length === 0 ? (
-                <MenuItem value={-1}>
-                  <em>Any Operation</em>
-                </MenuItem>
-              ) : (
-                points.allMachineOperations.map((oper, idx) => (
+              {[
+                ...(points.allMachineOperations.length !== 1
+                  ? [
+                      <MenuItem key={-1} value={-1}>
+                        <em>Any Operation</em>
+                      </MenuItem>,
+                    ]
+                  : []),
+                ...points.allMachineOperations.map((oper, idx) => (
                   <MenuItem key={idx} value={idx}>
                     {oper.statGroup} {oper.operation}
                   </MenuItem>
-                ))
-              )}
+                )),
+              ]}
             </Select>
           </FormControl>
         ) : undefined}
