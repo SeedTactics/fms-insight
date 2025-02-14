@@ -673,6 +673,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 path.Job.PartName,
                 stop.Program
               );
+              Log.Debug("Unable to find program for stop {@stop} for {@path}", stop, path);
             }
           }
           else if (!iccProgram.HasValue)
@@ -689,6 +690,7 @@ namespace BlackMaple.FMSInsight.Niigata
                 path.Job.PartName,
                 stop.Program
               );
+              Log.Debug("Unable to find program for stop {@stop} for {@path}", stop, path);
             }
           }
 
