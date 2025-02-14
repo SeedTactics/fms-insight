@@ -133,8 +133,9 @@ export function PartMachineCycleChart() {
     if (selectedPart) {
       if (selectedOperation) {
         return filterStationCycles(cycles.valuesToLazySeq(), {
-          operation: selectedOperation,
+          partAndProc: selectedPart,
           pallet: selectedPallet,
+          operation: selectedOperation,
         });
       } else {
         return filterStationCycles(cycles.valuesToLazySeq(), {
@@ -154,7 +155,12 @@ export function PartMachineCycleChart() {
       }
     }
   }, [selectedPart, selectedPallet, selectedMachine, selectedOperation, cycles]);
-  const curOperation = selectedPart ? selectedOperation ?? points.allMachineOperations[0] : undefined;
+
+  // If we have selected a part and there is only one operation, default to it.
+  const curOperation = selectedPart
+    ? (selectedOperation ??
+      (points.allMachineOperations.length === 1 ? points.allMachineOperations[0] : undefined))
+    : undefined;
   const plannedMinutes = useMemo(() => {
     if (curOperation) {
       return plannedOperationMinutes(points, false);
@@ -244,32 +250,33 @@ export function PartMachineCycleChart() {
               }
             }}
           >
-            {selectedPart ? (
-              points.allMachineOperations.length === 0 ? (
-                <MenuItem value={-1}>
-                  <em>Any Operation</em>
-                </MenuItem>
-              ) : (
-                points.allMachineOperations.map((oper, idx) => (
-                  <MenuItem key={idx} value={idx}>
-                    {oper.statGroup} {oper.operation}
-                  </MenuItem>
-                ))
-              )
-            ) : (
-              [
-                <MenuItem key={-1} value={FilterAnyMachineKey}>
-                  <em>Any Machine</em>
-                </MenuItem>,
-                points.allMachineNames.map((n) => (
-                  <MenuItem key={n} value={n}>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <span style={{ marginRight: "1em" }}>{n}</span>
-                    </div>
-                  </MenuItem>
-                )),
-              ]
-            )}
+            {selectedPart
+              ? [
+                  ...(points.allMachineOperations.length !== 1
+                    ? [
+                        <MenuItem value={-1}>
+                          <em>Any Operation</em>
+                        </MenuItem>,
+                      ]
+                    : []),
+                  ...points.allMachineOperations.map((oper, idx) => (
+                    <MenuItem key={idx} value={idx}>
+                      {oper.statGroup} {oper.operation}
+                    </MenuItem>
+                  )),
+                ]
+              : [
+                  <MenuItem key={-1} value={FilterAnyMachineKey}>
+                    <em>Any Machine</em>
+                  </MenuItem>,
+                  points.allMachineNames.map((n) => (
+                    <MenuItem key={n} value={n}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <span style={{ marginRight: "1em" }}>{n}</span>
+                      </div>
+                    </MenuItem>
+                  )),
+                ]}
           </Select>
         </FormControl>
         <FormControl size="small">
