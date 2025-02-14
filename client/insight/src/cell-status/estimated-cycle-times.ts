@@ -289,7 +289,8 @@ export function calcElapsedForCycles(
       (e) =>
         (e.type === LogType.LoadUnloadCycle || e.type === LogType.MachineCycle) &&
         !e.startofcycle &&
-        e.loc !== "",
+        e.loc !== "" &&
+        e.material.length > 0,
     ),
     (c) => c.loc + " #" + c.locnum.toString(),
     (c) => c.endUTC,
