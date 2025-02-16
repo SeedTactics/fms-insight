@@ -169,7 +169,7 @@ namespace BlackMaple.FMSInsight.Niigata
         openSuccess = true;
         conn.Notification += (sender, args) =>
         {
-          Log.Debug("PostgreSQL Notification {channel}: {payload}", args.Channel, args.Payload);
+          Log.Verbose("PostgreSQL Notification {channel}: {payload}", args.Channel, args.Payload);
           if (statusTables.Contains(args.Channel))
           {
             NewCurrentStatus?.Invoke();

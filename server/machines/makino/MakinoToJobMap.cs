@@ -209,7 +209,7 @@ namespace BlackMaple.FMSInsight.Makino
       var procNum = _procIDToProcNum[processID];
 
       _byPartID[_procIDToPartID[processID]] = _byPartID[_procIDToPartID[processID]]
-        .AdjustPath(procNum, 1, p => p with { PalletNums = p.PalletNums.AddRange(pals) });
+        .AdjustPath(procNum, 1, p => p with { PalletNums = p.PalletNums.Union(pals) });
     }
 
     public void AddOperationToProcess(int processID, int clampQty)

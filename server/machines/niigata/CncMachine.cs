@@ -62,7 +62,7 @@ namespace BlackMaple.FMSInsight.Niigata
         throw new Exception("Invalid machine number " + machine.ToString());
       }
       ushort handle;
-      Log.Debug(
+      Log.Verbose(
         "Connecting to machine {mc} at {ip} on port {port}",
         machine,
         _machines[machine - 1].Address.ToString(),

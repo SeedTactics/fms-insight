@@ -89,9 +89,9 @@ namespace MachineWatchTest
   {
     public static readonly ProcPathInfo EmptyPath = new ProcPathInfo()
     {
-      PalletNums = ImmutableList<int>.Empty,
-      Load = ImmutableList<int>.Empty,
-      Unload = ImmutableList<int>.Empty,
+      PalletNums = [],
+      Load = [],
+      Unload = [],
       ExpectedLoadTime = TimeSpan.Zero,
       ExpectedUnloadTime = TimeSpan.Zero,
       Stops = ImmutableList<MachiningStop>.Empty,
@@ -2337,7 +2337,6 @@ namespace MachineWatchTest
         _jobLog.GetLogOfAllCompletedParts(recent.AddHours(-4), recent.AddHours(4)).ToList(),
         (
           (LogEntry[])
-
             [
               mat1_proc1old,
               .. mat1_proc1load,

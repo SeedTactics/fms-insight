@@ -542,9 +542,9 @@ namespace MazakMachineInterface
           removeStr = ConvertStatIntV2ToV1(Convert.ToInt32(removeStr));
         }
 
-        var loads = ImmutableList.CreateBuilder<int>();
-        var unloads = ImmutableList.CreateBuilder<int>();
-        var machines = ImmutableList.CreateBuilder<int>();
+        var loads = ImmutableSortedSet.CreateBuilder<int>();
+        var unloads = ImmutableSortedSet.CreateBuilder<int>();
+        var machines = ImmutableSortedSet.CreateBuilder<int>();
         foreach (char c in fixStr)
           if (c != '0')
             loads.Add(int.Parse(c.ToString()));
@@ -574,7 +574,7 @@ namespace MazakMachineInterface
         };
 
         //Planned Pallets
-        var pals = ImmutableList.CreateBuilder<int>();
+        var pals = ImmutableSortedSet.CreateBuilder<int>();
         foreach (var palRow in mazakData.Pallets)
         {
           if (palRow.PalletNumber > 0 && palRow.Fixture == partProcRow.Fixture)
@@ -1264,6 +1264,14 @@ namespace MazakMachineInterface
     }
 
     private static ImmutableList<T> EmptyToNull<T>(ImmutableList<T> x)
+    {
+      if (x == null || x.Count == 0)
+        return null;
+      else
+        return x;
+    }
+
+    private static ImmutableSortedSet<T> EmptyToNull<T>(ImmutableSortedSet<T> x)
     {
       if (x == null || x.Count == 0)
         return null;

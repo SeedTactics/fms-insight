@@ -1077,7 +1077,7 @@ namespace MachineWatchTest
                   Program = "aaa",
                   ProgramRevision = null,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -1095,7 +1095,7 @@ namespace MachineWatchTest
                   Program = "aaa",
                   ProgramRevision = 1,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -1113,7 +1113,7 @@ namespace MachineWatchTest
                   Program = "bbb",
                   ProgramRevision = null,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -1131,7 +1131,7 @@ namespace MachineWatchTest
                   Program = "bbb",
                   ProgramRevision = 6,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -1233,7 +1233,7 @@ namespace MachineWatchTest
                   Program = "aaa",
                   ProgramRevision = 1,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -1251,7 +1251,7 @@ namespace MachineWatchTest
                   Program = "bbb",
                   ProgramRevision = 6,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -1948,7 +1948,7 @@ namespace MachineWatchTest
                   Program = "aaa",
                   ProgramRevision = -1,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -1966,7 +1966,7 @@ namespace MachineWatchTest
                   Program = "aaa",
                   ProgramRevision = -2,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -1984,7 +1984,7 @@ namespace MachineWatchTest
                   Program = "bbb",
                   ProgramRevision = -1,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -2002,7 +2002,7 @@ namespace MachineWatchTest
                   Program = "bbb",
                   ProgramRevision = -2,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -2020,7 +2020,7 @@ namespace MachineWatchTest
                   Program = "ccc",
                   ProgramRevision = -2,
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -2149,7 +2149,7 @@ namespace MachineWatchTest
                   Program = "aaa",
                   ProgramRevision = 1, // -1
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -2167,7 +2167,7 @@ namespace MachineWatchTest
                   Program = "aaa",
                   ProgramRevision = 2, // -2
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -2185,7 +2185,7 @@ namespace MachineWatchTest
                   Program = "bbb",
                   ProgramRevision = 6, // -1
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -2203,7 +2203,7 @@ namespace MachineWatchTest
                   Program = "bbb",
                   ProgramRevision = 7, // -2
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
@@ -2221,7 +2221,7 @@ namespace MachineWatchTest
                   Program = "ccc",
                   ProgramRevision = 5, // -2
                   StationGroup = "",
-                  Stations = ImmutableList<int>.Empty,
+                  Stations = [],
                   ExpectedCycleTime = TimeSpan.Zero,
                 }
               ),
