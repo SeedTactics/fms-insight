@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 import { addDays } from "date-fns";
-import { ILogEntry, LogType } from "../network/api.js";
+import { ILogEntry, ILogMaterial, LogType } from "../network/api.js";
 import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
 import { durationToMinutes } from "../util/parseISODuration.js";
 import type { ServerEventAndTime } from "./loading.js";
@@ -42,6 +42,7 @@ export interface PalletCycleData {
   readonly x: Date;
   readonly y: number; // cycle time in minutes
   readonly active: number;
+  readonly mats: ReadonlyArray<Readonly<ILogMaterial>>;
 }
 
 export type PalletCyclesByCntr = HashMap<number, PalletCycleData>;
@@ -59,6 +60,7 @@ function logToPalletCycle(c: Readonly<ILogEntry>): PalletCycleData {
     x: c.endUTC,
     y: durationToMinutes(c.elapsed),
     active: durationToMinutes(c.active),
+    mats: c.material,
   };
 }
 
