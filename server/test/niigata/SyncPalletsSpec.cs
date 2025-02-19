@@ -37,7 +37,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
@@ -143,13 +143,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         return null;
       }
-      using (var logMonitor = _logDBCfg.Monitor())
+      var lst = new List<LogEntry>();
+      Action<LogEntry, string, IRepository> addLog = (e, _, _) => lst.Add(e);
+      _logDBCfg.NewLogEntry += addLog;
+      try
       {
         Synchronize();
-        return logMonitor
-          .OccurredEvents.Where(e => e.EventName == "NewLogEntry")
-          .Select(e => e.Parameters[0])
-          .Cast<LogEntry>();
+        return lst;
+      }
+      finally
+      {
+        _logDBCfg.NewLogEntry -= addLog;
       }
     }
 
@@ -280,15 +284,27 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
     private void ExpectNewRoute()
     {
-      using (var logMonitor = _logDBCfg.Monitor())
+      bool seenNewRoute = false;
+
+      Action<LogEntry, string, IRepository> addLog = (e, _, _) =>
+      {
+        if (e.Result == "New Niigata Route")
+        {
+          seenNewRoute = true;
+        }
+      };
+
+      _logDBCfg.NewLogEntry += addLog;
+      try
       {
         Synchronize();
-        var evts = logMonitor
-          .OccurredEvents.Where(e => e.EventName == "NewLogEntry")
-          .Select(e => e.Parameters[0])
-          .Cast<LogEntry>();
-        evts.Count(e => e.Result == "New Niigata Route").Should().BePositive();
       }
+      finally
+      {
+        _logDBCfg.NewLogEntry -= addLog;
+      }
+
+      seenNewRoute.ShouldBeTrue();
     }
 
     private void AddJobs(NewJobs jobs, bool expectNewRoute = true)
@@ -297,17 +313,30 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       {
         db.AddJobs(jobs, null, addAsCopiedToSystem: true);
       }
-      using (var logMonitor = _logDBCfg.Monitor())
+
+      bool seenNewRoute = false;
+
+      Action<LogEntry, string, IRepository> addLog = (e, _, _) =>
+      {
+        if (e.Result == "New Niigata Route")
+        {
+          seenNewRoute = true;
+        }
+      };
+
+      _logDBCfg.NewLogEntry += addLog;
+      try
       {
         Synchronize();
-        if (expectNewRoute)
-        {
-          var evts = logMonitor
-            .OccurredEvents.Where(e => e.EventName == "NewLogEntry")
-            .Select(e => e.Parameters[0])
-            .Cast<LogEntry>();
-          evts.Count(e => e.Result == "New Niigata Route").Should().BePositive();
-        }
+      }
+      finally
+      {
+        _logDBCfg.NewLogEntry -= addLog;
+      }
+
+      if (expectNewRoute)
+      {
+        seenNewRoute.ShouldBeTrue();
       }
     }
 
@@ -331,7 +360,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           && e.LogType != LogType.PalletCycle
         )
         .ToList();
-      matLogs.Should().BeInAscendingOrder(e => e.EndTimeUTC);
+      matLogs.Select(e => e.EndTimeUTC).ShouldBeInOrder();
 
       machGroups = machGroups ?? Enumerable.Range(1, numProc).Select(_ => new string[] { "MC" }).ToArray();
 
@@ -345,18 +374,18 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           {
             expected.Add(e =>
             {
-              e.LogType.Should().Be(LogType.RemoveFromQueue);
-              e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-              e.LocationName.Should().Be(castingQueue);
+              e.LogType.ShouldBe(LogType.RemoveFromQueue);
+              e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+              e.LocationName.ShouldBe(castingQueue);
             });
           }
           else
           {
             expected.Add(mark =>
             {
-              mark.LogType.Should().Be(LogType.PartMark);
-              mark.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-              mark.Result.Should().Be(_serialSt.ConvertMaterialIDToSerial(matId));
+              mark.LogType.ShouldBe(LogType.PartMark);
+              mark.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+              mark.Result.ShouldBe(_serialSt.ConvertMaterialIDToSerial(matId));
             });
           }
         }
@@ -365,51 +394,51 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           expected.Add(e =>
           {
-            e.LogType.Should().Be(LogType.RemoveFromQueue);
-            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-            e.LocationName.Should().Be(queue);
+            e.LogType.ShouldBe(LogType.RemoveFromQueue);
+            e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LocationName.ShouldBe(queue);
           });
         }
 
         expected.Add(e =>
         {
-          e.Pallet.Should().BeOneOf(pals[proc - 1]);
-          e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-          e.LogType.Should().Be(LogType.LoadUnloadCycle);
-          e.StartOfCycle.Should().BeFalse();
-          e.Result.Should().Be("LOAD");
+          e.Pallet.ShouldBeOneOf(pals[proc - 1]);
+          e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+          e.LogType.ShouldBe(LogType.LoadUnloadCycle);
+          e.StartOfCycle.ShouldBeFalse();
+          e.Result.ShouldBe("LOAD");
         });
 
         foreach (var (group, grpIdx) in machGroups[proc - 1].Select((g, idx) => (g, idx)))
         {
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1]);
-            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-            e.LogType.Should().Be(LogType.MachineCycle);
-            e.LocationName.Should().Be(group);
-            e.StartOfCycle.Should().BeTrue();
+            e.Pallet.ShouldBeOneOf(pals[proc - 1]);
+            e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LogType.ShouldBe(LogType.MachineCycle);
+            e.LocationName.ShouldBe(group);
+            e.StartOfCycle.ShouldBeTrue();
 
             if (progs != null && proc - 1 < progs.Length && grpIdx < progs[proc - 1].Length)
             {
               var p = progs[proc - 1][grpIdx];
-              e.Program.Should().BeEquivalentTo(p.prog);
-              e.ProgramDetails["ProgramRevision"].Should().BeEquivalentTo(p.rev.ToString());
+              e.Program.ShouldBe(p.prog);
+              e.ProgramDetails["ProgramRevision"].ShouldBe(p.rev.ToString());
             }
           });
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1]);
-            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-            e.LogType.Should().Be(LogType.MachineCycle);
-            e.LocationName.Should().Be(group);
-            e.StartOfCycle.Should().BeFalse();
+            e.Pallet.ShouldBeOneOf(pals[proc - 1]);
+            e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LogType.ShouldBe(LogType.MachineCycle);
+            e.LocationName.ShouldBe(group);
+            e.StartOfCycle.ShouldBeFalse();
 
             if (progs != null && proc - 1 < progs.Length && grpIdx < progs[proc - 1].Length)
             {
               var p = progs[proc - 1][grpIdx];
-              e.Program.Should().BeEquivalentTo(p.prog);
-              e.ProgramDetails["ProgramRevision"].Should().BeEquivalentTo(p.rev.ToString());
+              e.Program.ShouldBe(p.prog);
+              e.ProgramDetails["ProgramRevision"].ShouldBe(p.rev.ToString());
             }
           });
         }
@@ -418,21 +447,21 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1]);
-            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-            e.LogType.Should().Be(LogType.LoadUnloadCycle);
-            e.Program.Should().Be("TestReclamp");
-            e.Result.Should().Be("TestReclamp");
-            e.StartOfCycle.Should().BeTrue();
+            e.Pallet.ShouldBeOneOf(pals[proc - 1]);
+            e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LogType.ShouldBe(LogType.LoadUnloadCycle);
+            e.Program.ShouldBe("TestReclamp");
+            e.Result.ShouldBe("TestReclamp");
+            e.StartOfCycle.ShouldBeTrue();
           });
           expected.Add(e =>
           {
-            e.Pallet.Should().BeOneOf(pals[proc - 1]);
-            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-            e.LogType.Should().Be(LogType.LoadUnloadCycle);
-            e.Program.Should().Be("TestReclamp");
-            e.Result.Should().Be("TestReclamp");
-            e.StartOfCycle.Should().BeFalse();
+            e.Pallet.ShouldBeOneOf(pals[proc - 1]);
+            e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LogType.ShouldBe(LogType.LoadUnloadCycle);
+            e.Program.ShouldBe("TestReclamp");
+            e.Result.ShouldBe("TestReclamp");
+            e.StartOfCycle.ShouldBeFalse();
           });
         }
 
@@ -440,22 +469,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           expected.Add(e =>
           {
-            e.LogType.Should().Be(LogType.AddToQueue);
-            e.Material.Should().OnlyContain(m => m.PartName == part && m.JobUniqueStr == uniq);
-            e.LocationName.Should().Be(queue);
+            e.LogType.ShouldBe(LogType.AddToQueue);
+            e.Material.ShouldAllBe(m => m.PartName == part && m.JobUniqueStr == uniq);
+            e.LocationName.ShouldBe(queue);
           });
         }
 
         expected.Add(e =>
         {
-          e.Pallet.Should().BeOneOf(pals[proc - 1]);
-          e.LogType.Should().Be(LogType.LoadUnloadCycle);
-          e.StartOfCycle.Should().BeFalse();
-          e.Result.Should().Be("UNLOAD");
+          e.Pallet.ShouldBeOneOf(pals[proc - 1]);
+          e.LogType.ShouldBe(LogType.LoadUnloadCycle);
+          e.StartOfCycle.ShouldBeFalse();
+          e.Result.ShouldBe("UNLOAD");
         });
       }
 
-      matLogs.Should().SatisfyRespectively(expected);
+      matLogs.Count.ShouldBe(expected.Count);
+      for (int i = 0; i < matLogs.Count; i++)
+      {
+        expected[i](matLogs[i]);
+      }
     }
 
     private void CheckMaxQueueSize(IEnumerable<LogEntry> logs, string queue, int expectedMax)
@@ -476,8 +509,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         }
       }
 
-      cnt.Should().Be(0);
-      max.Should().Be(expectedMax);
+      cnt.ShouldBe(0);
+      max.ShouldBe(expectedMax);
     }
 
     [Fact]
@@ -518,7 +551,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var logs = Run();
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
 
-      byMat.Count.Should().Be(3);
+      byMat.Count.ShouldBe(3);
       foreach (var m in byMat)
       {
         CheckSingleMaterial(
@@ -671,11 +704,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       var logs = Run();
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
-      byMat.Count.Should().Be(7);
+      byMat.Count.ShouldBe(7);
 
       var byPath = byMat.ToLookup(mat => (new[] { 1, 2 }).Contains(mat.Skip(1).First().Pallet));
-      byPath[true].Count().Should().BeGreaterThan(0); // true is pallets 1 or 2, path 1
-      byPath[false].Count().Should().BeGreaterThan(0); // false is pallets 5 or 6, path 2
+      byPath[true].Count().ShouldBeGreaterThan(0); // true is pallets 1 or 2, path 1
+      byPath[false].Count().ShouldBeGreaterThan(0); // false is pallets 5 or 6, path 2
 
       foreach (var path in byPath)
       {
@@ -831,13 +864,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var logs = Run();
 
       var matIds = logs.SelectMany(e => e.Material).Select(m => m.MaterialID).ToHashSet();
-      matIds.Count.Should().Be(14);
+      matIds.Count.ShouldBe(14);
 
       var byPath = matIds
         .Select(matId => new { matId, logs = logs.Where(e => e.Material.Any(m => m.MaterialID == matId)) })
         .ToLookup(mat => (new[] { 1, 2 }).Contains(mat.logs.Skip(1).First().Pallet));
-      byPath[true].Count().Should().BeGreaterThan(0); // true is pallets 1 or 2, path 1
-      byPath[false].Count().Should().BeGreaterThan(0); // false is pallets 3 or 4, path 2
+      byPath[true].Count().ShouldBeGreaterThan(0); // true is pallets 1 or 2, path 1
+      byPath[false].Count().ShouldBeGreaterThan(0); // false is pallets 3 or 4, path 2
 
       foreach (var path in byPath)
       {
@@ -948,7 +981,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var logs = Run();
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
 
-      byMat.Count.Should().Be(8);
+      byMat.Count.ShouldBe(8);
       foreach (var m in byMat)
       {
         CheckSingleMaterial(
@@ -1062,7 +1095,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var logs = Run();
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
 
-      byMat.Count.Should().Be(4);
+      byMat.Count.ShouldBe(4);
       foreach (var m in byMat)
       {
         CheckSingleMaterial(
@@ -1114,7 +1147,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var logs = Run();
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
 
-      byMat.Count.Should().Be(9);
+      byMat.Count.ShouldBe(9);
       foreach (var m in byMat)
       {
         CheckSingleMaterial(
@@ -1182,14 +1215,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var logs = Run();
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
 
-      byMat.Count.Should().Be(3);
+      byMat.Count.ShouldBe(3);
       byMat
-        .Should()
-        .AllSatisfy(mLog =>
-          mLog.Where(e => e.LogType == LogType.LoadUnloadCycle && e.Program == "LOAD")
-            .Should()
-            .AllSatisfy(e => e.LocationNum.Should().Be(2))
-        );
+        .SelectMany(e => e)
+        .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Program == "LOAD")
+        .ShouldAllBe(e => e.LocationNum == 2);
 
       foreach (var m in byMat)
       {
@@ -1289,12 +1319,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var logs = Run();
 
       logs.Where(e => e.LogType == LogType.LoadUnloadCycle && e.Program == "LOAD")
-        .Should()
-        .AllSatisfy(e =>
-          e.LocationNum.Should().Be(2) // path 1 filtered out
+        .ShouldAllBe(e =>
+          e.LocationNum == 2 // path 1 filtered out
         );
 
-      logs.Should().AllSatisfy(e => e.Pallet.Should().BeOneOf(0, 3, 4));
+      logs.ShouldAllBe(e => e.Pallet == 0 || e.Pallet == 3 || e.Pallet == 4);
     }
 
     [Fact]
@@ -1507,7 +1536,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       var logs = Run();
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
 
-      byMat.Count.Should().Be(9);
+      byMat.Count.ShouldBe(9);
       foreach (var m in byMat)
       {
         CheckSingleMaterial(
@@ -1547,8 +1576,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       using (var db = _logDBCfg.OpenConnection())
       {
         db.GetMaterialInAllQueues()
-          .Should()
-          .BeEquivalentTo(
+          .ToArray()
+          .ShouldBeEquivalentTo(
             new[]
             {
               new QueuedMaterial()
