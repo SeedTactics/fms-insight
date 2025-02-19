@@ -112,7 +112,12 @@ namespace BlackMaple.MachineFramework
       DateTime timeUTC,
       IReadOnlyDictionary<string, string> externalQueues
     );
-    IEnumerable<LogEntry> RecordEmptyPallet(int pallet, DateTime timeUTC, string foreignId = null);
+    IEnumerable<LogEntry> RecordEmptyPallet(
+      int pallet,
+      DateTime timeUTC,
+      string foreignId = null,
+      bool palletEnd = false
+    );
     LogEntry RecordManualWorkAtLULStart(
       IEnumerable<EventLogMaterial> mats,
       int pallet,

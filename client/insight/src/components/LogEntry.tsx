@@ -224,7 +224,11 @@ function display(props: LogEntryProps): ReactNode {
       );
 
     case api.LogType.PalletCycle:
-      return <span>Pallet {entry.pal} completed route</span>;
+      if (entry.startofcycle) {
+        return <span>Pallet {entry.pal} started route</span>;
+      } else {
+        return <span>Pallet {entry.pal} completed route</span>;
+      }
 
     case api.LogType.Inspection: {
       const inspName = (entry.details || {}).InspectionType || "";
