@@ -87,8 +87,32 @@ namespace BlackMaple.MachineFramework
       return "%stat" + proc.ToString() + "," + routeNum.ToString() + "%";
     }
 
-    int IComparable<PathInspection>.CompareTo(PathInspection? other) =>
-      InspectionType.CompareTo(other?.InspectionType);
+    int IComparable<PathInspection>.CompareTo(PathInspection? other)
+    {
+      var r = InspectionType.CompareTo(other?.InspectionType);
+      if (r != 0)
+        return r;
+      r = Counter.CompareTo(other?.Counter);
+      if (r != 0)
+        return r;
+      r = MaxVal.CompareTo(other?.MaxVal);
+      if (r != 0)
+        return r;
+      r = RandomFreq.CompareTo(other?.RandomFreq);
+      if (r != 0)
+        return r;
+      r = TimeInterval.CompareTo(other?.TimeInterval);
+      if (r != 0)
+        return r;
+      if (ExpectedInspectionTime.HasValue)
+      {
+        return ExpectedInspectionTime.Value.CompareTo(other?.ExpectedInspectionTime);
+      }
+      else
+      {
+        return other == null || !other.ExpectedInspectionTime.HasValue ? 0 : -1;
+      }
+    }
   }
 
   public record MachiningStop
@@ -146,8 +170,13 @@ namespace BlackMaple.MachineFramework
 
     public required int Quantity { get; init; } //total quantity simulated to be completed at TimeUTC
 
-    int IComparable<SimulatedProduction>.CompareTo(SimulatedProduction? other) =>
-      TimeUTC.CompareTo(other?.TimeUTC);
+    int IComparable<SimulatedProduction>.CompareTo(SimulatedProduction? other)
+    {
+      var r = TimeUTC.CompareTo(other?.TimeUTC);
+      if (r != 0)
+        return r;
+      return Quantity.CompareTo(other?.Quantity);
+    }
   }
 
   public record ProcessInfo
