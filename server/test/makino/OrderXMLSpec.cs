@@ -34,9 +34,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 using System.Xml;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
+using VerifyXunit;
 using Xunit;
 
 #nullable enable
@@ -61,28 +62,8 @@ public sealed class OrderXMLSpec : IDisposable
     File.Delete(_tempFile);
   }
 
-  private void CheckSnapshot(string snapshot, bool update = false)
-  {
-    if (update)
-    {
-      File.Copy(
-        _tempFile,
-        Path.Combine("..", "..", "..", "makino", "xml-snapshots", snapshot),
-        overwrite: true
-      );
-    }
-
-    var expected = new XmlDocument();
-    expected.Load(Path.Combine("..", "..", "..", "makino", "xml-snapshots", snapshot));
-
-    var actual = new XmlDocument();
-    actual.Load(_tempFile);
-
-    actual.Should().BeEquivalentTo(expected);
-  }
-
   [Fact]
-  public void FullJobs()
+  public async Task FullJobs()
   {
     var newj = JsonSerializer.Deserialize<NewJobs>(
       File.ReadAllText("../../../sample-newjobs/singleproc.json"),
@@ -91,11 +72,14 @@ public sealed class OrderXMLSpec : IDisposable
 
     OrderXML.WriteJobsXML(_tempFile, newj.Jobs, onlyOrders: false);
 
-    CheckSnapshot("singleproc.xml");
+    var actual = new XmlDocument();
+    actual.Load(_tempFile);
+
+    await Verifier.Verify(actual);
   }
 
   [Fact]
-  public void OnlyOrders()
+  public async Task OnlyOrders()
   {
     var newj = JsonSerializer.Deserialize<NewJobs>(
       File.ReadAllText("../../../sample-newjobs/singleproc.json"),
@@ -104,11 +88,14 @@ public sealed class OrderXMLSpec : IDisposable
 
     OrderXML.WriteJobsXML(_tempFile, newj.Jobs, onlyOrders: true);
 
-    CheckSnapshot("onlyorders.xml");
+    var actual = new XmlDocument();
+    actual.Load(_tempFile);
+
+    await Verifier.Verify(actual);
   }
 
   [Fact]
-  public void Decrements()
+  public async Task Decrements()
   {
     OrderXML.WriteDecrementXML(
       _tempFile,
@@ -118,6 +105,8 @@ public sealed class OrderXMLSpec : IDisposable
       ]
     );
 
-    CheckSnapshot("decrements.xml");
+    var actual = new XmlDocument();
+    actual.Load(_tempFile);
+    await Verifier.Verify(actual);
   }
 }

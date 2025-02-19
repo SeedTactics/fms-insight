@@ -22,6 +22,8 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.*" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
+    <PackageReference Include="Verify.DiffPlex" Version="3.*" />
+    <PackageReference Include="Verify.Xunit" Version="28.*" />
     <PackageReference Include="WireMock.Net" Version="1.7.*" />
     <PackageReference Include="xunit" Version="2.9.*" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.*" />
