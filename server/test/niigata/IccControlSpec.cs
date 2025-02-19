@@ -1108,6 +1108,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(
           new[]
           {
+            FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 6, program: "prog111", rev: 5, mat: CCCproc1),
             FakeIccDsl.ExpectMachineEnd(
               pal: 1,
               mach: 6,
@@ -1117,7 +1118,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               activeMin: 15,
               mats: BBBproc2
             ),
-            FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 6, program: "prog111", rev: 5, mat: CCCproc1),
           }
         )
         .AdvanceMinutes(100) // 212 min
@@ -1284,6 +1284,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(
           new[]
           {
+            FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 6, program: "prog222", rev: 6, mat: CCCproc2),
             FakeIccDsl.ExpectMachineEnd(
               pal: 1,
               mach: 6,
@@ -1293,7 +1294,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
               activeMin: 18,
               mats: DDDproc1
             ),
-            FakeIccDsl.ExpectMachineBegin(pal: 1, machine: 6, program: "prog222", rev: 6, mat: CCCproc2),
           }
         )
         .AdvanceMinutes(4) // = 230min
@@ -5076,7 +5076,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .RemoveJobStartedCnt("uniq1")
         .ArchiveJob("uniq1")
         .ExpectOldProgram("prog111", rev: 5, num: 2100)
-        .ExpectOldProgram("prog222", rev: 6, num: 2200)
+        .ExpectOldProgram("prog222", rev: 6, num: 2200, comment: "Comment prog222 rev6")
         .ExpectTransition(
           expectedUpdates: false,
           expectedChanges: new[]
