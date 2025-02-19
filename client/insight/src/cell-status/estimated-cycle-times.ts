@@ -54,14 +54,16 @@ export class PartAndStationOperation {
     return new PartAndStationOperation(
       c.material[0].part,
       c.loc,
-      c.type === LogType.LoadUnloadCycle ? c.result + "-" + c.material[0].proc.toString() : c.program,
+      c.type === LogType.LoadUnloadCycle && c.material.length > 0
+        ? c.result + "-" + c.material[0].proc.toString()
+        : c.program,
     );
   }
   public static ofPartCycle(c: Readonly<PartCycleData>): PartAndStationOperation {
     return new PartAndStationOperation(
       c.part,
       c.stationGroup,
-      c.isLabor ? c.operation + "-" + c.material[0].proc.toString() : c.operation,
+      c.isLabor && c.material.length > 0 ? c.operation + "-" + c.material[0].proc.toString() : c.operation,
     );
   }
 
@@ -289,7 +291,8 @@ export function calcElapsedForCycles(
       (e) =>
         (e.type === LogType.LoadUnloadCycle || e.type === LogType.MachineCycle) &&
         !e.startofcycle &&
-        e.loc !== "",
+        e.loc !== "" &&
+        e.material.length > 0,
     ),
     (c) => c.loc + " #" + c.locnum.toString(),
     (c) => c.endUTC,

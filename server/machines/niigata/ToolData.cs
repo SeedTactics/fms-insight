@@ -92,7 +92,7 @@ namespace BlackMaple.FMSInsight.Niigata
           machine,
           handle =>
           {
-            Log.Debug("Starting to load number of tools");
+            Log.Verbose("Starting to load number of tools");
 
             byte[] header = new byte[4];
 
@@ -103,7 +103,7 @@ namespace BlackMaple.FMSInsight.Niigata
               ret: pmc_rdkpm(handle, 51, header, 4)
             );
 
-            Log.Debug("Network call to load number of tools completed");
+            Log.Verbose("Network call to load number of tools completed");
 
             using (var mem = new MemoryStream(header))
             using (var rawReader = new BinaryReader(mem))
@@ -111,7 +111,7 @@ namespace BlackMaple.FMSInsight.Niigata
               var beReader = new BigEndianBinaryReader(rawReader);
 
               numTools = beReader.ReadUInt16();
-              Log.Debug("Loading {numTools} tools ({@header})", numTools, header);
+              Log.Verbose("Loading {numTools} tools ({@header})", numTools, header);
               if (numTools < 0)
                 numTools = 0;
               if (numTools > 360)
@@ -121,7 +121,7 @@ namespace BlackMaple.FMSInsight.Niigata
             if (numTools == 0)
               return 0;
 
-            Log.Debug("Starting to load tool data");
+            Log.Verbose("Starting to load tool data");
 
             CncMachineConnection.LogAndThrowError(
               machine,
@@ -130,7 +130,7 @@ namespace BlackMaple.FMSInsight.Niigata
               ret: pmc_rdkpm(handle, 51 + 4, buff, (ushort)(28 * numTools))
             );
 
-            Log.Debug("Network call to load tool data complete");
+            Log.Verbose("Network call to load tool data complete");
             return 0;
           }
         );
@@ -162,7 +162,7 @@ namespace BlackMaple.FMSInsight.Niigata
             var serialNo = toolNum % 100;
             var groupNo = toolNum / 100;
 
-            Log.Debug(
+            Log.Verbose(
               "Tool data for {i}: {@raw} "
                 + "{toolNum}, {gNum}, {lifeTm}, {restTm}, {loadMax}, {loadMore}, {meas}, {lifeAlrm}, {brokenAlrm}, {cuttingAlrm}, {checkingAlrm}, {lifeKind}",
               i,
