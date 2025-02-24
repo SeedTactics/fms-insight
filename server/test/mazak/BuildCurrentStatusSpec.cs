@@ -40,7 +40,7 @@ using MazakMachineInterface;
 using NSubstitute;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class BuildCurrentStatusSpec : IDisposable
   {

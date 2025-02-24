@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 using DiffEngine;
 using VerifyTests;
 
-namespace MachineWatchTest;
+namespace BlackMaple.FMSInsight.Tests;
 
 public static class VerifySetup
 {

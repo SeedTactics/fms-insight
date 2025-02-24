@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <PackageId>BlackMaple.MachineFramework.Tests</PackageId>
-    <AssemblyName>BlackMaple.MachineFramework.Tests</AssemblyName>
+    <PackageId>BlackMaple.FMSInsight.Tests</PackageId>
+    <AssemblyName>BlackMaple.FMSInsight.Tests</AssemblyName>
     <TargetFramework>net9.0</TargetFramework>
 
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>

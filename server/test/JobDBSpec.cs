@@ -40,7 +40,7 @@ using BlackMaple.MachineFramework;
 using FluentAssertions;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Tests
 {
   public class JobDBSpec : IDisposable
   {

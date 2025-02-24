@@ -39,7 +39,7 @@ using Microsoft.Data.Sqlite;
 using Shouldly;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Tests
 {
   public static class SchemaUpgradeSpec
   {

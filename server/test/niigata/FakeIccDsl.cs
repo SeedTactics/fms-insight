@@ -36,8 +36,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
-using MachineWatchTest;
 using Shouldly;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests

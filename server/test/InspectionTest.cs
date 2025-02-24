@@ -40,7 +40,7 @@ using BlackMaple.MachineFramework;
 using Shouldly;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Tests
 {
   public class InspectionTest : IDisposable
   {

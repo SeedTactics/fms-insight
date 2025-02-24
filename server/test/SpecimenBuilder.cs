@@ -37,7 +37,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using AutoFixture;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Tests
 {
   public class ImmutableSpecimenBuilder : AutoFixture.Kernel.ISpecimenBuilder
   {

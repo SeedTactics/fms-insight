@@ -37,14 +37,14 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
-using Castle.Components.DictionaryAdapter;
 using FluentAssertions;
 using MazakMachineInterface;
 using NSubstitute;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public sealed class WriteJobsSpec : IDisposable
   {

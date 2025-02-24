@@ -35,13 +35,14 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
 using MazakMachineInterface;
 using NSubstitute;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class DecrementSpec : IDisposable
   {

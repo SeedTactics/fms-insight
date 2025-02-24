@@ -36,7 +36,7 @@ using System.IO;
 using Shouldly;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Tests
 {
   public class SerilogSpec : IDisposable
   {

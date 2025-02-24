@@ -37,6 +37,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
 using MazakMachineInterface;
@@ -46,7 +47,7 @@ using WireMock.ResponseBuilders;
 using WireMock.Server;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class LogTestBase : IDisposable
   {

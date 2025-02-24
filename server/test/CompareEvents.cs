@@ -4,7 +4,7 @@ using System.Linq;
 using BlackMaple.MachineFramework;
 using Shouldly;
 
-namespace MachineWatchTest;
+namespace BlackMaple.FMSInsight.Tests;
 
 public static class CompareEvents
 {

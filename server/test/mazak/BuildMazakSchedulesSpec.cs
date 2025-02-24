@@ -35,12 +35,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using Shouldly;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class BuildMazakSchedulesSpec
   {
@@ -379,7 +380,8 @@ namespace MachineWatchTest
       actions.Pallets.ShouldBeEmpty();
 
       actions
-        .Schedules.ToList()
+        .Schedules.OrderBy(s => s.Id)
+        .ToList()
         .ShouldBeEquivalentTo(
           new List<MazakScheduleRow>
           {
