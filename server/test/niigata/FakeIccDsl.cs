@@ -78,8 +78,8 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10),
       };
       _settings = new FMSSettings() { QuarantineQueue = "Quarantine" };
-      _settings.Queues.Add("thequeue", new MachineFramework.QueueInfo());
-      _settings.Queues.Add("qqq", new MachineFramework.QueueInfo());
+      _settings.Queues.Add("thequeue", new MachineFramework.QueueInfo() { Role = QueueRole.RawMaterial });
+      _settings.Queues.Add("qqq", new MachineFramework.QueueInfo() { Role = QueueRole.InProcessTransfer });
       _settings.Queues.Add("Quarantine", new MachineFramework.QueueInfo());
 
       _logDBCfg = RepositoryConfig.InitializeMemoryDB(_serialSt);
