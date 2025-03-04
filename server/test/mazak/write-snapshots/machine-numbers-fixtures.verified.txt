@@ -1,0 +1,35 @@
+﻿{
+  Prefix: Add Fixtures,
+  Fixtures: [
+    {
+      FixtureName: F:0:1:fixZZZ:1,
+      Comment: Insight,
+      Command: Add
+    },
+    {
+      FixtureName: F:0:1:fixZZZ:2,
+      Comment: Insight,
+      Command: Add
+    },
+    {
+      FixtureName: F:0:2:fixZZZ:1,
+      Comment: Insight,
+      Command: Add
+    },
+    {
+      FixtureName: F:0:2:fixZZZ:2,
+      Comment: Insight,
+      Command: Add
+    },
+    {
+      FixtureName: F:0:3:fixZZZ:1,
+      Comment: Insight,
+      Command: Add
+    },
+    {
+      FixtureName: F:0:3:fixZZZ:2,
+      Comment: Insight,
+      Command: Add
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+﻿{
+  Prefix: Add Fixtures,
+  Fixtures: [
+    {
+      FixtureName: F:0:1:fixtureBB:1,
+      Comment: Insight,
+      Command: Add
+    },
+    {
+      FixtureName: F:0:2:fixtureAA1:1,
+      Comment: Insight,
+      Command: Add
+    },
+    {
+      FixtureName: F:0:3:fixtureAA2:2,
+      Comment: Insight,
+      Command: Add
+    },
+    {
+      FixtureName: F:0:4:fixtureCC5:1,
+      Comment: Insight,
+      Command: Add
+    },
+    {
+      FixtureName: F:0:5:fixtureCC6:2,
+      Comment: Insight,
+      Command: Add
+    }
+  ],
+  Programs: [
+    {
+      ProgramName: prog-aaa-1,
+      ProgramRevision: 8,
+      MainProgram: theprogdir/rev8/prog-aaa-1.EIA,
+      Comment: Insight:8:prog-aaa-1,
+      Command: Add,
+      ProgramContent: prog-aaa-1 content rev 8
+    },
+    {
+      ProgramName: prog-aaa-2,
+      ProgramRevision: 4,
+      MainProgram: theprogdir/rev4/prog-aaa-2.EIA,
+      Comment: Insight:4:prog-aaa-2,
+      Command: Add,
+      ProgramContent: prog-aaa-2 content rev 4
+    },
+    {
+      ProgramName: prog-bbb-2,
+      ProgramRevision: 5,
+      MainProgram: theprogdir/rev5/prog-bbb-2.EIA,
+      Comment: Insight:5:prog-bbb-2,
+      Command: Add,
+      ProgramContent: prog-bbb-2 content rev 5
+    }
+  ]
+}

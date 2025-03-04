@@ -37,11 +37,13 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
 using MazakMachineInterface;
 using NSubstitute;
+using Shouldly;
+using VerifyXunit;
 using Xunit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
@@ -235,47 +237,17 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _repoCfg.Dispose();
     }
 
-    private void ShouldMatchSnapshot<T>(T val, string snapshot)
+    private async Task ShouldMatchSnapshot<T>(T val, string snapshot)
     {
-      /*
-      File.WriteAllText(
-        Path.Combine("..", "..", "..", "mazak", "write-snapshots", snapshot),
-        JsonSerializer.Serialize(val, jsonSettings)
-      );
-      */
-      var expected = JsonSerializer.Deserialize<T>(
-        File.ReadAllText(Path.Combine("..", "..", "..", "mazak", "write-snapshots", snapshot)),
-        jsonSettings
-      );
-
-      val.Should()
-        .BeEquivalentTo(
-          expected,
-          options =>
-            options
-              .ComparingByMembers<MazakPartRow>()
-              .ComparingByMembers<MazakScheduleRow>()
-              .ComparingByMembers<MazakWriteData>()
-              .ComparingByMembers<NewMazakProgram>()
-              .ComparingByMembers<MazakPartProcessRow>()
-              .Using<string>(ctx =>
-              {
-                if (ctx.Expectation == null)
-                {
-                  ctx.Subject.Should().BeNull();
-                }
-                else
-                {
-                  var path = ctx.Expectation.Split('/');
-                  ctx.Subject.Should().Be(System.IO.Path.Combine(path));
-                }
-              })
-              .When(info => info.Path.EndsWith("MainProgram"))
-        );
+      await Verifier
+        .Verify(val)
+        .UseDirectory("write-snapshots")
+        .UseFileName(snapshot)
+        .DisableRequireUniquePrefix();
     }
 
     [Fact]
-    public void BasicCreate()
+    public async Task BasicCreate()
     {
       var completedJob = new Job()
       {
@@ -303,7 +275,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         addAsCopiedToSystem: true
       );
 
-      _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).Should().BeEquivalentTo(["uniq1", "uniq2"]);
+      _jobDB.LoadUnarchivedJobs().Select(j => j.UniqueStr).ShouldBe(["uniq1", "uniq2"]);
 
       var newJobs = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
@@ -313,46 +285,42 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       WriteJobs
         .SyncFromDatabase(_initialAllData, _jobDB, _mazakDbMock, _settings, _mazakCfg, fixtureQueueTime)
-        .Should()
-        .BeTrue();
+        .ShouldBeTrue();
 
-      ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts.json");
-      FindWrite("Delete Pallets")?.Pallets.Should().BeNullOrEmpty();
-      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts.json");
-      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
+      await ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch");
+      await ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts");
+      FindWrite("Delete Pallets")?.Pallets.ShouldBeEmpty();
+      await ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts");
+      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
 
       var start = newJobs.Jobs.First().RouteStartUTC;
-      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Should().BeEmpty();
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).ShouldBeEmpty();
 
       // uniq1 was archived
       _jobDB
         .LoadUnarchivedJobs()
         .Select(j => j.UniqueStr)
-        .Should()
-        .BeEquivalentTo(["uniq2", "aaa-schId1234", "bbb-schId1234", "ccc-schId1234"]);
+        .ShouldBe(["uniq2", "aaa-schId1234", "bbb-schId1234", "ccc-schId1234"]);
 
       // without any decrements
-      _jobDB.LoadDecrementsForJob("uniq1").Should().BeEmpty();
+      _jobDB.LoadDecrementsForJob("uniq1").ShouldBeEmpty();
 
       _jobDB
         .LoadUnarchivedJobs()
         .Select(j => (j.UniqueStr, j.CopiedToSystem))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           [("uniq2", true), ("aaa-schId1234", true), ("bbb-schId1234", true), ("ccc-schId1234", true)]
         );
 
       WriteJobs
         .SyncFromDatabase(_initialAllData, _jobDB, _mazakDbMock, _settings, _mazakCfg, fixtureQueueTime)
-        .Should()
-        .BeFalse();
+        .ShouldBeFalse();
     }
 
     [Fact]
-    public void CreatesPrograms()
+    public async Task CreatesPrograms()
     {
       //aaa-1  has prog prog-aaa-1 rev null
       //aaa-2 has prog prog-aaa-2 rev 4
@@ -395,16 +363,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         newJobs.Jobs.First().RouteStartUTC
       );
 
-      ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "managed-progs-add-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "managed-progs-del-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Add Parts"), "managed-progs-parts.json");
-      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
+      await ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch");
+      await ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts");
+      await ShouldMatchSnapshot(FindWrite("Add Fixtures"), "managed-progs-add-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "managed-progs-del-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Add Parts"), "managed-progs-parts");
+      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
     }
 
     [Fact]
-    public void OnlyDownloadsOneScheduleAtATime()
+    public async Task OnlyDownloadsOneScheduleAtATime()
     {
       var newJ1 = JsonSerializer.Deserialize<NewJobs>(
         File.ReadAllText(Path.Combine("..", "..", "..", "sample-newjobs", "fixtures-queues.json")),
@@ -423,20 +391,19 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       WriteJobs
         .SyncFromDatabase(_initialAllData, _jobDB, _mazakDbMock, _settings, _mazakCfg, fixtureQueueTime)
-        .Should()
-        .BeTrue();
+        .ShouldBeTrue();
 
-      ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts.json");
-      FindWrite("Delete Pallets")?.Pallets.Should().BeNullOrEmpty();
-      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts.json");
-      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
+      await ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch");
+      await ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts");
+      FindWrite("Delete Pallets")?.Pallets.ShouldBeEmpty();
+      await ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts");
+      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
     }
 
     [Fact]
-    public void ErrorDuringPartsPallets()
+    public async Task ErrorDuringPartsPallets()
     {
       _mazakDbMock
         .When(x => x.Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Add Parts")))
@@ -448,8 +415,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
       _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
 
-      FluentActions
-        .Invoking(
+      Should
+        .Throw<Exception>(
           () =>
             WriteJobs.SyncFromDatabase(
               _initialAllData,
@@ -460,27 +427,24 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
               fixtureQueueTime
             )
         )
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("Sample error");
+        .Message.ShouldBe("Sample error");
 
-      ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts.json");
-      FindWrite("Add Schedules").Should().BeNull();
+      await ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch");
+      await ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts");
+      await ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts");
+      FindWrite("Add Schedules").ShouldBeNull();
 
       var start = newJobs.Jobs.First().RouteStartUTC;
       _jobDB
         .LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))
         .Select(j => j.UniqueStr)
-        .Should()
-        .BeEquivalentTo(["aaa-schId1234", "bbb-schId1234", "ccc-schId1234"]);
+        .ShouldBe(["aaa-schId1234", "bbb-schId1234", "ccc-schId1234"]);
     }
 
     [Fact]
-    public void ErrorDuringSchedule()
+    public async Task ErrorDuringSchedule()
     {
       bool throwError = true;
       _mazakDbMock
@@ -499,8 +463,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
       _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
 
-      FluentActions
-        .Invoking(
+      Should
+        .Throw<Exception>(
           () =>
             WriteJobs.SyncFromDatabase(
               _initialAllData,
@@ -511,27 +475,24 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
               fixtureQueueTime
             )
         )
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("Sample error");
+        .Message.ShouldBe("Sample error");
 
-      ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch.json");
-      ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts.json");
-      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts.json");
-      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
+      await ShouldMatchSnapshot(FindWrite("Update schedules"), "fixtures-queues-updatesch");
+      await ShouldMatchSnapshot(FindWrite("Delete Parts"), "fixtures-queues-delparts");
+      await ShouldMatchSnapshot(FindWrite("Add Fixtures"), "fixtures-queues-add-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "fixtures-queues-del-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Add Parts"), "fixtures-queues-parts");
+      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
 
       var start = newJobs.Jobs.First().RouteStartUTC;
       _jobDB
         .LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))
         .Select(j => j.UniqueStr)
-        .Should()
-        .BeEquivalentTo(newJobs.Jobs.Select(j => j.UniqueStr));
+        .ShouldBe(newJobs.Jobs.Select(j => j.UniqueStr), ignoreOrder: true);
 
       //try again still with error
-      FluentActions
-        .Invoking(
+      Should
+        .Throw<Exception>(
           () =>
             WriteJobs.SyncFromDatabase(
               _initialAllData,
@@ -542,16 +503,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
               fixtureQueueTime
             )
         )
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("Sample error");
+        .Message.ShouldBe("Sample error");
 
-      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
+      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
       _jobDB
         .LoadJobsNotCopiedToSystem(start, start.AddMinutes(1))
         .Select(j => j.UniqueStr)
-        .Should()
-        .BeEquivalentTo(newJobs.Jobs.Select(j => j.UniqueStr));
+        .ShouldBe(newJobs.Jobs.Select(j => j.UniqueStr), ignoreOrder: true);
 
       //finally succeed without error
       throwError = false;
@@ -563,9 +521,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         _mazakCfg,
         fixtureQueueTime
       );
-      ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules.json");
+      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
 
-      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).Should().BeEmpty();
+      _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).ShouldBeEmpty();
     }
 
     [Fact]
@@ -589,8 +547,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
       _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
 
-      FluentActions
-        .Invoking(
+      Should
+        .Throw<Exception>(
           () =>
             WriteJobs.SyncFromDatabase(
               _initialAllData,
@@ -601,9 +559,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
               fixtureQueueTime
             )
         )
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("Sample error");
+        .Message.ShouldBe("Sample error");
 
       // Now with the parts and only the aaa schedule
       var allParts = FindWrite("Add Parts").Parts.ToList();
@@ -630,24 +586,24 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         fixtureQueueTime
       );
 
-      FindWrite("Add Fixtures").Should().BeNull();
-      FindWrite("Add Parts").Should().BeNull();
-      FindWrite("Delete Fixtures").Should().BeNull();
-      FindWrite("Delete Parts").Should().BeNull();
-      FindWrite("Delete Pallets")?.Pallets.Should().BeNullOrEmpty();
-      FindWrite("Update schedules").Should().BeNull();
+      FindWrite("Add Fixtures").ShouldBeNull();
+      FindWrite("Add Parts").ShouldBeNull();
+      FindWrite("Delete Fixtures").ShouldBeNull();
+      FindWrite("Delete Parts").ShouldBeNull();
+      FindWrite("Delete Pallets")?.Pallets.ShouldBeEmpty();
+      FindWrite("Update schedules").ShouldBeNull();
       // adds only bbb and ccc
       FindWrite("Add Schedules")
-        .Schedules.Should()
-        .BeEquivalentTo(bbbAndCCCSch.Select(s => s with { Priority = s.Priority + 1 }));
+        .Schedules.ShouldBeEquivalentTo(
+          bbbAndCCCSch.Select(s => s with { Priority = s.Priority + 1 }).ToList()
+        );
 
       _jobDB
         .LoadJobsNotCopiedToSystem(
           newJobs.Jobs.First().RouteStartUTC,
           newJobs.Jobs.First().RouteStartUTC.AddMinutes(1)
         )
-        .Should()
-        .BeEmpty();
+        .ShouldBeEmpty();
     }
 
     [Fact]
@@ -706,11 +662,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       // check
 
-      chunks.SelectMany(c => c.Schedules).Should().BeEquivalentTo(orig.Schedules);
-      chunks.SelectMany(c => c.Parts).Should().BeEquivalentTo(orig.Parts);
-      chunks.SelectMany(c => c.Pallets).Should().BeEquivalentTo(orig.Pallets);
-      chunks.SelectMany(c => c.Fixtures).Should().BeEquivalentTo(orig.Fixtures);
-      chunks.SelectMany(c => c.Programs).Should().BeEquivalentTo(orig.Programs);
+      chunks.SelectMany(c => c.Schedules).ToList().ShouldBeEquivalentTo(orig.Schedules);
+      chunks.SelectMany(c => c.Parts).ToList().ShouldBeEquivalentTo(orig.Parts);
+      chunks.SelectMany(c => c.Pallets).ToList().ShouldBeEquivalentTo(orig.Pallets);
+      chunks.SelectMany(c => c.Fixtures).ToList().ShouldBeEquivalentTo(orig.Fixtures);
+      chunks.SelectMany(c => c.Programs).ToList().ShouldBeEquivalentTo(orig.Programs);
 
       foreach (var chunk in chunks)
       {
@@ -720,14 +676,12 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           + chunk.Pallets.Count
           + chunk.Fixtures.Count
           + chunk.Programs.Count
-        )
-          .Should()
-          .BeLessOrEqualTo(20);
+        ).ShouldBeLessThanOrEqualTo(20);
       }
     }
 
     [Fact]
-    public void CorrectPriorityForPalletSubsets()
+    public async Task CorrectPriorityForPalletSubsets()
     {
       // If the starting times are equal but there is a pallet subset, the priorty
       // should be split
@@ -747,24 +701,23 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           _mazakCfg,
           new DateTime(2024, 6, 18, 22, 0, 0, DateTimeKind.Utc)
         )
-        .Should()
-        .BeTrue();
+        .ShouldBeTrue();
 
-      ShouldMatchSnapshot(FindWrite("Update schedules"), "pallet-subset-updatesch.json");
-      ShouldMatchSnapshot(FindWrite("Delete Parts"), "pallet-subset-delparts.json");
-      FindWrite("Delete Pallets")?.Pallets.Should().BeNullOrEmpty();
-      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "pallet-subset-add-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "pallet-subset-del-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Add Parts"), "pallet-subset-parts.json");
-      ShouldMatchSnapshot(FindWrite("Add Schedules"), "pallet-subset-schedules.json");
+      await ShouldMatchSnapshot(FindWrite("Update schedules"), "pallet-subset-updatesch");
+      await ShouldMatchSnapshot(FindWrite("Delete Parts"), "pallet-subset-delparts");
+      FindWrite("Delete Pallets")?.Pallets.ShouldBeEmpty();
+      await ShouldMatchSnapshot(FindWrite("Add Fixtures"), "pallet-subset-add-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "pallet-subset-del-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Add Parts"), "pallet-subset-parts");
+      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "pallet-subset-schedules");
 
       // The schedule snapshot should have checked this, but do it here too since it was the
       // bug which triggered this test case
-      FindWrite("Add Schedules").Schedules.DistinctBy(p => p.Priority).Should().HaveCount(2);
+      FindWrite("Add Schedules").Schedules.DistinctBy(p => p.Priority).Count().ShouldBe(2);
     }
 
     [Fact]
-    public void LargeMachineNumbers()
+    public async Task LargeMachineNumbers()
     {
       // should translate machine numbers 101, 102, 103, 104 to 1, 2, 3, 4
       // Careful when looking at the resulting snapshots, since machine numbers are
@@ -788,16 +741,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           },
           new DateTime(2024, 9, 24, 16, 0, 0, DateTimeKind.Utc)
         )
-        .Should()
-        .BeTrue();
+        .ShouldBeTrue();
 
-      ShouldMatchSnapshot(FindWrite("Update schedules"), "machine-numbers-updatesch.json");
-      ShouldMatchSnapshot(FindWrite("Delete Parts"), "machine-numbers-delparts.json");
-      FindWrite("Delete Pallets")?.Pallets.Should().BeNullOrEmpty();
-      ShouldMatchSnapshot(FindWrite("Add Fixtures"), "machine-numbers-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "machine-numbers-del-fixtures.json");
-      ShouldMatchSnapshot(FindWrite("Add Parts"), "machine-numbers-parts.json");
-      ShouldMatchSnapshot(FindWrite("Add Schedules"), "machine-numbers-schedules.json");
+      await ShouldMatchSnapshot(FindWrite("Update schedules"), "machine-numbers-updatesch");
+      await ShouldMatchSnapshot(FindWrite("Delete Parts"), "machine-numbers-delparts");
+      FindWrite("Delete Pallets")?.Pallets.ShouldBeEmpty();
+      await ShouldMatchSnapshot(FindWrite("Add Fixtures"), "machine-numbers-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Delete Fixtures"), "machine-numbers-del-fixtures");
+      await ShouldMatchSnapshot(FindWrite("Add Parts"), "machine-numbers-parts");
+      await ShouldMatchSnapshot(FindWrite("Add Schedules"), "machine-numbers-schedules");
     }
   }
 }

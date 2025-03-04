@@ -1,0 +1,13 @@
+﻿{
+  Prefix: Delete Parts,
+  Parts: [
+    {
+      PartName: part1:1:1,
+      Comment: uniq1-Insight,
+      TotalProcess: 1,
+      MaterialName: ,
+      Part_3: ,
+      Command: Delete
+    }
+  ]
+}
