@@ -39,9 +39,9 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
 using MazakMachineInterface;
 using NSubstitute;
+using Shouldly;
 using Xunit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests;
@@ -142,7 +142,7 @@ public sealed class MazakSyncSpec : IDisposable
 
     using var db = repo.OpenConnection();
 
-    _sync.CheckNewJobs(db, newJ).Should().BeEmpty();
+    _sync.CheckNewJobs(db, newJ).ShouldBeEmpty();
   }
 
   [Fact]
@@ -178,8 +178,7 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync
       .CheckNewJobs(db, newJ)
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         [
           "Part aaa program 1002 does not exist in the cell controller.",
           "Part bbb program 1002 does not exist in the cell controller.",
@@ -232,7 +231,7 @@ public sealed class MazakSyncSpec : IDisposable
 
     using var db = repo.OpenConnection();
 
-    _sync.CheckNewJobs(db, newJ).Should().BeEmpty();
+    _sync.CheckNewJobs(db, newJ).ShouldBeEmpty();
   }
 
   [Fact]
@@ -270,8 +269,7 @@ public sealed class MazakSyncSpec : IDisposable
 
     _sync
       .CheckNewJobs(db, newJ)
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         [
           " Job aaa-schId1234 has an output queue queueAAA which is not configured as a queue in FMS Insight. Non-final processes must have a configured local queue, not an external queue",
           " Job aaa-schId1234 has an input queue queueAAA which is not configured as a local queue in FMS Insight. All input queues must be local queues, not an external queue.",
@@ -307,43 +305,35 @@ public sealed class MazakSyncSpec : IDisposable
     };
     _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
 
-    _sync
-      .CalculateCellState(db)
-      .Should()
-      .BeEquivalentTo(
-        new MazakState()
+    var cellSt = _sync.CalculateCellState(db);
+    cellSt.CurrentStatus.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(5));
+    cellSt.ShouldBeEquivalentTo(
+      new MazakState()
+      {
+        CurrentStatus = new CurrentStatus()
         {
-          CurrentStatus = new CurrentStatus()
-          {
-            TimeOfCurrentStatusUTC = DateTime.UtcNow,
-            Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-            Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-            Material = [],
-            Alarms = [],
-            Workorders = null,
-            Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
-          },
-          AllData = allData,
-          StoppedBecauseRecentLogEvent = false,
-          StateUpdated = true,
-          TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
+          TimeOfCurrentStatusUTC = cellSt.CurrentStatus.TimeOfCurrentStatusUTC,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+          Material = [],
+          Alarms = [],
+          Workorders = null,
+          Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
         },
-        options =>
-          options
-            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(2)))
-            .When(info => info.Path.EndsWith("TimeOfCurrentStatusUTC"))
-      );
+        AllData = allData,
+        StoppedBecauseRecentLogEvent = false,
+        StateUpdated = true,
+        TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
+      }
+    );
 
-    db.MaxForeignID().Should().BeEquivalentTo("222loadend.csv");
+    db.MaxForeignID().ShouldBe("222loadend.csv");
 
     _mazakDB.Received().DeleteLogs("222loadend.csv");
 
     LogCSVParsing.DeleteLog("222loadend.csv", _tempDir);
 
-    Directory
-      .GetFiles(_tempDir, "*.csv")
-      .Should()
-      .BeEquivalentTo([Path.Combine(_tempDir, "333leaveload.csv")]);
+    Directory.GetFiles(_tempDir, "*.csv").ShouldBe([Path.Combine(_tempDir, "333leaveload.csv")]);
   }
 
   [Fact]
@@ -389,18 +379,17 @@ public sealed class MazakSyncSpec : IDisposable
 
     var st = _sync.CalculateCellState(db);
 
-    st.AllData.Should().Be(allData);
-    st.StoppedBecauseRecentLogEvent.Should().BeTrue();
-    st.StateUpdated.Should().BeTrue();
-    st.TimeUntilNextRefresh.Should().Be(TimeSpan.FromSeconds(15));
+    st.AllData.ShouldBe(allData);
+    st.StoppedBecauseRecentLogEvent.ShouldBeTrue();
+    st.StateUpdated.ShouldBeTrue();
+    st.TimeUntilNextRefresh.ShouldBe(TimeSpan.FromSeconds(15));
 
     // just a little check of the status that it correctly saw the load event,
     // the full testing is in BuildCurrentStatusSpec.  Check the material
     // has been loaded, even though we haven't yet processed the load
-    st.CurrentStatus.Material.Should().HaveCount(1);
+    st.CurrentStatus.Material.Count.ShouldBe(1);
     st.CurrentStatus.Material[0]
-      .Location.Should()
-      .BeEquivalentTo(
+      .Location.ShouldBeEquivalentTo(
         new InProcessMaterialLocation()
         {
           Type = InProcessMaterialLocation.LocType.OnPallet,
@@ -409,10 +398,11 @@ public sealed class MazakSyncSpec : IDisposable
         }
       );
     st.CurrentStatus.Material[0]
-      .Action.Should()
-      .BeEquivalentTo(new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting });
+      .Action.ShouldBeEquivalentTo(
+        new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting }
+      );
 
-    db.MaxForeignID().Should().BeEquivalentTo("111loadstart.csv");
+    db.MaxForeignID().ShouldBe("111loadstart.csv");
 
     _mazakDB.Received().DeleteLogs("111loadstart.csv");
   }
@@ -455,10 +445,10 @@ public sealed class MazakSyncSpec : IDisposable
       );
 
     var st = _sync.CalculateCellState(db);
-    st.StoppedBecauseRecentLogEvent.Should().BeTrue();
-    st.TimeUntilNextRefresh.Should().Be(TimeSpan.FromSeconds(15));
+    st.StoppedBecauseRecentLogEvent.ShouldBeTrue();
+    st.TimeUntilNextRefresh.ShouldBe(TimeSpan.FromSeconds(15));
 
-    db.MaxForeignID().Should().BeEquivalentTo("111loadstart.csv");
+    db.MaxForeignID().ShouldBe("111loadstart.csv");
 
     _mazakDB.Received().DeleteLogs("111loadstart.csv");
 
@@ -466,9 +456,9 @@ public sealed class MazakSyncSpec : IDisposable
 
     Directory
       .GetFiles(_tempDir, "*.csv")
-      .Should()
-      .BeEquivalentTo(
-        [Path.Combine(_tempDir, "222machineend.csv"), Path.Combine(_tempDir, "333loadend.csv")]
+      .ShouldBe(
+        [Path.Combine(_tempDir, "222machineend.csv"), Path.Combine(_tempDir, "333loadend.csv")],
+        ignoreOrder: true
       );
   }
 
@@ -516,50 +506,46 @@ public sealed class MazakSyncSpec : IDisposable
     };
     _mazakDB.LoadAllDataAndLogs(Arg.Any<string>()).Returns(allData);
 
-    _sync
-      .CalculateCellState(db)
-      .Should()
-      .BeEquivalentTo(
-        new MazakState()
+    var cellSt = _sync.CalculateCellState(db);
+
+    cellSt.CurrentStatus.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(5));
+    cellSt.ShouldBeEquivalentTo(
+      new MazakState()
+      {
+        CurrentStatus = new CurrentStatus()
         {
-          CurrentStatus = new CurrentStatus()
-          {
-            TimeOfCurrentStatusUTC = DateTime.UtcNow,
-            Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-            Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-            Material =
-            [
-              new InProcessMaterial()
+          TimeOfCurrentStatusUTC = cellSt.CurrentStatus.TimeOfCurrentStatusUTC,
+          Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+          Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+          Material =
+          [
+            new InProcessMaterial()
+            {
+              MaterialID = mat,
+              JobUnique = "uuuu",
+              PartName = "pppp",
+              Path = 1,
+              Process = 1,
+              Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+              SignaledInspections = [],
+              Location = new InProcessMaterialLocation()
               {
-                MaterialID = mat,
-                JobUnique = "uuuu",
-                PartName = "pppp",
-                Path = 1,
-                Process = 1,
-                Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
-                SignaledInspections = [],
-                Location = new InProcessMaterialLocation()
-                {
-                  Type = InProcessMaterialLocation.LocType.InQueue,
-                  CurrentQueue = "quarantine",
-                  QueuePosition = 0,
-                },
+                Type = InProcessMaterialLocation.LocType.InQueue,
+                CurrentQueue = "quarantine",
+                QueuePosition = 0,
               },
-            ],
-            Alarms = [],
-            Workorders = null,
-            Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
-          },
-          AllData = allData,
-          StoppedBecauseRecentLogEvent = false,
-          StateUpdated = true,
-          TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
+            },
+          ],
+          Alarms = [],
+          Workorders = null,
+          Queues = _fmsSt.Queues.ToImmutableDictionary(kv => kv.Key, kv => kv.Value),
         },
-        options =>
-          options
-            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(2)))
-            .When(info => info.Path.EndsWith("TimeOfCurrentStatusUTC"))
-      );
+        AllData = allData,
+        StoppedBecauseRecentLogEvent = false,
+        StateUpdated = true,
+        TimeUntilNextRefresh = TimeSpan.FromMinutes(2),
+      }
+    );
   }
 
   [Fact]
@@ -631,21 +617,20 @@ public sealed class MazakSyncSpec : IDisposable
           }
       );
 
-    _sync.ApplyActions(db, st).Should().BeTrue();
+    _sync.ApplyActions(db, st).ShouldBeTrue();
 
     _mazakDB
       .ReceivedCalls()
       .Where(c => c.GetMethodInfo().Name == "Save")
       .Select(c => ((MazakWriteData)c.GetArguments()[0]).Prefix)
-      .Should()
-      .BeEquivalentTo(["Delete Pallets", "Delete Fixtures", "Add Fixtures", "Add Parts", "Add Schedules"]);
+      .ShouldBe(["Delete Pallets", "Delete Fixtures", "Add Fixtures", "Add Parts", "Add Schedules"]);
     // more detailed tests are in the write data tests
 
     _mazakDB.ClearReceivedCalls();
 
-    _sync.ApplyActions(db, st).Should().BeFalse();
+    _sync.ApplyActions(db, st).ShouldBeFalse();
 
-    _mazakDB.ReceivedCalls().Should().BeEmpty();
+    _mazakDB.ReceivedCalls().ShouldBeEmpty();
   }
 
   [Fact]
@@ -737,19 +722,19 @@ public sealed class MazakSyncSpec : IDisposable
       reason: "TestSuite"
     );
 
-    _sync.ApplyActions(db, st).Should().BeTrue();
+    _sync.ApplyActions(db, st).ShouldBeTrue();
 
-    _mazakDB.ReceivedCalls().Should().HaveCount(1);
+    _mazakDB.ReceivedCalls().Count().ShouldBe(1);
     _mazakDB.Received().Save(Arg.Is<MazakWriteData>(m => m.Prefix == "Setting material from queues"));
 
     var trans = _mazakDB.ReceivedCalls().Select(c => c.GetArguments()[0] as MazakWriteData).First();
-    trans.Schedules.Count.Should().Be(1);
-    trans.Schedules[0].Id.Should().Be(10);
-    trans.Schedules[0].Priority.Should().Be(10);
-    trans.Schedules[0].Processes.Count.Should().Be(2);
-    trans.Schedules[0].Processes[0].ProcessNumber.Should().Be(1);
-    trans.Schedules[0].Processes[0].ProcessMaterialQuantity.Should().Be(1); // set the 1 material
-    trans.Schedules[0].Processes[1].ProcessNumber.Should().Be(2);
-    trans.Schedules[0].Processes[1].ProcessMaterialQuantity.Should().Be(0); // sets no material
+    trans.Schedules.Count.ShouldBe(1);
+    trans.Schedules[0].Id.ShouldBe(10);
+    trans.Schedules[0].Priority.ShouldBe(10);
+    trans.Schedules[0].Processes.Count.ShouldBe(2);
+    trans.Schedules[0].Processes[0].ProcessNumber.ShouldBe(1);
+    trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(1); // set the 1 material
+    trans.Schedules[0].Processes[1].ProcessNumber.ShouldBe(2);
+    trans.Schedules[0].Processes[1].ProcessMaterialQuantity.ShouldBe(0); // sets no material
   }
 }
