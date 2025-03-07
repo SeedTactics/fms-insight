@@ -243,7 +243,20 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .Verify(val)
         .UseDirectory("write-snapshots")
         .UseFileName(snapshot)
-        .DisableRequireUniquePrefix();
+        .DisableRequireUniquePrefix()
+        .ScrubLinesWithReplace(input =>
+        {
+          // MainProgram paths use Directory separator which is different on windows and linux
+          // scrub to always use /
+          if (input.Trim().StartsWith("theprogdir"))
+          {
+            return input.Replace('/', '\\');
+          }
+          else
+          {
+            return input;
+          }
+        });
     }
 
     [Fact]

@@ -15,7 +15,7 @@
           CutMc: 15,
           FixLDS: 3,
           Fixture: F:0:2:fixtureAA1:1,
-          MainProgram: theprogdir/rev8/prog-aaa-1.EIA,
+          MainProgram: theprogdir\rev8\prog-aaa-1.EIA,
           RemoveLDS: 3
         },
         {
@@ -25,7 +25,7 @@
           CutMc: 15,
           FixLDS: 3,
           Fixture: F:0:3:fixtureAA2:2,
-          MainProgram: theprogdir/rev4/prog-aaa-2.EIA,
+          MainProgram: theprogdir\rev4\prog-aaa-2.EIA,
           RemoveLDS: 3
         }
       ],
@@ -45,7 +45,7 @@
           CutMc: 15,
           FixLDS: 3,
           Fixture: F:0:1:fixtureBB:1,
-          MainProgram: theprogdir/rev3/prog-bbb-1.EIA,
+          MainProgram: theprogdir\rev3\prog-bbb-1.EIA,
           RemoveLDS: 3
         },
         {
@@ -55,7 +55,7 @@
           CutMc: 15,
           FixLDS: 3,
           Fixture: F:0:1:fixtureBB:1,
-          MainProgram: theprogdir/rev5/prog-bbb-2.EIA,
+          MainProgram: theprogdir\rev5\prog-bbb-2.EIA,
           RemoveLDS: 3
         }
       ],
@@ -75,7 +75,7 @@
           CutMc: 15,
           FixLDS: 3,
           Fixture: F:0:4:fixtureCC5:1,
-          MainProgram: theprogdir/rev8/prog-aaa-1.EIA,
+          MainProgram: theprogdir\rev8\prog-aaa-1.EIA,
           RemoveLDS: 3
         },
         {
@@ -85,7 +85,7 @@
           CutMc: 15,
           FixLDS: 3,
           Fixture: F:0:5:fixtureCC6:2,
-          MainProgram: theprogdir/rev4/prog-aaa-2.EIA,
+          MainProgram: theprogdir\rev4\prog-aaa-2.EIA,
           RemoveLDS: 3
         }
       ],
