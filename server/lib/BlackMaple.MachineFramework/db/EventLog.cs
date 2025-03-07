@@ -5232,8 +5232,7 @@ namespace BlackMaple.MachineFramework
 
           cmd.Transaction = trans;
 
-          IDataReader reader = cmd.ExecuteReader();
-          try
+          using (IDataReader reader = cmd.ExecuteReader())
           {
             var now = DateTime.UtcNow;
             while (reader.Read())
@@ -5249,10 +5248,6 @@ namespace BlackMaple.MachineFramework
                 logs.Add(RecordForceInspection(trans, mat, reader.GetString(0), inspect: true, utcNow: now));
               }
             }
-          }
-          finally
-          {
-            reader.Close();
           }
 
           cmd.CommandText = "DELETE FROM inspection_next_piece WHERE StatType = $loc AND StatNum = $locnum";
