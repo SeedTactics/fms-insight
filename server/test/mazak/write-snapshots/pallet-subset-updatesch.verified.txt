@@ -1,0 +1,21 @@
+﻿{
+  Prefix: Update schedules,
+  Schedules: [
+    {
+      Id: 1,
+      Comment: uniq1-Insight,
+      PartName: part1:1:1,
+      PlanQuantity: 15,
+      CompleteQuantity: 15,
+      Priority: 50,
+      Processes: [
+        {
+          MazakScheduleRowId: 1,
+          ProcessNumber: 1,
+          FixedMachineFlag: 1
+        }
+      ],
+      Command: Delete
+    }
+  ]
+}

@@ -945,12 +945,11 @@ namespace BlackMaple.FMSInsight.Niigata
 
       if (pallet.Status.HasWork)
       {
-        // add 1 seconds to now so the marking of serials and load end happens after the pallet cycle
         SetMaterialToLoadOnFace(
           pallet,
           allocateNew: true,
           actionIsLoading: false,
-          nowUtc: nowUtc.AddSeconds(1),
+          nowUtc: nowUtc,
           currentlyLoading: currentlyLoading,
           unusedMatsOnPal: unusedMatsOnPal,
           logDB: logDB
@@ -958,6 +957,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
         toLoad = pallet
           .Material.GroupBy(p => p.Mat.Location.Face ?? 1)
+          .OrderBy(face => face.Key)
           .Select(face =>
           {
             var job = face.First().Job;

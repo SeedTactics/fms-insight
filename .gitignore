@@ -16,3 +16,5 @@ website/i18n
 server/machines/mazak/log
 server/machines/niigata/programs
 server/bench/BenchmarkDotNet.Artifacts
+
+*.received.*

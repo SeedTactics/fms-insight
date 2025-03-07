@@ -35,11 +35,11 @@ using System;
 using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
 using Microsoft.Data.Sqlite;
+using Shouldly;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Tests
 {
   public static class SchemaUpgradeSpec
   {
@@ -63,18 +63,18 @@ namespace MachineWatchTest
           break;
         }
 
-        hasRow1.Should().BeTrue();
-        hasRow2.Should().BeTrue();
+        hasRow1.ShouldBeTrue();
+        hasRow2.ShouldBeTrue();
 
         var name = r1.GetString(1);
-        name.Should().BeEquivalentTo(r2.GetString(1));
+        name.ShouldBe(r2.GetString(1));
 
-        r1.GetString(0).Should().BeEquivalentTo(r2.GetString(0), because: name);
-        r1.GetString(2).Should().BeEquivalentTo(r2.GetString(2), because: name);
+        r1.GetString(0).ShouldBe(r2.GetString(0), name);
+        r1.GetString(2).ShouldBe(r2.GetString(2), name);
 
         if (r2.IsDBNull(3))
         {
-          r1.IsDBNull(3).Should().BeTrue(because: name);
+          r1.IsDBNull(3).ShouldBeTrue(name);
           continue;
         }
 
@@ -102,7 +102,7 @@ namespace MachineWatchTest
           sql1 = sql1.Replace("Face TEXT", "Face INTEGER");
         }
 
-        sql1.Should().BeEquivalentTo(sql2);
+        sql1.ShouldBe(sql2);
       }
     }
 
@@ -164,8 +164,7 @@ namespace MachineWatchTest
 
       _log.GetLogEntries(now, now.AddDays(1))
         .ToList()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new[]
           {
             new LogEntry(
@@ -252,13 +251,13 @@ namespace MachineWatchTest
               endTime: now.AddMinutes(60),
               result: "work3"
             ),
-          },
-          options => options.Excluding(x => x.Counter).ComparingByMembers<LogEntry>()
+          }
+            .Select((e, idx) => e with { Counter = idx + 1 })
+            .ToList()
         );
 
       _log.GetMaterialDetails(1)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new MaterialDetails()
           {
             MaterialID = 1,
@@ -270,8 +269,7 @@ namespace MachineWatchTest
           }
         );
       _log.GetMaterialDetails(2)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new MaterialDetails()
           {
             MaterialID = 2,
@@ -283,8 +281,7 @@ namespace MachineWatchTest
           }
         );
       _log.GetMaterialDetails(3)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new MaterialDetails()
           {
             MaterialID = 3,
@@ -314,8 +311,7 @@ namespace MachineWatchTest
       );
 
       _log.GetMaterialInAllQueues()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new QueuedMaterial()
@@ -340,12 +336,10 @@ namespace MachineWatchTest
       var expected = CreateJob();
       var actual = _log.LoadJob("Unique1");
 
-      actual.Processes[0].Should().BeEquivalentTo(expected.Processes[0]);
-      actual.Should().BeEquivalentTo(expected);
+      expected.ShouldBeEquivalentTo(actual);
 
       _log.LoadDecrementsForJob("Unique1")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new DecrementQuantity()
@@ -382,7 +376,7 @@ namespace MachineWatchTest
 
       var actual = _log.LoadJob("mynewunique");
 
-      actual.Should().BeEquivalentTo(newJob with { ScheduleId = newJob.ScheduleId + "newSch" });
+      actual.ShouldBeEquivalentTo(newJob with { ScheduleId = newJob.ScheduleId + "newSch" });
 
       var now = DateTime.UtcNow;
       _log.AddNewDecrement(
@@ -399,8 +393,7 @@ namespace MachineWatchTest
       );
 
       _log.LoadDecrementsForJob("mynewunique")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new DecrementQuantity()
@@ -458,7 +451,7 @@ namespace MachineWatchTest
                 InputQueue = "in11",
                 SimulatedStartingUTC = DateTime.Parse("1/5/2011 11:34 PM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(0.5),
-                SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+                SimulatedProduction = [],
                 PalletNums = [2, 5],
                 Fixture = "Fix1",
                 Face = 1,
@@ -475,7 +468,8 @@ namespace MachineWatchTest
                     ExpectedCycleTime = TimeSpan.FromHours(1.2),
                   }
                 ),
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "Insp1",
@@ -491,8 +485,8 @@ namespace MachineWatchTest
                     MaxVal = 175,
                     RandomFreq = -1,
                     TimeInterval = TimeSpan.FromMinutes(121),
-                  }
-                ),
+                  },
+                ],
                 HoldMachining = new HoldPattern()
                 {
                   UserHold = false,
@@ -516,7 +510,7 @@ namespace MachineWatchTest
                 OutputQueue = "out12",
                 SimulatedStartingUTC = DateTime.Parse("2/10/2011 12:45 AM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(1.5),
-                SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+                SimulatedProduction = [],
                 PalletNums = [4, 35],
                 Fixture = "ABC",
                 Face = 4,
@@ -533,7 +527,8 @@ namespace MachineWatchTest
                     ExpectedCycleTime = TimeSpan.FromHours(2.8),
                   }
                 ),
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "Insp1",
@@ -549,8 +544,8 @@ namespace MachineWatchTest
                     MaxVal = 175,
                     RandomFreq = -1,
                     TimeInterval = TimeSpan.FromMinutes(121),
-                  }
-                ),
+                  },
+                ],
                 HoldMachining = new HoldPattern()
                 {
                   UserHold = true,
@@ -582,7 +577,7 @@ namespace MachineWatchTest
                 InputQueue = "in21",
                 SimulatedStartingUTC = DateTime.Parse("3/14/2011 2:03 AM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(2.5),
-                SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+                SimulatedProduction = [],
                 PalletNums = [12, 64],
                 Fixture = "Fix123",
                 Face = 6,
@@ -606,7 +601,8 @@ namespace MachineWatchTest
                     ExpectedCycleTime = TimeSpan.Zero,
                   }
                 ),
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "Insp2",
@@ -630,8 +626,8 @@ namespace MachineWatchTest
                     RandomFreq = 0.544,
                     MaxVal = -1,
                     TimeInterval = TimeSpan.FromMinutes(44),
-                  }
-                ),
+                  },
+                ],
                 HoldMachining = new HoldPattern()
                 {
                   UserHold = false,
@@ -657,7 +653,7 @@ namespace MachineWatchTest
                 PartsPerPallet = 22,
                 SimulatedStartingUTC = DateTime.Parse("4/20/2011 3:22 PM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(3.5),
-                SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+                SimulatedProduction = [],
                 PalletNums = [55, 2],
                 // has non-integer face so should be ignored
                 Load = [785, 53],
@@ -680,7 +676,8 @@ namespace MachineWatchTest
                     ExpectedCycleTime = TimeSpan.Zero,
                   }
                 ),
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "Insp2",
@@ -704,8 +701,8 @@ namespace MachineWatchTest
                     RandomFreq = 0.544,
                     MaxVal = -1,
                     TimeInterval = TimeSpan.FromMinutes(44),
-                  }
-                ),
+                  },
+                ],
                 HoldMachining = new HoldPattern()
                 {
                   HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
@@ -729,7 +726,7 @@ namespace MachineWatchTest
                 OutputQueue = "out23",
                 SimulatedStartingUTC = DateTime.Parse("5/22/2011 4:18 AM GMT").ToUniversalTime(),
                 SimulatedAverageFlowTime = TimeSpan.FromMinutes(4.5),
-                SimulatedProduction = ImmutableList<SimulatedProduction>.Empty,
+                SimulatedProduction = [],
                 PalletNums = [5, 22],
                 Fixture = "Fix17",
                 Face = 7,
@@ -738,7 +735,8 @@ namespace MachineWatchTest
                 Unload = [32],
                 ExpectedUnloadTime = TimeSpan.FromSeconds(532),
                 Stops = ImmutableList<MachiningStop>.Empty,
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "Insp2",
@@ -762,8 +760,8 @@ namespace MachineWatchTest
                     RandomFreq = 0.544,
                     MaxVal = -1,
                     TimeInterval = TimeSpan.FromMinutes(44),
-                  }
-                ),
+                  },
+                ],
                 HoldMachining = new HoldPattern()
                 {
                   HoldUnholdPatternStartUTC = DateTime.Parse("2000-01-01"),
@@ -901,7 +899,7 @@ namespace MachineWatchTest
         new DateTime(2023, 11, 25, 0, 0, 0, DateTimeKind.Utc)
       );
 
-      evts.Should().HaveCount(1466);
+      evts.Count().ShouldBe(1466);
     }
   }
 
@@ -938,9 +936,8 @@ namespace MachineWatchTest
       // ver 32 to 33 changed around unfilled workorder tables
       using var db = _repo.OpenConnection();
       db.WorkordersById("work1")
-        .Should()
-        .BeEquivalentTo(
-          [
+        .ShouldBeEquivalentTo(
+          ImmutableList.Create(
             new Workorder()
             {
               WorkorderId = "work1",
@@ -966,11 +963,11 @@ namespace MachineWatchTest
               Quantity = 33,
               DueDate = new DateTime(2024, 7, 30, 14, 6, 27, DateTimeKind.Utc),
               Priority = 26,
-            },
-          ]
+            }
+          )
         );
 
-      db.WorkordersById("work2").Should().BeEmpty();
+      db.WorkordersById("work2").ShouldBeEmpty();
     }
   }
 }

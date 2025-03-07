@@ -35,13 +35,14 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
 using MazakMachineInterface;
 using NSubstitute;
+using Shouldly;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class DecrementSpec : IDisposable
   {
@@ -55,9 +56,12 @@ namespace MachineWatchTest
         _write.ReceivedCalls().LastOrDefault(c => c.GetMethodInfo().Name == "Save")?.GetArguments()[0]
         as MazakWriteData;
 
-      wr?.Pallets.Should().BeNullOrEmpty();
-      wr?.Parts.Should().BeNullOrEmpty();
-      wr?.Fixtures.Should().BeNullOrEmpty();
+      if (wr != null)
+      {
+        wr.Pallets.ShouldBeEmpty();
+        wr.Parts.ShouldBeEmpty();
+        wr.Fixtures.ShouldBeEmpty();
+      }
 
       return wr?.Schedules;
     }
@@ -129,29 +133,27 @@ namespace MachineWatchTest
       DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
       var schR = GetSchRows();
-      schR.Count.Should().Be(1);
+      schR.Count.ShouldBe(1);
       var sch = schR[0];
-      sch.Id.Should().Be(15);
-      sch.PlanQuantity.Should().Be(35);
-      sch.Processes.Should()
-        .BeEquivalentTo(
-          new[]
+      sch.Id.ShouldBe(15);
+      sch.PlanQuantity.ShouldBe(35);
+      sch.Processes.ShouldBe(
+        new[]
+        {
+          new MazakScheduleProcessRow()
           {
-            new MazakScheduleProcessRow()
-            {
-              MazakScheduleRowId = 15,
-              FixQuantity = 1,
-              ProcessNumber = 1,
-              ProcessMaterialQuantity = 15,
-              ProcessExecuteQuantity = 5,
-            },
-          }
-        );
+            MazakScheduleRowId = 15,
+            FixQuantity = 1,
+            ProcessNumber = 1,
+            ProcessMaterialQuantity = 15,
+            ProcessExecuteQuantity = 5,
+          },
+        }
+      );
 
       _jobDB
         .LoadDecrementsForJob("uuuu")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new DecrementQuantity()
@@ -216,8 +218,8 @@ namespace MachineWatchTest
 
       DecrementPlanQty.Decrement(_write, _jobDB, st);
 
-      GetSchRows().Should().BeNull();
-      _jobDB.LoadDecrementsForJob("uuuu").Should().BeEmpty();
+      GetSchRows().ShouldBeNull();
+      _jobDB.LoadDecrementsForJob("uuuu").ShouldBeEmpty();
     }
 
     [Fact]
@@ -285,11 +287,10 @@ namespace MachineWatchTest
 
       DecrementPlanQty.Decrement(_write, _jobDB, st);
 
-      GetSchRows().Should().BeNull();
+      GetSchRows().ShouldBeNull();
       _jobDB
         .LoadDecrementsForJob("uuuu")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new DecrementQuantity()
@@ -385,13 +386,12 @@ namespace MachineWatchTest
       DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
       var schR = GetSchRows();
-      schR.Count.Should().Be(1);
-      schR[0].PlanQuantity.Should().Be(36);
+      schR.Count.ShouldBe(1);
+      schR[0].PlanQuantity.ShouldBe(36);
 
       _jobDB
         .LoadDecrementsForJob("uuuu")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new DecrementQuantity()
@@ -457,12 +457,11 @@ namespace MachineWatchTest
       var now = DateTime.UtcNow;
       DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
-      GetSchRows().Should().BeNull();
+      GetSchRows().ShouldBeNull();
 
       _jobDB
         .LoadDecrementsForJob("uuuu")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new DecrementQuantity()
@@ -543,35 +542,32 @@ namespace MachineWatchTest
       _jobDB
         .LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false)
         .Select(j => j.UniqueStr)
-        .Should()
-        .BeEquivalentTo(new[] { "vvvv" });
+        .ShouldBe(new[] { "vvvv" });
 
       DecrementPlanQty.Decrement(_write, _jobDB, st, now);
 
       var schR = GetSchRows();
-      schR.Count.Should().Be(1);
+      schR.Count.ShouldBe(1);
       var sch = schR[0];
-      sch.Id.Should().Be(15);
-      sch.PlanQuantity.Should().Be(35);
-      sch.Processes.Should()
-        .BeEquivalentTo(
-          new List<MazakScheduleProcessRow>
+      sch.Id.ShouldBe(15);
+      sch.PlanQuantity.ShouldBe(35);
+      sch.Processes.ShouldBe(
+        new List<MazakScheduleProcessRow>
+        {
+          new MazakScheduleProcessRow()
           {
-            new MazakScheduleProcessRow()
-            {
-              MazakScheduleRowId = 15,
-              FixQuantity = 1,
-              ProcessNumber = 1,
-              ProcessMaterialQuantity = 15,
-              ProcessExecuteQuantity = 5,
-            },
-          }
-        );
+            MazakScheduleRowId = 15,
+            FixQuantity = 1,
+            ProcessNumber = 1,
+            ProcessMaterialQuantity = 15,
+            ProcessExecuteQuantity = 5,
+          },
+        }
+      );
 
       _jobDB
         .LoadDecrementsForJob("uuuu")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new DecrementQuantity()
@@ -584,8 +580,7 @@ namespace MachineWatchTest
         );
       _jobDB
         .LoadDecrementsForJob("vvvv")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new DecrementQuantity()
@@ -599,8 +594,7 @@ namespace MachineWatchTest
 
       _jobDB
         .LoadDecrementQuantitiesAfter(now.AddHours(-12))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             new JobAndDecrementQuantity()
@@ -624,8 +618,7 @@ namespace MachineWatchTest
 
       _jobDB
         .LoadJobsNotCopiedToSystem(now.AddHours(-12), now.AddHours(12), includeDecremented: false)
-        .Should()
-        .BeEmpty();
+        .ShouldBeEmpty();
     }
   }
 }

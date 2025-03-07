@@ -58,7 +58,7 @@
     <PackageReference Include="CsvHelper" Version="33.0.1"/>
     <PackageReference Include="System.Collections.Immutable" Version="9.0.*" />
 
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" Condition="'$(Configuration)' == 'Release'"/>
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,103 @@
+﻿{
+  Pallets: {
+    1: {
+      PalletNum: 1,
+      FixtureOnPallet: F:1:abfix:1,
+      OnHold: false,
+      CurrentPalletLocation: {
+        StationGroup: L/U,
+        Num: 2
+      },
+      NumFaces: 1
+    },
+    2: {
+      PalletNum: 2,
+      FixtureOnPallet: F:1:abfix:1,
+      OnHold: false,
+      CurrentPalletLocation: {
+        Location: Buffer,
+        StationGroup: Buffer,
+        Num: 2
+      },
+      NumFaces: 1
+    },
+    3: {
+      PalletNum: 3,
+      FixtureOnPallet: F:1:abfix:1,
+      OnHold: false,
+      CurrentPalletLocation: {
+        Location: Machine,
+        StationGroup: MC,
+        Num: 3
+      },
+      NumFaces: 1
+    },
+    4: {
+      PalletNum: 4,
+      FixtureOnPallet: F:1:abfix:1,
+      OnHold: false,
+      CurrentPalletLocation: {
+        Location: MachineQueue,
+        StationGroup: MC,
+        Num: 4
+      },
+      NumFaces: 1
+    }
+  },
+  Material: [
+    {
+      MaterialID: -1,
+      JobUnique: ,
+      PartName: zzz,
+      Process: 1,
+      Path: 1,
+      Location: {
+        Type: OnPallet,
+        PalletNum: 1,
+        Face: 1
+      },
+      Action: {
+        Type: Loading,
+        LoadOntoPalletNum: 1,
+        LoadOntoFace: 2,
+        ProcessAfterLoad: 2,
+        PathAfterLoad: 1
+      }
+    },
+    {
+      MaterialID: -1,
+      JobUnique: ,
+      PartName: zzz,
+      Process: 2,
+      Path: 1,
+      Location: {
+        Type: OnPallet,
+        PalletNum: 1,
+        Face: 2
+      },
+      Action: {
+        Type: UnloadToCompletedMaterial
+      }
+    },
+    {
+      MaterialID: -1,
+      JobUnique: ,
+      PartName: zzz,
+      Path: 1,
+      Location: {},
+      Action: {
+        Type: Loading,
+        LoadOntoPalletNum: 1,
+        LoadOntoFace: 1,
+        ProcessAfterLoad: 1,
+        PathAfterLoad: 1
+      }
+    }
+  ],
+  Queues: {
+    castings: {},
+    queueAAA: {},
+    queueBBB: {},
+    queueCCC: {}
+  }
+}

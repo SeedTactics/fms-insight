@@ -32,12 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Tests
 {
   public class SerilogSpec : IDisposable
   {
@@ -74,13 +73,13 @@ namespace MachineWatchTest
       var a = new BlackMaple.MachineFramework.InsightLogging.CompressSerilogDebugLog();
       a.OnFileDeleting(file1);
 
-      File.Exists(file1).Should().BeTrue();
-      File.ReadAllText(file1).Should().Be("some log messages");
-      File.Exists(oldGzFile).Should().BeTrue();
-      File.ReadAllText(oldGzFile).Should().Be("some oldGzFile");
-      File.Exists(toDelGzFile).Should().BeFalse();
+      File.Exists(file1).ShouldBeTrue();
+      File.ReadAllText(file1).ShouldBe("some log messages");
+      File.Exists(oldGzFile).ShouldBeTrue();
+      File.ReadAllText(oldGzFile).ShouldBe("some oldGzFile");
+      File.Exists(toDelGzFile).ShouldBeFalse();
 
-      File.Exists(file1 + ".gz").Should().BeTrue();
+      File.Exists(file1 + ".gz").ShouldBeTrue();
 
       using (var fs = File.Open(file1 + ".gz", FileMode.Open, FileAccess.Read))
       using (
@@ -88,7 +87,7 @@ namespace MachineWatchTest
       )
       using (var reader = new StreamReader(gz))
       {
-        reader.ReadToEnd().Should().Be("some log messages");
+        reader.ReadToEnd().ShouldBe("some log messages");
       }
     }
   }

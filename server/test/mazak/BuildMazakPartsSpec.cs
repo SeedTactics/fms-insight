@@ -36,12 +36,12 @@ using System.Collections.Immutable;
 using System.Data;
 using System.Linq;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
 using MazakMachineInterface;
 using NSubstitute;
+using Shouldly;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class BuildMazakPartsSpec
   {
@@ -202,8 +202,7 @@ namespace MachineWatchTest
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0)
-        Assert.Fail(log[0]);
+      log.ShouldBeEmpty();
 
       if (useStartingOffset)
       {
@@ -554,27 +553,26 @@ namespace MachineWatchTest
         Assert.Fail(log[0]);
 
       var del = pMap.DeleteOldPalletRows();
-      del.Pallets.Should()
-        .BeEquivalentTo(
-          new[]
+      del.Pallets.ShouldBe(
+        new[]
+        {
+          new MazakPalletRow()
           {
-            new MazakPalletRow()
-            {
-              PalletNumber = 5,
-              Fixture = "aaaa:1",
-              Command = MazakWriteCommand.Delete,
-              FixtureGroupV2 = 1,
-            },
-          }
-        );
-      del.Parts.Should().BeEmpty();
-      del.Fixtures.Should().BeEmpty();
-      del.Schedules.Should().BeEmpty();
+            PalletNumber = 5,
+            Fixture = "aaaa:1",
+            Command = MazakWriteCommand.Delete,
+            FixtureGroupV2 = 1,
+          },
+        }
+      );
+      del.Parts.ShouldBeEmpty();
+      del.Fixtures.ShouldBeEmpty();
+      del.Schedules.ShouldBeEmpty();
 
       del = pMap.DeleteOldPartRows();
-      del.Parts.Should()
-        .BeEquivalentTo(
-          new[]
+      del.Parts.ToList()
+        .ShouldBeEquivalentTo(
+          new List<MazakPartRow>()
           {
             dset.TestParts[0] with
             {
@@ -582,12 +580,11 @@ namespace MachineWatchTest
               TotalProcess = dset.TestParts[0].Processes.Count(),
               Processes = new List<MazakPartProcessRow>(),
             },
-          },
-          options => options.ComparingByMembers<MazakPartRow>()
+          }
         );
-      del.Pallets.Should().BeEmpty();
-      del.Fixtures.Should().BeEmpty();
-      del.Schedules.Should().BeEmpty();
+      del.Pallets.ShouldBeEmpty();
+      del.Fixtures.ShouldBeEmpty();
+      del.Schedules.ShouldBeEmpty();
     }
 
     [Fact]
@@ -628,14 +625,13 @@ namespace MachineWatchTest
         errors: log
       );
 
-      log.Should()
-        .BeEquivalentTo(
-          new[]
-          {
-            // one for each process
-            "Part Part1 program 1234 does not exist in the cell controller.",
-          }
-        );
+      log.ShouldBe(
+        new[]
+        {
+          // one for each process
+          "Part Part1 program 1234 does not exist in the cell controller.",
+        }
+      );
     }
 
     [Fact]
@@ -687,8 +683,7 @@ namespace MachineWatchTest
       getProgramCt("bbb", 7).Returns("bbb 7 ct");
 
       pMap.AddFixtureAndProgramDatabaseRows(getProgramCt, "theprogdir")
-        .Programs.Should()
-        .BeEquivalentTo(
+        .Programs.ShouldBe(
           new[]
           {
             new NewMazakProgram()
@@ -712,8 +707,7 @@ namespace MachineWatchTest
           }
         );
       pMap.DeleteFixtureAndProgramDatabaseRows()
-        .Programs.Should()
-        .BeEquivalentTo(
+        .Programs.ShouldBe(
           new[]
           {
             new NewMazakProgram()
@@ -731,8 +725,7 @@ namespace MachineWatchTest
       trans
         .Parts.First()
         .Processes.Select(p => (proc: p.ProcessNumber, prog: p.MainProgram))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new[]
           {
             (1, System.IO.Path.Combine("theprogdir", "rev3", "aaa.EIA")),
@@ -778,13 +771,13 @@ namespace MachineWatchTest
         lookupProgram: (_, _) => null,
         errors: log
       );
-      log.Should()
-        .BeEquivalentTo(
-          [
-            "Non-Insight part Part1 in the Mazak cell controller is using an Insight fixture fix:1.  Please edit the part in the cell controller to not use an Insight fixture.",
-            "Part Part1 program 1234 does not exist in the cell controller.",
-          ]
-        );
+      log.ShouldBe(
+        new[]
+        {
+          "Non-Insight part Part1 in the Mazak cell controller is using an Insight fixture fix:1.  Please edit the part in the cell controller to not use an Insight fixture.",
+          "Part Part1 program 1234 does not exist in the cell controller.",
+        }
+      );
     }
 
     [Fact]
@@ -823,8 +816,7 @@ namespace MachineWatchTest
         errors: log
       );
 
-      log.Should()
-        .BeEquivalentTo(new[] { "Part Part1 program bbb rev7 does not exist in the cell controller." });
+      log.ShouldBe(new[] { "Part Part1 program bbb rev7 does not exist in the cell controller." });
     }
 
     #region Checking
@@ -983,18 +975,21 @@ namespace MachineWatchTest
         (p, r) => throw new Exception("Unexpected program lookup"),
         "C:\\NCProgs"
       );
-      actions.Fixtures.Should().BeEquivalentTo(add);
-      actions.Schedules.Should().BeEmpty();
-      actions.Parts.Should().BeEmpty();
-      actions.Pallets.Should().BeEmpty();
-      actions.Programs.Should().BeEmpty();
+      actions.Fixtures.ShouldBe(add);
+      actions.Schedules.ShouldBeEmpty();
+      actions.Parts.ShouldBeEmpty();
+      actions.Pallets.ShouldBeEmpty();
+      actions.Programs.ShouldBeEmpty();
 
       actions = map.DeleteFixtureAndProgramDatabaseRows();
-      actions.Fixtures.Should().BeEquivalentTo(del);
-      actions.Schedules.Should().BeEmpty();
-      actions.Parts.Should().BeEmpty();
-      actions.Pallets.Should().BeEmpty();
-      actions.Programs.Should().BeEmpty();
+      actions
+        .Fixtures.OrderBy(e => e.FixtureName)
+        .ToList()
+        .ShouldBeEquivalentTo(del.OrderBy(e => e.FixtureName).ToList());
+      actions.Schedules.ShouldBeEmpty();
+      actions.Parts.ShouldBeEmpty();
+      actions.Pallets.ShouldBeEmpty();
+      actions.Programs.ShouldBeEmpty();
     }
 
     private void CheckPartProcess(MazakWriteData dset, string part, int proc, string fixture)
@@ -1026,10 +1021,10 @@ namespace MachineWatchTest
         {
           if (row.PartName == part && row.ProcessNumber == proc)
           {
-            row.Fixture.Should().Be(fixture, because: "on " + part);
-            row.FixLDS.Should().Be(fix, because: "on " + part);
-            row.RemoveLDS.Should().Be(rem, because: "on " + part);
-            row.CutMc.Should().Be(cut, because: "on " + part);
+            row.Fixture.ShouldBe(fixture, "on " + part);
+            row.FixLDS.ShouldBe(fix, "on " + part);
+            row.RemoveLDS.ShouldBe(rem, "on " + part);
+            row.CutMc.ShouldBe(cut, "on " + part);
             mpart.Processes.Remove(row);
             break;
           }
@@ -1043,8 +1038,8 @@ namespace MachineWatchTest
       {
         if (row.PartName == part)
         {
-          Assert.Equal(comment, row.Comment);
-          row.Processes.Should().BeEmpty();
+          row.Comment.ShouldBe(comment);
+          row.Processes.ShouldBeEmpty();
           ((List<MazakPartRow>)dset.Parts).Remove(row);
           break;
         }
@@ -1101,8 +1096,8 @@ namespace MachineWatchTest
       {
         if (row.PalletNumber == pal && row.Fixture == fix)
         {
-          row.AngleV1.Should().Be(expectedAngle);
-          row.FixtureGroupV2.Should().Be(expectedFixGroup);
+          row.AngleV1.ShouldBe(expectedAngle);
+          row.FixtureGroupV2.ShouldBe(expectedFixGroup);
           ((List<MazakPalletRow>)dset.Pallets).Remove(row);
         }
       }

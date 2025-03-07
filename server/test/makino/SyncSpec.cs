@@ -38,10 +38,10 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoFixture;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
-using MachineWatchTest;
 using NSubstitute;
+using Shouldly;
 using Xunit;
 
 #nullable enable
@@ -185,8 +185,7 @@ public sealed class SyncSpec : IDisposable
           ],
         }
       )
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         [
           $"FMS Insight does not support multiple processes currently, please change {partName} to have one process.",
         ]
@@ -223,8 +222,7 @@ public sealed class SyncSpec : IDisposable
           ],
         }
       )
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         [
           $"FMS Insight does not support paths with the same color, please make sure each path has a distinct color in {partName}",
         ]
@@ -284,8 +282,7 @@ public sealed class SyncSpec : IDisposable
           ],
         }
       )
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         [
           $"The flexibility plan for part {partName} uses machine bad number 1, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2",
           $"The flexibility plan for part {partName} uses machine Mach number 500, but that machine does not exist in the Makino system.  The makino system contains machines Mach1,Mach2",
@@ -313,8 +310,7 @@ public sealed class SyncSpec : IDisposable
     _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
 
     sync.CalculateCellState(db)
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBeEquivalentTo(
         new MakinoCellState()
         {
           CurrentStatus = cur,
@@ -323,7 +319,7 @@ public sealed class SyncSpec : IDisposable
         }
       );
 
-    db.MaxLogDate().Should().Be(DateTime.MinValue);
+    db.MaxLogDate().ShouldBe(DateTime.MinValue);
   }
 
   [Fact]
@@ -359,8 +355,7 @@ public sealed class SyncSpec : IDisposable
     _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Is(now)).Returns(cur);
 
     sync.CalculateCellState(db, now)
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBeEquivalentTo(
         new MakinoCellState()
         {
           CurrentStatus = cur,
@@ -369,7 +364,7 @@ public sealed class SyncSpec : IDisposable
         }
       );
 
-    db.MaxLogDate().Should().Be(now + TimeSpan.FromMinutes(20) + TimeSpan.FromSeconds(1));
+    db.MaxLogDate().ShouldBe(now + TimeSpan.FromMinutes(20) + TimeSpan.FromSeconds(1));
   }
 
   [Fact]
@@ -421,8 +416,7 @@ public sealed class SyncSpec : IDisposable
     _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
 
     sync.CalculateCellState(db)
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBeEquivalentTo(
         new MakinoCellState()
         {
           CurrentStatus = cur,
@@ -446,7 +440,7 @@ public sealed class SyncSpec : IDisposable
 
     using var db = _repo.OpenConnection();
 
-    sync.ApplyActions(db, st).Should().BeFalse();
+    sync.ApplyActions(db, st).ShouldBeFalse();
   }
 
   [Fact]
@@ -495,11 +489,11 @@ public sealed class SyncSpec : IDisposable
       addAsCopiedToSystem: false
     );
 
-    db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeFalse();
+    db.LoadJob(job.UniqueStr).CopiedToSystem.ShouldBeFalse();
 
-    sync.ApplyActions(db, st).Should().BeFalse();
+    sync.ApplyActions(db, st).ShouldBeFalse();
 
-    db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeTrue();
+    db.LoadJob(job.UniqueStr).CopiedToSystem.ShouldBeTrue();
   }
 
   [Fact]
@@ -539,14 +533,14 @@ public sealed class SyncSpec : IDisposable
       )
       .Create();
 
-    db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeFalse();
+    db.LoadJob(job.UniqueStr).CopiedToSystem.ShouldBeFalse();
 
     var (applyResult, file) = await WatchForFile(() => sync.ApplyActions(db, st));
 
-    applyResult.Should().BeTrue();
-    file.Should().Contain($"<Order action=\"ADD\" name=\"{job.UniqueStr}\">");
+    applyResult.ShouldBeTrue();
+    file.ShouldContain($"<Order action=\"ADD\" name=\"{job.UniqueStr}\">");
 
-    db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeTrue();
+    db.LoadJob(job.UniqueStr).CopiedToSystem.ShouldBeTrue();
   }
 
   [Fact]
@@ -584,14 +578,13 @@ public sealed class SyncSpec : IDisposable
       )
       .Create();
 
-    db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeFalse();
+    db.LoadJob(job.UniqueStr).CopiedToSystem.ShouldBeFalse();
 
-    sync.Invoking(s => s.ApplyActions(db, st))
-      .Should()
-      .Throw<Exception>()
-      .WithMessage("Unable to copy orders to Makino: check that the Makino software is running");
+    Should
+      .Throw<Exception>(() => sync.ApplyActions(db, st))
+      .Message.ShouldBe("Unable to copy orders to Makino: check that the Makino software is running");
 
-    db.LoadJob(job.UniqueStr).CopiedToSystem.Should().BeFalse();
+    db.LoadJob(job.UniqueStr).CopiedToSystem.ShouldBeFalse();
   }
 
   [Fact]
@@ -602,7 +595,7 @@ public sealed class SyncSpec : IDisposable
 
     _makinoDB.RemainingToRun().Returns([]);
 
-    sync.DecrementJobs(db, st).Should().BeFalse();
+    sync.DecrementJobs(db, st).ShouldBeFalse();
   }
 
   [Fact]
@@ -646,9 +639,9 @@ public sealed class SyncSpec : IDisposable
 
     var (applyResult, file) = await WatchForFile(() => sync.DecrementJobs(db, st));
 
-    applyResult.Should().BeTrue();
-    file.Should().Contain($"<OrderQuantity orderName=\"{job.UniqueStr}\">");
+    applyResult.ShouldBeTrue();
+    file.ShouldContain($"<OrderQuantity orderName=\"{job.UniqueStr}\">");
 
-    db.LoadJob(job.UniqueStr).Decrements!.Select(d => d.Quantity).Should().BeEquivalentTo([2]);
+    db.LoadJob(job.UniqueStr).Decrements!.Select(d => d.Quantity).ShouldBe([2]);
   }
 }

@@ -1,0 +1,12 @@
+﻿<MASData>
+  <OrderQuantities>
+    <OrderQuantity orderName="12345">
+      <ProcessNumber>1</ProcessNumber>
+      <RemainQuantity>-10</RemainQuantity>
+    </OrderQuantity>
+    <OrderQuantity orderName="67890">
+      <ProcessNumber>1</ProcessNumber>
+      <RemainQuantity>-20</RemainQuantity>
+    </OrderQuantity>
+  </OrderQuantities>
+</MASData>

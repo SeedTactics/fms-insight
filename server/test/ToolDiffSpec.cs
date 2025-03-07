@@ -36,10 +36,10 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
-namespace MachineWatchTest;
+namespace BlackMaple.FMSInsight.Tests;
 
 public class ToolDiffSpec
 {
@@ -380,7 +380,7 @@ public class ToolDiffSpec
       }
     );
 
-    ToolSnapshotDiff.Diff(start, end).Should().BeEquivalentTo(expected);
+    ToolSnapshotDiff.Diff(start, end).ShouldBe(expected, ignoreOrder: true);
   }
 
   [Fact]
@@ -658,7 +658,7 @@ public class ToolDiffSpec
       }
     );
 
-    ToolSnapshotDiff.Diff(start, end).Should().BeEquivalentTo(expected);
+    ToolSnapshotDiff.Diff(start, end).ShouldBe(expected);
   }
 
   [Fact]
@@ -867,6 +867,6 @@ public class ToolDiffSpec
       }
     );
 
-    ToolSnapshotDiff.Diff(start, end).Should().BeEquivalentTo(expected);
+    ToolSnapshotDiff.Diff(start, end).ShouldBe(expected, ignoreOrder: true);
   }
 }

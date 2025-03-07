@@ -343,7 +343,7 @@ namespace BlackMaple.FMSInsight.Makino
           w.LoadOrderName,
           w.LoadPartName,
           w.LoadProcessNum,
-          w.EndDateTimeUTC.AddSeconds(1)
+          w.EndDateTimeUTC
         );
 
         TimeSpan active = TimeSpan.Zero;
@@ -361,12 +361,7 @@ namespace BlackMaple.FMSInsight.Makino
             Process = w.LoadProcessNum,
             Path = null,
             ActiveOperationTime = active * matList.Count,
-            ForeignID = MkForeignID(
-              ws.Key.PalletID,
-              w.FixtureNumber,
-              w.LoadOrderName,
-              w.EndDateTimeUTC.AddSeconds(1)
-            ),
+            ForeignID = MkForeignID(ws.Key.PalletID, w.FixtureNumber, w.LoadOrderName, w.EndDateTimeUTC),
           }
         );
       }

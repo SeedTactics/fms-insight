@@ -37,6 +37,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using FluentAssertions;
 using MazakMachineInterface;
@@ -46,7 +47,7 @@ using WireMock.ResponseBuilders;
 using WireMock.Server;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class LogTestBase : IDisposable
   {
@@ -2036,7 +2037,8 @@ namespace MachineWatchTest
             Paths = ImmutableList.Create(
               JobLogTest.EmptyPath with
               {
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "insp_proc1",
@@ -2044,8 +2046,8 @@ namespace MachineWatchTest
                     MaxVal = 10,
                     RandomFreq = 0,
                     TimeInterval = TimeSpan.FromMinutes(1000),
-                  }
-                ),
+                  },
+                ],
               }
             ),
           },
@@ -2054,7 +2056,8 @@ namespace MachineWatchTest
             Paths = ImmutableList.Create(
               JobLogTest.EmptyPath with
               {
-                Inspections = ImmutableList.Create(
+                Inspections =
+                [
                   new PathInspection()
                   {
                     InspectionType = "insp_whole",
@@ -2062,8 +2065,8 @@ namespace MachineWatchTest
                     MaxVal = 15,
                     RandomFreq = 0,
                     TimeInterval = TimeSpan.FromMinutes(1500),
-                  }
-                ),
+                  },
+                ],
               }
             ),
           }

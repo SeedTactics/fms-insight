@@ -1,0 +1,910 @@
+﻿{
+  Jobs: {
+    aaa-schId1234: {
+      Completed: [
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      Precedence: [
+        [
+          2
+        ],
+        [
+          2
+        ]
+      ],
+      RemainingToStart: 10,
+      ScheduleId: schId1234,
+      CopiedToSystem: true,
+      UniqueStr: aaa-schId1234,
+      RouteStartUTC: 2018-07-18 21:51:36.112578 Utc,
+      RouteEndUTC: 2018-07-19 21:51:36.112589 Utc,
+      Archived: false,
+      PartName: aaa,
+      Comment: ,
+      ManuallyCreated: false,
+      Cycles: 11,
+      Processes: [
+        {
+          Paths: [
+            {
+              PalletNums: [
+                1
+              ],
+              Fixture: fixtureAA1,
+              Face: 1,
+              Load: [
+                1,
+                2
+              ],
+              ExpectedLoadTime: 00:05:00,
+              Unload: [
+                1,
+                2
+              ],
+              ExpectedUnloadTime: 00:05:00,
+              Stops: [
+                {
+                  StationGroup: MC,
+                  Stations: [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  ExpectedCycleTime: 00:12:12,
+                  Program: 1001
+                }
+              ],
+              SimulatedProduction: [
+                {
+                  TimeUTC: 2018-07-18 22:25:28.112578 Utc,
+                  Quantity: 1
+                },
+                {
+                  TimeUTC: 2018-07-19 00:14:30.112578 Utc,
+                  Quantity: 2
+                },
+                {
+                  TimeUTC: 2018-07-19 02:05:16.112578 Utc,
+                  Quantity: 3
+                },
+                {
+                  TimeUTC: 2018-07-19 03:56:02.112578 Utc,
+                  Quantity: 4
+                },
+                {
+                  TimeUTC: 2018-07-19 05:50:20.112578 Utc,
+                  Quantity: 5
+                },
+                {
+                  TimeUTC: 2018-07-19 07:38:34.112578 Utc,
+                  Quantity: 6
+                },
+                {
+                  TimeUTC: 2018-07-19 09:26:48.112578 Utc,
+                  Quantity: 7
+                },
+                {
+                  TimeUTC: 2018-07-19 11:18:22.112578 Utc,
+                  Quantity: 8
+                },
+                {
+                  TimeUTC: 2018-07-19 13:13:04.112578 Utc,
+                  Quantity: 9
+                },
+                {
+                  TimeUTC: 2018-07-19 15:01:18.112578 Utc,
+                  Quantity: 10
+                },
+                {
+                  TimeUTC: 2018-07-19 16:52:04.112578 Utc,
+                  Quantity: 11
+                }
+              ],
+              SimulatedStartingUTC: 2018-07-18 22:25:28.112578 Utc,
+              SimulatedAverageFlowTime: 00:35:32.3636363,
+              PartsPerPallet: 1,
+              InputQueue: castings,
+              OutputQueue: queueAAA
+            }
+          ]
+        },
+        {
+          Paths: [
+            {
+              PalletNums: [
+                1
+              ],
+              Fixture: fixtureAA2,
+              Face: 2,
+              Load: [
+                1,
+                2
+              ],
+              ExpectedLoadTime: 00:05:00,
+              Unload: [
+                1,
+                2
+              ],
+              ExpectedUnloadTime: 00:05:00,
+              Stops: [
+                {
+                  StationGroup: MC,
+                  Stations: [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  ExpectedCycleTime: 01:10:18,
+                  Program: 1002
+                }
+              ],
+              SimulatedProduction: [
+                {
+                  TimeUTC: 2018-07-18 23:48:38.112578 Utc,
+                  Quantity: 1
+                },
+                {
+                  TimeUTC: 2018-07-19 01:40:12.112578 Utc,
+                  Quantity: 2
+                },
+                {
+                  TimeUTC: 2018-07-19 03:30:58.112578 Utc,
+                  Quantity: 3
+                },
+                {
+                  TimeUTC: 2018-07-19 05:19:12.112578 Utc,
+                  Quantity: 4
+                },
+                {
+                  TimeUTC: 2018-07-19 07:13:30.112578 Utc,
+                  Quantity: 5
+                },
+                {
+                  TimeUTC: 2018-07-19 09:01:44.112578 Utc,
+                  Quantity: 6
+                },
+                {
+                  TimeUTC: 2018-07-19 10:52:30.112578 Utc,
+                  Quantity: 7
+                },
+                {
+                  TimeUTC: 2018-07-19 12:48:00.112578 Utc,
+                  Quantity: 8
+                },
+                {
+                  TimeUTC: 2018-07-19 14:36:14.112578 Utc,
+                  Quantity: 9
+                },
+                {
+                  TimeUTC: 2018-07-19 16:27:00.112578 Utc,
+                  Quantity: 10
+                },
+                {
+                  TimeUTC: 2018-07-19 18:22:38.112578 Utc,
+                  Quantity: 11
+                }
+              ],
+              SimulatedStartingUTC: 2018-07-18 23:48:38.112578 Utc,
+              SimulatedAverageFlowTime: 01:35:20.9090909,
+              PartsPerPallet: 1,
+              InputQueue: queueAAA
+            }
+          ]
+        }
+      ]
+    },
+    bbb-schId1234: {
+      Completed: [
+        [
+          0
+        ],
+        [
+          0
+        ]
+      ],
+      Precedence: [
+        [
+          1
+        ],
+        [
+          1
+        ]
+      ],
+      RemainingToStart: 20,
+      ScheduleId: schId1234,
+      CopiedToSystem: true,
+      UniqueStr: bbb-schId1234,
+      RouteStartUTC: 2018-07-18 21:51:36.112578 Utc,
+      RouteEndUTC: 2018-07-19 21:51:36.112589 Utc,
+      Archived: false,
+      PartName: bbb,
+      Comment: ,
+      ManuallyCreated: false,
+      Cycles: 20,
+      Processes: [
+        {
+          Paths: [
+            {
+              PalletNums: [
+                2
+              ],
+              Fixture: fixtureBB,
+              Face: 1,
+              Load: [
+                1,
+                2
+              ],
+              ExpectedLoadTime: 00:05:00,
+              Unload: [
+                1,
+                2
+              ],
+              ExpectedUnloadTime: 00:05:00,
+              Stops: [
+                {
+                  StationGroup: MC,
+                  Stations: [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  ExpectedCycleTime: 00:04:00,
+                  Program: 1001
+                }
+              ],
+              SimulatedProduction: [
+                {
+                  TimeUTC: 2018-07-18 22:16:00.112578 Utc,
+                  Quantity: 1
+                },
+                {
+                  TimeUTC: 2018-07-18 23:15:44.112578 Utc,
+                  Quantity: 2
+                },
+                {
+                  TimeUTC: 2018-07-19 00:27:02.112578 Utc,
+                  Quantity: 3
+                },
+                {
+                  TimeUTC: 2018-07-19 01:27:12.112578 Utc,
+                  Quantity: 4
+                },
+                {
+                  TimeUTC: 2018-07-19 02:35:34.112578 Utc,
+                  Quantity: 5
+                },
+                {
+                  TimeUTC: 2018-07-19 03:38:20.112578 Utc,
+                  Quantity: 6
+                },
+                {
+                  TimeUTC: 2018-07-19 04:38:04.112578 Utc,
+                  Quantity: 7
+                },
+                {
+                  TimeUTC: 2018-07-19 05:37:48.112578 Utc,
+                  Quantity: 8
+                },
+                {
+                  TimeUTC: 2018-07-19 06:37:32.112578 Utc,
+                  Quantity: 9
+                },
+                {
+                  TimeUTC: 2018-07-19 07:45:26.112578 Utc,
+                  Quantity: 10
+                },
+                {
+                  TimeUTC: 2018-07-19 08:45:10.112578 Utc,
+                  Quantity: 11
+                },
+                {
+                  TimeUTC: 2018-07-19 09:56:12.112578 Utc,
+                  Quantity: 12
+                },
+                {
+                  TimeUTC: 2018-07-19 10:56:50.112578 Utc,
+                  Quantity: 13
+                },
+                {
+                  TimeUTC: 2018-07-19 11:57:46.112578 Utc,
+                  Quantity: 14
+                },
+                {
+                  TimeUTC: 2018-07-19 13:00:32.112578 Utc,
+                  Quantity: 15
+                },
+                {
+                  TimeUTC: 2018-07-19 14:00:16.112578 Utc,
+                  Quantity: 16
+                },
+                {
+                  TimeUTC: 2018-07-19 15:13:50.112578 Utc,
+                  Quantity: 17
+                },
+                {
+                  TimeUTC: 2018-07-19 16:13:56.112578 Utc,
+                  Quantity: 18
+                },
+                {
+                  TimeUTC: 2018-07-19 17:14:12.112578 Utc,
+                  Quantity: 19
+                },
+                {
+                  TimeUTC: 2018-07-19 18:15:06.112578 Utc,
+                  Quantity: 20
+                }
+              ],
+              SimulatedStartingUTC: 2018-07-18 22:16:00.112578 Utc,
+              SimulatedAverageFlowTime: 00:28:00.8000000,
+              PartsPerPallet: 1,
+              InputQueue: castings,
+              OutputQueue: queueBBB
+            }
+          ]
+        },
+        {
+          Paths: [
+            {
+              PalletNums: [
+                2
+              ],
+              Fixture: fixtureBB,
+              Face: 1,
+              Load: [
+                1,
+                2
+              ],
+              ExpectedLoadTime: 00:05:00,
+              Unload: [
+                1,
+                2
+              ],
+              ExpectedUnloadTime: 00:05:00,
+              Stops: [
+                {
+                  StationGroup: MC,
+                  Stations: [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  ExpectedCycleTime: 00:30:00,
+                  Program: 1002
+                }
+              ],
+              SimulatedProduction: [
+                {
+                  TimeUTC: 2018-07-18 22:58:52.112578 Utc,
+                  Quantity: 1
+                },
+                {
+                  TimeUTC: 2018-07-19 00:01:32.112578 Utc,
+                  Quantity: 2
+                },
+                {
+                  TimeUTC: 2018-07-19 01:09:54.112578 Utc,
+                  Quantity: 3
+                },
+                {
+                  TimeUTC: 2018-07-19 02:17:48.112578 Utc,
+                  Quantity: 4
+                },
+                {
+                  TimeUTC: 2018-07-19 03:18:26.112578 Utc,
+                  Quantity: 5
+                },
+                {
+                  TimeUTC: 2018-07-19 04:21:12.112578 Utc,
+                  Quantity: 6
+                },
+                {
+                  TimeUTC: 2018-07-19 05:20:56.112578 Utc,
+                  Quantity: 7
+                },
+                {
+                  TimeUTC: 2018-07-19 06:20:40.112578 Utc,
+                  Quantity: 8
+                },
+                {
+                  TimeUTC: 2018-07-19 07:27:18.112578 Utc,
+                  Quantity: 9
+                },
+                {
+                  TimeUTC: 2018-07-19 08:28:18.112578 Utc,
+                  Quantity: 10
+                },
+                {
+                  TimeUTC: 2018-07-19 09:39:20.112578 Utc,
+                  Quantity: 11
+                },
+                {
+                  TimeUTC: 2018-07-19 10:39:04.112578 Utc,
+                  Quantity: 12
+                },
+                {
+                  TimeUTC: 2018-07-19 11:40:54.112578 Utc,
+                  Quantity: 13
+                },
+                {
+                  TimeUTC: 2018-07-19 12:40:38.112578 Utc,
+                  Quantity: 14
+                },
+                {
+                  TimeUTC: 2018-07-19 13:43:24.112578 Utc,
+                  Quantity: 15
+                },
+                {
+                  TimeUTC: 2018-07-19 14:48:46.112578 Utc,
+                  Quantity: 16
+                },
+                {
+                  TimeUTC: 2018-07-19 15:56:42.112578 Utc,
+                  Quantity: 17
+                },
+                {
+                  TimeUTC: 2018-07-19 16:57:20.112578 Utc,
+                  Quantity: 18
+                },
+                {
+                  TimeUTC: 2018-07-19 17:57:04.112578 Utc,
+                  Quantity: 19
+                },
+                {
+                  TimeUTC: 2018-07-19 18:52:58.112578 Utc,
+                  Quantity: 20
+                }
+              ],
+              SimulatedStartingUTC: 2018-07-18 22:58:52.112578 Utc,
+              SimulatedAverageFlowTime: 00:54:25.7000000,
+              PartsPerPallet: 1,
+              InputQueue: queueBBB
+            }
+          ]
+        }
+      ]
+    },
+    ccc-schId1234: {
+      Completed: [
+        [
+          2
+        ],
+        [
+          0
+        ]
+      ],
+      Precedence: [
+        [
+          3
+        ],
+        [
+          3
+        ]
+      ],
+      RemainingToStart: 32,
+      ScheduleId: schId1234,
+      CopiedToSystem: true,
+      UniqueStr: ccc-schId1234,
+      RouteStartUTC: 2018-07-18 21:51:36.112578 Utc,
+      RouteEndUTC: 2018-07-19 21:51:36.112589 Utc,
+      Archived: false,
+      PartName: ccc,
+      Comment: ,
+      ManuallyCreated: false,
+      Cycles: 38,
+      Processes: [
+        {
+          Paths: [
+            {
+              PalletNums: [
+                5
+              ],
+              Fixture: fixtureCC5,
+              Face: 1,
+              Load: [
+                1,
+                2
+              ],
+              ExpectedLoadTime: 00:05:00,
+              Unload: [
+                1,
+                2
+              ],
+              ExpectedUnloadTime: 00:05:00,
+              Stops: [
+                {
+                  StationGroup: MC,
+                  Stations: [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  ExpectedCycleTime: 00:04:00,
+                  Program: 1003
+                }
+              ],
+              SimulatedProduction: [
+                {
+                  TimeUTC: 2018-07-18 22:39:48.112578 Utc,
+                  Quantity: 2
+                },
+                {
+                  TimeUTC: 2018-07-18 23:14:52.112578 Utc,
+                  Quantity: 4
+                },
+                {
+                  TimeUTC: 2018-07-19 00:25:46.112578 Utc,
+                  Quantity: 6
+                },
+                {
+                  TimeUTC: 2018-07-19 01:32:52.112578 Utc,
+                  Quantity: 8
+                },
+                {
+                  TimeUTC: 2018-07-19 02:41:14.112578 Utc,
+                  Quantity: 10
+                },
+                {
+                  TimeUTC: 2018-07-19 03:53:30.112578 Utc,
+                  Quantity: 12
+                },
+                {
+                  TimeUTC: 2018-07-19 04:56:42.112578 Utc,
+                  Quantity: 14
+                },
+                {
+                  TimeUTC: 2018-07-19 06:06:00.112578 Utc,
+                  Quantity: 16
+                },
+                {
+                  TimeUTC: 2018-07-19 07:14:22.112578 Utc,
+                  Quantity: 18
+                },
+                {
+                  TimeUTC: 2018-07-19 08:23:38.112578 Utc,
+                  Quantity: 20
+                },
+                {
+                  TimeUTC: 2018-07-19 09:32:00.112578 Utc,
+                  Quantity: 22
+                },
+                {
+                  TimeUTC: 2018-07-19 10:41:16.112578 Utc,
+                  Quantity: 24
+                },
+                {
+                  TimeUTC: 2018-07-19 11:49:38.112578 Utc,
+                  Quantity: 26
+                },
+                {
+                  TimeUTC: 2018-07-19 13:03:10.112578 Utc,
+                  Quantity: 28
+                },
+                {
+                  TimeUTC: 2018-07-19 14:07:12.112578 Utc,
+                  Quantity: 30
+                },
+                {
+                  TimeUTC: 2018-07-19 15:15:34.112578 Utc,
+                  Quantity: 32
+                },
+                {
+                  TimeUTC: 2018-07-19 16:25:12.112578 Utc,
+                  Quantity: 34
+                },
+                {
+                  TimeUTC: 2018-07-19 17:38:00.112578 Utc,
+                  Quantity: 36
+                },
+                {
+                  TimeUTC: 2018-07-19 18:36:26.112578 Utc,
+                  Quantity: 38
+                }
+              ],
+              SimulatedStartingUTC: 2018-07-18 22:39:48.112578 Utc,
+              SimulatedAverageFlowTime: 00:41:58.0526315,
+              PartsPerPallet: 2,
+              OutputQueue: queueCCC
+            }
+          ]
+        },
+        {
+          Paths: [
+            {
+              PalletNums: [
+                6
+              ],
+              Fixture: fixtureCC6,
+              Face: 2,
+              Load: [
+                1,
+                2
+              ],
+              ExpectedLoadTime: 00:05:00,
+              Unload: [
+                1,
+                2
+              ],
+              ExpectedUnloadTime: 00:05:00,
+              Stops: [
+                {
+                  StationGroup: MC,
+                  Stations: [
+                    1,
+                    2,
+                    3,
+                    4
+                  ],
+                  ExpectedCycleTime: 00:45:30,
+                  Program: 1004
+                }
+              ],
+              SimulatedProduction: [
+                {
+                  TimeUTC: 2018-07-19 00:00:42.112578 Utc,
+                  Quantity: 2
+                },
+                {
+                  TimeUTC: 2018-07-19 01:09:04.112578 Utc,
+                  Quantity: 4
+                },
+                {
+                  TimeUTC: 2018-07-19 02:17:26.112578 Utc,
+                  Quantity: 6
+                },
+                {
+                  TimeUTC: 2018-07-19 03:25:48.112578 Utc,
+                  Quantity: 8
+                },
+                {
+                  TimeUTC: 2018-07-19 04:34:10.112578 Utc,
+                  Quantity: 10
+                },
+                {
+                  TimeUTC: 2018-07-19 05:43:28.112578 Utc,
+                  Quantity: 12
+                },
+                {
+                  TimeUTC: 2018-07-19 06:51:50.112578 Utc,
+                  Quantity: 14
+                },
+                {
+                  TimeUTC: 2018-07-19 08:01:06.112578 Utc,
+                  Quantity: 16
+                },
+                {
+                  TimeUTC: 2018-07-19 09:09:28.112578 Utc,
+                  Quantity: 18
+                },
+                {
+                  TimeUTC: 2018-07-19 10:18:44.112578 Utc,
+                  Quantity: 20
+                },
+                {
+                  TimeUTC: 2018-07-19 11:27:06.112578 Utc,
+                  Quantity: 22
+                },
+                {
+                  TimeUTC: 2018-07-19 12:35:28.112578 Utc,
+                  Quantity: 24
+                },
+                {
+                  TimeUTC: 2018-07-19 13:43:50.112578 Utc,
+                  Quantity: 26
+                },
+                {
+                  TimeUTC: 2018-07-19 14:53:02.112578 Utc,
+                  Quantity: 28
+                },
+                {
+                  TimeUTC: 2018-07-19 16:01:24.112578 Utc,
+                  Quantity: 30
+                },
+                {
+                  TimeUTC: 2018-07-19 17:14:36.112578 Utc,
+                  Quantity: 32
+                },
+                {
+                  TimeUTC: 2018-07-19 18:23:50.112578 Utc,
+                  Quantity: 34
+                },
+                {
+                  TimeUTC: 2018-07-19 19:32:16.112578 Utc,
+                  Quantity: 36
+                },
+                {
+                  TimeUTC: 2018-07-19 20:30:38.112578 Utc,
+                  Quantity: 38
+                }
+              ],
+              SimulatedStartingUTC: 2018-07-19 00:00:42.112578 Utc,
+              SimulatedAverageFlowTime: 00:43:54.1578947,
+              PartsPerPallet: 2,
+              InputQueue: queueCCC
+            }
+          ]
+        }
+      ]
+    }
+  },
+  Pallets: {
+    1: {
+      PalletNum: 1,
+      FixtureOnPallet: F:0:fixtureAA1:1,
+      OnHold: false,
+      CurrentPalletLocation: {
+        Location: MachineQueue,
+        StationGroup: MC,
+        Num: 1
+      },
+      NumFaces: 1
+    },
+    2: {
+      PalletNum: 2,
+      FixtureOnPallet: F:0:fixtureBB:1,
+      OnHold: false,
+      CurrentPalletLocation: {
+        Location: Buffer,
+        StationGroup: Buffer,
+        Num: 2
+      },
+      NumFaces: 1
+    },
+    5: {
+      PalletNum: 5,
+      FixtureOnPallet: F:0:fixtureCC:1,
+      OnHold: false,
+      CurrentPalletLocation: {
+        StationGroup: L/U,
+        Num: 1
+      },
+      NumFaces: 1
+    },
+    6: {
+      PalletNum: 6,
+      FixtureOnPallet: F:0:fixtureCC:2,
+      OnHold: false,
+      CurrentPalletLocation: {
+        Location: Machine,
+        StationGroup: MC,
+        Num: 1
+      },
+      NumFaces: 2
+    }
+  },
+  Material: [
+    {
+      MaterialID: 2426325,
+      JobUnique: aaa-schId1234,
+      PartName: aaa,
+      Process: 1,
+      Path: 1,
+      Serial: 000000abch,
+      Location: {
+        Type: OnPallet,
+        PalletNum: 1,
+        Face: 1
+      },
+      Action: {}
+    },
+    {
+      MaterialID: 2426323,
+      JobUnique: ccc-schId1234,
+      PartName: ccc,
+      Process: 1,
+      Path: 1,
+      Serial: 000000abcf,
+      LastCompletedMachiningRouteStopIndex: 0,
+      Location: {
+        Type: OnPallet,
+        PalletNum: 5,
+        Face: 1
+      },
+      Action: {
+        Type: UnloadToInProcess,
+        UnloadIntoQueue: queueCCC,
+        ElapsedLoadUnloadTime: 00:00:47
+      }
+    },
+    {
+      MaterialID: 2426324,
+      JobUnique: ccc-schId1234,
+      PartName: ccc,
+      Process: 1,
+      Path: 1,
+      Serial: 000000abcg,
+      LastCompletedMachiningRouteStopIndex: 0,
+      Location: {
+        Type: OnPallet,
+        PalletNum: 5,
+        Face: 1
+      },
+      Action: {
+        Type: UnloadToInProcess,
+        UnloadIntoQueue: queueCCC,
+        ElapsedLoadUnloadTime: 00:00:47
+      }
+    },
+    {
+      MaterialID: -1,
+      JobUnique: ccc-schId1234,
+      PartName: ccc,
+      Path: 1,
+      Location: {},
+      Action: {
+        Type: Loading,
+        LoadOntoPalletNum: 5,
+        LoadOntoFace: 1,
+        ProcessAfterLoad: 1,
+        PathAfterLoad: 1,
+        ElapsedLoadUnloadTime: 00:00:47
+      }
+    },
+    {
+      MaterialID: -1,
+      JobUnique: ccc-schId1234,
+      PartName: ccc,
+      Path: 1,
+      Location: {},
+      Action: {
+        Type: Loading,
+        LoadOntoPalletNum: 5,
+        LoadOntoFace: 1,
+        ProcessAfterLoad: 1,
+        PathAfterLoad: 1,
+        ElapsedLoadUnloadTime: 00:00:47
+      }
+    },
+    {
+      MaterialID: 2426321,
+      JobUnique: ccc-schId1234,
+      PartName: ccc,
+      Process: 2,
+      Path: 1,
+      Serial: 000000abcd,
+      Location: {
+        Type: OnPallet,
+        PalletNum: 6,
+        Face: 2
+      },
+      Action: {
+        Type: Machining,
+        ElapsedMachiningTime: 00:02:37,
+        ExpectedRemainingMachiningTime: 00:42:53
+      }
+    },
+    {
+      MaterialID: 2426322,
+      JobUnique: ccc-schId1234,
+      PartName: ccc,
+      Process: 2,
+      Path: 1,
+      Serial: 000000abce,
+      Location: {
+        Type: OnPallet,
+        PalletNum: 6,
+        Face: 2
+      },
+      Action: {
+        Type: Machining,
+        ElapsedMachiningTime: 00:02:37,
+        ExpectedRemainingMachiningTime: 00:42:53
+      }
+    }
+  ],
+  Queues: {
+    castings: {},
+    queueAAA: {},
+    queueBBB: {},
+    queueCCC: {}
+  }
+}

@@ -40,7 +40,7 @@ using System.Text.Json.Serialization;
 
 namespace BlackMaple.MachineFramework
 {
-  public record PathInspection
+  public record PathInspection : IComparable<PathInspection>
   {
     public required string InspectionType { get; init; }
 
@@ -85,6 +85,33 @@ namespace BlackMaple.MachineFramework
     public static string StationFormatFlag(int proc, int routeNum)
     {
       return "%stat" + proc.ToString() + "," + routeNum.ToString() + "%";
+    }
+
+    int IComparable<PathInspection>.CompareTo(PathInspection? other)
+    {
+      var r = InspectionType.CompareTo(other?.InspectionType);
+      if (r != 0)
+        return r;
+      r = Counter.CompareTo(other?.Counter);
+      if (r != 0)
+        return r;
+      r = MaxVal.CompareTo(other?.MaxVal);
+      if (r != 0)
+        return r;
+      r = RandomFreq.CompareTo(other?.RandomFreq);
+      if (r != 0)
+        return r;
+      r = TimeInterval.CompareTo(other?.TimeInterval);
+      if (r != 0)
+        return r;
+      if (ExpectedInspectionTime.HasValue)
+      {
+        return ExpectedInspectionTime.Value.CompareTo(other?.ExpectedInspectionTime);
+      }
+      else
+      {
+        return other == null || !other.ExpectedInspectionTime.HasValue ? 0 : -1;
+      }
     }
   }
 
@@ -137,11 +164,19 @@ namespace BlackMaple.MachineFramework
     public required bool HoldUnholdPatternRepeats { get; init; }
   }
 
-  public record SimulatedProduction
+  public record SimulatedProduction : IComparable<SimulatedProduction>
   {
     public required DateTime TimeUTC { get; init; }
 
     public required int Quantity { get; init; } //total quantity simulated to be completed at TimeUTC
+
+    int IComparable<SimulatedProduction>.CompareTo(SimulatedProduction? other)
+    {
+      var r = TimeUTC.CompareTo(other?.TimeUTC);
+      if (r != 0)
+        return r;
+      return Quantity.CompareTo(other?.Quantity);
+    }
   }
 
   public record ProcessInfo
@@ -168,7 +203,7 @@ namespace BlackMaple.MachineFramework
 
     public required ImmutableList<MachiningStop> Stops { get; init; }
 
-    public ImmutableList<SimulatedProduction>? SimulatedProduction { get; init; }
+    public ImmutableSortedSet<SimulatedProduction>? SimulatedProduction { get; init; }
 
     public required DateTime SimulatedStartingUTC { get; init; }
 
@@ -184,7 +219,7 @@ namespace BlackMaple.MachineFramework
 
     public string? OutputQueue { get; init; }
 
-    public ImmutableList<PathInspection>? Inspections { get; init; }
+    public ImmutableSortedSet<PathInspection>? Inspections { get; init; }
 
     public string? Casting { get; init; }
   }

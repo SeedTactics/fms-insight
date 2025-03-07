@@ -1,0 +1,63 @@
+﻿{
+  Prefix: Add Schedules,
+  Schedules: [
+    {
+      Id: 1,
+      Comment: aaa-schId1234-Insight,
+      PartName: aaa:0:1,
+      PlanQuantity: 11,
+      Priority: 10,
+      DueDate: DateTime_1,
+      Processes: [
+        {
+          MazakScheduleRowId: 1,
+          ProcessNumber: 1
+        },
+        {
+          MazakScheduleRowId: 1,
+          ProcessNumber: 2
+        }
+      ],
+      Command: Add
+    },
+    {
+      Id: 2,
+      Comment: bbb-schId1234-Insight,
+      PartName: bbb:0:2,
+      PlanQuantity: 20,
+      Priority: 10,
+      DueDate: DateTime_1,
+      Processes: [
+        {
+          MazakScheduleRowId: 2,
+          ProcessNumber: 1
+        },
+        {
+          MazakScheduleRowId: 2,
+          ProcessNumber: 2
+        }
+      ],
+      Command: Add
+    },
+    {
+      Id: 3,
+      Comment: ccc-schId1234-Insight,
+      PartName: ccc:0:3,
+      PlanQuantity: 38,
+      Priority: 10,
+      DueDate: DateTime_1,
+      Processes: [
+        {
+          MazakScheduleRowId: 3,
+          ProcessNumber: 1,
+          ProcessMaterialQuantity: 38
+        },
+        {
+          MazakScheduleRowId: 3,
+          ProcessNumber: 2
+        }
+      ],
+      Command: Add
+    }
+  ]
+}

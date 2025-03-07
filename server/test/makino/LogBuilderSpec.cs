@@ -37,9 +37,9 @@ using System.Collections.Immutable;
 using System.Linq;
 using AutoFixture;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using Shouldly;
 using Xunit;
 
 #nullable enable
@@ -350,56 +350,6 @@ public sealed class LogBuilderSpec : IDisposable
 
     int totalActive = totalActiveMin == 0 ? loadActiveMin + unloadActiveMin : totalActiveMin;
 
-    foreach (var mat in new[] { loadMat, unloadMat })
-    {
-      if (mat == null)
-        continue;
-      _expectedLog.Add(
-        new LogEntry()
-        {
-          Counter = 0,
-          Material = Enumerable
-            .Range(0, mat.Quantity)
-            .Select(i => new LogMaterial()
-            {
-              MaterialID = mat.StartingMatID + i,
-              JobUniqueStr = mat.OrderName,
-              Serial = SerialSettings.ConvertToBase62(mat.StartingMatID + i, 10),
-              Workorder = "",
-              NumProcesses = 1,
-              Face = mat.FixtureNum,
-              PartName = mat.PartName,
-              Process = mat.Process,
-              Path = null,
-            })
-            .ToImmutableList(),
-          LogType = LogType.LoadUnloadCycle,
-          StartOfCycle = false,
-          EndTimeUTC =
-            start.ToUniversalTime()
-            + TimeSpan.FromMinutes(elapsedMin)
-            + (mat == loadMat ? TimeSpan.FromSeconds(1) : TimeSpan.Zero),
-          LocationName = "L/U",
-          LocationNum = device,
-          Pallet = loadMat?.PalletID ?? unloadMat!.PalletID,
-          Program = loadMat == mat ? "LOAD" : "UNLOAD",
-          Result = loadMat == mat ? "LOAD" : "UNLOAD",
-          ElapsedTime = TimeSpan.FromSeconds(
-            Math.Round(
-              loadActiveMin + unloadActiveMin == 0
-                ? 60.0
-                  * elapsedMin
-                  * (loadMat == mat ? loadMat.Quantity : unloadMat?.Quantity ?? 0)
-                  / nonNullMatCnt
-                : 60.0 * elapsedMin * (loadMat == mat ? loadActiveMin : unloadActiveMin) / totalActive,
-              1
-            )
-          ),
-          ActiveOperationTime = TimeSpan.FromMinutes(loadMat == mat ? loadActiveMin : unloadActiveMin),
-        }
-      );
-    }
-
     if (loadMat != null)
     {
       for (int i = 0; i < loadMat.Quantity; i++)
@@ -425,7 +375,7 @@ public sealed class LogBuilderSpec : IDisposable
             ],
             LogType = LogType.PartMark,
             StartOfCycle = false,
-            EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin) + TimeSpan.FromSeconds(1),
+            EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin),
             LocationName = "Mark",
             LocationNum = 1,
             Pallet = 0,
@@ -436,59 +386,48 @@ public sealed class LogBuilderSpec : IDisposable
           }
         );
       }
+    }
 
-      if (palCycleMin >= 0)
-      {
-        _expectedLog.Add(
-          new LogEntry()
-          {
-            Counter = 0,
-            Material = Enumerable
-              .Range(0, loadMat.Quantity)
-              .Select(i => new LogMaterial()
-              {
-                MaterialID = loadMat.StartingMatID + i,
-                JobUniqueStr = loadMat.OrderName,
-                Serial = SerialSettings.ConvertToBase62(loadMat.StartingMatID + i, 10),
-                Workorder = "",
-                NumProcesses = 1,
-                Face = loadMat.FixtureNum,
-                PartName = loadMat.PartName,
-                Process = loadMat.Process,
-                Path = null,
-              })
-              .Concat(
-                extraPalCycleLoadMat == null
-                  ? []
-                  : Enumerable
-                    .Range(0, extraPalCycleLoadMat.Quantity)
-                    .Select(i => new LogMaterial()
-                    {
-                      MaterialID = extraPalCycleLoadMat.StartingMatID + i,
-                      JobUniqueStr = extraPalCycleLoadMat.OrderName,
-                      Serial = SerialSettings.ConvertToBase62(extraPalCycleLoadMat.StartingMatID + i, 10),
-                      Workorder = "",
-                      NumProcesses = 1,
-                      Face = extraPalCycleLoadMat.FixtureNum,
-                      PartName = extraPalCycleLoadMat.PartName,
-                      Process = extraPalCycleLoadMat.Process,
-                      Path = null,
-                    })
-              )
-              .ToImmutableList(),
-            LogType = LogType.PalletCycle,
-            StartOfCycle = true,
-            EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin),
-            LocationName = "Pallet Cycle",
-            LocationNum = 1,
-            Pallet = loadMat.PalletID,
-            Program = "",
-            Result = "PalletCycle",
-            ElapsedTime = TimeSpan.Zero,
-            ActiveOperationTime = TimeSpan.Zero,
-          }
-        );
-      }
+    if (unloadMat != null)
+    {
+      _expectedLog.Add(
+        new LogEntry()
+        {
+          Counter = 0,
+          Material = Enumerable
+            .Range(0, unloadMat.Quantity)
+            .Select(i => new LogMaterial()
+            {
+              MaterialID = unloadMat.StartingMatID + i,
+              JobUniqueStr = unloadMat.OrderName,
+              Serial = SerialSettings.ConvertToBase62(unloadMat.StartingMatID + i, 10),
+              Workorder = "",
+              NumProcesses = 1,
+              Face = unloadMat.FixtureNum,
+              PartName = unloadMat.PartName,
+              Process = unloadMat.Process,
+              Path = null,
+            })
+            .ToImmutableList(),
+          LogType = LogType.LoadUnloadCycle,
+          StartOfCycle = false,
+          EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin),
+          LocationName = "L/U",
+          LocationNum = device,
+          Pallet = unloadMat.PalletID,
+          Program = "UNLOAD",
+          Result = "UNLOAD",
+          ElapsedTime = TimeSpan.FromSeconds(
+            Math.Round(
+              loadActiveMin + unloadActiveMin == 0
+                ? 60.0 * elapsedMin * unloadMat.Quantity / nonNullMatCnt
+                : 60.0 * elapsedMin * unloadActiveMin / totalActive,
+              1
+            )
+          ),
+          ActiveOperationTime = TimeSpan.FromMinutes(unloadActiveMin),
+        }
+      );
     }
 
     if (palCycleMin >= 0 && unloadMat != null)
@@ -544,6 +483,101 @@ public sealed class LogBuilderSpec : IDisposable
       );
     }
 
+    if (palCycleMin >= 0 && loadMat != null)
+    {
+      _expectedLog.Add(
+        new LogEntry()
+        {
+          Counter = 0,
+          Material = Enumerable
+            .Range(0, loadMat.Quantity)
+            .Select(i => new LogMaterial()
+            {
+              MaterialID = loadMat!.StartingMatID + i,
+              JobUniqueStr = loadMat.OrderName,
+              Serial = SerialSettings.ConvertToBase62(loadMat.StartingMatID + i, 10),
+              Workorder = "",
+              NumProcesses = 1,
+              Face = loadMat.FixtureNum,
+              PartName = loadMat.PartName,
+              Process = loadMat.Process,
+              Path = null,
+            })
+            .Concat(
+              extraPalCycleLoadMat == null
+                ? []
+                : Enumerable
+                  .Range(0, extraPalCycleLoadMat.Quantity)
+                  .Select(i => new LogMaterial()
+                  {
+                    MaterialID = extraPalCycleLoadMat.StartingMatID + i,
+                    JobUniqueStr = extraPalCycleLoadMat.OrderName,
+                    Serial = SerialSettings.ConvertToBase62(extraPalCycleLoadMat.StartingMatID + i, 10),
+                    Workorder = "",
+                    NumProcesses = 1,
+                    Face = extraPalCycleLoadMat.FixtureNum,
+                    PartName = extraPalCycleLoadMat.PartName,
+                    Process = extraPalCycleLoadMat.Process,
+                    Path = null,
+                  })
+            )
+            .ToImmutableList(),
+          LogType = LogType.PalletCycle,
+          StartOfCycle = true,
+          EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin),
+          LocationName = "Pallet Cycle",
+          LocationNum = 1,
+          Pallet = loadMat.PalletID,
+          Program = "",
+          Result = "PalletCycle",
+          ElapsedTime = TimeSpan.Zero,
+          ActiveOperationTime = TimeSpan.Zero,
+        }
+      );
+    }
+
+    if (loadMat != null)
+    {
+      _expectedLog.Add(
+        new LogEntry()
+        {
+          Counter = 0,
+          Material = Enumerable
+            .Range(0, loadMat.Quantity)
+            .Select(i => new LogMaterial()
+            {
+              MaterialID = loadMat.StartingMatID + i,
+              JobUniqueStr = loadMat.OrderName,
+              Serial = SerialSettings.ConvertToBase62(loadMat.StartingMatID + i, 10),
+              Workorder = "",
+              NumProcesses = 1,
+              Face = loadMat.FixtureNum,
+              PartName = loadMat.PartName,
+              Process = loadMat.Process,
+              Path = null,
+            })
+            .ToImmutableList(),
+          LogType = LogType.LoadUnloadCycle,
+          StartOfCycle = false,
+          EndTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin) + TimeSpan.FromSeconds(1),
+          LocationName = "L/U",
+          LocationNum = device,
+          Pallet = loadMat.PalletID,
+          Program = "LOAD",
+          Result = "LOAD",
+          ElapsedTime = TimeSpan.FromSeconds(
+            Math.Round(
+              loadActiveMin + unloadActiveMin == 0
+                ? 60.0 * elapsedMin * loadMat.Quantity / nonNullMatCnt
+                : 60.0 * elapsedMin * loadActiveMin / totalActive,
+              1
+            )
+          ),
+          ActiveOperationTime = TimeSpan.FromMinutes(loadActiveMin),
+        }
+      );
+    }
+
     return workr;
   }
 
@@ -570,9 +604,9 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(lastDate, DateTime.UtcNow).Should().BeFalse();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(lastDate, DateTime.UtcNow).ShouldBeFalse();
 
-    db.MaxLogDate().Should().Be(DateTime.MinValue);
+    db.MaxLogDate().ShouldBe(DateTime.MinValue);
   }
 
   [Fact]
@@ -620,11 +654,13 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+      );
   }
 
   [Fact]
@@ -661,13 +697,15 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+      );
 
-    db.MaxLogDate().Should().Be(start.AddMinutes(15 + 11));
+    db.MaxLogDate().ShouldBe(start.AddMinutes(15 + 11));
 
     _makinoDB
       .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
@@ -683,11 +721,13 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(start.AddMinutes(15 + 11), now).Should().BeFalse();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(start.AddMinutes(15 + 11), now).ShouldBeFalse();
 
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+      );
   }
 
   [Fact]
@@ -737,13 +777,15 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+      );
 
-    db.MaxLogDate().Should().Be(start.AddMinutes(30 + 5));
+    db.MaxLogDate().ShouldBe(start.AddMinutes(30 + 5));
 
     _makinoDB
       .LoadResults(Arg.Any<DateTime>(), Arg.Any<DateTime>())
@@ -759,11 +801,13 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(start.AddMinutes(30 + 5), now).Should().BeFalse();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(start.AddMinutes(30 + 5), now).ShouldBeFalse();
 
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+      );
   }
 
   [Fact]
@@ -833,10 +877,12 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+      );
   }
 
   [Fact]
@@ -922,11 +968,13 @@ public sealed class LogBuilderSpec : IDisposable
 
     using var db = _repo.OpenConnection();
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+      );
   }
 
   [Fact]
@@ -1008,11 +1056,13 @@ public sealed class LogBuilderSpec : IDisposable
         .Add("24", "common value 24"),
     };
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+      );
   }
 
   [Fact]
@@ -1100,15 +1150,16 @@ public sealed class LogBuilderSpec : IDisposable
       }
     );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+      );
 
     db.LookupInspectionDecisions(mat.StartingMatID)
-      .Should()
-      .BeEquivalentTo(
+      .ShouldBe(
         [
           new Decision()
           {
@@ -1197,11 +1248,21 @@ public sealed class LogBuilderSpec : IDisposable
         }
       );
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog
+          .OrderBy(e => e.EndTimeUTC)
+          .ThenBy(e =>
+            e.LogType == LogType.PartMark ? -1
+            : e.LogType == LogType.PalletCycle && !e.StartOfCycle ? 1
+            : 0
+          )
+          .Select((i, idx) => i with { Counter = idx + 1 })
+          .ToList()
+      );
   }
 
   [Fact]
@@ -1256,10 +1317,12 @@ public sealed class LogBuilderSpec : IDisposable
 
     using var db = _repo.OpenConnection();
 
-    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).Should().BeTrue();
+    new LogBuilder(_makinoDB, db, _settings).CheckLogs(now.AddDays(-30), now).ShouldBeTrue();
 
     db.GetLogEntries(start, now)
-      .Should()
-      .BeEquivalentTo(_expectedLog, options => options.Excluding(x => x.Counter));
+      .ToList()
+      .ShouldBeEquivalentTo(
+        _expectedLog.OrderBy(e => e.EndTimeUTC).Select((i, idx) => i with { Counter = idx + 1 }).ToList()
+      );
   }
 }

@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -63,7 +64,7 @@ namespace BlackMaple.FMSInsight.Niigata
 
     public int Path { get; init; }
 
-    public IEnumerable<ProgramsForProcess>? ProgOverride { get; init; }
+    public ImmutableList<ProgramsForProcess>? ProgOverride { get; init; }
   }
 
   public static class RecordFacesForPallet

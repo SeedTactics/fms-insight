@@ -34,13 +34,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
 using MazakMachineInterface;
 using NSubstitute;
+using VerifyXunit;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class BuildCurrentStatusSpec : IDisposable
   {
@@ -127,7 +128,7 @@ namespace MachineWatchTest
     [InlineData("multiface-transfer-faces")]
     [InlineData("multiface-transfer-faces-and-unload")]
     [InlineData("multiface-transfer-user-jobs")]
-    public void StatusSnapshot(string scenario)
+    public async Task StatusSnapshot(string scenario)
     {
       IRepository repository;
       var existingLogPath = Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".log.db");
@@ -197,39 +198,16 @@ namespace MachineWatchTest
         File.Delete(_tempLogFile);
       }
 
-      /*
-      File.WriteAllText(
-        Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json"),
-        JsonSerializer.Serialize(status, jsonSettings)
-      );
-      */
-
-      var expectedStatus = JsonSerializer.Deserialize<CurrentStatus>(
-        File.ReadAllText(
-          Path.Combine("..", "..", "..", "mazak", "read-snapshots", scenario + ".status.json")
-        ),
-        jsonSettings
-      );
-
-      status
-        .Should()
-        .BeEquivalentTo(
-          expectedStatus,
-          options =>
-            options
-              .Excluding(c => c.TimeOfCurrentStatusUTC)
-              .ComparingByMembers<CurrentStatus>()
-              .ComparingByMembers<ActiveJob>()
-              .ComparingByMembers<ProcessInfo>()
-              .ComparingByMembers<ProcPathInfo>()
-              .ComparingByMembers<MachiningStop>()
-              .ComparingByMembers<InProcessMaterial>()
-              .ComparingByMembers<PalletStatus>()
-        );
+      await Verifier
+        .Verify(status)
+        .UseDirectory("read-snapshots")
+        .UseParameters(scenario)
+        .DontScrubDateTimes()
+        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
     }
 
     [Fact]
-    public void PendingLoad()
+    public async Task PendingLoad()
     {
       using var _memoryLog = _repoCfg.OpenConnection();
       NewJobs newJobs = JsonSerializer.Deserialize<NewJobs>(
@@ -269,32 +247,15 @@ namespace MachineWatchTest
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
       );
 
-      var expectedStatus = JsonSerializer.Deserialize<CurrentStatus>(
-        File.ReadAllText(
-          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-after-load.status.json")
-        ),
-        jsonSettings
-      );
-
-      status
-        .Should()
-        .BeEquivalentTo(
-          expectedStatus,
-          options =>
-            options
-              .Excluding(c => c.TimeOfCurrentStatusUTC)
-              .ComparingByMembers<CurrentStatus>()
-              .ComparingByMembers<ActiveJob>()
-              .ComparingByMembers<ProcessInfo>()
-              .ComparingByMembers<ProcPathInfo>()
-              .ComparingByMembers<MachiningStop>()
-              .ComparingByMembers<InProcessMaterial>()
-              .ComparingByMembers<PalletStatus>()
-        );
+      await Verifier
+        .Verify(status)
+        .UseDirectory("read-snapshots")
+        .DontScrubDateTimes()
+        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
     }
 
     [Fact]
-    public void SignalForQuarantine()
+    public async Task SignalForQuarantine()
     {
       IRepository repository;
       bool close = false;
@@ -366,53 +327,15 @@ namespace MachineWatchTest
         File.Delete(_tempLogFile);
       }
 
-      /*
-      File.WriteAllText(
-        Path.Combine(
-          "..",
-          "..",
-          "..",
-          "mazak",
-          "read-snapshots",
-          "basic-unload-queues-quarantine.status.json"
-        ),
-        JsonSerializer.Serialize(status, jsonSettings)
-      );
-      */
-
-      var expectedStatus = JsonSerializer.Deserialize<CurrentStatus>(
-        File.ReadAllText(
-          Path.Combine(
-            "..",
-            "..",
-            "..",
-            "mazak",
-            "read-snapshots",
-            "basic-unload-queues-quarantine.status.json"
-          )
-        ),
-        jsonSettings
-      );
-
-      status
-        .Should()
-        .BeEquivalentTo(
-          expectedStatus,
-          options =>
-            options
-              .Excluding(c => c.TimeOfCurrentStatusUTC)
-              .ComparingByMembers<CurrentStatus>()
-              .ComparingByMembers<ActiveJob>()
-              .ComparingByMembers<ProcessInfo>()
-              .ComparingByMembers<ProcPathInfo>()
-              .ComparingByMembers<MachiningStop>()
-              .ComparingByMembers<InProcessMaterial>()
-              .ComparingByMembers<PalletStatus>()
-        );
+      await Verifier
+        .Verify(status)
+        .UseDirectory("read-snapshots")
+        .DontScrubDateTimes()
+        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
     }
 
     [Fact]
-    public void WithMachineNumbers()
+    public async Task WithMachineNumbers()
     {
       using var repository = _repoCfg.OpenConnection();
 
@@ -442,23 +365,11 @@ namespace MachineWatchTest
         new DateTime(2018, 7, 19, 20, 42, 3, DateTimeKind.Utc)
       );
 
-      /*
-      File.WriteAllText(
-        Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-cutting-mach-nums.status.json"),
-        JsonSerializer.Serialize(status, jsonSettings)
-      );
-      */
-
-      var expectedStatus = JsonSerializer.Deserialize<CurrentStatus>(
-        File.ReadAllText(
-          Path.Combine("..", "..", "..", "mazak", "read-snapshots", "basic-cutting-mach-nums.status.json")
-        ),
-        jsonSettings
-      );
-
-      status
-        .Should()
-        .BeEquivalentTo(expectedStatus, options => options.Excluding(c => c.TimeOfCurrentStatusUTC));
+      await Verifier
+        .Verify(status)
+        .DontScrubDateTimes()
+        .UseDirectory("read-snapshots")
+        .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
     }
   }
 }

@@ -35,12 +35,13 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
 using MazakMachineInterface;
+using Shouldly;
 using Xunit;
 
-namespace MachineWatchTest
+namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class BuildMazakSchedulesSpec
   {
@@ -95,13 +96,21 @@ namespace MachineWatchTest
       var (actions, tokeep) = BuildMazakSchedules.RemoveCompletedSchedules(schedules);
 
       actions
-        .Schedules.Should()
-        .BeEquivalentTo(new[] { schedules.Schedules.First() with { Command = MazakWriteCommand.Delete } });
-      actions.Parts.Should().BeEmpty();
-      actions.Fixtures.Should().BeEmpty();
-      actions.Pallets.Should().BeEmpty();
+        .Schedules.ToList()
+        .ShouldBeEquivalentTo(
+          new List<MazakScheduleRow>
+          {
+            schedules.Schedules.First() with
+            {
+              Command = MazakWriteCommand.Delete,
+            },
+          }
+        );
+      actions.Parts.ShouldBeEmpty();
+      actions.Fixtures.ShouldBeEmpty();
+      actions.Pallets.ShouldBeEmpty();
 
-      tokeep.Should().BeEquivalentTo(new[] { "part2:1:1" });
+      tokeep.ShouldBe(new[] { "part2:1:1" });
     }
 
     [Theory]
@@ -366,14 +375,15 @@ namespace MachineWatchTest
         new[] { uniq1, uniq2, uniq3, uniq4, uniq5 },
         true
       );
-      actions.Parts.Should().BeEmpty();
-      actions.Fixtures.Should().BeEmpty();
-      actions.Pallets.Should().BeEmpty();
+      actions.Parts.ShouldBeEmpty();
+      actions.Fixtures.ShouldBeEmpty();
+      actions.Pallets.ShouldBeEmpty();
 
       actions
-        .Schedules.Should()
-        .BeEquivalentTo(
-          new[]
+        .Schedules.OrderBy(s => s.Id)
+        .ToList()
+        .ShouldBeEquivalentTo(
+          new List<MazakScheduleRow>
           {
             new MazakScheduleRow()
             {
@@ -479,8 +489,7 @@ namespace MachineWatchTest
                 },
               },
             },
-          },
-          options => options.ComparingByMembers<MazakScheduleRow>()
+          }
         );
     }
   }
