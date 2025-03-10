@@ -36,8 +36,8 @@ importers:
         specifier: ^9.7.5
         version: 9.7.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@seedtactics/immutable-collections':
-        specifier: ^1.0.1
-        version: 1.0.1
+        specifier: ^1.0.2
+        version: 1.0.2
       '@visx/axis':
         specifier: ^3.12.0
         version: 3.12.0(react@18.3.1)
@@ -87,8 +87,8 @@ importers:
         specifier: ^3.3.0
         version: 3.3.0
       jotai:
-        specifier: ^2.12.1
-        version: 2.12.1(@types/react@18.3.18)(react@18.3.1)
+        specifier: ^2.12.2
+        version: 2.12.2(@types/react@18.3.18)(react@18.3.1)
       jsbarcode:
         specifier: ^3.11.6
         version: 3.11.6
@@ -835,8 +835,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@seedtactics/immutable-collections@1.0.1':
-    resolution: {integrity: sha512-Xg3tk3uRaRE7oUkacvSnrXtqjzcup3rkiD43InXv0ALxYah4273uV6pc2QeI4EfwfzSk/clLJjfOhrpB3/lZiw==}
+  '@seedtactics/immutable-collections@1.0.2':
+    resolution: {integrity: sha512-MvIU5UW0xuFsnBZ8lrRH2I4i2W2xjrerZ6nLv23TIhpdT/zrqvqyGgPBK3mIY3P+JcynvVnBe0v7n9oBfxM0VQ==}
 
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
@@ -1838,8 +1838,8 @@ packages:
     engines: {node: '>=6.4.0'}
     hasBin: true
 
-  jotai@2.12.1:
-    resolution: {integrity: sha512-VUW0nMPYIru5g89tdxwr9ftiVdc/nGV9jvHISN8Ucx+m1vI9dBeHemfqYzEuw5XSkmYjD/MEyApN9k6yrATsZQ==}
+  jotai@2.12.2:
+    resolution: {integrity: sha512-oN8715y7MkjXlSrpyjlR887TOuc/NLZMs9gvgtfWH/JP47ChwO0lR2ijSwBvPMYyXRAPT+liIAhuBavluKGgtA==}
     engines: {node: '>=12.20.0'}
     peerDependencies:
       '@types/react': '>=17.0.0'
@@ -3219,7 +3219,7 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.35.0':
     optional: true
 
-  '@seedtactics/immutable-collections@1.0.1': {}
+  '@seedtactics/immutable-collections@1.0.2': {}
 
   '@types/babel__core@7.20.5':
     dependencies:
@@ -4551,7 +4551,7 @@ snapshots:
     dependencies:
       canvas-renderer: 2.2.1
 
-  jotai@2.12.1(@types/react@18.3.18)(react@18.3.1):
+  jotai@2.12.2(@types/react@18.3.18)(react@18.3.1):
     optionalDependencies:
       '@types/react': 18.3.18
       react: 18.3.1
