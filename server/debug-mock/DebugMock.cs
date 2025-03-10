@@ -737,7 +737,7 @@ namespace DebugMachineWatchApiServer
                     SimulatedStartingUTC = path.SimulatedStartingUTC.Add(offset),
                     SimulatedProduction = path
                       .SimulatedProduction.Select(prod => prod with { TimeUTC = prod.TimeUTC.Add(offset) })
-                      .ToImmutableList(),
+                      .ToImmutableSortedSet(),
                   }
                 )
                 .ToImmutableList(),
