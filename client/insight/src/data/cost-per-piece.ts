@@ -35,7 +35,7 @@ import { addMonths, getDaysInMonth, addDays } from "date-fns";
 import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary.js";
 import copy from "copy-to-clipboard";
 import { PartCycleData } from "../cell-status/station-cycles.js";
-import { HashMap, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
+import { HashMap, HashSet, LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 
 export interface PartCost {
   readonly part: string;
@@ -62,7 +62,8 @@ function isMonthType(type: { month: Date } | { thirtyDaysAgo: Date }): type is {
 }
 
 export function compute_monthly_cost_percentages(
-  cycles: Iterable<PartCycleData>,
+  cycles: LazySeq<PartCycleData>,
+  partsToIgnore: HashSet<string>,
   matsById: HashMap<number, MaterialSummaryAndCompletedData>,
   type: { month: Date } | { thirtyDaysAgo: Date },
 ): CostData {
@@ -74,8 +75,11 @@ export function compute_monthly_cost_percentages(
   let totalLaborUseMinutes = 0;
   const stationCount = new Map<string, Set<number>>();
 
-  for (const c of cycles) {
-    if (c.endTime < start || c.endTime > end) continue;
+  const filteredCycles = cycles.filter(
+    (c) => c.endTime >= start && c.endTime <= end && !c.material.some((m) => partsToIgnore.has(m.part)),
+  );
+
+  for (const c of filteredCycles) {
     if (isUnloadCycle(c)) {
       totalPalletCycles += 1;
     }
@@ -97,6 +101,7 @@ export function compute_monthly_cost_percentages(
 
   const completed = LazySeq.of(matsById)
     .filter(([, details]) => {
+      if (partsToIgnore.has(details.partName)) return false;
       if (details.numProcesses === undefined) return false;
       const unload = details.unloaded_processes?.[details.numProcesses];
       return !!unload && unload >= start && unload <= end;
@@ -106,8 +111,7 @@ export function compute_monthly_cost_percentages(
       (v1, v2) => v1 + v2,
     );
 
-  const parts = LazySeq.of(cycles)
-    .filter((c) => c.endTime >= start && c.endTime <= end)
+  const parts = filteredCycles
     .groupBy((c) => c.part)
     .map(([partName, forPart]) => ({
       part: partName,

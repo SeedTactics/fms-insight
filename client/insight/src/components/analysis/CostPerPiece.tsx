@@ -30,7 +30,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-import { useState, useMemo, memo } from "react";
+import { useState, memo } from "react";
 import { Box, Stack } from "@mui/material";
 import { Table } from "@mui/material";
 import { TableBody } from "@mui/material";
@@ -58,6 +58,8 @@ import { last30StationCycles, specificMonthStationCycles } from "../../cell-stat
 import { useSetTitle } from "../routes.js";
 import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage, atomFamily } from "jotai/utils";
+import { last30Jobs, specificMonthJobs } from "../../cell-status/scheduled-jobs.js";
+import { durationToSeconds } from "../../util/parseISODuration.js";
 
 const machineCostPerYear = atomWithStorage<MachineCostPerYear>("MachineCostPerYear", {});
 const automationCostPerYear = atomWithStorage<number | null>("AutomationCostPerYear", null);
@@ -69,23 +71,47 @@ const perMonthLaborCost = atomFamily((month: Date) =>
   ),
 );
 
+const artifactParts = atom((get) => {
+  const period = get(selectedAnalysisPeriod);
+  const jobs = get(period.type === "Last30" ? last30Jobs : specificMonthJobs);
+  return jobs
+    .valuesToLazySeq()
+    .filter(
+      (j) =>
+        j.procsAndPaths.length === 1 &&
+        j.procsAndPaths[0].paths.length === 1 &&
+        j.procsAndPaths[0].paths[0].stops.length === 1 &&
+        durationToSeconds(j.procsAndPaths[0].paths[0].stops[0].expectedCycleTime) === 0,
+    )
+    .toHashSet((j) => j.partName);
+});
+
+const costPercentages = atom((get) => {
+  const period = get(selectedAnalysisPeriod);
+
+  const cycles = get(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
+  const matIds = get(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
+  const artifacts = get(artifactParts);
+
+  const thirtyDaysAgo = addDays(startOfToday(), -30);
+  const month = period.type === "Last30" ? null : period.month;
+
+  return compute_monthly_cost_percentages(
+    cycles.valuesToLazySeq(),
+    artifacts,
+    matIds.matsById,
+    month ? { month: month } : { thirtyDaysAgo },
+  );
+});
+
 const computedCosts = atom((get) => {
   const period = get(selectedAnalysisPeriod);
 
   const machineCosts = get(machineCostPerYear);
   const automationCosts = get(automationCostPerYear);
   const laborCosts = get(period.type === "Last30" ? last30LaborCost : perMonthLaborCost(period.month));
-  const cycles = get(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const matIds = get(period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary);
 
-  const thirtyDaysAgo = addDays(startOfToday(), -30);
-  const month = period.type === "Last30" ? null : period.month;
-
-  const costPcts = compute_monthly_cost_percentages(
-    cycles.valuesToLazySeq(),
-    matIds.matsById,
-    month ? { month: month } : { thirtyDaysAgo },
-  );
+  const costPcts = get(costPercentages);
   return convert_cost_percent_to_cost_per_piece(costPcts, machineCosts, automationCosts, laborCosts ?? 0);
 });
 
@@ -101,7 +127,7 @@ function AutomationCostInput() {
       style={{ marginTop: "1.5em" }}
       inputProps={{ min: 0 }}
       variant="outlined"
-      value={cost === null ? automationCost ?? "" : isNaN(cost) ? "" : cost}
+      value={cost === null ? (automationCost ?? "") : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
       onBlur={() => {
         if (cost != null) {
@@ -131,7 +157,7 @@ function LaborCost() {
       }
       inputProps={{ min: 0 }}
       variant="outlined"
-      value={cost === null ? laborCost ?? "" : isNaN(cost) ? "" : cost}
+      value={cost === null ? (laborCost ?? "") : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
       onBlur={() => {
         if (cost != null) {
@@ -158,7 +184,7 @@ function SingleStationCostInput(props: StationCostInputProps & { readonly machin
       variant="outlined"
       label={"Cost for " + props.machineGroup + " per station per year"}
       style={{ marginTop: "1.5em" }}
-      value={cost === null ? machineCost[props.machineGroup] ?? "" : isNaN(cost) ? "" : cost}
+      value={cost === null ? (machineCost[props.machineGroup] ?? "") : isNaN(cost) ? "" : cost}
       onChange={(e) => setCost(parseFloat(e.target.value))}
       onBlur={() => {
         if (cost != null) {
@@ -199,22 +225,7 @@ const pctFormat = new Intl.NumberFormat(undefined, {
 
 export function CostBreakdownPage() {
   useSetTitle("Cost Percentages");
-  const period = useAtomValue(selectedAnalysisPeriod);
-  const month = period.type === "Last30" ? null : period.month;
-  const cycles = useAtomValue(period.type === "Last30" ? last30StationCycles : specificMonthStationCycles);
-  const matIds = useAtomValue(
-    period.type === "Last30" ? last30MaterialSummary : specificMonthMaterialSummary,
-  );
-
-  const thirtyDaysAgo = addDays(startOfToday(), -30);
-
-  const costs = useMemo(() => {
-    return compute_monthly_cost_percentages(
-      cycles.valuesToLazySeq(),
-      matIds.matsById,
-      month ? { month: month } : { thirtyDaysAgo },
-    );
-  }, [cycles, matIds, month, thirtyDaysAgo]);
+  const costs = useAtomValue(costPercentages);
 
   return (
     <Box paddingLeft="24px" paddingRight="24px" paddingTop="10px">
