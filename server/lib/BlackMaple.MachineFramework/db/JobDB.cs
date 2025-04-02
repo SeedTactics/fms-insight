@@ -128,6 +128,7 @@ namespace BlackMaple.MachineFramework
     private record SimStatUseRow
     {
       public required bool PlanDown { get; init; }
+      public required int? Pallet { get; init; }
       public ImmutableList<SimulatedStationPart>.Builder Parts { get; } =
         ImmutableList.CreateBuilder<SimulatedStationPart>();
     }
@@ -657,7 +658,11 @@ namespace BlackMaple.MachineFramework
             StartUTC = new DateTime(reader.GetInt64(3), DateTimeKind.Utc),
             EndUTC = new DateTime(reader.GetInt64(4), DateTimeKind.Utc),
           };
-          var row = new SimStatUseRow() { PlanDown = !reader.IsDBNull(5) && reader.GetBoolean(5) };
+          var row = new SimStatUseRow()
+          {
+            PlanDown = !reader.IsDBNull(5) && reader.GetBoolean(5),
+            Pallet = reader.IsDBNull(6) ? null : reader.GetInt32(6),
+          };
           rows.Add(key, row);
         }
       }
@@ -696,6 +701,7 @@ namespace BlackMaple.MachineFramework
           StartUTC = e.Key.StartUTC,
           EndUTC = e.Key.EndUTC,
           PlanDown = e.Value.PlanDown ? true : null,
+          Pallet = e.Value.Pallet,
           Parts = e.Value.Parts.Count == 0 ? null : e.Value.Parts.ToImmutable(),
         })
         .ToImmutableList();
@@ -762,7 +768,7 @@ namespace BlackMaple.MachineFramework
         using var simCmd = _connection.CreateCommand();
         simCmd.Transaction = trans;
         simCmd.CommandText =
-          "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, PlanDown "
+          "SELECT SimId, StationGroup, StationNum, StartUTC, EndUTC, PlanDown, Pallet "
           + " FROM sim_station_use WHERE SimId IN temp_sch_ids";
 
         using var simPartCmd = _connection.CreateCommand();
@@ -1581,14 +1587,15 @@ namespace BlackMaple.MachineFramework
         ((IDbCommand)partCmd).Transaction = trans;
 
         cmd.CommandText =
-          "INSERT OR REPLACE INTO sim_station_use(SimId, StationGroup, StationNum, StartUTC, EndUTC, PlanDown) "
-          + " VALUES($simid,$group,$num,$start,$end,$plandown)";
+          "INSERT OR REPLACE INTO sim_station_use(SimId, StationGroup, StationNum, StartUTC, EndUTC, PlanDown, Pallet) "
+          + " VALUES($simid,$group,$num,$start,$end,$plandown,$pal)";
         cmd.Parameters.Add("simid", SqliteType.Text);
         cmd.Parameters.Add("group", SqliteType.Text);
         cmd.Parameters.Add("num", SqliteType.Integer);
         cmd.Parameters.Add("start", SqliteType.Integer);
         cmd.Parameters.Add("end", SqliteType.Integer);
         cmd.Parameters.Add("plandown", SqliteType.Integer);
+        cmd.Parameters.Add("pal", SqliteType.Integer);
 
         partCmd.CommandText =
           "INSERT OR REPLACE INTO sim_station_use_parts(SimId, StationGroup, StationNum, StartUTC, EndUTC, JobUnique, Process, Path) "
@@ -1610,6 +1617,8 @@ namespace BlackMaple.MachineFramework
           cmd.Parameters[3].Value = sim.StartUTC.Ticks;
           cmd.Parameters[4].Value = sim.EndUTC.Ticks;
           cmd.Parameters[5].Value = sim.PlanDown.HasValue ? sim.PlanDown.Value : DBNull.Value;
+          cmd.Parameters[6].Value =
+            sim.Pallet.HasValue && sim.Pallet.Value > 0 ? sim.Pallet.Value : DBNull.Value;
           cmd.ExecuteNonQuery();
 
           if (sim.Parts != null)

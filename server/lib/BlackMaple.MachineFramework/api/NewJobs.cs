@@ -60,6 +60,8 @@ namespace BlackMaple.MachineFramework
 
     public bool? PlanDown { get; init; }
 
+    public int? Pallet { get; init; }
+
     public ImmutableList<SimulatedStationPart>? Parts { get; init; }
   }
 
