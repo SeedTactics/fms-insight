@@ -39,7 +39,7 @@ namespace BlackMaple.MachineFramework
 {
   internal static class DatabaseSchema
   {
-    private const int Version = 35;
+    private const int Version = 36;
 
     #region Create
     public static void CreateTables(SqliteConnection connection, SerialSettings settings)
@@ -227,7 +227,7 @@ namespace BlackMaple.MachineFramework
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
-          "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, PlanDown INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
+          "CREATE TABLE sim_station_use(SimId TEXT, StationGroup TEXT, StationNum INTEGER, StartUTC INTEGER, EndUTC INTEGER, PlanDown INTEGER, Pallet INTEGER, PRIMARY KEY(SimId, StationGroup, StationNum, StartUTC, EndUTC))";
         cmd.ExecuteNonQuery();
 
         cmd.CommandText =
@@ -469,6 +469,9 @@ namespace BlackMaple.MachineFramework
 
           if (curVersion < 35)
             Ver34ToVer35(trans);
+
+          if (curVersion < 36)
+            Ver35ToVer36(trans, updateJobsTables);
 
           //update the version in the database
           cmd.Transaction = trans;
@@ -1177,6 +1180,17 @@ namespace BlackMaple.MachineFramework
       using var cmd = trans.Connection.CreateCommand();
 
       cmd.CommandText = "DROP TABLE IF EXISTS pendingloads";
+      cmd.ExecuteNonQuery();
+    }
+
+    private static void Ver35ToVer36(IDbTransaction trans, bool updateJobTables)
+    {
+      if (!updateJobTables)
+        return;
+
+      using var cmd = trans.Connection.CreateCommand();
+
+      cmd.CommandText = "ALTER TABLE sim_station_use ADD Pallet INTEGER";
       cmd.ExecuteNonQuery();
     }
 

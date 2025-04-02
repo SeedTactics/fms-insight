@@ -2622,6 +2622,7 @@ namespace BlackMaple.FMSInsight.Tests
             StartUTC = start.AddMinutes(-rnd.Next(200, 300)),
             EndUTC = start.AddMinutes(rnd.Next(0, 100)),
             PlanDown = rnd.Next(0, 100) < 20 ? (rnd.Next(1, 100) < 50 ? null : false) : true,
+            Pallet = rnd.Next(0, 100) < 10 ? null : rnd.Next(1, 100),
             Parts = parts,
           }
         );
