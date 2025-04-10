@@ -200,7 +200,13 @@ namespace BlackMaple.FMSInsight.Niigata
             )
             .Concat(status.Alarm ? new[] { "ICC has an alarm" } : new string[] { })
             .ToImmutableList(),
-          Workorders = logDB.GetActiveWorkorders(),
+          Workorders = logDB.GetActiveWorkorders(
+            additionalWorkorders: pals.SelectMany(pal => pal.Material)
+              .Concat(queuedMats)
+              .Select(m => m.Mat.WorkorderId)
+              .Where(w => !string.IsNullOrEmpty(w))
+              .ToHashSet()
+          ),
         },
       };
     }

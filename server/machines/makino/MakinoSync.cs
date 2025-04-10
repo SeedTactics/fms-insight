@@ -144,6 +144,15 @@ namespace BlackMaple.FMSInsight.Makino
 
       var st = makinoDb.LoadCurrentInfo(db, nowUTC);
 
+      st = st with
+      {
+        Workorders = db.GetActiveWorkorders(
+          additionalWorkorders: st.Material.Select(m => m.WorkorderId)
+            .Where(w => !string.IsNullOrEmpty(w))
+            .ToHashSet()
+        ),
+      };
+
       var notCopied = db.LoadJobsNotCopiedToSystem(
         nowUTC.AddHours(-10),
         nowUTC.AddMinutes(20),

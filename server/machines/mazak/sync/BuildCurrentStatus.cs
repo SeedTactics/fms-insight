@@ -471,7 +471,12 @@ namespace MazakMachineInterface
           .Where(a => !string.IsNullOrEmpty(a.AlarmMessage))
           .Select(a => a.AlarmMessage)
           .ToImmutableList(),
-        Workorders = jobDB.GetActiveWorkorders(),
+        Workorders = jobDB.GetActiveWorkorders(
+          additionalWorkorders: material
+            .Select(m => m.WorkorderId)
+            .Where(w => !string.IsNullOrEmpty(w))
+            .ToHashSet()
+        ),
       };
     }
 
