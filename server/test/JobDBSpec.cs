@@ -1567,6 +1567,11 @@ namespace BlackMaple.FMSInsight.Tests
         .Should()
         .BeEquivalentTo(newWorkorders.Select(w => w.WorkorderId)); // initialWorks have been archived and don't appear
       _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] }); // but still exist when looked up directly
+      _jobDB
+        .GetActiveWorkorders(additionalWorkorders: new HashSet<string>() { initialWorks[0].WorkorderId })
+        .Select(w => w.WorkorderId)
+        .Should()
+        .BeEquivalentTo(newWorkorders.Select(w => w.WorkorderId).Append(initialWorks[0].WorkorderId));
 
       _jobDB
         .LoadMostRecentProgram("ccc")
@@ -2485,9 +2490,34 @@ namespace BlackMaple.FMSInsight.Tests
           ]
         );
 
+      // can include w4 even though it is archived
+      _jobDB
+        .GetActiveWorkorders(additionalWorkorders: new HashSet<string>() { w4.WorkorderId })
+        .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
+        .Should()
+        .BeEquivalentTo(
+          [
+            (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
+            (w2New.WorkorderId, w2New.Part, w2New.Priority, w2New.DueDate, w2New.Quantity),
+            (w4.WorkorderId, w4.Part, w4.Priority, w4.DueDate, w4.Quantity),
+            (w5.WorkorderId, w5.Part, w5.Priority, w5.DueDate, w5.Quantity),
+          ]
+        );
+
       _jobDB.UpdateCachedWorkorders([]);
 
       _jobDB.GetActiveWorkorders().Should().BeEmpty();
+
+      _jobDB
+        .GetActiveWorkorders(additionalWorkorders: new HashSet<string>() { w1.WorkorderId, w2.WorkorderId })
+        .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
+        .Should()
+        .BeEquivalentTo(
+          [
+            (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
+            (w2New.WorkorderId, w2New.Part, w2New.Priority, w2New.DueDate, w2New.Quantity),
+          ]
+        );
 
       _jobDB.WorkordersById(w1New.WorkorderId).Should().BeEquivalentTo([w1New, w2New]);
     }

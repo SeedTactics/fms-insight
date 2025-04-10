@@ -62,7 +62,7 @@ namespace BlackMaple.MachineFramework
     IEnumerable<ToolSnapshot> ToolPocketSnapshotForCycle(long counter);
     bool CycleExists(DateTime endUTC, int pal, LogType logTy, string locName, int locNum);
     ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder);
-    ImmutableList<ActiveWorkorder> GetActiveWorkorders();
+    ImmutableList<ActiveWorkorder> GetActiveWorkorders(IReadOnlySet<string> additionalWorkorders = null);
     ImmutableSortedSet<string> GetWorkordersForUnique(string jobUnique);
     DateTime MaxLogDate();
     string MaxForeignID(); // WARNING: uses sqlite default string collate (binary), not lexicographic
