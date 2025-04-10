@@ -789,15 +789,15 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder)
     {
-      return GetActiveWorkorders(partToFilter: null, workorderToFilter: workorder);
+      return GetActiveWorkorders(workorderToFilter: workorder);
     }
 
-    public ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter = null)
+    public ImmutableList<ActiveWorkorder> GetActiveWorkorders()
     {
-      return GetActiveWorkorders(partToFilter: partToFilter, workorderToFilter: null);
+      return GetActiveWorkorders(workorderToFilter: null);
     }
 
-    private ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter, string workorderToFilter)
+    private ImmutableList<ActiveWorkorder> GetActiveWorkorders(string workorderToFilter)
     {
       using var trans = _connection.BeginTransaction();
 
@@ -857,11 +857,6 @@ namespace BlackMaple.MachineFramework
       else
       {
         workQry += " uw.Archived = 0";
-      }
-
-      if (!string.IsNullOrEmpty(partToFilter))
-      {
-        workQry += " AND uw.Part = $part";
       }
 
       // For a given matdetails.MaterialID, check either for the most recent quarantine event
@@ -985,10 +980,6 @@ namespace BlackMaple.MachineFramework
       workCmd.CommandText = workQry;
       workCmd.Parameters.Add("schid", SqliteType.Text).Value = lastSchId;
       workCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
-      if (!string.IsNullOrEmpty(partToFilter))
-      {
-        workCmd.Parameters.Add("part", SqliteType.Text).Value = partToFilter;
-      }
       if (!string.IsNullOrEmpty(workorderToFilter))
       {
         workCmd.Parameters.Add("workorder", SqliteType.Text).Value = workorderToFilter;

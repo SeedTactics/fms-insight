@@ -1297,25 +1297,44 @@ namespace BlackMaple.FMSInsight.Tests
         );
 
       _jobDB
-        .GetActiveWorkorders(initialWorks[0].Part)
+        .GetActiveWorkorders()
         .Should()
         .BeEquivalentTo(
-          new[]
-          {
-            new ActiveWorkorder()
+          initialWorks
+            .Select(w => new ActiveWorkorder()
             {
-              WorkorderId = initialWorks[0].WorkorderId,
-              Part = initialWorks[0].Part,
-              PlannedQuantity = initialWorks[0].Quantity,
+              WorkorderId = w.WorkorderId,
+              Part = w.Part,
+              PlannedQuantity = w.Quantity,
               CompletedQuantity = 0,
-              DueDate = initialWorks[0].DueDate,
-              Priority = initialWorks[0].Priority,
+              DueDate = w.DueDate,
+              Priority = w.Priority,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              SimulatedStart = workStart[0].Started,
-              SimulatedFilled = workStart[0].Filled,
-            },
-          }
+            })
+            .Select(w =>
+            {
+              if (w.WorkorderId == initialWorks[0].WorkorderId)
+              {
+                return w with
+                {
+                  SimulatedStart = workStart[0].Started,
+                  SimulatedFilled = workStart[0].Filled,
+                };
+              }
+              else if (w.WorkorderId == initialWorks[1].WorkorderId)
+              {
+                return w with
+                {
+                  SimulatedStart = workStart[1].Started,
+                  SimulatedFilled = workStart[1].Filled,
+                };
+              }
+              else
+              {
+                return w;
+              }
+            })
         );
 
       _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] });
