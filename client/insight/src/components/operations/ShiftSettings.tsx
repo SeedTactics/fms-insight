@@ -142,20 +142,24 @@ function ShiftStartInput({ shiftNum }: { shiftNum: number }) {
       }}
       variant="standard"
       size="small"
-      InputLabelProps={{ shrink: true }}
-      InputProps={
-        shiftNum === 1
-          ? undefined
-          : {
-              endAdornment: (
-                <Tooltip title="Clear/Disable Shift">
-                  <ButtonBase sx={{ mb: "4px" }} onClick={() => setShifts((draft) => draft.delete(shiftNum))}>
-                    <ClearIcon fontSize="small" />
-                  </ButtonBase>
-                </Tooltip>
-              ),
-            }
-      }
+      slotProps={{
+        inputLabel: { shrink: true },
+        input:
+          shiftNum === 1
+            ? undefined
+            : {
+                endAdornment: (
+                  <Tooltip title="Clear/Disable Shift">
+                    <ButtonBase
+                      sx={{ mb: "4px" }}
+                      onClick={() => setShifts((draft) => draft.delete(shiftNum))}
+                    >
+                      <ClearIcon fontSize="small" />
+                    </ButtonBase>
+                  </Tooltip>
+                ),
+              },
+      }}
     />
   );
 }
