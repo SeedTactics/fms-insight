@@ -178,7 +178,8 @@ public static class JobHelpers
     this IJobCache cache,
     IEnumerable<InProcessMaterial> allMaterial,
     IRepository db,
-    DateTime? archiveCompletedBefore = null
+    DateTime? archiveCompletedBefore = null,
+    DateTime? archiveActiveBefore = null
   )
   {
     var precedence = cache
@@ -204,6 +205,7 @@ public static class JobHelpers
           )
           .ToArray();
         var maxUnloadTime = DateTime.MinValue;
+        var maxLULTime = j.RouteEndUTC;
 
         foreach (var e in db.GetLogForJobUnique(j.UniqueStr))
         {
@@ -211,6 +213,11 @@ public static class JobHelpers
             continue;
           if (e.StartOfCycle)
             continue;
+
+          if (e.EndTimeUTC > maxLULTime)
+          {
+            maxLULTime = e.EndTimeUTC;
+          }
 
           if (e.Result == "LOAD")
           {
@@ -248,6 +255,16 @@ public static class JobHelpers
           remainingToStart == 0
           && archiveCompletedBefore.HasValue
           && maxUnloadTime < archiveCompletedBefore.Value
+          && !allMaterial.Where(m => m.JobUnique == j.UniqueStr).Any()
+        )
+        {
+          db.ArchiveJob(j.UniqueStr);
+          return Enumerable.Empty<ActiveJob>();
+        }
+
+        if (
+          archiveActiveBefore.HasValue
+          && maxLULTime < archiveActiveBefore.Value
           && !allMaterial.Where(m => m.JobUnique == j.UniqueStr).Any()
         )
         {
