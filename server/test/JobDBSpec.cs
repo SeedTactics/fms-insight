@@ -1297,25 +1297,44 @@ namespace BlackMaple.FMSInsight.Tests
         );
 
       _jobDB
-        .GetActiveWorkorders(initialWorks[0].Part)
+        .GetActiveWorkorders()
         .Should()
         .BeEquivalentTo(
-          new[]
-          {
-            new ActiveWorkorder()
+          initialWorks
+            .Select(w => new ActiveWorkorder()
             {
-              WorkorderId = initialWorks[0].WorkorderId,
-              Part = initialWorks[0].Part,
-              PlannedQuantity = initialWorks[0].Quantity,
+              WorkorderId = w.WorkorderId,
+              Part = w.Part,
+              PlannedQuantity = w.Quantity,
               CompletedQuantity = 0,
-              DueDate = initialWorks[0].DueDate,
-              Priority = initialWorks[0].Priority,
+              DueDate = w.DueDate,
+              Priority = w.Priority,
               ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
               ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
-              SimulatedStart = workStart[0].Started,
-              SimulatedFilled = workStart[0].Filled,
-            },
-          }
+            })
+            .Select(w =>
+            {
+              if (w.WorkorderId == initialWorks[0].WorkorderId)
+              {
+                return w with
+                {
+                  SimulatedStart = workStart[0].Started,
+                  SimulatedFilled = workStart[0].Filled,
+                };
+              }
+              else if (w.WorkorderId == initialWorks[1].WorkorderId)
+              {
+                return w with
+                {
+                  SimulatedStart = workStart[1].Started,
+                  SimulatedFilled = workStart[1].Filled,
+                };
+              }
+              else
+              {
+                return w;
+              }
+            })
         );
 
       _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] });
@@ -1548,6 +1567,11 @@ namespace BlackMaple.FMSInsight.Tests
         .Should()
         .BeEquivalentTo(newWorkorders.Select(w => w.WorkorderId)); // initialWorks have been archived and don't appear
       _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] }); // but still exist when looked up directly
+      _jobDB
+        .GetActiveWorkorders(additionalWorkorders: new HashSet<string>() { initialWorks[0].WorkorderId })
+        .Select(w => w.WorkorderId)
+        .Should()
+        .BeEquivalentTo(newWorkorders.Select(w => w.WorkorderId).Append(initialWorks[0].WorkorderId));
 
       _jobDB
         .LoadMostRecentProgram("ccc")
@@ -2466,9 +2490,34 @@ namespace BlackMaple.FMSInsight.Tests
           ]
         );
 
+      // can include w4 even though it is archived
+      _jobDB
+        .GetActiveWorkorders(additionalWorkorders: new HashSet<string>() { w4.WorkorderId })
+        .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
+        .Should()
+        .BeEquivalentTo(
+          [
+            (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
+            (w2New.WorkorderId, w2New.Part, w2New.Priority, w2New.DueDate, w2New.Quantity),
+            (w4.WorkorderId, w4.Part, w4.Priority, w4.DueDate, w4.Quantity),
+            (w5.WorkorderId, w5.Part, w5.Priority, w5.DueDate, w5.Quantity),
+          ]
+        );
+
       _jobDB.UpdateCachedWorkorders([]);
 
       _jobDB.GetActiveWorkorders().Should().BeEmpty();
+
+      _jobDB
+        .GetActiveWorkorders(additionalWorkorders: new HashSet<string>() { w1.WorkorderId, w2.WorkorderId })
+        .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
+        .Should()
+        .BeEquivalentTo(
+          [
+            (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
+            (w2New.WorkorderId, w2New.Part, w2New.Priority, w2New.DueDate, w2New.Quantity),
+          ]
+        );
 
       _jobDB.WorkordersById(w1New.WorkorderId).Should().BeEquivalentTo([w1New, w2New]);
     }

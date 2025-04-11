@@ -306,7 +306,9 @@ public sealed class SyncSpec : IDisposable
         }
       );
 
-    var cur = fix.Create<CurrentStatus>();
+    var cur = fix.Build<CurrentStatus>()
+      .With(c => c.Workorders, (ImmutableList<ActiveWorkorder>?)null)
+      .Create();
     _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
 
     sync.CalculateCellState(db)
@@ -351,7 +353,9 @@ public sealed class SyncSpec : IDisposable
         }
       );
 
-    var cur = fix.Create<CurrentStatus>();
+    var cur = fix.Build<CurrentStatus>()
+      .With(c => c.Workorders, (ImmutableList<ActiveWorkorder>?)null)
+      .Create();
     _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Is(now)).Returns(cur);
 
     sync.CalculateCellState(db, now)
@@ -391,10 +395,18 @@ public sealed class SyncSpec : IDisposable
       .Create()
       .ClearCastingsOnLargerProcs();
 
+    var work1 = fix.Create<Workorder>();
+    var work2 = fix.Create<Workorder>();
+
     var schId = fix.Create<string>();
 
     db.AddJobs(
-      new NewJobs() { ScheduleId = schId, Jobs = [job1, job2, job3] },
+      new NewJobs()
+      {
+        ScheduleId = schId,
+        Jobs = [job1, job2, job3],
+        CurrentUnfilledWorkorders = [work1, work2],
+      },
       expectedPreviousScheduleId: null,
       addAsCopiedToSystem: false
     );
@@ -412,14 +424,31 @@ public sealed class SyncSpec : IDisposable
         }
       );
 
-    var cur = fix.Create<CurrentStatus>();
+    var cur = fix.Build<CurrentStatus>()
+      .With(c => c.Workorders, (ImmutableList<ActiveWorkorder>?)null)
+      .Create();
     _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
 
     sync.CalculateCellState(db)
       .ShouldBeEquivalentTo(
         new MakinoCellState()
         {
-          CurrentStatus = cur,
+          CurrentStatus = cur with
+          {
+            Workorders = new[] { work1, work2 }
+              .Select(w => new ActiveWorkorder()
+              {
+                WorkorderId = w.WorkorderId,
+                Part = w.Part,
+                PlannedQuantity = w.Quantity,
+                DueDate = w.DueDate,
+                Priority = w.Priority,
+                CompletedQuantity = 0,
+                ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+                ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              })
+              .ToImmutableList(),
+          },
           JobsNotYetCopied =
           [
             job2.CloneToDerived<HistoricJob, Job>() with
@@ -429,6 +458,65 @@ public sealed class SyncSpec : IDisposable
             },
           ],
           StateUpdated = false,
+        }
+      );
+
+    // archive work1, should no longer appear appear
+    db.AddJobs(
+      new NewJobs()
+      {
+        ScheduleId = schId + "2",
+        Jobs = [],
+        CurrentUnfilledWorkorders = [work2],
+      },
+      expectedPreviousScheduleId: null,
+      addAsCopiedToSystem: false
+    );
+
+    sync.CalculateCellState(db)
+      .CurrentStatus.ShouldBeEquivalentTo(
+        cur with
+        {
+          Workorders = new[] { work2 }
+            .Select(w => new ActiveWorkorder()
+            {
+              WorkorderId = w.WorkorderId,
+              Part = w.Part,
+              PlannedQuantity = w.Quantity,
+              DueDate = w.DueDate,
+              Priority = w.Priority,
+              CompletedQuantity = 0,
+              ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+            })
+            .ToImmutableList(),
+        }
+      );
+
+    // but, if a piece of material is added for work1, it should re-appear
+
+    var mat = fix.Build<InProcessMaterial>().With(m => m.WorkorderId, work1.WorkorderId).Create();
+
+    cur = cur with { Material = cur.Material.Add(mat) };
+    _makinoDB.LoadCurrentInfo(Arg.Is(db), Arg.Any<DateTime>()).Returns(cur);
+
+    sync.CalculateCellState(db)
+      .CurrentStatus.ShouldBeEquivalentTo(
+        cur with
+        {
+          Workorders = new[] { work2, work1 }
+            .Select(w => new ActiveWorkorder()
+            {
+              WorkorderId = w.WorkorderId,
+              Part = w.Part,
+              PlannedQuantity = w.Quantity,
+              DueDate = w.DueDate,
+              Priority = w.Priority,
+              CompletedQuantity = 0,
+              ElapsedStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+              ActiveStationTime = ImmutableDictionary<string, TimeSpan>.Empty,
+            })
+            .ToImmutableList(),
         }
       );
   }

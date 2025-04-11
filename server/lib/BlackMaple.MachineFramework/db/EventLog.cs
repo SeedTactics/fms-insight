@@ -789,15 +789,20 @@ namespace BlackMaple.MachineFramework
 
     public ImmutableList<ActiveWorkorder> GetActiveWorkorder(string workorder)
     {
-      return GetActiveWorkorders(partToFilter: null, workorderToFilter: workorder);
+      return GetActiveWorkorders(workorderToFilter: workorder, additionalWorkorders: null);
     }
 
-    public ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter = null)
+    public ImmutableList<ActiveWorkorder> GetActiveWorkorders(
+      IReadOnlySet<string> additionalWorkorders = null
+    )
     {
-      return GetActiveWorkorders(partToFilter: partToFilter, workorderToFilter: null);
+      return GetActiveWorkorders(workorderToFilter: null, additionalWorkorders: additionalWorkorders);
     }
 
-    private ImmutableList<ActiveWorkorder> GetActiveWorkorders(string partToFilter, string workorderToFilter)
+    private ImmutableList<ActiveWorkorder> GetActiveWorkorders(
+      string workorderToFilter,
+      IReadOnlySet<string> additionalWorkorders
+    )
     {
       using var trans = _connection.BeginTransaction();
 
@@ -819,6 +824,21 @@ namespace BlackMaple.MachineFramework
         // the sim_workorders table is empty.  Therefore, we can use anything for the lastSchId
         // and it will not affect the results.
         lastSchId = "";
+      }
+
+      if (additionalWorkorders != null && additionalWorkorders.Count > 0)
+      {
+        using var cmd = _connection.CreateCommand();
+        cmd.Transaction = trans;
+        cmd.CommandText = "CREATE TEMP TABLE temp_workorders (Workorder TEXT)";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText = "INSERT INTO temp_workorders (Workorder) VALUES ($workorder)";
+        cmd.Parameters.Add("workorder", SqliteType.Text);
+        foreach (var workorder in additionalWorkorders)
+        {
+          cmd.Parameters[0].Value = workorder;
+          cmd.ExecuteNonQuery();
+        }
       }
 
       var workQry =
@@ -859,9 +879,9 @@ namespace BlackMaple.MachineFramework
         workQry += " uw.Archived = 0";
       }
 
-      if (!string.IsNullOrEmpty(partToFilter))
+      if (additionalWorkorders != null && additionalWorkorders.Count > 0)
       {
-        workQry += " AND uw.Part = $part";
+        workQry += " OR uw.Workorder IN (SELECT Workorder FROM temp_workorders)";
       }
 
       // For a given matdetails.MaterialID, check either for the most recent quarantine event
@@ -985,10 +1005,6 @@ namespace BlackMaple.MachineFramework
       workCmd.CommandText = workQry;
       workCmd.Parameters.Add("schid", SqliteType.Text).Value = lastSchId;
       workCmd.Parameters.Add("loadty", SqliteType.Integer).Value = (int)LogType.LoadUnloadCycle;
-      if (!string.IsNullOrEmpty(partToFilter))
-      {
-        workCmd.Parameters.Add("part", SqliteType.Text).Value = partToFilter;
-      }
       if (!string.IsNullOrEmpty(workorderToFilter))
       {
         workCmd.Parameters.Add("workorder", SqliteType.Text).Value = workorderToFilter;

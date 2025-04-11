@@ -41,6 +41,11 @@ import {
   DialogTitle,
   FormControl,
   keyframes,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  ListSubheader,
   MenuItem,
   Select,
   Stack,
@@ -83,11 +88,14 @@ import {
 } from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 import { WorkorderGantt } from "./WorkorderGantt.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
 import { LogBackend } from "../../network/backend.js";
 
 const currentWorkorderIdToSearch = atom<string | null>(null);
+
+const recentSearchedWorkorders = atomWithStorage<ReadonlyArray<string>>("recentSearchedWorkorders", []);
 
 const currentSearchedWorkorder = atom<Promise<ReadonlyArray<Readonly<IActiveWorkorder>> | null>>(
   async (get, { signal }) => {
@@ -522,14 +530,20 @@ function WorkorderSearchButton() {
 
   const [searchWorkId, setSearchWorkId] = useAtom(currentWorkorderIdToSearch);
   const [curWorkId, setCurWorkId] = useState<string | null>(null);
+  const [prevSearches, setPrevSearches] = useAtom(recentSearchedWorkorders);
 
-  function search() {
-    if (curWorkId !== null && curWorkId !== "") {
+  function search(workId: string | null) {
+    if (workId !== null && workId !== "") {
       startTrans(() => {
-        setSearchWorkId(curWorkId);
+        setSearchWorkId(workId);
       });
       setOpen(false);
       setCurWorkId(null);
+      setPrevSearches((prev) => {
+        const n = prev.filter((w) => w !== workId);
+        n.unshift(workId);
+        return n.slice(0, 5);
+      });
     }
   }
 
@@ -567,20 +581,34 @@ function WorkorderSearchButton() {
             variant="outlined"
             fullWidth
             autoFocus
-            sx={{ mt: "0.5em" }}
+            sx={{ mt: "0.5em", minWidth: "15em" }}
             label="Workorder ID"
             value={curWorkId ?? ""}
             onChange={(e) => setCurWorkId(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                search();
+                search(curWorkId);
                 e.preventDefault();
               }
             }}
           />
+
+          {prevSearches.length > 0 ? (
+            <>
+              <List dense sx={{ mt: "1em" }} subheader={<ListSubheader>Previous Searches</ListSubheader>}>
+                {prevSearches.map((w) => (
+                  <ListItem key={w} onClick={() => search(w)}>
+                    <ListItemButton>
+                      <ListItemText primary={w} />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+            </>
+          ) : undefined}
         </DialogContent>
         <DialogActions>
-          <Button color="primary" onClick={search}>
+          <Button color="primary" onClick={() => search(curWorkId)}>
             Search
           </Button>
           <Button color="secondary" onClick={() => setOpen(false)}>

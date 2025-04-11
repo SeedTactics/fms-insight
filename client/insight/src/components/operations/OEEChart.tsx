@@ -72,7 +72,7 @@ export function OEEChart(props: OEEProps) {
   return (
     <Grid container>
       {props.points.map((series, idx) => (
-        <Grid item xs={12} md={6} key={idx}>
+        <Grid size={{ xs: 12, md: 6 }} key={idx}>
           <div>
             <Box sx={{ height: "calc(100vh / 2 - 200px)" }}>
               <XYChart
