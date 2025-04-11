@@ -34,5 +34,7 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    // https://github.com/vitest-dev/vitest/issues/3576
+    maxThreads: 20,
   },
 });
