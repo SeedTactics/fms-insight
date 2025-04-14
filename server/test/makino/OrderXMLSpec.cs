@@ -32,7 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
+using System.Collections.Immutable;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml;
@@ -87,6 +89,36 @@ public sealed class OrderXMLSpec : IDisposable
     )!;
 
     OrderXML.WriteJobsXML(_tempFile, newj.Jobs, onlyOrders: true);
+
+    var actual = new XmlDocument();
+    actual.Load(_tempFile);
+
+    await Verifier.Verify(actual);
+  }
+
+  [Fact]
+  public async Task OnlyOrdersWithoutPrograms()
+  {
+    var newJ = JsonSerializer.Deserialize<NewJobs>(
+      File.ReadAllText("../../../sample-newjobs/singleproc.json"),
+      jsonSettings
+    )!;
+
+    newJ = newJ with
+    {
+      Jobs = newJ
+        .Jobs.Select(j =>
+          j.AdjustAllPaths(p =>
+            p with
+            {
+              Stops = p.Stops.Select(s => s with { Program = null }).ToImmutableList(),
+            }
+          )
+        )
+        .ToImmutableList(),
+    };
+
+    OrderXML.WriteJobsXML(_tempFile, newJ.Jobs, onlyOrders: true);
 
     var actual = new XmlDocument();
     actual.Load(_tempFile);

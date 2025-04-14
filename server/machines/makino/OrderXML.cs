@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Xml;
@@ -266,7 +267,19 @@ namespace BlackMaple.FMSInsight.Makino
 
     private static void WriteOrder(XmlTextWriter xml, Job j, bool onlyOrders)
     {
-      string partName = onlyOrders ? j.PartName : j.UniqueStr;
+      string partName;
+      if (onlyOrders)
+      {
+        partName =
+          j.Processes.SelectMany(p => p.Paths)
+            .SelectMany(p => p.Stops)
+            .Select(s => s.Program)
+            .FirstOrDefault(prog => !string.IsNullOrEmpty(prog)) ?? j.PartName;
+      }
+      else
+      {
+        partName = j.UniqueStr;
+      }
 
       xml.WriteStartElement("Order");
       xml.WriteAttributeString("action", "ADD");

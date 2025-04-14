@@ -2,7 +2,7 @@
   <Orders>
     <Order action="ADD" name="aaa-0P_yYDHvCtK0w05e7">
       <Comment>aaa</Comment>
-      <PartName>aaaprog</PartName>
+      <PartName>aaa</PartName>
       <Revision>Insight</Revision>
       <Quantity>10</Quantity>
       <Priority>10</Priority>
@@ -10,7 +10,7 @@
     </Order>
     <Order action="ADD" name="bbb-1P_yYDHvCtK0w05e7">
       <Comment>bbb</Comment>
-      <PartName>bbbprog</PartName>
+      <PartName>bbb</PartName>
       <Revision>Insight</Revision>
       <Quantity>20</Quantity>
       <Priority>10</Priority>
