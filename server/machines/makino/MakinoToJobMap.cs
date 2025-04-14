@@ -231,6 +231,7 @@ namespace BlackMaple.FMSInsight.Makino
         RouteStartUTC = historic?.RouteStartUTC ?? DateTime.Today,
         RouteEndUTC = historic?.RouteEndUTC ?? DateTime.Today,
         Comment = historic?.Comment ?? job.Comment,
+        AllocationAlgorithm = historic?.AllocationAlgorithm ?? null,
         ScheduleId = historic?.ScheduleId ?? null,
         BookingIds = historic?.BookingIds ?? null,
         ManuallyCreated = historic?.ManuallyCreated ?? false,
