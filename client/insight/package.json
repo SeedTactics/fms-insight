@@ -1,6 +1,6 @@
 {
   "name": "@seedtactics/insight-client",
-  "version": "16.0.4",
+  "version": "16.0.5",
   "license": "BSD-3-Clause",
   "private": true,
   "type": "module",
