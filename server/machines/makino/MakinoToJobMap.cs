@@ -227,6 +227,7 @@ namespace BlackMaple.FMSInsight.Makino
       var newJob = job.CloneToDerived<ActiveJob, Job>() with
       {
         UniqueStr = order,
+        PartName = historic?.PartName ?? job.PartName,
         RouteStartUTC = historic?.RouteStartUTC ?? DateTime.Today,
         RouteEndUTC = historic?.RouteEndUTC ?? DateTime.Today,
         Comment = historic?.Comment ?? job.Comment,
