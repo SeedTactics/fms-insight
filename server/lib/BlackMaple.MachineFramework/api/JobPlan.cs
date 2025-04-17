@@ -327,5 +327,20 @@ namespace BlackMaple.MachineFramework
           .ToImmutableList(),
       };
     }
+
+    public static HistoricJob AdjustAllPaths(
+      this HistoricJob job,
+      Func<int, int, ProcPathInfo, ProcPathInfo> f
+    )
+    {
+      return job with
+      {
+        Processes = job
+          .Processes.Select(
+            (p, i) => p with { Paths = p.Paths.Select((pa, j) => f(i + 1, j + 1, pa)).ToImmutableList() }
+          )
+          .ToImmutableList(),
+      };
+    }
   }
 }
