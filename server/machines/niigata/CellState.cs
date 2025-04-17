@@ -170,7 +170,7 @@ namespace BlackMaple.FMSInsight.Niigata
         {
           TimeOfCurrentStatusUTC = status.TimeOfStatusUTC,
           Jobs = jobCache.BuildActiveJobs(
-            allMaterial: pals.SelectMany(p => p.Material).Select(m => m.Mat),
+            allMaterial: pals.SelectMany(p => p.Material).Concat(queuedMats).Select(m => m.Mat),
             db: logDB,
             archiveCompletedBefore: status.TimeOfStatusUTC.AddHours(-12)
           ),

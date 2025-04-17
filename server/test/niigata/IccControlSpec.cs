@@ -7139,22 +7139,29 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
       // Adding AAAproc1 back to the queue should unarchive the job
       _dsl.AddToQueue(AAAproc1, "qqq", 0)
-        .ExpectJobArchived("uniq1", isArchived: false)
+        .UpdateExpectedMaterial(
+          AAAproc1,
+          a => new InProcessMaterialAction()
+          {
+            Type = InProcessMaterialAction.ActionType.Loading,
+            LoadOntoPalletNum = 2,
+            LoadOntoFace = 1,
+            ProcessAfterLoad = 2,
+            PathAfterLoad = 1,
+          }
+        )
         .ExpectTransition(
           expectedUpdates: false,
           expectedChanges: new[]
           {
-            FakeIccDsl.ExpectNewRoute(
+            FakeIccDsl.ExpectRouteIncrement(
               pal: 2,
-              pri: 1,
-              luls: new[] { 3 },
-              unloads: new[] { 4 },
-              machs: new[] { 5, 6 },
-              progs: new[] { 654 },
+              newCycleCnt: 1,
               faces: new[] { (face: 1, unique: "uniq1", proc: 2, path: 1) }
             ),
           }
-        );
+        )
+        .ExpectJobArchived("uniq1", isArchived: false);
     }
   }
 }

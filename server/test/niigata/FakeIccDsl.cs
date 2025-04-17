@@ -681,7 +681,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
           Process = mat.Process,
           Path = 1,
           Serial = mat.Serial,
-          WorkorderId = mat.Workorder,
+          WorkorderId = mat.Workorder == "" ? null : mat.Workorder,
           SignaledInspections = [],
           Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
           Location = new InProcessMaterialLocation()
