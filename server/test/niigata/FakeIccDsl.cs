@@ -652,6 +652,49 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       return this;
     }
 
+    public FakeIccDsl AddToQueue(IEnumerable<LogMaterial> matsEnum, string queue, int pos)
+    {
+      using var _logDB = _logDBCfg.OpenConnection();
+      var mats = matsEnum.ToList();
+      for (int i = 0; i < mats.Count; i++)
+      {
+        var mat = mats[i];
+        _logDB.RecordAddMaterialToQueue(
+          new EventLogMaterial()
+          {
+            MaterialID = mat.MaterialID,
+            Process = mat.Process,
+            Face = 0,
+          },
+          queue,
+          pos + i,
+          operatorName: "theoperator",
+          reason: "TestAddCasting",
+          timeUTC: _status.TimeOfStatusUTC
+        );
+
+        _expectedMaterial[mat.MaterialID] = new InProcessMaterial()
+        {
+          JobUnique = mat.JobUniqueStr,
+          MaterialID = mat.MaterialID,
+          PartName = mat.PartName,
+          Process = mat.Process,
+          Path = 1,
+          Serial = mat.Serial,
+          WorkorderId = mat.Workorder == "" ? null : mat.Workorder,
+          SignaledInspections = [],
+          Action = new InProcessMaterialAction() { Type = InProcessMaterialAction.ActionType.Waiting },
+          Location = new InProcessMaterialLocation()
+          {
+            Type = InProcessMaterialLocation.LocType.InQueue,
+            CurrentQueue = queue,
+            QueuePosition = pos + i,
+          },
+        };
+      }
+      return this;
+    }
+
     public FakeIccDsl SetInQueue(LogMaterial mat, string queue, int pos)
     {
       using var _logDB = _logDBCfg.OpenConnection();
@@ -1493,7 +1536,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
                 var job = _logDB.LoadJob(face.unique);
                 return new PalletFace()
                 {
-                  Job = job,
+                  Job = job with { Archived = false },
                   Process = face.proc,
                   Path = face.path,
                   Face = face.face,
@@ -2002,11 +2045,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       public int Pallet { get; set; }
       public bool NoWork { get; set; }
+      public bool ExpectedUpdated { get; set; }
     }
 
-    public static ExpectedChange ExpectNoWork(int pal, bool noWork)
+    public static ExpectedChange ExpectNoWork(int pal, bool noWork, bool expectedUpdated = true)
     {
-      return new ExpectPalNoWork() { Pallet = pal, NoWork = noWork };
+      return new ExpectPalNoWork()
+      {
+        Pallet = pal,
+        NoWork = noWork,
+        ExpectedUpdated = expectedUpdated,
+      };
     }
 
     private class ExpectMachineBeginEvent : ExpectedChange
@@ -2515,7 +2564,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
             // reload cell state
             cellSt = CreateCellState.BuildCellState(_settings, _statNames, _machConn, _logDB, _status);
-            cellSt.StateUpdated.ShouldBe(true);
+            cellSt.StateUpdated.ShouldBe(expectNoWork.ExpectedUpdated);
           }
           else
           {
