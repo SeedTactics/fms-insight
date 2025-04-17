@@ -7127,7 +7127,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _dsl.RemoveFromQueue(AAAproc1)
         .ExpectTransition(
           expectedUpdates: false,
-          expectedChanges: new[] { FakeIccDsl.ExpectNoWork(pal: 2, noWork: true) }
+          expectedChanges: new[] { FakeIccDsl.ExpectNoWork(pal: 2, noWork: true, expectedUpdated: false) }
         );
 
       // After 12 hours it should be archived, so first advance 10

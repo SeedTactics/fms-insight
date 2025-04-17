@@ -2045,11 +2045,17 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     {
       public int Pallet { get; set; }
       public bool NoWork { get; set; }
+      public bool ExpectedUpdated { get; set; }
     }
 
-    public static ExpectedChange ExpectNoWork(int pal, bool noWork)
+    public static ExpectedChange ExpectNoWork(int pal, bool noWork, bool expectedUpdated = true)
     {
-      return new ExpectPalNoWork() { Pallet = pal, NoWork = noWork };
+      return new ExpectPalNoWork()
+      {
+        Pallet = pal,
+        NoWork = noWork,
+        ExpectedUpdated = expectedUpdated,
+      };
     }
 
     private class ExpectMachineBeginEvent : ExpectedChange
@@ -2558,7 +2564,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
 
             // reload cell state
             cellSt = CreateCellState.BuildCellState(_settings, _statNames, _machConn, _logDB, _status);
-            cellSt.StateUpdated.ShouldBe(expectedUpdates);
+            cellSt.StateUpdated.ShouldBe(expectNoWork.ExpectedUpdated);
           }
           else
           {
