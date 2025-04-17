@@ -86,7 +86,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       var status = _icc.LoadNiigataStatus();
       Log.Debug("Loaded pallets {@status}", status);
-      return CreateCellState.BuildCellState(_fmsSt, _settings.StationNames, _mcc, db, status);
+      return CreateCellState.BuildCellState(_fmsSt, _settings, _mcc, db, status);
     }
 
     public bool ApplyActions(IRepository db, CellState st)

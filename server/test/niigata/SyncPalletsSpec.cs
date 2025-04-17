@@ -76,18 +76,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       NiigataStationNames statNames,
       int numPals = 10,
       int numMachines = 6,
-      int numLoads = 2,
-      AssignNewRoutesOnPallets.ExtraPathFilterDelegate extraPathFilter = null
+      int numLoads = 2
     )
     {
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
       var assign = new MultiPalletAssign(
-        new IAssignPallets[]
-        {
-          new AssignNewRoutesOnPallets(statNames, extraPathFilter: extraPathFilter),
-          new SizedQueues(_fmsSt.Queues),
-        }
+        new IAssignPallets[] { new AssignNewRoutesOnPallets(statNames), new SizedQueues(_fmsSt.Queues) }
       );
 
       _sim = new IccSimulator(
@@ -1176,155 +1171,190 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
-    [Fact]
-    public void ChangePathDuringWrite()
-    {
-      InitSim(
-        new NiigataStationNames()
+    /*
+        [Fact]
+        public void ChangePathDuringWrite()
         {
-          ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
-          IccMachineToJobMachNames = Enumerable
-            .Range(1, 6)
-            .ToDictionary(mc => mc, mc => (group: "TestMC", num: mc + 100)),
-        },
-        extraPathFilter: (_job, _procNum, _pathNum, path) => path with { Load = [2] }
-      );
+          InitSim(
+            new NiigataStationNames()
+            {
+              ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+              IccMachineToJobMachNames = Enumerable
+                .Range(1, 6)
+                .ToDictionary(mc => mc, mc => (group: "TestMC", num: mc + 100)),
+            },
+            extraPathFilter: (_job, procNum, _pathNum, path) =>
+            {
+              if (path.Load.Contains(3))
+              {
+                path = path with { Load = path.Load.Remove(3).Add(2) };
+              }
+              if (path.Unload.Contains(3))
+              {
+                path = path with { Unload = path.Unload.Remove(3).Add(2) };
+              }
+              return path;
+            }
+          );
 
-      var j = FakeIccDsl
-        .CreateOneProcOnePathJob(
-          unique: "uniq1",
-          part: "part1",
-          qty: 3,
-          priority: 1,
-          partsPerPal: 1,
-          pals: new[] { 1, 2 },
-          fixture: "fix1",
-          face: 1,
-          luls: new[] { 1 },
-          loadMins: 8,
-          machs: new[] { 5, 6 },
-          machMins: 14,
-          prog: "prog111",
-          progRev: null,
-          unloadMins: 5
-        )
-        .Item1;
+          var j = FakeIccDsl
+            .CreateMultiProcSeparatePalletJob(
+              unique: "uniq1",
+              part: "part1",
+              qty: 3,
+              priority: 1,
+              fixture: "fix1",
+              partsPerPal: 1,
+              pals1: [5],
+              pals2: [7],
+              load1: [1],
+              unload1: [3],
+              load2: [3],
+              unload2: [4],
+              loadMins1: 8,
+              loadMins2: 9,
+              unloadMins1: 10,
+              unloadMins2: 11,
+              machs: new[] { 5, 6 },
+              machMins1: 14,
+              machMins2: 15,
+              prog1: "prog111",
+              prog1Rev: null,
+              prog2: "prog222",
+              prog2Rev: null,
+              transQ: "FLIPPER"
+            )
+            .Item1;
 
-      AddJobs(new[] { j }, new[] { (prog: "prog111", rev: 5L) });
+          AddJobs(new[] { j }, new[] { (prog: "prog111", rev: 5L), (prog: "prog222", rev: 8L) });
 
-      var logs = Run();
-      var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
+          var logs = Run();
+          var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
 
-      byMat.Count.ShouldBe(3);
-      byMat
-        .SelectMany(e => e)
-        .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Program == "LOAD")
-        .ShouldAllBe(e => e.LocationNum == 2);
+          byMat.Count.ShouldBe(3);
+          byMat
+            .SelectMany(e => e)
+            .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Program == "LOAD")
+            .ShouldAllBe(e => e.LocationNum == (e.Material[0].Process == 1 ? 1 : 2));
+          byMat
+            .SelectMany(e => e)
+            .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Program == "UNLOAD")
+            .ShouldAllBe(e => e.LocationNum == (e.Material[0].Process == 1 ? 2 : 4));
 
-      foreach (var m in byMat)
-      {
-        CheckSingleMaterial(
-          m,
-          m.Key,
-          "uniq1",
-          "part1",
-          1,
-          pals: new[] { new[] { 1, 2 } },
-          machGroups: new[] { new[] { "TestMC" } }
-        );
-      }
-    }
-
-    [Fact]
-    public void FilterOutPath()
-    {
-      InitSim(
-        new NiigataStationNames()
-        {
-          ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
-          IccMachineToJobMachNames = Enumerable
-            .Range(1, 6)
-            .ToDictionary(mc => mc, mc => (group: "MC", num: mc)),
-        },
-        extraPathFilter: (_job, _procNum, _pathNum, path) => _pathNum == 1 ? null : path
-      );
-
-      var j = new Job()
-      {
-        UniqueStr = "uniq1",
-        PartName = "part1",
-        Cycles = 14,
-        RouteStartUTC = DateTime.MinValue,
-        RouteEndUTC = DateTime.MinValue,
-        Archived = false,
-        Processes =
-        [
-          new ProcessInfo()
+          foreach (var m in byMat)
           {
-            Paths =
+            CheckSingleMaterial(
+              logs: m,
+              matId: m.Key,
+              uniq: "uniq1",
+              part: "part1",
+              numProc: 2,
+              pals:
+              [
+                [5],
+                [7],
+              ],
+              queue: "FLIPPER",
+              machGroups:
+              [
+                ["TestMC"],
+                ["TestMC"],
+              ]
+            );
+          }
+        }
+
+        [Fact]
+        public void FilterOutPath()
+        {
+          InitSim(
+            new NiigataStationNames()
+            {
+              ReclampGroupNames = new HashSet<string>() { "TestReclamp" },
+              IccMachineToJobMachNames = Enumerable
+                .Range(1, 6)
+                .ToDictionary(mc => mc, mc => (group: "MC", num: mc)),
+            },
+            extraPathFilter: (_job, _procNum, _pathNum, path) => _pathNum == 1 ? null : path
+          );
+
+          var j = new Job()
+          {
+            UniqueStr = "uniq1",
+            PartName = "part1",
+            Cycles = 14,
+            RouteStartUTC = DateTime.MinValue,
+            RouteEndUTC = DateTime.MinValue,
+            Archived = false,
+            Processes =
             [
-              new ProcPathInfo()
+              new ProcessInfo()
               {
-                Load = [1],
-                Unload = [1],
-                ExpectedLoadTime = TimeSpan.FromMinutes(8),
-                ExpectedUnloadTime = TimeSpan.FromMinutes(5),
-                PartsPerPallet = 2,
-                PalletNums = [1, 2],
-                Fixture = "fix1",
-                Face = 1,
-                SimulatedStartingUTC = DateTime.MinValue,
-                SimulatedAverageFlowTime = TimeSpan.Zero,
-                Stops =
+                Paths =
                 [
-                  new MachiningStop()
+                  new ProcPathInfo()
                   {
-                    StationGroup = "MC",
-                    Stations = [5, 6],
-                    ExpectedCycleTime = TimeSpan.FromMinutes(14),
-                    Program = "1111",
+                    Load = [1],
+                    Unload = [1],
+                    ExpectedLoadTime = TimeSpan.FromMinutes(8),
+                    ExpectedUnloadTime = TimeSpan.FromMinutes(5),
+                    PartsPerPallet = 2,
+                    PalletNums = [1, 2],
+                    Fixture = "fix1",
+                    Face = 1,
+                    SimulatedStartingUTC = DateTime.MinValue,
+                    SimulatedAverageFlowTime = TimeSpan.Zero,
+                    Stops =
+                    [
+                      new MachiningStop()
+                      {
+                        StationGroup = "MC",
+                        Stations = [5, 6],
+                        ExpectedCycleTime = TimeSpan.FromMinutes(14),
+                        Program = "1111",
+                      },
+                    ],
                   },
-                ],
-              },
-              new ProcPathInfo()
-              {
-                Load = [2],
-                Unload = [2],
-                ExpectedLoadTime = TimeSpan.FromMinutes(7),
-                ExpectedUnloadTime = TimeSpan.FromMinutes(4),
-                PartsPerPallet = 2,
-                PalletNums = [3, 4],
-                Fixture = "fix1",
-                Face = 1,
-                SimulatedStartingUTC = DateTime.MinValue,
-                SimulatedAverageFlowTime = TimeSpan.Zero,
-                Stops =
-                [
-                  new MachiningStop()
+                  new ProcPathInfo()
                   {
-                    StationGroup = "MC",
-                    Stations = [5, 6],
-                    ExpectedCycleTime = TimeSpan.FromMinutes(12),
-                    Program = "3333",
+                    Load = [2],
+                    Unload = [2],
+                    ExpectedLoadTime = TimeSpan.FromMinutes(7),
+                    ExpectedUnloadTime = TimeSpan.FromMinutes(4),
+                    PartsPerPallet = 2,
+                    PalletNums = [3, 4],
+                    Fixture = "fix1",
+                    Face = 1,
+                    SimulatedStartingUTC = DateTime.MinValue,
+                    SimulatedAverageFlowTime = TimeSpan.Zero,
+                    Stops =
+                    [
+                      new MachiningStop()
+                      {
+                        StationGroup = "MC",
+                        Stations = [5, 6],
+                        ExpectedCycleTime = TimeSpan.FromMinutes(12),
+                        Program = "3333",
+                      },
+                    ],
                   },
                 ],
               },
             ],
-          },
-        ],
-      };
+          };
 
-      AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
+          AddJobs(new[] { j }, Enumerable.Empty<(string prog, long rev)>());
 
-      var logs = Run();
+          var logs = Run();
 
-      logs.Where(e => e.LogType == LogType.LoadUnloadCycle && e.Program == "LOAD")
-        .ShouldAllBe(e =>
-          e.LocationNum == 2 // path 1 filtered out
-        );
+          logs.Where(e => e.LogType == LogType.LoadUnloadCycle && e.Program == "LOAD")
+            .ShouldAllBe(e =>
+              e.LocationNum == 2 // path 1 filtered out
+            );
 
-      logs.ShouldAllBe(e => e.Pallet == 0 || e.Pallet == 3 || e.Pallet == 4);
-    }
+          logs.ShouldAllBe(e => e.Pallet == 0 || e.Pallet == 3 || e.Pallet == 4);
+        }
+        */
 
     [Fact]
     public void PerMaterialWorkorderPrograms()

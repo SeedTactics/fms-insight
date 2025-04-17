@@ -84,24 +84,24 @@ namespace BlackMaple.FMSInsight.Niigata
   {
     private readonly FMSSettings _settings;
     private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<CreateCellState>();
-    private readonly NiigataStationNames _stationNames;
+    private readonly NiigataSettings _niigataSettings;
     private readonly ICncMachineConnection _machConnection;
 
     public static CellState BuildCellState(
       FMSSettings s,
-      NiigataStationNames n,
+      NiigataSettings nSt,
       ICncMachineConnection machConn,
       IRepository logDB,
       NiigataStatus status
     )
     {
-      return new CreateCellState(s, n, machConn).Build(logDB, status);
+      return new CreateCellState(s, nSt, machConn).Build(logDB, status);
     }
 
-    private CreateCellState(FMSSettings s, NiigataStationNames n, ICncMachineConnection machConn)
+    private CreateCellState(FMSSettings s, NiigataSettings nSt, ICncMachineConnection machConn)
     {
       _settings = s;
-      _stationNames = n;
+      _niigataSettings = nSt;
       _machConnection = machConn;
     }
 
@@ -109,7 +109,7 @@ namespace BlackMaple.FMSInsight.Niigata
     {
       var palletStateUpdated = false;
 
-      var jobCache = new JobCache(logDB);
+      var jobCache = _niigataSettings.CreateJobCache(logDB);
       var pals = status
         .Pallets.Select(p => BuildCurrentPallet(status.Machines, jobCache, p, logDB))
         .OrderBy(p =>
@@ -222,9 +222,9 @@ namespace BlackMaple.FMSInsight.Niigata
       if (pallet.CurStation.Location.Location == PalletLocationEnum.Machine)
       {
         var iccMc = pallet.CurStation.Location.Num;
-        if (_stationNames != null)
+        if (_niigataSettings.StationNames != null)
         {
-          iccMc = _stationNames.JobMachToIcc(
+          iccMc = _niigataSettings.StationNames.JobMachToIcc(
             pallet.CurStation.Location.StationGroup,
             pallet.CurStation.Location.Num
           );
@@ -248,7 +248,7 @@ namespace BlackMaple.FMSInsight.Niigata
             FaceIsMissingMaterial = false,
             Programs =
               m.ProgOverride?.ToImmutableList()
-              ?? JobProgramsFromStops(pathInfo.Stops, _stationNames).ToImmutableList(),
+              ?? JobProgramsFromStops(pathInfo.Stops, _niigataSettings.StationNames).ToImmutableList(),
           };
         })
         .ToList();
@@ -452,7 +452,7 @@ namespace BlackMaple.FMSInsight.Niigata
                   : logDB.WorkordersById(m.Workorder).ToImmutableList(),
               };
             })
-            .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face, _stationNames))
+            .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face, _niigataSettings.StationNames))
             .ToList();
 
           foreach (var mat in castings.Take(face.PathInfo.PartsPerPallet))
@@ -603,7 +603,7 @@ namespace BlackMaple.FMSInsight.Niigata
                     : logDB.WorkordersById(m.Workorder).ToImmutableList(),
                 };
               })
-              .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face, _stationNames))
+              .Where(m => FilterMaterialAvailableToLoadOntoFace(m, face, _niigataSettings.StationNames))
               .ToList();
             var inspections = logDB.LookupInspectionDecisions(availableMaterial.Select(m => m.MaterialID));
             foreach (var mat in availableMaterial)
@@ -1191,7 +1191,10 @@ namespace BlackMaple.FMSInsight.Niigata
         long? revision = null;
         string iccMachineProg = null;
         bool isReclamp = false;
-        if (_stationNames != null && _stationNames.ReclampGroupNames.Contains(stop.StationGroup))
+        if (
+          _niigataSettings.StationNames != null
+          && _niigataSettings.StationNames.ReclampGroupNames.Contains(stop.StationGroup)
+        )
         {
           isReclamp = true;
         }
@@ -1243,9 +1246,9 @@ namespace BlackMaple.FMSInsight.Niigata
                 && stop.Stations.Any(s =>
                 {
                   var iccMcNum = s;
-                  if (_stationNames != null)
+                  if (_niigataSettings.StationNames != null)
                   {
-                    iccMcNum = _stationNames.JobMachToIcc(stop.StationGroup, s);
+                    iccMcNum = _niigataSettings.StationNames.JobMachToIcc(stop.StationGroup, s);
                   }
                   return machStep.Machines.Contains(iccMcNum);
                 })
@@ -1340,7 +1343,7 @@ namespace BlackMaple.FMSInsight.Niigata
         palletStateUpdated = true;
 
         var tools = _machConnection.ToolsForMachine(
-          _stationNames.JobMachToIcc(
+          _niigataSettings.StationNames.JobMachToIcc(
             pallet.Status.CurStation.Location.StationGroup,
             pallet.Status.CurStation.Location.Num
           )
@@ -1476,7 +1479,9 @@ namespace BlackMaple.FMSInsight.Niigata
       IEnumerable<NiigataToolData> toolsAtEnd = null;
       if (toolsAtStart != null)
       {
-        toolsAtEnd = _machConnection.ToolsForMachine(_stationNames.JobMachToIcc(statName, statNum));
+        toolsAtEnd = _machConnection.ToolsForMachine(
+          _niigataSettings.StationNames.JobMachToIcc(statName, statNum)
+        );
       }
 
       logDB.RecordMachineEnd(
@@ -2269,7 +2274,7 @@ namespace BlackMaple.FMSInsight.Niigata
       }
     }
 
-    private ImmutableDictionary<string, QueueInfo> CalcQueueRoles(JobCache jobCache)
+    private ImmutableDictionary<string, QueueInfo> CalcQueueRoles(IJobCache jobCache)
     {
       var rawMatQueues = new HashSet<string>();
       var inProcQueues = new HashSet<string>();

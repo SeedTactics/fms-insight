@@ -52,6 +52,7 @@ public record NiigataSettings
   public required string SQLConnectionString { get; init; }
   public required bool RequireProgramsInJobs { get; init; }
   public Func<ActiveJob, bool>? DecrementJobFilter { get; init; } = null;
+  public Func<IRepository, IJobCache> CreateJobCache { get; init; } = (db) => new JobCache(db);
 
   public static NiigataSettings Load(IConfiguration cfg)
   {

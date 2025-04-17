@@ -69,28 +69,15 @@ namespace BlackMaple.FMSInsight.Niigata
     private static Serilog.ILogger Log = Serilog.Log.ForContext<AssignNewRoutesOnPallets>();
     private readonly NiigataStationNames _statNames;
 
-    public delegate MachineFramework.ProcPathInfo ExtraPathFilterDelegate(
-      MachineFramework.Job job,
-      int procNum,
-      int pathNum,
-      MachineFramework.ProcPathInfo pathInfo
-    );
-
     public delegate int PathToPriorityDelegate(
       IReadOnlyList<(MachineFramework.HistoricJob job, int process, int path)> newPaths
     );
 
-    private readonly ExtraPathFilterDelegate _extraPathFilter;
     private readonly PathToPriorityDelegate _pathToPriority;
 
-    public AssignNewRoutesOnPallets(
-      NiigataStationNames n,
-      ExtraPathFilterDelegate extraPathFilter = null,
-      PathToPriorityDelegate pathToPriority = null
-    )
+    public AssignNewRoutesOnPallets(NiigataStationNames n, PathToPriorityDelegate pathToPriority = null)
     {
       _statNames = n;
-      _extraPathFilter = extraPathFilter;
       _pathToPriority = pathToPriority ?? PathsToPriority;
     }
 
@@ -267,10 +254,10 @@ namespace BlackMaple.FMSInsight.Niigata
           )
         )
         .SelectMany(j =>
-          j.proc.Paths.SelectMany(
+          j.proc.Paths.Select(
             (path, pathIdx) =>
             {
-              var p = new JobPath
+              return new JobPath
               {
                 Job = j.job,
                 PathInfo = path,
@@ -279,22 +266,6 @@ namespace BlackMaple.FMSInsight.Niigata
                 Precedence = j.job.Precedence[j.procNum - 1][pathIdx],
                 RemainingProc1ToRun = j.procNum == 1 ? j.job.RemainingToStart > 0 : false,
               };
-              if (_extraPathFilter == null)
-              {
-                return [p];
-              }
-              else
-              {
-                var newPath = _extraPathFilter(j.job, j.procNum, pathIdx + 1, path);
-                if (newPath == null)
-                {
-                  return Enumerable.Empty<JobPath>();
-                }
-                else
-                {
-                  return [p with { PathInfo = newPath }];
-                }
-              }
             }
           )
         )
