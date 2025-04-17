@@ -108,14 +108,23 @@ public class JobCache : IJobCache
   private readonly Dictionary<string, HistoricJob> _jobs;
   private readonly SortedList<JobSortKey, (HistoricJob job, int proc, int path)> _precedence;
   private readonly IRepository _repo;
+  private readonly Func<HistoricJob, HistoricJob>? _jobAdjustment;
 
   public IEnumerable<HistoricJob> AllJobs => _jobs.Values;
   public IEnumerable<(HistoricJob job, int proc, int path)> JobsSortedByPrecedence => _precedence.Values;
 
-  public JobCache(IRepository repo)
+  public JobCache(IRepository repo, Func<HistoricJob, HistoricJob>? jobAdjustment = null)
   {
     _repo = repo;
-    _jobs = repo.LoadUnarchivedJobs().ToDictionary(j => j.UniqueStr, j => j);
+    _jobAdjustment = jobAdjustment;
+    if (jobAdjustment == null)
+    {
+      _jobs = repo.LoadUnarchivedJobs().ToDictionary(j => j.UniqueStr, j => j);
+    }
+    else
+    {
+      _jobs = repo.LoadUnarchivedJobs().Select(jobAdjustment).ToDictionary(j => j.UniqueStr, j => j);
+    }
     _precedence = new SortedList<JobSortKey, (HistoricJob job, int proc, int path)>();
     foreach (var j in _jobs.Values)
     {
@@ -157,6 +166,10 @@ public class JobCache : IJobCache
     else
     {
       var job = _repo.LoadJob(uniq);
+      if (job != null && _jobAdjustment != null)
+      {
+        job = _jobAdjustment(job);
+      }
       if (job != null && job.Archived)
       {
         _repo.UnarchiveJob(job.UniqueStr);

@@ -77,17 +77,13 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       int numPals = 10,
       int numMachines = 6,
       int numLoads = 2,
-      AssignNewRoutesOnPallets.ExtraPathFilterDelegate extraPathFilter = null
+      Func<IRepository, IJobCache> BuildJobCache = null
     )
     {
       var machConn = NSubstitute.Substitute.For<ICncMachineConnection>();
 
       var assign = new MultiPalletAssign(
-        new IAssignPallets[]
-        {
-          new AssignNewRoutesOnPallets(statNames, extraPathFilter: extraPathFilter),
-          new SizedQueues(_fmsSt.Queues),
-        }
+        new IAssignPallets[] { new AssignNewRoutesOnPallets(statNames), new SizedQueues(_fmsSt.Queues) }
       );
 
       _sim = new IccSimulator(
@@ -104,6 +100,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         RequireProgramsInJobs = false,
         StationNames = statNames,
         MachineIPs = [],
+        CreateJobCache = BuildJobCache ?? (db => new JobCache(db)),
       };
 
       _sync = new SyncNiigataPallets(_fmsSt, settings, _sim, machConn, assign);
@@ -1176,8 +1173,26 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
+    private static HistoricJob AdjustLoad3To2(HistoricJob j)
+    {
+      return j.AdjustAllPaths(
+        (proc, pathNum, path) =>
+        {
+          if (path.Load.Contains(3))
+          {
+            path = path with { Load = path.Load.Remove(3).Add(2) };
+          }
+          if (path.Unload.Contains(3))
+          {
+            path = path with { Unload = path.Unload.Remove(3).Add(2) };
+          }
+          return path;
+        }
+      );
+    }
+
     [Fact]
-    public void ChangePathDuringWrite()
+    public void ChangePathOfJob()
     {
       InitSim(
         new NiigataStationNames()
@@ -1187,30 +1202,41 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             .Range(1, 6)
             .ToDictionary(mc => mc, mc => (group: "TestMC", num: mc + 100)),
         },
-        extraPathFilter: (_job, _procNum, _pathNum, path) => path with { Load = [2] }
+        BuildJobCache: db => new JobCache(db, AdjustLoad3To2),
+        numLoads: 4,
+        numMachines: 6
       );
 
       var j = FakeIccDsl
-        .CreateOneProcOnePathJob(
+        .CreateMultiProcSeparatePalletJob(
           unique: "uniq1",
           part: "part1",
           qty: 3,
           priority: 1,
-          partsPerPal: 1,
-          pals: new[] { 1, 2 },
           fixture: "fix1",
-          face: 1,
-          luls: new[] { 1 },
-          loadMins: 8,
+          partsPerPal: 1,
+          pals1: [5],
+          pals2: [7],
+          load1: [1],
+          unload1: [3],
+          load2: [3],
+          unload2: [4],
+          loadMins1: 8,
+          loadMins2: 9,
+          unloadMins1: 10,
+          unloadMins2: 11,
           machs: new[] { 5, 6 },
-          machMins: 14,
-          prog: "prog111",
-          progRev: null,
-          unloadMins: 5
+          machMins1: 14,
+          machMins2: 15,
+          prog1: "prog111",
+          prog1Rev: null,
+          prog2: "prog222",
+          prog2Rev: null,
+          transQ: "FLIPPER"
         )
         .Item1;
 
-      AddJobs(new[] { j }, new[] { (prog: "prog111", rev: 5L) });
+      AddJobs(new[] { j }, new[] { (prog: "prog111", rev: 5L), (prog: "prog222", rev: 8L) });
 
       var logs = Run();
       var byMat = logs.Where(e => e.Material.Any()).ToLookup(e => e.Material.First().MaterialID);
@@ -1219,20 +1245,43 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       byMat
         .SelectMany(e => e)
         .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Program == "LOAD")
-        .ShouldAllBe(e => e.LocationNum == 2);
+        .ShouldAllBe(e => e.LocationNum == (e.Material[0].Process == 1 ? 1 : 2));
+      byMat
+        .SelectMany(e => e)
+        .Where(e => e.LogType == LogType.LoadUnloadCycle && e.Program == "UNLOAD")
+        .ShouldAllBe(e => e.LocationNum == (e.Material[0].Process == 1 ? 2 : 4));
 
       foreach (var m in byMat)
       {
         CheckSingleMaterial(
-          m,
-          m.Key,
-          "uniq1",
-          "part1",
-          1,
-          pals: new[] { new[] { 1, 2 } },
-          machGroups: new[] { new[] { "TestMC" } }
+          logs: m,
+          matId: m.Key,
+          uniq: "uniq1",
+          part: "part1",
+          numProc: 2,
+          pals:
+          [
+            [5],
+            [7],
+          ],
+          queue: "FLIPPER",
+          machGroups:
+          [
+            ["TestMC"],
+            ["TestMC"],
+          ]
         );
       }
+    }
+
+    private static HistoricJob RemoveFirstPath(HistoricJob j)
+    {
+      return j with
+      {
+        Processes = j
+          .Processes.Select(proc => proc with { Paths = proc.Paths.Skip(1).ToImmutableList() })
+          .ToImmutableList(),
+      };
     }
 
     [Fact]
@@ -1246,7 +1295,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             .Range(1, 6)
             .ToDictionary(mc => mc, mc => (group: "MC", num: mc)),
         },
-        extraPathFilter: (_job, _procNum, _pathNum, path) => _pathNum == 1 ? null : path
+        BuildJobCache: db => new JobCache(db, RemoveFirstPath)
       );
 
       var j = new Job()
