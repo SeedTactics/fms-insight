@@ -96,6 +96,12 @@
       "label": "terminate:vite:insight",
       "command": "echo ${input:terminateViteInsight}",
       "type": "shell",
+      "options": {
+        "shell": {
+          "executable": "/usr/bin/bash",
+          "args": ["-c"]
+        }
+      },
       "presentation": {
         "reveal": "silent",
         "close": true
