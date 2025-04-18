@@ -17,7 +17,7 @@ for more information.
 ## Windows Event Viewer
 
 The location of the viewer is different in different versions of Windows;
-on Windows 10, open the start menu and search for "Event Viewer" and on Windows 7 open the "Control Panel",
+on Windows 10 and 11, open the start menu and search for "Event Viewer" and on Windows 7 open the "Control Panel",
 navigate to "Administrative Tools", and then open the "Event Viewer". To view the events in the event viewer,
 navigate to "Windows Logs" and then "Application" in the tree on the left (see the screenshot below).
 
