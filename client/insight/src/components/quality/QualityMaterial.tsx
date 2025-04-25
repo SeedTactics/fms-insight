@@ -48,7 +48,6 @@ import { buildPathString, extractPath } from "../../data/results.inspection.js";
 import { startOfToday, addDays, startOfDay, endOfDay } from "date-fns";
 import { ApiException, ILogEntry, LogType } from "../../network/api.js";
 import { InspectionSankey } from "../analysis/InspectionSankey.js";
-import { DataTableActionZoomType } from "../analysis/DataTable.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
 import { extendRange, inspectionLogEntries, pathLookupRange } from "../../data/path-lookup.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
@@ -227,7 +226,7 @@ function PathLookupStep(props: PathLookupProps) {
         restrictToPart={mat.partName}
         subtitle={"Paths for " + mat.partName + " around " + lastMachineTime(matEvents).toLocaleString()}
         default_date_range={searchRange ? [searchRange.curStart, searchRange.curEnd] : []}
-        zoomType={searchRange ? DataTableActionZoomType.ExtendDays : undefined}
+        zoomType={searchRange ? "ExtendDays" : undefined}
         extendDateRange={extendDateRange}
         hideOpenDetailColumn
         onlyTable

@@ -1,4 +1,4 @@
-/* Copyright (c) 2022, John Lenz
+/* Copyright (c) 2025, John Lenz
 
 All rights reserved.
 
@@ -36,23 +36,30 @@ import {
   MouseEvent,
   useState,
   memo,
-  PureComponent,
   useMemo,
   ReactNode,
+  PureComponent,
 } from "react";
-import { Dialog, DialogActions, DialogContent, DialogTitle, styled, TableBody } from "@mui/material";
-import { TableCell } from "@mui/material";
-import { TableHead } from "@mui/material";
-import { TableRow } from "@mui/material";
-import { TableSortLabel } from "@mui/material";
-import { Tooltip } from "@mui/material";
-import { IconButton } from "@mui/material";
-import { Toolbar } from "@mui/material";
-import { Typography } from "@mui/material";
-import { Select } from "@mui/material";
-import { InputBase } from "@mui/material";
-import { MenuItem } from "@mui/material";
-import { Button } from "@mui/material";
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  styled,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TableSortLabel,
+  Tooltip,
+  IconButton,
+  Toolbar,
+  Typography,
+  Select,
+  InputBase,
+  MenuItem,
+  Button,
+} from "@mui/material";
 import { Calendar } from "react-calendar";
 import {
   MoreHoriz,
@@ -74,7 +81,7 @@ import { ToComparable, ToComparableBase } from "@seedtactics/immutable-collectio
 import { SelectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { useSetAtom, WritableAtom } from "jotai";
 
-export interface Column<Id, Row> {
+export type Column<Id, Row> = {
   readonly id: Id;
   readonly numeric: boolean;
   readonly label: string;
@@ -85,7 +92,7 @@ export interface Column<Id, Row> {
   readonly expanded?: boolean;
   readonly ignoreDuringExport?: boolean;
   readonly openFilterDialog?: WritableAtom<unknown, [boolean], unknown>;
-}
+};
 
 export type ColSort<Id, Row> = {
   readonly orderBy: Id;
@@ -101,27 +108,21 @@ export type TablePage = {
   readonly setRowsPerPage: (r: SetStateAction<number>) => void;
 };
 
-export enum DataTableActionZoomType {
-  Last30Days = "Last30",
-  ZoomIntoRange = "IntoRange",
-  ExtendDays = "Extend",
-}
-
-export interface DataTableActionZoomIntoRange {
-  readonly type: DataTableActionZoomType.ZoomIntoRange;
+export type DataTableActionZoomIntoRange = {
+  readonly type: "ZoomIntoRange";
   readonly default_date_range: Date[];
   readonly current_date_zoom: { start: Date; end: Date } | undefined;
   readonly set_date_zoom_range: (p: { start: Date; end: Date } | undefined) => void;
-}
+};
 
 export type DataTableActionZoom =
   | {
-      readonly type: DataTableActionZoomType.Last30Days;
+      readonly type: "Last30Days";
       readonly set_days_back: (numDaysBack: number | null) => void;
     }
   | DataTableActionZoomIntoRange
   | {
-      readonly type: DataTableActionZoomType.ExtendDays;
+      readonly type: "ExtendDays";
       readonly curStart: Date;
       readonly curEnd: Date;
       readonly extend: (numDays: number) => void;
@@ -138,13 +139,6 @@ const DataCell = styled(TableCell, { shouldForwardProp: (p) => p !== "expand" })
   width: expand ? "100%" : undefined,
 }));
 
-export interface DataTableHeadProps<Id, Row> {
-  readonly sort: ColSort<Id, Row>;
-  readonly columns: ReadonlyArray<Column<Id, Row>>;
-  readonly showDetailsCol: boolean;
-  readonly copyToClipboardRows?: Iterable<Row>;
-}
-
 function OpenFilterButton({ open }: { open: WritableAtom<unknown, [boolean], unknown> }) {
   const setOpen = useSetAtom(open);
   return (
@@ -156,9 +150,12 @@ function OpenFilterButton({ open }: { open: WritableAtom<unknown, [boolean], unk
   );
 }
 
-export function DataTableHead<Id extends string | number, Row>(
-  props: DataTableHeadProps<Id, Row>,
-): ReactNode {
+export function DataTableHead<Id extends string | number, Row>(props: {
+  readonly sort: ColSort<Id, Row>;
+  readonly columns: ReadonlyArray<Column<Id, Row>>;
+  readonly showDetailsCol: boolean;
+  readonly copyToClipboardRows?: Iterable<Row>;
+}): ReactNode {
   const clipboardRows = props.copyToClipboardRows;
   return (
     <TableHead>
@@ -236,11 +233,7 @@ const StyledCalendar = styled(Calendar)(({ theme }) => ({
   },
 }));
 
-interface SelectDateRangeProps {
-  readonly zoom: DataTableActionZoomIntoRange;
-}
-
-function SelectDateRange(props: SelectDateRangeProps) {
+function SelectDateRange(props: { readonly zoom: DataTableActionZoomIntoRange }) {
   const [open, setOpen] = useState(false);
   const start = props.zoom.current_date_zoom
     ? props.zoom.current_date_zoom.start
@@ -300,19 +293,17 @@ function SelectDateRange(props: SelectDateRangeProps) {
   );
 }
 
-export interface DataTableActionsProps {
-  readonly tpage: TablePage;
-  readonly count: number;
-  readonly zoom?: DataTableActionZoom;
-}
-
 export const DataTableActions = memo(function DataTableActions({
   zoom,
   tpage,
   count,
-}: DataTableActionsProps): ReactNode {
+}: {
+  readonly tpage: TablePage;
+  readonly count: number;
+  readonly zoom?: DataTableActionZoom;
+}): ReactNode {
   let zoomCtrl;
-  if (zoom && zoom.type === DataTableActionZoomType.Last30Days) {
+  if (zoom && zoom.type === "Last30Days") {
     zoomCtrl = (
       <>
         <Tooltip title="Last 24 hours">
@@ -367,9 +358,9 @@ export const DataTableActions = memo(function DataTableActions({
         </Tooltip>
       </>
     );
-  } else if (zoom && zoom.type === DataTableActionZoomType.ZoomIntoRange) {
+  } else if (zoom && zoom.type === "ZoomIntoRange") {
     zoomCtrl = <SelectDateRange zoom={zoom} />;
-  } else if (zoom && zoom.type === DataTableActionZoomType.ExtendDays) {
+  } else if (zoom && zoom.type === "ExtendDays") {
     zoomCtrl = (
       <>
         <Tooltip title="Extend 1 day previous">
@@ -462,17 +453,15 @@ export const DataTableActions = memo(function DataTableActions({
   );
 });
 
-export interface DataTableBodyProps<Id, Row> {
+// This is a class component because memo of a function component doesn't infer the column/row
+// types correctly.
+export class DataTableBody<Id extends string | number, Row> extends PureComponent<{
   readonly pageData: Iterable<Row>;
   readonly columns: ReadonlyArray<Column<Id, Row>>;
   readonly onClickDetails?: (event: MouseEvent, r: Row) => void;
   readonly rowsPerPage?: number;
   readonly emptyMessage?: string;
-}
-
-export class DataTableBody<Id extends string | number, Row> extends PureComponent<
-  DataTableBodyProps<Id, Row>
-> {
+}> {
   override render(): ReactNode {
     const onClickDetails = this.props.onClickDetails;
     const rows = [...this.props.pageData];
@@ -518,7 +507,7 @@ export function useTableZoomForPeriod(period: SelectedAnalysisPeriod): TableZoom
     let zoom: DataTableActionZoom;
     if (period.type === "Last30") {
       zoom = {
-        type: DataTableActionZoomType.Last30Days,
+        type: "Last30Days",
         set_days_back: (numDaysBack) => {
           if (numDaysBack) {
             const now = new Date();
@@ -530,7 +519,7 @@ export function useTableZoomForPeriod(period: SelectedAnalysisPeriod): TableZoom
       };
     } else {
       zoom = {
-        type: DataTableActionZoomType.ZoomIntoRange,
+        type: "ZoomIntoRange",
         default_date_range: [period.month, addMonths(period.month, 1)],
         current_date_zoom: curZoom,
         set_date_zoom_range: setCurZoom,

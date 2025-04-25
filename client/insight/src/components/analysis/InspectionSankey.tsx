@@ -45,7 +45,6 @@ import {
 } from "../../cell-status/inspections.js";
 import InspectionDataTable from "./InspectionDataTable.js";
 import { copyInspectionEntriesToClipboard } from "../../data/results.inspection.js";
-import { DataTableActionZoomType } from "./DataTable.js";
 import { isDemoAtom } from "../routes.js";
 import { Group } from "@visx/group";
 import { green } from "@mui/material/colors";
@@ -226,7 +225,7 @@ const InspectionDiagram = memo(function InspectionDiagram({
 export interface InspectionSankeyProps {
   readonly inspectionlogs: InspectionsByPartAndType;
   readonly default_date_range: Date[];
-  readonly zoomType?: DataTableActionZoomType;
+  readonly zoomType?: "Last30Days" | "ZoomIntoRange" | "ExtendDays";
   readonly subtitle?: string;
   readonly restrictToPart?: string;
   readonly onlyTable?: boolean;
