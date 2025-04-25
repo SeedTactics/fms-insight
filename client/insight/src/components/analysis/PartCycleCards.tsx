@@ -334,7 +334,11 @@ export function PartMachineCycleChart() {
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             showWorkorderAndInspect={true}
-            emptyMessage="Select part, station, or pallet to see cycles."
+            emptyMessage={
+              selectedPart || selectedPallet || selectedOperation
+                ? "No Cycles"
+                : "Select part, station, or pallet to see cycles."
+            }
           />
         )}
       </main>
@@ -612,7 +616,11 @@ export function PartLoadStationCycleChart() {
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             showWorkorderAndInspect={true}
             hideMedian={selectedOperation === "LULOccupancy"}
-            emptyMessage="Select part, operation, or pallet to see cycles."
+            emptyMessage={
+              selectedPart || selectedPallet
+                ? "No Cycles"
+                : "Select part, operation, or pallet to see cycles."
+            }
           />
         )}
       </main>
