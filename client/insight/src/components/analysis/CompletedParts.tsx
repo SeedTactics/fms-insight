@@ -49,6 +49,7 @@ import {
   Select,
   MenuItem,
   InputBase,
+  styled,
 } from "@mui/material";
 import { MaterialDialog, PartIdenticon } from "../station-monitor/Material.js";
 import {
@@ -73,24 +74,22 @@ import {
   useCompleteCloseout,
 } from "../../cell-status/material-details.js";
 import copy from "copy-to-clipboard";
-import { Atom, useAtomValue, useSetAtom } from "jotai";
+import { Atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
-import { PartSummary } from "../../data/part-summary.js";
+import {
+  last30PartSummary,
+  last30PartSummaryRange,
+  last30PartSummaryRangeStart,
+  PartSummary,
+} from "../../data/part-summary.js";
 import { MaterialSummaryAndCompletedData } from "../../cell-status/material-summary.js";
 
 type PartSummaryAtom = Atom<ReadonlyArray<PartSummary>>;
 
 const numFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
-const partColCount = 7;
-type SortColumn =
-  | "PartName"
-  | "PlannedQty"
-  | "CompletedQty"
-  | "AbnormalQty"
-  | "Workorders"
-  | "Elapsed"
-  | "Active";
+const partColCount = 6;
+type SortColumn = "PartName" | "CompletedQty" | "AbnormalQty" | "Workorders" | "Elapsed" | "Active";
 
 function sortPartSummary(
   parts: ReadonlyArray<PartSummary>,
@@ -102,9 +101,6 @@ function sortPartSummary(
     case "PartName":
       sortCol = (j) => j.part;
       break;
-    case "PlannedQty":
-      sortCol = (j) => j.plannedQty;
-      break;
     case "CompletedQty":
       sortCol = (j) => j.completedQty;
       break;
@@ -115,10 +111,18 @@ function sortPartSummary(
       sortCol = (j) => j.workorders.lookupMin()?.[0] ?? null;
       break;
     case "Elapsed":
-      sortCol = (j) => j.stationMins.valuesToAscLazySeq().sumBy((t) => t.elapsed);
+      sortCol = (j) =>
+        j.stationMins
+          .toAscLazySeq()
+          .filter(([stat, _]) => stat !== "L/U")
+          .sumBy(([, t]) => t.elapsed);
       break;
     case "Active":
-      sortCol = (j) => j.stationMins.valuesToAscLazySeq().sumBy((t) => t.active);
+      sortCol = (j) =>
+        j.stationMins
+          .toAscLazySeq()
+          .filter(([stat, _]) => stat !== "L/U")
+          .sumBy(([_, t]) => t.active);
       break;
   }
   const sorted = [...parts];
@@ -126,7 +130,14 @@ function sortPartSummary(
   return sorted;
 }
 
-type MatSortCol = "Serial" | "Workorder" | "Quarantined" | "InspectFailed" | "CloseOut";
+type MatSortCol = "Serial" | "CompletedDate" | "Workorder" | "Quarantined" | "InspectFailed" | "CloseOut";
+
+const completedDateFormat = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
 
 function sortMaterial(
   material: ReadonlyArray<MaterialSummaryAndCompletedData>,
@@ -138,18 +149,21 @@ function sortMaterial(
     case "Serial":
       sortCol = (j) => j.serial ?? null;
       break;
+    case "CompletedDate":
+      sortCol = (j) => j.last_unload_time ?? null;
+      break;
     case "Workorder":
       sortCol = (j) => j.workorderId ?? null;
       break;
     case "Quarantined":
-      sortCol = (j) => j.quarantined;
+      sortCol = (j) => j.jobUnique !== "TODO TODO TODO TODO TODO TODO";
       break;
     case "InspectFailed":
       sortCol = (j) =>
-        LazySeq.ofObject(j.completedInspections ?? {}).some(([, insp]) => insp.success === false);
+        LazySeq.ofObject(j.completedInspections ?? {}).some(([, insp]) => insp.success === false) ? -1 : 0;
       break;
     case "CloseOut":
-      sortCol = (j) => j.closeout_failed ?? null;
+      sortCol = (j) => (j.closeout_failed === undefined ? 1 : j.closeout_failed === true ? -1 : 0);
       break;
   }
   const sorted = [...material];
@@ -219,6 +233,9 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
             <SortColHeader col="Serial" {...sort}>
               Serial
             </SortColHeader>
+            <SortColHeader col="CompletedDate" {...sort}>
+              Completed
+            </SortColHeader>
             <SortColHeader col="Workorder" {...sort}>
               Workorder
             </SortColHeader>
@@ -238,9 +255,12 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
           {curPage.map((s) => (
             <TableRow key={s.materialID}>
               <TableCell>{s.serial ?? ""}</TableCell>
+              <TableCell>
+                {s.last_unload_time ? completedDateFormat.format(s.last_unload_time) : ""}
+              </TableCell>
               <TableCell>{s.workorderId ?? ""}</TableCell>
               <TableCell sx={{ textAlign: "center" }} padding="checkbox">
-                {s.quarantined ? <SavedSearch fontSize="inherit" /> : ""}
+                {s.jobUnique !== "AAA" ? <SavedSearch fontSize="inherit" /> : ""}
               </TableCell>
               <TableCell sx={{ textAlign: "center" }} padding="checkbox">
                 {LazySeq.ofObject(s.completedInspections ?? {}).some(([, insp]) => insp.success === false) ? (
@@ -273,9 +293,14 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
               </TableCell>
             </TableRow>
           ))}
+          {LazySeq.ofRange(0, rowsPerPage - curPage.length).map((i) => (
+            <TableRow key={i}>
+              <TableCell colSpan={7}>&nbsp;</TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
-      <Toolbar>
+      <Toolbar variant="dense" sx={{ mb: "0.5em" }}>
         <Typography color="textSecondary" variant="caption">
           Rows per page:
         </Typography>
@@ -348,16 +373,16 @@ const PartDetails = memo(function PartDetails({ part }: { readonly part: PartSum
           <TableHead>
             <TableRow>
               <TableCell>Station</TableCell>
-              <TableCell>Active Minutes</TableCell>
-              <TableCell>Elapsed Minutes</TableCell>
+              <TableCell>Active Hours</TableCell>
+              <TableCell>Elapsed Hours</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {part.stationMins.toAscLazySeq().map(([st, times]) => (
               <TableRow key={st}>
                 <TableCell>{st}</TableCell>
-                <TableCell>{numFormat.format(times.active)}</TableCell>
-                <TableCell>{numFormat.format(times.elapsed)}</TableCell>
+                <TableCell>{numFormat.format(times.active / 60)}</TableCell>
+                <TableCell>{numFormat.format(times.elapsed / 60)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -367,12 +392,18 @@ const PartDetails = memo(function PartDetails({ part }: { readonly part: PartSum
   );
 });
 
+const PartTableRow = styled(TableRow)({
+  "& > *": {
+    borderBottom: "unset !important",
+  },
+});
+
 const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) {
   const [open, setOpen] = useState<boolean>(false);
 
   return (
     <>
-      <TableRow sx={{ "& > *": { borderBottom: "unset" } }}>
+      <PartTableRow>
         <TableCell>
           <Box
             sx={{
@@ -390,14 +421,23 @@ const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) 
             </div>
           </Box>
         </TableCell>
-        <TableCell align="right">{part.plannedQty}</TableCell>
         <TableCell align="right">{part.completedQty}</TableCell>
         <TableCell align="right">{part.abnormalQty}</TableCell>
         <TableCell align="right">
-          {numFormat.format(part.stationMins.valuesToAscLazySeq().sumBy((t) => t.active))}
+          {numFormat.format(
+            part.stationMins
+              .toAscLazySeq()
+              .filter(([stat, _]) => stat !== "L/U")
+              .sumBy(([_, t]) => t.active) / 60,
+          )}
         </TableCell>
         <TableCell align="right">
-          {numFormat.format(part.stationMins.valuesToAscLazySeq().sumBy((t) => t.elapsed))}
+          {numFormat.format(
+            part.stationMins
+              .toAscLazySeq()
+              .filter(([stat, _]) => stat !== "L/U")
+              .sumBy(([, t]) => t.elapsed) / 60,
+          )}
         </TableCell>
         <TableCell align="left">
           {part.workorders.size <= 1
@@ -413,7 +453,7 @@ const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) 
             </IconButton>
           </Tooltip>
         </TableCell>
-      </TableRow>
+      </PartTableRow>
       <TableRow>
         <TableCell sx={{ pb: "0", pt: "0" }} colSpan={partColCount + 1}>
           <Collapse in={open} timeout="auto" unmountOnExit>
@@ -466,9 +506,6 @@ const PartHeader = memo(function PartHeader({
         <SortColHeader align="left" col="PartName" {...sort}>
           Part
         </SortColHeader>
-        <SortColHeader align="right" col="PlannedQty" {...sort}>
-          Planned Quantity
-        </SortColHeader>
         <SortColHeader align="right" col="CompletedQty" {...sort}>
           Completed Quantity
         </SortColHeader>
@@ -476,10 +513,10 @@ const PartHeader = memo(function PartHeader({
           Abnormal Quantity
         </SortColHeader>
         <SortColHeader align="right" col="Active" {...sort}>
-          Active Mins
+          Active Hours
         </SortColHeader>
         <SortColHeader align="right" col="Elapsed" {...sort}>
-          Elapsed Mins
+          Elapsed Hours
         </SortColHeader>
         <SortColHeader align="left" col="Workorders" {...sort}>
           Workorders
@@ -558,12 +595,52 @@ const CompletedPartsMaterialDialog = memo(function CompletedPartsMaterialDialog(
   return <MaterialDialog buttons={<CompPartsMatDialogBtns />} />;
 });
 
-export function CompletedPartsPage({ partsAtom }: { readonly partsAtom: PartSummaryAtom }): ReactNode {
+function RecentCompletedToolbar() {
+  const [range, setRange] = useAtom(last30PartSummaryRange);
+  const start = last30PartSummaryRangeStart(range);
+
+  return (
+    <Box
+      component="nav"
+      sx={{
+        display: "flex",
+        minHeight: "2.5em",
+        alignItems: "center",
+      }}
+    >
+      <Typography variant="subtitle1">
+        Completed Parts from{" "}
+        {start.toLocaleString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        })}{" "}
+        to now
+      </Typography>
+      <Box flexGrow={1} />
+      <Select
+        value={range}
+        onChange={(v) => setRange(v.target.value as "Today" | "PastTwoDays" | "ThisWeek" | "LastTwoWeeks")}
+        sx={{ minWidth: "10em" }}
+      >
+        <MenuItem value="Today">Today</MenuItem>
+        <MenuItem value="PastTwoDays">Past Two Days</MenuItem>
+        <MenuItem value="ThisWeek">This Week</MenuItem>
+        <MenuItem value="LastTwoWeeks">Last Two Weeks</MenuItem>
+      </Select>
+    </Box>
+  );
+}
+
+export function RecentCompletedPartsPage(): ReactNode {
   useSetTitle("Completed Parts");
 
   return (
     <Box component="main" padding="24px">
-      <CompletedPartsTable partsAtom={partsAtom} />
+      <RecentCompletedToolbar />
+      <CompletedPartsTable partsAtom={last30PartSummary} />
       <CompletedPartsMaterialDialog />
       <SelectWorkorderDialog />
     </Box>
@@ -573,7 +650,6 @@ export function CompletedPartsPage({ partsAtom }: { readonly partsAtom: PartSumm
 function copyPartsToClipboard(parts: ReadonlyArray<PartSummary>) {
   let table = "<table>\n<thead><tr>";
   table += "<th>Part</th>";
-  table += "<th>Planned Qty</th>";
   table += "<th>Completed Qty</th>";
   table += "<th>Abnormal Qty</th>";
   table += "<th>Workorders</th>";
@@ -584,9 +660,8 @@ function copyPartsToClipboard(parts: ReadonlyArray<PartSummary>) {
   for (const p of parts) {
     table += "<tr>";
     table += `<td>${p.part}</td>`;
-    table += `<td>${p.plannedQty}</td>`;
     table += `<td>${p.completedQty}</td>`;
-    table += `<td>${p.workorders.keysToAscLazySeq().toRArray().join(";")}</td>`;
+    table += `<td>${p.workorders.toAscLazySeq().toRArray().join(";")}</td>`;
     table += `<td>${p.stationMins
       .toAscLazySeq()
       .map(([st, t]) => `${st}: ${t.active}`)

@@ -31,18 +31,20 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
-import { MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
+import { LazySeq, OrderedMap, OrderedSet } from "@seedtactics/immutable-collections";
+import { last30MaterialSummary, MaterialSummaryAndCompletedData } from "../cell-status/material-summary";
 import { atom } from "jotai";
+import { addDays, addMinutes, startOfToday, startOfWeek } from "date-fns";
+import { last30StationCycles } from "../cell-status/station-cycles";
+import { splitTimeToDays } from "./results.oee";
 
 export type PartSummary = {
   readonly part: string;
-  readonly plannedQty: number;
   readonly completedQty: number;
   readonly abnormalQty: number;
   readonly stationMins: OrderedMap<string, { readonly active: number; readonly elapsed: number }>;
   readonly mats: ReadonlyArray<MaterialSummaryAndCompletedData>;
-  readonly workorders: OrderedMap<string, number>; // key is workorder, value is count of parts
+  readonly workorders: OrderedSet<string>;
 };
 
 function isAbnormal(m: MaterialSummaryAndCompletedData): boolean {
@@ -59,7 +61,84 @@ function isAbnormal(m: MaterialSummaryAndCompletedData): boolean {
   }
 }
 
-export const specificMonthPartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
-  const allParts = get(last30MaterialSummary);
-  return [] as ReadonlyArray<PartSummary>;
+export const last30PartSummaryRange = atom<"Today" | "PastTwoDays" | "ThisWeek" | "LastTwoWeeks">("ThisWeek");
+
+export function last30PartSummaryRangeStart(
+  range: "Today" | "PastTwoDays" | "ThisWeek" | "LastTwoWeeks",
+): Date {
+  return range === "Today"
+    ? startOfToday()
+    : range === "PastTwoDays"
+      ? addDays(startOfToday(), -1)
+      : range === "ThisWeek"
+        ? startOfWeek(new Date())
+        : addDays(startOfWeek(new Date()), -7);
+}
+
+export const last30PartSummary = atom<ReadonlyArray<PartSummary>>((get) => {
+  const mats = get(last30MaterialSummary);
+  const cycles = get(last30StationCycles);
+
+  const range = get(last30PartSummaryRange);
+  const start = last30PartSummaryRangeStart(range);
+
+  const stationTimes = cycles
+    .valuesToLazySeq()
+    .filter((c) => c.endTime >= start)
+    .toLookupOrderedMap(
+      (c) => c.part,
+      (c) => c.stationGroup,
+      (c) => {
+        const elapTime = c.elapsedMinsPerMaterial * c.material.length;
+        const startTime = addMinutes(c.endTime, -elapTime);
+        const elapDays = splitTimeToDays(startTime, c.endTime, elapTime);
+        const activeDays = splitTimeToDays(startTime, c.endTime, c.activeMinutes);
+        // only the final day, since the range is >= start
+        return {
+          elapsed: elapDays[elapDays.length - 1].value,
+          active: activeDays[activeDays.length - 1].value,
+        };
+      },
+      (a, b) => ({ elapsed: a.elapsed + b.elapsed, active: a.active + b.active }),
+    );
+
+  return mats.matsById
+    .valuesToLazySeq()
+    .filter((m) =>
+      Boolean(
+        m.numProcesses &&
+          m.unloaded_processes?.[m.numProcesses] &&
+          m.unloaded_processes[m.numProcesses] >= start,
+      ),
+    )
+    .toOrderedLookup((m) => m.partName)
+    .mapValues(
+      (mats, partName) =>
+        ({
+          part: partName,
+          completedQty: mats.length,
+          abnormalQty: LazySeq.of(mats).sumBy((m) => (isAbnormal(m) ? 1 : 0)),
+          mats: mats,
+          stationMins: OrderedMap.empty(),
+          workorders: LazySeq.of(mats)
+            .toOrderedSet((m) => m.workorderId ?? "")
+            .delete(""),
+        }) satisfies PartSummary,
+    )
+    .adjust(stationTimes, (summary, stationTimes, partName) => {
+      if (summary) {
+        return { ...summary, stationMins: stationTimes };
+      } else {
+        return {
+          part: partName,
+          completedQty: 0,
+          abnormalQty: 0,
+          mats: [],
+          stationMins: stationTimes,
+          workorders: OrderedSet.empty(),
+        };
+      }
+    })
+    .valuesToAscLazySeq()
+    .toRArray();
 });

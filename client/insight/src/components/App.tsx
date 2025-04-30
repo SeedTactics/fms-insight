@@ -53,6 +53,7 @@ import {
   AttachMoney as CostIcon,
   Opacity,
   Replay,
+  Summarize,
 } from "@mui/icons-material";
 
 import OperationDashboard from "./operations/Dashboard.js";
@@ -95,6 +96,7 @@ import { SimDayUsagePage } from "./operations/SimDayUsage.js";
 import { latestSimDayUsage } from "../cell-status/sim-day-usage.js";
 import { CloseoutReport } from "./operations/CloseoutReport.js";
 import { RebookingsPage } from "./operations/Rebookings.js";
+import { RecentCompletedPartsPage } from "./analysis/CompletedParts.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -172,6 +174,11 @@ const operationsReports: ReadonlyArray<MenuNavItem> = [
     name: "Production",
     route: { route: routes.RouteLocation.Operations_Production },
     icon: <ProductionIcon />,
+  },
+  {
+    name: "Part Summary",
+    route: { route: routes.RouteLocation.Operations_Parts },
+    icon: <Summarize />,
   },
   {
     name: (info) => info.supportsRebookings ?? "Rebooking",
@@ -554,6 +561,12 @@ const App = memo(function App(props: AppProps) {
         page = <RebookingsPage />;
         nav1 = OperationsTabs;
         menuNavItems = operationsReports;
+        break;
+      case routes.RouteLocation.Operations_Parts:
+        page = <RecentCompletedPartsPage />;
+        nav1 = OperationsTabs;
+        menuNavItems = operationsReports;
+        addBasicMaterialDialog = false;
         break;
 
       case routes.RouteLocation.Engineering_Cycles:
