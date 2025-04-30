@@ -156,7 +156,7 @@ function sortMaterial(
       sortCol = (j) => j.workorderId ?? null;
       break;
     case "Quarantined":
-      sortCol = (j) => j.jobUnique !== "TODO TODO TODO TODO TODO TODO";
+      sortCol = (j) => j.currently_quarantined ?? null;
       break;
     case "InspectFailed":
       sortCol = (j) =>
@@ -260,7 +260,7 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
               </TableCell>
               <TableCell>{s.workorderId ?? ""}</TableCell>
               <TableCell sx={{ textAlign: "center" }} padding="checkbox">
-                {s.jobUnique !== "AAA" ? <SavedSearch fontSize="inherit" /> : ""}
+                {s.currently_quarantined ? <SavedSearch fontSize="inherit" /> : ""}
               </TableCell>
               <TableCell sx={{ textAlign: "center" }} padding="checkbox">
                 {LazySeq.ofObject(s.completedInspections ?? {}).some(([, insp]) => insp.success === false) ? (

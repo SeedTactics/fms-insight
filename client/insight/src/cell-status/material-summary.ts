@@ -57,6 +57,7 @@ export interface MaterialSummaryAndCompletedData extends MaterialSummary {
   readonly closeout_completed?: Date;
   readonly closeout_failed?: boolean;
   readonly completedInspections?: { [key: string]: { time: Date; success: boolean } };
+  readonly currently_quarantined?: boolean;
 }
 
 interface MaterialSummaryFromEvents extends MaterialSummaryAndCompletedData {
@@ -181,6 +182,7 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
             ...mat,
             unloaded_processes: { ...mat.unloaded_processes, [logMat.proc]: e.endUTC },
             quarantineAfterUnload: false,
+            currently_quarantined: false, // a load cycle disables quarantine
           };
           if (logMat.proc === logMat.numproc) {
             mat = {
@@ -199,9 +201,23 @@ function process_event(st: MatSummaryState, e: Readonly<ILogEntry>): MatSummaryS
             ...mat,
             startedProcess1: true,
             quarantineAfterUnload: false,
+            currently_quarantined: false, // a load cycle disables quarantine
           };
         }
 
+        break;
+
+      case LogType.MachineCycle:
+        // a machine cycle disables quarantine
+        if (mat.currently_quarantined) {
+          mat = { ...mat, currently_quarantined: false };
+        }
+        break;
+
+      case LogType.AddToQueue:
+        if (e.program === "Quarantine") {
+          mat = { ...mat, currently_quarantined: true };
+        }
         break;
 
       case LogType.CloseOut:

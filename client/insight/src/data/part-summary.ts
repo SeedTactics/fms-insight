@@ -54,7 +54,10 @@ function isAbnormal(m: MaterialSummaryAndCompletedData): boolean {
       return true;
     }
 
-    // TODO: quarantined;
+    if (m.currently_quarantined) {
+      return true;
+    }
+
     return false;
   } else {
     return m.closeout_failed !== false;
