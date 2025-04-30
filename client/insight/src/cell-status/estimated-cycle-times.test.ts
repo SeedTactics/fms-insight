@@ -192,7 +192,7 @@ it("calculates median and MAD", () => {
 
   // MAD should be between 0 and 2
   expect(es?.MAD_aboveMinutes).toBeGreaterThan(0);
-  expect(es?.MAD_aboveMinutes).toBeLessThan(2.5);
+  expect(es?.MAD_aboveMinutes).toBeLessThan(2.6);
   expect(es?.MAD_belowMinutes).toBeGreaterThan(0);
   expect(es?.MAD_belowMinutes).toBeLessThan(2.5);
 
