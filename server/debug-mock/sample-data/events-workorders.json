@@ -1,0 +1,157 @@
+[
+  {
+    "counter": 0,
+    "material": [
+      {
+        "id": 1569,
+        "uniq": "ccc-2offline-2018-01-24",
+        "part": "ccc",
+        "proc": 1,
+        "numproc": 2,
+        "face": 1,
+        "serial": "00000000pj",
+        "workorder": ""
+      }
+    ],
+    "type": "OrderAssignment",
+    "startofcycle": false,
+    "endUTC": "2018-01-24T12:00:00Z",
+    "loc": "Order",
+    "locnum": 1,
+    "pal": 0,
+    "program": "",
+    "result": "work1",
+    "elapsed": "-PT1M",
+    "active": "PT0S"
+  },
+  {
+    "details": {},
+    "counter": 19801,
+    "material": [
+      {
+        "id": 1595,
+        "uniq": "ccc-2offline-2018-01-24",
+        "part": "ccc",
+        "proc": 1,
+        "numproc": 2,
+        "face": 1,
+        "serial": "00000000pJ",
+        "workorder": ""
+      }
+    ],
+    "type": "OrderAssignment",
+    "startofcycle": false,
+    "endUTC": "2018-01-24T12:01:00Z",
+    "loc": "Order",
+    "locnum": 1,
+    "pal": 0,
+    "program": "",
+    "result": "work2",
+    "elapsed": "-PT1M",
+    "active": "PT0S"
+  },
+  {
+    "details": {},
+    "counter": 19501,
+    "material": [
+      {
+        "id": 1573,
+        "uniq": "bbb-1offline-2018-01-24",
+        "part": "bbb",
+        "proc": 1,
+        "numproc": 2,
+        "face": 1,
+        "serial": "00000000pn",
+        "workorder": ""
+      }
+    ],
+    "type": "OrderAssignment",
+    "startofcycle": false,
+    "endUTC": "2018-01-24T12:02:00Z",
+    "loc": "Order",
+    "locnum": 1,
+    "pal": 0,
+    "program": "",
+    "result": "work3",
+    "elapsed": "-PT1M",
+    "active": "PT0S"
+  },
+  {
+    "details": {},
+    "counter": 19903,
+    "material": [
+      {
+        "id": 1601,
+        "uniq": "aaa-0offline-2018-01-25",
+        "part": "aaa",
+        "proc": 1,
+        "numproc": 2,
+        "face": 1,
+        "serial": "00000000pP",
+        "workorder": ""
+      }
+    ],
+    "type": "OrderAssignment",
+    "startofcycle": false,
+    "endUTC": "2018-01-24T12:02:00Z",
+    "loc": "Order",
+    "locnum": 1,
+    "pal": 0,
+    "program": "",
+    "result": "work1",
+    "elapsed": "-PT1M",
+    "active": "PT0S"
+  },
+  {
+    "details": {},
+    "counter": 20005,
+    "material": [
+      {
+        "id": 1609,
+        "uniq": "aaa-0offline-2018-01-25",
+        "part": "aaa",
+        "proc": 1,
+        "numproc": 2,
+        "face": 1,
+        "serial": "00000000pX",
+        "workorder": ""
+      }
+    ],
+    "type": "OrderAssignment",
+    "startofcycle": false,
+    "endUTC": "2018-01-24T12:02:00Z",
+    "loc": "Order",
+    "locnum": 1,
+    "pal": 0,
+    "program": "",
+    "result": "work2",
+    "elapsed": "-PT1M",
+    "active": "PT0S"
+  },
+  {
+    "details": {},
+    "counter": 20067,
+    "material": [
+      {
+        "id": 1614,
+        "uniq": "aaa-0offline-2018-01-25",
+        "part": "aaa",
+        "proc": 1,
+        "numproc": 2,
+        "face": 1,
+        "serial": "00000000q2",
+        "workorder": ""
+      }
+    ],
+    "type": "OrderAssignment",
+    "startofcycle": false,
+    "endUTC": "2018-01-24T12:02:00Z",
+    "loc": "Order",
+    "locnum": 1,
+    "pal": 0,
+    "program": "",
+    "result": "work3",
+    "elapsed": "-PT1M",
+    "active": "PT0S"
+  }
+]

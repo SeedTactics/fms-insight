@@ -32,10 +32,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import { LazySeq } from "@seedtactics/immutable-collections";
-import { useEffect } from "react";
+import { createElement, useEffect } from "react";
 import "urlpattern-polyfill";
 import { materialDialogOpen } from "../cell-status/material-details.js";
 import { atom, useAtomValue, useSetAtom } from "jotai";
+import { Link } from "@mui/material";
 
 export enum RouteLocation {
   ChooseMode = "/",
@@ -117,9 +118,9 @@ export type RouteState =
       completed: boolean;
     }
   | { route: RouteLocation.Station_InspectionMonitor }
-  | { route: RouteLocation.Station_InspectionMonitorWithType; inspType: string }
+  | { route: RouteLocation.Station_InspectionMonitorWithType; readonly inspType: string }
   | { route: RouteLocation.Station_Closeout }
-  | { route: RouteLocation.Station_Queues; queues: ReadonlyArray<string> }
+  | { route: RouteLocation.Station_Queues; readonly queues: ReadonlyArray<string> }
   | { route: RouteLocation.Station_Overview }
   | { route: RouteLocation.Operations_Dashboard }
   | { route: RouteLocation.Operations_LoadOutliers }
@@ -131,7 +132,7 @@ export type RouteState =
   | { route: RouteLocation.Operations_SystemOverview }
   | { route: RouteLocation.Operations_AllMaterial }
   | { route: RouteLocation.Operations_RecentSchedules }
-  | { route: RouteLocation.Operations_CurrentWorkorders }
+  | { route: RouteLocation.Operations_CurrentWorkorders; readonly workorder?: string }
   | { route: RouteLocation.Operations_Production }
   | { route: RouteLocation.Operations_Tools }
   | { route: RouteLocation.Operations_Programs }
@@ -162,7 +163,7 @@ export type RouteState =
   | { route: RouteLocation.Sales_Dashboard }
   | { route: RouteLocation.Sales_ProjectedUsage }
   | { route: RouteLocation.VerboseLogging }
-  | { route: RouteLocation.Client_Custom; custom: ReadonlyArray<string> };
+  | { route: RouteLocation.Client_Custom; readonly custom: ReadonlyArray<string> };
 
 function routeToUrl(route: RouteState): string {
   switch (route.route) {
@@ -192,6 +193,15 @@ function routeToUrl(route: RouteState): string {
         return `/station/queues?${params.toString()}`;
       } else {
         return `/station/queues`;
+      }
+
+    case RouteLocation.Operations_CurrentWorkorders:
+      if (route.workorder) {
+        const params = new URLSearchParams();
+        params.append("workorder", route.workorder);
+        return `/operations/current-workorders?${params.toString()}`;
+      } else {
+        return `/operations/current-workorders`;
       }
 
     case RouteLocation.Client_Custom:
@@ -233,6 +243,14 @@ function urlToRoute(url: URL): RouteState {
           };
         }
 
+        case RouteLocation.Operations_CurrentWorkorders: {
+          const workorder = url.searchParams.get("workorder");
+          return {
+            route: RouteLocation.Operations_CurrentWorkorders,
+            workorder: workorder ?? undefined,
+          };
+        }
+
         case RouteLocation.Client_Custom:
           return {
             route: RouteLocation.Client_Custom,
@@ -260,6 +278,22 @@ export const currentRoute = atom(
     }
   },
 );
+
+export function AppLink({ to, children }: { to: RouteState; children: React.ReactNode }): JSX.Element {
+  const setRoute = useSetAtom(currentRoute);
+  return createElement(
+    Link,
+    {
+      href: routeToUrl(to),
+      onClick: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setRoute(to);
+      },
+    },
+    children,
+  );
+}
 
 export function useWatchHistory(): void {
   const isDemo = useAtomValue(isDemoAtom);

@@ -96,7 +96,7 @@ import { SimDayUsagePage } from "./operations/SimDayUsage.js";
 import { latestSimDayUsage } from "../cell-status/sim-day-usage.js";
 import { CloseoutReport } from "./operations/CloseoutReport.js";
 import { RebookingsPage } from "./operations/Rebookings.js";
-import { RecentCompletedPartsPage } from "./analysis/CompletedParts.js";
+import { RecentCompletedPartsPage } from "./operations/CompletedParts.js";
 
 const OperationsReportsTab = "bms-operations-reports-tab";
 
@@ -613,7 +613,7 @@ const App = memo(function App(props: AppProps) {
         break;
 
       case routes.RouteLocation.Sales_Dashboard:
-        page = <CurrentWorkordersPage />;
+        page = <CurrentWorkordersPage disableSearch />;
         nav1 = SalesTabs;
         showAlarms = false;
         break;
