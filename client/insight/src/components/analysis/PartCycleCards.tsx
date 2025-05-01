@@ -64,9 +64,32 @@ import {
   specificMonthEstimatedCycleTimes,
 } from "../../cell-status/estimated-cycle-times.js";
 import { last30StationCycles, specificMonthStationCycles } from "../../cell-status/station-cycles.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
+import { LazySeq, OrderedMap } from "@seedtactics/immutable-collections";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
 import { atomWithDefault } from "jotai/utils";
+
+const dateTimeFormat = new Intl.DateTimeFormat(undefined, {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+function DisplayDateRange({ range }: { range: { start: Date; end: Date } | [Date, Date] | undefined }) {
+  const period = useAtomValue(selectedAnalysisPeriod);
+
+  if (!range) return null;
+
+  const start = "start" in range ? range.start : range[0];
+  const end = "end" in range ? range.end : range[1];
+
+  if (period.type === "SpecificMonth") {
+    return start.toDateString() + " to " + end.toDateString();
+  } else {
+    return dateTimeFormat.format(start) + " to " + dateTimeFormat.format(end);
+  }
+}
 
 // --------------------------------------------------------------------------------
 // Machine Cycles
@@ -79,7 +102,29 @@ const machineSelectedPart = atomWithDefault<PartAndProcess | undefined>((get) =>
 const machineSelectedMachine = atom<string>(FilterAnyMachineKey);
 const machineSelectedOperation = atom<PartAndStationOperation | undefined>(undefined);
 const machineSelectedPallet = atom<number | undefined>(undefined);
-const machineZoomDateRange = atom<{ start: Date; end: Date } | undefined>(undefined);
+const machineZoomDateRangeRecent = atom<{ start: Date; end: Date } | undefined>(undefined);
+const machineZoomDateRangeByMonth = atom<OrderedMap<Date, { start: Date; end: Date }>>(
+  OrderedMap.empty<Date, { start: Date; end: Date }>(),
+);
+const machineZoomDateRange = atom(
+  (get) => {
+    const period = get(selectedAnalysisPeriod);
+    if (period.type === "Last30") {
+      return get(machineZoomDateRangeRecent);
+    } else {
+      return get(machineZoomDateRangeByMonth).get(period.month);
+    }
+  },
+  (get, set, zoom: { start: Date; end: Date } | undefined) => {
+    const period = get(selectedAnalysisPeriod);
+    if (period.type === "Last30") {
+      set(machineZoomDateRangeRecent, zoom);
+    } else {
+      set(machineZoomDateRangeByMonth, (prev) => prev.alter(period.month, () => zoom));
+    }
+  },
+);
+
 const machineYZoom = atom<YZoomRange | null>(null);
 
 export function PartMachineCycleChart() {
@@ -120,7 +165,7 @@ export function PartMachineCycleChart() {
   const [yZoom, setYZoom] = useAtom(machineYZoom);
 
   // calculate points
-  const defaultDateRange =
+  const defaultDateRange: [Date, Date] =
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
@@ -176,7 +221,9 @@ export function PartMachineCycleChart() {
           maxWidth: "calc(100vw - 24px - 24px)",
         }}
       >
-        <Typography variant="subtitle1">Machine Cycles</Typography>
+        <Typography variant="subtitle1">
+          Machine Cycles for <DisplayDateRange range={zoomDateRange ?? defaultDateRange} />
+        </Typography>
         <Box flexGrow={1} />
         <FormControl size="small">
           <Select
@@ -334,7 +381,11 @@ export function PartMachineCycleChart() {
             current_date_zoom={zoomDateRange}
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             showWorkorderAndInspect={true}
-            emptyMessage="Select part, station, or pallet to see cycles."
+            emptyMessage={
+              selectedPart || selectedPallet || selectedOperation
+                ? "No Cycles"
+                : "Select part, station, or pallet to see cycles."
+            }
           />
         )}
       </main>
@@ -357,7 +408,29 @@ const loadSelectedOperation = atomWithDefault<LoadCycleFilter>((get) =>
 );
 const loadSelectedLoad = atom<string>(FilterAnyLoadKey);
 const loadSelectedPallet = atom<number | undefined>(undefined);
-const loadZoomDateRange = atom<{ start: Date; end: Date } | undefined>(undefined);
+const loadZoomDateRangeRecent = atom<{ start: Date; end: Date } | undefined>(undefined);
+const loadZoomDateRangeByMonth = atom<OrderedMap<Date, { start: Date; end: Date }>>(
+  OrderedMap.empty<Date, { start: Date; end: Date }>(),
+);
+const loadZoomDateRange = atom(
+  (get) => {
+    const period = get(selectedAnalysisPeriod);
+    if (period.type === "Last30") {
+      return get(loadZoomDateRangeRecent);
+    } else {
+      return get(loadZoomDateRangeByMonth).get(period.month);
+    }
+  },
+  (get, set, zoom: { start: Date; end: Date } | undefined) => {
+    const period = get(selectedAnalysisPeriod);
+    if (period.type === "Last30") {
+      set(loadZoomDateRangeRecent, zoom);
+    } else {
+      set(loadZoomDateRangeByMonth, (prev) => prev.alter(period.month, () => zoom));
+    }
+  },
+);
+
 const loadYZoom = atom<YZoomRange | null>(null);
 
 export function PartLoadStationCycleChart() {
@@ -404,7 +477,7 @@ export function PartLoadStationCycleChart() {
     [selectedPart, selectedOperation],
   );
 
-  const defaultDateRange =
+  const defaultDateRange: [Date, Date] =
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]
       : [period.month, addMonths(period.month, 1)];
@@ -459,7 +532,9 @@ export function PartLoadStationCycleChart() {
           maxWidth: "calc(100vw - 24px - 24px)",
         }}
       >
-        <Typography variant="subtitle1">Load/Unload Cycles</Typography>
+        <Typography variant="subtitle1">
+          Load/Unload Cycles for <DisplayDateRange range={zoomDateRange ?? defaultDateRange} />
+        </Typography>
         <Box flexGrow={1} />
         <FormControl size="small">
           <Select
@@ -612,7 +687,11 @@ export function PartLoadStationCycleChart() {
             set_date_zoom_range={(z) => setZoomRange(z.zoom)}
             showWorkorderAndInspect={true}
             hideMedian={selectedOperation === "LULOccupancy"}
-            emptyMessage="Select part, operation, or pallet to see cycles."
+            emptyMessage={
+              selectedPart || selectedPallet
+                ? "No Cycles"
+                : "Select part, operation, or pallet to see cycles."
+            }
           />
         )}
       </main>

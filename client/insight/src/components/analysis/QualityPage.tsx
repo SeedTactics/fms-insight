@@ -34,7 +34,6 @@ import { addMonths, addDays, startOfToday } from "date-fns";
 
 import { selectedAnalysisPeriod } from "../../network/load-specific-month.js";
 import { InspectionSankey } from "./InspectionSankey.js";
-import { DataTableActionZoomType } from "./DataTable.js";
 import { last30Inspections, specificMonthInspections } from "../../cell-status/inspections.js";
 import { useSetTitle } from "../routes.js";
 import { useAtomValue } from "jotai";
@@ -46,8 +45,7 @@ export function AnalysisQualityPage() {
   const inspectionlogs = useAtomValue(
     period.type === "Last30" ? last30Inspections : specificMonthInspections,
   );
-  const zoomType =
-    period.type === "Last30" ? DataTableActionZoomType.Last30Days : DataTableActionZoomType.ZoomIntoRange;
+  const zoomType = period.type === "Last30" ? "Last30Days" : "ZoomIntoRange";
   const default_date_range =
     period.type === "Last30"
       ? [addDays(startOfToday(), -29), addDays(startOfToday(), 1)]

@@ -43,7 +43,6 @@ import {
   DataTableActions,
   DataTableBody,
   DataTableActionZoom,
-  DataTableActionZoomType,
   useColSort,
   TableZoom,
 } from "./DataTable.js";
@@ -98,16 +97,16 @@ const columns: ReadonlyArray<Column<ColumnId, TriggeredInspectionEntry>> = [
 ];
 
 function useZoom(
-  zoomType: DataTableActionZoomType | undefined,
+  zoomType: "Last30Days" | "ZoomIntoRange" | "ExtendDays" | undefined,
   extendDateRange: ((numDays: number) => void) | undefined,
   default_date_range: Date[],
 ): TableZoom {
   const [curZoom, setCurZoom] = useState<{ start: Date; end: Date } | undefined>(undefined);
 
   let zoom: DataTableActionZoom | undefined;
-  if (zoomType && zoomType === DataTableActionZoomType.Last30Days) {
+  if (zoomType && zoomType === "Last30Days") {
     zoom = {
-      type: DataTableActionZoomType.Last30Days,
+      type: "Last30Days",
       set_days_back: (numDaysBack) => {
         if (numDaysBack) {
           const now = new Date();
@@ -117,16 +116,16 @@ function useZoom(
         }
       },
     };
-  } else if (zoomType && zoomType === DataTableActionZoomType.ZoomIntoRange) {
+  } else if (zoomType && zoomType === "ZoomIntoRange") {
     zoom = {
-      type: DataTableActionZoomType.ZoomIntoRange,
+      type: "ZoomIntoRange",
       default_date_range,
       current_date_zoom: curZoom,
       set_date_zoom_range: setCurZoom,
     };
-  } else if (zoomType && extendDateRange && zoomType === DataTableActionZoomType.ExtendDays) {
+  } else if (zoomType && extendDateRange && zoomType === "ExtendDays") {
     zoom = {
-      type: DataTableActionZoomType.ExtendDays,
+      type: "ExtendDays",
       curStart: default_date_range[0],
       curEnd: default_date_range[1],
       extend: extendDateRange,
@@ -139,7 +138,7 @@ function useZoom(
 export interface InspectionDataTableProps {
   readonly points: Iterable<InspectionLogEntry>;
   readonly default_date_range: Date[];
-  readonly zoomType?: DataTableActionZoomType;
+  readonly zoomType?: "Last30Days" | "ZoomIntoRange" | "ExtendDays";
   readonly extendDateRange?: (numDays: number) => void;
   readonly hideOpenDetailColumn?: boolean;
 }

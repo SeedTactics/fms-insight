@@ -63,7 +63,7 @@ export class DayAndStation {
   }
 }
 
-function splitTimeToDays(
+export function splitTimeToDays(
   startTime: Date,
   endTime: Date,
   mins: number,

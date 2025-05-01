@@ -40,7 +40,6 @@ import {
   DataTableActions,
   DataTableBody,
   DataTableActionZoom,
-  DataTableActionZoomType,
   useColSort,
   useTablePage,
   TableZoom,
@@ -228,7 +227,7 @@ function useZoom(props: StationDataTableProps): TableZoom {
   if (setZoomRange) {
     if (props.period.type === "Last30") {
       zoom = {
-        type: DataTableActionZoomType.Last30Days,
+        type: "Last30Days",
         set_days_back: (numDaysBack) => {
           if (numDaysBack) {
             const now = new Date();
@@ -240,7 +239,7 @@ function useZoom(props: StationDataTableProps): TableZoom {
       };
     } else {
       zoom = {
-        type: DataTableActionZoomType.ZoomIntoRange,
+        type: "ZoomIntoRange",
         default_date_range: [props.period.month, addMonths(props.period.month, 1)],
         current_date_zoom: props.current_date_zoom,
         set_date_zoom_range: (z) => setZoomRange({ zoom: z }),
