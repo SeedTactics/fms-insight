@@ -39,6 +39,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml;
 using BlackMaple.MachineFramework;
+using NSubstitute;
+using Shouldly;
 using VerifyXunit;
 using Xunit;
 
@@ -80,7 +82,8 @@ public sealed class OrderXMLSpec : IDisposable
         ADEPath = "unused",
         DbConnectionString = "noconn",
         DownloadOnlyOrders = false,
-      }
+      },
+      Substitute.For<IRepository>()
     );
 
     var actual = new XmlDocument();
@@ -105,7 +108,8 @@ public sealed class OrderXMLSpec : IDisposable
         ADEPath = "unused",
         DbConnectionString = "noconn",
         DownloadOnlyOrders = true,
-      }
+      },
+      Substitute.For<IRepository>()
     );
 
     var actual = new XmlDocument();
@@ -122,6 +126,8 @@ public sealed class OrderXMLSpec : IDisposable
       jsonSettings
     )!;
 
+    var db = Substitute.For<IRepository>();
+
     OrderXML.WriteJobsXML(
       _tempFile,
       newj.Jobs,
@@ -130,13 +136,18 @@ public sealed class OrderXMLSpec : IDisposable
         ADEPath = "unused",
         DbConnectionString = "noconn",
         DownloadOnlyOrders = true,
-        CustomOrderDetails = j => new OrderXML.OrderDetails()
+        CustomOrderDetails = (j, cdb) =>
         {
-          Comment = j.PartName + " custom comment",
-          Revision = j.PartName + " custom revision",
-          Priority = j.PartName.StartsWith("a") ? 1 : 2,
+          cdb.ShouldBe(db);
+          return new OrderXML.OrderDetails()
+          {
+            Comment = j.PartName + " custom comment",
+            Revision = j.PartName + " custom revision",
+            Priority = j.PartName.StartsWith("a") ? 1 : 2,
+          };
         },
-      }
+      },
+      db
     );
 
     var actual = new XmlDocument();
@@ -175,7 +186,8 @@ public sealed class OrderXMLSpec : IDisposable
         ADEPath = "unused",
         DbConnectionString = "noconn",
         DownloadOnlyOrders = true,
-      }
+      },
+      Substitute.For<IRepository>()
     );
 
     var actual = new XmlDocument();

@@ -43,7 +43,7 @@ public record MakinoSettings
   public required bool DownloadOnlyOrders { get; init; }
   public required string DbConnectionString { get; init; }
   public TimeZoneInfo LocalTimeZone { get; init; } = TimeZoneInfo.Local;
-  public Func<Job, OrderXML.OrderDetails>? CustomOrderDetails { get; init; } = null;
+  public Func<Job, IRepository, OrderXML.OrderDetails>? CustomOrderDetails { get; init; } = null;
 
   private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSettings>();
 

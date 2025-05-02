@@ -43,9 +43,9 @@ namespace BlackMaple.FMSInsight.Makino
 {
   public static class OrderXML
   {
-    public static void WriteNewJobs(MakinoSettings makinoCfg, IEnumerable<Job> jobs)
+    public static void WriteNewJobs(MakinoSettings makinoCfg, IEnumerable<Job> jobs, IRepository db)
     {
-      WriteXML(makinoCfg, tempFile => WriteJobsXML(tempFile, jobs, makinoCfg));
+      WriteXML(makinoCfg, tempFile => WriteJobsXML(tempFile, jobs, makinoCfg, db));
     }
 
     public static void WriteDecrement(MakinoSettings makinoCfg, IEnumerable<RemainingToRun> decrs)
@@ -112,7 +112,12 @@ namespace BlackMaple.FMSInsight.Makino
       public required int Proc { get; init; }
     }
 
-    public static void WriteJobsXML(string filename, IEnumerable<Job> jobs, MakinoSettings settings)
+    public static void WriteJobsXML(
+      string filename,
+      IEnumerable<Job> jobs,
+      MakinoSettings settings,
+      IRepository db
+    )
     {
       using var xml = new XmlTextWriter(filename, System.Text.Encoding.UTF8);
       xml.Formatting = Formatting.Indented;
@@ -167,7 +172,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       xml.WriteStartElement("Orders");
       foreach (var j in jobs)
-        WriteOrder(xml, j, settings);
+        WriteOrder(xml, j, settings, db);
       xml.WriteEndElement();
 
       xml.WriteStartElement("OrderQuantities");
@@ -272,7 +277,7 @@ namespace BlackMaple.FMSInsight.Makino
       public required int Priority { get; init; }
     }
 
-    private static void WriteOrder(XmlTextWriter xml, Job j, MakinoSettings settings)
+    private static void WriteOrder(XmlTextWriter xml, Job j, MakinoSettings settings, IRepository db)
     {
       string partName;
       if (settings.DownloadOnlyOrders)
@@ -288,7 +293,7 @@ namespace BlackMaple.FMSInsight.Makino
         partName = j.UniqueStr;
       }
 
-      var details = settings.CustomOrderDetails?.Invoke(j);
+      var details = settings.CustomOrderDetails?.Invoke(j, db);
 
       xml.WriteStartElement("Order");
       xml.WriteAttributeString("action", "ADD");
