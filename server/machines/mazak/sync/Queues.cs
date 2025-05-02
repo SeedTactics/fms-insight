@@ -204,10 +204,13 @@ namespace MazakMachineInterface
       bool waitForAllCastings
     )
     {
-      foreach (var sch in schsForJob.Where(s => !string.IsNullOrEmpty(s.Procs[proc].InputQueue)))
+      // The goal here is to keep the contents of the queue syncronized with the count of material
+      // inside the schedule.
+
+      foreach (var sch in schsForJob)
       {
         var schProc = sch.Procs[proc];
-        if (string.IsNullOrEmpty(schProc.InputQueue))
+        if (!ShouldSyncronizeJobProcess(sch.Job, proc: proc))
           continue;
 
         var matInQueue = QueuedMaterialForLoading(
@@ -297,7 +300,7 @@ namespace MazakMachineInterface
       {
         // now deal with the non-input-queue raw material. They could have larger material than planned quantity
         // if the schedule has been decremented
-        foreach (var sch in schsForJob.Where(s => string.IsNullOrEmpty(s.Procs[proc].InputQueue)))
+        foreach (var sch in schsForJob.Where(s => string.IsNullOrEmpty(s.Procs[1].InputQueue)))
         {
           if (
             sch.SchRow.PlanQuantity <= CountCompletedOrMachiningStarted(sch)
@@ -318,7 +321,7 @@ namespace MazakMachineInterface
     {
       var schsToAssign = allSchs
         .Where(s =>
-          !s.LowerPriorityScheduleMatchingCastingSkipped && !string.IsNullOrEmpty(s.Procs[1].InputQueue)
+          !s.LowerPriorityScheduleMatchingCastingSkipped && ShouldSyncronizeJobProcess(s.Job, proc: 1)
         )
         .OrderBy(s => s.SchRow.DueDate)
         .ThenBy(s => s.SchRow.Priority);
@@ -435,19 +438,9 @@ namespace MazakMachineInterface
       return new MazakWriteData() { Prefix = "Setting material from queues", Schedules = newSchs };
     }
 
-    private static int? FindPathGroup(IRepository log, Func<int, int, int> getPathGroup, long matId)
+    public static bool ShouldSyncronizeJobProcess(Job j, int proc)
     {
-      var details = log.GetMaterialDetails(matId);
-      if (details.Paths.Count > 0)
-      {
-        var path = details.Paths.Aggregate((max, v) => max.Key > v.Key ? max : v);
-        return getPathGroup(path.Key, path.Value);
-      }
-      else
-      {
-        Log.Warning("Material {matId} has no path groups! {@details}", matId, details);
-        return null;
-      }
+      return !string.IsNullOrEmpty(j.Processes[proc - 1].Paths[0].InputQueue);
     }
 
     public static List<QueuedMaterial> QueuedMaterialForLoading(
