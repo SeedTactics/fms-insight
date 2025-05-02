@@ -43,9 +43,9 @@ namespace BlackMaple.FMSInsight.Makino
 {
   public static class OrderXML
   {
-    public static void WriteNewJobs(MakinoSettings makinoCfg, IEnumerable<Job> jobs, bool onlyOrders)
+    public static void WriteNewJobs(MakinoSettings makinoCfg, IEnumerable<Job> jobs)
     {
-      WriteXML(makinoCfg, tempFile => WriteJobsXML(tempFile, jobs, onlyOrders));
+      WriteXML(makinoCfg, tempFile => WriteJobsXML(tempFile, jobs, makinoCfg));
     }
 
     public static void WriteDecrement(MakinoSettings makinoCfg, IEnumerable<RemainingToRun> decrs)
@@ -112,14 +112,14 @@ namespace BlackMaple.FMSInsight.Makino
       public required int Proc { get; init; }
     }
 
-    public static void WriteJobsXML(string filename, IEnumerable<Job> jobs, bool onlyOrders)
+    public static void WriteJobsXML(string filename, IEnumerable<Job> jobs, MakinoSettings settings)
     {
       using var xml = new XmlTextWriter(filename, System.Text.Encoding.UTF8);
       xml.Formatting = Formatting.Indented;
       xml.WriteStartDocument();
       xml.WriteStartElement("MASData");
 
-      if (!onlyOrders)
+      if (!settings.DownloadOnlyOrders)
       {
         xml.WriteStartElement("Parts");
         foreach (var j in jobs)
@@ -167,7 +167,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       xml.WriteStartElement("Orders");
       foreach (var j in jobs)
-        WriteOrder(xml, j, onlyOrders);
+        WriteOrder(xml, j, settings);
       xml.WriteEndElement();
 
       xml.WriteStartElement("OrderQuantities");
@@ -265,10 +265,17 @@ namespace BlackMaple.FMSInsight.Makino
       xml.WriteEndElement(); //CommonFixture
     }
 
-    private static void WriteOrder(XmlTextWriter xml, Job j, bool onlyOrders)
+    public record OrderDetails
+    {
+      public required string Comment { get; init; }
+      public required string Revision { get; init; }
+      public required int Priority { get; init; }
+    }
+
+    private static void WriteOrder(XmlTextWriter xml, Job j, MakinoSettings settings)
     {
       string partName;
-      if (onlyOrders)
+      if (settings.DownloadOnlyOrders)
       {
         partName =
           j.Processes.SelectMany(p => p.Paths)
@@ -281,15 +288,17 @@ namespace BlackMaple.FMSInsight.Makino
         partName = j.UniqueStr;
       }
 
+      var details = settings.CustomOrderDetails?.Invoke(j);
+
       xml.WriteStartElement("Order");
       xml.WriteAttributeString("action", "ADD");
       xml.WriteAttributeString("name", j.UniqueStr);
 
-      xml.WriteElementString("Comment", j.PartName);
+      xml.WriteElementString("Comment", details?.Comment ?? j.PartName);
       xml.WriteElementString("PartName", partName);
-      xml.WriteElementString("Revision", "Insight");
+      xml.WriteElementString("Revision", details?.Revision ?? "Insight");
       xml.WriteElementString("Quantity", j.Cycles.ToString());
-      xml.WriteElementString("Priority", "10");
+      xml.WriteElementString("Priority", details?.Priority.ToString() ?? "10");
       xml.WriteElementString("Status", "0");
 
       xml.WriteEndElement(); // Order

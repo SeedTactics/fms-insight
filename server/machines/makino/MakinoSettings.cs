@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.IO;
+using BlackMaple.MachineFramework;
 using Microsoft.Extensions.Configuration;
 
 namespace BlackMaple.FMSInsight.Makino;
@@ -42,6 +43,7 @@ public record MakinoSettings
   public required bool DownloadOnlyOrders { get; init; }
   public required string DbConnectionString { get; init; }
   public TimeZoneInfo LocalTimeZone { get; init; } = TimeZoneInfo.Local;
+  public Func<Job, OrderXML.OrderDetails>? CustomOrderDetails { get; init; } = null;
 
   private static readonly Serilog.ILogger Log = Serilog.Log.ForContext<MakinoSettings>();
 
