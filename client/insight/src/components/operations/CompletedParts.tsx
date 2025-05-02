@@ -67,7 +67,7 @@ import {
 } from "@mui/icons-material";
 import { Collapse } from "@mui/material";
 import { LazySeq, mkCompareByProperties, ToComparableBase } from "@seedtactics/immutable-collections";
-import { useSetTitle } from "../routes.js";
+import { AppLink, RouteLocation, useSetTitle } from "../routes.js";
 import {
   materialDialogOpen,
   materialInDialogInfo,
@@ -209,6 +209,22 @@ function SortColHeader<Col>(props: {
   );
 }
 
+const WorkorderLink = memo(function WorkorderLink({
+  workorderId,
+}: {
+  workorderId: string | null | undefined;
+}) {
+  if (!workorderId || workorderId === "") {
+    return <span />;
+  } else {
+    return (
+      <AppLink to={{ route: RouteLocation.Operations_CurrentWorkorders, workorder: workorderId }}>
+        {workorderId}
+      </AppLink>
+    );
+  }
+});
+
 function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAndCompletedData> }) {
   const setMatToShow = useSetAtom(materialDialogOpen);
   const [sortCol, setSortCol] = useState<MatSortCol>("Serial");
@@ -258,7 +274,9 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
               <TableCell>
                 {s.last_unload_time ? completedDateFormat.format(s.last_unload_time) : ""}
               </TableCell>
-              <TableCell>{s.workorderId ?? ""}</TableCell>
+              <TableCell>
+                <WorkorderLink workorderId={s.workorderId} />
+              </TableCell>
               <TableCell sx={{ textAlign: "center" }} padding="checkbox">
                 {s.currently_quarantined ? <SavedSearch fontSize="inherit" /> : ""}
               </TableCell>
@@ -440,11 +458,16 @@ const PartRow = memo(function PartRow({ part }: { readonly part: PartSummary }) 
           )}
         </TableCell>
         <TableCell align="left">
-          {part.workorders.size <= 1
-            ? (part.workorders.lookupMin()?.[0] ?? null)
-            : part.workorders.size === 2
-              ? part.workorders.lookupMin()?.[0] + " & " + part.workorders.lookupMax()?.[0]
-              : `${part.workorders.size} workorders`}
+          {part.workorders.size <= 1 ? (
+            <WorkorderLink workorderId={part.workorders.lookupMin() ?? null} />
+          ) : part.workorders.size === 2 ? (
+            <span>
+              <WorkorderLink workorderId={part.workorders.lookupMin()} /> &{" "}
+              <WorkorderLink workorderId={part.workorders.lookupMax()} />
+            </span>
+          ) : (
+            `${part.workorders.size} workorders`
+          )}
         </TableCell>
         <TableCell>
           <Tooltip title="Show Details">

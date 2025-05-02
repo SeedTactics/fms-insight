@@ -78,7 +78,7 @@ import {
 import { Collapse } from "@mui/material";
 import { addWorkorderComment, currentStatus } from "../../cell-status/current-status.js";
 import { LazySeq, ToComparableBase } from "@seedtactics/immutable-collections";
-import { useSetTitle } from "../routes.js";
+import { currentRoute, RouteLocation, useSetTitle } from "../routes.js";
 import { IActiveWorkorder, WorkorderSerialCloseout, WorkorderMaterial } from "../../network/api.js";
 import { durationToMinutes } from "../../util/parseISODuration.js";
 import {
@@ -93,7 +93,28 @@ import { WorkorderGantt } from "./WorkorderGantt.js";
 import { SelectWorkorderDialog, selectWorkorderDialogOpen } from "../station-monitor/SelectWorkorder.js";
 import { LogBackend } from "../../network/backend.js";
 
-const currentWorkorderIdToSearch = atom<string | null>(null);
+const currentWorkorderIdToSearch = atom<string | null, [string | null], void>(
+  (get) => {
+    const r = get(currentRoute);
+    if (r.route === RouteLocation.Operations_CurrentWorkorders) {
+      return r.workorder ?? null;
+    } else {
+      return null;
+    }
+  },
+  (get, set, workId: string | null) => {
+    const r = get(currentRoute);
+    if (r.route === RouteLocation.Operations_CurrentWorkorders) {
+      if (workId === "") {
+        workId = null;
+      }
+      set(currentRoute, {
+        route: RouteLocation.Operations_CurrentWorkorders,
+        workorder: workId ?? undefined,
+      });
+    }
+  },
+);
 
 const recentSearchedWorkorders = atomWithStorage<ReadonlyArray<string>>("recentSearchedWorkorders", []);
 
@@ -627,6 +648,7 @@ const WorkorderHeader = memo(function WorkorderHeader(props: {
   readonly setOrder: (o: "asc" | "desc") => void;
   readonly sortBy: SortColumn;
   readonly setSortBy: (c: SortColumn) => void;
+  readonly disableSearch: boolean | undefined;
 }) {
   const sort = {
     sortBy: props.sortBy,
@@ -642,7 +664,7 @@ const WorkorderHeader = memo(function WorkorderHeader(props: {
           align="left"
           col={SortColumn.WorkorderId}
           {...sort}
-          extraIcon={<WorkorderSearchButton />}
+          extraIcon={props.disableSearch ? undefined : <WorkorderSearchButton />}
         >
           Workorder
         </SortColHeader>
@@ -775,7 +797,13 @@ function SearchingWorkorder() {
   );
 }
 
-function WorkorderTable({ showSim }: { showSim: boolean }) {
+function WorkorderTable({
+  showSim,
+  disableSearch,
+}: {
+  showSim: boolean;
+  disableSearch: boolean | undefined;
+}) {
   const [sortBy, setSortBy] = useState<SortColumn>(SortColumn.WorkorderId);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const currentSt = useAtomValue(currentStatus);
@@ -788,6 +816,7 @@ function WorkorderTable({ showSim }: { showSim: boolean }) {
         showSim={showSim}
         order={order}
         setOrder={setOrder}
+        disableSearch={disableSearch}
       />
       <TableBody>
         <Suspense fallback={<SearchingWorkorder />}>
@@ -837,7 +866,11 @@ const WorkSerialDialog = memo(function WorkSerialDialog() {
   return <MaterialDialog buttons={<WorkSerialButtons />} />;
 });
 
-export const CurrentWorkordersPage = memo(function RecentWorkordersPage(): ReactNode {
+export const CurrentWorkordersPage = memo(function RecentWorkordersPage({
+  disableSearch,
+}: {
+  disableSearch?: boolean;
+}): ReactNode {
   useSetTitle("Workorders");
   const currentSt = useAtomValue(currentStatus);
   const display = useAtomValue(tableOrGantt);
@@ -850,7 +883,11 @@ export const CurrentWorkordersPage = memo(function RecentWorkordersPage(): React
   return (
     <Box component="main" padding="24px">
       {showSim ? <SimulatedWarning showSim={showSim} /> : undefined}
-      {display === "table" ? <WorkorderTable showSim={showSim} /> : <WorkorderGantt />}
+      {display === "table" ? (
+        <WorkorderTable showSim={showSim} disableSearch={disableSearch} />
+      ) : (
+        <WorkorderGantt />
+      )}
       <WorkorderCommentDialog />
       <WorkSerialDialog />
       <SelectWorkorderDialog />
