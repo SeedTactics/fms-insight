@@ -72,7 +72,16 @@ public sealed class OrderXMLSpec : IDisposable
       jsonSettings
     )!;
 
-    OrderXML.WriteJobsXML(_tempFile, newj.Jobs, onlyOrders: false);
+    OrderXML.WriteJobsXML(
+      _tempFile,
+      newj.Jobs,
+      new MakinoSettings()
+      {
+        ADEPath = "unused",
+        DbConnectionString = "noconn",
+        DownloadOnlyOrders = false,
+      }
+    );
 
     var actual = new XmlDocument();
     actual.Load(_tempFile);
@@ -88,7 +97,47 @@ public sealed class OrderXMLSpec : IDisposable
       jsonSettings
     )!;
 
-    OrderXML.WriteJobsXML(_tempFile, newj.Jobs, onlyOrders: true);
+    OrderXML.WriteJobsXML(
+      _tempFile,
+      newj.Jobs,
+      new MakinoSettings()
+      {
+        ADEPath = "unused",
+        DbConnectionString = "noconn",
+        DownloadOnlyOrders = true,
+      }
+    );
+
+    var actual = new XmlDocument();
+    actual.Load(_tempFile);
+
+    await Verifier.Verify(actual);
+  }
+
+  [Fact]
+  public async Task OnlyOrdersCustomDetails()
+  {
+    var newj = JsonSerializer.Deserialize<NewJobs>(
+      File.ReadAllText("../../../sample-newjobs/singleproc.json"),
+      jsonSettings
+    )!;
+
+    OrderXML.WriteJobsXML(
+      _tempFile,
+      newj.Jobs,
+      new MakinoSettings()
+      {
+        ADEPath = "unused",
+        DbConnectionString = "noconn",
+        DownloadOnlyOrders = true,
+        CustomOrderDetails = j => new OrderXML.OrderDetails()
+        {
+          Comment = j.PartName + " custom comment",
+          Revision = j.PartName + " custom revision",
+          Priority = j.PartName.StartsWith("a") ? 1 : 2,
+        },
+      }
+    );
 
     var actual = new XmlDocument();
     actual.Load(_tempFile);
@@ -118,7 +167,16 @@ public sealed class OrderXMLSpec : IDisposable
         .ToImmutableList(),
     };
 
-    OrderXML.WriteJobsXML(_tempFile, newJ.Jobs, onlyOrders: true);
+    OrderXML.WriteJobsXML(
+      _tempFile,
+      newJ.Jobs,
+      new MakinoSettings()
+      {
+        ADEPath = "unused",
+        DbConnectionString = "noconn",
+        DownloadOnlyOrders = true,
+      }
+    );
 
     var actual = new XmlDocument();
     actual.Load(_tempFile);

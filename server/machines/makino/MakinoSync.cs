@@ -187,7 +187,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       if (jobsToSend.Count > 0)
       {
-        OrderXML.WriteNewJobs(settings, jobsToSend, settings.DownloadOnlyOrders);
+        OrderXML.WriteNewJobs(settings, jobsToSend);
         foreach (var j in jobsToSend)
         {
           db.MarkJobCopiedToSystem(j.UniqueStr);
