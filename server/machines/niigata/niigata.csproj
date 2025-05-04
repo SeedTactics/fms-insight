@@ -1,11 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <AssemblyName>BlackMaple.FMSInsight.Niigata</AssemblyName>
     <PackageId>BlackMaple.FMSInsight.Niigata</PackageId>
     <OutputType>Library</OutputType>
     <TargetFramework>net9.0</TargetFramework>
-
     <Title>Niigata backend for FMS Insight</Title>
     <Company>Black Maple Software, LLC</Company>
     <Product>SeedTactics</Product>
@@ -18,22 +16,23 @@
 
       This package contains the backend to interface with the Niigata ICC Cell Controller.
     </Description>
-
     <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
     <PackageProjectUrl>https://fms-insight.seedtactics.com</PackageProjectUrl>
     <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
-
   <ItemGroup>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
     <PackageReference Include="Dapper" Version="2.1.35" />
     <PackageReference Include="Npgsql" Version="9.0.*" />
-
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" Condition="'$(Configuration)' == 'Release'"/>
+    <PackageReference
+      Include="Microsoft.SourceLink.GitHub"
+      Version="8.0.0"
+      PrivateAssets="All"
+      Condition="'$(Configuration)' == 'Release'"
+    />
   </ItemGroup>
 </Project>

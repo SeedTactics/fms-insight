@@ -1,20 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
   <ItemGroup>
-    <Using Include="BenchmarkDotNet.Attributes"/>
-    <Using Include="BlackMaple.MachineFramework"/>
+    <Using Include="BenchmarkDotNet.Attributes" />
+    <Using Include="BlackMaple.MachineFramework" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.13.11" />
     <ProjectReference Include="..\lib\BlackMaple.MachineFramework\BlackMaple.MachineFramework.csproj" />
   </ItemGroup>
-
 </Project>
