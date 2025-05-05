@@ -37,8 +37,6 @@ using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 
-#nullable enable
-
 namespace BlackMaple.MachineFramework;
 
 public static class Configuration

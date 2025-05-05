@@ -37,8 +37,6 @@ using System.Collections.Immutable;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-#nullable enable
-
 namespace BlackMaple.MachineFramework.Controllers
 {
   public record QueuePosition

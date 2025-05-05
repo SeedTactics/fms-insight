@@ -14,7 +14,7 @@ public class TimespanConverter : JsonConverter<TimeSpan>
       return result;
     if (TryParse(spanString, out result))
       return result;
-    return System.Xml.XmlConvert.ToTimeSpan(spanString);
+    return System.Xml.XmlConvert.ToTimeSpan(spanString ?? "");
   }
 
   public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
@@ -22,12 +22,12 @@ public class TimespanConverter : JsonConverter<TimeSpan>
     writer.WriteStringValue(System.Xml.XmlConvert.ToString(value));
   }
 
-  public static bool TryParse(string duration, out TimeSpan t)
+  public static bool TryParse(string? duration, out TimeSpan t)
   {
     long ticks = 0;
     t = TimeSpan.Zero;
 
-    if (duration[0] != 'P')
+    if (duration == null || duration[0] != 'P')
       return false;
 
     bool inTime = false;
