@@ -36,11 +36,13 @@ using System.Linq;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -110,6 +112,26 @@ public static class FMSInsightWebHost
 
         s.AddResponseCompression();
 
+        s.Configure<JsonOptions>(options => JsonSettings(options.SerializerOptions));
+        s.AddOpenApi(options =>
+        {
+          // SimStations list in NewJobs is bugged https://github.com/dotnet/aspnetcore/issues/61407
+          // Also, duplicates https://github.com/dotnet/aspnetcore/issues/58617 but can be worked around
+          options.AddSchemaTransformer(new TimespanSchemaConverter());
+          options.AddDocumentTransformer(
+            (doc, ctx, cancel) =>
+            {
+              doc.Info = new Microsoft.OpenApi.Models.OpenApiInfo
+              {
+                Title = "SeedTactic FMS Insight API",
+                Description = "API for FMS Insight",
+                Version = "v1",
+              };
+              return Task.CompletedTask;
+            }
+          );
+        });
+
         s.AddCors(options =>
         {
           options.AddDefaultPolicy(builder =>
@@ -137,10 +159,6 @@ public static class FMSInsightWebHost
               foreach (var p in extraParts)
                 am.ApplicationParts.Add(p);
             }
-          })
-          .AddJsonOptions(options =>
-          {
-            JsonSettings(options.JsonSerializerOptions);
           });
 
         if (serverSt.UseAuthentication)
@@ -264,6 +282,8 @@ public static class FMSInsightWebHost
         {
           ctrlBuilder.RequireAuthorization();
         }
+
+        endpoints.MapOpenApi();
 
         endpoints.Map(
           "/api/v1/events",

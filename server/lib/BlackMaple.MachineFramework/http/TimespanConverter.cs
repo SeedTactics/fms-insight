@@ -1,9 +1,57 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.OpenApi;
+using Microsoft.OpenApi.Models;
 
 namespace BlackMaple.MachineFramework;
+
+public class TimespanSchemaConverter : IOpenApiSchemaTransformer
+{
+  public Task TransformAsync(
+    OpenApiSchema schema,
+    OpenApiSchemaTransformerContext context,
+    CancellationToken cancellationToken
+  )
+  {
+    if (context.JsonTypeInfo.Type == typeof(TimeSpan))
+    {
+      schema.Type = "string";
+      schema.Format = "duration";
+      schema.Pattern = null;
+    }
+    else if (context.JsonTypeInfo.Type == typeof(TimeSpan?))
+    {
+      schema.Type = "string";
+      schema.Format = "duration";
+      schema.Pattern = null;
+      schema.Nullable = true;
+    }
+    else if (context.JsonTypeInfo.Type.IsAssignableTo(typeof(IDictionary<string, TimeSpan>)))
+    {
+      schema.AdditionalProperties = new OpenApiSchema { Type = "string", Format = "duration" };
+    }
+    else if (context.JsonTypeInfo.Type.IsAssignableTo(typeof(IEnumerable<TimeSpan>)))
+    {
+      schema.Type = "array";
+      schema.Items = new OpenApiSchema { Type = "string", Format = "duration" };
+    }
+    else if (context.JsonTypeInfo.Type.IsAssignableTo(typeof(IDictionary<string, TimeSpan?>)))
+    {
+      schema.AdditionalProperties = new OpenApiSchema
+      {
+        Type = "string",
+        Format = "duration",
+        Nullable = true,
+      };
+    }
+    return Task.CompletedTask;
+  }
+}
 
 public class TimespanConverter : JsonConverter<TimeSpan>
 {
