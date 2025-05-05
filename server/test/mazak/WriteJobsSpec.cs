@@ -429,16 +429,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
 
       Should
-        .Throw<Exception>(
-          () =>
-            WriteJobs.SyncFromDatabase(
-              _initialAllData,
-              _jobDB,
-              _mazakDbMock,
-              _settings,
-              _mazakCfg,
-              fixtureQueueTime
-            )
+        .Throw<Exception>(() =>
+          WriteJobs.SyncFromDatabase(
+            _initialAllData,
+            _jobDB,
+            _mazakDbMock,
+            _settings,
+            _mazakCfg,
+            fixtureQueueTime
+          )
         )
         .Message.ShouldBe("Sample error");
 
@@ -477,16 +476,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
 
       Should
-        .Throw<Exception>(
-          () =>
-            WriteJobs.SyncFromDatabase(
-              _initialAllData,
-              _jobDB,
-              _mazakDbMock,
-              _settings,
-              _mazakCfg,
-              fixtureQueueTime
-            )
+        .Throw<Exception>(() =>
+          WriteJobs.SyncFromDatabase(
+            _initialAllData,
+            _jobDB,
+            _mazakDbMock,
+            _settings,
+            _mazakCfg,
+            fixtureQueueTime
+          )
         )
         .Message.ShouldBe("Sample error");
 
@@ -505,16 +503,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       //try again still with error
       Should
-        .Throw<Exception>(
-          () =>
-            WriteJobs.SyncFromDatabase(
-              _initialAllData,
-              _jobDB,
-              _mazakDbMock,
-              _settings,
-              _mazakCfg,
-              fixtureQueueTime
-            )
+        .Throw<Exception>(() =>
+          WriteJobs.SyncFromDatabase(
+            _initialAllData,
+            _jobDB,
+            _mazakDbMock,
+            _settings,
+            _mazakCfg,
+            fixtureQueueTime
+          )
         )
         .Message.ShouldBe("Sample error");
 
@@ -561,16 +558,15 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _jobDB.AddJobs(newJobs, expectedPreviousScheduleId: null, addAsCopiedToSystem: false);
 
       Should
-        .Throw<Exception>(
-          () =>
-            WriteJobs.SyncFromDatabase(
-              _initialAllData,
-              _jobDB,
-              _mazakDbMock,
-              _settings,
-              _mazakCfg,
-              fixtureQueueTime
-            )
+        .Throw<Exception>(() =>
+          WriteJobs.SyncFromDatabase(
+            _initialAllData,
+            _jobDB,
+            _mazakDbMock,
+            _settings,
+            _mazakCfg,
+            fixtureQueueTime
+          )
         )
         .Message.ShouldBe("Sample error");
 

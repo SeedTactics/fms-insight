@@ -1268,8 +1268,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     }
 
     Should
-      .Throw<BadRequestException>(
-        () => _jq.SignalMaterialForQuarantine(materialId: 1, operatorName: "theoper", reason: "a reason")
+      .Throw<BadRequestException>(() =>
+        _jq.SignalMaterialForQuarantine(materialId: 1, operatorName: "theoper", reason: "a reason")
       )
       .Message.ShouldBe("Material not found");
 
@@ -1301,8 +1301,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     if (data.Error != null)
     {
       Should
-        .Throw<BadRequestException>(
-          () => _jq.SignalMaterialForQuarantine(materialId: 1, "theoper", reason: "a reason")
+        .Throw<BadRequestException>(() =>
+          _jq.SignalMaterialForQuarantine(materialId: 1, "theoper", reason: "a reason")
         )
         .Message.ShouldBe(data.Error);
     }

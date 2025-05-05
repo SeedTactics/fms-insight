@@ -1,12 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-
   <PropertyGroup>
     <PackageId>BlackMaple.MachineFramework</PackageId>
     <AssemblyName>BlackMaple.MachineFramework</AssemblyName>
     <OutputType>Library</OutputType>
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-
     <Title>SeedTactics FMS Insight for Flexibile Manufacturing Systems</Title>
     <Company>Black Maple Software, LLC</Company>
     <Product>SeedTactics</Product>
@@ -17,18 +15,15 @@
 
       It provides a server which stores a log of all events and stores a log of planned jobs, a server which translates incomming planned jobs into jobs in the cell controller, a REST-like HTTP API which allows other programs to view the events and create planned jobs, and an HTML client which displays a dashboard, station monitor, and data analysis based on the log of events, planned jobs, and current cell status.
     </Description>
-
     <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
     <PackageProjectUrl>https://fms-insight.seedtactics.com</PackageProjectUrl>
     <RepositoryUrl>https://github.com/SeedTactics/fms-insight.git</RepositoryUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
-
     <IsPackable>true</IsPackable>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
-
   <ItemGroup>
     <Content Include="..\..\..\client\insight\dist\**\*">
       <PackagePath>contentFiles\any\net9.0\wwwroot</PackagePath>
@@ -43,22 +38,22 @@
       <PackageCopyToOutput>true</PackageCopyToOutput>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.*"/>
-
-    <PackageReference Include="Serilog" Version="4.2.0"/>
-    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0"/>
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0"/>
-    <PackageReference Include="Serilog.Sinks.EventLog" Version="4.0.0"/>
-    <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0"/>
-    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0"/>
-
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.*" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.EventLog" Version="4.0.0" />
+    <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.*" />
-    <PackageReference Include="CsvHelper" Version="33.0.1"/>
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
     <PackageReference Include="System.Collections.Immutable" Version="9.0.*" />
-
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" Condition="'$(Configuration)' == 'Release'"/>
+    <PackageReference
+      Include="Microsoft.SourceLink.GitHub"
+      Version="8.0.0"
+      PrivateAssets="All"
+      Condition="'$(Configuration)' == 'Release'"
+    />
   </ItemGroup>
-
 </Project>
