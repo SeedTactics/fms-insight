@@ -38,6 +38,7 @@ using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 #nullable enable
 
@@ -207,7 +208,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(404)]
     public IActionResult FindInstructions(
       string part,
-      [FromQuery] string type,
+      [BindRequired, FromQuery] string type,
       [FromQuery] int? process = null,
       [FromQuery] long? materialID = null,
       [FromQuery] string? operatorName = null,
@@ -303,7 +304,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("parse-barcode")]
-    public ScannedMaterial? ParseBarcode([FromQuery] string barcode)
+    public ScannedMaterial? ParseBarcode([BindRequired, FromQuery] string barcode)
     {
       if (_parseBarcode != null)
       {
