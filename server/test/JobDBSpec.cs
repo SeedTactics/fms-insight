@@ -37,7 +37,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using AutoFixture;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 namespace BlackMaple.FMSInsight.Tests
@@ -98,8 +98,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJobHistory(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(10))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new HistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job1.UniqueStr, job1history),
@@ -113,8 +112,7 @@ namespace BlackMaple.FMSInsight.Tests
           job1.RouteStartUTC.AddHours(10),
           new HashSet<string>(new[] { schId })
         )
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new HistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
@@ -122,21 +120,19 @@ namespace BlackMaple.FMSInsight.Tests
           }
         );
 
-      _jobDB
-        .Invoking(j =>
-          j.LoadJobHistory(
+      Should
+        .Throw<ConflictRequestException>(() =>
+          _jobDB.LoadJobHistory(
             job1.RouteStartUTC.AddHours(-1),
             job1.RouteStartUTC.AddHours(10),
             new HashSet<string>(new[] { schId, "asdfouh" })
           )
         )
-        .Should()
-        .Throw<ConflictRequestException>("Schedule ID asdfouh does not exist");
+        .Message.ShouldBe("Schedule ID asdfouh does not exist");
 
       _jobDB
         .LoadJobHistory(job1.RouteStartUTC.AddHours(-20), job1.RouteStartUTC.AddHours(-10))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new HistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
@@ -144,23 +140,26 @@ namespace BlackMaple.FMSInsight.Tests
           }
         );
 
-      _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history);
-      _jobDB.DoesJobExist(job1.UniqueStr).Should().BeTrue();
-      _jobDB.DoesJobExist("afouiaehwiouhwef").Should().BeFalse();
+      _jobDB.LoadJob(job1.UniqueStr).ShouldBeEquivalentTo(job1history);
+      _jobDB.DoesJobExist(job1.UniqueStr).ShouldBeTrue();
+      _jobDB.DoesJobExist("afouiaehwiouhwef").ShouldBeFalse();
 
       var belowJob1 = job1.UniqueStr.Substring(0, job1.UniqueStr.Length / 2);
       var aboveJob1 =
         belowJob1.Substring(0, belowJob1.Length - 1)
         + ((char)(belowJob1[belowJob1.Length - 1] + 1)).ToString();
-      _jobDB.LoadJobsBetween(belowJob1, aboveJob1).Should().BeEquivalentTo(new[] { job1history });
-      _jobDB.LoadJobsBetween(belowJob1, job1.UniqueStr).Should().BeEquivalentTo(new[] { job1history });
-      _jobDB.LoadJobsBetween(belowJob1, belowJob1 + "!").Should().BeEmpty();
-      _jobDB.LoadJobsBetween(job1.UniqueStr, aboveJob1).Should().BeEquivalentTo(new[] { job1history });
+      _jobDB.LoadJobsBetween(belowJob1, aboveJob1).ShouldBeEquivalentToD(ImmutableList.Create(job1history));
+      _jobDB
+        .LoadJobsBetween(belowJob1, job1.UniqueStr)
+        .ShouldBeEquivalentTo(ImmutableList.Create(job1history));
+      _jobDB.LoadJobsBetween(belowJob1, belowJob1 + "!").ShouldBeEmpty();
+      _jobDB
+        .LoadJobsBetween(job1.UniqueStr, aboveJob1)
+        .ShouldBeEquivalentTo(ImmutableList.Create(job1history));
 
       _jobDB
         .LoadMostRecentSchedule()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new MostRecentSchedule()
           {
             LatestScheduleId = schId,
@@ -172,8 +171,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB
         .StationGroupsOnMostRecentSchedule()
         .ToList()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           job1history
             .Processes.SelectMany(p => p.Paths)
             .SelectMany(p => p.Stops)
@@ -203,15 +201,13 @@ namespace BlackMaple.FMSInsight.Tests
         CurrentUnfilledWorkorders = job2UnfilledWorks.ToImmutableList(),
       };
 
-      _jobDB
-        .Invoking(d => d.AddJobs(newJobs2, "badsch", true))
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("Mismatch in previous schedule: expected 'badsch' but got '" + schId + "'");
+      Should
+        .Throw<Exception>(() => _jobDB.AddJobs(newJobs2, "badsch", true))
+        .Message.ShouldBe("Mismatch in previous schedule: expected 'badsch' but got '" + schId + "'");
 
-      _jobDB.LoadJob(job2.UniqueStr).Should().BeNull();
-      _jobDB.DoesJobExist(job2.UniqueStr).Should().BeFalse();
-      _jobDB.LoadMostRecentSchedule().LatestScheduleId.Should().Be(schId);
+      _jobDB.LoadJob(job2.UniqueStr).ShouldBeNull();
+      _jobDB.DoesJobExist(job2.UniqueStr).ShouldBeFalse();
+      _jobDB.LoadMostRecentSchedule().LatestScheduleId.ShouldBe(schId);
 
       _jobDB.AddJobs(newJobs2, expectedPreviousScheduleId: schId, addAsCopiedToSystem: true);
 
@@ -219,7 +215,7 @@ namespace BlackMaple.FMSInsight.Tests
         .Select(s => s.PlanDown == false ? s with { PlanDown = null } : s)
         .ToImmutableList();
 
-      _jobDB.DoesJobExist(job2.UniqueStr).Should().BeTrue();
+      _jobDB.DoesJobExist(job2.UniqueStr).ShouldBeTrue();
 
       var job2history = job2.CloneToDerived<HistoricJob, Job>() with
       {
@@ -230,8 +226,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJobHistory(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(10))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new HistoricData()
           {
             Jobs = ImmutableDictionary
@@ -248,8 +243,7 @@ namespace BlackMaple.FMSInsight.Tests
           job1.RouteStartUTC.AddHours(10),
           new HashSet<string>(new[] { schId })
         )
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new HistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
@@ -259,8 +253,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJobHistory(job1.RouteStartUTC.AddHours(3), job1.RouteStartUTC.AddHours(10))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new HistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
@@ -270,8 +263,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(job1.RouteStartUTC.AddHours(-1))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary
@@ -285,8 +277,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(job1.RouteStartUTC.AddHours(-1), new[] { schId })
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
@@ -297,8 +288,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(job1.RouteEndUTC.AddHours(1))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
@@ -309,8 +299,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(job1.RouteEndUTC.AddHours(1), new[] { schId2 })
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
@@ -320,8 +309,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(job2.RouteEndUTC.AddHours(1))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
@@ -332,8 +320,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadMostRecentSchedule()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           // job2 is manually created and should be ignored
           new MostRecentSchedule()
           {
@@ -352,21 +339,19 @@ namespace BlackMaple.FMSInsight.Tests
       {
         _jobDB
           .LoadJobsBetween(belowJob1, aboveJob2)
-          .Should()
-          .BeEquivalentTo(new[] { job1history, job2history });
-        _jobDB.LoadJobsBetween(belowJob1, belowJob2).Should().BeEquivalentTo(new[] { job1history });
-        _jobDB.LoadJobsBetween(aboveJob1, aboveJob2).Should().BeEquivalentTo(new[] { job2history });
-        _jobDB.LoadJobsBetween(aboveJob1, belowJob2).Should().BeEmpty();
+          .ShouldBeEquivalentTo(ImmutableList.Create(job1history, job2history));
+        _jobDB.LoadJobsBetween(belowJob1, belowJob2).ShouldBeEquivalentTo(ImmutableList.Create(job1history));
+        _jobDB.LoadJobsBetween(aboveJob1, aboveJob2).ShouldBeEquivalentTo(ImmutableList.Create(job2history));
+        _jobDB.LoadJobsBetween(aboveJob1, belowJob2).ShouldBeEmpty();
       }
       else
       {
         _jobDB
           .LoadJobsBetween(belowJob2, aboveJob1)
-          .Should()
-          .BeEquivalentTo(new[] { job1history, job2history });
-        _jobDB.LoadJobsBetween(belowJob2, belowJob1).Should().BeEquivalentTo(new[] { job2history });
-        _jobDB.LoadJobsBetween(aboveJob2, aboveJob1).Should().BeEquivalentTo(new[] { job1history });
-        _jobDB.LoadJobsBetween(aboveJob2, belowJob1).Should().BeEmpty();
+          .ShouldBeEquivalentTo(ImmutableList.Create(job2history, job1history));
+        _jobDB.LoadJobsBetween(belowJob2, belowJob1).ShouldBeEquivalentTo(ImmutableList.Create(job2history));
+        _jobDB.LoadJobsBetween(aboveJob2, aboveJob1).ShouldBeEquivalentTo(ImmutableList.Create(job1history));
+        _jobDB.LoadJobsBetween(aboveJob2, belowJob1).ShouldBeEmpty();
       }
     }
 
@@ -377,7 +362,7 @@ namespace BlackMaple.FMSInsight.Tests
       var now = DateTime.UtcNow;
       var schId1 = "schId" + _fixture.Create<string>();
       var job1 = RandJob() with { RouteStartUTC = now, RouteEndUTC = now.AddHours(1) };
-      var simDays1 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
+      var simDays1 = _fixture.Create<IEnumerable<SimulatedDayUsage>>().OrderBy(s => s.Day).ToImmutableList();
       var job1history = job1.CloneToDerived<HistoricJob, Job>() with
       {
         ScheduleId = schId1,
@@ -385,7 +370,7 @@ namespace BlackMaple.FMSInsight.Tests
         Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
-      simDays1.Count.Should().BeGreaterThan(0);
+      simDays1.Count.ShouldBeGreaterThan(0);
 
       _jobDB.AddJobs(
         new NewJobs()
@@ -400,8 +385,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJobHistory(now, now)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new HistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job1.UniqueStr, job1history),
@@ -411,8 +395,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(now)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job1.UniqueStr, job1history),
@@ -424,8 +407,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(now, new[] { schId1 })
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
@@ -435,7 +417,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       var schId2 = schId1 + "222";
       var job2 = RandJob() with { RouteStartUTC = now, RouteEndUTC = now.AddHours(2) };
-      var simDays2 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
+      var simDays2 = _fixture.Create<IEnumerable<SimulatedDayUsage>>().OrderBy(s => s.Day).ToImmutableList();
       var job2history = job2.CloneToDerived<HistoricJob, Job>() with
       {
         ScheduleId = schId2,
@@ -456,8 +438,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(now)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary
@@ -472,8 +453,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(now, new[] { schId2 })
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job1.UniqueStr, job1history),
@@ -482,8 +462,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .LoadRecentJobHistory(now, new[] { schId1 })
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary.Create<string, HistoricJob>().Add(job2.UniqueStr, job2history),
@@ -500,7 +479,7 @@ namespace BlackMaple.FMSInsight.Tests
       using var _jobDB = _repoCfg.OpenConnection();
       var now = DateTime.UtcNow;
       var schId1 = "schId" + _fixture.Create<string>();
-      var simDays1 = _fixture.Create<ImmutableList<SimulatedDayUsage>>();
+      var simDays1 = _fixture.Create<IEnumerable<SimulatedDayUsage>>().OrderBy(s => s.Day).ToImmutableList();
 
       _jobDB.AddJobs(
         new NewJobs()
@@ -515,8 +494,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJobHistory(now, now)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new HistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
@@ -526,8 +504,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(now)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
@@ -539,8 +516,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadRecentJobHistory(now, new[] { schId1 })
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new RecentHistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>.Empty,
@@ -569,12 +545,12 @@ namespace BlackMaple.FMSInsight.Tests
         Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
-      _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history);
+      _jobDB.LoadJob(job1.UniqueStr).ShouldBeEquivalentTo(job1history);
 
       var newComment = _fixture.Create<string>();
       _jobDB.SetJobComment(job1.UniqueStr, newComment);
 
-      _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history with { Comment = newComment });
+      _jobDB.LoadJob(job1.UniqueStr).ShouldBeEquivalentTo(job1history with { Comment = newComment });
     }
 
     [Fact]
@@ -597,21 +573,20 @@ namespace BlackMaple.FMSInsight.Tests
         Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
-      _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history);
+      _jobDB.LoadJob(job1.UniqueStr).ShouldBeEquivalentTo(job1history);
 
       var newHold = _fixture.Create<HoldPattern>();
 
       _jobDB.UpdateJobHold(job1.UniqueStr, newHold);
 
-      _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history with { HoldJob = newHold });
+      _jobDB.LoadJob(job1.UniqueStr).ShouldBeEquivalentTo(job1history with { HoldJob = newHold });
 
       var newMachHold = _fixture.Create<HoldPattern>();
       _jobDB.UpdateJobMachiningHold(job1.UniqueStr, 1, 1, newMachHold);
 
       _jobDB
         .LoadJob(job1.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           job1history with
           {
             HoldJob = newHold,
@@ -636,8 +611,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJob(job1.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           job1history with
           {
             HoldJob = newHold,
@@ -692,22 +666,19 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJobsNotCopiedToSystem(job1.RouteStartUTC.AddHours(-10), job1.RouteStartUTC.AddHours(-5))
-        .Should()
-        .BeEmpty();
+        .ShouldBeEmpty();
 
       _jobDB
         .LoadJobsNotCopiedToSystem(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(2))
-        .Should()
-        .BeEquivalentTo(new[] { job1history });
+        .ShouldBeEquivalentTo(ImmutableList.Create(job1history));
 
       _jobDB.MarkJobCopiedToSystem(job1.UniqueStr);
 
       _jobDB
         .LoadJobsNotCopiedToSystem(job1.RouteStartUTC.AddHours(-1), job1.RouteStartUTC.AddHours(2))
-        .Should()
-        .BeEmpty();
+        .ShouldBeEmpty();
 
-      _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history with { CopiedToSystem = true });
+      _jobDB.LoadJob(job1.UniqueStr).ShouldBeEquivalentTo(job1history with { CopiedToSystem = true });
     }
 
     [Fact]
@@ -730,13 +701,13 @@ namespace BlackMaple.FMSInsight.Tests
         Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
-      _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history);
-      _jobDB.LoadUnarchivedJobs().Should().BeEquivalentTo(new[] { job1history });
+      _jobDB.LoadJob(job1.UniqueStr).ShouldBeEquivalentTo(job1history);
+      _jobDB.LoadUnarchivedJobs().ShouldBeEquivalentTo(ImmutableList.Create(job1history));
 
       _jobDB.ArchiveJob(job1.UniqueStr);
 
-      _jobDB.LoadJob(job1.UniqueStr).Should().BeEquivalentTo(job1history with { Archived = true });
-      _jobDB.LoadUnarchivedJobs().Should().BeEmpty();
+      _jobDB.LoadJob(job1.UniqueStr).ShouldBeEquivalentTo(job1history with { Archived = true });
+      _jobDB.LoadUnarchivedJobs().ShouldBeEmpty();
     }
 
     [Fact]
@@ -756,17 +727,15 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJobsNotCopiedToSystem(now, now)
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
+        .ShouldBeEquivalentTo(
+          ImmutableList.Create(
             job1.CloneToDerived<HistoricJob, Job>() with
             {
               CopiedToSystem = false,
               ScheduleId = "schId",
               Decrements = ImmutableList<DecrementQuantity>.Empty,
-            },
-          }
+            }
+          )
         );
 
       var time1 = now.AddHours(-2);
@@ -826,29 +795,26 @@ namespace BlackMaple.FMSInsight.Tests
         }
       );
 
-      _jobDB.LoadDecrementQuantitiesAfter(-1).Should().BeEquivalentTo(expected1JobAndDecr);
+      _jobDB.LoadDecrementQuantitiesAfter(-1).ShouldBe(expected1JobAndDecr, ignoreOrder: true);
 
       _jobDB
         .LoadJobsNotCopiedToSystem(now, now, includeDecremented: true)
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
+        .ShouldBeEquivalentTo(
+          ImmutableList.Create(
             job1.CloneToDerived<HistoricJob, Job>() with
             {
               CopiedToSystem = false,
               ScheduleId = "schId",
               Decrements = expected1Job1,
-            },
-          }
+            }
+          )
         );
 
-      _jobDB.LoadJobsNotCopiedToSystem(now, now, includeDecremented: false).Should().BeEmpty();
+      _jobDB.LoadJobsNotCopiedToSystem(now, now, includeDecremented: false).ShouldBeEmpty();
 
       _jobDB
         .LoadJob(job1.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           job1.CloneToDerived<HistoricJob, Job>() with
           {
             CopiedToSystem = false,
@@ -859,8 +825,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJob(job2.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           job2.CloneToDerived<HistoricJob, Job>() with
           {
             CopiedToSystem = true,
@@ -871,8 +836,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJobHistory(now, now)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           new HistoricData()
           {
             Jobs = ImmutableDictionary<string, HistoricJob>
@@ -947,24 +911,22 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadDecrementQuantitiesAfter(-1)
-        .Should()
-        .BeEquivalentTo(expected1JobAndDecr.Concat(expected2JobAndDecr));
-      _jobDB.LoadDecrementQuantitiesAfter(0).Should().BeEquivalentTo(expected2JobAndDecr);
-      _jobDB.LoadDecrementQuantitiesAfter(1).Should().BeEmpty();
+        .ShouldBe(expected1JobAndDecr.Concat(expected2JobAndDecr), ignoreOrder: true);
+      _jobDB.LoadDecrementQuantitiesAfter(0).ShouldBe(expected2JobAndDecr, ignoreOrder: true);
+      _jobDB.LoadDecrementQuantitiesAfter(1).ShouldBeEmpty();
 
       _jobDB
         .LoadDecrementQuantitiesAfter(time1.AddHours(-1))
-        .Should()
-        .BeEquivalentTo(expected1JobAndDecr.Concat(expected2JobAndDecr));
-      _jobDB.LoadDecrementQuantitiesAfter(time1.AddMinutes(30)).Should().BeEquivalentTo(expected2JobAndDecr);
-      _jobDB.LoadDecrementQuantitiesAfter(time2.AddMinutes(30)).Should().BeEmpty();
+        .ShouldBe(expected1JobAndDecr.Concat(expected2JobAndDecr), ignoreOrder: true);
+      _jobDB
+        .LoadDecrementQuantitiesAfter(time1.AddMinutes(30))
+        .ShouldBe(expected2JobAndDecr, ignoreOrder: true);
+      _jobDB.LoadDecrementQuantitiesAfter(time2.AddMinutes(30)).ShouldBeEmpty();
 
       _jobDB
         .LoadDecrementsForJob(job1.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
+        .ShouldBe(
+          ImmutableList.Create(
             new DecrementQuantity()
             {
               DecrementId = 0,
@@ -976,16 +938,15 @@ namespace BlackMaple.FMSInsight.Tests
               DecrementId = 1,
               TimeUTC = time2,
               Quantity = 26,
-            },
-          }
+            }
+          ),
+          ignoreOrder: true
         );
 
       _jobDB
         .LoadDecrementsForJob(job2.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
+        .ShouldBe(
+          ImmutableList.Create(
             new DecrementQuantity()
             {
               DecrementId = 0,
@@ -997,8 +958,9 @@ namespace BlackMaple.FMSInsight.Tests
               DecrementId = 1,
               TimeUTC = time2,
               Quantity = 44,
-            },
-          }
+            }
+          ),
+          ignoreOrder: true
         );
     }
 
@@ -1012,8 +974,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJob(job.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           job.CloneToDerived<HistoricJob, Job>() with
           {
             CopiedToSystem = true,
@@ -1040,8 +1001,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJob(job.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           job.CloneToDerived<HistoricJob, Job>() with
           {
             Archived = true,
@@ -1138,7 +1098,10 @@ namespace BlackMaple.FMSInsight.Tests
             }
         );
 
-      var initialWorks = _fixture.Create<List<Workorder>>();
+      var initialWorks = _fixture
+        .Create<List<Workorder>>()
+        .Select(w => w with { Programs = w.Programs.OrderBy(p => p.ProcessNumber).ToImmutableList() })
+        .ToList();
       initialWorks[0] = initialWorks[0] with
       {
         Programs =
@@ -1286,8 +1249,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJob(job1.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           job1.CloneToDerived<HistoricJob, Job>() with
           {
             ScheduleId = schId,
@@ -1298,8 +1260,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .GetActiveWorkorders()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           initialWorks
             .Select(w => new ActiveWorkorder()
             {
@@ -1335,20 +1296,21 @@ namespace BlackMaple.FMSInsight.Tests
                 return w;
               }
             })
+            .ToImmutableList()
         );
 
-      _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] });
+      _jobDB
+        .WorkordersById(initialWorks[0].WorkorderId)
+        .ShouldBeEquivalentTo(ImmutableList.Create(initialWorks[0]));
       _jobDB
         .WorkordersById(initialWorks.Select(w => w.WorkorderId).ToHashSet())
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentToD(
           initialWorks.GroupBy(w => w.WorkorderId).ToImmutableDictionary(g => g.Key, g => g.ToImmutableList())
         );
 
       _jobDB
         .LoadProgram("aaa", 1)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1358,8 +1320,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .LoadMostRecentProgram("aaa")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1369,8 +1330,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .LoadProgram("bbb", 6)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "bbb",
@@ -1380,8 +1340,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .LoadMostRecentProgram("bbb")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "bbb",
@@ -1389,19 +1348,19 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "bbb comment",
           }
         );
-      _jobDB.LoadProgram("aaa", 2).Should().BeNull();
-      _jobDB.LoadProgram("ccc", 1).Should().BeNull();
+      _jobDB.LoadProgram("aaa", 2).ShouldBeNull();
+      _jobDB.LoadProgram("ccc", 1).ShouldBeNull();
 
-      _jobDB.LoadProgramContent("aaa", 1).Should().Be("aaa program content");
-      _jobDB.LoadProgramContent("bbb", 6).Should().Be("bbb program content");
-      _jobDB.LoadProgramContent("aaa", 2).Should().BeNull();
-      _jobDB.LoadProgramContent("ccc", 1).Should().BeNull();
-      _jobDB.LoadProgramsInCellController().Should().BeEmpty();
+      _jobDB.LoadProgramContent("aaa", 1).ShouldBe("aaa program content");
+      _jobDB.LoadProgramContent("bbb", 6).ShouldBe("bbb program content");
+      _jobDB.LoadProgramContent("aaa", 2).ShouldBeNull();
+      _jobDB.LoadProgramContent("ccc", 1).ShouldBeNull();
+      _jobDB.LoadProgramsInCellController().ShouldBeEmpty();
 
       // error on program content mismatch
-      _jobDB
-        .Invoking(j =>
-          j.AddJobs(
+      Should
+        .Throw<BadRequestException>(() =>
+          _jobDB.AddJobs(
             new NewJobs
             {
               Jobs = ImmutableList<Job>.Empty,
@@ -1427,13 +1386,11 @@ namespace BlackMaple.FMSInsight.Tests
             addAsCopiedToSystem: true
           )
         )
-        .Should()
-        .Throw<BadRequestException>()
-        .WithMessage("Program bbb rev6 has already been used and the program contents do not match.");
+        .Message.ShouldBe("Program bbb rev6 has already been used and the program contents do not match.");
 
-      _jobDB
-        .Invoking(j =>
-          j.AddPrograms(
+      Should
+        .Throw<BadRequestException>(() =>
+          _jobDB.AddPrograms(
             new List<NewProgramContent>
             {
               new NewProgramContent()
@@ -1454,15 +1411,12 @@ namespace BlackMaple.FMSInsight.Tests
             DateTime.Parse("2019-09-14T03:52:12Z")
           )
         )
-        .Should()
-        .Throw<BadRequestException>()
-        .WithMessage("Program bbb rev6 has already been used and the program contents do not match.");
+        .Message.ShouldBe("Program bbb rev6 has already been used and the program contents do not match.");
 
-      _jobDB.LoadProgram("aaa", 2).Should().BeNull();
+      _jobDB.LoadProgram("aaa", 2).ShouldBeNull();
       _jobDB
         .LoadMostRecentProgram("aaa")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1472,8 +1426,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .LoadMostRecentProgram("bbb")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           new ProgramRevision()
           {
             ProgramName = "bbb",
@@ -1481,8 +1434,8 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "bbb comment",
           }
         );
-      _jobDB.LoadProgramContent("aaa", 1).Should().Be("aaa program content");
-      _jobDB.LoadProgramContent("aaa", 2).Should().BeNull();
+      _jobDB.LoadProgramContent("aaa", 1).ShouldBe("aaa program content");
+      _jobDB.LoadProgramContent("aaa", 2).ShouldBeNull();
 
       // adds new workorders and programs
       var newWorkorders = _fixture.Create<List<Workorder>>();
@@ -1564,19 +1517,22 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB
         .GetActiveWorkorders()
         .Select(w => w.WorkorderId)
-        .Should()
-        .BeEquivalentTo(newWorkorders.Select(w => w.WorkorderId)); // initialWorks have been archived and don't appear
-      _jobDB.WorkordersById(initialWorks[0].WorkorderId).Should().BeEquivalentTo(new[] { initialWorks[0] }); // but still exist when looked up directly
+        .ToList()
+        .ShouldBeEquivalentTo(newWorkorders.Select(w => w.WorkorderId).ToList()); // initialWorks have been archived and don't appear
+      _jobDB
+        .WorkordersById(initialWorks[0].WorkorderId)
+        .ShouldBeEquivalentTo(ImmutableList.Create(initialWorks[0])); // but still exist when looked up directly
       _jobDB
         .GetActiveWorkorders(additionalWorkorders: new HashSet<string>() { initialWorks[0].WorkorderId })
         .Select(w => w.WorkorderId)
-        .Should()
-        .BeEquivalentTo(newWorkorders.Select(w => w.WorkorderId).Append(initialWorks[0].WorkorderId));
+        .ToImmutableList()
+        .ShouldBeEquivalentTo(
+          newWorkorders.Select(w => w.WorkorderId).Append(initialWorks[0].WorkorderId).ToImmutableList()
+        );
 
       _jobDB
         .LoadMostRecentProgram("ccc")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "ccc",
@@ -1624,8 +1580,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadProgram("aaa", 2)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1635,8 +1590,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .LoadMostRecentProgram("aaa")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1646,8 +1600,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .LoadMostRecentProgram("bbb")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "bbb",
@@ -1655,11 +1608,10 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "bbb comment",
           }
         );
-      _jobDB.LoadProgramContent("aaa", 2).Should().Be("aaa program content rev 2");
+      _jobDB.LoadProgramContent("aaa", 2).ShouldBe("aaa program content rev 2");
       _jobDB
         .LoadMostRecentProgram("ccc")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "ccc",
@@ -1667,17 +1619,16 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "the ccc comment",
           }
         );
-      _jobDB.LoadProgramContent("ccc", 1).Should().Be("ccc first program");
+      _jobDB.LoadProgramContent("ccc", 1).ShouldBe("ccc first program");
 
       //now set cell controller names
-      _jobDB.LoadProgramsInCellController().Should().BeEmpty();
+      _jobDB.LoadProgramsInCellController().ShouldBeEmpty();
       _jobDB.SetCellControllerProgramForProgram("aaa", 1, "aaa-1");
       _jobDB.SetCellControllerProgramForProgram("bbb", 6, "bbb-6");
 
       _jobDB
         .ProgramFromCellControllerProgram("aaa-1")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1688,8 +1639,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .LoadProgram("aaa", 1)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1700,8 +1650,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .ProgramFromCellControllerProgram("bbb-6")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "bbb",
@@ -1712,8 +1661,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .LoadMostRecentProgram("bbb")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "bbb",
@@ -1722,12 +1670,11 @@ namespace BlackMaple.FMSInsight.Tests
             CellControllerProgramName = "bbb-6",
           }
         );
-      _jobDB.ProgramFromCellControllerProgram("aagaiouhgi").Should().BeNull();
+      _jobDB.ProgramFromCellControllerProgram("aagaiouhgi").ShouldBeNull();
       _jobDB
         .LoadProgramsInCellController()
-        .Should()
-        .BeEquivalentTo(
-          new[]
+        .ShouldBeEquivalentTo(
+          new List<ProgramRevision>
           {
             new ProgramRevision()
             {
@@ -1750,9 +1697,8 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadProgramsInCellController()
-        .Should()
-        .BeEquivalentTo(
-          new[]
+        .ShouldBeEquivalentTo(
+          new List<ProgramRevision>
           {
             new ProgramRevision()
             {
@@ -1764,11 +1710,10 @@ namespace BlackMaple.FMSInsight.Tests
           }
         );
 
-      _jobDB.ProgramFromCellControllerProgram("aaa-1").Should().BeNull();
+      _jobDB.ProgramFromCellControllerProgram("aaa-1").ShouldBeNull();
       _jobDB
         .LoadProgram("aaa", 1)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1777,11 +1722,9 @@ namespace BlackMaple.FMSInsight.Tests
           }
         );
 
-      _jobDB
-        .Invoking(j => j.SetCellControllerProgramForProgram("aaa", 2, "bbb-6"))
-        .Should()
-        .Throw<Exception>()
-        .WithMessage("Cell program name bbb-6 already in use");
+      Should
+        .Throw<Exception>(() => _jobDB.SetCellControllerProgramForProgram("aaa", 2, "bbb-6"))
+        .Message.ShouldBe("Cell program name bbb-6 already in use");
 
       _jobDB.AddPrograms(
         new[]
@@ -1806,8 +1749,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadMostRecentProgram("aaa")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1817,8 +1759,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
       _jobDB
         .LoadMostRecentProgram("bbb")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "bbb",
@@ -1826,7 +1767,7 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "bbb comment rev7",
           }
         );
-      _jobDB.LoadProgramContent("bbb", 7).Should().Be("bbb program content rev7");
+      _jobDB.LoadProgramContent("bbb", 7).ShouldBe("bbb program content rev7");
 
       // adds new when comment matches, but content does not
       _jobDB.AddPrograms(
@@ -1847,8 +1788,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadMostRecentProgram("aaa")
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -1856,15 +1796,13 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "aaa comment",
           }
         );
-      _jobDB.LoadProgramContent("aaa", 3).Should().BeEquivalentTo("aaa program content rev 3");
+      _jobDB.LoadProgramContent("aaa", 3).ShouldBeEquivalentTo("aaa program content rev 3");
 
       // loading all revisions
       _jobDB
         .LoadProgramRevisionsInDescendingOrderOfRevision("aaa", 3, startRevision: null)
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
+        .ShouldBeEquivalentTo(
+          ImmutableList.Create(
             new ProgramRevision()
             {
               ProgramName = "aaa",
@@ -1882,42 +1820,35 @@ namespace BlackMaple.FMSInsight.Tests
               ProgramName = "aaa",
               Revision = 1,
               Comment = "aaa comment",
-            },
-          },
-          options => options.WithStrictOrdering()
+            }
+          )
         );
       _jobDB
         .LoadProgramRevisionsInDescendingOrderOfRevision("aaa", 1, startRevision: null)
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
+        .ShouldBeEquivalentTo(
+          ImmutableList.Create(
             new ProgramRevision()
             {
               ProgramName = "aaa",
               Revision = 3,
               Comment = "aaa comment",
-            },
-          },
-          options => options.WithStrictOrdering()
+            }
+          )
         );
       _jobDB
         .LoadProgramRevisionsInDescendingOrderOfRevision("aaa", 2, startRevision: 1)
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
+        .ShouldBeEquivalentTo(
+          ImmutableList.Create(
             new ProgramRevision()
             {
               ProgramName = "aaa",
               Revision = 1,
               Comment = "aaa comment",
-            },
-          },
-          options => options.WithStrictOrdering()
+            }
+          )
         );
 
-      _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("wesrfohergh", 10000, null).Should().BeEmpty();
+      _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("wesrfohergh", 10000, null).ShouldBeEmpty();
     }
 
     [Fact]
@@ -2308,8 +2239,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJob(job1.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           job1.CloneToDerived<HistoricJob, Job>() with
           {
             ScheduleId = schId,
@@ -2320,8 +2250,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadProgram("aaa", 1)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -2329,11 +2258,10 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "aaa comment 1",
           }
         );
-      _jobDB.LoadProgramContent("aaa", 1).Should().Be("aaa program content for 1");
+      _jobDB.LoadProgramContent("aaa", 1).ShouldBe("aaa program content for 1");
       _jobDB
         .LoadProgram("aaa", 2)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "aaa",
@@ -2341,13 +2269,12 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "aaa comment 2",
           }
         );
-      _jobDB.LoadProgramContent("aaa", 2).Should().Be("aaa program content for 2");
-      _jobDB.LoadMostRecentProgram("aaa").Revision.Should().Be(2);
+      _jobDB.LoadProgramContent("aaa", 2).ShouldBe("aaa program content for 2");
+      _jobDB.LoadMostRecentProgram("aaa").Revision.ShouldBe(2);
 
       _jobDB
         .LoadProgram("bbb", 6)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "bbb",
@@ -2355,11 +2282,10 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "bbb comment 6",
           }
         );
-      _jobDB.LoadProgramContent("bbb", 6).Should().Be("bbb program content 6");
+      _jobDB.LoadProgramContent("bbb", 6).ShouldBe("bbb program content 6");
       _jobDB
         .LoadProgram("bbb", 7)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "bbb",
@@ -2367,13 +2293,12 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "bbb comment 7",
           }
         );
-      _jobDB.LoadProgramContent("bbb", 7).Should().Be("bbb program content 7");
-      _jobDB.LoadMostRecentProgram("bbb").Revision.Should().Be(7);
+      _jobDB.LoadProgramContent("bbb", 7).ShouldBe("bbb program content 7");
+      _jobDB.LoadMostRecentProgram("bbb").Revision.ShouldBe(7);
 
       _jobDB
         .LoadProgram("ccc", 3)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "ccc",
@@ -2381,11 +2306,10 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "ccc comment 3",
           }
         );
-      _jobDB.LoadProgramContent("ccc", 3).Should().Be("ccc program content 3");
+      _jobDB.LoadProgramContent("ccc", 3).ShouldBe("ccc program content 3");
       _jobDB
         .LoadProgram("ccc", 4)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "ccc",
@@ -2393,11 +2317,10 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "ccc comment 4",
           }
         );
-      _jobDB.LoadProgramContent("ccc", 4).Should().Be("ccc program content 4");
+      _jobDB.LoadProgramContent("ccc", 4).ShouldBe("ccc program content 4");
       _jobDB
         .LoadProgram("ccc", 5)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new ProgramRevision()
           {
             ProgramName = "ccc",
@@ -2405,8 +2328,8 @@ namespace BlackMaple.FMSInsight.Tests
             Comment = "ccc comment 3",
           }
         );
-      _jobDB.LoadProgramContent("ccc", 5).Should().Be("ccc program content 5");
-      _jobDB.LoadMostRecentProgram("ccc").Revision.Should().Be(5);
+      _jobDB.LoadProgramContent("ccc", 5).ShouldBe("ccc program content 5");
+      _jobDB.LoadMostRecentProgram("ccc").Revision.ShouldBe(5);
     }
 
     [Fact]
@@ -2418,7 +2341,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       using var _jobDB = _repoCfg.OpenConnection();
 
-      _jobDB.GetActiveWorkorders().Should().BeNull();
+      _jobDB.GetActiveWorkorders().ShouldBeNull();
 
       _jobDB.AddJobs(
         new NewJobs()
@@ -2434,8 +2357,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB
         .GetActiveWorkorders()
         .Select(w => (w.WorkorderId, w.Part))
-        .Should()
-        .BeEquivalentTo([(w1.WorkorderId, w1.Part), (w2.WorkorderId, w2.Part), (w3.WorkorderId, w3.Part)]);
+        .ShouldBe([(w1.WorkorderId, w1.Part), (w2.WorkorderId, w2.Part), (w3.WorkorderId, w3.Part)]);
 
       // now update w1 with new data, keep w2 unchanged, and remove w3, and add a new w4
       var w1New = _fixture
@@ -2443,6 +2365,7 @@ namespace BlackMaple.FMSInsight.Tests
         .With(w => w.WorkorderId, w1.WorkorderId)
         .With(w => w.Part, w1.Part)
         .Create();
+      w1New = w1New with { Programs = w1New.Programs.OrderBy(w => w.ProcessNumber).ToImmutableList() };
       var w4 = _fixture.Create<Workorder>();
 
       _jobDB.AddJobs(
@@ -2459,8 +2382,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB
         .GetActiveWorkorders()
         .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           [
             (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
             (w2.WorkorderId, w2.Part, w2.Priority, w2.DueDate, w2.Quantity),
@@ -2474,6 +2396,7 @@ namespace BlackMaple.FMSInsight.Tests
         .With(w => w.WorkorderId, w2.WorkorderId)
         .With(w => w.Part, w2.Part)
         .Create();
+      w2New = w2New with { Programs = w2New.Programs.OrderBy(w => w.ProcessNumber).ToImmutableList() };
       var w5 = _fixture.Create<Workorder>();
 
       _jobDB.UpdateCachedWorkorders([w1New, w2New, w5]);
@@ -2481,45 +2404,45 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB
         .GetActiveWorkorders()
         .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           [
             (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
             (w2New.WorkorderId, w2New.Part, w2New.Priority, w2New.DueDate, w2New.Quantity),
             (w5.WorkorderId, w5.Part, w5.Priority, w5.DueDate, w5.Quantity),
-          ]
+          ],
+          ignoreOrder: true
         );
 
       // can include w4 even though it is archived
       _jobDB
         .GetActiveWorkorders(additionalWorkorders: new HashSet<string>() { w4.WorkorderId })
         .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           [
             (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
             (w2New.WorkorderId, w2New.Part, w2New.Priority, w2New.DueDate, w2New.Quantity),
             (w4.WorkorderId, w4.Part, w4.Priority, w4.DueDate, w4.Quantity),
             (w5.WorkorderId, w5.Part, w5.Priority, w5.DueDate, w5.Quantity),
-          ]
+          ],
+          ignoreOrder: true
         );
 
       _jobDB.UpdateCachedWorkorders([]);
 
-      _jobDB.GetActiveWorkorders().Should().BeEmpty();
+      _jobDB.GetActiveWorkorders().ShouldBeEmpty();
 
       _jobDB
         .GetActiveWorkorders(additionalWorkorders: new HashSet<string>() { w1.WorkorderId, w2.WorkorderId })
         .Select(w => (w.WorkorderId, w.Part, w.Priority, w.DueDate, w.PlannedQuantity))
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBe(
           [
             (w1New.WorkorderId, w1New.Part, w1New.Priority, w1New.DueDate, w1New.Quantity),
             (w2New.WorkorderId, w2New.Part, w2New.Priority, w2New.DueDate, w2New.Quantity),
-          ]
+          ],
+          ignoreOrder: true
         );
 
-      _jobDB.WorkordersById(w1New.WorkorderId).Should().BeEquivalentTo([w1New, w2New]);
+      _jobDB.WorkordersById(w1New.WorkorderId).ShouldBeEquivalentTo(ImmutableList.Create(w1New, w2New));
     }
 
     [Fact]
@@ -2533,8 +2456,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       _jobDB
         .LoadJob(job1.UniqueStr)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           job1.CloneToDerived<HistoricJob, Job>() with
           {
             ScheduleId = "sch1",
@@ -2543,13 +2465,11 @@ namespace BlackMaple.FMSInsight.Tests
           }
         );
 
-      _jobDB
-        .Invoking(j =>
-          j.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(job2), ScheduleId = "sch1" }, null, true)
+      Should
+        .Throw<BadRequestException>(() =>
+          _jobDB.AddJobs(new NewJobs() { Jobs = ImmutableList.Create(job2), ScheduleId = "sch1" }, null, true)
         )
-        .Should()
-        .Throw<BadRequestException>()
-        .WithMessage("Schedule ID sch1 already exists!");
+        .Message.ShouldBe("Schedule ID sch1 already exists!");
     }
 
     [Fact]
@@ -2592,10 +2512,9 @@ namespace BlackMaple.FMSInsight.Tests
         Workorder = "work22",
       };
 
-      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([rebooking1, rebooking2]);
+      db.LoadUnscheduledRebookings().ShouldBeEquivalentTo(ImmutableList.Create(rebooking1, rebooking2));
       db.LoadMostRecentSchedule()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new MostRecentSchedule()
           {
             LatestScheduleId = "",
@@ -2616,10 +2535,9 @@ namespace BlackMaple.FMSInsight.Tests
         Decrements = ImmutableList<DecrementQuantity>.Empty,
       };
 
-      db.LoadUnscheduledRebookings().Should().BeEquivalentTo([rebooking2]);
+      db.LoadUnscheduledRebookings().ShouldBeEquivalentTo(ImmutableList.Create(rebooking2));
       db.LoadMostRecentSchedule()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new MostRecentSchedule()
           {
             LatestScheduleId = schId,
@@ -2655,7 +2573,7 @@ namespace BlackMaple.FMSInsight.Tests
               new SimulatedStationPart()
               {
                 JobUnique = "uniq" + i,
-                Process = rnd.Next(1, 10),
+                Process = rnd.Next(15, 20),
                 Path = 11 + rnd.Next(1, 10),
               },
             }
@@ -2668,8 +2586,8 @@ namespace BlackMaple.FMSInsight.Tests
             ScheduleId = schId,
             StationGroup = "group" + rnd.Next(0, 100000).ToString(),
             StationNum = rnd.Next(0, 10000),
-            StartUTC = start.AddMinutes(-rnd.Next(200, 300)),
-            EndUTC = start.AddMinutes(rnd.Next(0, 100)),
+            StartUTC = start.AddHours(i * 8).AddMinutes(-rnd.Next(200, 300)),
+            EndUTC = start.AddHours(i * 8).AddMinutes(rnd.Next(0, 100)),
             PlanDown = rnd.Next(0, 100) < 20 ? (rnd.Next(1, 100) < 50 ? null : false) : true,
             Pallet = rnd.Next(0, 100) < 10 ? null : rnd.Next(1, 100),
             Parts = parts,

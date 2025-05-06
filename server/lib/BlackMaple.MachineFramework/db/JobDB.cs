@@ -861,11 +861,12 @@ namespace BlackMaple.MachineFramework
           "CREATE TEMP TABLE temp_sch_ids AS SELECT DISTINCT ScheduleId FROM jobs WHERE StartUTC <= $end AND EndUTC >= $start AND ScheduleId IS NOT NULL";
         createTempCmd.Parameters.Add("start", SqliteType.Integer).Value = startUTC.Ticks;
         createTempCmd.Parameters.Add("end", SqliteType.Integer).Value = endUTC.Ticks;
-        return LoadHistory(
+        var recent = LoadHistory(
           createTempCmd,
           includeRecentSimDayUsage: false,
           alreadyKnownSchIds: alreadyKnownSchIds
         );
+        return new HistoricData() { Jobs = recent.Jobs, StationUse = recent.StationUse };
       }
     }
 
