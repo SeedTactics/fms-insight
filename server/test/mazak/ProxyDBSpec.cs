@@ -32,13 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoFixture;
-using FluentAssertions;
+using BlackMaple.MachineFramework;
 using MazakMachineInterface;
+using Shouldly;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
@@ -82,22 +81,46 @@ public sealed class ProxyDBspec : IDisposable
     return (T)ser.ReadObject(mem);
   }
 
+  private MazakAllData MkRandData()
+  {
+    // need the elements to be arrays
+    return new MazakAllData()
+    {
+      Schedules = _fixture
+        .Create<MazakScheduleRow[]>()
+        .Select(x =>
+          x with
+          {
+            DueDate = x.DueDate?.Date,
+            StartDate = x.StartDate?.Date,
+            Processes = x.Processes.ToArray(),
+          }
+        )
+        .ToArray(),
+      LoadActions = _fixture.Create<LoadAction[]>(),
+      PalletStatuses = _fixture.Create<MazakPalletStatusRow[]>(),
+      PalletSubStatuses = _fixture.Create<MazakPalletSubStatusRow[]>(),
+      PalletPositions = _fixture.Create<MazakPalletPositionRow[]>(),
+      Alarms = _fixture.Create<MazakAlarmRow[]>(),
+      Parts = _fixture
+        .Create<MazakPartRow[]>()
+        .Select(x => x with { Processes = x.Processes.ToArray() })
+        .ToArray(),
+      Pallets = _fixture.Create<MazakPalletRow[]>(),
+      MainPrograms = _fixture.Create<MazakProgramRow[]>(),
+      Fixtures = _fixture.Create<MazakFixtureRow[]>(),
+    };
+  }
+
   [Fact]
   public void LoadsAllData()
   {
-    var allData = _fixture.Create<MazakAllData>();
+    // need the elements to be arrays
+    var allData = MkRandData();
 
     _server.Given(Request.Create().WithPath("/all-data").UsingGet()).RespondWith(JsonBody(allData));
 
-    _db.LoadAllData()
-      .Should()
-      .BeEquivalentTo(
-        allData,
-        options =>
-          options
-            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(1)))
-            .WhenTypeIs<DateTime>()
-      );
+    _db.LoadAllData().ShouldBeEquivalentTo(allData);
   }
 
   [Fact]
@@ -107,49 +130,58 @@ public sealed class ProxyDBspec : IDisposable
       .Given(Request.Create().WithPath("/all-data").UsingGet())
       .RespondWith(Response.Create().WithStatusCode(500).WithBody("The error text\n another line"));
 
-    Action act = () => _db.LoadAllData();
-
-    act.Should()
-      .Throw<Exception>()
-      .WithMessage($"Error communicating with mazak proxy at {_server.Url}/: The error text");
+    Should
+      .Throw<Exception>(() => _db.LoadAllData())
+      .Message.ShouldBe($"Error communicating with mazak proxy at {_server.Url}/: The error text");
   }
 
   [Fact]
   public void LoadsAllDataAndLogs()
   {
-    var allData = _fixture.Create<MazakAllDataAndLogs>();
+    var allData = MkRandData().CloneToDerived<MazakAllDataAndLogs, MazakAllData>() with
+    {
+      Logs = _fixture
+        .Create<MazakMachineInterface.LogEntry[]>()
+        .Select(x =>
+          x with
+          {
+            TimeUTC = new DateTime(
+              x.TimeUTC.Year,
+              x.TimeUTC.Month,
+              x.TimeUTC.Day,
+              x.TimeUTC.Hour,
+              x.TimeUTC.Minute,
+              x.TimeUTC.Second,
+              DateTimeKind.Utc
+            ),
+          }
+        )
+        .ToArray(),
+    };
 
     _server.Given(Request.Create().WithPath("/all-data-and-logs").UsingPost()).RespondWith(JsonBody(allData));
 
-    _db.LoadAllDataAndLogs("123")
-      .Should()
-      .BeEquivalentTo(
-        allData,
-        options =>
-          options
-            .Using<DateTime>(ctx => ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(1)))
-            .WhenTypeIs<DateTime>()
-      );
+    _db.LoadAllDataAndLogs("123").ShouldBeEquivalentTo(allData);
   }
 
   [Fact]
   public void LoadsPrograms()
   {
-    var programs = _fixture.Create<IEnumerable<MazakProgramRow>>();
+    var programs = _fixture.Create<MazakProgramRow[]>();
 
     _server.Given(Request.Create().WithPath("/programs").UsingGet()).RespondWith(JsonBody(programs));
 
-    _db.LoadPrograms().Should().BeEquivalentTo(programs);
+    _db.LoadPrograms().ShouldBeEquivalentTo(programs);
   }
 
   [Fact]
   public void LoadsTools()
   {
-    var tools = _fixture.Create<IEnumerable<ToolPocketRow>>();
+    var tools = _fixture.Create<ToolPocketRow[]>();
 
     _server.Given(Request.Create().WithPath("/tools").UsingGet()).RespondWith(JsonBody(tools));
 
-    _db.LoadTools().Should().BeEquivalentTo(tools);
+    _db.LoadTools().ShouldBeEquivalentTo(tools);
   }
 
   [Fact]
@@ -165,7 +197,27 @@ public sealed class ProxyDBspec : IDisposable
   [Fact]
   public void Save()
   {
-    var data = _fixture.Create<MazakWriteData>();
+    var data = new MazakWriteData()
+    {
+      Schedules = _fixture
+        .Create<MazakScheduleRow[]>()
+        .Select(x =>
+          x with
+          {
+            DueDate = x.DueDate?.Date,
+            StartDate = x.StartDate?.Date,
+            Processes = x.Processes.ToArray(),
+          }
+        )
+        .ToArray(),
+      Parts = _fixture
+        .Create<MazakPartRow[]>()
+        .Select(x => x with { Processes = x.Processes.ToArray() })
+        .ToArray(),
+      Pallets = _fixture.Create<MazakPalletRow[]>(),
+      Fixtures = _fixture.Create<MazakFixtureRow[]>(),
+      Programs = _fixture.Create<NewMazakProgram[]>(),
+    };
 
     _server
       .Given(
@@ -183,17 +235,7 @@ public sealed class ProxyDBspec : IDisposable
             {
               try
               {
-                Decode<MazakWriteData>(bytes)
-                  .Should()
-                  .BeEquivalentTo(
-                    data,
-                    options =>
-                      options
-                        .Using<DateTime>(ctx =>
-                          ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(1))
-                        )
-                        .WhenTypeIs<DateTime>()
-                  );
+                Decode<MazakWriteData>(bytes).ShouldBeEquivalentTo(data);
               }
               catch (Exception)
               {
@@ -215,17 +257,16 @@ public sealed class ProxyDBspec : IDisposable
       .Given(Request.Create().WithPath("/save").UsingPost())
       .RespondWith(Response.Create().WithStatusCode(500).WithBody("The error text\n another line"));
 
-    Action act = () => _db.Save(_fixture.Create<MazakWriteData>());
-
-    act.Should()
-      .Throw<Exception>()
-      .WithMessage($"Error communicating with mazak proxy at {_server.Url}/: The error text");
+    Should
+      .Throw<Exception>(() => _db.Save(_fixture.Create<MazakWriteData>()))
+      .Message.ShouldBe($"Error communicating with mazak proxy at {_server.Url}/: The error text");
   }
 
   [Fact]
   public async Task HandlesLongPolling()
   {
-    using var monitor = _db.Monitor();
+    bool eventRaised = false;
+    _db.OnNewEvent += () => eventRaised = true;
 
     _server
       .Given(Request.Create().WithPath("/long-poll-events").UsingGet())
@@ -235,12 +276,12 @@ public sealed class ProxyDBspec : IDisposable
 
     await Task.Delay(TimeSpan.FromSeconds(1));
 
-    monitor.Should().NotRaise("OnNewEvent");
+    eventRaised.ShouldBeFalse();
 
     await Task.Delay(TimeSpan.FromSeconds(1));
 
     // responded with false
-    monitor.Should().NotRaise("OnNewEvent");
+    eventRaised.ShouldBeFalse();
 
     _server
       .Given(Request.Create().WithPath("/long-poll-events").UsingGet())
@@ -250,6 +291,6 @@ public sealed class ProxyDBspec : IDisposable
 
     await Task.Delay(TimeSpan.FromSeconds(4));
 
-    monitor.Should().Raise("OnNewEvent");
+    eventRaised.ShouldBeTrue();
   }
 }
