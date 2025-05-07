@@ -105,7 +105,10 @@ public sealed class MazakSyncSpec : IDisposable
 
     _mazakDB.OnNewEvent += Raise.Event<Action>();
 
-    if (await Task.WhenAny(complete.Task, Task.Delay(5000)) != complete.Task)
+    if (
+      await Task.WhenAny(complete.Task, Task.Delay(5000, TestContext.Current.CancellationToken))
+      != complete.Task
+    )
     {
       throw new Exception("Timeout waiting for event");
     }

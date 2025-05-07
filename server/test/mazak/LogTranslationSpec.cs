@@ -2716,7 +2716,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       int numWaits = 0;
       while (server.LogEntries.Count() < 3 && numWaits < 20)
       {
-        await Task.Delay(100);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
         numWaits++;
       }
 

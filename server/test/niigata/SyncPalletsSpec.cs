@@ -49,11 +49,11 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private RepositoryConfig _logDBCfg;
     private IccSimulator _sim;
     private SyncNiigataPallets _sync;
-    private Xunit.Abstractions.ITestOutputHelper _output;
+    private ITestOutputHelper _output;
     private bool _debugLogEnabled = false;
     private JsonSerializerOptions jsonSettings;
 
-    public SyncPalletsSpec(Xunit.Abstractions.ITestOutputHelper o)
+    public SyncPalletsSpec(ITestOutputHelper o)
     {
       _output = o;
 

@@ -5281,7 +5281,7 @@ namespace BlackMaple.FMSInsight.Tests
       int numWaits = 0;
       while (server.LogEntries.Count() < 1 && numWaits < 20)
       {
-        await Task.Delay(100);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
         numWaits++;
       }
 
@@ -5454,7 +5454,7 @@ namespace BlackMaple.FMSInsight.Tests
       numWaits = 0;
       while (server.LogEntries.Count() < 2 && numWaits < 10)
       {
-        await Task.Delay(100);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
         numWaits++;
       }
 
