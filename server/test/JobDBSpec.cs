@@ -2442,7 +2442,14 @@ namespace BlackMaple.FMSInsight.Tests
           ignoreOrder: true
         );
 
-      _jobDB.WorkordersById(w1New.WorkorderId).ShouldBeEquivalentTo(ImmutableList.Create(w1New, w2New));
+      _jobDB
+        .WorkordersById(w1New.WorkorderId)
+        .OrderBy(w => w.WorkorderId)
+        .ThenBy(w => w.Part)
+        .ToList()
+        .ShouldBeEquivalentTo(
+          ImmutableList.Create(w1New, w2New).OrderBy(w => w.WorkorderId).ThenBy(w => w.Part).ToList()
+        );
     }
 
     [Fact]
