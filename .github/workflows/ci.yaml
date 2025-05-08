@@ -11,7 +11,7 @@ on:
 
 jobs:
   server:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -26,8 +26,8 @@ jobs:
         timeout-minutes: 10
         run: |
           tzutil /s "Pacific Standard Time"
-          dotnet run --project server/test \
-              --coverage --coverage-output-format cobertura --coverage-output server-cov.xml \
+          dotnet run --project server/test `
+              --coverage --coverage-output-format cobertura --coverage-output server-cov.xml `
               --long-running 20 --xunit-diagnostics on
 
       - name: Upload Code Coverage
