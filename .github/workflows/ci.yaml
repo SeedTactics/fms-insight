@@ -26,13 +26,15 @@ jobs:
         timeout-minutes: 10
         run: |
           tzutil /s "Pacific Standard Time"
-          dotnet test server/test --collect:"XPlat Code Coverage" --logger "console;verbosity=normal" -- xUnit.LongRunningTestSeconds=20 xUnit.DiagnosticMessages=true
+          dotnet run --project server/test \
+              --coverage --coverage-output-format cobertura --coverage-output server-cov.xml \
+              --long-running 20 --xunit-diagnostics on
 
       - name: Upload Code Coverage
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: server/test/TestResults
+          directory: server/test/bin/Debug/net9.0/TestResults
           flags: server-unittests
 
       - name: API Build

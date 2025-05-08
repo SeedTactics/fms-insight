@@ -40,6 +40,7 @@ using AutoFixture;
 using BlackMaple.MachineFramework;
 using Shouldly;
 using Xunit;
+using Xunit.Sdk;
 
 namespace BlackMaple.FMSInsight.Tests;
 
@@ -1032,7 +1033,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       .Message.ShouldBe("Only waiting material can be moved between queues");
   }
 
-  public record SignalQuarantineTheoryData
+  public record SignalQuarantineTheoryData : IXunitSerializable
   {
     public enum QuarantineType
     {
@@ -1041,14 +1042,38 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       Remove,
     }
 
-    public required InProcessMaterialLocation.LocType LocType { get; init; }
-    public required InProcessMaterialAction.ActionType ActionType { get; init; }
-    public required string QuarantineQueue { get; init; }
-    public string Error { get; init; } = null;
-    public QuarantineType? QuarantineAction { get; init; } = null;
-    public int Process { get; init; } = 0;
-    public string JobTransferQeuue { get; init; } = "q1";
-    public bool AllowQuarantineToCancelLoad { get; init; } = false;
+    public required InProcessMaterialLocation.LocType LocType { get; set; }
+    public required InProcessMaterialAction.ActionType ActionType { get; set; }
+    public required string QuarantineQueue { get; set; }
+    public string Error { get; set; } = null;
+    public QuarantineType? QuarantineAction { get; set; } = null;
+    public int Process { get; set; } = 0;
+    public string JobTransferQeuue { get; set; } = "q1";
+    public bool AllowQuarantineToCancelLoad { get; set; } = false;
+
+    public void Deserialize(IXunitSerializationInfo info)
+    {
+      LocType = (InProcessMaterialLocation.LocType)info.GetValue("LocType");
+      ActionType = (InProcessMaterialAction.ActionType)info.GetValue("ActionType");
+      QuarantineQueue = info.GetValue<string>("QuarantineQueue");
+      Error = info.GetValue<string>("Error");
+      QuarantineAction = (QuarantineType?)info.GetValue("QuarantineAction");
+      Process = info.GetValue<int>("Process");
+      JobTransferQeuue = info.GetValue<string>("JobTransferQeuue");
+      AllowQuarantineToCancelLoad = info.GetValue<bool>("AllowQuarantineToCancelLoad");
+    }
+
+    public void Serialize(IXunitSerializationInfo info)
+    {
+      info.AddValue("LocType", LocType);
+      info.AddValue("ActionType", ActionType);
+      info.AddValue("QuarantineQueue", QuarantineQueue);
+      info.AddValue("Error", Error);
+      info.AddValue("QuarantineAction", QuarantineAction);
+      info.AddValue("Process", Process);
+      info.AddValue("JobTransferQeuue", JobTransferQeuue);
+      info.AddValue("AllowQuarantineToCancelLoad", AllowQuarantineToCancelLoad);
+    }
   }
 
   public static readonly IEnumerable<object[]> SignalTheoryData = new[]
