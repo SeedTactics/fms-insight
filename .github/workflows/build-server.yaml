@@ -108,7 +108,7 @@ jobs:
       - name: Server TestSuite
         run: |
           tzutil /s "Pacific Standard Time"
-          dotnet test server/test --collect:"XPlat Code Coverage"
+          dotnet run --project server/test
 
       - name: Build MachineFramework
         run: dotnet pack -c Release --include-symbols /p:Version="${{ env.NEW_VERSION_NUM }}" server/lib/BlackMaple.MachineFramework
