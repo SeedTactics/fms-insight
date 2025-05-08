@@ -42,7 +42,6 @@ using Shouldly;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Tests
 {
@@ -108,7 +107,7 @@ namespace BlackMaple.FMSInsight.Tests
       _repoCfg.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void MaterialIDs()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -296,11 +295,11 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void AddLog()
     {
       using var _jobLog = _repoCfg.OpenConnection();
-      Assert.Equal(DateTime.MinValue, _jobLog.MaxLogDate());
+      _jobLog.MaxLogDate().ShouldBe(DateTime.MinValue);
 
       System.DateTime start = DateTime.UtcNow.AddHours(-10);
 
@@ -868,7 +867,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       // ----- check loading of logs -----
 
-      Assert.Equal(start.AddHours(7), _jobLog.MaxLogDate());
+      _jobLog.MaxLogDate().ShouldBe(start.AddHours(7));
 
       _jobLog.GetLogEntries(start, DateTime.UtcNow).EventsShouldBe(logs);
 
@@ -893,12 +892,13 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.GetRecentLog(unloadEndActualCycle.Last().Counter).ShouldBeEmpty();
 
       foreach (var c in logs)
-        Assert.True(
-          _jobLog.CycleExists(c.EndTimeUTC, c.Pallet, c.LogType, c.LocationName, c.LocationNum),
-          "Checking " + c.EndTimeUTC.ToString()
-        );
+      {
+        _jobLog
+          .CycleExists(c.EndTimeUTC, c.Pallet, c.LogType, c.LocationName, c.LocationNum)
+          .ShouldBeTrue("Checking " + c.EndTimeUTC.ToString());
+      }
 
-      Assert.False(_jobLog.CycleExists(DateTime.Parse("4/6/2011"), 123, LogType.MachineCycle, "MC", 3));
+      _jobLog.CycleExists(DateTime.Parse("4/6/2011"), 123, LogType.MachineCycle, "MC", 3).ShouldBeFalse();
 
       _jobLog.GetLogForMaterial(1).EventsShouldBe(logsForMat1);
       _jobLog.GetLogForMaterial(new[] { 1, mat2.MaterialID }).EventsShouldBe(logsForMat1.Concat(logsForMat2));
@@ -1109,14 +1109,14 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.GetLogForJobUnique(mat1.JobUniqueStr).EventsShouldBe(logsForMat1);
     }
 
-    [Fact]
+    [Test]
     public void LookupByPallet()
     {
       using var _jobLog = _repoCfg.OpenConnection();
 
       _jobLog.CurrentPalletLog(123).ShouldBeEmpty();
       _jobLog.CurrentPalletLog(4).ShouldBeEmpty();
-      Assert.Equal(DateTime.MinValue, _jobLog.LastPalletCycleTime(212));
+      _jobLog.LastPalletCycleTime(212).ShouldBe(DateTime.MinValue);
 
       var pal1Initial = new List<LogEntry>();
       var pal1Cycle = new List<LogEntry>();
@@ -1176,7 +1176,7 @@ namespace BlackMaple.FMSInsight.Tests
       );
       var initialPalCycle = initialLoad.First(e => e.LogType == LogType.PalletCycle);
       pal1Initial.AddRange(initialLoad.Where(e => e.LogType != LogType.PalletCycle));
-      Assert.Equal(pal1InitialTime.AddMinutes(5), _jobLog.LastPalletCycleTime(1));
+      _jobLog.LastPalletCycleTime(1).ShouldBe(pal1InitialTime.AddMinutes(5));
 
       // *********** Add machine cycle on pal1
       pal1Initial.Add(
@@ -1234,7 +1234,7 @@ namespace BlackMaple.FMSInsight.Tests
         )
       );
 
-      Assert.Equal(pal1InitialTime.AddMinutes(25), _jobLog.LastPalletCycleTime(1));
+      _jobLog.LastPalletCycleTime(1).ShouldBe(pal1InitialTime.AddMinutes(25));
       _jobLog
         .GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow)
         .EventsShouldBe([loadStart, initialPalCycle, .. pal1Initial, pal1CycleEvt]);
@@ -1383,7 +1383,7 @@ namespace BlackMaple.FMSInsight.Tests
         )
       );
 
-      Assert.Equal(pal1CycleTime.AddMinutes(40), _jobLog.LastPalletCycleTime(1));
+      _jobLog.LastPalletCycleTime(1).ShouldBe(pal1CycleTime.AddMinutes(40));
       _jobLog.CurrentPalletLog(1).ShouldBeEmpty();
 
       // add invalidated when loading all entries
@@ -1396,7 +1396,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.CurrentPalletLog(2).EventsShouldBe(pal2Cycle);
     }
 
-    [Fact]
+    [Test]
     public void ForeignID()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -1501,7 +1501,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.MostRecentLogEntryForForeignID("for1").ShouldBeEquivalentTo(expectedFor1Serial);
     }
 
-    [Fact]
+    [Test]
     public void OriginalMessage()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -1526,7 +1526,7 @@ namespace BlackMaple.FMSInsight.Tests
         "2"
       );
 
-      Assert.Equal("", _jobLog.MaxForeignID());
+      _jobLog.MaxForeignID().ShouldBe("");
 
       var log1 = _jobLog.RecordGeneralMessage(
         mats: [EventLogMaterial.FromLogMat(mat1), EventLogMaterial.FromLogMat(mat2)],
@@ -1537,15 +1537,15 @@ namespace BlackMaple.FMSInsight.Tests
         originalMessage: "the original message"
       );
 
-      Assert.Equal("foreign1", _jobLog.MaxForeignID());
+      _jobLog.MaxForeignID().ShouldBe("foreign1");
 
       _jobLog.MostRecentLogEntryForForeignID("foreign1").ShouldBeEquivalentTo(log1);
 
-      Assert.Equal("the original message", _jobLog.OriginalMessageByForeignID("foreign1"));
-      Assert.Equal("", _jobLog.OriginalMessageByForeignID("abc"));
+      _jobLog.OriginalMessageByForeignID("foreign1").ShouldBe("the original message");
+      _jobLog.OriginalMessageByForeignID("abc").ShouldBe("");
     }
 
-    [Fact]
+    [Test]
     public void WorkorderSummary()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -1758,7 +1758,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat4), "serial4", t.AddHours(4));
       _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat5), "serial5", t.AddHours(5));
       _jobLog.RecordSerialForMaterialID(EventLogMaterial.FromLogMat(mat6), "serial6", t.AddHours(6));
-      Assert.Equal("serial1", _jobLog.GetMaterialDetails(mat1_proc2.MaterialID).Serial);
+      _jobLog.GetMaterialDetails(mat1_proc2.MaterialID).Serial.ShouldBe("serial1");
       _jobLog
         .GetMaterialDetailsForSerial("serial1")
         .ShouldBeEquivalentTo(
@@ -1781,7 +1781,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(mat4), "work1");
       _jobLog.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(mat5), "work2");
       _jobLog.RecordWorkorderForMaterialID(EventLogMaterial.FromLogMat(mat6), "work2");
-      Assert.Equal("work2", _jobLog.GetMaterialDetails(mat5.MaterialID).Workorder);
+      _jobLog.GetMaterialDetails(mat5.MaterialID).Workorder.ShouldBe("work2");
 
       // mat1 is closed out, mat5 failed closeout
       _jobLog.RecordCloseoutCompleted(
@@ -1965,9 +1965,9 @@ namespace BlackMaple.FMSInsight.Tests
         operName: "oper1",
         timeUTC: t.AddHours(222)
       );
-      Assert.Equal(0, finalizedEntry.Pallet);
-      Assert.Equal("work1", finalizedEntry.Result);
-      Assert.Equal(LogType.WorkorderComment, finalizedEntry.LogType);
+      finalizedEntry.Pallet.ShouldBe(0);
+      finalizedEntry.Result.ShouldBe("work1");
+      finalizedEntry.LogType.ShouldBe(LogType.WorkorderComment);
       finalizedEntry.ProgramDetails.ShouldBeEquivalentTo(
         ImmutableDictionary<string, string>.Empty.Add("Comment", "work1ccc").Add("Operator", "oper1")
       );
@@ -2029,7 +2029,7 @@ namespace BlackMaple.FMSInsight.Tests
         .ShouldBeEquivalentTo(ImmutableList.Create(expectedActiveWorks[2]));
     }
 
-    [Fact]
+    [Test]
     public void LoadCompletedParts()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -2277,7 +2277,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void Queues()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -3134,7 +3134,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.GetLogEntries(start, DateTime.UtcNow).EventsShouldBe(expectedLogs);
     }
 
-    [Fact]
+    [Test]
     public void LoadUnloadIntoQueues()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -3431,15 +3431,15 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.NextProcessForQueuedMaterial(mat4.MaterialID).ShouldBe(16);
     }
 
-    [Theory]
-    [InlineData(true, true, true)]
-    [InlineData(true, true, false)]
-    [InlineData(true, false, true)]
-    [InlineData(true, false, false)]
-    [InlineData(false, true, true)]
-    [InlineData(false, true, false)]
-    [InlineData(false, false, true)]
-    [InlineData(false, false, false)]
+    [Test]
+    [Arguments(true, true, true)]
+    [Arguments(true, true, false)]
+    [Arguments(true, false, true)]
+    [Arguments(true, false, false)]
+    [Arguments(false, true, true)]
+    [Arguments(false, true, false)]
+    [Arguments(false, false, true)]
+    [Arguments(false, false, false)]
     public void BulkAddRemoveCastings(bool useSerial, bool existingMats, bool useWorkorder)
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -3739,7 +3739,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void ReuseMatIDsWhenBulkAdding()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -3929,7 +3929,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.GetMaterialDetails(9).Workorder.ShouldBe("updatedwork");
     }
 
-    [Fact]
+    [Test]
     public void AllocateCastingsFromQueues()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -4093,13 +4093,13 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.NextProcessForQueuedMaterial(mat3.MaterialID).ShouldBe(1);
     }
 
-    [Theory]
-    [InlineData(true, true, null)]
-    [InlineData(true, true, "thecasting")]
-    [InlineData(false, true, null)]
-    [InlineData(false, true, "thecasting")]
-    [InlineData(true, false, null)]
-    [InlineData(false, false, null)]
+    [Test]
+    [Arguments(true, true, null)]
+    [Arguments(true, true, "thecasting")]
+    [Arguments(false, true, null)]
+    [Arguments(false, true, "thecasting")]
+    [Arguments(true, false, null)]
+    [Arguments(false, false, null)]
     public void OverrideMatOnPal(bool firstPalletCycle, bool newMatUnassigned, string rawMatName)
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -4592,7 +4592,7 @@ namespace BlackMaple.FMSInsight.Tests
         .ShouldBe(0);
     }
 
-    [Fact]
+    [Test]
     public void ErrorsOnBadOverrideMatOnPal()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -4729,7 +4729,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void InvalidatesCycle()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -5031,7 +5031,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void RecordsRebookings()
     {
       var now = DateTime.UtcNow.AddHours(-5);
@@ -5168,7 +5168,7 @@ namespace BlackMaple.FMSInsight.Tests
         .UnscheduledRebookings.ShouldBeEquivalentTo(ImmutableList.Create(expectedR2));
     }
 
-    [Fact]
+    [Test]
     public async Task ExternalQueues()
     {
       using var server = WireMockServer.Start();
@@ -5663,7 +5663,7 @@ namespace BlackMaple.FMSInsight.Tests
       _repoCfg.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void AllocateMatIds()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -5852,7 +5852,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void ForeignID()
     {
       using var _jobLog = _repoCfg.OpenConnection();
@@ -5903,7 +5903,7 @@ namespace BlackMaple.FMSInsight.Tests
 
   public class LogStartingMaterialIDSpec
   {
-    [Fact]
+    [Test]
     public void ConvertSerials()
     {
       var fixture = new Fixture();
@@ -5911,7 +5911,7 @@ namespace BlackMaple.FMSInsight.Tests
       SerialSettings.ConvertFromBase62(SerialSettings.ConvertToBase62(matId)).ShouldBe(matId);
     }
 
-    [Fact]
+    [Test]
     public void MaterialIDs()
     {
       using var repoCfg = RepositoryConfig.InitializeMemoryDB(
@@ -5942,7 +5942,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void ErrorsTooLarge()
     {
       Should
@@ -5958,7 +5958,7 @@ namespace BlackMaple.FMSInsight.Tests
         .Message.ShouldBe("Starting Serial is too large");
     }
 
-    [Fact]
+    [Test]
     public void AdjustsStartingSerial()
     {
       using var repoCfg = RepositoryConfig.InitializeMemoryDB(
@@ -5974,7 +5974,7 @@ namespace BlackMaple.FMSInsight.Tests
       m1.ShouldBe(33_152_428_148);
     }
 
-    [Fact]
+    [Test]
     public void AdjustsStartingSerial2()
     {
       using var repoCfg = RepositoryConfig.InitializeMemoryDB(
@@ -5992,7 +5992,7 @@ namespace BlackMaple.FMSInsight.Tests
       m3.ShouldBe(33_948_163_269);
     }
 
-    [Fact]
+    [Test]
     public void AvoidsAdjustingSerialBackwards()
     {
       var guid = new Guid();

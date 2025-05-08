@@ -36,7 +36,6 @@ using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using WireMock.Matchers;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -49,12 +48,12 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       _dsl = new FakeIccDsl(numPals: 5, numMachines: 6);
     }
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
       _dsl.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void OneProcOnePath()
     {
       _dsl.AddJobs(
@@ -461,7 +460,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges();
     }
 
-    [Fact]
+    [Test]
     public void IgnoresDecrementedJob()
     {
       _dsl.AddJobs(
@@ -511,9 +510,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges();
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("mycasting")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("mycasting")]
     public void CastingsFromQueue(string casting)
     {
       _dsl.AddJobs(
@@ -637,7 +636,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void MultiProcSamePallet()
     {
       _dsl.AddJobs(
@@ -1486,7 +1485,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectJobArchived(uniq: "uniq1", isArchived: true);
     }
 
-    [Fact]
+    [Test]
     public void MultipleProcessSeparatePallets()
     {
       _dsl.AddJobs(
@@ -2323,7 +2322,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void SeparateLoadUnloadStations()
     {
       _dsl.AddJobs(
@@ -2580,7 +2579,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void MultipleMachineStops()
     {
       _dsl.AddJobs(
@@ -2891,7 +2890,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void MissEvents()
     {
       _dsl.AddJobs(
@@ -3063,9 +3062,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("rawmat")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("rawmat")]
     public void ProgramsInWorkorders(string rawMatName)
     {
       _dsl.AddJobs(
@@ -3867,7 +3866,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact(Skip = "Holding at machine not yet supported by Niigata")]
+    [Test, Skip("Holding at machine not yet supported by Niigata")]
     public void SizedQueues()
     {
       _dsl.AddJobs(
@@ -4379,7 +4378,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void SizedQueuesWithReclamp()
     {
       _dsl.AddJobs(
@@ -4942,7 +4941,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void DeletePrograms()
     {
       _dsl.AddJobs(
@@ -5088,7 +5087,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void UsesNextLargestProgram()
     {
       _dsl.SetIccProgram(2133, "non-insight")
@@ -5148,7 +5147,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void OperatorDeletesPrograms()
     {
       _dsl.AddJobs(
@@ -5236,7 +5235,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void RemoveFromQueueDuringLoad()
     {
       _dsl.AddJobs(
@@ -5469,7 +5468,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges();
     }
 
-    [Fact]
+    [Test]
     public void OperatorPressesUnloadToSetNoWork()
     {
       _dsl.AddJobs(
@@ -5694,7 +5693,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] { FakeIccDsl.ExpectPalletStart(pal: 2, mats: []) });
     }
 
-    [Fact]
+    [Test]
     public void OperatorManuallyOverridesWithNoWork()
     {
       _dsl.AddJobs(
@@ -5859,7 +5858,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void UnarchivesJobWithMaterial()
     {
       _dsl.AddJobs(
@@ -5986,9 +5985,9 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectNoChanges();
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void SignalForQuarantine(bool signalDuringUnload)
     {
       _dsl.AddJobs(
@@ -6205,7 +6204,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void SwapRawMaterialOnPal()
     {
       // TODO: raw material name
@@ -6359,7 +6358,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void SwapInProcessMat()
     {
       _dsl.AddJobs(
@@ -6549,7 +6548,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void PalletMarkedAsManualControl()
     {
       _dsl.AddJobs(
@@ -6714,7 +6713,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         .ExpectTransition(new[] { FakeIccDsl.ExpectLoadBegin(pal: 1, lul: 4) });
     }
 
-    [Fact]
+    [Test]
     public void DeletesPalletRoute()
     {
       _dsl.OverrideRoute(
@@ -6773,7 +6772,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void AllowsSubsetsOfMachines()
     {
       _dsl.AddJobs(
@@ -6872,7 +6871,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void ManualJobPriority()
     {
       _dsl.AddJobs(
@@ -6938,7 +6937,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void UnarchivesJobs()
     {
       _dsl.AddJobs(

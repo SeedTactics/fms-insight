@@ -37,13 +37,12 @@ using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Tests;
 
 public class ToolDiffSpec
 {
-  [Fact]
+  [Test]
   public void ToolSnapshotDifference()
   {
     var start = new List<ToolSnapshot>();
@@ -383,7 +382,7 @@ public class ToolDiffSpec
     ToolSnapshotDiff.Diff(start, end).ShouldBe(expected, ignoreOrder: true);
   }
 
-  [Fact]
+  [Test]
   public void Counts()
   {
     var start = new List<ToolSnapshot>();
@@ -661,7 +660,7 @@ public class ToolDiffSpec
     ToolSnapshotDiff.Diff(start, end).ShouldBe(expected);
   }
 
-  [Fact]
+  [Test]
   public void Serials()
   {
     var start = new List<ToolSnapshot>();

@@ -40,7 +40,6 @@ using BlackMaple.MachineFramework;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Shouldly;
-using Xunit;
 
 #nullable enable
 
@@ -581,7 +580,7 @@ public sealed class LogBuilderSpec : IDisposable
     return workr;
   }
 
-  [Fact]
+  [Test]
   public void NoLogOnEmpty()
   {
     using var db = _repo.OpenConnection();
@@ -609,7 +608,7 @@ public sealed class LogBuilderSpec : IDisposable
     db.MaxLogDate().ShouldBe(DateTime.MinValue);
   }
 
-  [Fact]
+  [Test]
   public void SingleCycle()
   {
     using var db = _repo.OpenConnection();
@@ -663,7 +662,7 @@ public sealed class LogBuilderSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void AvoidsDuplicateMachine()
   {
     using var db = _repo.OpenConnection();
@@ -730,7 +729,7 @@ public sealed class LogBuilderSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void AvoidsDuplicateLoad()
   {
     using var db = _repo.OpenConnection();
@@ -810,7 +809,7 @@ public sealed class LogBuilderSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void MultiplePallets()
   {
     using var db = _repo.OpenConnection();
@@ -885,7 +884,7 @@ public sealed class LogBuilderSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void LoadAndUnloadSameTime()
   {
     var mat1 = MkMat(palId: 2, fixNum: 4, matId: 1, qty: 2);
@@ -977,7 +976,7 @@ public sealed class LogBuilderSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void RecordsCommonValues()
   {
     using var db = _repo.OpenConnection();
@@ -1065,7 +1064,7 @@ public sealed class LogBuilderSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void SignalsInspection()
   {
     using var db = _repo.OpenConnection();
@@ -1174,7 +1173,7 @@ public sealed class LogBuilderSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void MultipleFaces()
   {
     using var db = _repo.OpenConnection();
@@ -1265,7 +1264,7 @@ public sealed class LogBuilderSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void SkipsRemachine()
   {
     var mat = MkMat(palId: 2, fixNum: 4, matId: 1);

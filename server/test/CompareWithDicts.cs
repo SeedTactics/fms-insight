@@ -693,7 +693,7 @@ public static partial class ObjectGraphTestExtensions
 
 // Copied from Shouldly because needed to filter stack trace from this assembly
 [Serializable]
-public class ShouldAssertException : Exception, Xunit.Sdk.IAssertionException
+public class ShouldAssertException : Exception
 {
   /// <summary>
   /// Creates a new ShouldAssertException with the specified message
@@ -727,7 +727,7 @@ public class ShouldAssertException : Exception, Xunit.Sdk.IAssertionException
 
   private static void WriteFilteredStackTrace(StringBuilder builder, StackTrace stackTrace)
   {
-    var shouldlyAssembly = Assembly.GetExecutingAssembly();
+    var shouldlyAssembly = System.Reflection.Assembly.GetExecutingAssembly();
 
     var frames = stackTrace.GetFrames();
     for (int startIndex = 0; startIndex < frames.Length; startIndex++)

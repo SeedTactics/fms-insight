@@ -39,13 +39,12 @@ using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
   public class BuildMazakSchedulesSpec
   {
-    [Fact]
+    [Test]
     public void DeleteCompletedSchedules()
     {
       var schedules = new MazakCurrentStatus()
@@ -113,9 +112,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       tokeep.ShouldBe(new[] { "part2:1:1" });
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void AddsSchedules(bool conflictByFixture)
     {
       //basic job

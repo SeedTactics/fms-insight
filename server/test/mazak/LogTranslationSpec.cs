@@ -44,7 +44,6 @@ using Shouldly;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
@@ -1344,7 +1343,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
   public class LogTranslationTests : LogTestBase
   {
-    [Fact]
+    [Test]
     public void SingleMachineCycle()
     {
       var j = new Job()
@@ -1402,9 +1401,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
     public void MultipleMachineCycles(bool customMachineNums)
     {
       if (customMachineNums)
@@ -1483,7 +1482,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void MultipleProcess()
     {
       var j = new Job()
@@ -1566,7 +1565,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void ActiveTime()
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -1767,7 +1766,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void LargeFixedQuantites()
     {
       var j = new Job()
@@ -1878,7 +1877,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void SkipShortMachineCycle()
     {
       var j = new Job()
@@ -1942,7 +1941,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void Remachining()
     {
       var j = new Job()
@@ -2005,7 +2004,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void Inspections()
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -2148,7 +2147,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void TranslatesProgramsFromJob()
     {
       var j1 = new Job()
@@ -2286,7 +2285,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void TranslatesProgramsFromMazakDb()
     {
       var j = new Job()
@@ -2326,7 +2325,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void Queues()
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -2397,7 +2396,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public async Task QueuesFirstInFirstOut()
     {
       // run multiple process 1s on multiple paths.  Also have multiple parts on a face.
@@ -2732,9 +2731,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .ShouldBe(["[\"0000000001\"]", "[\"0000000002\"]", "[\"0000000003\"]"]);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void QueuesSignalQuarantine(bool signalDuringUnload)
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -2797,7 +2796,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void SwapsRawMaterial()
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -2950,7 +2949,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void Tools()
     {
       var j = new Job()
@@ -3134,7 +3133,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void StockerAndRotaryTable()
     {
       var j = new Job()
@@ -3200,7 +3199,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void LeaveInboundRotary()
     {
       var j = new Job()
@@ -3247,7 +3246,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void QuarantinesMaterial()
     {
       var j = new Job()
@@ -3370,7 +3369,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void SkipsRecentMachineEnd()
     {
       var e = new MazakMachineInterface.LogEntry()

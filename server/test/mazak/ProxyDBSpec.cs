@@ -41,7 +41,6 @@ using Shouldly;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests;
 
@@ -112,7 +111,7 @@ public sealed class ProxyDBspec : IDisposable
     };
   }
 
-  [Fact]
+  [Test]
   public void LoadsAllData()
   {
     // need the elements to be arrays
@@ -123,7 +122,7 @@ public sealed class ProxyDBspec : IDisposable
     _db.LoadAllData().ShouldBeEquivalentTo(allData);
   }
 
-  [Fact]
+  [Test]
   public void HandlesError()
   {
     _server
@@ -135,7 +134,7 @@ public sealed class ProxyDBspec : IDisposable
       .Message.ShouldBe($"Error communicating with mazak proxy at {_server.Url}/: The error text");
   }
 
-  [Fact]
+  [Test]
   public void LoadsAllDataAndLogs()
   {
     var allData = MkRandData().CloneToDerived<MazakAllDataAndLogs, MazakAllData>() with
@@ -164,7 +163,7 @@ public sealed class ProxyDBspec : IDisposable
     _db.LoadAllDataAndLogs("123").ShouldBeEquivalentTo(allData);
   }
 
-  [Fact]
+  [Test]
   public void LoadsPrograms()
   {
     var programs = _fixture.Create<MazakProgramRow[]>();
@@ -174,7 +173,7 @@ public sealed class ProxyDBspec : IDisposable
     _db.LoadPrograms().ShouldBeEquivalentTo(programs);
   }
 
-  [Fact]
+  [Test]
   public void LoadsTools()
   {
     var tools = _fixture.Create<ToolPocketRow[]>();
@@ -184,7 +183,7 @@ public sealed class ProxyDBspec : IDisposable
     _db.LoadTools().ShouldBeEquivalentTo(tools);
   }
 
-  [Fact]
+  [Test]
   public void DeleteLogs()
   {
     _server
@@ -194,7 +193,7 @@ public sealed class ProxyDBspec : IDisposable
     _db.DeleteLogs("123");
   }
 
-  [Fact]
+  [Test]
   public void Save()
   {
     var data = new MazakWriteData()
@@ -250,7 +249,7 @@ public sealed class ProxyDBspec : IDisposable
     _db.Save(data);
   }
 
-  [Fact]
+  [Test]
   public void HandlesErrorInSave()
   {
     _server
@@ -262,7 +261,7 @@ public sealed class ProxyDBspec : IDisposable
       .Message.ShouldBe($"Error communicating with mazak proxy at {_server.Url}/: The error text");
   }
 
-  [Fact]
+  [Test]
   public async Task HandlesLongPolling()
   {
     bool eventRaised = false;

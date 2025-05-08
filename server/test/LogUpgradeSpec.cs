@@ -37,7 +37,6 @@ using System.Linq;
 using BlackMaple.MachineFramework;
 using Microsoft.Data.Sqlite;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Tests
 {
@@ -150,7 +149,7 @@ namespace BlackMaple.FMSInsight.Tests
         System.IO.File.Delete(_tempJobFile);
     }
 
-    [Fact]
+    [Test]
     public void ConvertsMaterialFromV17()
     {
       // existing v17 file has the following data in it
@@ -294,7 +293,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void QueueTablesCorrectlyCreated()
     {
       var now = new DateTime(2018, 7, 12, 5, 6, 7, DateTimeKind.Utc);
@@ -330,7 +329,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void ConvertsJobFromV16()
     {
       var expected = CreateJob();
@@ -352,7 +351,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void CreatesNewJob()
     {
       var old = CreateJob();
@@ -885,13 +884,13 @@ namespace BlackMaple.FMSInsight.Tests
         System.IO.File.Delete(_tempFile);
     }
 
-    [Fact]
+    [Test]
     public void Schema()
     {
       SchemaUpgradeSpec.Check(_tempFile);
     }
 
-    [Fact]
+    [Test]
     public void LoadsVer25()
     {
       var evts = _repo.GetLogEntries(
@@ -924,13 +923,13 @@ namespace BlackMaple.FMSInsight.Tests
         System.IO.File.Delete(_tempFile);
     }
 
-    [Fact]
+    [Test]
     public void Schema()
     {
       SchemaUpgradeSpec.Check(_tempFile);
     }
 
-    [Fact]
+    [Test]
     public void LoadsUnfilledWorks()
     {
       // ver 32 to 33 changed around unfilled workorder tables

@@ -42,7 +42,6 @@ using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using NSubstitute;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests;
 
@@ -96,7 +95,7 @@ public sealed class MazakSyncSpec : IDisposable
     repo.Dispose();
   }
 
-  [Fact]
+  [Test]
   public async Task RaisesEventOnNewLogMessage()
   {
     var complete = new TaskCompletionSource<bool>();
@@ -114,7 +113,7 @@ public sealed class MazakSyncSpec : IDisposable
     }
   }
 
-  [Fact]
+  [Test]
   public void CheckJobsSuccess()
   {
     var jsonSettings = new JsonSerializerOptions();
@@ -148,7 +147,7 @@ public sealed class MazakSyncSpec : IDisposable
     _sync.CheckNewJobs(db, newJ).ShouldBeEmpty();
   }
 
-  [Fact]
+  [Test]
   public void CheckFailMissingProgram()
   {
     var jsonSettings = new JsonSerializerOptions();
@@ -189,7 +188,7 @@ public sealed class MazakSyncSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void CheckSucceedIfProgramInDownload()
   {
     var jsonSettings = new JsonSerializerOptions();
@@ -237,7 +236,7 @@ public sealed class MazakSyncSpec : IDisposable
     _sync.CheckNewJobs(db, newJ).ShouldBeEmpty();
   }
 
-  [Fact]
+  [Test]
   public void MissingQueue()
   {
     _fmsSt.Queues.Remove("queueAAA");
@@ -280,7 +279,7 @@ public sealed class MazakSyncSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void LoadsEvents()
   {
     using var db = repo.OpenConnection();
@@ -339,7 +338,7 @@ public sealed class MazakSyncSpec : IDisposable
     Directory.GetFiles(_tempDir, "*.csv").ShouldBe([Path.Combine(_tempDir, "333leaveload.csv")]);
   }
 
-  [Fact]
+  [Test]
   public void StopsProcessingOnLoadEvents()
   {
     using var db = repo.OpenConnection();
@@ -410,7 +409,7 @@ public sealed class MazakSyncSpec : IDisposable
     _mazakDB.Received().DeleteLogs("111loadstart.csv");
   }
 
-  [Fact]
+  [Test]
   public void StopsProcessingOnRecentMachineEnd()
   {
     var now = DateTime.UtcNow.ToLocalTime();
@@ -465,7 +464,7 @@ public sealed class MazakSyncSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void QuarantinesMaterial()
   {
     using var db = repo.OpenConnection();
@@ -551,7 +550,7 @@ public sealed class MazakSyncSpec : IDisposable
     );
   }
 
-  [Fact]
+  [Test]
   public void DownloadsNewJobs()
   {
     var jsonSettings = new JsonSerializerOptions();
@@ -636,7 +635,7 @@ public sealed class MazakSyncSpec : IDisposable
     _mazakDB.ReceivedCalls().ShouldBeEmpty();
   }
 
-  [Fact]
+  [Test]
   public void CalculatesQueueChanges()
   {
     using var db = repo.OpenConnection();

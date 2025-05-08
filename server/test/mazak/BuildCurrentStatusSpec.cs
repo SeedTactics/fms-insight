@@ -37,9 +37,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
-using NSubstitute;
-using VerifyXunit;
-using Xunit;
+using VerifyTUnit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
@@ -118,16 +116,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
     */
 
-    [Theory]
-    [InlineData("basic-no-material")]
-    [InlineData("basic-load-material")]
-    [InlineData("basic-cutting")]
-    [InlineData("basic-load-queue")]
-    [InlineData("basic-unload-queues")]
-    [InlineData("multiface-inital-load")]
-    [InlineData("multiface-transfer-faces")]
-    [InlineData("multiface-transfer-faces-and-unload")]
-    [InlineData("multiface-transfer-user-jobs")]
+    [Test]
+    [Arguments("basic-no-material")]
+    [Arguments("basic-load-material")]
+    [Arguments("basic-cutting")]
+    [Arguments("basic-load-queue")]
+    [Arguments("basic-unload-queues")]
+    [Arguments("multiface-inital-load")]
+    [Arguments("multiface-transfer-faces")]
+    [Arguments("multiface-transfer-faces-and-unload")]
+    [Arguments("multiface-transfer-user-jobs")]
     public async Task StatusSnapshot(string scenario)
     {
       IRepository repository;
@@ -206,7 +204,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
     }
 
-    [Fact]
+    [Test]
     public async Task PendingLoad()
     {
       using var _memoryLog = _repoCfg.OpenConnection();
@@ -254,7 +252,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
     }
 
-    [Fact]
+    [Test]
     public async Task SignalForQuarantine()
     {
       IRepository repository;
@@ -334,7 +332,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .IgnoreMember<CurrentStatus>(c => c.TimeOfCurrentStatusUTC);
     }
 
-    [Fact]
+    [Test]
     public async Task WithMachineNumbers()
     {
       using var repository = _repoCfg.OpenConnection();

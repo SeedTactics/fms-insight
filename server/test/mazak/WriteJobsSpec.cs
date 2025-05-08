@@ -43,8 +43,7 @@ using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using NSubstitute;
 using Shouldly;
-using VerifyXunit;
-using Xunit;
+using VerifyTUnit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
@@ -259,7 +258,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         });
     }
 
-    [Fact]
+    [Test]
     public async Task BasicCreate()
     {
       var completedJob = new Job()
@@ -332,7 +331,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .ShouldBeFalse();
     }
 
-    [Fact]
+    [Test]
     public async Task CreatesPrograms()
     {
       //aaa-1  has prog prog-aaa-1 rev null
@@ -384,7 +383,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
     }
 
-    [Fact]
+    [Test]
     public async Task OnlyDownloadsOneScheduleAtATime()
     {
       var newJ1 = JsonSerializer.Deserialize<NewJobs>(
@@ -415,7 +414,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       await ShouldMatchSnapshot(FindWrite("Add Schedules"), "fixtures-queues-schedules");
     }
 
-    [Fact]
+    [Test]
     public async Task ErrorDuringPartsPallets()
     {
       _mazakDbMock
@@ -455,7 +454,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .ShouldBe(["aaa-schId1234", "bbb-schId1234", "ccc-schId1234"]);
     }
 
-    [Fact]
+    [Test]
     public async Task ErrorDuringSchedule()
     {
       bool throwError = true;
@@ -536,7 +535,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _jobDB.LoadJobsNotCopiedToSystem(start, start.AddMinutes(1)).ShouldBeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void ResumesADownloadInterruptedDuringSchedules()
     {
       bool throwError = true;
@@ -615,7 +614,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         .ShouldBeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void SplitsWrites()
     {
       //Arrange
@@ -689,7 +688,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       }
     }
 
-    [Fact]
+    [Test]
     public async Task CorrectPriorityForPalletSubsets()
     {
       // If the starting times are equal but there is a pallet subset, the priorty
@@ -725,7 +724,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       FindWrite("Add Schedules").Schedules.DistinctBy(p => p.Priority).Count().ShouldBe(2);
     }
 
-    [Fact]
+    [Test]
     public async Task LargeMachineNumbers()
     {
       // should translate machine numbers 101, 102, 103, 104 to 1, 2, 3, 4

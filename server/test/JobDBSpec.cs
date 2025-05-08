@@ -38,7 +38,6 @@ using System.Linq;
 using AutoFixture;
 using BlackMaple.MachineFramework;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Tests
 {
@@ -60,7 +59,7 @@ namespace BlackMaple.FMSInsight.Tests
       _repoCfg.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void AddsJobs()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -355,7 +354,7 @@ namespace BlackMaple.FMSInsight.Tests
       }
     }
 
-    [Fact]
+    [Test]
     public void SimDays()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -473,7 +472,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void SimDaysWithoutJobs()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -525,7 +524,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void SetsComment()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -553,7 +552,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB.LoadJob(job1.UniqueStr).ShouldBeEquivalentTo(job1history with { Comment = newComment });
     }
 
-    [Fact]
+    [Test]
     public void UpdatesHold()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -644,7 +643,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void MarksAsCopied()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -681,7 +680,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB.LoadJob(job1.UniqueStr).ShouldBeEquivalentTo(job1history with { CopiedToSystem = true });
     }
 
-    [Fact]
+    [Test]
     public void ArchivesJobs()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -710,7 +709,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB.LoadUnarchivedJobs().ShouldBeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void Decrements()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -964,7 +963,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void DecrementsDuringArchive()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -1019,7 +1018,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void Programs()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -1851,7 +1850,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB.LoadProgramRevisionsInDescendingOrderOfRevision("wesrfohergh", 10000, null).ShouldBeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void NegativeProgramRevisions()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -2332,7 +2331,7 @@ namespace BlackMaple.FMSInsight.Tests
       _jobDB.LoadMostRecentProgram("ccc").Revision.ShouldBe(5);
     }
 
-    [Fact]
+    [Test]
     public void UpdatesWorkorders()
     {
       var w1 = _fixture.Create<Workorder>();
@@ -2452,7 +2451,7 @@ namespace BlackMaple.FMSInsight.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void ErrorOnDuplicateSchId()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -2479,7 +2478,7 @@ namespace BlackMaple.FMSInsight.Tests
         .Message.ShouldBe("Schedule ID sch1 already exists!");
     }
 
-    [Fact]
+    [Test]
     public void SchedulesRebooking()
     {
       using var db = _repoCfg.OpenConnection();
