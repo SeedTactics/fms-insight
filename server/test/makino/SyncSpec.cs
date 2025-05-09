@@ -42,7 +42,6 @@ using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using NSubstitute;
 using Shouldly;
-using Xunit;
 
 #nullable enable
 
@@ -158,7 +157,7 @@ public sealed class SyncSpec : IDisposable
       });
   }
 
-  [Fact]
+  [Test]
   public void ErrorsOnMultiProcJob()
   {
     using var db = _repo.OpenConnection();
@@ -192,7 +191,7 @@ public sealed class SyncSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void ErrorsOnTwoPaths()
   {
     using var db = _repo.OpenConnection();
@@ -229,7 +228,7 @@ public sealed class SyncSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void ErrorsOnBadMachineName()
   {
     using var db = _repo.OpenConnection();
@@ -290,7 +289,7 @@ public sealed class SyncSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void LoadsStateWithNoNewEvents()
   {
     using var db = _repo.OpenConnection();
@@ -324,7 +323,7 @@ public sealed class SyncSpec : IDisposable
     db.MaxLogDate().ShouldBe(DateTime.MinValue);
   }
 
-  [Fact]
+  [Test]
   public void ProcessesEvents()
   {
     // more detailed event processing is in LogBuilderSpec, here we just test that
@@ -371,7 +370,7 @@ public sealed class SyncSpec : IDisposable
     db.MaxLogDate().ShouldBe(now + TimeSpan.FromMinutes(20) + TimeSpan.FromSeconds(1));
   }
 
-  [Fact]
+  [Test]
   public void LoadsNewJobs()
   {
     using var db = _repo.OpenConnection();
@@ -521,7 +520,7 @@ public sealed class SyncSpec : IDisposable
       );
   }
 
-  [Fact]
+  [Test]
   public void DoesNothingWithNoJobsToDownload()
   {
     var st = fix.Build<MakinoCellState>().With(s => s.JobsNotYetCopied, []).Create();
@@ -531,7 +530,7 @@ public sealed class SyncSpec : IDisposable
     sync.ApplyActions(db, st).ShouldBeFalse();
   }
 
-  [Fact]
+  [Test]
   public void MarksCopiedJobsToSystem()
   {
     using var db = _repo.OpenConnection();
@@ -584,7 +583,7 @@ public sealed class SyncSpec : IDisposable
     db.LoadJob(job.UniqueStr).CopiedToSystem.ShouldBeTrue();
   }
 
-  [Fact]
+  [Test]
   public async Task CreatesFile()
   {
     // more complicated tests are in OrderXMLSpec, here we just test that the file is created
@@ -631,7 +630,7 @@ public sealed class SyncSpec : IDisposable
     db.LoadJob(job.UniqueStr).CopiedToSystem.ShouldBeTrue();
   }
 
-  [Fact]
+  [Test]
   public void TimesOutIfMakinoNotRunning()
   {
     using var db = _repo.OpenConnection();
@@ -675,7 +674,7 @@ public sealed class SyncSpec : IDisposable
     db.LoadJob(job.UniqueStr).CopiedToSystem.ShouldBeFalse();
   }
 
-  [Fact]
+  [Test]
   public void DoesNotDecrementOnEmptyList()
   {
     using var db = _repo.OpenConnection();
@@ -686,7 +685,7 @@ public sealed class SyncSpec : IDisposable
     sync.DecrementJobs(db, st).ShouldBeFalse();
   }
 
-  [Fact]
+  [Test]
   public async Task WritesDecrement()
   {
     using var db = _repo.OpenConnection();

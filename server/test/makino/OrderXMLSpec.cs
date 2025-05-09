@@ -41,8 +41,7 @@ using System.Xml;
 using BlackMaple.MachineFramework;
 using NSubstitute;
 using Shouldly;
-using VerifyXunit;
-using Xunit;
+using VerifyTUnit;
 
 #nullable enable
 
@@ -66,7 +65,7 @@ public sealed class OrderXMLSpec : IDisposable
     File.Delete(_tempFile);
   }
 
-  [Fact]
+  [Test]
   public async Task FullJobs()
   {
     var newj = JsonSerializer.Deserialize<NewJobs>(
@@ -92,7 +91,7 @@ public sealed class OrderXMLSpec : IDisposable
     await Verifier.Verify(actual);
   }
 
-  [Fact]
+  [Test]
   public async Task OnlyOrders()
   {
     var newj = JsonSerializer.Deserialize<NewJobs>(
@@ -118,7 +117,7 @@ public sealed class OrderXMLSpec : IDisposable
     await Verifier.Verify(actual);
   }
 
-  [Fact]
+  [Test]
   public async Task OnlyOrdersCustomDetails()
   {
     var newj = JsonSerializer.Deserialize<NewJobs>(
@@ -156,7 +155,7 @@ public sealed class OrderXMLSpec : IDisposable
     await Verifier.Verify(actual);
   }
 
-  [Fact]
+  [Test]
   public async Task OnlyOrdersWithoutPrograms()
   {
     var newJ = JsonSerializer.Deserialize<NewJobs>(
@@ -196,7 +195,7 @@ public sealed class OrderXMLSpec : IDisposable
     await Verifier.Verify(actual);
   }
 
-  [Fact]
+  [Test]
   public async Task Decrements()
   {
     OrderXML.WriteDecrementXML(
