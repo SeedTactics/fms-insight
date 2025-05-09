@@ -40,8 +40,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-#nullable enable
-
 namespace BlackMaple.MachineFramework.Controllers
 {
   [KnownType(typeof(ServerEvent))]

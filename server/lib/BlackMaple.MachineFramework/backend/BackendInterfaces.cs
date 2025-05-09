@@ -35,8 +35,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-#nullable enable
-
 namespace BlackMaple.MachineFramework
 {
   public interface IMachineControl

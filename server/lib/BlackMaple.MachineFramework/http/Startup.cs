@@ -66,7 +66,7 @@ public static class FMSInsightWebHost
     IConfiguration cfg,
     ServerSettings serverSt,
     FMSSettings fmsSt,
-    System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart> extraParts =
+    System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPart>? extraParts =
       null,
     bool hideStartupMessages = false
   )
@@ -153,7 +153,7 @@ public static class FMSInsightWebHost
                 new Microsoft.IdentityModel.Tokens.TokenValidationParameters()
                 {
                   ValidateIssuer = true,
-                  ValidAudiences = serverSt.AuthTokenAudiences.Split(';'),
+                  ValidAudiences = serverSt.AuthTokenAudiences?.Split(';'),
                 };
 #if DEBUG
               options.RequireHttpsMetadata = false;

@@ -47,7 +47,7 @@ namespace BlackMaple.MachineFramework
         try
         {
           var newGzFile = Path.Combine(
-            Path.GetDirectoryName(origTxtFile),
+            Path.GetDirectoryName(origTxtFile) ?? ".",
             Path.GetFileName(origTxtFile) + ".gz"
           );
 
@@ -74,7 +74,9 @@ namespace BlackMaple.MachineFramework
 
           // delete after 30 days
           var rx = new System.Text.RegularExpressions.Regex(@"fmsinsight-debug(\d+)\.txt\.gz");
-          foreach (var existingGzFile in Directory.GetFiles(Path.GetDirectoryName(origTxtFile), "*.gz"))
+          foreach (
+            var existingGzFile in Directory.GetFiles(Path.GetDirectoryName(origTxtFile) ?? ".", "*.gz")
+          )
           {
             var m = rx.Match(Path.GetFileName(existingGzFile));
             if (m != null && m.Success && m.Groups.Count >= 2)

@@ -35,8 +35,6 @@ using System;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 
-#nullable enable
-
 namespace BlackMaple.MachineFramework
 {
   internal sealed partial class Repository : IDisposable, IRepository

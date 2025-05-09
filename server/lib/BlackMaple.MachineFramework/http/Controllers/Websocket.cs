@@ -43,13 +43,13 @@ namespace BlackMaple.MachineFramework.Controllers
 {
   public record ServerEvent
   {
-    public LogEntry LogEntry { get; init; }
+    public LogEntry? LogEntry { get; init; }
 
-    public NewJobs NewJobs { get; init; }
+    public NewJobs? NewJobs { get; init; }
 
-    public CurrentStatus NewCurrentStatus { get; init; }
+    public CurrentStatus? NewCurrentStatus { get; init; }
 
-    public EditMaterialInLogEvents EditMaterialInLog { get; init; }
+    public EditMaterialInLogEvents? EditMaterialInLog { get; init; }
   }
 
   public sealed class WebsocketManager : IAsyncDisposable
@@ -76,7 +76,7 @@ namespace BlackMaple.MachineFramework.Controllers
         lock (_lock)
         {
           var sockets = _sockets.Values.ToList();
-          _sockets = null;
+          _sockets = new();
           return sockets;
         }
       }
