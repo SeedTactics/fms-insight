@@ -205,12 +205,7 @@ namespace MazakMachineInterface
         }
       }
 
-      int matQty = newSchRow.PlanQuantity;
-
-      if (!string.IsNullOrEmpty(part.Processes[0].Paths[0].InputQueue))
-      {
-        matQty = 0;
-      }
+      int matQty = MazakQueues.ShouldSyncronizeJobProcess(part, proc: 1) ? 0 : newSchRow.PlanQuantity;
 
       //need to add all the ScheduleProcess rows
       for (int i = 1; i <= numProcess; i++)

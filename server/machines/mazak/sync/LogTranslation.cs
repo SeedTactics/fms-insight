@@ -707,16 +707,35 @@ namespace MazakMachineInterface
             proc
           );
 
-          for (int i = 1; i <= fixQty; i++)
+          if (fixQty <= qs.Count)
           {
-            if (i <= qs.Count)
+            // enough already assigned, use them
+            mats.AddRange(qs.Take(fixQty).Select(qmat => qmat.MaterialID));
+          }
+          else
+          {
+            // add everything already assigned (if any)
+            mats.AddRange(qs.Select(qmat => qmat.MaterialID));
+
+            // first, try assigning any castings
+            if (proc == 1)
             {
-              var qmat = qs[i - 1];
-              mats.Add(qmat.MaterialID);
+              mats.AddRange(
+                repo.AllocateCastingsInQueue(
+                  queue: job.Processes[0].Paths[0].InputQueue,
+                  casting: job.Processes[0].Paths[0].Casting ?? job.PartName,
+                  unique: job.UniqueStr,
+                  part: job.PartName,
+                  proc1Path: 1,
+                  numProcesses: job.Processes.Count,
+                  count: fixQty - mats.Count
+                )
+              );
             }
-            else
+
+            // if there are still not enough, create them
+            if (mats.Count < fixQty)
             {
-              // not enough material in queue
               Log.Warning(
                 "Not enough material in queue {queue} for {part}-{proc}, creating new material for {@pending}",
                 info.InputQueue,
@@ -724,15 +743,24 @@ namespace MazakMachineInterface
                 proc,
                 e
               );
-              mats.Add(
-                repo.AllocateMaterialIDAndGenerateSerial(unique, e.JobPartName, numProc, e.TimeUTC, out var _)
-              );
+              for (int i = mats.Count + 1; i <= fixQty; i++)
+              {
+                mats.Add(
+                  repo.AllocateMaterialIDAndGenerateSerial(
+                    unique,
+                    e.JobPartName,
+                    numProc,
+                    e.TimeUTC,
+                    out var _
+                  )
+                );
+              }
             }
           }
         }
         else if (proc == 1)
         {
-          // create new material
+          // no input queue so just create new material
           Log.Debug("Creating new material for unique {unique} process 1", unique);
           for (int i = 1; i <= fixQty; i += 1)
           {
