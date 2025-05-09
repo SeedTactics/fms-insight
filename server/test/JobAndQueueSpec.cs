@@ -39,9 +39,11 @@ using System.Threading.Tasks;
 using AutoFixture;
 using BlackMaple.MachineFramework;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Tests;
+
+// warning that Test methods should not assign instance data
+#pragma warning disable TUnit0018
 
 public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.MockCellState>, IDisposable
 {
@@ -115,7 +117,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     );
   }
 
-  public IEnumerable<string> CheckNewJobs(IRepository db, NewJobs jobs)
+  IEnumerable<string> ISynchronizeCellState<MockCellState>.CheckNewJobs(IRepository db, NewJobs jobs)
   {
     return [];
   }
@@ -232,7 +234,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
   #endregion
 
-  [Fact(Timeout = 15000)]
+  [Test]
   public async Task HandlesErrorDuringCalculateState()
   {
     await StartSyncThread();
@@ -267,7 +269,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     // the error handling waits 2 seconds and tries again, so wait 3 seconds.
     // This checks that since the error is the same the OnNewCurrentStatus is not raised,
     // since it would get an error since OnNewCurrentStatus checks for task completion to be null
-    await Task.Delay(TimeSpan.FromSeconds(3));
+    await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
 
     // clear the error, and then wait for a new current status since the error changed
     var newStatusTask = CreateTaskToWaitForNewStatus();
@@ -275,7 +277,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     (await newStatusTask).ShouldBe(_curSt.CurrentStatus);
   }
 
-  [Fact(Timeout = 15000)]
+  [Test]
   public async Task ErrorsDuringActions()
   {
     await StartSyncThread();
@@ -318,7 +320,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     // the error handling waits 2 seconds and tries again, so wait 3 seconds.
     // This checks that since the error is the same the OnNewCurrentStatus is not raised,
     // since it would get an error since OnNewCurrentStatus checks for task completion to be null
-    await Task.Delay(TimeSpan.FromSeconds(3));
+    await Task.Delay(TimeSpan.FromSeconds(3), TestContext.Current.CancellationToken);
 
     // clear the error, and then wait for the new current status again
     var newStatusTask = CreateTaskToWaitForNewStatus();
@@ -348,7 +350,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     };
   }
 
-  [Fact(Timeout = 10000)]
+  [Test]
   public async Task AddsBasicJobs()
   {
     using var db = _repo.OpenConnection();
@@ -432,9 +434,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       );
   }
 
-  [Theory(Timeout = 10000)]
-  [InlineData(true)]
-  [InlineData(false)]
+  [Test]
+  [Arguments(true)]
+  [Arguments(false)]
   public async Task Decrement(bool byDate)
   {
     await StartSyncThread();
@@ -515,7 +517,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
 
   #region Queues
-  [Fact(Timeout = 10000)]
+  [Test]
   public async Task UnallocatedQueues()
   {
     using var db = _repo.OpenConnection();
@@ -737,9 +739,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     db.GetMaterialInAllQueues().ShouldContain(m => m.MaterialID == 2);
   }
 
-  [Theory(Timeout = 10000)]
-  [InlineData(0)]
-  [InlineData(1)]
+  [Test]
+  [Arguments(0)]
+  [Arguments(1)]
   public async Task UnprocessedMaterial(int lastCompletedProcess)
   {
     await StartSyncThread();
@@ -969,7 +971,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     db.GetLogForMaterial(materialID: 1).Count().ShouldBe(expectedLog.Length);
   }
 
-  [Fact(Timeout = 10000)]
+  [Test]
   public async Task AllowsSwapOfLoadingMaterial()
   {
     await StartSyncThread();
@@ -1041,18 +1043,18 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       Remove,
     }
 
-    public required InProcessMaterialLocation.LocType LocType { get; init; }
-    public required InProcessMaterialAction.ActionType ActionType { get; init; }
-    public required string QuarantineQueue { get; init; }
-    public string Error { get; init; } = null;
-    public QuarantineType? QuarantineAction { get; init; } = null;
-    public int Process { get; init; } = 0;
-    public string JobTransferQeuue { get; init; } = "q1";
-    public bool AllowQuarantineToCancelLoad { get; init; } = false;
+    public required InProcessMaterialLocation.LocType LocType { get; set; }
+    public required InProcessMaterialAction.ActionType ActionType { get; set; }
+    public required string QuarantineQueue { get; set; }
+    public string Error { get; set; } = null;
+    public QuarantineType? QuarantineAction { get; set; } = null;
+    public int Process { get; set; } = 0;
+    public string JobTransferQeuue { get; set; } = "q1";
+    public bool AllowQuarantineToCancelLoad { get; set; } = false;
   }
 
-  public static readonly IEnumerable<object[]> SignalTheoryData = new[]
-  {
+  public readonly ImmutableList<SignalQuarantineTheoryData> SignalTheoryData =
+  [
     new SignalQuarantineTheoryData
     {
       ActionType = InProcessMaterialAction.ActionType.Waiting,
@@ -1180,10 +1182,18 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       AllowQuarantineToCancelLoad = true,
       QuarantineAction = SignalQuarantineTheoryData.QuarantineType.Remove,
     },
-  }.Select(d => new object[] { d });
+  ];
 
-  [Theory(Timeout = 10000)]
-  [MemberData(nameof(SignalTheoryData))]
+  public IEnumerable<Func<SignalQuarantineTheoryData>> SignalTheoryDataSource()
+  {
+    foreach (var data in SignalTheoryData)
+    {
+      yield return () => data;
+    }
+  }
+
+  [Test]
+  [MethodDataSource(nameof(SignalTheoryDataSource))]
   public async Task QuarantinesMatOnPallet(SignalQuarantineTheoryData data)
   {
     _settings = _settings with { QuarantineQueue = data.QuarantineQueue };
@@ -1676,7 +1686,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
 
   #region TimeZone
 
-  [Fact(Timeout = 10000)]
+  [Test]
   public async Task NoAlarm()
   {
     _serverSettings = new ServerSettings() { ExpectedTimeZone = TimeZoneInfo.Local };
@@ -1696,7 +1706,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     await SetCurrentState(stateUpdated: true, executeAction: false, curSt: curSt);
   }
 
-  [Fact(Timeout = 10000)]
+  [Test]
   public async Task WrongTimezone()
   {
     _serverSettings = new ServerSettings()

@@ -11,7 +11,7 @@ on:
 
 jobs:
   server:
-    runs-on: windows-2022
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -26,13 +26,14 @@ jobs:
         timeout-minutes: 10
         run: |
           tzutil /s "Pacific Standard Time"
-          dotnet test server/test --collect:"XPlat Code Coverage" --logger "console;verbosity=normal" -- xUnit.LongRunningTestSeconds=20 xUnit.DiagnosticMessages=true
+          dotnet run --project server/test `
+              --coverage --coverage-output-format cobertura --coverage-output server-cov.xml
 
       - name: Upload Code Coverage
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: server/test/TestResults
+          files: server\test\bin\Debug\net9.0\TestResults\server-cov.xml
           flags: server-unittests
 
       - name: API Build

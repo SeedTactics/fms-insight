@@ -35,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 #nullable enable
 
@@ -56,7 +57,10 @@ namespace BlackMaple.MachineFramework.Controllers
   ) : ControllerBase
   {
     [HttpGet("history")]
-    public HistoricData History([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
+    public HistoricData History(
+      [BindRequired, FromQuery] DateTime startUTC,
+      [BindRequired, FromQuery] DateTime endUTC
+    )
     {
       using var db = repo.OpenConnection();
       return db.LoadJobHistory(startUTC, endUTC);
@@ -64,9 +68,9 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPost("history")]
     public HistoricData FilteredHistory(
-      [FromQuery] DateTime startUTC,
-      [FromQuery] DateTime endUTC,
-      [FromBody] List<string> alreadyKnownSchIds
+      [BindRequired, FromQuery] DateTime startUTC,
+      [BindRequired, FromQuery] DateTime endUTC,
+      [FromBody] List<string>? alreadyKnownSchIds = null
     )
     {
       using var db = repo.OpenConnection();
@@ -79,8 +83,8 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPost("recent")]
     public RecentHistoricData Recent(
-      [FromQuery] DateTime startUTC,
-      [FromBody] List<string> alreadyKnownSchIds
+      [BindRequired, FromQuery] DateTime startUTC,
+      [FromBody] List<string>? alreadyKnownSchIds = null
     )
     {
       using var db = repo.OpenConnection();
@@ -148,7 +152,7 @@ namespace BlackMaple.MachineFramework.Controllers
     [HttpPost("casting/{castingName}")]
     public List<InProcessMaterial> AddUnallocatedCastingToQueue(
       string castingName,
-      [FromQuery] string queue,
+      [BindRequired, FromQuery] string queue,
       [FromBody] List<string> serials,
       [FromQuery] int qty = 1,
       [FromQuery] string? operName = null,
@@ -180,7 +184,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public InProcessMaterial AddUnprocessedMaterialToQueue(
       string jobUnique,
       [FromQuery] int lastCompletedProcess,
-      [FromQuery] string queue,
+      [BindRequired, FromQuery] string queue,
       [FromQuery] int pos,
       [FromBody] string? serial,
       [FromQuery] string? operName = null,

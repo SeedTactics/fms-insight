@@ -38,7 +38,6 @@ using System.Linq;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Tests
 {
@@ -56,7 +55,7 @@ namespace BlackMaple.FMSInsight.Tests
       _repoCfg.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void Counts()
     {
       using var _insp = _repoCfg.OpenConnection();
@@ -89,7 +88,7 @@ namespace BlackMaple.FMSInsight.Tests
       loaded.ShouldBe(cnts);
     }
 
-    [Fact]
+    [Test]
     public void Frequencies()
     {
       using var _insp = _repoCfg.OpenConnection();
@@ -116,7 +115,7 @@ namespace BlackMaple.FMSInsight.Tests
       numInsp.ShouldBeLessThan(100);
     }
 
-    [Fact]
+    [Test]
     public void Inspections()
     {
       using var _insp = _repoCfg.OpenConnection();
@@ -175,7 +174,7 @@ namespace BlackMaple.FMSInsight.Tests
       CheckDecisions(new[] { 1L, 2, 3, 4 }, "insp1", "counter1", new[] { false, false, true, true }, now);
     }
 
-    [Fact]
+    [Test]
     public void ForcedInspection()
     {
       using var _insp = _repoCfg.OpenConnection();
@@ -214,7 +213,7 @@ namespace BlackMaple.FMSInsight.Tests
       CheckCount("counter1", 2);
     }
 
-    [Fact]
+    [Test]
     public void NextPiece()
     {
       using var _insp = _repoCfg.OpenConnection();
@@ -252,7 +251,7 @@ namespace BlackMaple.FMSInsight.Tests
       CheckDecision(1, "insp1", "counter1", true, now, true);
     }
 
-    [Fact]
+    [Test]
     public void TranslateCounter()
     {
       using var _insp = _repoCfg.OpenConnection();
@@ -300,8 +299,6 @@ namespace BlackMaple.FMSInsight.Tests
       var mat1Proc2 = new[] { MkLogMat.Mk(1, "job1", 2, "part1", 2, "", "", "") };
       var mat2Proc1 = new[] { MkLogMat.Mk(2, "job1", 1, "part1", 2, "", "", "") };
       var mat2Proc2 = new[] { MkLogMat.Mk(2, "job1", 2, "part1", 2, "", "", "") };
-
-      _lastCycleTime = DateTime.UtcNow.AddDays(-1);
 
       AddCycle(mat1Proc1, 1, LogType.LoadUnloadCycle, 1);
       AddCycle(mat2Proc1, 5, LogType.LoadUnloadCycle, 6);
@@ -407,7 +404,7 @@ namespace BlackMaple.FMSInsight.Tests
       CheckCount(expandedCounter2, 1);
     }
 
-    [Fact]
+    [Test]
     public void WithoutInspectProgram()
     {
       using var _insp = _repoCfg.OpenConnection();
@@ -435,7 +432,7 @@ namespace BlackMaple.FMSInsight.Tests
       CheckDecisions(new[] { 1L, 2L }, "myinspection", "", new[] { true, false }, now, true);
     }
 
-    private DateTime _lastCycleTime;
+    private DateTime _lastCycleTime = DateTime.UtcNow.AddDays(-1);
 
     private void AddCycle(LogMaterial[] mat, int pal, LogType loc, int statNum)
     {
@@ -623,7 +620,7 @@ namespace BlackMaple.FMSInsight.Tests
           return d.Inspect;
         }
       }
-      Assert.Fail("Unable to find counter and inspection type");
+      Fail.Test("No inspection decision found for " + matID.ToString());
       return false;
     }
 
@@ -634,11 +631,11 @@ namespace BlackMaple.FMSInsight.Tests
       {
         if (c.Counter == counter)
         {
-          Assert.Equal(val, c.Value);
+          c.Value.ShouldBe(val);
           return;
         }
       }
-      Assert.Fail("Unable to find counter " + counter);
+      Fail.Test("No inspection count found for " + counter);
     }
 
     private void CheckLastUTC(string counter, DateTime val)
@@ -649,13 +646,13 @@ namespace BlackMaple.FMSInsight.Tests
         if (c.Counter == counter)
         {
           if (val == DateTime.MaxValue)
-            Assert.Equal(DateTime.MaxValue, c.LastUTC);
+            c.LastUTC.ShouldBe(DateTime.MaxValue);
           else
-            Assert.True(5 >= Math.Abs(val.Subtract(c.LastUTC).TotalMinutes));
+            Math.Abs(val.Subtract(c.LastUTC).TotalMinutes).ShouldBeLessThanOrEqualTo(5);
           return;
         }
       }
-      Assert.Fail("Unable to find counter");
+      Fail.Test("No inspection count found for " + counter);
     }
   }
 }

@@ -37,6 +37,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace BlackMaple.MachineFramework.Controllers
 {
@@ -84,7 +85,10 @@ namespace BlackMaple.MachineFramework.Controllers
     : ControllerBase
   {
     [HttpGet("events/all")]
-    public IEnumerable<LogEntry> Get([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
+    public IEnumerable<LogEntry> Get(
+      [BindRequired, FromQuery] DateTime startUTC,
+      [BindRequired, FromQuery] DateTime endUTC
+    )
     {
       using var db = repo.OpenConnection();
       foreach (var l in db.GetLogEntries(startUTC, endUTC))
@@ -95,7 +99,10 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpGet("events.csv")]
     [Produces("text/csv")]
-    public IActionResult GetEventCSV([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
+    public IActionResult GetEventCSV(
+      [BindRequired, FromQuery] DateTime startUTC,
+      [BindRequired, FromQuery] DateTime endUTC
+    )
     {
       IEnumerable<LogEntry> entries;
       using (var db = repo.OpenConnection())
@@ -121,7 +128,10 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("events/all-completed-parts")]
-    public IEnumerable<LogEntry> GetCompletedParts([FromQuery] DateTime startUTC, [FromQuery] DateTime endUTC)
+    public IEnumerable<LogEntry> GetCompletedParts(
+      [BindRequired, FromQuery] DateTime startUTC,
+      [BindRequired, FromQuery] DateTime endUTC
+    )
     {
       using var db = repo.OpenConnection();
       foreach (var l in db.GetLogOfAllCompletedParts(startUTC, endUTC))
@@ -132,7 +142,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpGet("events/recent")]
     public IEnumerable<LogEntry> Recent(
-      [FromQuery] long lastSeenCounter,
+      [BindRequired, FromQuery] long lastSeenCounter,
       [FromQuery] DateTime? expectedEndUTCofLastSeen = null
     )
     {
@@ -154,7 +164,7 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpGet("events/for-material")]
-    public IEnumerable<LogEntry> LogForMaterials([FromQuery] List<long> id)
+    public IEnumerable<LogEntry> LogForMaterials([FromQuery] List<long>? id = null)
     {
       if (id == null || id.Count == 0)
       {
@@ -269,7 +279,7 @@ namespace BlackMaple.MachineFramework.Controllers
 
     [HttpPost("events/rebooking")]
     public LogEntry RequestRebooking(
-      [FromQuery] string partName,
+      [BindRequired, FromQuery] string partName,
       [FromQuery] int qty = 1,
       [FromBody] string? notes = null,
       [FromQuery] string? workorder = null,

@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.IO;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Tests
 {
@@ -53,7 +52,7 @@ namespace BlackMaple.FMSInsight.Tests
       Directory.Delete(_dir, true);
     }
 
-    [Fact]
+    [Test]
     public void ArchivesDebugLog()
     {
       var file1 = Path.Combine(_dir, $"fmsinsight-debug{DateTime.Today.ToString("yyyyMMdd")}.txt");

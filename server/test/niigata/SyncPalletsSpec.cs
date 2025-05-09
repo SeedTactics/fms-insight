@@ -38,7 +38,6 @@ using System.Linq;
 using System.Text.Json;
 using BlackMaple.MachineFramework;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Niigata.Tests
 {
@@ -49,14 +48,10 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
     private RepositoryConfig _logDBCfg;
     private IccSimulator _sim;
     private SyncNiigataPallets _sync;
-    private Xunit.Abstractions.ITestOutputHelper _output;
-    private bool _debugLogEnabled = false;
     private JsonSerializerOptions jsonSettings;
 
-    public SyncPalletsSpec(Xunit.Abstractions.ITestOutputHelper o)
+    public SyncPalletsSpec()
     {
-      _output = o;
-
       _serialSt = new SerialSettings()
       {
         ConvertMaterialIDToSerial = (m) => SerialSettings.ConvertToBase62(m, 10),
@@ -168,19 +163,6 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
         {
           break;
         }
-        if (_debugLogEnabled)
-        {
-          if (newLogs.Any())
-          {
-            _output.WriteLine("");
-            _output.WriteLine("*************** Events *********************************");
-            _output.WriteLine("Events: ");
-            WriteLogs(newLogs);
-          }
-          _output.WriteLine("");
-          _output.WriteLine("--------------- Status ---------------------------------");
-          _output.WriteLine(_sim.DebugPrintStatus());
-        }
       }
       return logs;
     }
@@ -251,7 +233,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
             break;
         }
       }
-      _output.WriteLine(output.ToString());
+      System.Diagnostics.Debug.WriteLine(output.ToString());
     }
 
     private void AddJobs(IEnumerable<Job> jobs, IEnumerable<(string prog, long rev)> progs)
@@ -510,7 +492,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       max.ShouldBe(expectedMax);
     }
 
-    [Fact]
+    [Test]
     public void OneProcJob()
     {
       InitSim(
@@ -563,7 +545,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
-    [Fact]
+    [Test]
     public void MultpleProcsMultiplePathsSeparatePallets()
     {
       InitSim(
@@ -726,7 +708,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
-    [Fact]
+    [Test]
     public void MultipleProcsMultiplePathsSamePallet()
     {
       InitSim(
@@ -887,7 +869,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       }
     }
 
-    [Fact(Skip = "Holding at machine not yet supported by Niigata")]
+    [Test, Skip("Holding at machine not yet supported by Niigata")]
     public void SizedQueue()
     {
       InitSim(
@@ -995,7 +977,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       CheckMaxQueueSize(logs, "sizedQ", 1);
     }
 
-    [Fact]
+    [Test]
     public void SizedQueueWithReclamp()
     {
       InitSim(
@@ -1110,7 +1092,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       CheckMaxQueueSize(logs, "sizedQ", 1);
     }
 
-    [Fact]
+    [Test]
     public void TwoMachineStops()
     {
       InitSim(
@@ -1191,7 +1173,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       );
     }
 
-    [Fact]
+    [Test]
     public void ChangePathOfJob()
     {
       InitSim(
@@ -1284,7 +1266,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       };
     }
 
-    [Fact]
+    [Test]
     public void FilterOutPath()
     {
       InitSim(
@@ -1375,7 +1357,7 @@ namespace BlackMaple.FMSInsight.Niigata.Tests
       logs.ShouldAllBe(e => e.Pallet == 0 || e.Pallet == 3 || e.Pallet == 4);
     }
 
-    [Fact]
+    [Test]
     public void PerMaterialWorkorderPrograms()
     {
       InitSim(

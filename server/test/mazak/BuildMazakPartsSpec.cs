@@ -39,7 +39,6 @@ using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using NSubstitute;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
@@ -53,9 +52,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       DBType = MazakDbType.MazakVersionE,
     };
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void BasicFromJob(bool useStartingOffset)
     {
       var job1 = CreateBasicStopsWithProg(
@@ -100,8 +99,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0)
-        Assert.Fail(log[0]);
+      log.ShouldBeEmpty();
 
       CheckNewFixtures(
         pMap,
@@ -132,9 +130,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AssertPartsPalletsDeleted(trans);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void FromJobReuseOrIgnoreFixtures(bool useStartingOffset)
     {
       //proc 1 and proc 2 on same pallets
@@ -248,9 +246,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AssertPartsPalletsDeleted(trans);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void DifferentPallets(bool useStartingOffset)
     {
       //Test when processes have different pallet lists
@@ -293,8 +291,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0)
-        Assert.Fail(log[0]);
+      log.ShouldBeEmpty();
 
       CheckNewFixtures(pMap, new string[] { "F:3:1:1", "F:3:2:2", "F:3:3:2" });
 
@@ -319,7 +316,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AssertPartsPalletsDeleted(trans);
     }
 
-    [Fact]
+    [Test]
     public void ManualFixtureAssignment()
     {
       //each process uses different faces
@@ -373,8 +370,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0)
-        Assert.Fail(log[0]);
+      log.ShouldBeEmpty();
 
       CheckNewFixtures(
         pMap,
@@ -405,11 +401,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AssertPartsPalletsDeleted(trans);
     }
 
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(false, true)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
+    [Test]
+    [Arguments(false, false)]
+    [Arguments(false, true)]
+    [Arguments(true, false)]
+    [Arguments(true, true)]
     public void SortsFixtureGroupsBySimStartingTime(bool useStartingOffset, bool sharePallets)
     {
       var job1 = CreateBasicStopsWithProg(
@@ -457,8 +453,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0)
-        Assert.Fail(log[0]);
+      log.ShouldBeEmpty();
 
       string part1BaseFix,
         part2BaseFix,
@@ -517,7 +512,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AssertPartsPalletsDeleted(trans);
     }
 
-    [Fact]
+    [Test]
     public void DeleteUnusedPartsPals()
     {
       var job1 = CreateBasicStopsWithProg(
@@ -549,8 +544,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         lookupProgram: (p, r) => throw new Exception("Unexpected program lookup"),
         errors: log
       );
-      if (log.Count > 0)
-        Assert.Fail(log[0]);
+      log.ShouldBeEmpty();
 
       var del = pMap.DeleteOldPalletRows();
       del.Pallets.ShouldBe(
@@ -587,7 +581,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       del.Schedules.ShouldBeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void ErrorsOnMissingProgram()
     {
       //Test when processes have different pallet lists
@@ -634,7 +628,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
     }
 
-    [Fact]
+    [Test]
     public void CreatesPrograms()
     {
       var job1 = CreateBasicStopsWithProg(
@@ -675,8 +669,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         lookupProgram: lookupProgram,
         errors: log
       );
-      if (log.Count > 0)
-        Assert.Fail(log[0]);
+      log.ShouldBeEmpty();
 
       var getProgramCt = Substitute.For<Func<string, long, string>>();
       getProgramCt("aaa", 3).Returns("aaa 3 ct");
@@ -736,7 +729,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void ErrorsOnSharedFixture()
     {
       var job1 = CreateBasicStopsWithProg(
@@ -780,7 +773,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
     }
 
-    [Fact]
+    [Test]
     public void ErrorsOnMissingManagedProgram()
     {
       var job1 = CreateBasicStopsWithProg(
@@ -1105,20 +1098,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
     private void AssertPartsPalletsDeleted(MazakWriteData dset)
     {
-      foreach (var row in dset.Parts)
-      {
-        Assert.Fail("Extra part row: " + row.PartName);
-      }
-
-      foreach (var row in dset.Pallets)
-      {
-        Assert.Fail("Extra pallet row: " + row.PalletNumber.ToString() + " " + row.Fixture);
-      }
-
-      foreach (var row in dset.Fixtures)
-      {
-        Assert.Fail("Extra fixture row: " + row.FixtureName);
-      }
+      dset.Parts.ShouldBeEmpty();
+      dset.Pallets.ShouldBeEmpty();
+      dset.Fixtures.ShouldBeEmpty();
     }
     #endregion
   }

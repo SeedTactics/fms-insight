@@ -39,13 +39,11 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
-using FluentAssertions;
 using MazakMachineInterface;
-using NSubstitute;
+using Shouldly;
 using WireMock.RequestBuilders;
 using WireMock.ResponseBuilders;
 using WireMock.Server;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
@@ -124,8 +122,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         loadTools: () => mazakDataTools
       );
 
-      ret.StoppedBecauseRecentMachineEvent.Should().Be(expectedMachineEnd);
-      ret.PalletWithMostRecentEventAsLoadUnloadEnd.Should().Be(expectedFinalLulEvt ? e.Pallet : null);
+      ret.StoppedBecauseRecentMachineEvent.ShouldBe(expectedMachineEnd);
+      ret.PalletWithMostRecentEventAsLoadUnloadEnd.ShouldBe(expectedFinalLulEvt ? e.Pallet : null);
 
       if (expectedFinalLulEvt)
       {
@@ -568,6 +566,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       TestMaterial mat,
       string inspTy,
       string counter,
+      int offset,
       bool result,
       IEnumerable<MaterialProcessActualPath> path
     )
@@ -581,7 +580,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         locNum: 1,
         prog: counter,
         start: false,
-        endTime: DateTime.UtcNow,
+        endTime: mat.EventStartTime.AddMinutes(offset),
         result: result.ToString()
       );
       e = e with
@@ -728,7 +727,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             locNum: 1,
             prog: "MARK",
             start: false,
-            endTime: mat.EventStartTime.AddMinutes(offset).AddSeconds(1),
+            endTime: mat.EventStartTime.AddMinutes(offset),
             result: SerialSettings.ConvertToBase62(mat.MaterialID).PadLeft(10, '0')
           )
         );
@@ -827,7 +826,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           locNum: e2.StationNumber,
           prog: "UNLOAD",
           start: false,
-          endTime: e2.TimeUTC.AddSeconds(1),
+          endTime: e2.TimeUTC,
           result: "UNLOAD",
           elapsed: TimeSpan.FromSeconds(
             Math.Round(
@@ -1180,7 +1179,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             locNum: startingPos,
             prog: reason ?? "",
             start: false,
-            endTime: mat.EventStartTime.AddMinutes(offset).AddSeconds(1),
+            endTime: mat.EventStartTime.AddMinutes(offset),
             result: "",
             elapsed: TimeSpan.FromMinutes(elapMin),
             active: TimeSpan.Zero
@@ -1306,41 +1305,17 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     #region Checking Log
     protected void CheckExpected(DateTime start, DateTime end)
     {
-      var log = jobLog.GetLogEntries(start, end).ToList();
+      jobLog.GetLogEntries(start, end).EventsShouldBe(expected);
 
-      if (log.Count != expected.Count)
-      {
-        // get a decent error message
-        log.GroupBy(e => e.LogType)
-          .ToDictionary(g => g.Key, g => g.Count())
-          .Should()
-          .BeEquivalentTo(expected.GroupBy(e => e.LogType).ToDictionary(g => g.Key, g => g.Count()));
-      }
-
-      log.Should()
-        .BeEquivalentTo(
-          expected,
-          options =>
-            options
-              .ComparingByMembers<BlackMaple.MachineFramework.LogEntry>()
-              .Excluding(e => e.Counter)
-              .Using<DateTime>(ctx =>
-                ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(1))
-              )
-              .WhenTypeIs<DateTime>()
-        );
-
-      raisedByEvent.Should().BeEquivalentTo(expectedMazakLogEntries);
+      raisedByEvent.ShouldBeEquivalentTo(expectedMazakLogEntries);
     }
 
     protected void CheckMatInQueue(string queue, IEnumerable<TestMaterial> mats)
     {
-      jobLog
-        .GetMaterialInAllQueues()
-        .Where(m => m.Queue == queue)
-        .Should()
-        .BeEquivalentTo(
-          mats.Select(
+      var actual = jobLog.GetMaterialInAllQueues().Where(m => m.Queue == queue).ToList();
+
+      actual.ShouldBeEquivalentTo(
+        mats.Select(
             (m, idx) =>
               new QueuedMaterial()
               {
@@ -1353,17 +1328,34 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
                 Paths = ImmutableDictionary<int, int>.Empty,
                 PartNameOrCasting = m.JobPartName,
                 NumProcesses = m.NumProcess,
+                AddTimeUTC = actual[idx].AddTimeUTC, // Ignore AddTimeUTC for comparison
               }
-          ),
-          options => options.ComparingByMembers<QueuedMaterial>().Excluding(o => o.AddTimeUTC)
-        );
+          )
+          .ToList()
+      );
+    }
+
+    protected void CheckMatInQueueIgnoreAddTime(string queue, IEnumerable<QueuedMaterial> mats)
+    {
+      var actual = jobLog.GetMaterialInAllQueues().Where(m => m.Queue == queue).ToList();
+
+      actual.ShouldBeEquivalentTo(
+        mats.Select(
+            (m, idx) =>
+              m with
+              {
+                AddTimeUTC = actual[idx].AddTimeUTC, // Ignore AddTimeUTC for comparison
+              }
+          )
+          .ToList()
+      );
     }
     #endregion
   }
 
   public class LogTranslationTests : LogTestBase
   {
-    [Fact]
+    [Test]
     public void SingleMachineCycle()
     {
       var j = new Job()
@@ -1407,8 +1399,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       jobLog
         .GetMaterialDetails(p.MaterialID)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new MaterialDetails()
           {
             MaterialID = p.MaterialID,
@@ -1418,14 +1409,13 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             Serial = SerialSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
             Workorder = null,
             Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-          },
-          options => options.ComparingByMembers<MaterialDetails>()
+          }
         );
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
+    [Test]
+    [Arguments(false)]
+    [Arguments(true)]
     public void MultipleMachineCycles(bool customMachineNums)
     {
       if (customMachineNums)
@@ -1504,7 +1494,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void MultipleProcess()
     {
       var j = new Job()
@@ -1587,7 +1577,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void ActiveTime()
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -1788,7 +1778,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void LargeFixedQuantites()
     {
       var j = new Job()
@@ -1899,7 +1889,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void SkipShortMachineCycle()
     {
       var j = new Job()
@@ -1963,7 +1953,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void Remachining()
     {
       var j = new Job()
@@ -2026,7 +2016,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void Inspections()
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -2099,6 +2089,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         proc1,
         inspTy: "insp_proc1",
         counter: "counter1",
+        offset: 20,
         result: false,
         path: new[]
         {
@@ -2132,6 +2123,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         inspTy: "insp_whole",
         counter: "counter2",
         result: false,
+        offset: 50,
         path: new[]
         {
           new MaterialProcessActualPath()
@@ -2167,7 +2159,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void TranslatesProgramsFromJob()
     {
       var j1 = new Job()
@@ -2305,7 +2297,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void TranslatesProgramsFromMazakDb()
     {
       var j = new Job()
@@ -2345,7 +2337,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void Queues()
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -2416,7 +2408,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public async Task QueuesFirstInFirstOut()
     {
       // run multiple process 1s on multiple paths.  Also have multiple parts on a face.
@@ -2603,8 +2595,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       //queue now has 9 elements
       jobLog
         .GetMaterialInAllQueues()
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           Enumerable
             .Range(1, 9)
             .Select(
@@ -2627,6 +2618,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
                   ),
                 }
             )
+            .ToList()
         );
 
       //first load should pull in mat ids 1, 2, 3
@@ -2646,24 +2638,25 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       jobLog
         .GetMaterialInAllQueues()
-        .Should()
-        .BeEquivalentTo(
-          (new[] { 4, 5, 6, 7, 8, 9 }).Select(
-            (i, idx) =>
-              new QueuedMaterial()
-              {
-                MaterialID = i,
-                Queue = "thequeue",
-                Position = idx,
-                Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
-                PartNameOrCasting = "pppp",
-                NumProcesses = 2,
-                NextProcess = 2,
-                Serial = SerialSettings.ConvertToBase62(i).PadLeft(10, '0'),
-                Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-                AddTimeUTC = t.AddMinutes(i <= 6 ? 27 : 33),
-              }
-          )
+        .ShouldBeEquivalentTo(
+          (new[] { 4, 5, 6, 7, 8, 9 })
+            .Select(
+              (i, idx) =>
+                new QueuedMaterial()
+                {
+                  MaterialID = i,
+                  Queue = "thequeue",
+                  Position = idx,
+                  Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
+                  PartNameOrCasting = "pppp",
+                  NumProcesses = 2,
+                  NextProcess = 2,
+                  Serial = SerialSettings.ConvertToBase62(i).PadLeft(10, '0'),
+                  Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
+                  AddTimeUTC = t.AddMinutes(i <= 6 ? 27 : 33),
+                }
+            )
+            .ToList()
         );
 
       MachStart(proc2path1, offset: 50, mach: 100);
@@ -2689,24 +2682,25 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       jobLog
         .GetMaterialInAllQueues()
-        .Should()
-        .BeEquivalentTo(
-          (new[] { 4, 5, 6 }).Select(
-            (i, idx) =>
-              new QueuedMaterial()
-              {
-                MaterialID = i,
-                Queue = "thequeue",
-                Position = idx,
-                Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
-                PartNameOrCasting = "pppp",
-                NumProcesses = 2,
-                NextProcess = 2,
-                Serial = SerialSettings.ConvertToBase62(i).PadLeft(10, '0'),
-                Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-                AddTimeUTC = t.AddMinutes(27),
-              }
-          )
+        .ShouldBeEquivalentTo(
+          (new[] { 4, 5, 6 })
+            .Select(
+              (i, idx) =>
+                new QueuedMaterial()
+                {
+                  MaterialID = i,
+                  Queue = "thequeue",
+                  Position = idx,
+                  Unique = proc1path2.Concat(proc2path2).Any(m => m.MaterialID == i) ? "uuuu2" : "uuuu1",
+                  PartNameOrCasting = "pppp",
+                  NumProcesses = 2,
+                  NextProcess = 2,
+                  Serial = SerialSettings.ConvertToBase62(i).PadLeft(10, '0'),
+                  Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
+                  AddTimeUTC = t.AddMinutes(27),
+                }
+            )
+            .ToList()
         );
 
       // finally, load of path2 pulls remaining 4, 5, 6
@@ -2723,7 +2717,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         elapMin: 73 - 27
       );
 
-      jobLog.GetMaterialInAllQueues().Should().BeEmpty();
+      jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
 
       var details = jobLog.GetMaterialDetails(proc1path2.First().MaterialID);
 
@@ -2733,29 +2727,25 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       int numWaits = 0;
       while (server.LogEntries.Count() < 3 && numWaits < 20)
       {
-        await Task.Delay(100);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
         numWaits++;
       }
 
-      server.LogEntries.Should().HaveCount(3);
-      server
-        .LogEntries.Should()
-        .AllSatisfy(e => e.RequestMessage.Path.Should().Be("/api/v1/jobs/casting/pppp"));
-      server
-        .LogEntries.Should()
-        .AllSatisfy(e =>
-          e.RequestMessage.Query.Should()
-            .BeEquivalentTo(new Dictionary<string, List<string>> { { "queue", ["externalq"] } })
-        );
+      server.LogEntries.Count.ShouldBe(3);
+      foreach (var e in server.LogEntries)
+      {
+        e.RequestMessage.Path.ShouldBe("/api/v1/jobs/casting/pppp");
+        e.RequestMessage.Query.ShouldHaveSingleItem();
+        e.RequestMessage.Query["queue"].ShouldBe(["externalq"]);
+      }
       server
         .LogEntries.Select(e => e.RequestMessage.Body)
-        .Should()
-        .BeEquivalentTo(["[\"0000000001\"]", "[\"0000000002\"]", "[\"0000000003\"]"]);
+        .ShouldBe(["[\"0000000001\"]", "[\"0000000002\"]", "[\"0000000003\"]"]);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void QueuesSignalQuarantine(bool signalDuringUnload)
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -2818,7 +2808,189 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
+    public void LoadsAssignedRawMaterial()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
+
+      var casting = BuildMaterial(t, pal: 8, unique: "", part: "xxxx", proc: 1, numProc: 1, matID: 1);
+      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 2);
+      var mat2 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 3);
+      var mat3 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 4);
+      AddMaterialToQueue(casting, proc: 0, queue: "rawmat", offset: 0, allocate: AllocateTy.Casting);
+      AddMaterialToQueue(mat1, proc: 0, queue: "rawmat", offset: 1, allocate: AllocateTy.Assigned);
+      AddMaterialToQueue(mat2, proc: 0, queue: "rawmat", offset: 2, allocate: AllocateTy.Assigned);
+      AddMaterialToQueue(mat3, proc: 0, queue: "rawmat", offset: 3, allocate: AllocateTy.Assigned);
+
+      // Add job with 2 fix qty on process 1
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes =
+        [
+          new ProcessInfo()
+          {
+            Paths =
+            [
+              JobLogTest.EmptyPath with
+              {
+                PartsPerPallet = 2,
+                InputQueue = "rawmat",
+                OutputQueue = "thequeue",
+              },
+            ],
+          },
+          new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { InputQueue = "thequeue" }] },
+        ],
+      };
+      var newJobs = new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "swapSch" };
+      jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+
+      CheckMatInQueue("rawmat", new[] { casting, mat1, mat2, mat3 });
+
+      // load of pallet 8 should take both mat1 and mat2
+      LoadStart([mat1, mat2], offset: 4, load: 1);
+      LoadEnd([mat1, mat2], offset: 5, load: 1, elapMin: 1, expectMark: false);
+      ExpectPalletStart(t, pal: 8, offset: 5, mats: [mat1, mat2]);
+      MovePallet(t, pal: 8, offset: 6, load: 1);
+      ExpectRemoveFromQueue(
+        AdjProcess(mat1, 0),
+        offset: 5,
+        queue: "rawmat",
+        startingPos: 1,
+        reason: "LoadedToPallet",
+        elapMin: 5 - 1
+      );
+      ExpectRemoveFromQueue(
+        AdjProcess(mat2, 0),
+        offset: 5,
+        queue: "rawmat",
+        startingPos: 1,
+        reason: "LoadedToPallet",
+        elapMin: 5 - 2
+      );
+
+      CheckMatInQueue("rawmat", new[] { casting, mat3 });
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+
+      // now a load of pallet 4, should take mat3 and create a new piece of material
+      var newMat = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 5);
+
+      LoadStart([mat3, newMat], offset: 8, load: 1);
+      LoadEnd(
+        [mat3, newMat],
+        offset: 10,
+        load: 1,
+        elapMin: 2,
+        // newMat should still have a mark at this time
+        matsToSkipMark: new HashSet<long>([mat3.MaterialID])
+      );
+      ExpectPalletStart(t, pal: 4, offset: 10, mats: [mat3, newMat]);
+      MovePallet(t, pal: 4, offset: 11, load: 1);
+      ExpectRemoveFromQueue(
+        AdjProcess(mat3, 0),
+        offset: 10,
+        queue: "rawmat",
+        startingPos: 1,
+        reason: "LoadedToPallet",
+        elapMin: 10 - 3
+      );
+
+      CheckMatInQueue("rawmat", new[] { casting });
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Test]
+    public void AssignsMaterialFromQueueDuringLoad()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
+
+      // one assigned, two castings
+      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
+      var mat2 = BuildMaterial(t, pal: 8, unique: "", part: "cccc", proc: 1, numProc: 1, matID: 2);
+      var mat3 = BuildMaterial(t, pal: 8, unique: "", part: "cccc", proc: 1, numProc: 1, matID: 3);
+      AddMaterialToQueue(mat1, proc: 0, queue: "rawmat", offset: 1, allocate: AllocateTy.Assigned);
+      AddMaterialToQueue(mat2, proc: 0, queue: "rawmat", offset: 2, allocate: AllocateTy.Casting);
+      AddMaterialToQueue(mat3, proc: 0, queue: "rawmat", offset: 3, allocate: AllocateTy.Casting);
+
+      // Add job with 3 fix qty on process 1
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes =
+        [
+          new ProcessInfo()
+          {
+            Paths =
+            [
+              JobLogTest.EmptyPath with
+              {
+                PartsPerPallet = 3,
+                Casting = "cccc",
+                InputQueue = "rawmat",
+                OutputQueue = "thequeue",
+              },
+            ],
+          },
+          new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { InputQueue = "thequeue" }] },
+        ],
+      };
+      var newJobs = new NewJobs() { Jobs = [j], ScheduleId = "swapSch" };
+      jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+
+      CheckMatInQueue("rawmat", [mat1, mat2, mat3]);
+
+      // load of pallet 8 should take them all
+      LoadStart([mat1, mat2, mat3], offset: 4, load: 1);
+      LoadEnd([mat1, mat2, mat3], offset: 5, load: 1, elapMin: 1, expectMark: false);
+      ExpectPalletStart(t, pal: 8, offset: 5, mats: [mat1, mat2, mat3]);
+      MovePallet(t, pal: 8, offset: 6, load: 1);
+      ExpectRemoveFromQueue(
+        AdjProcess(mat1, 0),
+        offset: 5,
+        queue: "rawmat",
+        startingPos: 0,
+        reason: "LoadedToPallet",
+        elapMin: 5 - 1
+      );
+      ExpectRemoveFromQueue(
+        AdjProcess(mat2, 0),
+        offset: 5,
+        queue: "rawmat",
+        startingPos: 0,
+        reason: "LoadedToPallet",
+        elapMin: 5 - 2
+      );
+      ExpectRemoveFromQueue(
+        AdjProcess(mat3, 0),
+        offset: 5,
+        queue: "rawmat",
+        startingPos: 0,
+        reason: "LoadedToPallet",
+        elapMin: 5 - 3
+      );
+
+      CheckMatInQueue("rawmat", []);
+
+      AdjustLogMaterial(mat2, m => m with { JobUniqueStr = "uuuu", PartName = "pppp", NumProcesses = 2 });
+      AdjustLogMaterial(mat3, m => m with { JobUniqueStr = "uuuu", PartName = "pppp", NumProcesses = 2 });
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Test]
     public void LoadsAssignedRawMaterial()
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -3000,7 +3172,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void SwapsRawMaterial()
     {
       var t = DateTime.UtcNow.AddHours(-5);
@@ -3063,51 +3235,48 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       SwapMaterial(mat1, mat2, offset: 10, unassigned: false);
 
-      jobLog
-        .GetMaterialInAllQueues()
-        .Where(m => m.Queue == "rawmat")
-        .Should()
-        .BeEquivalentTo(
-          [
-            new QueuedMaterial()
-            {
-              MaterialID = mat3.MaterialID,
-              Queue = "rawmat",
-              Position = 0,
-              Unique = mat3.Unique,
-              NextProcess = 1,
-              Serial = SerialSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0'),
-              Paths = ImmutableDictionary<int, int>.Empty,
-              PartNameOrCasting = mat3.JobPartName,
-              NumProcesses = mat3.NumProcess,
-            },
-            new QueuedMaterial()
-            {
-              MaterialID = mat4.MaterialID,
-              Queue = "rawmat",
-              Position = 1,
-              Unique = "", // unique is cleared
-              NextProcess = 1,
-              Serial = SerialSettings.ConvertToBase62(mat4.MaterialID).PadLeft(10, '0'),
-              Paths = ImmutableDictionary<int, int>.Empty,
-              PartNameOrCasting = mat4.JobPartName,
-              NumProcesses = 1, // num processes is reset
-            },
-            new QueuedMaterial()
-            {
-              MaterialID = mat1.MaterialID,
-              Queue = "rawmat",
-              Position = 2,
-              Unique = mat1.Unique,
-              NextProcess = 1,
-              Serial = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0'),
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-              PartNameOrCasting = mat1.JobPartName,
-              NumProcesses = mat1.NumProcess,
-            },
-          ],
-          options => options.ComparingByMembers<QueuedMaterial>().Excluding(o => o.AddTimeUTC)
-        );
+      CheckMatInQueueIgnoreAddTime(
+        "rawmat",
+        new List<QueuedMaterial>
+        {
+          new QueuedMaterial()
+          {
+            MaterialID = mat3.MaterialID,
+            Queue = "rawmat",
+            Position = 0,
+            Unique = mat3.Unique,
+            NextProcess = 1,
+            Serial = SerialSettings.ConvertToBase62(mat3.MaterialID).PadLeft(10, '0'),
+            Paths = ImmutableDictionary<int, int>.Empty,
+            PartNameOrCasting = mat3.JobPartName,
+            NumProcesses = mat3.NumProcess,
+          },
+          new QueuedMaterial()
+          {
+            MaterialID = mat4.MaterialID,
+            Queue = "rawmat",
+            Position = 1,
+            Unique = "", // unique is cleared
+            NextProcess = 1,
+            Serial = SerialSettings.ConvertToBase62(mat4.MaterialID).PadLeft(10, '0'),
+            Paths = ImmutableDictionary<int, int>.Empty,
+            PartNameOrCasting = mat4.JobPartName,
+            NumProcesses = 1, // num processes is reset
+          },
+          new QueuedMaterial()
+          {
+            MaterialID = mat1.MaterialID,
+            Queue = "rawmat",
+            Position = 2,
+            Unique = mat1.Unique,
+            NextProcess = 1,
+            Serial = SerialSettings.ConvertToBase62(mat1.MaterialID).PadLeft(10, '0'),
+            Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
+            PartNameOrCasting = mat1.JobPartName,
+            NumProcesses = mat1.NumProcess,
+          },
+        }
+      );
 
       // continue with mat2
       MachStart(mat2, offset: 15, mach: 3);
@@ -3141,8 +3310,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       jobLog
         .GetMaterialDetails(mat3.MaterialID)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new MaterialDetails()
           {
             MaterialID = mat3.MaterialID,
@@ -3157,7 +3325,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void Tools()
     {
       var j = new Job()
@@ -3341,7 +3509,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void StockerAndRotaryTable()
     {
       var j = new Job()
@@ -3393,8 +3561,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       jobLog
         .GetMaterialDetails(p.MaterialID)
-        .Should()
-        .BeEquivalentTo(
+        .ShouldBeEquivalentTo(
           new MaterialDetails()
           {
             MaterialID = p.MaterialID,
@@ -3404,12 +3571,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             Serial = SerialSettings.ConvertToBase62(p.MaterialID).PadLeft(10, '0'),
             Workorder = null,
             Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-          },
-          options => options.ComparingByMembers<MaterialDetails>()
+          }
         );
     }
 
-    [Fact]
+    [Test]
     public void LeaveInboundRotary()
     {
       var j = new Job()
@@ -3456,7 +3622,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void QuarantinesMaterial()
     {
       var j = new Job()
@@ -3497,8 +3663,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       MachStart(m1proc1, offset: 10, mach: 4);
 
       // shouldn't do anything here, statuses match
-      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
-      jobLog.GetMaterialInAllQueues().Should().BeEmpty();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.ShouldBeFalse();
+      jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
 
       MachEnd(m1proc1, offset: 15, mach: 4, elapMin: 5);
 
@@ -3510,8 +3676,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       ClearPalletFace(pal: 3, proc: 1);
 
       // shouldn't do anything, pallet at load station
-      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
-      jobLog.GetMaterialInAllQueues().Should().BeEmpty();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.ShouldBeFalse();
+      jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
 
       UnloadEnd(m1proc1, offset: 22, load: 2, elapMin: 2, totalMatCnt: 3);
       LoadEnd(m1proc2, offset: 22, load: 2, elapMin: 2, totalMatCnt: 3);
@@ -3526,41 +3692,33 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       StockerStart(new[] { m1proc2, m2proc1 }, offset: 25, stocker: 3, waitForMachine: true);
 
       // shouldn't do anything, statuses match
-      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
-      jobLog.GetMaterialInAllQueues().Should().BeEmpty();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.ShouldBeFalse();
+      jobLog.GetMaterialInAllQueues().ShouldBeEmpty();
 
       // remove process 1
       ClearPalletFace(pal: 3, proc: 1);
 
-      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeTrue();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.ShouldBeTrue();
 
-      jobLog
-        .GetMaterialInAllQueues()
-        .Should()
-        .BeEquivalentTo(
-          new[]
-          {
-            new QueuedMaterial()
-            {
-              MaterialID = m2proc1.MaterialID,
-              Queue = "quarantineQ",
-              Position = 0,
-              Unique = "unique",
-              PartNameOrCasting = "part1",
-              NumProcesses = 2,
-              NextProcess = 2,
-              Serial = SerialSettings.ConvertToBase62(m2proc1.MaterialID).PadLeft(10, '0'),
-              Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
-              AddTimeUTC = DateTime.UtcNow,
-            },
-          },
-          options =>
-            options
-              .Using<DateTime>(ctx =>
-                ctx.Subject.Should().BeCloseTo(ctx.Expectation, TimeSpan.FromSeconds(5))
-              )
-              .When(p => p.Path.EndsWith("AddTimeUTC"))
-        );
+      var actualQuarantinedMat = jobLog.GetMaterialInAllQueues().ShouldHaveSingleItem();
+      actualQuarantinedMat
+        .AddTimeUTC.ShouldNotBeNull()
+        .ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(3));
+      actualQuarantinedMat.ShouldBeEquivalentTo(
+        new QueuedMaterial()
+        {
+          MaterialID = m2proc1.MaterialID,
+          Queue = "quarantineQ",
+          Position = 0,
+          Unique = "unique",
+          PartNameOrCasting = "part1",
+          NumProcesses = 2,
+          NextProcess = 2,
+          Serial = SerialSettings.ConvertToBase62(m2proc1.MaterialID).PadLeft(10, '0'),
+          Paths = ImmutableDictionary<int, int>.Empty.Add(1, 1),
+          AddTimeUTC = actualQuarantinedMat.AddTimeUTC,
+        }
+      );
 
       expected.Add(
         new BlackMaple.MachineFramework.LogEntry(
@@ -3572,14 +3730,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           locNum: 0,
           prog: "MaterialMissingOnPallet",
           start: false,
-          endTime: jobLog.GetMaterialInAllQueues().First().AddTimeUTC.Value,
+          endTime: actualQuarantinedMat.AddTimeUTC.ShouldNotBeNull(),
           result: ""
         )
       );
 
       // need to reload material in queues
 
-      CheckPalletStatusMatchesLogs().PalletStatusChanged.Should().BeFalse();
+      CheckPalletStatusMatchesLogs().PalletStatusChanged.ShouldBeFalse();
 
       // now future events don't have the material
       StockerEnd(new[] { m1proc2 }, offset: 30, stocker: 3, waitForMachine: true, elapMin: 5);
@@ -3587,7 +3745,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }
 
-    [Fact]
+    [Test]
     public void SkipsRecentMachineEnd()
     {
       var e = new MazakMachineInterface.LogEntry()
@@ -3607,8 +3765,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       };
 
       HandleEvent(e, expectedMachineEnd: true);
-      raisedByEvent.Should().BeEmpty();
-      jobLog.GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow.AddHours(10)).Should().BeEmpty();
+      raisedByEvent.ShouldBeEmpty();
+      jobLog.GetLogEntries(DateTime.UtcNow.AddHours(-10), DateTime.UtcNow.AddHours(10)).ShouldBeEmpty();
     }
   }
 

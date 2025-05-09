@@ -38,37 +38,40 @@ using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+
+#nullable enable
 
 namespace BlackMaple.MachineFramework.Controllers
 {
   [KnownType(typeof(ServerEvent))]
   public record FMSInfo
   {
-    public string Name { get; init; }
+    public required string Name { get; init; }
 
-    public string Version { get; init; }
+    public required string Version { get; init; }
 
     public DateTime? LicenseExpires { get; init; }
 
-    public IReadOnlyList<string> AdditionalLogServers { get; init; }
+    public IReadOnlyList<string>? AdditionalLogServers { get; init; }
 
-    public string OpenIDConnectAuthority { get; init; }
+    public string? OpenIDConnectAuthority { get; init; }
 
-    public string LocalhostOpenIDConnectAuthority { get; init; }
+    public string? LocalhostOpenIDConnectAuthority { get; init; }
 
-    public string OpenIDConnectClientId { get; init; }
+    public string? OpenIDConnectClientId { get; init; }
 
-    public bool UsingLabelPrinterForSerials { get; init; }
+    public bool? UsingLabelPrinterForSerials { get; init; }
 
     public bool? UseClientPrinterForLabels { get; init; }
 
     public bool? AllowQuarantineToCancelLoad { get; init; }
 
-    public string QuarantineQueue { get; init; }
+    public string? QuarantineQueue { get; init; }
 
-    public string CustomStationMonitorDialogUrl { get; init; }
+    public string? CustomStationMonitorDialogUrl { get; init; }
 
-    public string SupportsRebookings { get; init; }
+    public string? SupportsRebookings { get; init; }
 
     // LoadStation Options
     public bool? AllowChangeWorkorderAtLoadStation { get; init; }
@@ -78,18 +81,18 @@ namespace BlackMaple.MachineFramework.Controllers
     public bool? AllowInvalidateMaterialAtLoadStation { get; init; }
 
     // Closeout Page Options
-    public bool RequireScanAtCloseout { get; init; }
+    public bool? RequireScanAtCloseout { get; init; }
 
-    public bool RequireWorkorderBeforeAllowCloseoutComplete { get; init; }
+    public bool? RequireWorkorderBeforeAllowCloseoutComplete { get; init; }
 
     // Queues Page Options
-    public AddRawMaterialType AddRawMaterial { get; init; }
+    public AddRawMaterialType? AddRawMaterial { get; init; }
 
-    public AddInProcessMaterialType AddInProcessMaterial { get; init; }
+    public AddInProcessMaterialType? AddInProcessMaterial { get; init; }
 
     public bool? RequireOperatorNamePromptWhenAddingMaterial { get; init; }
 
-    public string AllowEditJobPlanQuantityFromQueuesPage { get; init; }
+    public string? AllowEditJobPlanQuantityFromQueuesPage { get; init; }
 
     public bool? AllowInvalidateMaterialOnQueuesPage { get; init; } = false;
   }
@@ -101,11 +104,11 @@ namespace BlackMaple.MachineFramework.Controllers
     private readonly FMSSettings _cfg;
     private readonly ServerSettings _serverSt;
     private readonly RepositoryConfig _repo;
-    private readonly IPrintLabelForMaterial _printLabel;
+    private readonly IPrintLabelForMaterial? _printLabel;
     private readonly IJobAndQueueControl _jobsAndQueues;
-    private readonly ICalculateInstructionPath _instrPath;
-    private readonly IParseBarcode _parseBarcode;
-    private readonly ICheckLicense _checkLicense;
+    private readonly ICalculateInstructionPath? _instrPath;
+    private readonly IParseBarcode? _parseBarcode;
+    private readonly ICheckLicense? _checkLicense;
 
     private readonly string _name;
     private readonly string _version;
@@ -115,10 +118,10 @@ namespace BlackMaple.MachineFramework.Controllers
       ServerSettings serverSt,
       IJobAndQueueControl jobsAndQueues,
       RepositoryConfig repo,
-      IPrintLabelForMaterial printLabel = null,
-      ICalculateInstructionPath instrPath = null,
-      IParseBarcode parseBarcode = null,
-      ICheckLicense license = null
+      IPrintLabelForMaterial? printLabel = null,
+      ICalculateInstructionPath? instrPath = null,
+      IParseBarcode? parseBarcode = null,
+      ICheckLicense? license = null
     )
     {
       _cfg = fmsSt;
@@ -131,12 +134,22 @@ namespace BlackMaple.MachineFramework.Controllers
       _checkLicense = license;
 
       var startA = System.Reflection.Assembly.GetEntryAssembly();
-      _name =
-        (
-          (System.Reflection.AssemblyTitleAttribute)
-            Attribute.GetCustomAttribute(startA, typeof(System.Reflection.AssemblyTitleAttribute), false)
-        )?.Title ?? startA.GetName().Name;
-      _version = startA.GetName().Version?.ToString();
+      if (startA == null)
+      {
+        _name = "FMS Insight";
+        _version = "";
+      }
+      else
+      {
+        _name =
+          (
+            (System.Reflection.AssemblyTitleAttribute?)
+              Attribute.GetCustomAttribute(startA, typeof(System.Reflection.AssemblyTitleAttribute), false)
+          )?.Title
+          ?? startA.GetName().Name
+          ?? "FMS Insight";
+        _version = startA.GetName().Version?.ToString() ?? "";
+      }
     }
 
     [HttpGet("fms-information")]
@@ -172,8 +185,10 @@ namespace BlackMaple.MachineFramework.Controllers
       };
     }
 
-    private string SearchFiles(string part, string type)
+    private string? SearchFiles(string part, string type)
     {
+      if (string.IsNullOrEmpty(_cfg.InstructionFilePath))
+        return null;
       foreach (var f in Directory.GetFiles(_cfg.InstructionFilePath))
       {
         if (!Path.GetFileName(f).Contains(part))
@@ -193,10 +208,10 @@ namespace BlackMaple.MachineFramework.Controllers
     [ProducesResponseType(404)]
     public IActionResult FindInstructions(
       string part,
-      [FromQuery] string type,
+      [BindRequired, FromQuery] string type,
       [FromQuery] int? process = null,
       [FromQuery] long? materialID = null,
-      [FromQuery] string operatorName = null,
+      [FromQuery] string? operatorName = null,
       [FromQuery] int pallet = 0
     )
     {
@@ -231,7 +246,7 @@ namespace BlackMaple.MachineFramework.Controllers
         return NotFound("Error: configured instruction directory does not exist");
       }
 
-      string instrFile = null;
+      string? instrFile = null;
 
       // try part with process
       if (process.HasValue)
@@ -279,7 +294,7 @@ namespace BlackMaple.MachineFramework.Controllers
     {
       if (_printLabel != null)
       {
-        _printLabel.PrintLabel(materialId, process, Request.GetTypedHeaders().Referer);
+        _printLabel.PrintLabel(materialId, process, Request.GetTypedHeaders().Referer ?? new Uri("/"));
         return Ok();
       }
       else
@@ -289,11 +304,14 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("parse-barcode")]
-    public ScannedMaterial ParseBarcode([FromQuery] string barcode)
+    public ScannedMaterial? ParseBarcode([BindRequired, FromQuery] string barcode)
     {
       if (_parseBarcode != null)
       {
-        return _parseBarcode.ParseBarcode(barcode: barcode, httpReferer: Request.GetTypedHeaders().Referer);
+        return _parseBarcode.ParseBarcode(
+          barcode: barcode,
+          httpReferer: Request.GetTypedHeaders().Referer ?? new Uri("/")
+        );
       }
       else
       {

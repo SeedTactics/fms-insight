@@ -39,7 +39,6 @@ using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
@@ -74,9 +73,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       }
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void Empty(bool waitAll)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -173,7 +172,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       return mat;
     }
 
-    [Fact]
+    [Test]
     public void AddAssignedMaterialToQueueNoWaitForAll()
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -250,9 +249,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.ShouldBe(1); // set the 1 material
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("casting")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("casting")]
     public void AddAssignedToQueueNoWaitForAll(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -336,9 +335,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.ShouldBe(3);
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("casting")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("casting")]
     public void AddAssignedToQueueWaitForAll(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -436,7 +435,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _logDB.IsMaterialInQueue(matIdProc1).ShouldBeFalse();
     }
 
-    [Fact]
+    [Test]
     public void RemoveMatFromQueueNoWaitForAll()
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -520,7 +519,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.ShouldBe(3); // set the material back to 3
     }
 
-    [Fact]
+    [Test]
     public void RemoveMatFromQueueWaitForAll()
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -771,9 +770,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         }.Concat(expectedTransQ).ToList());
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("mycasting")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("mycasting")]
     public void AddCastingsByFixedQuantity(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -957,9 +956,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(1); // set the material
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("mycasting")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("mycasting")]
     public void AddCastingsByPlannedQuantity(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -1145,7 +1144,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(2); // set the material
     }
 
-    [Fact]
+    [Test]
     public void AllocateCastingsAndMatQtyChanges()
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -1348,9 +1347,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(2); // set the 2 already allocated
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void IgnoreAllocateWhenNoRemaining(bool waitAll)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -1495,9 +1494,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules.ShouldBeEmpty();
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void DecrementJobWithoutQueue(bool waitAll)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -1544,11 +1543,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(0); // clear the material
     }
 
-    [Theory]
-    [InlineData(true, null)]
-    [InlineData(true, "mycasting")]
-    [InlineData(false, null)]
-    [InlineData(false, "mycasting")]
+    [Test]
+    [Arguments(true, null)]
+    [Arguments(true, "mycasting")]
+    [Arguments(false, null)]
+    [Arguments(false, "mycasting")]
     public void DecrementJobWithQueue(bool waitAll, string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -1767,7 +1766,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
     }
 
-    [Fact]
+    [Test]
     public void MultiplePathsAddMaterial()
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -1861,7 +1860,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       path2Rows[1].ProcessMaterialQuantity.ShouldBe(0 + 15);
     }
 
-    [Fact]
+    [Test]
     public void MultiplePathsRemoveMaterial()
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -1971,9 +1970,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       path2Rows[1].ProcessMaterialQuantity.ShouldBe(9 - 2); // remove two
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("mycasting")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("mycasting")]
     public void AddCastingsByFixedQuantityMultiPath(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -2292,9 +2291,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       path2Rows[1].ProcessMaterialQuantity.ShouldBe(6); // unchanged
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("mycasting")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("mycasting")]
     public void AddCastingsByFullScheduleMultiPath(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -2534,11 +2533,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       path2Rows[1].ProcessMaterialQuantity.ShouldBe(6); // unchanged
     }
 
-    [Theory]
-    [InlineData(null, true, false)]
-    [InlineData(null, false, true)]
-    [InlineData("mycasting", true, false)]
-    [InlineData("mycasting", false, true)]
+    [Test]
+    [Arguments(null, true, false)]
+    [Arguments(null, false, true)]
+    [Arguments("mycasting", true, false)]
+    [Arguments("mycasting", false, true)]
     public void AdjustsPriorityWhenAddingCastings(string casting, bool matchPallet, bool matchFixture)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -2625,9 +2624,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       path2Rows[1].ProcessMaterialQuantity.ShouldBe(6); // unchanged
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
     public void SkipsWhenAtLoad(bool waitAll)
     {
       using var _logDB = _repoCfg.OpenConnection();
@@ -2751,9 +2750,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       }
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("mycasting")]
+    [Test]
+    [Arguments(null)]
+    [Arguments("mycasting")]
     public void AllocateToMultipleSchedulesByPriority(string casting)
     {
       using var _logDB = _repoCfg.OpenConnection();

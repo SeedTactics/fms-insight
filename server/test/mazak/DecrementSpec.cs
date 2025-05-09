@@ -40,7 +40,6 @@ using BlackMaple.MachineFramework;
 using MazakMachineInterface;
 using NSubstitute;
 using Shouldly;
-using Xunit;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests
 {
@@ -80,7 +79,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _repoCfg.Dispose();
     }
 
-    [Fact]
+    [Test]
     public void SinglePathSingleProc()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -166,7 +165,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void IgnoresManualSchedule()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -222,7 +221,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _jobDB.LoadDecrementsForJob("uuuu").ShouldBeEmpty();
     }
 
-    [Fact]
+    [Test]
     public void IgnoresAlreadyExistingDecrement()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -303,7 +302,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void LoadInProcess()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -404,7 +403,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void ContinuePreviousDecrement()
     {
       using var _jobDB = _repoCfg.OpenConnection();
@@ -474,7 +473,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
     }
 
-    [Fact]
+    [Test]
     public void IncludesNotCopiedJobs()
     {
       using var _jobDB = _repoCfg.OpenConnection();

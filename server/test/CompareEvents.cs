@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using BlackMaple.MachineFramework;
 using Shouldly;
@@ -18,14 +19,30 @@ public static class CompareEvents
       .OrderBy(e => e.EndTimeUTC)
       .ThenBy(e => e.LogType)
       .ThenBy(e => e.StartOfCycle)
-      .Select(e => e with { Counter = 0 })
+      .ThenBy(e => e.Material?.FirstOrDefault()?.MaterialID)
+      .Select(e =>
+        e with
+        {
+          Counter = 0,
+          Tools = e.Tools?.OrderBy(t => t.Tool).ToImmutableList(),
+          Material = e.Material.OrderBy(m => m.MaterialID).ToImmutableList(),
+        }
+      )
       .ToList();
 
     var sortedExpected = expected
       .OrderBy(e => e.EndTimeUTC)
       .ThenBy(e => e.LogType)
       .ThenBy(e => e.StartOfCycle)
-      .Select(e => e with { Counter = 0 })
+      .ThenBy(e => e.Material?.FirstOrDefault()?.MaterialID)
+      .Select(e =>
+        e with
+        {
+          Counter = 0,
+          Tools = e.Tools?.OrderBy(t => t.Tool).ToImmutableList(),
+          Material = e.Material.OrderBy(m => m.MaterialID).ToImmutableList(),
+        }
+      )
       .ToList();
 
     sortedActual.ShouldBeEquivalentTo(sortedExpected);

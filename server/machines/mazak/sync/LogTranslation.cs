@@ -399,7 +399,7 @@ namespace MazakMachineInterface
                 ? null
                 : new Dictionary<string, string> { { "ProgramRevision", progRev.Value.ToString() } }
             );
-            CheckForInspections(s, machineMats);
+            CheckForInspections(s, machineMats, e.TimeUTC);
           }
           else
           {
@@ -1143,7 +1143,11 @@ namespace MazakMachineInterface
       return true;
     }
 
-    private void CheckForInspections(MWI.LogEntry cycle, IEnumerable<LogMaterialAndPath> mats)
+    private void CheckForInspections(
+      MWI.LogEntry cycle,
+      IEnumerable<LogMaterialAndPath> mats,
+      DateTime timeUTC
+    )
     {
       foreach (LogMaterialAndPath mat in mats)
       {
@@ -1169,7 +1173,7 @@ namespace MazakMachineInterface
         var insps = job.Processes[mat.Mat.Process - 1].Paths[0].Inspections;
         if (insps != null && insps.Count > 0)
         {
-          repo.MakeInspectionDecisions(mat.Mat.MaterialID, mat.Mat.Process, insps);
+          repo.MakeInspectionDecisions(mat.Mat.MaterialID, mat.Mat.Process, insps, timeUTC);
           Log.Debug(
             "Making inspection decision for "
               + string.Join(",", insps.Select(x => x.InspectionType))
