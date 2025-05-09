@@ -17,12 +17,11 @@
     <None Update="repo.v32.db" CopyToOutputDirectory="Always" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
-    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.*" />
     <PackageReference Include="TUnit" Version="0.*" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.*" />
     <PackageReference Include="Shouldly" Version="4.*" />
-    <PackageReference Include="Verify.DiffPlex" Version="3.*" />
     <PackageReference Include="Verify.TUnit" Version="30.*" />
+    <PackageReference Include="Verify.DiffPlex" Version="3.*" />
     <PackageReference Include="WireMock.Net" Version="1.8.*" />
     <PackageReference Include="AutoFixture" Version="4.*" />
     <PackageReference Include="NSubstitute" Version="5.*" />
