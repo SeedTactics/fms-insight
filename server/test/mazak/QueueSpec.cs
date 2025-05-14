@@ -73,6 +73,16 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       }
     }
 
+    private static MazakConfig MkConfig(bool waitForAllCastings, bool syncProc1 = true)
+    {
+      return new MazakConfig()
+      {
+        DBType = MazakDbType.MazakSmooth,
+        WaitForAllCastings = waitForAllCastings,
+        SynchronizeRawMaterialInQueues = syncProc1,
+      };
+    }
+
     [Test]
     [Arguments(true)]
     [Arguments(false)]
@@ -82,7 +92,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var trans = MazakQueues.CalculateScheduleChanges(
         _logDB,
         new TestMazakData().ToData(),
-        waitForAllCastings: waitAll
+        MkConfig(waitForAllCastings: waitAll)
       );
       trans.ShouldBeNull();
     }
@@ -173,7 +183,9 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
     }
 
     [Test]
-    public void AddAssignedMaterialToQueueNoWaitForAll()
+    [Arguments(true)]
+    [Arguments(false)]
+    public void AddAssignedMaterialToQueueNoWaitForAll(bool syncProc1)
     {
       using var _logDB = _repoCfg.OpenConnection();
       var read = new TestMazakData();
@@ -217,7 +229,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         addAsCopiedToSystem: true
       );
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false, syncProc1: syncProc1)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // put 2 castings in queue, plus a different unique and a different process
@@ -237,22 +253,28 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         Qty = 1,
       };
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false, syncProc1: syncProc1)
+      );
 
       trans.Schedules.Count.ShouldBe(1);
       trans.Schedules[0].Id.ShouldBe(10);
       trans.Schedules[0].Priority.ShouldBe(10);
       trans.Schedules[0].Processes.Count.ShouldBe(2);
       trans.Schedules[0].Processes[0].ProcessNumber.ShouldBe(1);
-      trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(2); // set the 2 material
+      trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(syncProc1 ? 2 : 0); // set the 2 material
       trans.Schedules[0].Processes[1].ProcessNumber.ShouldBe(2);
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.ShouldBe(1); // set the 1 material
     }
 
     [Test]
-    [Arguments(null)]
-    [Arguments("casting")]
-    public void AddAssignedToQueueNoWaitForAll(string casting)
+    [MatrixDataSource]
+    public void AddAssignedToQueueNoWaitForAll(
+      [Matrix(null, "casting")] string casting,
+      [Matrix(true, false)] bool syncProc1
+    )
     {
       using var _logDB = _repoCfg.OpenConnection();
       var read = new TestMazakData();
@@ -317,20 +339,28 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AddCasting(casting, "thequeue");
       AddCasting(casting, "thequeue");
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false, syncProc1: syncProc1)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // add 1 more for each proc 1 and 2
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "thequeue");
       AddAssigned(uniq: "uuuu", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "thequeue");
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false, syncProc1: syncProc1)
+      );
 
       trans.Schedules.Count.ShouldBe(1);
       trans.Schedules[0].Priority.ShouldBe(10);
       trans.Schedules[0].Processes.Count.ShouldBe(2);
       trans.Schedules[0].Processes[0].ProcessNumber.ShouldBe(1);
-      trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(2);
+      trans.Schedules[0].Processes[0].ProcessMaterialQuantity.ShouldBe(syncProc1 ? 2 : 1);
       trans.Schedules[0].Processes[1].ProcessNumber.ShouldBe(2);
       trans.Schedules[0].Processes[1].ProcessMaterialQuantity.ShouldBe(3);
     }
@@ -403,7 +433,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AddCasting(casting, "thequeue");
       AddCasting(casting, "thequeue");
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // add 1 more for each proc 1 and 2.
@@ -421,7 +455,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _logDB.GetMaterialInQueueByUnique("thequeue", "uuuu").ShouldContain(m => m.MaterialID == matIdProc1);
       _logDB.IsMaterialInQueue(matIdProc1).ShouldBeTrue();
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), MkConfig(waitForAllCastings: true));
 
       trans.Schedules.Count.ShouldBe(1);
       trans.Schedules[0].Priority.ShouldBe(10);
@@ -500,14 +534,22 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 0, path: 1, queue: "castingQ");
       AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "transQ");
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // now remove one from process 1 and one from process 2
       _logDB.RecordRemoveMaterialFromAllQueues(proc1Mat[0], 1);
       _logDB.RecordRemoveMaterialFromAllQueues(proc2Mat[0], 2);
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
 
       trans.Schedules.Count.ShouldBe(1);
       trans.Schedules[0].Id.ShouldBe(10);
@@ -591,7 +633,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       );
       var xxxId2 = AddAssigned(uniq: "xxxx", part: "pppp", numProc: 1, lastProc: 1, path: 1, queue: "transQ");
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // now remove one from process 1 and one from process 2
@@ -665,7 +711,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             .ToList()
         );
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), MkConfig(waitForAllCastings: true));
 
       // adds an extra material with id xxxId2 + 1
       var actual = _logDB.GetMaterialInAllQueues();
@@ -724,7 +770,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       read.Schedules[0].Processes[1] = read.Schedules[0].Processes[1] with { ProcessMaterialQuantity = 3 };
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // no extra material a second time
@@ -825,7 +875,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       // put a different casting
       var mat0 = AddCasting("unused", "thequeue");
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // put 3 unassigned castings in queue
@@ -890,7 +944,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
 
       // should allocate 1 parts to uuuu since that is the fixed quantity
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
 
       _logDB
         .GetMaterialInAllQueues()
@@ -1013,7 +1071,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var mat2 = AddCasting(casting, "thequeue");
 
       // should not be enough, need two to fill out planned quantity
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // now add two more
@@ -1077,7 +1139,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
 
       // should allocate 2 parts to uuuu since that is the remaining planned
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), MkConfig(waitForAllCastings: true));
 
       _logDB
         .GetMaterialInAllQueues()
@@ -1191,7 +1253,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         addAsCopiedToSystem: true
       );
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // put 2 assigned castings and three castings
@@ -1270,7 +1336,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
 
       // should allocate nothing because material is not zero, just update the process material quantity
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
 
       _logDB
         .GetMaterialInAllQueues()
@@ -1445,7 +1515,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
 
       // should allocate no parts and leave schedule unchanged.
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: waitAll)
+      );
 
       _logDB
         .GetMaterialInAllQueues()
@@ -1534,7 +1608,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         addAsCopiedToSystem: true
       );
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: waitAll)
+      );
 
       trans.Schedules.Count.ShouldBe(1);
       trans.Schedules[0].Priority.ShouldBe(10);
@@ -1636,7 +1714,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
 
       // should not touch the schedule but unallocate or remove the two entries
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: waitAll)
+      );
 
       trans.Schedules.ShouldBeEmpty();
 
@@ -1816,7 +1898,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       AddAssigned(uniq: "xxxx", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ");
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // add 2 more to uuuu1 proc 1
@@ -1835,7 +1921,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       for (int i = 0; i < 15; i++)
         AddAssigned(uniq: "uuuu2", part: "pppp", numProc: 2, lastProc: 1, path: 1, queue: "transQ");
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
 
       trans.Schedules.Count.ShouldBe(2);
       trans.Schedules.Select(s => s.Id).ShouldBe(new[] { 10, 11 }, ignoreOrder: true);
@@ -1932,7 +2022,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       CreateMultiPathJobs();
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // now remove some material
@@ -1940,12 +2034,20 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       _logDB.RecordRemoveMaterialFromAllQueues(proc2path2[0], 2);
       _logDB.RecordRemoveMaterialFromAllQueues(proc2path2[1], 2);
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
 
       trans.Schedules.Count.ShouldBe(2);
       trans.Schedules.Select(s => s.Id).ShouldBe(new[] { 10, 11 }, ignoreOrder: true);
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
 
       trans.Schedules.Count.ShouldBe(2);
       trans.Schedules.Select(s => s.Id).ShouldBe(new[] { 10, 11 }, ignoreOrder: true);
@@ -2038,7 +2140,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       // put a different casting
       var mat0 = AddCasting("unused", "castingQ");
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // put 3 unassigned castings in queue
@@ -2105,7 +2211,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
         );
 
       // should allocate 2 (fixqty) parts to path 2 (lowest priority)
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
 
       _logDB
         .GetMaterialInAllQueues()
@@ -2182,7 +2292,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var mat4 = AddCasting(casting, "castingQ");
       var mat5 = AddCasting(casting, "castingQ");
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
 
       _logDB
         .GetMaterialInAllQueues()
@@ -2360,7 +2474,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       // put a different casting
       var mat0 = AddCasting("unused", "castingQ");
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       // put 3 unassigned castings in queue which is not enough for path 2 (but is enough for path 1)
@@ -2426,14 +2544,14 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           }
         );
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), MkConfig(waitForAllCastings: true));
       trans.Schedules.ShouldBeEmpty();
 
       // two more, which gives enough for path 2
       var mat4 = AddCasting(casting, "castingQ");
       var mat5 = AddCasting(casting, "castingQ");
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
+      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), MkConfig(waitForAllCastings: true));
 
       _logDB
         .GetMaterialInAllQueues()
@@ -2609,7 +2727,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var mat4 = AddCasting(casting, "castingQ");
       var mat5 = AddCasting(casting, "castingQ");
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: true);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: true)
+      );
 
       trans.Schedules.Count.ShouldBe(1);
       trans.Schedules[0].Priority.ShouldBe(11); // schedule has priority increased from 8 to 11
@@ -2686,7 +2808,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       };
       read.LoadActions.Add(action);
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: waitAll)
+      );
       trans.ShouldBeNull();
 
       _logDB
@@ -2711,7 +2837,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       read.LoadActions.Clear();
 
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: waitAll);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: waitAll)
+      );
 
       if (waitAll)
       {
@@ -2868,7 +2998,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
           }
         );
 
-      var trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      var trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
       trans.Schedules.ShouldBeEmpty();
 
       _logDB
@@ -2893,7 +3027,11 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       // now remove the action
       read.LoadActions.Clear();
-      trans = MazakQueues.CalculateScheduleChanges(_logDB, read.ToData(), waitForAllCastings: false);
+      trans = MazakQueues.CalculateScheduleChanges(
+        _logDB,
+        read.ToData(),
+        MkConfig(waitForAllCastings: false)
+      );
 
       _logDB
         .GetMaterialInAllQueues()
