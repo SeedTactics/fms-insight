@@ -255,15 +255,13 @@ export function RecentStationCycleChart({ ty }: { ty: CycleType }) {
           </FormControl>
         ) : undefined}
         <FormControl size="small">
-          <Select
+          <Select<number | "">
             name="Station-Cycles-cycle-chart-station-pallet"
             autoWidth
             displayEmpty
             value={selectedPallet || ""}
             style={{ marginLeft: "1em" }}
-            onChange={(e) =>
-              setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as number))
-            }
+            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
           >
             <MenuItem key={0} value="">
               <em>Any Pallet</em>

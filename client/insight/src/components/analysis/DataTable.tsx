@@ -391,9 +391,8 @@ export const DataTableActions = memo(function DataTableActions({
         SelectDisplayProps={{ style: { color: "rgba(0, 0, 0, 0.54)" } }}
         input={<InputBase />}
         onChange={(evt) => {
-          const rpp = parseInt(evt.target.value as string, 10);
-          tpage.setRowsPerPage(rpp);
-          const maxPage = Math.ceil(count / rpp) - 1;
+          tpage.setRowsPerPage(evt.target.value);
+          const maxPage = Math.ceil(count / evt.target.value) - 1;
           if (tpage.page > maxPage) {
             tpage.setPage(maxPage);
           }

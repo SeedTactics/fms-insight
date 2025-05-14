@@ -90,7 +90,7 @@ export async function loadInfo(): Promise<FMSInfoAndUser> {
   return { ...fmsInfo, user: user === null ? undefined : user };
 }
 
-export const fmsInformation = atom<FMSInfoAndUser>({});
+export const fmsInformation = atom<FMSInfoAndUser>({ name: "FMS Insight", version: "" });
 
 export function login(fmsInfo: FMSInfoAndUser) {
   if (userManager && !fmsInfo.user) {
