@@ -597,6 +597,7 @@ const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialBu
               case api.AddRawMaterialType.AddAsUnassigned:
                 setBulkAddCastings(props.label);
                 break;
+              case api.AddRawMaterialType.AddAsUnassignedWithSerial:
               case api.AddRawMaterialType.AddAndSpecifyJob:
               case api.AddRawMaterialType.RequireExistingMaterial:
                 setAddBySerial(props.label);
