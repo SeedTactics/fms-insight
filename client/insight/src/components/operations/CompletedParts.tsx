@@ -328,7 +328,7 @@ function MaterialTable({ material }: { material: ReadonlyArray<MaterialSummaryAn
           SelectDisplayProps={{ style: { color: "rgba(0, 0, 0, 0.54)" } }}
           input={<InputBase />}
           onChange={(evt) => {
-            const rpp = parseInt(evt.target.value as string, 10);
+            const rpp = evt.target.value;
             setRowsPerPage(rpp);
             const maxPage = Math.ceil(material.length / rpp) - 1;
             if (page > maxPage) {

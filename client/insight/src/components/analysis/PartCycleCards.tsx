@@ -323,14 +323,12 @@ export function PartMachineCycleChart() {
           </Select>
         </FormControl>
         <FormControl size="small">
-          <Select
+          <Select<number | "">
             autoWidth
             displayEmpty
             value={selectedPallet || ""}
             style={{ marginLeft: "1em" }}
-            onChange={(e) =>
-              setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as number))
-            }
+            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
           >
             <MenuItem key={0} value="">
               <em>Any Pallet</em>
@@ -624,14 +622,12 @@ export function PartLoadStationCycleChart() {
           </Select>
         </FormControl>
         <FormControl size="small">
-          <Select
+          <Select<number | "">
             autoWidth
             displayEmpty
             value={selectedPallet || ""}
             style={{ marginLeft: "1em" }}
-            onChange={(e) =>
-              setSelectedPallet(e.target.value === "" ? undefined : (e.target.value as number))
-            }
+            onChange={(e) => setSelectedPallet(e.target.value === "" ? undefined : e.target.value)}
           >
             <MenuItem key={0} value="">
               <em>Any Pallet</em>

@@ -162,6 +162,7 @@ public record SerialSettings
 public enum AddRawMaterialType
 {
   AddAsUnassigned,
+  AddAsUnassignedWithSerial,
   RequireExistingMaterial,
   RequireBarcodeScan,
   AddAndSpecifyJob,

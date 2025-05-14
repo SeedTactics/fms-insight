@@ -164,6 +164,7 @@ function possibleCastings(
       return [];
 
     case api.AddRawMaterialType.AddAsUnassigned:
+    case api.AddRawMaterialType.AddAsUnassignedWithSerial:
       return LazySeq.ofObject(currentSt.jobs)
         .flatMap(([, j]) => j.procsAndPaths[0].paths)
         .collect((p) => (p.casting === "" ? null : p.casting))

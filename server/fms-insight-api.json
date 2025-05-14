@@ -1,5 +1,5 @@
 {
-  "x-generator": "NSwag v14.2.0.0 (NJsonSchema v11.1.0.0 (Newtonsoft.Json v13.0.0.0))",
+  "x-generator": "NSwag v14.4.0.0 (NJsonSchema v11.3.2.0 (Newtonsoft.Json v13.0.0.0))",
   "openapi": "3.0.0",
   "info": {
     "title": "SeedTactic FMS Insight",
@@ -48,8 +48,7 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string",
-              "nullable": true
+              "type": "string"
             },
             "x-position": 2
           },
@@ -167,8 +166,7 @@
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string",
-              "nullable": true
+              "type": "string"
             },
             "x-position": 1
           }
@@ -179,7 +177,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ScannedMaterial"
+                  "nullable": true,
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/ScannedMaterial"
+                    }
+                  ]
                 }
               }
             }
@@ -280,7 +283,6 @@
               }
             }
           },
-          "required": true,
           "x-position": 3
         },
         "responses": {
@@ -327,7 +329,6 @@
               }
             }
           },
-          "required": true,
           "x-position": 2
         },
         "responses": {
@@ -1259,9 +1260,9 @@
             "in": "query",
             "style": "form",
             "explode": true,
-            "required": true,
             "schema": {
               "type": "array",
+              "nullable": true,
               "items": {
                 "type": "integer",
                 "format": "int64"
@@ -2119,14 +2120,16 @@
       "FMSInfo": {
         "type": "object",
         "additionalProperties": false,
+        "required": [
+          "Name",
+          "Version"
+        ],
         "properties": {
           "Name": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "Version": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "LicenseExpires": {
             "type": "string",
@@ -2153,7 +2156,8 @@
             "nullable": true
           },
           "UsingLabelPrinterForSerials": {
-            "type": "boolean"
+            "type": "boolean",
+            "nullable": true
           },
           "UseClientPrinterForLabels": {
             "type": "boolean",
@@ -2188,16 +2192,28 @@
             "nullable": true
           },
           "RequireScanAtCloseout": {
-            "type": "boolean"
+            "type": "boolean",
+            "nullable": true
           },
           "RequireWorkorderBeforeAllowCloseoutComplete": {
-            "type": "boolean"
+            "type": "boolean",
+            "nullable": true
           },
           "AddRawMaterial": {
-            "$ref": "#/components/schemas/AddRawMaterialType"
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AddRawMaterialType"
+              }
+            ]
           },
           "AddInProcessMaterial": {
-            "$ref": "#/components/schemas/AddInProcessMaterialType"
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AddInProcessMaterialType"
+              }
+            ]
           },
           "RequireOperatorNamePromptWhenAddingMaterial": {
             "type": "boolean",
@@ -2218,12 +2234,14 @@
         "description": "",
         "x-enumNames": [
           "AddAsUnassigned",
+          "AddAsUnassignedWithSerial",
           "RequireExistingMaterial",
           "RequireBarcodeScan",
           "AddAndSpecifyJob"
         ],
         "enum": [
           "AddAsUnassigned",
+          "AddAsUnassignedWithSerial",
           "RequireExistingMaterial",
           "RequireBarcodeScan",
           "AddAndSpecifyJob"

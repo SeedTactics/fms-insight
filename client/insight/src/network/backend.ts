@@ -90,7 +90,7 @@ export interface JobAPI {
 export interface FmsAPI {
   fMSInformation(): Promise<Readonly<api.IFMSInfo>>;
   printLabel(materialId: number, process: number): Promise<void>;
-  parseBarcode(barcode: string | null): Promise<Readonly<api.IScannedMaterial>>;
+  parseBarcode(barcode: string | null): Promise<Readonly<api.IScannedMaterial | null>>;
   enableVerboseLoggingForFiveMinutes(): Promise<void>;
 }
 
@@ -101,7 +101,9 @@ export interface LogAPI {
     expectedEndUTCofLastSeen: Date | null | undefined,
   ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForMaterial(materialID: number, signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
-  logForMaterials(materialIDs: ReadonlyArray<number> | null): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
+  logForMaterials(
+    materialIDs: ReadonlyArray<number> | null | undefined,
+  ): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   logForSerial(serial: string, signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.ILogEntry>>>;
   materialForSerial(serial: string | null): Promise<ReadonlyArray<Readonly<api.IMaterialDetails>>>;
 
