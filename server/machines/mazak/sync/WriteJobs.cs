@@ -233,7 +233,7 @@ namespace MazakMachineInterface
     {
       Log.Debug("Adding new schedules for {@jobs}, mazak data is {@mazakData}", jobs, mazakData);
 
-      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, mazakCfg.UseStartingOffsetForDueDate);
+      var transSet = BuildMazakSchedules.AddSchedules(mazakData, jobs, mazakCfg);
       if (transSet.Schedules.Any())
       {
         writeDb.Save(transSet);

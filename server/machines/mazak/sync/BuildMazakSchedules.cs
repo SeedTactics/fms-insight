@@ -63,11 +63,7 @@ namespace MazakMachineInterface
       return (transSet, savedParts);
     }
 
-    public static MazakWriteData AddSchedules(
-      MazakAllData mazakData,
-      IEnumerable<Job> jobs,
-      bool UseStartingOffsetForDueDate
-    )
+    public static MazakWriteData AddSchedules(MazakAllData mazakData, IEnumerable<Job> jobs, MazakConfig cfg)
     {
       if (!jobs.Any())
         return new MazakWriteData() { Prefix = "Add Schedules" };
@@ -139,13 +135,13 @@ namespace MazakMachineInterface
               earlierConflicts: earlierConflicts,
               startingPriority: maxPriMatchingDate + 1,
               routeStartDate: routeStartDate,
-              UseStartingOffsetForDueDate: UseStartingOffsetForDueDate
+              cfg
             )
           );
         }
       }
 
-      if (UseStartingOffsetForDueDate)
+      if (cfg.UseStartingOffsetForDueDate)
         return new MazakWriteData() { Prefix = "Add Schedules", Schedules = SortSchedulesByDate(schs) };
       else
         return new MazakWriteData() { Prefix = "Add Schedules", Schedules = schs };
@@ -160,7 +156,7 @@ namespace MazakMachineInterface
       int earlierConflicts,
       int startingPriority,
       DateTime routeStartDate,
-      bool UseStartingOffsetForDueDate
+      MazakConfig cfg
     )
     {
       bool entireHold = false;
@@ -189,7 +185,7 @@ namespace MazakMachineInterface
         HoldMode = (int)HoldPattern.CalculateHoldMode(entireHold, machiningHold),
       };
 
-      if (UseStartingOffsetForDueDate)
+      if (cfg.UseStartingOffsetForDueDate)
       {
         if (part.Processes[0].Paths[0].SimulatedStartingUTC != DateTime.MinValue)
         {
@@ -205,12 +201,7 @@ namespace MazakMachineInterface
         }
       }
 
-      int matQty = newSchRow.PlanQuantity;
-
-      if (!string.IsNullOrEmpty(part.Processes[0].Paths[0].InputQueue))
-      {
-        matQty = 0;
-      }
+      int matQty = MazakQueues.ShouldSyncronizeJobProcess(part, proc: 1, cfg) ? 0 : newSchRow.PlanQuantity;
 
       //need to add all the ScheduleProcess rows
       for (int i = 1; i <= numProcess; i++)

@@ -667,7 +667,8 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       int activeMin = 0,
       bool expectMark = true,
       int totalActiveMin = 0,
-      int? totalMatCnt = null
+      int? totalMatCnt = null,
+      IReadOnlySet<long> matsToSkipMark = null
     )
     {
       var e2 = new MazakMachineInterface.LogEntry()
@@ -714,7 +715,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
 
       foreach (var mat in mats)
       {
-        if (mat.Process > 1 || expectMark == false)
+        if (mat.Process > 1 || expectMark == false || matsToSkipMark?.Contains(mat.MaterialID) == true)
           continue;
         expected.Add(
           new BlackMaple.MachineFramework.LogEntry(
@@ -1286,6 +1287,17 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       }
 
       expected.AddRange(swap.NewLogEntries);
+    }
+
+    protected void AdjustLogMaterial(TestMaterial mat, Func<LogMaterial, LogMaterial> adjust)
+    {
+      for (int i = 0; i < expected.Count; i++)
+      {
+        if (expected[i].Material.Any(m => m.MaterialID == mat.MaterialID))
+        {
+          expected[i] = JobLogTest.TransformLog(mat.MaterialID, adjust)(expected[i]);
+        }
+      }
     }
 
     #endregion
@@ -2792,6 +2804,188 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       ExpectPalletCycle(t, pal: 8, offset: 24, elapMin: 24 - 5, mats: [proc1]);
       ExpectPalletStart(t, pal: 8, offset: 24, mats: [proc1snd]);
       MovePallet(t, pal: 8, offset: 25, load: 2);
+
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Test]
+    public void LoadsAssignedRawMaterial()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
+
+      var casting = BuildMaterial(t, pal: 8, unique: "", part: "xxxx", proc: 1, numProc: 1, matID: 1);
+      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 2);
+      var mat2 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 3);
+      var mat3 = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 4);
+      AddMaterialToQueue(casting, proc: 0, queue: "rawmat", offset: 0, allocate: AllocateTy.Casting);
+      AddMaterialToQueue(mat1, proc: 0, queue: "rawmat", offset: 1, allocate: AllocateTy.Assigned);
+      AddMaterialToQueue(mat2, proc: 0, queue: "rawmat", offset: 2, allocate: AllocateTy.Assigned);
+      AddMaterialToQueue(mat3, proc: 0, queue: "rawmat", offset: 3, allocate: AllocateTy.Assigned);
+
+      // Add job with 2 fix qty on process 1
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes =
+        [
+          new ProcessInfo()
+          {
+            Paths =
+            [
+              JobLogTest.EmptyPath with
+              {
+                PartsPerPallet = 2,
+                InputQueue = "rawmat",
+                OutputQueue = "thequeue",
+              },
+            ],
+          },
+          new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { InputQueue = "thequeue" }] },
+        ],
+      };
+      var newJobs = new NewJobs() { Jobs = ImmutableList.Create<Job>(j), ScheduleId = "swapSch" };
+      jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+
+      CheckMatInQueue("rawmat", new[] { casting, mat1, mat2, mat3 });
+
+      // load of pallet 8 should take both mat1 and mat2
+      LoadStart([mat1, mat2], offset: 4, load: 1);
+      LoadEnd([mat1, mat2], offset: 5, load: 1, elapMin: 1, expectMark: false);
+      ExpectPalletStart(t, pal: 8, offset: 5, mats: [mat1, mat2]);
+      MovePallet(t, pal: 8, offset: 6, load: 1);
+      ExpectRemoveFromQueue(
+        AdjProcess(mat1, 0),
+        offset: 5,
+        queue: "rawmat",
+        startingPos: 1,
+        reason: "LoadedToPallet",
+        elapMin: 5 - 1
+      );
+      ExpectRemoveFromQueue(
+        AdjProcess(mat2, 0),
+        offset: 5,
+        queue: "rawmat",
+        startingPos: 1,
+        reason: "LoadedToPallet",
+        elapMin: 5 - 2
+      );
+
+      CheckMatInQueue("rawmat", new[] { casting, mat3 });
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+
+      // now a load of pallet 4, should take mat3 and create a new piece of material
+      var newMat = BuildMaterial(t, pal: 4, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 5);
+
+      LoadStart([mat3, newMat], offset: 8, load: 1);
+      LoadEnd(
+        [mat3, newMat],
+        offset: 10,
+        load: 1,
+        elapMin: 2,
+        // newMat should still have a mark at this time
+        matsToSkipMark: new HashSet<long>([mat3.MaterialID])
+      );
+      ExpectPalletStart(t, pal: 4, offset: 10, mats: [mat3, newMat]);
+      MovePallet(t, pal: 4, offset: 11, load: 1);
+      ExpectRemoveFromQueue(
+        AdjProcess(mat3, 0),
+        offset: 10,
+        queue: "rawmat",
+        startingPos: 1,
+        reason: "LoadedToPallet",
+        elapMin: 10 - 3
+      );
+
+      CheckMatInQueue("rawmat", new[] { casting });
+      CheckExpected(t.AddHours(-1), t.AddHours(10));
+    }
+
+    [Test]
+    public void AssignsMaterialFromQueueDuringLoad()
+    {
+      var t = DateTime.UtcNow.AddHours(-5);
+      AddTestPart(unique: "uuuu", part: "pppp", numProc: 2);
+
+      // one assigned, two castings
+      var mat1 = BuildMaterial(t, pal: 8, unique: "uuuu", part: "pppp", proc: 1, numProc: 2, matID: 1);
+      var mat2 = BuildMaterial(t, pal: 8, unique: "", part: "cccc", proc: 1, numProc: 1, matID: 2);
+      var mat3 = BuildMaterial(t, pal: 8, unique: "", part: "cccc", proc: 1, numProc: 1, matID: 3);
+      AddMaterialToQueue(mat1, proc: 0, queue: "rawmat", offset: 1, allocate: AllocateTy.Assigned);
+      AddMaterialToQueue(mat2, proc: 0, queue: "rawmat", offset: 2, allocate: AllocateTy.Casting);
+      AddMaterialToQueue(mat3, proc: 0, queue: "rawmat", offset: 3, allocate: AllocateTy.Casting);
+
+      // Add job with 3 fix qty on process 1
+      var j = new Job()
+      {
+        UniqueStr = "uuuu",
+        PartName = "pppp",
+        Cycles = 0,
+        RouteStartUTC = DateTime.MinValue,
+        RouteEndUTC = DateTime.MinValue,
+        Archived = false,
+        Processes =
+        [
+          new ProcessInfo()
+          {
+            Paths =
+            [
+              JobLogTest.EmptyPath with
+              {
+                PartsPerPallet = 3,
+                Casting = "cccc",
+                InputQueue = "rawmat",
+                OutputQueue = "thequeue",
+              },
+            ],
+          },
+          new ProcessInfo() { Paths = [JobLogTest.EmptyPath with { InputQueue = "thequeue" }] },
+        ],
+      };
+      var newJobs = new NewJobs() { Jobs = [j], ScheduleId = "swapSch" };
+      jobLog.AddJobs(newJobs, null, addAsCopiedToSystem: true);
+
+      CheckMatInQueue("rawmat", [mat1, mat2, mat3]);
+
+      // load of pallet 8 should take them all
+      LoadStart([mat1, mat2, mat3], offset: 4, load: 1);
+      LoadEnd([mat1, mat2, mat3], offset: 5, load: 1, elapMin: 1, expectMark: false);
+      ExpectPalletStart(t, pal: 8, offset: 5, mats: [mat1, mat2, mat3]);
+      MovePallet(t, pal: 8, offset: 6, load: 1);
+      ExpectRemoveFromQueue(
+        AdjProcess(mat1, 0),
+        offset: 5,
+        queue: "rawmat",
+        startingPos: 0,
+        reason: "LoadedToPallet",
+        elapMin: 5 - 1
+      );
+      ExpectRemoveFromQueue(
+        AdjProcess(mat2, 0),
+        offset: 5,
+        queue: "rawmat",
+        startingPos: 0,
+        reason: "LoadedToPallet",
+        elapMin: 5 - 2
+      );
+      ExpectRemoveFromQueue(
+        AdjProcess(mat3, 0),
+        offset: 5,
+        queue: "rawmat",
+        startingPos: 0,
+        reason: "LoadedToPallet",
+        elapMin: 5 - 3
+      );
+
+      CheckMatInQueue("rawmat", []);
+
+      AdjustLogMaterial(mat2, m => m with { JobUniqueStr = "uuuu", PartName = "pppp", NumProcesses = 2 });
+      AdjustLogMaterial(mat3, m => m with { JobUniqueStr = "uuuu", PartName = "pppp", NumProcesses = 2 });
 
       CheckExpected(t.AddHours(-1), t.AddHours(10));
     }

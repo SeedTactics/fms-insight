@@ -52,6 +52,7 @@ namespace MazakMachineInterface
     public Uri? ProxyDBUri { get; init; }
     public bool UseStartingOffsetForDueDate { get; init; } = true;
     public bool WaitForAllCastings { get; init; } = false;
+    public bool SynchronizeRawMaterialInQueues { get; init; } = true;
 
     public ImmutableList<int>? MachineNumbers { get; init; } = null;
 

@@ -46,15 +46,15 @@ namespace MazakMachineInterface
     public static MazakWriteData CalculateScheduleChanges(
       IRepository jdb,
       MazakCurrentStatus mazakData,
-      bool waitForAllCastings
+      MazakConfig cfg
     )
     {
       IEnumerable<ScheduleWithQueues> schs;
-      schs = LoadSchedules(jdb, mazakData, waitForAllCastings: waitForAllCastings);
+      schs = LoadSchedules(jdb, mazakData, cfg);
       if (!schs.Any())
         return null;
 
-      CalculateTargetMatQty(jdb, schs, waitForAllCastings: waitForAllCastings);
+      CalculateTargetMatQty(jdb, schs, cfg);
       return UpdateMazakMaterialCounts(schs);
     }
 
@@ -81,7 +81,7 @@ namespace MazakMachineInterface
     private static IReadOnlyList<ScheduleWithQueues> LoadSchedules(
       IRepository jdb,
       MazakCurrentStatus mazakData,
-      bool waitForAllCastings
+      MazakConfig cfg
     )
     {
       var loadOpers = mazakData.LoadActions;
@@ -130,7 +130,7 @@ namespace MazakMachineInterface
           // when we are waiting for all castings to assign, we can assume that any running schedule
           // has all of its material so no need to prevent assignment.
           LowerPriorityScheduleMatchingCastingSkipped =
-            !waitForAllCastings && skippedCastings.Contains(casting),
+            !cfg.WaitForAllCastings && skippedCastings.Contains(casting),
           Procs = new Dictionary<int, ScheduleWithQueuesProcess>(),
           NewDueDate = null,
           NewPriority = null,
@@ -180,7 +180,7 @@ namespace MazakMachineInterface
     private static void CalculateTargetMatQty(
       IRepository logDb,
       IEnumerable<ScheduleWithQueues> schs,
-      bool waitForAllCastings
+      MazakConfig cfg
     )
     {
       // go through each job and process, and distribute the queued material among the various paths
@@ -190,10 +190,10 @@ namespace MazakMachineInterface
         var job = schsForJob.First().Job;
         for (int proc = job.Processes.Count; proc >= 1; proc--)
         {
-          CheckAssignedMaterial(job, logDb, schsForJob, proc, waitForAllCastings: waitForAllCastings);
+          CheckAssignedMaterial(job, logDb, schsForJob, proc, cfg);
         }
       }
-      AssignCastings(logDb, schs, waitForAllCastings: waitForAllCastings);
+      AssignCastings(logDb, schs, cfg);
     }
 
     private static void CheckAssignedMaterial(
@@ -201,13 +201,16 @@ namespace MazakMachineInterface
       IRepository logDb,
       IEnumerable<ScheduleWithQueues> schsForJob,
       int proc,
-      bool waitForAllCastings
+      MazakConfig cfg
     )
     {
-      foreach (var sch in schsForJob.Where(s => !string.IsNullOrEmpty(s.Procs[proc].InputQueue)))
+      // The goal here is to keep the contents of the queue syncronized with the count of material
+      // inside the schedule.
+
+      foreach (var sch in schsForJob)
       {
         var schProc = sch.Procs[proc];
-        if (string.IsNullOrEmpty(schProc.InputQueue))
+        if (!ShouldSyncronizeJobProcess(sch.Job, proc: proc, cfg))
           continue;
 
         var matInQueue = QueuedMaterialForLoading(
@@ -219,7 +222,7 @@ namespace MazakMachineInterface
 
         if (proc == 1)
         {
-          if (waitForAllCastings)
+          if (cfg.WaitForAllCastings)
           {
             // update FMS Insight queue to match schedule
             if (numMatInQueue < schProc.SchProcRow.ProcessMaterialQuantity)
@@ -297,7 +300,7 @@ namespace MazakMachineInterface
       {
         // now deal with the non-input-queue raw material. They could have larger material than planned quantity
         // if the schedule has been decremented
-        foreach (var sch in schsForJob.Where(s => string.IsNullOrEmpty(s.Procs[proc].InputQueue)))
+        foreach (var sch in schsForJob.Where(s => string.IsNullOrEmpty(s.Procs[1].InputQueue)))
         {
           if (
             sch.SchRow.PlanQuantity <= CountCompletedOrMachiningStarted(sch)
@@ -313,12 +316,12 @@ namespace MazakMachineInterface
     private static void AssignCastings(
       IRepository logDb,
       IEnumerable<ScheduleWithQueues> allSchs,
-      bool waitForAllCastings
+      MazakConfig cfg
     )
     {
       var schsToAssign = allSchs
         .Where(s =>
-          !s.LowerPriorityScheduleMatchingCastingSkipped && !string.IsNullOrEmpty(s.Procs[1].InputQueue)
+          !s.LowerPriorityScheduleMatchingCastingSkipped && ShouldSyncronizeJobProcess(s.Job, proc: 1, cfg)
         )
         .OrderBy(s => s.SchRow.DueDate)
         .ThenBy(s => s.SchRow.Priority);
@@ -337,7 +340,7 @@ namespace MazakMachineInterface
         if (started + curCastings < sch.SchRow.PlanQuantity && curCastings < schProc1.SchProcRow.FixQuantity)
         {
           // find some new castings
-          var toAdd = waitForAllCastings
+          var toAdd = cfg.WaitForAllCastings
             ? sch.SchRow.PlanQuantity - started - curCastings
             : schProc1.SchProcRow.FixQuantity - curCastings;
 
@@ -376,7 +379,7 @@ namespace MazakMachineInterface
             }
           }
 
-          if (toAdd > 0 && waitForAllCastings && !foundEnough)
+          if (toAdd > 0 && cfg.WaitForAllCastings && !foundEnough)
           {
             // if we tried to add but didn't have enough, dont let schedules with higher priority
             // snatch up these castings.  If the user wants to run it, they can edit priority
@@ -435,19 +438,14 @@ namespace MazakMachineInterface
       return new MazakWriteData() { Prefix = "Setting material from queues", Schedules = newSchs };
     }
 
-    private static int? FindPathGroup(IRepository log, Func<int, int, int> getPathGroup, long matId)
+    public static bool ShouldSyncronizeJobProcess(Job j, int proc, MazakConfig cfg)
     {
-      var details = log.GetMaterialDetails(matId);
-      if (details.Paths.Count > 0)
+      if (proc == 1 && !cfg.SynchronizeRawMaterialInQueues)
       {
-        var path = details.Paths.Aggregate((max, v) => max.Key > v.Key ? max : v);
-        return getPathGroup(path.Key, path.Value);
+        return false;
       }
-      else
-      {
-        Log.Warning("Material {matId} has no path groups! {@details}", matId, details);
-        return null;
-      }
+
+      return !string.IsNullOrEmpty(j.Processes[proc - 1].Paths[0].InputQueue);
     }
 
     public static List<QueuedMaterial> QueuedMaterialForLoading(

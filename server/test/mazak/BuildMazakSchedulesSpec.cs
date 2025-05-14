@@ -35,6 +35,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using AutoFixture;
 using BlackMaple.FMSInsight.Tests;
 using BlackMaple.MachineFramework;
 using MazakMachineInterface;
@@ -372,7 +373,7 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
       var actions = BuildMazakSchedules.AddSchedules(
         curData,
         new[] { uniq1, uniq2, uniq3, uniq4, uniq5 },
-        true
+        new MazakConfig() { DBType = MazakDbType.MazakSmooth, UseStartingOffsetForDueDate = true }
       );
       actions.Parts.ShouldBeEmpty();
       actions.Fixtures.ShouldBeEmpty();
@@ -490,6 +491,67 @@ namespace BlackMaple.FMSInsight.Mazak.Tests
             },
           }
         );
+    }
+
+    [Test]
+    [MatrixDataSource]
+    public void UsesZeroQtyForProc1(
+      [Matrix(true, false)] bool hasInputQueue,
+      [Matrix(true, false)] bool shouldSyncProc1
+    )
+    {
+      var cfg = new MazakConfig()
+      {
+        DBType = MazakDbType.MazakSmooth,
+        SynchronizeRawMaterialInQueues = shouldSyncProc1,
+      };
+
+      var fix = new Fixture();
+      fix.Customizations.Add(new ImmutableSpecimenBuilder());
+
+      var job = fix.Build<Job>()
+        .With(j => j.Cycles, 30)
+        .With(
+          j => j.Processes,
+          [
+            new ProcessInfo()
+            {
+              Paths =
+              [
+                fix.Build<ProcPathInfo>()
+                  .With(p => p.InputQueue, hasInputQueue ? "inputQ" : "")
+                  .With(x => x.OutputQueue, "outQ")
+                  .Create(),
+              ],
+            },
+            new ProcessInfo()
+            {
+              Paths = [fix.Build<ProcPathInfo>().With(p => p.InputQueue, "outQ").Create()],
+            },
+          ]
+        )
+        .Create();
+
+      var actions = BuildMazakSchedules.AddSchedules(
+        new MazakAllData()
+        {
+          Schedules = [],
+          Parts =
+          [
+            new MazakPartRow() { PartName = job.PartName + ":1", Comment = job.UniqueStr + "-Insight" },
+          ],
+        },
+        [job],
+        cfg
+      );
+
+      actions.Schedules.Count.ShouldBe(1);
+      actions.Schedules[0].PlanQuantity.ShouldBe(30);
+      actions.Schedules[0].Processes.Count.ShouldBe(2);
+      actions
+        .Schedules[0]
+        .Processes[0]
+        .ProcessMaterialQuantity.ShouldBe(hasInputQueue && shouldSyncProc1 ? 0 : 30);
     }
   }
 }

@@ -238,11 +238,7 @@ public sealed class MazakSync : ISynchronizeCellState<MazakState>, INotifyMazakL
     bool queuesChanged = false;
     if (!jobsCopied)
     {
-      var transSet = MazakQueues.CalculateScheduleChanges(
-        db,
-        st.AllData,
-        waitForAllCastings: mazakConfig.WaitForAllCastings
-      );
+      var transSet = MazakQueues.CalculateScheduleChanges(db, st.AllData, mazakConfig);
 
       if (transSet != null && transSet.Schedules.Count > 0)
       {
