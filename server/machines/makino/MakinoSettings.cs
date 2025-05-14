@@ -41,7 +41,7 @@ public record MakinoSettings
 {
   public required string ADEPath { get; init; }
   public required bool DownloadOnlyOrders { get; init; }
-  public required string DbConnectionString { get; init; }
+  public required string? DbConnectionString { get; init; }
   public TimeZoneInfo LocalTimeZone { get; init; } = TimeZoneInfo.Local;
   public Func<Job, IRepository, OrderXML.OrderDetails>? CustomOrderDetails { get; init; } = null;
 
@@ -72,29 +72,11 @@ public record MakinoSettings
       Log.Error(ex, "Error when deleting old insight xml files");
     }
 
-    var connStr = cfg.GetValue<string>("SQL Server Connection String");
-    if (string.IsNullOrEmpty(connStr))
-    {
-      connStr = DetectSqlConnectionStr();
-    }
-
     return new MakinoSettings()
     {
       ADEPath = adePath,
       DownloadOnlyOrders = cfg.GetValue<bool>("Download Only Orders"),
-      DbConnectionString = connStr,
+      DbConnectionString = cfg.GetValue<string>("SQL Server Connection String"),
     };
-  }
-
-  private static string DetectSqlConnectionStr()
-  {
-    var b = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder
-    {
-      UserID = "sa",
-      Password = "M@k1n0Admin",
-      InitialCatalog = "Makino",
-      DataSource = "(local)",
-    };
-    return b.ConnectionString;
   }
 }

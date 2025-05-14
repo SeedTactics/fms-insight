@@ -390,7 +390,7 @@ namespace BlackMaple.FMSInsight.Makino
     public MakinoDB(MakinoSettings cfg)
     {
       makinoCfg = cfg;
-      dbo = makinoCfg.DbConnectionString.StartsWith("sqlite:") ? "" : "dbo.";
+      dbo = makinoCfg.DbConnectionString?.StartsWith("sqlite:") == true ? "" : "dbo.";
       machineStatusHasJobColumn = CheckForMachineStatusJobColumn();
       CheckForQueryNotification();
     }
@@ -425,7 +425,7 @@ namespace BlackMaple.FMSInsight.Makino
       {
         using var db = OpenConnection();
         using var cmd = db.CreateCommand();
-        if (makinoCfg.DbConnectionString.StartsWith("sqlite:"))
+        if (makinoCfg.DbConnectionString?.StartsWith("sqlite:") == true)
         {
           cmd.CommandText = "SELECT COUNT(*) FROM pragma_table_info('MachineStatus') WHERE name = 'JobID'";
           return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
@@ -447,7 +447,7 @@ namespace BlackMaple.FMSInsight.Makino
     // At the moment, not sure if Query Notification is enabled
     private void CheckForQueryNotification()
     {
-      if (makinoCfg.DbConnectionString.StartsWith("sqlite:"))
+      if (makinoCfg.DbConnectionString?.StartsWith("sqlite:") == true)
         return;
       using var _db = OpenConnection();
       using (var cmd = _db.CreateCommand())
