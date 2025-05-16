@@ -92,6 +92,7 @@ namespace MazakMachineInterface
           UserID = "mazakpmc",
           Password = "Fms-978",
           DataSource = "(local)",
+          TrustServerCertificate = true,
         };
         dbConnStr = b.ConnectionString;
       }
