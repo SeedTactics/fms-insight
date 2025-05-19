@@ -190,7 +190,7 @@ namespace BlackMaple.FMSInsight.Niigata
             .Select(m => m.Mat)
             .Concat(SetLongTool(pals))
             .ToImmutableList(),
-          Queues = CalcQueueRoles(jobCache),
+          Queues = BlackMaple.MachineFramework.BuildCellState.CalcQueueRoles(jobCache.AllJobs, _settings),
           Alarms = pals.Where(pal => pal.Status.Tracking.Alarm)
             .Select(pal => AlarmCodeToString(pal.Status.Master.PalletNum, pal.Status.Tracking.AlarmCode))
             .Concat(
@@ -2272,49 +2272,6 @@ namespace BlackMaple.FMSInsight.Niigata
             break;
         }
       }
-    }
-
-    private ImmutableDictionary<string, QueueInfo> CalcQueueRoles(IJobCache jobCache)
-    {
-      var rawMatQueues = new HashSet<string>();
-      var inProcQueues = new HashSet<string>();
-
-      foreach (var j in jobCache.AllJobs)
-      {
-        for (int proc = 1; proc <= j.Processes.Count; proc++)
-        {
-          foreach (var path in j.Processes[proc - 1].Paths)
-          {
-            if (!string.IsNullOrEmpty(path.InputQueue))
-            {
-              if (proc == 1)
-              {
-                rawMatQueues.Add(path.InputQueue);
-              }
-              else
-              {
-                inProcQueues.Add(path.InputQueue);
-              }
-            }
-            if (!string.IsNullOrEmpty(path.OutputQueue))
-            {
-              inProcQueues.Add(path.OutputQueue);
-            }
-          }
-        }
-      }
-
-      return _settings.Queues.ToImmutableDictionary(
-        k => k.Key,
-        k =>
-          k.Value with
-          {
-            Role =
-              rawMatQueues.Contains(k.Key) ? QueueRole.RawMaterial
-              : inProcQueues.Contains(k.Key) ? QueueRole.InProcessTransfer
-              : k.Value.Role,
-          }
-      );
     }
 
     private static string AlarmCodeToString(int palletNum, PalletAlarmCode code)

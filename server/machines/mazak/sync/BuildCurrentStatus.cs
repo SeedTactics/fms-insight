@@ -426,47 +426,49 @@ namespace MazakMachineInterface
           };
         });
 
+      var allJobs = jobsByUniq
+        .Values.Select(job => new ActiveJob()
+        {
+          UniqueStr = job.UniqueStr,
+          RouteStartUTC = job.DbJob?.RouteStartUTC ?? DateTime.Today,
+          RouteEndUTC = job.DbJob?.RouteEndUTC ?? DateTime.Today.AddDays(1),
+          Archived = false,
+          PartName = job.PartName,
+          Comment = job.DbJob?.Comment,
+          ScheduleId = job.DbJob?.ScheduleId,
+          BookingIds = job.DbJob?.BookingIds,
+          ManuallyCreated = job.DbJob?.ManuallyCreated ?? false,
+          HoldJob = job.UserHold
+            ? new BlackMaple.MachineFramework.HoldPattern()
+            {
+              UserHold = true,
+              ReasonForUserHold = "",
+              HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
+              HoldUnholdPatternStartUTC = DateTime.MinValue,
+              HoldUnholdPatternRepeats = false,
+            }
+            : null,
+          Cycles = job.Cycles,
+          Processes = job
+            .Processes.Select(paths => new ProcessInfo() { Paths = paths.ToImmutable() })
+            .ToImmutableList(),
+          CopiedToSystem = true,
+          Completed = job.Completed.Select(c => c.ToImmutable()).ToImmutableList(),
+          RemainingToStart = Math.Max(job.Cycles - job.Started, 0),
+          Decrements = EmptyToNull(jobDB.LoadDecrementsForJob(job.UniqueStr)),
+          AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(job.UniqueStr)),
+          Precedence = job.Precedence.Select(p => p.ToImmutable()).ToImmutableList(),
+        })
+        .Concat(notCopied)
+        .ToImmutableDictionary(j => j.UniqueStr);
+
       return new CurrentStatus()
       {
         TimeOfCurrentStatusUTC = DateTime.UtcNow,
-        Jobs = jobsByUniq
-          .Values.Select(job => new ActiveJob()
-          {
-            UniqueStr = job.UniqueStr,
-            RouteStartUTC = job.DbJob?.RouteStartUTC ?? DateTime.Today,
-            RouteEndUTC = job.DbJob?.RouteEndUTC ?? DateTime.Today.AddDays(1),
-            Archived = false,
-            PartName = job.PartName,
-            Comment = job.DbJob?.Comment,
-            ScheduleId = job.DbJob?.ScheduleId,
-            BookingIds = job.DbJob?.BookingIds,
-            ManuallyCreated = job.DbJob?.ManuallyCreated ?? false,
-            HoldJob = job.UserHold
-              ? new BlackMaple.MachineFramework.HoldPattern()
-              {
-                UserHold = true,
-                ReasonForUserHold = "",
-                HoldUnholdPattern = ImmutableList<TimeSpan>.Empty,
-                HoldUnholdPatternStartUTC = DateTime.MinValue,
-                HoldUnholdPatternRepeats = false,
-              }
-              : null,
-            Cycles = job.Cycles,
-            Processes = job
-              .Processes.Select(paths => new ProcessInfo() { Paths = paths.ToImmutable() })
-              .ToImmutableList(),
-            CopiedToSystem = true,
-            Completed = job.Completed.Select(c => c.ToImmutable()).ToImmutableList(),
-            RemainingToStart = Math.Max(job.Cycles - job.Started, 0),
-            Decrements = EmptyToNull(jobDB.LoadDecrementsForJob(job.UniqueStr)),
-            AssignedWorkorders = EmptyToNull(jobDB.GetWorkordersForUnique(job.UniqueStr)),
-            Precedence = job.Precedence.Select(p => p.ToImmutable()).ToImmutableList(),
-          })
-          .Concat(notCopied)
-          .ToImmutableDictionary(j => j.UniqueStr),
+        Jobs = allJobs,
         Pallets = palletsByName.ToImmutable(),
         Material = material.ToImmutable(),
-        Queues = fmsSettings.Queues.ToImmutableDictionary(),
+        Queues = BuildCellState.CalcQueueRoles(allJobs.Values, fmsSettings),
         Alarms = (mazakData.Alarms ?? Enumerable.Empty<MazakAlarmRow>())
           .Where(a => !string.IsNullOrEmpty(a.AlarmMessage))
           .Select(a => a.AlarmMessage)

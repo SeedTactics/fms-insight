@@ -815,9 +815,17 @@
     Test alarm two
   ],
   Queues: {
-    castings: {},
-    queueAAA: {},
-    queueBBB: {},
-    queueCCC: {}
+    castings: {
+      Role: RawMaterial
+    },
+    queueAAA: {
+      Role: InProcessTransfer
+    },
+    queueBBB: {
+      Role: InProcessTransfer
+    },
+    queueCCC: {
+      Role: InProcessTransfer
+    }
   }
 }

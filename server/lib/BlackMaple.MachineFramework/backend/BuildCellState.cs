@@ -1046,4 +1046,50 @@ public static class BuildCellState
 
     return pal;
   }
+
+  public static ImmutableDictionary<string, QueueInfo> CalcQueueRoles(
+    IEnumerable<Job> jobs,
+    FMSSettings settings
+  )
+  {
+    var rawMatQueues = new HashSet<string>();
+    var inProcQueues = new HashSet<string>();
+
+    foreach (var j in jobs)
+    {
+      for (int proc = 1; proc <= j.Processes.Count; proc++)
+      {
+        foreach (var path in j.Processes[proc - 1].Paths)
+        {
+          if (!string.IsNullOrEmpty(path.InputQueue))
+          {
+            if (proc == 1)
+            {
+              rawMatQueues.Add(path.InputQueue);
+            }
+            else
+            {
+              inProcQueues.Add(path.InputQueue);
+            }
+          }
+          if (!string.IsNullOrEmpty(path.OutputQueue))
+          {
+            inProcQueues.Add(path.OutputQueue);
+          }
+        }
+      }
+    }
+
+    return settings.Queues.ToImmutableDictionary(
+      k => k.Key,
+      k =>
+        k.Value with
+        {
+          Role =
+            rawMatQueues.Contains(k.Key) ? QueueRole.RawMaterial
+            : inProcQueues.Contains(k.Key) ? QueueRole.InProcessTransfer
+            : k.Value.Role,
+        }
+    );
+  }
 }
