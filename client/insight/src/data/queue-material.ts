@@ -170,7 +170,8 @@ function possibleCastings(
         .collect((p) => (p.casting === "" ? null : p.casting))
         .concat(historicCastingNames)
         .map((c) => ({ casting: c, message: null }))
-        .toSortedArray((c) => c.casting);
+        .distinctAndSortBy((c) => c.casting)
+        .toRArray();
   }
 }
 
