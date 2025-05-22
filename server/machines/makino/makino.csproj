@@ -28,10 +28,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.*" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
     <PackageReference
       Include="Microsoft.SourceLink.GitHub"
-      Version="8.0.0"
       PrivateAssets="All"
       Condition="'$(Configuration)' == 'Release'"
     />

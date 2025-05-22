@@ -1,0 +1,17 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+
+  <Project Path="./debug-mock/debugmock.csproj" />
+  <Project Path="./lib/BlackMaple.MachineFramework/BlackMaple.MachineFramework.csproj" />
+  <Project Path="./machines/makino/makino.csproj" />
+  <Project Path="./machines/mazak-proxy/mazak-proxy.csproj" />
+  <Project Path="./machines/mazak/mazak.csproj" />
+  <Project Path="./machines/niigata/niigata.csproj" />
+  <Project Path="./reverse-proxy/reverse-proxy.csproj" />
+  <Project Path="./test/FMSInsight.Tests.csproj" />
+
+</Solution>
