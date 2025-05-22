@@ -2199,19 +2199,11 @@
             "type": "boolean",
             "nullable": true
           },
-          "AddRawMaterial": {
+          "AddToQueueButton": {
             "nullable": true,
             "oneOf": [
               {
-                "$ref": "#/components/schemas/AddRawMaterialType"
-              }
-            ]
-          },
-          "AddInProcessMaterial": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/AddInProcessMaterialType"
+                "$ref": "#/components/schemas/AddToQueueButton"
               }
             ]
           },
@@ -2229,34 +2221,20 @@
           }
         }
       },
-      "AddRawMaterialType": {
+      "AddToQueueButton": {
         "type": "string",
         "description": "",
         "x-enumNames": [
-          "AddAsUnassigned",
-          "AddAsUnassignedWithSerial",
-          "RequireExistingMaterial",
-          "RequireBarcodeScan",
-          "AddAndSpecifyJob"
+          "DoNotShow",
+          "AddBulkUnassigned",
+          "LookupExistingSerial",
+          "ManualBarcodeScan"
         ],
         "enum": [
-          "AddAsUnassigned",
-          "AddAsUnassignedWithSerial",
-          "RequireExistingMaterial",
-          "RequireBarcodeScan",
-          "AddAndSpecifyJob"
-        ]
-      },
-      "AddInProcessMaterialType": {
-        "type": "string",
-        "description": "",
-        "x-enumNames": [
-          "RequireExistingMaterial",
-          "AddAndSpecifyJob"
-        ],
-        "enum": [
-          "RequireExistingMaterial",
-          "AddAndSpecifyJob"
+          "DoNotShow",
+          "AddBulkUnassigned",
+          "LookupExistingSerial",
+          "ManualBarcodeScan"
         ]
       },
       "ServerEvent": {
@@ -3903,11 +3881,11 @@
               }
             ]
           },
-          "Casting": {
+          "PotentialNewMaterial": {
             "nullable": true,
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ScannedCasting"
+                "$ref": "#/components/schemas/ScannedPotentialNewMaterial"
               }
             ]
           }
@@ -3954,7 +3932,7 @@
           }
         }
       },
-      "ScannedCasting": {
+      "ScannedPotentialNewMaterial": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -3969,7 +3947,7 @@
             "type": "array",
             "nullable": true,
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/PossibleJobAndProcess"
             }
           },
           "Workorder": {
@@ -3979,6 +3957,23 @@
           "Serial": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "PossibleJobAndProcess": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "JobUnique",
+          "LastCompletedProcess"
+        ],
+        "properties": {
+          "JobUnique": {
+            "type": "string"
+          },
+          "LastCompletedProcess": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

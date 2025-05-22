@@ -103,8 +103,7 @@ namespace DebugMachineWatchApiServer
         RequireScanAtCloseout = true,
         AllowChangeWorkorderAtLoadStation = true,
         UsingLabelPrinterForSerials = true,
-        AddRawMaterial = AddRawMaterialType.RequireBarcodeScan,
-        AddInProcessMaterial = AddInProcessMaterialType.RequireExistingMaterial,
+        AddToQueueButton = AddToQueueButton.ManualBarcodeScan,
         RebookingPrefix = "RE:",
         RebookingsDisplayName = "DRebook",
       };
@@ -287,12 +286,19 @@ namespace DebugMachineWatchApiServer
         {
           return new ScannedMaterial()
           {
-            Casting = new ScannedCasting()
+            PotentialNewMaterial = new()
             {
               Serial = barcode,
               Workorder = "work1",
               //PossibleCastings = ImmutableList.Create("part1", "part2"),
-              PossibleJobs = ImmutableList.Create("aaa-offline-2018-01-01", "bbb-offline-2018-01-01"),
+              PossibleJobs = ImmutableList.Create(
+                new PossibleJobAndProcess()
+                {
+                  JobUnique = "aaa-offline-2018-01-01",
+                  LastCompletedProcess = 0,
+                },
+                new PossibleJobAndProcess() { JobUnique = "bbb-offline-2018-01-01", LastCompletedProcess = 0 }
+              ),
             },
           };
         }

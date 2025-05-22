@@ -2238,8 +2238,7 @@ export class FMSInfo implements IFMSInfo {
     allowInvalidateMaterialAtLoadStation?: boolean | undefined;
     requireScanAtCloseout?: boolean | undefined;
     requireWorkorderBeforeAllowCloseoutComplete?: boolean | undefined;
-    addRawMaterial?: AddRawMaterialType | undefined;
-    addInProcessMaterial?: AddInProcessMaterialType | undefined;
+    addToQueueButton?: AddToQueueButton | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
     allowInvalidateMaterialOnQueuesPage?: boolean | undefined;
@@ -2277,8 +2276,7 @@ export class FMSInfo implements IFMSInfo {
             this.allowInvalidateMaterialAtLoadStation = _data["AllowInvalidateMaterialAtLoadStation"];
             this.requireScanAtCloseout = _data["RequireScanAtCloseout"];
             this.requireWorkorderBeforeAllowCloseoutComplete = _data["RequireWorkorderBeforeAllowCloseoutComplete"];
-            this.addRawMaterial = _data["AddRawMaterial"];
-            this.addInProcessMaterial = _data["AddInProcessMaterial"];
+            this.addToQueueButton = _data["AddToQueueButton"];
             this.requireOperatorNamePromptWhenAddingMaterial = _data["RequireOperatorNamePromptWhenAddingMaterial"];
             this.allowEditJobPlanQuantityFromQueuesPage = _data["AllowEditJobPlanQuantityFromQueuesPage"];
             this.allowInvalidateMaterialOnQueuesPage = _data["AllowInvalidateMaterialOnQueuesPage"];
@@ -2316,8 +2314,7 @@ export class FMSInfo implements IFMSInfo {
         data["AllowInvalidateMaterialAtLoadStation"] = this.allowInvalidateMaterialAtLoadStation;
         data["RequireScanAtCloseout"] = this.requireScanAtCloseout;
         data["RequireWorkorderBeforeAllowCloseoutComplete"] = this.requireWorkorderBeforeAllowCloseoutComplete;
-        data["AddRawMaterial"] = this.addRawMaterial;
-        data["AddInProcessMaterial"] = this.addInProcessMaterial;
+        data["AddToQueueButton"] = this.addToQueueButton;
         data["RequireOperatorNamePromptWhenAddingMaterial"] = this.requireOperatorNamePromptWhenAddingMaterial;
         data["AllowEditJobPlanQuantityFromQueuesPage"] = this.allowEditJobPlanQuantityFromQueuesPage;
         data["AllowInvalidateMaterialOnQueuesPage"] = this.allowInvalidateMaterialOnQueuesPage;
@@ -2344,24 +2341,17 @@ export interface IFMSInfo {
     allowInvalidateMaterialAtLoadStation?: boolean | undefined;
     requireScanAtCloseout?: boolean | undefined;
     requireWorkorderBeforeAllowCloseoutComplete?: boolean | undefined;
-    addRawMaterial?: AddRawMaterialType | undefined;
-    addInProcessMaterial?: AddInProcessMaterialType | undefined;
+    addToQueueButton?: AddToQueueButton | undefined;
     requireOperatorNamePromptWhenAddingMaterial?: boolean | undefined;
     allowEditJobPlanQuantityFromQueuesPage?: string | undefined;
     allowInvalidateMaterialOnQueuesPage?: boolean | undefined;
 }
 
-export enum AddRawMaterialType {
-    AddAsUnassigned = "AddAsUnassigned",
-    AddAsUnassignedWithSerial = "AddAsUnassignedWithSerial",
-    RequireExistingMaterial = "RequireExistingMaterial",
-    RequireBarcodeScan = "RequireBarcodeScan",
-    AddAndSpecifyJob = "AddAndSpecifyJob",
-}
-
-export enum AddInProcessMaterialType {
-    RequireExistingMaterial = "RequireExistingMaterial",
-    AddAndSpecifyJob = "AddAndSpecifyJob",
+export enum AddToQueueButton {
+    DoNotShow = "DoNotShow",
+    AddBulkUnassigned = "AddBulkUnassigned",
+    LookupExistingSerial = "LookupExistingSerial",
+    ManualBarcodeScan = "ManualBarcodeScan",
 }
 
 export class ServerEvent implements IServerEvent {
@@ -4970,7 +4960,7 @@ export interface IProblemDetails {
 
 export class ScannedMaterial implements IScannedMaterial {
     existingMaterial?: MaterialDetails | undefined;
-    casting?: ScannedCasting | undefined;
+    potentialNewMaterial?: ScannedPotentialNewMaterial | undefined;
 
     constructor(data?: IScannedMaterial) {
         if (data) {
@@ -4984,7 +4974,7 @@ export class ScannedMaterial implements IScannedMaterial {
     init(_data?: any) {
         if (_data) {
             this.existingMaterial = _data["ExistingMaterial"] ? MaterialDetails.fromJS(_data["ExistingMaterial"]) : <any>undefined;
-            this.casting = _data["Casting"] ? ScannedCasting.fromJS(_data["Casting"]) : <any>undefined;
+            this.potentialNewMaterial = _data["PotentialNewMaterial"] ? ScannedPotentialNewMaterial.fromJS(_data["PotentialNewMaterial"]) : <any>undefined;
         }
     }
 
@@ -4998,14 +4988,14 @@ export class ScannedMaterial implements IScannedMaterial {
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["ExistingMaterial"] = this.existingMaterial ? this.existingMaterial.toJSON() : <any>undefined;
-        data["Casting"] = this.casting ? this.casting.toJSON() : <any>undefined;
+        data["PotentialNewMaterial"] = this.potentialNewMaterial ? this.potentialNewMaterial.toJSON() : <any>undefined;
         return data;
     }
 }
 
 export interface IScannedMaterial {
     existingMaterial?: MaterialDetails | undefined;
-    casting?: ScannedCasting | undefined;
+    potentialNewMaterial?: ScannedPotentialNewMaterial | undefined;
 }
 
 export class MaterialDetails implements IMaterialDetails {
@@ -5080,13 +5070,13 @@ export interface IMaterialDetails {
     paths?: { [key: string]: number; } | undefined;
 }
 
-export class ScannedCasting implements IScannedCasting {
+export class ScannedPotentialNewMaterial implements IScannedPotentialNewMaterial {
     possibleCastings?: string[] | undefined;
-    possibleJobs?: string[] | undefined;
+    possibleJobs?: PossibleJobAndProcess[] | undefined;
     workorder?: string | undefined;
     serial?: string | undefined;
 
-    constructor(data?: IScannedCasting) {
+    constructor(data?: IScannedPotentialNewMaterial) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -5105,16 +5095,16 @@ export class ScannedCasting implements IScannedCasting {
             if (Array.isArray(_data["PossibleJobs"])) {
                 this.possibleJobs = [] as any;
                 for (let item of _data["PossibleJobs"])
-                    this.possibleJobs!.push(item);
+                    this.possibleJobs!.push(PossibleJobAndProcess.fromJS(item));
             }
             this.workorder = _data["Workorder"];
             this.serial = _data["Serial"];
         }
     }
 
-    static fromJS(data: any): ScannedCasting {
+    static fromJS(data: any): ScannedPotentialNewMaterial {
         data = typeof data === 'object' ? data : {};
-        let result = new ScannedCasting();
+        let result = new ScannedPotentialNewMaterial();
         result.init(data);
         return result;
     }
@@ -5129,7 +5119,7 @@ export class ScannedCasting implements IScannedCasting {
         if (Array.isArray(this.possibleJobs)) {
             data["PossibleJobs"] = [];
             for (let item of this.possibleJobs)
-                data["PossibleJobs"].push(item);
+                data["PossibleJobs"].push(item ? item.toJSON() : <any>undefined);
         }
         data["Workorder"] = this.workorder;
         data["Serial"] = this.serial;
@@ -5137,11 +5127,51 @@ export class ScannedCasting implements IScannedCasting {
     }
 }
 
-export interface IScannedCasting {
+export interface IScannedPotentialNewMaterial {
     possibleCastings?: string[] | undefined;
-    possibleJobs?: string[] | undefined;
+    possibleJobs?: PossibleJobAndProcess[] | undefined;
     workorder?: string | undefined;
     serial?: string | undefined;
+}
+
+export class PossibleJobAndProcess implements IPossibleJobAndProcess {
+    jobUnique!: string;
+    lastCompletedProcess!: number;
+
+    constructor(data?: IPossibleJobAndProcess) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.jobUnique = _data["JobUnique"];
+            this.lastCompletedProcess = _data["LastCompletedProcess"];
+        }
+    }
+
+    static fromJS(data: any): PossibleJobAndProcess {
+        data = typeof data === 'object' ? data : {};
+        let result = new PossibleJobAndProcess();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["JobUnique"] = this.jobUnique;
+        data["LastCompletedProcess"] = this.lastCompletedProcess;
+        return data;
+    }
+}
+
+export interface IPossibleJobAndProcess {
+    jobUnique: string;
+    lastCompletedProcess: number;
 }
 
 export class HistoricData implements IHistoricData {
