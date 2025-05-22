@@ -36,9 +36,6 @@ jobs:
           files: server\test\bin\Debug\net9.0\TestResults\server-cov.xml
           flags: server-unittests
 
-      - name: API Build
-        run: dotnet build client/csharp-api
-
       - name: Reverse proxy build
         run: dotnet build server/reverse-proxy
 
