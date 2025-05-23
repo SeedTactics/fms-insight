@@ -169,6 +169,29 @@
               "type": "string"
             },
             "x-position": 1
+          },
+          {
+            "name": "queuesToAddTo",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "x-position": 2
+          },
+          {
+            "name": "onLoadScreen",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 3
           }
         ],
         "responses": {
@@ -3936,18 +3959,24 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "PossibleCastings": {
-            "type": "array",
+          "PossibleCastingsByQueue": {
+            "type": "object",
             "nullable": true,
-            "items": {
-              "type": "string"
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
-          "PossibleJobs": {
-            "type": "array",
+          "PossibleJobsByQueue": {
+            "type": "object",
             "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/PossibleJobAndProcess"
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/PossibleJobAndProcess"
+              }
             }
           },
           "Workorder": {

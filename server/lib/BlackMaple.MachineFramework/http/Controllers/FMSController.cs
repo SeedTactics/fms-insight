@@ -300,13 +300,18 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("parse-barcode")]
-    public ScannedMaterial? ParseBarcode([BindRequired, FromQuery] string barcode)
+    public ScannedMaterial? ParseBarcode(
+      [BindRequired, FromQuery] string barcode,
+      [FromQuery] IEnumerable<string>? queuesToAddTo = null,
+      [FromQuery] bool? onLoadScreen = null
+    )
     {
       if (_parseBarcode != null)
       {
         return _parseBarcode.ParseBarcode(
           barcode: barcode,
-          httpReferer: Request.GetTypedHeaders().Referer ?? new Uri("/")
+          queuesToAddTo: queuesToAddTo ?? [],
+          onLoadScreen: onLoadScreen ?? false
         );
       }
       else

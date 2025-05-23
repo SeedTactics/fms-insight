@@ -268,9 +268,14 @@ namespace DebugMachineWatchApiServer
       );
     }
 
-    public ScannedMaterial ParseBarcode(string barcode, Uri referer)
+    public ScannedMaterial ParseBarcode(string barcode, IEnumerable<string> queuesToAddTo, bool onLoadScreen)
     {
-      Serilog.Log.Information("Parsing barcode {barcode} {referer}", barcode, referer);
+      Serilog.Log.Information(
+        "Parsing barcode {barcode} {queues}, load = {onLoadScreen}",
+        barcode,
+        queuesToAddTo,
+        onLoadScreen
+      );
       System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
       var commaIdx = barcode.IndexOf(',');
       if (commaIdx >= 0)
@@ -291,13 +296,23 @@ namespace DebugMachineWatchApiServer
               Serial = barcode,
               Workorder = "work1",
               //PossibleCastings = ImmutableList.Create("part1", "part2"),
-              PossibleJobs = ImmutableList.Create(
-                new PossibleJobAndProcess()
-                {
-                  JobUnique = "aaa-offline-2018-01-01",
-                  LastCompletedProcess = 0,
-                },
-                new PossibleJobAndProcess() { JobUnique = "bbb-offline-2018-01-01", LastCompletedProcess = 0 }
+              PossibleJobsByQueue = ImmutableDictionary<
+                string,
+                ImmutableList<PossibleJobAndProcess>
+              >.Empty.Add(
+                "queue1",
+                [
+                  new PossibleJobAndProcess()
+                  {
+                    JobUnique = "aaa-offline-2018-01-01",
+                    LastCompletedProcess = 0,
+                  },
+                  new PossibleJobAndProcess()
+                  {
+                    JobUnique = "bbb-offline-2018-01-01",
+                    LastCompletedProcess = 0,
+                  },
+                ]
               ),
             },
           };

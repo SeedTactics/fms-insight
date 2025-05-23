@@ -153,12 +153,18 @@ export class FmsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    parseBarcode(barcode: string, signal?: AbortSignal): Promise<ScannedMaterial | null> {
+    parseBarcode(barcode: string, queuesToAddTo: string[], onLoadScreen: boolean | null | undefined, signal?: AbortSignal): Promise<ScannedMaterial | null> {
         let url_ = this.baseUrl + "/api/v1/fms/parse-barcode?";
         if (barcode === undefined || barcode === null)
             throw new Error("The parameter 'barcode' must be defined and cannot be null.");
         else
             url_ += "barcode=" + encodeURIComponent("" + barcode) + "&";
+        if (queuesToAddTo === undefined || queuesToAddTo === null)
+            throw new Error("The parameter 'queuesToAddTo' must be defined and cannot be null.");
+        else
+            queuesToAddTo && queuesToAddTo.forEach(item => { url_ += "queuesToAddTo=" + encodeURIComponent("" + item) + "&"; });
+        if (onLoadScreen !== undefined && onLoadScreen !== null)
+            url_ += "onLoadScreen=" + encodeURIComponent("" + onLoadScreen) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
@@ -5071,8 +5077,8 @@ export interface IMaterialDetails {
 }
 
 export class ScannedPotentialNewMaterial implements IScannedPotentialNewMaterial {
-    possibleCastings?: string[] | undefined;
-    possibleJobs?: PossibleJobAndProcess[] | undefined;
+    possibleCastingsByQueue?: { [key: string]: string[]; } | undefined;
+    possibleJobsByQueue?: { [key: string]: PossibleJobAndProcess[]; } | undefined;
     workorder?: string | undefined;
     serial?: string | undefined;
 
@@ -5087,15 +5093,19 @@ export class ScannedPotentialNewMaterial implements IScannedPotentialNewMaterial
 
     init(_data?: any) {
         if (_data) {
-            if (Array.isArray(_data["PossibleCastings"])) {
-                this.possibleCastings = [] as any;
-                for (let item of _data["PossibleCastings"])
-                    this.possibleCastings!.push(item);
+            if (_data["PossibleCastingsByQueue"]) {
+                this.possibleCastingsByQueue = {} as any;
+                for (let key in _data["PossibleCastingsByQueue"]) {
+                    if (_data["PossibleCastingsByQueue"].hasOwnProperty(key))
+                        (<any>this.possibleCastingsByQueue)![key] = _data["PossibleCastingsByQueue"][key] !== undefined ? _data["PossibleCastingsByQueue"][key] : [];
+                }
             }
-            if (Array.isArray(_data["PossibleJobs"])) {
-                this.possibleJobs = [] as any;
-                for (let item of _data["PossibleJobs"])
-                    this.possibleJobs!.push(PossibleJobAndProcess.fromJS(item));
+            if (_data["PossibleJobsByQueue"]) {
+                this.possibleJobsByQueue = {} as any;
+                for (let key in _data["PossibleJobsByQueue"]) {
+                    if (_data["PossibleJobsByQueue"].hasOwnProperty(key))
+                        (<any>this.possibleJobsByQueue)![key] = _data["PossibleJobsByQueue"][key] ? _data["PossibleJobsByQueue"][key].map((i: any) => PossibleJobAndProcess.fromJS(i)) : [];
+                }
             }
             this.workorder = _data["Workorder"];
             this.serial = _data["Serial"];
@@ -5111,15 +5121,19 @@ export class ScannedPotentialNewMaterial implements IScannedPotentialNewMaterial
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.possibleCastings)) {
-            data["PossibleCastings"] = [];
-            for (let item of this.possibleCastings)
-                data["PossibleCastings"].push(item);
+        if (this.possibleCastingsByQueue) {
+            data["PossibleCastingsByQueue"] = {};
+            for (let key in this.possibleCastingsByQueue) {
+                if (this.possibleCastingsByQueue.hasOwnProperty(key))
+                    (<any>data["PossibleCastingsByQueue"])[key] = (<any>this.possibleCastingsByQueue)[key];
+            }
         }
-        if (Array.isArray(this.possibleJobs)) {
-            data["PossibleJobs"] = [];
-            for (let item of this.possibleJobs)
-                data["PossibleJobs"].push(item ? item.toJSON() : <any>undefined);
+        if (this.possibleJobsByQueue) {
+            data["PossibleJobsByQueue"] = {};
+            for (let key in this.possibleJobsByQueue) {
+                if (this.possibleJobsByQueue.hasOwnProperty(key))
+                    (<any>data["PossibleJobsByQueue"])[key] = (<any>this.possibleJobsByQueue)[key];
+            }
         }
         data["Workorder"] = this.workorder;
         data["Serial"] = this.serial;
@@ -5128,8 +5142,8 @@ export class ScannedPotentialNewMaterial implements IScannedPotentialNewMaterial
 }
 
 export interface IScannedPotentialNewMaterial {
-    possibleCastings?: string[] | undefined;
-    possibleJobs?: PossibleJobAndProcess[] | undefined;
+    possibleCastingsByQueue?: { [key: string]: string[]; } | undefined;
+    possibleJobsByQueue?: { [key: string]: PossibleJobAndProcess[]; } | undefined;
     workorder?: string | undefined;
     serial?: string | undefined;
 }

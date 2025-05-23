@@ -162,10 +162,15 @@ namespace BlackMaple.MachineFramework
   public record ScannedPotentialNewMaterial
   {
     // If selected by the user, call IJobAndQueueControl.AddUnallocatedCastingToQueue with the casting
-    public ImmutableList<string>? PossibleCastings { get; init; }
+    // Key is queue, value is the casting name
+    public ImmutableDictionary<string, ImmutableSortedSet<string>>? PossibleCastingsByQueue { get; init; }
 
     // If selected by the user, call IJobAndQueueControl.AddUnprocessedMaterialToQueue
-    public ImmutableList<PossibleJobAndProcess>? PossibleJobs { get; init; }
+    // Key is the queue, value is the job and last completed process
+    public ImmutableDictionary<
+      string,
+      ImmutableList<PossibleJobAndProcess>
+    >? PossibleJobsByQueue { get; init; }
 
     public string? Workorder { get; init; }
 

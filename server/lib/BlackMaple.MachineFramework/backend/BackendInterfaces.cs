@@ -95,7 +95,11 @@ namespace BlackMaple.MachineFramework
 
   public interface IParseBarcode
   {
-    public ScannedMaterial? ParseBarcode(string barcode, Uri httpReferer);
+    public ScannedMaterial? ParseBarcode(
+      string barcode,
+      IEnumerable<string> queuesToAddTo,
+      bool onLoadScreen
+    );
   }
 
   public interface ICheckLicense
