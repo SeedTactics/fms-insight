@@ -57,7 +57,6 @@ import { Collapse } from "@mui/material";
 import { CircularProgress } from "@mui/material";
 import { TextField } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
-import { Tooltip } from "@mui/material";
 import { useReactToPrint } from "react-to-print";
 
 import { PartIdenticon } from "./Material.js";
@@ -84,7 +83,7 @@ export function useMaterialInDialogAddType(
 ): "None" | "MatInQueue" | "AddToQueue" {
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
-  const fmsInfo = useAtomValue(fmsInformation);
+  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
 
   const curInQueueOnScreen =
     inProcMat !== null &&
@@ -96,17 +95,15 @@ export function useMaterialInDialogAddType(
   const curOnPallet = inProcMat !== null && inProcMat.location.type === api.LocType.OnPallet;
   if (curOnPallet) return "None";
 
-  // this is just a prelimiary check to see if we should show the dialog at all,
-  // other combinations of addInProcessMaterial and addRawMaterial are handled by the details
-  // shown inside the dialog, perhaps preventing the user from selecting a queue or job
-  // in certian cases (with an appropriate error message).
-  const missingButMatRequired =
-    existingMat === null &&
-    fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.RequireExistingMaterial &&
-    fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireExistingMaterial;
-  if (missingButMatRequired) return "None";
+  if (existingMat !== null) {
+    return "AddToQueue";
+  }
 
-  return "AddToQueue";
+  if (existingMat === null && barcode?.potentialNewMaterial != null) {
+    return "AddToQueue";
+  }
+
+  return "None";
 }
 
 const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
@@ -184,44 +181,41 @@ function SelectJob({
     <List sx={indent ? (theme) => ({ pl: theme.spacing(4) }) : undefined}>
       {jobs.map((j, idx) =>
         j.machinedProcs.length === 1 ? (
-          <Tooltip title={j.machinedProcs[0].disabledMsg ?? ""} key={idx}>
-            <div>
-              <ListItem>
-                <ListItemButton
-                  alignItems="flex-start"
-                  disabled={!!j.machinedProcs[0].disabledMsg}
-                  selected={
-                    newMaterialTy?.kind === "JobAndProc" &&
-                    newMaterialTy?.job.unique === j.job.unique &&
-                    newMaterialTy?.last_proc === j.machinedProcs[0].lastProc
+          <div key={idx}>
+            <ListItem>
+              <ListItemButton
+                alignItems="flex-start"
+                selected={
+                  newMaterialTy?.kind === "JobAndProc" &&
+                  newMaterialTy?.job.unique === j.job.unique &&
+                  newMaterialTy?.last_proc === j.machinedProcs[0].lastProc
+                }
+                onClick={() =>
+                  setNewMaterialTy({
+                    kind: "JobAndProc",
+                    job: j.job,
+                    last_proc: j.machinedProcs[0].lastProc,
+                  })
+                }
+              >
+                <ListItemIcon>
+                  <PartIdenticon part={j.job.partName} />
+                </ListItemIcon>
+                <ListItemText
+                  primary={j.job.partName + " (" + j.job.unique + ")"}
+                  slotProps={{ primary: { variant: "h4" } }}
+                  secondary={
+                    <Typography variant="body2">
+                      {j.machinedProcs[0].lastProc === 0
+                        ? "Raw Material"
+                        : "Last machined process " + j.machinedProcs[0].lastProc.toString()}
+                      , {j.job.routeStartUTC.toLocaleDateString()}, {j.machinedProcs[0].details}
+                    </Typography>
                   }
-                  onClick={() =>
-                    setNewMaterialTy({
-                      kind: "JobAndProc",
-                      job: j.job,
-                      last_proc: j.machinedProcs[0].lastProc,
-                    })
-                  }
-                >
-                  <ListItemIcon>
-                    <PartIdenticon part={j.job.partName} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={j.job.partName + " (" + j.job.unique + ")"}
-                    primaryTypographyProps={{ variant: "h4" }}
-                    secondary={
-                      <Typography variant="body2">
-                        {j.machinedProcs[0].lastProc === 0
-                          ? "Raw Material"
-                          : "Last machined process " + j.machinedProcs[0].lastProc.toString()}
-                        , {j.job.routeStartUTC.toLocaleDateString()}, {j.machinedProcs[0].details}
-                      </Typography>
-                    }
-                  />
-                </ListItemButton>
-              </ListItem>
-            </div>
-          </Tooltip>
+                />
+              </ListItemButton>
+            </ListItem>
+          </div>
         ) : (
           <Fragment key={idx}>
             <ListItem>
@@ -249,7 +243,7 @@ function SelectJob({
                 </ListItemIcon>
                 <ListItemText
                   primary={j.job.partName + " (" + j.job.unique + ")"}
-                  primaryTypographyProps={{ variant: "h4" }}
+                  slotProps={{ primary: { variant: "h4" } }}
                   secondary={j.job.routeStartUTC.toLocaleDateString()}
                 />
               </ListItemButton>
@@ -259,32 +253,27 @@ function SelectJob({
               timeout="auto"
             >
               {j.machinedProcs.map((p, idx) => (
-                <Tooltip title={p.disabledMsg ?? ""} key={idx}>
-                  <div>
-                    <ListItem sx={(theme) => ({ pl: theme.spacing(indent ? 8 : 4) })}>
-                      <ListItemButton
-                        disabled={!!p.disabledMsg}
-                        selected={
-                          newMaterialTy?.kind === "JobAndProc" &&
-                          newMaterialTy?.job.unique === j.job.unique &&
-                          newMaterialTy?.last_proc === p.lastProc
+                <div key={idx}>
+                  <ListItem sx={(theme) => ({ pl: theme.spacing(indent ? 8 : 4) })}>
+                    <ListItemButton
+                      selected={
+                        newMaterialTy?.kind === "JobAndProc" &&
+                        newMaterialTy?.job.unique === j.job.unique &&
+                        newMaterialTy?.last_proc === p.lastProc
+                      }
+                      onClick={() =>
+                        setNewMaterialTy({ kind: "JobAndProc", job: j.job, last_proc: p.lastProc })
+                      }
+                    >
+                      <ListItemText
+                        primary={
+                          p.lastProc === 0 ? "Raw Material" : "Last machined process " + p.lastProc.toString()
                         }
-                        onClick={() =>
-                          setNewMaterialTy({ kind: "JobAndProc", job: j.job, last_proc: p.lastProc })
-                        }
-                      >
-                        <ListItemText
-                          primary={
-                            p.lastProc === 0
-                              ? "Raw Material"
-                              : "Last machined process " + p.lastProc.toString()
-                          }
-                          secondary={p.details}
-                        />
-                      </ListItemButton>
-                    </ListItem>
-                  </div>
-                </Tooltip>
+                        secondary={p.details}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                </div>
               ))}
             </Collapse>
           </Fragment>
@@ -513,7 +502,10 @@ export function AddToQueueMaterialDialogCt({
   setNewMaterialTy: (job: NewMaterialToQueueType | null) => void;
 }) {
   const toShow = useAtomValue(matDetails.materialDialogOpen);
-  const requireSelectQueue = queueNames.length > 1 && toShow?.type !== "AddMatWithEnteredSerial";
+  const requireSelectQueue =
+    queueNames.length > 1 &&
+    toShow?.type !== "AddMatWithEnteredSerial" &&
+    !(toShow?.type === "Barcode" && toShow.toQueue !== null);
   return (
     <>
       <WorkorderFromBarcode />

@@ -74,7 +74,7 @@ export const BarcodeListener = memo(function BarcodeListener(): null {
       }
       scanActive = false;
 
-      setBarcode({ type: "Barcode", barcode: scannedTxt });
+      setBarcode({ type: "Barcode", barcode: scannedTxt, toQueue: null });
     }
 
     function onKeyDown(k: KeyboardEvent) {
@@ -118,7 +118,7 @@ export const QRScanButton = memo(function QRScanButton() {
 
   function onScan(results: ReadonlyArray<IDetectedBarcode>): void {
     if (results.length > 0 && results[0].rawValue !== null && results[0].rawValue !== "") {
-      setBarcode({ type: "Barcode", barcode: results[0].rawValue });
+      setBarcode({ type: "Barcode", barcode: results[0].rawValue, toQueue: null });
       setDialogOpen(false);
       setManual("");
     }
@@ -126,7 +126,7 @@ export const QRScanButton = memo(function QRScanButton() {
 
   function onManual(): void {
     if (manual !== "") {
-      setBarcode({ type: "Barcode", barcode: manual });
+      setBarcode({ type: "Barcode", barcode: manual, toQueue: null });
     }
     setDialogOpen(false);
     setManual("");

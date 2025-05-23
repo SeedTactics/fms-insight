@@ -78,7 +78,7 @@ import { JobDetails } from "./JobDetails.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { addWorkorderComment, currentStatus, setJobComment } from "../../cell-status/current-status.js";
 import { Collapse } from "@mui/material";
-import { rawMaterialQueues } from "../../cell-status/names.js";
+import { inProcessQueues, rawMaterialQueues } from "../../cell-status/names.js";
 import { SortableRegion } from "./Whiteboard.js";
 import { MultiMaterialDialog, QueuedMaterialDialog } from "./QueuesMatDialog.js";
 import { useSetTitle } from "../routes.js";
@@ -569,57 +569,52 @@ function WorkorderCommentDialog() {
 interface AddMaterialButtonsProps {
   readonly label: string;
   readonly rawMatQueue: boolean;
+  readonly inProcQueue: boolean;
 }
 
 const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
-  const currentJobs = useAtomValue(currentStatus).jobs;
   const fmsInfo = useAtomValue(fmsInformation);
   const setBulkAddCastings = useSetAtom(bulkAddCastingToQueue);
   const setAddBySerial = useSetAtom(enterSerialForNewMaterialDialog);
 
-  const jobExistsWithInputQueue = useMemo(() => {
-    return LazySeq.ofObject(currentJobs)
-      .flatMap(([, j]) => j.procsAndPaths)
-      .flatMap((p) => p.paths)
-      .some((p) => p.inputQueue === props.label);
-  }, [currentJobs, props.label]);
+  if (!fmsInfo.addToQueueButton || fmsInfo.addToQueueButton === api.AddToQueueButton.DoNotShow) {
+    return null;
+  }
+
+  function click() {
+    switch (fmsInfo.addToQueueButton) {
+      case api.AddToQueueButton.DoNotShow:
+        return;
+      case api.AddToQueueButton.AddBulkUnassigned:
+        if (props.rawMatQueue) {
+          setBulkAddCastings(props.label);
+        } else {
+          setAddBySerial(props.label);
+        }
+        break;
+
+      case api.AddToQueueButton.LookupExistingSerial:
+        setAddBySerial(props.label);
+        return;
+
+      case api.AddToQueueButton.ManualBarcodeScan:
+        // TODO;
+        return;
+    }
+  }
 
   if (props.rawMatQueue) {
-    if (fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireBarcodeScan) {
-      return null;
-    }
     return (
       <Tooltip title="Add Raw Material">
-        <Fab
-          color="secondary"
-          onClick={() => {
-            switch (fmsInfo.addRawMaterial) {
-              case api.AddRawMaterialType.AddAsUnassigned:
-                setBulkAddCastings(props.label);
-                break;
-              case api.AddRawMaterialType.AddAsUnassignedWithSerial:
-              case api.AddRawMaterialType.AddAndSpecifyJob:
-              case api.AddRawMaterialType.RequireExistingMaterial:
-                setAddBySerial(props.label);
-                break;
-            }
-          }}
-          size="large"
-          style={{ marginBottom: "-30px", zIndex: 1 }}
-        >
+        <Fab color="secondary" onClick={click} size="large" style={{ marginBottom: "-30px", zIndex: 1 }}>
           <AddIcon />
         </Fab>
       </Tooltip>
     );
-  } else if (jobExistsWithInputQueue) {
+  } else if (props.inProcQueue) {
     return (
       <Tooltip title="Add Material">
-        <Fab
-          color="secondary"
-          onClick={() => setAddBySerial(props.label)}
-          size="medium"
-          style={{ marginBottom: "-30px", zIndex: 1 }}
-        >
+        <Fab color="secondary" onClick={click} size="medium" style={{ marginBottom: "-30px", zIndex: 1 }}>
           <AssignIcon fontSize="inherit" />
         </Fab>
       </Tooltip>
@@ -637,9 +632,10 @@ export const Queues = (props: QueueProps) => {
   const operator = useAtomValue(currentOperator);
   const currentSt = useAtomValue(currentStatus);
   const rawMatQueues = useAtomValue(rawMaterialQueues);
+  const inProcQueues = useAtomValue(inProcessQueues);
   const data = useMemo(
-    () => selectQueueData(props.queues, currentSt, rawMatQueues),
-    [currentSt, props.queues, rawMatQueues],
+    () => selectQueueData(props.queues, currentSt, rawMatQueues, inProcQueues),
+    [currentSt, props.queues, rawMatQueues, inProcQueues],
   );
   const hasJobs = !LazySeq.ofObject(currentSt.jobs).isEmpty();
 
@@ -680,7 +676,11 @@ export const Queues = (props: QueueProps) => {
                   {region.label}
                 </Typography>
                 {region.free ? undefined : (
-                  <AddMaterialButtons label={region.label} rawMatQueue={region.rawMaterialQueue} />
+                  <AddMaterialButtons
+                    label={region.label}
+                    rawMatQueue={region.rawMaterialQueue}
+                    inProcQueue={region.inProcQueue}
+                  />
                 )}
               </Box>
               <Box justifyContent="flex-start" display="flex" flexWrap="wrap">

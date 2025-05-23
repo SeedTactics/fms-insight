@@ -90,7 +90,11 @@ export interface JobAPI {
 export interface FmsAPI {
   fMSInformation(): Promise<Readonly<api.IFMSInfo>>;
   printLabel(materialId: number, process: number): Promise<void>;
-  parseBarcode(barcode: string | null): Promise<Readonly<api.IScannedMaterial | null>>;
+  parseBarcode(
+    barcode: string | null,
+    queuesToAddTo: ReadonlyArray<string> | null,
+    onLoadScreen: boolean | null,
+  ): Promise<Readonly<api.IScannedMaterial | null>>;
   enableVerboseLoggingForFiveMinutes(): Promise<void>;
 }
 

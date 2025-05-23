@@ -236,6 +236,8 @@ export const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
   let toQueue: string | null = null;
   if (toShow && toShow.type === "AddMatWithEnteredSerial") {
     toQueue = toShow.toQueue;
+  } else if (toShow && toShow.type === "Barcode" && toShow.toQueue) {
+    toQueue = toShow.toQueue;
   } else if (queueNames.length === 1) {
     toQueue = queueNames[0];
   } else {

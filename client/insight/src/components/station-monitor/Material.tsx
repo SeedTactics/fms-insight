@@ -759,7 +759,7 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
     if (toShow.type === "AddMatWithEnteredSerial" || toShow.type === "ManuallyEnteredSerial") {
       return <div style={{ marginLeft: "1em" }}>Material with serial {toShow.serial} not found.</div>;
     } else if (toShow.type === "Barcode") {
-      if (barcode?.casting) {
+      if (barcode?.potentialNewMaterial) {
         return (
           <div style={{ marginLeft: "1em" }}>
             Material with barcode {toShow.barcode} does not yet exist in the cell.

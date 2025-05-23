@@ -38,6 +38,9 @@ import { LazySeq } from "@seedtactics/immutable-collections";
 const rawMaterialQueuesRW = atom<ReadonlySet<string>>(new Set<string>());
 export const rawMaterialQueues: Atom<ReadonlySet<string>> = rawMaterialQueuesRW;
 
+const inProcQueuesRW = atom<ReadonlySet<string>>(new Set<string>());
+export const inProcessQueues: Atom<ReadonlySet<string>> = inProcQueuesRW;
+
 const castingNamesRW = atom<ReadonlySet<string>>(new Set<string>());
 export const castingNames: Atom<ReadonlySet<string>> = castingNamesRW;
 
@@ -86,17 +89,27 @@ function onCurrentStatus(get: Getter, set: Setter, st: Readonly<ICurrentStatus>)
   onNewJobs(set, Object.values(st.jobs));
 
   const rawMatQueues = get(rawMaterialQueuesRW);
+  const inProc = get(inProcQueuesRW);
 
-  const newQ = new Set<string>();
+  const newRawQ = new Set<string>();
+  const newInProcQ = new Set<string>();
+
   for (const [queue, info] of LazySeq.ofObject(st.queues)) {
     if (info.role === QueueRole.RawMaterial) {
       if (!rawMatQueues.has(queue)) {
-        newQ.add(queue);
+        newRawQ.add(queue);
+      }
+    } else if (info.role === QueueRole.InProcessTransfer) {
+      if (!inProc.has(queue)) {
+        newInProcQ.add(queue);
       }
     }
   }
-  if (newQ.size > 0) {
-    set(rawMaterialQueuesRW, new Set([...rawMatQueues, ...newQ]));
+  if (newRawQ.size > 0) {
+    set(rawMaterialQueuesRW, new Set([...rawMatQueues, ...newRawQ]));
+  }
+  if (newInProcQ.size > 0) {
+    set(inProcQueuesRW, new Set([...inProc, ...newInProcQ]));
   }
 }
 
