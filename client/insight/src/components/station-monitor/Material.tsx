@@ -333,6 +333,25 @@ function RebookingNoteElipsis({ fsize, uniq }: { fsize?: MatCardFontSize; uniq: 
   return null;
 }
 
+export function WorkorderFromBarcode() {
+  const currentSt = useAtomValue(currentStatus);
+  const workorderId = useAtomValue(matDetails.workorderInMaterialDialog);
+  if (!workorderId) return null;
+
+  const comments = currentSt.workorders?.find((w) => w.workorderId === workorderId)?.comments ?? [];
+
+  return (
+    <div style={{ marginTop: "1em", marginLeft: "1em" }}>
+      <p>Workorder: {workorderId}</p>
+      <ul>
+        {comments.map((c, idx) => (
+          <li key={idx}>{c.comment}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 interface MaterialDragProps {
   readonly dragRootProps?: HTMLAttributes<HTMLDivElement>;
   readonly showDragHandle?: boolean;

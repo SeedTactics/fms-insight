@@ -1,4 +1,4 @@
-/* Copyright (c) 2023, John Lenz
+/* Copyright (c) 2025, John Lenz
 
 All rights reserved.
 
@@ -31,56 +31,48 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useState, memo, useRef, useEffect, useMemo, Fragment } from "react";
+import { useState, Fragment, SetStateAction, Dispatch } from "react";
 import {
   Button,
+  Collapse,
+  List,
+  ListItem,
   ListItemButton,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
+  ListItemIcon,
+  ListItemText,
+  TextField,
   Typography,
   styled,
 } from "@mui/material";
-import { List } from "@mui/material";
-import { ListItem } from "@mui/material";
-import { ListItemText } from "@mui/material";
-import { ListItemIcon } from "@mui/material";
-import { MenuItem } from "@mui/material";
-import { Dialog } from "@mui/material";
-import { DialogActions } from "@mui/material";
-import { DialogContent } from "@mui/material";
-import { DialogTitle } from "@mui/material";
-import { Collapse } from "@mui/material";
-import { CircularProgress } from "@mui/material";
-import { TextField } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
-import { useReactToPrint } from "react-to-print";
 
-import { PartIdenticon } from "./Material.js";
+import { PartIdenticon, WorkorderFromBarcode } from "./Material.js";
 import * as api from "../../network/api.js";
 import * as matDetails from "../../cell-status/material-details.js";
-import { LazySeq } from "@seedtactics/immutable-collections";
 import {
   SelectableCasting,
   SelectableJob,
   SelectableMaterialType,
-  extractJobRawMaterial,
   usePossibleNewMaterialTypes,
 } from "../../data/queue-material.js";
 import { currentOperator } from "../../data/operators.js";
-import { PrintedLabel } from "./PrintedLabel.js";
 import { fmsInformation } from "../../network/server-settings.js";
-import { currentStatus } from "../../cell-status/current-status.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
-import { castingNames } from "../../cell-status/names.js";
-import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
+import {
+  InvalidateCycleDialogButton,
+  InvalidateCycleDialogContent,
+  InvalidateCycleState,
+} from "./InvalidateCycle.js";
 
-export function useMaterialInDialogAddType(
-  queueNames: ReadonlyArray<string>,
-): "None" | "MatInQueue" | "AddToQueue" {
+export type AddMaterialState = {
+  readonly toQueue: string | null;
+  readonly enteredOperator: string | null;
+  readonly newMaterialTy: NewMaterialToQueueType | null;
+  readonly invalidateSt: InvalidateCycleState | null;
+};
+
+function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
   const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
@@ -90,20 +82,20 @@ export function useMaterialInDialogAddType(
     inProcMat.location.type === api.LocType.InQueue &&
     inProcMat.location.currentQueue &&
     queueNames.includes(inProcMat.location.currentQueue);
-  if (curInQueueOnScreen) return "MatInQueue";
+  if (curInQueueOnScreen) return false;
 
   const curOnPallet = inProcMat !== null && inProcMat.location.type === api.LocType.OnPallet;
-  if (curOnPallet) return "None";
+  if (curOnPallet) return false;
 
   if (existingMat !== null) {
-    return "AddToQueue";
+    return false;
   }
 
   if (existingMat === null && barcode?.potentialNewMaterial != null) {
-    return "AddToQueue";
+    return false;
   }
 
-  return "None";
+  return true;
 }
 
 const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
@@ -413,7 +405,7 @@ function PromptForMaterialType({
   );
 }
 
-function PromptForQueue({
+export function PromptForQueue({
   selectedQueue,
   setSelectedQueue,
   queueNames,
@@ -463,81 +455,66 @@ function PromptForOperator({
   );
 }
 
-function WorkorderFromBarcode() {
-  const currentSt = useAtomValue(currentStatus);
-  const workorderId = useAtomValue(matDetails.workorderInMaterialDialog);
-  if (!workorderId) return null;
-
-  const comments = currentSt.workorders?.find((w) => w.workorderId === workorderId)?.comments ?? [];
-
-  return (
-    <div style={{ marginTop: "1em", marginLeft: "1em" }}>
-      <p>Workorder: {workorderId}</p>
-      <ul>
-        {comments.map((c, idx) => (
-          <li key={idx}>{c.comment}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
 export function AddToQueueMaterialDialogCt({
+  st,
   queueNames,
-  toQueue,
-  enteredOperator,
-  setEnteredOperator,
-  selectedQueue,
-  setSelectedQueue,
-  newMaterialTy,
-  setNewMaterialTy,
+  setState,
 }: {
+  st: AddMaterialState;
   queueNames: ReadonlyArray<string>;
-  toQueue: string | null;
-  enteredOperator: string | null;
-  setEnteredOperator: (operator: string | null) => void;
-  selectedQueue: string | null;
-  setSelectedQueue: (q: string | null) => void;
-  newMaterialTy: NewMaterialToQueueType | null;
-  setNewMaterialTy: (job: NewMaterialToQueueType | null) => void;
+  setState: (st: AddMaterialState) => void;
 }) {
-  const toShow = useAtomValue(matDetails.materialDialogOpen);
-  const requireSelectQueue =
-    queueNames.length > 1 &&
-    toShow?.type !== "AddMatWithEnteredSerial" &&
-    !(toShow?.type === "Barcode" && toShow.toQueue !== null);
+  const allowAdd = useAllowAddToQueue(queueNames);
+
+  if (!allowAdd) {
+    return null;
+  }
+
   return (
     <>
       <WorkorderFromBarcode />
-      {requireSelectQueue ? (
+      {queueNames.length > 1 ? (
         <PromptForQueue
-          selectedQueue={selectedQueue}
+          selectedQueue={st.toQueue}
           setSelectedQueue={(q) => {
-            setSelectedQueue(q);
-            setNewMaterialTy(null);
+            setState({
+              toQueue: q,
+              newMaterialTy: null,
+              enteredOperator: st.enteredOperator,
+              invalidateSt: st.invalidateSt,
+            });
           }}
           queueNames={queueNames}
         />
       ) : undefined}
       <PromptForMaterialType
-        newMaterialTy={newMaterialTy}
-        setNewMaterialTy={setNewMaterialTy}
-        toQueue={toQueue}
+        newMaterialTy={st.newMaterialTy}
+        toQueue={st.toQueue}
+        setNewMaterialTy={(ty) => setState({ ...st, newMaterialTy: ty })}
       />
-      <PromptForOperator enteredOperator={enteredOperator} setEnteredOperator={setEnteredOperator} />
+      <PromptForOperator
+        enteredOperator={st.enteredOperator}
+        setEnteredOperator={(o) => setState({ ...st, enteredOperator: o })}
+      />
+      {st.invalidateSt !== null ? (
+        <InvalidateCycleDialogContent
+          st={st.invalidateSt}
+          setState={(is) => setState({ ...st, invalidateSt: is })}
+        />
+      ) : undefined}
     </>
   );
 }
 
 export function AddToQueueButton({
-  enteredOperator,
-  newMaterialTy,
-  toQueue,
+  st: { enteredOperator, newMaterialTy, toQueue, invalidateSt },
+  setState,
+  queueNames,
   onClose,
 }: {
-  enteredOperator: string | null;
-  newMaterialTy: NewMaterialToQueueType | null;
-  toQueue: string | null;
+  st: AddMaterialState;
+  setState: Dispatch<SetStateAction<AddMaterialState>>;
+  queueNames: ReadonlyArray<string>;
   onClose: () => void;
 }) {
   const fmsInfo = useAtomValue(fmsInformation);
@@ -553,6 +530,16 @@ export function AddToQueueButton({
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
   const [addNewMat, addingNewMat] = matDetails.useAddNewMaterialToQueue();
   const [addNewCasting, addingNewCasting] = useAddNewCastingToQueue();
+
+  const allowAdd = useAllowAddToQueue(queueNames);
+
+  if (!allowAdd) {
+    return null;
+  }
+
+  if (toQueue === null && queueNames.length === 1) {
+    toQueue = queueNames[0];
+  }
 
   let addProcMsg = "";
   if (existingMat !== null) {
@@ -579,390 +566,65 @@ export function AddToQueueButton({
   const curQueue = inProcMat?.location.currentQueue ?? null;
 
   return (
-    <Button
-      color="primary"
-      disabled={
-        toQueue === null ||
-        addingExistingMat === true ||
-        addingNewMat === true ||
-        addingNewCasting === true ||
-        (existingMat === null && newMaterialTy === null) ||
-        (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
-          (enteredOperator === null || enteredOperator === ""))
-      }
-      onClick={() => {
-        if (existingMat) {
-          addExistingMat({
-            materialId: existingMat.materialID,
-            queue: toQueue ?? "",
-            queuePosition: -1,
-            operator: enteredOperator ?? operator,
-          });
-        } else if (newMaterialTy && newMaterialTy.kind === "JobAndProc" && newMaterialTy.job) {
-          addNewMat({
-            jobUnique: newMaterialTy.job.unique,
-            lastCompletedProcess: newMaterialTy.last_proc,
-            serial: newSerial ?? undefined,
-            workorder: newWorkorder ?? null,
-            queue: toQueue ?? "",
-            queuePosition: -1,
-            operator: enteredOperator ?? operator,
-          });
-        } else if (newMaterialTy && newMaterialTy.kind === "RawMat" && newMaterialTy.rawMatName) {
-          addNewCasting({
-            casting: newMaterialTy.rawMatName,
-            quantity: 1,
-            queue: toQueue ?? "",
-            serials: newSerial ? [newSerial] : undefined,
-            workorder: newWorkorder,
-            operator: enteredOperator ?? operator,
-          });
+    <>
+      <InvalidateCycleDialogButton
+        onClose={onClose}
+        st={invalidateSt}
+        setState={(s) => setState((as) => ({ ...as, invalidateSt: s }))}
+      />
+      <Button
+        color="primary"
+        disabled={
+          toQueue === null ||
+          addingExistingMat === true ||
+          addingNewMat === true ||
+          addingNewCasting === true ||
+          (existingMat === null && newMaterialTy === null) ||
+          (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
+            (enteredOperator === null || enteredOperator === ""))
         }
-        setMatToShow(null);
-        onClose();
-      }}
-    >
-      {toQueue === null ? (
-        "Add to Queue"
-      ) : (
-        <span>
-          {curQueue !== null ? `Move From ${curQueue} To` : "Add To"} {toQueue}
-          {withSerialMsg}
-          {addProcMsg}
-        </span>
-      )}
-    </Button>
-  );
-}
-
-export const enterSerialForNewMaterialDialog = atom<string | null>(null);
-
-export const AddBySerialDialog = memo(function AddBySerialDialog() {
-  const [queue, setQueue] = useAtom(enterSerialForNewMaterialDialog);
-  const setMatToDisplay = useSetAtom(matDetails.materialDialogOpen);
-  const [serial, setSerial] = useState<string | undefined>(undefined);
-
-  function lookup() {
-    if (serial && serial !== "" && queue !== null) {
-      setMatToDisplay({ type: "AddMatWithEnteredSerial", serial, toQueue: queue });
-      setQueue(null);
-      setSerial(undefined);
-    }
-  }
-  function close() {
-    setQueue(null);
-    setSerial(undefined);
-  }
-  return (
-    <Dialog open={queue !== null} onClose={close} maxWidth="md">
-      <DialogTitle>Lookup Material</DialogTitle>
-      <DialogContent>
-        <TextField
-          label="Serial"
-          style={{ marginTop: "0.5em" }}
-          autoFocus
-          value={serial || ""}
-          onChange={(e) => setSerial(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && serial && serial !== "") {
-              e.preventDefault();
-              lookup();
-            }
-          }}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={lookup} color="secondary">
-          Lookup Serial
-        </Button>
-        <Button onClick={close} color="primary">
-          Cancel
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-});
-
-export const bulkAddCastingToQueue = atom<string | null>(null);
-
-function AddAndPrintOnClientButton({
-  operator,
-  selectedCasting,
-  queue,
-  close,
-  qty,
-  disabled,
-}: {
-  operator: string | null;
-  selectedCasting: string | null;
-  queue: string | null;
-  close: () => void;
-  qty: number | null;
-  disabled: boolean;
-}) {
-  const printRef = useRef<HTMLDivElement>(null);
-  const [adding, setAdding] = useState<boolean>(false);
-  const print = useReactToPrint({
-    contentRef: printRef,
-    onAfterPrint: close,
-    ignoreGlobalStyles: true,
-  });
-  const [materialToPrint, setMaterialToPrint] = useState<ReadonlyArray<api.IInProcessMaterial>>([]);
-  const [addNewCasting] = useAddNewCastingToQueue();
-
-  useEffect(() => {
-    if (materialToPrint.length === 0) return;
-    print();
-  }, [materialToPrint, print]);
-
-  function addAndPrint() {
-    if (queue !== null && selectedCasting !== null && qty !== null && !isNaN(qty)) {
-      setAdding(true);
-      addNewCasting({
-        casting: selectedCasting,
-        quantity: qty,
-        queue: queue,
-        operator: operator,
-        workorder: null,
-        onNewMaterial: (mats) => {
-          setMaterialToPrint(mats);
-        },
-        onError: () => {
-          close();
-        },
-      });
-    }
-  }
-
-  return (
-    <>
-      <Button color="primary" disabled={disabled || adding} onClick={addAndPrint}>
-        {adding ? <CircularProgress size={10} /> : undefined}
-        Add to {queue}
+        onClick={() => {
+          if (existingMat) {
+            addExistingMat({
+              materialId: existingMat.materialID,
+              queue: toQueue ?? "",
+              queuePosition: -1,
+              operator: enteredOperator ?? operator,
+            });
+          } else if (newMaterialTy && newMaterialTy.kind === "JobAndProc" && newMaterialTy.job) {
+            addNewMat({
+              jobUnique: newMaterialTy.job.unique,
+              lastCompletedProcess: newMaterialTy.last_proc,
+              serial: newSerial ?? undefined,
+              workorder: newWorkorder ?? null,
+              queue: toQueue ?? "",
+              queuePosition: -1,
+              operator: enteredOperator ?? operator,
+            });
+          } else if (newMaterialTy && newMaterialTy.kind === "RawMat" && newMaterialTy.rawMatName) {
+            addNewCasting({
+              casting: newMaterialTy.rawMatName,
+              quantity: 1,
+              queue: toQueue ?? "",
+              serials: newSerial ? [newSerial] : undefined,
+              workorder: newWorkorder,
+              operator: enteredOperator ?? operator,
+            });
+          }
+          setMatToShow(null);
+          onClose();
+        }}
+      >
+        {toQueue === null ? (
+          "Add to Queue"
+        ) : (
+          <span>
+            {curQueue !== null ? `Move From ${curQueue} To` : "Add To"} {toQueue}
+            {withSerialMsg}
+            {addProcMsg}
+          </span>
+        )}
       </Button>
-      <div style={{ display: "none" }}>
-        <div ref={printRef}>
-          <PrintedLabel
-            materialName={selectedCasting}
-            material={materialToPrint}
-            operator={operator}
-            oneJobPerPage={true}
-          />
-        </div>
-      </div>
     </>
   );
 }
-
-function JobsForCasting({ casting }: { casting: string }) {
-  const currentSt = useAtomValue(currentStatus);
-
-  const jobs = useMemo(
-    () => extractJobRawMaterial(currentSt.jobs, currentSt.material).filter((j) => j.rawMatName === casting),
-    [currentSt.jobs, currentSt.material, casting],
-  );
-
-  if (jobs.length === 0) return null;
-
-  return (
-    <Table size="small">
-      <TableHead>
-        <TableCell>Job</TableCell>
-        <TableCell align="right">Plan</TableCell>
-        <TableCell align="right">Remaining</TableCell>
-        <TableCell align="right">Assigned</TableCell>
-        <TableCell align="right">Required</TableCell>
-        <TableCell align="right">Available</TableCell>
-      </TableHead>
-      <TableBody>
-        {jobs.map((j, idx) => (
-          <TableRow key={idx}>
-            <TableCell>{j.job.unique}</TableCell>
-            <TableCell align="right">{j.job.cycles}</TableCell>
-            <TableCell align="right">{j.remainingToStart}</TableCell>
-            <TableCell align="right">{j.assignedRaw}</TableCell>
-            <TableCell align="right">{Math.max(j.remainingToStart - j.assignedRaw, 0)}</TableCell>
-            <TableCell align="right">{j.availableUnassigned}</TableCell>
-          </TableRow>
-        ))}
-        {jobs.length >= 2 ? (
-          <TableRow>
-            <TableCell>Total</TableCell>
-            <TableCell align="right">{LazySeq.of(jobs).sumBy((j) => j.job.cycles)}</TableCell>
-            <TableCell align="right">{LazySeq.of(jobs).sumBy((j) => j.remainingToStart)}</TableCell>
-            <TableCell align="right">{LazySeq.of(jobs).sumBy((j) => j.assignedRaw)}</TableCell>
-            <TableCell align="right">
-              {LazySeq.of(jobs).sumBy((j) => Math.max(j.remainingToStart - j.assignedRaw, 0))}
-            </TableCell>
-            <TableCell align="right">{LazySeq.of(jobs).sumBy((j) => j.availableUnassigned)}</TableCell>
-          </TableRow>
-        ) : undefined}
-      </TableBody>
-    </Table>
-  );
-}
-
-export const BulkAddCastingWithoutSerialDialog = memo(function BulkAddCastingWithoutSerialDialog() {
-  const [queue, setQueue] = useAtom(bulkAddCastingToQueue);
-
-  const operator = useAtomValue(currentOperator);
-  const fmsInfo = useAtomValue(fmsInformation);
-  const printOnAdd = fmsInfo.usingLabelPrinterForSerials && fmsInfo.useClientPrinterForLabels;
-  const [addNewCasting] = useAddNewCastingToQueue();
-
-  const [selectedCasting, setSelectedCasting] = useState<string | null>(null);
-  const [enteredQty, setQty] = useState<number | null>(null);
-  const [enteredOperator, setEnteredOperator] = useState<string | null>(null);
-  const [adding, setAdding] = useState<boolean>(false);
-
-  const currentSt = useAtomValue(currentStatus);
-  const historicCastNames = useAtomValue(castingNames);
-
-  const castings = useMemo(
-    () =>
-      LazySeq.ofObject(currentSt.jobs)
-        .flatMap(([, j]) => j.procsAndPaths[0].paths)
-        .filter((p) => p.casting !== undefined && p.casting !== "")
-        .map((p) => ({ casting: p.casting as string, cnt: 1 }))
-        .concat(LazySeq.of(historicCastNames).map((c) => ({ casting: c, cnt: 0 })))
-        .buildOrderedMap<string, number>(
-          (c) => c.casting,
-          (old, c) => (old === undefined ? c.cnt : old + c.cnt),
-        )
-        .toAscLazySeq(),
-    [currentSt.jobs, historicCastNames],
-  );
-
-  function close() {
-    setQueue(null);
-    setSelectedCasting(null);
-    setEnteredOperator(null);
-    setAdding(false);
-    setQty(null);
-  }
-
-  function add() {
-    if (
-      queue !== null &&
-      selectedCasting !== null &&
-      enteredQty !== null &&
-      !isNaN(enteredQty) &&
-      enteredQty > 0
-    ) {
-      addNewCasting({
-        casting: selectedCasting,
-        quantity: enteredQty,
-        queue: queue,
-        workorder: null,
-        operator: fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator,
-      });
-    }
-    close();
-  }
-
-  return (
-    <>
-      <Dialog open={queue !== null} onClose={() => close()}>
-        <DialogTitle>Add Raw Material</DialogTitle>
-        <DialogContent>
-          <Stack direction="column" spacing={2} mt="0.5em">
-            <TextField
-              style={{ minWidth: "15em" }}
-              value={selectedCasting || ""}
-              onChange={(e) => setSelectedCasting(e.target.value)}
-              select
-              fullWidth
-              label="Raw Material"
-              SelectProps={{
-                renderValue:
-                  selectedCasting === null
-                    ? undefined
-                    : () => (
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          <div style={{ marginRight: "0.5em" }}>
-                            <PartIdenticon part={selectedCasting} size={25} />
-                          </div>
-                          <div>{selectedCasting}</div>
-                        </div>
-                      ),
-              }}
-            >
-              {castings.map(([casting, jobCnt], idx) => (
-                <MenuItem key={idx} value={casting}>
-                  <ListItemIcon>
-                    <PartIdenticon part={casting} />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={casting}
-                    primaryTypographyProps={{ variant: "h4" }}
-                    secondary={
-                      jobCnt === 0
-                        ? "Not used by any current jobs"
-                        : `Used by ${jobCnt} current job${jobCnt > 1 ? "s" : ""}`
-                    }
-                  />
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              fullWidth
-              type="number"
-              label="Quantity"
-              disabled={selectedCasting === null}
-              inputProps={{ min: "1" }}
-              value={enteredQty === null || isNaN(enteredQty) || enteredQty <= 0 ? "" : enteredQty}
-              onChange={(e) => setQty(parseInt(e.target.value))}
-            />
-            {fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? (
-              <TextField
-                fullWidth
-                label="Operator"
-                value={enteredOperator || ""}
-                onChange={(e) => setEnteredOperator(e.target.value)}
-              />
-            ) : undefined}
-            {selectedCasting !== null && queue !== null ? (
-              <JobsForCasting casting={selectedCasting} />
-            ) : undefined}
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          {printOnAdd ? (
-            <AddAndPrintOnClientButton
-              queue={queue}
-              selectedCasting={selectedCasting}
-              operator={fmsInfo.requireOperatorNamePromptWhenAddingMaterial ? enteredOperator : operator}
-              qty={enteredQty}
-              close={close}
-              disabled={
-                selectedCasting === null ||
-                enteredQty === null ||
-                isNaN(enteredQty) ||
-                enteredQty <= 0 ||
-                (!!fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
-                  (enteredOperator === null || enteredOperator === ""))
-              }
-            />
-          ) : (
-            <Button
-              color="primary"
-              disabled={
-                selectedCasting === null ||
-                enteredQty === null ||
-                isNaN(enteredQty) ||
-                (fmsInfo.requireOperatorNamePromptWhenAddingMaterial &&
-                  (enteredOperator === null || enteredOperator === ""))
-              }
-              onClick={add}
-            >
-              Add {enteredQty !== null && !isNaN(enteredQty) ? enteredQty.toString() + " " : ""}to {queue}
-            </Button>
-          )}
-          <Button color="primary" disabled={adding && printOnAdd} onClick={close}>
-            Cancel
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
-  );
-});

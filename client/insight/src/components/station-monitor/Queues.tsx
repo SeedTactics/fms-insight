@@ -63,14 +63,9 @@ import {
   MultiMaterial,
   InProcMaterial,
   DragOverlayInProcMaterial,
+  MaterialDialog,
 } from "./Material.js";
 import * as api from "../../network/api.js";
-import {
-  BulkAddCastingWithoutSerialDialog,
-  bulkAddCastingToQueue,
-  enterSerialForNewMaterialDialog,
-  AddBySerialDialog,
-} from "./QueuesAddMaterial.js";
 import { selectQueueData, extractJobRawMaterial, JobRawMaterialData } from "../../data/queue-material.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
@@ -80,9 +75,22 @@ import { addWorkorderComment, currentStatus, setJobComment } from "../../cell-st
 import { Collapse } from "@mui/material";
 import { inProcessQueues, rawMaterialQueues } from "../../cell-status/names.js";
 import { SortableRegion } from "./Whiteboard.js";
-import { MultiMaterialDialog, QueuedMaterialDialog } from "./QueuesMatDialog.js";
 import { useSetTitle } from "../routes.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import {
+  bulkAddCastingToQueue,
+  BulkAddCastingWithoutSerialDialog,
+  MultiMaterialDialog,
+} from "./BulkRawMaterial.js";
+import { AddBySerialDialog, enterSerialForNewMaterialDialog } from "../ManualScan.js";
+import {
+  inProcessMaterialInDialog,
+  materialDialogOpen,
+  usePrintLabel,
+} from "../../cell-status/material-details.js";
+import { PrintOnClientButton } from "./PrintedLabel.js";
+import { AddMaterialState, AddToQueueButton, AddToQueueMaterialDialogCt } from "./QueuesAddMaterial.js";
+import { QuarantineMatButton } from "./QuarantineButton.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -622,6 +630,90 @@ const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialBu
   } else {
     return null;
   }
+});
+
+function PrintLabelButton() {
+  const fmsInfo = useAtomValue(fmsInformation);
+  const curMat = useAtomValue(inProcessMaterialInDialog);
+  const [printLabel, printingLabel] = usePrintLabel();
+
+  if (curMat === null || !fmsInfo.usingLabelPrinterForSerials) return null;
+
+  if (fmsInfo.useClientPrinterForLabels) {
+    return <PrintOnClientButton mat={curMat} />;
+  } else {
+    return (
+      <Button
+        color="primary"
+        disabled={printingLabel}
+        onClick={() =>
+          printLabel({
+            materialId: curMat.materialID,
+            proc: curMat.process,
+          })
+        }
+      >
+        Print Label
+      </Button>
+    );
+  }
+}
+
+function usePossibleQueuesForAdd(queueNames: ReadonlyArray<string>): ReadonlyArray<string> {
+  const toShow = useAtomValue(materialDialogOpen);
+
+  if (toShow && toShow.type === "AddMatWithEnteredSerial") {
+    if (queueNames.includes(toShow.toQueue)) {
+      return [toShow.toQueue];
+    } else {
+      return [];
+    }
+  } else if (toShow && toShow.type === "Barcode" && toShow.toQueue) {
+    if (queueNames.includes(toShow.toQueue)) {
+      return [toShow.toQueue];
+    } else {
+      return [];
+    }
+  } else {
+    return queueNames;
+  }
+}
+
+const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
+  queueNames,
+}: {
+  queueNames: ReadonlyArray<string>;
+}) {
+  const [addMatSt, setAddMatSt] = useState<AddMaterialState>({
+    toQueue: null,
+    enteredOperator: null,
+    newMaterialTy: null,
+    invalidateSt: null,
+  });
+
+  const onClose = useCallback(() => {
+    setAddMatSt({ toQueue: null, enteredOperator: null, newMaterialTy: null, invalidateSt: null });
+  }, []);
+
+  queueNames = usePossibleQueuesForAdd(queueNames);
+
+  return (
+    <MaterialDialog
+      allowNote
+      onClose={onClose}
+      highlightProcess={addMatSt?.invalidateSt?.process ?? undefined}
+      extraDialogElements={
+        <AddToQueueMaterialDialogCt queueNames={queueNames} st={addMatSt} setState={setAddMatSt} />
+      }
+      buttons={
+        <>
+          <PrintLabelButton />
+          <QuarantineMatButton onClose={onClose} />
+          <AddToQueueButton st={addMatSt} setState={setAddMatSt} queueNames={queueNames} onClose={onClose} />
+        </>
+      }
+    />
+  );
 });
 
 interface QueueProps {
