@@ -268,13 +268,13 @@ namespace DebugMachineWatchApiServer
       );
     }
 
-    public ScannedMaterial ParseBarcode(string barcode, IEnumerable<string> queuesToAddTo, bool onLoadScreen)
+    public ScannedMaterial ParseBarcode(string barcode, IEnumerable<string> queuesToAddTo, Uri referer)
     {
       Serilog.Log.Information(
-        "Parsing barcode {barcode} {queues}, load = {onLoadScreen}",
+        "Parsing barcode {barcode} {queues}, referer = {referer}",
         barcode,
         queuesToAddTo,
-        onLoadScreen
+        referer
       );
       System.Threading.Thread.Sleep(TimeSpan.FromSeconds(5));
       var commaIdx = barcode.IndexOf(',');

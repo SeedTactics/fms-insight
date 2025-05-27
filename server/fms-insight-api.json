@@ -175,23 +175,14 @@
             "in": "query",
             "style": "form",
             "explode": true,
-            "required": true,
             "schema": {
               "type": "array",
+              "nullable": true,
               "items": {
                 "type": "string"
               }
             },
             "x-position": 2
-          },
-          {
-            "name": "onLoadScreen",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "nullable": true
-            },
-            "x-position": 3
           }
         ],
         "responses": {

@@ -92,8 +92,7 @@ export interface FmsAPI {
   printLabel(materialId: number, process: number): Promise<void>;
   parseBarcode(
     barcode: string | null,
-    queuesToAddTo: ReadonlyArray<string> | null,
-    onLoadScreen: boolean | null,
+    queuesToAddTo: ReadonlyArray<string> | null | undefined,
   ): Promise<Readonly<api.IScannedMaterial | null>>;
   enableVerboseLoggingForFiveMinutes(): Promise<void>;
 }

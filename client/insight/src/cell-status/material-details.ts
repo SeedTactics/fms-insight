@@ -97,8 +97,7 @@ export const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | n
         : route.route === RouteLocation.Station_Queues
           ? route.queues
           : null;
-    const onLoadScreen = route.route === RouteLocation.Station_LoadMonitor;
-    return await FmsServerBackend.parseBarcode(toShow.barcode, queues, onLoadScreen);
+    return await FmsServerBackend.parseBarcode(toShow.barcode, queues);
   } else {
     return null;
   }

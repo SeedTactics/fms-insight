@@ -153,18 +153,14 @@ export class FmsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    parseBarcode(barcode: string, queuesToAddTo: string[], onLoadScreen: boolean | null | undefined, signal?: AbortSignal): Promise<ScannedMaterial | null> {
+    parseBarcode(barcode: string, queuesToAddTo: string[] | null | undefined, signal?: AbortSignal): Promise<ScannedMaterial | null> {
         let url_ = this.baseUrl + "/api/v1/fms/parse-barcode?";
         if (barcode === undefined || barcode === null)
             throw new Error("The parameter 'barcode' must be defined and cannot be null.");
         else
             url_ += "barcode=" + encodeURIComponent("" + barcode) + "&";
-        if (queuesToAddTo === undefined || queuesToAddTo === null)
-            throw new Error("The parameter 'queuesToAddTo' must be defined and cannot be null.");
-        else
+        if (queuesToAddTo !== undefined && queuesToAddTo !== null)
             queuesToAddTo && queuesToAddTo.forEach(item => { url_ += "queuesToAddTo=" + encodeURIComponent("" + item) + "&"; });
-        if (onLoadScreen !== undefined && onLoadScreen !== null)
-            url_ += "onLoadScreen=" + encodeURIComponent("" + onLoadScreen) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_: RequestInit = {
