@@ -91,7 +91,7 @@ function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
     return false;
   }
 
-  if (existingMat === null && barcode?.potentialNewMaterial != null) {
+  if (existingMat === null && !barcode?.potentialNewMaterial) {
     return false;
   }
 

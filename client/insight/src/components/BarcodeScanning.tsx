@@ -218,6 +218,10 @@ export const AddByBarcodeDialog = memo(function AddByBarcodeDialog() {
           />
         </Box>
       </DialogContent>
+      <DialogActions>
+        {manual !== "" ? <Button onClick={onManual}>Submit</Button> : undefined}
+        <Button onClick={() => setQueue(null)}>Cancel</Button>
+      </DialogActions>
     </Dialog>
   );
 });

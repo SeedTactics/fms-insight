@@ -76,9 +76,10 @@ export const ManualSerialEntryButton = memo(function ManualScan() {
               sx={{ mt: "5px" }}
               label={serial === null || serial === "" ? "Serial" : "Serial (press enter)"}
               value={serial ?? ""}
+              fullWidth
               autoFocus
               onChange={(e) => setSerial(e.target.value)}
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === "Enter" && serial && serial !== "") {
                   e.preventDefault();
                   open();
@@ -128,6 +129,7 @@ export const AddBySerialDialog = memo(function AddBySerialDialog() {
           label="Serial"
           style={{ marginTop: "0.5em" }}
           autoFocus
+          fullWidth
           value={serial || ""}
           onChange={(e) => setSerial(e.target.value)}
           onKeyDown={(e) => {

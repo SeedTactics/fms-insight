@@ -300,7 +300,7 @@ namespace DebugMachineWatchApiServer
                 string,
                 ImmutableList<PossibleJobAndProcess>
               >.Empty.Add(
-                "queue1",
+                "Queue1",
                 [
                   new PossibleJobAndProcess()
                   {

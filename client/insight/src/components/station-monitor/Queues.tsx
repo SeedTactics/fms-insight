@@ -91,7 +91,7 @@ import {
 import { PrintOnClientButton } from "./PrintedLabel.js";
 import { AddMaterialState, AddToQueueButton, AddToQueueMaterialDialogCt } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
-import { scanBarcodeToAddToQueueDialog } from "../BarcodeScanning.js";
+import { AddByBarcodeDialog, scanBarcodeToAddToQueueDialog } from "../BarcodeScanning.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -827,6 +827,7 @@ export const Queues = (props: QueueProps) => {
       ))}
       <QueuedMaterialDialog queueNames={props.queues} />
       <AddBySerialDialog />
+      <AddByBarcodeDialog />
       <BulkAddCastingWithoutSerialDialog />
       <EditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />
