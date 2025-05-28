@@ -44,7 +44,7 @@ import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
 import { atom, useAtom, useSetAtom } from "jotai";
 
-export const ManualScanButton = memo(function ManualScan() {
+export const ManualSerialEntryButton = memo(function ManualScan() {
   const [serial, setSerial] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const setMatToShowDialog = useSetAtom(materialDialogOpen);
@@ -122,7 +122,7 @@ export const AddBySerialDialog = memo(function AddBySerialDialog() {
   }
   return (
     <Dialog open={queue !== null} onClose={close} maxWidth="md">
-      <DialogTitle>Lookup Material</DialogTitle>
+      <DialogTitle>Lookup Material To Add To {queue}</DialogTitle>
       <DialogContent>
         <TextField
           label="Serial"

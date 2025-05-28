@@ -365,11 +365,10 @@ function PromptForMaterialType({
 
   if (existingMat) return null;
   if (serial === null) return null;
+  if (toQueue === null) return null;
 
-  if (toQueue === null) {
-    return <div>No queue is selected</div>;
-  } else if (materialTypes.castings.length === 0 && materialTypes.jobs.length === 0) {
-    return <div>No scheduled material uses this queue</div>;
+  if (materialTypes.castings.length === 0 && materialTypes.jobs.length === 0) {
+    return <div>No material is currently scheduled for {toQueue}</div>;
   }
 
   if (materialTypes.jobs.length === 0) {
@@ -414,10 +413,6 @@ export function PromptForQueue({
   setSelectedQueue: (queue: string) => void;
   queueNames: ReadonlyArray<string>;
 }) {
-  if (queueNames.length <= 1) {
-    return null;
-  }
-
   return (
     <div>
       <p>Select a queue</p>

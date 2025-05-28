@@ -82,7 +82,7 @@ import {
   BulkAddCastingWithoutSerialDialog,
   MultiMaterialDialog,
 } from "./BulkRawMaterial.js";
-import { AddBySerialDialog, enterSerialForNewMaterialDialog } from "../ManualScan.js";
+import { AddBySerialDialog, enterSerialForNewMaterialDialog } from "../ManualSerialEntry.js";
 import {
   inProcessMaterialInDialog,
   materialDialogOpen,
@@ -91,6 +91,7 @@ import {
 import { PrintOnClientButton } from "./PrintedLabel.js";
 import { AddMaterialState, AddToQueueButton, AddToQueueMaterialDialogCt } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
+import { scanBarcodeToAddToQueueDialog } from "../BarcodeScanning.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -584,6 +585,7 @@ const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialBu
   const fmsInfo = useAtomValue(fmsInformation);
   const setBulkAddCastings = useSetAtom(bulkAddCastingToQueue);
   const setAddBySerial = useSetAtom(enterSerialForNewMaterialDialog);
+  const setAddByBarcode = useSetAtom(scanBarcodeToAddToQueueDialog);
 
   if (!fmsInfo.addToQueueButton || fmsInfo.addToQueueButton === api.AddToQueueButton.DoNotShow) {
     return null;
@@ -606,7 +608,7 @@ const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialBu
         return;
 
       case api.AddToQueueButton.ManualBarcodeScan:
-        // TODO;
+        setAddByBarcode(props.label);
         return;
     }
   }
