@@ -84,8 +84,8 @@ function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
     queueNames.includes(inProcMat.location.currentQueue);
   if (curInQueueOnScreen) return false;
 
-  const curOnPallet = inProcMat !== null && inProcMat.location.type === api.LocType.OnPallet;
-  if (curOnPallet) return false;
+  if (inProcMat?.location.type === api.LocType.OnPallet) return false;
+  if (inProcMat?.action.type === api.ActionType.Loading) return false;
 
   if (existingMat === null && !barcode?.potentialNewMaterial) {
     return false;
