@@ -87,10 +87,6 @@ function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
   const curOnPallet = inProcMat !== null && inProcMat.location.type === api.LocType.OnPallet;
   if (curOnPallet) return false;
 
-  if (existingMat !== null) {
-    return false;
-  }
-
   if (existingMat === null && !barcode?.potentialNewMaterial) {
     return false;
   }
@@ -484,7 +480,7 @@ export function AddToQueueMaterialDialogCt({
       ) : undefined}
       <PromptForMaterialType
         newMaterialTy={st.newMaterialTy}
-        toQueue={st.toQueue}
+        toQueue={queueNames.length > 1 ? st.toQueue : (queueNames[0] ?? null)}
         setNewMaterialTy={(ty) => setState({ ...st, newMaterialTy: ty })}
       />
       <PromptForOperator
