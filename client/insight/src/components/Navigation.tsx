@@ -57,7 +57,7 @@ import { currentStatus } from "../cell-status/current-status";
 import { SeedtacticLogo } from "../seedtactics-logo";
 import { OperatorSelect } from "./ChooseOperator";
 import { LoadingIcon } from "./LoadingIcon";
-import { ManualScanButton } from "./ManualScan";
+import { ManualSerialEntryButton } from "./ManualSerialEntry";
 import { CustomStationMonitorDialog } from "./station-monitor/CustomStationMonitorDialog";
 import { RouteLocation, RouteState, currentRoute, helpUrl } from "./routes";
 import { fmsInformation, logout } from "../network/server-settings";
@@ -161,7 +161,7 @@ function ToolButtons({
       <LoadingIcon />
       <CustomStationMonitorDialog />
       {showSearch ? <QRScanButton /> : undefined}
-      {showSearch ? <ManualScanButton /> : undefined}
+      {showSearch ? <ManualSerialEntryButton /> : undefined}
       <HelpButton />
       {showLogout ? <LogoutButton /> : undefined}
       {showAlarms ? <Alarms /> : undefined}

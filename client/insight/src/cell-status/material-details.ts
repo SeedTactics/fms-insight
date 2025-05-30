@@ -50,6 +50,7 @@ import { currentStatus } from "./current-status.js";
 import { atom, useSetAtom } from "jotai";
 import { loadable } from "jotai/utils";
 import { isLogEntryInvalidated } from "../components/LogEntry.js";
+import { currentRoute, RouteLocation } from "../components/routes.js";
 
 export type MaterialToShowInfo = {
   readonly materialID: number;
@@ -63,7 +64,7 @@ export type MaterialToShow =
   | { readonly type: "MatSummary"; readonly summary: MaterialToShowInfo }
   | { readonly type: "MatDetails"; readonly details: Readonly<IMaterialDetails> }
   | { readonly type: "LogMat"; readonly logMat: Readonly<ILogMaterial> }
-  | { readonly type: "Barcode"; readonly barcode: string }
+  | { readonly type: "Barcode"; readonly barcode: string; readonly toQueue: string | null }
   | { readonly type: "ManuallyEnteredSerial"; readonly serial: string }
   | { readonly type: "AddMatWithEnteredSerial"; readonly serial: string; readonly toQueue: string };
 
@@ -88,7 +89,15 @@ export const materialDialogOpen = atom(
 export const barcodeMaterialDetail = atom<Promise<Readonly<IScannedMaterial> | null>>(async (get) => {
   const toShow = get(matToShow);
   if (toShow && toShow.type === "Barcode") {
-    return await FmsServerBackend.parseBarcode(toShow.barcode);
+    const route = get(currentRoute);
+    const queues = toShow.toQueue
+      ? [toShow.toQueue]
+      : route.route === RouteLocation.Station_LoadMonitor
+        ? route.queues
+        : route.route === RouteLocation.Station_Queues
+          ? route.queues
+          : null;
+    return await FmsServerBackend.parseBarcode(toShow.barcode, queues);
   } else {
     return null;
   }
@@ -132,7 +141,7 @@ export const inProcessMaterialInDialog = atom<Promise<IInProcessMaterial | null>
   if (toShow === null) return null;
   if (toShow.type === "InProcMat") return toShow.inproc;
   const matId = (await get(materialInDialogInfo))?.materialID ?? null;
-  return matId !== null && matId >= 0 ? status.material.find((m) => m.materialID === matId) ?? null : null;
+  return matId !== null && matId >= 0 ? (status.material.find((m) => m.materialID === matId) ?? null) : null;
 });
 
 export const serialInMaterialDialog = atom<Promise<string | null>>(async (get) => {
@@ -149,7 +158,7 @@ export const serialInMaterialDialog = atom<Promise<string | null>>(async (get) =
       return toShow.logMat.serial ?? null;
     case "Barcode": {
       const barcodeMat = await get(barcodeMaterialDetail);
-      return barcodeMat?.existingMaterial?.serial ?? barcodeMat?.casting?.serial ?? null;
+      return barcodeMat?.existingMaterial?.serial ?? barcodeMat?.potentialNewMaterial?.serial ?? null;
     }
     case "ManuallyEnteredSerial":
     case "AddMatWithEnteredSerial":
@@ -171,7 +180,7 @@ export const workorderInMaterialDialog = atom<Promise<string | null>>(async (get
       return toShow.logMat.workorder ?? null;
     case "Barcode": {
       const barcodeMat = await get(barcodeMaterialDetail);
-      return barcodeMat?.existingMaterial?.workorder ?? barcodeMat?.casting?.workorder ?? null;
+      return barcodeMat?.existingMaterial?.workorder ?? barcodeMat?.potentialNewMaterial?.workorder ?? null;
     }
     case "ManuallyEnteredSerial":
     case "AddMatWithEnteredSerial":

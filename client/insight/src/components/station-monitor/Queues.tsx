@@ -63,14 +63,9 @@ import {
   MultiMaterial,
   InProcMaterial,
   DragOverlayInProcMaterial,
+  MaterialDialog,
 } from "./Material.js";
 import * as api from "../../network/api.js";
-import {
-  BulkAddCastingWithoutSerialDialog,
-  bulkAddCastingToQueue,
-  enterSerialForNewMaterialDialog,
-  AddBySerialDialog,
-} from "./QueuesAddMaterial.js";
 import { selectQueueData, extractJobRawMaterial, JobRawMaterialData } from "../../data/queue-material.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentOperator } from "../../data/operators.js";
@@ -78,11 +73,25 @@ import { JobDetails } from "./JobDetails.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { addWorkorderComment, currentStatus, setJobComment } from "../../cell-status/current-status.js";
 import { Collapse } from "@mui/material";
-import { rawMaterialQueues } from "../../cell-status/names.js";
+import { inProcessQueues, rawMaterialQueues } from "../../cell-status/names.js";
 import { SortableRegion } from "./Whiteboard.js";
-import { MultiMaterialDialog, QueuedMaterialDialog } from "./QueuesMatDialog.js";
 import { useSetTitle } from "../routes.js";
 import { atom, useAtom, useAtomValue, useSetAtom } from "jotai";
+import {
+  bulkAddCastingToQueue,
+  BulkAddCastingWithoutSerialDialog,
+  MultiMaterialDialog,
+} from "./BulkRawMaterial.js";
+import { AddBySerialDialog, enterSerialForNewMaterialDialog } from "../ManualSerialEntry.js";
+import {
+  inProcessMaterialInDialog,
+  materialDialogOpen,
+  usePrintLabel,
+} from "../../cell-status/material-details.js";
+import { PrintOnClientButton } from "./PrintedLabel.js";
+import { AddMaterialState, AddToQueueButton, AddToQueueMaterialDialogCt } from "./QueuesAddMaterial.js";
+import { QuarantineMatButton } from "./QuarantineButton.js";
+import { AddByBarcodeDialog, scanBarcodeToAddToQueueDialog } from "../BarcodeScanning.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -569,57 +578,53 @@ function WorkorderCommentDialog() {
 interface AddMaterialButtonsProps {
   readonly label: string;
   readonly rawMatQueue: boolean;
+  readonly inProcQueue: boolean;
 }
 
 const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialButtonsProps) {
-  const currentJobs = useAtomValue(currentStatus).jobs;
   const fmsInfo = useAtomValue(fmsInformation);
   const setBulkAddCastings = useSetAtom(bulkAddCastingToQueue);
   const setAddBySerial = useSetAtom(enterSerialForNewMaterialDialog);
+  const setAddByBarcode = useSetAtom(scanBarcodeToAddToQueueDialog);
 
-  const jobExistsWithInputQueue = useMemo(() => {
-    return LazySeq.ofObject(currentJobs)
-      .flatMap(([, j]) => j.procsAndPaths)
-      .flatMap((p) => p.paths)
-      .some((p) => p.inputQueue === props.label);
-  }, [currentJobs, props.label]);
+  if (!fmsInfo.addToQueueButton || fmsInfo.addToQueueButton === api.AddToQueueButton.DoNotShow) {
+    return null;
+  }
+
+  function click() {
+    switch (fmsInfo.addToQueueButton) {
+      case api.AddToQueueButton.DoNotShow:
+        return;
+      case api.AddToQueueButton.AddBulkUnassigned:
+        if (props.rawMatQueue) {
+          setBulkAddCastings(props.label);
+        } else {
+          setAddBySerial(props.label);
+        }
+        break;
+
+      case api.AddToQueueButton.LookupExistingSerial:
+        setAddBySerial(props.label);
+        return;
+
+      case api.AddToQueueButton.ManualBarcodeScan:
+        setAddByBarcode(props.label);
+        return;
+    }
+  }
 
   if (props.rawMatQueue) {
-    if (fmsInfo.addRawMaterial === api.AddRawMaterialType.RequireBarcodeScan) {
-      return null;
-    }
     return (
       <Tooltip title="Add Raw Material">
-        <Fab
-          color="secondary"
-          onClick={() => {
-            switch (fmsInfo.addRawMaterial) {
-              case api.AddRawMaterialType.AddAsUnassigned:
-                setBulkAddCastings(props.label);
-                break;
-              case api.AddRawMaterialType.AddAsUnassignedWithSerial:
-              case api.AddRawMaterialType.AddAndSpecifyJob:
-              case api.AddRawMaterialType.RequireExistingMaterial:
-                setAddBySerial(props.label);
-                break;
-            }
-          }}
-          size="large"
-          style={{ marginBottom: "-30px", zIndex: 1 }}
-        >
+        <Fab color="secondary" onClick={click} size="large" style={{ marginBottom: "-30px", zIndex: 1 }}>
           <AddIcon />
         </Fab>
       </Tooltip>
     );
-  } else if (jobExistsWithInputQueue) {
+  } else if (props.inProcQueue) {
     return (
       <Tooltip title="Add Material">
-        <Fab
-          color="secondary"
-          onClick={() => setAddBySerial(props.label)}
-          size="medium"
-          style={{ marginBottom: "-30px", zIndex: 1 }}
-        >
+        <Fab color="secondary" onClick={click} size="medium" style={{ marginBottom: "-30px", zIndex: 1 }}>
           <AssignIcon fontSize="inherit" />
         </Fab>
       </Tooltip>
@@ -627,6 +632,90 @@ const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialBu
   } else {
     return null;
   }
+});
+
+function PrintLabelButton() {
+  const fmsInfo = useAtomValue(fmsInformation);
+  const curMat = useAtomValue(inProcessMaterialInDialog);
+  const [printLabel, printingLabel] = usePrintLabel();
+
+  if (curMat === null || !fmsInfo.usingLabelPrinterForSerials) return null;
+
+  if (fmsInfo.useClientPrinterForLabels) {
+    return <PrintOnClientButton mat={curMat} />;
+  } else {
+    return (
+      <Button
+        color="primary"
+        disabled={printingLabel}
+        onClick={() =>
+          printLabel({
+            materialId: curMat.materialID,
+            proc: curMat.process,
+          })
+        }
+      >
+        Print Label
+      </Button>
+    );
+  }
+}
+
+function usePossibleQueuesForAdd(queueNames: ReadonlyArray<string>): ReadonlyArray<string> {
+  const toShow = useAtomValue(materialDialogOpen);
+
+  if (toShow && toShow.type === "AddMatWithEnteredSerial") {
+    if (queueNames.includes(toShow.toQueue)) {
+      return [toShow.toQueue];
+    } else {
+      return [];
+    }
+  } else if (toShow && toShow.type === "Barcode" && toShow.toQueue) {
+    if (queueNames.includes(toShow.toQueue)) {
+      return [toShow.toQueue];
+    } else {
+      return [];
+    }
+  } else {
+    return queueNames;
+  }
+}
+
+const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
+  queueNames,
+}: {
+  queueNames: ReadonlyArray<string>;
+}) {
+  const [addMatSt, setAddMatSt] = useState<AddMaterialState>({
+    toQueue: null,
+    enteredOperator: null,
+    newMaterialTy: null,
+    invalidateSt: null,
+  });
+
+  const onClose = useCallback(() => {
+    setAddMatSt({ toQueue: null, enteredOperator: null, newMaterialTy: null, invalidateSt: null });
+  }, []);
+
+  queueNames = usePossibleQueuesForAdd(queueNames);
+
+  return (
+    <MaterialDialog
+      allowNote
+      onClose={onClose}
+      highlightProcess={addMatSt?.invalidateSt?.process ?? undefined}
+      extraDialogElements={
+        <AddToQueueMaterialDialogCt queueNames={queueNames} st={addMatSt} setState={setAddMatSt} />
+      }
+      buttons={
+        <>
+          <PrintLabelButton />
+          <QuarantineMatButton onClose={onClose} />
+          <AddToQueueButton st={addMatSt} setState={setAddMatSt} queueNames={queueNames} onClose={onClose} />
+        </>
+      }
+    />
+  );
 });
 
 interface QueueProps {
@@ -637,9 +726,10 @@ export const Queues = (props: QueueProps) => {
   const operator = useAtomValue(currentOperator);
   const currentSt = useAtomValue(currentStatus);
   const rawMatQueues = useAtomValue(rawMaterialQueues);
+  const inProcQueues = useAtomValue(inProcessQueues);
   const data = useMemo(
-    () => selectQueueData(props.queues, currentSt, rawMatQueues),
-    [currentSt, props.queues, rawMatQueues],
+    () => selectQueueData(props.queues, currentSt, rawMatQueues, inProcQueues),
+    [currentSt, props.queues, rawMatQueues, inProcQueues],
   );
   const hasJobs = !LazySeq.ofObject(currentSt.jobs).isEmpty();
 
@@ -680,7 +770,11 @@ export const Queues = (props: QueueProps) => {
                   {region.label}
                 </Typography>
                 {region.free ? undefined : (
-                  <AddMaterialButtons label={region.label} rawMatQueue={region.rawMaterialQueue} />
+                  <AddMaterialButtons
+                    label={region.label}
+                    rawMatQueue={region.rawMaterialQueue}
+                    inProcQueue={region.inProcQueue}
+                  />
                 )}
               </Box>
               <Box justifyContent="flex-start" display="flex" flexWrap="wrap">
@@ -733,6 +827,7 @@ export const Queues = (props: QueueProps) => {
       ))}
       <QueuedMaterialDialog queueNames={props.queues} />
       <AddBySerialDialog />
+      <AddByBarcodeDialog />
       <BulkAddCastingWithoutSerialDialog />
       <EditNoteDialog job={changeNoteForJob} closeDialog={closeChangeNoteDialog} />
       <EditJobPlanQtyDialog job={editQtyForJob} closeDialog={closeEditJobQtyDialog} />

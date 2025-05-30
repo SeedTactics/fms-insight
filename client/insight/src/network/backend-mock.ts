@@ -210,7 +210,7 @@ export function registerMockBackend(
         };
       } else {
         return {
-          casting: new api.ScannedCasting({
+          potentialNewMaterial: new api.ScannedPotentialNewMaterial({
             serial: barcode,
           }),
         };

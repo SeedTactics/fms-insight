@@ -42,9 +42,9 @@ import { TextField } from "@mui/material";
 import { materialDialogOpen } from "../cell-status/material-details.js";
 import { Tooltip } from "@mui/material";
 import { IconButton } from "@mui/material";
-import { useSetAtom } from "jotai";
+import { atom, useAtom, useSetAtom } from "jotai";
 
-export const ManualScanButton = memo(function ManualScan() {
+export const ManualSerialEntryButton = memo(function ManualScan() {
   const [serial, setSerial] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const setMatToShowDialog = useSetAtom(materialDialogOpen);
@@ -76,9 +76,10 @@ export const ManualScanButton = memo(function ManualScan() {
               sx={{ mt: "5px" }}
               label={serial === null || serial === "" ? "Serial" : "Serial (press enter)"}
               value={serial ?? ""}
+              fullWidth
               autoFocus
               onChange={(e) => setSerial(e.target.value)}
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === "Enter" && serial && serial !== "") {
                   e.preventDefault();
                   open();
@@ -97,5 +98,56 @@ export const ManualScanButton = memo(function ManualScan() {
         </DialogActions>
       </Dialog>
     </>
+  );
+});
+
+// A version of the above dialog that in addition passes along which queue the material
+// is being added to, setting AddMatWithEnteredSerial instead of ManuallyEnteredSerial
+export const enterSerialForNewMaterialDialog = atom<string | null>(null);
+
+export const AddBySerialDialog = memo(function AddBySerialDialog() {
+  const [queue, setQueue] = useAtom(enterSerialForNewMaterialDialog);
+  const setMatToDisplay = useSetAtom(materialDialogOpen);
+  const [serial, setSerial] = useState<string | undefined>(undefined);
+
+  function lookup() {
+    if (serial && serial !== "" && queue !== null) {
+      setMatToDisplay({ type: "AddMatWithEnteredSerial", serial, toQueue: queue });
+      setQueue(null);
+      setSerial(undefined);
+    }
+  }
+  function close() {
+    setQueue(null);
+    setSerial(undefined);
+  }
+  return (
+    <Dialog open={queue !== null} onClose={close} maxWidth="md">
+      <DialogTitle>Lookup Material To Add To {queue}</DialogTitle>
+      <DialogContent>
+        <TextField
+          label="Serial"
+          style={{ marginTop: "0.5em" }}
+          autoFocus
+          fullWidth
+          value={serial || ""}
+          onChange={(e) => setSerial(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && serial && serial !== "") {
+              e.preventDefault();
+              lookup();
+            }
+          }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={lookup} color="secondary">
+          Lookup Serial
+        </Button>
+        <Button onClick={close} color="primary">
+          Cancel
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 });

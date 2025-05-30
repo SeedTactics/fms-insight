@@ -159,19 +159,12 @@ public record SerialSettings
   }
 }
 
-public enum AddRawMaterialType
+public enum AddToQueueButton
 {
-  AddAsUnassigned,
-  AddAsUnassignedWithSerial,
-  RequireExistingMaterial,
-  RequireBarcodeScan,
-  AddAndSpecifyJob,
-}
-
-public enum AddInProcessMaterialType
-{
-  RequireExistingMaterial,
-  AddAndSpecifyJob,
+  DoNotShow,
+  AddBulkUnassigned,
+  LookupExistingSerial,
+  ManualBarcodeScan,
 }
 
 public record FMSSettings
@@ -190,9 +183,7 @@ public record FMSSettings
   public bool UsingLabelPrinterForSerials { get; init; }
 
   public string? CustomStationMonitorDialogUrl { get; init; } = null;
-  public AddRawMaterialType AddRawMaterial { get; init; } = AddRawMaterialType.RequireExistingMaterial;
-  public AddInProcessMaterialType AddInProcessMaterial { get; init; } =
-    AddInProcessMaterialType.RequireExistingMaterial;
+  public AddToQueueButton AddToQueueButton { get; init; } = AddToQueueButton.DoNotShow;
 
   public string? QuarantineQueue { get; init; } = null;
 
