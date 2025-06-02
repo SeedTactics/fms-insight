@@ -44,6 +44,9 @@ using WireMock.Server;
 
 namespace BlackMaple.FMSInsight.Mazak.Tests;
 
+// not in parallel because the timeouts in LongPollTest would have to be increased
+// to run successfully on CI.  Thus NotInParallel is actually faster overall.
+[NotInParallel]
 public sealed class ProxyDBspec : IDisposable
 {
   private readonly WireMockServer _server;

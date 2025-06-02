@@ -32,7 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace BlackMaple.MachineFramework
@@ -153,22 +152,35 @@ namespace BlackMaple.MachineFramework
     public ImmutableDictionary<int, int>? Paths { get; init; } // key is process, value is path
   }
 
-  public record ScannedCasting
+  public record PossibleJobAndProcess
   {
-    public ImmutableList<string>? PossibleCastings { get; init; }
+    public required string JobUnique { get; init; }
 
-    public ImmutableList<string>? PossibleJobs { get; init; }
+    public required int LastCompletedProcess { get; init; }
+  }
+
+  public record ScannedPotentialNewMaterial
+  {
+    // If selected by the user, call IJobAndQueueControl.AddUnallocatedCastingToQueue with the casting
+    // Key is queue, value is the casting name
+    public ImmutableDictionary<string, ImmutableSortedSet<string>>? PossibleCastingsByQueue { get; init; }
+
+    // If selected by the user, call IJobAndQueueControl.AddUnprocessedMaterialToQueue
+    // Key is the queue, value is the job and last completed process
+    public ImmutableDictionary<
+      string,
+      ImmutableList<PossibleJobAndProcess>
+    >? PossibleJobsByQueue { get; init; }
 
     public string? Workorder { get; init; }
 
     public string? Serial { get; init; }
   }
 
-  // This is a Sum Type, only one of the fields will be non-null
   public record ScannedMaterial
   {
     public MaterialDetails? ExistingMaterial { get; init; }
 
-    public ScannedCasting? Casting { get; init; }
+    public ScannedPotentialNewMaterial? PotentialNewMaterial { get; init; }
   }
 }

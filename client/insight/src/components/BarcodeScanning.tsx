@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { memo, useEffect, useState } from "react";
 import { materialDialogOpen } from "../cell-status/material-details.js";
-import { useSetAtom } from "jotai";
+import { atom, useAtom, useSetAtom } from "jotai";
 import {
   Box,
   Button,
@@ -74,7 +74,7 @@ export const BarcodeListener = memo(function BarcodeListener(): null {
       }
       scanActive = false;
 
-      setBarcode({ type: "Barcode", barcode: scannedTxt });
+      setBarcode({ type: "Barcode", barcode: scannedTxt, toQueue: null });
     }
 
     function onKeyDown(k: KeyboardEvent) {
@@ -114,11 +114,15 @@ export const QRScanButton = memo(function QRScanButton() {
   const setBarcode = useSetAtom(materialDialogOpen);
   const [manual, setManual] = useState("");
 
-  if (window.location.protocol !== "https:" && window.location.hostname !== "localhost") return null;
+  if (
+    window.location.protocol !== "https:" &&
+    (import.meta.env.PROD || window.location.hostname !== "localhost")
+  )
+    return null;
 
   function onScan(results: ReadonlyArray<IDetectedBarcode>): void {
     if (results.length > 0 && results[0].rawValue !== null && results[0].rawValue !== "") {
-      setBarcode({ type: "Barcode", barcode: results[0].rawValue });
+      setBarcode({ type: "Barcode", barcode: results[0].rawValue, toQueue: null });
       setDialogOpen(false);
       setManual("");
     }
@@ -126,7 +130,7 @@ export const QRScanButton = memo(function QRScanButton() {
 
   function onManual(): void {
     if (manual !== "") {
-      setBarcode({ type: "Barcode", barcode: manual });
+      setBarcode({ type: "Barcode", barcode: manual, toQueue: null });
     }
     setDialogOpen(false);
     setManual("");
@@ -166,5 +170,63 @@ export const QRScanButton = memo(function QRScanButton() {
         </IconButton>
       </Tooltip>
     </>
+  );
+});
+
+// A version of the above dialog that in addition passes along which queue the material
+// is being added to.
+export const scanBarcodeToAddToQueueDialog = atom<string | null>(null);
+
+export const AddByBarcodeDialog = memo(function AddByBarcodeDialog() {
+  const [queue, setQueue] = useAtom(scanBarcodeToAddToQueueDialog);
+  const [manual, setManual] = useState<string>("");
+  const setBarcode = useSetAtom(materialDialogOpen);
+
+  function onScan(results: ReadonlyArray<IDetectedBarcode>): void {
+    if (queue !== null && results.length > 0 && results[0].rawValue !== null && results[0].rawValue !== "") {
+      setBarcode({ type: "Barcode", barcode: results[0].rawValue, toQueue: queue });
+      setQueue(null);
+      setManual("");
+    }
+  }
+
+  function onManual(): void {
+    if (manual !== "" && queue !== null) {
+      setBarcode({ type: "Barcode", barcode: manual, toQueue: queue });
+    }
+    setQueue(null);
+    setManual("");
+  }
+
+  return (
+    <Dialog open={queue !== null} onClose={() => setQueue(null)} maxWidth="md">
+      <DialogTitle>Scan a Barcode To Add To {queue}</DialogTitle>
+      <DialogContent>
+        {window.location.protocol === "https:" ||
+        (import.meta.env.DEV && window.location.hostname === "localhost") ? (
+          <Box width="15em" height="15em">
+            {queue !== null ? <Scanner onScan={onScan} /> : undefined}
+          </Box>
+        ) : undefined}
+        <Box marginTop="1em">
+          <TextField
+            label="Manual Entry"
+            value={manual}
+            variant="outlined"
+            fullWidth
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onManual();
+              }
+            }}
+            onChange={(e) => setManual(e.target.value)}
+          />
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        {manual !== "" ? <Button onClick={onManual}>Submit</Button> : undefined}
+        <Button onClick={() => setQueue(null)}>Cancel</Button>
+      </DialogActions>
+    </Dialog>
   );
 });

@@ -32,13 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 import * as api from "../network/api.js";
-import { HashMap, LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
+import { HashMap, LazySeq } from "@seedtactics/immutable-collections";
 import { LogBackend } from "../network/backend.js";
 import { differenceInSeconds } from "date-fns";
 import { useAtomValue } from "jotai";
 import { currentStatus } from "../cell-status/current-status.js";
-import { fmsInformation } from "../network/server-settings.js";
-import { castingNames, rawMaterialQueues } from "../cell-status/names.js";
+import { rawMaterialQueues } from "../cell-status/names.js";
 import { barcodeMaterialDetail } from "../cell-status/material-details.js";
 import { useMemo } from "react";
 import { last30Jobs } from "../cell-status/scheduled-jobs.js";
@@ -47,7 +46,6 @@ export type SelectableJob = {
   readonly job: Readonly<api.IJob>;
   readonly machinedProcs: ReadonlyArray<{
     readonly lastProc: number;
-    readonly disabledMsg: string | null;
     readonly details?: string;
   }>;
 };
@@ -72,56 +70,6 @@ function describePath(path: Readonly<api.IProcPathInfo>): string {
   }; ${path.stops.map((s) => s.stationGroup + "#" + (s.stationNums ?? []).join(",")).join("->")}`;
 }
 
-function extractJobGroups(
-  job: Readonly<api.IActiveJob>,
-  fmsInfo: Readonly<api.IFMSInfo>,
-  toQueue: string,
-): SelectableJob | null {
-  const machinedProcs: {
-    readonly lastProc: number;
-    readonly disabledMsg: string | null;
-    readonly details?: string;
-  }[] = [];
-
-  const matchesRawMatQueue = LazySeq.of(job.procsAndPaths?.[0].paths ?? []).some(
-    (p) => p.inputQueue === toQueue,
-  );
-
-  if (matchesRawMatQueue && fmsInfo.addRawMaterial === api.AddRawMaterialType.AddAndSpecifyJob) {
-    // Raw material
-    machinedProcs.push({
-      lastProc: 0,
-      details: job.procsAndPaths[0].paths.map(describePath).join(" | "),
-      disabledMsg: null,
-    });
-  }
-
-  if (fmsInfo.addInProcessMaterial === api.AddInProcessMaterialType.AddAndSpecifyJob) {
-    // paths besides the final path
-    for (let procIdx = 0; procIdx < job.procsAndPaths.length - 1; procIdx++) {
-      const matchingQueue = LazySeq.of(job.procsAndPaths[procIdx + 1].paths).some(
-        (p) => p.inputQueue === toQueue,
-      );
-      machinedProcs.push({
-        lastProc: procIdx + 1,
-        details: job.procsAndPaths[procIdx].paths.map(describePath).join(" | "),
-        disabledMsg: !matchingQueue ? "Material for this process is not loaded to " + toQueue : null,
-      });
-    }
-  }
-
-  const anyGoodPath = LazySeq.of(machinedProcs).some((p) => p.disabledMsg === null);
-
-  if (anyGoodPath) {
-    return {
-      job,
-      machinedProcs,
-    };
-  } else {
-    return null;
-  }
-}
-
 function workorderDetailForCasting(
   currentSt: Readonly<api.ICurrentStatus>,
   workorderId: string,
@@ -142,91 +90,59 @@ function workorderDetailForCasting(
 
 function possibleCastings(
   currentSt: Readonly<api.ICurrentStatus>,
-  historicCastingNames: ReadonlySet<string>,
   barcode: Readonly<api.IScannedMaterial> | null,
-  fmsInfo: Readonly<api.IFMSInfo>,
+  toQueue: string,
 ): ReadonlyArray<SelectableCasting> {
-  if (barcode?.casting?.possibleCastings && barcode.casting.possibleCastings.length > 0) {
-    const workorder = barcode.casting.workorder;
-    return LazySeq.of(barcode.casting.possibleCastings)
-      .map((c) => ({
-        casting: c,
-        message: workorder ? workorderDetailForCasting(currentSt, workorder, c) : null,
-      }))
-      .toSortedArray((c) => c.casting);
-  }
-
-  switch (fmsInfo.addRawMaterial) {
-    case api.AddRawMaterialType.AddAndSpecifyJob:
-    case api.AddRawMaterialType.RequireBarcodeScan:
-    case api.AddRawMaterialType.RequireExistingMaterial:
-    case undefined:
-      return [];
-
-    case api.AddRawMaterialType.AddAsUnassigned:
-    case api.AddRawMaterialType.AddAsUnassignedWithSerial:
-      return LazySeq.ofObject(currentSt.jobs)
-        .flatMap(([, j]) => j.procsAndPaths[0].paths)
-        .collect((p) => (p.casting === "" ? null : p.casting))
-        .concat(historicCastingNames)
-        .map((c) => ({ casting: c, message: null }))
-        .distinctAndSortBy((c) => c.casting)
-        .toRArray();
-  }
+  const workorder = barcode?.potentialNewMaterial?.workorder;
+  return LazySeq.of(barcode?.potentialNewMaterial?.possibleCastingsByQueue?.[toQueue] ?? [])
+    .map((c) => ({
+      casting: c,
+      message: workorder ? workorderDetailForCasting(currentSt, workorder, c) : null,
+    }))
+    .toSortedArray((c) => c.casting);
 }
 
 function possibleJobs(
   currentSt: Readonly<api.ICurrentStatus>,
   historicJobs: HashMap<string, Readonly<api.IHistoricJob>>,
-  fmsInfo: Readonly<api.IFMSInfo>,
-  toQueue: string,
   barcode: Readonly<api.IScannedMaterial> | null,
+  toQueue: string,
 ): ReadonlyArray<SelectableJob> {
-  if (barcode?.casting?.possibleJobs && barcode.casting.possibleJobs.length > 0) {
-    const possible = OrderedSet.from(barcode.casting.possibleJobs);
-    return LazySeq.ofObject<Readonly<api.IJob>>(currentSt.jobs)
-      .map(([, j]) => j)
-      .concat(historicJobs.valuesToLazySeq())
-      .filter((j) => possible.has(j.unique))
-      .distinctBy((j) => j.unique)
-      .map((j) => ({
-        job: j,
-        machinedProcs: [
-          {
-            lastProc: 0,
-            details: j.procsAndPaths[0].paths.map(describePath).join(" | "),
-            disabledMsg: null,
-          },
-        ],
-      }))
-      .toSortedArray((j) => j.job.partName);
-  } else {
-    return LazySeq.ofObject(currentSt.jobs)
-      .collect(([, j]) => extractJobGroups(j, fmsInfo, toQueue))
-      .toSortedArray((j) => j.job.partName);
-  }
+  return LazySeq.of(barcode?.potentialNewMaterial?.possibleJobsByQueue?.[toQueue] ?? [])
+    .groupBy((j) => j.jobUnique)
+    .collect(([uniq, procs]) => {
+      const job: Readonly<api.IJob> = currentSt.jobs[uniq] ?? historicJobs.get(uniq);
+      if (!job) {
+        return null;
+      }
+
+      return {
+        job: job,
+        machinedProcs: procs.map((proc) => ({
+          lastProc: proc.lastCompletedProcess,
+          details: job.procsAndPaths[proc.lastCompletedProcess].paths.map(describePath).join(" | "),
+        })),
+      };
+    })
+    .toSortedArray((j) => j.job.partName);
 }
 
 export function usePossibleNewMaterialTypes(toQueue: string | null): SelectableMaterialType {
   const historicJobs = useAtomValue(last30Jobs);
   const currentSt = useAtomValue(currentStatus);
-  const fmsInfo = useAtomValue(fmsInformation);
-  const castingsFromHistoric = useAtomValue(castingNames);
   const barcode = useAtomValue(barcodeMaterialDetail);
   const rawMatQueues = useAtomValue(rawMaterialQueues);
 
   return useMemo(() => {
-    if (toQueue === null) {
+    if (barcode === null || toQueue === null) {
       return { castings: [], jobs: [] };
     } else {
       return {
-        castings: rawMatQueues.has(toQueue)
-          ? possibleCastings(currentSt, castingsFromHistoric, barcode, fmsInfo)
-          : [],
-        jobs: possibleJobs(currentSt, historicJobs, fmsInfo, toQueue, barcode),
+        castings: rawMatQueues.has(toQueue) ? possibleCastings(currentSt, barcode, toQueue) : [],
+        jobs: possibleJobs(currentSt, historicJobs, barcode, toQueue),
       };
     }
-  }, [currentSt, historicJobs, fmsInfo, toQueue, castingsFromHistoric, barcode, rawMatQueues]);
+  }, [currentSt, historicJobs, toQueue, barcode, rawMatQueues]);
 }
 
 export interface JobRawMaterialData {
@@ -293,6 +209,7 @@ export interface QueueData {
   readonly label: string;
   readonly free: boolean;
   readonly rawMaterialQueue: boolean;
+  readonly inProcQueue: boolean;
   readonly material: MaterialList;
   readonly groupedRawMat?: ReadonlyArray<QueueRawMaterialGroup>;
 }
@@ -308,6 +225,7 @@ export function selectQueueData(
   queuesToCheck: ReadonlyArray<string>,
   curSt: Readonly<api.ICurrentStatus>,
   rawMatQueues: ReadonlySet<string>,
+  inProcQueues: ReadonlySet<string>,
 ): ReadonlyArray<QueueData> {
   const queues: QueueData[] = [];
 
@@ -365,6 +283,7 @@ export function selectQueueData(
         label: queueName,
         free: false,
         rawMaterialQueue: true,
+        inProcQueue: false,
         material: material.sort(compareByQueuePos),
         groupedRawMat: matGroups,
       });
@@ -373,6 +292,7 @@ export function selectQueueData(
         label: queueName,
         free: false,
         rawMaterialQueue: false,
+        inProcQueue: inProcQueues.has(queueName),
         material: curSt.material
           .filter((m) => m.location.type === api.LocType.InQueue && m.location.currentQueue === queueName)
           .sort(compareByQueuePos),

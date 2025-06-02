@@ -5,6 +5,7 @@
     "target": "es2021",
     "lib": ["es2021", "dom"],
     "noEmit": true,
+    "types": ["vite/client"],
 
     "allowJs": false,
     "jsx": "react-jsx",

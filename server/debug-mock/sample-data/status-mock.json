@@ -1332,7 +1332,7 @@
   "Alarms": [],
   "Queues": {
     "Queue1": { "Role": "RawMaterial" },
-    "Queue2": {}
+    "Queue2": { "Role": "InProcessTransfer " }
   },
   "Workorders": [
     {

@@ -63,7 +63,6 @@ import { Fab } from "@mui/material";
 import { fmsInformation } from "../../network/server-settings.js";
 import { currentStatus, secondsSinceEpochAtom } from "../../cell-status/current-status.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
-import { PrintOnClientButton } from "./QueuesMatDialog.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { durationToSeconds } from "../../util/parseISODuration.js";
 import { formatSeconds } from "./SystemOverview.js";
@@ -77,13 +76,9 @@ import {
 } from "./InvalidateCycle.js";
 import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { addHours } from "date-fns";
-import {
-  AddToQueueButton,
-  AddToQueueMaterialDialogCt,
-  NewMaterialToQueueType,
-  useMaterialInDialogAddType,
-} from "./QueuesAddMaterial.js";
+import { PromptForQueue } from "./QueuesAddMaterial.js";
 import { useAtomValue, useSetAtom } from "jotai";
+import { PrintOnClientButton } from "./PrintedLabel.js";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -604,41 +599,32 @@ function PrintSerialButton() {
   }
 }
 
-function useAllowAddMaterial(queues: ReadonlyArray<string>): boolean {
-  const kind = useMaterialInDialogAddType(queues);
-  const mat = useAtomValue(matDetails.materialInDialogInfo);
-  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
-  switch (kind) {
-    case "None":
-    case "MatInQueue":
-      return false;
-
-    case "AddToQueue":
-      // add an additional restriction that the material must already exist or
-      // come from a barcode.  It can not be added manually (use the queues page for that).
-      return mat !== null || !!barcode;
-  }
-}
-
 function AddMatButton({
   queues,
   onClose,
-  newMaterialTy,
-  enteredOperator,
-  showAddToQueue,
   toQueue,
+  showAddToQueue,
   setShowAddToQueue,
 }: {
   queues: ReadonlyArray<string>;
   onClose: () => void;
-  newMaterialTy: NewMaterialToQueueType | null;
-  enteredOperator: string | null;
   toQueue: string | null;
   showAddToQueue: boolean;
   setShowAddToQueue: (show: boolean) => void;
 }) {
-  const allow = useAllowAddMaterial(queues);
-  if (!allow) return null;
+  const lastProcMat = useAtomValue(matDetails.materialInDialogLargestUsedProcess);
+  const existingMat = useAtomValue(matDetails.materialInDialogInfo);
+  const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
+  const operator = useAtomValue(currentOperator);
+  const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
+
+  if (
+    !existingMat ||
+    inProcMat?.location.type === api.LocType.OnPallet ||
+    inProcMat?.action.type === api.ActionType.Loading
+  ) {
+    return null;
+  }
   if (queues.length === 0) return null;
 
   if (!showAddToQueue) {
@@ -649,12 +635,21 @@ function AddMatButton({
     );
   } else {
     return (
-      <AddToQueueButton
-        enteredOperator={enteredOperator}
-        newMaterialTy={newMaterialTy}
-        toQueue={toQueue}
-        onClose={onClose}
-      />
+      <Button
+        color="primary"
+        disabled={toQueue === null || addingExistingMat === true}
+        onClick={() => {
+          addExistingMat({
+            materialId: existingMat.materialID,
+            queue: toQueue ?? "",
+            queuePosition: -1,
+            operator: operator,
+          });
+          onClose();
+        }}
+      >
+        Add To {toQueue ?? "Queue"} {lastProcMat ? ` To Run Process ${lastProcMat.process}` : ""}
+      </Button>
     );
   }
 }
@@ -686,10 +681,6 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
   // add material state
   const [showAddMaterial, setShowAddMaterial] = useState<boolean>(false);
   const [selectedQueue, setSelectedQueue] = useState<string | null>(null);
-  const [enteredOperator, setEnteredOperator] = useState<string | null>(null);
-  const [newMaterialTy, setNewMaterialTy] = useState<NewMaterialToQueueType | null>(null);
-
-  const toQueue = props.queues.length === 1 ? props.queues[0] : selectedQueue;
 
   const onClose = useCallback(
     function onClose() {
@@ -711,15 +702,10 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
             <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
           ) : null}
           {showAddMaterial ? (
-            <AddToQueueMaterialDialogCt
-              enteredOperator={enteredOperator}
-              setEnteredOperator={setEnteredOperator}
+            <PromptForQueue
               selectedQueue={selectedQueue}
               setSelectedQueue={setSelectedQueue}
-              newMaterialTy={newMaterialTy}
-              setNewMaterialTy={setNewMaterialTy}
               queueNames={props.queues}
-              toQueue={toQueue}
             />
           ) : undefined}
         </>
@@ -731,11 +717,9 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
           <QuarantineMatButton />
           <SignalInspectionButton />
           <AddMatButton
-            toQueue={toQueue}
+            toQueue={selectedQueue}
             queues={props.queues}
             onClose={onClose}
-            enteredOperator={enteredOperator}
-            newMaterialTy={newMaterialTy}
             showAddToQueue={showAddMaterial}
             setShowAddToQueue={setShowAddMaterial}
           />

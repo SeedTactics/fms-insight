@@ -36,6 +36,8 @@ import JsBarcode from "jsbarcode";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { currentStatus } from "../../cell-status/current-status.js";
 import { useAtomValue } from "jotai";
+import { useReactToPrint } from "react-to-print";
+import { Button } from "@mui/material";
 
 interface BarcodeProps {
   readonly text: string;
@@ -332,4 +334,38 @@ export function PrintedLabel(props: PrintedLabelProps) {
   } else {
     return <CombinedToOnePage {...props} />;
   }
+}
+
+export function PrintOnClientButton({
+  mat,
+  materialName,
+  operator,
+}: {
+  mat: PrintMaterial | ReadonlyArray<PrintMaterial>;
+  materialName?: string | null;
+  operator?: string | null;
+}) {
+  const printRef = useRef<HTMLDivElement>(null);
+  const print = useReactToPrint({
+    contentRef: printRef,
+    ignoreGlobalStyles: true,
+  });
+
+  return (
+    <>
+      <Button color="primary" onClick={() => print()}>
+        Print Label
+      </Button>
+      <div style={{ display: "none" }}>
+        <div ref={printRef}>
+          <PrintedLabel
+            materialName={materialName}
+            material={Array.isArray(mat) ? mat : [mat]}
+            oneJobPerPage={false}
+            operator={operator}
+          />
+        </div>
+      </div>
+    </>
+  );
 }

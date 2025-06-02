@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -84,9 +85,7 @@ namespace BlackMaple.MachineFramework.Controllers
     public bool? RequireWorkorderBeforeAllowCloseoutComplete { get; init; }
 
     // Queues Page Options
-    public AddRawMaterialType? AddRawMaterial { get; init; }
-
-    public AddInProcessMaterialType? AddInProcessMaterial { get; init; }
+    public AddToQueueButton? AddToQueueButton { get; init; }
 
     public bool? RequireOperatorNamePromptWhenAddingMaterial { get; init; }
 
@@ -168,8 +167,7 @@ namespace BlackMaple.MachineFramework.Controllers
         UseClientPrinterForLabels = _printLabel == null,
         QuarantineQueue = _cfg.QuarantineQueue,
         RequireOperatorNamePromptWhenAddingMaterial = _cfg.RequireOperatorNamePromptWhenAddingMaterial,
-        AddRawMaterial = _cfg.AddRawMaterial,
-        AddInProcessMaterial = _cfg.AddInProcessMaterial,
+        AddToQueueButton = _cfg.AddToQueueButton,
         AllowEditJobPlanQuantityFromQueuesPage = _cfg.AllowEditJobPlanQuantityFromQueuesPage,
         AllowQuarantineToCancelLoad = _jobsAndQueues.AllowQuarantineToCancelLoad,
         SupportsRebookings =
@@ -302,12 +300,16 @@ namespace BlackMaple.MachineFramework.Controllers
     }
 
     [HttpPost("parse-barcode")]
-    public ScannedMaterial? ParseBarcode([BindRequired, FromQuery] string barcode)
+    public ScannedMaterial? ParseBarcode(
+      [BindRequired, FromQuery] string barcode,
+      [FromQuery] IEnumerable<string>? queuesToAddTo = null
+    )
     {
       if (_parseBarcode != null)
       {
         return _parseBarcode.ParseBarcode(
           barcode: barcode,
+          queuesToAddTo: queuesToAddTo ?? [],
           httpReferer: Request.GetTypedHeaders().Referer ?? new Uri("/")
         );
       }
@@ -319,11 +321,11 @@ namespace BlackMaple.MachineFramework.Controllers
         var mats = conn.GetMaterialDetailsForSerial(serial);
         if (mats.Count > 0)
         {
-          return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
+          return new ScannedMaterial() { ExistingMaterial = mats.MaxBy(m => m.MaterialID) };
         }
         else
         {
-          return new ScannedMaterial() { Casting = new ScannedCasting() { Serial = serial } };
+          return new ScannedMaterial() { PotentialNewMaterial = new() { Serial = serial } };
         }
       }
     }

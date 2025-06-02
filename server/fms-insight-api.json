@@ -169,6 +169,20 @@
               "type": "string"
             },
             "x-position": 1
+          },
+          {
+            "name": "queuesToAddTo",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "nullable": true,
+              "items": {
+                "type": "string"
+              }
+            },
+            "x-position": 2
           }
         ],
         "responses": {
@@ -2199,19 +2213,11 @@
             "type": "boolean",
             "nullable": true
           },
-          "AddRawMaterial": {
+          "AddToQueueButton": {
             "nullable": true,
             "oneOf": [
               {
-                "$ref": "#/components/schemas/AddRawMaterialType"
-              }
-            ]
-          },
-          "AddInProcessMaterial": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/AddInProcessMaterialType"
+                "$ref": "#/components/schemas/AddToQueueButton"
               }
             ]
           },
@@ -2229,34 +2235,20 @@
           }
         }
       },
-      "AddRawMaterialType": {
+      "AddToQueueButton": {
         "type": "string",
         "description": "",
         "x-enumNames": [
-          "AddAsUnassigned",
-          "AddAsUnassignedWithSerial",
-          "RequireExistingMaterial",
-          "RequireBarcodeScan",
-          "AddAndSpecifyJob"
+          "DoNotShow",
+          "AddBulkUnassigned",
+          "LookupExistingSerial",
+          "ManualBarcodeScan"
         ],
         "enum": [
-          "AddAsUnassigned",
-          "AddAsUnassignedWithSerial",
-          "RequireExistingMaterial",
-          "RequireBarcodeScan",
-          "AddAndSpecifyJob"
-        ]
-      },
-      "AddInProcessMaterialType": {
-        "type": "string",
-        "description": "",
-        "x-enumNames": [
-          "RequireExistingMaterial",
-          "AddAndSpecifyJob"
-        ],
-        "enum": [
-          "RequireExistingMaterial",
-          "AddAndSpecifyJob"
+          "DoNotShow",
+          "AddBulkUnassigned",
+          "LookupExistingSerial",
+          "ManualBarcodeScan"
         ]
       },
       "ServerEvent": {
@@ -3903,11 +3895,11 @@
               }
             ]
           },
-          "Casting": {
+          "PotentialNewMaterial": {
             "nullable": true,
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ScannedCasting"
+                "$ref": "#/components/schemas/ScannedPotentialNewMaterial"
               }
             ]
           }
@@ -3954,22 +3946,28 @@
           }
         }
       },
-      "ScannedCasting": {
+      "ScannedPotentialNewMaterial": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "PossibleCastings": {
-            "type": "array",
+          "PossibleCastingsByQueue": {
+            "type": "object",
             "nullable": true,
-            "items": {
-              "type": "string"
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           },
-          "PossibleJobs": {
-            "type": "array",
+          "PossibleJobsByQueue": {
+            "type": "object",
             "nullable": true,
-            "items": {
-              "type": "string"
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/PossibleJobAndProcess"
+              }
             }
           },
           "Workorder": {
@@ -3979,6 +3977,23 @@
           "Serial": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "PossibleJobAndProcess": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "JobUnique",
+          "LastCompletedProcess"
+        ],
+        "properties": {
+          "JobUnique": {
+            "type": "string"
+          },
+          "LastCompletedProcess": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
