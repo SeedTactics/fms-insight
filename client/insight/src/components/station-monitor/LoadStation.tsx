@@ -618,8 +618,11 @@ function AddMatButton({
   const operator = useAtomValue(currentOperator);
   const [addExistingMat, addingExistingMat] = matDetails.useAddExistingMaterialToQueue();
 
-  if (!existingMat) return null;
-  if (inProcMat?.location.type === api.LocType.OnPallet) {
+  if (
+    !existingMat ||
+    inProcMat?.location.type === api.LocType.OnPallet ||
+    inProcMat?.action.type === api.ActionType.Loading
+  ) {
     return null;
   }
   if (queues.length === 0) return null;

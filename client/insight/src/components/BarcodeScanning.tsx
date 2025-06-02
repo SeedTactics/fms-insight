@@ -114,7 +114,11 @@ export const QRScanButton = memo(function QRScanButton() {
   const setBarcode = useSetAtom(materialDialogOpen);
   const [manual, setManual] = useState("");
 
-  if (window.location.protocol !== "https:" && window.location.hostname !== "localhost") return null;
+  if (
+    window.location.protocol !== "https:" &&
+    (import.meta.env.PROD || window.location.hostname !== "localhost")
+  )
+    return null;
 
   function onScan(results: ReadonlyArray<IDetectedBarcode>): void {
     if (results.length > 0 && results[0].rawValue !== null && results[0].rawValue !== "") {
@@ -198,7 +202,8 @@ export const AddByBarcodeDialog = memo(function AddByBarcodeDialog() {
     <Dialog open={queue !== null} onClose={() => setQueue(null)} maxWidth="md">
       <DialogTitle>Scan a Barcode To Add To {queue}</DialogTitle>
       <DialogContent>
-        {window.location.protocol === "https:" || window.location.hostname === "localhost" ? (
+        {window.location.protocol === "https:" ||
+        (import.meta.env.DEV && window.location.hostname === "localhost") ? (
           <Box width="15em" height="15em">
             {queue !== null ? <Scanner onScan={onScan} /> : undefined}
           </Box>
