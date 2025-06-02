@@ -1247,60 +1247,75 @@ Map {
 
 exports[`processes last 30 events > after filter - tool use 1`] = `
 Map {
-  "{part: part111}, statGroup: MC, operation: progR}" => [
-    {
-      "tools": [
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.35,
-          "toolChangedDuringMiddleOfCycle": false,
-          "toolName": "T",
-        },
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.43333333333333335,
-          "toolChangedDuringMiddleOfCycle": true,
-          "toolName": "C",
-        },
-      ],
-    },
-  ],
-  "{part: part222}, statGroup: MC, operation: proga}" => [
-    {
-      "tools": [
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.36666666666666664,
-          "toolChangedDuringMiddleOfCycle": true,
-          "toolName": "F",
-        },
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.2833333333333333,
-          "toolChangedDuringMiddleOfCycle": false,
-          "toolName": "N",
-        },
-      ],
-    },
-  ],
-  "{part: part222}, statGroup: MC, operation: progE}" => [
-    {
-      "tools": [
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.4166666666666667,
-          "toolChangedDuringMiddleOfCycle": false,
-          "toolName": "F",
-        },
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.5,
-          "toolChangedDuringMiddleOfCycle": true,
-          "toolName": "k",
-        },
-      ],
-    },
-  ],
+  "{part: part111}, statGroup: MC, operation: progR}" => {
+    "machines": [
+      "MC #1",
+    ],
+    "recentCycles": [
+      {
+        "tools": [
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.35,
+            "toolChangedDuringMiddleOfCycle": false,
+            "toolName": "T",
+          },
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.43333333333333335,
+            "toolChangedDuringMiddleOfCycle": true,
+            "toolName": "C",
+          },
+        ],
+      },
+    ],
+  },
+  "{part: part222}, statGroup: MC, operation: proga}" => {
+    "machines": [
+      "MC #1",
+    ],
+    "recentCycles": [
+      {
+        "tools": [
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.36666666666666664,
+            "toolChangedDuringMiddleOfCycle": true,
+            "toolName": "F",
+          },
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.2833333333333333,
+            "toolChangedDuringMiddleOfCycle": false,
+            "toolName": "N",
+          },
+        ],
+      },
+    ],
+  },
+  "{part: part222}, statGroup: MC, operation: progE}" => {
+    "machines": [
+      "MC #1",
+    ],
+    "recentCycles": [
+      {
+        "tools": [
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.4166666666666667,
+            "toolChangedDuringMiddleOfCycle": false,
+            "toolName": "F",
+          },
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.5,
+            "toolChangedDuringMiddleOfCycle": true,
+            "toolName": "k",
+          },
+        ],
+      },
+    ],
+  },
 }
 `;
 
@@ -1923,59 +1938,74 @@ Map {
 
 exports[`processes last 30 events > initial 27 days ago, two days ago, and today - tool use 1`] = `
 Map {
-  "{part: part111}, statGroup: MC, operation: progR}" => [
-    {
-      "tools": [
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.35,
-          "toolChangedDuringMiddleOfCycle": false,
-          "toolName": "T",
-        },
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.43333333333333335,
-          "toolChangedDuringMiddleOfCycle": true,
-          "toolName": "C",
-        },
-      ],
-    },
-  ],
-  "{part: part222}, statGroup: MC, operation: proga}" => [
-    {
-      "tools": [
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.36666666666666664,
-          "toolChangedDuringMiddleOfCycle": true,
-          "toolName": "F",
-        },
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.2833333333333333,
-          "toolChangedDuringMiddleOfCycle": false,
-          "toolName": "N",
-        },
-      ],
-    },
-  ],
-  "{part: part222}, statGroup: MC, operation: progE}" => [
-    {
-      "tools": [
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.4166666666666667,
-          "toolChangedDuringMiddleOfCycle": false,
-          "toolName": "F",
-        },
-        {
-          "cycleUsageCnt": 0,
-          "cycleUsageMinutes": 0.5,
-          "toolChangedDuringMiddleOfCycle": true,
-          "toolName": "k",
-        },
-      ],
-    },
-  ],
+  "{part: part111}, statGroup: MC, operation: progR}" => {
+    "machines": [
+      "MC #1",
+    ],
+    "recentCycles": [
+      {
+        "tools": [
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.35,
+            "toolChangedDuringMiddleOfCycle": false,
+            "toolName": "T",
+          },
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.43333333333333335,
+            "toolChangedDuringMiddleOfCycle": true,
+            "toolName": "C",
+          },
+        ],
+      },
+    ],
+  },
+  "{part: part222}, statGroup: MC, operation: proga}" => {
+    "machines": [
+      "MC #1",
+    ],
+    "recentCycles": [
+      {
+        "tools": [
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.36666666666666664,
+            "toolChangedDuringMiddleOfCycle": true,
+            "toolName": "F",
+          },
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.2833333333333333,
+            "toolChangedDuringMiddleOfCycle": false,
+            "toolName": "N",
+          },
+        ],
+      },
+    ],
+  },
+  "{part: part222}, statGroup: MC, operation: progE}" => {
+    "machines": [
+      "MC #1",
+    ],
+    "recentCycles": [
+      {
+        "tools": [
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.4166666666666667,
+            "toolChangedDuringMiddleOfCycle": false,
+            "toolName": "F",
+          },
+          {
+            "cycleUsageCnt": 0,
+            "cycleUsageMinutes": 0.5,
+            "toolChangedDuringMiddleOfCycle": true,
+            "toolName": "k",
+          },
+        ],
+      },
+    ],
+  },
 }
 `;
