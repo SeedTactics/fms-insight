@@ -101,8 +101,6 @@ export interface PartToolUsage {
 export interface ToolReport {
   readonly toolName: string;
   readonly machines: ReadonlyArray<ToolInMachine>;
-  readonly minRemainingMinutes: number | null;
-  readonly minRemainingCnt: number | null;
   readonly parts: ReadonlyArray<PartToolUsage>;
   readonly estimatedToolCounts: boolean;
 }
@@ -125,16 +123,14 @@ class StationOperation {
   }
 }
 
-function estimateToolUsePerPart(parts: Iterable<PartToolUsage>, machineName: string) {
+function estimateToolMinutesPerCount(parts: Iterable<PartToolUsage>, machineName: string) {
   let use = 0;
   let numParts = 0;
-  for (const [, uses] of LazySeq.of(parts)
-    .filter((p) => p.machines.has(machineName) ?? false)
-    .groupBy((p) => p.partAndProg.part)) {
-    // all processes should have the same quantity, but need to sum scheduled use
-    const qty = uses[0]?.quantity;
-    use += qty * LazySeq.of(uses).sumBy((u) => u.scheduledUseMinutes);
-    numParts += qty;
+
+  // weighted average of (u.scheduledUseMinutes / u.scheduledUseCnt) by quantity
+  for (const u of LazySeq.of(parts).filter((p) => p.machines.has(machineName) ?? false)) {
+    use += u.quantity * (u.scheduledUseMinutes / u.scheduledUseCnt);
+    numParts += u.quantity;
   }
 
   return numParts === 0 ? 0 : use / numParts;
@@ -143,6 +139,7 @@ function estimateToolUsePerPart(parts: Iterable<PartToolUsage>, machineName: str
 declare global {
   interface Window {
     bmsToolReportOverridePartQuantity?: number;
+    bmsToolReportOverrideCountPerCycle?: number;
   }
 }
 
@@ -195,16 +192,21 @@ export function calcToolReport(
     .flatMap(([partAndProg, tools]) => {
       const qty = window.bmsToolReportOverridePartQuantity ?? partPlannedQtys.get(partAndProg);
       if (qty !== undefined && qty > 0) {
-        return tools.tools.map((tool) => ({
-          toolName: tool.toolName,
-          part: {
-            partAndProg,
-            quantity: qty,
-            scheduledUseMinutes: tool.cycleUsageMinutes,
-            scheduledUseCnt: tool.cycleUsageCnt || 1, // if zero, estimate the count as 1
-            machines: usage.get(partAndProg)?.machines ?? OrderedSet.empty<string>(),
-          },
-        }));
+        return tools.tools.map((tool) => {
+          // if zero, then use override count or just 1
+          const cnt =
+            tool.cycleUsageCnt === 0 ? (window.bmsToolReportOverrideCountPerCycle ?? 1) : tool.cycleUsageCnt;
+          return {
+            toolName: tool.toolName,
+            part: {
+              partAndProg,
+              quantity: qty,
+              scheduledUseMinutes: tool.cycleUsageMinutes,
+              scheduledUseCnt: cnt,
+              machines: usage.get(partAndProg)?.machines ?? OrderedSet.empty<string>(),
+            },
+          };
+        });
       } else {
         return [];
       }
@@ -245,9 +247,10 @@ export function calcToolReport(
           let lifetimeCnt: number | null = m.totalLifeCount ?? null;
           if (currentUseCnt === null && lifetimeCnt === null) {
             // If both are not defined, then estimate
-            const estUse = estimateToolUsePerPart(parts.get(toolName) ?? [], machineName);
+            const estUse = estimateToolMinutesPerCount(parts.get(toolName) ?? [], machineName);
             if (estUse > 0) {
               estimatedToolCounts = true;
+              // unit analysis: mins / (mins / cnt) = cnt
               currentUseCnt = currentUseMinutes !== null ? currentUseMinutes / estUse : null;
               lifetimeCnt = lifetimeMinutes !== null ? lifetimeMinutes / estUse : null;
             }
@@ -273,29 +276,9 @@ export function calcToolReport(
         })
         .toRArray();
 
-      const machGroups = LazySeq.of(toolsInMachine).groupBy((m) => m.machineName);
-
-      const minMachMins = machGroups
-        .map(([_, toolsForMachine]) =>
-          LazySeq.of(toolsForMachine)
-            .collect((m) => m.remainingMinutes)
-            .sumBy((m) => m),
-        )
-        .minBy((m) => m);
-
-      const minMachCnt = machGroups
-        .map(([_, toolsForMachine]) =>
-          LazySeq.of(toolsForMachine)
-            .collect((m) => m.remainingCnt)
-            .sumBy((m) => m),
-        )
-        .minBy((m) => m);
-
       return {
         toolName,
         machines: toolsInMachine,
-        minRemainingMinutes: minMachMins ?? null,
-        minRemainingCnt: minMachCnt ?? null,
         parts: parts.get(toolName) ?? [],
         estimatedToolCounts,
       };

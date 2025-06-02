@@ -100,17 +100,43 @@ const ToolDetailSummaryRow = styled(TableRow)({
   },
 });
 
+const VerticalSeperator = styled("span")({
+  fontSize: "x-large",
+  fontWeight: "lighter",
+});
+
 function FormatMinAndCnt({
   min,
   cnt,
   showZero,
+  extraMin,
+  extraCnt,
 }: {
-  min: number | null;
-  cnt: number | null;
+  min: number | null | undefined;
+  cnt: number | null | undefined;
   showZero?: boolean;
+  extraMin?: string | null;
+  extraCnt?: string | null;
 }) {
   min ??= 0;
   cnt ??= 0;
+
+  const minSpan = extraMin ? (
+    <Tooltip title={extraMin}>
+      <span>{min.toFixed(1)} min</span>
+    </Tooltip>
+  ) : (
+    min.toFixed(1) + " min"
+  );
+
+  const cntSpan = extraCnt ? (
+    <Tooltip title={extraCnt}>
+      <span>{cntFormat.format(cnt)} cnt</span>
+    </Tooltip>
+  ) : (
+    cntFormat.format(cnt) + " cnt"
+  );
+
   if (min === 0 && cnt === 0) {
     if (showZero) {
       return "0";
@@ -118,11 +144,15 @@ function FormatMinAndCnt({
       return "";
     }
   } else if (min > 0 && cnt === 0) {
-    return min.toFixed(1) + " min";
+    return minSpan;
   } else if (min === 0 && cnt > 0) {
-    return cntFormat.format(cnt) + " cnt";
+    return cntSpan;
   } else {
-    return min.toFixed(1) + " min / " + cntFormat.format(cnt) + " cnt";
+    return (
+      <span>
+        {minSpan} <VerticalSeperator>|</VerticalSeperator> {cntSpan}
+      </span>
+    );
   }
 }
 
@@ -285,7 +315,8 @@ function ToolSummaryHeader() {
       <TableCell align="right">
         <Tooltip
           title={
-            "Remaining use summed over all machines." + (cntsWereEstimated ? " Counts are estimates." : "")
+            "Remaining use summed over all machines which have a scheduled part." +
+            (cntsWereEstimated ? " Counts are estimates." : "")
           }
         >
           <span>Total Remaining Use</span>
@@ -308,10 +339,25 @@ function ToolSummaryHeader() {
 function ToolSummaryRow({ tool }: { tool: ToolReport }) {
   const [open, setOpen] = useState<boolean>(false);
 
+  const machinesWithSomePart = LazySeq.of(tool.machines).filter((m) =>
+    tool.parts.some((p) => p.machines.has(m.machineName)),
+  );
+
   const schUseMin = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
-  const totalLifeMin = LazySeq.of(tool.machines).sumBy((m) => m.remainingMinutes ?? 0);
   const schUseCnt = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseCnt * p.quantity);
-  const totalLifeCnt = LazySeq.of(tool.machines).sumBy((m) => m.remainingCnt ?? 0);
+
+  const totalRemainMin = machinesWithSomePart.sumBy((m) => m.remainingMinutes ?? 0);
+  const totalRemainCnt = machinesWithSomePart.sumBy((m) => m.remainingCnt ?? 0);
+
+  const minRemainMin = machinesWithSomePart
+    .groupBy((m) => m.machineName)
+    .map(([mach, tools]) => ({ mach, remainMin: LazySeq.of(tools).sumBy((m) => m.remainingMinutes ?? 0) }))
+    .minBy(({ remainMin }) => remainMin);
+
+  const minRemainCnt = machinesWithSomePart
+    .groupBy((m) => m.machineName)
+    .map(([mach, tools]) => ({ mach, remainCnt: LazySeq.of(tools).sumBy((m) => m.remainingCnt ?? 0) }))
+    .minBy(({ remainCnt }) => remainCnt);
 
   const numCols = 6;
 
@@ -319,12 +365,12 @@ function ToolSummaryRow({ tool }: { tool: ToolReport }) {
     <>
       <ToolTableRow
         $noBorderBottom
-        $highlightedRow={schUseMin > totalLifeMin || schUseCnt > totalLifeCnt}
+        $highlightedRow={schUseMin > totalRemainMin || schUseCnt > totalRemainCnt}
         $noticeRow={
-          schUseMin <= totalLifeMin &&
-          schUseCnt <= totalLifeCnt &&
-          ((tool.minRemainingMinutes !== null && schUseMin > tool.minRemainingMinutes) ||
-            (tool.minRemainingCnt !== null && schUseCnt > tool.minRemainingCnt))
+          schUseMin <= totalRemainMin &&
+          schUseCnt <= totalRemainCnt &&
+          ((minRemainMin && schUseMin > minRemainMin.remainMin) ||
+            (minRemainCnt && schUseCnt > minRemainCnt.remainCnt))
         }
       >
         <TableCell>
@@ -337,10 +383,16 @@ function ToolSummaryRow({ tool }: { tool: ToolReport }) {
           <FormatMinAndCnt min={schUseMin} cnt={schUseCnt} />
         </TableCell>
         <TableCell align="right">
-          <FormatMinAndCnt min={totalLifeMin} cnt={totalLifeCnt} />
+          <FormatMinAndCnt min={totalRemainMin} cnt={totalRemainCnt} />
         </TableCell>
         <TableCell align="right">
-          <FormatMinAndCnt min={tool.minRemainingMinutes} cnt={tool.minRemainingCnt} showZero />
+          <FormatMinAndCnt
+            min={minRemainMin?.remainMin}
+            cnt={minRemainCnt?.remainCnt}
+            showZero
+            extraMin={minRemainMin?.mach}
+            extraCnt={minRemainCnt?.mach}
+          />
         </TableCell>
         <TableCell />
       </ToolTableRow>
