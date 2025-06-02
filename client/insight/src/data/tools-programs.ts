@@ -50,7 +50,7 @@ import {
   StatisticalCycleTime,
 } from "../cell-status/estimated-cycle-times.js";
 import { stat_name_and_num } from "../cell-status/station-cycles.js";
-import { LazySeq, HashMap, hashValues } from "@seedtactics/immutable-collections";
+import { LazySeq, HashMap, hashValues, OrderedSet } from "@seedtactics/immutable-collections";
 import { atom, useStore } from "jotai";
 import { useCallback } from "react";
 import { last30Jobs } from "../cell-status/scheduled-jobs.js";
@@ -95,6 +95,7 @@ export interface PartToolUsage {
   readonly quantity: number;
   readonly scheduledUseMinutes: number;
   readonly scheduledUseCnt: number;
+  readonly machines: OrderedSet<string>;
 }
 
 export interface ToolReport {
@@ -124,11 +125,11 @@ class StationOperation {
   }
 }
 
-function estimateToolUsePerPart(parts: Iterable<PartToolUsage>, machineName: string, usage: ToolUsage) {
+function estimateToolUsePerPart(parts: Iterable<PartToolUsage>, machineName: string) {
   let use = 0;
   let numParts = 0;
   for (const [, uses] of LazySeq.of(parts)
-    .filter((p) => usage.get(p.partAndProg)?.machines.has(machineName) ?? false)
+    .filter((p) => p.machines.has(machineName) ?? false)
     .groupBy((p) => p.partAndProg.part)) {
     // all processes should have the same quantity, but need to sum scheduled use
     const qty = uses[0]?.quantity;
@@ -149,7 +150,6 @@ export function calcToolReport(
   currentSt: Readonly<ICurrentStatus>,
   toolsInMach: ReadonlyArray<Readonly<IToolInMachine>>,
   usage: ToolUsage,
-  machineFilter: string | null,
 ): ReadonlyArray<ToolReport> {
   let partPlannedQtys = HashMap.empty<PartAndStationOperation, number>();
   for (const [uniq, job] of LazySeq.ofObject(currentSt.jobs)) {
@@ -201,7 +201,8 @@ export function calcToolReport(
             partAndProg,
             quantity: qty,
             scheduledUseMinutes: tool.cycleUsageMinutes,
-            scheduledUseCnt: tool.cycleUsageCnt,
+            scheduledUseCnt: tool.cycleUsageCnt || 1, // if zero, estimate the count as 1
+            machines: usage.get(partAndProg)?.machines ?? OrderedSet.empty<string>(),
           },
         }));
       } else {
@@ -218,10 +219,7 @@ export function calcToolReport(
     );
 
   return LazySeq.of(toolsInMach)
-    .filter(
-      (t) => machineFilter === null || machineFilter === stat_name_and_num(t.machineGroupName, t.machineNum),
-    )
-    .groupBy((t) => t.toolName)
+    .orderedGroupBy((t) => t.toolName)
     .map(([toolName, tools]) => {
       let estimatedToolCounts = false;
 
@@ -247,7 +245,7 @@ export function calcToolReport(
           let lifetimeCnt: number | null = m.totalLifeCount ?? null;
           if (currentUseCnt === null && lifetimeCnt === null) {
             // If both are not defined, then estimate
-            const estUse = estimateToolUsePerPart(parts.get(toolName) ?? [], machineName, usage);
+            const estUse = estimateToolUsePerPart(parts.get(toolName) ?? [], machineName);
             if (estUse > 0) {
               estimatedToolCounts = true;
               currentUseCnt = currentUseMinutes !== null ? currentUseMinutes / estUse : null;
@@ -305,8 +303,6 @@ export function calcToolReport(
     .toRArray();
 }
 
-export const toolReportMachineFilter = atom<string | null>(null);
-
 type ToolsInMachine = {
   readonly tools: ReadonlyArray<IToolInMachine>;
   readonly time: Date;
@@ -337,10 +333,9 @@ export const machinesWithTools = atom<ReadonlyArray<string>>((get) => {
 export const currentToolReport = atom<ReadonlyArray<ToolReport> | null>((get) => {
   const toolsInMach = get(toolsInMachine);
   if (toolsInMach === null) return null;
-  const machineFilter = get(toolReportMachineFilter);
   const currentSt = get(currentStatus);
   const usage = get(last30ToolUse);
-  return calcToolReport(currentSt, toolsInMach.tools, usage, machineFilter);
+  return calcToolReport(currentSt, toolsInMach.tools, usage);
 });
 
 export const toolReportHasSerial = atom<boolean>((get) => {
@@ -351,40 +346,20 @@ export const toolReportHasSerial = atom<boolean>((get) => {
     .some((t) => t.serial != null && t.serial !== "");
 });
 
-export const toolReportHasTimeUsage = atom<boolean>((get) => {
-  const report = get(currentToolReport);
-  if (!report) return false;
-  return LazySeq.of(report)
-    .flatMap((r) => r.machines)
-    .some((t) => t.currentUseMinutes != null);
-});
-
-export const toolReportHasCntUsage = atom<boolean>((get) => {
-  const report = get(currentToolReport);
-  if (!report) return false;
-  return LazySeq.of(report)
-    .flatMap((r) => r.machines)
-    .some((t) => t.currentUseCnt != null);
-});
-
-export const toolReportHasPartCntUsage = atom<boolean>((get) => {
-  const report = get(currentToolReport);
-  if (!report) return false;
-  return LazySeq.of(report)
-    .flatMap((r) => r.parts)
-    .some((t) => t.scheduledUseCnt != null && t.scheduledUseCnt > 0);
-});
-
 export const toolReportEstimatedToolCounts = atom<boolean>((get) => {
   const report = get(currentToolReport);
   if (!report) return false;
   return LazySeq.of(report).some((r) => r.estimatedToolCounts);
 });
 
-function buildToolReportHTML(
-  tools: Iterable<ToolReport>,
-  { showTime, showCnts }: { showTime: boolean; showCnts: boolean },
-): string {
+function buildToolReportHTML(tools: Iterable<ToolReport>): string {
+  const showTime = LazySeq.of(tools)
+    .flatMap((r) => r.machines)
+    .some((t) => t.currentUseMinutes != null);
+  const showCnts = LazySeq.of(tools)
+    .flatMap((r) => r.machines)
+    .some((t) => t.currentUseCnt != null);
+
   let table = "<table>\n<thead><tr>";
   table += "<th>Tool</th><th>Machine</th><th>Pocket</th>";
   if (showTime) {
@@ -432,12 +407,7 @@ export function useCopyToolReportToClipboard(): () => void {
   return useCallback(() => {
     const tools = store.get(currentToolReport);
     if (!tools) return;
-    copy(
-      buildToolReportHTML(tools, {
-        showTime: store.get(toolReportHasTimeUsage),
-        showCnts: store.get(toolReportHasCntUsage),
-      }),
-    );
+    copy(buildToolReportHTML(tools));
   }, [store]);
 }
 
