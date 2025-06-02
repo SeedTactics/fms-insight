@@ -60,7 +60,7 @@ function averageToolUse(
   sort: boolean,
 ): HashMap<PartAndStationOperation, ProgramToolUseInSingleCycle> {
   return usage.mapValues((cycles) => {
-    const tools = LazySeq.of(cycles)
+    const tools = LazySeq.of(cycles.recentCycles)
       .flatMap((c) => c.tools)
       .filter((c) => !c.toolChangedDuringMiddleOfCycle)
       .groupBy((t) => t.toolName)
@@ -91,8 +91,7 @@ export interface ToolInMachine {
 }
 
 export interface PartToolUsage {
-  readonly partName: string;
-  readonly program: string;
+  readonly partAndProg: PartAndStationOperation;
   readonly quantity: number;
   readonly scheduledUseMinutes: number;
   readonly scheduledUseCnt: number;
@@ -104,6 +103,7 @@ export interface ToolReport {
   readonly minRemainingMinutes: number | null;
   readonly minRemainingCnt: number | null;
   readonly parts: ReadonlyArray<PartToolUsage>;
+  readonly estimatedToolCounts: boolean;
 }
 
 class StationOperation {
@@ -121,6 +121,27 @@ class StationOperation {
   }
   toString(): string {
     return `{statGroup: ${this.statGroup}, operation: ${this.operation}}`;
+  }
+}
+
+function estimateToolUsePerPart(parts: Iterable<PartToolUsage>, machineName: string, usage: ToolUsage) {
+  let use = 0;
+  let numParts = 0;
+  for (const [, uses] of LazySeq.of(parts)
+    .filter((p) => usage.get(p.partAndProg)?.machines.has(machineName) ?? false)
+    .groupBy((p) => p.partAndProg.part)) {
+    // all processes should have the same quantity, but need to sum scheduled use
+    const qty = uses[0]?.quantity;
+    use += qty * LazySeq.of(uses).sumBy((u) => u.scheduledUseMinutes);
+    numParts += qty;
+  }
+
+  return numParts === 0 ? 0 : use / numParts;
+}
+
+declare global {
+  interface Window {
+    bmsToolReportOverridePartQuantity?: number;
   }
 }
 
@@ -172,13 +193,12 @@ export function calcToolReport(
 
   const parts = LazySeq.of(averageToolUse(usage, false))
     .flatMap(([partAndProg, tools]) => {
-      const qty = partPlannedQtys.get(partAndProg);
+      const qty = window.bmsToolReportOverridePartQuantity ?? partPlannedQtys.get(partAndProg);
       if (qty !== undefined && qty > 0) {
         return tools.tools.map((tool) => ({
           toolName: tool.toolName,
           part: {
-            partName: partAndProg.part,
-            program: partAndProg.operation,
+            partAndProg,
             quantity: qty,
             scheduledUseMinutes: tool.cycleUsageMinutes,
             scheduledUseCnt: tool.cycleUsageCnt,
@@ -189,8 +209,8 @@ export function calcToolReport(
       }
     })
     .sortBy(
-      (p) => p.part.partName,
-      (p) => p.part.program,
+      (p) => p.part.partAndProg.part,
+      (p) => p.part.partAndProg.operation,
     )
     .toLookup(
       (t) => t.toolName,
@@ -203,6 +223,8 @@ export function calcToolReport(
     )
     .groupBy((t) => t.toolName)
     .map(([toolName, tools]) => {
+      let estimatedToolCounts = false;
+
       const toolsInMachine: ReadonlyArray<ToolInMachine> = LazySeq.of(tools)
         .sortBy(
           (t) => t.machineGroupName,
@@ -218,8 +240,23 @@ export function calcToolReport(
             m.totalLifeTime !== null && m.totalLifeTime !== undefined && m.totalLifeTime !== ""
               ? durationToMinutes(m.totalLifeTime)
               : null;
+
+          const machineName = stat_name_and_num(m.machineGroupName, m.machineNum);
+
+          let currentUseCnt: number | null = m.currentUseCount ?? null;
+          let lifetimeCnt: number | null = m.totalLifeCount ?? null;
+          if (currentUseCnt === null && lifetimeCnt === null) {
+            // If both are not defined, then estimate
+            const estUse = estimateToolUsePerPart(parts.get(toolName) ?? [], machineName, usage);
+            if (estUse > 0) {
+              estimatedToolCounts = true;
+              currentUseCnt = currentUseMinutes !== null ? currentUseMinutes / estUse : null;
+              lifetimeCnt = lifetimeMinutes !== null ? lifetimeMinutes / estUse : null;
+            }
+          }
+
           return {
-            machineName: m.machineGroupName + " #" + m.machineNum.toString(),
+            machineName,
             pocket: m.pocket,
             serial: m.serial,
             currentUseMinutes,
@@ -228,14 +265,11 @@ export function calcToolReport(
               currentUseMinutes !== null && lifetimeMinutes !== null
                 ? Math.max(0, lifetimeMinutes - currentUseMinutes)
                 : null,
-            currentUseCnt: m.currentUseCount ?? null,
-            lifetimeCnt: m.totalLifeCount ?? null,
+            currentUseCnt: currentUseCnt ?? null,
+            lifetimeCnt: lifetimeCnt ?? null,
             remainingCnt:
-              m.currentUseCount !== null &&
-              m.currentUseCount !== undefined &&
-              m.totalLifeCount !== null &&
-              m.totalLifeCount !== undefined
-                ? Math.max(0, m.totalLifeCount - m.currentUseCount)
+              currentUseCnt !== null && lifetimeCnt !== null
+                ? Math.max(0, lifetimeCnt - currentUseCnt)
                 : null,
           };
         })
@@ -265,6 +299,7 @@ export function calcToolReport(
         minRemainingMinutes: minMachMins ?? null,
         minRemainingCnt: minMachCnt ?? null,
         parts: parts.get(toolName) ?? [],
+        estimatedToolCounts,
       };
     })
     .toRArray();
@@ -330,6 +365,20 @@ export const toolReportHasCntUsage = atom<boolean>((get) => {
   return LazySeq.of(report)
     .flatMap((r) => r.machines)
     .some((t) => t.currentUseCnt != null);
+});
+
+export const toolReportHasPartCntUsage = atom<boolean>((get) => {
+  const report = get(currentToolReport);
+  if (!report) return false;
+  return LazySeq.of(report)
+    .flatMap((r) => r.parts)
+    .some((t) => t.scheduledUseCnt != null && t.scheduledUseCnt > 0);
+});
+
+export const toolReportEstimatedToolCounts = atom<boolean>((get) => {
+  const report = get(currentToolReport);
+  if (!report) return false;
+  return LazySeq.of(report).some((r) => r.estimatedToolCounts);
 });
 
 function buildToolReportHTML(
@@ -464,8 +513,8 @@ export function calcProgramReport(
         comment: prog.comment ?? null,
         revision: prog.revision ?? null,
         partName: part?.part ?? null,
-        statisticalCycleTime: part ? cycleTimes.get(part) ?? null : null,
-        toolUse: part ? tools.get(part) ?? null : null,
+        statisticalCycleTime: part ? (cycleTimes.get(part) ?? null) : null,
+        toolUse: part ? (tools.get(part) ?? null) : null,
         plannedMins: plannedTimes?.get(prog.programName)?.plannedMins ?? null,
       };
     })

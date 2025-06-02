@@ -64,6 +64,8 @@ import {
   useCopyToolReportToClipboard,
   ToolInMachine,
   toolReportMachineFilter,
+  toolReportHasPartCntUsage,
+  toolReportEstimatedToolCounts,
 } from "../../data/tools-programs.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { PartIdenticon } from "../station-monitor/Material.js";
@@ -230,6 +232,7 @@ function ToolRow(props: ToolRowProps) {
   const [open, setOpen] = useState<boolean>(false);
   const showTime = useAtomValue(toolReportHasTimeUsage);
   const showCnts = useAtomValue(toolReportHasCntUsage);
+  const showPartCnts = useAtomValue(toolReportHasPartCntUsage);
 
   const schUseMin = LazySeq.of(props.tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
   const totalLifeMin = LazySeq.of(props.tool.machines).sumBy((m) => m.remainingMinutes ?? 0);
@@ -320,7 +323,7 @@ function ToolRow(props: ToolRowProps) {
                         <TableCell>Program</TableCell>
                         <TableCell align="right">Quantity</TableCell>
                         {showTime ? <TableCell align="right">Use/Cycle (min)</TableCell> : undefined}
-                        {showCnts ? <TableCell align="right">Use/Cycle (cnt)</TableCell> : undefined}
+                        {showPartCnts ? <TableCell align="right">Use/Cycle (cnt)</TableCell> : undefined}
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -333,18 +336,18 @@ function ToolRow(props: ToolRowProps) {
                                 alignItems: "center",
                               }}
                             >
-                              <PartIdenticon part={p.partName} size={20} />
-                              <span>{p.partName}</span>
+                              <PartIdenticon part={p.partAndProg.part} size={20} />
+                              <span>{p.partAndProg.part}</span>
                             </Box>
                           </TableCell>
-                          <TableCell>{p.program}</TableCell>
+                          <TableCell>{p.partAndProg.operation}</TableCell>
                           <TableCell align="right">{p.quantity}</TableCell>
                           {showTime ? (
                             <TableCell align="right">
                               {p.scheduledUseMinutes > 0 ? p.scheduledUseMinutes.toFixed(1) : ""}
                             </TableCell>
                           ) : undefined}
-                          {showCnts ? (
+                          {showPartCnts ? (
                             <TableCell align="right">
                               {p.scheduledUseCnt > 0 ? cntFormat.format(p.scheduledUseCnt) : ""}
                             </TableCell>
@@ -384,6 +387,7 @@ export function ToolSummaryTable(): ReactNode {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const showTime = useAtomValue(toolReportHasTimeUsage);
   const showCnts = useAtomValue(toolReportHasCntUsage);
+  const cntsWereEstimated = useAtomValue(toolReportEstimatedToolCounts);
 
   if (tools === null) {
     return <div />;
@@ -501,7 +505,7 @@ export function ToolSummaryTable(): ReactNode {
                     direction={sortDir}
                     onClick={() => toggleSort("ScheduledUseCnt")}
                   >
-                    Scheduled Use (count)
+                    {cntsWereEstimated ? "Estimated Scheduled Use (count)" : "Scheduled Use (count)"}
                   </TableSortLabel>
                 </Tooltip>
               </TableCell>
@@ -518,6 +522,7 @@ export function ToolSummaryTable(): ReactNode {
                     direction={sortDir}
                     onClick={() => toggleSort("RemainingTotalCnt")}
                   >
+                    {cntsWereEstimated ? "Estimated " : ""}
                     {showingMultipleMachines ? "Total Remaining Life (count)" : "Remaining Life (count)"}
                   </TableSortLabel>
                 </Tooltip>

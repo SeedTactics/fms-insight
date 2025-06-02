@@ -39,23 +39,27 @@ import {
   last30EstimatedCycleTimes,
   PartAndStationOperation,
 } from "./estimated-cycle-times.js";
-import { LazySeq, HashMap } from "@seedtactics/immutable-collections";
+import { LazySeq, HashMap, OrderedSet } from "@seedtactics/immutable-collections";
 import { Atom, atom } from "jotai";
+import { stat_name_and_num } from "./station-cycles.js";
 
-export interface ProgramToolUseInSingleCycle {
+export type ProgramToolUseInSingleCycle = {
   readonly tools: ReadonlyArray<{
     readonly toolName: string;
     readonly cycleUsageMinutes: number;
     readonly cycleUsageCnt: number;
     readonly toolChangedDuringMiddleOfCycle: boolean;
   }>;
-}
+};
 
-export type ToolUsage = HashMap<PartAndStationOperation, ReadonlyArray<ProgramToolUseInSingleCycle>>;
+export type RecentProgramToolUse = {
+  readonly machines: OrderedSet<string>;
+  readonly recentCycles: ReadonlyArray<ProgramToolUseInSingleCycle>;
+};
 
-const last30ToolUseRW = atom<ToolUsage>(
-  HashMap.empty<PartAndStationOperation, ReadonlyArray<ProgramToolUseInSingleCycle>>(),
-);
+export type ToolUsage = HashMap<PartAndStationOperation, RecentProgramToolUse>;
+
+const last30ToolUseRW = atom<ToolUsage>(HashMap.empty<PartAndStationOperation, RecentProgramToolUse>());
 export const last30ToolUse: Atom<ToolUsage> = last30ToolUseRW;
 
 function process_tools(
@@ -101,11 +105,14 @@ function process_tools(
 
   return toolUsage.modify(key, (old) => {
     if (old) {
-      const n = old.slice(-4);
+      const n = old.recentCycles.slice(-4);
       n.push({ tools: toolsUsedInCycle });
-      return n;
+      return { machines: old.machines.add(stat_name_and_num(cycle.loc, cycle.locnum)), recentCycles: n };
     } else {
-      return [{ tools: toolsUsedInCycle }];
+      return {
+        machines: OrderedSet.empty<string>().add(stat_name_and_num(cycle.loc, cycle.locnum)),
+        recentCycles: [{ tools: toolsUsedInCycle }],
+      };
     }
   });
 }
