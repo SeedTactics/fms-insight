@@ -20,7 +20,7 @@
     "@emotion/styled": "^11.14.0",
     "@fontsource/roboto": "^5.2.5",
     "@mui/icons-material": "^7.1.0",
-    "@mui/material": "^7.1.0",
+    "@mui/material": "^7.1.1",
     "@react-spring/rafz": "^9.7.5",
     "@react-spring/web": "^9.7.5",
     "@seedtactics/immutable-collections": "^1.0.2",
