@@ -78,7 +78,7 @@ function averageToolUse(
   });
 }
 
-export interface ToolInMachine {
+export type ToolInMachine = {
   readonly machineName: string;
   readonly pocket: number;
   readonly serial?: string;
@@ -88,22 +88,22 @@ export interface ToolInMachine {
   readonly currentUseCnt: number | null;
   readonly lifetimeCnt: number | null;
   readonly remainingCnt: number | null;
-}
+};
 
-export interface PartToolUsage {
+export type PartToolUsage = {
   readonly partAndProg: PartAndStationOperation;
   readonly quantity: number;
   readonly scheduledUseMinutes: number;
   readonly scheduledUseCnt: number;
   readonly machines: OrderedSet<string>;
-}
+};
 
-export interface ToolReport {
+export type ToolReport = {
   readonly toolName: string;
   readonly machines: ReadonlyArray<ToolInMachine>;
   readonly parts: ReadonlyArray<PartToolUsage>;
   readonly estimatedToolCounts: boolean;
-}
+};
 
 class StationOperation {
   public constructor(
@@ -139,7 +139,6 @@ function estimateToolMinutesPerCount(parts: Iterable<PartToolUsage>, machineName
 declare global {
   interface Window {
     bmsToolReportOverridePartQuantity?: number;
-    bmsToolReportOverrideCountPerCycle?: number;
   }
 }
 
@@ -193,16 +192,14 @@ export function calcToolReport(
       const qty = window.bmsToolReportOverridePartQuantity ?? partPlannedQtys.get(partAndProg);
       if (qty !== undefined && qty > 0) {
         return tools.tools.map((tool) => {
-          // if zero, then use override count or just 1
-          const cnt =
-            tool.cycleUsageCnt === 0 ? (window.bmsToolReportOverrideCountPerCycle ?? 1) : tool.cycleUsageCnt;
           return {
             toolName: tool.toolName,
             part: {
               partAndProg,
               quantity: qty,
               scheduledUseMinutes: tool.cycleUsageMinutes,
-              scheduledUseCnt: cnt,
+              // if no counts, just estimate as 1
+              scheduledUseCnt: tool.cycleUsageCnt === 0 ? 1 : tool.cycleUsageCnt,
               machines: usage.get(partAndProg)?.machines ?? OrderedSet.empty<string>(),
             },
           };
