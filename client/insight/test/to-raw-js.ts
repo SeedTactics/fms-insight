@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 
-import { HashSet, HashMap, OrderedMap, LazySeq } from "@seedtactics/immutable-collections";
+import { HashSet, HashMap, OrderedMap, LazySeq, OrderedSet } from "@seedtactics/immutable-collections";
 
 export function toRawJs(val: any): any {
   if (val instanceof Date) {
@@ -21,6 +21,8 @@ export function toRawJs(val: any): any {
     return val.toLazySeq().toRMap(([k, v]) => [k.toString(), toRawJs(v)]);
   } else if (val instanceof OrderedMap) {
     return val.toAscLazySeq().toRMap(([k, v]) => [k.toString(), toRawJs(v)]);
+  } else if (val instanceof OrderedSet) {
+    return val.toAscLazySeq().map(toRawJs).toRArray();
   } else if (val === undefined || val === null) {
     return val;
   } else if (typeof val === "object") {

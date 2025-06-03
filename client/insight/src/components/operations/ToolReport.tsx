@@ -38,7 +38,6 @@ import { Table } from "@mui/material";
 import { TableHead } from "@mui/material";
 import { TableCell } from "@mui/material";
 import { TableRow } from "@mui/material";
-import { TableSortLabel } from "@mui/material";
 import { Tooltip } from "@mui/material";
 import { TableBody } from "@mui/material";
 import { IconButton } from "@mui/material";
@@ -59,22 +58,15 @@ import {
   toolReportRefreshTime,
   machinesWithTools,
   toolReportHasSerial,
-  toolReportHasTimeUsage,
-  toolReportHasCntUsage,
   useCopyToolReportToClipboard,
   ToolInMachine,
-  toolReportMachineFilter,
+  toolReportEstimatedToolCounts,
 } from "../../data/tools-programs.js";
 import { LazySeq } from "@seedtactics/immutable-collections";
 import { PartIdenticon } from "../station-monitor/Material.js";
 import { useIsDemo, useSetTitle } from "../routes.js";
 import { DisplayLoadingAndError } from "../ErrorsAndLoading.js";
-import { useAtom, useAtomValue } from "jotai";
-
-interface ToolRowProps {
-  readonly tool: ToolReport;
-  readonly showingMultipleMachines: boolean;
-}
+import { atom, useAtom, useAtomValue } from "jotai";
 
 const cntFormat = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 0,
@@ -102,21 +94,145 @@ const ToolTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toStri
   backgroundColor: $highlightedRow ? "#BDBDBD" : $noticeRow ? "#E0E0E0" : undefined,
 }));
 
-const ToolDetailSummaryRow = styled(TableRow)({
-  "&:not(:last-child)": {
-    borderBottom: "2px solid black",
-  },
+const MachineDetailTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $borderBottom?: boolean;
+}>(({ $borderBottom }) => ({
+  ...($borderBottom && {
+    "&:not(:last-child)": {
+      borderBottom: "2px solid black",
+    },
+  }),
+}));
+
+const VerticalSeperator = styled("span")({
+  fontSize: "x-large",
+  fontWeight: "lighter",
 });
 
-function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> }) {
+function FormatMinAndCnt({
+  min,
+  cnt,
+  showZero,
+  extraMin,
+  extraCnt,
+}: {
+  min: number | null | undefined;
+  cnt: number | null | undefined;
+  showZero?: boolean;
+  extraMin?: string | null;
+  extraCnt?: string | null;
+}) {
+  min ??= 0;
+  cnt ??= 0;
+
+  const minSpan = extraMin ? (
+    <Tooltip title={extraMin}>
+      <span>{min.toFixed(1)} min</span>
+    </Tooltip>
+  ) : (
+    min.toFixed(1) + " min"
+  );
+
+  const cntSpan = extraCnt ? (
+    <Tooltip title={extraCnt}>
+      <span>{cntFormat.format(cnt)} cnt</span>
+    </Tooltip>
+  ) : (
+    cntFormat.format(cnt) + " cnt"
+  );
+
+  if (min === 0 && cnt === 0) {
+    if (showZero) {
+      return "0";
+    } else {
+      return "";
+    }
+  } else if (min > 0 && cnt === 0) {
+    return minSpan;
+  } else if (min === 0 && cnt > 0) {
+    return cntSpan;
+  } else {
+    return (
+      <span>
+        {minSpan} <VerticalSeperator>|</VerticalSeperator> {cntSpan}
+      </span>
+    );
+  }
+}
+
+function PartDetailTable({ tool, machine }: { tool: ToolReport; machine?: string }) {
+  const parts = machine
+    ? LazySeq.of(tool.parts).filter((p) => p.machines.has(machine))
+    : LazySeq.of(tool.parts);
+
+  return (
+    <Table
+      size="small"
+      sx={{
+        width: "auto",
+        ml: "10em",
+        mb: "1em",
+      }}
+    >
+      <TableHead>
+        <TableRow>
+          <TableCell>Part</TableCell>
+          <TableCell>Program</TableCell>
+          {!machine ? <TableCell>Machines</TableCell> : undefined}
+          <TableCell align="right">Quantity</TableCell>
+          <TableCell align="right">Use/Cycle (min)</TableCell>
+          <TableCell align="right">Use/Cycle (cnt)</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {parts.isEmpty() ? (
+          <TableRow>
+            <TableCell colSpan={5}>No programs use this machine</TableCell>
+          </TableRow>
+        ) : (
+          parts.map((p, idx) => (
+            <TableRow key={idx}>
+              <TableCell>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <PartIdenticon part={p.partAndProg.part} size={20} />
+                  <span>{p.partAndProg.part}</span>
+                </Box>
+              </TableCell>
+              <TableCell>{p.partAndProg.operation}</TableCell>
+              {!machine ? (
+                <TableCell>
+                  {p.machines.foldl((acc, m) => (acc.length > 0 ? acc + ", " : "") + m, "")}
+                </TableCell>
+              ) : undefined}
+              <TableCell align="right">{p.quantity}</TableCell>
+              <TableCell align="right">
+                {p.scheduledUseMinutes > 0 ? p.scheduledUseMinutes.toFixed(1) : ""}
+              </TableCell>
+              <TableCell align="right">
+                {p.scheduledUseCnt > 0 ? cntFormat.format(p.scheduledUseCnt) : ""}
+              </TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+function MachineDetailTable({ machines }: { machines: ReadonlyArray<ToolInMachine> }) {
   const showSerial = useAtomValue(toolReportHasSerial);
-  const showTime = LazySeq.of(machines).some((m) => m.currentUseMinutes != null || m.lifetimeMinutes != null);
-  const showCnts = LazySeq.of(machines).some((m) => m.currentUseCnt != null || m.lifetimeCnt != null);
 
   const byMachine = LazySeq.of(machines).toLookupOrderedMap(
     (m) => m.machineName,
     (m) => m.pocket,
   );
+
+  const anyHasSubtotal = byMachine.size > 1 && byMachine.valuesToAscLazySeq().some((tools) => tools.size > 1);
 
   return (
     <Table
@@ -132,130 +248,135 @@ function ToolDetailRow({ machines }: { machines: ReadonlyArray<ToolInMachine> })
           <TableCell>Machine</TableCell>
           <TableCell align="right">Pocket</TableCell>
           {showSerial ? <TableCell>Serial</TableCell> : undefined}
-          {showTime ? (
-            <>
-              <TableCell align="right">Current Use (min)</TableCell>
-              <TableCell align="right">Lifetime (min)</TableCell>
-              <TableCell align="right">Remaining Use (min)</TableCell>
-            </>
-          ) : undefined}
-          {showCnts ? (
-            <>
-              <TableCell align="right">Current Use (count)</TableCell>
-              <TableCell align="right">Lifetime (count)</TableCell>
-              <TableCell align="right">Remaining Use (count)</TableCell>
-            </>
-          ) : undefined}
+          <TableCell align="right">Current Use </TableCell>
+          <TableCell align="right">Lifetime </TableCell>
+          <TableCell align="right">Remaining Use </TableCell>
         </TableRow>
       </TableHead>
       <TableBody>
         {byMachine.toAscLazySeq().map(([mach, tools]) => (
           <Fragment key={mach}>
             {tools.valuesToAscLazySeq().map((m, idx) => (
-              <TableRow key={idx}>
+              <MachineDetailTableRow key={idx} $borderBottom={anyHasSubtotal && tools.size === 1}>
                 <TableCell>{m.machineName}</TableCell>
                 <TableCell align="right">{m.pocket}</TableCell>
                 {showSerial ? <TableCell>{m.serial ?? ""}</TableCell> : undefined}
-                {showTime ? (
-                  <>
-                    <TableCell align="right">
-                      {m.currentUseMinutes !== null ? m.currentUseMinutes.toFixed(1) : ""}
-                    </TableCell>
-                    <TableCell align="right">
-                      {m.lifetimeMinutes !== null ? m.lifetimeMinutes.toFixed(1) : ""}
-                    </TableCell>
-                    <TableCell align="right">
-                      {m.remainingMinutes !== null ? m.remainingMinutes.toFixed(1) : ""}
-                    </TableCell>
-                  </>
-                ) : undefined}
-                {showCnts ? (
-                  <>
-                    <TableCell align="right">
-                      {m.currentUseCnt !== null ? cntFormat.format(m.currentUseCnt) : ""}
-                    </TableCell>
-                    <TableCell align="right">
-                      {m.lifetimeCnt !== null ? cntFormat.format(m.lifetimeCnt) : ""}
-                    </TableCell>
-                    <TableCell align="right">
-                      {m.remainingCnt !== null ? cntFormat.format(m.remainingCnt) : ""}
-                    </TableCell>
-                  </>
-                ) : undefined}
-              </TableRow>
+                <TableCell align="right">
+                  <FormatMinAndCnt min={m.currentUseMinutes} cnt={m.currentUseCnt} />
+                </TableCell>
+                <TableCell align="right">
+                  <FormatMinAndCnt min={m.lifetimeMinutes} cnt={m.lifetimeCnt} />
+                </TableCell>
+                <TableCell align="right">
+                  <FormatMinAndCnt min={m.remainingMinutes} cnt={m.remainingCnt} showZero />
+                </TableCell>
+              </MachineDetailTableRow>
             ))}
             {byMachine.size > 1 && tools.size > 1 ? (
-              <ToolDetailSummaryRow>
+              <MachineDetailTableRow $borderBottom>
                 <TableCell colSpan={showSerial ? 4 : 3} />
                 <TableCell>Subtotal</TableCell>
-                {showTime ? (
-                  <TableCell align="right">
-                    {tools
-                      .valuesToAscLazySeq()
-                      .sumBy((m) => m.remainingMinutes ?? 0)
-                      .toFixed(1)}
-                  </TableCell>
-                ) : undefined}
-                {showCnts ? (
-                  <TableCell align="right" colSpan={showTime ? 3 : 1}>
-                    {cntFormat.format(tools.valuesToAscLazySeq().sumBy((m) => m.remainingCnt ?? 0))}
-                  </TableCell>
-                ) : undefined}
-              </ToolDetailSummaryRow>
+                <TableCell align="right">
+                  <FormatMinAndCnt
+                    min={tools.valuesToAscLazySeq().sumBy((m) => m.remainingMinutes ?? 0)}
+                    cnt={tools.valuesToAscLazySeq().sumBy((m) => m.remainingCnt ?? 0)}
+                  />
+                </TableCell>
+              </MachineDetailTableRow>
             ) : undefined}
           </Fragment>
         ))}
         <TableRow>
           <TableCell colSpan={showSerial ? 4 : 3} />
           <TableCell>Total</TableCell>
-          {showTime ? (
-            <TableCell align="right">
-              {LazySeq.of(machines)
-                .sumBy((m) => m.remainingMinutes ?? 0)
-                .toFixed(1)}
-            </TableCell>
-          ) : undefined}
-          {showCnts ? (
-            <TableCell align="right" colSpan={showTime ? 3 : 1}>
-              {cntFormat.format(LazySeq.of(machines).sumBy((m) => m.remainingCnt ?? 0))}
-            </TableCell>
-          ) : undefined}
+          <TableCell align="right">
+            <FormatMinAndCnt
+              min={LazySeq.of(machines).sumBy((m) => m.remainingMinutes ?? 0)}
+              cnt={LazySeq.of(machines).sumBy((m) => m.remainingCnt ?? 0)}
+            />
+          </TableCell>
         </TableRow>
       </TableBody>
     </Table>
   );
 }
 
-function ToolRow(props: ToolRowProps) {
+function ToolSummaryHeader() {
+  const cntsWereEstimated = useAtomValue(toolReportEstimatedToolCounts);
+
+  return (
+    <ToolTableRow>
+      <TableCell />
+      <TableCell>Tool</TableCell>
+      <TableCell align="right">
+        <Tooltip
+          title={
+            "Expected use for all currently scheduled parts." +
+            (cntsWereEstimated ? " Counts are estimates." : "")
+          }
+        >
+          <span>Scheduled Use</span>
+        </Tooltip>
+      </TableCell>
+      <TableCell align="right">
+        <Tooltip
+          title={
+            "Remaining use summed over all machines which have a scheduled part." +
+            (cntsWereEstimated ? " Counts are estimates." : "")
+          }
+        >
+          <span>Total Remaining Use</span>
+        </Tooltip>
+      </TableCell>
+      <TableCell align="right">
+        <Tooltip
+          title={
+            "Machine with the least remaining use." + (cntsWereEstimated ? " Counts are estimates." : "")
+          }
+        >
+          <span>Smallest Remaining Use</span>
+        </Tooltip>
+      </TableCell>
+      <TableCell />
+    </ToolTableRow>
+  );
+}
+
+function ToolSummaryRow({ tool }: { tool: ToolReport }) {
   const [open, setOpen] = useState<boolean>(false);
-  const showTime = useAtomValue(toolReportHasTimeUsage);
-  const showCnts = useAtomValue(toolReportHasCntUsage);
 
-  const schUseMin = LazySeq.of(props.tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
-  const totalLifeMin = LazySeq.of(props.tool.machines).sumBy((m) => m.remainingMinutes ?? 0);
-  const schUseCnt = LazySeq.of(props.tool.parts).sumBy((p) => p.scheduledUseCnt * p.quantity);
-  const totalLifeCnt = LazySeq.of(props.tool.machines).sumBy((m) => m.remainingCnt ?? 0);
+  const machinesWithSomePart = LazySeq.of(tool.machines).filter((m) =>
+    tool.parts.some((p) => p.machines.has(m.machineName)),
+  );
 
-  let numCols = 3;
-  if (showTime) {
-    numCols += 2;
-    if (props.showingMultipleMachines) numCols += 1;
-  }
-  if (showCnts) {
-    numCols += 2;
-    if (props.showingMultipleMachines) numCols += 1;
-  }
+  const schUseMin = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
+  const schUseCnt = LazySeq.of(tool.parts).sumBy((p) => p.scheduledUseCnt * p.quantity);
+
+  const totalRemainMin = machinesWithSomePart.sumBy((m) => m.remainingMinutes ?? 0);
+  const totalRemainCnt = machinesWithSomePart.sumBy((m) => m.remainingCnt ?? 0);
+
+  const minRemainMin = machinesWithSomePart
+    .groupBy((m) => m.machineName)
+    .map(([mach, tools]) => ({ mach, remainMin: LazySeq.of(tools).sumBy((m) => m.remainingMinutes ?? 0) }))
+    .minBy(({ remainMin }) => remainMin);
+
+  const minRemainCnt = machinesWithSomePart
+    .groupBy((m) => m.machineName)
+    .map(([mach, tools]) => ({ mach, remainCnt: LazySeq.of(tools).sumBy((m) => m.remainingCnt ?? 0) }))
+    .minBy(({ remainCnt }) => remainCnt);
+
+  const numCols = 6;
 
   return (
     <>
       <ToolTableRow
         $noBorderBottom
-        $highlightedRow={schUseMin > totalLifeMin || schUseCnt > totalLifeCnt}
+        $highlightedRow={schUseMin > totalRemainMin || schUseCnt > totalRemainCnt}
         $noticeRow={
-          schUseMin <= totalLifeMin &&
-          schUseCnt <= totalLifeCnt &&
-          ((props.tool.minRemainingMinutes !== null && schUseMin > props.tool.minRemainingMinutes) ||
-            (props.tool.minRemainingCnt !== null && schUseCnt > props.tool.minRemainingCnt))
+          schUseMin <= totalRemainMin &&
+          schUseCnt <= totalRemainCnt &&
+          ((minRemainMin && schUseMin > minRemainMin.remainMin) ||
+            (minRemainCnt && schUseCnt > minRemainCnt.remainCnt))
         }
       >
         <TableCell>
@@ -263,33 +384,22 @@ function ToolRow(props: ToolRowProps) {
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell>{props.tool.toolName}</TableCell>
-        {showTime ? (
-          <>
-            <TableCell align="right">{schUseMin > 0 ? schUseMin.toFixed(1) : ""}</TableCell>
-            <TableCell align="right">{totalLifeMin > 0 ? totalLifeMin.toFixed(1) : ""}</TableCell>
-          </>
-        ) : undefined}
-        {showCnts ? (
-          <>
-            <TableCell align="right">{schUseCnt > 0 ? cntFormat.format(schUseCnt) : ""}</TableCell>
-            <TableCell align="right">{totalLifeCnt > 0 ? cntFormat.format(totalLifeCnt) : ""}</TableCell>
-          </>
-        ) : undefined}
-        {props.showingMultipleMachines ? (
-          <>
-            {showTime ? (
-              <TableCell align="right">
-                {props.tool.minRemainingMinutes !== null ? props.tool.minRemainingMinutes.toFixed(1) : ""}
-              </TableCell>
-            ) : undefined}
-            {showCnts ? (
-              <TableCell align="right">
-                {props.tool.minRemainingCnt !== null ? cntFormat.format(props.tool.minRemainingCnt) : ""}
-              </TableCell>
-            ) : undefined}
-          </>
-        ) : undefined}
+        <TableCell>{tool.toolName}</TableCell>
+        <TableCell align="right">
+          <FormatMinAndCnt min={schUseMin} cnt={schUseCnt} />
+        </TableCell>
+        <TableCell align="right">
+          <FormatMinAndCnt min={totalRemainMin} cnt={totalRemainCnt} />
+        </TableCell>
+        <TableCell align="right">
+          <FormatMinAndCnt
+            min={minRemainMin?.remainMin}
+            cnt={minRemainCnt?.remainCnt}
+            showZero
+            extraMin={minRemainMin?.mach}
+            extraCnt={minRemainCnt?.mach}
+          />
+        </TableCell>
         <TableCell />
       </ToolTableRow>
       <TableRow>
@@ -304,60 +414,14 @@ function ToolRow(props: ToolRowProps) {
                 mr: "1em",
               }}
             >
-              {props.tool.parts.length === 0 ? undefined : (
+              <div>
+                <MachineDetailTable machines={tool.machines} />
+              </div>
+              {tool.parts.length === 0 ? undefined : (
                 <div>
-                  <Table
-                    size="small"
-                    sx={{
-                      width: "auto",
-                      ml: "10em",
-                      mb: "1em",
-                    }}
-                  >
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Part</TableCell>
-                        <TableCell>Program</TableCell>
-                        <TableCell align="right">Quantity</TableCell>
-                        {showTime ? <TableCell align="right">Use/Cycle (min)</TableCell> : undefined}
-                        {showCnts ? <TableCell align="right">Use/Cycle (cnt)</TableCell> : undefined}
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {LazySeq.of(props.tool.parts).map((p, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                              }}
-                            >
-                              <PartIdenticon part={p.partName} size={20} />
-                              <span>{p.partName}</span>
-                            </Box>
-                          </TableCell>
-                          <TableCell>{p.program}</TableCell>
-                          <TableCell align="right">{p.quantity}</TableCell>
-                          {showTime ? (
-                            <TableCell align="right">
-                              {p.scheduledUseMinutes > 0 ? p.scheduledUseMinutes.toFixed(1) : ""}
-                            </TableCell>
-                          ) : undefined}
-                          {showCnts ? (
-                            <TableCell align="right">
-                              {p.scheduledUseCnt > 0 ? cntFormat.format(p.scheduledUseCnt) : ""}
-                            </TableCell>
-                          ) : undefined}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <PartDetailTable tool={tool} />
                 </div>
               )}
-              <div>
-                <ToolDetailRow machines={props.tool.machines} />
-              </div>
             </Box>
           </Collapse>
         </TableCell>
@@ -366,204 +430,132 @@ function ToolRow(props: ToolRowProps) {
   );
 }
 
-type SortColumn =
-  | "ToolName"
-  | "ScheduledUseMin"
-  | "RemainingTotalMin"
-  | "ScheduledUseCnt"
-  | "RemainingTotalCnt"
-  | "MinRemainingLifeMinutes"
-  | "MinRemainingLifeCnt";
+function ToolMachineHeader({ machine }: { machine: string }) {
+  const cntsWereEstimated = useAtomValue(toolReportEstimatedToolCounts);
+  const showSerial = useAtomValue(toolReportHasSerial);
+
+  return (
+    <ToolTableRow>
+      <TableCell />
+      <TableCell>Tool In {machine}</TableCell>
+      <TableCell align="right">Pocket</TableCell>
+      {showSerial ? <TableCell>Serial</TableCell> : undefined}
+      <TableCell align="right">
+        <Tooltip
+          title={
+            "Expected use for all currently scheduled parts." +
+            (cntsWereEstimated ? " Counts are estimates." : "")
+          }
+        >
+          <span>Scheduled Use</span>
+        </Tooltip>
+      </TableCell>
+      <TableCell align="right">
+        <Tooltip
+          title={"Current recorded usage of this tool." + (cntsWereEstimated ? " Counts are estimates." : "")}
+        >
+          <span>Current Use</span>
+        </Tooltip>
+      </TableCell>
+      <TableCell align="right">
+        <Tooltip
+          title={
+            "Current configured lifetime of this tool." + (cntsWereEstimated ? " Counts are estimates." : "")
+          }
+        >
+          <span>Lifetime</span>
+        </Tooltip>{" "}
+      </TableCell>
+      <TableCell align="right">
+        <Tooltip title={"Lifetime minus current use." + (cntsWereEstimated ? " Counts are estimates." : "")}>
+          <span>Remaining Use</span>
+        </Tooltip>
+      </TableCell>
+      <TableCell />
+    </ToolTableRow>
+  );
+}
+
+function ToolMachineRow({ report, pocket }: { report: ToolReport; pocket: ToolInMachine }) {
+  const [open, setOpen] = useState<boolean>(false);
+  const showSerial = useAtomValue(toolReportHasSerial);
+
+  const numCols = showSerial ? 9 : 8;
+
+  const schMins = LazySeq.of(report.parts)
+    .filter((p) => p.machines.has(pocket.machineName))
+    .sumBy((p) => p.scheduledUseMinutes * p.quantity);
+  const schCnts = LazySeq.of(report.parts)
+    .filter((p) => p.machines.has(pocket.machineName))
+    .sumBy((p) => p.scheduledUseCnt * p.quantity);
+
+  return (
+    <>
+      <ToolTableRow $noBorderBottom>
+        <TableCell>
+          <IconButton size="small" onClick={() => setOpen(!open)}>
+            {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+          </IconButton>
+        </TableCell>
+        <TableCell>{report.toolName}</TableCell>
+        <TableCell align="right">{pocket.pocket}</TableCell>
+        {showSerial ? <TableCell>{pocket.serial ?? ""}</TableCell> : undefined}
+        <TableCell align="right">
+          <FormatMinAndCnt min={schMins} cnt={schCnts} />
+        </TableCell>
+        <TableCell align="right">
+          <FormatMinAndCnt min={pocket.currentUseMinutes} cnt={pocket.currentUseCnt} />
+        </TableCell>
+        <TableCell align="right">
+          <FormatMinAndCnt min={pocket.lifetimeMinutes} cnt={pocket.lifetimeCnt} />
+        </TableCell>
+        <TableCell align="right">
+          <FormatMinAndCnt min={pocket.remainingMinutes} cnt={pocket.remainingCnt} />
+        </TableCell>
+        <TableCell />
+      </ToolTableRow>
+      <TableRow>
+        <TableCell sx={{ pb: "0", pt: "0" }} colSpan={numCols}>
+          <Collapse in={open} timeout="auto" unmountOnExit>
+            <PartDetailTable tool={report} machine={pocket.machineName} />
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+}
 
 const FilterAnyMachineKey = "__Insight__FilterAnyMachine__";
+
+const toolReportMachineFilter = atom<string | null>(null);
 
 export function ToolSummaryTable(): ReactNode {
   const machineFilter = useAtomValue(toolReportMachineFilter);
   const tools = useAtomValue(currentToolReport);
-  const [sortCol, setSortCol] = useState<SortColumn>("ToolName");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-  const showTime = useAtomValue(toolReportHasTimeUsage);
-  const showCnts = useAtomValue(toolReportHasCntUsage);
 
   if (tools === null) {
     return <div />;
   }
 
-  const showingMultipleMachines =
-    machineFilter === null &&
-    LazySeq.of(tools)
-      .flatMap((t) => t.machines)
-      .distinctBy((m) => m.machineName)
-      .length() > 1;
-
-  const rows = LazySeq.of(tools).sortWith((a: ToolReport, b: ToolReport) => {
-    let c = 0;
-    switch (sortCol) {
-      case "ToolName":
-        c = a.toolName.localeCompare(b.toolName);
-        break;
-      case "ScheduledUseMin":
-        c =
-          LazySeq.of(a.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity) -
-          LazySeq.of(b.parts).sumBy((p) => p.scheduledUseMinutes * p.quantity);
-        break;
-      case "RemainingTotalMin":
-        c =
-          LazySeq.of(a.machines).sumBy((m) => m.remainingMinutes ?? 0) -
-          LazySeq.of(b.machines).sumBy((m) => m.remainingMinutes ?? 0);
-        break;
-      case "ScheduledUseCnt":
-        c =
-          LazySeq.of(a.parts).sumBy((p) => p.scheduledUseCnt * p.quantity) -
-          LazySeq.of(b.parts).sumBy((p) => p.scheduledUseCnt * p.quantity);
-        break;
-      case "RemainingTotalCnt":
-        c =
-          LazySeq.of(a.machines).sumBy((m) => m.remainingCnt ?? 0) -
-          LazySeq.of(b.machines).sumBy((m) => m.remainingCnt ?? 0);
-        break;
-      case "MinRemainingLifeMinutes":
-        c = (a.minRemainingMinutes ?? 0) - (b.minRemainingMinutes ?? 0);
-        break;
-      case "MinRemainingLifeCnt":
-        c = (a.minRemainingCnt ?? 0) - (b.minRemainingCnt ?? 0);
-        break;
-    }
-    if (c === 0) {
-      return 0;
-    } else if ((c < 0 && sortDir === "asc") || (c > 0 && sortDir === "desc")) {
-      return -1;
-    } else {
-      return 1;
-    }
-  });
-
-  function toggleSort(s: SortColumn) {
-    if (s == sortCol) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortCol(s);
-    }
-  }
-
   return (
     <Table stickyHeader>
       <TableHead>
-        <ToolTableRow>
-          <TableCell />
-          <TableCell sortDirection={sortCol === "ToolName" ? sortDir : false}>
-            <TableSortLabel
-              active={sortCol === "ToolName"}
-              direction={sortDir}
-              onClick={() => toggleSort("ToolName")}
-            >
-              Tool
-            </TableSortLabel>
-          </TableCell>
-          {showTime ? (
-            <>
-              <TableCell sortDirection={sortCol === "ScheduledUseMin" ? sortDir : false} align="right">
-                <Tooltip title="Expected use for all currently scheduled parts">
-                  <TableSortLabel
-                    active={sortCol === "ScheduledUseMin"}
-                    direction={sortDir}
-                    onClick={() => toggleSort("ScheduledUseMin")}
-                  >
-                    Scheduled Use (minutes)
-                  </TableSortLabel>
-                </Tooltip>
-              </TableCell>
-              <TableCell sortDirection={sortCol === "RemainingTotalMin" ? sortDir : false} align="right">
-                <Tooltip
-                  title={
-                    showingMultipleMachines
-                      ? "Remaining life summed over all machines"
-                      : "Remaining life of all tools in the machine"
-                  }
-                >
-                  <TableSortLabel
-                    active={sortCol === "RemainingTotalMin"}
-                    direction={sortDir}
-                    onClick={() => toggleSort("RemainingTotalMin")}
-                  >
-                    {showingMultipleMachines ? "Total Remaining Life (minutes)" : "Remaining Life (minutes)"}
-                  </TableSortLabel>
-                </Tooltip>
-              </TableCell>
-            </>
-          ) : undefined}
-          {showCnts ? (
-            <>
-              <TableCell sortDirection={sortCol === "ScheduledUseCnt" ? sortDir : false} align="right">
-                <Tooltip title="Expected use for all currently scheduled parts">
-                  <TableSortLabel
-                    active={sortCol === "ScheduledUseCnt"}
-                    direction={sortDir}
-                    onClick={() => toggleSort("ScheduledUseCnt")}
-                  >
-                    Scheduled Use (count)
-                  </TableSortLabel>
-                </Tooltip>
-              </TableCell>
-              <TableCell sortDirection={sortCol === "RemainingTotalCnt" ? sortDir : false} align="right">
-                <Tooltip
-                  title={
-                    showingMultipleMachines
-                      ? "Remaining life summed over all machines"
-                      : "Remaining life of all tools in the machine"
-                  }
-                >
-                  <TableSortLabel
-                    active={sortCol === "RemainingTotalCnt"}
-                    direction={sortDir}
-                    onClick={() => toggleSort("RemainingTotalCnt")}
-                  >
-                    {showingMultipleMachines ? "Total Remaining Life (count)" : "Remaining Life (count)"}
-                  </TableSortLabel>
-                </Tooltip>
-              </TableCell>
-            </>
-          ) : undefined}
-          {showingMultipleMachines ? (
-            <>
-              {showTime ? (
-                <TableCell
-                  sortDirection={sortCol === "MinRemainingLifeMinutes" ? sortDir : false}
-                  align="right"
-                >
-                  <Tooltip title="Machine with the least remaining life">
-                    <TableSortLabel
-                      active={sortCol === "MinRemainingLifeMinutes"}
-                      direction={sortDir}
-                      onClick={() => toggleSort("MinRemainingLifeMinutes")}
-                    >
-                      Smallest Remaining Life (minutes)
-                    </TableSortLabel>
-                  </Tooltip>
-                </TableCell>
-              ) : undefined}
-              {showCnts ? (
-                <TableCell sortDirection={sortCol === "MinRemainingLifeCnt" ? sortDir : false} align="right">
-                  <Tooltip title="Machine with the least remaining life">
-                    <TableSortLabel
-                      active={sortCol === "MinRemainingLifeCnt"}
-                      direction={sortDir}
-                      onClick={() => toggleSort("MinRemainingLifeCnt")}
-                    >
-                      Smallest Remaining Life (count)
-                    </TableSortLabel>
-                  </Tooltip>
-                </TableCell>
-              ) : undefined}
-            </>
-          ) : undefined}
-          <TableCell />
-        </ToolTableRow>
+        {machineFilter === null ? <ToolSummaryHeader /> : <ToolMachineHeader machine={machineFilter} />}
       </TableHead>
       <TableBody>
-        {rows.map((tool) => (
-          <ToolRow key={tool.toolName} tool={tool} showingMultipleMachines={showingMultipleMachines} />
-        ))}
+        {tools.map((tool) =>
+          machineFilter === null ? (
+            <ToolSummaryRow key={tool.toolName} tool={tool} />
+          ) : (
+            <Fragment key={tool.toolName}>
+              {tool.machines
+                .filter((m) => m.machineName === machineFilter)
+                .map((m) => (
+                  <ToolMachineRow key={m.pocket} report={tool} pocket={m} />
+                ))}
+            </Fragment>
+          ),
+        )}
       </TableBody>
     </Table>
   );

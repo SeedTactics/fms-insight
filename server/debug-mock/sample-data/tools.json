@@ -121,7 +121,7 @@
   },
   {
     "MachineGroupName": "Machine",
-    "MachineNum": 4,
+    "MachineNum": 1,
     "Pocket": 10,
     "ToolName": "tool2",
     "CurrentUse": "PT74M",
@@ -129,7 +129,7 @@
   },
   {
     "MachineGroupName": "Machine",
-    "MachineNum": 4,
+    "MachineNum": 1,
     "Pocket": 11,
     "ToolName": "tool2",
     "CurrentUse": "PT42M",
