@@ -19,8 +19,8 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@fontsource/roboto": "^5.2.5",
-    "@mui/icons-material": "^7.1.0",
-    "@mui/material": "^7.1.0",
+    "@mui/icons-material": "^7.1.1",
+    "@mui/material": "^7.1.1",
     "@react-spring/rafz": "^9.7.5",
     "@react-spring/web": "^9.7.5",
     "@seedtactics/immutable-collections": "^1.0.2",
@@ -40,7 +40,7 @@
     "date-fns": "^4.1.0",
     "highlight.js": "^11.11.1",
     "jdenticon": "^3.3.0",
-    "jotai": "^2.12.4",
+    "jotai": "^2.12.5",
     "jsbarcode": "^3.11.6",
     "oidc-client-ts": "^3.2.1",
     "react": "^18.3.1",
@@ -52,15 +52,15 @@
     "urlpattern-polyfill": "^10.1.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.27.0",
+    "@eslint/js": "^9.28.0",
     "@faker-js/faker": "^9.8.0",
     "@types/d3-sankey": "^0.12.4",
-    "@types/node": "^22.15.21",
-    "@types/react": "^18.3.22",
+    "@types/node": "^22.15.29",
+    "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@types/react-timeago": "^4.1.7",
-    "@vitejs/plugin-react": "^4.5.0",
-    "eslint": "^9.27.0",
+    "@vitejs/plugin-react": "^4.5.1",
+    "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -69,8 +69,8 @@
     "nswag": "^14.4.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.32.1",
+    "typescript-eslint": "^8.33.1",
     "vite": "^6.3.5",
-    "vitest": "^3.1.4"
+    "vitest": "^3.2.1"
   }
 }
