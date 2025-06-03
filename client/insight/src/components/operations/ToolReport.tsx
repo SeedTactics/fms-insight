@@ -94,11 +94,15 @@ const ToolTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toStri
   backgroundColor: $highlightedRow ? "#BDBDBD" : $noticeRow ? "#E0E0E0" : undefined,
 }));
 
-const ToolDetailSummaryRow = styled(TableRow)({
-  "&:not(:last-child)": {
-    borderBottom: "2px solid black",
-  },
-});
+const MachineDetailTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
+  $borderBottom?: boolean;
+}>(({ $borderBottom }) => ({
+  ...($borderBottom && {
+    "&:not(:last-child)": {
+      borderBottom: "2px solid black",
+    },
+  }),
+}));
 
 const VerticalSeperator = styled("span")({
   fontSize: "x-large",
@@ -228,6 +232,8 @@ function MachineDetailTable({ machines }: { machines: ReadonlyArray<ToolInMachin
     (m) => m.pocket,
   );
 
+  const anyHasSubtotal = byMachine.size > 1 && byMachine.valuesToAscLazySeq().some((tools) => tools.size > 1);
+
   return (
     <Table
       size="small"
@@ -251,7 +257,7 @@ function MachineDetailTable({ machines }: { machines: ReadonlyArray<ToolInMachin
         {byMachine.toAscLazySeq().map(([mach, tools]) => (
           <Fragment key={mach}>
             {tools.valuesToAscLazySeq().map((m, idx) => (
-              <TableRow key={idx}>
+              <MachineDetailTableRow key={idx} $borderBottom={anyHasSubtotal && tools.size === 1}>
                 <TableCell>{m.machineName}</TableCell>
                 <TableCell align="right">{m.pocket}</TableCell>
                 {showSerial ? <TableCell>{m.serial ?? ""}</TableCell> : undefined}
@@ -264,10 +270,10 @@ function MachineDetailTable({ machines }: { machines: ReadonlyArray<ToolInMachin
                 <TableCell align="right">
                   <FormatMinAndCnt min={m.remainingMinutes} cnt={m.remainingCnt} showZero />
                 </TableCell>
-              </TableRow>
+              </MachineDetailTableRow>
             ))}
             {byMachine.size > 1 && tools.size > 1 ? (
-              <ToolDetailSummaryRow>
+              <MachineDetailTableRow $borderBottom>
                 <TableCell colSpan={showSerial ? 4 : 3} />
                 <TableCell>Subtotal</TableCell>
                 <TableCell align="right">
@@ -276,7 +282,7 @@ function MachineDetailTable({ machines }: { machines: ReadonlyArray<ToolInMachin
                     cnt={tools.valuesToAscLazySeq().sumBy((m) => m.remainingCnt ?? 0)}
                   />
                 </TableCell>
-              </ToolDetailSummaryRow>
+              </MachineDetailTableRow>
             ) : undefined}
           </Fragment>
         ))}
@@ -408,14 +414,14 @@ function ToolSummaryRow({ tool }: { tool: ToolReport }) {
                 mr: "1em",
               }}
             >
+              <div>
+                <MachineDetailTable machines={tool.machines} />
+              </div>
               {tool.parts.length === 0 ? undefined : (
                 <div>
                   <PartDetailTable tool={tool} />
                 </div>
               )}
-              <div>
-                <MachineDetailTable machines={tool.machines} />
-              </div>
             </Box>
           </Collapse>
         </TableCell>

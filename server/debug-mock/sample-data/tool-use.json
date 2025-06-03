@@ -41,12 +41,22 @@
       "Pocket": 11,
       "ToolUseDuringCycle": "PT4M30S",
       "TotalToolUseAtEndOfCycle": "PT50M"
-    },
+    }
+  ],
+  "5718": [
     {
       "Tool": "tool3",
       "Pocket": 30,
       "ToolUseDuringCycle": "PT8M",
       "TotalToolUseAtEndOfCycle": "PT30M"
+    }
+  ],
+  "5698": [
+    {
+      "Tool": "tool3",
+      "Pocket": 30,
+      "ToolUseDuringCycle": "PT5M",
+      "TotalToolUseAtEndOfCycle": "PT40M"
     }
   ],
   "13355": [
