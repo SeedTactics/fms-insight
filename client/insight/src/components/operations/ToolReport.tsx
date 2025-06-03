@@ -482,6 +482,13 @@ function ToolMachineRow({ report, pocket }: { report: ToolReport; pocket: ToolIn
 
   const numCols = showSerial ? 9 : 8;
 
+  const schMins = LazySeq.of(report.parts)
+    .filter((p) => p.machines.has(pocket.machineName))
+    .sumBy((p) => p.scheduledUseMinutes * p.quantity);
+  const schCnts = LazySeq.of(report.parts)
+    .filter((p) => p.machines.has(pocket.machineName))
+    .sumBy((p) => p.scheduledUseCnt * p.quantity);
+
   return (
     <>
       <ToolTableRow $noBorderBottom>
@@ -493,7 +500,9 @@ function ToolMachineRow({ report, pocket }: { report: ToolReport; pocket: ToolIn
         <TableCell>{report.toolName}</TableCell>
         <TableCell align="right">{pocket.pocket}</TableCell>
         {showSerial ? <TableCell>{pocket.serial ?? ""}</TableCell> : undefined}
-        <TableCell align="right">TODO</TableCell>
+        <TableCell align="right">
+          <FormatMinAndCnt min={schMins} cnt={schCnts} />
+        </TableCell>
         <TableCell align="right">
           <FormatMinAndCnt min={pocket.currentUseMinutes} cnt={pocket.currentUseCnt} />
         </TableCell>
