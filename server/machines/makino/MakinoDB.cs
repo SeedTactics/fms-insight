@@ -245,8 +245,10 @@ namespace BlackMaple.FMSInsight.Makino
 
   public record MachineResults
   {
-    public DateTime StartDateTimeUTC { get; set; }
-    public DateTime EndDateTimeUTC { get; set; }
+    public required DateTime StartDateTimeLocal { get; init; }
+    public required DateTime EndDateTimeLocal { get; init; }
+    public required DateTime StartDateTimeUTC { get; init; }
+    public required DateTime EndDateTimeUTC { get; init; }
 
     public int DeviceID { get; set; }
 
@@ -392,7 +394,6 @@ namespace BlackMaple.FMSInsight.Makino
       makinoCfg = cfg;
       dbo = makinoCfg.DbConnectionString?.StartsWith("sqlite:") == true ? "" : "dbo.";
       machineStatusHasJobColumn = CheckForMachineStatusJobColumn();
-      CheckForQueryNotification();
     }
 
     public IDbConnection OpenConnection()
@@ -441,42 +442,6 @@ namespace BlackMaple.FMSInsight.Makino
       {
         Log.Debug(ex, "Error checking for JobID column in MachineStatus");
         return false;
-      }
-    }
-
-    // At the moment, not sure if Query Notification is enabled
-    private void CheckForQueryNotification()
-    {
-      if (makinoCfg.DbConnectionString?.StartsWith("sqlite:") == true)
-        return;
-      using var _db = OpenConnection();
-      using (var cmd = _db.CreateCommand())
-      {
-        cmd.CommandText = "SELECT is_broker_enabled FROM sys.databases WHERE name = 'Makino'";
-        var result = cmd.ExecuteScalar();
-        Log.Debug("Query Notification {@result}", result);
-      }
-
-      // checking permissions now
-      try
-      {
-        Microsoft.Data.SqlClient.SqlDependency.Start(_db.ConnectionString);
-        Log.Debug("SqlDependency started");
-      }
-      catch (Exception ex)
-      {
-        Log.Debug(ex, "Error starting SqlDependency");
-      }
-      finally
-      {
-        try
-        {
-          Microsoft.Data.SqlClient.SqlDependency.Stop(_db.ConnectionString);
-        }
-        catch (Exception ex)
-        {
-          Log.Debug(ex, "Error stopping SqlDependency");
-        }
       }
     }
 
@@ -545,6 +510,8 @@ namespace BlackMaple.FMSInsight.Makino
           var localEnd = DateTime.SpecifyKind(reader.GetDateTime(1), DateTimeKind.Unspecified);
           var m = new MachineResults
           {
+            StartDateTimeLocal = localStart,
+            EndDateTimeLocal = localEnd,
             StartDateTimeUTC = TimeZoneInfo.ConvertTimeToUtc(localStart, makinoCfg.LocalTimeZone),
             EndDateTimeUTC = TimeZoneInfo.ConvertTimeToUtc(localEnd, makinoCfg.LocalTimeZone),
           };
@@ -572,10 +539,13 @@ namespace BlackMaple.FMSInsight.Makino
             m.OperQuantities.Add(reader.GetInt32(16 + i));
           }
 
-          m.CommonValues = QueryCommonValues(_db, localStart, localEnd, m.DeviceID, trans);
-
           ret.Add(m);
         }
+      }
+
+      foreach (var m in ret)
+      {
+        m.CommonValues = QueryCommonValues(_db, m.StartDateTimeLocal, m.EndDateTimeLocal, m.DeviceID, trans);
       }
 
       return ret;
