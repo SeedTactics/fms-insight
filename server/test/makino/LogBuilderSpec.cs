@@ -239,6 +239,8 @@ public sealed class LogBuilderSpec : IDisposable
   {
     var machr = new MachineResults()
     {
+      StartDateTimeLocal = start,
+      EndDateTimeLocal = start + TimeSpan.FromMinutes(elapsedMin),
       StartDateTimeUTC = start.ToUniversalTime(),
       EndDateTimeUTC = start.ToUniversalTime() + TimeSpan.FromMinutes(elapsedMin),
       DeviceID = device,
