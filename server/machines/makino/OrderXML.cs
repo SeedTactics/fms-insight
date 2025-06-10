@@ -61,6 +61,17 @@ namespace BlackMaple.FMSInsight.Makino
       {
         writeTempFile(tempFile);
 
+        if (Serilog.Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+        {
+          Serilog.Log.Debug(
+            "Copying temp {tempFile} to {adePath} as {fileName}: {content}",
+            tempFile,
+            makinoCfg.ADEPath,
+            fileName,
+            File.ReadAllText(tempFile, System.Text.Encoding.UTF8)
+          );
+        }
+
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
           var accControl = new System.Security.AccessControl.FileSecurity();
@@ -86,6 +97,7 @@ namespace BlackMaple.FMSInsight.Makino
         {
           if (e.Name == fileName)
           {
+            Serilog.Log.Debug("Makino ADE processed new jobs: {fileName}", fileName);
             tcs.SetResult(true);
           }
         };

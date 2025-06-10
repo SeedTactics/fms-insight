@@ -187,6 +187,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       if (jobsToSend.Count > 0)
       {
+        Log.Debug("Sending Jobs to Makino {@jobs}", jobsToSend.Select(j => j.UniqueStr));
         OrderXML.WriteNewJobs(settings, jobsToSend, db);
         foreach (var j in jobsToSend)
         {

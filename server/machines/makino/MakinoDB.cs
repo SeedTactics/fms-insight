@@ -1090,7 +1090,7 @@ namespace BlackMaple.FMSInsight.Makino
 
     private static void Load(string command, Action<IDataReader> onEachRow, IDbTransaction trans)
     {
-      Log.Debug(string.Concat("Loading ", command.AsSpan(7)));
+      Log.Verbose(string.Concat("Loading ", command.AsSpan(7)));
 
       using var cmd = trans.Connection!.CreateCommand();
       cmd.Transaction = trans;
