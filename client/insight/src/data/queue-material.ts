@@ -43,7 +43,8 @@ import { useMemo } from "react";
 import { last30Jobs } from "../cell-status/scheduled-jobs.js";
 
 export type SelectableJob = {
-  readonly job: Readonly<api.IJob>;
+  readonly jobUnique: string;
+  readonly job: Readonly<api.IJob> | null;
   readonly machinedProcs: ReadonlyArray<{
     readonly lastProc: number;
     readonly details?: string;
@@ -111,20 +112,17 @@ function possibleJobs(
   return LazySeq.of(barcode?.potentialNewMaterial?.possibleJobsByQueue?.[toQueue] ?? [])
     .groupBy((j) => j.jobUnique)
     .collect(([uniq, procs]) => {
-      const job: Readonly<api.IJob> = currentSt.jobs[uniq] ?? historicJobs.get(uniq);
-      if (!job) {
-        return null;
-      }
-
+      const job = currentSt.jobs[uniq] ?? historicJobs.get(uniq);
       return {
-        job: job,
+        jobUnique: uniq,
+        job: job ?? null,
         machinedProcs: procs.map((proc) => ({
           lastProc: proc.lastCompletedProcess,
-          details: job.procsAndPaths[proc.lastCompletedProcess].paths.map(describePath).join(" | "),
+          details: job?.procsAndPaths[proc.lastCompletedProcess].paths.map(describePath).join(" | ") ?? "",
         })),
       };
     })
-    .toSortedArray((j) => j.job.partName);
+    .toSortedArray((j) => j.job?.partName ?? j.jobUnique);
 }
 
 export function usePossibleNewMaterialTypes(toQueue: string | null): SelectableMaterialType {

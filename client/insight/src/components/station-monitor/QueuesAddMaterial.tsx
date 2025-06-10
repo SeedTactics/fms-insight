@@ -103,10 +103,10 @@ const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.to
   }),
 }));
 
-export type NewMaterialToQueueType =
+type NewMaterialToQueueType =
   | {
       readonly kind: "JobAndProc";
-      readonly job: Readonly<api.IJob>;
+      readonly jobUnique: string;
       readonly last_proc: number;
     }
   | { readonly kind: "RawMat"; readonly rawMatName: string };
@@ -175,29 +175,31 @@ function SelectJob({
                 alignItems="flex-start"
                 selected={
                   newMaterialTy?.kind === "JobAndProc" &&
-                  newMaterialTy?.job.unique === j.job.unique &&
+                  newMaterialTy?.jobUnique === j.jobUnique &&
                   newMaterialTy?.last_proc === j.machinedProcs[0].lastProc
                 }
                 onClick={() =>
                   setNewMaterialTy({
                     kind: "JobAndProc",
-                    job: j.job,
+                    jobUnique: j.jobUnique,
                     last_proc: j.machinedProcs[0].lastProc,
                   })
                 }
               >
-                <ListItemIcon>
-                  <PartIdenticon part={j.job.partName} />
-                </ListItemIcon>
+                {j.job ? (
+                  <ListItemIcon>
+                    <PartIdenticon part={j.job.partName} />
+                  </ListItemIcon>
+                ) : undefined}
                 <ListItemText
-                  primary={j.job.partName + " (" + j.job.unique + ")"}
+                  primary={(j.job?.partName ?? "") + " (" + j.jobUnique + ")"}
                   slotProps={{ primary: { variant: "h4" } }}
                   secondary={
                     <Typography variant="body2">
                       {j.machinedProcs[0].lastProc === 0
                         ? "Raw Material"
                         : "Last machined process " + j.machinedProcs[0].lastProc.toString()}
-                      , {j.job.routeStartUTC.toLocaleDateString()}, {j.machinedProcs[0].details}
+                      , {j.job?.routeStartUTC.toLocaleDateString() ?? ""}, {j.machinedProcs[0].details}
                     </Typography>
                   }
                 />
@@ -211,33 +213,33 @@ function SelectJob({
                 onClick={() => {
                   if (newMaterialTy) setNewMaterialTy(null);
                   setCurCollapse(
-                    curCollapse && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique
+                    curCollapse && curCollapse.kind === "Job" && curCollapse.unique === j.jobUnique
                       ? null
-                      : { kind: "Job", unique: j.job.unique },
+                      : { kind: "Job", unique: j.jobUnique },
                   );
                 }}
               >
                 <ListItemIcon>
                   <ExpandMore
                     $expandedOpen={
-                      curCollapse !== null &&
-                      curCollapse.kind === "Job" &&
-                      curCollapse.unique === j.job.unique
+                      curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.jobUnique
                     }
                   />
                 </ListItemIcon>
-                <ListItemIcon>
-                  <PartIdenticon part={j.job.partName} />
-                </ListItemIcon>
+                {j.job ? (
+                  <ListItemIcon>
+                    <PartIdenticon part={j.job.partName} />
+                  </ListItemIcon>
+                ) : undefined}
                 <ListItemText
-                  primary={j.job.partName + " (" + j.job.unique + ")"}
+                  primary={(j.job?.partName ?? "") + " (" + j.jobUnique + ")"}
                   slotProps={{ primary: { variant: "h4" } }}
-                  secondary={j.job.routeStartUTC.toLocaleDateString()}
+                  secondary={j.job?.routeStartUTC.toLocaleDateString()}
                 />
               </ListItemButton>
             </ListItem>
             <Collapse
-              in={curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.job.unique}
+              in={curCollapse !== null && curCollapse.kind === "Job" && curCollapse.unique === j.jobUnique}
               timeout="auto"
             >
               {j.machinedProcs.map((p, idx) => (
@@ -246,11 +248,15 @@ function SelectJob({
                     <ListItemButton
                       selected={
                         newMaterialTy?.kind === "JobAndProc" &&
-                        newMaterialTy?.job.unique === j.job.unique &&
+                        newMaterialTy?.jobUnique === j.jobUnique &&
                         newMaterialTy?.last_proc === p.lastProc
                       }
                       onClick={() =>
-                        setNewMaterialTy({ kind: "JobAndProc", job: j.job, last_proc: p.lastProc })
+                        setNewMaterialTy({
+                          kind: "JobAndProc",
+                          jobUnique: j.jobUnique,
+                          last_proc: p.lastProc,
+                        })
                       }
                     >
                       <ListItemText
@@ -364,7 +370,7 @@ function PromptForMaterialType({
   if (toQueue === null) return null;
 
   if (materialTypes.castings.length === 0 && materialTypes.jobs.length === 0) {
-    return <div>No material is currently scheduled for {toQueue}</div>;
+    return <div>No jobs are currently scheduled for {toQueue}</div>;
   }
 
   if (materialTypes.jobs.length === 0) {
@@ -582,9 +588,9 @@ export function AddToQueueButton({
               queuePosition: -1,
               operator: enteredOperator ?? operator,
             });
-          } else if (newMaterialTy && newMaterialTy.kind === "JobAndProc" && newMaterialTy.job) {
+          } else if (newMaterialTy && newMaterialTy.kind === "JobAndProc" && newMaterialTy.jobUnique) {
             addNewMat({
-              jobUnique: newMaterialTy.job.unique,
+              jobUnique: newMaterialTy.jobUnique,
               lastCompletedProcess: newMaterialTy.last_proc,
               serial: newSerial ?? undefined,
               workorder: newWorkorder ?? null,

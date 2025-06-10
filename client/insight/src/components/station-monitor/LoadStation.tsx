@@ -626,6 +626,13 @@ function AddMatButton({
     return null;
   }
   if (queues.length === 0) return null;
+  if (
+    inProcMat?.location.type === api.LocType.InQueue &&
+    inProcMat?.location.currentQueue &&
+    queues.includes(inProcMat?.location.currentQueue)
+  ) {
+    return null;
+  }
 
   if (!showAddToQueue) {
     return (
@@ -686,6 +693,8 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
     function onClose() {
       setSwapSt(null);
       setInvalidateSt(null);
+      setShowAddMaterial(false);
+      setSelectedQueue(null);
     },
     [setSwapSt, setInvalidateSt],
   );
