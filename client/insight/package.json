@@ -21,7 +21,7 @@
     "@fontsource/roboto": "^5.2.6",
     "@mui/icons-material": "^7.1.1",
     "@mui/material": "^7.1.1",
-    "@react-spring/rafz": "^9.7.5",
+    "@react-spring/rafz": "^10.0.1",
     "@react-spring/web": "^9.7.5",
     "@seedtactics/immutable-collections": "^1.0.2",
     "@visx/axis": "^3.12.0",
