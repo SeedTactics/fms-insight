@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -121,6 +122,7 @@ namespace BlackMaple.FMSInsight.Makino
     private record JobAndProc
     {
       public required Job Job { get; init; }
+      public required string Revision { get; init; }
       public required int Proc { get; init; }
     }
 
@@ -136,11 +138,16 @@ namespace BlackMaple.FMSInsight.Makino
       xml.WriteStartDocument();
       xml.WriteStartElement("MASData");
 
+      var jobUniqueToDetails = jobs.ToImmutableDictionary(
+        j => j.UniqueStr,
+        j => settings.CustomOrderDetails?.Invoke(j, db)
+      );
+
       if (!settings.DownloadOnlyOrders)
       {
         xml.WriteStartElement("Parts");
         foreach (var j in jobs)
-          WritePart(xml, j);
+          WritePart(xml, j, jobUniqueToDetails.GetValueOrDefault(j.UniqueStr));
         xml.WriteEndElement();
 
         var allFixtures = new Dictionary<string, List<JobAndProc>>();
@@ -162,13 +169,25 @@ namespace BlackMaple.FMSInsight.Makino
               }
               if (allFixtures.TryGetValue(fixName, out var value))
               {
-                value.Add(new JobAndProc() { Job = j, Proc = proc });
+                value.Add(
+                  new JobAndProc()
+                  {
+                    Job = j,
+                    Revision = jobUniqueToDetails.GetValueOrDefault(j.UniqueStr)?.Revision ?? "Insight",
+                    Proc = proc,
+                  }
+                );
               }
               else
               {
                 var lst = new List<JobAndProc>
                 {
-                  new() { Job = j, Proc = proc },
+                  new()
+                  {
+                    Job = j,
+                    Revision = jobUniqueToDetails.GetValueOrDefault(j.UniqueStr)?.Revision ?? "Insight",
+                    Proc = proc,
+                  },
                 };
                 allFixtures.Add(fixName, lst);
               }
@@ -184,7 +203,7 @@ namespace BlackMaple.FMSInsight.Makino
 
       xml.WriteStartElement("Orders");
       foreach (var j in jobs)
-        WriteOrder(xml, j, settings, db);
+        WriteOrder(xml, j, jobUniqueToDetails.GetValueOrDefault(j.UniqueStr), settings, db);
       xml.WriteEndElement();
 
       xml.WriteStartElement("OrderQuantities");
@@ -196,12 +215,12 @@ namespace BlackMaple.FMSInsight.Makino
       xml.WriteEndDocument();
     }
 
-    private static void WritePart(XmlTextWriter xml, Job j)
+    private static void WritePart(XmlTextWriter xml, Job j, OrderDetails? details)
     {
       xml.WriteStartElement("Part");
       xml.WriteAttributeString("action", "ADD");
       xml.WriteAttributeString("name", j.UniqueStr);
-      xml.WriteAttributeString("revision", "Insight");
+      xml.WriteAttributeString("revision", details?.Revision ?? "Insight");
 
       xml.WriteElementString("Comment", j.PartName);
 
@@ -273,7 +292,7 @@ namespace BlackMaple.FMSInsight.Makino
         xml.WriteStartElement("Process");
         xml.WriteAttributeString("action", "ADD");
         xml.WriteAttributeString("partName", j.Job.UniqueStr);
-        xml.WriteAttributeString("revision", "Insight");
+        xml.WriteAttributeString("revision", j.Revision);
         xml.WriteAttributeString("processNumber", j.Proc.ToString());
         xml.WriteEndElement(); //Process
       }
@@ -289,7 +308,13 @@ namespace BlackMaple.FMSInsight.Makino
       public required int Priority { get; init; }
     }
 
-    private static void WriteOrder(XmlTextWriter xml, Job j, MakinoSettings settings, IRepository db)
+    private static void WriteOrder(
+      XmlTextWriter xml,
+      Job j,
+      OrderDetails? details,
+      MakinoSettings settings,
+      IRepository db
+    )
     {
       string partName;
       if (settings.DownloadOnlyOrders)
@@ -304,8 +329,6 @@ namespace BlackMaple.FMSInsight.Makino
       {
         partName = j.UniqueStr;
       }
-
-      var details = settings.CustomOrderDetails?.Invoke(j, db);
 
       xml.WriteStartElement("Order");
       xml.WriteAttributeString("action", "ADD");

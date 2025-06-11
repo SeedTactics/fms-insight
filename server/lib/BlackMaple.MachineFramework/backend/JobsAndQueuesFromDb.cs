@@ -463,8 +463,7 @@ namespace BlackMaple.MachineFramework
     #region Queues
     public event EditMaterialInLogDelegate OnEditMaterialInLog;
 
-    private List<InProcessMaterial> AddUnallocatedCastingToQueue(
-      IRepository logDB,
+    public List<InProcessMaterial> AddUnallocatedCastingToQueue(
       string casting,
       int qty,
       string queue,
@@ -473,6 +472,8 @@ namespace BlackMaple.MachineFramework
       string operatorName
     )
     {
+      using var ldb = _repo.OpenConnection();
+
       if (!_settings.Queues.ContainsKey(queue))
       {
         throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
@@ -481,7 +482,7 @@ namespace BlackMaple.MachineFramework
       // num proc will be set later once it is allocated to a specific job
       var mats = new List<InProcessMaterial>();
 
-      var newMats = logDB.BulkAddNewCastingsInQueue(
+      var newMats = ldb.BulkAddNewCastingsInQueue(
         casting: casting,
         qty: qty,
         queue: queue,
@@ -519,27 +520,6 @@ namespace BlackMaple.MachineFramework
       RecalculateCellState();
 
       return mats;
-    }
-
-    public List<InProcessMaterial> AddUnallocatedCastingToQueue(
-      string casting,
-      int qty,
-      string queue,
-      IList<string> serial,
-      string workorder,
-      string operatorName
-    )
-    {
-      using var ldb = _repo.OpenConnection();
-      return AddUnallocatedCastingToQueue(
-        logDB: ldb,
-        casting: casting,
-        qty: qty,
-        queue: queue,
-        serial: serial,
-        workorder: workorder,
-        operatorName: operatorName
-      );
     }
 
     public InProcessMaterial AddUnprocessedMaterialToQueue(
