@@ -161,6 +161,16 @@ function isMatAssignedRaw(unique: string, m: Readonly<api.IInProcessMaterial>): 
   );
 }
 
+function isMatUnassignedRaw(rawMatName: string, m: Readonly<api.IInProcessMaterial>): boolean {
+  return (
+    m.partName === rawMatName &&
+    m.location.type === api.LocType.InQueue &&
+    m.action.type !== api.ActionType.Loading &&
+    m.process === 0 &&
+    !m.jobUnique
+  );
+}
+
 export function extractJobRawMaterial(
   jobs: {
     [key: string]: Readonly<api.IActiveJob>;
@@ -184,7 +194,9 @@ export function extractJobRawMaterial(
         assignedRaw: LazySeq.of(mats)
           .filter((m) => isMatAssignedRaw(j.unique, m))
           .length(),
-        availableUnassigned: LazySeq.of(mats).length(),
+        availableUnassigned: LazySeq.of(mats)
+          .filter((m) => isMatUnassignedRaw(rawMatName, m))
+          .length(),
       };
       // })
     })
