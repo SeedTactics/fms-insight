@@ -476,7 +476,7 @@ namespace BlackMaple.MachineFramework
 
       if (!_settings.Queues.ContainsKey(queue))
       {
-        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
+        throw new BadRequestException("Queue " + queue + " does not exist");
       }
 
       // num proc will be set later once it is allocated to a specific job
@@ -534,7 +534,7 @@ namespace BlackMaple.MachineFramework
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
-        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
+        throw new BadRequestException("Queue " + queue + " does not exist");
       }
 
       Log.Debug(
@@ -553,11 +553,11 @@ namespace BlackMaple.MachineFramework
         job = jdb.LoadJob(jobUnique);
       }
       if (job == null)
-        throw new BlackMaple.MachineFramework.BadRequestException("Unable to find job " + jobUnique);
+        throw new BadRequestException("Unable to find job " + jobUnique);
 
       int procToCheck = Math.Max(1, process);
       if (procToCheck > job.Processes.Count)
-        throw new BlackMaple.MachineFramework.BadRequestException("Invalid process " + process.ToString());
+        throw new BadRequestException("Invalid process " + process.ToString());
 
       long matId;
       IEnumerable<LogEntry> logEvt;
@@ -567,7 +567,7 @@ namespace BlackMaple.MachineFramework
         if (!string.IsNullOrEmpty(serial))
         {
           ldb.RecordSerialForMaterialID(
-            new BlackMaple.MachineFramework.EventLogMaterial()
+            new EventLogMaterial()
             {
               MaterialID = matId,
               Process = process,
@@ -580,7 +580,7 @@ namespace BlackMaple.MachineFramework
         if (!string.IsNullOrEmpty(workorder))
         {
           ldb.RecordWorkorderForMaterialID(
-            new BlackMaple.MachineFramework.EventLogMaterial()
+            new EventLogMaterial()
             {
               MaterialID = matId,
               Process = process,
@@ -627,7 +627,7 @@ namespace BlackMaple.MachineFramework
     {
       if (!_settings.Queues.ContainsKey(queue))
       {
-        throw new BlackMaple.MachineFramework.BadRequestException("Queue " + queue + " does not exist");
+        throw new BadRequestException("Queue " + queue + " does not exist");
       }
       Log.Debug("Adding material {matId} to queue {queue} in position {pos}", materialId, queue, position);
 
