@@ -78,7 +78,7 @@ import { last30MaterialSummary } from "../../cell-status/material-summary.js";
 import { addHours } from "date-fns";
 import { PromptForQueue } from "./QueuesAddMaterial.js";
 import { useAtomValue, useSetAtom } from "jotai";
-import { PrintOnClientButton } from "./PrintedLabel.js";
+import { PrintLabelButton } from "./PrintedLabel.js";
 
 type MaterialList = ReadonlyArray<Readonly<api.IInProcessMaterial>>;
 
@@ -572,33 +572,6 @@ function InstructionButton({ pallet }: { pallet: number | null }) {
   }
 }
 
-function PrintSerialButton() {
-  const fmsInfo = useAtomValue(fmsInformation);
-  const curMat = useAtomValue(matDetails.inProcessMaterialInDialog);
-  const [printLabel, printingLabel] = matDetails.usePrintLabel();
-
-  if (curMat === null || !fmsInfo.usingLabelPrinterForSerials || curMat.materialID < 0) return null;
-
-  if (fmsInfo.useClientPrinterForLabels) {
-    return <PrintOnClientButton mat={curMat} />;
-  } else {
-    return (
-      <Button
-        color="primary"
-        disabled={printingLabel}
-        onClick={() =>
-          printLabel({
-            materialId: curMat.materialID,
-            proc: curMat.process,
-          })
-        }
-      >
-        Print Label
-      </Button>
-    );
-  }
-}
-
 function AddMatButton({
   queues,
   onClose,
@@ -722,7 +695,7 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
       buttons={
         <>
           <InstructionButton pallet={props.pallet} />
-          <PrintSerialButton />
+          <PrintLabelButton />
           <QuarantineMatButton />
           <SignalInspectionButton />
           <AddMatButton

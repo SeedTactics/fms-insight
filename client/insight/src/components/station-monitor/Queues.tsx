@@ -83,12 +83,8 @@ import {
   MultiMaterialDialog,
 } from "./BulkRawMaterial.js";
 import { AddBySerialDialog, enterSerialForNewMaterialDialog } from "../ManualSerialEntry.js";
-import {
-  inProcessMaterialInDialog,
-  materialDialogOpen,
-  usePrintLabel,
-} from "../../cell-status/material-details.js";
-import { PrintOnClientButton } from "./PrintedLabel.js";
+import { materialDialogOpen } from "../../cell-status/material-details.js";
+import { PrintLabelButton } from "./PrintedLabel.js";
 import { AddMaterialState, AddToQueueButton, AddToQueueMaterialDialogCt } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { AddByBarcodeDialog, scanBarcodeToAddToQueueDialog } from "../BarcodeScanning.js";
@@ -633,33 +629,6 @@ const AddMaterialButtons = memo(function AddMaterialButtons(props: AddMaterialBu
     return null;
   }
 });
-
-function PrintLabelButton() {
-  const fmsInfo = useAtomValue(fmsInformation);
-  const curMat = useAtomValue(inProcessMaterialInDialog);
-  const [printLabel, printingLabel] = usePrintLabel();
-
-  if (curMat === null || !fmsInfo.usingLabelPrinterForSerials) return null;
-
-  if (fmsInfo.useClientPrinterForLabels) {
-    return <PrintOnClientButton mat={curMat} />;
-  } else {
-    return (
-      <Button
-        color="primary"
-        disabled={printingLabel}
-        onClick={() =>
-          printLabel({
-            materialId: curMat.materialID,
-            proc: curMat.process,
-          })
-        }
-      >
-        Print Label
-      </Button>
-    );
-  }
-}
 
 function usePossibleQueuesForAdd(queueNames: ReadonlyArray<string>): ReadonlyArray<string> {
   const toShow = useAtomValue(materialDialogOpen);

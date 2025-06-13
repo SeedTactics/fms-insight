@@ -465,16 +465,20 @@ export interface PrintLabelData {
   readonly proc: number;
 }
 
-export function usePrintLabel(): [(data: PrintLabelData) => void, boolean] {
+export function usePrintLabel(): [(data: PrintLabelData) => void, boolean, boolean] {
   const [updating, setUpdating] = useState<boolean>(false);
+  const [printed, setPrinted] = useState<boolean>(false);
   const callback = useCallback((d: PrintLabelData) => {
     setUpdating(true);
     FmsServerBackend.printLabel(d.materialId, d.proc)
       .catch(console.log)
-      .finally(() => setUpdating(false));
+      .finally(() => {
+        setUpdating(false);
+        setPrinted(true);
+      });
   }, []);
 
-  return [callback, updating];
+  return [callback, updating, printed];
 }
 
 export function useRemoveFromQueue(): [(matId: number, operator: string | null) => void, boolean] {

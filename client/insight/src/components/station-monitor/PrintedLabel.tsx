@@ -38,6 +38,12 @@ import { currentStatus } from "../../cell-status/current-status.js";
 import { useAtomValue } from "jotai";
 import { useReactToPrint } from "react-to-print";
 import { Button } from "@mui/material";
+import { fmsInformation } from "../../network/server-settings.js";
+import {
+  inProcessMaterialInDialog,
+  materialInDialogInfo,
+  usePrintLabel,
+} from "../../cell-status/material-details.js";
 
 interface BarcodeProps {
   readonly text: string;
@@ -368,4 +374,36 @@ export function PrintOnClientButton({
       </div>
     </>
   );
+}
+
+export function PrintLabelButton() {
+  const fmsInfo = useAtomValue(fmsInformation);
+  const matInfo = useAtomValue(materialInDialogInfo);
+  const curMat = useAtomValue(inProcessMaterialInDialog);
+  const [printLabel, printingLabel, printed] = usePrintLabel();
+
+  if (!fmsInfo.usingLabelPrinterForSerials || matInfo === null || matInfo.materialID < 0) return null;
+
+  if (fmsInfo.useClientPrinterForLabels) {
+    if (curMat === null) {
+      return null;
+    } else {
+      return <PrintOnClientButton mat={curMat} />;
+    }
+  } else {
+    return (
+      <Button
+        color="primary"
+        disabled={printingLabel || printed}
+        onClick={() =>
+          printLabel({
+            materialId: matInfo.materialID,
+            proc: curMat?.process ?? 0,
+          })
+        }
+      >
+        {printed ? "Printed" : "Print Label"}
+      </Button>
+    );
+  }
 }
