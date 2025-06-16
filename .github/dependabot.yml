@@ -8,6 +8,23 @@ updates:
     directory: "/client/insight"
     schedule:
       interval: "weekly"
+    groups:
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "@react-spring/*"
+          - "@visx/*"
+      insight-dev:
+        dependency-type: "development"
+        patterns:
+          - "*"
+      insight-prod:
+        dependency-type: "production"
+        patterns:
+          - "*"
   - package-ecosystem: "nuget"
     directory: "/server"
     schedule:
