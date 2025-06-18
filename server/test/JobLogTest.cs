@@ -4915,7 +4915,7 @@ namespace BlackMaple.FMSInsight.Tests
 
       var expectedInvalidateMsg = new LogEntry(
         cntr: 0,
-        mat: [logMatProc0 with { Process = 1, Path = 5 }],
+        mat: [logMatProc0 with { Process = 1, Path = null }],
         pal: 0,
         ty: LogType.InvalidateCycle,
         locName: "InvalidateCycle",
@@ -4923,7 +4923,7 @@ namespace BlackMaple.FMSInsight.Tests
         prog: "InvalidateCycle",
         start: false,
         endTime: now,
-        result: "Invalidate all events on cycle for pallet 5"
+        result: "Invalidate all events on cycles"
       );
       expectedInvalidateMsg = expectedInvalidateMsg with
       {
@@ -4932,12 +4932,15 @@ namespace BlackMaple.FMSInsight.Tests
           .Add("operator", "theoper"),
       };
 
+      result.EventsShouldBe(new[] { expectedInvalidateMsg });
+
       var newMatLog = origMatLog
         .Select(RemoveActiveTime())
         .Select(evt =>
         {
           return evt with
           {
+            Material = evt.Material.Select(m => m with { Path = null }).ToImmutableList(),
             ProgramDetails = (evt.ProgramDetails ?? ImmutableDictionary<string, string>.Empty).Add(
               "PalletCycleInvalidated",
               "1"
@@ -4946,7 +4949,14 @@ namespace BlackMaple.FMSInsight.Tests
         })
         .ToList();
 
-      result.EventsShouldBe(new[] { expectedInvalidateMsg });
+      var newPalLog = origPalLog.Select(evt =>
+        evt with
+        {
+          Material = evt.Material.Select(m => m with { Path = null }).ToImmutableList(),
+        }
+      );
+
+      logMatProc0 = logMatProc0 with { Path = null };
 
       // log for initiallyLoadedMatProc matches, and importantly has only process 0 as max
       _jobLog.NextProcessForQueuedMaterial(matProc0.MaterialID).ShouldBe(1);
@@ -4955,7 +4965,7 @@ namespace BlackMaple.FMSInsight.Tests
         .GetLogForMaterial(matProc0.MaterialID)
         .EventsShouldBe(
           newMatLog
-            .Concat(origPalLog)
+            .Concat(newPalLog)
             .Concat(
               new[]
               {

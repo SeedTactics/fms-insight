@@ -914,17 +914,54 @@ namespace BlackMaple.MachineFramework
       string? changeJobUniqueTo = null
     )
     {
-      Log.Debug("Invalidating pallet cycle for {matId} and {process}", matId, process);
+      Log.Debug(
+        "Invalidating pallet cycle for {matId} and {process}: changing to {casting} and {job}",
+        matId,
+        process,
+        changeCastingTo,
+        changeJobUniqueTo
+      );
 
-      using (var logDb = _repo.OpenConnection())
+      if (!string.IsNullOrEmpty(changeCastingTo))
       {
-        logDb.InvalidatePalletCycle(
+        if (process > 1)
+        {
+          throw new BadRequestException("Can only change casting when invalidating all processes");
+        }
+
+        using var db = _repo.OpenConnection();
+        db.InvalidateAndChangeAssignment(
           matId: matId,
-          process: process,
-          operatorName: operatorName,
-          changeCastingTo: changeCastingTo,
-          changeJobUniqueTo: changeJobUniqueTo
+          changeJobUniqueTo: null,
+          changePartNameTo: changeCastingTo,
+          changeNumProcessesTo: 1,
+          operatorName: operatorName
         );
+      }
+      else if (!string.IsNullOrEmpty(changeJobUniqueTo))
+      {
+        if (process > 1)
+        {
+          throw new BadRequestException("Can only change job when invalidating all processes");
+        }
+        using var db = _repo.OpenConnection();
+        var job = db.LoadJob(changeJobUniqueTo);
+        if (job == null)
+        {
+          throw new BadRequestException("Job " + changeJobUniqueTo + " not found");
+        }
+        db.InvalidateAndChangeAssignment(
+          matId: matId,
+          changeJobUniqueTo: changeJobUniqueTo,
+          changePartNameTo: job.PartName,
+          changeNumProcessesTo: job.Processes.Count,
+          operatorName: operatorName
+        );
+      }
+      else
+      {
+        using var logDb = _repo.OpenConnection();
+        logDb.InvalidatePalletCycle(matId: matId, process: process, operatorName: operatorName);
       }
 
       RecalculateCellState();

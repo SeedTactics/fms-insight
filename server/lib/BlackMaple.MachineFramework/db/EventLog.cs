@@ -3109,129 +3109,210 @@ namespace BlackMaple.MachineFramework
       }
     );
 
+    private void InvalidatePalletCycle(
+      long matId,
+      int? process,
+      string operatorName,
+      DateTime timeUTC,
+      SqliteTransaction trans,
+      List<LogEntry> newLogEntries
+    )
+    {
+      using var getCycles = _connection.CreateCommand();
+      using var getMatsCmd = _connection.CreateCommand();
+      using var updateEvtCmd = _connection.CreateCommand();
+      using var removePathDetailsCmd = _connection.CreateCommand();
+      using var addMessageCmd = _connection.CreateCommand();
+
+      getCycles.CommandText =
+        "SELECT s.Counter, s.Pallet FROM stations s WHERE "
+        + " EXISTS ("
+        + "   SELECT 1 FROM stations_mat m "
+        + "        WHERE s.Counter = m.Counter "
+        + "          AND m.MaterialID = $matid "
+        + (process.HasValue ? "AND m.Process = $proc" : "")
+        + " ) AND "
+        + " s.StationLoc IN ("
+        + LogTypesToCheckForNextProcess
+        + ") AND "
+        + " NOT EXISTS("
+        + "   SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'"
+        + " )";
+      getCycles.Parameters.Add("matid", SqliteType.Integer).Value = matId;
+      if (process.HasValue)
+      {
+        getCycles.Parameters.Add("proc", SqliteType.Integer).Value = process.Value;
+      }
+      getCycles.Transaction = trans;
+
+      getMatsCmd.CommandText = "SELECT MaterialID, Process FROM stations_mat WHERE Counter = $cntr";
+      getMatsCmd.Parameters.Add("cntr", SqliteType.Integer);
+      getMatsCmd.Transaction = trans;
+
+      updateEvtCmd.CommandText = "UPDATE stations SET ActiveTime = 0 WHERE Counter = $cntr";
+      updateEvtCmd.Parameters.Add("cntr", SqliteType.Integer);
+      updateEvtCmd.Transaction = trans;
+
+      removePathDetailsCmd.CommandText =
+        "DELETE FROM mat_path_details WHERE MaterialID = $mid AND Process = $proc";
+      removePathDetailsCmd.Parameters.Add("mid", SqliteType.Integer);
+      removePathDetailsCmd.Parameters.Add("proc", SqliteType.Integer);
+      removePathDetailsCmd.Transaction = trans;
+
+      addMessageCmd.CommandText =
+        "INSERT OR REPLACE INTO program_details(Counter, Key, Value) VALUES ($cntr,'PalletCycleInvalidated','1')";
+      addMessageCmd.Parameters.Add("cntr", SqliteType.Integer);
+      addMessageCmd.Transaction = trans;
+
+      // load old events
+      var invalidatedCntrs = new List<long>();
+      var allMatIds = new HashSet<(long matId, int proc)>();
+      using (var reader = getCycles.ExecuteReader())
+      {
+        while (reader.Read())
+        {
+          int pallet = 0;
+          if (!reader.IsDBNull(1))
+          {
+            if (reader.GetFieldType(1) == typeof(string))
+            {
+              var palStr = reader.GetString(1);
+              if (!string.IsNullOrEmpty(palStr))
+              {
+                int.TryParse(palStr, out pallet);
+              }
+            }
+            else
+            {
+              var palNum = reader.GetInt32(1);
+              if (palNum > 0)
+              {
+                pallet = palNum;
+              }
+            }
+          }
+          var cntr = reader.GetInt64(0);
+          invalidatedCntrs.Add(cntr);
+
+          getMatsCmd.Parameters[0].Value = cntr;
+          using (var matIdReader = getMatsCmd.ExecuteReader())
+          {
+            while (matIdReader.Read())
+            {
+              long removedMatId = matIdReader.GetInt64(0);
+              int removedProc = matIdReader.GetInt32(1);
+              allMatIds.Add((removedMatId, removedProc));
+
+              removePathDetailsCmd.Parameters[0].Value = removedMatId;
+              removePathDetailsCmd.Parameters[1].Value = removedProc;
+              removePathDetailsCmd.ExecuteNonQuery();
+            }
+          }
+
+          updateEvtCmd.Parameters[0].Value = cntr;
+          updateEvtCmd.ExecuteNonQuery();
+
+          addMessageCmd.Parameters[0].Value = cntr;
+          addMessageCmd.ExecuteNonQuery();
+        }
+      }
+
+      // record events
+      var newMsg = new NewEventLogEntry()
+      {
+        Material = allMatIds.Select(m => new EventLogMaterial()
+        {
+          MaterialID = m.matId,
+          Process = m.proc,
+          Face = 0,
+        }),
+        Pallet = 0,
+        LogType = LogType.InvalidateCycle,
+        LocationName = "InvalidateCycle",
+        LocationNum = 1,
+        Program = "InvalidateCycle",
+        StartOfCycle = false,
+        EndTimeUTC = timeUTC,
+        Result = "Invalidate all events on cycles",
+      };
+      newMsg.ProgramDetails["EditedCounters"] = string.Join(",", invalidatedCntrs);
+      if (!string.IsNullOrEmpty(operatorName))
+      {
+        newMsg.ProgramDetails["operator"] = operatorName;
+      }
+      newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
+    }
+
     public IEnumerable<LogEntry> InvalidatePalletCycle(
       long matId,
       int process,
       string operatorName,
-      string changeCastingTo = null,
-      string changeJobUniqueTo = null,
       DateTime? timeUTC = null
     )
     {
-      // TODO: change casting or job
-
       var newLogEntries = new List<LogEntry>();
 
       lock (_cfg)
       {
-        using (var getCycles = _connection.CreateCommand())
-        using (var getMatsCmd = _connection.CreateCommand())
-        using (var updateEvtCmd = _connection.CreateCommand())
-        using (var addMessageCmd = _connection.CreateCommand())
-        using (var trans = _connection.BeginTransaction())
-        {
-          getCycles.CommandText =
-            "SELECT s.Counter, s.Pallet FROM stations s WHERE "
-            + " EXISTS ("
-            + "   SELECT 1 FROM stations_mat m WHERE s.Counter = m.Counter AND m.MaterialID = $matid AND m.Process = $proc"
-            + " ) AND "
-            + " s.StationLoc IN ("
-            + LogTypesToCheckForNextProcess
-            + ") AND "
-            + " NOT EXISTS("
-            + "   SELECT 1 FROM program_details d WHERE s.Counter = d.Counter AND d.Key = 'PalletCycleInvalidated'"
-            + " )";
-          getCycles.Parameters.Add("matid", SqliteType.Integer).Value = matId;
-          getCycles.Parameters.Add("proc", SqliteType.Integer).Value = process;
-          getCycles.Transaction = trans;
+        using var trans = _connection.BeginTransaction();
 
-          getMatsCmd.CommandText = "SELECT MaterialID FROM stations_mat WHERE Counter = $cntr";
-          getMatsCmd.Parameters.Add("cntr", SqliteType.Integer);
-          getMatsCmd.Transaction = trans;
+        InvalidatePalletCycle(
+          matId: matId,
+          process: process,
+          operatorName: operatorName,
+          timeUTC: timeUTC ?? DateTime.UtcNow,
+          trans: trans,
+          newLogEntries: newLogEntries
+        );
 
-          updateEvtCmd.CommandText = "UPDATE stations SET ActiveTime = 0 WHERE Counter = $cntr";
-          updateEvtCmd.Parameters.Add("cntr", SqliteType.Integer);
-          updateEvtCmd.Transaction = trans;
+        trans.Commit();
+      }
 
-          addMessageCmd.CommandText =
-            "INSERT OR REPLACE INTO program_details(Counter, Key, Value) VALUES ($cntr,'PalletCycleInvalidated','1')";
-          addMessageCmd.Parameters.Add("cntr", SqliteType.Integer);
-          addMessageCmd.Transaction = trans;
+      foreach (var l in newLogEntries)
+        _cfg.OnNewLogEntry(l, null, this);
 
-          // load old events
-          int pallet = 0;
-          var invalidatedCntrs = new List<long>();
-          var allMatIds = new HashSet<long>();
-          using (var reader = getCycles.ExecuteReader())
-          {
-            while (reader.Read())
-            {
-              if (!reader.IsDBNull(1))
-              {
-                if (reader.GetFieldType(1) == typeof(string))
-                {
-                  var palStr = reader.GetString(1);
-                  if (!string.IsNullOrEmpty(palStr))
-                  {
-                    int.TryParse(palStr, out pallet);
-                  }
-                }
-                else
-                {
-                  var palNum = reader.GetInt32(1);
-                  if (palNum > 0)
-                  {
-                    pallet = palNum;
-                  }
-                }
-              }
-              var cntr = reader.GetInt64(0);
-              invalidatedCntrs.Add(cntr);
+      return newLogEntries;
+    }
 
-              getMatsCmd.Parameters[0].Value = cntr;
-              using (var matIdReader = getMatsCmd.ExecuteReader())
-              {
-                while (matIdReader.Read())
-                  allMatIds.Add(matIdReader.GetInt64(0));
-              }
+    public IEnumerable<LogEntry> InvalidateAndChangeAssignment(
+      long matId,
+      string operatorName,
+      string changeJobUniqueTo,
+      string changePartNameTo,
+      int changeNumProcessesTo,
+      DateTime? timeUTC = null
+    )
+    {
+      var newLogEntries = new List<LogEntry>();
 
-              updateEvtCmd.Parameters[0].Value = cntr;
-              updateEvtCmd.ExecuteNonQuery();
+      lock (_cfg)
+      {
+        using var trans = _connection.BeginTransaction();
 
-              addMessageCmd.Parameters[0].Value = cntr;
-              addMessageCmd.ExecuteNonQuery();
-            }
-          }
+        InvalidatePalletCycle(
+          matId: matId,
+          process: null,
+          operatorName: operatorName,
+          timeUTC: timeUTC ?? DateTime.UtcNow,
+          trans: trans,
+          newLogEntries: newLogEntries
+        );
 
-          // record events
-          var time = timeUTC ?? DateTime.UtcNow;
+        using var updateMatDetailsCmd = _connection.CreateCommand();
+        updateMatDetailsCmd.Transaction = trans;
+        updateMatDetailsCmd.CommandText =
+          "UPDATE matdetails SET UniqueStr = $uniq, PartName = $part, NumProcesses = $numproc WHERE MaterialID = $mid";
+        updateMatDetailsCmd.Parameters.Add("uniq", SqliteType.Text).Value = string.IsNullOrEmpty(
+          changeJobUniqueTo
+        )
+          ? DBNull.Value
+          : changeJobUniqueTo;
+        updateMatDetailsCmd.Parameters.Add("part", SqliteType.Text).Value = changePartNameTo;
+        updateMatDetailsCmd.Parameters.Add("numproc", SqliteType.Integer).Value = changeNumProcessesTo;
+        updateMatDetailsCmd.Parameters.Add("mid", SqliteType.Integer).Value = matId;
+        updateMatDetailsCmd.ExecuteNonQuery();
 
-          var newMsg = new NewEventLogEntry()
-          {
-            Material = allMatIds.Select(m => new EventLogMaterial()
-            {
-              MaterialID = m,
-              Process = process,
-              Face = 0,
-            }),
-            Pallet = 0,
-            LogType = LogType.InvalidateCycle,
-            LocationName = "InvalidateCycle",
-            LocationNum = 1,
-            Program = "InvalidateCycle",
-            StartOfCycle = false,
-            EndTimeUTC = time,
-            Result = "Invalidate all events on cycle for pallet " + pallet.ToString(),
-          };
-          newMsg.ProgramDetails["EditedCounters"] = string.Join(",", invalidatedCntrs);
-          if (!string.IsNullOrEmpty(operatorName))
-          {
-            newMsg.ProgramDetails["operator"] = operatorName;
-          }
-          newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
-
-          trans.Commit();
-        }
+        trans.Commit();
       }
 
       foreach (var l in newLogEntries)

@@ -374,8 +374,14 @@ namespace BlackMaple.MachineFramework
       long matId,
       int process,
       string operatorName,
-      string changeCastingTo = null,
-      string changeJobUniqueTo = null,
+      DateTime? timeUTC = null
+    );
+    IEnumerable<LogEntry> InvalidateAndChangeAssignment(
+      long matId,
+      string operatorName,
+      string changeJobUniqueTo,
+      string changePartNameTo,
+      int changeNumProcessesTo,
       DateTime? timeUTC = null
     );
     LogEntry CreateRebooking(
