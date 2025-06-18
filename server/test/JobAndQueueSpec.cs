@@ -72,6 +72,19 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     _settings.Queues.Add("q2", new QueueInfo());
 
     _serverSettings = new ServerSettings();
+
+    _curSt = new MockCellState()
+    {
+      CurrentStatus = new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = DateTime.UtcNow,
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+        Material = [],
+        Alarms = ["Initial First Startup Status"],
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+      },
+    };
   }
 
   void IDisposable.Dispose()
@@ -94,11 +107,27 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
   public bool AllowQuarantineToCancelLoad { get; private set; } = false;
   public bool AddJobsAsCopiedToSystem => true;
 
-  private async Task StartSyncThread()
+  private async Task StartSyncThread(string extraAlarm = null)
   {
     var newCellSt = CreateTaskToWaitForNewStatus();
     _jq = new JobsAndQueuesFromDb<MockCellState>(_repo, _serverSettings, _settings, this, startThread: false);
     _jq.OnNewCurrentStatus += OnNewCurrentStatus;
+
+    // before starting (or while starting), the current status is Starting up
+    var initial = _jq.GetCurrentStatus();
+    initial.TimeOfCurrentStatusUTC.ShouldBe(DateTime.UtcNow, tolerance: TimeSpan.FromSeconds(4));
+    initial.ShouldBeEquivalentTo(
+      new CurrentStatus()
+      {
+        TimeOfCurrentStatusUTC = initial.TimeOfCurrentStatusUTC,
+        Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
+        Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
+        Material = [],
+        Queues = ImmutableDictionary<string, QueueInfo>.Empty,
+        Alarms = ["FMS Insight is starting up..."],
+      }
+    );
+
     _jq.StartThread();
 
     var actual = await newCellSt;
@@ -112,7 +141,9 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
         Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
         Material = [],
         Queues = ImmutableDictionary<string, QueueInfo>.Empty,
-        Alarms = ["FMS Insight is starting up..."],
+        Alarms = !string.IsNullOrEmpty(extraAlarm)
+          ? ["Initial First Startup Status", extraAlarm]
+          : ["Initial First Startup Status"],
       }
     );
   }
@@ -1600,7 +1631,7 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
     return new InProcessMaterial()
     {
       MaterialID = matId,
-      JobUnique = job?.UniqueStr,
+      JobUnique = job?.UniqueStr ?? "",
       PartName = part,
       Process = proc,
       Path = path,
@@ -1714,34 +1745,8 @@ public sealed class JobAndQueueSpec : ISynchronizeCellState<JobAndQueueSpec.Mock
       ExpectedTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Hawaiian Standard Time"),
     };
 
-    await StartSyncThread();
-
-    var curSt = new CurrentStatus()
-    {
-      TimeOfCurrentStatusUTC = DateTime.UtcNow,
-      Jobs = ImmutableDictionary<string, ActiveJob>.Empty,
-      Pallets = ImmutableDictionary<int, PalletStatus>.Empty,
-      Material = [],
-      Alarms = [],
-      Queues = ImmutableDictionary<string, QueueInfo>.Empty,
-    };
-    _curSt = new MockCellState()
-    {
-      Uniq = 0,
-      CurrentStatus = curSt,
-      StateUpdated = true,
-    };
-
-    var task = CreateTaskToWaitForNewStatus();
-    NewCellState?.Invoke();
-    (await task).ShouldBeEquivalentTo(
-      curSt with
-      {
-        Alarms =
-        [
-          $"The server is running in timezone {TimeZoneInfo.Local.Id} but was expected to be Hawaiian Standard Time.",
-        ],
-      }
+    await StartSyncThread(
+      $"The server is running in timezone {TimeZoneInfo.Local.Id} but was expected to be Hawaiian Standard Time."
     );
   }
 

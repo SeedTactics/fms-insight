@@ -4894,7 +4894,6 @@ namespace BlackMaple.FMSInsight.Tests
       var result = _jobLog.InvalidatePalletCycle(
         matId: matProc1.MaterialID,
         process: 1,
-        oldMatPutInQueue: "quarantine",
         operatorName: "theoper",
         timeUTC: now
       );
@@ -4947,31 +4946,7 @@ namespace BlackMaple.FMSInsight.Tests
         })
         .ToList();
 
-      result.EventsShouldBe(
-        new[]
-        {
-          expectedInvalidateMsg,
-          RemoveFromQueueExpectedEntry(
-            mat: logMatProc0,
-            cntr: 0,
-            queue: "xyz",
-            position: 0,
-            timeUTC: now,
-            elapsedMin: 1,
-            reason: "MovingInQueue",
-            operName: "theoper"
-          ),
-          AddToQueueExpectedEntry(
-            mat: logMatProc0,
-            cntr: 0,
-            queue: "quarantine",
-            position: 0,
-            timeUTC: now,
-            operName: "theoper",
-            reason: "InvalidateCycle"
-          ),
-        }
-      );
+      result.EventsShouldBe(new[] { expectedInvalidateMsg });
 
       // log for initiallyLoadedMatProc matches, and importantly has only process 0 as max
       _jobLog.NextProcessForQueuedMaterial(matProc0.MaterialID).ShouldBe(1);
@@ -5007,25 +4982,6 @@ namespace BlackMaple.FMSInsight.Tests
                   elapsedMin: initialMatRemoveQueueTime.Subtract(initialMatAddToQueueTime).TotalMinutes
                 ),
                 expectedInvalidateMsg,
-                RemoveFromQueueExpectedEntry(
-                  mat: logMatProc0,
-                  cntr: 0,
-                  queue: "xyz",
-                  position: 0,
-                  timeUTC: now,
-                  elapsedMin: 1,
-                  reason: "MovingInQueue",
-                  operName: "theoper"
-                ),
-                AddToQueueExpectedEntry(
-                  mat: logMatProc0,
-                  cntr: 0,
-                  queue: "quarantine",
-                  position: 0,
-                  timeUTC: now,
-                  operName: "theoper",
-                  reason: "InvalidateCycle"
-                ),
               }
             )
         );

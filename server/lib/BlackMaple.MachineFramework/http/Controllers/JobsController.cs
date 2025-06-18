@@ -249,15 +249,17 @@ namespace BlackMaple.MachineFramework.Controllers
     public void InvalidatePalletCycle(
       long materialId,
       [FromBody] int process,
-      [FromQuery] string? putMatInQueue = null,
-      [FromQuery] string? operName = null
+      [FromQuery] string? operName = null,
+      [FromQuery] string? changeCastingTo = null,
+      [FromQuery] string? changeJobUniqueTo = null
     )
     {
       jobAndQueue.InvalidatePalletCycle(
         matId: materialId,
         process: process,
-        oldMatPutInQueue: putMatInQueue,
-        operatorName: operName
+        operatorName: operName,
+        changeCastingTo: changeCastingTo,
+        changeJobUniqueTo: changeJobUniqueTo
       );
     }
 

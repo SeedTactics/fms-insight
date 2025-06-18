@@ -3112,11 +3112,14 @@ namespace BlackMaple.MachineFramework
     public IEnumerable<LogEntry> InvalidatePalletCycle(
       long matId,
       int process,
-      string oldMatPutInQueue,
       string operatorName,
+      string changeCastingTo = null,
+      string changeJobUniqueTo = null,
       DateTime? timeUTC = null
     )
     {
+      // TODO: change casting or job
+
       var newLogEntries = new List<LogEntry>();
 
       lock (_cfg)
@@ -3226,41 +3229,6 @@ namespace BlackMaple.MachineFramework
             newMsg.ProgramDetails["operator"] = operatorName;
           }
           newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
-
-          if (!string.IsNullOrEmpty(oldMatPutInQueue))
-          {
-            using (var checkMatInQueue = _connection.CreateCommand())
-            {
-              checkMatInQueue.CommandText = "SELECT Queue FROM queues WHERE MaterialID = $matid LIMIT 1";
-              checkMatInQueue.Parameters.Add("matid", SqliteType.Integer);
-              checkMatInQueue.Transaction = trans;
-
-              foreach (var m in allMatIds)
-              {
-                checkMatInQueue.Parameters[0].Value = m;
-                var currentQueue = checkMatInQueue.ExecuteScalar();
-                if (
-                  currentQueue == null
-                  || currentQueue == DBNull.Value
-                  || (string)currentQueue != oldMatPutInQueue
-                )
-                {
-                  newLogEntries.AddRange(
-                    AddToQueue(
-                      trans,
-                      matId: m,
-                      process: process - 1,
-                      queue: oldMatPutInQueue,
-                      position: -1,
-                      operatorName: operatorName,
-                      timeUTC: time,
-                      reason: "InvalidateCycle"
-                    )
-                  );
-                }
-              }
-            }
-          }
 
           trans.Commit();
         }

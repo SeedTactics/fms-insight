@@ -206,8 +206,6 @@ namespace DebugMachineWatchApiServer
 
     private JsonSerializerOptions _jsonSettings;
 
-    public event EditMaterialInLogDelegate OnEditMaterialInLog;
-
     public bool AllowQuarantineToCancelLoad { get; } = true;
     public bool AddJobsAsCopiedToSystem { get; } = true;
 
@@ -822,49 +820,6 @@ namespace DebugMachineWatchApiServer
         Alarms = ImmutableList<string>.Empty,
         Queues = ImmutableDictionary<string, QueueInfo>.Empty,
       };
-    }
-
-    public void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string operatorName = null)
-    {
-      using var LogDB = RepoConfig.OpenConnection();
-      Serilog.Log.Information(
-        "Swapping {oldMatId} to {newMatId} on pallet {pallet}",
-        oldMatId,
-        newMatId,
-        pallet
-      );
-      var o = LogDB.SwapMaterialInCurrentPalletCycle(
-        pallet: pallet,
-        oldMatId: oldMatId,
-        newMatId: newMatId,
-        operatorName: operatorName,
-        quarantineQueue: null
-      );
-      OnEditMaterialInLog?.Invoke(
-        new EditMaterialInLogEvents()
-        {
-          OldMaterialID = oldMatId,
-          NewMaterialID = newMatId,
-          EditedEvents = o.ChangedLogEntries,
-        }
-      );
-    }
-
-    public void InvalidatePalletCycle(
-      long matId,
-      int process,
-      string oldMatPutInQueue = null,
-      string operatorName = null
-    )
-    {
-      using var LogDB = RepoConfig.OpenConnection();
-      Serilog.Log.Information("Invalidating {matId} process {process}", matId, process);
-      var o = LogDB.InvalidatePalletCycle(
-        matId: matId,
-        process: process,
-        oldMatPutInQueue: oldMatPutInQueue,
-        operatorName: operatorName
-      );
     }
   }
 }
