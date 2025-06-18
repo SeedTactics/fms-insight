@@ -75,7 +75,7 @@ export type AddMaterialState = {
 function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
   const inProcMat = useAtomValue(matDetails.inProcessMaterialInDialog);
-  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
+  const possibleNewMats = useAtomValue(matDetails.barcodePotentialNewMaterial);
 
   const curInQueueOnScreen =
     inProcMat !== null &&
@@ -87,7 +87,7 @@ function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
   if (inProcMat?.location.type === api.LocType.OnPallet) return false;
   if (inProcMat?.action.type === api.ActionType.Loading) return false;
 
-  if (existingMat === null && !barcode?.potentialNewMaterial) {
+  if (existingMat === null && !possibleNewMats) {
     return false;
   }
 

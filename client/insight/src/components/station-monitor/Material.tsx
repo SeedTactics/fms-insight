@@ -770,7 +770,7 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
 }) {
   const toShow = useAtomValue(matDetails.materialDialogOpen);
   const mat = useAtomValue(matDetails.materialInDialogInfo);
-  const barcode = useAtomValue(matDetails.barcodeMaterialDetail);
+  const barcodeNewMat = useAtomValue(matDetails.barcodePotentialNewMaterial);
 
   if (toShow === null) return null;
 
@@ -778,7 +778,7 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
     if (toShow.type === "AddMatWithEnteredSerial" || toShow.type === "ManuallyEnteredSerial") {
       return <div style={{ marginLeft: "1em" }}>Material with serial {toShow.serial} not found.</div>;
     } else if (toShow.type === "Barcode") {
-      if (barcode?.potentialNewMaterial) {
+      if (barcodeNewMat) {
         return (
           <div style={{ marginLeft: "1em" }}>
             Material with barcode {toShow.barcode} does not yet exist in the cell.
