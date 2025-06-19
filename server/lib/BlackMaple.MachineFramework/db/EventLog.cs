@@ -3289,15 +3289,6 @@ namespace BlackMaple.MachineFramework
       {
         using var trans = _connection.BeginTransaction();
 
-        InvalidatePalletCycle(
-          matId: matId,
-          process: null,
-          operatorName: operatorName,
-          timeUTC: timeUTC ?? DateTime.UtcNow,
-          trans: trans,
-          newLogEntries: newLogEntries
-        );
-
         using var updateMatDetailsCmd = _connection.CreateCommand();
         updateMatDetailsCmd.Transaction = trans;
         updateMatDetailsCmd.CommandText =
@@ -3311,6 +3302,15 @@ namespace BlackMaple.MachineFramework
         updateMatDetailsCmd.Parameters.Add("numproc", SqliteType.Integer).Value = changeNumProcessesTo;
         updateMatDetailsCmd.Parameters.Add("mid", SqliteType.Integer).Value = matId;
         updateMatDetailsCmd.ExecuteNonQuery();
+
+        InvalidatePalletCycle(
+          matId: matId,
+          process: null,
+          operatorName: operatorName,
+          timeUTC: timeUTC ?? DateTime.UtcNow,
+          trans: trans,
+          newLogEntries: newLogEntries
+        );
 
         trans.Commit();
       }
