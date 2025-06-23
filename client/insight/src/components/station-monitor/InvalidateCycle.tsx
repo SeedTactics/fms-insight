@@ -1,4 +1,4 @@
-/* Copyright (c) 2024, John Lenz
+/* Copyright (c) 2025, John Lenz
 
 All rights reserved.
 
@@ -48,13 +48,14 @@ import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAtomValue, useSetAtom } from "jotai";
 import { ReactNode } from "react";
+import { usePossibleNewMaterialTypes } from "../../data/queue-material.js";
+import { NewMaterialToQueueType, PromptForMaterialType } from "./QueuesAddMaterial.js";
 
-interface InvalidateCycle {
+export type InvalidateCycleState = {
   readonly process: number | null;
   readonly updating: boolean;
-}
-
-export type InvalidateCycleState = InvalidateCycle | null;
+  readonly newMaterialTy: NewMaterialToQueueType | null;
+} | null;
 
 export interface InvalidateCycleProps {
   readonly st: InvalidateCycleState;
@@ -63,6 +64,7 @@ export interface InvalidateCycleProps {
 
 export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
   const curMat = useAtomValue(materialInDialogInfo);
+  const inProcMat = useAtomValue(inProcessMaterialInDialog);
   const lastMat = useAtomValue(materialInDialogLargestUsedProcess);
 
   if (curMat === null || lastMat === null) return <div />;
@@ -93,6 +95,13 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
           </MenuItem>
         ))}
       </TextField>
+      <PromptForMaterialType
+        newMaterialTy={props.st?.newMaterialTy ?? null}
+        setNewMaterialTy={(s) => props.setState(props.st ? { ...props.st, newMaterialTy: s } : null)}
+        toQueue={
+          inProcMat?.location.type === LocType.InQueue ? (inProcMat.location.currentQueue ?? null) : null
+        }
+      />
     </div>
   );
 }
@@ -107,20 +116,56 @@ export function InvalidateCycleDialogButton(
   const fmsInfo = useAtomValue(fmsInformation);
   const curMat = useAtomValue(materialInDialogInfo);
   const lastMat = useAtomValue(materialInDialogLargestUsedProcess);
+  const inProcMat = useAtomValue(inProcessMaterialInDialog);
+  const possibleNew = usePossibleNewMaterialTypes(
+    inProcMat?.location.type === LocType.InQueue ? (inProcMat.location.currentQueue ?? null) : null,
+  );
   const setMatToShow = useSetAtom(materialDialogOpen);
   let operator = useAtomValue(currentOperator);
 
   if (props.loadStation && !fmsInfo.allowInvalidateMaterialAtLoadStation) return null;
   if (!props.loadStation && !fmsInfo.allowInvalidateMaterialOnQueuesPage) return null;
+  if (curMat === null) return null;
+
+  const allowChange =
+    inProcMat?.location.type === LocType.InQueue &&
+    (possibleNew.castings.length > 0 || possibleNew.jobs.length > 0);
+  if (!allowChange && (lastMat === null || lastMat.process < 1)) return null;
 
   if (props.ignoreOperator) operator = null;
-
-  if (curMat === null || lastMat === null || lastMat.process < 1) return null;
 
   function invalidateCycle() {
     if (curMat && props.st && props.st.process) {
       props.setState({ ...props.st, updating: true });
-      JobsBackend.invalidatePalletCycle(curMat.materialID, null, operator, props.st.process)
+      JobsBackend.invalidatePalletCycle(curMat.materialID, operator, null, null, props.st.process)
+        .catch(console.log)
+        .finally(() => {
+          setMatToShow(null);
+          props.onClose();
+        });
+    } else if (curMat && props.st?.newMaterialTy?.kind == "JobAndProc") {
+      props.setState({ ...props.st, updating: true });
+      JobsBackend.invalidatePalletCycle(
+        curMat.materialID,
+        operator,
+        null,
+        props.st.newMaterialTy.jobUnique,
+        1,
+      )
+        .catch(console.log)
+        .finally(() => {
+          setMatToShow(null);
+          props.onClose();
+        });
+    } else if (curMat && props.st?.newMaterialTy?.kind == "RawMat") {
+      props.setState({ ...props.st, updating: true });
+      JobsBackend.invalidatePalletCycle(
+        curMat.materialID,
+        operator,
+        props.st.newMaterialTy.rawMatName,
+        null,
+        1,
+      )
         .catch(console.log)
         .finally(() => {
           setMatToShow(null);
@@ -132,7 +177,10 @@ export function InvalidateCycleDialogButton(
   return (
     <>
       {props.st === null ? (
-        <Button color="primary" onClick={() => props.setState({ process: null, updating: false })}>
+        <Button
+          color="primary"
+          onClick={() => props.setState({ process: null, updating: false, newMaterialTy: null })}
+        >
           Invalidate Cycle
         </Button>
       ) : undefined}
@@ -142,9 +190,13 @@ export function InvalidateCycleDialogButton(
           onClick={invalidateCycle}
           disabled={props.st.process === null || props.st.updating}
         >
-          {props.st.process === null
-            ? "Invalidate Cycle"
-            : "Invalidate Process " + props.st.process.toString()}
+          {props.st.process !== null
+            ? "Invalidate Process " + props.st.process.toString()
+            : props.st.newMaterialTy?.kind === "JobAndProc"
+              ? "Invalidate And Change To Job " + props.st.newMaterialTy.jobUnique
+              : props.st.newMaterialTy?.kind === "RawMat"
+                ? "Invalidate And Change To " + props.st.newMaterialTy.rawMatName
+                : "Invalidate Cycle"}
         </Button>
       ) : undefined}
     </>

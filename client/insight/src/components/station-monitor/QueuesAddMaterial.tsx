@@ -31,7 +31,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import { useState, Fragment, SetStateAction, Dispatch } from "react";
+import { useState, Fragment } from "react";
 import {
   Button,
   Collapse,
@@ -59,17 +59,11 @@ import { currentOperator } from "../../data/operators.js";
 import { fmsInformation } from "../../network/server-settings.js";
 import { useAddNewCastingToQueue } from "../../cell-status/material-details.js";
 import { useAtomValue, useSetAtom } from "jotai";
-import {
-  InvalidateCycleDialogButton,
-  InvalidateCycleDialogContent,
-  InvalidateCycleState,
-} from "./InvalidateCycle.js";
 
 export type AddMaterialState = {
   readonly toQueue: string | null;
   readonly enteredOperator: string | null;
   readonly newMaterialTy: NewMaterialToQueueType | null;
-  readonly invalidateSt: InvalidateCycleState | null;
 };
 
 function useAllowAddToQueue(queueNames: ReadonlyArray<string>): boolean {
@@ -103,7 +97,7 @@ const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.to
   }),
 }));
 
-type NewMaterialToQueueType =
+export type NewMaterialToQueueType =
   | {
       readonly kind: "JobAndProc";
       readonly jobUnique: string;
@@ -351,14 +345,16 @@ function SelectRawMatAndJob({
   );
 }
 
-function PromptForMaterialType({
+export function PromptForMaterialType({
   newMaterialTy,
   setNewMaterialTy,
   toQueue,
+  hideError,
 }: {
   newMaterialTy: NewMaterialToQueueType | null;
   setNewMaterialTy: (j: NewMaterialToQueueType | null) => void;
   toQueue: string | null;
+  hideError?: boolean;
 }) {
   const serial = useAtomValue(matDetails.serialInMaterialDialog);
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
@@ -370,7 +366,11 @@ function PromptForMaterialType({
   if (toQueue === null) return null;
 
   if (materialTypes.castings.length === 0 && materialTypes.jobs.length === 0) {
-    return <div>No jobs are currently scheduled for {toQueue}</div>;
+    if (hideError) {
+      return null;
+    } else {
+      return <div>No jobs are currently scheduled for {toQueue}</div>;
+    }
   }
 
   if (materialTypes.jobs.length === 0) {
@@ -478,7 +478,6 @@ export function AddToQueueMaterialDialogCt({
               toQueue: q,
               newMaterialTy: null,
               enteredOperator: st.enteredOperator,
-              invalidateSt: st.invalidateSt,
             });
           }}
           queueNames={queueNames}
@@ -493,24 +492,16 @@ export function AddToQueueMaterialDialogCt({
         enteredOperator={st.enteredOperator}
         setEnteredOperator={(o) => setState({ ...st, enteredOperator: o })}
       />
-      {st.invalidateSt !== null ? (
-        <InvalidateCycleDialogContent
-          st={st.invalidateSt}
-          setState={(is) => setState({ ...st, invalidateSt: is })}
-        />
-      ) : undefined}
     </>
   );
 }
 
 export function AddToQueueButton({
-  st: { enteredOperator, newMaterialTy, toQueue, invalidateSt },
-  setState,
+  st: { enteredOperator, newMaterialTy, toQueue },
   queueNames,
   onClose,
 }: {
   st: AddMaterialState;
-  setState: Dispatch<SetStateAction<AddMaterialState>>;
   queueNames: ReadonlyArray<string>;
   onClose: () => void;
 }) {
@@ -564,11 +555,6 @@ export function AddToQueueButton({
 
   return (
     <>
-      <InvalidateCycleDialogButton
-        onClose={onClose}
-        st={invalidateSt}
-        setState={(s) => setState((as) => ({ ...as, invalidateSt: s }))}
-      />
       <Button
         color="primary"
         disabled={

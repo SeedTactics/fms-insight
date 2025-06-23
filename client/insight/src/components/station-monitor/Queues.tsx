@@ -88,6 +88,7 @@ import { PrintLabelButton } from "./PrintedLabel.js";
 import { AddMaterialState, AddToQueueButton, AddToQueueMaterialDialogCt } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { AddByBarcodeDialog, scanBarcodeToAddToQueueDialog } from "../BarcodeScanning.js";
+import { InvalidateCycleDialogButton, InvalidateCycleState } from "./InvalidateCycle.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -659,11 +660,12 @@ const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
     toQueue: null,
     enteredOperator: null,
     newMaterialTy: null,
-    invalidateSt: null,
   });
+  const [invalidateSt, setInvalidateSt] = useState<InvalidateCycleState | null>(null);
 
   const onClose = useCallback(() => {
-    setAddMatSt({ toQueue: null, enteredOperator: null, newMaterialTy: null, invalidateSt: null });
+    setAddMatSt({ toQueue: null, enteredOperator: null, newMaterialTy: null });
+    setInvalidateSt(null);
   }, []);
 
   queueNames = usePossibleQueuesForAdd(queueNames);
@@ -672,7 +674,7 @@ const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
     <MaterialDialog
       allowNote
       onClose={onClose}
-      highlightProcess={addMatSt?.invalidateSt?.process ?? undefined}
+      highlightProcess={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <AddToQueueMaterialDialogCt queueNames={queueNames} st={addMatSt} setState={setAddMatSt} />
       }
@@ -680,7 +682,8 @@ const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
         <>
           <PrintLabelButton />
           <QuarantineMatButton onClose={onClose} />
-          <AddToQueueButton st={addMatSt} setState={setAddMatSt} queueNames={queueNames} onClose={onClose} />
+          <InvalidateCycleDialogButton onClose={onClose} st={invalidateSt} setState={setInvalidateSt} />
+          <AddToQueueButton st={addMatSt} queueNames={queueNames} onClose={onClose} />
         </>
       }
     />
