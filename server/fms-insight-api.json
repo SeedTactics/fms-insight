@@ -880,7 +880,7 @@
             "x-position": 1
           },
           {
-            "name": "putMatInQueue",
+            "name": "operName",
             "in": "query",
             "schema": {
               "type": "string",
@@ -889,13 +889,22 @@
             "x-position": 3
           },
           {
-            "name": "operName",
+            "name": "changeCastingTo",
             "in": "query",
             "schema": {
               "type": "string",
               "nullable": true
             },
             "x-position": 4
+          },
+          {
+            "name": "changeJobUniqueTo",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 5
           }
         ],
         "requestBody": {

@@ -870,15 +870,17 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    invalidatePalletCycle(materialId: number, putMatInQueue: string | null | undefined, operName: string | null | undefined, process: number, signal?: AbortSignal): Promise<void> {
+    invalidatePalletCycle(materialId: number, operName: string | null | undefined, changeCastingTo: string | null | undefined, changeJobUniqueTo: string | null | undefined, process: number, signal?: AbortSignal): Promise<void> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/invalidate-process?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
         url_ = url_.replace("{materialId}", encodeURIComponent("" + materialId));
-        if (putMatInQueue !== undefined && putMatInQueue !== null)
-            url_ += "putMatInQueue=" + encodeURIComponent("" + putMatInQueue) + "&";
         if (operName !== undefined && operName !== null)
             url_ += "operName=" + encodeURIComponent("" + operName) + "&";
+        if (changeCastingTo !== undefined && changeCastingTo !== null)
+            url_ += "changeCastingTo=" + encodeURIComponent("" + changeCastingTo) + "&";
+        if (changeJobUniqueTo !== undefined && changeJobUniqueTo !== null)
+            url_ += "changeJobUniqueTo=" + encodeURIComponent("" + changeJobUniqueTo) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(process);
