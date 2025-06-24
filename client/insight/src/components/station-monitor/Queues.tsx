@@ -88,7 +88,11 @@ import { PrintLabelButton } from "./PrintedLabel.js";
 import { AddMaterialState, AddToQueueButton, AddToQueueMaterialDialogCt } from "./QueuesAddMaterial.js";
 import { QuarantineMatButton } from "./QuarantineButton.js";
 import { AddByBarcodeDialog, scanBarcodeToAddToQueueDialog } from "../BarcodeScanning.js";
-import { InvalidateCycleDialogButton, InvalidateCycleState } from "./InvalidateCycle.js";
+import {
+  InvalidateCycleDialogButton,
+  InvalidateCycleDialogContent,
+  InvalidateCycleState,
+} from "./InvalidateCycle.js";
 
 const JobTableRow = styled(TableRow, { shouldForwardProp: (prop) => prop.toString()[0] !== "$" })<{
   $noBorderBottom?: boolean;
@@ -676,7 +680,10 @@ const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
       onClose={onClose}
       highlightProcess={invalidateSt?.process ?? undefined}
       extraDialogElements={
-        <AddToQueueMaterialDialogCt queueNames={queueNames} st={addMatSt} setState={setAddMatSt} />
+        <>
+          <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
+          <AddToQueueMaterialDialogCt queueNames={queueNames} st={addMatSt} setState={setAddMatSt} />
+        </>
       }
       buttons={
         <>

@@ -97,7 +97,7 @@ const ExpandMore = styled(ExpandMoreIcon, { shouldForwardProp: (prop) => prop.to
   }),
 }));
 
-export type NewMaterialToQueueType =
+type NewMaterialToQueueType =
   | {
       readonly kind: "JobAndProc";
       readonly jobUnique: string;
@@ -345,7 +345,7 @@ function SelectRawMatAndJob({
   );
 }
 
-export function PromptForMaterialType({
+function PromptForMaterialType({
   newMaterialTy,
   setNewMaterialTy,
   toQueue,

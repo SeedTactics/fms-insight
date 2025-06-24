@@ -102,6 +102,8 @@ namespace DebugMachineWatchApiServer
         QuarantineQueue = "Initial Quarantine",
         RequireScanAtCloseout = true,
         AllowChangeWorkorderAtLoadStation = true,
+        AllowInvalidateMaterialOnQueuesPage = true,
+        AllowInvalidateMaterialAtLoadStation = true,
         UsingLabelPrinterForSerials = true,
         AddToQueueButton = AddToQueueButton.ManualBarcodeScan,
         RebookingPrefix = "RE:",
