@@ -870,7 +870,7 @@ export class JobsClient {
         return Promise.resolve<void>(null as any);
     }
 
-    invalidatePalletCycle(materialId: number, operName: string | null | undefined, changeCastingTo: string | null | undefined, changeJobUniqueTo: string | null | undefined, process: number, signal?: AbortSignal): Promise<void> {
+    invalidatePalletCycle(materialId: number, operName: string | null | undefined, changeCastingTo: string | null | undefined, changeJobUniqueTo: string | null | undefined, process: number, signal?: AbortSignal): Promise<MaterialDetails> {
         let url_ = this.baseUrl + "/api/v1/jobs/material/{materialId}/invalidate-process?";
         if (materialId === undefined || materialId === null)
             throw new Error("The parameter 'materialId' must be defined.");
@@ -891,6 +891,7 @@ export class JobsClient {
             signal,
             headers: {
                 "Content-Type": "application/json",
+                "Accept": "application/json"
             }
         };
 
@@ -899,19 +900,22 @@ export class JobsClient {
         });
     }
 
-    protected processInvalidatePalletCycle(response: Response): Promise<void> {
+    protected processInvalidatePalletCycle(response: Response): Promise<MaterialDetails> {
         const status = response.status;
         let _headers: any = {}; if (response.headers && response.headers.forEach) { response.headers.forEach((v: any, k: any) => _headers[k] = v); };
         if (status === 200) {
             return response.text().then((_responseText) => {
-            return;
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = MaterialDetails.fromJS(resultData200);
+            return result200;
             });
         } else if (status !== 200 && status !== 204) {
             return response.text().then((_responseText) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
             });
         }
-        return Promise.resolve<void>(null as any);
+        return Promise.resolve<MaterialDetails>(null as any);
     }
 
     swapMaterialOnPallet(materialId: number, operName: string | null | undefined, mat: MatToPutOnPallet, signal?: AbortSignal): Promise<void> {

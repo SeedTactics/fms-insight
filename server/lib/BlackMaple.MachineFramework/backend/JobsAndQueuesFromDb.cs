@@ -118,7 +118,7 @@ namespace BlackMaple.MachineFramework
     void SwapMaterialOnPallet(int pallet, long oldMatId, long newMatId, string? operatorName = null);
     event EditMaterialInLogDelegate? OnEditMaterialInLog;
 
-    void InvalidatePalletCycle(
+    MaterialDetails? InvalidatePalletCycle(
       long matId,
       int process,
       string? operatorName = null,
@@ -906,7 +906,7 @@ namespace BlackMaple.MachineFramework
       RecalculateCellState();
     }
 
-    public void InvalidatePalletCycle(
+    public MaterialDetails? InvalidatePalletCycle(
       long matId,
       int process,
       string? operatorName = null,
@@ -922,6 +922,8 @@ namespace BlackMaple.MachineFramework
         changeJobUniqueTo
       );
 
+      using var db = _repo.OpenConnection();
+
       if (!string.IsNullOrEmpty(changeCastingTo))
       {
         if (process > 1)
@@ -929,7 +931,6 @@ namespace BlackMaple.MachineFramework
           throw new BadRequestException("Can only change casting when invalidating all processes");
         }
 
-        using var db = _repo.OpenConnection();
         db.InvalidateAndChangeAssignment(
           matId: matId,
           changeJobUniqueTo: null,
@@ -944,7 +945,6 @@ namespace BlackMaple.MachineFramework
         {
           throw new BadRequestException("Can only change job when invalidating all processes");
         }
-        using var db = _repo.OpenConnection();
         var job = db.LoadJob(changeJobUniqueTo);
         if (job == null)
         {
@@ -960,11 +960,12 @@ namespace BlackMaple.MachineFramework
       }
       else
       {
-        using var logDb = _repo.OpenConnection();
-        logDb.InvalidatePalletCycle(matId: matId, process: process, operatorName: operatorName);
+        db.InvalidatePalletCycle(matId: matId, process: process, operatorName: operatorName);
       }
 
       RecalculateCellState();
+
+      return db.GetMaterialDetails(matId);
     }
     #endregion
   }

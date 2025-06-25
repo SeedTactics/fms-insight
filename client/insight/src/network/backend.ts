@@ -84,7 +84,7 @@ export interface JobAPI {
     changeCastingTo: string | null | undefined,
     changeJobUniqueTo: string | null | undefined,
     process: number,
-  ): Promise<void>;
+  ): Promise<Readonly<api.IMaterialDetails> | null | undefined>;
   unscheduledRebookings(signal?: AbortSignal): Promise<ReadonlyArray<Readonly<api.IRebooking>>>;
 }
 

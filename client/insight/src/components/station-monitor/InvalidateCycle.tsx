@@ -216,8 +216,20 @@ export function InvalidateCycleDialogButton(
         props.st?.changeJobUnique,
         props.st?.process ?? 0,
       )
-        .catch(console.log)
-        .finally(() => {
+        .then((mat) => {
+          if (mat) {
+            setMatToShow({
+              type: "MatDetails",
+              details: mat,
+            });
+            props.onClose();
+          } else {
+            setMatToShow(null);
+            props.onClose();
+          }
+        })
+        .catch((e) => {
+          console.log(e);
           setMatToShow(null);
           props.onClose();
         });
