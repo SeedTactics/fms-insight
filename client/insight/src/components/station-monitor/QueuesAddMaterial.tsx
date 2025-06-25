@@ -349,12 +349,10 @@ function PromptForMaterialType({
   newMaterialTy,
   setNewMaterialTy,
   toQueue,
-  hideError,
 }: {
   newMaterialTy: NewMaterialToQueueType | null;
   setNewMaterialTy: (j: NewMaterialToQueueType | null) => void;
   toQueue: string | null;
-  hideError?: boolean;
 }) {
   const serial = useAtomValue(matDetails.serialInMaterialDialog);
   const existingMat = useAtomValue(matDetails.materialInDialogInfo);
@@ -366,11 +364,7 @@ function PromptForMaterialType({
   if (toQueue === null) return null;
 
   if (materialTypes.castings.length === 0 && materialTypes.jobs.length === 0) {
-    if (hideError) {
-      return null;
-    } else {
-      return <div>No jobs are currently scheduled for {toQueue}</div>;
-    }
+    return <div>No jobs are currently scheduled for {toQueue}</div>;
   }
 
   if (materialTypes.jobs.length === 0) {
