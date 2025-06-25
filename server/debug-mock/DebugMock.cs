@@ -283,7 +283,22 @@ namespace DebugMachineWatchApiServer
       using (var conn = RepoConfig.OpenConnection())
       {
         var mats = conn.GetMaterialDetailsForSerial(barcode);
-        if (mats.Count > 0)
+        if (mats.Count > 0 && barcode == "NBVHA")
+        {
+          return new ScannedMaterial()
+          {
+            ExistingMaterial = mats[mats.Count - 1],
+            PotentialNewMaterial = new()
+            {
+              Serial = barcode,
+              PossibleCastingsByQueue = ImmutableDictionary<string, ImmutableSortedSet<string>>.Empty.Add(
+                "Queue1",
+                ["part1", "part2"]
+              ),
+            },
+          };
+        }
+        else if (mats.Count > 0)
         {
           return new ScannedMaterial() { ExistingMaterial = mats[mats.Count - 1] };
         }
