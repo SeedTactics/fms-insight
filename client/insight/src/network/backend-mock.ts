@@ -261,8 +261,8 @@ export function registerMockBackend(
     swapMaterialOnPallet(): Promise<void> {
       return Promise.resolve();
     },
-    invalidatePalletCycle(): Promise<void> {
-      return Promise.resolve();
+    invalidatePalletCycle(): Promise<Readonly<api.IMaterialDetails> | null | undefined> {
+      return Promise.resolve(null);
     },
     unscheduledRebookings(): Promise<ReadonlyArray<Readonly<api.IRebooking>>> {
       return Promise.resolve([]);
