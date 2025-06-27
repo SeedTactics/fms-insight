@@ -739,9 +739,15 @@ function MaterialInspections() {
   }
 }
 
-function MaterialEvents({ highlightProcess }: { highlightProcess?: number }) {
+function MaterialEvents({ highlightProcsGreaterOrEqualTo }: { highlightProcsGreaterOrEqualTo?: number }) {
   const events = useAtomValue(matDetails.materialInDialogEvents);
-  return <LogEntries entries={events} copyToClipboard highlightProcess={highlightProcess} />;
+  return (
+    <LogEntries
+      entries={events}
+      copyToClipboard
+      highlightProcsGreaterOrEqualTo={highlightProcsGreaterOrEqualTo}
+    />
+  );
 }
 
 function RebookingNote() {
@@ -764,9 +770,9 @@ function RebookingNote() {
 }
 
 export const MaterialDetailContent = memo(function MaterialDetailContent({
-  highlightProcess,
+  highlightProcsGreaterOrEqualTo,
 }: {
-  highlightProcess?: number;
+  highlightProcsGreaterOrEqualTo?: number;
 }) {
   const toShow = useAtomValue(matDetails.materialDialogOpen);
   const mat = useAtomValue(matDetails.materialInDialogInfo);
@@ -816,7 +822,7 @@ export const MaterialDetailContent = memo(function MaterialDetailContent({
         </div>
       </div>
       <DisplayLoadingAndError fallback={<CircularProgress />}>
-        <MaterialEvents highlightProcess={highlightProcess} />
+        <MaterialEvents highlightProcsGreaterOrEqualTo={highlightProcsGreaterOrEqualTo} />
       </DisplayLoadingAndError>
     </>
   );
@@ -914,7 +920,7 @@ export interface MaterialDialogProps {
   onClose?: () => void;
   allowNote?: boolean;
   extraDialogElements?: ReactNode;
-  highlightProcess?: number;
+  highlightProcsGreaterOrEqualTo?: number;
 }
 
 export const MaterialDialog = memo(function MaterialDialog(props: MaterialDialogProps) {
@@ -936,7 +942,7 @@ export const MaterialDialog = memo(function MaterialDialog(props: MaterialDialog
         </DialogTitle>
         <DialogContent>
           <DisplayLoadingAndError fallback={<MaterialLoading />}>
-            <MaterialDetailContent highlightProcess={props.highlightProcess} />
+            <MaterialDetailContent highlightProcsGreaterOrEqualTo={props.highlightProcsGreaterOrEqualTo} />
             <DisplayLoadingAndError fallback={<CircularProgress />}>
               {props.extraDialogElements}
             </DisplayLoadingAndError>

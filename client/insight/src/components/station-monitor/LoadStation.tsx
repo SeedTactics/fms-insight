@@ -676,7 +676,7 @@ const LoadMatDialog = memo(function LoadMatDialog(props: LoadMatDialogProps) {
     <MaterialDialog
       onClose={onClose}
       allowNote
-      highlightProcess={invalidateSt?.process ?? undefined}
+      highlightProcsGreaterOrEqualTo={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
           <SwapMaterialDialogContent st={swapSt} setState={setSwapSt} />

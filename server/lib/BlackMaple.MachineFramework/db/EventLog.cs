@@ -3123,6 +3123,7 @@ namespace BlackMaple.MachineFramework
       using var updateEvtCmd = _connection.CreateCommand();
       using var removePathDetailsCmd = _connection.CreateCommand();
       using var addMessageCmd = _connection.CreateCommand();
+      using var checkQueueCmd = _connection.CreateCommand();
 
       getCycles.CommandText =
         "SELECT s.Counter, s.Pallet FROM stations s WHERE "
@@ -3130,7 +3131,7 @@ namespace BlackMaple.MachineFramework
         + "   SELECT 1 FROM stations_mat m "
         + "        WHERE s.Counter = m.Counter "
         + "          AND m.MaterialID = $matid "
-        + (process.HasValue ? "AND m.Process = $proc" : "")
+        + (process.HasValue ? "AND m.Process >= $proc" : "")
         + " ) AND "
         + " s.StationLoc IN ("
         + LogTypesToCheckForNextProcess
@@ -3163,6 +3164,10 @@ namespace BlackMaple.MachineFramework
         "INSERT OR REPLACE INTO program_details(Counter, Key, Value) VALUES ($cntr,'PalletCycleInvalidated','1')";
       addMessageCmd.Parameters.Add("cntr", SqliteType.Integer);
       addMessageCmd.Transaction = trans;
+
+      checkQueueCmd.CommandText = "SELECT Queue, Position FROM queues WHERE MaterialID = $matid";
+      checkQueueCmd.Parameters.Add("matid", SqliteType.Integer).Value = matId;
+      checkQueueCmd.Transaction = trans;
 
       // load old events
       var invalidatedCntrs = new List<long>();
@@ -3241,6 +3246,47 @@ namespace BlackMaple.MachineFramework
         newMsg.ProgramDetails["operator"] = operatorName;
       }
       newLogEntries.Add(AddLogEntry(trans, newMsg, null, null));
+
+      string queue = null;
+      int queuePos = -1;
+      using (var reader = checkQueueCmd.ExecuteReader())
+      {
+        if (reader.Read())
+        {
+          queue = reader.GetString(0);
+          queuePos = reader.GetInt32(1);
+        }
+      }
+
+      if (!string.IsNullOrEmpty(queue))
+      {
+        // We are invalidating an AddToQueue event, so need to re-add to the queue
+        var addQueueLog = new NewEventLogEntry()
+        {
+          Material =
+          [
+            new EventLogMaterial()
+            {
+              MaterialID = matId,
+              Process = (process ?? 1) - 1,
+              Face = 0,
+            },
+          ],
+          Pallet = 0,
+          LogType = LogType.AddToQueue,
+          LocationName = queue,
+          LocationNum = queuePos,
+          Program = "Invalidating",
+          StartOfCycle = false,
+          EndTimeUTC = timeUTC,
+          Result = "",
+        };
+        if (!string.IsNullOrEmpty(operatorName))
+        {
+          addQueueLog.ProgramDetails["operator"] = operatorName;
+        }
+        newLogEntries.AddRange(AddLogEntry(trans, addQueueLog, null, null));
+      }
     }
 
     public IEnumerable<LogEntry> InvalidatePalletCycle(

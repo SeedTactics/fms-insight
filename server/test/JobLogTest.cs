@@ -4752,6 +4752,13 @@ namespace BlackMaple.FMSInsight.Tests
         Face = 12,
       };
 
+      var matProc2 = new EventLogMaterial()
+      {
+        MaterialID = matProc0.MaterialID,
+        Process = 2,
+        Face = 0,
+      };
+
       var initialMatAddToQueueTime = now;
       _jobLog.RecordAddMaterialToQueue(
         matProc0,
@@ -4766,6 +4773,43 @@ namespace BlackMaple.FMSInsight.Tests
       _jobLog.NextProcessForQueuedMaterial(matProc0.MaterialID).ShouldBe(1);
 
       now = now.AddMinutes(1);
+
+      var logMatProc0 = MkLogMat.Mk(
+        matID: matProc0.MaterialID,
+        uniq: "uniq1",
+        part: "part1",
+        proc: 0,
+        numProc: 2,
+        serial: "bbbb",
+        workorder: "",
+        face: ""
+      );
+
+      var proc0Evts = new[]
+      {
+        RecordSerialExpectedEntry(
+          mat: logMatProc0,
+          cntr: 0,
+          serial: "bbbb",
+          timeUTC: initialMatAddToQueueTime
+        ),
+        AddToQueueExpectedEntry(
+          mat: logMatProc0,
+          cntr: 0,
+          queue: "rawmat",
+          position: 0,
+          timeUTC: initialMatAddToQueueTime
+        ),
+        RemoveFromQueueExpectedEntry(
+          mat: logMatProc0,
+          cntr: 0,
+          queue: "rawmat",
+          position: 0,
+          reason: "LoadedToPallet",
+          timeUTC: now,
+          elapsedMin: now.Subtract(initialMatAddToQueueTime).TotalMinutes
+        ),
+      };
 
       // ------------------------------------------------------
       // Original Events
@@ -4885,7 +4929,20 @@ namespace BlackMaple.FMSInsight.Tests
 
       now = now.AddMinutes(1);
 
-      _jobLog.NextProcessForQueuedMaterial(matProc0.MaterialID).ShouldBe(2);
+      origMatLog.Add(
+        _jobLog.RecordMachineStart(
+          new[] { matProc2 },
+          pallet: 5,
+          statName: "Mach",
+          statNum: 3,
+          program: "prog22",
+          timeUTC: now
+        )
+      );
+
+      now = now.AddMinutes(1);
+
+      _jobLog.NextProcessForQueuedMaterial(matProc0.MaterialID).ShouldBe(3);
 
       // ------------------------------------------------------
       // Invalidate
@@ -4902,20 +4959,9 @@ namespace BlackMaple.FMSInsight.Tests
       // Check Logs
       // ------------------------------------------------------
 
-      var logMatProc0 = MkLogMat.Mk(
-        matID: matProc0.MaterialID,
-        uniq: "uniq1",
-        part: "part1",
-        proc: 0,
-        numProc: 2,
-        serial: "bbbb",
-        workorder: "",
-        face: ""
-      );
-
       var expectedInvalidateMsg = new LogEntry(
         cntr: 0,
-        mat: [logMatProc0 with { Process = 1, Path = null }],
+        mat: [logMatProc0 with { Process = 1, Path = null }, logMatProc0 with { Process = 2, Path = null }],
         pal: 0,
         ty: LogType.InvalidateCycle,
         locName: "InvalidateCycle",
@@ -4932,7 +4978,24 @@ namespace BlackMaple.FMSInsight.Tests
           .Add("operator", "theoper"),
       };
 
-      result.EventsShouldBe(new[] { expectedInvalidateMsg });
+      var expectedReaddToQueue = new LogEntry(
+        cntr: 0,
+        mat: [logMatProc0], // was process 1, adding back as process 0
+        pal: 0,
+        ty: LogType.AddToQueue,
+        locName: "xyz",
+        locNum: 0,
+        prog: "Invalidating",
+        start: false,
+        endTime: now,
+        result: ""
+      );
+      expectedReaddToQueue = expectedReaddToQueue with
+      {
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", "theoper"),
+      };
+
+      result.EventsShouldBe(new[] { expectedInvalidateMsg, expectedReaddToQueue });
 
       var newMatLog = origMatLog
         .Select(RemoveActiveTime())
@@ -4966,34 +5029,8 @@ namespace BlackMaple.FMSInsight.Tests
         .EventsShouldBe(
           newMatLog
             .Concat(newPalLog)
-            .Concat(
-              new[]
-              {
-                RecordSerialExpectedEntry(
-                  mat: logMatProc0,
-                  cntr: 0,
-                  serial: "bbbb",
-                  timeUTC: initialMatAddToQueueTime
-                ),
-                AddToQueueExpectedEntry(
-                  mat: logMatProc0,
-                  cntr: 0,
-                  queue: "rawmat",
-                  position: 0,
-                  timeUTC: initialMatAddToQueueTime
-                ),
-                RemoveFromQueueExpectedEntry(
-                  mat: logMatProc0,
-                  cntr: 0,
-                  queue: "rawmat",
-                  position: 0,
-                  reason: "LoadedToPallet",
-                  timeUTC: initialMatRemoveQueueTime,
-                  elapsedMin: initialMatRemoveQueueTime.Subtract(initialMatAddToQueueTime).TotalMinutes
-                ),
-                expectedInvalidateMsg,
-              }
-            )
+            .Concat(proc0Evts)
+            .Concat(new[] { expectedInvalidateMsg, expectedReaddToQueue })
         );
     }
 
@@ -5040,6 +5077,13 @@ namespace BlackMaple.FMSInsight.Tests
             )
             .First()
         )
+      );
+
+      now = now.AddMinutes(1);
+
+      logToInvalidate.AddRange(
+        db.RecordRemoveMaterialFromAllQueues(matProc1, timeUTC: now)
+          .Select(TransformAllMat(SetPathInMat(path: 2)))
       );
 
       noChangingLog.Add(
@@ -5286,6 +5330,35 @@ namespace BlackMaple.FMSInsight.Tests
           .Add("operator", "theoper"),
       };
 
+      var expectedReaddToQueue = new LogEntry()
+      {
+        Counter = 0,
+        Material = new[]
+        {
+          MkLogMat.Mk(
+            matID: matProc0.MaterialID,
+            uniq: "ZZZuniq",
+            part: "ZZZpart",
+            proc: 0,
+            numProc: 2,
+            serial: "ser111",
+            workorder: "",
+            face: ""
+          ),
+        }.ToImmutableList(),
+        Pallet = 0,
+        LogType = LogType.AddToQueue,
+        LocationName = "rawmat",
+        LocationNum = 0,
+        Program = "Invalidating",
+        StartOfCycle = false,
+        EndTimeUTC = now.AddMinutes(5),
+        ElapsedTime = TimeSpan.FromMinutes(-1),
+        ActiveOperationTime = TimeSpan.Zero,
+        Result = "",
+        ProgramDetails = ImmutableDictionary<string, string>.Empty.Add("operator", "theoper"),
+      };
+
       db.InvalidateAndChangeAssignment(
           matId: matProc0.MaterialID,
           operatorName: "theoper",
@@ -5294,7 +5367,7 @@ namespace BlackMaple.FMSInsight.Tests
           changeNumProcessesTo: 2,
           timeUTC: now.AddMinutes(5)
         )
-        .EventsShouldBe([expectedInvalidate]);
+        .EventsShouldBe([expectedInvalidate, expectedReaddToQueue]);
 
       db.GetMaterialDetails(matId)
         .ShouldBeEquivalentTo(
@@ -5310,7 +5383,7 @@ namespace BlackMaple.FMSInsight.Tests
           }
         );
 
-      db.NextProcessForQueuedMaterial(matId).ShouldBeNull();
+      db.NextProcessForQueuedMaterial(matId).ShouldBe(1);
 
       db.GetLogForMaterial(matId)
         .EventsShouldBe(
@@ -5327,6 +5400,7 @@ namespace BlackMaple.FMSInsight.Tests
                 .. addToQueue.Skip(1),
                 serial,
                 expectedInvalidate,
+                expectedReaddToQueue,
               ]
           ).Select(e =>
             e with
@@ -5359,7 +5433,7 @@ namespace BlackMaple.FMSInsight.Tests
               Position = 0,
               Paths = ImmutableDictionary<int, int>.Empty,
               AddTimeUTC = now,
-              NextProcess = null,
+              NextProcess = 1,
             },
           ]
         );

@@ -678,7 +678,7 @@ const QueuedMaterialDialog = memo(function QueuedMaterialDialog({
     <MaterialDialog
       allowNote
       onClose={onClose}
-      highlightProcess={invalidateSt?.process ?? undefined}
+      highlightProcsGreaterOrEqualTo={invalidateSt?.process ?? undefined}
       extraDialogElements={
         <>
           <InvalidateCycleDialogContent st={invalidateSt} setState={setInvalidateSt} />
