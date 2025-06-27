@@ -165,8 +165,8 @@ export function InvalidateCycleDialogContent(props: InvalidateCycleProps) {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "1em" }}>
-      <Stack spacing={2} sx={{ maxWidth: "35em" }}>
-        <p>
+      <Stack spacing={2}>
+        <p style={{ maxWidth: "35em" }}>
           An invalidated cycle remains in the event log, but is not considered when determining the next
           process to be machined on a piece of material.
         </p>
